@@ -182,6 +182,16 @@ namespace CosmicShore.Gameplay
         public int RabidEnterThreshold => ResolveThresholds().RabidEnter;
 
         /// <summary>
+        /// The full resolved phase-threshold table for this cell (config table, or
+        /// <see cref="CellPhaseThresholds.Default"/> when no config / legacy zeroed
+        /// asset). Exposed so the concentric-hexagon volume indicator can draw one
+        /// ring per phase boundary (Quiet/Settled/Restless/Frozen/Rabid) at a radius
+        /// proportional to its enter threshold, lighting each ring as the cell's
+        /// summed mass crosses it. Read-only — the cell is the single writer.
+        /// </summary>
+        public CellPhaseThresholds ResolvedThresholds => ResolveThresholds();
+
+        /// <summary>
         /// True once this cell's CellConfig has been assigned (Initialize ran). While
         /// false, threshold reads fall back to CellPhaseThresholds.Default — HUD
         /// diagnostics surface this so a mis-scaled indicator is explainable at a

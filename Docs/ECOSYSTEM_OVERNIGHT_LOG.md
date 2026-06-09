@@ -158,3 +158,42 @@ visibly? does Skim Race FPS recover?) and I'll tune from there.
 5. (Behavior, higher-risk — may leave for you) re-add a low-count shark to the
    *menu* with immunity, to restore the predator/prey layer; per-scene forager
    diet so the menu isn't stripped by any-domain foragers.
+
+---
+
+## Session 8 — Skim Race volume indicator (concentric phase hexagons)
+
+Brought the main-menu volume gauge (`DomainVolumeIndicator` +
+`DomainVolumeHexGraphic`) into Skim Race in a new **concentric-phase-rings** mode,
+per the request "make it make concentric hexagons so we can see when each phase is
+triggered and by which domain reaching the mass threshold."
+
+What changed:
+- `Cell.ResolvedThresholds` — new public read-only accessor over the private
+  `ResolveThresholds()`, so the indicator can map each phase boundary to a ring.
+- `DomainVolumeHexGraphic.SetPhaseState(...)` + `DrawPhaseRings(...)` — a second
+  layout alongside the existing per-domain radial bands. Draws one hexagon ring per
+  phase boundary, spaced **evenly** (not by raw threshold) so all five read clearly
+  despite Skim Race's bunched thresholds (Quiet 100 … Rabid 2000). A translucent
+  live-mass fill is mapped **piecewise** through the thresholds onto the even ring
+  radii, so the fill edge reaches ring *i* exactly when summed mass crosses phase
+  *i* — the disc sweeping past a ring **is** that phase tripping. Crossed rings glow
+  in the dominant domain's color; uncrossed stay faint. Centre hex + spawn-cycle
+  ring tint with the dominant domain too, so "which domain" reads straight off color.
+- `DomainVolumeIndicator` — `concentricPhaseMode` toggle (+ `SetConcentricPhaseMode`
+  for the AddComponent path), `_massNow/_massTarget` lerp, and per-phase frac
+  computation from `cell.ResolvedThresholds`.
+- `HexRaceHUD` — auto-attaches a concentric indicator (top-left, tunable
+  `indicatorAnchoredPos`/`indicatorSize`) and hands it the injected `GameDataSO`.
+  Lives in `GameCanvas-HexRace.prefab`, which is in `MinigameHexRace.unity`, so it
+  appears in Skim Race with no scene edit. A pre-placed indicator can be wired into
+  the prefab to override the auto-created one.
+
+**Needs your in-editor validation** (procedural UI I can't render): position/size
+of the gauge in the Skim Race HUD, ring thickness/alpha legibility, and that the
+dominant-domain color reads correctly against the track background. Tune via the
+`HexRaceHUD` fields and the `DomainVolumeHexGraphic` "Concentric phase rings"
+header.
+
+Requests 1/2/4 from this batch (lower mass-vs-crystal threshold, 10× hunt speed,
+spawn-on-mass-concentration) shipped earlier in ff1529b4.

@@ -46,6 +46,10 @@ namespace CosmicShore.UI
         [Tooltip("Lerp speed for fill changes between samples. 0 = instant; higher = smoother.")]
         [Min(0f)] [SerializeField] float fillLerpSpeed = 8f;
 
+        [Header("Concentric phase mode (Skim Race)")]
+        [Tooltip("Draw concentric hexagon rings — one per cell phase boundary (Quiet/Settled/Restless/Frozen/Rabid) — that light up in the dominant domain's color as the cell's summed mass crosses each threshold. Off = the per-domain radial bands used in the main menu.")]
+        [SerializeField] bool concentricPhaseMode = false;
+
         [Header("Cell resolution")]
         [Tooltip("If assigned, the indicator reads from this cell directly. Leave null to auto-resolve via the local player's vessel position (or the nearest active cell).")]
         [SerializeField] Cell explicitCell;
@@ -59,6 +63,13 @@ namespace CosmicShore.UI
         int _dominant = -1;
         float _spawnCycle;
 
+        // Concentric-phase-mode state. _massTarget/_massNow are the summed mass as a
+        // fraction of RabidEnter (lerped like the per-domain fills). _phaseFracs are the
+        // per-phase enter thresholds / RabidEnter — fixed per cell config, so they're
+        // resolved at sample time and fed straight to the graphic.
+        float _massTarget, _massNow;
+        readonly float[] _phaseFracs = new float[5]; // Quiet, Settled, Restless, Frozen, Rabid
+
         /// <summary>
         /// Explicit dependency handoff for the AddComponent path: runtime-added
         /// components never receive Reflex scene injection, so the creator passes its
@@ -66,6 +77,14 @@ namespace CosmicShore.UI
         /// in-scene case.
         /// </summary>
         public void SetGameData(GameDataSO data) => gameData = data;
+
+        /// <summary>
+        /// Runtime toggle for the concentric-phase-rings layout (Skim Race). Used by the
+        /// AddComponent path (e.g. <see cref="HexRaceHUD"/>) where the component is created
+        /// in code and so never receives the serialized inspector value. Authored-in-scene
+        /// indicators set this via the inspector field instead.
+        /// </summary>
+        public void SetConcentricPhaseMode(bool enabled) => concentricPhaseMode = enabled;
 
         // ------------------------------------------------------------------
         //  Lifecycle
@@ -77,6 +96,7 @@ namespace CosmicShore.UI
 
             _jadeNow = _rubyNow = _goldNow = 0f;
             _jadeTarget = _rubyTarget = _goldTarget = 0f;
+            _massNow = _massTarget = 0f;
             _nextSampleAt = 0f;
             PushState();
         }
@@ -156,6 +176,7 @@ namespace CosmicShore.UI
             if (!cell)
             {
                 _jadeTarget = _rubyTarget = _goldTarget = 0f;
+                _massTarget = 0f;
                 _dominant = -1;
                 return;
             }
@@ -164,6 +185,21 @@ namespace CosmicShore.UI
             int jade = cell.GetDomainBlockCount(Domains.Jade);
             int ruby = cell.GetDomainBlockCount(Domains.Ruby);
             int gold = cell.GetDomainBlockCount(Domains.Gold);
+
+            // Concentric phase mode: total summed mass vs frenzy, plus each phase
+            // boundary as a radius fraction. Thresholds are static per config so they
+            // can be read straight here (no lerp needed on the rings themselves).
+            if (concentricPhaseMode)
+            {
+                _massTarget = rabid > 0 ? Mathf.Clamp01((float)cell.LiveBlockCount / rabid) : 0f;
+                var t = cell.ResolvedThresholds;
+                float denom = Mathf.Max(1, t.RabidEnter);
+                _phaseFracs[0] = t.QuietEnter / denom;
+                _phaseFracs[1] = t.SettledEnter / denom;
+                _phaseFracs[2] = t.RestlessEnter / denom;
+                _phaseFracs[3] = t.FrozenEnter / denom;
+                _phaseFracs[4] = t.RabidEnter / denom; // 1.0 by construction
+            }
 
             if (rabid > 0)
             {
@@ -203,6 +239,7 @@ namespace CosmicShore.UI
                 _jadeNow = _jadeTarget;
                 _rubyNow = _rubyTarget;
                 _goldNow = _goldTarget;
+                _massNow = _massTarget;
             }
             else
             {
@@ -210,6 +247,7 @@ namespace CosmicShore.UI
                 _jadeNow = Mathf.Lerp(_jadeNow, _jadeTarget, t);
                 _rubyNow = Mathf.Lerp(_rubyNow, _rubyTarget, t);
                 _goldNow = Mathf.Lerp(_goldNow, _goldTarget, t);
+                _massNow = Mathf.Lerp(_massNow, _massTarget, t);
             }
             PushState();
         }
@@ -222,6 +260,22 @@ namespace CosmicShore.UI
             // so the ring sweeps smoothly between the 0.25s volume samples. Use the
             // cached cell to avoid re-running cell resolution every frame.
             float cycle = _cachedCell ? _cachedCell.FaunaSpawnCycleFraction : _spawnCycle;
+
+            if (concentricPhaseMode)
+            {
+                // The lit rings + centre + mass fill all take the dominant domain's hue,
+                // so "which domain reached the threshold" reads straight off the color.
+                Color dominantColor = _dominant switch
+                {
+                    0 => jadeC,
+                    1 => rubyC,
+                    2 => goldC,
+                    _ => Color.white,
+                };
+                hexGraphic.SetPhaseState(_massNow, _phaseFracs, dominantColor, _dominant, cycle);
+                return;
+            }
+
             // SetState rebuilds the mesh only on a meaningful delta.
             hexGraphic.SetState(_jadeNow, _rubyNow, _goldNow, jadeC, rubyC, goldC, _dominant, cycle);
         }
