@@ -155,11 +155,16 @@ namespace CosmicShore.Gameplay
             AvatarId = NetAvatarId.Value;
             Vessel = vessel;
 
+            // RoundStats.Domain is a LOCAL mirror of the player's domain on EVERY peer —
+            // Player.NetDomain is the single networked source (RoundStats.n_Domain is retired). Set
+            // it on clients too, so a client's own RoundStats.Domain is correct immediately instead
+            // of via a lagging second replication.
+            RoundStats.Domain = Domain;
+
             if (!IsServer)
                 return;
 
             RoundStats.Name = Name;
-            RoundStats.Domain = Domain;
 
             SetGameObjectName();
         }
@@ -435,14 +440,11 @@ namespace CosmicShore.Gameplay
         {
             Domain = newValue;
 
-            // Drive RoundStats.Domain from the reliably-replicated Player.NetDomain on EVERY peer.
-            // The owner client does NOT receive its own RoundStats.n_Domain replication (same
-            // owner-replication gap as BUGS.md B9), so a server-only write left the owner's
-            // RoundStats.Domain stale (set once from a pre-sync Player.Domain at init) — the in-game
-            // HUD then grouped the client's icon into the wrong domain box. NetDomain → Player.Domain
-            // IS reliable on the owner, so sourcing RoundStats.Domain from it here keeps every
-            // consumer (HUD grouping, scoreboards, end-game, GameFeedAPI colorers) correct across
-            // initial picks, modal re-picks, and NormalizeUnassignedHumans rerolls.
+            // RoundStats.Domain is a LOCAL mirror derived from Player.NetDomain — the single
+            // authoritative networked domain source (RoundStats.n_Domain is retired). Update it on
+            // EVERY peer here so all consumers (scoreboards, end-game, GameFeedAPI colorers) stay
+            // correct across initial picks, modal re-picks, and rerolls, without a second
+            // RoundStats-level replication that could lag behind.
             if (_roundStats)
                 _roundStats.Domain = newValue;
 
