@@ -137,10 +137,12 @@ logging      : no [FLOW-*] spam
 
 ### `IRoundStats` (`_Scripts/Data/Enums/IRoundStats.cs`)
 Per-player stat snapshot. Implemented by `RoundStats` (a `NetworkBehaviour`),
-so every property is backed by a server-authoritative `NetworkVariable` and
+so every metric property is backed by a server-authoritative `NetworkVariable` and
 each change raises an observer event:
 
-- Identity: `Name`, `Domain`.
+- Identity: `Name` (NetworkVariable) and `Domain` — **`Domain` is NOT networked**; it is
+  a local mirror of the owning `Player.NetDomain`, kept in sync on every peer by `Player`
+  (retired `n_Domain`, BUGS.md B10).
 - Primary: `float Score` + `OnScoreChanged`.
 - Mode metrics: `CrystalsCollected`, `OmniCrystalsCollected`, `JoustCollisions`,
   … each with an `OnXxxChanged` event (e.g. `OnOmniCrystalsCollectedChanged`).
@@ -237,27 +239,29 @@ RoundStats NetworkVariable (server write, replicated)
   `Score`, driven separately by `MiniGameHUD.UpdateScoreUI` on
   `localRoundStats.OnScoreChanged`.
 
-### [B9 / Approach B] Server-authoritative domain sums + reactive panels
-Clients do **not** re-sum per-player stats for the domain boxes — a client's OWN
-`RoundStats` metric can fail to replicate to the owner (BUGS.md B9). Two pieces:
+### Domain attribution + in-game box values
+**Domain has ONE networked source: `Player.NetDomain`.** `Player.Domain` mirrors it on
+every peer immediately; `RoundStats.Domain` is a **local mirror** `Player` keeps in sync
+on every peer (`InitializeForMultiplayerMode` + `OnNetDomainChanged`) — there is no
+`RoundStats.n_Domain` (retired, BUGS.md B10). This removed the lagging second
+representation that misplaced a client's own icon.
 
-- **Values (server-authoritative).** `MultiplayerDomainGamesController` (the base of
+- **Structure / grouping (authoritative).** `MultiplayerHUD` builds the boxes and groups
+  player icons entirely off `Player.Domain` via `gameData.Players` (`HasPlayersInDomain`,
+  `CreateDomainPanel`). The reconcile is **membership-aware**: `DomainLayoutChanged`
+  compares an order-stable layout signature (each player's name → `Player.Domain`, plus
+  ally domain + domain count), so it rebuilds when a player MOVES domains, not only when
+  the SET of domains changes.
+- **Values (server-synced, "Approach B").** `MultiplayerDomainGamesController` (base of
   HexRace / Joust / CrystalCapture) runs a throttled (0.1s) **server** coroutine that
-  writes `ScoringMetrics.SumByDomain(gameData, rule.Metric, ActiveDomains[i])` into
-  three `NetworkVariable<int>`. Every peer's `OnValueChanged` mirrors the value into
-  `GameDataSO.SetDomainMetricSum` (→ `OnDomainMetricSumsChanged`), and
-  `MultiplayerHUD.SumStatByDomain` returns `gameData.GetDomainMetricSum`. So every
-  client shows exactly the host's number, and the single code path serves all three
-  modes via the per-mode `rule.Metric` (Crystals / Jousts).
-- **Structure (reactive).** `RoundStats.n_Domain` / `n_Name` now raise
-  `OnAnyStatChanged`; `MultiplayerHUD` rebuilds the panel set whenever the
-  ally/opposing domain set or roster changes (`RebuildDomainPanels` + allocation-free
-  `DomainLayoutChanged`) and subscribes `OnPlayerAdded`, instead of snapshotting once
-  at turn start (BUGS.md B8).
+  writes `ScoringMetrics.SumByDomain(gameData, rule.Metric, ActiveDomains[i])` into three
+  `NetworkVariable<int>`; every peer mirrors them into `GameDataSO.SetDomainMetricSum`
+  (→ `OnDomainMetricSumsChanged`), and `MultiplayerHUD.SumStatByDomain` returns
+  `gameData.GetDomainMetricSum`. **Now redundant** with the domain fixed at the source (the
+  HUD could re-sum locally by `Player.Domain`); kept as harmless robustness — `TODOS.md` TD3.
 
-> **Legacy gap:** the above covers only the **domain** layout. The legacy per-player
-> layout still reads per-player `RoundStats` directly and can show a frozen own-card
-> on a client — `TODOS.md` TD1 (recheck).
+> **Legacy gap:** the above covers only the **domain** layout. The legacy per-player layout
+> still reads per-player `RoundStats` directly — `TODOS.md` TD1.
 
 ---
 

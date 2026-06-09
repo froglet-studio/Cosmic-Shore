@@ -55,13 +55,18 @@ won't benefit from the B9 / Approach-B client-sync fix.
 **Action:** open the Joust scene, confirm `HasDomainPanelWiring`; if missing, wire
 it like HexRace / CC.
 
-## TD3 — 🟢 [verify only] Confirm B9 fix across all three domain modes
-Approach B lives in the shared `MultiplayerDomainGamesController` + `MultiplayerHUD`
-and is parameterized by `gameData.ScoringRule.Metric`, so it should fix client
-domain-box sync for all three modes by construction (no HexRace-specific logic).
-Verify with the tester (2 humans, separate domains — each client's OWN domain box
-must track the host):
-- **HexRace** (metric Crystals) — primary repro, fix under test.
-- **Crystal Capture** (metric Crystals) — same crystal mechanism + metric → expected identical.
-- **Joust** (metric Jousts) — server sums `RoundStats.JoustCollisions` (server-authoritative); gated on **TD2**.
-See `TESTS.md` T11 / T12.
+## TD3 — 🟡 [verify + optional cleanup] Confirm domain fixes; consider retiring Approach B
+The in-game domain HUD now reads `Player.Domain` (Commit `5442d3d0`) and `RoundStats.Domain`
+is a local mirror of the authoritative `NetDomain` (Commit `aaabc1b6`, `n_Domain` retired).
+Verify with the tester (2 humans, separate domains):
+- **B10 (icon placement):** each player's profile icon sits in its OWN domain box on the
+  client (the reported bug). HexRace first, then Crystal Capture + Joust.
+- **B9 (counts):** each domain box's number tracks the host.
+See `TESTS.md` T11 / T12. Joust is gated on **TD2** (scene wiring).
+
+**Optional cleanup once confirmed:** "Approach B" (server-synced domain sums —
+`MultiplayerDomainGamesController` + `GameDataSO.GetDomainMetricSum`) is now **redundant**:
+with the domain correct on every peer, the HUD could client-side sum by `Player.Domain`
+reading the reliably-replicated per-player metric (`RoundStats.CrystalsCollected` etc.) and
+drop the 3 server-sum `NetworkVariable`s. Keep it as harmless robustness until the domain
+fixes are play-test-confirmed, then retire if desired.

@@ -119,23 +119,37 @@ reads per-player stats and is NOT covered — `TODOS.md` **TD1**. Needs the 2-hu
 play-test (HexRace / Joust / CrystalCapture — `TESTS.md` T11/T12).
 Files: `_Scripts/Controller/Arcade/MultiplayerDomainGamesController.cs`,
 `_Scripts/Utility/DataContainers/GameDataSO.cs`, `_Scripts/UI/MultiplayerHUD.cs`.
+**Correction (post-B10):** the "owner replication unreliable" framing was disproven
+(RoundStats is baked on the same NetworkObject as Player). The frozen count was the
+SAME domain-divergence root as B10 — the local player's crystals summed under a stale
+`RoundStats.Domain`. With B10's fix the domain is correct everywhere, so Approach B's
+server-synced sums are now **redundant but harmless** robustness; optional retirement
+tracked in `TODOS.md` TD3.
 
 ### B10 — 🟢 Client's OWN profile icon grouped into the wrong domain box
 With 2 humans on different domains (host Jade, client Ruby), the client's screen
-grouped BOTH players' icons into one domain box (the client's icon landed in the
-host's box), while the host's screen grouped them correctly. Same owner-replication
-gap as B9: the client's OWN `RoundStats.Domain` (a server-write NetworkVariable)
-doesn't reach the owner, so it stayed stale (set once from a pre-sync `Player.Domain`
-at init). `Player.OnNetDomainChanged` wrote `RoundStats.Domain` **only on the
-server**, trusting `n_Domain` replication to carry it to clients — but the owner never
-gets its own. `Player.Domain` (driven by the reliably-replicated `NetDomain`) WAS
-correct, which is why the ally box + crystal counts (B9 server-synced) were already
-right. **Done** (commit `352ed485`): `Player.OnNetDomainChanged` now writes
-`RoundStats.Domain` on **every** peer, sourced from the reliable `NetDomain` instead
-of the unreliable per-`RoundStats` `n_Domain`; the `RoundStats.Domain` setter raises
-`OnAnyStatChanged` on a client/local set so the HUD regroups. The COUNT fix (B9) is
-unaffected — sums are computed from the server's always-correct domains.
-Files: `_Scripts/Controller/Player/Player.cs`, `_Scripts/Data/Enums/RoundStats.cs`.
+grouped BOTH icons into the host's box while the host's screen was correct.
+**Corrected root cause** — an earlier "owner doesn't receive its own RoundStats
+replication" theory (and B10's first fix `352ed485`) was **DISPROVEN**: `RoundStats`
+is a baked `NetworkBehaviour` on the SAME `NetworkObject` as `Player`
+(`_Prefabs/CORE/Player.prefab`), so its NetworkVariables replicate to the owner
+exactly like `Player.NetDomain`. The real cause: domain was networked **twice** —
+`Player.NetDomain` (authoritative, set directly by the pick) and `RoundStats.n_Domain`
+(a server-DERIVED copy re-replicated through a round-trip). The derived copy lagged
+`Player.Domain` on the client, and the HUD **mixed sources** — ally box from
+`Player.Domain` (correct), icon grouping from `RoundStats.Domain` (lagging) — so the
+client's own icon grouped by the stale copy into the host's box. A membership-blind
+reconcile (rebuilds only on a domain-SET change, not when a player MOVES boxes) meant
+it never healed, which is why the first attempts (`fa2515f7`, `352ed485`) never
+re-rendered. **Done** in two commits:
+- `5442d3d0` — the in-game HUD groups entirely off `Player.Domain` (via
+  `gameData.Players`) with a membership-aware reconcile (layout-signature hash), so the
+  icon is in the right box from the first build.
+- `aaabc1b6` — retire `RoundStats.n_Domain`; `RoundStats.Domain` is a local mirror
+  Player keeps in sync on every peer from the authoritative `NetDomain` (one source of
+  truth), fixing every other `RoundStats.Domain` consumer too.
+Files: `_Scripts/UI/MultiplayerHUD.cs`, `_Scripts/Data/Enums/RoundStats.cs`,
+`_Scripts/Controller/Player/Player.cs`.
 
 ---
 
