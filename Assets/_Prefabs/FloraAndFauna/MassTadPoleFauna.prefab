@@ -59,10 +59,10 @@ MonoBehaviour:
     type: 2}
   autoInitialize: 1
   Population: {fileID: 0}
-  cohesionRadius: 20
-  behaviorUpdateRate: 3
+  cohesionRadius: 50
+  behaviorUpdateRate: 1.5
   separationRadius: 15
-  trailBlockInteractionRadius: 15
+  trailBlockInteractionRadius: 45
   separationWeight: 12
   alignmentWeight: 2
   cohesionWeight: 1
