@@ -125,6 +125,7 @@ SAME domain-divergence root as B10 — the local player's crystals summed under 
 `RoundStats.Domain`. With B10's fix the domain is correct everywhere, so Approach B's
 server-synced sums are now **redundant but harmless** robustness; optional retirement
 tracked in `TODOS.md` TD3.
+**✅ Verified in engine** (2-human test — client domain counts track the host).
 
 ### B10 — 🟢 Client's OWN profile icon grouped into the wrong domain box
 With 2 humans on different domains (host Jade, client Ruby), the client's screen
@@ -150,11 +151,14 @@ re-rendered. **Done** in two commits:
   truth), fixing every other `RoundStats.Domain` consumer too.
 Files: `_Scripts/UI/MultiplayerHUD.cs`, `_Scripts/Data/Enums/RoundStats.cs`,
 `_Scripts/Controller/Player/Player.cs`.
+**✅ Verified in engine** (2-human test — the client's own profile icon now sits in its
+own domain box). Broader mode coverage (CrystalCapture / Joust) continuing.
 
 ---
 
 B1–B4, B6, B7, B8 fixed (verify only — B6 also warrants a visual position check).
-B9 (count) + B10 (domain icon placement) fixed for the **domain** layout (need the
-2-human play-test; legacy-layout residual tracked in `TODOS.md` TD1). B5 remains
+B9 (count) + B10 (domain icon placement) fixed for the **domain** layout and **verified
+in a 2-human engine test** (broader mode coverage continuing; legacy-layout residual
+tracked in `TODOS.md` TD1). B5 remains
 scheduled into **R10** (the unified ranked `ScoreResult` list dissolves it). No open
 read-through findings remain.

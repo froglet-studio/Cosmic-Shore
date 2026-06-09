@@ -58,10 +58,12 @@ HexRace / CC if missing.
 ## TD3 — 🟡 [verify + optional cleanup] Confirm domain fixes; consider retiring Approach B
 The in-game domain HUD now reads `Player.Domain` (Commit `5442d3d0`) and `RoundStats.Domain`
 is a local mirror of the authoritative `NetDomain` (Commit `aaabc1b6`, `n_Domain` retired).
+**Status:** B9 + B10 ✅ confirmed in a 2-human engine test; broader mode coverage
+(CrystalCapture / Joust) + more scenarios pending.
 Verify with the tester (2 humans, separate domains):
 - **B10 (icon placement):** each player's profile icon sits in its OWN domain box on the
-  client (the reported bug). HexRace first, then Crystal Capture + Joust.
-- **B9 (counts):** each domain box's number tracks the host.
+  client (the reported bug) — ✅ confirmed. Re-check on Crystal Capture + Joust.
+- **B9 (counts):** each domain box's number tracks the host — ✅ confirmed. Re-check on CC + Joust.
 See `TESTS.md` T11 / T12. Joust is gated on **TD2** (scene wiring).
 
 **Optional cleanup once confirmed:** "Approach B" (server-synced domain sums —
