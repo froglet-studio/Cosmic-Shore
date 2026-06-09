@@ -130,7 +130,7 @@ at init). `Player.OnNetDomainChanged` wrote `RoundStats.Domain` **only on the
 server**, trusting `n_Domain` replication to carry it to clients — but the owner never
 gets its own. `Player.Domain` (driven by the reliably-replicated `NetDomain`) WAS
 correct, which is why the ally box + crystal counts (B9 server-synced) were already
-right. **Done** (commit `eb798334`): `Player.OnNetDomainChanged` now writes
+right. **Done** (commit `352ed485`): `Player.OnNetDomainChanged` now writes
 `RoundStats.Domain` on **every** peer, sourced from the reliable `NetDomain` instead
 of the unreliable per-`RoundStats` `n_Domain`; the `RoundStats.Domain` setter raises
 `OnAnyStatChanged` on a client/local set so the HUD regroups. The COUNT fix (B9) is
