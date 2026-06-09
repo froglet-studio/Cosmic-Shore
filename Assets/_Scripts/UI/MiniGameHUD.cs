@@ -36,6 +36,12 @@ namespace CosmicShore.UI
         [Header("Related UI Components")]
         [SerializeField] private Scoreboard scoreboard;
 
+        [Header("Volume / Pause Button (universal domain-volume gauge)")]
+        [Tooltip("The in-game pause button. The domain-volume hex gauge is auto-attached to it so the SAME gauge trains as the pause button across every gameplay scene. Leave null to auto-find a button named \"Volume / Pause Button\" under the HUD canvas.")]
+        [SerializeField] protected UnityEngine.UI.Button volumePauseButton;
+        [Tooltip("Optional pre-placed indicator. Leave null to attach/create one on the volume-pause button at runtime.")]
+        [SerializeField] protected DomainVolumeIndicator volumeIndicator;
+
         [Header("Event Channels")]
         [SerializeField] private ScriptableEventInt onMoundDroneSpawned;
         [SerializeField] private ScriptableEventInt onQueenDroneSpawned;
@@ -143,6 +149,7 @@ namespace CosmicShore.UI
             SubscribeToEvents();
 
             EnsureObjectiveIndicator();
+            EnsureVolumeIndicator();
 
             // If OnClientReady already fired before we subscribed (client race condition:
             // RPCs can resolve in the same frame as scene load, before Start() runs),
@@ -172,6 +179,49 @@ namespace CosmicShore.UI
 
             Transform canvasRoot = transform.parent != null ? transform.parent : transform;
             _autoCreatedIndicator = ObjectiveIndicator.CreateRuntime(canvasRoot, provider);
+        }
+
+        /// <summary>
+        /// Attaches the universal domain-volume hex gauge to this scene's "Volume /
+        /// Pause Button" so the same gauge trains players as the in-game pause button
+        /// everywhere (it mirrors MenuMiniGameHUD.EnsureDomainVolumeIndicator for the
+        /// menu). The button keeps its authored onClick (open PauseMenu) — the gauge
+        /// only replaces the button's face. Runs in Start so the injected gameData can
+        /// be handed to the runtime-added component (which never gets Reflex injection).
+        /// </summary>
+        protected virtual void EnsureVolumeIndicator()
+        {
+            var button = ResolveVolumePauseButton();
+            if (!button) return;
+
+            if (!volumeIndicator)
+                volumeIndicator = button.GetComponent<DomainVolumeIndicator>();
+            if (!volumeIndicator)
+                volumeIndicator = button.gameObject.AddComponent<DomainVolumeIndicator>();
+
+            volumeIndicator.SetGameData(gameData);
+        }
+
+        /// <summary>
+        /// Returns the serialized volume-pause button, or auto-finds one named
+        /// "Volume / Pause Button" under the HUD canvas so the gauge appears without
+        /// per-prefab wiring (the GameCanvas prefabs already carry that button).
+        /// </summary>
+        UnityEngine.UI.Button ResolveVolumePauseButton()
+        {
+            if (volumePauseButton) return volumePauseButton;
+
+            var canvas = GetComponentInParent<Canvas>();
+            Transform root = canvas ? canvas.transform : transform.root;
+            foreach (var btn in root.GetComponentsInChildren<UnityEngine.UI.Button>(true))
+            {
+                if (btn && btn.name == "Volume / Pause Button")
+                {
+                    volumePauseButton = btn;
+                    return btn;
+                }
+            }
+            return null;
         }
 
         IObjectiveProvider CreateObjectiveProviderForGameMode(GameModes mode)

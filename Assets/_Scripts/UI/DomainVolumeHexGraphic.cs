@@ -4,7 +4,10 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Procedural hexagonal domain-volume gauge (the pause-button face).
+    /// Procedural hexagonal domain-volume gauge — the universal in-game pause-button
+    /// face. Trained as a single recognizable element across the main menu and every
+    /// gameplay scene (attached to the "Volume / Pause Button" by MenuMiniGameHUD in
+    /// the menu and by MiniGameHUD in gameplay).
     ///
     /// A pointy-top hexagon split into three fixed 120° sectors — one per playable
     /// domain — each spanning two of the six edges:
@@ -15,9 +18,15 @@ namespace CosmicShore.UI
     ///
     /// Each sector ALWAYS spans its full angular width; volume is shown by RADIAL
     /// DEPTH — the colored band grows from the outer hexagon edge inward toward the
-    /// centre as the domain's mass approaches the frenzy threshold (fill = 1 reaches
-    /// the centre hexagon). A small centre hexagon is tinted by the dominant domain,
-    /// denoting who currently holds the most volume.
+    /// centre as the domain's mass approaches the frenzy threshold. The END of the
+    /// wedge (the centre hexagon) is the final frenzy (Rabid) state.
+    ///
+    /// Overlaid on top are CONCENTRIC THRESHOLD RINGS — one per cell phase boundary
+    /// (Quiet/Settled/Restless/Frozen/Rabid) — placed at the radius a wedge reaches
+    /// when its mass equals that threshold. As a domain's wedge fills inward it PASSES
+    /// THROUGH each ring; a ring DISAPPEARS once a wedge has filled past it, so only the
+    /// upcoming thresholds are shown and the colored wedges aren't visually cluttered.
+    /// "Which domain" reads off the colored wedge extending past where the ring was.
     ///
     /// Follows the ObjectiveArrowGraphic idiom: one MaskableGraphic, no sprite/font
     /// dependency, geometry built in OnPopulateMesh. The owning DomainVolumeIndicator
@@ -30,12 +39,18 @@ namespace CosmicShore.UI
         [Header("Geometry (fractions of the rect's half-min-extent)")]
         [Tooltip("Outer radius of the colored bands. <1 leaves a gap to the boundary ring.")]
         [Range(0.3f, 1f)] [SerializeField] float bandOuterFrac = 0.78f;
-        [Tooltip("Radius of the centre 'dominant' hexagon. Bands reach this at fill = 1.")]
+        [Tooltip("Radius of the centre 'dominant' hexagon. Bands reach this at fill = 1 (frenzy).")]
         [Range(0.05f, 0.4f)] [SerializeField] float centerHexFrac = 0.18f;
         [Tooltip("Minimum band thickness (fraction) so an empty domain still shows a sliver at full width.")]
         [Range(0f, 0.2f)] [SerializeField] float minBandThicknessFrac = 0.06f;
         [Tooltip("Faint boundary hexagon marking the frenzy extent. 0 thickness = off.")]
         [Range(0f, 0.12f)] [SerializeField] float boundaryThicknessFrac = 0.04f;
+
+        [Header("Phase threshold rings (wedges pass through these)")]
+        [Tooltip("Thickness of each concentric phase-threshold ring, as a fraction of the half-min-extent.")]
+        [Range(0.005f, 0.08f)] [SerializeField] float phaseRingThicknessFrac = 0.022f;
+        [Tooltip("Color of a phase-threshold ring no wedge has reached yet. The ring disappears once a wedge fills past it.")]
+        [SerializeField] Color thresholdRingColor = new(1f, 1f, 1f, 0.28f);
 
         [Header("Spawn-cycle ring (outside the hex)")]
         [Tooltip("Inner radius of the spawn-cycle ring (fraction). Sits OUTSIDE the band/boundary so it doesn't obscure the volume gauge.")]
@@ -68,15 +83,20 @@ namespace CosmicShore.UI
         readonly Color[] _domainColor = { Color.green, Color.red, Color.yellow };
         int _dominant = -1;                              // 0/1/2 or -1 (none)
         float _spawnCycle;                               // 0..1 progress toward next fauna spawn
+        float[] _thresholdFracs = System.Array.Empty<float>(); // phase enter thresholds / RabidEnter (ascending)
 
         /// <summary>
         /// Push the live gauge state. Rebuilds the mesh only when something changed
         /// past a small epsilon, so per-frame lerps from the controller don't force a
         /// Canvas batch rebuild every frame once the values settle.
+        ///
+        /// <paramref name="thresholdFracs"/> are the cell's phase enter thresholds as a
+        /// fraction of RabidEnter (ascending) — where to draw the concentric rings the
+        /// wedges pass through. Pass an empty/null array to draw no rings.
         /// </summary>
         public void SetState(float fillJade, float fillRuby, float fillGold,
                              Color cJade, Color cRuby, Color cGold, int dominant,
-                             float spawnCycle)
+                             float spawnCycle, float[] thresholdFracs)
         {
             bool changed =
                 !Approximately(_fill[0], fillJade) ||
@@ -84,7 +104,8 @@ namespace CosmicShore.UI
                 !Approximately(_fill[2], fillGold) ||
                 _dominant != dominant ||
                 !Approximately(_spawnCycle, spawnCycle) ||
-                _domainColor[0] != cJade || _domainColor[1] != cRuby || _domainColor[2] != cGold;
+                _domainColor[0] != cJade || _domainColor[1] != cRuby || _domainColor[2] != cGold ||
+                !FracsApproximately(_thresholdFracs, thresholdFracs);
 
             if (!changed) return;
 
@@ -92,7 +113,24 @@ namespace CosmicShore.UI
             _domainColor[0] = cJade; _domainColor[1] = cRuby; _domainColor[2] = cGold;
             _dominant = dominant;
             _spawnCycle = spawnCycle;
+            CopyThresholds(thresholdFracs);
             SetVerticesDirty();
+        }
+
+        void CopyThresholds(float[] src)
+        {
+            if (src == null || src.Length == 0) { _thresholdFracs = System.Array.Empty<float>(); return; }
+            if (_thresholdFracs.Length != src.Length) _thresholdFracs = new float[src.Length];
+            System.Array.Copy(src, _thresholdFracs, src.Length);
+        }
+
+        static bool FracsApproximately(float[] a, float[] b)
+        {
+            int la = a?.Length ?? 0, lb = b?.Length ?? 0;
+            if (la != lb) return false;
+            for (int i = 0; i < la; i++)
+                if (!Approximately(a[i], b[i])) return false;
+            return true;
         }
 
         static bool Approximately(float a, float b) => Mathf.Abs(a - b) < 0.002f;
@@ -115,21 +153,39 @@ namespace CosmicShore.UI
                 AddHexRing(vh, c, R, R - R * boundaryThicknessFrac, boundaryColor);
 
             // 2) Three domain bands, each filling its 120° sector radially inward.
+            float maxFill = 0f;
             for (int d = 0; d < 3; d++)
             {
                 float fill = Mathf.Clamp01(_fill[d]);
+                if (fill > maxFill) maxFill = fill;
                 // fill = 0 → a thin sliver at the outer edge (full angular width, per spec).
-                // fill = 1 → inner edge reaches the centre hexagon.
+                // fill = 1 → inner edge reaches the centre hexagon (frenzy).
                 float innerR = Mathf.Lerp(bandOuterR - minThick, centerR, fill);
                 innerR = Mathf.Min(innerR, bandOuterR - 0.5f); // guard against degenerate/inverted band
                 AddSectorBand(vh, c, bandOuterR, innerR, DomainCornerAngles[d], _domainColor[d]);
             }
 
-            // 3) Centre hexagon — tinted by the dominant domain (who leads on volume).
+            // 3) Concentric phase-threshold rings the wedges pass through. Each ring sits
+            //    at the radius a wedge reaches when its mass equals that threshold. A ring
+            //    DISAPPEARS once the leading wedge has filled past it — so only the
+            //    upcoming thresholds are drawn, reducing visual competition with the
+            //    colored wedges. "Which domain" still reads off the wedge extending past
+            //    where the ring used to be.
+            float ringThick = R * phaseRingThicknessFrac;
+            for (int i = 0; i < _thresholdFracs.Length; i++)
+            {
+                float f = Mathf.Clamp01(_thresholdFracs[i]);
+                if (maxFill >= f - 0.0005f) continue; // crossed → ring gone
+                float ringR = Mathf.Lerp(bandOuterR - minThick, centerR, f);
+                if (ringR <= ringThick) continue;
+                AddHexRing(vh, c, ringR, ringR - ringThick, thresholdRingColor);
+            }
+
+            // 4) Centre hexagon — tinted by the dominant domain (who leads on volume).
             Color centerColor = (_dominant >= 0 && _dominant < 3) ? _domainColor[_dominant] : neutralCenterColor;
             AddHexFill(vh, c, centerR, centerColor);
 
-            // 4) Spawn-cycle ring around the outside. Empty background track + a
+            // 5) Spawn-cycle ring around the outside. Empty background track + a
             //    progress arc starting at the top and sweeping clockwise. The arc
             //    is tinted by the DOMINANT domain because every periodic fauna
             //    spawn produces the leader's color — when the arc completes a

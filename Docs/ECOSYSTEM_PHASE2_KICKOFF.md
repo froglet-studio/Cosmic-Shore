@@ -31,31 +31,54 @@ fundamentals whose interactions produce rich, self-balancing, surprising behavio
    — the density foundation the ecology sits on.
 
 ### Current state (what Phase 1 leaves you)
-- **One live spawner:** every scene runs `RandomLifeSpawner` (the shared
-  `Cell.prefab` is `Random`). `IntensityWiseLifeSpawner` is **dead** — delete it or
-  reconcile; don't maintain two fauna models.
+- **Two spawners, both live:** most scenes (Menu, Skim Race, …) run
+  `RandomLifeSpawner` (`Cell.prefab` default `Random`), but the **WildlifeBlitz +
+  Tournament** scenes select `IntensityWiseLifeSpawner` (`cellTypeChoiceOptions:
+  1`). `IntensityWiseLifeSpawner` is **NOT dead — do not delete it.** (Earlier
+  notes wrongly called it dead.) The two have diverged (Random has the prey-linked
+  `FaunaFoodFloor` gate + population bursts; IntensityWise spawns 1/tick, phase-
+  gated); reconcile rather than remove if it matters.
 - **Fauna:** timer-driven, fixed-size populations in the cell's **controlling
   color**; **prey-linked starvation** — they consume opposing-domain prisms to
   live, and despawn if they can't feed for `starvationSeconds`; production pauses
   below `FaunaFoodFloor`. Prism-count→phase→**aggression** drives *behavior* (seek
   crystal / opposing centroid / densest), not spawn rate.
-- **Flora:** plant `Phase < Settled`, grow `Phase < Frozen`, plus a **regrowth
-  pulse** between Frozen and Rabid.
+- **Flora:** plant `Phase < Settled`, grow `Phase < Frozen`. The **regrowth pulse
+  is retired** (`FloraGrowingEnabled = phase < Frozen`); a full cell now stays
+  full until an active force eats it (valid state per §0).
+- **Diet split landed (code):** `FaunaDiet` (Herbivore default | Predator) on the
+  `Fauna` base; `LightFauna` consume branches by diet (herbivore→prisms,
+  predator→herbivore fauna via `Predated`); both bounded by the shared starvation
+  clock = two-tier Lotka–Volterra. **Predators aren't active until authored** —
+  see ECOSYSTEM.md §7.1 (predator prefab + config + wire into a `SpawnProfileSO`).
 - **Density:** Blob (menu) thresholds scaled ~6× (Frozen 4200 / Rabid 5400).
-- **Two cheats deliberately in place — your job is to retire them:**
-  1. the flora **regrowth pulse** (a hard-coded oscillator), and
-  2. the **fixed-period fauna spawner** (a hard-coded population source).
+- **One cheat still in place — to retire:** the **fixed-period fauna spawner** (a
+  hard-coded population source → step 3, reproduction). The regrowth pulse is
+  already gone; prism decay was rejected (§0), not added.
+
+### ⚠️ Locked invariant — mass is conserved (no passive decay). Read ECOSYSTEM.md §0.
+A prism (flora health-prism or vessel-spawned) is removed **only by active
+forces**: a vessel using an ability, or fauna eating it. There is **no decay,
+aging, lifespan, timed culler, or growth/decay oscillator** — population
+homeostasis is the **food web**, not artificial removal. A large prism
+accumulation is a *valid* state; it persists until something active eats it, and
+if no fauna can reach edible prey the correction shows up as fauna *starving*, not
+prisms vanishing. **Prism decay was considered and rejected** — do not re-propose
+it. If a cell "freezes," strengthen the food web (fauna diet/reach/spawning) or
+vessel abilities; never add a culler. (CLAUDE.md → "Mass" + "Don't cheat
+emergence.")
 
 ### Phase 2 build order (ECOSYSTEM.md §10 — each step ships alone, composes with the fundamentals, and retires a cheat)
-1. **Prism mortality / decay** — *retires the regrowth-pulse cheat.* Prisms (flora
-   especially) age and die → count falls on its own → flora resume growing through
-   the existing Frozen-exit hysteresis with the pulse **removed**. This is the
-   missing down-force on the *dominant* domain (fauna only eat opposing mass), so
-   cells finally breathe by themselves. **START HERE.**
-2. **Predator / herbivore split** — *the centerpiece.* Fauna sub-type on
-   `FaunaConfigurationSO` + "diet = what counts as prey" reuses the existing
-   `Fauna.ResolveGoal`/consume/starvation hooks. Herbivores eat flora prisms,
-   predators eat herbivore fauna → genuine Lotka–Volterra oscillation.
+1. **~~Prism mortality / decay~~ — REJECTED (see §0 above).** A timed culler is
+   just the regrowth pulse inverted — a cheat. The down-force is the food web, not
+   decay. **Done instead:** the regrowth pulse is retired
+   (`FloraGrowingEnabled = phase < Frozen`).
+2. **Predator / herbivore split — code DONE, authoring/tuning remains.** The diet
+   machinery is in (`FaunaDiet`, `Fauna.diet`/`Predated`, `LightFauna` consume
+   branch); both diets share the starvation bound → Lotka–Volterra. **Next:**
+   author a predator prefab + `FaunaConfigurationSO`, wire alongside the herbivore
+   config in a `SpawnProfileSO`, then tune to a breathing equilibrium (§7.1). This
+   is the active down-force that lets accumulations come down through the food web.
 3. **Fauna reproduction** — *retires the fixed-period-spawner cheat.* Well-fed
    fauna breed; the spawner becomes a one-time seeder. Population becomes a true
    function of the food web.
@@ -82,15 +105,22 @@ fundamentals whose interactions produce rich, self-balancing, surprising behavio
   when asked.
 
 ### Your first task
-Design and implement **Phase 2 step 1: prism mortality / decay.** Goal: flora
-prisms age and die so cell density falls on its own, flora growth resumes through
-the existing hysteresis with the **regrowth pulse removed**, and the cell
-oscillates with no scaffolding. Investigate prism creation/tracking
-(`Cell.AddBlock`/`RemoveBlock`, `HealthPrism`, `HealthBlockTracker`, `Flora.Grow`),
-propose the decay mechanism (lifespan vs. age vs. probabilistic shed — and whether
-it lives on the prism, the flora, or a cell-level reaper), **confirm the design
-fork with the prompter**, implement it config-driven, then remove the regrowth
-pulse (`Cell.FloraGrowingEnabled` / `SpawnProfileSO.FloraRegrowthPulse*`) and hand
-back the precise in-editor validation steps. Watch the predator-prey interaction:
-decay must not fight fauna consumption into a death spiral — tune so flora
-regrowth and fauna grazing reach a breathing equilibrium.
+The regrowth-pulse retirement and the predator/herbivore **diet machinery are
+already implemented** (see "Current state" + ECOSYSTEM.md §7). Two tracks remain,
+pick up wherever the prompter points:
+
+- **Activate + tune the food web (no code, then tuning).** Author a predator
+  fauna (duplicate a `LightFauna` prefab, set `Diet = Predator`), make a
+  `FaunaConfigurationSO`, wire it **alongside** the herbivore config in a
+  `SpawnProfileSO` (§7.1). Then validate in Menu_Main and tune `PopulationSize`,
+  `BaseFaunaSpawnTime`, `starvationSeconds`, `consumeRadius` so flora → herbivores
+  → predators **oscillates** (breathes) instead of one-shot extinction. Likely
+  code follow-ups surfaced by tuning: explicit predator "seek nearest herbivore"
+  steering (today predators reuse the shared density goal), and gating predator
+  *spawn* on herbivore count rather than the prism `FaunaFoodFloor` proxy.
+- **Step 3 — fauna reproduction** (the remaining cheat): well-fed fauna breed; the
+  fixed-period spawner becomes a one-time seeder so population is a true function
+  of the food web. **Confirm the design fork with the prompter** before building.
+
+Working rule still holds: **mass is conserved — never add prism decay/culling to
+"fix" an accumulation** (§0). If a cell stays frozen, strengthen the food web.

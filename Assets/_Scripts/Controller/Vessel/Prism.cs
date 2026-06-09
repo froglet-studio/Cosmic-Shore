@@ -145,6 +145,13 @@ namespace CosmicShore.Gameplay
         void RegisterWithCell()
         {
             if (_registeredCell) return;
+            // Fauna bodies (LightFauna / Boid HealthPrisms) are creatures, not environment
+            // mass: they must NOT inflate the cell's phase count or pollute the density grid.
+            // Otherwise a forager swarm reads as its own "mass concentration" and seeks
+            // itself instead of the trail/flora buildup. Only HealthPrisms can be fauna
+            // bodies, so the GetComponentInParent walk is gated to that subtype to keep
+            // ordinary trail-prism spawns cheap.
+            if (this is HealthPrism && GetComponentInParent<Fauna>() != null) return;
             _registeredCell = Cell.FindCellContaining(transform.position);
             _registeredCell?.AddBlock(this);
         }

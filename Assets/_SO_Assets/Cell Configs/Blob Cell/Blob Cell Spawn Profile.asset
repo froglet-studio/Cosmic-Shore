@@ -30,3 +30,4 @@ MonoBehaviour:
   FaunaSpawnIntervalSeconds: 0
   SupportedFaunas:
   - {fileID: 11400000, guid: b3e5efaa5053ab748943e4c3433f72d1, type: 2}
+  - {fileID: 11400000, guid: 178e4d83e2fd4a4bae1ab253d7766ea7, type: 2}

@@ -189,6 +189,36 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
+                // Predator diet: hunt herbivore fauna. Another creature's body shows up
+                // here as its child HealthPrisms, so walk up to the owning Fauna. We match
+                // the Fauna BASE (not LightFauna) so a predator eats ANY herbivore species
+                // — LightFauna (brittlestar) and Boid (tadpole) alike. The creature is the
+                // nearest Fauna ancestor of its body colliders, so managers (also Fauna,
+                // but with no body in the scene) are never returned. A predator's own body
+                // resolves to `this` and is skipped; other predators (Diet != Herbivore)
+                // are neighbors, not prey, so predators don't cannibalize. Predation
+                // ignores domain — it is a diet relationship, not a team fight — so
+                // predators always have prey even in a single-domain cell.
+                if (diet == FaunaDiet.Predator)
+                {
+                    var prey = collider.GetComponentInParent<Fauna>();
+                    if (prey && prey != this && prey.Diet == FaunaDiet.Herbivore)
+                    {
+                        neighborCount++;
+                        if (distance < separationRadius)
+                            separation += diff.normalized / distance;
+
+                        // Predated() respects the prey's post-spawn immunity window and
+                        // returns false if the prey couldn't be eaten — only feed on a real kill.
+                        if (prey.IsAlivePrey && distance < consumeRadius && prey.Predated(PLAYER_NAME))
+                            NotifyFed();
+                        continue;
+                    }
+                    // Not prey (flora / trail / ship / another predator): predators don't
+                    // eat prism mass, so fall through for separation only — the consume
+                    // calls below are gated to Herbivore.
+                }
+
                 // Handle other fauna/health prisms
                 var otherHealthBlock = collider.GetComponent<HealthPrism>();
                 if (otherHealthBlock)
@@ -202,7 +232,8 @@ namespace CosmicShore.Gameplay
                     if (distance < separationRadius && !(dropFriendlyAvoidance && sameDomain))
                         separation += diff.normalized / distance;
 
-                    if (distance < consumeRadius && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
+                    // Herbivores eat opposing-domain plant/trail mass; predators never eat prisms.
+                    if (diet == FaunaDiet.Herbivore && distance < consumeRadius && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
                     {
                         otherHealthBlock.Consume(transform, domain, PLAYER_NAME, true);
                         NotifyFed();
@@ -213,7 +244,7 @@ namespace CosmicShore.Gameplay
 
                 // Handle blocks
                 Prism block = collider.GetComponent<Prism>();
-                if (block && block.Domain != domain && distance < consumeRadius)
+                if (block && diet == FaunaDiet.Herbivore && block.Domain != domain && distance < consumeRadius)
                 {
                     block.Consume(transform, domain, PLAYER_NAME, true);
                     NotifyFed();

@@ -145,15 +145,25 @@ namespace CosmicShore.Gameplay
         /// Seeks the crystal when present, the cell centre otherwise; each member adds
         /// its own orbit offset (Fauna) so the swarm spreads instead of stacking.
         /// </summary>
+        // Jitter radius around the mass concentration when spawning a population, so the
+        // swarm spreads over the buildup instead of stacking on one point.
+        const float FaunaSpawnJitter = 150f;
+
         void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, FaunaConfigurationSO faunaCfg, Domains color)
         {
             int count = Mathf.Max(1, faunaCfg.PopulationSize);
-            Vector3 goal = TryGetCrystalGoal(runtime, out var crystalGoal)
-                ? crystalGoal
-                : host.transform.position;
+
+            // Spawn new fauna right ON the prioritized mass concentration (the densest region
+            // the cell senses) so they appear on the buildup they'll forage, not at the
+            // distant cell centre — they start clearing immediately. GetDensestRegionAnyDomain
+            // falls back to the crystal/cell anchor when there's no mass yet.
+            Vector3 goal = host.GetDensestRegionAnyDomain();
 
             for (int i = 0; i < count; i++)
-                SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color);
+            {
+                Vector3 spawnPos = goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter;
+                SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color, spawnPos);
+            }
         }
     }
 }

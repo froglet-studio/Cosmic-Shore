@@ -11,6 +11,38 @@ herbivore).
 
 ---
 
+## 0. Invariant — mass is conserved (no passive decay)
+
+**Read this first; it constrains every solution below.** A prism — whether a
+lifeform's health-prism or vessel-spawned — is **only ever removed by an active
+force**:
+
+1. **A vessel using an ability** (combat), or
+2. **Fauna eating it** (consumption).
+
+There is **no passive decay, aging, lifespan, timed culler, or growth/decay
+oscillator** anywhere in the prism pipeline. Population homeostasis is the job of
+the **food web**, not of artificial removal:
+
+- A **large accumulation of prisms is a valid state**, not a defect to
+  auto-correct. It persists until an active force consumes it.
+- The only outcomes for a big accumulation are: **fauna consume it** (opposing-
+  domain fauna graze it down), **or** the fauna that depend on that prey **starve
+  and the population crashes** (because the mass is the wrong domain for them, or
+  out of reach). Either is correct emergent behavior.
+
+This is why **prism decay / mortality was considered and rejected** (it was the
+original Phase 2 "step 1"). A timed culler is just the flora regrowth pulse
+inverted — a hard-coded oscillator that manufactures the "breathing" we want to
+*emerge* from the predator–prey loop. The mirror cheat on the growth side is the
+flora **regrowth pulse** (§5.1), which is likewise flagged for retirement, not
+extension. If a cell "freezes," the fix is to give an active force a reason or
+ability to consume that mass (tune fauna diet/reach/spawning, or vessel
+abilities) — **never** to add decay. See CLAUDE.md → "Mass" fundamental and
+"Don't cheat emergence."
+
+---
+
 ## 1. The spine: everything keys off **prism count**
 
 One state variable drives the whole system: the cell's live prism count
@@ -25,7 +57,10 @@ fundamental. Everything else is a projection of, or a force on, prism count.
 | Flora planting | **+** | new flora instantiated (`RandomLifeSpawner`) → health prisms → `AddBlock` |
 | Flora growth | **+** | existing flora grow new prisms (`Flora.Grow`) → `AddBlock` |
 | Fauna consumption | **−** | fauna seek & detonate opposing-domain prisms → `RemoveBlock` |
-| Combat / decay | **−** | vessel impacts, prism death → `RemoveBlock` |
+| Vessel abilities (combat) | **−** | vessel impacts / ability use → prism death → `RemoveBlock` |
+
+> The **−** column is exhaustive: fauna consumption and vessel abilities are the
+> *only* prism sinks. There is no decay/aging row — mass is conserved (§0).
 
 Prism count → **Cell Phase** (`Sprout→Quiet→Settled→Restless→Frozen→Rabid`,
 computed with enter/exit **hysteresis** so the cell doesn't chatter on the
@@ -143,7 +178,7 @@ Dashed = not implemented. Fauna currently spawn, hunt forever, and never leave.
 | 11 | Fauna **consume → −prisms** | aggression behavior → impact | reduces opposing prisms | same | ✅ this is the prey side of loop #2 |
 
 **Root causes of what you saw:**
-- *Dead spawn-cycle ring* → `RandomLifeSpawner` never called `RecordFaunaSpawn` (fixed in the retrofit; all scenes run `RandomLifeSpawner`, not `IntensityWise`).
+- *Dead spawn-cycle ring* → `RandomLifeSpawner` never called `RecordFaunaSpawn` (fixed in the retrofit). **Correction:** NOT all scenes run `RandomLifeSpawner` — the WildlifeBlitz scenes (`MinigameWildlifeBlitz`, `MinigameWildlifeBlitzMultuplayerCoOp`) and `MinigameTournamentMultuplayer` select `IntensityWiseLifeSpawner` (`cellTypeChoiceOptions: 1`). Menu, Skim Race, and the rest use `Random` (0).
 - *No fauna in menu* → fauna were gated on scored team volume (~0 in Menu_Main). Retrofit moved them to a phase gate; the redesign moves them to **timer only**.
 - *No Jade fauna when Jade controls* → row 8: the controlling/local color is **excluded by construction**.
 
@@ -191,10 +226,17 @@ Two follow-on changes so cells feel full and keep breathing:
   `FloraRegrowthPulseDuration` (4s); `<= 0` falls back to those defaults so the
   pulse is on across the board.
 
-> The pulse is the flora-side stopgap until prism mortality/decay exists — the
-> truly emergent down-force (flora shed aged prisms, count falls, growth resumes
-> via hysteresis) that would make the pulse unnecessary. Noted for the iteration
-> toward §7.
+> The pulse is a **growth-side cheat** — a hard-coded oscillator that fakes the
+> "breathing" we want to *emerge* from the predator–prey loop. Its mirror,
+> **prism decay**, was considered as the "real" down-force (flora shed aged
+> prisms → count falls → growth resumes via hysteresis) and **rejected**: mass is
+> conserved, prisms are only removed by active forces (§0). The honest model is
+> that a frozen-solid cell is a *valid* state — it stays frozen until an active
+> force (opposing-domain fauna grazing it, or vessel abilities) removes mass, at
+> which point the existing `phase < Frozen` hysteresis resumes growth on its own.
+> The pulse is therefore flagged for **retirement, not replacement-by-decay**;
+> retiring it means accepting frozen accumulations until the food web (or a
+> vessel) eats them. See §0 and §10.
 
 ---
 
@@ -233,24 +275,148 @@ as a backstop (not the primary control).
 
 ---
 
-## 7. Extensibility — predator / herbivore split (where this is headed)
+## 7. Predator / herbivore split — IMPLEMENTED + wired (3 species)
 
-The redesign is shaped so the split drops in without rework:
+The diet split is in code (`FaunaDiet` enum + `Fauna.diet` + `LightFauna`
+consume branch + `Fauna.Predated`) **and wired into the Blob (menu) test cell**
+with the team's three real species:
 
-- **Fauna sub-type** becomes a field on `FaunaConfigurationSO` (e.g. `Herbivore`
-  / `Predator`). `SupportedFaunas` already lists multiple configs per biome.
-- **Diet = "what counts as prey"** in `Fauna.ResolveGoal` / consume: herbivores
-  target **flora** prisms (any flora-domain mass), predators target **herbivore**
-  fauna. Today `ResolveGoal` already switches its target by aggression — diet is
-  the same seam, parameterized by sub-type instead of hard-coded to "opposing
-  prisms."
-- **Option C (starvation)** is the shared population-control mechanism for both:
-  herbivores starve when flora is gone; predators starve when herbivores are
-  gone. That two-tier starvation is the classic Lotka–Volterra oscillation and is
-  exactly the "vibrant ecosystem" target.
-- **Aggression tiers** stay the behavior dial per sub-type (a 4th tier or
-  per-sub-type curves slot into the existing `CellAggressionLevel` switch points:
-  `Cell.AggressionLevel`, `Fauna.ResolveGoal`, `goalUpdateIntervalByAggression`).
+| Species | Prefab | Component | Diet | Role |
+|---|---|---|---|---|
+| **Tadpole** | `MassTadPoleFauna` | `Boid` (`forager: 1`) | Herbivore | flocking forager swarm |
+| **Brittlestar** | `MassBrittlestarFauna` | `LightFauna` | Herbivore | grazer |
+| **Shark** | `MassSharkFauna` | `LightFauna` | **Predator** (`diet: 1`) | apex; eats *both* herbivores |
+
+All three are **spawnable** by the cell config (`SpawnProfileSO.SupportedFaunas`,
+via `RandomLifeSpawner`). Two herbivore species + one predator. **Currently only
+the two herbivores are wired into the test profiles** — the shark is built and
+balanced (spawn-immunity exists) but left out of both scenes for now (see §7.2);
+its config asset still exists, so re-adding it is one line in a profile.
+
+> **The live spawn path is the cell config — NOT the scene-placed populations.**
+> The `MassTadpolePopulation` / `MassBrittlestarPopulation` etc. objects in scenes
+> are wired through a `Cell` field named `fauna2` that **no longer exists** on
+> `Cell.cs` — a dead/stale prefab override Unity ignores. So those `BoidManager`/
+> `LightFaunaManager` populations **never instantiate**. Every working fauna comes
+> from a `FaunaConfigurationSO` in the cell's `SpawnProfileSO`. (This is why
+> removing the tadpole config = no tadpoles, regardless of the placed population.)
+
+- **Diet = "what counts as prey"** is a `FaunaDiet diet` field on the `Fauna`
+  base (`Herbivore` / `Predator`), defaulting to **Herbivore**:
+  - **Herbivore** — eats prism MASS, but the two herbivore species differ:
+    - `LightFauna` (brittlestar) `Consume`s **opposing-domain** flora/trail prisms
+      within `consumeRadius`.
+    - `Boid` (tadpole forager) `Consume`s (implode → **suction shader**) any
+      **unshielded** prism of **any domain** that is **not a fauna body** — so it
+      grazes the *dominant* trail too (the bulk of the obstacle mass), while
+      skipping the shielded race track and other creatures. Detect/eat radius =
+      `cohesionRadius`/`trailBlockInteractionRadius` (currently 50/45). (Boid's
+      Attach/mound effect is unused by tadpoles but stays — drone abilities use it.)
+  - **Predator** — consumes **herbivore fauna of any species** via
+    `GetComponentInParent<Fauna>()` on nearby colliders (matches the `Fauna` base,
+    so a shark eats both `LightFauna` brittlestars and `Boid` tadpoles) →
+    `prey.Predated()`. Predators **never** eat prism mass. Predation **ignores
+    domain** (a diet relationship, not a team fight) so predators have prey even in
+    a single-domain cell — the food web bounds them, not the domain split.
+- **Population bounds (per species) — all starvation-linked:**
+  - *Brittlestar* (`LightFauna`) — `Fauna.IsStarving → Die` + shark predation.
+  - *Tadpole* (`Boid`, `forager: 1`) — feeds (`NotifyFed`) when it grazes any
+    edible prism, and starves (`IsStarving → Die`) after `starvationSeconds` (90 on
+    the prefab) without feeding. So the swarm **self-limits to available prey**: it
+    grows where there's mass to eat and thins out (dropping its CPU cost) once the
+    obstacles are cleared. The `forager` flag is OFF on the drone `Boid` path
+    (BoidController/mound), which must not starve.
+  - *Shark* (`LightFauna`) — `IsStarving → Die` when no herbivores are reachable.
+  Net: a self-bounding food web — the spawner keeps adding `PopulationSize` per
+  period while there's prey; starvation + predation remove them when there isn't.
+- **Targeting (v1):** predators reuse the shared phase-based goal (density-grid
+  centroids). Herbivores swarm opposing-flora density; predators seek the same
+  centroids and so converge on the herbivores feeding there, eating them on
+  contact. Explicit "seek nearest herbivore" steering is a future refinement (no
+  central fauna registry exists yet).
+- **Spawn gating (known approximation):** `RandomLifeSpawner` gates every fauna
+  population on `OpposingBlockCount >= FaunaFoodFloor` (prism prey). For predators
+  this is a *proxy* (dense prisms ⇒ herbivores present ⇒ predator food); the real
+  bound is starvation. Refinement: gate predator spawn on herbivore count.
+- **Aggression tiers** stay the behavior dial per diet (a 4th tier or per-diet
+  curves slot into the existing `CellAggressionLevel` switch points:
+  `Cell.AggressionLevel`, `Fauna.ResolveGoal` / `LightFauna.UpdateBehavior`).
+
+### 7.1 Wiring recipe
+- **Predator diet:** `MassSharkFauna`'s `LightFauna` has `diet: 1` (Predator);
+  `MassTadPoleFauna`'s `Boid` has `forager: 1`. Herbivore brittlestar needs nothing.
+- **One `FaunaConfigurationSO` per species**, pointing at the **creature** prefab's
+  Fauna component (Boid for tadpole, LightFauna for brittlestar/shark) — *not* the
+  Population/manager prefab — listed in the cell's `SpawnProfileSO.SupportedFaunas`.
+  `PopulationSize` = boids spawned per period (tadpole bigger for the swarm,
+  predator smaller for the apex tier).
+- **Swarm size = tadpole `PopulationSize`** (Blob 25, Skim Race 12). The spawner
+  adds that many per `BaseFaunaSpawnTime`; starvation caps the standing count to
+  available prey, so a denser swarm needs a higher `PopulationSize` *and* enough
+  prey to keep it fed.
+
+> **Don't rely on the scene-placed `*Population` objects** — they're wired through
+> the dead `Cell.fauna2` field (removed) and never spawn (see the §7 note). The
+> `Boid` mound code stays in the class (drone abilities use it via BoidController);
+> the tadpole prefab just never invokes it (Explode-only, `forager: 1`).
+
+### 7.2 Trail-management test deployments (two scenes)
+
+The food web is wired into two scenes to test the ecosystem's ability to manage
+**trail** prisms (player/AI mass), not just flora:
+
+**A. Menu_Main freestyle toy box** (`Blob Cell Config → Blob Cell Spawn Profile`).
+Flora + two herbivores: tadpole forager (`PopulationSize` 25, the swarm) +
+brittlestar. **No shark** (removed — see the predator note below). The
+autopilot/player vessel lays trails; the tadpole grazes any unshielded non-fauna
+mass (incl. the dominant trail + flora), the brittlestar grazes opposing mass.
+Goal: a self-sustaining scene that stays visually interesting and playable
+**indefinitely**. Levers: tadpole `PopulationSize` (swarm density), `Blob Cell
+Spawn Profile` `BaseFaunaSpawnTime` / `FaunaFoodFloor`, `starvationSeconds` /
+`consumeRadius`.
+
+**B. Skim Race** (`MinigameHexRace`, dedicated `Skim Race Cell Config → Skim Race
+Spawn Profile`, isolated from the 6 other scenes that share the Barren config).
+**No flora**; only the herbivore forager swarm (tadpole `PopulationSize` 12 +
+brittlestar), **Random** spawner (`cellTypeChoiceOptions = 0`) so spawning is
+prey-linked. Hypothesis: at late laps / high player counts, AI orbiting crystals
+leave an excess of **trail-prism obstacles**; the forager swarm grazes them →
+fewer prisms → better perf; foragers self-limit (starve) once the obstacles are
+cleared.
+
+> **Sharks (predators) are currently REMOVED from both test scenes.** Why: all
+> fauna spawn co-located at the cell centre, and once predator detection was
+> generalized to the `Fauna` base (so sharks eat `Boid` tadpoles, not just
+> `LightFauna`), the sharks ate **every** herbivore the instant it spawned —
+> leaving "only sharks" and nothing to graze trails. Predators are also
+> counterproductive to the perf goal (they remove foragers). **Spawn immunity is
+> now built** (`Fauna.predationImmunitySeconds`, default 6s, stamped in `Awake`;
+> `Predated` refuses during the window) so a balanced predator CAN be re-added
+> safely — just add the `Blob Shark` config back to the menu profile (keep
+> `PopulationSize` low). I left it out so it doesn't muddy the foraging test; say
+> the word and I'll wire it in.
+
+> **Other caveats to validate in-editor (I can't run Unity):**
+> 2. **Sense coverage (addressed — tune `SenseRadiusOverride`).** Registration +
+>    density targeting used to be capped at the ~1200 membrane while the track runs
+>    ~4000 long, so foragers only sensed/cleaned the central bubble. Now
+>    `Cell.SenseRadius` (a `CellConfig.SenseRadiusOverride`, **3000** on Skim Race)
+>    decouples sensing from the visual membrane, so the cell registers + builds its
+>    density grid across the whole track and the forager's `ResolveGoal` (=
+>    `GetDensestRegionAnyDomain`) sends the swarm to the densest trail buildup
+>    track-wide — emergent, not track-following. If foragers still don't reach a
+>    far end, raise `SenseRadiusOverride`; if the grid feels too coarse, lower it.
+> 3. **Domain.** Foragers eat *opposing*-domain mass, so the dominant domain's own
+>    trail isn't grazed by its own fauna. At multi-domain player counts most trail
+>    mass is still "opposing" to *some* school, but the single dominant trail is the
+>    one accumulation the food web won't touch.
+> 4. **Client-local fauna.** Fauna + trail prisms have **no `NetworkObject`** —
+>    client-local (trails reconstructed from networked vessel movement; cell phase
+>    synced via `CellNetworkSync`). Fine for a per-client **perf** test and the
+>    menu; **diverges across clients**, so not yet fair for competitive play.
+> 5. **Net perf.** Fauna cost CPU (per-tick `OverlapSphere` per creature). Test
+>    whether trail savings beat fauna cost: start modest and profile before/after;
+>    scale `PopulationSize` only if net-positive.
 
 ---
 
@@ -259,16 +425,19 @@ The redesign is shaped so the split drops in without rework:
 1. ✅ Map + agree the redesign and the §6 bound.
 2. ✅ Spawn rewrite in `RandomLifeSpawner`: timer-only, fixed period, fixed
    population N, `ControllingDomain`; `CurrentFaunaSpawnPeriod` simplified to base
-   period. (`IntensityWiseLifeSpawner` left as-is — no scene runs it; reconcile or
-   delete later.)
+   period. (`IntensityWiseLifeSpawner` left as-is — it is STILL USED by the
+   WildlifeBlitz + Tournament scenes via `cellTypeChoiceOptions: 1`; do NOT delete.)
 3. ✅ §6 bound = option C: `OpposingBlockCount` prey signal + `FaunaFoodFloor`
    production gate + `starvationSeconds` despawn. Config on `SpawnProfileSO` /
    `FaunaConfigurationSO` / `Fauna`.
 4. ⏳ Validate in Menu_Main: Jade fauna appear when Jade controls; populations
    appear, hunt, and thin out as prey runs low; ring sweeps at the fixed period.
    Tune the §6 knobs.
-5. ⏳ Iterate toward the predator/herbivore sub-type split (diet = "what counts as
-   prey"; two-tier starvation = Lotka–Volterra).
+5. ✅/⏳ Predator/herbivore diet split — **code landed** (`FaunaDiet` + `Fauna.diet`
+   + `LightFauna` consume branch + `Fauna.Predated`); two-tier starvation =
+   Lotka–Volterra. Remaining: author a predator prefab/config and wire it into a
+   `SpawnProfileSO`, then tune in-editor (§7.1).
+6. ⏳ Retire the regrowth pulse — **done** (`FloraGrowingEnabled = phase < Frozen`).
 
 ---
 
@@ -279,11 +448,13 @@ The redesign is shaped so the split drops in without rework:
 | Prism count, phase, gates, aggression, controlling domain | `Assets/_Scripts/Controller/Environment/Cell.cs` |
 | Phase thresholds + hysteresis | `Assets/_Scripts/.../CellPhaseRules.cs`, `CellPhase` enum, Blob Cell Config asset |
 | Spawner all scenes run | `Assets/_Scripts/Controller/Environment/RandomLifeSpawner.cs` |
-| Regulated spawner (parity ref, unused) | `Assets/_Scripts/Controller/Environment/IntensityWiseLifeSpawner.cs` |
+| Regulated spawner — USED by WildlifeBlitz + Tournament (`cellTypeChoiceOptions: 1`) | `Assets/_Scripts/Controller/Environment/IntensityWiseLifeSpawner.cs` |
 | Spawn helpers (`SpawnFaunaWithDomain`, `PickRandomDomain`) | `Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs` |
-| Fauna behavior / aggression goal logic | `Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs` |
-| Flora growth gate | `AssembledFlora.cs`, `BranchingFlora.cs` |
-| Spawn tuning (period, population, exclude-local) | `SpawnProfileSO.cs`, `FaunaConfigurationSO.cs` |
+| Fauna base: domain, goal, diet, starvation, `Predated` | `Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs` |
+| Creature behavior + diet-branched consume (herbivore prisms / predator fauna) | `Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs` |
+| Diet enum (Herbivore / Predator) | `Assets/_Scripts/Data/Enums/FaunaDiet.cs` |
+| Flora growth gate (now just `phase < Frozen`) | `AssembledFlora.cs`, `BranchingFlora.cs`, `Cell.FloraGrowingEnabled` |
+| Spawn tuning (period, population, food floor) | `SpawnProfileSO.cs`, `FaunaConfigurationSO.cs` |
 | Aggression enum + tier behaviors | `Assets/_Scripts/Data/Enums/CellAggressionLevel.cs` |
 | Indicator (hex gauge + spawn ring, no numbers) | `Assets/_Scripts/UI/DomainVolumeIndicator.cs` |
 
@@ -306,9 +477,12 @@ work is saved and Phase 2 can be picked up.
      still appear, nothing runs away, framerate holds.
 2. **Perf pass** at the new menu density (~4200 prisms steady). If it dips on a
    target device, lower `Blob Cell Config` `FrozenEnter`/`RabidEnter` (one asset).
-3. **Decide `IntensityWiseLifeSpawner`.** Dead (no scene uses it) and now diverged
-   from the live model. Recommend **delete** to kill confusion; keep only if wanted
-   as a reference. Either way, stop maintaining two fauna models.
+3. **`IntensityWiseLifeSpawner` is LIVE, not dead** (earlier notes were wrong).
+   The WildlifeBlitz + Tournament scenes select it (`cellTypeChoiceOptions: 1`);
+   Menu/Skim Race/etc. use `Random`. **Do NOT delete it.** It has diverged from
+   `RandomLifeSpawner` (no prey-linked `FaunaFoodFloor` gate, spawns 1/tick not a
+   population), so if those scenes ever wire fauna into their `SupportedFaunas`
+   they'll behave differently — reconcile the two spawners then, don't remove one.
 4. **Confirm the global defaults are wanted in gameplay**, not just the menu: the
    flora regrowth pulse (`SpawnProfileSO`, code-default ON) and prey-linked fauna
    (controlling-color + starvation) now apply to every biome. If a gameplay biome
@@ -326,14 +500,19 @@ pulse, the fixed-period spawner) as real emergent forces replace them. Ordered
 highest-impact / lowest-risk first; each step ships independently and composes
 with the others.
 
-1. **Prism mortality / decay** — *retires the regrowth-pulse cheat.*
-   Prisms (flora especially) age and die, so count falls on its own → flora
-   growth resumes through the existing Frozen-exit hysteresis with **no pulse**.
-   This is the missing down-force on the *dominant* domain (fauna only eat
-   opposing mass), so cells finally breathe by themselves. Composes with Mass,
-   Cells (phase), Flora, Fauna.
+1. **~~Prism mortality / decay~~ — REJECTED (see §0).** The original plan was
+   that flora prisms age and die so the count falls on its own, retiring the
+   regrowth-pulse cheat. **This is itself a cheat** and is not the path: mass is
+   conserved, prisms are removed only by active forces (vessel abilities + fauna
+   consumption). The real down-force on a dominant accumulation is the **food
+   web** — opposing-domain fauna grazing it, or, failing that, fauna starving (a
+   crash on the predator side, not a vanish on the prism side). So the work here
+   is **not** to add a culler; it is to make the food web strong enough that
+   accumulations get eaten — and to **retire the regrowth pulse outright**,
+   accepting that a cell with no active force on it stays full (a valid state).
+   That makes step 2 (predator/herbivore) the real first lever.
 
-2. **Predator / herbivore split** — *the centerpiece.*
+2. **Predator / herbivore split** — *the centerpiece, and the actual first step.*
    Sub-type on `FaunaConfigurationSO` (Herbivore / Predator). "Diet = what counts
    as prey" parameterizes the existing `Fauna.ResolveGoal`/consume + starvation
    hooks: herbivores eat flora prisms, predators eat herbivore fauna. Two-tier
@@ -363,6 +542,10 @@ with the others.
    isolated cells become one connected biome.
 
 **Cheats currently in place, to retire as Phase 2 lands:** the flora regrowth
-pulse (→ step 1, decay) and the fixed-period fauna spawner (→ step 3,
-reproduction). Both are honest first-approximation scaffolding, flagged so we
-remove them rather than build on them.
+pulse and the fixed-period fauna spawner (→ step 3, reproduction). Both are
+honest first-approximation scaffolding, flagged so we remove them rather than
+build on them. **Note:** retiring the regrowth pulse is *not* replaced by prism
+decay (that was the rejected step 1 — see §0). It is replaced by *nothing* on the
+removal side — mass is conserved — so once the pulse is gone a cell only comes
+back down when an active force (fauna grazing / vessel abilities) eats its mass.
+The down-force we strengthen is the **food web** (step 2), not a culler.
