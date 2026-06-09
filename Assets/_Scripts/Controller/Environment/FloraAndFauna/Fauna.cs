@@ -49,6 +49,20 @@ namespace CosmicShore.Gameplay
         /// <summary>What this fauna eats — the predator/herbivore selector. See <see cref="FaunaDiet"/>.</summary>
         public FaunaDiet Diet => diet;
 
+        [Tooltip("Seconds after spawn during which this fauna CANNOT be eaten by a predator. " +
+                 "All fauna spawn co-located at the cell centre, so without this a predator " +
+                 "eats every herbivore the instant it spawns ('only sharks'). The grace window " +
+                 "lets the swarm disperse first. See Docs/ECOSYSTEM.md §7.")]
+        [SerializeField] protected float predationImmunitySeconds = 6f;
+
+        // Set in Awake (runs during Instantiate, before any predator's behavior tick) so a
+        // freshly-spawned creature is immune from frame zero, not only after its Start runs.
+        float _spawnTime = -1f;
+
+        /// <summary>True during the post-spawn grace window when this fauna can't be predated.</summary>
+        public bool IsPredationImmune =>
+            predationImmunitySeconds > 0f && _spawnTime >= 0f && (Time.time - _spawnTime) < predationImmunitySeconds;
+
         [Header("Population control (prey-linked)")]
         [Tooltip("Seconds this fauna can go without feeding before it starves and despawns. " +
                  "Feeding (consuming any prism, or — for predators — eating a herbivore) resets " +
@@ -76,6 +90,14 @@ namespace CosmicShore.Gameplay
         // NRE when cellData was never wired on the prefab — they just get null
         // and skip the goal/avoidance branches that need it.
         protected Cell cell => cellData ? cellData.Cell : null;
+
+        protected virtual void Awake()
+        {
+            // Stamp spawn time as early as possible (Instantiate runs Awake synchronously,
+            // before the spawner calls Initialize or any predator's first behavior tick), so
+            // predation immunity is active from the moment the creature exists.
+            _spawnTime = Time.time;
+        }
 
         protected virtual void Start()
         {
@@ -110,15 +132,17 @@ namespace CosmicShore.Gameplay
         public bool IsAlivePrey => !_consumedAsPrey;
 
         /// <summary>
-        /// A predator has caught this fauna (it is the predator's food — the predator
-        /// resets its own starvation clock on its side). Routes through the normal
-        /// <see cref="Die"/> path (manager removal / destroy) and is idempotent.
+        /// A predator has caught this fauna. Routes through the normal <see cref="Die"/> path
+        /// (manager removal / destroy), is idempotent, and respects the post-spawn predation
+        /// immunity window. Returns true only if the prey was actually eaten this call — the
+        /// predator should reset its starvation clock (NotifyFed) only on a true result.
         /// </summary>
-        public virtual void Predated(string predatorName = "predator")
+        public virtual bool Predated(string predatorName = "predator")
         {
-            if (_consumedAsPrey) return;
+            if (_consumedAsPrey || IsPredationImmune) return false;
             _consumedAsPrey = true;
             Die(predatorName);
+            return true;
         }
 
         public void SetTeam(Domains domain)

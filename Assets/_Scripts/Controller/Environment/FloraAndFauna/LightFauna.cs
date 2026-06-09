@@ -208,11 +208,10 @@ namespace CosmicShore.Gameplay
                         if (distance < separationRadius)
                             separation += diff.normalized / distance;
 
-                        if (prey.IsAlivePrey && distance < consumeRadius)
-                        {
-                            prey.Predated(PLAYER_NAME);
+                        // Predated() respects the prey's post-spawn immunity window and
+                        // returns false if the prey couldn't be eaten — only feed on a real kill.
+                        if (prey.IsAlivePrey && distance < consumeRadius && prey.Predated(PLAYER_NAME))
                             NotifyFed();
-                        }
                         continue;
                     }
                     // Not prey (flora / trail / ship / another predator): predators don't
