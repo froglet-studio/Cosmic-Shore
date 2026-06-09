@@ -68,6 +68,18 @@ Doc-only; no code change.
 
 ---
 
+## Session 4 — reviewed LightFauna predator/herbivore paths (clean)
+
+Read LightFauna's consume logic end-to-end. Correct: herbivores eat opposing
+**flora** (HealthPrism+LifeForm branch) AND opposing **trails** (plain-Prism
+branch); the predator branch matches the Fauna base (eats any herbivore species),
+respects post-spawn immunity, and feeds only on a real kill. No bug, no change.
+Observation: brittlestars are still opposing-domain only (don't graze the dominant
+trail) — only the tadpole does that now; acceptable since the tadpole is the
+primary cleaner.
+
+---
+
 ## Backlog (planned for later sessions, safest first)
 1. Doc consolidation — `ECOSYSTEM.md` has drifted across many edits; make it match
    the current code (cell-config spawn is live; scene-placed `*Population` via
