@@ -16,6 +16,10 @@ namespace CosmicShore.Utility
         [Min(0f)] public float FloraInitialDelaySeconds;
         [Tooltip("Seconds between each flora spawn (within the initial flora batch). 0 = spawn all instantly.")]
         [Min(0f)] public float FloraSpawnIntervalSeconds;
+        // The flora regrowth pulse (FloraRegrowthPulsePeriod / FloraRegrowthPulseDuration)
+        // was removed: it was a hard-coded growth oscillator faking the "breathing" the
+        // food web is meant to produce. Mass is conserved — growth resumes only when an
+        // active force lowers the prism count below Frozen. See Docs/ECOSYSTEM.md §0.
         public List<FloraConfigurationSO> SupportedFloras = new();
         
         [Header("FaunaPrefab Configs")]
@@ -24,6 +28,10 @@ namespace CosmicShore.Utility
         [Min(0f)] public float InitialFaunaSpawnWaitTime = 10f;
         [Min(0f)] public float FaunaSpawnVolumeThreshold = 1f;
         [Min(0f)] public float BaseFaunaSpawnTime = 60f;
+        [Tooltip("Population control (prey-linked): a population only spawns while the cell holds at least " +
+                 "this many prisms NOT of the controlling color (prey). Below it, production pauses until " +
+                 "prey returns; existing fauna then starve. 0 = always produce. See Docs/ECOSYSTEM.md.")]
+        [Min(0)] public int FaunaFoodFloor = 5;
         [Tooltip("Wait this many seconds after the crystal spawns before FaunaPrefab begins spawning.")]
         [Min(0f)] public float FaunaInitialDelaySeconds;
         [Tooltip("Seconds between each population spawn (within the initial FaunaPrefab batch). 0 = spawn all instantly.")]

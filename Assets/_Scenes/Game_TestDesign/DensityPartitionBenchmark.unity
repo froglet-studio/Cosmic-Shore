@@ -1,0 +1,956 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!29 &1
+OcclusionCullingSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_OcclusionBakeSettings:
+    smallestOccluder: 5
+    smallestHole: 0.25
+    backfaceThreshold: 100
+  m_SceneGUID: 00000000000000000000000000000000
+  m_OcclusionCullingData: {fileID: 0}
+--- !u!104 &2
+RenderSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 10
+  m_Fog: 0
+  m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  m_FogMode: 3
+  m_FogDensity: 0.01
+  m_LinearFogStart: 0
+  m_LinearFogEnd: 300
+  m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
+  m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
+  m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
+  m_AmbientIntensity: 1
+  m_AmbientMode: 0
+  m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
+  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_HaloStrength: 0.5
+  m_FlareStrength: 1
+  m_FlareFadeSpeed: 3
+  m_HaloTexture: {fileID: 0}
+  m_SpotCookie: {fileID: 10001, guid: 0000000000000000e000000000000000, type: 0}
+  m_DefaultReflectionMode: 0
+  m_DefaultReflectionResolution: 128
+  m_ReflectionBounces: 1
+  m_ReflectionIntensity: 1
+  m_CustomReflection: {fileID: 0}
+  m_Sun: {fileID: 0}
+  m_UseRadianceAmbientProbe: 0
+--- !u!157 &3
+LightmapSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 13
+  m_BakeOnSceneLoad: 0
+  m_GISettings:
+    serializedVersion: 2
+    m_BounceScale: 1
+    m_IndirectOutputScale: 1
+    m_AlbedoBoost: 1
+    m_EnvironmentLightingMode: 0
+    m_EnableBakedLightmaps: 1
+    m_EnableRealtimeLightmaps: 0
+  m_LightmapEditorSettings:
+    serializedVersion: 12
+    m_Resolution: 2
+    m_BakeResolution: 40
+    m_AtlasSize: 1024
+    m_AO: 0
+    m_AOMaxDistance: 1
+    m_CompAOExponent: 1
+    m_CompAOExponentDirect: 0
+    m_ExtractAmbientOcclusion: 0
+    m_Padding: 2
+    m_LightmapParameters: {fileID: 0}
+    m_LightmapsBakeMode: 1
+    m_TextureCompression: 1
+    m_ReflectionCompression: 2
+    m_MixedBakeMode: 2
+    m_BakeBackend: 1
+    m_PVRSampling: 1
+    m_PVRDirectSampleCount: 32
+    m_PVRSampleCount: 512
+    m_PVRBounces: 2
+    m_PVREnvironmentSampleCount: 256
+    m_PVREnvironmentReferencePointCount: 2048
+    m_PVRFilteringMode: 1
+    m_PVRDenoiserTypeDirect: 1
+    m_PVRDenoiserTypeIndirect: 1
+    m_PVRDenoiserTypeAO: 1
+    m_PVRFilterTypeDirect: 0
+    m_PVRFilterTypeIndirect: 0
+    m_PVRFilterTypeAO: 0
+    m_PVREnvironmentMIS: 1
+    m_PVRCulling: 1
+    m_PVRFilteringGaussRadiusDirect: 1
+    m_PVRFilteringGaussRadiusIndirect: 1
+    m_PVRFilteringGaussRadiusAO: 1
+    m_PVRFilteringAtrousPositionSigmaDirect: 0.5
+    m_PVRFilteringAtrousPositionSigmaIndirect: 2
+    m_PVRFilteringAtrousPositionSigmaAO: 1
+    m_ExportTrainingData: 0
+    m_TrainingDataDestination: TrainingData
+    m_LightProbeSampleCountMultiplier: 4
+  m_LightingDataAsset: {fileID: 20201, guid: 0000000000000000f000000000000000, type: 0}
+  m_LightingSettings: {fileID: 0}
+--- !u!196 &4
+NavMeshSettings:
+  serializedVersion: 2
+  m_ObjectHideFlags: 0
+  m_BuildSettings:
+    serializedVersion: 3
+    agentTypeID: 0
+    agentRadius: 0.5
+    agentHeight: 2
+    agentSlope: 45
+    agentClimb: 0.4
+    ledgeDropHeight: 0
+    maxJumpAcrossDistance: 0
+    minRegionArea: 2
+    manualCellSize: 0
+    cellSize: 0.16666667
+    manualTileSize: 0
+    tileSize: 256
+    buildHeightMesh: 0
+    maxJobWorkers: 0
+    preserveTilesOutsideBounds: 0
+    debug:
+      m_Flags: 0
+  m_NavMeshData: {fileID: 0}
+--- !u!1 &1487394310
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1487394312}
+  - component: {fileID: 1487394311}
+  - component: {fileID: 1487394313}
+  m_Layer: 0
+  m_Name: DensityPartitionBenchmarkRunner
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1487394311
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1487394310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b54d2ef521c47bca622551db5098cff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _configVersion: 0
+  scenarios: []
+  groundTruthSmoothingRadius: 90
+  groundTruthMassWeighted: 0
+  warmupPass: 1
+  lastReport: "=== DensityPartitionBenchmark v1.1 ===\r\nBranch: (unknown)   Commit:
+    (unknown)   Date: 2026-05-13 18:35:50 UTC\r\nKernel: 90m   ProductionGrid: 60m
+    x 17^3\r\nDistance units: meters.  Density units: prism count (or mass-weighted
+    for Mass* variants).\r\nHeadline targets (on Peaked scenarios only):\r\n  median
+    \u0394 < 30m (= half the production grid stride)\r\n  median mass-found > 90%\r\n 
+    median recompute < 1.0ms at N=2000\r\nNotes:\r\n  - 'density sys=' is the algorithm's
+    own internal score over its (possibly stale) input.\r\n  - 'mass=' is the corrected
+    score \u2014 system answer rescored against the clean truth tape,\r\n    divided
+    by ground truth.\r\n  - Diffuse scenarios (UniformRandom, Gradient) have no peak
+    to find. They appear in the\r\n    per-algorithm sections for diagnostic purposes
+    but do NOT count toward the headline.\r\n\r\n--- Algorithm: GridArgmax17 (current
+    production) ---\r\nScenario: DomainSegregated_K3_clean\r\n  anti-Jade    gt=(  
+    26, -186, -143) sys=(   29, -206, -147) \u0394=   20.8m  density gt= 371.0 sys=  
+    22.0 mass=   79%   t=0.09ms\r\n  anti-Ruby    gt=(  134,  -46, -199) sys=(  
+    88, -206, -206) \u0394=  166.1m  density gt= 387.0 sys=   20.0 mass=   74%  
+    t=0.09ms\r\n  anti-Gold    gt=(   37, -202, -181) sys=(   88, -206, -206) \u0394=  
+    57.5m  density gt= 562.0 sys=   28.0 mass=   73%   t=0.09ms\r\n  all-domain  
+    gt=(   58, -196, -186) sys=(   88, -206, -206) \u0394=   37.9m  density gt= 620.0
+    sys=   29.0 mass=   74%   t=0.09ms\r\n\r\nScenario: DomainSegregated_K3_stale30\r\n 
+    anti-Jade    gt=(   26, -186, -143) sys=(   29, -206, -147) \u0394=   20.8m 
+    density gt= 371.0 sys=   27.0 mass=   79%   t=0.11ms\r\n  anti-Ruby    gt=( 
+    134,  -46, -199) sys=(   88, -206, -206) \u0394=  166.1m  density gt= 387.0 sys=  
+    30.0 mass=   74%   t=0.11ms\r\n  anti-Gold    gt=(   37, -202, -181) sys=(  
+    88, -206, -206) \u0394=   57.5m  density gt= 562.0 sys=   38.0 mass=   73%  
+    t=0.16ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   88, -206, -206) \u0394=  
+    37.9m  density gt= 620.0 sys=   39.0 mass=   74%   t=0.14ms\r\n\r\nScenario:
+    MultiCluster_2000_K3\r\n  anti-Jade    gt=(   76, -202, -186) sys=(   29, -206,
+    -265) \u0394=   90.9m  density gt= 443.0 sys=   23.0 mass=   52%   t=0.10ms\r\n 
+    anti-Ruby    gt=(   33, -199, -178) sys=(   88, -206, -206) \u0394=   62.5m 
+    density gt= 425.0 sys=   24.0 mass=   69%   t=0.10ms\r\n  anti-Gold    gt=(  
+    63, -188, -188) sys=(   88, -265, -206) \u0394=   83.1m  density gt= 392.0 sys=  
+    19.0 mass=   59%   t=0.10ms\r\n  all-domain   gt=(   58, -196, -186) sys=(  
+    88, -206, -206) \u0394=   37.9m  density gt= 620.0 sys=   29.0 mass=   74%  
+    t=0.10ms\r\n\r\nScenario: MultiCluster_HeavyMass_K3\r\n  anti-Jade    gt=(  
+    76, -202, -186) sys=(   29, -206, -265) \u0394=   90.9m  density gt= 443.0 sys=  
+    23.0 mass=   52%   t=0.09ms\r\n  anti-Ruby    gt=(   33, -199, -178) sys=(  
+    88, -206, -206) \u0394=   62.5m  density gt= 425.0 sys=   24.0 mass=   69%  
+    t=0.09ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(   88, -265, -206) \u0394=  
+    83.1m  density gt= 392.0 sys=   19.0 mass=   59%   t=0.10ms\r\n  all-domain  
+    gt=(   58, -196, -186) sys=(   88, -206, -206) \u0394=   37.9m  density gt= 620.0
+    sys=   29.0 mass=   74%   t=0.09ms\r\n\r\nScenario: MultiCluster_K3_stale30_uniformMix\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   29, -206, -265) \u0394=   90.9m 
+    density gt= 443.0 sys=   33.0 mass=   52%   t=0.13ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   88, -206, -206) \u0394=   62.5m  density gt= 425.0 sys=  
+    34.0 mass=   69%   t=0.12ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    88, -265, -206) \u0394=   83.1m  density gt= 392.0 sys=   29.0 mass=   59%  
+    t=0.13ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   88, -206, -206) \u0394=  
+    37.9m  density gt= 620.0 sys=   39.0 mass=   74%   t=0.13ms\r\n\r\nScenario:
+    SingleCluster_OffGrid_r80\r\n  anti-Jade    gt=(   76,   50, -134) sys=(   88,  
+    88, -147) \u0394=   42.1m  density gt= 615.0 sys=   34.0 mass=   71%   t=0.09ms\r\n 
+    anti-Ruby    gt=(   69,   57, -138) sys=(   88,   29,  -88) \u0394=   60.3m 
+    density gt= 605.0 sys=   33.0 mass=   73%   t=0.09ms\r\n  anti-Gold    gt=(  
+    73,   54, -137) sys=(   88,   29,  -88) \u0394=   56.3m  density gt= 816.0 sys=  
+    44.0 mass=   71%   t=0.11ms\r\n  all-domain   gt=(   75,   53, -137) sys=(  
+    88,   29,  -88) \u0394=   55.7m  density gt=1017.0 sys=   53.0 mass=   71%  
+    t=0.11ms\r\n\r\nScenario: SingleCluster_OnGrid_r80\r\n  anti-Jade    gt=(  123,  
+    61, -183) sys=(  147,   29, -147) \u0394=   53.8m  density gt= 626.0 sys=   29.0
+    mass=   67%   t=0.09ms\r\n  anti-Ruby    gt=(  129,   64, -185) sys=(  147,  
+    29, -206) \u0394=   44.0m  density gt= 602.0 sys=   32.0 mass=   73%   t=0.10ms\r\n 
+    anti-Gold    gt=(  124,   67, -183) sys=(  147,   29, -147) \u0394=   56.1m 
+    density gt= 826.0 sys=   37.0 mass=   68%   t=0.09ms\r\n  all-domain   gt=( 
+    125,   64, -183) sys=(  147,   29, -147) \u0394=   54.6m  density gt=1027.0 sys=  
+    44.0 mass=   68%   t=0.09ms\r\n\r\nScenario: TightCluster_OffGrid_r30\r\n  anti-Jade   
+    gt=(  169,   48, -232) sys=(  147,   29, -206) \u0394=   39.1m  density gt=1172.0
+    sys=  210.0 mass=   96%   t=0.09ms\r\n  anti-Ruby    gt=(  174,   49, -242) sys=( 
+    147,   29, -206) \u0394=   49.7m  density gt=1226.0 sys=  225.0 mass=   96%  
+    t=0.09ms\r\n  anti-Gold    gt=(  171,   48, -232) sys=(  147,   29, -206) \u0394=  
+    39.9m  density gt=1588.0 sys=  281.0 mass=   97%   t=0.09ms\r\n  all-domain  
+    gt=(  172,   49, -232) sys=(  147,   29, -206) \u0394=   40.8m  density gt=1993.0
+    sys=  358.0 mass=   96%   t=0.09ms\r\n\r\nScenario: TwoEqualClusters_2000\r\n 
+    anti-Jade    gt=(  285,  247,  158) sys=(  324,  206,  147) \u0394=   57.1m 
+    density gt= 312.0 sys=   18.0 mass=   68%   t=0.09ms\r\n  anti-Ruby    gt=( 
+    283,  253,  153) sys=(  206,   88, -324) \u0394=  509.9m  density gt= 301.0 sys=  
+    17.0 mass=   58%   t=0.09ms\r\n  anti-Gold    gt=(  286,  248,  155) sys=(  147,  
+    88, -265) \u0394=  470.6m  density gt= 415.0 sys=   21.0 mass=   59%   t=0.10ms\r\n 
+    all-domain   gt=(  285,  250,  155) sys=(  147,  147, -265) \u0394=  453.5m 
+    density gt= 514.0 sys=   26.0 mass=   71%   t=0.09ms\r\n\r\nScenario: UniformRandom_2000_diag 
+    [DIFFUSE \u2014 diagnostic only]\r\n  anti-Jade    gt=( -375,  -96, -328) sys=(
+    -441, -147, -382) \u0394=   99.5m  density gt=  24.0 sys=    4.0 mass=   38%  
+    t=0.09ms\r\n  anti-Ruby    gt=( -379,  -96, -392) sys=( -441,  -29, -441) \u0394= 
+    103.7m  density gt=  25.0 sys=    3.0 mass=   24%   t=0.09ms\r\n  anti-Gold   
+    gt=( -380,  -96, -388) sys=(   29,  265,  382) \u0394=  944.0m  density gt= 
+    28.0 sys=    4.0 mass=   36%   t=0.11ms\r\n  all-domain   gt=( -376,  -95, -333)
+    sys=(   29,  265,  382) \u0394=  897.3m  density gt=  36.0 sys=    5.0 mass=  
+    47%   t=0.09ms\r\n\r\n  total query time: 22.5ms across 40 queries\r\n\r\n---
+    Algorithm: GridSmoothed17 (sibling baseline) ---\r\nScenario: DomainSegregated_K3_clean\r\n 
+    anti-Jade    gt=(   26, -186, -143) sys=(   88,  -88, -147) \u0394=  115.6m 
+    density gt= 371.0 sys=  745.0 mass=   65%   t=0.19ms\r\n  anti-Ruby    gt=( 
+    134,  -46, -199) sys=(   88,  -88, -206) \u0394=   62.5m  density gt= 387.0 sys= 
+    755.0 mass=   71%   t=0.20ms\r\n  anti-Gold    gt=(   37, -202, -181) sys=(  
+    29, -206, -147) \u0394=   34.7m  density gt= 562.0 sys=  930.0 mass=   75%  
+    t=0.19ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   88, -147, -206) \u0394=  
+    61.3m  density gt= 620.0 sys= 1140.0 mass=   68%   t=0.20ms\r\n\r\nScenario:
+    DomainSegregated_K3_stale30\r\n  anti-Jade    gt=(   26, -186, -143) sys=(  
+    88,  -88, -147) \u0394=  115.6m  density gt= 371.0 sys= 1049.0 mass=   65%  
+    t=0.24ms\r\n  anti-Ruby    gt=(  134,  -46, -199) sys=(   88, -147, -206) \u0394= 
+    110.9m  density gt= 387.0 sys= 1081.0 mass=   72%   t=0.23ms\r\n  anti-Gold   
+    gt=(   37, -202, -181) sys=(   29, -206, -147) \u0394=   34.7m  density gt= 562.0
+    sys= 1238.0 mass=   75%   t=0.22ms\r\n  all-domain   gt=(   58, -196, -186) sys=(  
+    88, -147, -206) \u0394=   61.3m  density gt= 620.0 sys= 1469.0 mass=   68%  
+    t=0.28ms\r\n\r\nScenario: MultiCluster_2000_K3\r\n  anti-Jade    gt=(   76, -202,
+    -186) sys=(   88, -147, -206) \u0394=   59.9m  density gt= 443.0 sys=  788.0
+    mass=   65%   t=0.21ms\r\n  anti-Ruby    gt=(   33, -199, -178) sys=(   88, -147,
+    -147) \u0394=   82.3m  density gt= 425.0 sys=  789.0 mass=   64%   t=0.21ms\r\n 
+    anti-Gold    gt=(   63, -188, -188) sys=(   88, -147, -206) \u0394=   50.7m 
+    density gt= 392.0 sys=  708.0 mass=   66%   t=0.20ms\r\n  all-domain   gt=(  
+    58, -196, -186) sys=(   88, -147, -206) \u0394=   61.3m  density gt= 620.0 sys=
+    1140.0 mass=   68%   t=0.21ms\r\n\r\nScenario: MultiCluster_HeavyMass_K3\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   88, -147, -206) \u0394=   59.9m 
+    density gt= 443.0 sys=  788.0 mass=   65%   t=0.22ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   88, -147, -147) \u0394=   82.3m  density gt= 425.0 sys= 
+    789.0 mass=   64%   t=0.20ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    88, -147, -206) \u0394=   50.7m  density gt= 392.0 sys=  708.0 mass=   66%  
+    t=0.20ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   88, -147, -206) \u0394=  
+    61.3m  density gt= 620.0 sys= 1140.0 mass=   68%   t=0.22ms\r\n\r\nScenario:
+    MultiCluster_K3_stale30_uniformMix\r\n  anti-Jade    gt=(   76, -202, -186) sys=(  
+    88, -147, -206) \u0394=   59.9m  density gt= 443.0 sys= 1117.0 mass=   65%  
+    t=0.22ms\r\n  anti-Ruby    gt=(   33, -199, -178) sys=(   88, -147, -147) \u0394=  
+    82.3m  density gt= 425.0 sys= 1118.0 mass=   64%   t=0.23ms\r\n  anti-Gold   
+    gt=(   63, -188, -188) sys=(   88, -147, -206) \u0394=   50.7m  density gt= 392.0
+    sys= 1037.0 mass=   66%   t=0.25ms\r\n  all-domain   gt=(   58, -196, -186) sys=(  
+    88, -147, -206) \u0394=   61.3m  density gt= 620.0 sys= 1469.0 mass=   68%  
+    t=0.22ms\r\n\r\nScenario: SingleCluster_OffGrid_r80\r\n  anti-Jade    gt=(  
+    76,   50, -134) sys=(   88,   29, -147) \u0394=   27.6m  density gt= 615.0 sys= 
+    951.0 mass=   74%   t=0.23ms\r\n  anti-Ruby    gt=(   69,   57, -138) sys=(  
+    88,   29, -147) \u0394=   34.8m  density gt= 605.0 sys=  949.0 mass=   77%  
+    t=0.24ms\r\n  anti-Gold    gt=(   73,   54, -137) sys=(   88,   29, -147) \u0394=  
+    30.5m  density gt= 816.0 sys= 1292.0 mass=   77%   t=0.22ms\r\n  all-domain  
+    gt=(   75,   53, -137) sys=(   88,   29, -147) \u0394=   28.7m  density gt=1017.0
+    sys= 1596.0 mass=   76%   t=0.22ms\r\n\r\nScenario: SingleCluster_OnGrid_r80\r\n 
+    anti-Jade    gt=(  123,   61, -183) sys=(  147,   88, -147) \u0394=   51.2m 
+    density gt= 626.0 sys=  943.0 mass=   68%   t=0.19ms\r\n  anti-Ruby    gt=( 
+    129,   64, -185) sys=(   88,   88, -206) \u0394=   51.9m  density gt= 602.0 sys= 
+    931.0 mass=   70%   t=0.24ms\r\n  anti-Gold    gt=(  124,   67, -183) sys=( 
+    147,   88, -206) \u0394=   39.1m  density gt= 826.0 sys= 1269.0 mass=   72%  
+    t=0.22ms\r\n  all-domain   gt=(  125,   64, -183) sys=(  147,   88, -206) \u0394=  
+    39.9m  density gt=1027.0 sys= 1561.0 mass=   71%   t=0.21ms\r\n\r\nScenario:
+    TightCluster_OffGrid_r30\r\n  anti-Jade    gt=(  169,   48, -232) sys=(  206,  
+    29, -206) \u0394=   48.7m  density gt=1172.0 sys= 1175.0 mass=   94%   t=0.24ms\r\n 
+    anti-Ruby    gt=(  174,   49, -242) sys=(  147,   29, -206) \u0394=   49.7m 
+    density gt=1226.0 sys= 1230.0 mass=   96%   t=0.23ms\r\n  anti-Gold    gt=( 
+    171,   48, -232) sys=(  206,   29, -206) \u0394=   47.6m  density gt=1588.0 sys=
+    1595.0 mass=   95%   t=0.22ms\r\n  all-domain   gt=(  172,   49, -232) sys=( 
+    206,   29, -206) \u0394=   46.9m  density gt=1993.0 sys= 2000.0 mass=   95%  
+    t=0.22ms\r\n\r\nScenario: TwoEqualClusters_2000\r\n  anti-Jade    gt=(  285, 
+    247,  158) sys=(  265,  265,  147) \u0394=   29.5m  density gt= 312.0 sys=  486.0
+    mass=   77%   t=0.21ms\r\n  anti-Ruby    gt=(  283,  253,  153) sys=(  206, 
+    147, -265) \u0394=  437.7m  density gt= 301.0 sys=  481.0 mass=   72%   t=0.21ms\r\n 
+    anti-Gold    gt=(  286,  248,  155) sys=(  206,  147, -265) \u0394=  439.6m 
+    density gt= 415.0 sys=  644.0 mass=   75%   t=0.21ms\r\n  all-domain   gt=( 
+    285,  250,  155) sys=(  206,  147, -265) \u0394=  439.3m  density gt= 514.0 sys= 
+    791.0 mass=   74%   t=0.22ms\r\n\r\nScenario: UniformRandom_2000_diag  [DIFFUSE
+    \u2014 diagnostic only]\r\n  anti-Jade    gt=( -375,  -96, -328) sys=( -324, 
+    -88, -382) \u0394=   75.2m  density gt=  24.0 sys=   44.0 mass=   38%   t=0.22ms\r\n 
+    anti-Ruby    gt=( -379,  -96, -392) sys=( -324, -147, -324) \u0394=  101.7m 
+    density gt=  25.0 sys=   50.0 mass=   32%   t=0.22ms\r\n  anti-Gold    gt=( -380, 
+    -96, -388) sys=(  -29,  265,  -88) \u0394=  585.6m  density gt=  28.0 sys=  
+    59.0 mass=   29%   t=0.22ms\r\n  all-domain   gt=( -376,  -95, -333) sys=( -324, 
+    -88, -324) \u0394=   53.8m  density gt=  36.0 sys=   75.0 mass=   50%   t=0.21ms\r\n\r\n 
+    total query time: 40.4ms across 40 queries\r\n\r\n--- Algorithm: GridSmoothedInterp17
+    ---\r\nScenario: DomainSegregated_K3_clean\r\n  anti-Jade    gt=(   26, -186,
+    -143) sys=(   78, -103, -165) \u0394=   99.6m  density gt= 371.0 sys=  745.0
+    mass=   67%   t=0.21ms\r\n  anti-Ruby    gt=(  134,  -46, -199) sys=(  112, -116,
+    -204) \u0394=   72.8m  density gt= 387.0 sys=  755.0 mass=   73%   t=0.21ms\r\n 
+    anti-Gold    gt=(   37, -202, -181) sys=(   53, -200, -173) \u0394=   18.0m 
+    density gt= 562.0 sys=  930.0 mass=   77%   t=0.20ms\r\n  all-domain   gt=(  
+    58, -196, -186) sys=(   79, -151, -179) \u0394=   50.6m  density gt= 620.0 sys=
+    1140.0 mass=   72%   t=0.21ms\r\n\r\nScenario: DomainSegregated_K3_stale30\r\n 
+    anti-Jade    gt=(   26, -186, -143) sys=(   80, -116, -168) \u0394=   91.6m 
+    density gt= 371.0 sys= 1049.0 mass=   67%   t=0.22ms\r\n  anti-Ruby    gt=( 
+    134,  -46, -199) sys=(  103, -128, -198) \u0394=   87.2m  density gt= 387.0 sys=
+    1081.0 mass=   73%   t=0.23ms\r\n  anti-Gold    gt=(   37, -202, -181) sys=(  
+    54, -194, -171) \u0394=   21.4m  density gt= 562.0 sys= 1238.0 mass=   77%  
+    t=0.23ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   80, -149, -179) \u0394=  
+    52.4m  density gt= 620.0 sys= 1469.0 mass=   71%   t=0.26ms\r\n\r\nScenario:
+    MultiCluster_2000_K3\r\n  anti-Jade    gt=(   76, -202, -186) sys=(   81, -152,
+    -178) \u0394=   51.8m  density gt= 443.0 sys=  788.0 mass=   70%   t=0.20ms\r\n 
+    anti-Ruby    gt=(   33, -199, -178) sys=(   70, -147, -175) \u0394=   64.4m 
+    density gt= 425.0 sys=  789.0 mass=   73%   t=0.20ms\r\n  anti-Gold    gt=(  
+    63, -188, -188) sys=(   78, -155, -186) \u0394=   35.7m  density gt= 392.0 sys= 
+    708.0 mass=   72%   t=0.20ms\r\n  all-domain   gt=(   58, -196, -186) sys=(  
+    79, -151, -179) \u0394=   50.6m  density gt= 620.0 sys= 1140.0 mass=   72%  
+    t=0.21ms\r\n\r\nScenario: MultiCluster_HeavyMass_K3\r\n  anti-Jade    gt=(  
+    76, -202, -186) sys=(   81, -152, -178) \u0394=   51.8m  density gt= 443.0 sys= 
+    788.0 mass=   70%   t=0.24ms\r\n  anti-Ruby    gt=(   33, -199, -178) sys=(  
+    70, -147, -175) \u0394=   64.4m  density gt= 425.0 sys=  789.0 mass=   73%  
+    t=0.22ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(   78, -155, -186) \u0394=  
+    35.7m  density gt= 392.0 sys=  708.0 mass=   72%   t=0.24ms\r\n  all-domain  
+    gt=(   58, -196, -186) sys=(   79, -151, -179) \u0394=   50.6m  density gt= 620.0
+    sys= 1140.0 mass=   72%   t=0.23ms\r\n\r\nScenario: MultiCluster_K3_stale30_uniformMix\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   82, -150, -177) \u0394=   54.0m 
+    density gt= 443.0 sys= 1117.0 mass=   69%   t=0.24ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   72, -148, -175) \u0394=   65.2m  density gt= 425.0 sys=
+    1118.0 mass=   73%   t=0.25ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    80, -152, -184) \u0394=   39.4m  density gt= 392.0 sys= 1037.0 mass=   72%  
+    t=0.24ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   80, -149, -179) \u0394=  
+    52.4m  density gt= 620.0 sys= 1469.0 mass=   71%   t=0.24ms\r\n\r\nScenario:
+    SingleCluster_OffGrid_r80\r\n  anti-Jade    gt=(   76,   50, -134) sys=(   77,  
+    48, -128) \u0394=    6.1m  density gt= 615.0 sys=  951.0 mass=   79%   t=0.22ms\r\n 
+    anti-Ruby    gt=(   69,   57, -138) sys=(   76,   55, -126) \u0394=   14.4m 
+    density gt= 605.0 sys=  949.0 mass=   80%   t=0.21ms\r\n  anti-Gold    gt=(  
+    73,   54, -137) sys=(   76,   50, -129) \u0394=    9.3m  density gt= 816.0 sys=
+    1292.0 mass=   79%   t=0.22ms\r\n  all-domain   gt=(   75,   53, -137) sys=(  
+    76,   50, -128) \u0394=    9.6m  density gt=1017.0 sys= 1596.0 mass=   79%  
+    t=0.21ms\r\n\r\nScenario: SingleCluster_OnGrid_r80\r\n  anti-Jade    gt=(  123,  
+    61, -183) sys=(  123,   62, -170) \u0394=   13.0m  density gt= 626.0 sys=  943.0
+    mass=   77%   t=0.20ms\r\n  anti-Ruby    gt=(  129,   64, -185) sys=(  117,  
+    60, -185) \u0394=   12.7m  density gt= 602.0 sys=  931.0 mass=   79%   t=0.20ms\r\n 
+    anti-Gold    gt=(  124,   67, -183) sys=(  120,   63, -177) \u0394=    7.7m 
+    density gt= 826.0 sys= 1269.0 mass=   79%   t=0.20ms\r\n  all-domain   gt=( 
+    125,   64, -183) sys=(  120,   62, -177) \u0394=    8.7m  density gt=1027.0 sys=
+    1561.0 mass=   79%   t=0.20ms\r\n\r\nScenario: TightCluster_OffGrid_r30\r\n 
+    anti-Jade    gt=(  169,   48, -232) sys=(  178,   59, -232) \u0394=   13.4m 
+    density gt=1172.0 sys= 1175.0 mass=   99%   t=0.19ms\r\n  anti-Ruby    gt=( 
+    174,   49, -242) sys=(  176,   59, -232) \u0394=   14.2m  density gt=1226.0 sys=
+    1230.0 mass=   99%   t=0.21ms\r\n  anti-Gold    gt=(  171,   48, -232) sys=( 
+    178,   59, -231) \u0394=   12.5m  density gt=1588.0 sys= 1595.0 mass=   99%  
+    t=0.24ms\r\n  all-domain   gt=(  172,   49, -232) sys=(  177,   59, -231) \u0394=  
+    11.4m  density gt=1993.0 sys= 2000.0 mass=   99%   t=0.22ms\r\n\r\nScenario:
+    TwoEqualClusters_2000\r\n  anti-Jade    gt=(  285,  247,  158) sys=(  287,  246, 
+    150) \u0394=    8.8m  density gt= 312.0 sys=  486.0 mass=   79%   t=0.19ms\r\n 
+    anti-Ruby    gt=(  283,  253,  153) sys=(  191,  141, -277) \u0394=  453.8m 
+    density gt= 301.0 sys=  481.0 mass=   74%   t=0.19ms\r\n  anti-Gold    gt=( 
+    286,  248,  155) sys=(  181,  141, -270) \u0394=  451.4m  density gt= 415.0 sys= 
+    644.0 mass=   74%   t=0.21ms\r\n  all-domain   gt=(  285,  250,  155) sys=( 
+    183,  141, -269) \u0394=  449.8m  density gt= 514.0 sys=  791.0 mass=   74%  
+    t=0.21ms\r\n\r\nScenario: UniformRandom_2000_diag  [DIFFUSE \u2014 diagnostic
+    only]\r\n  anti-Jade    gt=( -375,  -96, -328) sys=( -329,  -59, -353) \u0394=  
+    64.1m  density gt=  24.0 sys=   44.0 mass=   58%   t=0.21ms\r\n  anti-Ruby   
+    gt=( -379,  -96, -392) sys=( -324, -118, -337) \u0394=   80.9m  density gt= 
+    25.0 sys=   50.0 mass=   40%   t=0.23ms\r\n  anti-Gold    gt=( -380,  -96, -388)
+    sys=(  -42,  257,  -81) \u0394=  577.2m  density gt=  28.0 sys=   59.0 mass=  
+    32%   t=0.25ms\r\n  all-domain   gt=( -376,  -95, -333) sys=( -328,  -98, -337)
+    \u0394=   48.7m  density gt=  36.0 sys=   75.0 mass=   53%   t=0.23ms\r\n\r\n 
+    total query time: 40.2ms across 40 queries\r\n\r\n--- Algorithm: GridMassSmoothedInterp17
+    ---\r\nScenario: DomainSegregated_K3_clean\r\n  anti-Jade    gt=(   26, -186,
+    -143) sys=(   78, -103, -165) \u0394=   99.6m  density gt= 371.0 sys=  745.0
+    mass=   67%   t=0.22ms\r\n  anti-Ruby    gt=(  134,  -46, -199) sys=(  112, -116,
+    -204) \u0394=   72.8m  density gt= 387.0 sys=  755.0 mass=   73%   t=0.20ms\r\n 
+    anti-Gold    gt=(   37, -202, -181) sys=(   53, -200, -173) \u0394=   18.0m 
+    density gt= 562.0 sys=  930.0 mass=   77%   t=0.20ms\r\n  all-domain   gt=(  
+    58, -196, -186) sys=(   79, -151, -179) \u0394=   50.6m  density gt= 620.0 sys=
+    1140.0 mass=   72%   t=0.20ms\r\n\r\nScenario: DomainSegregated_K3_stale30\r\n 
+    anti-Jade    gt=(   26, -186, -143) sys=(   80, -116, -168) \u0394=   91.6m 
+    density gt= 371.0 sys= 1049.0 mass=   67%   t=0.24ms\r\n  anti-Ruby    gt=( 
+    134,  -46, -199) sys=(  103, -128, -198) \u0394=   87.2m  density gt= 387.0 sys=
+    1081.0 mass=   73%   t=0.23ms\r\n  anti-Gold    gt=(   37, -202, -181) sys=(  
+    54, -194, -171) \u0394=   21.4m  density gt= 562.0 sys= 1238.0 mass=   77%  
+    t=0.29ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   80, -149, -179) \u0394=  
+    52.4m  density gt= 620.0 sys= 1469.0 mass=   71%   t=0.29ms\r\n\r\nScenario:
+    MultiCluster_2000_K3\r\n  anti-Jade    gt=(   76, -202, -186) sys=(   81, -152,
+    -178) \u0394=   51.8m  density gt= 443.0 sys=  788.0 mass=   70%   t=0.24ms\r\n 
+    anti-Ruby    gt=(   33, -199, -178) sys=(   70, -147, -175) \u0394=   64.4m 
+    density gt= 425.0 sys=  789.0 mass=   73%   t=0.23ms\r\n  anti-Gold    gt=(  
+    63, -188, -188) sys=(   78, -155, -186) \u0394=   35.7m  density gt= 392.0 sys= 
+    708.0 mass=   72%   t=0.20ms\r\n  all-domain   gt=(   58, -196, -186) sys=(  
+    79, -151, -179) \u0394=   50.6m  density gt= 620.0 sys= 1140.0 mass=   72%  
+    t=0.21ms\r\n\r\nScenario: MultiCluster_HeavyMass_K3\r\n  anti-Jade    gt=(  
+    76, -202, -186) sys=(   79, -157, -177) \u0394=   46.3m  density gt= 443.0 sys=
+    1721.4 mass=   70%   t=0.20ms\r\n  anti-Ruby    gt=(   33, -199, -178) sys=(  
+    69, -150, -173) \u0394=   61.2m  density gt= 425.0 sys= 1740.1 mass=   73%  
+    t=0.22ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(   79, -160, -187) \u0394=  
+    32.0m  density gt= 392.0 sys= 1561.8 mass=   74%   t=0.21ms\r\n  all-domain  
+    gt=(   58, -196, -186) sys=(   78, -156, -179) \u0394=   45.9m  density gt= 620.0
+    sys= 2500.3 mass=   72%   t=0.23ms\r\n\r\nScenario: MultiCluster_K3_stale30_uniformMix\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   82, -150, -177) \u0394=   54.0m 
+    density gt= 443.0 sys= 1117.0 mass=   69%   t=0.24ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   72, -148, -175) \u0394=   65.2m  density gt= 425.0 sys=
+    1118.0 mass=   73%   t=0.27ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    80, -152, -184) \u0394=   39.4m  density gt= 392.0 sys= 1037.0 mass=   72%  
+    t=0.35ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   80, -149, -179) \u0394=  
+    52.4m  density gt= 620.0 sys= 1469.0 mass=   71%   t=0.23ms\r\n\r\nScenario:
+    SingleCluster_OffGrid_r80\r\n  anti-Jade    gt=(   76,   50, -134) sys=(   77,  
+    48, -128) \u0394=    6.1m  density gt= 615.0 sys=  951.0 mass=   79%   t=0.21ms\r\n 
+    anti-Ruby    gt=(   69,   57, -138) sys=(   76,   55, -126) \u0394=   14.4m 
+    density gt= 605.0 sys=  949.0 mass=   80%   t=0.20ms\r\n  anti-Gold    gt=(  
+    73,   54, -137) sys=(   76,   50, -129) \u0394=    9.3m  density gt= 816.0 sys=
+    1292.0 mass=   79%   t=0.21ms\r\n  all-domain   gt=(   75,   53, -137) sys=(  
+    76,   50, -128) \u0394=    9.6m  density gt=1017.0 sys= 1596.0 mass=   79%  
+    t=0.21ms\r\n\r\nScenario: SingleCluster_OnGrid_r80\r\n  anti-Jade    gt=(  123,  
+    61, -183) sys=(  123,   62, -170) \u0394=   13.0m  density gt= 626.0 sys=  943.0
+    mass=   77%   t=0.20ms\r\n  anti-Ruby    gt=(  129,   64, -185) sys=(  117,  
+    60, -185) \u0394=   12.7m  density gt= 602.0 sys=  931.0 mass=   79%   t=0.20ms\r\n 
+    anti-Gold    gt=(  124,   67, -183) sys=(  120,   63, -177) \u0394=    7.7m 
+    density gt= 826.0 sys= 1269.0 mass=   79%   t=0.21ms\r\n  all-domain   gt=( 
+    125,   64, -183) sys=(  120,   62, -177) \u0394=    8.7m  density gt=1027.0 sys=
+    1561.0 mass=   79%   t=0.23ms\r\n\r\nScenario: TightCluster_OffGrid_r30\r\n 
+    anti-Jade    gt=(  169,   48, -232) sys=(  178,   59, -232) \u0394=   13.4m 
+    density gt=1172.0 sys= 1175.0 mass=   99%   t=0.22ms\r\n  anti-Ruby    gt=( 
+    174,   49, -242) sys=(  176,   59, -232) \u0394=   14.2m  density gt=1226.0 sys=
+    1230.0 mass=   99%   t=0.20ms\r\n  anti-Gold    gt=(  171,   48, -232) sys=( 
+    178,   59, -231) \u0394=   12.5m  density gt=1588.0 sys= 1595.0 mass=   99%  
+    t=0.21ms\r\n  all-domain   gt=(  172,   49, -232) sys=(  177,   59, -231) \u0394=  
+    11.4m  density gt=1993.0 sys= 2000.0 mass=   99%   t=0.21ms\r\n\r\nScenario:
+    TwoEqualClusters_2000\r\n  anti-Jade    gt=(  285,  247,  158) sys=(  287,  246, 
+    150) \u0394=    8.8m  density gt= 312.0 sys=  486.0 mass=   79%   t=0.25ms\r\n 
+    anti-Ruby    gt=(  283,  253,  153) sys=(  191,  141, -277) \u0394=  453.8m 
+    density gt= 301.0 sys=  481.0 mass=   74%   t=0.21ms\r\n  anti-Gold    gt=( 
+    286,  248,  155) sys=(  181,  141, -270) \u0394=  451.4m  density gt= 415.0 sys= 
+    644.0 mass=   74%   t=0.20ms\r\n  all-domain   gt=(  285,  250,  155) sys=( 
+    183,  141, -269) \u0394=  449.8m  density gt= 514.0 sys=  791.0 mass=   74%  
+    t=0.20ms\r\n\r\nScenario: UniformRandom_2000_diag  [DIFFUSE \u2014 diagnostic
+    only]\r\n  anti-Jade    gt=( -375,  -96, -328) sys=( -329,  -59, -353) \u0394=  
+    64.1m  density gt=  24.0 sys=   44.0 mass=   58%   t=0.22ms\r\n  anti-Ruby   
+    gt=( -379,  -96, -392) sys=( -324, -118, -337) \u0394=   80.9m  density gt= 
+    25.0 sys=   50.0 mass=   40%   t=0.19ms\r\n  anti-Gold    gt=( -380,  -96, -388)
+    sys=(  -42,  257,  -81) \u0394=  577.2m  density gt=  28.0 sys=   59.0 mass=  
+    32%   t=0.21ms\r\n  all-domain   gt=( -376,  -95, -333) sys=( -328,  -98, -337)
+    \u0394=   48.7m  density gt=  36.0 sys=   75.0 mass=   53%   t=0.25ms\r\n\r\n 
+    total query time: 41.0ms across 40 queries\r\n\r\n--- Algorithm: GridMassSmoothedInterp32
+    ---\r\nScenario: DomainSegregated_K3_clean\r\n  anti-Jade    gt=(   26, -186,
+    -143) sys=(   41, -167, -151) \u0394=   24.8m  density gt= 371.0 sys=  418.0
+    mass=   74%   t=1.05ms\r\n  anti-Ruby    gt=(  134,  -46, -199) sys=(  127, 
+    -70, -200) \u0394=   25.1m  density gt= 387.0 sys=  444.0 mass=   74%   t=1.13ms\r\n 
+    anti-Gold    gt=(   37, -202, -181) sys=(   55, -207, -186) \u0394=   19.7m 
+    density gt= 562.0 sys=  633.0 mass=   79%   t=0.98ms\r\n  all-domain   gt=(  
+    58, -196, -186) sys=(   64, -188, -182) \u0394=   10.8m  density gt= 620.0 sys= 
+    717.0 mass=   79%   t=1.08ms\r\n\r\nScenario: DomainSegregated_K3_stale30\r\n 
+    anti-Jade    gt=(   26, -186, -143) sys=(   66, -161, -173) \u0394=   55.6m 
+    density gt= 371.0 sys=  608.0 mass=   70%   t=0.98ms\r\n  anti-Ruby    gt=( 
+    134,  -46, -199) sys=(  101, -163, -201) \u0394=  121.3m  density gt= 387.0 sys= 
+    638.0 mass=   76%   t=1.02ms\r\n  anti-Gold    gt=(   37, -202, -181) sys=(  
+    59, -207, -188) \u0394=   23.8m  density gt= 562.0 sys=  833.0 mass=   80%  
+    t=0.99ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   68, -187, -184) \u0394=  
+    13.8m  density gt= 620.0 sys=  912.0 mass=   79%   t=1.19ms\r\n\r\nScenario:
+    MultiCluster_2000_K3\r\n  anti-Jade    gt=(   76, -202, -186) sys=(   66, -204,
+    -185) \u0394=    9.9m  density gt= 443.0 sys=  501.0 mass=   79%   t=0.95ms\r\n 
+    anti-Ruby    gt=(   33, -199, -178) sys=(   58, -181, -182) \u0394=   31.8m 
+    density gt= 425.0 sys=  489.0 mass=   78%   t=0.96ms\r\n  anti-Gold    gt=(  
+    63, -188, -188) sys=(   68, -183, -182) \u0394=    8.7m  density gt= 392.0 sys= 
+    445.0 mass=   79%   t=0.96ms\r\n  all-domain   gt=(   58, -196, -186) sys=(  
+    64, -188, -182) \u0394=   10.8m  density gt= 620.0 sys=  717.0 mass=   79%  
+    t=1.04ms\r\n\r\nScenario: MultiCluster_HeavyMass_K3\r\n  anti-Jade    gt=(  
+    76, -202, -186) sys=(   66, -203, -181) \u0394=   11.4m  density gt= 443.0 sys=
+    1109.7 mass=   78%   t=1.44ms\r\n  anti-Ruby    gt=(   33, -199, -178) sys=(  
+    56, -188, -177) \u0394=   26.1m  density gt= 425.0 sys= 1067.0 mass=   77%  
+    t=0.97ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(   73, -185, -178) \u0394=  
+    14.3m  density gt= 392.0 sys=  976.1 mass=   78%   t=1.01ms\r\n  all-domain  
+    gt=(   58, -196, -186) sys=(   64, -191, -178) \u0394=   10.7m  density gt= 620.0
+    sys= 1576.4 mass=   79%   t=1.08ms\r\n\r\nScenario: MultiCluster_K3_stale30_uniformMix\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   70, -205, -187) \u0394=    6.8m 
+    density gt= 443.0 sys=  701.0 mass=   80%   t=0.99ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   64, -170, -183) \u0394=   43.0m  density gt= 425.0 sys= 
+    687.0 mass=   76%   t=0.99ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    75, -178, -185) \u0394=   15.2m  density gt= 392.0 sys=  640.0 mass=   79%  
+    t=1.09ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   68, -187, -184) \u0394=  
+    13.8m  density gt= 620.0 sys=  912.0 mass=   79%   t=1.21ms\r\n\r\nScenario:
+    SingleCluster_OffGrid_r80\r\n  anti-Jade    gt=(   76,   50, -134) sys=(   73,  
+    52, -127) \u0394=    7.8m  density gt= 615.0 sys=  670.0 mass=   79%   t=0.93ms\r\n 
+    anti-Ruby    gt=(   69,   57, -138) sys=(   80,   56, -132) \u0394=   12.5m 
+    density gt= 605.0 sys=  674.0 mass=   80%   t=1.03ms\r\n  anti-Gold    gt=(  
+    73,   54, -137) sys=(   74,   49, -133) \u0394=    6.2m  density gt= 816.0 sys= 
+    906.0 mass=   80%   t=1.07ms\r\n  all-domain   gt=(   75,   53, -137) sys=(  
+    75,   52, -131) \u0394=    5.9m  density gt=1017.0 sys= 1123.0 mass=   79%  
+    t=1.99ms\r\n\r\nScenario: SingleCluster_OnGrid_r80\r\n  anti-Jade    gt=(  123,  
+    61, -183) sys=(  122,   59, -180) \u0394=    3.9m  density gt= 626.0 sys=  696.0
+    mass=   78%   t=1.12ms\r\n  anti-Ruby    gt=(  129,   64, -185) sys=(  124,  
+    61, -183) \u0394=    6.1m  density gt= 602.0 sys=  690.0 mass=   79%   t=0.96ms\r\n 
+    anti-Gold    gt=(  124,   67, -183) sys=(  125,   62, -183) \u0394=    4.5m 
+    density gt= 826.0 sys=  934.0 mass=   78%   t=0.95ms\r\n  all-domain   gt=( 
+    125,   64, -183) sys=(  124,   61, -182) \u0394=    3.2m  density gt=1027.0 sys=
+    1160.0 mass=   79%   t=0.97ms\r\n\r\nScenario: TightCluster_OffGrid_r30\r\n 
+    anti-Jade    gt=(  169,   48, -232) sys=(  169,   47, -230) \u0394=    2.3m 
+    density gt=1172.0 sys= 1171.0 mass=   99%   t=1.11ms\r\n  anti-Ruby    gt=( 
+    174,   49, -242) sys=(  170,   53, -232) \u0394=   11.9m  density gt=1226.0 sys=
+    1229.0 mass=   99%   t=1.06ms\r\n  anti-Gold    gt=(  171,   48, -232) sys=( 
+    169,   50, -229) \u0394=    3.4m  density gt=1588.0 sys= 1592.0 mass=   99%  
+    t=0.94ms\r\n  all-domain   gt=(  172,   49, -232) sys=(  169,   50, -230) \u0394=   
+    3.4m  density gt=1993.0 sys= 1996.0 mass=   99%   t=0.94ms\r\n\r\nScenario: TwoEqualClusters_2000\r\n 
+    anti-Jade    gt=(  285,  247,  158) sys=(  285,  249,  148) \u0394=   10.5m 
+    density gt= 312.0 sys=  352.0 mass=   80%   t=0.99ms\r\n  anti-Ruby    gt=( 
+    283,  253,  153) sys=(  289,  243,  143) \u0394=   15.3m  density gt= 301.0 sys= 
+    333.0 mass=   80%   t=0.98ms\r\n  anti-Gold    gt=(  286,  248,  155) sys=( 
+    290,  246,  150) \u0394=    7.9m  density gt= 415.0 sys=  455.0 mass=   78%  
+    t=1.17ms\r\n  all-domain   gt=(  285,  250,  155) sys=(  288,  246,  147) \u0394=   
+    9.5m  density gt= 514.0 sys=  570.0 mass=   79%   t=1.07ms\r\n\r\nScenario: UniformRandom_2000_diag 
+    [DIFFUSE \u2014 diagnostic only]\r\n  anti-Jade    gt=( -375,  -96, -328) sys=(
+    -367,  -91, -328) \u0394=    9.7m  density gt=  24.0 sys=   25.0 mass=   58%  
+    t=1.03ms\r\n  anti-Ruby    gt=( -379,  -96, -392) sys=( -375,  -94, -391) \u0394=   
+    4.9m  density gt=  25.0 sys=   27.0 mass=   60%   t=0.98ms\r\n  anti-Gold   
+    gt=( -380,  -96, -388) sys=(    2,  -65,  -22) \u0394=  530.0m  density gt= 
+    28.0 sys=   30.0 mass=   57%   t=1.05ms\r\n  all-domain   gt=( -376,  -95, -333)
+    sys=( -375,  -94, -359) \u0394=   26.6m  density gt=  36.0 sys=   38.0 mass=  
+    50%   t=1.08ms\r\n\r\n  total query time: 180.5ms across 40 queries\r\n\r\n---
+    Algorithm: GridMassSmoothedInterpCentroid17 ---\r\nScenario: DomainSegregated_K3_clean\r\n 
+    anti-Jade    gt=(   26, -186, -143) sys=(   70, -110, -169) \u0394=   91.0m 
+    density gt= 371.0 sys=  745.0 mass=   68%   t=0.35ms\r\n  anti-Ruby    gt=( 
+    134,  -46, -199) sys=(  109, -116, -211) \u0394=   74.8m  density gt= 387.0 sys= 
+    755.0 mass=   73%   t=0.37ms\r\n  anti-Gold    gt=(   37, -202, -181) sys=(  
+    52, -202, -178) \u0394=   15.2m  density gt= 562.0 sys=  930.0 mass=   77%  
+    t=0.33ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   70, -160, -182) \u0394=  
+    38.2m  density gt= 620.0 sys= 1140.0 mass=   75%   t=0.36ms\r\n\r\nScenario:
+    DomainSegregated_K3_stale30\r\n  anti-Jade    gt=(   26, -186, -143) sys=(  
+    71, -124, -171) \u0394=   80.7m  density gt= 371.0 sys= 1049.0 mass=   71%  
+    t=0.38ms\r\n  anti-Ruby    gt=(  134,  -46, -199) sys=(   96, -130, -203) \u0394=  
+    92.2m  density gt= 387.0 sys= 1081.0 mass=   72%   t=0.39ms\r\n  anti-Gold   
+    gt=(   37, -202, -181) sys=(   54, -195, -175) \u0394=   19.0m  density gt= 562.0
+    sys= 1238.0 mass=   77%   t=0.42ms\r\n  all-domain   gt=(   58, -196, -186) sys=(  
+    70, -160, -182) \u0394=   38.9m  density gt= 620.0 sys= 1469.0 mass=   75%  
+    t=0.42ms\r\n\r\nScenario: MultiCluster_2000_K3\r\n  anti-Jade    gt=(   76, -202,
+    -186) sys=(   72, -163, -180) \u0394=   39.8m  density gt= 443.0 sys=  788.0
+    mass=   72%   t=0.66ms\r\n  anti-Ruby    gt=(   33, -199, -178) sys=(   64, -157,
+    -182) \u0394=   53.0m  density gt= 425.0 sys=  789.0 mass=   75%   t=0.74ms\r\n 
+    anti-Gold    gt=(   63, -188, -188) sys=(   70, -163, -186) \u0394=   25.7m 
+    density gt= 392.0 sys=  708.0 mass=   74%   t=0.67ms\r\n  all-domain   gt=(  
+    58, -196, -186) sys=(   70, -160, -182) \u0394=   38.2m  density gt= 620.0 sys=
+    1140.0 mass=   75%   t=0.74ms\r\n\r\nScenario: MultiCluster_HeavyMass_K3\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   69, -166, -180) \u0394=   37.2m 
+    density gt= 443.0 sys= 1721.4 mass=   72%   t=0.74ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   64, -160, -178) \u0394=   50.6m  density gt= 425.0 sys=
+    1740.1 mass=   74%   t=0.46ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    70, -170, -188) \u0394=   19.0m  density gt= 392.0 sys= 1561.8 mass=   76%  
+    t=0.32ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   68, -164, -181) \u0394=  
+    33.7m  density gt= 620.0 sys= 2500.3 mass=   75%   t=0.37ms\r\n\r\nScenario:
+    MultiCluster_K3_stale30_uniformMix\r\n  anti-Jade    gt=(   76, -202, -186) sys=(  
+    73, -160, -181) \u0394=   43.0m  density gt= 443.0 sys= 1117.0 mass=   71%  
+    t=0.45ms\r\n  anti-Ruby    gt=(   33, -199, -178) sys=(   66, -158, -181) \u0394=  
+    53.5m  density gt= 425.0 sys= 1118.0 mass=   74%   t=0.40ms\r\n  anti-Gold   
+    gt=(   63, -188, -188) sys=(   72, -161, -184) \u0394=   27.7m  density gt= 392.0
+    sys= 1037.0 mass=   74%   t=0.38ms\r\n  all-domain   gt=(   58, -196, -186) sys=(  
+    70, -160, -182) \u0394=   38.9m  density gt= 620.0 sys= 1469.0 mass=   75%  
+    t=0.43ms\r\n\r\nScenario: SingleCluster_OffGrid_r80\r\n  anti-Jade    gt=(  
+    76,   50, -134) sys=(   73,   51, -130) \u0394=    5.1m  density gt= 615.0 sys= 
+    951.0 mass=   78%   t=0.35ms\r\n  anti-Ruby    gt=(   69,   57, -138) sys=(  
+    70,   57, -125) \u0394=   13.0m  density gt= 605.0 sys=  949.0 mass=   80%  
+    t=0.40ms\r\n  anti-Gold    gt=(   73,   54, -137) sys=(   71,   53, -129) \u0394=   
+    8.3m  density gt= 816.0 sys= 1292.0 mass=   80%   t=0.74ms\r\n  all-domain  
+    gt=(   75,   53, -137) sys=(   71,   53, -128) \u0394=    9.7m  density gt=1017.0
+    sys= 1596.0 mass=   80%   t=0.75ms\r\n\r\nScenario: SingleCluster_OnGrid_r80\r\n 
+    anti-Jade    gt=(  123,   61, -183) sys=(  123,   59, -173) \u0394=   10.9m 
+    density gt= 626.0 sys=  943.0 mass=   77%   t=0.67ms\r\n  anti-Ruby    gt=( 
+    129,   64, -185) sys=(  119,   59, -184) \u0394=   11.6m  density gt= 602.0 sys= 
+    931.0 mass=   79%   t=0.63ms\r\n  anti-Gold    gt=(  124,   67, -183) sys=( 
+    120,   60, -180) \u0394=    7.9m  density gt= 826.0 sys= 1269.0 mass=   78%  
+    t=0.36ms\r\n  all-domain   gt=(  125,   64, -183) sys=(  120,   60, -179) \u0394=   
+    7.5m  density gt=1027.0 sys= 1561.0 mass=   78%   t=0.37ms\r\n\r\nScenario: TightCluster_OffGrid_r30\r\n 
+    anti-Jade    gt=(  169,   48, -232) sys=(  172,   50, -227) \u0394=    6.0m 
+    density gt=1172.0 sys= 1175.0 mass=   99%   t=0.35ms\r\n  anti-Ruby    gt=( 
+    174,   49, -242) sys=(  173,   50, -227) \u0394=   15.4m  density gt=1226.0 sys=
+    1230.0 mass=   99%   t=0.35ms\r\n  anti-Gold    gt=(  171,   48, -232) sys=( 
+    173,   50, -227) \u0394=    5.3m  density gt=1588.0 sys= 1595.0 mass=   99%  
+    t=0.38ms\r\n  all-domain   gt=(  172,   49, -232) sys=(  173,   50, -227) \u0394=   
+    5.1m  density gt=1993.0 sys= 2000.0 mass=   99%   t=0.41ms\r\n\r\nScenario: TwoEqualClusters_2000\r\n 
+    anti-Jade    gt=(  285,  247,  158) sys=(  283,  243,  149) \u0394=   10.4m 
+    density gt= 312.0 sys=  486.0 mass=   78%   t=0.33ms\r\n  anti-Ruby    gt=( 
+    283,  253,  153) sys=(  185,  142, -279) \u0394=  456.7m  density gt= 301.0 sys= 
+    481.0 mass=   75%   t=0.34ms\r\n  anti-Gold    gt=(  286,  248,  155) sys=( 
+    179,  142, -267) \u0394=  448.4m  density gt= 415.0 sys=  644.0 mass=   74%  
+    t=0.37ms\r\n  all-domain   gt=(  285,  250,  155) sys=(  180,  143, -270) \u0394= 
+    450.3m  density gt= 514.0 sys=  791.0 mass=   74%   t=0.37ms\r\n\r\nScenario:
+    UniformRandom_2000_diag  [DIFFUSE \u2014 diagnostic only]\r\n  anti-Jade    gt=(
+    -375,  -96, -328) sys=( -319,  -59, -339) \u0394=   67.9m  density gt=  24.0
+    sys=   44.0 mass=   50%   t=0.30ms\r\n  anti-Ruby    gt=( -379,  -96, -392) sys=(
+    -351, -147, -347) \u0394=   73.2m  density gt=  25.0 sys=   50.0 mass=   56%  
+    t=0.33ms\r\n  anti-Gold    gt=( -380,  -96, -388) sys=(  -39,  245,  -54) \u0394= 
+    586.6m  density gt=  28.0 sys=   59.0 mass=   43%   t=0.43ms\r\n  all-domain  
+    gt=( -376,  -95, -333) sys=( -336, -111, -332) \u0394=   43.1m  density gt= 
+    36.0 sys=   75.0 mass=   53%   t=0.49ms\r\n\r\n  total query time: 78.8ms across
+    40 queries\r\n\r\n--- Algorithm: GridMassSmoothedInterpMeanShift17 ---\r\nScenario:
+    DomainSegregated_K3_clean\r\n  anti-Jade    gt=(   26, -186, -143) sys=(   48,
+    -141, -166) \u0394=   55.0m  density gt= 371.0 sys=  745.0 mass=   70%   t=0.81ms\r\n 
+    anti-Ruby    gt=(  134,  -46, -199) sys=(  101, -118, -221) \u0394=   81.5m 
+    density gt= 387.0 sys=  755.0 mass=   73%   t=0.93ms\r\n  anti-Gold    gt=(  
+    37, -202, -181) sys=(   52, -204, -185) \u0394=   15.8m  density gt= 562.0 sys= 
+    930.0 mass=   78%   t=0.85ms\r\n  all-domain   gt=(   58, -196, -186) sys=(  
+    55, -188, -185) \u0394=    8.8m  density gt= 620.0 sys= 1140.0 mass=   79%  
+    t=1.08ms\r\n\r\nScenario: DomainSegregated_K3_stale30\r\n  anti-Jade    gt=(  
+    26, -186, -143) sys=(   52, -161, -167) \u0394=   42.8m  density gt= 371.0 sys=
+    1049.0 mass=   70%   t=1.10ms\r\n  anti-Ruby    gt=(  134,  -46, -199) sys=(  
+    86, -142, -206) \u0394=  107.7m  density gt= 387.0 sys= 1081.0 mass=   69%  
+    t=1.13ms\r\n  anti-Gold    gt=(   37, -202, -181) sys=(   55, -197, -183) \u0394=  
+    19.3m  density gt= 562.0 sys= 1238.0 mass=   79%   t=1.19ms\r\n  all-domain  
+    gt=(   58, -196, -186) sys=(   59, -188, -184) \u0394=    8.0m  density gt= 620.0
+    sys= 1469.0 mass=   79%   t=1.28ms\r\n\r\nScenario: MultiCluster_2000_K3\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   56, -191, -184) \u0394=   22.6m 
+    density gt= 443.0 sys=  788.0 mass=   78%   t=0.92ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   52, -182, -187) \u0394=   27.1m  density gt= 425.0 sys= 
+    789.0 mass=   78%   t=0.90ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    58, -193, -184) \u0394=    8.8m  density gt= 392.0 sys=  708.0 mass=   78%  
+    t=0.84ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   55, -188, -185) \u0394=   
+    8.8m  density gt= 620.0 sys= 1140.0 mass=   79%   t=1.14ms\r\n\r\nScenario: MultiCluster_HeavyMass_K3\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   57, -193, -184) \u0394=   21.5m 
+    density gt= 443.0 sys= 1721.4 mass=   77%   t=0.91ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   53, -187, -182) \u0394=   24.2m  density gt= 425.0 sys=
+    1740.1 mass=   77%   t=0.92ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    57, -200, -183) \u0394=   14.9m  density gt= 392.0 sys= 1561.8 mass=   78%  
+    t=0.86ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   56, -193, -183) \u0394=   
+    4.5m  density gt= 620.0 sys= 2500.3 mass=   78%   t=1.03ms\r\n\r\nScenario: MultiCluster_K3_stale30_uniformMix\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   60, -189, -182) \u0394=   20.5m 
+    density gt= 443.0 sys= 1117.0 mass=   77%   t=1.13ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   58, -184, -186) \u0394=   30.9m  density gt= 425.0 sys=
+    1118.0 mass=   78%   t=1.34ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    61, -191, -183) \u0394=    6.7m  density gt= 392.0 sys= 1037.0 mass=   78%  
+    t=1.09ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   59, -188, -184) \u0394=   
+    8.0m  density gt= 620.0 sys= 1469.0 mass=   79%   t=1.25ms\r\n\r\nScenario: SingleCluster_OffGrid_r80\r\n 
+    anti-Jade    gt=(   76,   50, -134) sys=(   67,   53, -129) \u0394=   10.1m 
+    density gt= 615.0 sys=  951.0 mass=   80%   t=0.86ms\r\n  anti-Ruby    gt=(  
+    69,   57, -138) sys=(   68,   60, -127) \u0394=   12.1m  density gt= 605.0 sys= 
+    949.0 mass=   81%   t=0.80ms\r\n  anti-Gold    gt=(   73,   54, -137) sys=(  
+    66,   57, -129) \u0394=   11.5m  density gt= 816.0 sys= 1292.0 mass=   81%  
+    t=1.00ms\r\n  all-domain   gt=(   75,   53, -137) sys=(   68,   57, -128) \u0394=  
+    11.9m  density gt=1017.0 sys= 1596.0 mass=   80%   t=1.03ms\r\n\r\nScenario:
+    SingleCluster_OnGrid_r80\r\n  anti-Jade    gt=(  123,   61, -183) sys=(  123,  
+    56, -177) \u0394=    8.2m  density gt= 626.0 sys=  943.0 mass=   78%   t=0.90ms\r\n 
+    anti-Ruby    gt=(  129,   64, -185) sys=(  121,   56, -182) \u0394=   12.0m 
+    density gt= 602.0 sys=  931.0 mass=   80%   t=0.91ms\r\n  anti-Gold    gt=( 
+    124,   67, -183) sys=(  121,   60, -182) \u0394=    7.7m  density gt= 826.0 sys=
+    1269.0 mass=   79%   t=0.82ms\r\n  all-domain   gt=(  125,   64, -183) sys=( 
+    121,   58, -181) \u0394=    7.5m  density gt=1027.0 sys= 1561.0 mass=   79%  
+    t=1.08ms\r\n\r\nScenario: TightCluster_OffGrid_r30\r\n  anti-Jade    gt=(  169,  
+    48, -232) sys=(  171,   50, -226) \u0394=    6.1m  density gt=1172.0 sys= 1175.0
+    mass=   99%   t=0.65ms\r\n  anti-Ruby    gt=(  174,   49, -242) sys=(  173,  
+    49, -227) \u0394=   15.5m  density gt=1226.0 sys= 1230.0 mass=   99%   t=0.69ms\r\n 
+    anti-Gold    gt=(  171,   48, -232) sys=(  173,   50, -227) \u0394=    5.2m 
+    density gt=1588.0 sys= 1595.0 mass=   99%   t=0.60ms\r\n  all-domain   gt=( 
+    172,   49, -232) sys=(  172,   50, -227) \u0394=    5.1m  density gt=1993.0 sys=
+    2000.0 mass=   99%   t=0.59ms\r\n\r\nScenario: TwoEqualClusters_2000\r\n  anti-Jade   
+    gt=(  285,  247,  158) sys=(  275,  240,  148) \u0394=   15.8m  density gt= 312.0
+    sys=  486.0 mass=   78%   t=0.76ms\r\n  anti-Ruby    gt=(  283,  253,  153) sys=( 
+    178,  145, -287) \u0394=  465.0m  density gt= 301.0 sys=  481.0 mass=   77%  
+    t=0.77ms\r\n  anti-Gold    gt=(  286,  248,  155) sys=(  175,  144, -262) \u0394= 
+    443.9m  density gt= 415.0 sys=  644.0 mass=   77%   t=0.99ms\r\n  all-domain  
+    gt=(  285,  250,  155) sys=(  177,  146, -270) \u0394=  450.7m  density gt= 514.0
+    sys=  791.0 mass=   75%   t=1.03ms\r\n\r\nScenario: UniformRandom_2000_diag 
+    [DIFFUSE \u2014 diagnostic only]\r\n  anti-Jade    gt=( -375,  -96, -328) sys=(
+    -311,  -70, -312) \u0394=   71.2m  density gt=  24.0 sys=   44.0 mass=   63%  
+    t=0.66ms\r\n  anti-Ruby    gt=( -379,  -96, -392) sys=( -397, -181, -413) \u0394=  
+    89.0m  density gt=  25.0 sys=   50.0 mass=   68%   t=0.67ms\r\n  anti-Gold   
+    gt=( -380,  -96, -388) sys=(  -19,  209,  -18) \u0394=  600.6m  density gt= 
+    28.0 sys=   59.0 mass=   43%   t=0.74ms\r\n  all-domain   gt=( -376,  -95, -333)
+    sys=( -325, -119, -289) \u0394=   71.8m  density gt=  36.0 sys=   75.0 mass=  
+    50%   t=0.85ms\r\n\r\n  total query time: 154.0ms across 40 queries\r\n\r\n---
+    Algorithm: GridMassSmoothedInterpCentroid32 ---\r\nScenario: DomainSegregated_K3_clean\r\n 
+    anti-Jade    gt=(   26, -186, -143) sys=(   37, -173, -153) \u0394=   19.3m 
+    density gt= 371.0 sys=  418.0 mass=   77%   t=1.08ms\r\n  anti-Ruby    gt=( 
+    134,  -46, -199) sys=(  129,  -65, -205) \u0394=   20.3m  density gt= 387.0 sys= 
+    444.0 mass=   77%   t=1.08ms\r\n  anti-Gold    gt=(   37, -202, -181) sys=(  
+    53, -208, -186) \u0394=   18.4m  density gt= 562.0 sys=  633.0 mass=   79%  
+    t=1.21ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   59, -192, -184) \u0394=   
+    4.7m  density gt= 620.0 sys=  717.0 mass=   79%   t=1.15ms\r\n\r\nScenario: DomainSegregated_K3_stale30\r\n 
+    anti-Jade    gt=(   26, -186, -143) sys=(   58, -168, -170) \u0394=   45.2m 
+    density gt= 371.0 sys=  608.0 mass=   72%   t=1.21ms\r\n  anti-Ruby    gt=( 
+    134,  -46, -199) sys=(   91, -167, -204) \u0394=  128.6m  density gt= 387.0 sys= 
+    638.0 mass=   74%   t=1.21ms\r\n  anti-Gold    gt=(   37, -202, -181) sys=(  
+    57, -207, -186) \u0394=   22.0m  density gt= 562.0 sys=  833.0 mass=   79%  
+    t=1.19ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   64, -191, -183) \u0394=   
+    8.8m  density gt= 620.0 sys=  912.0 mass=   79%   t=1.27ms\r\n\r\nScenario: MultiCluster_2000_K3\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   62, -202, -186) \u0394=   14.0m 
+    density gt= 443.0 sys=  501.0 mass=   79%   t=1.37ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   55, -183, -185) \u0394=   28.2m  density gt= 425.0 sys= 
+    489.0 mass=   79%   t=1.18ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    63, -190, -183) \u0394=    5.7m  density gt= 392.0 sys=  445.0 mass=   77%  
+    t=1.23ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   59, -192, -184) \u0394=   
+    4.7m  density gt= 620.0 sys=  717.0 mass=   79%   t=1.16ms\r\n\r\nScenario: MultiCluster_HeavyMass_K3\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   62, -202, -183) \u0394=   14.4m 
+    density gt= 443.0 sys= 1109.7 mass=   79%   t=1.09ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   54, -190, -178) \u0394=   23.5m  density gt= 425.0 sys=
+    1067.0 mass=   78%   t=1.16ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    66, -193, -180) \u0394=   10.6m  density gt= 392.0 sys=  976.1 mass=   78%  
+    t=1.07ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   59, -195, -180) \u0394=   
+    5.7m  density gt= 620.0 sys= 1576.4 mass=   78%   t=1.18ms\r\n\r\nScenario: MultiCluster_K3_stale30_uniformMix\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   67, -204, -186) \u0394=    8.9m 
+    density gt= 443.0 sys=  701.0 mass=   80%   t=1.33ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   60, -177, -184) \u0394=   35.2m  density gt= 425.0 sys= 
+    687.0 mass=   79%   t=1.26ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    70, -185, -184) \u0394=    8.6m  density gt= 392.0 sys=  640.0 mass=   78%  
+    t=1.42ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   64, -191, -183) \u0394=   
+    8.8m  density gt= 620.0 sys=  912.0 mass=   79%   t=1.26ms\r\n\r\nScenario: SingleCluster_OffGrid_r80\r\n 
+    anti-Jade    gt=(   76,   50, -134) sys=(   71,   53, -128) \u0394=    8.1m 
+    density gt= 615.0 sys=  670.0 mass=   80%   t=1.38ms\r\n  anti-Ruby    gt=(  
+    69,   57, -138) sys=(   72,   57, -130) \u0394=    8.8m  density gt= 605.0 sys= 
+    674.0 mass=   80%   t=1.07ms\r\n  anti-Gold    gt=(   73,   54, -137) sys=(  
+    70,   53, -131) \u0394=    6.5m  density gt= 816.0 sys=  906.0 mass=   80%  
+    t=1.10ms\r\n  all-domain   gt=(   75,   53, -137) sys=(   71,   54, -130) \u0394=   
+    8.0m  density gt=1017.0 sys= 1123.0 mass=   79%   t=1.13ms\r\n\r\nScenario: SingleCluster_OnGrid_r80\r\n 
+    anti-Jade    gt=(  123,   61, -183) sys=(  122,   57, -181) \u0394=    4.9m 
+    density gt= 626.0 sys=  696.0 mass=   78%   t=1.12ms\r\n  anti-Ruby    gt=( 
+    129,   64, -185) sys=(  123,   60, -182) \u0394=    8.1m  density gt= 602.0 sys= 
+    690.0 mass=   80%   t=1.13ms\r\n  anti-Gold    gt=(  124,   67, -183) sys=( 
+    123,   61, -183) \u0394=    5.8m  density gt= 826.0 sys=  934.0 mass=   78%  
+    t=1.15ms\r\n  all-domain   gt=(  125,   64, -183) sys=(  122,   60, -182) \u0394=   
+    5.1m  density gt=1027.0 sys= 1160.0 mass=   79%   t=1.24ms\r\n\r\nScenario: TightCluster_OffGrid_r30\r\n 
+    anti-Jade    gt=(  169,   48, -232) sys=(  171,   50, -226) \u0394=    5.9m 
+    density gt=1172.0 sys= 1171.0 mass=   99%   t=1.20ms\r\n  anti-Ruby    gt=( 
+    174,   49, -242) sys=(  173,   49, -227) \u0394=   15.4m  density gt=1226.0 sys=
+    1229.0 mass=   99%   t=1.22ms\r\n  anti-Gold    gt=(  171,   48, -232) sys=( 
+    173,   50, -227) \u0394=    5.1m  density gt=1588.0 sys= 1592.0 mass=   99%  
+    t=1.34ms\r\n  all-domain   gt=(  172,   49, -232) sys=(  172,   50, -227) \u0394=   
+    5.0m  density gt=1993.0 sys= 1996.0 mass=   99%   t=1.21ms\r\n\r\nScenario: TwoEqualClusters_2000\r\n 
+    anti-Jade    gt=(  285,  247,  158) sys=(  282,  246,  149) \u0394=   10.0m 
+    density gt= 312.0 sys=  352.0 mass=   78%   t=1.09ms\r\n  anti-Ruby    gt=( 
+    283,  253,  153) sys=(  289,  243,  139) \u0394=   17.7m  density gt= 301.0 sys= 
+    333.0 mass=   81%   t=1.12ms\r\n  anti-Gold    gt=(  286,  248,  155) sys=( 
+    287,  247,  148) \u0394=    8.0m  density gt= 415.0 sys=  455.0 mass=   80%  
+    t=1.10ms\r\n  all-domain   gt=(  285,  250,  155) sys=(  285,  245,  146) \u0394=  
+    10.5m  density gt= 514.0 sys=  570.0 mass=   79%   t=1.10ms\r\n\r\nScenario:
+    UniformRandom_2000_diag  [DIFFUSE \u2014 diagnostic only]\r\n  anti-Jade    gt=(
+    -375,  -96, -328) sys=( -374,  -91, -310) \u0394=   19.1m  density gt=  24.0
+    sys=   25.0 mass=   63%   t=1.39ms\r\n  anti-Ruby    gt=( -379,  -96, -392) sys=(
+    -397, -102, -412) \u0394=   27.5m  density gt=  25.0 sys=   27.0 mass=   60%  
+    t=1.18ms\r\n  anti-Gold    gt=( -380,  -96, -388) sys=(   -3,  -63,  -11) \u0394= 
+    534.0m  density gt=  28.0 sys=   30.0 mass=   61%   t=1.17ms\r\n  all-domain  
+    gt=( -376,  -95, -333) sys=( -391,  -98, -360) \u0394=   31.0m  density gt= 
+    36.0 sys=   38.0 mass=   53%   t=1.16ms\r\n\r\n  total query time: 198.4ms across
+    40 queries\r\n\r\n--- Algorithm: GridMassSmoothedInterpMeanShift32 ---\r\nScenario:
+    DomainSegregated_K3_clean\r\n  anti-Jade    gt=(   26, -186, -143) sys=(   30,
+    -186, -153) \u0394=   10.8m  density gt= 371.0 sys=  418.0 mass=   78%   t=1.54ms\r\n 
+    anti-Ruby    gt=(  134,  -46, -199) sys=(  131,  -55, -210) \u0394=   14.8m 
+    density gt= 387.0 sys=  444.0 mass=   75%   t=1.55ms\r\n  anti-Gold    gt=(  
+    37, -202, -181) sys=(   51, -210, -186) \u0394=   17.1m  density gt= 562.0 sys= 
+    633.0 mass=   79%   t=1.48ms\r\n  all-domain   gt=(   58, -196, -186) sys=(  
+    54, -196, -184) \u0394=    4.1m  density gt= 620.0 sys=  717.0 mass=   79%  
+    t=1.85ms\r\n\r\nScenario: DomainSegregated_K3_stale30\r\n  anti-Jade    gt=(  
+    26, -186, -143) sys=(   47, -187, -165) \u0394=   29.7m  density gt= 371.0 sys= 
+    608.0 mass=   73%   t=1.98ms\r\n  anti-Ruby    gt=(  134,  -46, -199) sys=(  
+    83, -183, -202) \u0394=  146.1m  density gt= 387.0 sys=  638.0 mass=   76%  
+    t=2.01ms\r\n  anti-Gold    gt=(   37, -202, -181) sys=(   56, -204, -184) \u0394=  
+    19.4m  density gt= 562.0 sys=  833.0 mass=   79%   t=1.92ms\r\n  all-domain  
+    gt=(   58, -196, -186) sys=(   58, -194, -183) \u0394=    3.5m  density gt= 620.0
+    sys=  912.0 mass=   78%   t=2.14ms\r\n\r\nScenario: MultiCluster_2000_K3\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   55, -197, -185) \u0394=   21.0m 
+    density gt= 443.0 sys=  501.0 mass=   77%   t=1.56ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   52, -188, -187) \u0394=   24.0m  density gt= 425.0 sys= 
+    489.0 mass=   78%   t=1.68ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    57, -204, -185) \u0394=   17.7m  density gt= 392.0 sys=  445.0 mass=   77%  
+    t=1.51ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   54, -196, -184) \u0394=   
+    4.1m  density gt= 620.0 sys=  717.0 mass=   79%   t=1.78ms\r\n\r\nScenario: MultiCluster_HeavyMass_K3\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   56, -200, -185) \u0394=   20.1m 
+    density gt= 443.0 sys= 1109.7 mass=   77%   t=1.82ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   51, -192, -180) \u0394=   19.7m  density gt= 425.0 sys=
+    1067.0 mass=   78%   t=1.74ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    58, -211, -183) \u0394=   24.2m  density gt= 392.0 sys=  976.1 mass=   78%  
+    t=1.64ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   55, -197, -183) \u0394=   
+    4.1m  density gt= 620.0 sys= 1576.4 mass=   79%   t=1.79ms\r\n\r\nScenario: MultiCluster_K3_stale30_uniformMix\r\n 
+    anti-Jade    gt=(   76, -202, -186) sys=(   61, -195, -185) \u0394=   16.9m 
+    density gt= 443.0 sys=  701.0 mass=   79%   t=1.86ms\r\n  anti-Ruby    gt=(  
+    33, -199, -178) sys=(   58, -190, -184) \u0394=   27.3m  density gt= 425.0 sys= 
+    687.0 mass=   78%   t=1.93ms\r\n  anti-Gold    gt=(   63, -188, -188) sys=(  
+    61, -197, -183) \u0394=   11.2m  density gt= 392.0 sys=  640.0 mass=   78%  
+    t=2.70ms\r\n  all-domain   gt=(   58, -196, -186) sys=(   58, -194, -183) \u0394=   
+    3.5m  density gt= 620.0 sys=  912.0 mass=   78%   t=1.98ms\r\n\r\nScenario: SingleCluster_OffGrid_r80\r\n 
+    anti-Jade    gt=(   76,   50, -134) sys=(   67,   53, -129) \u0394=   10.1m 
+    density gt= 615.0 sys=  670.0 mass=   80%   t=2.41ms\r\n  anti-Ruby    gt=(  
+    69,   57, -138) sys=(   68,   60, -128) \u0394=   11.1m  density gt= 605.0 sys= 
+    674.0 mass=   81%   t=1.68ms\r\n  anti-Gold    gt=(   73,   54, -137) sys=(  
+    66,   57, -129) \u0394=   11.4m  density gt= 816.0 sys=  906.0 mass=   81%  
+    t=1.73ms\r\n  all-domain   gt=(   75,   53, -137) sys=(   67,   57, -128) \u0394=  
+    12.0m  density gt=1017.0 sys= 1123.0 mass=   80%   t=1.91ms\r\n\r\nScenario:
+    SingleCluster_OnGrid_r80\r\n  anti-Jade    gt=(  123,   61, -183) sys=(  120,  
+    57, -180) \u0394=    6.3m  density gt= 626.0 sys=  696.0 mass=   78%   t=1.50ms\r\n 
+    anti-Ruby    gt=(  129,   64, -185) sys=(  122,   56, -182) \u0394=   11.2m 
+    density gt= 602.0 sys=  690.0 mass=   80%   t=1.66ms\r\n  anti-Gold    gt=( 
+    124,   67, -183) sys=(  122,   60, -183) \u0394=    7.1m  density gt= 826.0 sys= 
+    934.0 mass=   78%   t=1.49ms\r\n  all-domain   gt=(  125,   64, -183) sys=( 
+    122,   58, -182) \u0394=    6.7m  density gt=1027.0 sys= 1160.0 mass=   79%  
+    t=1.63ms\r\n\r\nScenario: TightCluster_OffGrid_r30\r\n  anti-Jade    gt=(  169,  
+    48, -232) sys=(  171,   50, -226) \u0394=    6.1m  density gt=1172.0 sys= 1171.0
+    mass=   99%   t=1.28ms\r\n  anti-Ruby    gt=(  174,   49, -242) sys=(  173,  
+    49, -227) \u0394=   15.4m  density gt=1226.0 sys= 1229.0 mass=   99%   t=1.34ms\r\n 
+    anti-Gold    gt=(  171,   48, -232) sys=(  173,   50, -227) \u0394=    5.2m 
+    density gt=1588.0 sys= 1592.0 mass=   99%   t=1.40ms\r\n  all-domain   gt=( 
+    172,   49, -232) sys=(  172,   50, -227) \u0394=    5.1m  density gt=1993.0 sys=
+    1996.0 mass=   99%   t=1.47ms\r\n\r\nScenario: TwoEqualClusters_2000\r\n  anti-Jade   
+    gt=(  285,  247,  158) sys=(  275,  242,  148) \u0394=   15.3m  density gt= 312.0
+    sys=  352.0 mass=   77%   t=1.57ms\r\n  anti-Ruby    gt=(  283,  253,  153) sys=( 
+    289,  243,  133) \u0394=   22.6m  density gt= 301.0 sys=  333.0 mass=   80%  
+    t=1.52ms\r\n  anti-Gold    gt=(  286,  248,  155) sys=(  280,  253,  147) \u0394=  
+    11.0m  density gt= 415.0 sys=  455.0 mass=   79%   t=1.77ms\r\n  all-domain  
+    gt=(  285,  250,  155) sys=(  282,  246,  145) \u0394=   10.9m  density gt= 514.0
+    sys=  570.0 mass=   79%   t=1.59ms\r\n\r\nScenario: UniformRandom_2000_diag 
+    [DIFFUSE \u2014 diagnostic only]\r\n  anti-Jade    gt=( -375,  -96, -328) sys=(
+    -420,  -88, -325) \u0394=   46.1m  density gt=  24.0 sys=   25.0 mass=   58%  
+    t=1.40ms\r\n  anti-Ruby    gt=( -379,  -96, -392) sys=( -392, -159, -422) \u0394=  
+    70.5m  density gt=  25.0 sys=   27.0 mass=   60%   t=1.44ms\r\n  anti-Gold   
+    gt=( -380,  -96, -388) sys=(    9,  -62,   28) \u0394=  570.6m  density gt= 
+    28.0 sys=   30.0 mass=   54%   t=1.82ms\r\n  all-domain   gt=( -376,  -95, -333)
+    sys=( -413, -112, -385) \u0394=   65.6m  density gt=  36.0 sys=   38.0 mass=  
+    58%   t=1.78ms\r\n\r\n  total query time: 287.8ms across 40 queries\r\n\r\n===
+    Summary (Peaked scenarios \u2014 headline ranking) ===\r\nAlgorithm                                
+    median\u0394(m)  medianMass%    medianMs     worstMs\r\nGridArgmax17 (current
+    production)              56.7          71%        0.09*       0.10*\r\nGridSmoothed17
+    (sibling baseline)              55.9          70%        0.22        0.23 \r\nGridSmoothedInterp17                          
+    45.0          74%        0.21        0.23 \r\nGridMassSmoothedInterp17                      
+    42.7          74%        0.21        0.23 \r\nGridMassSmoothedInterp32                      
+    10.8          79%        1.01        1.10 \r\nGridMassSmoothedInterpCentroid17              
+    30.7          75%        0.39        0.41 \r\nGridMassSmoothedInterpMeanShift17             
+    13.5          78%        0.92        0.95 \r\nGridMassSmoothedInterpCentroid32               
+    8.8*         79%*       1.18        1.21 \r\nGridMassSmoothedInterpMeanShift32             
+    11.3          79%        1.68        1.80 \r\n\r\n  *  marks the best algorithm
+    per column. Lower-is-better except medianMass% (higher).\r\n  worstMs = max of
+    3 timing repeats per query, then median across queries. Jitter floor.\r\n\r\n===
+    Summary (Diffuse scenarios \u2014 diagnostic only, no peak exists) ===\r\nAlgorithm                                
+    median\u0394(m)  medianMass%    medianMs     worstMs\r\nGridArgmax17 (current
+    production)              500.5          37%        0.09        0.10\r\nGridSmoothed17
+    (sibling baseline)               88.5          35%        0.22        0.25\r\nGridSmoothedInterp17                           
+    72.5          46%        0.23        0.25\r\nGridMassSmoothedInterp17                       
+    72.5          46%        0.21        0.22\r\nGridMassSmoothedInterp32                       
+    18.1          58%        1.04        1.08\r\nGridMassSmoothedInterpCentroid17               
+    70.5          51%        0.38        0.40\r\nGridMassSmoothedInterpMeanShift17              
+    80.4          56%        0.70        0.73\r\nGridMassSmoothedInterpCentroid32               
+    29.3          60%        1.17        1.23\r\nGridMassSmoothedInterpMeanShift32              
+    68.0          58%        1.61        1.69\r\n\r\n=== Per-scenario winners + stability
+    (Peaked only) ===\r\nScenario                           Winner (smallest median\u0394)             
+    winner\u0394(m) winnerStab(m)\r\nDomainSegregated_K3_clean          GridMassSmoothedInterpMeanShift32          
+    12.8       103.9\r\nDomainSegregated_K3_stale30        GridMassSmoothedInterpMeanShift32          
+    24.6        30.0\r\nMultiCluster_2000_K3               GridMassSmoothedInterpCentroid32            
+    9.8        10.4\r\nMultiCluster_HeavyMass_K3          GridMassSmoothedInterpCentroid32           
+    12.5         8.9\r\nMultiCluster_K3_stale30_uniformMix GridMassSmoothedInterpCentroid32            
+    8.8        13.9\r\nSingleCluster_OffGrid_r80          GridMassSmoothedInterp32                    
+    7.0         6.3\r\nSingleCluster_OnGrid_r80           GridMassSmoothedInterp32                    
+    4.2         2.6\r\nTightCluster_OffGrid_r30           GridMassSmoothedInterp32                    
+    3.4         3.2\r\nTwoEqualClusters_2000              GridMassSmoothedInterp32                   
+    10.0         6.2\r\n\r\nStability = median pairwise distance between the algorithm's
+    4 query answers\r\non the same scenario. A scenario with one dominant cluster
+    should produce a low\r\nstability number (answers cluster together). High stability
+    + low \u0394 together =\r\n'algorithm flips between equivalent answers across
+    queries' (TwoEqualClusters at\r\nlow grid resolution is the canonical example).\r\n\r\n===
+    Cross-algorithm stability on each Peaked scenario ===\r\n(median pairwise distance
+    between the 4 query answers \u2014 lower = more stable)\r\n\r\nScenario                          
+    GridArgmax17 (current  GridSmoothed17 (siblin GridSmoothedInterp17   GridMassSmoothedInterp
+    GridMassSmoothedInterp GridMassSmoothedInterp GridMassSmoothedInterp GridMassSmoothedInterp
+    GridMassSmoothedInterp\r\nDomainSegregated_K3_clean                          
+    41.6m                  92.5m                  55.3m                  55.3m                 
+    94.9m                  62.1m                  73.2m                  98.6m                
+    103.9m\r\nDomainSegregated_K3_stale30                         41.6m                 
+    92.5m                  46.1m                  46.1m                  44.3m                 
+    43.0m                  46.9m                  41.2m                  30.0m\r\nMultiCluster_2000_K3                               
+    71.0m                  29.4m                  10.2m                  10.2m                 
+    12.8m                   6.0m                   6.6m                  10.4m                  
+    8.7m\r\nMultiCluster_HeavyMass_K3                           71.0m                 
+    29.4m                  10.2m                  11.6m                  15.0m                  
+    8.5m                   6.8m                   8.9m                  10.7m\r\nMultiCluster_K3_stale30_uniformMix                 
+    71.0m                  29.4m                   8.1m                   8.1m                 
+    17.9m                   4.2m                   4.2m                  13.9m                  
+    3.9m\r\nSingleCluster_OffGrid_r80                           41.6m                  
+    0.0m                   3.8m                   3.8m                   6.3m                  
+    4.0m                   4.1m                   3.6m                   4.0m\r\nSingleCluster_OnGrid_r80                           
+    29.4m                  58.8m                   8.3m                   8.3m                  
+    2.6m                   5.9m                   4.3m                   2.3m                  
+    2.5m\r\nTightCluster_OffGrid_r30                             0.0m                 
+    29.4m                   1.1m                   1.1m                   3.2m                  
+    0.8m                   0.8m                   0.9m                   0.9m\r\nTwoEqualClusters_2000                             
+    276.9m                 216.1m                 227.9m                 227.9m                  
+    6.2m                 226.9m                 228.7m                   6.6m                 
+    13.0m\r\n\r\nInterpretation:\r\n  Headline rank is median\u0394 on Peaked scenarios
+    \u2014 that's the only metric\r\n  where 'algorithm accuracy' is meaningful.
+    Diffuse scenarios have no peak\r\n  and exist only to surface noise-floor behavior.\r\n\r\n 
+    Use this report as the falsifiable contract for any redesign. A candidate\r\n 
+    algorithm must beat the current production row (GridArgmax17) on at least\r\n 
+    one of median\u0394 / medianMass% / medianMs without regressing the other two.\r\n"
+--- !u!4 &1487394312
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1487394310}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1487394313
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1487394310}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 814ee89e39d542a0a2e9a53dbc2f926b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  simDurationSeconds: 300
+  tickIntervalSeconds: 0.5
+  cellMembraneRadius: 1200
+  seed: 42
+  innerFloraCount: 60
+  outerFloraCount: 60
+  floraGrowthIntervalSeconds: 1.5
+  floraScatterRadius: 80
+  thresholdScale: 0.15
+  faunaConsumeRadius: 40
+  faunaConsumePerTickInRange: 3
+  faunaSpeed: 250
+  faunaGoalUpdateIntervalSeconds: 5
+  faunaGoalOrbitRadius: 60
+  faunaPopulationCap: 40
+  faunaSpawnIntervalSeconds: 2
+  timeSeriesSampleEverySeconds: 10
+  lastReport: 
+--- !u!1660057539 &9223372036854775807
+SceneRoots:
+  m_ObjectHideFlags: 0
+  m_Roots:
+  - {fileID: 1487394312}

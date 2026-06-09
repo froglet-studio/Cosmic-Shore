@@ -1951,7 +1951,17 @@ ones.
   structures. Sometimes referred to casually as "color"; the canonical term
   is *domain*.
 - **Mass** — the produced/consumed quantity that drives scoring, fueling,
-  and cell control.
+  and cell control. **Mass is conserved: it has no passive decay.** A prism
+  (the concrete unit of mass), once created, is only ever removed by an
+  *active* force — a vessel using an ability, or fauna eating it. There is no
+  aging, lifespan, timed culler, or growth/decay oscillator anywhere in the
+  mass pipeline. Population homeostasis is the job of the **food web** (fauna
+  consume mass; fauna starve when prey is scarce), never of artificial decay.
+  A large accumulation of prisms is therefore a *valid* state, not a bug to
+  auto-correct: it persists until an active force consumes it, and when the
+  fauna that would eat it can't reach prey, the correction surfaces as fauna
+  starving — not as prisms vanishing. See "Don't cheat emergence" below and
+  `Docs/ECOSYSTEM.md`.
 - **Cells** (with `CellType`) — the regions of play that are the unit of
   territorial control. Casual language sometimes calls these "biomes"; the
   canonical term is *cell*.
@@ -1961,7 +1971,10 @@ ones.
 - **Prisms / Prismscapes** — the geometric primitive of player-generated
   structure. Trails are the 1-dimensional case of a prismscape; higher-
   dimensional prism constructions are planned and should reuse this
-  primitive rather than introducing parallel structure types.
+  primitive rather than introducing parallel structure types. Prisms *are*
+  conserved mass (see **Mass**): only active forces — vessel abilities and
+  fauna consumption — remove a prism. Whether a prism is a lifeform's health-
+  prism or vessel-spawned makes no difference to this rule.
 - **Flora & Fauna** — populations that live on and respond to the
   fundamentals above (e.g. fauna attraction to prisms, flora growth on
   cells).
@@ -2040,6 +2053,25 @@ things so the balance is achieved by construction. Before taking that
 shortcut — for instance, before reading fauna placement data and acting on
 it to short-circuit the attraction behavior — ask the prompter whether they
 want the cheat or the emergent solution.
+
+**Example (resolved): prism decay is a cheat — mass is conserved.** Cells fill
+with the dominant domain's flora and "freeze solid": fauna only eat *opposing*
+mass, so the leader's flora have no predator and the prism count never falls.
+The tempting fix is **passive prism decay** — prisms age and die on a timer (or
+a cell-level reaper culls N per tick) so the count drops on its own and flora
+resume growing through the phase hysteresis. **That is a cheat** — a timed
+culler is just the flora regrowth-pulse inverted, a hard-coded oscillator
+reaching past the fundamentals to manufacture the breathing we want to *emerge*.
+The decided answer (do not relitigate): **prisms are conserved; the only sinks
+are active — vessel abilities and fauna consumption.** The down-force on a
+dominant accumulation is the **food web**: opposing-domain fauna graze it down,
+or, when no fauna can reach edible prey, the population crashes via starvation.
+A large accumulation that nothing is eating is a *valid* equilibrium, not a
+defect to auto-correct. If a future cell "freezes," fix it by giving an active
+force a reason/ability to consume that mass (or by tuning fauna diet, reach, and
+spawning) — never by adding decay. The flora regrowth pulse that currently
+exists is the growth-side counterpart of this same cheat and is flagged for
+retirement, not extension. See `Docs/ECOSYSTEM.md`.
 
 ### When in doubt
 

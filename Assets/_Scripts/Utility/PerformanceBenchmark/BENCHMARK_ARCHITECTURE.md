@@ -1,141 +1,241 @@
-# Performance Benchmark Tool — Tabs (plain Notion version)
+# Performance Benchmark — Architecture Gist (for diagramming)
 
-No Mermaid — just text + ASCII so it pastes into Notion cleanly. Each tab below has:
-**what it is · what data it captures · a small picture.**
+This is a **structured gist of how the tool is wired**, written so it can be pasted into a chat to
+generate an architecture diagram. It lists the components, what each one does, who calls whom, and
+the data flow — with extra depth on the **Runtime Capture** and **Sweep** tabs. Plain text + ASCII,
+no Mermaid.
 
----
+The one rule that explains the whole design:
 
-## The whole tool in one picture
-
-```
-                ┌──────────────── Benchmark Window ────────────────┐
-                │ Collect │ Runtime Capture │ Sweep │ History │ Compare │
-                └───┬────────────┬────────────┬─────────┬─────────┬─────┘
-                    │            │            │         │         │
-              one fixed     free-play,     many       saved     A vs B
-              run of a      live spike     scenes /    runs      diff
-              scene         breakdown      a data set  list
-                    │            │            │
-                    └────────► Runner (measures during Play) ◄─────┘
-                                     │
-                   per-frame data  +  spikes (script breakdown)
-                                     │
-                            Report (JSON)  ──►  saved to History
-```
-
-> **Runner** = the one thing that actually measures while the game runs.
-> Every tab is just a different way to *start* it or *read* its output.
+> **The `PerformanceBenchmarkRunner` is the only thing that measures.** Everything else either
+> *starts* it, *reads* its output, or is a *separate on-screen readout*. Every tab is a different
+> front-end onto that one runtime collector.
 
 ---
 
-## Tab 1 — Collect
-
-**What:** one controlled run of a single scene — warm up a few seconds, then
-measure for a fixed window. Produces a score, hints, and the worst spikes.
-
-**Good for:** a repeatable yardstick. Same scene, same length, every time → you can
-Compare runs and catch regressions.
-
-**Honest note:** for *exploring* "why did it just hitch?" this is clunky — fixed
-window, you don't pick the moment. That's what **Runtime Capture** is for.
-→ Suggestion: keep Collect as the *fixed benchmark*, and use Runtime Capture day-to-day.
-
-**Captures:** fps · frame time (avg/p95/p99) · CPU/GPU split · draws/tris · memory/GC ·
-netcode · gameplay load (prisms/VFX/vessels) · top spikes.
+## 1. Layers (top → bottom)
 
 ```
-pick scene + config ─► Start (enters Play) ─► warmup ─► sample N s ─► Report + Score + Hints
-```
-
----
-
-## Tab 2 — Runtime Capture   ⭐ (the one you liked)
-
-**What:** Start/Stop while you **freely play**. Low overhead. Every frame that spikes
-is broken down into the **script methods** that caused it (editor noise filtered out).
-Shows live on screen, and a **"Copy for Claude"** button dumps a clean text block —
-so no more screenshots.
-
-**Good for:** "the game just hitched — what was it?" You play, it watches, it names the scripts.
-
-**Captures per frame:** frame time · CPU main-thread · physics · GC · draws/tris.
-**Captures per spike:** frame # · frame ms · top script self-times
-(e.g. `ObjectiveIndicator.LateUpdate()  17 ms`).
-
-```
-Start ─► play freely ─► [spike?] ─► grab script breakdown ─► live list
-                                                   │
-                                   Stop ─► save .json  +  Copy-for-Claude text
+┌─────────────────────────────── EDITOR (UnityEditor, #if UNITY_EDITOR) ───────────────────────────────┐
+│                                                                                                       │
+│   PerformanceBenchmarkWindow  ──tabs──►  Runtime Capture │ Sweep │ History │ Compare                  │
+│        │                                                                                              │
+│        │ starts / reads                         enriches spikes (off game thread)                    │
+│        ▼                                              ▲                                               │
+│   SpikeAnalyzer (ProfilerDriver / HierarchyFrameDataView — editor-only marker self-time)             │
+│        │                                                                                              │
+│   EditorUIStyles · BenchmarkHistory · BenchmarkComparer · BenchmarkAutoStart                          │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                  │ creates GameObjects in Play Mode                 ▲ reads .Spikes / .LastReport
+                  ▼                                                  │
+┌─────────────────────────────── RUNTIME (MonoBehaviours, exist in Play Mode) ─────────────────────────┐
+│                                                                                                       │
+│   PerformanceBenchmarkRunner  ◄── the only measurer (end-of-frame, zero-alloc)                       │
+│        ├─ samples FrameSnapshot/frame  ── ProfilerRecorder (Render/Memory/Physics) + FrameTimingMgr   │
+│        ├─ GameLoadSampler   ── prisms / VFX / vessels / players from gameplay singletons              │
+│        ├─ NetMarkers        ── CSM.Net.* markers + RPC/NetVar/bytes counters (read back as recorders) │
+│        └─ on stop ─► BenchmarkStatistics ─► BenchmarkAnalysis (score+grade+hints) ─► BenchmarkReport  │
+│                                                                                                       │
+│   ManualSweepSession   ── Sweep companion: error/exception log + F8 marks (near-zero overhead)        │
+│                                                                                                       │
+│   DiagnosticsHUD (F7)  ── auto-spawn uGUI overlay, editor + DEV builds, own Run-Diagnostic export     │
+│   BenchmarkHUDOverlay (F9) ── editor IMGUI eyeball overlay                                            │
+│   ProfilerCsvLogger    ── standalone per-frame CSV dump (menu-driven)                                 │
+│   BenchmarkBuildAutoRunner ── headless dev-build self-runner (-csmbench)                              │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────┘
+                  │ writes
+                  ▼
+┌─────────────────────────────── STORAGE (plain JSON / text on disk) ──────────────────────────────────┐
+│   persistentDataPath/Benchmarks/*.json   (+ benchmark_index.json, _collect_lastrun, _sweep_lastrun)   │
+│   persistentDataPath/PerfRuns/*.json     (dev-build self-capture, origin=DevBuild)                    │
+│   persistentDataPath/ProfilerCaptures/*.csv (+ _summary.txt)                                          │
+│   Documents/CosmicShore Diagnostics/diag_*.json (+ .txt)  (DiagnosticsHUD)                            │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Tab 3 — Sweep   (reworked: a data set, two modes)
+## 2. The measurer — `PerformanceBenchmarkRunner` (runtime)
 
-**Idea:** build a *data set* of the game's performance, not just one scene.
+A MonoBehaviour created in Play Mode. Samples **once per frame at end-of-frame**, into a
+pre-allocated ring of `FrameSnapshot`s (so steady-state allocation ≈ 0 — verified by the
+"collector overhead" self-check).
 
-**Manual mode (build now):** start the sweep, then **play the game yourself**. It records
-in the background with **minimal FPS disturbance**, captures **errors / exceptions**, and
-lets you **mark moments** ("boss fight", "this felt bad"). Real-play data + annotated
-problem spots + error log — the creative one.
-
-**Automatic mode (future):** the tool loads each scene in turn, runs a scripted capture,
-moves to the next — hands-off regression sweep. *(parked for later)*
-
-```
-Manual:    Start ─► you play ─► [ errors + your marks + frames ] ─► data set
-Automatic: for each scene ─► auto-load ─► capture ─► next ─► combined report   (future)
-```
-
-**Captures (manual):** everything Runtime Capture does + a per-session **error list**
-(message + when) + your **marks** (label + timestamp).
-
----
-
-## Tab 4 — History
-
-Every saved run, newest first. **Tag** them ("GDC_demo", "after-trail-fix"), reopen, or
-send one to Compare. Backed by JSON files on disk.
-
-```
-[ run 12  HexRace   12.5 fps   tag: baseline ]
-[ run 11  Menu      58 fps     tag: trail-cap ]   ← click → Open / Baseline / Current
-```
+- **Inputs per frame:** `Time.unscaledDeltaTime`; `ProfilerRecorder`s for Render (Draw Calls,
+  SetPass, Batches, Triangles, Vertices), Memory (GC Allocated In Frame, reserved/used), Physics
+  (active rigidbodies); `FrameTimingManager` for CPU/GPU split; `GameLoadSampler` for gameplay
+  counts; `NetMarkers` counters for netcode.
+- **Two run shapes** (`StartBenchmark(freeForm)`):
+  - **free-form (Runtime Capture, Manual Sweep):** *skip warmup, sample immediately, record until
+    Stop* (or until the frame buffer fills, `MaxFreeFormSeconds`).
+  - **fixed (automatic sweep, dev-build):** *warmup `Config.WarmupDuration` → sample
+    `Config.SampleDuration` → auto-finish*.
+- **Spikes (free-form):** a frame over threshold is recorded as a lightweight `SpikeEntry`
+  (`frameIndex`, `frameTimeMs`, CPU/GPU, and crucially a `profilerFrameIndex`). The **expensive
+  script breakdown is NOT done here** — only the cheap frame index is stored, so capturing a spike
+  costs ~microseconds (this is the fix for the old "capture storm").
+- **On stop → `FinishRun`:** aggregates into `BenchmarkStatistics`, runs `BenchmarkAnalysis`
+  (score + grade + hints), assembles a `BenchmarkReport`, exposes `.LastReport` / `.LastReportPath`.
+- **Public surface the window reads:** `IsRunning`, `IsFreeForm`, `FramesCaptured`, `Spikes`,
+  `LastReport`, `LastReportPath`, `AutoSave`, `Configure(config, data, gameData, hintRules)`,
+  `StartBenchmark(bool)`, `StopBenchmark()`.
 
 ---
 
-## Tab 5 — Compare
+## 3. Tab front-ends (editor)
 
-Pick a **baseline** and a **current** run → side-by-side diff of the key numbers
-(fps, p99, draws, GC, spikes). Green = better, red = worse. This is how you *prove* a fix worked.
+### 3a. Runtime Capture  (internal enum `Tab.Collect`, displayed "Runtime Capture")
+
+The free-play recorder. Flow and ownership:
 
 ```
-                 baseline      current     Δ
-   avg fps        12.5          24.0     +11.5  ▲
-   p99 ms        168           70        -98    ▲
-   GC KB/f       100           40        -60    ▲
+[Setup foldout]  Config / HintRules / GameData / "Capture spike breakdowns" toggle / Spawn F9 overlay
+        │
+   ● Start Recording ──► StartFreeFormInCurrentPlay()
+        │                   ├─ find or create PerformanceBenchmarkRunner GameObject
+        │                   ├─ if breakdowns on: SpikeAnalyzer.SetProfilerEnabled(true)
+        │                   ├─ ClearRecent()  (discard previous unsaved run + cache)
+        │                   ├─ Configure(...) ; AutoSave=false
+        │                   └─ StartBenchmark(freeForm:true)
+        │
+   while running ─► DrawRecordingStatus()      (live: frames · spikes · Live Spikes list + filters)
+        │            window.Update() ─► EnrichPendingSpikes()  ◄── KEY: spike breakdown happens HERE,
+        │                                  rate-limited (0.35s), worst-first, off the game frame,
+        │                                  via SpikeAnalyzer.TryGetTopMarkers(profilerFrameIndex)
+        │
+   ■ Stop & Analyze ─► runner.StopBenchmark() ─► runner.LastReport
+        │
+   adopt report ─► cache to Benchmarks/_collect_lastrun.json  (survives leaving Play Mode)
+        │
+   [📋 Copy error log]  BuildClaudeReportText(report) → system clipboard  (stats+spikes+hints, Claude-ready)
+   [Save]               report.SaveToFile + BenchmarkHistory.AddToHistory
+   [Clear Recent]       discard report + delete cache
 ```
+
+- **Live Spikes filters:** `spikeScriptsOnly` · `spikeShowCount` (5/10/20/All) · `spikeSearch` text.
+- **Low-overhead mode** = "Capture spike breakdowns" OFF → no Profiler enable, no hierarchy walks →
+  records frame time / fps / stability only (true smoothness read).
+- **State-driven UI:** while recording it shows only the live status + spikes; idle shows one
+  state-appropriate primary button (Enter Play / Start Recording) + the Copy/Save/Clear row.
+
+### 3b. Sweep  (`Tab.Sweep`) — two modes
+
+**Manual Session (primary).** Two runtime objects run together:
+
+```
+● Start Session ──► StartManualSweep()
+        ├─ PerformanceBenchmarkRunner (free-form, low overhead — no profiler walks)   → frame stats
+        └─ ManualSweepSession.StartSession()                                          → errors + marks
+                ├─ Application.logMessageReceived → captures Error/Exception/Assert (timestamp+msg)
+                └─ F8 / Mark button → SweepMark(timestamp, fps, label)
+        │
+   live: "● Session — N frames · E errors · M marks"  + live Error list + Mark list
+        │
+   ■ Stop & Save ──► StopManualSweep()
+        ├─ runner.StopBenchmark() → LastReport (stats)
+        ├─ session.FillReport(report) → copies errors[] + marks[] INTO the same report
+        └─ cache to Benchmarks/_sweep_lastrun.json
+        │
+   results: stat foldouts (DrawResults) + Errors foldout + Marks foldout
+   [📋 Copy error log]  BuildSweepLogText(report)   [Save]   [Clear Recent]
+```
+
+> The Manual Session is the only place two runtime collectors compose: the **Runner** owns frame
+> stats, the **ManualSweepSession** owns the error log + marks, and `FillReport` merges them into one
+> `BenchmarkReport` before save.
+
+**Automatic (multi-scene) — experimental, foldout.** `BenchmarkSweepRunner.StartSweep(scenes, ...)`
+iterates selected Build-Settings scenes:
+- **Full sweep:** load → fixed benchmark → next; results to History (A–F grade per scene).
+- **Errors only (fast scan):** load briefly → catch errors → next; per-scene OK/ERR badge,
+  expandable messages. Networked scenes load uninitialized (no host/players).
+
+### 3c. History (`Tab.History`)
+
+Reads `BenchmarkHistory` (disk index). Per entry: score badge, FPS/frame stats, origin badge
+(Editor/DevBuild/Legacy), git branch/commit, tag. Actions: set Baseline/Current → Compare, Tag,
+reveal JSON, Delete, Rebuild Index, **Import External Run** (dev-build JSON from a device).
+
+### 3d. Compare (`Tab.Compare`)
+
+`BenchmarkComparer.Compare(baseline, current)` → per-metric diff (FPS, frame time, render, memory,
+netcode) with better/same/worse verdicts + counts banner + non-scored game-load context. **Cross-
+source guard**: warns when origin/platform differ (only same-source deltas are valid). Copy as text.
 
 ---
 
-## Where the data lives (all plain text — Claude can read it)
+## 4. On-screen overlays (independent of the window)
 
-| Source | File path |
-| --- | --- |
-| Collect / Sweep runs | `persistentDataPath/Benchmarks/*.json` |
-| Runtime Capture (CSV logger) | `persistentDataPath/ProfilerCaptures/*.csv  + _summary.txt` |
-| Dev-build self-capture | `persistentDataPath/PerfRuns/*.json` |
+### DiagnosticsHUD (F7) — the on-device tester overlay
+- `[RuntimeInitializeOnLoadMethod]` **auto-spawns** in Editor + Development builds (`#if
+  UNITY_EDITOR || DEVELOPMENT_BUILD`), DontDestroyOnLoad. Pure **uGUI** (own Canvas + EventSystem).
+- **Keys:** F7 toggle · F6 Advanced/Simple · F5 Run Diagnostic. On-screen buttons mirror these +
+  `–/+` duration.
+- **Two side-by-side blocks**, color-coded by health:
+  - Left = local frame cost: **FPS, Frame Time**, **Render** (Draw/Batches/SetPass/Tris/Verts),
+    **Memory** (GC KB/frame).
+  - Right = connection: **Network** (Ping=UTP RTT, NetVars, RPCs, Bytes/f), **Region** (OS region +
+    UTC offset).
+- **Run Diagnostic (F5):** records N seconds, flags spikes (`> max(33.3ms, 1.75×mean)`), writes
+  `Documents/CosmicShore Diagnostics/diag_<scene>_<ts>.json` + `.txt`. Works in editor and build.
+- Reads the **same** `ProfilerRecorder`s + `NetMarkers` counters as the Runner → numbers match.
 
-On Mac (editor): `~/Library/Application Support/<company>/<product>/…`
+### BenchmarkHUDOverlay (F9) — editor IMGUI eyeball
+- Spawned from Runtime Capture's *Spawn Live HUD Overlay* (or drop the component). `OnGUI` text:
+  FPS / frame (avg+max) / Draw / SetPass / Tris / GC, plus optional game-load counts via GameDataSO.
 
 ---
 
-## Proposed tab line-up after the rework
+## 5. Shared data model
 
 ```
-Collect  →  keep (fixed benchmark / regressions)
-Runtime  →  NEW  (free-play live spike breakdown + Copy-for-Claude)   ⭐
-Sweep    →  rework  (manual data set now · automatic later)
-History  →  keep
-Compare  →  keep
+FrameSnapshot   (one per frame: ms, cpu, gpu, draws, setpass, batches, tris, verts, gcAlloc,
+                 mem, rigidbodies, + game-load counts, + netcode counters)
+        │ aggregated by
+BenchmarkStatistics  (avg/p95/p99/max frame ms, avg/p1 fps, stddev, avg draws/tris,
+                      total GC, CPU/GPU avgs, netcode share, collector overhead)
+        │ scored by
+BenchmarkAnalysis    (0–100 score, A–F grade via BenchmarkGrade, boundVerdict CPU/GPU,
+                      hints[] from BenchmarkHintRulesSO rules)
+        │ assembled into
+BenchmarkReport      (sceneName, timestamp, source{origin,platform,git}, statistics, spikes[]
+                      (+ topMarkers[] {name, ms, isScript}), analysis, errors[], marks[])
+        │ persisted as
+JSON on disk  ── indexed by BenchmarkHistory ── diffed by BenchmarkComparer
 ```
+
+`SpikeEntry` carries `profilerFrameIndex` so the **editor** can fetch `topMarkers` lazily via
+`SpikeAnalyzer` after the fact. `SweepError{timeSeconds,type,message}` and `SweepMark{timeSeconds,
+fps,label}` come from `ManualSweepSession`.
+
+---
+
+## 6. Who-calls-what (one-liners for arrows in a diagram)
+
+- `PerformanceBenchmarkWindow` → **creates/finds** `PerformanceBenchmarkRunner` (and, for Manual
+  Sweep, `ManualSweepSession`) in Play Mode.
+- `PerformanceBenchmarkWindow.Update()` → `EnrichPendingSpikes()` → `SpikeAnalyzer.TryGetTopMarkers`
+  (off the game thread).
+- `PerformanceBenchmarkRunner` → `ProfilerRecorder` / `FrameTimingManager` / `GameLoadSampler` /
+  `NetMarkers` (read) → `BenchmarkStatistics` → `BenchmarkAnalysis` → `BenchmarkReport`.
+- Gameplay/netcode code → `NetMarkers.*` (write markers + counters) ← read back by both the Runner
+  and `DiagnosticsHUD`.
+- `ManualSweepSession` → `Application.logMessageReceived` (errors) + Input System F8 (marks) →
+  `FillReport(report)`.
+- `BenchmarkReport.SaveToFile` → disk → `BenchmarkHistory` (index) → `BenchmarkComparer` (diff).
+- `DiagnosticsHUD` → own `ProfilerRecorder`s + `NetMarkers` + UTP RTT → `Documents/…/diag_*.json`.
+- `BenchmarkBuildAutoRunner` (`-csmbench`) → `PerformanceBenchmarkRunner` (fixed run) →
+  `PerfRuns/*.json` → History *Import External Run*.
+
+---
+
+## 7. Suggested diagram framing
+
+- **Three swim-lanes:** Editor · Runtime · Storage (as in §1).
+- **Center of gravity:** `PerformanceBenchmarkRunner`. Draw every tab as an arrow *into* it (start)
+  and an arrow *out* of it (read report).
+- **Call out the two "off-thread / low-overhead" design decisions** as annotations: (a) spikes store
+  only a frame index, breakdown is enriched later in the editor; (b) Manual Sweep + DiagnosticsHUD
+  run with the Profiler off for near-zero perturbation.
+- **Show the two overlays as independent runtime nodes** (not children of the window) — DiagnosticsHUD
+  is the one that ships in dev builds and writes to Documents.

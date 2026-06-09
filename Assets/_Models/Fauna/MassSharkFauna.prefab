@@ -763,6 +763,7 @@ MonoBehaviour:
   minHealthBlocks: 0
   shieldPeriod: 0
   domain: 0
+  diet: 1
   onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
     type: 2}
@@ -3148,6 +3149,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Crystal: {fileID: 1196320470979252114}
+  elementalCrystalShipEffects:
+  - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
   moveToVesselDuration: 1
   easeMoveToVessel: 1
 --- !u!4 &1196320470979252112 stripped

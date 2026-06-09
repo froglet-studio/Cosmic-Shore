@@ -218,7 +218,10 @@ namespace CosmicShore.UI
 
         IEnumerator UpdateBalanceCoroutine()
         {
-            var crystalBalance = int.Parse(CrystalBalance.text);
+            // The text may hold a placeholder/empty value (e.g. before the balance is first
+            // seeded), so parse defensively rather than throwing a FormatException that would
+            // abort the coroutine.
+            int.TryParse(CrystalBalance.text, out var crystalBalance);
             var newCrystalBalance = CatalogManager.Instance.GetCrystalBalance();
             CSDebug.Log($"UpdateBalanceCoroutine - initial Balance: {crystalBalance}, new Balance: {newCrystalBalance}");
             var delta = crystalBalance- newCrystalBalance;
