@@ -397,14 +397,15 @@ cleared.
 > the word and I'll wire it in.
 
 > **Other caveats to validate in-editor (I can't run Unity):**
-> 2. **Membrane coverage.** Cell-config spawning + density targeting live inside a
->    **1200-radius sphere** (`Cell.ContainsPosition`) while the track runs ~4000
->    long, so foragers concentrate in the **central** crystal-orbit zone, not the
->    whole track. For track-wide cleanup, raise the membrane radius (needs a
->    Skim-Race-specific membrane prefab) or place multiple cells along the track —
->    this is the real "spawn where the crystals spawn" follow-up (the prior
->    `BoidManager.spawnAtCrystals` route was a dead end: that manager is never
->    instantiated — §7 note).
+> 2. **Sense coverage (addressed — tune `SenseRadiusOverride`).** Registration +
+>    density targeting used to be capped at the ~1200 membrane while the track runs
+>    ~4000 long, so foragers only sensed/cleaned the central bubble. Now
+>    `Cell.SenseRadius` (a `CellConfig.SenseRadiusOverride`, **3000** on Skim Race)
+>    decouples sensing from the visual membrane, so the cell registers + builds its
+>    density grid across the whole track and the forager's `ResolveGoal` (=
+>    `GetDensestRegionAnyDomain`) sends the swarm to the densest trail buildup
+>    track-wide — emergent, not track-following. If foragers still don't reach a
+>    far end, raise `SenseRadiusOverride`; if the grid feels too coarse, lower it.
 > 3. **Domain.** Foragers eat *opposing*-domain mass, so the dominant domain's own
 >    trail isn't grazed by its own fauna. At multi-domain player counts most trail
 >    mass is still "opposing" to *some* school, but the single dominant trail is the
