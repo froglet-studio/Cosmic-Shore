@@ -24,9 +24,9 @@ namespace CosmicShore.UI
     /// Overlaid on top are CONCENTRIC THRESHOLD RINGS — one per cell phase boundary
     /// (Quiet/Settled/Restless/Frozen/Rabid) — placed at the radius a wedge reaches
     /// when its mass equals that threshold. As a domain's wedge fills inward it PASSES
-    /// THROUGH each ring; a crossed ring brightens, signalling that domain is pushing
-    /// the cell's aggression level into the next zone. "Which domain" reads off the
-    /// colored wedge extending past the ring.
+    /// THROUGH each ring; a ring DISAPPEARS once a wedge has filled past it, so only the
+    /// upcoming thresholds are shown and the colored wedges aren't visually cluttered.
+    /// "Which domain" reads off the colored wedge extending past where the ring was.
     ///
     /// Follows the ObjectiveArrowGraphic idiom: one MaskableGraphic, no sprite/font
     /// dependency, geometry built in OnPopulateMesh. The owning DomainVolumeIndicator
@@ -49,10 +49,8 @@ namespace CosmicShore.UI
         [Header("Phase threshold rings (wedges pass through these)")]
         [Tooltip("Thickness of each concentric phase-threshold ring, as a fraction of the half-min-extent.")]
         [Range(0.005f, 0.08f)] [SerializeField] float phaseRingThicknessFrac = 0.022f;
-        [Tooltip("Color of a phase-threshold ring no wedge has reached yet.")]
-        [SerializeField] Color thresholdRingColor = new(1f, 1f, 1f, 0.22f);
-        [Tooltip("Color of a phase-threshold ring once a wedge has filled past it (a domain has pushed aggression into the next zone).")]
-        [SerializeField] Color thresholdRingCrossedColor = new(1f, 1f, 1f, 0.85f);
+        [Tooltip("Color of a phase-threshold ring no wedge has reached yet. The ring disappears once a wedge fills past it.")]
+        [SerializeField] Color thresholdRingColor = new(1f, 1f, 1f, 0.28f);
 
         [Header("Spawn-cycle ring (outside the hex)")]
         [Tooltip("Inner radius of the spawn-cycle ring (fraction). Sits OUTSIDE the band/boundary so it doesn't obscure the volume gauge.")]
@@ -168,18 +166,19 @@ namespace CosmicShore.UI
             }
 
             // 3) Concentric phase-threshold rings the wedges pass through. Each ring sits
-            //    at the radius a wedge reaches when its mass equals that threshold, so a
-            //    crossing wedge has, by definition, enough mass for that phase. Drawn after
-            //    the bands so they read as tick marks over the fills; a ring the leading
-            //    wedge has passed brightens to signal the phase is triggered.
+            //    at the radius a wedge reaches when its mass equals that threshold. A ring
+            //    DISAPPEARS once the leading wedge has filled past it — so only the
+            //    upcoming thresholds are drawn, reducing visual competition with the
+            //    colored wedges. "Which domain" still reads off the wedge extending past
+            //    where the ring used to be.
             float ringThick = R * phaseRingThicknessFrac;
             for (int i = 0; i < _thresholdFracs.Length; i++)
             {
                 float f = Mathf.Clamp01(_thresholdFracs[i]);
+                if (maxFill >= f - 0.0005f) continue; // crossed → ring gone
                 float ringR = Mathf.Lerp(bandOuterR - minThick, centerR, f);
                 if (ringR <= ringThick) continue;
-                bool crossed = maxFill >= f - 0.0005f;
-                AddHexRing(vh, c, ringR, ringR - ringThick, crossed ? thresholdRingCrossedColor : thresholdRingColor);
+                AddHexRing(vh, c, ringR, ringR - ringThick, thresholdRingColor);
             }
 
             // 4) Centre hexagon — tinted by the dominant domain (who leads on volume).
