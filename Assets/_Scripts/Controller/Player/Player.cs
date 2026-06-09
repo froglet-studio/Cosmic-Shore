@@ -435,12 +435,15 @@ namespace CosmicShore.Gameplay
         {
             Domain = newValue;
 
-            // (a) Server keeps RoundStats authoritative; clients receive the change
-            // via RoundStats.n_Domain.OnValueChanged — so writing here on the server
-            // alone keeps every consumer of RoundStats.Domain (scoreboards, end-game
-            // controllers, GameFeedAPI colorers) live across modal re-picks,
-            // NormalizeUnassignedHumans rerolls, and shape-mode SetDomain calls.
-            if (IsServer && _roundStats)
+            // Drive RoundStats.Domain from the reliably-replicated Player.NetDomain on EVERY peer.
+            // The owner client does NOT receive its own RoundStats.n_Domain replication (same
+            // owner-replication gap as BUGS.md B9), so a server-only write left the owner's
+            // RoundStats.Domain stale (set once from a pre-sync Player.Domain at init) — the in-game
+            // HUD then grouped the client's icon into the wrong domain box. NetDomain → Player.Domain
+            // IS reliable on the owner, so sourcing RoundStats.Domain from it here keeps every
+            // consumer (HUD grouping, scoreboards, end-game, GameFeedAPI colorers) correct across
+            // initial picks, modal re-picks, and NormalizeUnassignedHumans rerolls.
+            if (_roundStats)
                 _roundStats.Domain = newValue;
 
             // (b) Repaint the vessel materials. Skipped pre-spawn (no themeManagerData

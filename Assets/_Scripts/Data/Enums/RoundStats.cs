@@ -221,7 +221,13 @@ namespace CosmicShore.Data
             set
             {
                 _domainLocal = value;
-                if (IsSpawned && IsServer) n_Domain.Value = value;
+                if (IsSpawned && IsServer)
+                    n_Domain.Value = value;          // server → replicates; n_Domain callback raises OnAnyStatChanged
+                else
+                    // Client/local set — e.g. Player.OnNetDomainChanged driving this from the
+                    // reliably-replicated NetDomain. The owner doesn't get its own n_Domain
+                    // replication, so notify here or the in-game HUD's domain grouping stays stale.
+                    OnAnyStatChanged?.Invoke(this);
             }
         }
 
