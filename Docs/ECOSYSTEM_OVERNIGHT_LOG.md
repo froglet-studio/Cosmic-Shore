@@ -55,6 +55,19 @@ too, so I left it.
 
 ---
 
+## Session 3 — corrected the "IntensityWiseLifeSpawner is dead" docs
+
+Checked spawner selection across all scenes. `IntensityWiseLifeSpawner` is **NOT
+dead** — `MinigameWildlifeBlitz`, `MinigameWildlifeBlitzMultuplayerCoOp`, and
+`MinigameTournamentMultuplayer` select it (`cellTypeChoiceOptions: 1`). The docs
+(ECOSYSTEM.md §1 root-causes, §8, §9, §10; the kickoff brief) claimed it was dead
+and recommended deletion — that would have broken those scenes. Corrected all five
+places to say it's live (used by WildlifeBlitz + Tournament), do not delete, and
+note it has diverged from `RandomLifeSpawner` (no `FaunaFoodFloor` gate, 1/tick).
+Doc-only; no code change.
+
+---
+
 ## Backlog (planned for later sessions, safest first)
 1. Doc consolidation — `ECOSYSTEM.md` has drifted across many edits; make it match
    the current code (cell-config spawn is live; scene-placed `*Population` via

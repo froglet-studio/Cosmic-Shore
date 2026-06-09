@@ -178,7 +178,7 @@ Dashed = not implemented. Fauna currently spawn, hunt forever, and never leave.
 | 11 | Fauna **consume → −prisms** | aggression behavior → impact | reduces opposing prisms | same | ✅ this is the prey side of loop #2 |
 
 **Root causes of what you saw:**
-- *Dead spawn-cycle ring* → `RandomLifeSpawner` never called `RecordFaunaSpawn` (fixed in the retrofit; all scenes run `RandomLifeSpawner`, not `IntensityWise`).
+- *Dead spawn-cycle ring* → `RandomLifeSpawner` never called `RecordFaunaSpawn` (fixed in the retrofit). **Correction:** NOT all scenes run `RandomLifeSpawner` — the WildlifeBlitz scenes (`MinigameWildlifeBlitz`, `MinigameWildlifeBlitzMultuplayerCoOp`) and `MinigameTournamentMultuplayer` select `IntensityWiseLifeSpawner` (`cellTypeChoiceOptions: 1`). Menu, Skim Race, and the rest use `Random` (0).
 - *No fauna in menu* → fauna were gated on scored team volume (~0 in Menu_Main). Retrofit moved them to a phase gate; the redesign moves them to **timer only**.
 - *No Jade fauna when Jade controls* → row 8: the controlling/local color is **excluded by construction**.
 
@@ -414,8 +414,8 @@ cleared.
 1. ✅ Map + agree the redesign and the §6 bound.
 2. ✅ Spawn rewrite in `RandomLifeSpawner`: timer-only, fixed period, fixed
    population N, `ControllingDomain`; `CurrentFaunaSpawnPeriod` simplified to base
-   period. (`IntensityWiseLifeSpawner` left as-is — no scene runs it; reconcile or
-   delete later.)
+   period. (`IntensityWiseLifeSpawner` left as-is — it is STILL USED by the
+   WildlifeBlitz + Tournament scenes via `cellTypeChoiceOptions: 1`; do NOT delete.)
 3. ✅ §6 bound = option C: `OpposingBlockCount` prey signal + `FaunaFoodFloor`
    production gate + `starvationSeconds` despawn. Config on `SpawnProfileSO` /
    `FaunaConfigurationSO` / `Fauna`.
@@ -437,7 +437,7 @@ cleared.
 | Prism count, phase, gates, aggression, controlling domain | `Assets/_Scripts/Controller/Environment/Cell.cs` |
 | Phase thresholds + hysteresis | `Assets/_Scripts/.../CellPhaseRules.cs`, `CellPhase` enum, Blob Cell Config asset |
 | Spawner all scenes run | `Assets/_Scripts/Controller/Environment/RandomLifeSpawner.cs` |
-| Regulated spawner (parity ref, unused) | `Assets/_Scripts/Controller/Environment/IntensityWiseLifeSpawner.cs` |
+| Regulated spawner — USED by WildlifeBlitz + Tournament (`cellTypeChoiceOptions: 1`) | `Assets/_Scripts/Controller/Environment/IntensityWiseLifeSpawner.cs` |
 | Spawn helpers (`SpawnFaunaWithDomain`, `PickRandomDomain`) | `Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs` |
 | Fauna base: domain, goal, diet, starvation, `Predated` | `Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs` |
 | Creature behavior + diet-branched consume (herbivore prisms / predator fauna) | `Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs` |
@@ -466,9 +466,12 @@ work is saved and Phase 2 can be picked up.
      still appear, nothing runs away, framerate holds.
 2. **Perf pass** at the new menu density (~4200 prisms steady). If it dips on a
    target device, lower `Blob Cell Config` `FrozenEnter`/`RabidEnter` (one asset).
-3. **Decide `IntensityWiseLifeSpawner`.** Dead (no scene uses it) and now diverged
-   from the live model. Recommend **delete** to kill confusion; keep only if wanted
-   as a reference. Either way, stop maintaining two fauna models.
+3. **`IntensityWiseLifeSpawner` is LIVE, not dead** (earlier notes were wrong).
+   The WildlifeBlitz + Tournament scenes select it (`cellTypeChoiceOptions: 1`);
+   Menu/Skim Race/etc. use `Random`. **Do NOT delete it.** It has diverged from
+   `RandomLifeSpawner` (no prey-linked `FaunaFoodFloor` gate, spawns 1/tick not a
+   population), so if those scenes ever wire fauna into their `SupportedFaunas`
+   they'll behave differently — reconcile the two spawners then, don't remove one.
 4. **Confirm the global defaults are wanted in gameplay**, not just the menu: the
    flora regrowth pulse (`SpawnProfileSO`, code-default ON) and prey-linked fauna
    (controlling-color + starvation) now apply to every biome. If a gameplay biome

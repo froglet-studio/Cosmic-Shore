@@ -31,9 +31,13 @@ fundamentals whose interactions produce rich, self-balancing, surprising behavio
    — the density foundation the ecology sits on.
 
 ### Current state (what Phase 1 leaves you)
-- **One live spawner:** every scene runs `RandomLifeSpawner` (the shared
-  `Cell.prefab` is `Random`). `IntensityWiseLifeSpawner` is **dead** — delete it or
-  reconcile; don't maintain two fauna models.
+- **Two spawners, both live:** most scenes (Menu, Skim Race, …) run
+  `RandomLifeSpawner` (`Cell.prefab` default `Random`), but the **WildlifeBlitz +
+  Tournament** scenes select `IntensityWiseLifeSpawner` (`cellTypeChoiceOptions:
+  1`). `IntensityWiseLifeSpawner` is **NOT dead — do not delete it.** (Earlier
+  notes wrongly called it dead.) The two have diverged (Random has the prey-linked
+  `FaunaFoodFloor` gate + population bursts; IntensityWise spawns 1/tick, phase-
+  gated); reconcile rather than remove if it matters.
 - **Fauna:** timer-driven, fixed-size populations in the cell's **controlling
   color**; **prey-linked starvation** — they consume opposing-domain prisms to
   live, and despawn if they can't feed for `starvationSeconds`; production pauses
