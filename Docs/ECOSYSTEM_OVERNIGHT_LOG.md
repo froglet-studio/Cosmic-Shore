@@ -93,6 +93,16 @@ Default threshold-table invariants (Enter>Exit per phase, monotonic Enters,
 
 ---
 
+## Session 6 — ecology enum drift guards
+
+Added `EcologyEnumIntegrityTests.cs` (UNITY_EDITOR-guarded): locks the integer
+values of `FaunaDiet` (Herbivore 0 / Predator 1 — now serialized on the fauna
+prefabs as `diet:`), `CellPhase` (None 0 … Rabid 6), and `CellAggressionLevel`
+(0/1/2), plus monotonic-ordering and uniqueness checks. Prevents a silent
+reorder from corrupting prefab/asset fields. Test-only.
+
+---
+
 ## Backlog (planned for later sessions, safest first)
 1. Doc consolidation — `ECOSYSTEM.md` has drifted across many edits; make it match
    the current code (cell-config spawn is live; scene-placed `*Population` via
