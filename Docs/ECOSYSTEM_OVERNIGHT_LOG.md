@@ -80,6 +80,19 @@ primary cleaner.
 
 ---
 
+## Session 5 — edit-mode tests for CellPhaseRules (phase spine)
+
+Added `Assets/_Scripts/Tests/EditMode/CellPhaseRulesTests.cs` (20 tests, guarded
+`#if UNITY_EDITOR`, NUnit). Covers the pure phase-resolution function that drives
+the whole ecology: climbing (keys off Enter), descending (keys off Exit, strict
+`<`), **hysteresis band stability** (no chatter across an oscillating count),
+multi-step spike/crash transitions resolving in one call, boundary cases, and the
+Default threshold-table invariants (Enter>Exit per phase, monotonic Enters,
+`IsAllZero` legacy-substitution guard). All expectations hand-traced against
+`CellPhaseRules.Compute`. Safe (test-only).
+
+---
+
 ## Backlog (planned for later sessions, safest first)
 1. Doc consolidation — `ECOSYSTEM.md` has drifted across many edits; make it match
    the current code (cell-config spawn is live; scene-placed `*Population` via
