@@ -42,6 +42,15 @@ namespace CosmicShore.Utility
         public ScriptableEventUlong OnPlayerPairInitialized;
         public event Action<string, Domains> OnPlayerAdded;
 
+        /// <summary>
+        /// Raised on every peer when the server-synced per-domain metric sums change (see
+        /// <see cref="SetDomainMetricSum"/>). The in-game multiplayer HUD listens so its domain boxes
+        /// display the SERVER's authoritative sums verbatim instead of each client re-summing
+        /// per-player stats (which can freeze for a client's own player when its own RoundStats
+        /// replication lags).
+        /// </summary>
+        public event Action OnDomainMetricSumsChanged;
+
         [Header("UI Flow")]
         public ScriptableEventNoParam OnShowGameEndScreen;
         
@@ -86,6 +95,32 @@ namespace CosmicShore.Utility
         /// </summary>
         public bool IsGolfRules { get; private set; }
 
+        // ── Server-synced per-domain metric sums (in-game HUD) ───────────────────
+        // MultiplayerDomainGamesController computes ScoringMetrics.SumByDomain for each active domain
+        // on the server and replicates it; SetDomainMetricSum runs on every peer from the
+        // NetworkVariable callback. Indexed by ActiveDomains order (Jade, Ruby, Gold).
+        readonly int[] _domainMetricSums = new int[3];
+
+        /// <summary>Server-synced summed metric (crystals / jousts) for an active domain; 0 if not active.</summary>
+        public int GetDomainMetricSum(Domains domain)
+        {
+            int i = System.Array.IndexOf(ActiveDomains, domain);
+            return (i >= 0 && i < _domainMetricSums.Length) ? _domainMetricSums[i] : 0;
+        }
+
+        /// <summary>
+        /// Writes one synced domain sum (called on every peer from the controller's NetworkVariable
+        /// callback) and raises <see cref="OnDomainMetricSumsChanged"/> when it actually changes.
+        /// </summary>
+        public void SetDomainMetricSum(Domains domain, int value)
+        {
+            int i = System.Array.IndexOf(ActiveDomains, domain);
+            if (i < 0 || i >= _domainMetricSums.Length) return;
+            if (_domainMetricSums[i] == value) return;
+            _domainMetricSums[i] = value;
+            OnDomainMetricSumsChanged?.Invoke();
+        }
+
         /// <summary>
         /// Server-authoritative winner name, written by game controllers in their
         /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
@@ -102,6 +137,38 @@ namespace CosmicShore.Utility
         [NonSerialized] public Domains WinnerDomain = Domains.Blue;
 
         /// <summary>
+        /// Single source of truth for the final ranked results (per-player, sorted, with
+        /// 1-based <see cref="ScoreResult.Rank"/>). Produced once per game end by the mode:
+        /// server-side in networked modes (and assembled identically on each client from the
+        /// already-synced score arrays), or locally in single-player. Every end-game surface
+        /// — scoreboard banner + cards, end-game cinematic, crystal reward — reads this.
+        /// <see cref="WinnerName"/>/<see cref="WinnerDomain"/> are a thin derived view over
+        /// <c>Results[0]</c> (see <see cref="SetResults"/>). Empty until the mode computes
+        /// results. Reset in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
+        /// See Docs/ScoringSystem/REFACTOR.md R10.
+        /// </summary>
+        [NonSerialized] public List<ScoreResult> Results = new();
+
+        /// <summary>
+        /// Sets <see cref="Results"/> (reusing the same list instance so existing references
+        /// stay valid) and derives <see cref="WinnerName"/>/<see cref="WinnerDomain"/> from
+        /// the top row, keeping them a convenience view over the single source. Call once per
+        /// game end on the server and on each client.
+        /// </summary>
+        public void SetResults(IEnumerable<ScoreResult> results)
+        {
+            Results.Clear();
+            if (results != null)
+                Results.AddRange(results);
+
+            if (Results.Count > 0)
+            {
+                WinnerName = Results[0].Name;
+                WinnerDomain = Results[0].Domain;
+            }
+        }
+
+        /// <summary>
         /// The resolved crystal collection target for the current session.
         /// Written by <see cref="NetworkCrystalCollisionTurnMonitor"/> in StartMonitor (server),
         /// synced to clients via NetworkVariable.OnValueChanged.
@@ -109,6 +176,26 @@ namespace CosmicShore.Utility
         /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
         /// </summary>
         [NonSerialized] public int CrystalTargetCount;
+
+        /// <summary>
+        /// The resolved joust-collision target for the current session — the per-domain
+        /// joust sum that ends a Joust turn. Published by <see cref="JoustCollisionTurnMonitor"/>
+        /// in StartMonitor on every peer (a scene constant, identical across clients). Read by
+        /// the Joust controller to format the "N Jousts Left" loser line into
+        /// <see cref="ScoreResult.ScoreText"/>. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public int JoustTargetCount;
+
+        /// <summary>
+        /// The active scoring strategy for the current mode, published by the mode's controller
+        /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
+        /// asset onto the controller). Read by the network turn monitors for the end condition
+        /// and the "remaining" readout (and, in later commits, the scoreboard + end-game
+        /// cinematic). Transient — re-published on every (re)spawn, so it is intentionally NOT
+        /// cleared by the reset methods.
+        /// </summary>
+        [NonSerialized] public ScoringRuleSO ScoringRule;
 
         /// <summary>
         /// Syncs essential game identity fields from an <see cref="SO_ArcadeGame"/> asset.
@@ -254,7 +341,10 @@ namespace CosmicShore.Utility
             LocalRoundStats = null;
             WinnerName = "";
             WinnerDomain = Domains.Blue;
+            Results.Clear();
             CrystalTargetCount = 0;
+            JoustTargetCount = 0;
+            System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
             // ArcadeGameConfigureModal and must survive the ResetRuntimeData() call
@@ -289,7 +379,10 @@ namespace CosmicShore.Utility
             _playerSpawnPoseList.Clear();
             WinnerName = "";
             WinnerDomain = Domains.Blue;
+            Results.Clear();
             CrystalTargetCount = 0;
+            JoustTargetCount = 0;
+            System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 
         public void ResetStatsDataForReplay()
@@ -435,58 +528,6 @@ namespace CosmicShore.Utility
                 if (s != null && s.Domain == domain) sum += s.CrystalsCollected;
             }
             return sum;
-        }
-
-        public int SumJoustCollisionsByDomain(Domains domain)
-        {
-            int sum = 0;
-            for (int i = 0, count = RoundStatsList.Count; i < count; i++)
-            {
-                var s = RoundStatsList[i];
-                if (s != null && s.Domain == domain) sum += s.JoustCollisions;
-            }
-            return sum;
-        }
-
-        /// <summary>
-        /// Returns the first active domain whose summed CrystalsCollected meets
-        /// or exceeds <paramref name="target"/>. Scans in <see cref="ActiveDomains"/>
-        /// order (Jade → Ruby → Gold), so identical inputs are deterministic.
-        /// </summary>
-        public bool TryGetDomainReachingCrystalTarget(int target, out Domains winner)
-        {
-            int dc = Mathf.Clamp(RequestedDomainCount, 1, ActiveDomains.Length);
-            for (int i = 0; i < dc; i++)
-            {
-                var d = ActiveDomains[i];
-                if (SumCrystalsCollectedByDomain(d) >= target)
-                {
-                    winner = d;
-                    return true;
-                }
-            }
-            winner = Domains.Blue;
-            return false;
-        }
-
-        /// <summary>
-        /// Returns the first active domain whose summed JoustCollisions meets
-        /// or exceeds <paramref name="target"/>. See <see cref="TryGetDomainReachingCrystalTarget"/>.
-        /// </summary>
-        public bool TryGetDomainReachingJoustTarget(int target, out Domains winner)
-        {
-            int dc = Mathf.Clamp(RequestedDomainCount, 1, ActiveDomains.Length);
-            for (int i = 0; i < dc; i++)
-            {
-                var d = ActiveDomains[i];
-                if (SumJoustCollisionsByDomain(d) >= target)
-                {
-                    winner = d;
-                    return true;
-                }
-            }
-            winner = Domains.Blue;
-            return false;
         }
         
         public void SetPlayersActive()

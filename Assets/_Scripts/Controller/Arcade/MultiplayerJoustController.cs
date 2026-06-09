@@ -1,4 +1,5 @@
 // MultiplayerJoustController.cs
+using System.Collections.Generic;
 using System.Linq;
 using Unity.Collections;
 using Unity.Netcode;
@@ -10,10 +11,15 @@ namespace CosmicShore.Gameplay
 {
     public class MultiplayerJoustController : MultiplayerDomainGamesController
     {
+        [Header("Scoring")]
+        [Tooltip("Drag JoustScoringRule.asset — the per-mode scoring strategy (winner, scores, results).")]
+        [SerializeField] ScoringRuleSO rule;
+
         private bool _finalResultsSent;
         private Domains _winningDomain = Domains.Blue;
 
         protected override bool UseGolfRules => true;
+        protected override bool UseSceneReloadForReplay => true; // match HexRace / CrystalCapture
 
         // Joust handles end-game through OnTurnEndedCustom (server-side winner detection) →
         // SyncJoustResults_ClientRpc, which calls InvokeWinnerCalculated + InvokeMiniGameEnd.
@@ -24,6 +30,7 @@ namespace CosmicShore.Gameplay
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            gameData.ScoringRule = rule;
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
             _finalResultsSent = false;
@@ -52,19 +59,9 @@ namespace CosmicShore.Gameplay
         {
             float currentTime = Time.time - gameData.TurnStartTime;
 
-            Domains winningDomain = Domains.Blue;
-            int bestDomainSum = -1;
-            int dc = Mathf.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
-            for (int i = 0; i < dc; i++)
-            {
-                var d = GameDataSO.ActiveDomains[i];
-                int sum = gameData.SumJoustCollisionsByDomain(d);
-                if (sum > bestDomainSum)
-                {
-                    bestDomainSum = sum;
-                    winningDomain = d;
-                }
-            }
+            // Winning domain (highest joust sum, Jade→Ruby→Gold tie-break) + per-player
+            // scores (winner = elapsed time, losers = sentinel) delegated to the rule.
+            Domains winningDomain = rule.ResolveWinner(gameData);
 
             // Representative winner-name = best individual contributor on the winning
             // domain. Used for the WinnerName legacy field (display strings only —
@@ -78,16 +75,10 @@ namespace CosmicShore.Gameplay
             string winnerName = winnerRep?.Name ?? "";
 
             CSDebug.Log($"[JoustController] Calculating scores. Winner='{winnerName}' Domain={winningDomain} " +
-                      $"DomainSum={bestDomainSum} Time={currentTime:F2}s " +
+                      $"Time={currentTime:F2}s " +
                       $"Players=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}({s.Domain}):{s.JoustCollisions}j"))}]");
 
-            foreach (var stats in gameData.RoundStatsList)
-            {
-                if (winningDomain != Domains.Blue && stats.Domain == winningDomain)
-                    stats.Score = currentTime;
-                else
-                    stats.Score = 99999f;
-            }
+            rule.AssignScores(gameData, winningDomain, currentTime);
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
@@ -168,25 +159,14 @@ namespace CosmicShore.Gameplay
             CSDebug.Log($"[JoustController] Client synced. Winner='{gameData.WinnerName}' Domain={gameData.WinnerDomain} " +
                       $"Order=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}({s.Domain}):{s.Score:F1}"))}]");
 
+            gameData.SetResults(rule.BuildResults(gameData));
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
         }
 
         // ── Replay ───────────────────────────────────────────────────────
-
-        protected override void OnResetForReplayCustom()
-        {
-            base.OnResetForReplayCustom();
-            _finalResultsSent = false;
-            _winningDomain = Domains.Blue;
-
-            foreach (var s in gameData.RoundStatsList)
-            {
-                s.JoustCollisions = 0;
-                s.Score = 0f;
-            }
-
-            gameData.InvokeTurnStarted();
-        }
+        // OnResetForReplayCustom removed — Joust uses UseSceneReloadForReplay = true, which
+        // performs a full network scene reload. _finalResultsSent / _winningDomain and all
+        // per-player stats are re-initialized fresh via OnNetworkSpawn + a rebuilt RoundStatsList.
     }
 }

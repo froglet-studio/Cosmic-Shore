@@ -13,6 +13,14 @@ namespace CosmicShore.Gameplay
 
         public Dictionary<Domains, SO_MaterialSet> TeamMaterialSets { get; set; }
 
+        /// <summary>
+        /// Null-safe accessor for the single representative domain UI color
+        /// (see <see cref="SO_ColorSet.GetDomainUIColor"/>) — the one source every UI
+        /// surface uses, matching vessels and prisms. Neutral gray if no ColorSet is wired.
+        /// </summary>
+        public Color GetDomainUIColor(Domains domain) =>
+            ColorSet != null ? ColorSet.GetDomainUIColor(domain) : Color.gray;
+
         public void SetBackgroundColor(Camera mainCamera)
         {
             if (mainCamera == null)

@@ -232,7 +232,7 @@ gameData.OnMiniGameTurnStarted.Raise()
 └─ TurnMonitorController.Update() — every frame
     └─ CheckEndOfTurn()
         └─ NetworkCrystalCollisionTurnMonitor.CheckForEndOfTurn()
-            └─ return gameData.TryGetDomainReachingCrystalTarget(target, out _)
+            └─ return gameData.ScoringRule.IsObjectiveReached(gameData, out _)   // SumByDomain(Crystals) ≥ target
                 └─ If true → OnTurnEnded() → gameData.InvokeGameTurnConditionsMet()
 ```
 The end condition is **domain-aggregated**: the turn ends as soon as any active domain's summed CrystalsCollected reaches the target. Teammates (humans + AI on the same Domain) cross the finish line together.
@@ -241,10 +241,16 @@ The end condition is **domain-aggregated**: the turn ends as soon as any active 
 
 When any domain's summed crystals reach the target, the turn monitor detects the condition and the turn ends. Winner detection is **server-authoritative** and **domain-aggregated** via `OnTurnEndedCustom()`:
 
+> **Source of truth:** the end condition, winning domain, per-player score, and ranked
+> results are produced by `HexRaceScoringRuleSO` (`IsObjectiveReached` / `AssignScores` /
+> `BuildResults`) via `gameData.ScoringRule`; the turn monitor + controller delegate to it.
+> (The old `gameData.TryGetDomainReaching*` helpers were retired.) The diagram shows the
+> equivalent logic.
+
 ```
 TurnMonitorController.CheckEndOfTurn()  [server, every frame]
 │   └─ NetworkCrystalCollisionTurnMonitor.CheckForEndOfTurn()
-│       └─ return gameData.TryGetDomainReachingCrystalTarget(target, out _)
+│       └─ return gameData.ScoringRule.IsObjectiveReached(gameData, out _)
 │           └─ If true → gameData.InvokeGameTurnConditionsMet()
 │
 ├─ MultiplayerMiniGameControllerBase.HandleTurnEnd()  [server]
@@ -252,12 +258,12 @@ TurnMonitorController.CheckEndOfTurn()  [server, every frame]
 │   │   └─ [All clients] OnTurnEndedCustom()
 │   │       └─ HexRaceController.OnTurnEndedCustom()  [server only — guard: if (!IsServer) return]
 │   │           ├─ Guard: if (_raceEnded) return
-│   │           ├─ Find winning DOMAIN: gameData.TryGetDomainReachingCrystalTarget(target, out winningDomain)
+│   │           ├─ Find winning DOMAIN: gameData.ScoringRule.IsObjectiveReached(gameData, out winningDomain)
 │   │           ├─ Representative WinnerName: best individual contributor on the winning domain
 │   │           ├─ _raceEnded = true
 │   │           ├─ For each player on the winning domain: stats.Score = elapsed race time
 │   │           ├─ For each player on a losing domain:
-│   │           │   └─ stats.Score = 10000 + (target - SumCrystalsCollectedByDomain(stats.Domain))
+│   │           │   └─ stats.Score = GolfScoreSentinels.EncodeHexRaceLoserScore(target - ScoringMetrics.SumByDomain(gameData, Crystals, stats.Domain))  // 10000 + crystals-left
 │   │           ├─ gameData.SortRoundStats(UseGolfRules: true)
 │   │           ├─ gameData.CalculateDomainStats(UseGolfRules: true)
 │   │           └─ SyncFinalScoresSnapshot(winnerName)

@@ -13,6 +13,73 @@ namespace CosmicShore.Gameplay
     {
         private int readyClientCount;
 
+        // ── Server-authoritative per-domain score sync (in-game HUD) ─────────────
+        // Clients re-summing their own per-player RoundStats can freeze for a client's OWN player
+        // when its own NetworkVariable replication lags. Instead the server computes each active
+        // domain's metric sum and replicates it here; every peer mirrors it into gameData and the
+        // MultiplayerHUD displays it verbatim, so every client matches the host exactly.
+        readonly NetworkVariable<int> n_DomainSum0 =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        readonly NetworkVariable<int> n_DomainSum1 =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        readonly NetworkVariable<int> n_DomainSum2 =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        Coroutine _domainSumSyncRoutine;
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+
+            // Every peer mirrors the synced sums into gameData (read by MultiplayerHUD).
+            n_DomainSum0.OnValueChanged += (_, v) => PublishDomainSum(0, v);
+            n_DomainSum1.OnValueChanged += (_, v) => PublishDomainSum(1, v);
+            n_DomainSum2.OnValueChanged += (_, v) => PublishDomainSum(2, v);
+            PublishDomainSum(0, n_DomainSum0.Value);
+            PublishDomainSum(1, n_DomainSum1.Value);
+            PublishDomainSum(2, n_DomainSum2.Value);
+
+            if (IsServer)
+                _domainSumSyncRoutine = StartCoroutine(SyncDomainSumsRoutine());
+        }
+
+        public override void OnNetworkDespawn()
+        {
+            if (_domainSumSyncRoutine != null)
+            {
+                StopCoroutine(_domainSumSyncRoutine);
+                _domainSumSyncRoutine = null;
+            }
+            base.OnNetworkDespawn();
+        }
+
+        void PublishDomainSum(int index, int value)
+        {
+            if (index < 0 || index >= GameDataSO.ActiveDomains.Length) return;
+            gameData.SetDomainMetricSum(GameDataSO.ActiveDomains[index], value);
+        }
+
+        /// <summary>
+        /// Server-only: recompute each active domain's summed scoring metric from the authoritative
+        /// RoundStats and push it through the NetworkVariables, so every client's domain boxes match
+        /// the host. Throttled — the value is a small int and NetworkVariables only replicate on change.
+        /// </summary>
+        IEnumerator SyncDomainSumsRoutine()
+        {
+            var wait = new WaitForSeconds(0.1f);
+            while (true)
+            {
+                var rule = gameData.ScoringRule;
+                if (rule != null)
+                {
+                    n_DomainSum0.Value = ScoringMetrics.SumByDomain(gameData, rule.Metric, GameDataSO.ActiveDomains[0]);
+                    n_DomainSum1.Value = ScoringMetrics.SumByDomain(gameData, rule.Metric, GameDataSO.ActiveDomains[1]);
+                    n_DomainSum2.Value = ScoringMetrics.SumByDomain(gameData, rule.Metric, GameDataSO.ActiveDomains[2]);
+                }
+                yield return wait;
+            }
+        }
+
         public void OnClickReturnToMainMenu()
         {
             CloseSession_ServerRpc();

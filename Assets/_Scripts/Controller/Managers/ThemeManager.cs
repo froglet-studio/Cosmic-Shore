@@ -1,6 +1,7 @@
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 
 
 namespace CosmicShore.Gameplay
@@ -23,6 +24,10 @@ namespace CosmicShore.Gameplay
                 { Domains.Gold,  GoldTeamMaterialSet },
                 { Domains.Blue,  BlueTeamMaterialSet },
             };
+
+            // Hand the ColorSet to the static game-feed API so it colors joust messages
+            // from the same single source the vessels and prisms use (R5).
+            GameFeedAPI.ColorSet = _dataContainer.ColorSet;
         }
 
         SO_MaterialSet GenerateDomainMaterialSet(DomainColorSet colorSet, string domainName)
