@@ -47,13 +47,13 @@ Files: `_Scripts/UI/MultiplayerHUD.cs` (`InitializePlayerCards`,
 `_Scripts/UI/View/MultiplayerHUDView.cs` (`HasDomainPanelWiring`).
 
 ## TD2 — 🔴 [verify] Joust scene domain-HUD wiring
-The HexRace (`debb3239`) and Crystal Capture (`e57066b6`) scenes were wired for the
-domain HUD this session; **no equivalent Joust scene commit exists.** If
-`MinigameJoust_Gameplay`'s `MultiplayerHUDView` lacks the ally/opposing containers
-+ `DomainScorePanel` prefab, Joust falls back to the legacy layout (**TD1**) and
-won't benefit from the B9 / Approach-B client-sync fix.
-**Action:** open the Joust scene, confirm `HasDomainPanelWiring`; if missing, wire
-it like HexRace / CC.
+HexRace (`debb3239`/`4dc95258`), Crystal Capture (`e57066b6`), and Joust
+(`d2562539`) scenes all have update commits. The Joust commit **exists**, but it's
+unconfirmed whether `MinigameJoust_Gameplay`'s `MultiplayerHUDView` has the
+ally/opposing containers + `DomainScorePanel` prefab assigned. If it doesn't, Joust
+falls back to the legacy layout (**TD1**) and won't show the domain boxes.
+**Action:** open the Joust scene, confirm `HasDomainPanelWiring`; wire it like
+HexRace / CC if missing.
 
 ## TD3 — 🟡 [verify + optional cleanup] Confirm domain fixes; consider retiring Approach B
 The in-game domain HUD now reads `Player.Domain` (Commit `5442d3d0`) and `RoundStats.Domain`
