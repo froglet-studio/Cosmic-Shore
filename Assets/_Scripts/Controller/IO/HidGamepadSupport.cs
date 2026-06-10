@@ -77,6 +77,14 @@ namespace CosmicShore.Gameplay
         private static readonly HashSet<string> s_RegisteredLayouts = new HashSet<string>();
 
         /// <summary>
+        /// When true, every HID device the Input System asks us about is logged with its
+        /// interface, product, vendor/product id, matched layout, top-level usage and element
+        /// count, plus the promotion decision. Invaluable for diagnosing a controller that
+        /// still isn't recognized — leave it on until a pad is confirmed working.
+        /// </summary>
+        public static bool VerboseLogging = true;
+
+        /// <summary>
         /// Optional per-device corrections, keyed by (vendorId, productId). The generic
         /// descriptor-driven mapping is correct for the vast majority of pads; entries here
         /// only exist to override the rare device that reports non-standard ordering or
@@ -119,26 +127,68 @@ namespace CosmicShore.Gameplay
             // Subscribe once; the handler is invoked by the Input System every time a device
             // is discovered, on both the main thread and during editor domain reloads.
             InputSystem.onFindLayoutForDevice += OnFindLayoutForDevice;
+
+            // onFindLayoutForDevice only fires when a device is (re)discovered. A controller
+            // that was already paired/connected before this handler subscribed — the common
+            // case in the editor and for Bluetooth pads connected at boot — won't be
+            // re-evaluated. Sweep currently-present devices so they get promoted too;
+            // registering a matching layout causes the Input System to recreate the device.
+            PromoteAlreadyConnectedDevices();
+        }
+
+        private static void PromoteAlreadyConnectedDevices()
+        {
+            try
+            {
+                foreach (var device in InputSystem.devices)
+                {
+                    if (device is Gamepad)
+                        continue;
+                    var desc = device.description;
+                    if (string.IsNullOrEmpty(desc.interfaceName) || desc.interfaceName != "HID")
+                        continue;
+
+                    var name = TryBuildAndRegisterLayout(desc, device.layout);
+                    if (!string.IsNullOrEmpty(name))
+                        CSDebug.Log($"[HidGamepadSupport] Registered Gamepad layout '{name}' for " +
+                                    $"already-connected device '{desc.product}'. It will be recreated as a Gamepad.");
+                }
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[HidGamepadSupport] Sweep of connected devices failed: {e.Message}");
+            }
         }
 
         private static string OnFindLayoutForDevice(ref InputDeviceDescription description,
             string matchedLayout, InputDeviceExecuteCommandDelegate executeDeviceCommand)
+        {
+            return TryBuildAndRegisterLayout(description, matchedLayout);
+        }
+
+        /// <summary>
+        /// Core promotion logic shared by the live <see cref="OnFindLayoutForDevice"/> hook and
+        /// the connected-device sweep. Returns the generated layout name to use for the device,
+        /// or null to leave the Input System's default (Joystick) layout in place.
+        /// </summary>
+        private static string TryBuildAndRegisterLayout(InputDeviceDescription description, string matchedLayout)
         {
             // Only handle raw HID devices.
             if (string.IsNullOrEmpty(description.interfaceName) ||
                 description.interfaceName != "HID")
                 return null;
 
-            // If Unity already matched this device to a real Gamepad-derived layout
-            // (XInput, DualShock, Switch Pro, or a previously-generated layout of ours),
-            // leave it alone. We only promote devices headed for the generic Joystick/HID
-            // fallback.
-            if (!string.IsNullOrEmpty(matchedLayout) &&
-                matchedLayout != "HID" &&
-                matchedLayout != "Joystick")
-            {
+            // If the device is already exposed via a Gamepad-derived layout (XInput,
+            // DualShock, Switch Pro, or a previously-generated layout of ours), leave it.
+            // NOTE: Unity names auto-generated HID layouts after the *product* (e.g. "Nimbus"),
+            // deriving from Joystick — so we must test ancestry, not the literal name.
+            bool alreadyGamepad = !string.IsNullOrEmpty(matchedLayout) && IsBasedOn(matchedLayout, "Gamepad");
+
+            if (VerboseLogging)
+                LogDevice(description, matchedLayout, alreadyGamepad);
+
+            if (alreadyGamepad)
                 return null;
-            }
 
             HID.HIDDeviceDescriptor descriptor;
             try
@@ -155,8 +205,14 @@ namespace CosmicShore.Gameplay
             if (descriptor.elements == null || descriptor.elements.Length == 0)
                 return null;
 
-            // Only promote things that present themselves as a controller of some kind.
-            if (!IsControllerLike(descriptor))
+            // A device the Input System already classified as a Joystick is controller-like by
+            // definition (Unity only builds Joysticks from Joystick/Gamepad/MultiAxisController
+            // usages). Otherwise fall back to inspecting the descriptor's top-level usage. This
+            // covers descriptors that don't surface a helpful device-level usage.
+            bool joystickFallback = string.IsNullOrEmpty(matchedLayout) ||
+                                    matchedLayout == "HID" ||
+                                    IsBasedOn(matchedLayout, "Joystick");
+            if (!joystickFallback && !IsControllerLike(descriptor))
                 return null;
 
             var map = BuildControlMap(descriptor);
@@ -216,6 +272,43 @@ namespace CosmicShore.Gameplay
             }
 
             return layoutName;
+        }
+
+        private static bool IsBasedOn(string layoutName, string baseLayoutName)
+        {
+            try
+            {
+                return InputSystem.IsFirstLayoutBasedOnSecond(layoutName, baseLayoutName);
+            }
+            catch
+            {
+                // matchedLayout may be a name the registry can't resolve at this instant.
+                return false;
+            }
+        }
+
+        private static void LogDevice(InputDeviceDescription description, string matchedLayout, bool alreadyGamepad)
+        {
+            int vendorId = 0, productId = 0, usage = 0, usagePage = 0, elementCount = 0;
+            try
+            {
+                if (!string.IsNullOrEmpty(description.capabilities))
+                {
+                    var d = HID.HIDDeviceDescriptor.FromJson(description.capabilities);
+                    vendorId = d.vendorId;
+                    productId = d.productId;
+                    usage = d.usage;
+                    usagePage = (int)d.usagePage;
+                    elementCount = d.elements?.Length ?? 0;
+                }
+            }
+            catch { /* best-effort diagnostics only */ }
+
+            CSDebug.Log($"[HidGamepadSupport] HID seen: product='{description.product}' " +
+                        $"manufacturer='{description.manufacturer}' " +
+                        $"vendor=0x{vendorId:X4} product=0x{productId:X4} " +
+                        $"usagePage=0x{usagePage:X2} usage=0x{usage:X2} elements={elementCount} " +
+                        $"matchedLayout='{matchedLayout}' alreadyGamepad={alreadyGamepad}");
         }
 
         private static bool IsControllerLike(HID.HIDDeviceDescriptor descriptor)
