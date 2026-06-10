@@ -17,7 +17,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Maximum slow strength from a normal prism (fraction of speed removed, 0..1)")]
         [SerializeField] float maxSlowStrength = 0.8f;
 
-        [Tooltip("Multiplies the capped slow strength when the impacted prism is dangerous, so the danger prism max is this many times higher (clamps at a full stop)")]
+        [Tooltip("Danger prisms always slow at maxSlowStrength times this multiplier — volume-independent, so even small danger prisms hit at the danger max (clamps at a full stop)")]
         [SerializeField] float dangerSlowMultiplier = 3f;
 
         [Tooltip("Multiplies the recovery duration when the impacted prism is dangerous (1 = same window as normal prisms)")]
@@ -28,16 +28,22 @@ namespace CosmicShore.Gameplay
             var shipStatus = impactor.Vessel.VesselStatus;
             var trailBlockProperties = prismImpactee.Prism.prismProperties;
 
-            // Larger prisms slow more, up to maxSlowStrength. Danger prisms multiply the
-            // already-capped strength, so their effective max is dangerSlowMultiplier times
-            // higher, and suffer a longer recovery window.
-            var slowStrength = Mathf.Min(trailBlockProperties.volume * massScaling, maxSlowStrength);
-            var duration = speedModifierDuration;
+            // Normal prisms: larger volume slows more, up to maxSlowStrength.
+            // Danger prisms: always the danger max (maxSlowStrength * dangerSlowMultiplier),
+            // independent of volume — danger is a prism state, not a function of its mass —
+            // with a longer recovery window.
+            float slowStrength;
+            float duration;
 
             if (trailBlockProperties.IsDangerous)
             {
-                slowStrength *= dangerSlowMultiplier;
-                duration *= dangerSlowDurationMultiplier;
+                slowStrength = maxSlowStrength * dangerSlowMultiplier;
+                duration = speedModifierDuration * dangerSlowDurationMultiplier;
+            }
+            else
+            {
+                slowStrength = Mathf.Min(trailBlockProperties.volume * massScaling, maxSlowStrength);
+                duration = speedModifierDuration;
             }
 
             shipStatus.VesselTransformer.ModifyThrottle(Mathf.Clamp01(1f - slowStrength), duration);
