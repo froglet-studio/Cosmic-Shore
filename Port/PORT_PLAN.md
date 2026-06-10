@@ -24,6 +24,45 @@
 5. **Tests accompany every port.** Enum values get freeze tests; logic gets behavior
    tests. The Unity project's existing edit-mode tests get ported alongside their
    subjects.
+6. **Always shippable progress builds** (prompter requirement, 2026-06-10): the branch
+   must always offer a one-command way for a human to try the current state — see
+   "Progress builds — testing protocol" below. Growing the testable surface is part of
+   every phase, not an afterthought.
+
+## Progress builds — testing protocol
+
+The prompter tests progress without prompting the loop. Contract:
+
+1. **Green branch invariant.** Every push to `claude/quirky-cannon-sk8a02` has
+   `cd Port && dotnet build && dotnet test` green. The branch is always safe to pull.
+2. **Runnable harness: `CosmicShore.Cli`** (`src/CosmicShore.Cli`, lands iteration 2).
+   One command to exercise the current port on any machine with the .NET 10 SDK:
+   `cd Port && dotnet run --project src/CosmicShore.Cli`. It grows with the port:
+   - now → engine smoke: boot loop, SOAP wiring, state machine walk, version banner
+   - phase 2 → scripted simulation: AI vessels, prisms, crystals, cells; deterministic
+     via `--seed`; emits a readable match transcript + final stats
+   - phase 3 → full game-mode rounds headless (`--mode hexrace --players 4 --seed 42`)
+   - phase 5 → `--render` flag for the interactive window; headless stays the default
+3. **Visual artifacts before the renderer is interactive.** From the first render-capable
+   milestone, headless render-to-PNG (and short MP4) smoke outputs are committed under
+   `Port/artifacts/` (small, curated) and sent into the chat at milestones so progress
+   is visible with zero local setup.
+4. **Milestone tags + notification.** Each numbered milestone (M1 first CLI sim, M2 first
+   full game-mode round, M3 first picture, M4 first interactive build, …) gets an
+   annotated git tag `port-mN` on the branch and a push notification to the prompter
+   with the exact command (or file) to try. Milestone log lives in this file.
+5. **Local prerequisites for the prompter** (one-time):
+   `winget install Microsoft.DotNet.SDK.10` (Windows) / `brew install dotnet-sdk` (macOS),
+   then `git fetch origin claude/quirky-cannon-sk8a02 && git checkout claude/quirky-cannon-sk8a02`.
+
+### Milestone log
+
+| Tag | What became testable | Command | Status |
+|---|---|---|---|
+| `port-m1` | CLI engine smoke + sim skeleton | `cd Port && dotnet run --project src/CosmicShore.Cli` | ⬜ next |
+| `port-m2` | First full headless game-mode round (AI vs AI) | `… -- --mode <mode> --seed <n>` | ⬜ |
+| `port-m3` | First rendered frame (PNG artifact in chat + repo) | pull + open artifact | ⬜ |
+| `port-m4` | First interactive desktop build | `… -- --render` | ⬜ |
 
 ## Toolchain (re-verify each fresh container)
 
@@ -128,10 +167,14 @@
 3. Implement the DI container (`CosmicShore.Engine.Injection`): `RegisterValue`,
    lazy `RegisterFactory`, `[Inject]` field injection, container scopes + tests.
 4. Implement `Debug` logging shim (`Debug.Log/LogWarning/LogError`) → pluggable sink.
-5. Port `_Scripts/Utility/ClassExtensions/` pure-logic extensions (skip UniTaskExtensions
+5. **Create `CosmicShore.Cli` (milestone M1)**: console runner that boots the engine
+   loop, walks the ApplicationState machine via SOAP events, prints a version/status
+   banner and a deterministic engine smoke transcript. Tag `port-m1`, notify prompter
+   per the testing protocol above.
+6. Port `_Scripts/Utility/ClassExtensions/` pure-logic extensions (skip UniTaskExtensions
    — superseded by Engine.Tasks) and any other Unity-free utility code + their existing
    tests from `_Scripts/Tests/EditMode/`.
-6. Update this file (status tables + NEXT UP), commit, push.
+7. Update this file (status tables, milestone log, NEXT UP), commit, push.
 
 ## Loop protocol (every iteration)
 
