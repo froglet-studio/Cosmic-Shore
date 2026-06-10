@@ -506,18 +506,6 @@ Transform:
   - {fileID: 263098544}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &778382901 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1795283907943804098, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 2113049457}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &778382902 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 649124003064993173, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
@@ -587,9 +575,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 778382906}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8be3bc7de28342eab7a6def9013e9b89, type: 3}
+  m_Script: {fileID: 11500000, guid: 86e7b4ae1c1b4eca9e999b64aff764c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  autoCreateObjectiveIndicator: 1
   view: {fileID: 778382907}
   scoreboard: {fileID: 2113049460}
   onMoundDroneSpawned: {fileID: 11400000, guid: 14f15b4cda639404cae764ee683d8c3e,
@@ -673,6 +662,8 @@ MonoBehaviour:
   StraightLineLength: 0
   RotationAmount: 10
   DifficultyAngle: 0
+  superShieldTrackPrisms: 0
+  superShieldEngageInstant: 1
   ExternalResetControl: 0
 --- !u!1 &842877272
 GameObject:
@@ -1342,8 +1333,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d862f8cf825f46b9a64c001dd3627bfc, type: 3}
-  m_Name:
-  m_EditorClassIdentifier:
+  m_Name: 
+  m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   _updateInterval: 1
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
@@ -1456,6 +1447,7 @@ MonoBehaviour:
   countdownTimer: {fileID: 778382903}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
+  rule: {fileID: 11400000, guid: c8871fb425b845bca97daed360d11dce, type: 2}
 --- !u!114 &1628508346
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2295,7 +2287,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 2113049459}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c9fc2f1518a04c4f8d5cfa9349c53719, type: 3}
+  m_Script: {fileID: 11500000, guid: ad1572ebe0d06f143bbc8789e520819f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
@@ -2308,15 +2300,9 @@ MonoBehaviour:
     type: 3}
   BannerImage: {fileID: 2113049470}
   BannerText: {fileID: 2113049469}
-  SinglePlayerBannerColor: {r: 0.45490196, g: 0.48235294, b: 0.6784314, a: 1}
-  JadeTeamBannerColor: {r: 0.105882354, g: 0.73333335, b: 0.73333335, a: 1}
-  RubyTeamBannerColor: {r: 0.83137256, g: 0.18039216, b: 0.57254905, a: 1}
-  GoldTeamBannerColor: {r: 0.9882353, g: 0.64705884, b: 0.24705882, a: 1}
-  BlueTeamBannerColor: {r: 0.2, g: 0.4, b: 0.9, a: 1}
   playerCardContainer: {fileID: 1539128694}
   playerCardPrefab: {fileID: 8998330683301042486, guid: ba84a682b21a0a742974715e5d7432b5,
     type: 3}
-  domainColorPalette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
   winnerCrystalReward: 5
@@ -2393,7 +2379,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 2113049472}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6a5c708715524779b5863fb0deacbf0c, type: 3}
+  m_Script: {fileID: 11500000, guid: 585e900e2ee74668919ca01a846434df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
@@ -2401,11 +2387,7 @@ MonoBehaviour:
     type: 2}
   cinematicCameraController: {fileID: 778382904}
   view: {fileID: 778382905}
-  crystalsPerGame: 5
   crystalRewardRoot: {fileID: 778382902}
-  crystalRewardText: {fileID: 778382901}
-  crystalFadeDuration: 0.5
-  delegateCrystalRewardToScoreboard: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

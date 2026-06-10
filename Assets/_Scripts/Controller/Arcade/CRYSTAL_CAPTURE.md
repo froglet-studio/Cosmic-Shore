@@ -141,7 +141,7 @@ gameData.OnMiniGameTurnStarted.Raise()
 │       ├─ [Server] gameData.CrystalTargetCount = target
 │       ├─ Subscribe to OnCrystalsCollectedChanged on EVERY RoundStats (so the
 │       │   HUD's "remaining" readout reflects the local DOMAIN sum, not just self)
-│       └─ UpdateCrystalsRemainingUI()  — shows target - SumCrystalsCollectedByDomain(localDomain)
+│       └─ UpdateCrystalsRemainingUI()  — shows gameData.ScoringRule.Remaining(gameData, localDomain)
 │
 ├─ Crystal collected by player:
 │   ├─ Collision → updates RoundStats.CrystalsCollected
@@ -151,7 +151,7 @@ gameData.OnMiniGameTurnStarted.Raise()
 │
 └─ TurnMonitor.Update() — every frame
     └─ CheckForEndOfTurn()
-        └─ NetworkCrystalCollisionTurnMonitor: gameData.TryGetDomainReachingCrystalTarget(target)?
+        └─ NetworkCrystalCollisionTurnMonitor: gameData.ScoringRule.IsObjectiveReached(gameData, out _)?
             └─ If true → OnTurnEnded() → gameData.InvokeGameTurnConditionsMet()
 ```
 
@@ -161,6 +161,12 @@ gameData.OnMiniGameTurnStarted.Raise()
 
 Winner detection is **server-authoritative** via `OnTurnEndedCustom()`:
 
+> **Source of truth:** the end condition, winning domain, per-player score, and ranked
+> results are produced by `CrystalCaptureScoringRuleSO` (`IsObjectiveReached` / `ResolveWinner`
+> / `AssignScores` / `BuildResults`) via `gameData.ScoringRule`; the turn monitor + controller
+> delegate to it. (The old `gameData.TryGetDomainReachingCrystalTarget` helper was retired —
+> per-domain sums come from `ScoringMetrics.SumByDomain(gameData, Crystals, domain)`.)
+
 ```
 TurnMonitor detects end condition → gameData.InvokeGameTurnConditionsMet()
 │
@@ -169,7 +175,7 @@ TurnMonitor detects end condition → gameData.InvokeGameTurnConditionsMet()
 │   │   └─ [All clients] OnTurnEndedCustom()
 │   │       └─ MultiplayerCrystalCaptureController.OnTurnEndedCustom()  [server only]
 │   │           ├─ Guard: if (_finalResultsSent) return
-│   │           ├─ DetermineWinner(): active domain with the highest SumCrystalsCollectedByDomain;
+│   │           ├─ DetermineWinner(): active domain with the highest ScoringMetrics.SumByDomain(gameData, Crystals, …);
 │   │           │   representative WinnerName = best individual contributor on that domain
 │   │           ├─ Map CrystalsCollected → Score for ALL players (individual contribution)
 │   │           ├─ gameData.SortRoundStats(UseGolfRules: false)  — descending
@@ -248,7 +254,7 @@ Crystal Capture ends when the first active domain's summed CrystalsCollected rea
 
 | Turn Monitor | End Condition | Winner |
 |---|---|---|
-| `NetworkCrystalCollisionTurnMonitor` | First domain whose `SumCrystalsCollectedByDomain` ≥ `CrystalCollisions` | Domain with highest aggregate; representative `WinnerName` = best individual contributor on the winning domain |
+| `NetworkCrystalCollisionTurnMonitor` | First domain whose `ScoringMetrics.SumByDomain(Crystals)` ≥ `CrystalCollisions` (via `gameData.ScoringRule.IsObjectiveReached`) | Domain with highest aggregate; representative `WinnerName` = best individual contributor on the winning domain |
 
 To swap the end condition mode (e.g., timer-based), replace the turn monitor in the scene — the controller drives the rest of the flow through `OnTurnEndedCustom()` regardless of which monitor triggers it.
 
@@ -319,7 +325,7 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 
 1. **No dedicated environment generation**: Unlike HexRace's deterministic track with seed sync, Crystal Capture uses a scene-placed environment. No seed NetworkVariable or deterministic spawning is needed.
 
-2. **Domain-aggregated turn end**: The scene wires `NetworkCrystalCollisionTurnMonitor` with `CrystalCollisions` set to the per-domain target. The turn ends as soon as `gameData.TryGetDomainReachingCrystalTarget(target, out _)` returns true — i.e., when any active domain's summed CrystalsCollected reaches the target. To swap the trigger (e.g., back to a timer), replace the monitor in the scene.
+2. **Domain-aggregated turn end**: The scene wires `NetworkCrystalCollisionTurnMonitor` with `CrystalCollisions` set to the per-domain target. The turn ends as soon as `gameData.ScoringRule.IsObjectiveReached(gameData, out _)` returns true — i.e., when any active domain's summed CrystalsCollected reaches the target. To swap the trigger (e.g., back to a timer), replace the monitor in the scene.
 
 3. **Score = CrystalsCollected (per-player)**: Per-player `Score` still equals individual `CrystalsCollected` so the scoreboard's secondary stat shows individual contribution. The winner banner and end-game attribution use the domain aggregate via `WinnerDomain`.
 

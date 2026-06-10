@@ -248,6 +248,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `PartySystem/` | `Docs/` | Party (Relay) layer: `ARCHITECTURE.md` (locked design, investigation Q&A, error-handling matrix, exit criteria), `REFACTOR.md` (active backlog + deferred items + per-commit protocol), `BUGS.md`, `TESTS.md`, `TODOS.md`. EAGER per-user Relay session is the locked design. |
 | `PresenceSystem/` | `Docs/` | Presence-lobby (discovery) layer: `ARCHITECTURE.md`, `REFACTOR.md`, `BUGS.md`, `TESTS.md`, `TODOS.md`. Lobby-only UGS session, coexists with NetworkManager. |
 | `NetworkDiagnostics/` | `Docs/` | NetDiag overlay: `ARCHITECTURE.md` (NetworkMonitor + `NetworkDiagnostics` helper, classification rules), `TESTS.md` (Tests A-E), `TODOS.md`. |
+| `ScoringSystem/` | `Docs/` | Scoring system (in-game score HUD + final scoreboard): `ARCHITECTURE.md` (shared data layer, event dispatch, per-mode override table, target = one unified networked scoring path), `REFACTOR.md` (sequenced backlog + ground rules: SOAP/observer/SOLID/DRY/KISS, retire `IsMultiplayerMode`), `BUGS.md`, `TESTS.md`. |
 | `CameraMigrationReview.md` | `Docs/` | Camera system migration tracking |
 | `BOOTSTRAP_AUDIT.md` | `_Scripts/System/Bootstrap/` | Bootstrap scene audit, execution order, DI registration |
 | `HEXRACE.md` | `_Scripts/Controller/Arcade/` | HexRace game mode technical reference |
@@ -1391,7 +1392,7 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 #### Race Rules
 
 - **Crystal target**: Resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()`: inspector `CrystalCollisions` field (if non-zero) > `SpawnableWaypointTrack` waypoints > default 39. Synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable → `gameData.CrystalTargetCount`
-- **Turn monitor (domain-aggregated)**: `NetworkCrystalCollisionTurnMonitor` calls `gameData.TryGetDomainReachingCrystalTarget(target, out _)` every frame (server only) — the turn ends when any active domain's summed CrystalsCollected reaches the target, so AI and human teammates finish the race together
+- **Turn monitor (domain-aggregated)**: `NetworkCrystalCollisionTurnMonitor` calls `gameData.ScoringRule.IsObjectiveReached(gameData, out _)` every frame (server only) — the turn ends when any active domain's summed CrystalsCollected (`ScoringMetrics.SumByDomain`) reaches the target, so AI and human teammates finish the race together
 - **Winner detection (domain-aggregated)**: Server-authoritative via `HexRaceController.OnTurnEndedCustom()` — finds the first active domain whose summed crystals reach the target (Jade → Ruby → Gold tie-break), sets `_raceEnded=true`, picks the best individual contributor on that domain as the representative `WinnerName`, calculates all scores, broadcasts via `SyncFinalScores_ClientRpc`
 - **Scoring**: Every player on the winning domain gets `Score = finishTime` (seconds). Losing-domain players get `Score = 10000 + domainCrystalsRemaining` — the penalty reflects the team's deficit, so teammates on the same losing domain tie on Score. Golf rules (`UseGolfRules=true`): lower = better
 - **Score sync**: `SyncFinalScores_ClientRpc()` broadcasts all player scores + winner name to all clients, then calls `InvokeWinnerCalculated()` + `InvokeMiniGameEnd()`
@@ -1440,7 +1441,7 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 - **Comeback system**: Use `ElementalComebackSystem` with `ScoreDifferenceSource.CrystalsCollected` for HexRace (not Score, since Score tracks elapsed time equally for all). Leader and player values are read as domain aggregates via `GameDataSO.SumCrystalsCollectedByDomain`, so comeback buffs scale with the **team** deficit.
 - **Single scene**: Do not create separate singleplayer/multiplayer scenes. AI backfill handles solo play within the same Netcode pipeline.
 - **Crystal target sync**: Server writes target to `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable, which syncs to `gameData.CrystalTargetCount` on all clients.
-- **Domain-aggregated scoring**: HexRace, Joust, and Crystal Capture all end on a **per-domain** sum (`GameDataSO.TryGetDomainReachingCrystalTarget` / `TryGetDomainReachingJoustTarget`). At most three scores ever exist (Jade / Ruby / Gold); teammates contribute to the same domain total. The in-game `MultiplayerHUD` shows the local player's domain panel to the left of the centered player score and 1-2 opposing-domain panels to the right when its `MultiplayerHUDView` has the `allyDomainContainer` / `opposingDomainsContainer` / `domainPanelPrefab` wiring; otherwise it falls back to the legacy per-player layout.
+- **Domain-aggregated scoring**: HexRace, Joust, and Crystal Capture all end on a **per-domain** sum via the mode's `ScoringRuleSO.IsObjectiveReached` (over `ScoringMetrics.SumByDomain`). At most three scores ever exist (Jade / Ruby / Gold); teammates contribute to the same domain total. The in-game `MultiplayerHUD` shows the local player's domain panel to the left of the centered player score and 1-2 opposing-domain panels to the right when its `MultiplayerHUDView` has the `allyDomainContainer` / `opposingDomainsContainer` / `domainPanelPrefab` wiring; otherwise it falls back to the legacy per-player layout.
 
 ### FTUE (First-Time User Experience)
 
@@ -1950,7 +1951,17 @@ ones.
   structures. Sometimes referred to casually as "color"; the canonical term
   is *domain*.
 - **Mass** — the produced/consumed quantity that drives scoring, fueling,
-  and cell control.
+  and cell control. **Mass is conserved: it has no passive decay.** A prism
+  (the concrete unit of mass), once created, is only ever removed by an
+  *active* force — a vessel using an ability, or fauna eating it. There is no
+  aging, lifespan, timed culler, or growth/decay oscillator anywhere in the
+  mass pipeline. Population homeostasis is the job of the **food web** (fauna
+  consume mass; fauna starve when prey is scarce), never of artificial decay.
+  A large accumulation of prisms is therefore a *valid* state, not a bug to
+  auto-correct: it persists until an active force consumes it, and when the
+  fauna that would eat it can't reach prey, the correction surfaces as fauna
+  starving — not as prisms vanishing. See "Don't cheat emergence" below and
+  `Docs/ECOSYSTEM.md`.
 - **Cells** (with `CellType`) — the regions of play that are the unit of
   territorial control. Casual language sometimes calls these "biomes"; the
   canonical term is *cell*.
@@ -1960,7 +1971,10 @@ ones.
 - **Prisms / Prismscapes** — the geometric primitive of player-generated
   structure. Trails are the 1-dimensional case of a prismscape; higher-
   dimensional prism constructions are planned and should reuse this
-  primitive rather than introducing parallel structure types.
+  primitive rather than introducing parallel structure types. Prisms *are*
+  conserved mass (see **Mass**): only active forces — vessel abilities and
+  fauna consumption — remove a prism. Whether a prism is a lifeform's health-
+  prism or vessel-spawned makes no difference to this rule.
 - **Flora & Fauna** — populations that live on and respond to the
   fundamentals above (e.g. fauna attraction to prisms, flora growth on
   cells).
@@ -2039,6 +2053,25 @@ things so the balance is achieved by construction. Before taking that
 shortcut — for instance, before reading fauna placement data and acting on
 it to short-circuit the attraction behavior — ask the prompter whether they
 want the cheat or the emergent solution.
+
+**Example (resolved): prism decay is a cheat — mass is conserved.** Cells fill
+with the dominant domain's flora and "freeze solid": fauna only eat *opposing*
+mass, so the leader's flora have no predator and the prism count never falls.
+The tempting fix is **passive prism decay** — prisms age and die on a timer (or
+a cell-level reaper culls N per tick) so the count drops on its own and flora
+resume growing through the phase hysteresis. **That is a cheat** — a timed
+culler is just the flora regrowth-pulse inverted, a hard-coded oscillator
+reaching past the fundamentals to manufacture the breathing we want to *emerge*.
+The decided answer (do not relitigate): **prisms are conserved; the only sinks
+are active — vessel abilities and fauna consumption.** The down-force on a
+dominant accumulation is the **food web**: opposing-domain fauna graze it down,
+or, when no fauna can reach edible prey, the population crashes via starvation.
+A large accumulation that nothing is eating is a *valid* equilibrium, not a
+defect to auto-correct. If a future cell "freezes," fix it by giving an active
+force a reason/ability to consume that mass (or by tuning fauna diet, reach, and
+spawning) — never by adding decay. The flora regrowth pulse that currently
+exists is the growth-side counterpart of this same cheat and is flagged for
+retirement, not extension. See `Docs/ECOSYSTEM.md`.
 
 ### When in doubt
 

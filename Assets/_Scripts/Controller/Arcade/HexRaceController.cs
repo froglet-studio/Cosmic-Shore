@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -26,6 +27,10 @@ namespace CosmicShore.Gameplay
         [Header("Seed")]
         [SerializeField] int seed = 0;
 
+        [Header("Scoring")]
+        [Tooltip("Drag HexRaceScoringRule.asset — the per-mode scoring strategy (end condition, scores, results).")]
+        [SerializeField] ScoringRuleSO rule;
+
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
 
         private bool _raceEnded;
@@ -46,6 +51,7 @@ namespace CosmicShore.Gameplay
         {
             Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] OnNetworkSpawn — IsServer={IsServer}, Intensity={Intensity}</color>");
             base.OnNetworkSpawn();
+            gameData.ScoringRule = rule;
             numberOfRounds = 1;
             numberOfTurnsPerRound = 1;
 
@@ -219,12 +225,10 @@ namespace CosmicShore.Gameplay
             base.OnTurnEndedCustom();
             if (!IsServer || _raceEnded) return;
 
-            int target = ResolveCrystalsToFinishTarget();
-
-            // Domain-aggregated winner: the first active domain whose summed
-            // CrystalsCollected reaches the target wins together. Teammates (human
-            // and AI on the same domain) finish the race as a team.
-            if (!gameData.TryGetDomainReachingCrystalTarget(target, out var winningDomain))
+            // Domain-aggregated end + scoring delegated to the mode's ScoringRule: the first
+            // active domain whose summed metric reaches the target wins together. Teammates
+            // (human and AI on the same domain) finish the race as a team.
+            if (!rule.IsObjectiveReached(gameData, out var winningDomain))
                 return;
 
             _raceEnded = true;
@@ -240,21 +244,8 @@ namespace CosmicShore.Gameplay
                 .FirstOrDefault();
             string winnerName = winnerRep?.Name ?? "";
 
-            // Losing-side penalty is based on the DOMAIN crystal deficit so the
-            // scoreboard's "crystals left" reflects how close the team came overall.
-            foreach (var stats in gameData.RoundStatsList)
-            {
-                if (stats.Domain == winningDomain)
-                {
-                    stats.Score = finishTime;
-                }
-                else
-                {
-                    int domainSum = gameData.SumCrystalsCollectedByDomain(stats.Domain);
-                    int crystalsLeft = Mathf.Max(0, target - domainSum);
-                    stats.Score = 10000f + crystalsLeft;
-                }
-            }
+            // Winner = finish time; losers = DOMAIN crystal-deficit sentinel (the rule owns this).
+            rule.AssignScores(gameData, winningDomain, finishTime);
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
@@ -271,11 +262,6 @@ namespace CosmicShore.Gameplay
         {
             if (_raceEnded) return;
             base.SetupNewRound();
-        }
-
-        int ResolveCrystalsToFinishTarget()
-        {
-            return gameData.CrystalTargetCount > 0 ? gameData.CrystalTargetCount : 39;
         }
 
         void SyncFinalScoresSnapshot(string winnerName, Domains winnerDomain)
@@ -331,6 +317,7 @@ namespace CosmicShore.Gameplay
 
             gameData.SortRoundStats(UseGolfRules);
             gameData.CalculateDomainStats(UseGolfRules);
+            gameData.SetResults(rule.BuildResults(gameData));
             gameData.InvokeWinnerCalculated();
             gameData.InvokeMiniGameEnd();
         }

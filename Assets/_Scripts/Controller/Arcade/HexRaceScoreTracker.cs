@@ -19,7 +19,6 @@ namespace CosmicShore.Gameplay
         [SerializeField] CrystalCollisionTurnMonitor turnMonitor;
 
         [Header("Settings")]
-        [SerializeField] float penaltyScoreBase = 10000f;
         [SerializeField] bool showDebugLogs = true;
 
         [Inject] UGSStatsManager ugsStatsManager;
@@ -98,7 +97,7 @@ namespace CosmicShore.Gameplay
                 crystalsRemaining = parsed;
 
             bool  isWinner   = crystalsRemaining <= 0;
-            float finalScore = isWinner ? _elapsedRaceTime : (penaltyScoreBase + crystalsRemaining);
+            float finalScore = isWinner ? _elapsedRaceTime : GolfScoreSentinels.EncodeHexRaceLoserScore(crystalsRemaining);
 
             gameData.LocalRoundStats.Score = finalScore;
 

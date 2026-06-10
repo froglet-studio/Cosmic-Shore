@@ -32,6 +32,13 @@ Docs/
 │   ├── TESTS.md                 Tests A-E
 │   └── TODOS.md                 deferred adoption + extensions
 │
+├── ScoringSystem/               ← in-game score HUD + final scoreboard
+│   ├── ARCHITECTURE.md          both surfaces, data flow, per-mode table,
+│   │                            target architecture (unified networked scoring)
+│   ├── REFACTOR.md              sequenced backlog + ground rules
+│   ├── BUGS.md                  open correctness issues (B1-B5)
+│   └── TESTS.md                 manual procedures (T1-T10)
+│
 ├── THREADING.md                 main-thread affinity rules
 │                                (.AsMainThread() contract, MainThreadDispatcher)
 ├── SCENES.md                    scene inventory, game-mode reference,
@@ -39,10 +46,11 @@ Docs/
 └── CameraMigrationReview.md     camera system migration tracking
 ```
 
-The `PartySystem/`, `PresenceSystem/`, and `NetworkDiagnostics/`
-folders share a consistent shape: ARCHITECTURE for current state,
-REFACTOR for active backlog, BUGS for open issues, TESTS for manual
-procedures, TODOS for parking-lot items. The PartySystem also keeps a
+The `PartySystem/`, `PresenceSystem/`, `NetworkDiagnostics/`, and
+`ScoringSystem/` folders share a consistent shape: ARCHITECTURE for current
+state, REFACTOR for active backlog, BUGS for open issues, TESTS for manual
+procedures, TODOS for parking-lot items (the Scoring System folds its
+parking-lot into REFACTOR). The PartySystem also keeps a
 chronological session journal because MPPM testing produces
 session-scoped findings that benefit from a timeline view.
 
@@ -54,9 +62,12 @@ session-scoped findings that benefit from a timeline view.
 | Understand presence vs party | `PresenceSystem/ARCHITECTURE.md` § "Why it's separate from the party session" |
 | See known issues + their status | `PartySystem/BUGS.md` + `PresenceSystem/BUGS.md` |
 | See what we're refactoring next | `PartySystem/REFACTOR.md` § "Sequencing" |
+| See the next multiplayer TODOs / big-picture roadmap | `MultiplayerArchitecture/ROADMAP.md` |
 | Run the manual smoke / stress tests | `PartySystem/TESTS.md` § "Smoke gate" |
 | See the latest MPPM session findings | `PartySystem/MPPM_SESSION_LOG.md` |
 | Understand the diagnostic overlay | `NetworkDiagnostics/ARCHITECTURE.md` |
+| Understand the scoring system (HUD + end-game) | `ScoringSystem/ARCHITECTURE.md` |
+| See scoring-system cleanup work / open issues | `ScoringSystem/REFACTOR.md` + `ScoringSystem/BUGS.md` |
 | Understand the threading rules | `THREADING.md` |
 | Find a scene | `SCENES.md` |
 

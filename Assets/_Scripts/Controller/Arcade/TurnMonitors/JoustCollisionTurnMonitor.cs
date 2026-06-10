@@ -17,6 +17,11 @@ namespace CosmicShore.Gameplay
         {
             InitializeOwnStats();
 
+            // Publish the joust target so the controller (and Phase B: scoreboard) can read
+            // it from one place — mirrors HexRace's CrystalTargetCount. A scene constant, so
+            // every peer writes the same value (R10).
+            gameData.JoustTargetCount = collisionsNeeded;
+
             if (ownStats != null)
             {
                 ownStats.OnJoustCollisionChanged += OnJoustCollisionChanged;

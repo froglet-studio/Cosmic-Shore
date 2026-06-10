@@ -75,29 +75,20 @@ namespace CosmicShore.Gameplay
         {
             if (!IsServer) return false;
 
-            int target = _netCrystalCollisions.Value > 0
-                ? _netCrystalCollisions.Value
-                : CrystalCollisions;
-
-            // Team-aware end condition: the turn ends when any active domain's
-            // summed CrystalsCollected reaches the target. Individual progress is
-            // displayed by the HUD, but the trigger is per-team so AI and human
-            // teammates can finish the objective together.
-            return gameData.TryGetDomainReachingCrystalTarget(target, out _);
+            // End condition delegated to the mode's ScoringRule. HexRace and Crystal Capture
+            // both end when an active domain's summed metric reaches the target; the trigger is
+            // per-team so AI and human teammates finish the objective together.
+            return gameData.ScoringRule.IsObjectiveReached(gameData, out _);
         }
 
         protected override void UpdateCrystalsRemainingUI()
         {
-            int target = _netCrystalCollisions.Value > 0
-                ? _netCrystalCollisions.Value
-                : CrystalCollisions;
-
-            // Remaining is now relative to the LOCAL PLAYER'S DOMAIN aggregate,
-            // so the HUD reflects the team objective rather than a single ship.
-            int domainSum = 0;
-            if (gameData.LocalPlayer != null)
-                domainSum = gameData.SumCrystalsCollectedByDomain(gameData.LocalPlayer.Domain);
-            int remaining = Mathf.Max(0, target - domainSum);
+            // Remaining is the LOCAL PLAYER'S DOMAIN deficit (the rule owns target + sum), so
+            // the HUD reflects the team objective rather than a single ship. A null local
+            // player resolves to Domains.Blue (sum 0 → full target remaining), matching the
+            // previous behavior.
+            int remaining = gameData.ScoringRule.Remaining(
+                gameData, gameData.LocalPlayer?.Domain ?? Domains.Blue);
 
             if (onUpdateTurnMonitorDisplay)
                 onUpdateTurnMonitorDisplay.Raise(remaining.ToString());

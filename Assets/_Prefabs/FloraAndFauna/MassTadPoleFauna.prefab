@@ -59,14 +59,14 @@ MonoBehaviour:
     type: 2}
   autoInitialize: 1
   Population: {fileID: 0}
-  cohesionRadius: 20
-  behaviorUpdateRate: 3
+  cohesionRadius: 50
+  behaviorUpdateRate: 1.5
   separationRadius: 15
-  trailBlockInteractionRadius: 15
+  trailBlockInteractionRadius: 45
   separationWeight: 12
   alignmentWeight: 2
   cohesionWeight: 1
-  goalWeight: 0.3
+  goalWeight: 3
   minSpeed: 10
   maxSpeed: 15
   DefaultGoal: {fileID: 0}
@@ -75,6 +75,8 @@ MonoBehaviour:
   Mound: {fileID: 0}
   isKilled: 0
   collisionEffects: 01000000
+  forager: 1
+  starvationSeconds: 90
 --- !u!1001 &4724174359583210385
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -411,6 +413,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Crystal: {fileID: 1936952849576087950}
+  elementalCrystalShipEffects:
+  - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
   moveToVesselDuration: 3
   easeMoveToVessel: 1
 --- !u!114 &621589876111236878

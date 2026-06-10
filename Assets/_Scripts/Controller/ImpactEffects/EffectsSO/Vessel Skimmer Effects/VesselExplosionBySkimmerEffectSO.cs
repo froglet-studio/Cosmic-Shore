@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using UnityEngine;
@@ -83,6 +84,12 @@ namespace CosmicShore.Gameplay
                 _spawnOffset);
 
             OnJoustCollision.Raise(impacteeVessel.VesselStatus.PlayerName);
+
+            // Play audio for the local player — skimmer owner scored, impactor received.
+            if (impacteeVessel.VesselStatus.IsLocalUser)
+                AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.JoustScored);
+            else if (impactorVessel.VesselStatus.IsLocalUser)
+                AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.JoustReceived);
 
             // Post two-tone joust notification to the game feed
             GameFeedAPI.PostJoust(

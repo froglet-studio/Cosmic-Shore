@@ -1,3 +1,4 @@
+using CosmicShore.Core;
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
@@ -10,6 +11,20 @@ namespace CosmicShore.Gameplay
         public override void Execute(VesselImpactor vesselImpactor, CrystalImpactData data)
         {
             vesselImpactor.Vessel.VesselStatus.ResourceSystem.IncrementLevel(data.Element);
+
+            if (vesselImpactor.Vessel.VesselStatus.IsLocalUser)
+            {
+                var category = data.Element switch
+                {
+                    Element.Charge => GameplaySFXCategory.ElementChargeReceived,
+                    Element.Mass   => GameplaySFXCategory.ElementMassReceived,
+                    Element.Space  => GameplaySFXCategory.ElementSpaceReceived,
+                    Element.Time   => GameplaySFXCategory.ElementTimeReceived,
+                    _              => (GameplaySFXCategory)(-1),
+                };
+                if ((int)category != -1)
+                    AudioSystem.Instance?.PlayGameplaySFX(category);
+            }
         }
     }
 }

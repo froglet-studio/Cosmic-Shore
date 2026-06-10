@@ -4,6 +4,8 @@ using CosmicShore.Gameplay;
 using CosmicShore.Data;
 using CosmicShore.UI;
 using CosmicShore.Core;
+using CosmicShore.Utility;
+using Reflex.Attributes;
 
 namespace CosmicShore.Gameplay
 {
@@ -24,6 +26,8 @@ namespace CosmicShore.Gameplay
 
         [Header("Element Bars")]
         [SerializeField] private ElementalBarsView elementBars;
+
+        [Inject] private GameDataSO gameData;
 
         private IVessel _vessel;
         private IVesselStatus _status;
@@ -155,15 +159,22 @@ namespace CosmicShore.Gameplay
             var isDanger = false;
             try { isDanger = prism.prismProperties != null && prism.prismProperties.IsDangerous; } catch { }
 
-            if (isDanger && config && config.useDomainPaletteColors && config.domainPalette)
+            // Domain (and danger) tint now come from the same theme ColorSet the
+            // vessels and prisms use (R5) — danger maps to the shared EnvironmentColors.Danger.
+            var colorSet = gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.ColorSet
+                : null;
+            if (config && config.useDomainPaletteColors && colorSet)
             {
-                tint = config.domainPalette.danger;
-                haveTint = true;
-            }
-            else if (config && config.useDomainPaletteColors && config.domainPalette)
-            {
-                var dom = _vessel?.VesselStatus?.Domain ?? Domains.Blue;
-                tint = config.domainPalette.Get(dom);
+                if (isDanger)
+                {
+                    tint = colorSet.EnvironmentColors.Danger;
+                }
+                else
+                {
+                    var dom = _vessel?.VesselStatus?.Domain ?? Domains.Blue;
+                    tint = colorSet.GetDomainUIColor(dom);
+                }
                 haveTint = true;
             }
 

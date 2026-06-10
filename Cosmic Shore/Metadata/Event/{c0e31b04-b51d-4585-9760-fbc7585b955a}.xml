@@ -5,7 +5,7 @@
 			<value>Vessel impact</value>
 		</property>
 		<property name="outputFormat">
-			<value>1</value>
+			<value>2</value>
 		</property>
 		<relationship name="folder">
 			<destination>{2bbab971-3f3e-4f99-a6e0-584fa1d58d64}</destination>
@@ -68,7 +68,7 @@
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>700</value>
+			<value>70</value>
 		</property>
 	</object>
 	<object class="MarkerTrack" id="{a0ebcda5-6044-4bca-9885-d6f1ce8824e1}" />
@@ -176,6 +176,7 @@
 	<object class="MixerBusEffectChain" id="{2d012a16-36fd-4d7b-928d-75e2d6a4f95d}">
 		<relationship name="effects">
 			<destination>{666987c7-2629-4a27-9a29-6ef4d77ea9a7}</destination>
+			<destination>{f6958b0e-b4a5-41b5-994f-4821206dc673}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{7683d08e-dfd1-4e8b-9ef7-14953179101b}" />
@@ -209,6 +210,14 @@
 	</object>
 	<object class="MixerBusPanner" id="{4539b4f4-8a34-4072-b1a9-e9f91caafb17}" />
 	<object class="MixerBusFader" id="{666987c7-2629-4a27-9a29-6ef4d77ea9a7}" />
+	<object class="SpatialiserEffect" id="{f6958b0e-b4a5-41b5-994f-4821206dc673}">
+		<property name="minimumDistance">
+			<value>0</value>
+		</property>
+		<property name="maximumDistance">
+			<value>70</value>
+		</property>
+	</object>
 	<object class="MixerBusFader" id="{f70e5f78-4215-4e3a-ba5d-e94806f1540d}" />
 	<object class="AutomationPoint" id="{8e759c38-85fa-4de9-bd4c-972986b4512c}">
 		<property name="position">
