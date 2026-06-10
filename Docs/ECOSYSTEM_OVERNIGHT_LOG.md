@@ -295,3 +295,70 @@ rewritten), so collapsing/renumbering the enum can't drift any scene/prefab/SOAP
    band."
 4. **Run the edit-mode tests** (`CellPhaseRulesTests`, `EcologyEnumIntegrityTests`) —
    rewritten for the 3-phase Default table (Restless 8000/7500, Frenzy 15000/14000).
+
+---
+
+## Session 11 — Fauna REPRODUCTION lands; spawner demoted to seeder; shark re-added; non-alloc perf
+
+**Directive (operator):** "really go hard exploring how far you can take this to
+become vibrant performant life." This session retires the LAST scaffolding cheat
+and stands up the full 3-tier Lotka–Volterra web.
+
+### 1. Reproduction — the population driver (ECOSYSTEM.md §6.1)
+Feeds convert to births. Every `NotifyFed()` (prism consume; a kill for predators)
+advances a per-individual counter; at `FeedsPerOffspring` feeds the fauna births
+`OffspringPerBirth` offspring next to itself, gated by a per-individual
+`ReproductionCooldownSeconds` and a hard per-cell, per-species `MaxLivePopulation`
+cap (performance backstop, NOT the primary control — starvation is). All knobs on
+`FaunaConfigurationSO`; `FeedsPerOffspring = 0` (default for un-authored assets,
+incl. all WildlifeBlitz configs) = reproduction off. Offspring inherit domain +
+lineage (`Fauna.AssignLineage` — host cell + species config) so they count in
+`Cell.GetLiveFaunaCount` and can breed in turn. Spawn-immunity (session 1) covers
+newborns automatically (stamped in `Awake`).
+
+### 2. Spawner → SEEDER (the cheat retirement)
+`RandomLifeSpawner`'s fauna loop now spawns only the *deficit* below the species'
+seed floor (`PopulationSize`) each period — bootstrap + extinction recovery — and
+stays out while the food web sustains the population (pure gating in
+`FaunaReproductionRules.SeedSpawnCount`; prey-floor gate unchanged).
+`IntensityWiseLifeSpawner` (WildlifeBlitz/Tournament) only gained lineage-binding
+(counting + config-opt-in reproduction); its 1/tick cadence is unchanged.
+
+### 3. Shark re-added to the Blob (menu) profile — full 3-tier web
+flora → tadpole (floor 25 / cap 60 / births @10 feeds) + brittlestar (4 / 24 / @8)
+→ shark (2 / 5 / births @3 kills, 30s cooldown). Skim Race stays predator-free on
+purpose (predators remove the foragers that scene exists to test). Authored:
+tadpole/brittlestar/shark configs in both biomes + `Blob Cell Spawn Profile`
+SupportedFaunas.
+
+### 4. Performance
+- Both behavior ticks (`LightFauna.UpdateBehavior`, `Boid.CalculateBehavior`) now
+  use `Physics.OverlapSphereNonAlloc` against a shared static 256-slot scratch on
+  the `Fauna` base — the per-tick `Collider[]` allocation was pure GC churn at
+  swarm scale (and reproduction makes swarms bigger).
+- `MaxLivePopulation` is the per-species frame-budget ceiling; size it to perf,
+  not to desired equilibrium.
+
+### 5. Multi-cell correctness (latent bug fixed in passing)
+`Fauna.cell` previously always read `cellData.Cell` — a SHARED runtime SO holding
+only the LAST cell that initialized it (wrong cell in multi-cell scenes, e.g.
+WildlifeBlitz's 4 cells). `Fauna.Initialize(cell)` now records the explicit host
+cell and `cell` prefers it; the SO path remains the fallback for scene-placed
+managers. `LightFauna`/`Boid` overrides call `base.Initialize`.
+
+**Tests:** `FaunaReproductionRulesTests` (19 cases) pin `ShouldBirth` (feed
+threshold, cooldown strictness, cap semantics incl. over-cap, 0 = disabled/uncapped)
+and `SeedSpawnCount` (deficit, floor, cap clamp).
+
+### ⬅️ Validate on return (Session 11)
+1. **Menu:** the food web should now BREATHE — tadpole swarm grows while grazing
+   (watch births: new tadpoles popping out of feeding ones), sharks pick off
+   herbivores and multiply on kills, populations crash when prey runs out, the
+   seeder re-seeds after a crash. If sharks dominate: raise their
+   `FeedsPerOffspring` / lower `MaxLivePopulation` (5 now). If tadpole births feel
+   spammy: raise `ReproductionCooldownSeconds` (6 now).
+2. **Skim Race:** swarm should now keep itself sized to obstacle mass via births
+   instead of the old +12-per-period drip. FPS at late laps is the metric.
+3. **Perf:** watch fauna counts vs frame time; `MaxLivePopulation` (60/24/40/16/5)
+   are first guesses — tune to budget.
+4. **Run `FaunaReproductionRulesTests`** with the other edit-mode tests.

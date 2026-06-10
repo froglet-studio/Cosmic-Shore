@@ -112,26 +112,26 @@ flowchart TD
     %% Aggression is the ONLY thing prism count feeds into fauna (per redesign)
     PHASE --> AGGRO["FAUNA AGGRESSION<br/>L0 calm / L1 / L2 frenzied<br/>(derived from Phase)"]
 
-    %% Fauna spawn is timer-driven, fixed period + fixed population
-    TIMER(["Spawn timer<br/>FIXED long period"]) --> SPAWN
-    DOM["Controlling domain<br/>(DominantDomain)"] --> SPAWN
-    SPAWN["FAUNA SPAWN<br/>fixed-size population<br/>in controlling color"]
+    %% The seeder only tops the species up to its seed floor (bootstrap/recovery)
+    TIMER(["Seed timer<br/>fixed period"]) --> SEED
+    DOM["Controlling domain<br/>(DominantDomain)"] --> SEED
+    SEED["SEEDER<br/>top up to seed floor<br/>(bootstrap + crash recovery)"]
 
-    SPAWN --> POP["Live fauna population"]
+    SEED --> POP["Live fauna population"]
     AGGRO --> BEHAVE
     POP --> BEHAVE["FAUNA BEHAVIOR<br/>L0 seek crystal /<br/>L1 opposing centroid /<br/>L2 densest any-domain"]
-    BEHAVE --> CONSUME["Consume opposing prisms"]
+    BEHAVE --> CONSUME["Consume prey<br/>(prisms; herbivores for predators)"]
     CONSUME -->|−| COUNT
     CONSUME --> DOM
 
-    %% The missing negative feedback on population
-    POP -.->|UNBOUNDED today| CULL["CULL / STOP-PRODUCING<br/>(MISSING — see §6)"]
-    CULL -.->|should bound| SPAWN
-    CULL -.->|should remove| POP
+    %% Population control — the food web closes the loop both ways
+    CONSUME -->|feeds convert to births| REPRO["REPRODUCTION<br/>FeedsPerOffspring per birth<br/>cooldown + MaxLivePopulation cap"]
+    REPRO -->|+| POP
+    POP --> STARVE["STARVATION<br/>no feed in starvationSeconds<br/>=> despawn"]
+    STARVE -->|−| POP
+    POP -.->|live count ≥ floor| SEED
 
-    classDef missing fill:#fee,stroke:#c00,stroke-width:2px;
     classDef state fill:#eef,stroke:#33c,stroke-width:2px;
-    class CULL missing;
     class COUNT,PHASE state;
 ```
 
@@ -147,11 +147,14 @@ flowchart TD
 2. **Predator–prey (negative, the heartbeat).** `count↑ → aggression↑ → fauna hunt
    harder/closer → consume more → count↓ → aggression↓ → …` This is the
    oscillation that should make the cell feel alive. Per the latest decision this
-   loop runs **through aggression (behavior)**, not through spawn rate. ✅ (once
-   §6 lands)
-3. **Population control (negative, MISSING).** Nothing removes fauna or throttles
-   production. Fixed-period spawning with no death ⇒ fauna accumulate without
-   bound. This is the loop we must add. ❌
+   loop runs **through aggression (behavior)**, not through spawn rate. ✅
+3. **Population control (the Lotka–Volterra coupling).** Feeds convert to births
+   (`FeedsPerOffspring` per offspring, per-individual cooldown, hard
+   `MaxLivePopulation` performance backstop); going `starvationSeconds` without a
+   feed despawns the creature. Population is therefore a true function of prey:
+   rich prey ⇒ the population grows past the seed floor; scarce prey ⇒ it crashes.
+   The periodic spawner is demoted to a **seeder** — it only tops a species back up
+   to its seed floor (bootstrap + extinction recovery), never drives growth. ✅
 
 ### ASCII core loop (quick read)
 
@@ -160,32 +163,34 @@ flowchart TD
         |                                                     |
         v                                                     |
    PRISM COUNT --> PHASE --> AGGRESSION --> fauna hunt --> CONSUME (−)
-        ^   ^                                                  |
-        |   |                                                  |
-   flora +  +-- planting + growth freeze ONLY at Frenzy (ceiling, not a throttle)
-   trail +                                                     |
-                                                               |
-   SPAWN (timer, fixed N, controlling color) --> POPULATION ---+
-                                                     |
-                                                     X  no cull / no cap  (MISSING)
+        ^   ^                                              |        |
+        |   |                              feeds => births |        | no feeds
+   flora +  +-- planting + growth freeze ONLY at Frenzy    v        v
+   trail +      (ceiling, not a throttle)            REPRODUCE   STARVE
+                                                        (+)        (−)
+                                                          \        /
+   SEEDER (timer, top-up to floor, controlling color) --> POPULATION
 ```
 
 ---
 
-## 3. Fauna lifecycle (today vs. target)
+## 3. Fauna lifecycle
 
 ```mermaid
 flowchart LR
-    T(["timer tick<br/>fixed period"]) --> S["spawn population N<br/>domain = controlling color"]
+    T(["seed timer<br/>fixed period"]) --> S["top up to seed floor<br/>domain = controlling color"]
     S --> A["assign aggression<br/>from cell phase"]
     A --> H["hunt: resolve goal by aggression<br/>L0 crystal / L1 opposing / L2 densest"]
-    H --> E["reach prisms -> detonate (−count)"]
+    H --> E["reach prey -> consume (−count)"]
     E --> H
-    E -.->|MISSING| D["death / cull"]
-    H -.->|MISSING| ST["starve / despawn when no prey"]
+    E -->|feeds accumulate| R["reproduce<br/>(FeedsPerOffspring, cooldown, cap)"]
+    R --> A
+    H -->|no prey reachable| ST["starve -> despawn"]
+    E -.->|predator reaches it first| P["predated -> despawn"]
 ```
 
-Dashed = not implemented. Fauna currently spawn, hunt forever, and never leave.
+Every arrow is implemented: spawn (seeding), reproduction (births from feeds),
+starvation, and predation all run through the same `Fauna` base.
 
 ---
 
@@ -198,11 +203,11 @@ Dashed = not implemented. Fauna currently spawn, hunt forever, and never leave.
 | 3 | Flora **planting** | `Phase < Frenzy` | steady rate until Frenzy | prism-count driven | ✅ steady-until-frenzy (cheat removed) |
 | 4 | Flora **growth** | `Phase < Frenzy` | steady rate until Frenzy | prism-count driven | ✅ `AssembledFlora`/`BranchingFlora`; same gate as planting |
 | 5 | Fauna **aggression** | Phase → L0/L1/L2 | seek crystal→opposing→densest | prism-count driven | ✅ works; extension seam for a 4th tier / per-subtype |
-| 6 | Fauna **spawn timing** | timer + phase gate + aggression-scaled interval | gated + variable period | **timer only, FIXED period** | 🔧 drop phase gate; drop aggression interval scaling |
-| 7 | Fauna **spawn count** | 1 per tick | single fauna | **fixed-size population** | 🔧 spawn N per tick |
-| 8 | Fauna **domain** | `PickRandomDomain(excluded = local)` + `FaunaExcludeLocalDomain=true` | never the controller's color | **controlling color** | 🔧 use `host.ControllingDomain` — **this is the "no Jade fauna" bug** |
-| 9 | Spawn-cycle HUD ring | `CurrentFaunaSpawnPeriod` (aggression-scaled) | period varies | base fixed period | 🔧 ring reads base period (no aggression scaling) |
-| 10 | Fauna **population bound** | none | unbounded (no death/cap) | bounded | ❌ **MISSING — §6 decision** |
+| 6 | Fauna **spawn timing** | fixed-period seed timer | seeds at `BaseFaunaSpawnTime` | same | ✅ timer-only, fixed period |
+| 7 | Fauna **spawn count** | deficit below seed floor | tops species up to `PopulationSize` | same | ✅ seeder (reproduction drives growth, §6.1) |
+| 8 | Fauna **domain** | `host.ControllingDomain` | controlling color | same | ✅ (was the "no Jade fauna" bug) |
+| 9 | Spawn-cycle HUD ring | `CurrentFaunaSpawnPeriod` (base period) | fixed sweep | same | ✅ no aggression scaling |
+| 10 | Fauna **population bound** | starvation + reproduction + `MaxLivePopulation` | prey-linked rise and crash | same | ✅ §6 + §6.1 (full Lotka–Volterra) |
 | 11 | Fauna **consume → −prisms** | aggression behavior → impact | reduces opposing prisms | same | ✅ this is the prey side of loop #2 |
 
 **Root causes of what you saw:**
@@ -219,13 +224,17 @@ the aggression levels of all fauna" + "do what's best for basic functionality to
 first approximations, build to extend"):
 
 - **Aggression is the lever.** `prism count → phase → aggression level → fauna
-  behavior`. Spawn **period and population size are FIXED** (config values, tuned
-  "much longer" than today). Aggression does **not** feed spawn rate/size — only
-  behavior. This makes loop #2 the heartbeat.
+  behavior`. Aggression does **not** feed spawn rate/size — only behavior. This
+  makes loop #2 the heartbeat.
 - **Fauna domain = controlling color** (`host.ControllingDomain`). Fixes the Jade
   bug; the dominant domain's fauna proliferate and hunt the minority. Trivial,
   certain change — folded into the spawn rewrite.
-- **Spawn = timer-driven**, no phase gate, **population of fixed N** per tick.
+- **Spawner = SEEDER** *(supersedes the original "fixed N per tick" decision —
+  roadmap step 3 landed)*. The timer still ticks at the fixed `BaseFaunaSpawnTime`,
+  but each tick only tops the species back up to its **seed floor**
+  (`PopulationSize`): bootstrap at scene start, recovery after a crash. Above the
+  floor, **reproduction** is the population driver (see §6) — the spawner never
+  races the food web.
 - **HUD ring = base fixed period** (remove the aggression scaling the retrofit
   added to `ScaleFaunaInterval` / `CurrentFaunaSpawnPeriod`).
 - **Keep 3 aggression tiers** — and they are now the **same thing as the phases**.
@@ -285,17 +294,43 @@ the emergent north star and the seam the predator/herbivore split plugs into.
 - **Starvation cull** on `Fauna`/`LightFauna`: a creature that hasn't consumed a
   prism in `starvationSeconds` (default 30, `Fauna` field) despawns; `NotifyFed()`
   resets the clock on every `Consume`.
-- Net: population self-bounds to prey, no hard cap. Because fauna only *hunt*
-  opposing prisms at higher aggression (L1+), and aggression rises with prism
-  count, **survival tracks prism count** — low mass ⇒ fauna can't find food ⇒ they
-  thin out; high mass ⇒ they feed and multiply. That coupling is the oscillation.
+- Net: population self-bounds to prey. Because fauna only *hunt* opposing prisms
+  at higher aggression (L1+), and aggression rises with prism count, **survival
+  tracks prism count** — low mass ⇒ fauna can't find food ⇒ they thin out; high
+  mass ⇒ they feed and multiply. That coupling is the oscillation.
+
+### 6.1 Reproduction — the population driver (roadmap step 3, LANDED)
+
+The fixed-period spawner-as-population-source was the last scaffolding cheat; it
+is now retired. **Feeds convert to births**:
+
+- Every `NotifyFed()` (prism consume; a kill for predators) advances a per-individual
+  birth counter. At `FeedsPerOffspring` feeds the fauna births `OffspringPerBirth`
+  offspring next to itself (post-spawn predation immunity gives them time to
+  disperse), subject to a per-individual `ReproductionCooldownSeconds` and a hard
+  per-cell, per-species `MaxLivePopulation` cap — a **performance backstop**, not
+  the primary control (starvation is). All four knobs live on
+  `FaunaConfigurationSO`; `FeedsPerOffspring = 0` (the default for un-authored
+  assets) disables reproduction for the species.
+- Offspring inherit the parent's domain and **lineage** (`Fauna.AssignLineage`:
+  host cell + species config), so they count toward the cell's per-species live
+  population (`Cell.GetLiveFaunaCount`) and can reproduce in turn.
+- The **spawner is demoted to a seeder**: each fixed period it spawns only the
+  *deficit* below the species' seed floor (`PopulationSize`) — bootstrap at scene
+  start, recovery after extinction — and stays out entirely while the food web
+  sustains the population at or above the floor
+  (`FaunaReproductionRules.SeedSpawnCount`). The seeder is acknowledged residual
+  scaffolding: real ecosystems get immigration; ours gets a floor so a crash is
+  never a permanently-dead scene.
+- The pure gating lives in `FaunaReproductionRules` (`ShouldBirth` /
+  `SeedSpawnCount`) with edit-mode tests pinning the Lotka–Volterra coupling.
 
 **Tuning knobs** (watch in Menu_Main, expect to adjust): `starvationSeconds` (too
 low ⇒ fauna starve before reaching prey; raise it), `FaunaFoodFloor` (min prey
-before a burst), `PopulationSize` (`FaunaConfigurationSO`, swarm size),
-`BaseFaunaSpawnTime` (fixed period). No hard population cap was added; if a
-prey-rich cell ever spikes fauna enough to hurt frame-rate, add a high safety cap
-as a backstop (not the primary control).
+before seeding), `PopulationSize` (seed floor), `BaseFaunaSpawnTime` (seed period),
+`FeedsPerOffspring` (lower ⇒ steeper population upswing on rich prey),
+`ReproductionCooldownSeconds` (birth burst throttle), `MaxLivePopulation`
+(performance ceiling — size to frame budget, not to desired equilibrium).
 
 ---
 
@@ -312,10 +347,11 @@ with the team's three real species:
 | **Shark** | `MassSharkFauna` | `LightFauna` | **Predator** (`diet: 1`) | apex; eats *both* herbivores |
 
 All three are **spawnable** by the cell config (`SpawnProfileSO.SupportedFaunas`,
-via `RandomLifeSpawner`). Two herbivore species + one predator. **Currently only
-the two herbivores are wired into the test profiles** — the shark is built and
-balanced (spawn-immunity exists) but left out of both scenes for now (see §7.2);
-its config asset still exists, so re-adding it is one line in a profile.
+via `RandomLifeSpawner`). Two herbivore species + one predator. **The shark is
+wired into the Blob (menu) profile** at apex-tier numbers (seed floor 2, cap 5,
+births on 3 kills) — safe now that spawn immunity gives co-spawned herbivores a
+dispersal window. It stays **out of Skim Race** deliberately: predators remove
+foragers, which is counterproductive to that scene's trail-cleanup perf goal.
 
 > **The live spawn path is the cell config — NOT the scene-placed populations.**
 > The `MassTadpolePopulation` / `MassBrittlestarPopulation` etc. objects in scenes
@@ -374,10 +410,11 @@ its config asset still exists, so re-adding it is one line in a profile.
   Population/manager prefab — listed in the cell's `SpawnProfileSO.SupportedFaunas`.
   `PopulationSize` = boids spawned per period (tadpole bigger for the swarm,
   predator smaller for the apex tier).
-- **Swarm size = tadpole `PopulationSize`** (Blob 25, Skim Race 12). The spawner
-  adds that many per `BaseFaunaSpawnTime`; starvation caps the standing count to
-  available prey, so a denser swarm needs a higher `PopulationSize` *and* enough
-  prey to keep it fed.
+- **Seed floor = `PopulationSize`** (Blob tadpole 25, Skim Race tadpole 12). The
+  seeder tops the species back up to this each `BaseFaunaSpawnTime`; above it the
+  population is reproduction-driven (`FeedsPerOffspring` etc., §6.1) and bounded by
+  starvation + the `MaxLivePopulation` performance cap. A denser standing swarm
+  wants a lower `FeedsPerOffspring` (faster births) *and* enough prey to keep it fed.
 
 > **Don't rely on the scene-placed `*Population` objects** — they're wired through
 > the dead `Cell.fauna2` field (removed) and never spawn (see the §7 note). The
@@ -390,14 +427,16 @@ The food web is wired into two scenes to test the ecosystem's ability to manage
 **trail** prisms (player/AI mass), not just flora:
 
 **A. Menu_Main freestyle toy box** (`Blob Cell Config → Blob Cell Spawn Profile`).
-Flora + two herbivores: tadpole forager (`PopulationSize` 25, the swarm) +
-brittlestar. **No shark** (removed — see the predator note below). The
-autopilot/player vessel lays trails; the tadpole grazes any unshielded non-fauna
-mass (incl. the dominant trail + flora), the brittlestar grazes opposing mass.
-Goal: a self-sustaining scene that stays visually interesting and playable
-**indefinitely**. Levers: tadpole `PopulationSize` (swarm density), `Blob Cell
-Spawn Profile` `BaseFaunaSpawnTime` / `FaunaFoodFloor`, `starvationSeconds` /
-`consumeRadius`.
+The **full 3-tier food web**: flora + tadpole forager (seed floor 25, cap 60,
+births on 10 feeds) + brittlestar (floor 4, cap 24, births on 8 feeds) + **shark**
+(floor 2, cap 5, births on 3 kills — re-added now that spawn immunity covers
+co-spawned prey). The autopilot/player vessel lays trails; the tadpole grazes any
+unshielded non-fauna mass (incl. the dominant trail + flora), the brittlestar
+grazes opposing mass, the shark eats both herbivores. Goal: a self-sustaining
+scene that stays visually interesting and playable **indefinitely** — flora feed
+herbivores, herbivores feed sharks, every tier rises and crashes with its prey.
+Levers: per-species reproduction knobs (§6.1), `Blob Cell Spawn Profile`
+`BaseFaunaSpawnTime` / `FaunaFoodFloor`, `starvationSeconds` / `consumeRadius`.
 
 **B. Skim Race** (`MinigameHexRace`, dedicated `Skim Race Cell Config → Skim Race
 Spawn Profile`, isolated from the 6 other scenes that share the Barren config).
@@ -408,17 +447,16 @@ leave an excess of **trail-prism obstacles**; the forager swarm grazes them →
 fewer prisms → better perf; foragers self-limit (starve) once the obstacles are
 cleared.
 
-> **Sharks (predators) are currently REMOVED from both test scenes.** Why: all
-> fauna spawn co-located at the cell centre, and once predator detection was
-> generalized to the `Fauna` base (so sharks eat `Boid` tadpoles, not just
-> `LightFauna`), the sharks ate **every** herbivore the instant it spawned —
-> leaving "only sharks" and nothing to graze trails. Predators are also
-> counterproductive to the perf goal (they remove foragers). **Spawn immunity is
-> now built** (`Fauna.predationImmunitySeconds`, default 6s, stamped in `Awake`;
-> `Predated` refuses during the window) so a balanced predator CAN be re-added
-> safely — just add the `Blob Shark` config back to the menu profile (keep
-> `PopulationSize` low). I left it out so it doesn't muddy the foraging test; say
-> the word and I'll wire it in.
+> **Shark status: IN the Blob (menu) profile, OUT of Skim Race.** The original
+> "only sharks" wipe (predators eating every herbivore at co-spawn, before the
+> swarm dispersed) is covered by spawn immunity
+> (`Fauna.predationImmunitySeconds`, default 6s, stamped in `Awake`; `Predated`
+> refuses during the window), so the menu now runs the full apex tier at low
+> numbers (seed floor 2, cap 5). Skim Race stays predator-free deliberately —
+> predators remove foragers, which is counterproductive to that scene's
+> trail-cleanup perf goal. If the menu sharks still overgraze in practice, lower
+> their `MaxLivePopulation`/`PopulationSize` or raise `FeedsPerOffspring` before
+> considering removal.
 
 > **Other caveats to validate in-editor (I can't run Unity):**
 > 2. **Sense coverage (addressed — tune `SenseRadiusOverride`).** Registration +
@@ -476,11 +514,12 @@ cleared.
 | Spawner all scenes run | `Assets/_Scripts/Controller/Environment/RandomLifeSpawner.cs` |
 | Regulated spawner — USED by WildlifeBlitz + Tournament (`cellTypeChoiceOptions: 1`) | `Assets/_Scripts/Controller/Environment/IntensityWiseLifeSpawner.cs` |
 | Spawn helpers (`SpawnFaunaWithDomain`, `PickRandomDomain`) | `Assets/_Scripts/Controller/Environment/CellLifeSpawnerBase.cs` |
-| Fauna base: domain, goal, diet, starvation, `Predated` | `Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs` |
+| Fauna base: domain, goal, diet, starvation, `Predated`, lineage + reproduction (`AssignLineage`/`NotifyFed`→`TryReproduce`) | `Assets/_Scripts/Controller/Environment/FloraAndFauna/Fauna.cs` |
+| Reproduction + seeding gating (pure, tested) | `Assets/_Scripts/Utility/DataContainers/FaunaReproductionRules.cs` |
 | Creature behavior + diet-branched consume (herbivore prisms / predator fauna) | `Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs` |
 | Diet enum (Herbivore / Predator) | `Assets/_Scripts/Data/Enums/FaunaDiet.cs` |
 | Flora plant + growth gate (now just `phase < Frenzy`) | `AssembledFlora.cs`, `BranchingFlora.cs`, `Cell.FloraGrowingEnabled` / `FloraPlantingEnabled` |
-| Spawn tuning (period, population, food floor) | `SpawnProfileSO.cs`, `FaunaConfigurationSO.cs` |
+| Spawn tuning (seed period/floor, food floor) + per-species reproduction knobs | `SpawnProfileSO.cs`, `FaunaConfigurationSO.cs` |
 | Aggression enum + tier behaviors | `Assets/_Scripts/Data/Enums/CellAggressionLevel.cs` |
 | Indicator (hex gauge + spawn ring, no numbers) | `Assets/_Scripts/UI/DomainVolumeIndicator.cs` |
 
@@ -547,9 +586,11 @@ with the others.
    hooks: herbivores eat flora prisms, predators eat herbivore fauna. Two-tier
    starvation → genuine Lotka–Volterra oscillation (flora→herbivores→predators→…).
 
-3. **Fauna reproduction** — *retires the fixed-period-spawner cheat.*
-   Well-fed fauna reproduce; the spawner becomes a one-time *seeder*, not the
-   population driver. Population becomes a true function of the food web.
+3. **Fauna reproduction — ✅ LANDED (see §6.1).** Well-fed fauna reproduce
+   (`FeedsPerOffspring` etc. on `FaunaConfigurationSO`); the spawner is demoted to
+   a *seeder* that only tops a species up to its seed floor. Population is a true
+   function of the food web; `FaunaReproductionRules` + edit-mode tests pin the
+   gating. The 3-tier Blob web (flora → tadpole/brittlestar → shark) is authored.
 
 4. **Elemental integration** — *ties the ecology to gameplay.*
    Flora/fauna express their effects through **Elementals** (Charge/Mass/Space/
@@ -570,14 +611,16 @@ with the others.
    Fauna migrate to adjacent cells chasing prey; crowded/empty cells rebalance —
    isolated cells become one connected biome.
 
-**Cheats currently in place, to retire as Phase 2 lands:** the **fixed-period fauna
-spawner** is now the *only* remaining scaffolding cheat (→ step 3, reproduction).
-The flora **regrowth pulse** and the flora **phase-gated self-limit** are both
-**retired** (§0/§5 — flora grow + plant steadily until Frenzy). **Note:** retiring
-those is *not* replaced by prism decay (that was the rejected step 1 — see §0). It
-is replaced by *nothing* on the removal side — mass is conserved — so a cell only
-comes back down when an active force (fauna grazing / vessel abilities) eats its
-mass. The down-force we strengthen is the **food web** (step 2), not a culler.
+**Scaffolding cheat scorecard:** the flora **regrowth pulse**, the flora
+**phase-gated self-limit**, and the **fixed-period spawner as population driver**
+are all **retired** (§0/§5/§6.1). What deliberately remains is the **seeder** — the
+same timer, demoted to topping a species up to its seed floor (bootstrap +
+extinction recovery). It is acknowledged residual scaffolding, kept because a food
+web with no immigration makes extinction permanent and a dead scene is worse than a
+small non-emergent floor; revisit if cross-cell migration (step 7) ever provides a
+real immigration force. **Note:** none of these retirements is replaced by prism
+decay (rejected, §0) — mass is conserved, and a cell only comes back down when an
+active force (fauna grazing / vessel abilities) eats its mass.
 
 ---
 
@@ -594,7 +637,7 @@ exact recipe. As of the 3-phase collapse, standing up a biome is fully data-driv
 | **Biome** | `CellConfigDataSO` | membrane/nucleus/cytoplasm prefabs, `CellModifiers`, the `SpawnProfile` ref, `SenseRadiusOverride` (grid coverage vs. visual membrane), and the **2 phase thresholds** `PhaseThresholds` (`RestlessEnter/Exit`, `FrenzyEnter/Exit`) |
 | **Food web roster + cadence** | `SpawnProfileSO` | `SupportedFloras[]`, `SupportedFaunas[]`, `BaseFaunaSpawnTime` (fixed spawn period), `FaunaFoodFloor` (prey floor for production), initial delays/intervals, `FloraExcludeLocalDomain` |
 | **Flora species** (1 per type) | `FloraConfigurationSO` | `FloraPrefab`, `SpawnProbability`, `InitialSpawnCount`, plant-period override |
-| **Fauna species** (1 per type) | `FaunaConfigurationSO` | `FaunaPrefab`, `PopulationSize` (swarm size per burst), `InitialSpawnCount`, `SpawnProbability` |
+| **Fauna species** (1 per type) | `FaunaConfigurationSO` | `FaunaPrefab`, `PopulationSize` (seed floor), `InitialSpawnCount`, `SpawnProbability`, and the reproduction knobs: `FeedsPerOffspring` (0 = off), `OffspringPerBirth`, `ReproductionCooldownSeconds`, `MaxLivePopulation` (perf cap) |
 | **Per-creature tuning** | the flora/fauna **prefabs** | diet (`FaunaDiet`), `starvationSeconds`, `predationImmunitySeconds`, `forager` (Boid), consume/detection radii (`LightFaunaDataSO`), aggression-curve multipliers, body `HealthPrism`s |
 
 **Recipe for a brand-new biome (zero code):**
@@ -623,8 +666,9 @@ from assets. Lift them onto a config SO when a biome actually needs to vary them
   and the `IntensityWiseLifeSpawner.FaunaSpawnIntervalByAggression`. A biome can't
   make its fauna ramp differently. Lift to `FaunaConfigurationSO` (per species) or
   `SpawnProfileSO` (per biome) when needed.
-- **`RandomLifeSpawner.FaunaSpawnJitter` (150)** — spawn spread around the mass
-  concentration. Const; could be a `SpawnProfileSO` field.
+- **`RandomLifeSpawner.FaunaSpawnJitter` (150)** and **`Fauna.OffspringSpawnJitter`
+  (25)** — spawn/birth spread radii. Consts; could be `SpawnProfileSO` /
+  `FaunaConfigurationSO` fields.
 - **`Boid.forager`** is a prefab bool, so the *same* prefab can't be a forager in
   one biome and a drone in another. Authorable per-prefab today; lift to
   `FaunaConfigurationSO` only if a biome needs the dual role.

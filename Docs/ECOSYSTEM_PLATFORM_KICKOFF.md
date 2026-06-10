@@ -93,12 +93,16 @@ gate (grow + plant until Frenzy) and fauna aggression — **not** spawn rate.
 seek itself. `CellConfigDataSO.SenseRadiusOverride` decouples grid coverage from the
 membrane's visual radius (Skim Race uses 3000 so fauna sense the whole long track).
 
-**Retired scaffolding.** The flora **regrowth pulse** AND the flora **phase-gated
-self-limit** are both gone — flora plant + grow at a **steady rate until Frenzy**
+**Retired scaffolding.** The flora **regrowth pulse**, the flora **phase-gated
+self-limit**, AND the **fixed-period spawner as population driver** are all gone.
+Flora plant + grow at a **steady rate until Frenzy**
 (`Cell.FloraGrowingEnabled = FloraPlantingEnabled = phase < Frenzy`); the food web
-is the only down-force. Removing the staggered self-limit is what collapsed the
-phase ladder 6→3. The fixed-period fauna spawner is still in place (a known
-first-approximation cheat; retire it via reproduction — work item 4 below).
+is the only down-force (removing the staggered self-limit collapsed the phase
+ladder 6→3). **Reproduction is the population driver** (work item 4 — LANDED):
+feeds convert to births (`FeedsPerOffspring`/`OffspringPerBirth`/cooldown/cap on
+`FaunaConfigurationSO`), and the spawner is demoted to a seeder that only tops a
+species up to its seed floor (bootstrap + extinction recovery). See ECOSYSTEM.md
+§6.1.
 
 **Two test scenes wired** (`Docs/ECOSYSTEM.md` §7.2):
 - *Menu_Main* freestyle toy box (Blob Cell) — vibrant, indefinitely watchable.
@@ -149,10 +153,13 @@ every cheat with an emergent force.** Start at the top.
    so arbitrary multi-tier food webs compose from config. This is the key that
    unlocks "countless ecosystems."
 
-4. **Fauna reproduction → retire the fixed-period spawner cheat.**
-   Well-fed fauna reproduce; the spawner becomes a one-time *seeder*. Population
-   becomes a true function of the food web (genuine Lotka–Volterra oscillation with
-   the predator/herbivore tiers). This removes the last scaffolding cheat.
+4. **Fauna reproduction → retire the fixed-period spawner cheat. ✅ LANDED.**
+   Well-fed fauna reproduce (`FaunaConfigurationSO` reproduction knobs;
+   `Fauna.NotifyFed → TryReproduce`; `FaunaReproductionRules` + tests); the spawner
+   is a *seeder* that only tops a species up to its seed floor. Population is a
+   true function of the food web — genuine Lotka–Volterra with the
+   predator/herbivore tiers (the 3-tier Blob web incl. the shark is authored).
+   See ECOSYSTEM.md §6.1.
 
 5. **Elemental integration (ties ecology to gameplay through the right fundamental).**
    Flora/fauna express their effects via **Elementals** (Charge/Mass/Space/Time),

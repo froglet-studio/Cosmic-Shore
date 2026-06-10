@@ -54,9 +54,10 @@ fundamentals whose interactions produce rich, self-balancing, surprising behavio
   clock = two-tier Lotka–Volterra. **Predators aren't active until authored** —
   see ECOSYSTEM.md §7.1 (predator prefab + config + wire into a `SpawnProfileSO`).
 - **Density:** Blob (menu) thresholds `RestlessEnter 3000 / FrenzyEnter 5400`.
-- **One cheat still in place — to retire:** the **fixed-period fauna spawner** (a
-  hard-coded population source → step 3, reproduction). The regrowth pulse is
-  already gone; prism decay was rejected (§0), not added.
+- **All scaffolding cheats retired:** regrowth pulse, flora self-limit, and the
+  fixed-period spawner as population source (now reproduction-driven; the timer
+  only seeds back up to the floor — ECOSYSTEM.md §6.1). Prism decay was rejected
+  (§0), not added.
 
 ### ⚠️ Locked invariant — mass is conserved (no passive decay). Read ECOSYSTEM.md §0.
 A prism (flora health-prism or vessel-spawned) is removed **only by active
@@ -82,9 +83,9 @@ emergence.")
    author a predator prefab + `FaunaConfigurationSO`, wire alongside the herbivore
    config in a `SpawnProfileSO`, then tune to a breathing equilibrium (§7.1). This
    is the active down-force that lets accumulations come down through the food web.
-3. **Fauna reproduction** — *retires the fixed-period-spawner cheat.* Well-fed
-   fauna breed; the spawner becomes a one-time seeder. Population becomes a true
-   function of the food web.
+3. **Fauna reproduction — ✅ LANDED (ECOSYSTEM.md §6.1).** Well-fed fauna breed;
+   the spawner is a seeder topping species up to their seed floor. Population is a
+   true function of the food web.
 4. **Elemental integration** — flora/fauna express effects through **Elementals**
    so vessels *feel* the ecology.
 5. **Domain territory dynamics** · 6. **flora succession** · 7. **cross-cell migration.**
