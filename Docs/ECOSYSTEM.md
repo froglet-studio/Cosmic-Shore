@@ -252,12 +252,13 @@ first approximations, build to extend"):
 
 ### 5.1 Density & the steady-until-frenzy model (cells were sparse / froze solid)
 
-- **Scaled-up capacity.** The menu's `Blob Cell Config` thresholds are now
-  `RestlessEnter 3000 / FrenzyEnter 5400` (was the tiny "widened for visibility"
-  values). Raising `FrenzyEnter` raises both the prism-count ceiling *and* the
-  `DomainVolumeIndicator` volume scale (it ranges against `FrenzyEnter`). Other
-  biomes use the high code `Default` (`FrenzyEnter 15000`); Skim Race is
-  `RestlessEnter 600 / FrenzyEnter 2000`.
+- **Capacity is a PERFORMANCE budget, not a "fill it up" dial.** `FrenzyEnter` is
+  the steady-state prism count (the cell pins there, §6/§12), and prism count is the
+  dominant frame cost — so it is tuned against the frame budget, not for visual
+  density. The menu's `Blob Cell Config` is `RestlessEnter 600 / FrenzyEnter 1000`
+  (was 3000/5400, which sat the menu at ~5 fps — see §12). `FrenzyEnter` also sets
+  the `DomainVolumeIndicator` volume scale. Other biomes use the high code `Default`
+  (`FrenzyEnter 15000`); Skim Race is `RestlessEnter 600 / FrenzyEnter 2000`.
 - **Flora grow steadily until Frenzy.** The old "stop planting at a low phase, stop
   growing at a mid phase" staggered self-limit (and, before it, the periodic
   **regrowth pulse**) are **both retired** — they were growth-side cheats faking the
@@ -348,7 +349,7 @@ with the team's three real species:
 
 All three are **spawnable** by the cell config (`SpawnProfileSO.SupportedFaunas`,
 via `RandomLifeSpawner`). Two herbivore species + one predator. **The shark is
-wired into the Blob (menu) profile** at apex-tier numbers (seed floor 2, cap 5,
+wired into the Blob (menu) profile** at apex-tier numbers (seed floor 2, cap 3,
 births on 3 kills) — safe now that spawn immunity gives co-spawned herbivores a
 dispersal window. It stays **out of Skim Race** deliberately: predators remove
 foragers, which is counterproductive to that scene's trail-cleanup perf goal.
@@ -431,10 +432,12 @@ The food web is wired into two scenes to test the ecosystem's ability to manage
 **trail** prisms (player/AI mass), not just flora:
 
 **A. Menu_Main freestyle toy box** (`Blob Cell Config → Blob Cell Spawn Profile`).
-The **full 3-tier food web**: flora + tadpole forager (seed floor 25, cap 60,
-births on 10 feeds) + brittlestar (floor 4, cap 24, births on 8 feeds) + **shark**
-(floor 2, cap 5, births on 3 kills — re-added now that spawn immunity covers
-co-spawned prey). The autopilot/player vessel lays trails; the tadpole grazes any
+The **full 3-tier food web**: flora + tadpole forager (seed floor 12, cap 24,
+births on 10 feeds) + brittlestar (floor 3, cap 10, births on 8 feeds) + **shark**
+(floor 2, cap 3, births on 3 kills — re-added now that spawn immunity covers
+co-spawned prey). These caps are **performance-bounded** (§12: each fauna's
+per-tick `OverlapSphere` is a top frame cost); raise them only if the
+`EcosystemPerfProbe` shows frame headroom. The autopilot/player vessel lays trails; the tadpole grazes any
 unshielded non-fauna mass (incl. the dominant trail + flora), the brittlestar
 grazes opposing mass, the shark eats both herbivores. Goal: a self-sustaining
 scene that stays visually interesting and playable **indefinitely** — flora feed
@@ -456,7 +459,7 @@ cleared.
 > swarm dispersed) is covered by spawn immunity
 > (`Fauna.predationImmunitySeconds`, default 6s, stamped in `Awake`; `Predated`
 > refuses during the window), so the menu now runs the full apex tier at low
-> numbers (seed floor 2, cap 5). Skim Race stays predator-free deliberately —
+> numbers (seed floor 2, cap 3). Skim Race stays predator-free deliberately —
 > predators remove foragers, which is counterproductive to that scene's
 > trail-cleanup perf goal. If the menu sharks still overgraze in practice, lower
 > their `MaxLivePopulation`/`PopulationSize` or raise `FeedsPerOffspring` before
@@ -526,6 +529,8 @@ cleared.
 | Spawn tuning (seed period/floor, food floor) + per-species reproduction knobs | `SpawnProfileSO.cs`, `FaunaConfigurationSO.cs` |
 | Aggression enum + tier behaviors | `Assets/_Scripts/Data/Enums/CellAggressionLevel.cs` |
 | Indicator (hex gauge + spawn ring, no numbers) | `Assets/_Scripts/UI/DomainVolumeIndicator.cs` |
+| Headless perf+ecology tuner (no Unity) | `Tools/ecosim/ecosim.py` (+ `calibration.csv`, `README.md`) — see §12 |
+| In-Unity perf probe (emits calibration samples) | `Assets/_Scripts/Controller/Environment/EcosystemPerfProbe.cs` |
 
 ---
 
@@ -687,3 +692,75 @@ from assets. Lift them onto a config SO when a biome actually needs to vary them
 
 The domain set ({Jade, Ruby, Gold} + the Blue wildcard) is intentionally fixed —
 Domain is a fundamental, not a per-biome knob.
+
+---
+
+## 12. Performance & the headless tuning loop
+
+The ecology's cost is dominated by two terms, and a config can drive the menu from
+5 fps to 60+ by moving them. This section is the model, the fix, and the loop that
+lets the *agent* tune perf without a human watching the profiler.
+
+### What costs frames
+
+1. **Prism count (per-frame ceiling).** Each prism is a full GameObject (renderer +
+   collider + MonoBehaviours). Because flora grow steadily to `FrenzyEnter` (§0) and
+   the cell pins there (fauna rarely out-graze flora, §6), **`FrenzyEnter` ≈ the
+   steady-state prism count**, and that count sets a hard per-frame ceiling
+   regardless of anything else.
+2. **Fauna `OverlapSphere` queries (fixed-rate).** Every fauna runs a
+   `Physics.OverlapSphere(detectionRadius)` each behavior tick, touching the prism
+   colliders in its radius. Cost ≈ `Σ_species (count/period)·prisms·(radius/cellR)³`.
+   It scales with fauna **count**, with prism count, and with **radius cubed** — and
+   because fauna seek dense regions they sample local (not mean) density. At the old
+   menu steady state (5400 prisms, ~90 fauna, 70 m radii) this term alone ate ~70 %
+   of the frame budget — that was the 5 fps.
+
+### The three levers (highest leverage first)
+
+| Lever | Where | Effect |
+|---|---|---|
+| **Prism ceiling** `FrenzyEnter` | `CellConfigDataSO.PhaseThresholds` | Linear on the per-frame ceiling **and** on every fauna's collider count. The big one. |
+| **Fauna caps** `MaxLivePopulation` / `PopulationSize` | `FaunaConfigurationSO` | Linear on overlap cost. Per-species, per-biome. |
+| **Query radius** `detectionRadius` (LightFauna data SO), `cohesionRadius` (Boid) | prefab/data SO | **Cubic** on overlap — but SHARED across scenes, so a riskier global lever. |
+
+### Menu fix (shipped)
+
+`Blob Cell Config` `FrenzyEnter 5400 → 1000`, `RestlessEnter 3000 → 600`; fauna caps
+cut ~⅔ (tadpole 60→24, brittlestar 24→10, shark 5→3). Menu-scoped (Blob assets
+only — zero behavior / shared-data-SO risk). Modeled steady state: ~1000 prisms,
+~37 fauna → predicted **~77 fps** (was ~5). Vibrancy now comes from motion + the
+birth/death churn, not a static prism wall; push density back up only if the probe
+shows headroom.
+
+### The closed loop (agent-runnable, no Unity)
+
+There is no Unity or C# toolchain in the autonomy container, so perf is tuned
+through a headless model:
+
+- **`Tools/ecosim/ecosim.py`** — reads the real config assets, models the heavy
+  steady state, and estimates FPS from a cost model (the two terms above) calibrated
+  to one real measurement. Prints per-lever sensitivity + named candidate configs.
+  Run: `python3 Tools/ecosim/ecosim.py`. See `Tools/ecosim/README.md`.
+- **`EcosystemPerfProbe`** (`_Scripts/Controller/Environment/EcosystemPerfProbe.cs`)
+  — drop on a Menu_Main GameObject (or set the `ECOSIM_PROBE` define to auto-spawn).
+  Logs `[ECOSIM] prisms=… fauna=… fps=…` from the live `Cell` registry. Read-only,
+  never ships unless added.
+
+The loop: **edit Blob config → `python3 ecosim.py` (predicted fps + levers) → human
+plays the menu → paste the probe's steady-state line into
+`Tools/ecosim/calibration.csv` → ecosim recalibrates to the real numbers → repeat.**
+The model is a lever-ranker, not an oracle (one calibration point + documented
+priors); each real sample tightens its prism-vs-overlap cost split.
+
+### Structural wins still on the table (not yet done — need in-editor validation)
+
+- **Decouple detection from consume radius**, or shrink `detectionRadius` toward
+  `consumeRadius` (the consume loop only needs colliders within consume range). A
+  brittlestar `detectionRadius 70→45` cuts its overlap ~3.7× with little behavior
+  change — but it is a shared data SO (affects every scene's brittlestar), so it
+  wants a real before/after capture.
+- **Stop OverlapSphere-ing prisms for grazing at all.** Fauna already seek the
+  densest region via the (Burst) density grid; grazing could be driven from the cell
+  instead of a per-fauna physics query. Bigger refactor; the highest ceiling-raiser
+  if the food web is ever to be dense AND cheap.

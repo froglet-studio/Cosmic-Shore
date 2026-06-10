@@ -93,6 +93,13 @@ namespace CosmicShore.Gameplay
         static readonly List<Cell> ActiveCells = new();
 
         /// <summary>
+        /// Read-only view of the enabled cells in the scene. Exposed for read-only
+        /// diagnostics (e.g. <see cref="EcosystemPerfProbe"/> summing prisms + live
+        /// fauna across cells); do not mutate or cache across frames.
+        /// </summary>
+        public static IReadOnlyList<Cell> ActiveCellsSnapshot => ActiveCells;
+
+        /// <summary>
         /// The enabled cell whose membrane contains <paramref name="position"/>,
         /// or null when the position is in open space. O(cells-in-scene) — call
         /// at object lifecycle points (spawn/destroy), not per frame.

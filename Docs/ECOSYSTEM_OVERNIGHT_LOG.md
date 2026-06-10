@@ -398,3 +398,57 @@ instantiate (§7 dead `fauna2` note).
    first levers are shark `MaxLivePopulation` (5) and `FeedsPerOffspring` (3);
    the herbivores' `predationImmunitySeconds` (6s, prefab/code default) is the
    newborn-survival lever.
+
+---
+
+## Session 13 — Menu perf (5 fps -> modeled ~77 fps) + a headless tuning LOOP
+
+**Directive (operator):** "the main menu is dropping to a steady 5 fps; steady
+state must be >60. Build a way to close the loop so you can run the game, observe
+performance + population oscillations, and make changes WITHOUT a human in the loop."
+
+### The diagnosis (and my own regression)
+The steady-growth-to-Frenzy change (session 10) raised the menu's prism ceiling to
+`FrenzyEnter 5400`, and reproduction (session 11) pushed fauna to their caps (~90).
+That is the 5 fps: built a headless cost model and it shows the fauna
+`Physics.OverlapSphere` term (each creature querying a 50–70 m sphere into ~5400
+prism colliders, a few times/sec, ×90 fauna) ate ~70 % of the frame budget, and the
+5400 prism GameObjects set a hard per-frame ceiling on top.
+
+### The loop (the real deliverable) — `Tools/ecosim/`
+No Unity / C# in the container, so I built a **dependency-free Python simulator**:
+- `ecosim.py` reads the REAL Blob config assets, models the heavy steady state
+  (prisms pin at Frenzy, fauna at caps), and estimates FPS from a physically-grounded
+  cost model (`fps = (1000 − overlap_ms/s) / frame_fixed_ms`) calibrated to one real
+  anchor (5400,90 → 5 fps). Prints per-lever sensitivity + named candidate configs.
+- `calibration.csv` holds real `(prisms,fauna,fps)` samples; the first is the anchor.
+- `EcosystemPerfProbe.cs` (in-Unity, read-only, never ships unless added) logs
+  `[ECOSIM] prisms=… fauna=… fps=…` from the live `Cell` registry.
+- The loop: edit config -> `python3 Tools/ecosim/ecosim.py` -> read predicted fps ->
+  human plays menu -> paste probe line into calibration.csv -> ecosim recalibrates.
+  See `Tools/ecosim/README.md` and ECOSYSTEM.md §12.
+
+It is a lever-ranker, not an oracle (single calibration point + documented priors:
+`CLUSTERING`, `OVERLAP_SHARE`, `cell_radius_m`); each real sample tightens it.
+
+### The menu fix (Blob assets only — zero behavior risk)
+`FrenzyEnter 5400→1000`, `RestlessEnter 3000→600`; caps tadpole 60→24, brittlestar
+24→10, shark 5→3 (seed floors 25→12 / 4→3 / 2→2). Model: ~1000 prisms, ~37 fauna ->
+**~77 fps predicted** (was 5). The model puts the per-frame prism ceiling at ~80 fps
+for 1000 prisms, so Frenzy is now a PERFORMANCE budget, not a density dial.
+
+### ⬅️ Validate on return (Session 13) — and feed the loop
+1. **Capture the real number.** Add `EcosystemPerfProbe` to a Menu_Main GameObject
+   (or set the `ECOSIM_PROBE` define), play, read the `[ECOSIM]` line. Paste the
+   steady-state sample into `Tools/ecosim/calibration.csv` (most-trusted first) and
+   re-run ecosim — that calibrates the model to YOUR hardware.
+2. If the real menu is **still <60**: the model says cut `FrenzyEnter` further (it is
+   the dominant lever) — try 800 (model ~93 fps). If it's **well above 60**, add life
+   back (raise caps / FrenzyEnter) until it settles ~70–75 with margin.
+3. The other scenes (Skim Race, gameplay) run the same ecosystem; the same probe +
+   ecosim levers apply. I can add Skim Race as a second biome in ecosim on request.
+
+### Structural wins deferred (need a real before/after capture, can't do blind)
+Shrinking the shared `detectionRadius` (cubic on overlap) and driving grazing from
+the density grid instead of per-fauna OverlapSphere — the latter is the only way to
+make the food web dense AND cheap. Flagged in §12.

@@ -19,4 +19,4 @@ MonoBehaviour:
   FeedsPerOffspring: 3
   OffspringPerBirth: 1
   ReproductionCooldownSeconds: 30
-  MaxLivePopulation: 5
+  MaxLivePopulation: 3

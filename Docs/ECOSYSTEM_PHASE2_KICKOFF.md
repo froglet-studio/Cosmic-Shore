@@ -53,7 +53,8 @@ fundamentals whose interactions produce rich, self-balancing, surprising behavio
   predator→herbivore fauna via `Predated`); both bounded by the shared starvation
   clock = two-tier Lotka–Volterra. **Predators aren't active until authored** —
   see ECOSYSTEM.md §7.1 (predator prefab + config + wire into a `SpawnProfileSO`).
-- **Density:** Blob (menu) thresholds `RestlessEnter 3000 / FrenzyEnter 5400`.
+- **Density:** Blob (menu) thresholds `RestlessEnter 600 / FrenzyEnter 1000`
+  (perf-bounded — prism count is the dominant frame cost; see ECOSYSTEM.md §12).
 - **All scaffolding cheats retired:** regrowth pulse, flora self-limit, and the
   fixed-period spawner as population source (now reproduction-driven; the timer
   only seeds back up to the floor — ECOSYSTEM.md §6.1). Prism decay was rejected
