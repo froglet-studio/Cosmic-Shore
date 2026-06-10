@@ -150,13 +150,13 @@ namespace CosmicShore.Gameplay
 
                     var name = TryBuildAndRegisterLayout(desc, device.layout);
                     if (!string.IsNullOrEmpty(name))
-                        CSDebug.Log($"[HidGamepadSupport] Registered Gamepad layout '{name}' for " +
+                        UnityEngine.Debug.Log($"[HidGamepadSupport] Registered Gamepad layout '{name}' for " +
                                     $"already-connected device '{desc.product}'. It will be recreated as a Gamepad.");
                 }
             }
             catch (System.Exception e)
             {
-                CSDebug.LogWarning($"[HidGamepadSupport] Sweep of connected devices failed: {e.Message}");
+                UnityEngine.Debug.LogWarning($"[HidGamepadSupport] Sweep of connected devices failed: {e.Message}");
             }
         }
 
@@ -194,16 +194,23 @@ namespace CosmicShore.Gameplay
             try
             {
                 if (string.IsNullOrEmpty(description.capabilities))
+                {
+                    Bail(description, "no HID capabilities JSON");
                     return null;
+                }
                 descriptor = HID.HIDDeviceDescriptor.FromJson(description.capabilities);
             }
-            catch
+            catch (System.Exception e)
             {
+                Bail(description, $"failed to parse HID descriptor: {e.Message}");
                 return null;
             }
 
             if (descriptor.elements == null || descriptor.elements.Length == 0)
+            {
+                Bail(description, "HID descriptor has no elements");
                 return null;
+            }
 
             // A device the Input System already classified as a Joystick is controller-like by
             // definition (Unity only builds Joysticks from Joystick/Gamepad/MultiAxisController
@@ -213,13 +220,22 @@ namespace CosmicShore.Gameplay
                                     matchedLayout == "HID" ||
                                     IsBasedOn(matchedLayout, "Joystick");
             if (!joystickFallback && !IsControllerLike(descriptor))
+            {
+                Bail(description, $"not controller-like (usagePage=0x{(int)descriptor.usagePage:X2} usage=0x{descriptor.usage:X2})");
                 return null;
+            }
 
             var map = BuildControlMap(descriptor);
             // Require at least the primary stick + one button before we claim it's a gamepad;
             // otherwise we'd misrepresent steering wheels, flight sticks, etc.
             if (!map.HasLeftStick || map.ButtonCount == 0)
+            {
+                Bail(description, $"insufficient controls (leftStick={map.HasLeftStick}, " +
+                                  $"rightStick={map.HasRightStick}, buttons={map.ButtonCount}) " +
+                                  $"— if this is your pad, the report likely encodes buttons/axes " +
+                                  $"in a form the generic mapping didn't catch; paste this log.");
                 return null;
+            }
 
             var layoutName = MakeLayoutName(description, descriptor);
             if (!s_RegisteredLayouts.Contains(layoutName))
@@ -259,13 +275,15 @@ namespace CosmicShore.Gameplay
                         baseLayout: "Gamepad",
                         matches: matcher);
                     s_RegisteredLayouts.Add(layoutName);
-                    CSDebug.Log($"[HidGamepadSupport] Promoted HID device '{displayName}' " +
+                    UnityEngine.Debug.Log($"[HidGamepadSupport] PROMOTED HID device '{displayName}' " +
                                 $"(vendor 0x{descriptor.vendorId:X4}, product 0x{descriptor.productId:X4}) " +
-                                $"to Gamepad layout '{layoutName}'.");
+                                $"to Gamepad layout '{layoutName}' — leftStick={map.HasLeftStick}, " +
+                                $"rightStick={map.HasRightStick}, buttons={map.ButtonCount}. " +
+                                $"It should now appear as Gamepad.current.");
                 }
                 catch (System.Exception e)
                 {
-                    CSDebug.LogWarning($"[HidGamepadSupport] Failed to register Gamepad layout for " +
+                    UnityEngine.Debug.LogWarning($"[HidGamepadSupport] Failed to register Gamepad layout for " +
                                        $"'{displayName}': {e.Message}. Falling back to default Joystick.");
                     return null;
                 }
@@ -304,11 +322,17 @@ namespace CosmicShore.Gameplay
             }
             catch { /* best-effort diagnostics only */ }
 
-            CSDebug.Log($"[HidGamepadSupport] HID seen: product='{description.product}' " +
+            UnityEngine.Debug.Log($"[HidGamepadSupport] HID seen: product='{description.product}' " +
                         $"manufacturer='{description.manufacturer}' " +
                         $"vendor=0x{vendorId:X4} product=0x{productId:X4} " +
                         $"usagePage=0x{usagePage:X2} usage=0x{usage:X2} elements={elementCount} " +
                         $"matchedLayout='{matchedLayout}' alreadyGamepad={alreadyGamepad}");
+        }
+
+        private static void Bail(InputDeviceDescription description, string reason)
+        {
+            if (VerboseLogging)
+                UnityEngine.Debug.Log($"[HidGamepadSupport] Not promoting '{description.product}': {reason}");
         }
 
         private static bool IsControllerLike(HID.HIDDeviceDescriptor descriptor)
