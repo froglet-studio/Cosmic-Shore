@@ -120,6 +120,35 @@ namespace CosmicShore.Gameplay
 
         bool IsBerserk => cell != null && cell.AggressionLevel == CellAggressionLevel.Level2;
 
+        /// <summary>
+        /// Nearest live, non-immune herbivore in the host cell's fauna registry.
+        /// O(live fauna) per behavior tick — the registry is small (bounded by the
+        /// per-species MaxLivePopulation caps).
+        /// </summary>
+        bool TryFindNearestPreyFauna(out Vector3 position)
+        {
+            position = default;
+            var host = cell;
+            if (host == null) return false;
+
+            var fauna = host.LiveFauna;
+            Fauna best = null;
+            float bestSqr = float.PositiveInfinity;
+            for (int i = 0; i < fauna.Count; i++)
+            {
+                var f = fauna[i];
+                if (!f || f == this) continue;
+                if (f.Diet != FaunaDiet.Herbivore || !f.IsAlivePrey || f.IsPredationImmune) continue;
+
+                float d = (f.transform.position - transform.position).sqrMagnitude;
+                if (d < bestSqr) { bestSqr = d; best = f; }
+            }
+
+            if (!best) return false;
+            position = best.transform.position;
+            return true;
+        }
+
         void UpdateBehavior()
         {
             if (!data)
@@ -150,6 +179,15 @@ namespace CosmicShore.Gameplay
                        ? cellData.CrystalTransform.position
                        : (cell ? cell.transform.position : transform.position),
             };
+
+            // Predators hunt PREY, not mass: seek the nearest live herbivore the cell
+            // senses (Cell.LiveFauna — the fauna analogue of the prism density grid).
+            // Replaces the v1 approximation where predators converged on prism-density
+            // centroids and only met herbivores incidentally. Skips predation-immune
+            // newborns so a shark doesn't camp a fresh birth; with no herbivores alive
+            // the phase-based goal above stands (roam plausibly, then starve).
+            if (diet == FaunaDiet.Predator && TryFindNearestPreyFauna(out var preyPos))
+                Goal = preyPos;
 
             if (!IsFinite(Goal) || Goal.sqrMagnitude < 0.001f)
             {

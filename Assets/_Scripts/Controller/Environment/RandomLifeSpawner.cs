@@ -122,6 +122,13 @@ namespace CosmicShore.Gameplay
             // (Docs/ECOSYSTEM.md §6: prey-linked production + starvation + reproduction.)
             float period = Mathf.Max(0.05f, spawnProfile.BaseFaunaSpawnTime);
 
+            // Prey signal by diet: herbivore species seed on prism prey (opposing
+            // mass), predator species on the LIVE HERBIVORE count — the real food,
+            // not the old prism-mass proxy (Docs/ECOSYSTEM.md §7 "spawn gating"
+            // refinement). FaunaFoodFloor doubles as both floors: N prisms for a
+            // herbivore, N herbivores for a predator.
+            bool isPredator = faunaCfg.FaunaPrefab && faunaCfg.FaunaPrefab.Diet == FaunaDiet.Predator;
+
             while (true)
             {
                 if (!host) yield break;
@@ -132,7 +139,11 @@ namespace CosmicShore.Gameplay
                     Mathf.Max(1, faunaCfg.PopulationSize),
                     faunaCfg.MaxLivePopulation);
 
-                if (deficit > 0 && host.OpposingBlockCount(color) >= spawnProfile.FaunaFoodFloor)
+                int preySignal = isPredator
+                    ? host.GetLiveHerbivoreCount()
+                    : host.OpposingBlockCount(color);
+
+                if (deficit > 0 && preySignal >= spawnProfile.FaunaFoodFloor)
                     SpawnFaunaPopulation(host, runtime, faunaCfg, color, deficit);
 
                 // Reset the spawn-cycle ring each period whether or not seeding happened —

@@ -476,6 +476,7 @@ namespace CosmicShore.Gameplay
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
             liveFaunaCounts.Clear();
+            liveFauna.Clear();
             phase = CellPhase.Calm;
 
             if (spawnedCytoplasm)
@@ -528,32 +529,59 @@ namespace CosmicShore.Gameplay
         }
 
         // ---------------------------------------------------------------------
-        //  Per-species live fauna registry — keyed by the FaunaConfigurationSO
-        //  that defines the species. Fauna register on AssignLineage (spawner and
-        //  reproduction paths both) and unregister in OnDestroy, so the count is
-        //  the live standing population. Read by the seeder (top up to the seed
-        //  floor only) and by reproduction (hard MaxLivePopulation backstop).
-        //  See Docs/ECOSYSTEM.md §6.
+        //  Live fauna registry — instances plus per-species counts (keyed by the
+        //  FaunaConfigurationSO that defines the species). Fauna register on
+        //  AssignLineage (spawner and reproduction paths both) and unregister in
+        //  OnDestroy. This registry is the cell "sensing" its inhabitants — the
+        //  fauna analogue of the prism density grid: counts feed the seeder
+        //  (top up to seed floor) and reproduction (MaxLivePopulation backstop);
+        //  instances feed predator prey-seeking (nearest live herbivore) and the
+        //  predator seeding gate. Manager-spawned fauna (no lineage) are invisible
+        //  to it — acceptable, those legacy populations never instantiate (§7).
+        //  See Docs/ECOSYSTEM.md §6/§7.
         // ---------------------------------------------------------------------
 
         readonly Dictionary<FaunaConfigurationSO, int> liveFaunaCounts = new();
+        readonly List<Fauna> liveFauna = new();
 
         /// <summary>Live population of the species defined by <paramref name="config"/> in this cell.</summary>
         public int GetLiveFaunaCount(FaunaConfigurationSO config) =>
             config && liveFaunaCounts.TryGetValue(config, out int c) ? c : 0;
 
-        public void RegisterLiveFauna(FaunaConfigurationSO config)
+        /// <summary>All lineage-registered live fauna in this cell (any species, any diet).</summary>
+        public IReadOnlyList<Fauna> LiveFauna => liveFauna;
+
+        /// <summary>
+        /// Live herbivores still eligible as prey — the prey signal for predator
+        /// seeding (a real herbivore count, not the prism-mass proxy).
+        /// </summary>
+        public int GetLiveHerbivoreCount()
         {
-            if (!config) return;
-            liveFaunaCounts.TryGetValue(config, out int c);
-            liveFaunaCounts[config] = c + 1;
+            int n = 0;
+            for (int i = 0; i < liveFauna.Count; i++)
+            {
+                var f = liveFauna[i];
+                if (f && f.Diet == FaunaDiet.Herbivore && f.IsAlivePrey) n++;
+            }
+            return n;
         }
 
-        public void UnregisterLiveFauna(FaunaConfigurationSO config)
+        public void RegisterLiveFauna(Fauna fauna)
         {
-            if (!config) return;
-            if (liveFaunaCounts.TryGetValue(config, out int c) && c > 0)
-                liveFaunaCounts[config] = c - 1;
+            if (!fauna || !fauna.SourceConfig) return;
+            liveFaunaCounts.TryGetValue(fauna.SourceConfig, out int c);
+            liveFaunaCounts[fauna.SourceConfig] = c + 1;
+            liveFauna.Add(fauna);
+        }
+
+        public void UnregisterLiveFauna(Fauna fauna)
+        {
+            // `is null` guard only — a destroyed-but-non-null fauna must still be
+            // removable from the registry during teardown.
+            if (fauna is null || !fauna.SourceConfig) return;
+            if (liveFaunaCounts.TryGetValue(fauna.SourceConfig, out int c) && c > 0)
+                liveFaunaCounts[fauna.SourceConfig] = c - 1;
+            liveFauna.Remove(fauna);
         }
 
         void Initialize()
@@ -562,6 +590,7 @@ namespace CosmicShore.Gameplay
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
             liveFaunaCounts.Clear();
+            liveFauna.Clear();
             phase = CellPhase.Calm;
 
             // Bind runtime -> this cell

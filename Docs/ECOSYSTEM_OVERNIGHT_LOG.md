@@ -362,3 +362,39 @@ and `SeedSpawnCount` (deficit, floor, cap clamp).
 3. **Perf:** watch fauna counts vs frame time; `MaxLivePopulation` (60/24/40/16/5)
    are first guesses — tune to budget.
 4. **Run `FaunaReproductionRulesTests`** with the other edit-mode tests.
+
+---
+
+## Session 12 — Predators truly HUNT: prey-seeking via the fauna registry + diet-aware seeding
+
+Resolves two documented v1 approximations in ECOSYSTEM.md §7 using the lineage
+registry session 11 built:
+
+1. **Real prey-seeking.** The per-species count registry is upgraded to track
+   live `Fauna` INSTANCES (`Cell.LiveFauna` — the cell sensing its inhabitants,
+   the fauna analogue of the prism density grid; sanctioned by §7's own "no
+   central fauna registry exists yet" note, not a privileged shortcut). A
+   predator's behavior tick now targets the **nearest live, non-immune
+   herbivore**, falling back to the phase-based density goal when no prey exists
+   (roam plausibly → starve). Skipping predation-immune newborns keeps sharks
+   from camping fresh births.
+2. **Diet-aware seeding.** A predator species now seeds on
+   `GetLiveHerbivoreCount() >= FaunaFoodFloor` instead of the prism-mass proxy —
+   no more churn of doomed sharks in a cell with mass but no herbivores.
+   `FaunaFoodFloor` doubles as both floors (N prisms / N herbivores). Added the
+   explicit `FaunaFoodFloor: 5` to the Blob profile (was relying on the
+   deserialization default).
+
+Registry hygiene: instances register in `AssignLineage`, unregister in
+`OnDestroy`, cleared on cell reset/init; destroyed-but-pending fauna are skipped
+by Unity-null checks in every scan. Manager-spawned fauna (no lineage) are
+invisible to the registry — acceptable, those legacy populations never
+instantiate (§7 dead `fauna2` note).
+
+### ⬅️ Validate on return (Session 12)
+1. **Menu:** sharks should now visibly CHASE tadpoles/brittlestars (not drift at
+   mass centroids), and should not appear at all until ≥5 herbivores are alive.
+2. If shark pursuit looks too lethal (herbivore population can't recover), the
+   first levers are shark `MaxLivePopulation` (5) and `FeedsPerOffspring` (3);
+   the herbivores' `predationImmunitySeconds` (6s, prefab/code default) is the
+   newborn-survival lever.

@@ -124,7 +124,7 @@ namespace CosmicShore.Gameplay
             sourceConfig = config;
             if (host && config && !lineageRegistered)
             {
-                host.RegisterLiveFauna(config);
+                host.RegisterLiveFauna(this);
                 lineageRegistered = true;
             }
         }
@@ -174,7 +174,7 @@ namespace CosmicShore.Gameplay
         protected virtual void OnDestroy()
         {
             if (lineageRegistered && hostCell)
-                hostCell.UnregisterLiveFauna(sourceConfig);
+                hostCell.UnregisterLiveFauna(this);
             lineageRegistered = false;
         }
 

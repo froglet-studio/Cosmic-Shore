@@ -389,15 +389,19 @@ foragers, which is counterproductive to that scene's trail-cleanup perf goal.
   - *Shark* (`LightFauna`) — `IsStarving → Die` when no herbivores are reachable.
   Net: a self-bounding food web — the spawner keeps adding `PopulationSize` per
   period while there's prey; starvation + predation remove them when there isn't.
-- **Targeting (v1):** predators reuse the shared phase-based goal (density-grid
-  centroids). Herbivores swarm opposing-flora density; predators seek the same
-  centroids and so converge on the herbivores feeding there, eating them on
-  contact. Explicit "seek nearest herbivore" steering is a future refinement (no
-  central fauna registry exists yet).
-- **Spawn gating (known approximation):** `RandomLifeSpawner` gates every fauna
-  population on `OpposingBlockCount >= FaunaFoodFloor` (prism prey). For predators
-  this is a *proxy* (dense prisms ⇒ herbivores present ⇒ predator food); the real
-  bound is starvation. Refinement: gate predator spawn on herbivore count.
+- **Targeting (v2 — real prey-seeking):** predators hunt the **nearest live
+  herbivore** via the cell's fauna registry (`Cell.LiveFauna` — the fauna analogue
+  of the prism density grid: the cell sensing its inhabitants, not a privileged
+  shortcut). Predation-immune newborns are skipped so a shark doesn't camp a fresh
+  birth. With no herbivores alive, the predator falls back to the shared
+  phase-based density goal (roams plausibly, then starves). Herbivores still swarm
+  opposing-mass density.
+- **Spawn gating (by diet):** `RandomLifeSpawner` seeds a herbivore species when
+  `OpposingBlockCount >= FaunaFoodFloor` (prism prey) and a predator species when
+  `GetLiveHerbivoreCount() >= FaunaFoodFloor` (real food, not the old prism-mass
+  proxy) — so sharks never churn-spawn-and-starve in a cell with mass but no
+  herbivores. `FaunaFoodFloor` doubles as both floors (N prisms / N herbivores);
+  split it into two knobs only if a biome needs them to differ.
 - **Aggression tiers** stay the behavior dial per diet (a 4th tier or per-diet
   curves slot into the existing `CellAggressionLevel` switch points:
   `Cell.AggressionLevel`, `Fauna.ResolveGoal` / `LightFauna.UpdateBehavior`).
@@ -509,7 +513,7 @@ cleared.
 
 | Concern | File |
 |---|---|
-| Prism count, phase, gates, aggression, controlling domain | `Assets/_Scripts/Controller/Environment/Cell.cs` |
+| Prism count, phase, gates, aggression, controlling domain, live-fauna registry (`LiveFauna`/`GetLiveFaunaCount`/`GetLiveHerbivoreCount`) | `Assets/_Scripts/Controller/Environment/Cell.cs` |
 | Phase thresholds + hysteresis | `Assets/_Scripts/.../CellPhaseRules.cs`, `CellPhase` enum, Blob Cell Config asset |
 | Spawner all scenes run | `Assets/_Scripts/Controller/Environment/RandomLifeSpawner.cs` |
 | Regulated spawner — USED by WildlifeBlitz + Tournament (`cellTypeChoiceOptions: 1`) | `Assets/_Scripts/Controller/Environment/IntensityWiseLifeSpawner.cs` |
