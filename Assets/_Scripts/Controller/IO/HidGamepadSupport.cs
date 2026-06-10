@@ -1,0 +1,448 @@
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.Layouts;
+using UnityEngine.InputSystem.LowLevel;
+using UnityEngine.InputSystem.HID;
+using CosmicShore.Utility;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// Universal HID -> Gamepad promotion.
+    ///
+    /// Problem: Unity's Input System only exposes a device as <see cref="Gamepad"/> when it
+    /// ships a hand-authored layout for it (Xbox, DualShock, Switch Pro, ...). For ANY other
+    /// HID controller — e.g. the SteelSeries Nimbus on macOS, many Bluetooth/MFi pads, and a
+    /// long tail of generic USB pads — Unity falls back to a generic <see cref="Joystick"/>.
+    /// All of Cosmic Shore's input (flight via <see cref="GamepadInputStrategy"/>, UI via
+    /// ControllerButtonPress / ControllerDropdown, and strategy selection in
+    /// <see cref="InputController"/>) keys off <c>Gamepad.current</c>, so a Joystick is simply
+    /// ignored and the controller appears dead.
+    ///
+    /// Fix: hook <see cref="InputSystem.onFindLayoutForDevice"/> and, for any HID that Unity
+    /// was about to expose as a generic Joystick, parse the device's OWN HID report descriptor
+    /// and synthesize a <see cref="Gamepad"/>-derived layout whose control offsets are taken
+    /// straight from that descriptor. This is the same mechanism Unity itself uses for its
+    /// built-in HID gamepads (see Unity's HID.cs), generalized to read the offsets from the
+    /// device instead of hardcoding them — so it is universal across a wide range of pads and
+    /// requires no per-device byte tables.
+    ///
+    /// Standard HID Generic-Desktop / Button usages are mapped onto the Gamepad interface:
+    ///   X/Y            -> leftStick
+    ///   Z/Rz (or Rx/Ry)-> rightStick
+    ///   Hat switch     -> dpad
+    ///   Dpad Up/Right/Down/Left usages (pressure dpads like the Nimbus) -> dpad
+    ///   Button page 1..N -> buttonSouth, buttonEast, buttonWest, buttonNorth,
+    ///                       leftShoulder, rightShoulder, leftTrigger, rightTrigger,
+    ///                       select, start, leftStickPress, rightStickPress
+    ///
+    /// Per-device quirks (axis inversion, non-standard button order) can be added to
+    /// <see cref="Quirks"/> without touching the generic path. Axis direction is also
+    /// recoverable at runtime via the existing in-game Invert-Y setting, so a wrong guess is
+    /// never fatal.
+    ///
+    /// Verifying a specific controller: enable <see cref="Utility.GamepadDebugger"/> in a scene;
+    /// it logs the resolved control map for any promoted pad so offsets can be confirmed.
+    /// </summary>
+    public static class HidGamepadSupport
+    {
+        // HID usage-page identifiers (USB HID Usage Tables).
+        private const int UsagePageGenericDesktop = 0x01;
+        private const int UsagePageButton = 0x09;
+
+        // Generic Desktop usages.
+        private const int GD_Joystick = 0x04;
+        private const int GD_Gamepad = 0x05;
+        private const int GD_MultiAxisController = 0x08;
+        private const int GD_X = 0x30;
+        private const int GD_Y = 0x31;
+        private const int GD_Z = 0x32;
+        private const int GD_Rx = 0x33;
+        private const int GD_Ry = 0x34;
+        private const int GD_Rz = 0x35;
+        private const int GD_HatSwitch = 0x39;
+        // Some controllers (e.g. SteelSeries Nimbus) expose the dpad as four discrete
+        // Generic-Desktop "D-pad" usages rather than a hat switch.
+        private const int GD_DpadUp = 0x90;
+        private const int GD_DpadDown = 0x91;
+        private const int GD_DpadRight = 0x92;
+        private const int GD_DpadLeft = 0x93;
+
+        // Tracks layout names we've already generated so re-discovery of the same device
+        // model doesn't try to register a duplicate layout.
+        private static readonly HashSet<string> s_RegisteredLayouts = new HashSet<string>();
+
+        /// <summary>
+        /// Optional per-device corrections, keyed by (vendorId, productId). The generic
+        /// descriptor-driven mapping is correct for the vast majority of pads; entries here
+        /// only exist to override the rare device that reports non-standard ordering or
+        /// inverts an axis contrary to the HID spec.
+        /// </summary>
+        private struct Quirk
+        {
+            public bool InvertLeftStickY;
+            public bool InvertRightStickY;
+        }
+
+        private static readonly Dictionary<(int vendor, int product), Quirk> Quirks =
+            new Dictionary<(int, int), Quirk>
+            {
+                // SteelSeries Nimbus (vendorId 0x0111, productId 0x1420). Documented to invert
+                // the thumbstick Y axes on macOS contrary to the HID spec. We already invert Y
+                // for the standard HID convention below; the Nimbus needs no *extra* flip, so
+                // this entry is a no-op placeholder kept as the canonical example of how to add
+                // a device-specific correction. Adjust the flags here if on-hardware testing
+                // shows a given pad's sticks are reversed.
+                { (0x0111, 0x1420), new Quirk { InvertLeftStickY = false, InvertRightStickY = false } },
+            };
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
+        private static void InitRuntime() => Register();
+
+#if UNITY_EDITOR
+        [InitializeOnLoadMethod]
+        private static void InitEditor() => Register();
+#endif
+
+        private static bool s_Registered;
+
+        private static void Register()
+        {
+            if (s_Registered)
+                return;
+            s_Registered = true;
+
+            // Subscribe once; the handler is invoked by the Input System every time a device
+            // is discovered, on both the main thread and during editor domain reloads.
+            InputSystem.onFindLayoutForDevice += OnFindLayoutForDevice;
+        }
+
+        private static string OnFindLayoutForDevice(ref InputDeviceDescription description,
+            string matchedLayout, InputDeviceExecuteCommandDelegate executeDeviceCommand)
+        {
+            // Only handle raw HID devices.
+            if (string.IsNullOrEmpty(description.interfaceName) ||
+                description.interfaceName != "HID")
+                return null;
+
+            // If Unity already matched this device to a real Gamepad-derived layout
+            // (XInput, DualShock, Switch Pro, or a previously-generated layout of ours),
+            // leave it alone. We only promote devices headed for the generic Joystick/HID
+            // fallback.
+            if (!string.IsNullOrEmpty(matchedLayout) &&
+                matchedLayout != "HID" &&
+                matchedLayout != "Joystick")
+            {
+                return null;
+            }
+
+            HID.HIDDeviceDescriptor descriptor;
+            try
+            {
+                if (string.IsNullOrEmpty(description.capabilities))
+                    return null;
+                descriptor = HID.HIDDeviceDescriptor.FromJson(description.capabilities);
+            }
+            catch
+            {
+                return null;
+            }
+
+            if (descriptor.elements == null || descriptor.elements.Length == 0)
+                return null;
+
+            // Only promote things that present themselves as a controller of some kind.
+            if (!IsControllerLike(descriptor))
+                return null;
+
+            var map = BuildControlMap(descriptor);
+            // Require at least the primary stick + one button before we claim it's a gamepad;
+            // otherwise we'd misrepresent steering wheels, flight sticks, etc.
+            if (!map.HasLeftStick || map.ButtonCount == 0)
+                return null;
+
+            var layoutName = MakeLayoutName(description, descriptor);
+            if (!s_RegisteredLayouts.Contains(layoutName))
+            {
+                Quirks.TryGetValue((descriptor.vendorId, descriptor.productId), out var quirk);
+
+                int reportSizeBytes = Mathf.Max(1, descriptor.inputReportSize);
+                var capturedMap = map;
+                var capturedQuirk = quirk;
+                var capturedName = layoutName;
+                var displayName = string.IsNullOrEmpty(description.product)
+                    ? "HID Gamepad"
+                    : description.product;
+
+                // Match on vendor/product when the device reports them; otherwise fall back to
+                // manufacturer/product strings so zero-id Bluetooth pads still resolve uniquely.
+                var matcher = new InputDeviceMatcher().WithInterface("HID");
+                if (descriptor.vendorId != 0 || descriptor.productId != 0)
+                {
+                    matcher = matcher
+                        .WithCapability("vendorId", descriptor.vendorId)
+                        .WithCapability("productId", descriptor.productId);
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(description.manufacturer))
+                        matcher = matcher.WithManufacturer(description.manufacturer);
+                    if (!string.IsNullOrEmpty(description.product))
+                        matcher = matcher.WithProduct(description.product);
+                }
+
+                try
+                {
+                    InputSystem.RegisterLayoutBuilder(
+                        () => BuildLayout(capturedName, displayName, capturedMap, capturedQuirk, reportSizeBytes),
+                        capturedName,
+                        baseLayout: "Gamepad",
+                        matches: matcher);
+                    s_RegisteredLayouts.Add(layoutName);
+                    CSDebug.Log($"[HidGamepadSupport] Promoted HID device '{displayName}' " +
+                                $"(vendor 0x{descriptor.vendorId:X4}, product 0x{descriptor.productId:X4}) " +
+                                $"to Gamepad layout '{layoutName}'.");
+                }
+                catch (System.Exception e)
+                {
+                    CSDebug.LogWarning($"[HidGamepadSupport] Failed to register Gamepad layout for " +
+                                       $"'{displayName}': {e.Message}. Falling back to default Joystick.");
+                    return null;
+                }
+            }
+
+            return layoutName;
+        }
+
+        private static bool IsControllerLike(HID.HIDDeviceDescriptor descriptor)
+        {
+            // Only promote devices whose top-level usage declares them a controller. This is
+            // the same set Unity itself turns into Joysticks, and it deliberately excludes
+            // mice (usage 0x02) and keyboards (0x06), which also carry X/Y axes and buttons
+            // and would otherwise be mis-promoted to a Gamepad.
+            if (descriptor.usagePage != HID.UsagePage.GenericDesktop)
+                return false;
+
+            switch (descriptor.usage)
+            {
+                case GD_Joystick:
+                case GD_Gamepad:
+                case GD_MultiAxisController:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private struct ControlMap
+        {
+            public bool HasLeftStick, HasRightStick;
+            public int LeftStickXOffsetBits, LeftStickYOffsetBits, LeftStickBits;
+            public int RightStickXOffsetBits, RightStickYOffsetBits, RightStickBits;
+
+            public bool HasHat;
+            public int HatOffsetBits, HatSizeBits;
+
+            // Discrete dpad direction usages (pressure dpads).
+            public int DpadUpBit, DpadDownBit, DpadLeftBit, DpadRightBit; // bit offsets, -1 if absent
+
+            // Ordered list of button bit offsets from the Button usage page.
+            public List<int> ButtonBitOffsets;
+            public int ButtonCount => ButtonBitOffsets?.Count ?? 0;
+        }
+
+        private static ControlMap BuildControlMap(HID.HIDDeviceDescriptor descriptor)
+        {
+            var map = new ControlMap
+            {
+                ButtonBitOffsets = new List<int>(),
+                DpadUpBit = -1,
+                DpadDownBit = -1,
+                DpadLeftBit = -1,
+                DpadRightBit = -1,
+            };
+
+            // Track which generic-desktop axes we've consumed so the second pair falls through
+            // to the right stick.
+            bool haveX = false, haveY = false, haveRightX = false, haveRightY = false;
+
+            foreach (var element in descriptor.elements)
+            {
+                if (element.reportType != HID.HIDReportType.Input)
+                    continue;
+
+                int offset = element.reportOffsetInBits;
+                int size = element.reportSizeInBits;
+
+                if (element.usagePage == HID.UsagePage.GenericDesktop)
+                {
+                    switch (element.usage)
+                    {
+                        case GD_X:
+                            map.LeftStickXOffsetBits = offset; map.LeftStickBits = size; haveX = true; break;
+                        case GD_Y:
+                            map.LeftStickYOffsetBits = offset; map.LeftStickBits = size; haveY = true; break;
+                        case GD_Z:
+                            map.RightStickXOffsetBits = offset; map.RightStickBits = size; haveRightX = true; break;
+                        case GD_Rz:
+                            map.RightStickYOffsetBits = offset; map.RightStickBits = size; haveRightY = true; break;
+                        case GD_Rx:
+                            if (!haveRightX) { map.RightStickXOffsetBits = offset; map.RightStickBits = size; haveRightX = true; }
+                            break;
+                        case GD_Ry:
+                            if (!haveRightY) { map.RightStickYOffsetBits = offset; map.RightStickBits = size; haveRightY = true; }
+                            break;
+                        case GD_HatSwitch:
+                            map.HasHat = true; map.HatOffsetBits = offset; map.HatSizeBits = size; break;
+                        case GD_DpadUp: map.DpadUpBit = offset; break;
+                        case GD_DpadDown: map.DpadDownBit = offset; break;
+                        case GD_DpadRight: map.DpadRightBit = offset; break;
+                        case GD_DpadLeft: map.DpadLeftBit = offset; break;
+                    }
+                }
+                else if ((int)element.usagePage == UsagePageButton)
+                {
+                    // Each button element is one bit; collect in report order.
+                    map.ButtonBitOffsets.Add(offset);
+                }
+            }
+
+            map.HasLeftStick = haveX && haveY;
+            map.HasRightStick = haveRightX && haveRightY;
+            return map;
+        }
+
+        private static InputControlLayout BuildLayout(string layoutName, string displayName,
+            ControlMap map, Quirk quirk, int reportSizeBytes)
+        {
+            // A byte the device never writes (one past the input report) is guaranteed to stay
+            // zero in the state buffer, so any standard Gamepad control we DON'T map is parked
+            // here and reads as "not pressed / centered" instead of garbage from a real byte.
+            int deadByte = reportSizeBytes;
+
+            var builder = new InputControlLayout.Builder()
+                .WithName(layoutName)
+                .WithDisplayName(displayName)
+                .WithFormat("HID")
+                .Extend("Gamepad");
+
+            // ---- Sticks ----
+            AddStick(builder, "leftStick",
+                map.HasLeftStick ? map.LeftStickXOffsetBits : deadByte * 8,
+                map.HasLeftStick ? map.LeftStickYOffsetBits : deadByte * 8,
+                map.HasLeftStick ? map.LeftStickBits : 8,
+                invertY: !quirk.InvertLeftStickY);
+
+            AddStick(builder, "rightStick",
+                map.HasRightStick ? map.RightStickXOffsetBits : deadByte * 8,
+                map.HasRightStick ? map.RightStickYOffsetBits : deadByte * 8,
+                map.HasRightStick ? map.RightStickBits : 8,
+                invertY: !quirk.InvertRightStickY);
+
+            // ---- Buttons (report order -> gamepad semantic order) ----
+            // Order follows the de-facto HID/MFi gamepad convention. Remap via a Quirk if a
+            // specific pad disagrees.
+            string[] semanticButtons =
+            {
+                "buttonSouth", "buttonEast", "buttonWest", "buttonNorth",
+                "leftShoulder", "rightShoulder", "leftTrigger", "rightTrigger",
+                "select", "start", "leftStickPress", "rightStickPress",
+            };
+
+            for (int i = 0; i < semanticButtons.Length; i++)
+            {
+                int bitOffset = i < map.ButtonCount ? map.ButtonBitOffsets[i] : deadByte * 8;
+                AddButton(builder, semanticButtons[i], bitOffset);
+            }
+
+            // ---- Dpad ----
+            if (map.DpadUpBit >= 0 || map.DpadDownBit >= 0 || map.DpadLeftBit >= 0 || map.DpadRightBit >= 0)
+            {
+                // Discrete (often pressure) dpad usages -> treat each as a button bit.
+                AddButton(builder, "dpad/up", map.DpadUpBit >= 0 ? map.DpadUpBit : deadByte * 8);
+                AddButton(builder, "dpad/down", map.DpadDownBit >= 0 ? map.DpadDownBit : deadByte * 8);
+                AddButton(builder, "dpad/left", map.DpadLeftBit >= 0 ? map.DpadLeftBit : deadByte * 8);
+                AddButton(builder, "dpad/right", map.DpadRightBit >= 0 ? map.DpadRightBit : deadByte * 8);
+            }
+            else if (map.HasHat)
+            {
+                // Hat switch -> Unity's dpad-from-hat handling. The DiscreteButton processors
+                // on the inherited dpad children decode the 0..7 hat value.
+                builder.AddControl("dpad")
+                    .WithLayout("Dpad")
+                    .WithFormat("BIT")
+                    .WithByteOffset((uint)(map.HatOffsetBits / 8))
+                    .WithBitOffset((uint)(map.HatOffsetBits % 8))
+                    .WithSizeInBits((uint)Mathf.Max(4, map.HatSizeBits));
+            }
+            else
+            {
+                // No dpad on the device: park it on the dead byte so it reads neutral.
+                AddButton(builder, "dpad/up", deadByte * 8);
+                AddButton(builder, "dpad/down", deadByte * 8);
+                AddButton(builder, "dpad/left", deadByte * 8);
+                AddButton(builder, "dpad/right", deadByte * 8);
+            }
+
+            return builder.Build();
+        }
+
+        private static void AddStick(InputControlLayout.Builder builder, string name,
+            int xOffsetBits, int yOffsetBits, int sizeBits, bool invertY)
+        {
+            // Parent at byte 0 so the absolute child offsets below resolve correctly.
+            builder.AddControl(name)
+                .WithLayout("Stick")
+                .WithByteOffset(0);
+
+            // 8-bit axes are the common case; normalize 0..255 with center at 0.5. For wider
+            // axes the same normalized form still centers correctly.
+            string xParams = "normalize,normalizeMin=0,normalizeMax=1,normalizeZero=0.5";
+            string yParams = invertY
+                ? "invert,normalize,normalizeMin=0,normalizeMax=1,normalizeZero=0.5"
+                : "normalize,normalizeMin=0,normalizeMax=1,normalizeZero=0.5";
+
+            string format = sizeBits <= 8 ? "BYTE" : "SHRT";
+
+            builder.AddControl(name + "/x")
+                .WithFormat(format)
+                .WithByteOffset((uint)(xOffsetBits / 8))
+                .WithBitOffset((uint)(xOffsetBits % 8))
+                .WithSizeInBits((uint)sizeBits)
+                .WithParameters(xParams);
+
+            builder.AddControl(name + "/y")
+                .WithFormat(format)
+                .WithByteOffset((uint)(yOffsetBits / 8))
+                .WithBitOffset((uint)(yOffsetBits % 8))
+                .WithSizeInBits((uint)sizeBits)
+                .WithParameters(yParams);
+        }
+
+        private static void AddButton(InputControlLayout.Builder builder, string name, int bitOffset)
+        {
+            builder.AddControl(name)
+                .WithLayout("Button")
+                .WithFormat("BIT")
+                .WithByteOffset((uint)(bitOffset / 8))
+                .WithBitOffset((uint)(bitOffset % 8))
+                .WithSizeInBits(1);
+        }
+
+        private static string MakeLayoutName(InputDeviceDescription description,
+            HID.HIDDeviceDescriptor descriptor)
+        {
+            if (descriptor.vendorId != 0 || descriptor.productId != 0)
+                return $"HIDGamepad::{descriptor.vendorId:X4}-{descriptor.productId:X4}";
+
+            // Zero-id device (some Bluetooth pads): fall back to a name keyed on the
+            // manufacturer/product strings so distinct models don't collide.
+            var key = $"{description.manufacturer}-{description.product}";
+            return $"HIDGamepad::{key.GetHashCode():X8}";
+        }
+    }
+}
