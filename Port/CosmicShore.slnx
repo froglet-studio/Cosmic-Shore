@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/CosmicShore.Data/CosmicShore.Data.csproj" />
+    <Project Path="src/CosmicShore.Engine/CosmicShore.Engine.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/CosmicShore.Tests/CosmicShore.Tests.csproj" />
+  </Folder>
+</Solution>
