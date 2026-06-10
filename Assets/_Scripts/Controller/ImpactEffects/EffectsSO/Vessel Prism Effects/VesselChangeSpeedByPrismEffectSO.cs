@@ -10,13 +10,20 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField] float speedModifierDuration = .03f;
         [SerializeField] float massScaling = .01f;
-        
+
+        [Tooltip("Multiplies the slow's duration when the impacted prism is dangerous (1 = same as normal prisms)")]
+        [SerializeField] float dangerSlowMultiplier = 3f;
+
         public override void Execute(VesselImpactor impactor, PrismImpactor prismImpactee)
         {
             var shipStatus = impactor.Vessel.VesselStatus;
             var trailBlockProperties = prismImpactee.Prism.prismProperties;
-            
-            shipStatus.VesselTransformer.ModifyThrottle(Mathf.Min(trailBlockProperties.volume * massScaling, .2f), speedModifierDuration);
+
+            var duration = trailBlockProperties.IsDangerous
+                ? speedModifierDuration * dangerSlowMultiplier
+                : speedModifierDuration;
+
+            shipStatus.VesselTransformer.ModifyThrottle(Mathf.Min(trailBlockProperties.volume * massScaling, .2f), duration);
         }
     }
 }

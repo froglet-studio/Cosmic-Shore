@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: MantaVesselChangeSpeedByPrism
   m_EditorClassIdentifier: 
   speedModifierDuration: 0.5
+  dangerSlowMultiplier: 3

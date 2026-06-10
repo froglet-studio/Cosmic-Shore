@@ -13,3 +13,4 @@ MonoBehaviour:
   m_Name: DolphinVesselChangeSpeedByPrism
   m_EditorClassIdentifier: 
   speedModifierDuration: 0.5
+  dangerSlowMultiplier: 3
