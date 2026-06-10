@@ -185,11 +185,6 @@ namespace CosmicShore.Core
         {
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
 
-            // Prevent the game scene's ServerPlayerVesselInitializer from calling
-            // NetworkManager.Shutdown() during the scene transition. The network
-            // must stay alive for Menu_Main's vessel spawning pipeline.
-            gameData.IsReturnToMenuTransition = true;
-
             // Clear stale return-to-screen/modal state so Menu_Main starts clean
             // on HOME with no modals open. These keys are set by ScreenSwitcher
             // during normal menu navigation but become stale when a scene
@@ -308,15 +303,12 @@ namespace CosmicShore.Core
                 return;
             }
 
-            // Eager per-user Relay: the party Relay session is NOT cleared here.
-            // MultiplayerSetup.LeaveSession() raises OnSessionEnded but leaves the
-            // shared gameData.ActiveSession reference intact (Commit 8 unified it
-            // with PartySessionService.ActiveSession; nulling here would orphan
-            // the live Relay).  HCS still has a live Relay and NM is still
-            // running.  ReturnToMainMenu() uses nm.SceneManager.LoadScene to
-            // carry all party members back to Menu_Main on the same Relay
-            // connection — no disconnection, no re-creation.
-
+            // Genuine session end — a client lost its connection (OnClientDisconnect)
+            // or the transport failed (OnTransportFailure). The host's deliberate
+            // "Main Menu" return does NOT route here; it goes straight through
+            // ReturnToMainMenu(), which keeps the live Relay so the whole party
+            // reloads Menu_Main together. Here the session is already gone, so we
+            // return to the menu and fully reset local game state.
             ReturnToMainMenu();
             gameData.ResetAllData();
         }

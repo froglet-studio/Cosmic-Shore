@@ -60,6 +60,36 @@ populates with VP2, VP3.
 **Pass criterion.** Same as S1 — proves the leave path leaves no
 state divergence.
 
+### S9. Host return to menu with full party (post-game)
+
+Regression for the "clients stuck in the game scene when the host taps
+Main Menu" bug. The host's deliberate return must keep the party on one
+live Relay and carry every client back — it must NOT route through the
+disconnect/`OnSessionEnded` path (which despawns the clients' persistent
+`Player` objects).
+
+**Setup.** Run S1 to completion (VP1 host + VP2 client together in
+Menu_Main, both in autopilot).
+
+**Steps.**
+1. VP1 launches a multiplayer game (e.g. HexRace) from the Arcade menu;
+   confirm VP2 follows into the game scene (launch regression).
+2. Play to the end so the scoreboard appears.
+3. On VP1 (host), tap **Main Menu** on the scoreboard.
+
+**Pass criterion.**
+- VP1 **and** VP2 both load Menu_Main and roam in autopilot (lavalamp),
+  exactly like first entry.
+- Each client logs `[FLOW-6] … Raising OnClientReady` then
+  `[FLOW-8] [SceneLoader] FadeFromSplashOnReady` (splash clears).
+- VP1's log shows **no** client `Player` despawn during the return
+  (`DestroyPlayerAndVessel` must not run on the host-initiated return).
+- The Relay session id is unchanged across game → menu (party intact);
+  Party Area still shows 2/4 members.
+- Non-host VP2 never sees the scoreboard's Main Menu button — only the
+  host returns the whole party (VP2 has "Leave Lobby" instead, see S3).
+- Repeat the menu → game → menu cycle 2–3× with no leftover state.
+
 ## Stress gate — run on every refactor commit
 
 ### Stress-1. Five-accept smoke
@@ -114,7 +144,7 @@ target.
 
 | Gate | Required for |
 |---|---|
-| S1, S2, S3, S4 | Every party-system commit |
+| S1, S2, S3, S4, S9 | Every party-system commit |
 | Stress-1, Stress-2, Stress-3 | Every refactor commit (Refactor 1, 2, 3 from `REFACTOR.md`) |
 | S5, S6, S7, S8 | Run when investigating a specific bug; not a per-commit gate |
 

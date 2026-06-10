@@ -13,11 +13,6 @@ namespace CosmicShore.Gameplay
     {
         private int readyClientCount;
 
-        public void OnClickReturnToMainMenu()
-        {
-            CloseSession_ServerRpc();
-        }
-
         protected override void OnCountdownTimerEnded()
         {
             if (!IsServer)
@@ -34,12 +29,6 @@ namespace CosmicShore.Gameplay
             gameData.SetPlayersActive();
             gameData.StartTurn();
             EnsureLocalHumanCanMove();
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        void CloseSession_ServerRpc()
-        {
-            multiplayerSetup.LeaveSession().Forget();
         }
 
         protected override void OnReadyClicked_()
