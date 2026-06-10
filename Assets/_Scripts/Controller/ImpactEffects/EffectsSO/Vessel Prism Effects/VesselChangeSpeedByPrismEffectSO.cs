@@ -8,6 +8,7 @@ namespace CosmicShore.Gameplay
     [CreateAssetMenu(fileName = "VesselChangeSpeedByPrismEffect", menuName = "ScriptableObjects/Impact Effects/Vessel - Prism/VesselChangeSpeedByPrismEffectSO")]
     public class VesselChangeSpeedByPrismEffectSO : VesselPrismEffectSO
     {
+        [Tooltip("Seconds the throttle modifier is active. The modifier multiplies into the transformer's smoothed speed every frame it is active, so the felt slow deepens fast with duration — keep this short (~0.1s); recovery back to full speed is governed by the transformer's speed lerp (~1-2s), not this value.")]
         [SerializeField] float speedModifierDuration = .03f;
         [SerializeField] float massScaling = .01f;
 
