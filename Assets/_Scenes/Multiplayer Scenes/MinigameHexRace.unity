@@ -1214,23 +1214,6 @@ MonoBehaviour:
   _disableAfterSubscribing: 0
   _eventResponses:
   - Delay: 0
-    ScriptableEvent: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
-    Response:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 1078953729}
-          m_TargetAssemblyTypeName: CosmicShore.Gameplay.HexRaceController, Assembly-CSharp
-          m_MethodName: OnClickReturnToMainMenu
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
-  - Delay: 0
     ScriptableEvent: {fileID: 11400000, guid: e7886dabf1acf704786153773a2d241a, type: 2}
     Response:
       m_PersistentCalls:
@@ -1305,7 +1288,6 @@ MonoBehaviour:
   clientPlayerVesselInitializer: {fileID: 1078953724}
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
-  shutdownNetworkOnDespawn: 1
   playerSpawnPoints:
   - {fileID: 1194123993}
   - {fileID: 696378175}
