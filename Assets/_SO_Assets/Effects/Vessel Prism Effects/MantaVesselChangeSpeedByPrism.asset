@@ -14,3 +14,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speedModifierDuration: 0.5
   dangerSlowMultiplier: 3
+  massScaling: 0.1
+  maxSlowStrength: 0.8
