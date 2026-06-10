@@ -190,7 +190,11 @@ namespace CosmicShore.Gameplay
             // Per user spec: fauna spawn in the cell's controlling color, not random.
             Domains color = host.ControllingDomain;
 
-            SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color);
+            var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color);
+            // Lineage-bind so the species counts toward the cell's live population and
+            // can reproduce if its config authors FeedsPerOffspring > 0 (off by default
+            // on the WildlifeBlitz/Tournament configs — purely config-opt-in).
+            if (fauna) fauna.AssignLineage(host, faunaCfg);
         }
     }
 }

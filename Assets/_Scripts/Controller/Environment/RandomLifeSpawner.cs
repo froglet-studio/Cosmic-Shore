@@ -112,13 +112,14 @@ namespace CosmicShore.Gameplay
             if (spawnProfile.InitialFaunaSpawnWaitTime > 0f)
                 yield return new WaitForSeconds(spawnProfile.InitialFaunaSpawnWaitTime);
 
-            // Timer-driven spawning at a FIXED period — no phase gate, no aggression
-            // scaling. Prism count drives fauna *aggression/behavior* (see Fauna /
-            // LightFauna); the timer drives *when* they spawn. Each tick emits a
-            // fixed-size population in the cell's controlling color, but only while there
-            // is prey to eat: production pauses when opposing prism mass is below
-            // FaunaFoodFloor, and starving fauna despawn — so the population self-bounds
-            // to prey. (Docs/ECOSYSTEM.md §6, option C: prey-linked.)
+            // SEEDER, not population driver: each fixed period the loop only tops the
+            // species back up to its seed floor (PopulationSize) — bootstrap on scene
+            // start, and recovery after a starvation/predation crash so extinction is
+            // never permanent. Above the floor the population is driven by REPRODUCTION
+            // (well-fed fauna birth offspring, Fauna.TryReproduce) and bounded by
+            // starvation — the food web, not this timer. Production still pauses when
+            // opposing prism mass is below FaunaFoodFloor (no prey ⇒ no seeding either).
+            // (Docs/ECOSYSTEM.md §6: prey-linked production + starvation + reproduction.)
             float period = Mathf.Max(0.05f, spawnProfile.BaseFaunaSpawnTime);
 
             while (true)
@@ -126,11 +127,16 @@ namespace CosmicShore.Gameplay
                 if (!host) yield break;
 
                 Domains color = host.ControllingDomain;
-                if (host.OpposingBlockCount(color) >= spawnProfile.FaunaFoodFloor)
-                    SpawnFaunaPopulation(host, runtime, faunaCfg, color);
+                int deficit = FaunaReproductionRules.SeedSpawnCount(
+                    host.GetLiveFaunaCount(faunaCfg),
+                    Mathf.Max(1, faunaCfg.PopulationSize),
+                    faunaCfg.MaxLivePopulation);
 
-                // Reset the spawn-cycle ring each period whether or not prey allowed a
-                // burst — the ring reflects the fixed timer cadence, not the food gate.
+                if (deficit > 0 && host.OpposingBlockCount(color) >= spawnProfile.FaunaFoodFloor)
+                    SpawnFaunaPopulation(host, runtime, faunaCfg, color, deficit);
+
+                // Reset the spawn-cycle ring each period whether or not seeding happened —
+                // the ring reflects the fixed timer cadence, not the food/deficit gates.
                 host.RecordFaunaSpawn();
 
                 yield return new WaitForSeconds(period);
@@ -138,20 +144,19 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Spawns one fixed-size population in <paramref name="color"/> — the cell's
+        /// Spawns <paramref name="count"/> fauna in <paramref name="color"/> — the cell's
         /// controlling domain. Spawning in the controller's color fixes "no Jade fauna
         /// when Jade controls" and lets the dominant color's fauna hunt the minority.
-        /// Seeks the crystal when present, the cell centre otherwise; each member adds
-        /// its own orbit offset (Fauna) so the swarm spreads instead of stacking.
+        /// Each spawn is lineage-bound to its species config so it counts toward the
+        /// per-cell population and can reproduce. Seeks the densest mass concentration
+        /// when present, the crystal/cell anchor otherwise.
         /// </summary>
         // Jitter radius around the mass concentration when spawning a population, so the
         // swarm spreads over the buildup instead of stacking on one point.
         const float FaunaSpawnJitter = 150f;
 
-        void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, FaunaConfigurationSO faunaCfg, Domains color)
+        void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, FaunaConfigurationSO faunaCfg, Domains color, int count)
         {
-            int count = Mathf.Max(1, faunaCfg.PopulationSize);
-
             // Spawn new fauna right ON the prioritized mass concentration (the densest region
             // the cell senses) so they appear on the buildup they'll forage, not at the
             // distant cell centre — they start clearing immediately. GetDensestRegionAnyDomain
@@ -161,7 +166,8 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < count; i++)
             {
                 Vector3 spawnPos = goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter;
-                SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color, spawnPos);
+                var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color, spawnPos);
+                if (fauna) fauna.AssignLineage(host, faunaCfg);
             }
         }
     }

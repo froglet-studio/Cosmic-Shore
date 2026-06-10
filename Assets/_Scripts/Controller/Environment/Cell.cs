@@ -475,6 +475,7 @@ namespace CosmicShore.Gameplay
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
+            liveFaunaCounts.Clear();
             phase = CellPhase.Calm;
 
             if (spawnedCytoplasm)
@@ -526,11 +527,41 @@ namespace CosmicShore.Gameplay
                 UpdateCellStats();
         }
 
+        // ---------------------------------------------------------------------
+        //  Per-species live fauna registry — keyed by the FaunaConfigurationSO
+        //  that defines the species. Fauna register on AssignLineage (spawner and
+        //  reproduction paths both) and unregister in OnDestroy, so the count is
+        //  the live standing population. Read by the seeder (top up to the seed
+        //  floor only) and by reproduction (hard MaxLivePopulation backstop).
+        //  See Docs/ECOSYSTEM.md §6.
+        // ---------------------------------------------------------------------
+
+        readonly Dictionary<FaunaConfigurationSO, int> liveFaunaCounts = new();
+
+        /// <summary>Live population of the species defined by <paramref name="config"/> in this cell.</summary>
+        public int GetLiveFaunaCount(FaunaConfigurationSO config) =>
+            config && liveFaunaCounts.TryGetValue(config, out int c) ? c : 0;
+
+        public void RegisterLiveFauna(FaunaConfigurationSO config)
+        {
+            if (!config) return;
+            liveFaunaCounts.TryGetValue(config, out int c);
+            liveFaunaCounts[config] = c + 1;
+        }
+
+        public void UnregisterLiveFauna(FaunaConfigurationSO config)
+        {
+            if (!config) return;
+            if (liveFaunaCounts.TryGetValue(config, out int c) && c > 0)
+                liveFaunaCounts[config] = c - 1;
+        }
+
         void Initialize()
         {
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
+            liveFaunaCounts.Clear();
             phase = CellPhase.Calm;
 
             // Bind runtime -> this cell

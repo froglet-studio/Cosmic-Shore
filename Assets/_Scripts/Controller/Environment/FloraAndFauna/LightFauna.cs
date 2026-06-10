@@ -36,6 +36,8 @@ namespace CosmicShore.Gameplay
 
         public override void Initialize(Cell cell)
         {
+            base.Initialize(cell); // record the explicit host cell (multi-cell correctness)
+
             if (!data)
             {
                 CSDebug.LogError($"{nameof(LightFauna)} on {name} is missing {nameof(LightFaunaDataSO)}.");
@@ -168,10 +170,13 @@ namespace CosmicShore.Gameplay
             // still push us away so we don't clip through enemy mass.
             bool dropFriendlyAvoidance = phase >= CellPhase.Frenzy;
 
-            var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
+            // Shared non-alloc scratch (Fauna.OverlapScratch) — at swarm scale the old
+            // per-tick Collider[] allocation was pure GC churn.
+            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, OverlapScratch);
 
-            foreach (var collider in nearbyColliders)
+            for (int ci = 0; ci < hitCount; ci++)
             {
+                var collider = OverlapScratch[ci];
                 if (!collider || collider.gameObject == gameObject) continue;
 
                 Vector3 diff = transform.position - collider.transform.position;
