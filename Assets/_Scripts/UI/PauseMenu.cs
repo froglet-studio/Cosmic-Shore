@@ -112,21 +112,17 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Host / single-player only — the host's return carries every client back
-        /// to Menu_Main via the network scene load. Defense in depth: the button is
-        /// hidden for non-host clients (ConfigureHostOnlyButtons), but guard the
-        /// call path too.
+        /// Host only — the host's return carries every client back to Menu_Main via
+        /// the network scene load. Defense in depth: the button is hidden for non-host
+        /// clients (ConfigureHostOnlyButtons), but guard the call path too.
         /// </summary>
         public void OnClickMainMenu()
         {
-            if (gameData != null && gameData.IsMultiplayerMode)
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer)
             {
-                var nm = NetworkManager.Singleton;
-                if (nm == null || !nm.IsServer)
-                {
-                    CSDebug.LogWarning("[PauseMenu] Main Menu ignored — only the host can return the party to the menu.");
-                    return;
-                }
+                CSDebug.LogWarning("[PauseMenu] Main Menu ignored — only the host can return the party to the menu.");
+                return;
             }
 
             _onClickToMainMenu.Raise();
@@ -141,16 +137,14 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Host-only gating for the replay and main menu buttons in multiplayer.
-        /// Mirrors the Scoreboard's ConfigureLobbyButtons logic so non-host clients
-        /// can't trigger a restart or a host-authoritative return to menu.
+        /// Host-only gating for the replay and main menu buttons. Mirrors the
+        /// Scoreboard's ConfigureLobbyButtons logic so non-host clients can't
+        /// trigger a restart or a host-authoritative return to menu.
         /// </summary>
         void ConfigureHostOnlyButtons()
         {
             var nm = NetworkManager.Singleton;
-            bool isMultiplayer = gameData != null && gameData.IsMultiplayerMode;
-            bool isHost = nm != null && nm.IsServer;
-            bool isClient = isMultiplayer && !isHost;
+            bool isClient = nm == null || !nm.IsServer;
 
             if (replayButton)   replayButton.SetActive(!isClient);
             if (mainMenuButton) mainMenuButton.SetActive(!isClient);
