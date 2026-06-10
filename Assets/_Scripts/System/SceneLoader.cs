@@ -161,13 +161,11 @@ namespace CosmicShore.Core
                 return;
             }
 
-            bool useNetworkSceneLoading = nm != null && nm.IsServer;
-
             // Game config sync to clients is now handled by
             // MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()
             // in the game scene's OnNetworkSpawn, rather than here before scene load.
 
-            LoadSceneAsync(gameData.SceneName, useNetworkSceneLoading).Forget();
+            LoadSceneAsync(gameData.SceneName).Forget();
         }
 
         void FadeFromSplashOnReady()
@@ -204,16 +202,18 @@ namespace CosmicShore.Core
                 return;
             }
 
-            bool useNetworkSceneLoading = nm != null && nm.IsServer;
-            LoadSceneAsync(menuScene, useNetworkSceneLoading).Forget();
+            LoadSceneAsync(menuScene).Forget();
         }
 
-        async UniTaskVoid LoadSceneAsync(string sceneName, bool useNetworkSceneLoading)
+        async UniTaskVoid LoadSceneAsync(string sceneName)
         {
-            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}</color>");
+            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}</color>");
             gameData.InvokeSceneTransition(false);
 
-            if (useNetworkSceneLoading)
+            var nm = NetworkManager.Singleton;
+            bool isServer = nm != null && nm.IsServer;
+
+            if (isServer)
                 ClearPlayerVesselReferences();
 
             gameData.ResetRuntimeData();
@@ -223,27 +223,16 @@ namespace CosmicShore.Core
                 DelayType.UnscaledDeltaTime
             );
 
-            if (!useNetworkSceneLoading)
-            {
-                SceneManager.LoadScene(sceneName);
-                return;
-            }
-
-            var nm = NetworkManager.Singleton;
-            if (nm == null)
-            {
-                Debug.LogWarning("[SceneLoader] NetworkManager missing. Falling back to local load.");
-                SceneManager.LoadScene(sceneName);
-                return;
-            }
-
-            if (nm.IsServer && nm.SceneManager != null)
+            if (isServer && nm.SceneManager != null)
             {
                 nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
             }
             else
             {
-                Debug.LogWarning("[SceneLoader] Not server or SceneManager null — cannot load network scene.");
+                // Defensive fallback: no active server (should not happen under the
+                // always-hosted model). Load locally so a scene transition never hangs.
+                Debug.LogWarning("[SceneLoader] No active server — falling back to local scene load.");
+                SceneManager.LoadScene(sceneName);
             }
         }
 
