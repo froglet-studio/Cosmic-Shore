@@ -100,6 +100,15 @@ namespace CosmicShore.Engine
         internal bool HasFixedUpdate => hooks.FixedUpdate != null;
         internal bool HasLateUpdate => hooks.LateUpdate != null;
 
+        public Coroutine StartCoroutine(System.Collections.IEnumerator routine)
+            => GameLoop.Current.Coroutines.Start(this, routine);
+
+        public void StopCoroutine(Coroutine routine)
+            => GameLoop.Current?.Coroutines.Stop(this, routine);
+
+        public void StopAllCoroutines()
+            => GameLoop.Current?.Coroutines.StopAll(this);
+
         internal override void DestroyComponentNow()
         {
             if (destroyedFlag) return;

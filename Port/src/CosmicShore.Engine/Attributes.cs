@@ -84,6 +84,18 @@ namespace CosmicShore.Engine
         public FormerlySerializedAsAttribute(string oldName) { this.oldName = oldName; }
     }
 
+    /// <summary>Declares component dependencies (enforced by editor tooling later; inert at runtime).</summary>
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
+    public sealed class RequireComponentAttribute : Attribute
+    {
+        public readonly Type m_Type0;
+        public RequireComponentAttribute(Type requiredComponent) { m_Type0 = requiredComponent; }
+    }
+
+    /// <summary>Hides a serialized field from inspector tooling (inert marker).</summary>
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class HideInInspectorAttribute : Attribute { }
+
     /// <summary>Keeps the annotated member through code stripping (inert marker for now).</summary>
     [AttributeUsage(AttributeTargets.All, Inherited = false)]
     public sealed class PreserveAttribute : Attribute { }

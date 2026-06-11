@@ -41,6 +41,7 @@ namespace CosmicShore.Cli
             RunSimulationDemo(frames);
             RunRoundStatsDemo();
             RunPortedLogicDemo();
+            RunElementalDemo();
 
             Console.WriteLine();
             int exitCode;
@@ -265,6 +266,42 @@ namespace CosmicShore.Cli
                 phasesOk &= phase == expected;
             }
             Check(phasesOk, "cell phase transitions follow hysteresis thresholds");
+        }
+
+        // ── [5] Ported ResourceSystem: crystals, buffs, decay ────────
+
+        static void RunElementalDemo()
+        {
+            Console.WriteLine();
+            Console.WriteLine("[5] Ported ResourceSystem — crystal pickups, temporary debuff decay");
+
+            using var loop = new GameLoop("ElementalDemo");
+            var vessel = new GameObject("DemoVessel");
+            vessel.SetActive(false); // configure before Awake (runtime-AddComponent pattern)
+            var system = vessel.AddComponent<Gameplay.ResourceSystem>();
+            system.Resources = new List<Gameplay.Resource> { new() { Name = "boost", resourceGainRate = 0.1f } };
+            system.InitializeElementLevels(new ResourceCollection(0f, 0f, 0f, 0f));
+            vessel.SetActive(true);
+
+            var levelLog = new List<string>();
+            system.OnElementLevelChange += (element, level) => levelLog.Add($"{element}→{level}");
+            loop.Tick(1f / 60f);
+
+            for (int i = 0; i < 3; i++) system.IncrementLevel(Element.Charge); // 3 charge crystals
+            Print($"  3 charge crystals collected → Charge level {system.GetLevel(Element.Charge)}");
+
+            system.ApplyElementalEffect(Element.Space, -0.4f, duration: 1f);   // danger-prism debuff
+            loop.Tick(1f / 60f);
+            int debuffed = system.GetLevel(Element.Space);
+            Print($"  danger-prism Space debuff applied → Space level {debuffed}");
+
+            loop.Run(70, 1f / 60f); // decay past 1s
+            Print($"  debuff decayed after 1s → Space level {system.GetLevel(Element.Space)}");
+            Print($"  level events: {string.Join(", ", levelLog)}");
+
+            Check(system.GetLevel(Element.Charge) == 3, "crystal pickups raise the element level permanently");
+            Check(debuffed <= -3, "temporary debuff lowers the effective level");
+            Check(system.GetLevel(Element.Space) == 0, "debuff decays back without touching base progress");
         }
     }
 }

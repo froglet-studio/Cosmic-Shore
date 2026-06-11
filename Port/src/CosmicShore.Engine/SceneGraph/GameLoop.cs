@@ -22,6 +22,7 @@ namespace CosmicShore.Engine
 
         public Scene Scene { get; }
         public GameTaskScheduler Scheduler { get; }
+        internal CoroutineRunner Coroutines { get; } = new();
         public GameSynchronizationContext SyncContext { get; }
 
         int _loopThreadId = -1;
@@ -91,6 +92,7 @@ namespace CosmicShore.Engine
                 DrainStartQueue();
                 RunFixedSteps();
                 RunPhase(static mb => mb.HasUpdate, static mb => mb.RunUpdate());
+                Coroutines.RunFrame();
                 Scheduler.RunFrame();
                 RunPhase(static mb => mb.HasLateUpdate, static mb => mb.RunLateUpdate());
                 Scheduler.RunEndOfFrame();

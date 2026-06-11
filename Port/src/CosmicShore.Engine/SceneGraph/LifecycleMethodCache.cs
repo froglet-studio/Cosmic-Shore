@@ -60,6 +60,15 @@ namespace CosmicShore.Engine
 
                 var target = Expression.Parameter(typeof(MonoBehaviour), "mb");
                 var call = Expression.Call(Expression.Convert(target, t), method);
+
+                // `IEnumerator Start()` runs as a coroutine (original engine contract).
+                if (methodName == "Start" && method.ReturnType == typeof(System.Collections.IEnumerator))
+                {
+                    var startCoroutine = typeof(MonoBehaviour).GetMethod(nameof(MonoBehaviour.StartCoroutine));
+                    var wrapped = Expression.Call(target, startCoroutine, call);
+                    return Expression.Lambda<Action<MonoBehaviour>>(wrapped, target).Compile();
+                }
+
                 return Expression.Lambda<Action<MonoBehaviour>>(call, target).Compile();
             }
             return null;

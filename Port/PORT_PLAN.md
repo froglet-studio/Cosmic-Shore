@@ -167,6 +167,7 @@ The prompter tests progress without prompting the loop. Contract:
 | 6 | **Upstream latent red test reframed**: `ImpactEffects_AllValuesAreUnique` contradicts the shipped enum, which intentionally merges legacy effect groups sharing values 1-8, 10. Values are wire format — port freezes the exact duplicate set instead so NEW collisions still fail. | Enum values untouchable. |
 | 7 | 10 SOAP files deferred pending gameplay types: ScriptableEventVesselImpactor / ExplosionDebuffApplied / SkimmerDebuffApplied (IVessel/IVesselStatus/VesselImpactor), ScriptableSilhouetteData/* (SilhouetteController), ScriptableVesselHUDData/* (MiniGameHUD), VesselPrefabContainer (IVesselStatus). MainMenuStateTests (MainMenuController) and GameObjectExtensionTests (physics types) likewise port with their subjects. | Tracked in NEXT UP. |
 | 8 | Stat structs (CellStats/CrystalStats/PrismStats/AbilityStats), PrismType, and audio category enums are extracted into their own port files (source noted in headers) because their host classes (StatsManager, PrismFactory, AudioSystem) port in later phases. | File-split only; content verbatim. |
+| 9 | ResourceSystem temporary deviations: (a) base class `ElementalShipComponent` → `MonoBehaviour` until IVessel/ElementalFloat port; (b) `[RequireComponent(typeof(IVesselStatus))]` commented until IVesselStatus ports. Class body verbatim. Restore both when the vessel layer lands. | Unblocks the elemental core. |
 
 ## Iteration log
 
@@ -193,24 +194,33 @@ The prompter tests progress without prompting the loop. Contract:
   latent upstream issues (fixed in port, see Deviations #4-6); CLI section [4] (SOAP
   channels + cell phase hysteresis). 528 tests green (322 xunit + 206 NUnit).
 
-## NEXT UP (iteration 4)
+- **Iteration 4** (2026-06-11): phase-2 entry — **engine coroutines** (CoroutineRunner:
+  synchronous first step, yield-null next frame, WaitForSeconds scaled time, nesting,
+  death-with-owner; `IEnumerator Start` auto-runs via LifecycleHooks), RequireComponent/
+  HideInInspector attributes, standalone-binary protocol (win-x64 exe delivered to
+  prompter); ported: Resource, **ResourceSystem** (elemental levels: GetLevel floor math,
+  AdjustLevel, temporary-effect linear decay over base levels — 2 deviations, see #9),
+  GenericDataSO/IntDataSO/StringDataSO, RuntimeCollectionSO, CameraSettingsSO (+ their
+  3 EditMode test files verbatim); xunit coroutine + ResourceSystem suites; CLI section
+  [5] (crystal pickups, danger-prism debuff decay). 578 tests green (329 + 249).
 
-Goal: enter phase 2 — resource/elemental simulation core so VesselStatus/ResourceSystem can port in
+## NEXT UP (iteration 5)
+
+Goal: widen the phase-2 simulation core toward the vessel layer so VesselStatus/ResourceSystem can port in
 iteration 4.
 
-1. Port the remaining pure DataContainer subjects whose EditMode tests exist:
-   GenericDataSO, RuntimeCollectionSO, CameraSettingsSO, XpData, HostConnectionDataSO
-   (defer if it drags UGS types) + their tests verbatim into Tests.Ported.
-2. Port the resource/elemental core from `Controller/Vessel/`: ResourceSystem (+
-   Resource, element-level model `GetLevel` math) and whatever small SO configs it
-   needs (SO_Element …). Port SkimmerAdjustElementLevelByCrystalEffectTests if its
-   subject closure is tractable.
-3. Map the IVessel/IVesselStatus interface closure; port the interfaces once the
-   referenced types exist, then un-defer the 10 SOAP files from iteration 3
-   (VesselImpactor/debuff events, SilhouetteData, VesselHUDData, VesselPrefabContainer)
-   and MainMenuStateTests/GameObjectExtensionTests when their subjects land.
-4. Extend the CLI with a resource/elemental demo (crystal pickup → element level walk).
-5. Update this file (status tables, iteration log, NEXT UP), commit, push.
+1. Port ElementalFloat (locate the real class — `Controller/Vessel/**`), ITransform,
+   then ElementalShipComponent; restore ResourceSystem's base class (deviation #9a).
+2. Begin the IVessel/IVesselStatus closure bottom-up: port the small leaf types they
+   reference (VesselAnimation? Skimmer? — survey first, port what's tractable, stub
+   nothing). Target: interfaces compile so deviation #9b (RequireComponent) and the
+   10 deferred SOAP files can un-defer.
+3. Port XpData + XpDataTests, and survey HostConnectionDataSO for UGS coupling.
+4. Port `Utility/DataContainers/CellPhaseThresholds`-adjacent ecology configs and the
+   prism density/BlockDensityGrid pure-logic pieces if reachable.
+5. Grow the CLI toward an M2 vertical slice: one cell + crystals + 2 scripted vessels
+   exchanging resource/elemental state on a seeded run.
+6. Update this file (status tables, iteration log, NEXT UP), commit, push.
 
 ## Loop protocol (every iteration)
 
