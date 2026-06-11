@@ -21,7 +21,12 @@ namespace CosmicShore.Gameplay
             if (spawnProfile.SupportedFloras is not { Count: > 0 })
                 yield break;
 
-            var excluded = GetExcludedDomain(spawnProfile.FloraExcludeLocalDomain, gameData, fallbackLocal: Domains.Blue);
+            // No excluded-domain roll — the locked no-domain-asymmetry invariant: all three
+            // domains seed flora uniformly (the exclusion kept the local player's color from
+            // ever growing canopy). Passing null keeps legacy SpawnProfile assets with the old
+            // serialized FloraExcludeLocalDomain=true inert. Fauna were already controlling-
+            // color only (see StartFaunaLoops below).
+            Domains? excluded = null;
 
             foreach (var floraCfg in spawnProfile.SupportedFloras)
             {
