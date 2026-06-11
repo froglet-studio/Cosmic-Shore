@@ -101,6 +101,12 @@ namespace CosmicShore.Gameplay
                 hp.Initialize("tadpole");
             }
 
+            // Locked invariant: every lifeform carries one elemental crystal it drops as
+            // a powerup on death (mass conserved). EnsureElementalCrystal uses the prefab's
+            // authored crystal if present (validator-enforced fast path) or provisions one;
+            // the sealed Fauna.Die drops it on any death path (predation / forager starvation).
+            crystal = LifeFormCrystal.EnsureElementalCrystal(this);
+
             currentVelocity = transform.forward * Random.Range(minSpeed, Mathf.Max(minSpeed, maxSpeed));
             float initialDelay = normalizedIndex * behaviorUpdateRate;
             StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
@@ -307,7 +313,7 @@ namespace CosmicShore.Gameplay
             desiredRotation = SafeLookRotation.TryGet(currentVelocity, out var desiredRot, this) ? desiredRot : transform.rotation;
         }
 
-        protected override void Die(string killerName = "")
+        protected override void OnDeath(string killerName = "")
         {
             isKilled = true;
             StopAllCoroutines();

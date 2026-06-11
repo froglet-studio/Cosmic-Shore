@@ -63,6 +63,12 @@ namespace CosmicShore.Gameplay
                 hp.Initialize("FaunaPrefab");
             }
 
+            // Locked invariant: every lifeform carries one elemental crystal it drops as
+            // a powerup on death (mass conserved). EnsureElementalCrystal uses the prefab's
+            // authored crystal if present (validator-enforced fast path) or provisions one;
+            // the sealed Fauna.Die drops it on any death path.
+            crystal = LifeFormCrystal.EnsureElementalCrystal(this);
+
             float minSpeed = Mathf.Max(0f, data.minSpeed);
             float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed);
 
@@ -70,7 +76,7 @@ namespace CosmicShore.Gameplay
             StartCoroutine(UpdateBehaviorCoroutine());
         }
 
-        protected override void Die(string killerName = "")
+        protected override void OnDeath(string killerName = "")
         {
             if (LightFaunaManager)
                 LightFaunaManager.RemoveFauna(this);

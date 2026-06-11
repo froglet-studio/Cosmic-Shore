@@ -233,10 +233,37 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Handle this fauna's death. Default is empty - override in subclasses
-        /// that have meaningful death behavior.
+        /// The elemental crystal this fauna conserves its mass into on death. Set by
+        /// concrete creature subclasses in Initialize via
+        /// <see cref="LifeFormCrystal.EnsureElementalCrystal"/>; null for manager /
+        /// composite-segment fauna that are not standalone lifeforms (their crystal is
+        /// owned at the whole-creature level).
         /// </summary>
-        protected virtual void Die(string killerName = "") { }
+        protected Crystal crystal;
+
+        /// <summary>
+        /// Death chokepoint — SEALED so no fauna can die without conserving its mass.
+        /// Every death path (starvation, <see cref="Predated"/>) routes here; it drops
+        /// the elemental crystal (the locked "every lifeform drops one elemental crystal
+        /// on death, mass is conserved" invariant — the creature does not just vanish)
+        /// and then runs subclass removal via <see cref="OnDeath"/>. ActivateCrystal
+        /// reparents the crystal to the cell, so it survives this object's destruction
+        /// as a collectible powerup.
+        /// </summary>
+        protected void Die(string killerName = "")
+        {
+            if (crystal && crystal.gameObject && crystal.gameObject.activeInHierarchy)
+                crystal.ActivateCrystal();
+            OnDeath(killerName);
+        }
+
+        /// <summary>
+        /// Subclass death behavior (manager removal / destroy / worm-splitting). Override
+        /// THIS, not <see cref="Die"/> — the crystal drop is sealed into Die so the mass-
+        /// conservation invariant cannot be bypassed by a subclass. Default is empty so
+        /// managers and stubs don't need to throw NotImplementedException.
+        /// </summary>
+        protected virtual void OnDeath(string killerName = "") { }
 
         // Idempotency for predation: two predators can reach the same herbivore on the
         // same frame (each iterating its own OverlapSphere snapshot). Without this guard
