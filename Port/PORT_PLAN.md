@@ -90,9 +90,11 @@ the score) built on the already-ported sim (ResourceSystem, RoundStats, SOAP). S
 here via Xvfb+Mesa screenshots, shipped as win-x64 zips in `Port/dist/`. The verbatim
 fidelity arc (VESSEL_LAYER.md V1-V19, phases 2-8) continues underneath sprint
 iterations — sprint code reuses ported systems wherever they exist and must not fork
-their semantics. SkimRace milestones: **S1** window+starfield+vessel+camera (screenshot
-to prompter), **S2** track+crystals+collection+trail, **S3** HUD+finish+timing = M2/M4
-combined, **S4** polish (glow, palette, gamepad).
+their semantics. SkimRace milestones: **S1-S3 SHIPPED** (windowed race: track/crystals/trail/HUD/finish,
+win-x64 zip in dist). **S4 in progress**: AI rival shipped (contested crystals, overtake
+targeting, rubber-band boost+speed) + gamepad input; KNOWN ISSUE — rival can't beat a
+perfect autopilot in AI-vs-AI demos (sweeps happen); vs humans it contests missed
+crystals. Next: rival balance telemetry, glow/bloom pass, mouse steering, sound.
 
 ## Phase roadmap
 

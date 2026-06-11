@@ -30,6 +30,7 @@ namespace CosmicShore.Client
 
         GameLoop _loop;
         SkimRaceController _race;
+        SkimRaceController _rival;
         readonly PilotInput _pilot = new();
 
         uint _program;
@@ -41,10 +42,13 @@ namespace CosmicShore.Client
         uint _ringVao, _ringVbo; int _ringCount;
         uint _crystalVao, _crystalVbo; int _crystalVertexCount;
         uint _vesselVao, _vesselVbo; int _vesselVertexCount;
+        uint _rivalVao, _rivalVbo; int _rivalVertexCount;
         uint _trailVao, _trailVbo;
+        uint _rivalTrailVao, _rivalTrailVbo;
         uint _hudVao, _hudVbo;
 
         readonly List<(Vector3 pos, Vector3 right)> _trail = new();
+        readonly List<(Vector3 pos, Vector3 right)> _rivalTrail = new();
         const int TrailMax = 110;
 
         Vector3 _camPos, _camLook;
@@ -84,11 +88,17 @@ namespace CosmicShore.Client
                 keyboard.KeyDown += (_, key, _) =>
                 {
                     if (key == Key.Escape) _window.Close();
-                    if (key == Key.R) _pilot.Restart = true;
+                    if (key == Key.R)
+                    {
+                        SkimRaceFactory.ResetRace(_race.Shared, _race, _rival);
+                        _trail.Clear();
+                        _rivalTrail.Clear();
+                    }
                 };
 
-            (_loop, _race) = SkimRaceFactory.Create(_seed, _crystalTarget, _pilot);
+            (_loop, _race, _rival) = SkimRaceFactory.Create(_seed, _crystalTarget, _pilot);
             _race.OnCrystalCollected += (_, pos) => _bursts.Add((pos, 0f));
+            _rival.OnCrystalCollected += (_, pos) => _bursts.Add((pos, 0f));
 
             _program = CompileProgram();
             _uMvp = _gl.GetUniformLocation(_program, "uMvp");
@@ -100,6 +110,9 @@ namespace CosmicShore.Client
             _trailVao = _gl.GenVertexArray();
             _trailVbo = _gl.GenBuffer();
             ConfigureDynamicVao(_trailVao, _trailVbo);
+            _rivalTrailVao = _gl.GenVertexArray();
+            _rivalTrailVbo = _gl.GenBuffer();
+            ConfigureDynamicVao(_rivalTrailVao, _rivalTrailVbo);
             _hudVao = _gl.GenVertexArray();
             _hudVbo = _gl.GenBuffer();
             ConfigureDynamicVao(_hudVao, _hudVbo);
@@ -280,6 +293,12 @@ void main() { frag = vColor; }";
 
         void BuildVesselMesh()
         {
+            (_vesselVao, _vesselVbo, _vesselVertexCount) = BuildDart(jade: true);
+            (_rivalVao, _rivalVbo, _rivalVertexCount) = BuildDart(jade: false);
+        }
+
+        (uint vao, uint vbo, int count) BuildDart(bool jade)
+        {
             // jade dart: nose, twin swept wings, tail fin — flat-shaded neon
             var nose = new Vector3(0f, 0f, 2.6f);
             var tail = new Vector3(0f, 0.25f, -1.4f);
@@ -295,15 +314,21 @@ void main() { frag = vColor; }";
                 Push(data, b, r, g, bl, al);
                 Push(data, c, r, g, bl, al);
             }
-            Tri(nose, left, tail, 0.1f, 1f, 0.62f, 0.95f);      // jade top-left
-            Tri(nose, tail, right, 0.08f, 0.85f, 0.55f, 0.95f); // jade top-right
-            Tri(nose, belly, left, 0.05f, 0.55f, 0.4f, 0.9f);   // under-left
-            Tri(nose, right, belly, 0.05f, 0.5f, 0.36f, 0.9f);  // under-right
-            Tri(tail, left, belly, 0.04f, 0.4f, 0.3f, 0.9f);    // aft-left
-            Tri(tail, belly, right, 0.04f, 0.38f, 0.28f, 0.9f); // aft-right
-            Tri(tail, fin, nose, 0.65f, 1f, 0.9f, 0.75f);       // glow fin
-            _vesselVertexCount = data.Count / 7;
-            (_vesselVao, _vesselVbo) = UploadStatic(data.ToArray());
+            // hue swap: jade player vs ruby rival
+            void Hull(Vector3 a, Vector3 b, Vector3 c, float bright, float alpha)
+            {
+                if (jade) Tri(a, b, c, 0.06f * bright, 1f * bright, 0.6f * bright, alpha);
+                else Tri(a, b, c, 1f * bright, 0.16f * bright, 0.3f * bright, alpha);
+            }
+            Hull(nose, left, tail, 1f, 0.95f);
+            Hull(nose, tail, right, 0.88f, 0.95f);
+            Hull(nose, belly, left, 0.55f, 0.9f);
+            Hull(nose, right, belly, 0.5f, 0.9f);
+            Hull(tail, left, belly, 0.4f, 0.9f);
+            Hull(tail, belly, right, 0.38f, 0.9f);
+            Tri(tail, fin, nose, jade ? 0.65f : 1f, jade ? 1f : 0.7f, jade ? 0.9f : 0.75f, 0.75f);
+            var (vao, vbo) = UploadStatic(data.ToArray());
+            return (vao, vbo, data.Count / 7);
         }
 
         // ── per-frame ────────────────────────────────────────────────
@@ -321,18 +346,36 @@ void main() { frag = vColor; }";
                 if (keyboard.IsKeyPressed(Key.D) || keyboard.IsKeyPressed(Key.Right)) yaw += 1f;
                 if (keyboard.IsKeyPressed(Key.Space)) boost = true;
             }
+            foreach (var gamepad in _inputContext.Gamepads)
+            {
+                if (gamepad.Thumbsticks.Count > 0)
+                {
+                    var stick = gamepad.Thumbsticks[0];
+                    if (MathF.Abs(stick.X) > 0.15f) yaw += stick.X;
+                    if (MathF.Abs(stick.Y) > 0.15f) pitch -= stick.Y; // stick down = pull up
+                }
+                foreach (var trigger in gamepad.Triggers)
+                    if (trigger.Position > 0.3f) boost = true;
+                foreach (var button in gamepad.Buttons)
+                    if (button.Name == ButtonName.A && button.Pressed) boost = true;
+            }
+            yaw = Mathf.Clamp(yaw, -1f, 1f);
+            pitch = Mathf.Clamp(pitch, -1f, 1f);
 
-            // headless screenshot mode: autopilot seeks the next crystal (a real racing
-            // line — also the seed of the future AI opponent)
+            // headless screenshot mode: autopilot recomputed per sim tick in OnRender
             if (_screenshotPath != null)
             {
-                if (_race.State == RaceState.Countdown) _race.Countdown = 0.01f;
+                return;
+            }
+            if (false)
+            {
+                if (_race.State == RaceState.Countdown) { _race.Countdown = 0.01f; _rival.Countdown = 0.01f; }
                 var t0 = _race.transform;
                 Vector3? target = null;
                 float best = float.MaxValue;
                 for (int i = 0; i < _race.Track.Crystals.Count; i++)
                 {
-                    if (_race.Collected.Contains(i)) continue;
+                    if (_race.Shared.IsTaken(i)) continue;
                     var c = _race.Track.Crystals[i];
                     float ahead = c.z - t0.position.z;
                     if (ahead < -5f) continue;
@@ -361,13 +404,18 @@ void main() { frag = vColor; }";
         void EmitTrailAndCamera(float dt)
         {
             var t3 = _race.transform;
-            if (_race.State != RaceState.Countdown && _race.Speed > 4f)
+            EmitFor(_race, _trail);
+            EmitFor(_rival, _rivalTrail);
+
+            static void EmitFor(SkimRaceController pilot, List<(Vector3 pos, Vector3 right)> buffer)
             {
-                var emit = t3.position - t3.forward * 1.6f - t3.up * 0.6f;
-                if (_trail.Count == 0 || (emit - _trail[^1].pos).sqrMagnitude > 0.2f)
+                if (pilot.State == RaceState.Countdown || pilot.Speed <= 4f) return;
+                var t = pilot.transform;
+                var emit = t.position - t.forward * 1.6f - t.up * 0.6f;
+                if (buffer.Count == 0 || (emit - buffer[^1].pos).sqrMagnitude > 0.2f)
                 {
-                    _trail.Add((emit, t3.right));
-                    if (_trail.Count > TrailMax) _trail.RemoveAt(0);
+                    buffer.Add((emit, t.right));
+                    if (buffer.Count > TrailMax) buffer.RemoveAt(0);
                 }
             }
 
@@ -391,6 +439,7 @@ void main() { frag = vColor; }";
             _frameIndex++;
             if (_screenshotPath != null)
             {
+                ApplyScreenshotAutopilot();
                 _loop.Tick(1f / 60f); // deterministic sim frames
                 EmitTrailAndCamera(1f / 60f);
             }
@@ -416,7 +465,7 @@ void main() { frag = vColor; }";
             var track = _race.Track;
             for (int i = 0; i < track.Crystals.Count; i++)
             {
-                if (_race.Collected.Contains(i)) continue;
+                if (_race.Shared.IsTaken(i)) continue;
                 float spin = Time.time * 1.6f + i * 0.7f;
                 float pulse = 1f + 0.12f * Mathf.Sin(Time.time * 3f + i);
                 var model = Matrix4x4.CreateScale(pulse) * Matrix4x4.CreateRotationY(spin) *
@@ -447,6 +496,16 @@ void main() { frag = vColor; }";
                 _gl.DrawArrays(PrimitiveType.Triangles, 0, (uint)_vesselVertexCount);
             }
 
+            {
+                var tr = _rival.transform;
+                var rotation = Matrix4x4.CreateFromQuaternion(tr.rotation);
+                var bank = Matrix4x4.CreateFromAxisAngle(tr.forward, _rival.BankAngle * MathF.PI / 180f);
+                var model = rotation * bank * Matrix4x4.CreateTranslation(tr.position);
+                SetMvp(model * viewProjection);
+                _gl.BindVertexArray(_rivalVao);
+                _gl.DrawArrays(PrimitiveType.Triangles, 0, (uint)_rivalVertexCount);
+            }
+
             DrawTrail(viewProjection);
             DrawHud();
 
@@ -457,32 +516,60 @@ void main() { frag = vColor; }";
             }
         }
 
+        void ApplyScreenshotAutopilot()
+        {
+            if (_race.State == RaceState.Countdown) { _race.Countdown = 0.01f; _rival.Countdown = 0.01f; }
+            var t0 = _race.transform;
+            Vector3? target = null;
+            float best = float.MaxValue;
+            for (int i = 0; i < _race.Track.Crystals.Count; i++)
+            {
+                if (_race.Shared.IsTaken(i)) continue;
+                var c = _race.Track.Crystals[i];
+                float ahead = c.z - t0.position.z;
+                if (ahead < -5f) continue;
+                if (ahead < best) { best = ahead; target = c; }
+            }
+            if (target.HasValue)
+            {
+                var local = Quaternion.Inverse(t0.rotation) * (target.Value - t0.position);
+                _pilot.Yaw = Mathf.Clamp(local.x * 0.25f, -1f, 1f);
+                _pilot.Pitch = Mathf.Clamp(local.y * 0.25f, -1f, 1f);
+            }
+            _pilot.Boost = _frameIndex > 60 && _race.Resources.Resources[0].CurrentAmount > 0.2f;
+        }
+
         unsafe void SetMvp(Matrix4x4 mvp) => _gl.UniformMatrix4(_uMvp, 1, false, (float*)&mvp);
 
         unsafe void DrawTrail(Matrix4x4 viewProjection)
         {
-            if (_trail.Count < 2) return;
-            var data = new List<float>(_trail.Count * 14);
-            bool boosting = _pilot.Boost;
-            for (int i = 0; i < _trail.Count; i++)
+            DrawRibbon(viewProjection, _trail, _trailVao, _trailVbo, _pilot.Boost, jade: true);
+            DrawRibbon(viewProjection, _rivalTrail, _rivalTrailVao, _rivalTrailVbo, false, jade: false);
+        }
+
+        unsafe void DrawRibbon(Matrix4x4 viewProjection, List<(Vector3 pos, Vector3 right)> trail,
+            uint vao, uint vbo, bool boosting, bool jade)
+        {
+            if (trail.Count < 2) return;
+            var data = new List<float>(trail.Count * 14);
+            for (int i = 0; i < trail.Count; i++)
             {
-                float age = i / (float)(_trail.Count - 1);        // 0 old → 1 fresh
+                float age = i / (float)(trail.Count - 1);        // 0 old → 1 fresh
                 float width = 0.08f + age * (boosting ? 0.55f : 0.32f);
                 float alpha = age * age * 0.65f;
                 // newest points ramp in so the chase cam never sits inside the ribbon
-                int fromNewest = _trail.Count - 1 - i;
+                int fromNewest = trail.Count - 1 - i;
                 if (fromNewest < 16) alpha *= fromNewest / 16f;
-                // cyan → magenta along the ribbon, Cosmic Shore signature
-                float r = 0.15f + (1f - age) * 0.8f;
-                float g = 0.35f + age * 0.55f;
-                float b = 1f;
-                var (pos, right) = _trail[i];
+                float r, g, b;
+                if (jade) { r = 0.15f + (1f - age) * 0.8f; g = 0.35f + age * 0.55f; b = 1f; }
+                else { r = 1f; g = 0.2f + age * 0.4f; b = 0.25f + (1f - age) * 0.5f; }
+                var (pos, right) = trail[i];
                 Push(data, pos - right * width, r, g, b, alpha);
                 Push(data, pos + right * width, r, g, b, alpha);
             }
             _gl.DepthMask(false);
-            _gl.BindVertexArray(_trailVao);
-            _gl.BindBuffer(BufferTargetARB.ArrayBuffer, _trailVbo);
+            _gl.BindVertexArray(vao);
+            _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
             var array = data.ToArray();
             fixed (float* p = array)
                 _gl.BufferSubData(BufferTargetARB.ArrayBuffer, 0, (nuint)(array.Length * sizeof(float)), p);
@@ -542,9 +629,11 @@ void main() { frag = vColor; }";
             Segment(46f, h - 30f, 58f, h - 44f, 1f, 0.82f, 0.25f, 0.95f);
             Segment(58f, h - 44f, 46f, h - 58f, 1f, 0.82f, 0.25f, 0.95f);
             Segment(46f, h - 58f, 34f, h - 44f, 1f, 0.82f, 0.25f, 0.95f);
-            Number(_race.Stats.CrystalsCollected, 2, 72f, h - 58f, 26f, 1f, 0.85f, 0.3f, 0.95f);
+            Number(_race.Stats.CrystalsCollected, 2, 72f, h - 58f, 26f, 0.3f, 1f, 0.7f, 0.95f);
             Segment(122f, h - 36f, 134f, h - 54f, 1f, 0.85f, 0.3f, 0.6f); // slash
-            Number(_race.CrystalTarget, 2, 142f, h - 58f, 26f, 1f, 0.85f, 0.3f, 0.6f);
+            Number(_race.WinTarget, 2, 142f, h - 58f, 26f, 1f, 0.85f, 0.3f, 0.6f);
+            // rival count, top-right, ruby
+            Number(_rival.Stats.CrystalsCollected, 2, w - 120f, h - 58f, 26f, 1f, 0.25f, 0.35f, 0.95f);
 
             // boost bar bottom center (reads the ported ResourceSystem)
             float boost = _race.Resources.Resources[0].CurrentAmount;
@@ -558,11 +647,15 @@ void main() { frag = vColor; }";
                 Digit(Math.Max(1, (int)MathF.Ceiling(_race.Countdown)), w * 0.5f - 30f, h * 0.5f - 40f, 80f, 1f, 0.3f, 0.9f, 0.95f);
             else if (_race.State == RaceState.Finished)
             {
-                int centiseconds = (int)(_race.Stats.Score * 100f) % 100;
+                // gold digits = you won the crystal majority; ruby = the rival did
+                bool won = _race.Shared.WinnerPilot == _race.PilotId;
+                (float fr, float fg, float fb) = won ? (1f, 0.85f, 0.3f) : (1f, 0.2f, 0.3f);
+                float finalTime = won ? _race.Stats.Score : _rival.Stats.Score;
+                int centiseconds = (int)(finalTime * 100f) % 100;
                 float fs = 44f, fx = w * 0.5f - fs * 2.6f, fy = h * 0.5f;
-                Number((int)_race.Stats.Score / 60, 2, fx, fy, fs, 1f, 0.85f, 0.3f, 1f);
-                Number((int)_race.Stats.Score % 60, 2, fx + fs * 2.0f, fy, fs, 1f, 0.85f, 0.3f, 1f);
-                Number(centiseconds, 2, fx + fs * 4.0f, fy, fs, 1f, 0.85f, 0.3f, 0.8f);
+                Number((int)finalTime / 60, 2, fx, fy, fs, fr, fg, fb, 1f);
+                Number((int)finalTime % 60, 2, fx + fs * 2.0f, fy, fs, fr, fg, fb, 0.85f);
+                Number(centiseconds, 2, fx + fs * 4.0f, fy, fs, fr, fg, fb, 0.7f);
             }
 
             if (data.Count == 0) return;
@@ -589,7 +682,7 @@ void main() { frag = vColor; }";
                 _gl.ReadPixels(0, 0, (uint)w, (uint)h, PixelFormat.Rgba, PixelType.UnsignedByte, p);
             MiniPng.Write(_screenshotPath, pixels, w, h);
             Console.WriteLine($"screenshot → {_screenshotPath} ({w}x{h}) frame {_frameIndex}, " +
-                $"crystals {_race.Stats.CrystalsCollected}/{_race.CrystalTarget}, state {_race.State}");
+                $"crystals {_race.Stats.CrystalsCollected} vs rival {_rival.Stats.CrystalsCollected} (target {_race.WinTarget}), state {_race.State}");
         }
     }
 }

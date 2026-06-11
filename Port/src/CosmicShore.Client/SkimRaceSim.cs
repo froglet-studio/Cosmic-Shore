@@ -56,10 +56,34 @@ namespace CosmicShore.Client
 
     public enum RaceState { Countdown = 0, Racing = 1, Finished = 2 }
 
+    /// <summary>Contested-crystal ledger + winner flag shared between pilots.</summary>
+    public sealed class SharedRaceState
+    {
+        readonly Dictionary<int, int> _ownerByCrystal = new();
+        public int WinnerPilot = -1;
+
+        public bool IsTaken(int crystal) => _ownerByCrystal.ContainsKey(crystal);
+
+        public bool TryClaim(int crystal, int pilot)
+        {
+            if (_ownerByCrystal.ContainsKey(crystal)) return false;
+            _ownerByCrystal[crystal] = pilot;
+            return true;
+        }
+
+        public void Reset()
+        {
+            _ownerByCrystal.Clear();
+            WinnerPilot = -1;
+        }
+    }
+
     /// <summary>
-    /// The race brain — a genuine engine MonoBehaviour: flight model in Update,
-    /// boost resource through the ported ResourceSystem, scoring through the ported
-    /// RoundStats, crystal target + finish per HexRace rules (time is the score).
+    /// The race brain — a genuine engine MonoBehaviour shared by the player and the AI
+    /// rival (identical flight model = fair race; the AI just synthesizes its input).
+    /// Boost runs on the ported ResourceSystem, scoring on the ported RoundStats.
+    /// Crystals are contested: first pilot to skim one claims it; first to the win
+    /// target takes the race.
     /// </summary>
     public sealed class SkimRaceController : MonoBehaviour
     {
@@ -67,12 +91,16 @@ namespace CosmicShore.Client
         public SkimTrack Track;
         public ResourceSystem Resources;
         public RoundStats Stats;
+        public SharedRaceState Shared;
+        public int PilotId;
+        public bool IsAI;
+        public SkimRaceController Opponent;
+        public float SkillTurnScale = 1f; // AI flies slightly sloppier lines
 
         public RaceState State = RaceState.Countdown;
         public float Countdown = 3f;
         public float ElapsedTime;
-        public int CrystalTarget;
-        public readonly HashSet<int> Collected = new();
+        public int WinTarget;
         public float Speed;
         public float BankAngle;
         public event Action<int, Vector3> OnCrystalCollected;
@@ -87,8 +115,8 @@ namespace CosmicShore.Client
 
         void Update()
         {
-            if (Input is null || Track is null) return;
-            if (Input.Restart) { ResetRace(); Input.Restart = false; }
+            if (Track is null || Shared is null) return;
+            if (Input is { Restart: true }) { Input.Restart = false; }
 
             switch (State)
             {
@@ -97,57 +125,108 @@ namespace CosmicShore.Client
                     if (Countdown <= 0f) State = RaceState.Racing;
                     return;
                 case RaceState.Finished:
-                    // victory drift: ease forward, level out
                     transform.position += transform.forward * (Speed * Time.deltaTime);
                     Speed = Mathf.Lerp(Speed, BaseSpeed * 0.4f, Time.deltaTime);
                     return;
             }
 
+            if (Shared.WinnerPilot >= 0) { State = RaceState.Finished; return; }
+
             ElapsedTime += Time.deltaTime;
 
-            // Boost: drains the ported boost resource; regenerates via ResourceSystem's
-            // own gain coroutine when released.
-            bool boosting = Input.Boost && Resources.Resources[0].CurrentAmount > 0.02f;
+            float pitchInput, yawInput;
+            bool boostInput;
+            if (IsAI) SynthesizeAIInput(out pitchInput, out yawInput, out boostInput);
+            else (pitchInput, yawInput, boostInput) = (Input.Pitch, Input.Yaw, Input.Boost);
+
+            bool boosting = boostInput && Resources.Resources[0].CurrentAmount > 0.02f;
             if (boosting)
                 Resources.ChangeResourceAmount(0, -BoostDrainPerSecond * Time.deltaTime);
             float targetSpeed = boosting ? BoostSpeed : BaseSpeed;
+            if (IsAI && Opponent != null)
+            {
+                // rubber-band speed: claw back when trailing, coast when far ahead
+                int crystalLead = Stats.CrystalsCollected - Opponent.Stats.CrystalsCollected;
+                if (crystalLead <= -2) targetSpeed *= 1.22f;
+                else if (crystalLead >= 3) targetSpeed *= 0.85f;
+            }
             Speed = Mathf.Lerp(Speed, targetSpeed, Time.deltaTime * 3f);
 
-            // Flight: rate-limited pitch/yaw, banked visual roll.
-            _yawDeg += Input.Yaw * TurnRate * Time.deltaTime;
+            float turn = TurnRate * SkillTurnScale;
+            _yawDeg += yawInput * turn * Time.deltaTime;
             // +X Euler is nose-down, so positive (stick-up) pitch input SUBTRACTS
-            _pitchDeg = Mathf.Clamp(_pitchDeg - Input.Pitch * TurnRate * Time.deltaTime, -70f, 70f);
-            BankAngle = Mathf.Lerp(BankAngle, -Input.Yaw * 38f, Time.deltaTime * 6f);
+            _pitchDeg = Mathf.Clamp(_pitchDeg - pitchInput * turn * Time.deltaTime, -70f, 70f);
+            BankAngle = Mathf.Lerp(BankAngle, -yawInput * 38f, Time.deltaTime * 6f);
             transform.rotation = Quaternion.Euler(_pitchDeg, _yawDeg, 0f);
             transform.position += transform.forward * (Speed * Time.deltaTime);
 
-            // Skim collection.
+            // Contested skim collection.
             for (int i = 0; i < Track.Crystals.Count; i++)
             {
-                if (Collected.Contains(i)) continue;
+                if (Shared.IsTaken(i)) continue;
                 if ((Track.Crystals[i] - transform.position).sqrMagnitude > CollectRadius * CollectRadius) continue;
+                if (!Shared.TryClaim(i, PilotId)) continue;
 
-                Collected.Add(i);
                 Stats.CrystalsCollected++;
                 Stats.OmniCrystalsCollected++;
                 Resources.ChangeResourceAmount(0, 0.15f);          // skim refund
                 Resources.IncrementLevel(Element.Charge);          // elemental progression
                 OnCrystalCollected?.Invoke(i, Track.Crystals[i]);
 
-                if (Stats.CrystalsCollected >= CrystalTarget)
+                if (Stats.CrystalsCollected >= WinTarget)
                 {
-                    State = RaceState.Finished;
+                    Shared.WinnerPilot = PilotId;
                     Stats.Score = ElapsedTime;                     // HexRace golf scoring
+                    State = RaceState.Finished;
                 }
             }
         }
 
-        public void ResetRace()
+        /// <summary>Seek the nearest unclaimed crystal ahead; boost when lined up.</summary>
+        void SynthesizeAIInput(out float pitch, out float yaw, out bool boost)
+        {
+            pitch = 0f; yaw = 0f; boost = false;
+            // nearest two unclaimed crystals ahead
+            Vector3? first = null, second = null;
+            float bestZ = float.MaxValue, secondZ = float.MaxValue;
+            for (int i = 0; i < Track.Crystals.Count; i++)
+            {
+                if (Shared.IsTaken(i)) continue;
+                var c = Track.Crystals[i];
+                float ahead = c.z - transform.position.z;
+                if (ahead < -5f) continue;
+                if (ahead < bestZ) { secondZ = bestZ; second = first; bestZ = ahead; first = c; }
+                else if (ahead < secondZ) { secondZ = ahead; second = c; }
+            }
+            // Overtake line: if the opponent will beat me to the nearest crystal, concede
+            // it and set up on the following one instead of trailing forever.
+            Vector3? target = first;
+            if (first.HasValue && second.HasValue && Opponent != null)
+            {
+                float mine = (first.Value - transform.position).magnitude;
+                float theirs = (first.Value - Opponent.transform.position).magnitude;
+                if (theirs < mine * 0.8f) target = second;
+            }
+            if (!target.HasValue) return;
+
+            var local = Quaternion.Inverse(transform.rotation) * (target.Value - transform.position);
+            yaw = Mathf.Clamp(local.x * 0.25f, -1f, 1f);
+            pitch = Mathf.Clamp(local.y * 0.25f, -1f, 1f);
+            bool linedUp = Mathf.Abs(yaw) < 0.35f && Mathf.Abs(pitch) < 0.35f;
+            // Rubber-band both directions: hold boost for the opening seconds (give the
+            // player the early line), spend freely when trailing, coast when leading —
+            // otherwise the leader sweeps every contested crystal on the shared line.
+            int lead = Opponent != null ? Stats.CrystalsCollected - Opponent.Stats.CrystalsCollected : 0;
+            float reserve = lead >= 3 ? 0.95f : lead <= -2 ? 0.12f : 0.4f;
+            boost = linedUp && ElapsedTime > 5f && Resources.Resources[0].CurrentAmount > reserve;
+        }
+
+        public void ResetPilot(float lateralOffset)
         {
             ((IRoundStats)Stats).Cleanup();
-            Collected.Clear();
             Resources.ResetResource(0);
-            transform.position = new Vector3(Track.PointAt(0f).x, Track.PointAt(0f).y, -30f);
+            var start = Track.PointAt(0f);
+            transform.position = new Vector3(start.x + lateralOffset, start.y, -30f);
             transform.rotation = Quaternion.identity;
             _pitchDeg = 0f; _yawDeg = 0f; BankAngle = 0f;
             Speed = 0f;
@@ -157,36 +236,54 @@ namespace CosmicShore.Client
         }
     }
 
-    /// <summary>Builds the engine-side scene (loop, vessel object, systems) for a race.</summary>
+    /// <summary>Builds the engine-side race: shared state, player vessel, AI rival.</summary>
     public static class SkimRaceFactory
     {
-        public static (GameLoop loop, SkimRaceController race) Create(int seed, int crystalTarget, PilotInput input)
+        public static (GameLoop loop, SkimRaceController player, SkimRaceController rival) Create(
+            int seed, int trackCrystals, PilotInput input)
         {
             var loop = new GameLoop("SkimRace");
             var track = new SkimTrack(seed);
+            var shared = new SharedRaceState();
+            int winTarget = Math.Min(track.Crystals.Count, Math.Max(1, trackCrystals)) / 2 + 1;
 
-            var vessel = new GameObject("SkimVessel");
-            vessel.SetActive(false); // configure before Awake
-
-            var resources = vessel.AddComponent<ResourceSystem>();
-            resources.Resources = new List<Resource>
+            SkimRaceController Build(string name, Domains domain, int pilotId, bool isAI)
             {
-                new() { Name = "boost", resourceGainRate = 0.12f },
-            };
-            resources.InitializeElementLevels(new ResourceCollection(0f, 0f, 0f, 0f));
+                var vessel = new GameObject(name);
+                vessel.SetActive(false); // configure before Awake
 
-            var race = vessel.AddComponent<SkimRaceController>();
-            race.Input = input;
-            race.Track = track;
-            race.Resources = resources;
-            race.Stats = new RoundStats { Name = "Pilot", Domain = Domains.Jade };
-            race.CrystalTarget = crystalTarget > 0
-                ? Math.Min(crystalTarget, track.Crystals.Count)
-                : track.Crystals.Count;
+                var resources = vessel.AddComponent<ResourceSystem>();
+                resources.Resources = new List<Resource> { new() { Name = "boost", resourceGainRate = 0.12f } };
+                resources.InitializeElementLevels(new ResourceCollection(0f, 0f, 0f, 0f));
 
-            vessel.SetActive(true);
-            race.ResetRace();
-            return (loop, race);
+                var pilot = vessel.AddComponent<SkimRaceController>();
+                pilot.Track = track;
+                pilot.Shared = shared;
+                pilot.Resources = resources;
+                pilot.Stats = new RoundStats { Name = name, Domain = domain };
+                pilot.PilotId = pilotId;
+                pilot.IsAI = isAI;
+                pilot.WinTarget = winTarget;
+                vessel.SetActive(true);
+                return pilot;
+            }
+
+            var player = Build("Pilot", Domains.Jade, 0, isAI: false);
+            player.Input = input;
+            var rival = Build("Rival", Domains.Ruby, 1, isAI: true);
+            rival.SkillTurnScale = 0.92f; // beatable, but honest lines
+            rival.Opponent = player;
+            player.Opponent = rival;
+
+            ResetRace(shared, player, rival);
+            return (loop, player, rival);
+        }
+
+        public static void ResetRace(SharedRaceState shared, SkimRaceController player, SkimRaceController rival)
+        {
+            shared.Reset();
+            player.ResetPilot(-3.5f);
+            rival.ResetPilot(3.5f);
         }
     }
 }
