@@ -79,6 +79,13 @@ The prompter tests progress without prompting the loop. Contract:
 | `port-m3` | First rendered frame (PNG artifact in chat + repo) | pull + open artifact | ⬜ |
 | `port-m4` | First interactive desktop build | `… -- --render` | ⬜ |
 
+## HARD RULE (prompter, 2026-06-11): never merge OUT of this branch
+
+**NEVER merge, rebase, or cherry-pick anything from `claude/quirky-cannon-sk8a02`
+into `bleeding-edge` or any other branch.** Merging INTO this branch (as was done
+with bleeding-edge and brahmagupta) is fine; the reverse direction is prohibited.
+Push only to `claude/quirky-cannon-sk8a02`.
+
 ## Session resume protocol (fresh session / fresh container)
 
 The loop's memory is THIS FILE plus the branch — no chat context is load-bearing.
@@ -86,11 +93,15 @@ To resume in a brand-new session, the prompter pastes exactly:
 
 > /loop run Port/setup.sh if the toolchain is missing, then continue the Cosmic Shore
 > port per Port/PORT_PLAN.md: SPRINT MODE (SkimRace toward full Cosmic Shore parity)
-> + the fidelity arc (docs/VESSEL_LAYER.md). Keep dotnet test green, update this plan,
-> commit and push to claude/quirky-cannon-sk8a02, ship playable zips to Port/dist.
+> + the fidelity arc (docs/VESSEL_LAYER.md, V6 keystone next). Keep dotnet test green,
+> update PORT_PLAN, commit and push ONLY to claude/quirky-cannon-sk8a02 — NEVER merge
+> anything from this branch into bleeding-edge or any other branch. Ship playable zips
+> to Port/dist and tell me the download link when builds change.
 
 That re-arms the heartbeat, rebuilds the toolchain (~3-5 min via setup.sh), and picks
 up at NEXT UP. Mid-iteration work is never stranded: every iteration ends pushed.
+(Only ONE session should run this loop at a time; the 2026-06-11 session stopped its
+heartbeat on handoff.)
 
 ## Toolchain (re-verify each fresh container)
 
