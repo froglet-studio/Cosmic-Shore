@@ -21,12 +21,21 @@ namespace CosmicShore.Engine
     public enum DeviceType { Unknown = 0, Handheld = 1, Console = 2, Desktop = 3 }
     public enum RuntimePlatform { WindowsPlayer = 2, OSXPlayer = 1, LinuxPlayer = 13, Android = 11, IPhonePlayer = 8 }
 
+    public struct Resolution
+    {
+        public int width;
+        public int height;
+        public int refreshRate;
+    }
+
     public static class Screen
     {
         public static int width = 1280;
         public static int height = 720;
+        public static float dpi = 96f;
         public static ScreenOrientation orientation = ScreenOrientation.LandscapeLeft;
         public static bool sleepTimeout;
+        public static Resolution currentResolution => new() { width = width, height = height, refreshRate = 60 };
     }
 
     public static class SystemInfo

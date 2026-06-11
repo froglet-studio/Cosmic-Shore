@@ -85,6 +85,8 @@ namespace CosmicShore.Engine.InputSystem
         public QuaternionControl attitude = new();
     }
 
+    public enum TouchPhase { None = 0, Began = 1, Moved = 2, Ended = 3, Canceled = 4, Stationary = 5 }
+
     public static class InputSystem
     {
         public static void EnableDevice(object device) { }
@@ -106,9 +108,8 @@ namespace CosmicShore.Engine.InputSystem.EnhancedTouch
     {
         public static readonly System.Collections.Generic.List<Touch> activeTouches = new();
         public Vector2 screenPosition;
-        public TouchPhase phase;
+        // Same enum as the parent namespace — the original API shares one TouchPhase.
+        public CosmicShore.Engine.InputSystem.TouchPhase phase;
         public int touchId;
     }
-
-    public enum TouchPhase { None = 0, Began = 1, Moved = 2, Ended = 3, Canceled = 4, Stationary = 5 }
 }

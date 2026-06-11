@@ -106,10 +106,12 @@ BoostChangedPayload+event, InputEventBlockPayload, CellItem; ApplicationLifecycl
 IsQuitting extraction). **V2 DONE** (engine E1 inert input-device shim: Keyboard/Gamepad/Mouse/AttitudeSensor/
 EnhancedTouch; ported IInputStatus [Deviation #10a open: InputController property +
 GetGyroRotation commented until V5], IInputStrategy, BaseInputStrategy,
-KeyboardInputStrategy — the live loose-file strategy per the survey). Next: V3
-(TouchInputStrategy + GamepadInputStrategy) + input-layer unit tests (Ease curve,
-inert ProcessInput on a stub IInputStatus), rival balance from prompter feedback,
-richer meshes/track variety.
+KeyboardInputStrategy — the live loose-file strategy per the survey). **V3 DONE** (TouchInputStrategy + GamepadInputStrategy verbatim; shim grew Screen.dpi/
+currentResolution + unified TouchPhase — the original shares one enum across
+namespaces; InputStrategyTests: all three strategies run inert without faulting, invert
+toggles write through). Next: V4 (DualMouseInputStrategy, MultiMouseService,
+DeviceOrientationHandler), rival balance from prompter feedback, richer meshes/track
+variety.
 
 ## Phase roadmap
 
