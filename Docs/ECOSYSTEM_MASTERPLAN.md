@@ -28,14 +28,19 @@ invariants live in `CLAUDE.md ▸ Ecosystem Design Principles`. This doc is the 
 
 ## 2. Where we are (grounded, June 2026)
 
-Mechanics solid: the **volume spine** (`Cell.LiveVolume` → phase, hysteresis), **flora**
-plant/grow gates, **fauna** controlling-color spawn + prey-linked **starvation → wither-to-
-crystal**, **consumption** as the cell's down-force, **crystals → elemental powerups**, and the
-**lifeform-crystal invariant** (`LifeFormCrystal`: every lifeform drops one elemental crystal).
+Mechanics solid (foundation adopted from `bleeding-edge`, §10): the **`PrismSpatialIndex`**
+collider-light spatial backbone, a two-tier **predator/herbivore Lotka–Volterra food web**,
+**fauna reproduction** (feeds→births; the spawner is now a seeder), **Boid foragers**, the
+sealed **mass-conserving crystal drop** on the fauna death path, **crystals → elemental
+powerups**, and the **lifeform-crystal invariant** (`LifeFormCrystal` + validator: every
+lifeform carries/drops one elemental crystal).
 
-Open: roadmap steps 2–7 unstarted (seams ready); ecology wired into only ~2–3 of ~11 modes; no
-collider budget; no heredity/reproduction/evolution. **The architecture is ready; the work is
-the food web, the genome, the budget, and the wiring.**
+Open: three LOCKED invariants still to re-assert on the adopted foundation — **no-domain-
+asymmetry spawn**, **volume as the spine** (foundation phase is count-driven), and authoring
+crystals on fauna prefabs (§10 items 2–3). Then: collider budget (telemetry + collider-LOD +
+fauna-queries-on-the-index), the **genome/heredity** (the evolution substrate), and wiring
+ecology into the ~9 bare modes. **The food web is now real; the remaining work is the invariant
+re-assertions, the budget, the genome, and the wiring.**
 
 ---
 
@@ -97,16 +102,19 @@ result even for dedicated ALife systems.
 ## 4. The performance contract — colliders below threshold
 
 The hard constraint. Current reality: ~3–4k active `BoxCollider`s per full cell, uncapped.
-The Burst `BlockDensityGrid` (per-domain spatial grid) and `PrismAOERegistry` already answer
-spatial queries **without colliders** — so the budget is reachable. The contract:
+**`PrismSpatialIndex`** (the adopted backbone — 16B-hot data, 8m-bucket
+`NativeParallelMultiHashMap`; `QuerySphere`/`IsAnyPrismWithin`/`TryReserve`) and the per-domain
+`BlockDensityGrid` already answer spatial queries **without colliders** — so the budget is
+reachable; the remaining job is to route fauna behavior through them. The contract:
 
 - **`ColliderBudget` (new):** a configurable per-cell ceiling on active prism colliders
   (default to be tuned, target ≤ ~1,500). Exposed in `CellConfigDataSO`.
 - **Collider-LOD by phase:** once a cell reaches **Frozen**, prism colliders are *disabled*
   (growth has stopped; collisions are no longer gameplay-critical there). AOE + fauna queries
   run off the Burst grids/registry, which need no colliders. (~60–75% reduction.)
-- **Fauna queries off the grid:** replace `LightFauna`'s per-tick `Physics.OverlapSphere`
-  with a `BlockDensityGrid` neighborhood query (saves 2–5 ms/frame *and* drops collider reliance).
+- **Fauna queries off the index:** replace `LightFauna`/`Boid`'s per-tick
+  `Physics.OverlapSphereNonAlloc` with `PrismSpatialIndex.QuerySphere` (saves 2–5 ms/frame *and*
+  drops collider reliance — prerequisite for collider-LOD).
 - **Global active-prism budget:** recycle the oldest/farthest prism when the budget is
   exceeded (generalize the menu trail-cap). Crystals are already capped (16/cell wither).
 - **Telemetry overlay (new):** an in-editor HUD showing active colliders / prism count / phase
@@ -134,19 +142,23 @@ Make a Cell+ecology a *default* any scene gets, like a `ContainerScope`:
 ## 6. The roadmap (each phase: emergence · collider cost · tunability · gameplay · life-criterion)
 
 **Phase 1 — Foundations & budget** *(prereq for everything; mostly mechanical)*
-- Lock invariants (`CLAUDE.md`), this plan, the `ecology` skill. ✅ *(this turn)*
-- Build the **collider budget + LOD + grid-fauna-queries + telemetry** (§4). *Life: enables scale.*
+- Lock invariants (`CLAUDE.md`), this plan, the `ecology` skill. ✅
+- Adopt the `PrismSpatialIndex` spatial backbone (`QuerySphere`/`TryReserve`). ✅ *(merged from `bleeding-edge`)*
+- Re-assert the three locked invariants on the foundation (§10): crystal-drop ✅, no-asymmetry
+  spawn, volume spine. *Life: keeps mass conservation + the credible-alife economy intact.*
+- Build the **collider budget + LOD + index-fauna-queries + telemetry** (§4). *Life: enables scale.*
 - **`LifeformBootstrap`** + wire ecology into the ~9 bare modes; intensity→biome selection.
 
-**Phase 2 — The food web (Lotka–Volterra)** *(roadmap step 2)*
-- `FaunaConfigurationSO.SubType` (Herbivore/Predator); **diet = "what counts as prey"** in
-  `Fauna.ResolveGoal`/consume; **two-tier starvation** (herbivores↔flora, predators↔herbivores).
-- *Emergence:* genuine population oscillation. *Life:* metabolism + homeostasis. *Collider:* neutral
-  (reuses consume path). *Gameplay:* predators players can bait; prey blooms to harvest.
+**Phase 2 — The food web (Lotka–Volterra)** ✅ *(adopted from `bleeding-edge`, §10)*
+- `Fauna.diet` (Herbivore/Predator); **diet = "what counts as prey"** (herbivores eat opposing
+  prism mass, predators hunt herbivore fauna via `Cell.LiveFauna`); **two-tier starvation** +
+  post-spawn predation-immunity window. *Emergence:* genuine population oscillation. *Life:*
+  metabolism + homeostasis. *Gameplay:* predators players can bait; prey blooms to harvest.
 
-**Phase 3 — Reproduction + the genome** *(roadmap step 3 + the evolution substrate)*
-- Well-fed lifeforms **reproduce**; the spawner becomes a one-time **seeder**.
-- A small **heritable trait genome** (e.g. speed, size, consume-radius, starvation-tolerance,
+**Phase 3 — Reproduction + the genome** *(reproduction ✅ adopted; genome = the evolution substrate, TODO)*
+- Well-fed lifeforms **reproduce** (`Fauna.NotifyFed`→`TryReproduce`; `FaunaReproductionRules`);
+  the spawner is now a one-time **seeder**. ✅ *(adopted from `bleeding-edge`)*
+- TODO: a small **heritable trait genome** (e.g. speed, size, consume-radius, starvation-tolerance,
   diet-bias, reproduction-threshold, element); offspring inherit **with mutation**.
 - *Life:* reproduction + heredity + variation — the substrate for evolution. *Collider:* governed
   by the budget (reproduction can't exceed it). *Tunable:* mutation rate, trait ranges per biome.
@@ -222,31 +234,57 @@ Make a Cell+ecology a *default* any scene gets, like a `ContainerScope`:
 
 ---
 
-## 10. P1 execution detail — RESUME HERE
+## 10. Execution — RESUME HERE (rebased onto bleeding-edge, June 2026)
 
-**Decided: P1 first** (the collider budget gate, before scaling life to every mode).
+**What changed (the ground-up reconsideration).** `epic-darwin` had drifted 148 commits
+behind `bleeding-edge` and was independently reinventing the collider-light spatial backbone
+the team already shipped (**`PrismSpatialIndex`** — 16B-hot / 8m-bucket index; `QuerySphere`
+replaces `Physics.OverlapSphere`, `TryReserve` replaces `Physics.CheckBox`, drives the per-cell
+density grids), plus a parallel food web. We stopped the divergence: **merged `bleeding-edge`
+and adopted its superior foundation wholesale** (PrismSpatialIndex + predator/herbivore
+Lotka–Volterra food web + fauna reproduction + Boid foragers + headless `EcosystemPerfProbe`).
+So roadmap **Phases 2 (food web) and 3 (reproduction) are DONE** at the foundation level, and the
+old §10 collider-budget plan is **superseded by PrismSpatialIndex** for the spatial-query half.
 
-**The collider-LOD dependency (key insight — don't lose this):** you must NOT blanket-disable
-prism colliders at Frozen. Prism colliders are needed by (a) the **player** colliding with the
-canopy and (b) **fauna** finding prey via `Physics.OverlapSphere`. So the safe staged order is:
+**But `bleeding-edge` drifted from three LOCKED invariants** (it had no `/ecology` skill or
+locked CLAUDE.md section to hold the line). The remaining work is to **re-assert them as clean
+deltas on top of the adopted foundation** — not to rebuild anything:
 
-1. **Telemetry (safe, do first).** Add `CellConfigDataSO.ColliderBudget` (int) + an in-editor
-   overlay showing per cell: phase, prism count (≈ active colliders today), `LiveVolume`, vs
-   budget (red when over). Reads existing `Cell.LiveBlockCount` / `LiveVolume` / `Phase`. Makes
-   the budget **observable** — the perf-regression guard. Lowest risk; ship + validate first.
-2. **Fauna → density-grid queries.** Replace `LightFauna.UpdateBehavior`'s `Physics.OverlapSphere`
-   (~LightFauna.cs:268) with a Burst `BlockDensityGrid` neighborhood query (new API, e.g.
-   `GetPrismsInRadius`). Removes fauna's collider dependency + saves ~2–5 ms. **Prerequisite for LOD.**
-3. **Proximity collider-LOD** (NOT a blanket phase-disable). Disable colliders on prisms far from
-   any vessel; re-enable on approach → active colliders bounded to "prisms near a vessel"
-   regardless of total prism count. Track the precise active count → feed the telemetry. Touch:
-   `Prism.cs` collider toggles (~247/305/452/OnDisable) gated on a coarse vessel-proximity check.
-4. **Per-cell active-prism budget.** Recycle oldest **trail** prisms when over budget — **never
-   cull the flora canopy** (territorial permanence + mass conservation). Generalize the menu trail cap.
-5. **`LifeformBootstrap`** prefab (Cell + CellConfig + budget + telemetry) → wire the ~9 bare modes.
+1. **Mass-conserving crystal drop on the fauna death path.** ✅ *(done — commit `79f6996d`)*
+   `bleeding-edge` fauna `Die()` just `Destroy`ed (vanished, no crystal). Sealed it into the
+   `Fauna` base: non-virtual `Die` drops the elemental crystal then calls a `protected virtual
+   OnDeath` hook — no subclass can die without conserving mass. `LightFauna`/`Boid` provision
+   the crystal in `Initialize` via `LifeFormCrystal.EnsureElementalCrystal`.
+   *Follow-up:* author one elemental crystal on each fauna prefab + run **Tools ▸ Cosmic Shore ▸
+   Validate Lifeform Crystals**, so `EnsureElementalCrystal` is a no-op fast path (budget-neutral).
 
-**P1 correctness invariants:** player-prism collision must survive; fauna must still find prey
-(via the grid); never cull flora mass to meet the budget (recycle trails only).
+2. **No domain asymmetry in spawning.** `SpawnProfileSO.FloraExcludeLocalDomain` /
+   `FaunaExcludeLocalDomain` still default `true`, and `RandomLifeSpawner.GetExcludedDomain`
+   excludes the controlling color from flora — the asymmetry the invariant forbids ("all three
+   domains seed flora; fauna spawn in the controlling color only"). Re-assert: default both flags
+   `false` (or remove them) and drop the exclusion roll. Low risk, value-only + a few lines.
 
-**To resume:** invoke the `/ecology` skill, read this §10, continue from the first unchecked
-slice. All prior work is committed on `claude/epic-darwin-g0Ehi`.
+3. **Volume as the spine.** `bleeding-edge` phase is **count-driven**
+   (`Cell.cs:384 CellPhaseRules.Compute(LiveBlockCount, …)`); there is no `LiveVolume`. The
+   invariant says phase/dominant/prey/HUD key off per-domain **VOLUME**, count is a perf backstop.
+   Re-assert: add `Cell.LiveVolume` (sum of per-domain volumes), key `CellPhaseRules`/thresholds
+   off it, retune `CellPhaseThresholds` to volume scale, point `DomainVolumeIndicator` at volume.
+   **Keep `bleeding-edge`'s cleaner 3-phase enum (Calm/Restless/Frenzy)** — the *phase count* was
+   never locked, only "volume is the spine." This is the serialization-sensitive, retuning-heavy
+   one; do it last, behind the telemetry overlay, and retune every cell config in-editor.
+
+**Collider budget (PrismSpatialIndex backbone now present; remaining):**
+- **Migrate fauna queries to the index.** `LightFauna`/`Boid` still call
+  `Physics.OverlapSphereNonAlloc`; swap to `PrismSpatialIndex.QuerySphere` so fauna stop
+  depending on prism colliders (prerequisite for collider-LOD).
+- **Proximity collider-LOD** (disable colliders on prisms far from any vessel; never blanket-
+  disable — player + any remaining collider consumers need near-vessel colliders).
+- **Telemetry overlay** (per-cell active colliders / count / `LiveVolume` / phase vs budget) —
+  makes the budget observable; ship first as the perf-regression guard.
+- **Per-cell active-prism budget** — recycle oldest **trail** prisms only; never cull flora canopy
+  (territorial permanence + mass conservation).
+
+**To resume:** invoke the `/ecology` skill, read this §10, take item **2** (lowest risk) then the
+collider-budget telemetry, and treat item **3** (volume spine) as the staged, retuning-heavy
+finish. All work is committed on `claude/epic-darwin-g0Ehi`; the foundation == `bleeding-edge`
+plus the crystal-invariant infra + this governance.
