@@ -85,6 +85,14 @@ namespace CosmicShore.Gameplay
         public static bool VerboseLogging = true;
 
         /// <summary>
+        /// When true, auto-installs <see cref="GamepadValueDebugger"/> at startup, which logs the
+        /// live values read from <c>Gamepad.current</c> as you move sticks / press buttons. Used
+        /// to verify a promoted controller's mapping actually produces correct input. Turn off
+        /// once a pad is confirmed working.
+        /// </summary>
+        public static bool DebugReadValues = true;
+
+        /// <summary>
         /// Optional per-device corrections, keyed by (vendorId, productId). The generic
         /// descriptor-driven mapping is correct for the vast majority of pads; entries here
         /// only exist to override the rare device that reports non-standard ordering or
@@ -110,6 +118,17 @@ namespace CosmicShore.Gameplay
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         private static void InitRuntime() => Register();
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        private static void InstallValueDebugger()
+        {
+            if (!DebugReadValues)
+                return;
+
+            var go = new GameObject("HidGamepadValueDebugger") { hideFlags = HideFlags.HideAndDontSave };
+            Object.DontDestroyOnLoad(go);
+            go.AddComponent<GamepadValueDebugger>();
+        }
 
 #if UNITY_EDITOR
         [InitializeOnLoadMethod]
