@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] Cell cell;
 
         readonly NetworkVariable<int> _netLiveBlockCount = new(0);
-        readonly NetworkVariable<CellPhase> _netPhase = new(CellPhase.Sprout);
+        readonly NetworkVariable<CellPhase> _netPhase = new(CellPhase.Calm);
         readonly NetworkVariable<Domains> _netDominantDomain = new(Domains.Blue);
 
         float _nextMirrorAt;
