@@ -34,10 +34,9 @@ namespace CosmicShore.UI
         void Start()
         {
             _menuAudio = GetComponent<MenuAudio>();
-            // TODO: Reconsider this implementation for avoiding displaying Freestyle on the scoreboard
-            // Copy the game list, but skip Freestyle -- IMPORTANT to copy the list so we don't modify the SO
+            // Copy the game list, but skip non-competitive modes -- IMPORTANT to copy the list so we don't modify the SO
             foreach (var game in allGames.Games)
-                if (game.Mode != GameModes.Freestyle && game.Mode != GameModes.Elimination)
+                if (game.Mode != GameModes.Elimination)
                     LeaderboardEligibleGames.Add(game);
 
             var gamesCount = LeaderboardEligibleGames.Count;
