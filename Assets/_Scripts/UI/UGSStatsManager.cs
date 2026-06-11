@@ -3,7 +3,6 @@ using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
-using Unity.Services.Analytics;
 using Unity.Services.Leaderboards;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -24,6 +23,7 @@ namespace CosmicShore.Core
         [SerializeField] LeaderboardConfigSO leaderboardConfig;
 
         [Inject] UGSDataService _ugsDataService;
+        [Inject] AnalyticsServiceFacade _analytics;
 
         private PlayerStatsProfile _cachedProfile = new();
         private VesselStatsCloudData _vesselStats = new();
@@ -214,20 +214,7 @@ namespace CosmicShore.Core
 
         #region Internal
 
-        public void TrackPlayAgain()
-        {
-            try
-            {
-                var evt = new CustomEvent(UGSKeys.EventPlayAgain);
-                AnalyticsService.Instance.RecordEvent(evt);
-                AnalyticsService.Instance.Flush();
-                Debug.Log("[UGSStats] Play Again analytics event sent.");
-            }
-            catch (Exception ex)
-            {
-                Debug.LogWarning($"[UGSStats] Failed to send Play Again event: {ex.Message}");
-            }
-        }
+        public void TrackPlayAgain() => _analytics.RecordPlayAgain();
 
         async void SubmitScoreInternal(GameModes mode, int intensity, double score)
         {

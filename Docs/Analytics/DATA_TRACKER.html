@@ -190,15 +190,15 @@
 <!-- ════════════════════════ F. ANALYTICS EVENTS -->
 <div class="cat">
   <div class="cat-header"><span class="cat-pill c-evt">F · UGS Analytics Events</span><span class="cat-title">The event stream (UGS-only)</span></div>
-  <p class="cat-sub">Everything routes through the new <code>CSAnalyticsService</code> facade (P1). SDK batches automatically — <code>Flush()</code> only on app pause/quit. Full event-by-event detail: <code>INSTRUMENTATION_DATA.html</code>.</p>
+  <p class="cat-sub">Everything routes through <code>AnalyticsServiceFacade</code> (shipped 2026-06-11 — single writer, DI singleton, owns StartDataCollection). SDK batches automatically — <code>Flush()</code> only on app pause/quit. <strong>Each event + its parameters must be declared in the UGS dashboard Event Manager.</strong> Full event-by-event detail: <code>INSTRUMENTATION_DATA.html</code>.</p>
   <table class="t">
     <tr><th>Event(s)</th><th>Fires when</th><th>Hook</th><th>Status</th></tr>
-    <tr><td class="k">session auto-events</td><td>Session start/device/newPlayer — SDK built-ins</td><td class="w">UnityAnalytics.cs (StartDataCollection at sign-in)</td><td><span class="st st-live">LIVE</span></td></tr>
-    <tr><td class="k">play_again_pressed</td><td>Scoreboard "Play Again"</td><td class="w">UGSStatsManager — remove its per-event Flush() in P1</td><td><span class="st st-fix">FIX · P1</span></td></tr>
-    <tr><td class="k">game_started · game_completed</td><td>Any game begins / ends (mode, intensity, vessel, players, score, duration, win)</td><td class="w">GameDataSO.OnMiniGameTurnStarted / OnMiniGameEnd</td><td><span class="st st-planned">PLANNED · P1</span></td></tr>
-    <tr><td class="k">session_ended</td><td>App pause/quit — carries last_screen + last_event_type</td><td class="w">ApplicationLifecycleManager + ScreenSwitcher + ApplicationStateMachine</td><td><span class="st st-planned">PLANNED · P1</span></td></tr>
-    <tr><td class="k">ui_action</td><td>Menu navigation (port of Firebase user_ui_action)</td><td class="w">UserActionSystem.OnUserActionCompleted</td><td><span class="st st-planned">PLANNED · P1</span></td></tr>
-    <tr><td class="k">ad_impression</td><td>Rewarded ad loaded (port from Firebase)</td><td class="w">AdsSystem.AdLoaded</td><td><span class="st st-planned">PLANNED · P1</span></td></tr>
+    <tr><td class="k">session auto-events</td><td>Session start/device/newPlayer — SDK built-ins</td><td class="w">AnalyticsServiceFacade.StartCollectionIfReady() at sign-in (old UnityAnalytics.cs owner was orphaned — collection never actually started before)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">play_again_pressed</td><td>Scoreboard "Play Again"</td><td class="w">UGSStatsManager → facade (per-event Flush removed)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">game_started · game_completed</td><td>Any game begins / ends — game_mode, intensity, vessel_class, player_count, ai_count, is_multiplayer (+ duration_seconds)</td><td class="w">Facade ← GameDataSO.OnMiniGameTurnStarted / OnMiniGameEnd</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">session_ended</td><td>App pause/quit — reason, last_ui_action, app_state</td><td class="w">Facade ← ApplicationLifecycleManager (ScreenSwitcher-precise last_screen = P2 refinement)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">ui_action</td><td>Menu navigation (ported from Firebase user_ui_action)</td><td class="w">Facade ← UserActionSystem.OnUserActionCompleted</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">ad_impression</td><td>Rewarded ad loaded (ported from Firebase)</td><td class="w">Facade ← AdsSystem.AdLoaded (AdManager prefab not placed in any scene)</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">crystals_earned · crystals_spent · crystal_spend_blocked · vessel_unlocked · crystal_balance_snapshot</td><td>Economy mutations / session end</td><td class="w">PlayerDataService, VesselUnlockSystem</td><td><span class="st st-planned">PLANNED · P2</span></td></tr>
     <tr><td class="k">game_first_launched · freestyle_entered · menu_ready · mode_unlocked · intensity_unlocked · setting_changed</td><td>Activation funnel + control scheme</td><td class="w">AppManager, MenuCrystalClickHandler, MainMenuController, GameModeProgressionService, GameSetting</td><td><span class="st st-planned">PLANNED · P2</span></td></tr>
     <tr><td class="k">friend_request_* · party_invite_* · minigame_favorited · share_triggered</td><td>Social loop</td><td class="w">FriendsServiceFacade, HostConnectionService, PartyInviteController, FavoriteSystem, SnsShare</td><td><span class="st st-planned">PLANNED · P2</span></td></tr>
@@ -206,7 +206,7 @@
     <tr><td class="k">cloud_save_failed</td><td>Any Cloud Save write fails after retries — observability</td><td class="w">UGSCloudSaveProvider</td><td><span class="st st-planned">PLANNED · P3</span></td></tr>
     <tr><td class="k">pilot_recruited · vessel_upgraded · episode_* · style telemetry</td><td>VDemo systems</td><td class="w">CaptainManager (re-enabled), EpisodeProgress, VesselTelemetry</td><td><span class="st st-planned">PLANNED · P4</span></td></tr>
   </table>
-  <div class="note amber"><strong>Consent gate (P1, compliance blocker):</strong> <code>StartDataCollection</code> currently runs unconditionally (<code>IS_CONSENTED = true</code> hardcoded). The facade ships behind a first-run consent dialog + an opt-out toggle in settings.</div>
+  <div class="note amber"><strong>Consent (P1 remaining):</strong> the facade gates collection on a persisted consent flag (<code>AnalyticsServiceFacade.SetConsent</code>), defaulting to granted — same shipping behavior as before. The first-run consent dialog + settings opt-out toggle still need to ship before store release (GDPR/COPPA); both just call <code>SetConsent</code>.</div>
 </div>
 
 <!-- ════════════════════════ ROADMAP -->

@@ -210,6 +210,16 @@ favorites is a referral signal), and should get cloud keys + events when touched
 > wiring and the `cs_*` Firebase collector implementations (keep their taxonomy as the UGS event
 > spec). Removing the Firebase SDK from the project entirely is a separate ticket (check non-analytics
 > dependents first).
+>
+> **Implemented (2026-06-11, P0+P1):** `AnalyticsServiceFacade` (`_Scripts/System/Instrumentation/`)
+> is now the single writer for all UGS Analytics events — it owns StartDataCollection (sign-in +
+> consent + network gated), records `game_started`, `game_completed`, `session_ended`, `ui_action`,
+> `ad_impression`, `play_again_pressed`, and flushes only on pause/quit. The whole Firebase analytics
+> path was deleted. **Audit correction:** the previous "live" Firebase events never actually fired —
+> `UnityAnalytics.cs`, `CSAnalyticsManager.prefab`, and `AdManager.prefab` were all orphaned (placed
+> in no scene), so UGS data collection had never started. Remaining P1 work: the consent dialog +
+> settings opt-out (both call `AnalyticsServiceFacade.SetConsent`), and declaring the six events in
+> the UGS dashboard Event Manager.
 
 ### 2.1 Live
 

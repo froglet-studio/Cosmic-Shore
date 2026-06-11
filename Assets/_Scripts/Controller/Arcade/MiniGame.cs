@@ -105,25 +105,14 @@ namespace CosmicShore.Gameplay
 
         protected virtual void OnEnable()
         {
-            // GameManager.OnPlayGame += InitializeGame;
-            
-            // TODO - Replaced in MiniGameControllerBase
-            // OnMiniGameTurnStarted += FirebaseAnalyticsController.LogEventMiniGameStart;
-            // OnMiniGameEnd += FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused += HandleGamePaused;
             PauseSystem.OnGameResumed += HandleGameResumed;
         }
 
         protected virtual void OnDisable()
         {
-            // GameManager.OnPlayGame -= InitializeGame;
-            
-            // TODO - Replaced in MiniGameControllerBase
-            // OnMiniGameTurnStarted -= FirebaseAnalyticsController.LogEventMiniGameStart;
-            // OnMiniGameEnd -= FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused -= HandleGamePaused;
             PauseSystem.OnGameResumed -= HandleGameResumed;
-
         }
 
         void InitializeGame()

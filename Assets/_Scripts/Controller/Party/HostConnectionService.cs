@@ -313,7 +313,7 @@ namespace CosmicShore.Gameplay
             // All [Inject] fields (services + gameData) are populated before Start.
             // UGS auth completes asynchronously AFTER Start in the normal flow, so
             // OnSignedIn is the PRIMARY init trigger — subscribe in code, the same
-            // pattern used by MultiplayerSetup / UGSDataService / UnityAnalytics.
+            // pattern used by MultiplayerSetup / UGSDataService / AnalyticsServiceFacade.
             // There is no inspector EventListenerNoParam for this handler.
             // HandleSignedInEvent is idempotent — the immediate call (for the
             // already-signed-in case) and the event collapse through

@@ -95,6 +95,10 @@ namespace CosmicShore.Core
         [Inject] FriendsServiceFacade friendsServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
         [Inject] ApplicationStateMachine applicationStateMachine;
+        // Injected so the facade is constructed at bootstrap — it has no other
+        // injection point until consumers appear, and its event subscriptions
+        // (sign-in, game lifecycle, pause/quit) must exist from app start.
+        [Inject] AnalyticsServiceFacade analyticsServiceFacade;
 
         static bool _hasBootstrapped;
         bool _resolved;
@@ -363,6 +367,18 @@ namespace CosmicShore.Core
                     applicationStateDataVariable,
                     gameData,
                     networkMonitorDataVariable,
+                    _bootstrapConfig == null || _bootstrapConfig.VerboseLogging),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory(
+                _ => new AnalyticsServiceFacade(
+                    authenticationDataVariable,
+                    networkMonitorDataVariable,
+                    gameData,
+                    lifecycleEvents,
+                    applicationStateDataVariable,
                     _bootstrapConfig == null || _bootstrapConfig.VerboseLogging),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy

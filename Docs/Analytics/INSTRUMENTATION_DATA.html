@@ -175,10 +175,15 @@
   <p class="stage-question">Ground truth before adding anything. The custom-event surface is nearly empty — almost all current value flows through Cloud Save and Leaderboards.</p>
 
   <div class="block" data-tier="vslice">
-  <div class="section-label">UGS Analytics — custom events <span class="ver-badge vs">VSlice</span></div>
+  <div class="section-label">UGS Analytics — custom events (facade shipped 2026-06-11) <span class="ver-badge vs">VSlice</span></div>
+  <div class="note-box green"><strong>P0+P1 shipped:</strong> all events route through <code>AnalyticsServiceFacade</code> (single writer, DI lazy singleton, constructed at bootstrap). It owns the collection lifecycle — StartDataCollection after sign-in, gated by consent + network — and flushes only on app pause/quit. <strong>Action required: declare every event + its parameters in the UGS dashboard Event Manager</strong>, or the backend silently discards them.</div>
   <div class="events-grid">
-    <div class="event-row"><div><span class="event-name">play_again_pressed</span><span class="st st-live">LIVE</span></div><div class="event-desc">Scoreboard "Play Again" button</div><div class="impl">UGSStatsManager.TrackPlayAgain() — note: calls Flush() per event (fix, see pipeline)</div></div>
-    <div class="event-row"><div><span class="event-name">(built-in auto events)</span><span class="st st-live">LIVE</span></div><div class="event-desc">Session, device, newPlayer — collected automatically once StartDataCollection runs at sign-in</div><div class="impl">UnityAnalytics.cs (network-aware pause/resume)</div></div>
+    <div class="event-row"><div><span class="event-name">play_again_pressed</span><span class="st st-live">LIVE</span></div><div class="event-desc">Scoreboard "Play Again" button</div><div class="impl">UGSStatsManager.TrackPlayAgain() → AnalyticsServiceFacade (batched; per-event Flush removed)</div></div>
+    <div class="event-row"><div><span class="event-name">(built-in auto events)</span><span class="st st-live">LIVE</span></div><div class="event-desc">Session, device, newPlayer — collected automatically once StartDataCollection runs</div><div class="impl">AnalyticsServiceFacade.StartCollectionIfReady() on sign-in (old owner UnityAnalytics.cs was orphaned — collection never actually started before this)</div></div>
+    <div class="event-row"><div><span class="event-name">game_started / game_completed</span><span class="st st-live">LIVE</span></div><div class="event-desc">game_mode, intensity, vessel_class, player_count, ai_count, is_multiplayer (+ duration_seconds on complete)</div><div class="impl">AnalyticsServiceFacade ← GameDataSO.OnMiniGameTurnStarted / OnMiniGameEnd (first-turn flag = one event per game)</div></div>
+    <div class="event-row"><div><span class="event-name">session_ended</span><span class="st st-live">LIVE</span></div><div class="event-desc">reason (pause/quit), last_ui_action, app_state — the churn-forensics event</div><div class="impl">AnalyticsServiceFacade ← ApplicationLifecycleManager OnAppPaused / OnAppQuitting</div></div>
+    <div class="event-row"><div><span class="event-name">ui_action</span><span class="st st-live">LIVE</span></div><div class="event-desc">Menu navigation funnel (PlayGame, ViewHangarMenu, ViewArcadeMenu…) — ported from Firebase</div><div class="impl">AnalyticsServiceFacade ← UserActionSystem.OnUserActionCompleted</div></div>
+    <div class="event-row"><div><span class="event-name">ad_impression</span><span class="st st-live">LIVE</span></div><div class="event-desc">Rewarded ad loaded — ported from Firebase</div><div class="impl">AnalyticsServiceFacade ← AdsSystem.AdLoaded (note: AdManager prefab is not currently placed in any scene)</div></div>
   </div>
   </div>
 
@@ -193,16 +198,11 @@
   </div>
 
   <div class="block" data-tier="vslice">
-  <div class="section-label">Firebase — being retired (UGS-only decision, 2026-06-11) <span class="ver-badge vs">VSlice</span></div>
-  <div class="events-grid">
-    <div class="event-row"><div><span class="event-name">app_open</span><span class="st st-dormant">RETIRE</span></div><div class="event-desc">SDK init</div><div class="impl">FirebaseAnalyticsController — remove; UGS auto session events cover this</div></div>
-    <div class="event-row"><div><span class="event-name">ad_impression</span><span class="st st-dormant">RETIRE</span></div><div class="event-desc">Rewarded ad loaded</div><div class="impl">AdsSystem.AdLoaded — re-route to a UGS ad_impression custom event</div></div>
-    <div class="event-row"><div><span class="event-name">user_ui_action</span><span class="st st-dormant">PORT</span></div><div class="event-desc">Menu navigation funnel (PlayGame, ViewHangarMenu, ViewArcadeMenu…)</div><div class="impl">UserActionSystem.OnUserActionCompleted — port to UGS ui_action, then delete the Firebase path</div></div>
-    <div class="event-row"><div><span class="event-name">cs_* collector taxonomy (16 events)</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Arcade/training/mission/daily-challenge start+complete, purchases, watch-ad — fully defined, never initialized</div><div class="impl">CSAnalyticsManager + 7 collectors — reuse the taxonomy in the UGS facade, delete the Firebase implementations</div></div>
-  </div>
+  <div class="section-label">Firebase analytics path — deleted 2026-06-11 (UGS-only) <span class="ver-badge vs">VSlice</span></div>
+  <div class="note-box blue">Removed: <code>FirebaseAnalyticsController</code>, <code>CSAnalyticsManager</code> + 7 collectors + Firebase implementations, <code>UnityAnalytics.cs</code>, and the orphaned <code>CSAnalyticsManager.prefab</code>. <code>ui_action</code> and <code>ad_impression</code> were ported to UGS (above); the dormant <code>cs_*</code> taxonomy (training/mission/daily-challenge start+complete, purchases) lives on as the spec for Phase 2/3 UGS events. Removing the Firebase SDK itself from the project is a separate ticket.</div>
   </div>
 
-  <div class="note-box amber"><strong>Consent blocker:</strong> <code>IS_CONSENTED = true</code> is hardcoded and Firebase collection is enabled unconditionally — there is no consent dialog. This must ship with (or before) the VSlice analytics push for GDPR/COPPA compliance.</div>
+  <div class="note-box amber"><strong>Consent (P1 remaining):</strong> the facade now gates collection on a persisted consent flag (<code>AnalyticsServiceFacade.SetConsent</code>), defaulting to granted — same shipping behavior as before. The first-run consent dialog + settings opt-out toggle still need to ship before store release for GDPR/COPPA compliance; both just call <code>SetConsent</code>.</div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ CLOUD SAVE INVENTORY -->
@@ -309,7 +309,7 @@
     <div class="event-row"><div><span class="event-name">game_first_launched</span><span class="st st-build">BUILD</span></div><div class="event-desc">App opened for the very first time</div><div class="impl">AppManager bootstrap + existing PlayerPrefs IsInitialPlay flag</div></div>
     <div class="event-row"><div><span class="event-name">freestyle_entered</span><span class="st st-build">BUILD</span></div><div class="event-desc">Took control of the lava-lamp vessel (first tap = first flight)</div><div class="impl">MenuCrystalClickHandler.ToggleTransition / OnEnterFreestyle SOAP event — log: is_first</div></div>
     <div class="event-row"><div><span class="event-name">menu_ready</span><span class="st st-build">BUILD</span></div><div class="event-desc">Menu fully interactive (vessel spawned)</div><div class="impl">MainMenuController.HandleMenuReady — log: is_first, seconds_since_launch</div></div>
-    <div class="event-row"><div><span class="event-name">vessel_inspected</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Opened a vessel in Hangar</div><div class="impl">UserActionType.ViewShipManta/Rhino/Squirrel → already live in Firebase user_ui_action; mirror to UGS</div></div>
+    <div class="event-row"><div><span class="event-name">vessel_inspected</span><span class="st st-live">LIVE</span></div><div class="event-desc">Opened a vessel in Hangar</div><div class="impl">UserActionType.ViewShipManta/Rhino/Squirrel → now flows through the UGS ui_action event</div></div>
     <div class="event-row"><div><span class="event-name">training_first_started</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Entered first training game</div><div class="impl">cs_start_training collector defines params (intensity, vessel) — port to UGS</div></div>
     <div class="event-row"><div><span class="event-name">squad_configured</span><span class="st st-build">BUILD</span></div><div class="event-desc">Completed squad setup (leader + 2 rogues, class + element)</div><div class="impl">SquadSystem.SaveSquad — also migrate squad.data to Cloud Save</div></div>
     <div class="event-row"><div><span class="event-name">mode_unlocked</span><span class="st st-build">BUILD</span></div><div class="event-desc">New game mode became available</div><div class="impl">GameModeProgressionService.ClaimQuestAndUnlockNext — log: mode, quest</div></div>
@@ -353,8 +353,8 @@
   <div class="block" data-tier="vslice">
   <div class="section-label">Session lifecycle <span class="ver-badge vs">VSlice</span></div>
   <div class="events-grid">
-    <div class="event-row"><div><span class="event-name">session_started</span><span class="st st-live">LIVE</span></div><div class="event-desc">Auto-collected by UGS Analytics once collection starts</div><div class="impl">UnityAnalytics.cs — verify StartDataCollection always runs post-consent</div></div>
-    <div class="event-row"><div><span class="event-name">session_ended</span><span class="st st-build">BUILD</span></div><div class="event-desc">Custom event carrying last_screen + last_event_type</div><div class="impl">ApplicationLifecycleManager.OnAppPaused/OnAppQuitting + ScreenSwitcher current screen + ApplicationStateMachine state</div></div>
+    <div class="event-row"><div><span class="event-name">session_started</span><span class="st st-live">LIVE</span></div><div class="event-desc">Auto-collected by UGS Analytics once collection starts</div><div class="impl">AnalyticsServiceFacade.StartCollectionIfReady() on sign-in</div></div>
+    <div class="event-row"><div><span class="event-name">session_ended</span><span class="st st-live">LIVE</span></div><div class="event-desc">reason (pause/quit), last_ui_action, app_state</div><div class="impl">AnalyticsServiceFacade ← OnAppPaused/OnAppQuitting; ScreenSwitcher-precise last_screen is a P2 refinement</div></div>
     <div class="event-row"><div><span class="event-name">daily_challenge_played</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Completed the daily challenge</div><div class="impl">cs_start/complete_daily_challenge collectors define params; DailyChallengeSystem fully implemented — also finish PlayerPrefs → DAILY_CHALLENGE cloud migration</div></div>
     <div class="event-row"><div><span class="event-name">daily_challenge_skipped</span><span class="st st-build">BUILD</span></div><div class="event-desc">Session occurred but tickets unspent</div><div class="impl">Derived at session_ended from DailyChallengeSystem.TicketBalance</div></div>
   </div>
@@ -376,8 +376,8 @@
   <div class="block" data-tier="vslice">
   <div class="section-label">Progression loop retention <span class="ver-badge vs">VSlice</span></div>
   <div class="events-grid">
-    <div class="event-row"><div><span class="event-name">game_started</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Any game began — mode, intensity, vessel, player count, is_multiplayer</div><div class="impl">GameDataSO.OnMiniGameTurnStarted — the exact subscription commented out in FirebaseAnalyticsController</div></div>
-    <div class="event-row"><div><span class="event-name">game_completed</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Game ended — score, duration, win/loss, + all start params</div><div class="impl">GameDataSO.OnMiniGameEnd — ditto; UGSStatsManager already listens here for leaderboards</div></div>
+    <div class="event-row"><div><span class="event-name">game_started</span><span class="st st-live">LIVE</span></div><div class="event-desc">Any game began — mode, intensity, vessel, player count, AI count, is_multiplayer</div><div class="impl">AnalyticsServiceFacade ← GameDataSO.OnMiniGameTurnStarted</div></div>
+    <div class="event-row"><div><span class="event-name">game_completed</span><span class="st st-live">LIVE</span></div><div class="event-desc">Game ended — start params + duration_seconds (score/win-loss params are a P2 refinement)</div><div class="impl">AnalyticsServiceFacade ← GameDataSO.OnMiniGameEnd</div></div>
     <div class="event-row"><div><span class="event-name">xp_track_inspected</span><span class="st st-build">BUILD</span></div><div class="event-desc">Viewed XP track / progression path</div><div class="impl">XPTrack view (UI/Views) OnScreenEnter</div></div>
     <div class="event-row"><div><span class="event-name">xp_reward_earned</span><span class="st st-build">BUILD</span></div><div class="event-desc">Unlocked something from XP track</div><div class="impl">PlayerDataService.UnlockReward — log: reward_id, xp_level</div></div>
     <div class="event-row"><div><span class="event-name">vessel_upgraded</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Captain/vessel upgrade confirmed</div><div class="impl">CaptainManager is PlayFab-disabled; cs_upgrade_captain collector defines params — blocked on UGS captain re-enable (CAPTAIN_PROGRESS key ready)</div></div>

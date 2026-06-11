@@ -21,6 +21,13 @@ namespace CosmicShore.Core
         public const string PlayerSettings        = "PLAYER_SETTINGS";
 
         // ── Analytics Events ──
-        public const string EventPlayAgain = "play_again_pressed";
+        // Every event (and its parameters) must also be declared in the UGS
+        // dashboard Event Manager, or the backend silently discards it.
+        public const string EventPlayAgain     = "play_again_pressed";
+        public const string EventGameStarted   = "game_started";
+        public const string EventGameCompleted = "game_completed";
+        public const string EventSessionEnded  = "session_ended";
+        public const string EventUiAction      = "ui_action";
+        public const string EventAdImpression  = "ad_impression";
     }
 }
