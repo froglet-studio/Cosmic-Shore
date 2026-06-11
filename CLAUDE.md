@@ -1739,6 +1739,7 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 - **"Game UI" CanvasGroup controls all game panel visibility** — individual panels should not manage their own top-level visibility during freestyle toggles; the parent CanvasGroup handles fade in/out
 - **Vessel HUD reparenting is automatic** — do not manually instantiate or position vessel HUDs; the `onShipHUDInitialized` → `MiniGameHUD.OnShipHUDInitialized()` pipeline handles it
 - **Network-aware vessel selection only** — always use `MenuVesselSelectionPanelController` in Menu_Main, never the singleplayer `VesselSelectionPanelController`
+- **Mass is conserved in the menu too** — the lava-lamp vessel is the freestyle gameplay vessel, so its trail follows the universal conserved-mass rules: no trail caps, prism TTLs, or idle cullers (a `maxTrailBlocks` ring-buffer cap was added for menu perf and reverted — see "Don't cheat emergence"). Manage menu-idle prism growth with fauna cleanup or by pausing the spawner
 - **Scoreboard hidden until needed** — do not show the scoreboard in basic freestyle; let the SOAP event system activate it when a game controller raises `OnShowGameEndScreen`
 - **Phase 2/3 panels start inactive** — `EndShapeDetailHUD` GO starts with `SetActive(false)`, activated only by `ShapeDrawingManager` (Phase 2). PlayerScoreCards are dynamically instantiated only when turns are active (Phase 3)
 
@@ -1966,8 +1967,11 @@ ones.
   A large accumulation of prisms is therefore a *valid* state, not a bug to
   auto-correct: it persists until an active force consumes it, and when the
   fauna that would eat it can't reach prey, the correction surfaces as fauna
-  starving — not as prisms vanishing. See "Don't cheat emergence" below and
-  `Docs/ECOSYSTEM.md`.
+  starving — not as prisms vanishing. This holds in **every scene the
+  simulation runs in** — including Menu_Main's lava-lamp/freestyle, where the
+  autopilot vessel *is* the gameplay vessel. There is no "cosmetic" or
+  "menu-only" exemption. See "Universality" and "Don't cheat emergence" below
+  and `Docs/ECOSYSTEM.md`.
 - **Cells** (with `CellType`) — the regions of play that are the unit of
   territorial control. Casual language sometimes calls these "biomes"; the
   canonical term is *cell*.
@@ -2078,6 +2082,41 @@ force a reason/ability to consume that mass (or by tuning fauna diet, reach, and
 spawning) — never by adding decay. The flora regrowth pulse that currently
 exists is the growth-side counterpart of this same cheat and is flagged for
 retirement, not extension. See `Docs/ECOSYSTEM.md`.
+
+**Example (resolved & reverted): the menu trail cap is a cheat — no "cosmetic"
+exemptions.** The Menu_Main autopilot vessel lays prisms indefinitely, so a
+perf-motivated commit added a per-trail ring-buffer cap (`maxTrailBlocks` /
+`Trail.RemoveOldest`, commit `64d8f0c8`) that silently recycled the oldest
+trail prism on every new spawn, rationalized as "cosmetic, menu-only —
+gameplay unaffected." That rationale was false by construction: the lava lamp
+*is* freestyle (one system, two names — see "Lava-Lamp Mode"), so the same
+capped vessel is the one the player flies, and the cap followed them into
+freestyle flight as an age-based trail limit — exactly the passive-removal
+cheat §0 of `Docs/ECOSYSTEM.md` rejects. The commit was reverted. The decided
+answer (do not relitigate): **there is no context in which trail caps, prism
+TTLs, or idle cullers are acceptable.** If prism accumulation in the menu (or
+anywhere) is a perf problem, solve it with the universal systems: **fauna
+cleanup** (cleanup is one of the fauna's jobs — foragers consume trail mass
+through the food web) or **pause/throttle the spawner** (not creating mass is
+allowed; aging it out is not).
+
+### Universality — one HyperSea, one rule set
+
+The fundamentals are universal. The HyperSea has rules and **everything in it
+follows them** — game scenes, Menu_Main's lava-lamp/freestyle, tools and test
+scenes alike. Do not create context-specific exemptions ("it's only the menu,"
+"it's just cosmetic," "it's a perf special case"). Every carve-out creeps
+confusion into best practices about when the rules apply, and carve-outs are
+precisely how rejected cheats re-enter the codebase — both resolved examples
+above came back wearing a special-circumstance costume.
+
+When a context creates pressure (performance, pacing, visuals), solve it with
+the universal systems that already exist — fauna have many jobs and cleanup is
+one of them; spawners can pause; abilities can consume — never with a bespoke
+mechanism that exists only in that context. Build systems once, use them
+everywhere. If a universal system genuinely can't serve the context, that is a
+fundamentals discussion (see the curation process above), not a license for a
+local workaround.
 
 ### When in doubt
 
