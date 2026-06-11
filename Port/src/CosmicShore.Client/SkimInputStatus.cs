@@ -17,6 +17,9 @@ namespace CosmicShore.Client
         public ScriptableEventInputEvents OnButtonPressed { get; } = new() { name = "OnButtonPressed" };
         public ScriptableEventInputEvents OnButtonReleased { get; } = new() { name = "OnButtonReleased" };
 
+        public InputController InputController { get; set; }
+        public Quaternion GetGyroRotation() => Quaternion.identity;
+
         public float XSum { get; set; }
         public float YSum { get; set; }
         public float XDiff { get; set; } = 0.5f; // neutral sticks = mid throttle

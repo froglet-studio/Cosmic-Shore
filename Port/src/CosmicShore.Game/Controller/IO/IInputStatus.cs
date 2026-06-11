@@ -14,8 +14,7 @@ namespace CosmicShore.Gameplay
         ScriptableEventInputEvents OnButtonPressed {get;}
         ScriptableEventInputEvents OnButtonReleased {get;}
         
-        // PORT Deviation #10a: restored when InputController lands (VESSEL_LAYER V5)
-        // InputController InputController { get; set; }
+        InputController InputController { get; set; }
 
         // Floats
         float XSum { get; set; }
@@ -50,8 +49,7 @@ namespace CosmicShore.Gameplay
         Vector2 SingleTouchValue { get; set; }
         Vector3 ThreeDPosition { get; set; }
 
-        // PORT Deviation #10a: restored when InputController lands (VESSEL_LAYER V5)
-        // Quaternion GetGyroRotation();
+        Quaternion GetGyroRotation();
         void ResetForReplay();
     }
 

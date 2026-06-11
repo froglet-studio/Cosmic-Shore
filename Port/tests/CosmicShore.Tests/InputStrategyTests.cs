@@ -14,6 +14,8 @@ public class InputStrategyTests
         public event Action<bool> OnToggleInputPaused { add { } remove { } }
         public ScriptableEventInputEvents OnButtonPressed { get; } = new();
         public ScriptableEventInputEvents OnButtonReleased { get; } = new();
+        public InputController InputController { get; set; }
+        public Quaternion GetGyroRotation() => Quaternion.identity;
         public float XSum { get; set; }
         public float YSum { get; set; }
         public float XDiff { get; set; }

@@ -145,8 +145,13 @@ toggles write through). **V4 DONE** (DualMouseInputStrategy, MultiMouse folder �
 compiles out under our defines, verbatim — DeviceOrientationHandler; shim grew Mouse.all/
 displayName, InputSystem.devices, Accelerometer, AttitudeSensor.enabled, Cursor/
 CursorLockMode, Screen autorotate flags). The IO SCC is now fully ported except
-InputStatus(V7) + InputController(V5). Next: V5 (GameSetting + InputController, closes
-deviation #10a), rival balance from prompter feedback, richer meshes/track variety.
+InputStatus(V7) + InputController(V5). **V5 DONE** (GameSetting [282L; Deviation #14: UGS cloud-settings paths commented until
+services phase; pure PlayerSettingsCloudData model ported] + InputController [275L;
+Deviation #10b: IVessel field/usages commented, restore at V6; Deviation #15:
+TryAddInputStatus fail-loud until concrete InputStatus at V7]; **Deviation #10a
+CLOSED** — IInputStatus verbatim again). Next: V6 — the keystone (ITransform, IVessel,
+IPlayer, IVesselStatus #10c, ElementalFloat, ElementalShipComponent; restores #9 and
+#10b), rival balance from prompter feedback.
 
 ## Phase roadmap
 
