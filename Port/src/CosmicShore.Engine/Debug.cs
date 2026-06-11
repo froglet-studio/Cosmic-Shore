@@ -82,6 +82,10 @@ namespace CosmicShore.Engine
         public static void LogException(Exception exception) => Sink.Write(LogType.Exception, exception?.Message, null, exception);
         public static void LogException(Exception exception, Object context) => Sink.Write(LogType.Exception, exception?.Message, context, exception);
 
+        // Editor-visualization no-ops (rays render once a debug-draw layer exists).
+        public static void DrawLine(Vector3 start, Vector3 end, Color color = default, float duration = 0f) { }
+        public static void DrawRay(Vector3 start, Vector3 dir, Color color = default, float duration = 0f) { }
+
         public static void Assert(bool condition, string message = "Assertion failed")
         {
             if (!condition) Sink.Write(LogType.Assert, message, null);

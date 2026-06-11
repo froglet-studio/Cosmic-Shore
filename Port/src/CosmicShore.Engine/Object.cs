@@ -63,6 +63,16 @@ namespace CosmicShore.Engine
             }
         }
 
+        /// <summary>Single-scene engine for now: objects survive (nonexistent) scene loads by default.</summary>
+        public static void DontDestroyOnLoad(Object target) { }
+
+        public static T FindFirstObjectByType<T>() where T : class
+            => GameLoop.Current?.Scene.FindObjectOfType<T>(includeInactive: true);
+
+        /// <summary>Clone an asset or object graph (see ObjectUtilities for semantics).</summary>
+        public static T Instantiate<T>(T original) where T : Object
+            => ObjectUtilities.InstantiateObject(original);
+
         /// <summary>Destroy synchronously, right now. Prefer <see cref="Destroy"/> in gameplay code.</summary>
         public static void DestroyImmediate(Object obj)
         {

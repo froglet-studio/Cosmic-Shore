@@ -98,8 +98,14 @@ crystals. Shipped since: bloom post chain (bright-pass → half-res gaussian →
 composite) with camera-proximity fades for trails/bursts; mouse steering; **procedural
 audio** (AudioEngine: synthesized PCM via OpenAL Soft — engine hum scaling with speed,
 boost layer, crystal chimes, countdown/go beeps, win/lose jingle; fail-safe silent mode
-when no device). Next: rival balance from prompter feedback, vessel-layer arc resumes
-(VESSEL_LAYER.md V1), richer vessel/crystal meshes, track variety.
+when no device). Fidelity arc: **V1 DONE** (engine E3-E8/E10: RPC attrs, profiling shim, Screen/
+Application/PlayerPrefs/Resources statics, Object.DontDestroyOnLoad/Instantiate/
+FindFirstObjectByType, Physics+collider stubs; NetworkBehaviour now : MonoBehaviour
+(parity); ported PauseSystem, SafeLookRotation, Singleton family, NetMarkers,
+BoostChangedPayload+event, InputEventBlockPayload, CellItem; ApplicationLifecycleManager
+IsQuitting extraction). Next: V2 (input shim E1 + IInputStatus/IInputStrategy/
+BaseInputStrategy/KeyboardInputStrategy), rival balance from prompter feedback,
+richer meshes/track variety.
 
 ## Phase roadmap
 

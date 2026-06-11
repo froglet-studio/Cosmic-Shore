@@ -7,7 +7,7 @@ namespace CosmicShore.Engine.Networking
     /// role flags. The session/transport layer (networking phase) drives <see cref="Spawn"/>/<see cref="Despawn"/>;
     /// tests and single-process play drive them directly.
     /// </summary>
-    public abstract class NetworkBehaviour
+    public abstract class NetworkBehaviour : MonoBehaviour
     {
         public bool IsSpawned { get; private set; }
         public bool IsServer { get; private set; }

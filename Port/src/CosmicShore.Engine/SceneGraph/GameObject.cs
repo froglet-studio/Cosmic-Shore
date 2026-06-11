@@ -89,6 +89,14 @@ namespace CosmicShore.Engine
             return component;
         }
 
+        public Component GetComponent(Type type)
+        {
+            foreach (var component in _components)
+                if (type.IsInstanceOfType(component) && !component.destroyedFlag)
+                    return component;
+            return null;
+        }
+
         public T GetComponent<T>() where T : class
         {
             foreach (var component in _components)
