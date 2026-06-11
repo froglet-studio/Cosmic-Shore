@@ -85,7 +85,7 @@ of each other both saw "empty" and both spawned. **No collider-based check can
 close this race; the claim has to be synchronous with the decision.**
 
 ```
-GyroidAssembler / WallAssembler . GetGrowthInfo()
+GyroidAssembler / WallAssembler / SchwarzPAssembler . GetGrowthInfo()
   └─ TryReserve(newPosition, clearRadius)        ← atomic check-and-claim
        ├─ live prism within clearRadius?   → false (site occupied → knit lattice)
        ├─ active reservation within range? → false (sibling already claimed it)
@@ -150,6 +150,15 @@ Nothing in this system decays, culls, or auto-corrects prism populations.
   `Prism.RegisterWithCell`'s fauna-body exclusion for the same reason).
 - **Cross-network queries** — the index is local sim state, not replicated.
 
+A note on **lattice bookkeeping**: an assembler may keep its own *graph-side*
+state about its lattice — the gyroid's bond-site flags, the Schwarz P frame's
+param-space registry (`SchwarzPSurfaceFrame.occupied`). That is fine: it
+encodes adjacency semantics in the assembler's own coordinate system, which a
+world-space index cannot express. The rule is that **world-space occupancy** —
+"is physical space free, across all structures" — goes through this index, and
+only this index. `SchwarzPAssembler.GetGrowthInfo` shows the pattern: frame
+registry for its own lattice, `TryReserve` for the world.
+
 ## Known gaps (intentional, tracked)
 
 - `UpdateDomain` / `UpdateVolume` have **no callers**: a stolen prism keeps its
@@ -168,7 +177,7 @@ Nothing in this system decays, culls, or auto-corrects prism populations.
 
 | Phase | Scope | Status |
 |---|---|---|
-| 1 | Bucket grid + reservations; `GyroidAssembler`/`WallAssembler` switch from `Physics.CheckBox` to `TryReserve`; lifecycle holes fixed (`Restore` re-entry, pool-return staleness, mover positions) | **Shipped** |
+| 1 | Bucket grid + reservations; `GyroidAssembler`/`WallAssembler`/`SchwarzPAssembler` switch from `Physics.CheckBox` to `TryReserve`; lifecycle holes fixed (`Restore` re-entry, pool-return staleness, mover positions) | **Shipped** |
 | 2 | `QuerySphere`/`FindNearest` views replace remaining physics queries against prisms: `GyroidAssembler.FindClosestMate` + `WallAssembler` mate-finding (also fixes the stale `OverlapSphereNonAlloc` array bug), `ScoutTrailPrismScaler`, `LightFauna` prism scan, `Boid` prism-attraction scan | Planned |
 | 3 | `Cell.AddBlock`/`RemoveBlock` driven by index registration events — one stream feeds both the fine (occupancy) and coarse (density) views | Planned |
 | 4 | Optional: second index instance over fauna for boid flocking neighbors; bucket-accelerated AOE if profiling ever demands it | Candidate |

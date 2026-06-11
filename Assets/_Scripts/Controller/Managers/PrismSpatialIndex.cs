@@ -110,11 +110,12 @@ namespace CosmicShore.Gameplay
     ///   1. AOE damage    — Burst brute-force sphere scan over the hot array
     ///                      (ExplosionImpactor.ProcessBatchFrame).
     ///   2. Occupancy     — bucket hash grid + reservation set. Growth systems
-    ///                      (GyroidAssembler / WallAssembler) call TryReserve at
-    ///                      the grow DECISION, before Instantiate — this closes
-    ///                      the race that Physics.CheckBox could never close
-    ///                      (prism colliders are disabled for the first
-    ///                      Prism.waitTime seconds after spawn).
+    ///                      (GyroidAssembler / WallAssembler / SchwarzPAssembler)
+    ///                      call TryReserve at the grow DECISION, before
+    ///                      Instantiate — this closes the race that
+    ///                      Physics.CheckBox could never close (prism colliders
+    ///                      are disabled for the first Prism.waitTime seconds
+    ///                      after spawn).
     ///   3. (Phase 2)     — QuerySphere/FindNearest for fauna senses, mate
     ///                      finding, trail passives. See Docs/SPATIAL_INDEX.md.
     ///
