@@ -53,8 +53,9 @@ namespace CosmicShore.Gameplay
             // cluster of invisible prisms. Recolor to the fauna's domain first,
             // then kick off the growth animation. LifeForm is intentionally not
             // assigned so these body prisms don't register with Cell as
-            // consumable targets.
-            var bodyPrisms = GetComponentsInChildren<HealthPrism>(true);
+            // consumable targets. The cache also powers NotifyBodyPrismsMoved —
+            // the per-frame spatial-index position sync for a moving body.
+            var bodyPrisms = CacheBodyPrisms();
             for (int i = 0; i < bodyPrisms.Length; i++)
             {
                 var hp = bodyPrisms[i];
@@ -208,42 +209,63 @@ namespace CosmicShore.Gameplay
             // still push us away so we don't clip through enemy mass.
             bool dropFriendlyAvoidance = phase >= CellPhase.Frenzy;
 
-            // Shared non-alloc scratch (Fauna.OverlapScratch) — at swarm scale the old
-            // per-tick Collider[] allocation was pure GC churn.
-            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, OverlapScratch);
+            // --- Non-prism populations (vessels) via physics --------------------
+            // Prism layers are masked out: that whole population — trail/flora
+            // prisms AND other fauna's body HealthPrisms — comes from the spatial
+            // index below, so the broadphase no longer wades through thousands of
+            // prism colliders (which also used to truncate ships out of the
+            // 256-slot scratch in dense fields).
+            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, OverlapScratch, NonPrismOverlapMask);
 
             for (int ci = 0; ci < hitCount; ci++)
             {
                 var collider = OverlapScratch[ci];
                 if (!collider || collider.gameObject == gameObject) continue;
 
+                if (!collider.TryGetComponent(out IVesselStatus vessel)) continue;
+
                 Vector3 diff = transform.position - collider.transform.position;
                 float distance = diff.magnitude;
                 if (distance <= 0f) continue;
 
-                // Handle Ships
-                if (collider.TryGetComponent(out IVesselStatus vessel))
-                {
-                    neighborCount++;
-                    // Level 2: skip separation from same-domain ships.
-                    if (!(dropFriendlyAvoidance && vessel.Domain == domain))
-                        separation -= diff.normalized / distance;
-                    continue;
-                }
+                neighborCount++;
+                // Level 2: skip separation from same-domain ships.
+                if (!(dropFriendlyAvoidance && vessel.Domain == domain))
+                    separation -= diff.normalized / distance;
+            }
+
+            // --- Prism populations via the spatial index -------------------------
+            // Snapshot of live prisms in range (Fauna.PrismScratch). Entries can be
+            // consumed/predated by our own side effects mid-loop, so each is
+            // re-checked — the same contract collider snapshots had.
+            var spatialIndex = PrismSpatialIndex.EnsureInstance();
+            int prismCount = spatialIndex != null && spatialIndex.IsAvailable
+                ? spatialIndex.QuerySphere(transform.position, detectionRadius, PrismScratch)
+                : 0;
+
+            for (int pi = 0; pi < prismCount; pi++)
+            {
+                var prism = PrismScratch[pi];
+                if (!prism || prism.destroyed) continue;
+
+                Vector3 diff = transform.position - prism.transform.position;
+                float distance = diff.magnitude;
+                if (distance <= 0f) continue;
 
                 // Predator diet: hunt herbivore fauna. Another creature's body shows up
-                // here as its child HealthPrisms, so walk up to the owning Fauna. We match
+                // here as its child HealthPrisms, so walk up to the owning Fauna (only
+                // HealthPrisms can be fauna bodies — plain prisms skip the walk). We match
                 // the Fauna BASE (not LightFauna) so a predator eats ANY herbivore species
                 // — LightFauna (brittlestar) and Boid (tadpole) alike. The creature is the
-                // nearest Fauna ancestor of its body colliders, so managers (also Fauna,
+                // nearest Fauna ancestor of its body prisms, so managers (also Fauna,
                 // but with no body in the scene) are never returned. A predator's own body
                 // resolves to `this` and is skipped; other predators (Diet != Herbivore)
                 // are neighbors, not prey, so predators don't cannibalize. Predation
                 // ignores domain — it is a diet relationship, not a team fight — so
                 // predators always have prey even in a single-domain cell.
-                if (diet == FaunaDiet.Predator)
+                if (diet == FaunaDiet.Predator && prism is HealthPrism)
                 {
-                    var prey = collider.GetComponentInParent<Fauna>();
+                    var prey = prism.GetComponentInParent<Fauna>();
                     if (prey && prey != this && prey.Diet == FaunaDiet.Herbivore)
                     {
                         neighborCount++;
@@ -256,17 +278,14 @@ namespace CosmicShore.Gameplay
                             NotifyFed();
                         continue;
                     }
-                    // Not prey (flora / trail / ship / another predator): predators don't
-                    // eat prism mass, so fall through for separation only — the consume
+                    // Not prey (flora / another predator's body): predators don't eat
+                    // prism mass, so fall through for separation only — the consume
                     // calls below are gated to Herbivore.
                 }
 
                 // Handle other fauna/health prisms
-                var otherHealthBlock = collider.GetComponent<HealthPrism>();
-                if (otherHealthBlock)
+                if (prism is HealthPrism otherHealthBlock)
                 {
-                    if (otherHealthBlock.LifeForm == this) continue;
-
                     neighborCount++;
 
                     bool sameDomain = otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain == domain;
@@ -285,10 +304,9 @@ namespace CosmicShore.Gameplay
                 }
 
                 // Handle blocks
-                Prism block = collider.GetComponent<Prism>();
-                if (block && diet == FaunaDiet.Herbivore && block.Domain != domain && distance < consumeRadius)
+                if (diet == FaunaDiet.Herbivore && prism.Domain != domain && distance < consumeRadius)
                 {
-                    block.Consume(transform, domain, PLAYER_NAME, true);
+                    prism.Consume(transform, domain, PLAYER_NAME, true);
                     NotifyFed();
                 }
             }
@@ -317,6 +335,9 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             transform.position += currentVelocity * Time.deltaTime;
+            // Movers contract: the body prisms are registered mass — keep their
+            // stored index positions tracking the swimming creature.
+            NotifyBodyPrismsMoved();
 
             float lerpSpeed = data ? Mathf.Max(0f, data.rotationLerpSpeed) : 5f;
             var t = Mathf.Clamp(Time.deltaTime * lerpSpeed, 0f, 0.99f);

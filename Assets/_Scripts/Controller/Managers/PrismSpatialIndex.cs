@@ -116,8 +116,13 @@ namespace CosmicShore.Gameplay
     ///                      Physics.CheckBox could never close (prism colliders
     ///                      are disabled for the first Prism.waitTime seconds
     ///                      after spawn).
-    ///   3. (Phase 2)     — QuerySphere/FindNearest for fauna senses, mate
-    ///                      finding, trail passives. See Docs/SPATIAL_INDEX.md.
+    ///   3. Neighborhood  — QuerySphere (gather live prisms in range) and
+    ///                      IsAnyPrismWithin (boolean probe) serve fauna senses
+    ///                      (LightFauna / Boid), assembler mate-finding
+    ///                      (GyroidAssembler / WallAssembler) and trail passives
+    ///                      (ScoutTrailPrismScaler) — no physics broadphase, no
+    ///                      per-collider GetComponent, no scratch-array
+    ///                      truncation. See Docs/SPATIAL_INDEX.md.
     ///
     /// Data layout (hot/cold split):
     ///   _spatial[i] — PrismSpatialData (16B) — read by Burst job for ALL prisms
@@ -137,7 +142,10 @@ namespace CosmicShore.Gameplay
     ///   Prism.Restore              → MarkRestored(index) → re-enters AOE + bucket
     ///   Prism.OnDisable/OnDestroy  → Unregister(index) → frees slot
     ///   PrismStateManager          → UpdateShieldState(index, ...) on state change
-    ///   GyroidAssembler movers     → UpdatePosition(index, pos) when steering blocks
+    ///   Assembler movers / fauna   → UpdatePosition(index, pos) — anything that
+    ///                                moves a registered prism (gyroid/wall bond
+    ///                                steering, fauna body prisms swimming) must
+    ///                                keep the stored position honest
     /// </summary>
     public class PrismSpatialIndex : Singleton<PrismSpatialIndex>
     {
@@ -248,9 +256,21 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// True when probing every bucket in the AABB would touch more entries than a
+        /// straight scan of the slot array — wide queries (Scout open-space probes reach
+        /// 100m → 26³ ≈ 17k bucket lookups) are cheaper as one pass over the hot array.
+        /// </summary>
+        private bool BucketWalkCostsMoreThanLinearScan(int3 min, int3 max)
+        {
+            long bucketVolume = (long)(max.x - min.x + 1) * (max.y - min.y + 1) * (max.z - min.z + 1);
+            return bucketVolume > _highWaterMark;
+        }
+
+        /// <summary>
         /// True if any LIVE prism (active, not destroyed — reservations excluded)
         /// sits within <paramref name="radius"/> of <paramref name="position"/>.
-        /// O(buckets covered), no physics, no allocation.
+        /// Bucket-accelerated for tight radii, linear hot-array scan for wide ones.
+        /// No physics, no allocation.
         /// </summary>
         public bool IsAnyPrismWithin(Vector3 position, float radius)
         {
@@ -259,6 +279,18 @@ namespace CosmicShore.Gameplay
             float radiusSq = radius * radius;
             int3 min = (int3)math.floor((center - radius) / BucketSizeMeters);
             int3 max = (int3)math.floor((center + radius) / BucketSizeMeters);
+
+            if (BucketWalkCostsMoreThanLinearScan(min, max))
+            {
+                for (int i = 0; i < _highWaterMark; i++)
+                {
+                    var s = _spatial[i];
+                    if ((s.Flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue &&
+                        math.distancesq(s.Position, center) <= radiusSq)
+                        return true;
+                }
+                return false;
+            }
 
             for (int x = min.x; x <= max.x; x++)
             for (int y = min.y; y <= max.y; y++)
@@ -275,6 +307,60 @@ namespace CosmicShore.Gameplay
                 } while (_buckets.TryGetNextValue(out idx, ref it));
             }
             return false;
+        }
+
+        /// <summary>
+        /// Gathers every LIVE prism (active, not destroyed) within
+        /// <paramref name="radius"/> of <paramref name="center"/> into
+        /// <paramref name="results"/> (cleared first) and returns the count.
+        /// The replacement for Physics.OverlapSphere against prisms: same
+        /// population as the AOE view, returns Prism references directly (no
+        /// per-collider GetComponent), unbounded (no NonAlloc truncation), and
+        /// allocation-free given a reused caller list.
+        ///
+        /// Results are an unordered snapshot — entries can be destroyed by the
+        /// caller's own side effects mid-iteration (consume, steal, convert), so
+        /// iterate with a null/destroyed guard, exactly as collider snapshots
+        /// required. Main-thread only.
+        /// </summary>
+        public int QuerySphere(Vector3 center, float radius, List<Prism> results)
+        {
+            results.Clear();
+            if (!_buckets.IsCreated || _highWaterMark == 0) return 0;
+            float3 c = center;
+            float radiusSq = radius * radius;
+            int3 min = (int3)math.floor((c - radius) / BucketSizeMeters);
+            int3 max = (int3)math.floor((c + radius) / BucketSizeMeters);
+
+            if (BucketWalkCostsMoreThanLinearScan(min, max))
+            {
+                for (int i = 0; i < _highWaterMark; i++)
+                {
+                    var s = _spatial[i];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (math.distancesq(s.Position, c) > radiusSq) continue;
+                    var prism = _prisms[i];
+                    if (prism) results.Add(prism);
+                }
+                return results.Count;
+            }
+
+            for (int x = min.x; x <= max.x; x++)
+            for (int y = min.y; y <= max.y; y++)
+            for (int z = min.z; z <= max.z; z++)
+            {
+                if (!_buckets.TryGetFirstValue(new int3(x, y, z), out int idx, out var it))
+                    continue;
+                do
+                {
+                    var s = _spatial[idx];
+                    if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                    if (math.distancesq(s.Position, c) > radiusSq) continue;
+                    var prism = _prisms[idx];
+                    if (prism) results.Add(prism);
+                } while (_buckets.TryGetNextValue(out idx, ref it));
+            }
+            return results.Count;
         }
 
         #endregion

@@ -66,7 +66,6 @@ namespace CosmicShore.Gameplay
 
         BoxCollider blockCollider;
 
-        List<Collider> separatedBoids = new List<Collider>();
         HealthPrism embeddedHealthPrism;
 
         public BoidManager BoidManager { get; set; }
@@ -91,8 +90,9 @@ namespace CosmicShore.Gameplay
             // (consumable) health prism. Like LightFauna's body prisms, they start at local
             // scale 0 and only grow once Prism.Initialize fires the scale animator — without
             // this the tadpole has no visible/active health prism. (LightFauna does the same
-            // for the brittlestar/shark body.)
-            var bodyPrisms = GetComponentsInChildren<HealthPrism>(true);
+            // for the brittlestar/shark body.) The cache also powers NotifyBodyPrismsMoved —
+            // the per-frame spatial-index position sync for a moving body.
+            var bodyPrisms = CacheBodyPrisms();
             for (int i = 0; i < bodyPrisms.Length; i++)
             {
                 var hp = bodyPrisms[i];
@@ -177,40 +177,47 @@ namespace CosmicShore.Gameplay
             Vector3 blockAttraction = Vector3.zero;
 
             float averageSpeed = 0.0f;
-            separatedBoids.Clear();
+            int separatedBoidCount = 0;
 
-            // Shared non-alloc scratch (Fauna.OverlapScratch) — at swarm scale the old
-            // per-tick Collider[] allocation was pure GC churn.
-            int colliderCount = Physics.OverlapSphereNonAlloc(transform.position, cohesionRadius, OverlapScratch);
+            // Everything this scan inspects is a registered prism — neighbor boids are
+            // sensed through their body HealthPrisms, attraction/grazing targets ARE
+            // prisms — so the whole neighborhood comes from the spatial index
+            // (Fauna.PrismScratch snapshot): no physics broadphase, no per-collider
+            // GetComponent, no 256-slot truncation in dense fields. Entries can be
+            // consumed by our own side effects mid-loop, so each is re-checked.
+            var spatialIndex = PrismSpatialIndex.EnsureInstance();
+            int prismCount = spatialIndex != null && spatialIndex.IsAvailable
+                ? spatialIndex.QuerySphere(transform.position, cohesionRadius, PrismScratch)
+                : 0;
 
-            for (int i = 0; i < colliderCount; i++)
+            for (int i = 0; i < prismCount; i++)
             {
-                Collider collider = OverlapScratch[i];
-                if (!collider) continue;
+                Prism otherPrism = PrismScratch[i];
+                if (!otherPrism || otherPrism.destroyed) continue;
 
-                // Ignore our own collider (if present)
-                if (blockCollider && collider.gameObject == blockCollider.gameObject) continue;
+                // Ignore our own body prism (if present)
+                if (blockCollider && otherPrism.gameObject == blockCollider.gameObject) continue;
 
-                Boid otherBoid = collider.GetComponentInParent<Boid>();
-                Prism otherPrism = collider.GetComponent<Prism>();
+                // Only HealthPrisms can be fauna bodies — plain prisms skip the parent walk.
+                Boid otherBoid = otherPrism is HealthPrism ? otherPrism.GetComponentInParent<Boid>() : null;
 
-                Vector3 diff = transform.position - collider.transform.position;
+                Vector3 diff = transform.position - otherPrism.transform.position;
                 float distance = diff.magnitude;
                 if (distance == 0) continue;
 
                 if (otherBoid)
                 {
                     cohesion += -diff.normalized / distance;
-                    alignment += collider.transform.forward;
+                    alignment += otherPrism.transform.forward;
 
                     if (distance < separationRadius)
                     {
-                        separatedBoids.Add(collider);
+                        separatedBoidCount++;
                         separation += diff.normalized / distance;
                         averageSpeed += currentVelocity.magnitude;
                     }
                 }
-                else if (otherPrism)
+                else
                 {
                     blockAttraction += -diff.normalized / distance;
 
@@ -224,7 +231,7 @@ namespace CosmicShore.Gameplay
                     //     any fauna body; this prism's own boid was already excluded above.
                     var pp = otherPrism.prismProperties;
                     bool shielded = pp != null && (pp.IsShielded || pp.IsSuperShielded);
-                    bool isFaunaBody = collider.GetComponentInParent<Fauna>() != null;
+                    bool isFaunaBody = otherPrism is HealthPrism && otherPrism.GetComponentInParent<Fauna>() != null;
                     bool edible = forager
                         ? (!shielded && !isFaunaBody)
                         : embeddedHealthPrism && otherPrism.Domain != embeddedHealthPrism.Domain;
@@ -276,7 +283,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            int totalBoids = colliderCount - 1;
+            int totalBoids = prismCount - 1;
 
             if (totalBoids > 0)
             {
@@ -284,7 +291,7 @@ namespace CosmicShore.Gameplay
                 cohesion = (cohesion - transform.position).normalized;
             }
 
-            averageSpeed = separatedBoids.Count > 0 ? averageSpeed / separatedBoids.Count : currentVelocity.magnitude;
+            averageSpeed = separatedBoidCount > 0 ? averageSpeed / separatedBoidCount : currentVelocity.magnitude;
 
             desiredDirection = ((separation * separationWeight)
                                + (alignment * alignmentWeight)
@@ -323,6 +330,10 @@ namespace CosmicShore.Gameplay
 
             float scanRadius = 30f;
 
+            // Intentionally a physics query: the mound blocks this hunts for are built
+            // by NewBlock WITHOUT Prism.Initialize, so they never register with the
+            // spatial index — their colliders on the dedicated Mound layer are the
+            // only way to find them (tiny population, narrow layer; physics is fine).
             Collider[] colliders = new Collider[0];
             while (colliders.Length == 0)
             {
@@ -371,6 +382,9 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             transform.position += currentVelocity * Time.deltaTime;
+            // Movers contract: the body prism is registered mass — keep its stored
+            // index position tracking the swimming boid.
+            NotifyBodyPrismsMoved();
             transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, Time.deltaTime);
         }
     }

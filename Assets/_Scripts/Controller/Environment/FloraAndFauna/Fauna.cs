@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Reflex.Attributes;
@@ -200,6 +201,64 @@ namespace CosmicShore.Gameplay
         /// extremely dense neighborhood that tick.
         /// </summary>
         protected static readonly Collider[] OverlapScratch = new Collider[256];
+
+        /// <summary>
+        /// Shared scratch list for PrismSpatialIndex.QuerySphere in fauna behavior
+        /// ticks — the prism half of the neighborhood scan (the physics half above
+        /// now only carries non-prism populations like vessels). Same single-buffer
+        /// rationale as <see cref="OverlapScratch"/>; reproduction's deferred first
+        /// behavior tick (see Boid.CalculateBehaviorCoroutine) keeps a parent from
+        /// having its snapshot clobbered mid-iteration.
+        /// </summary>
+        protected static readonly List<Prism> PrismScratch = new(256);
+
+        /// <summary>
+        /// Overlap mask for the physics half of fauna scans: everything EXCEPT prism
+        /// layers (TrailBlocks + Mound). Prisms — including other fauna's body
+        /// HealthPrisms — are served by PrismSpatialIndex.QuerySphere instead, so the
+        /// physics query stops paying broadphase + GetComponent costs for thousands
+        /// of prism colliders (and stops truncating ships out of the 256-slot scratch
+        /// in dense fields). Lazy so LayerMask resolves after engine init.
+        /// </summary>
+        static int s_nonPrismOverlapMask;
+        protected static int NonPrismOverlapMask =>
+            s_nonPrismOverlapMask != 0
+                ? s_nonPrismOverlapMask
+                : s_nonPrismOverlapMask = ~LayerMask.GetMask("TrailBlocks", "Mound");
+
+        // --- Body prisms (the movers contract with PrismSpatialIndex) -------
+        // Fauna bodies are HealthPrisms — registered prism mass that MOVES every
+        // frame. The index stores positions, so the mover must keep them honest
+        // (Docs/SPATIAL_INDEX.md): otherwise batch AOE hits the creature at its
+        // spawn point and index-served fauna senses look for it where it used
+        // to be.
+
+        HealthPrism[] _bodyPrisms;
+
+        /// <summary>
+        /// Caches this fauna's body HealthPrisms for the per-frame movement
+        /// notification. Call from Initialize, after the body hierarchy exists.
+        /// Returns the cached array so subclasses can reuse it for body setup.
+        /// </summary>
+        protected HealthPrism[] CacheBodyPrisms() =>
+            _bodyPrisms = GetComponentsInChildren<HealthPrism>(true);
+
+        /// <summary>
+        /// Pushes the body prisms' current positions into the spatial index. Call
+        /// every frame after moving the creature. Cheap: the index only rebuckets
+        /// when a body crosses an 8m occupancy-bucket boundary; unregistered
+        /// bodies (inside Prism.waitTime) no-op.
+        /// </summary>
+        protected void NotifyBodyPrismsMoved()
+        {
+            var prisms = _bodyPrisms;
+            if (prisms == null) return;
+            for (int i = 0; i < prisms.Length; i++)
+            {
+                var hp = prisms[i];
+                if (hp) hp.NotifyPositionChanged();
+            }
+        }
 
         protected virtual void Awake()
         {
