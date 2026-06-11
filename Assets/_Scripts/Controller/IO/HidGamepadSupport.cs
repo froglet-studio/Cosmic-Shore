@@ -50,10 +50,6 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class HidGamepadSupport
     {
-        // HID usage-page identifiers (USB HID Usage Tables).
-        private const int UsagePageGenericDesktop = 0x01;
-        private const int UsagePageButton = 0x09;
-
         // Generic Desktop usages.
         private const int GD_Joystick = 0x04;
         private const int GD_Gamepad = 0x05;
@@ -394,11 +390,20 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        private struct AxisInfo
+        {
+            public bool Present;
+            public int OffsetBits;
+            public int SizeBits;
+            public int LogicalMin;
+            public int LogicalMax;
+        }
+
         private struct ControlMap
         {
-            public bool HasLeftStick, HasRightStick;
-            public int LeftStickXOffsetBits, LeftStickYOffsetBits, LeftStickBits;
-            public int RightStickXOffsetBits, RightStickYOffsetBits, RightStickBits;
+            public AxisInfo LeftX, LeftY, RightX, RightY;
+            public bool HasLeftStick => LeftX.Present && LeftY.Present;
+            public bool HasRightStick => RightX.Present && RightY.Present;
 
             public bool HasHat;
             public int HatOffsetBits, HatSizeBits;
@@ -422,53 +427,45 @@ namespace CosmicShore.Gameplay
                 DpadRightBit = -1,
             };
 
-            // Track which generic-desktop axes we've consumed so the second pair falls through
-            // to the right stick.
-            bool haveX = false, haveY = false, haveRightX = false, haveRightY = false;
-
             foreach (var element in descriptor.elements)
             {
                 if (element.reportType != HID.HIDReportType.Input)
                     continue;
 
-                int offset = element.reportOffsetInBits;
-                int size = element.reportSizeInBits;
+                var axis = new AxisInfo
+                {
+                    Present = true,
+                    OffsetBits = element.reportOffsetInBits,
+                    SizeBits = element.reportSizeInBits,
+                    LogicalMin = element.logicalMin,
+                    LogicalMax = element.logicalMax,
+                };
 
                 if (element.usagePage == HID.UsagePage.GenericDesktop)
                 {
                     switch (element.usage)
                     {
-                        case GD_X:
-                            map.LeftStickXOffsetBits = offset; map.LeftStickBits = size; haveX = true; break;
-                        case GD_Y:
-                            map.LeftStickYOffsetBits = offset; map.LeftStickBits = size; haveY = true; break;
-                        case GD_Z:
-                            map.RightStickXOffsetBits = offset; map.RightStickBits = size; haveRightX = true; break;
-                        case GD_Rz:
-                            map.RightStickYOffsetBits = offset; map.RightStickBits = size; haveRightY = true; break;
-                        case GD_Rx:
-                            if (!haveRightX) { map.RightStickXOffsetBits = offset; map.RightStickBits = size; haveRightX = true; }
-                            break;
-                        case GD_Ry:
-                            if (!haveRightY) { map.RightStickYOffsetBits = offset; map.RightStickBits = size; haveRightY = true; }
-                            break;
+                        case GD_X: map.LeftX = axis; break;
+                        case GD_Y: map.LeftY = axis; break;
+                        case GD_Z: map.RightX = axis; break;
+                        case GD_Rz: map.RightY = axis; break;
+                        case GD_Rx: if (!map.RightX.Present) map.RightX = axis; break;
+                        case GD_Ry: if (!map.RightY.Present) map.RightY = axis; break;
                         case GD_HatSwitch:
-                            map.HasHat = true; map.HatOffsetBits = offset; map.HatSizeBits = size; break;
-                        case GD_DpadUp: map.DpadUpBit = offset; break;
-                        case GD_DpadDown: map.DpadDownBit = offset; break;
-                        case GD_DpadRight: map.DpadRightBit = offset; break;
-                        case GD_DpadLeft: map.DpadLeftBit = offset; break;
+                            map.HasHat = true; map.HatOffsetBits = axis.OffsetBits; map.HatSizeBits = axis.SizeBits; break;
+                        case GD_DpadUp: map.DpadUpBit = axis.OffsetBits; break;
+                        case GD_DpadDown: map.DpadDownBit = axis.OffsetBits; break;
+                        case GD_DpadRight: map.DpadRightBit = axis.OffsetBits; break;
+                        case GD_DpadLeft: map.DpadLeftBit = axis.OffsetBits; break;
                     }
                 }
-                else if ((int)element.usagePage == UsagePageButton)
+                else if (element.usagePage == HID.UsagePage.Button)
                 {
                     // Each button element is one bit; collect in report order.
-                    map.ButtonBitOffsets.Add(offset);
+                    map.ButtonBitOffsets.Add(element.reportOffsetInBits);
                 }
             }
 
-            map.HasLeftStick = haveX && haveY;
-            map.HasRightStick = haveRightX && haveRightY;
             return map;
         }
 
@@ -510,16 +507,17 @@ namespace CosmicShore.Gameplay
                 .Extend("Gamepad");
 
             // ---- Sticks ----
+            // A signed axis parked on the always-zero dead byte reads 0 = centered.
+            var deadAxis = new AxisInfo { Present = false, OffsetBits = deadByte * 8, SizeBits = 8, LogicalMin = -128, LogicalMax = 127 };
+
             AddStick(builder, "leftStick",
-                map.HasLeftStick ? map.LeftStickXOffsetBits : deadByte * 8,
-                map.HasLeftStick ? map.LeftStickYOffsetBits : deadByte * 8,
-                map.HasLeftStick ? map.LeftStickBits : 8,
+                map.HasLeftStick ? map.LeftX : deadAxis,
+                map.HasLeftStick ? map.LeftY : deadAxis,
                 invertY: !quirk.InvertLeftStickY);
 
             AddStick(builder, "rightStick",
-                map.HasRightStick ? map.RightStickXOffsetBits : deadByte * 8,
-                map.HasRightStick ? map.RightStickYOffsetBits : deadByte * 8,
-                map.HasRightStick ? map.RightStickBits : 8,
+                map.HasRightStick ? map.RightX : deadAxis,
+                map.HasRightStick ? map.RightY : deadAxis,
                 invertY: !quirk.InvertRightStickY);
 
             // ---- Buttons (report order -> gamepad semantic order) ----
@@ -571,35 +569,96 @@ namespace CosmicShore.Gameplay
         }
 
         private static void AddStick(InputControlLayout.Builder builder, string name,
-            int xOffsetBits, int yOffsetBits, int sizeBits, bool invertY)
+            AxisInfo x, AxisInfo y, bool invertY)
         {
             // Parent at byte 0 so the absolute child offsets below resolve correctly.
             builder.AddControl(name)
                 .WithLayout("Stick")
                 .WithByteOffset(0);
 
-            // 8-bit axes are the common case; normalize 0..255 with center at 0.5. For wider
-            // axes the same normalized form still centers correctly.
-            string xParams = "normalize,normalizeMin=0,normalizeMax=1,normalizeZero=0.5";
-            string yParams = invertY
-                ? "invert,normalize,normalizeMin=0,normalizeMax=1,normalizeZero=0.5"
-                : "normalize,normalizeMin=0,normalizeMax=1,normalizeZero=0.5";
+            AddAxis(builder, name + "/x", x, invert: false);
+            AddAxis(builder, name + "/y", y, invert: invertY);
+        }
 
-            string format = sizeBits <= 8 ? "BYTE" : "SHRT";
+        private static void AddAxis(InputControlLayout.Builder builder, string name, AxisInfo axis, bool invert)
+        {
+            // Pick signed vs unsigned format and centering from the descriptor's logical range,
+            // mirroring Unity's own HID handling (HID.cs DetermineFormat / isSigned /
+            // DetermineAxisNormalizationParameters). This is what makes a signed-byte stick
+            // (rest = 0, range -128..127) center correctly instead of reading as a hard
+            // deflection — the root cause of "drifts to one side at rest".
+            int sizeBits = axis.SizeBits <= 0 ? 8 : axis.SizeBits;
+            bool signed = axis.LogicalMin < 0;
+            string format = AxisFormat(sizeBits, signed);
+            string norm = NormalizationParameters(axis.LogicalMin, axis.LogicalMax, sizeBits);
 
-            builder.AddControl(name + "/x")
+            string parameters = invert
+                ? (string.IsNullOrEmpty(norm) ? "invert" : "invert," + norm)
+                : norm;
+
+            var c = builder.AddControl(name)
                 .WithFormat(format)
-                .WithByteOffset((uint)(xOffsetBits / 8))
-                .WithBitOffset((uint)(xOffsetBits % 8))
-                .WithSizeInBits((uint)sizeBits)
-                .WithParameters(xParams);
+                .WithByteOffset((uint)(axis.OffsetBits / 8))
+                .WithBitOffset((uint)(axis.OffsetBits % 8))
+                .WithSizeInBits((uint)sizeBits);
 
-            builder.AddControl(name + "/y")
-                .WithFormat(format)
-                .WithByteOffset((uint)(yOffsetBits / 8))
-                .WithBitOffset((uint)(yOffsetBits % 8))
-                .WithSizeInBits((uint)sizeBits)
-                .WithParameters(yParams);
+            if (!string.IsNullOrEmpty(parameters))
+                c.WithParameters(parameters);
+        }
+
+        private static string AxisFormat(int sizeBits, bool signed)
+        {
+            switch (sizeBits)
+            {
+                case 8: return signed ? "SBYT" : "BYTE";
+                case 16: return signed ? "SHRT" : "USHT";
+                case 32: return signed ? "INT" : "UINT";
+                default: return "BIT";
+            }
+        }
+
+        // Mirrors HID.cs HIDElementDescriptor.DetermineAxisNormalizationParameters: build the
+        // normalize processor from the element's logical range so any axis (signed/unsigned,
+        // 8/16/32-bit, with an arbitrary center) maps to a clean -1..1 with 0 at rest.
+        private static string NormalizationParameters(int logicalMin, int logicalMax, int sizeBits)
+        {
+            if (logicalMin == 0 && logicalMax == 0)
+                return "normalize,normalizeMin=0,normalizeMax=1,normalizeZero=0.5";
+
+            // Signedness is a property of the element (its logicalMin), applied to BOTH bounds —
+            // not decided per value (logicalMax is positive even on a signed axis).
+            bool signed = logicalMin < 0;
+            float min = LogicalToFloat(logicalMin, sizeBits, signed);
+            float max = LogicalToFloat(logicalMax, sizeBits, signed);
+            if (Mathf.Approximately(0f, min) && Mathf.Approximately(0f, max))
+                return null;
+
+            float zero = min + (max - min) / 2.0f;
+            return string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                "normalize,normalizeMin={0},normalizeMax={1},normalizeZero={2}", min, max, zero);
+        }
+
+        // Mirrors HID.cs HIDElementDescriptor.minFloatValue/maxFloatValue.
+        private static float LogicalToFloat(int logical, int sizeBits, bool signed)
+        {
+            if (signed)
+            {
+                long minValue = -(1L << (sizeBits - 1));
+                long maxValue = (1L << (sizeBits - 1)) - 1;
+                return NormalizedFloat(logical, minValue, maxValue) * 2.0f - 1.0f;
+            }
+            else
+            {
+                long maxValue = (1L << sizeBits) - 1;
+                return NormalizedFloat(logical, 0, maxValue);
+            }
+        }
+
+        private static float NormalizedFloat(long value, long min, long max)
+        {
+            if (max <= min)
+                return 0f;
+            return Mathf.Clamp01((float)((double)(value - min) / (max - min)));
         }
 
         private static void AddButton(InputControlLayout.Builder builder, string name, int bitOffset)
