@@ -209,7 +209,15 @@ instancing, `sharedMaterial` + `MaterialPropertyBlock`, SOAP over `Find*`).
 
 Rule types: `GcPerFrameKb`, `MemorySlopeKbPerFrame` (leak), `AvgDrawCalls`, `GpuBound`, `CpuBound`,
 `FrameInstability`, `SpikeMarkerName`, `NetcodeSharePercent`, `RpcsPerFrame`. Severities: `Info`,
-`Warning`, `Blocker`.
+`Warning`, `Blocker`. The `GpuBound`/`CpuBound` rules and the report's `boundVerdict` compare GPU
+time against **busy CPU** (`EffectiveCpuTimeMs` — wait-for-present removed) on schema-v2 captures,
+so frame-capped runs aren't misread as CPU-bound.
+
+Schema v2 (see `BenchmarkReport.CurrentSchemaVersion`) adds to every `FrameSnapshot`: CPU
+main-thread / present-wait / render-thread times and `physicsTimeMs` (the `Physics.Processing`
+marker), and to `statistics`: their averages plus `avgCpuBusyTimeMs` / `maxCpuBusyTimeMs` /
+`physicsSharePercent`. Pre-v2 reports load fine — the new fields read as 0 and verdicts fall back
+to the raw CPU total.
 
 ---
 

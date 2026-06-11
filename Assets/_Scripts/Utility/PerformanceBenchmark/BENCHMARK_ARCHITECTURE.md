@@ -194,11 +194,13 @@ source guard**: warns when origin/platform differ (only same-source deltas are v
 ## 5. Shared data model
 
 ```
-FrameSnapshot   (one per frame: ms, cpu, gpu, draws, setpass, batches, tris, verts, gcAlloc,
-                 mem, rigidbodies, + game-load counts, + netcode counters)
+FrameSnapshot   (one per frame: ms, cpu, gpu, cpu main/wait/render thread (v2), draws,
+                 setpass, batches, tris, verts, gcAlloc, mem, rigidbodies, physics ms (v2),
+                 + game-load counts, + netcode counters)
         │ aggregated by
 BenchmarkStatistics  (avg/p95/p99/max frame ms, avg/p1 fps, stddev, avg draws/tris,
-                      total GC, CPU/GPU avgs, netcode share, collector overhead)
+                      total GC, CPU/GPU avgs + thread breakdown + busy-CPU (v2),
+                      physics share (v2), netcode share, collector overhead)
         │ scored by
 BenchmarkAnalysis    (0–100 score, A–F grade via BenchmarkGrade, boundVerdict CPU/GPU,
                       hints[] from BenchmarkHintRulesSO rules)

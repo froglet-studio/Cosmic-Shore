@@ -138,8 +138,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             return Math.Max(0, Math.Min(100, score));
         }
 
+        // Busy CPU (wait-for-present removed) when the capture has thread times (schema v2),
+        // else the raw total — identical to pre-v2 behavior on old reports.
         static string BoundVerdict(BenchmarkStatistics s) =>
-            FrameBoundness.Classify(s.avgCpuFrameTimeMs, s.avgGpuFrameTimeMs);
+            FrameBoundness.Classify(s.EffectiveCpuTimeMs, s.avgGpuFrameTimeMs);
 
         static bool TryEvaluate(HintRule rule, BenchmarkStatistics s, List<SpikeEntry> spikes, out BenchmarkHint hint)
         {
@@ -172,15 +174,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 case HintRuleType.GpuBound:
                 {
                     if (s.avgGpuFrameTimeMs <= 0.001f) return false;
-                    if (s.avgGpuFrameTimeMs <= s.avgCpuFrameTimeMs * rule.threshold) return false;
-                    finding = $"GPU {s.avgGpuFrameTimeMs:F1} ms vs CPU {s.avgCpuFrameTimeMs:F1} ms — GPU-bound.";
+                    if (s.avgGpuFrameTimeMs <= s.EffectiveCpuTimeMs * rule.threshold) return false;
+                    finding = $"GPU {s.avgGpuFrameTimeMs:F1} ms vs busy CPU {s.EffectiveCpuTimeMs:F1} ms — GPU-bound.";
                     break;
                 }
                 case HintRuleType.CpuBound:
                 {
-                    if (s.avgCpuFrameTimeMs <= 0.001f) return false;
-                    if (s.avgCpuFrameTimeMs <= s.avgGpuFrameTimeMs * rule.threshold) return false;
-                    finding = $"CPU {s.avgCpuFrameTimeMs:F1} ms vs GPU {s.avgGpuFrameTimeMs:F1} ms — CPU-bound.";
+                    if (s.EffectiveCpuTimeMs <= 0.001f) return false;
+                    if (s.EffectiveCpuTimeMs <= s.avgGpuFrameTimeMs * rule.threshold) return false;
+                    finding = $"Busy CPU {s.EffectiveCpuTimeMs:F1} ms vs GPU {s.avgGpuFrameTimeMs:F1} ms — CPU-bound.";
                     break;
                 }
                 case HintRuleType.FrameInstability:

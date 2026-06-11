@@ -102,6 +102,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         ProfilerRecorder verticesRecorder;
         ProfilerRecorder gcAllocRecorder;
         ProfilerRecorder activeBodiesRecorder;
+        ProfilerRecorder physicsTimeRecorder;
 
         // Netcode (NGO) marker + counter recorders
         ProfilerRecorder netTickRecorder, netSerializeRecorder, netDeserializeRecorder,
@@ -347,6 +348,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 {
                     snapshot.cpuFrameTimeMs = (float)_frameTimings[0].cpuFrameTime;
                     snapshot.gpuFrameTimeMs = (float)_frameTimings[0].gpuFrameTime;
+                    snapshot.cpuMainThreadTimeMs = (float)_frameTimings[0].cpuMainThreadFrameTime;
+                    snapshot.cpuPresentWaitTimeMs = (float)_frameTimings[0].cpuMainThreadPresentWaitTime;
+                    snapshot.cpuRenderThreadTimeMs = (float)_frameTimings[0].cpuRenderThreadFrameTime;
                 }
 
                 if (cachedCaptureRendering)
@@ -366,7 +370,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 }
 
                 if (cachedCapturePhysics)
+                {
                     snapshot.activeRigidbodies = GetRecorderValue(activeBodiesRecorder);
+                    // Marker recorder reports nanoseconds.
+                    snapshot.physicsTimeMs = GetRecorderValueLong(physicsTimeRecorder) / 1_000_000f;
+                }
 
                 if (cachedCaptureNetcode)
                 {
@@ -544,7 +552,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (cachedCaptureMemory)
                 gcAllocRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Memory, "GC Allocated In Frame");
             if (cachedCapturePhysics)
+            {
                 activeBodiesRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Physics, "Active Dynamic Bodies");
+                physicsTimeRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Physics, "Physics.Processing");
+            }
             if (cachedCaptureNetcode)
             {
                 netTickRecorder = ProfilerRecorder.StartNew(ProfilerCategory.Network, "CSM.Net.Tick");
@@ -567,6 +578,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             verticesRecorder.Dispose();
             gcAllocRecorder.Dispose();
             activeBodiesRecorder.Dispose();
+            physicsTimeRecorder.Dispose();
             netTickRecorder.Dispose();
             netSerializeRecorder.Dispose();
             netDeserializeRecorder.Dispose();

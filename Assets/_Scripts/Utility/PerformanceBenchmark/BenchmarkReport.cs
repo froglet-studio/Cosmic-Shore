@@ -46,7 +46,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         // Bump CurrentSchemaVersion on any field change; readers must tolerate older/unknown
         // versions. Defaults to 0 (no initializer) so legacy JSON lacking the key reads as 0
         // = "legacy/unversioned"; PopulateEnvironment stamps the current version on new runs.
-        public const int CurrentSchemaVersion = 1;
+        // v2: FrameSnapshot gains cpuMainThread/cpuPresentWait/cpuRenderThread/physicsTimeMs;
+        //     statistics gain thread-breakdown averages, busy-CPU, and physics time/share.
+        public const int CurrentSchemaVersion = 2;
         public int schemaVersion;
         public SourceInfo source = new();
 
