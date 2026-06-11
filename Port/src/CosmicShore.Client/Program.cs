@@ -33,8 +33,29 @@ namespace CosmicShore.Client
             Console.WriteLine($"SkimRace — seed {seed}, crystal target {crystals}");
             Console.WriteLine("WASD/arrows steer · Space boost · R restart · Esc quit");
 
-            new RaceWindow(seed, crystals, screenshot, screenshotFrame).Run();
-            return 0;
+            try
+            {
+                new RaceWindow(seed, crystals, screenshot, screenshotFrame).Run();
+                return 0;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine();
+                Console.WriteLine("CRASH — please send this text (or skimrace-crash.txt next to the exe):");
+                Console.WriteLine(e);
+                try
+                {
+                    string dir = System.IO.Path.GetDirectoryName(Environment.ProcessPath) ?? ".";
+                    System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "skimrace-crash.txt"), e.ToString());
+                }
+                catch { /* log location unavailable — console output still shows it */ }
+                if (OperatingSystem.IsWindows() && !Console.IsInputRedirected)
+                {
+                    Console.Write("Press Enter to exit...");
+                    Console.ReadLine();
+                }
+                return 2;
+            }
         }
     }
 }

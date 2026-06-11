@@ -81,10 +81,12 @@ namespace CosmicShore.Client
                 Title = "Cosmic Shore — SkimRace (port progress build)",
                 VSync = true,
             };
+            Console.WriteLine("[1/4] creating window (GLFW)...");
             _window = Window.Create(options);
             _window.Load += OnLoad;
             _window.Update += OnUpdate;
             _window.Render += OnRender;
+            Console.WriteLine("[2/4] entering run loop...");
             _window.Run();
         }
 
@@ -92,6 +94,7 @@ namespace CosmicShore.Client
 
         void OnLoad()
         {
+            Console.WriteLine("[3/4] window open — initializing GL/audio/scene...");
             _gl = GL.GetApi(_window);
             _inputContext = _window.CreateInput();
             foreach (var keyboard in _inputContext.Keyboards)
@@ -140,6 +143,7 @@ namespace CosmicShore.Client
             _gl.Enable(EnableCap.ProgramPointSize);
 
             _camPos = _race.transform.position - new Vector3(0f, -2.5f, 9f);
+            Console.WriteLine("[4/4] ready — racing. (If the game window isn't visible now, check the taskbar.)");
         }
 
         uint CompileProgram() => CompileProgram(MainVertexSrc, MainFragmentSrc);
