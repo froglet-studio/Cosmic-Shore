@@ -172,7 +172,6 @@ See `Docs/SCENES.md` for the full scene and game mode reference. Summary below.
 
 | Scene | Game Mode | Controller |
 |---|---|---|
-| `MinigameFreestyle` | `Freestyle (7)` | `SinglePlayerFreestyleController` |
 | `MinigameCellularDuel` | `CellularDuel (8)` | `SinglePlayerCellularDuelController` |
 | `MinigameWildlifeBlitz` | `WildlifeBlitz (26)` | `SinglePlayerWildlifeBlitzController` |
 
@@ -200,7 +199,7 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 
 #### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
 
-36 game modes with explicit numeric IDs. Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`. Meta: `Random(0)`. Note: ID 31 is skipped.
+35 game modes with explicit numeric IDs. Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`. Meta: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
 
 Many single-player modes (1-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail.
 
@@ -211,7 +210,6 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 │   Template Method: rounds → turns → countdown → gameplay → end
 │
 ├── SinglePlayerMiniGameControllerBase (abstract)
-│   ├── SinglePlayerFreestyleController    — shape drawing + open-ended freestyle
 │   ├── SinglePlayerCellularDuelController — vessel swap on turn end
 │   ├── SinglePlayerSlipnStrideController  — procedural course with intensity scaling
 │   ├── SinglePlayerWildlifeBlitzController — blitz scoring
@@ -1536,7 +1534,9 @@ public interface IScreen
 
 ### Lava-Lamp Mode (Menu Freestyle Merge)
 
-Lava-lamp mode merges freestyle gameplay directly into Menu_Main. Instead of launching a separate freestyle scene, the autopilot vessel becomes playable when the player enters freestyle mode. Game UI panels from the freestyle scenes (MiniGameHUD, Scoreboard, Vessel Selection, Vessel HUDs, PlayerScoreCards, EndShapeDetailHUD) live under Menu_Main's "Game UI" container and fade in/out with the freestyle toggle.
+**Naming: "lava lamp" and "freestyle" are the same thing.** When viewed from the menu (autopilot vessels drifting behind the UI) it is called the *lava lamp*; when the player takes control and flies it is called *freestyle*. One system, two names. The old standalone arcade game named "Freestyle" (`GameModes.Freestyle = 7`, `MinigameFreestyle.unity`, `SinglePlayerFreestyleController`) was a vestige of the pre-lava-lamp era and has been removed — do not reintroduce it. `MultiplayerFreestyle (28)` is a separate multiplayer sandbox game and still exists.
+
+Lava-lamp mode hosts freestyle gameplay directly in Menu_Main: the autopilot vessel becomes playable when the player enters freestyle mode. Game UI panels (MiniGameHUD, Scoreboard, Vessel Selection, Vessel HUDs, PlayerScoreCards, EndShapeDetailHUD) live under Menu_Main's "Game UI" container and fade in/out with the freestyle toggle.
 
 #### Design Principles
 
@@ -1560,7 +1560,7 @@ Game UI [RectTransform, CanvasGroup]                    ← already in freestyle
     └── Menu [GridLayout, 6× ShipCardView]
 ```
 
-`MenuMiniGameHUD` (`_Scripts/UI/MenuMiniGameHUD.cs`) is a slim alternative to the full `MiniGameHUD` for menu freestyle mode. It provides the Volume/Pause icon button (matching the MinigameFreestyle scene pattern) that opens the `MenuVesselSelectionPanelController` panel, vessel HUD reparenting via the `onShipHUDInitialized` SOAP event, and runtime PauseMenu prefab instantiation. The button is visible when Game UI fades in during freestyle, hidden when returning to menu. The full `MiniGameHUD` can replace this when Phase 2/3 features (shape drawing, scoring) are needed.
+`MenuMiniGameHUD` (`_Scripts/UI/MenuMiniGameHUD.cs`) is a slim alternative to the full `MiniGameHUD` for menu freestyle mode. It provides the Volume/Pause icon button that opens the `MenuVesselSelectionPanelController` panel, vessel HUD reparenting via the `onShipHUDInitialized` SOAP event, and runtime PauseMenu prefab instantiation. The button is visible when Game UI fades in during freestyle, hidden when returning to menu. The full `MiniGameHUD` can replace this when Phase 2/3 features (shape drawing, scoring) are needed.
 
 #### Phase 1: Core Freestyle HUD (target hierarchy)
 
@@ -1681,17 +1681,17 @@ When scoring is enabled (Phase 3), a game controller can raise `OnShowGameEndScr
 
 #### Phase 2: Shape Drawing (Deferred)
 
-Shape drawing requires additional scene infrastructure beyond UI panels:
+Shape drawing requires additional scene infrastructure beyond UI panels. The scripts all still exist; their scene wiring lived in the removed `MinigameFreestyle.unity` (recover the reference setup from git history when porting):
 
-| Dependency | Purpose | Current Location |
+| Dependency | Purpose | Script Location |
 |---|---|---|
-| `ShapeDrawingManager` | Orchestrates shape preview → draw → score flow | Freestyle scene (Game GO) |
-| `SegmentSpawner` | Spawns trail segments with shape triggers | Freestyle scene (Game GO) |
-| `ShapeDrawingCrystalManager` | Manages crystals during shape mode | Freestyle scene (Game GO) |
-| `Spawnable*` objects | Shape definitions (Arrow, Circle, Diamond, etc.) | Freestyle scene (12 prefab instances) |
-| `EndShapeDetailHUD` | Shows shape results (name, time, accuracy, stars) | Freestyle scene (scene-level UI) |
+| `ShapeDrawingManager` | Orchestrates shape preview → draw → score flow | `_Scripts/Controller/Environment/MiniGameObjects/` |
+| `SegmentSpawner` | Spawns trail segments with shape triggers | `_Scripts/Controller/Environment/MiniGameObjects/` |
+| `ShapeDrawingCrystalManager` | Manages crystals during shape mode | `_Scripts/Controller/Environment/MiniGameObjects/` |
+| `Spawnable*` objects | Shape definitions (Arrow, Circle, Diamond, etc.) | `_Prefabs/Spawnables/` |
+| `EndShapeDetailHUD` | Shows shape results (name, time, accuracy, stars) | `_Scripts/UI/` |
 
-The `SinglePlayerFreestyleController` manages the freestyle↔shape-drawing transitions (collision detection, environment teardown/restore, camera swaps). For lava-lamp, a `MenuFreestyleController` would adapt this flow for the menu context.
+The removed `SinglePlayerFreestyleController` (git history) managed the freestyle↔shape-drawing transitions (collision detection, environment teardown/restore, camera swaps). For lava-lamp, a `MenuFreestyleController` would adapt this flow for the menu context.
 
 **Shape Drawing State Flow:**
 ```
@@ -1727,8 +1727,8 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 | Shape results panel | `EndShapeDetailHUD.cs` | `_Scripts/UI/` |
 | Vessel HUD reparenting bridge | `VesselHUD.cs` (class: `ShipHUD`) | `_Scripts/Controller/Vessel/` |
 | Freestyle SOAP events container | `MenuFreestyleEventsContainerSO.cs` | `_Scripts/ScriptableObjects/` |
+| Shape drawing manager (Phase 2) | `ShapeDrawingManager.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
 | Vessel selection (singleplayer, legacy) | `VesselSelectionPanelController.cs` | `_Scripts/UI/` |
-| Freestyle controller (singleplayer ref) | `SinglePlayerFreestyleController.cs` | `_Scripts/Controller/Arcade/` |
 | VesselHUD prefab variants | `*HUDVariant.prefab` | `_Prefabs/UI Elements/VesselHUD/` |
 | PlayerScoreCard prefab | `PlayerScoreCard.prefab` | `_Prefabs/UI Elements/In Game/` |
 
