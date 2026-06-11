@@ -47,10 +47,12 @@ The prompter tests progress without prompting the loop. Contract:
    milestone, headless render-to-PNG (and short MP4) smoke outputs are committed under
    `Port/artifacts/` (small, curated) and sent into the chat at milestones so progress
    is visible with zero local setup.
-4. **Milestone tags + notification.** Each numbered milestone (M1 first CLI sim, M2 first
-   full game-mode round, M3 first picture, M4 first interactive build, …) gets an
-   annotated git tag `port-mN` on the branch and a push notification to the prompter
-   with the exact command (or file) to try. Milestone log lives in this file.
+4. **Milestone log + notification.** Each numbered milestone (M1 first CLI sim, M2 first
+   full game-mode round, M3 first picture, M4 first interactive build, …) is recorded in
+   the milestone log below with its commit hash, and the prompter gets a push
+   notification with the exact command (or file) to try. (Annotated `port-mN` tags are
+   created locally, but this environment's git proxy only accepts branch pushes — the
+   log + commit message are the durable record.)
 5. **Local prerequisites for the prompter** (one-time):
    `winget install Microsoft.DotNet.SDK.10` (Windows) / `brew install dotnet-sdk` (macOS),
    then `git fetch origin claude/quirky-cannon-sk8a02 && git checkout claude/quirky-cannon-sk8a02`.
@@ -59,7 +61,7 @@ The prompter tests progress without prompting the loop. Contract:
 
 | Tag | What became testable | Command | Status |
 |---|---|---|---|
-| `port-m1` | CLI engine smoke + deterministic sim (loop, lifecycle, tasks, DI, SOAP, RoundStats) | `cd Port && dotnet run --project src/CosmicShore.Cli` | ✅ 2026-06-11 |
+| `port-m1` | CLI engine smoke + deterministic sim (loop, lifecycle, tasks, DI, SOAP, RoundStats) | `cd Port && dotnet run --project src/CosmicShore.Cli` | ✅ 2026-06-11 (commit `25b5582d`) |
 | `port-m2` | First full headless game-mode round (AI vs AI) | `… -- --mode <mode> --seed <n>` | ⬜ |
 | `port-m3` | First rendered frame (PNG artifact in chat + repo) | pull + open artifact | ⬜ |
 | `port-m4` | First interactive desktop build | `… -- --render` | ⬜ |
