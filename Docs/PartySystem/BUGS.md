@@ -15,7 +15,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B3 | TC4 bounce leaves 2 vessels + dead controls | ~85% | 🔴 |
 | B5 | TC2/TC4 second joiner fails to join | Uncertain (diagnose first) | 🔴 |
 | B7 | Client pair-init runs before remote identity replicates (`InitializePair Player=` empty, vessel-type `Random`) | Verified mostly benign | ⚪ |
-| B9 | Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) | Observed (not yet diagnosed) | 🔴 |
+| B9 | Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) | Root-caused & fixed | 🟢 |
 
 ---
 
@@ -620,7 +620,7 @@ write flaky) is tracked separately in `../PresenceSystem/BUGS.md` B1.
 
 ---
 
-## B9 — Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) 🔴
+## B9 — Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) 🟢
 
 **Observed (MPPM, 1 host + 3 clients, 2026-06-09 — Session 2).** The S9
 host-return fix works: the host taps **Main Menu** on the scoreboard and
@@ -635,39 +635,50 @@ But two defects surface on arrival:
    vessels keep their in-game domains (Jade/Ruby/Gold) instead of all
    re-syncing to Jade the way a fresh `Menu_Main` entry does.
 
-**Hypothesis (one shared root — not yet investigated).** The menu's
-per-client autopilot **and** domain reset are driven by
-`MainMenuController.HandleMenuReady → ActivateLocalPlayerAutopilot()`,
-which for the **local/owned** vessel calls `ApplyMenuDomain(player)`
-(resets `NetDomain` to Jade), then `StartPlayer()`,
-`Vessel.ToggleAIPilot(true)`, `InputController.SetPause(true)`. Non-local
-pairs go through `HandlePlayerPairInitialized`, which re-activates
-autopilot but does **not** call `ApplyMenuDomain`. If a returning
-client's local pair-init / `OnClientReady` doesn't complete cleanly on
-the game→menu network reload (suspect a timing/race in
-`ClientPlayerVesselInitializer`'s roster-pull on this path, distinct from
-the initial party-join path), that client gets **neither** the autopilot
-re-activation **nor** the Jade reset — explaining both symptoms at once.
-The straight-line drift also points at stale gameplay input/throttle
-leaking into the menu without a hard reset.
+**Root cause (confirmed 2026-06-11).** The old `MainMenuController.
+ApplyMenuDomain` (since deleted) was the only menu domain "reset", and it
+ran **client-locally** on each machine's own vessel:
 
-**For next session.**
-- Confirm whether the stuck client ever fired `HandleMenuReady` /
-  `ActivateLocalPlayerAutopilot` on return (look for the FLOW-6
-  `OnClientReady` + autopilot logs). If not, fix the per-client re-init
-  reliability on the game→menu reload.
-- Apply the menu-domain (Jade) reset to **every** returning party member,
-  not just the locally-owned vessel — likely drive it server-side per
-  `Player` in the `Menu_Main` respawn so it can't depend on each client's
-  local activation firing.
-- Hard-reset vessel input / AI-pilot state on return so no held
-  throttle/heading carries from the game into the menu autopilot.
+1. **Domains not reset (symptom 2):** `Player.NetDomain` is
+   `WritePermission.Server`; a client cannot write it, so the reset never
+   reached the server — the server (and every other peer) kept each
+   client's in-game domain. The method's comment claiming "NetDomain is
+   owner-writable" was wrong. No server-side menu reset existed anywhere.
+2. **Drift-stuck vessel (symptom 1):** for a returning client whose
+   in-game domain ≠ Jade, the illegal `NetDomain.Value = Jade` write is
+   rejected by Netcode; when the rejection throws, the exception aborts
+   the rest of `ActivateLocalPlayerAutopilot` — `StartPlayer()`,
+   `ToggleAIPilot(true)`, `SetPause(true)` never ran. That selects
+   exactly the clients on non-Jade domains, matching "one of three stuck".
+   The method's local `Player.Domain` / `RoundStats.Domain` stamps also
+   desynced that machine's mirrors from the replicated truth
+   (`../ScoringSystem/BUGS.md` B11).
 
-**Repro.** 1 host + 3 MPPM clients → party up in `Menu_Main` → host
-launches a domain game (e.g. Skim Race) → play to the scoreboard → host
-taps **Main Menu** → watch each client's vessel control + domain color.
+**Fix (commits `53294068`, `65d4da96`, `c073636e`).** The menu domain
+reset is now **server-authoritative**: `MenuServerPlayerVesselInitializer.
+OnPlayerReadyToSpawnAsync` writes `NetDomain = menuVesselDomain` (Jade)
+for every human BEFORE the vessel spawns, on every menu entry path
+(fresh start, party join, host-return); the delta replicates and every
+peer's mirrors + vessel paint follow via `Player.OnNetDomainChanged`
+(whose repaint was completed via the init-aware
+`ShipHelper.SetShipProperties`). `ApplyMenuDomain` and its field were
+deleted — client code never writes domain state. Activation is now
+exception-free and idempotent.
 
-**Status.** 🔴 Open — deferred to a future session (logged Session 2).
+**Related.** The same session also fixed the party-join stale
+`RoundStats` shadow (`../ScoringSystem/BUGS.md` B12, commits `52923bf8`,
+`6400eca0`) — a returning/joined client's name-keyed stat lookups
+resolved a destroyed pre-party component (frozen Jade).
+
+**Repro (for verification).** 1 host + 3 MPPM clients → party up in
+`Menu_Main` → host launches a domain game (e.g. Skim Race) → play to the
+scoreboard → host taps **Main Menu** → every vessel on every peer
+renders Jade, all clients roam on autopilot and can toggle freestyle; no
+"not allowed to write" / `InvalidOperationException` in any console.
+
+**Status.** 🟢 Fixed — domain-pick + ready-feed flow verified in a
+2-human MPPM test (2026-06-11); full 4-player host-return sweep still to
+be re-run.
 
 ---
 
