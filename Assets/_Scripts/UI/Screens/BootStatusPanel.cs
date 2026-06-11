@@ -22,18 +22,12 @@ namespace CosmicShore.UI
     /// raised when the user taps the retry button. Listeners (e.g.
     /// <c>HostConnectionService</c>) decide what to do.
     ///
-    /// Zero-wire fallback: this component has been lost from the splash canvas
-    /// once already via a script-GUID break (see B10 in
-    /// Docs/PartySystem/BUGS.md), leaving the authored retry button
-    /// orphaned-active on every splash. To make that state unrepresentable,
-    /// missing UI references are auto-found among the splash canvas's children
-    /// (it contains exactly one status TMP_Text and one retry Button), missing
-    /// event channels are supplied at runtime by
-    /// <c>BootStatusBroadcaster.EnsureStatusPanelWired</c> via
-    /// <see cref="EnsureWired"/>, and the retry button is forced hidden as
-    /// soon as the panel binds — whatever its authored active state. Retry
-    /// only ever appears via an explicit <see cref="BootStatusMode.Retry"/>
-    /// request.
+    /// All references are inspector-wired in Bootstrap.unity — there is no
+    /// runtime discovery or repair. This component's scene wiring was lost
+    /// once via a script-GUID break, leaving the authored retry button
+    /// orphaned-active on every splash (B10 in Docs/PartySystem/BUGS.md), so
+    /// missing wiring now fails loud via <see cref="ReportMissingWiring"/>
+    /// instead of silently degrading.
     ///
     /// Visibility of the surface as a whole is owned by the splash
     /// <c>CanvasGroup</c> on the parent Bootstrap canvas (managed by
@@ -54,72 +48,44 @@ namespace CosmicShore.UI
         [Tooltip("Outbound: raised when the user taps the retry button.")]
         [SerializeField] private ScriptableEventNoParam outboundRetryEvent;
 
-        bool _inboundSubscribed;
-        bool _buttonHooked;
-        bool _initialStateApplied;
+        void OnEnable()
+        {
+            ReportMissingWiring();
 
-        void OnEnable() => Bind();
+            if (inboundRequestEvent != null)
+                inboundRequestEvent.OnRaised += HandleRequest;
+
+            if (retryButton != null)
+                retryButton.onClick.AddListener(HandleRetryClicked);
+
+            Apply(new BootStatusRequest(BootStatusMode.Hide));
+        }
 
         void OnDisable()
         {
-            if (_inboundSubscribed && inboundRequestEvent != null)
-            {
+            if (inboundRequestEvent != null)
                 inboundRequestEvent.OnRaised -= HandleRequest;
-                _inboundSubscribed = false;
-            }
 
-            if (_buttonHooked && retryButton != null)
-            {
+            if (retryButton != null)
                 retryButton.onClick.RemoveListener(HandleRetryClicked);
-                _buttonHooked = false;
-            }
-
-            _initialStateApplied = false;
         }
 
         /// <summary>
-        /// Fills any missing references and (re)binds. Called by
-        /// <c>BootStatusBroadcaster</c>'s runtime self-heal (Awake and Start —
-        /// the outbound channel's owner may not exist yet at Awake). Safe to
-        /// call repeatedly; a no-op for anything already wired in the
-        /// inspector.
+        /// Fail loud on missing inspector wiring (project policy): an unwired
+        /// reference means the boot/retry surface silently stops working — see
+        /// B10 in Docs/PartySystem/BUGS.md for the orphaned-retry-button
+        /// incident this guards against.
         /// </summary>
-        public void EnsureWired(ScriptableEventBootStatusRequest inbound, ScriptableEventNoParam outboundRetry)
+        void ReportMissingWiring()
         {
-            if (inboundRequestEvent == null) inboundRequestEvent = inbound;
-            if (outboundRetryEvent == null) outboundRetryEvent = outboundRetry;
-
-            if (isActiveAndEnabled)
-                Bind();
-        }
-
-        /// <summary>
-        /// Idempotent: auto-finds missing UI references, subscribes the inbound
-        /// channel and the button click once each, and asserts the hidden
-        /// initial state once per enable-cycle.
-        /// </summary>
-        void Bind()
-        {
-            if (statusText == null) statusText = GetComponentInChildren<TMP_Text>(true);
-            if (retryButton == null) retryButton = GetComponentInChildren<Button>(true);
-
-            if (!_inboundSubscribed && inboundRequestEvent != null)
-            {
-                inboundRequestEvent.OnRaised += HandleRequest;
-                _inboundSubscribed = true;
-            }
-
-            if (!_buttonHooked && retryButton != null)
-            {
-                retryButton.onClick.AddListener(HandleRetryClicked);
-                _buttonHooked = true;
-            }
-
-            if (!_initialStateApplied)
-            {
-                Apply(new BootStatusRequest(BootStatusMode.Hide));
-                _initialStateApplied = true;
-            }
+            if (statusText == null)
+                Debug.LogError("[BootStatusPanel] statusText is not wired in the inspector.", this);
+            if (retryButton == null)
+                Debug.LogError("[BootStatusPanel] retryButton is not wired in the inspector.", this);
+            if (inboundRequestEvent == null)
+                Debug.LogError("[BootStatusPanel] inboundRequestEvent is not wired in the inspector.", this);
+            if (outboundRetryEvent == null)
+                Debug.LogError("[BootStatusPanel] outboundRetryEvent is not wired in the inspector.", this);
         }
 
         private void HandleRequest(BootStatusRequest req) => Apply(req);
@@ -143,14 +109,6 @@ namespace CosmicShore.UI
         {
             if (retryButton != null)
                 retryButton.interactable = false;
-
-            if (outboundRetryEvent == null)
-            {
-                Debug.LogError("[BootStatusPanel] Retry tapped but outboundRetryEvent is not wired — " +
-                               "no recovery will run. Check BootStatusBroadcaster.EnsureStatusPanelWired " +
-                               "and HostConnectionService.bootStatusRetryRequestedEvent.");
-                return;
-            }
 
             outboundRetryEvent.Raise();
         }

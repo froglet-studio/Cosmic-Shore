@@ -53,14 +53,6 @@ namespace CosmicShore.Gameplay
         [Tooltip("Raised by BootStatusPanel when the user taps the retry button after the auto-retry loop exhausts. Triggers EnsurePartySessionAsync.")]
         [SerializeField] private ScriptableEventNoParam bootStatusRetryRequestedEvent;
 
-        /// <summary>
-        /// Outbound boot-status retry channel — exposed so
-        /// <c>BootStatusBroadcaster.EnsureStatusPanelWired</c> can wire a
-        /// runtime-recreated <c>BootStatusPanel</c> without scene edits
-        /// (see B10 in Docs/PartySystem/BUGS.md).
-        /// </summary>
-        public ScriptableEventNoParam BootStatusRetryRequestedEvent => bootStatusRetryRequestedEvent;
-
         [Header("Presence Lobby")]
         [Tooltip("Max simultaneous players in the global presence lobby.")]
         [SerializeField] private int presenceLobbyMaxPlayers = 100;

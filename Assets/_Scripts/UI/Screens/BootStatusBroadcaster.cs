@@ -51,11 +51,6 @@ namespace CosmicShore.UI
         // raises inside this window are not retry-worthy — see class doc.
         private bool _inLaunchTransition;
 
-        void Awake()
-        {
-            EnsureStatusPanelWired();
-        }
-
         void OnEnable()
         {
             if (connectionData != null)
@@ -79,9 +74,15 @@ namespace CosmicShore.UI
 
         void Start()
         {
-            // Second self-heal pass: HostConnectionService.Instance (owner of
-            // the outbound retry channel) may not have existed yet at Awake.
-            EnsureStatusPanelWired();
+            // Inspector-wired design: BootStatusPanel must exist on this same
+            // GameObject with its references wired in Bootstrap.unity — there
+            // is no runtime repair. Fail loud if the scene lost it (see B10 in
+            // Docs/PartySystem/BUGS.md): without the panel, nothing drives the
+            // status text and an authored-active retry button would be
+            // orphaned on every splash.
+            if (GetComponent<BootStatusPanel>() == null)
+                Debug.LogError("[BootStatusBroadcaster] BootStatusPanel is missing from the splash canvas — " +
+                               "the boot/retry surface is dead. Re-apply the Bootstrap.unity wiring (B10).", this);
 
             // Auth may have signed-in event wired in lazily; retry the
             // subscription once injectors and facades have settled.
@@ -91,29 +92,6 @@ namespace CosmicShore.UI
             // fired yet — show "Connecting…" so the surface is informative
             // from the very first frame.
             requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Status, labelConnecting));
-        }
-
-        /// <summary>
-        /// Runtime self-heal for the boot-status view (see B10 in
-        /// Docs/PartySystem/BUGS.md): the splash canvas's
-        /// <see cref="BootStatusPanel"/> has been lost once already to a
-        /// script-GUID break, and scene merges can resurrect that broken state
-        /// — leaving the authored retry button orphaned-active on every splash
-        /// with nothing driving it. This broadcaster is the component that
-        /// survived in the scene, so it recreates the panel and supplies the
-        /// event channels at runtime. No-op when the scene wiring is intact.
-        /// </summary>
-        private void EnsureStatusPanelWired()
-        {
-            if (!TryGetComponent<BootStatusPanel>(out var panel))
-            {
-                Debug.LogWarning("[BootStatusBroadcaster] BootStatusPanel missing from the splash canvas — " +
-                                 "recreating it at runtime (scene wiring was lost; see B10).");
-                panel = gameObject.AddComponent<BootStatusPanel>();
-            }
-
-            var hcs = HostConnectionService.Instance;
-            panel.EnsureWired(requestEvent, hcs != null ? hcs.BootStatusRetryRequestedEvent : null);
         }
 
         void OnDisable()
