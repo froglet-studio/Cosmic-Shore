@@ -53,8 +53,10 @@ The prompter tests progress without prompting the loop. Contract:
    notification with the exact command (or file) to try. (Annotated `port-mN` tags are
    created locally, but this environment's git proxy only accepts branch pushes — the
    log + commit message are the durable record.)
-5. **Standalone binaries on request / at milestones.** No-install executables build with:
-   `dotnet publish src/CosmicShore.Cli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true`
+5. **Standalone binaries on request / at milestones.** No-install executables build with
+   (NOTE `IncludeNativeLibrariesForSelfExtract` — without it GLFW/OpenAL natives land
+   BESIDE the exe and a bare-exe zip fails to load, which shipped once):
+   `dotnet publish <proj> -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true`
    (swap `-r` for `linux-x64` / `osx-arm64`; ~36 MB single file; no trimming — the
    engine's reflective lifecycle discovery forbids it). The exe holds its console window
    open when double-clicked (`--no-wait` skips). Delivered into the chat at milestones.
