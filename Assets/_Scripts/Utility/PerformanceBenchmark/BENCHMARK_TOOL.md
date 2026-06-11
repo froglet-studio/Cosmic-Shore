@@ -12,8 +12,8 @@ It has three faces:
 | Piece | Where it lives | Use it for |
 |---|---|---|
 | **Benchmark Window** (4 tabs) | Editor only (`FrogletTools` menu) | Recording, scoring, sweeping, comparing — the analysis cockpit. |
-| **DiagnosticsHUD** (F7) | Editor **and** dev builds (auto-spawns) | On-screen live readout + "Run Diagnostic" spike capture to Documents. The overlay testers use on a real device. |
-| **BenchmarkHUDOverlay** (F9) | Editor (spawned from the window) | A quick IMGUI eyeball of FPS/draws/GC while you play. |
+| **DiagnosticsHUD** (F7) | Editor **and** dev builds (auto-spawns) | On-screen live readout (FPS, CPU/GPU split + bound verdict, memory) + "Run Diagnostic" spike capture to Documents. The overlay testers use on a real device. |
+| **BenchmarkHUDOverlay** (F9) | Editor (spawned from the window) | A quick IMGUI eyeball of FPS/CPU-GPU/draws/GC/memory while you play. |
 
 There's also a standalone **ProfilerCsvLogger** (per-frame CSV dump) and a **dev-build self-runner**
 (`-csmbench`) covered further down.
@@ -145,19 +145,44 @@ On-screen buttons mirror these (**Advanced/Simple**, **Run Ns**, **– / +** to 
 
 **Layout** (top-left, two side-by-side blocks, color-coded by health — green/amber/red):
 
-- **Simple:** `FPS` and `Frame Time (ms)` only — the panel shrinks to just these two rows.
-- **Advanced:** left block = local frame cost — **Render** (Draw Calls, Batches, SetPass, Triangles,
-  Vertices) and **Memory** (GC KB/frame); right block = connection — **Network** (Ping, NetVars,
+- **Simple:** `FPS`, `Frame Time (ms)`, `CPU (busy)`, `GPU`, and `Bound` — the live CPU-vs-GPU
+  dependence readout (see "Reading CPU vs GPU bound" below).
+- **Advanced:** left block = local frame cost — **CPU / GPU** (CPU Total, Main Thread,
+  Wait (present), Render Thread), **Render** (Draw Calls, Batches, SetPass, Triangles, Vertices)
+  and **Memory** (GC KB/frame, Managed heap, Unity Alloc, Reserved with % of device RAM,
+  Gfx Driver, Device RAM/VRAM caps); right block = connection — **Network** (Ping, NetVars,
   RPCs, Bytes/f) and **Region** (Location + UTC offset). The panel auto-resizes to fit.
 
 > **Ping** is round-trip time to the host (UnityTransport RTT). **Region** is the local client's OS
 > region + UTC offset — UGS auto-picks the Relay region and doesn't surface it, so for
 > cross-continent testing you read the local region and let Ping tell you the latency to host.
 
+### Reading CPU vs GPU bound
+
+The split comes from `FrameTimingManager` (always active in the Editor and Development builds —
+exactly where these overlays exist; release builds would additionally need "Frame Timing Stats"
+in Player Settings). Shared classification lives in `FrameBoundness` so the live overlays and the
+benchmark's `boundVerdict` agree:
+
+- **CPU (busy)** = `max(main thread − wait-for-present, render thread)` — actual CPU work. The
+  raw `cpuFrameTime` *includes* the idle wait for present, so under vsync or
+  `Application.targetFrameRate` it always fills the frame budget and would misread as
+  "CPU-bound"; the busy number doesn't.
+- **GPU** = `gpuFrameTime`. Shows `n/a` on graphics APIs without GPU timestamps (e.g. some GLES
+  devices) — there the Bound verdict falls back to what's measurable.
+- **Bound** = `GPU-bound` / `CPU-bound` (one side >10% over the other) / `Balanced`, or
+  **`Capped @N`** when fps sits at the vsync/targetFrameRate cap — then the cap is the limiter
+  and neither processor verdict applies (that's the healthy state: both have headroom).
+- **Memory** answers the "is it RAM?" question: **Reserved** (Unity's total footprint) is shown
+  against the device's physical RAM — that percentage is what predicts OS kills on mobile;
+  **Gfx Driver** approximates GPU-side memory (textures/meshes/RTs) against the VRAM cap.
+
 **Run Diagnostic (F5 / button):** records frames for the selected seconds (default 10s, `±` adjusts),
 flags spikes (frames over `max(33.3 ms, 1.75 × running mean)`), and writes a report to
 `Documents/CosmicShore Diagnostics/diag_<scene>_<timestamp>.json` (+ a readable `.txt`). Works in the
-editor and in a build. Each spike records time, ms, fps, draws, tris, GC KB, and ping.
+editor and in a build. Each spike records time, ms, fps, draws, tris, GC KB, CPU/GPU ms, and ping;
+the report header adds avg CPU (total + busy), avg GPU, the bound verdict, and allocated/reserved
+memory vs device RAM.
 
 The HUD reads the same `ProfilerRecorder`s and `NetMarkers` counters as the window, so its numbers
 line up with a Runtime Capture.
@@ -168,8 +193,8 @@ line up with a Runtime Capture.
 
 | Overlay | Key | Where | Tech | Extras |
 |---|---|---|---|---|
-| **DiagnosticsHUD** | F7 (F6 advanced · F5 diagnostic) | Editor + Dev builds (auto) | uGUI | Ping, Region, **Run Diagnostic → Documents** |
-| **BenchmarkHUDOverlay** | F9 | Editor (spawn from Runtime Capture's *Spawn Live HUD Overlay*, or drop the component) | IMGUI | FPS/frame, Draw/SetPass/Tris/GC, optional game-load counts |
+| **DiagnosticsHUD** | F7 (F6 advanced · F5 diagnostic) | Editor + Dev builds (auto) | uGUI | CPU/GPU split + Bound verdict, full memory block, Ping, Region, **Run Diagnostic → Documents** |
+| **BenchmarkHUDOverlay** | F9 | Editor (spawn from Runtime Capture's *Spawn Live HUD Overlay*, or drop the component) | IMGUI | FPS/frame, CPU/GPU + Bound verdict, Draw/SetPass/Tris/GC, memory, optional game-load counts |
 
 ---
 
@@ -233,6 +258,7 @@ Reports include per-frame snapshots, aggregated statistics, spikes (with markers
 | Editor live overlay (F9) | `BenchmarkHUDOverlay.cs` |
 | Spike marker attribution (editor-only) | `SpikeAnalyzer.cs` |
 | Score + rule-based hint engine | `BenchmarkAnalysis.cs` |
+| Shared CPU/GPU bound classification (busy CPU, fps-cap detection) | `FrameBoundness.cs` |
 | Customizable hint rules (SO) | `BenchmarkHintRulesSO.cs` |
 | Netcode (NGO) markers + counters | `NetMarkers.cs` |
 | Game-load counters (prisms/VFX/vessels) | `GameLoadSampler.cs` |
