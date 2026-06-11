@@ -15,13 +15,23 @@ They are a direct application of "Favor Emergent Systems / Don't cheat emergence
 not by accident — they are also what makes the system credible as artificial life (a scripted
 outcome is optimization, not life). Use the `/ecology` skill for any change here.
 
+- **Continuity of existence — nothing pops in or out (PLATFORM-WIDE LAW, all of Cosmic Shore).**
+  Nothing may *instantly* appear or disappear. Every entity — prisms, crystals, flora, fauna,
+  vessels, projectiles, even UI — must **grow / bloom / fade / suction / wither / evaporate** into
+  and out of existence over a visible transition. A bare `Instantiate`-then-show or `Destroy` of
+  anything the player can see is a bug. Spawns animate in (scale-from-zero / bloom); deaths animate
+  out (wither from the extremities inward, suction toward a point, or fade). This is *why*
+  starvation withers and mass is conserved — it is the same law applied to the ecosystem. It is not
+  ecology-specific: respect it everywhere.
 - **No imposed death.** No decay, lifespan, or fixed-period despawn timers. Populations are
   bounded by **consumption + starvation**, never an imposed clock. (Repeatedly rejected.)
 - **No domain asymmetry.** Fauna spawn in **one color — the cell's controlling color** — and
   hunt opposing mass. Never cross-domain / prey-weighted / per-domain-biased spawning.
-- **Starvation = wither-to-crystal.** A starving creature withers from its extremity spindles
-  inward and leaves a collectible elemental crystal — it does not vanish. **Mass is conserved**
-  (the "self-sustaining economy" that makes the system NASA-credible).
+- **Starvation = wither-to-crystal.** A starving (or predated) creature withers from its extremity
+  spindles inward — a shark's fins / a brittlestar's arms evaporate *before* the core body
+  (farthest-from-centre first, emergent from geometry) — and leaves a collectible elemental crystal.
+  It **does not vanish** (the continuity law above). **Mass is conserved** (the "self-sustaining
+  economy" that makes the system NASA-credible). Sealed into `Fauna.Die` so no fauna can bypass it.
 - **Volume is the spine.** Phase, dominant domain, prey, HUD all key off per-domain **VOLUME**
   (`Cell.LiveVolume`), not prism count. Count is a rare frenzy/perf backstop only.
 - **Every lifeform drops one elemental crystal** (Charge/Mass/Space/Time) as a powerup on death,

@@ -13,6 +13,12 @@ invariants live in `CLAUDE.md ▸ Ecosystem Design Principles`. This doc is the 
 
 ## 1. The five pillars (every feature must serve all five)
 
+> **Platform law (above the pillars): continuity of existence.** Nothing in Cosmic Shore ever
+> pops in or out — every entity (prisms, crystals, flora, fauna, vessels, projectiles, UI) must
+> grow / bloom / fade / suction / wither into and out of existence over a visible transition. A
+> bare `Instantiate`-then-show or `Destroy` of anything the player can see is a bug. This is the
+> *why* behind wither-to-crystal and mass conservation, applied game-wide.
+
 1. **Fundamental & emergent.** Behaviour arises from composing the fundamentals (Domain,
    Mass/prisms, Cells, Elementals, Flora & Fauna, Vessels) — never hard-coded outcomes.
 2. **Tunable & variable.** Every knob is SO-config; richness comes from *biome × intensity ×
@@ -250,11 +256,17 @@ old §10 collider-budget plan is **superseded by PrismSpatialIndex** for the spa
 locked CLAUDE.md section to hold the line). The remaining work is to **re-assert them as clean
 deltas on top of the adopted foundation** — not to rebuild anything:
 
-1. **Mass-conserving crystal drop on the fauna death path.** ✅ *(done — commit `79f6996d`)*
-   `bleeding-edge` fauna `Die()` just `Destroy`ed (vanished, no crystal). Sealed it into the
-   `Fauna` base: non-virtual `Die` drops the elemental crystal then calls a `protected virtual
-   OnDeath` hook — no subclass can die without conserving mass. `LightFauna`/`Boid` provision
-   the crystal in `Initialize` via `LifeFormCrystal.EnsureElementalCrystal`.
+1. **Mass-conserving crystal drop + wither (continuity) on the fauna death path.** ✅ *(done)*
+   `bleeding-edge` fauna `Die()` just `Destroy`ed — they **popped out of existence**, dropping no
+   crystal (violates both the mass-conservation invariant *and* the platform-wide **continuity
+   law**: nothing pops in/out). Fixed in two layers: (a) sealed the crystal drop into the `Fauna`
+   base — non-virtual `Die` drops the elemental crystal then calls a `protected virtual OnDeath`
+   hook, so no subclass can die without conserving mass; (b) restored the **extremity-first
+   wither** — `LightFauna.OnDeath` collapses spindle rings farthest-from-centre first (a shark's
+   fins / a brittlestar's arms evaporate before the core body — emergent from geometry, tunable
+   via `LightFaunaDataSO.witherRingInterval`), `Boid.OnDeath` shrinks out; both then remove the
+   spent husk. `LightFauna`/`Boid` provision the crystal in `Initialize` via
+   `LifeFormCrystal.EnsureElementalCrystal`.
    *Follow-up:* author one elemental crystal on each fauna prefab + run **Tools ▸ Cosmic Shore ▸
    Validate Lifeform Crystals**, so `EnsureElementalCrystal` is a no-op fast path (budget-neutral).
 
