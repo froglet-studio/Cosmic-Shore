@@ -6,6 +6,7 @@
     <Project Path="src/CosmicShore.Game/CosmicShore.Game.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/CosmicShore.Tests.Ported/CosmicShore.Tests.Ported.csproj" />
     <Project Path="tests/CosmicShore.Tests/CosmicShore.Tests.csproj" />
   </Folder>
 </Solution>

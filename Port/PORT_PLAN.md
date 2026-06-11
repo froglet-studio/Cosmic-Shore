@@ -156,7 +156,12 @@ The prompter tests progress without prompting the loop. Contract:
 |---|---|---|
 | 1 | `Mathf.Round` uses banker's rounding (MidpointRounding.ToEven) — same as Unity. `Vector3.SmoothDamp` is component-wise (Unity clamps the change vector once); identical for maxSpeed=∞ usage. | Documented at the source; revisit if a ported system clamps SmoothDamp speed. |
 | 2 | `NetworkVariable<T>` change callback uses `EqualityComparer<T>.Default` dedup; Unity Netcode dedups on serialized-value equality. Behaviorally identical for the value types used. | — |
-| 3 | SOAP `ScriptableEvent` drops Unity-inspector listener components; subscription is code-only until the scene/component model lands (phase 1). Inspector-wired `EventListener*` components become scene-asset-driven bindings in phase 7. | No scenes yet. |
+| 3 | SOAP `EventListener*` components are ported and functional in code (`Engine.Soap.EventListenerGeneric` + `Engine.Events.UnityEvent`); inspector wiring arrives with the scene-asset pipeline (phase 7). The `UnityEvent` type NAME is kept for verbatim porting — it is first-party code in `CosmicShore.Engine.Events`. | — |
+| 4 | **Upstream latent bug fixed in port**: `new TrainingGameProgress()` zero-initialized (null `Progress`, intensity 0) — C# 9 couldn't express the intended parameterless init, and the 16 TrainingGameProgressTests documenting the contract were silently red upstream (no CI). Port adds a real parameterless ctor chaining to the dummy-arg one. Worth fixing upstream. | Test-documented contract wins. |
+| 5 | **Upstream stale test fixed in port**: `GameModes_HasExpectedMemberCount` expected 34; the enum has 35 members (MultiplayerCrystalCapture added without updating). Updated to 35. | — |
+| 6 | **Upstream latent red test reframed**: `ImpactEffects_AllValuesAreUnique` contradicts the shipped enum, which intentionally merges legacy effect groups sharing values 1-8, 10. Values are wire format — port freezes the exact duplicate set instead so NEW collisions still fail. | Enum values untouchable. |
+| 7 | 10 SOAP files deferred pending gameplay types: ScriptableEventVesselImpactor / ExplosionDebuffApplied / SkimmerDebuffApplied (IVessel/IVesselStatus/VesselImpactor), ScriptableSilhouetteData/* (SilhouetteController), ScriptableVesselHUDData/* (MiniGameHUD), VesselPrefabContainer (IVesselStatus). MainMenuStateTests (MainMenuController) and GameObjectExtensionTests (physics types) likewise port with their subjects. | Tracked in NEXT UP. |
+| 8 | Stat structs (CellStats/CrystalStats/PrismStats/AbilityStats), PrismType, and audio category enums are extracted into their own port files (source noted in headers) because their host classes (StatsManager, PrismFactory, AudioSystem) port in later phases. | File-split only; content verbatim. |
 
 ## Iteration log
 
@@ -171,27 +176,35 @@ The prompter tests progress without prompting the loop. Contract:
   GameTask), ported IRoundStatsCleanupTests, `docs/ENGINE_CORE.md`, **CosmicShore.Cli
   milestone M1** (tag `port-m1`). 322 tests.
 
-## NEXT UP (iteration 3)
+- **Iteration 3** (2026-06-11): custom SOAP layer + pure-logic substrate — engine
+  additions (UnityEvent/UnityEvent<T> in `Engine.Events`, EventListenerGeneric/
+  EventResponse in `Engine.Soap`, AddComponentMenu/FormerlySerializedAs/Preserve
+  attributes); 48/58 SOAP custom-type files ported verbatim (10 deferred on unported
+  gameplay types — see Deviations); struct/enum extractions (StatsManager stat structs,
+  PrismType, MenuAudioCategory/GameplaySFXCategory); Utility ports (DisposableGroup,
+  GeometryUtils, SceneNameListSO, CellPhaseThresholds + CellPhaseRules); **new
+  `tests/CosmicShore.Tests.Ported` project (NUnit 3, mirrors Unity Test Framework) with
+  12 original EditMode test files ported verbatim** — which immediately caught three
+  latent upstream issues (fixed in port, see Deviations #4-6); CLI section [4] (SOAP
+  channels + cell phase hysteresis). 528 tests green (322 xunit + 206 NUnit).
 
-Goal: finish the pure-logic substrate so VesselStatus/ResourceSystem can port in
+## NEXT UP (iteration 4)
+
+Goal: enter phase 2 — resource/elemental simulation core so VesselStatus/ResourceSystem can port in
 iteration 4.
 
-1. Port the custom SOAP types from `_Scripts/ScriptableObjects/SOAP/` (16 subdirs:
-   ClassType, CrystalStats, PrismStats, AbilityStats, InputEvents, Quaternion,
-   Transform, PipData, VesselHUDData, SilhouetteData, GameplaySFX, PartyData,
-   FriendData, AuthenticationData, ApplicationState, ScriptableEventWithReturn,
-   + VesselPrefabContainer) into `CosmicShore.Game/ScriptableObjects/SOAP/` —
-   most are thin `ScriptableVariable`/`ScriptableEvent` subclasses + data structs.
-   Port their EditMode tests (PartyInviteDataTests, PartyPlayerDataTests, …).
-2. Port Unity-free utility code: `Utility/DisposableGroup` (+ tests), GeometryUtils
-   (+ tests), `Utility/DataContainers/` pure-logic pieces (SceneNameListSO, simple
-   containers — defer GameDataSO until Player exists).
-3. Port remaining EditMode tests whose subjects now exist (EnumIntegrityTests,
-   EnumIntegrityExtendedTests, EcologyEnumIntegrityTests, ResourceCollectionTests,
-   TrainingGameProgressTests, ShipModifierTests, MainMenuStateTests, CSDebugTests,
-   GameObjectExtensionTests, CellPhaseRulesTests + subject if pure logic).
-4. Extend the CLI smoke with one new section exercising the SOAP custom types
-   (e.g. CrystalStats event round-trip).
+1. Port the remaining pure DataContainer subjects whose EditMode tests exist:
+   GenericDataSO, RuntimeCollectionSO, CameraSettingsSO, XpData, HostConnectionDataSO
+   (defer if it drags UGS types) + their tests verbatim into Tests.Ported.
+2. Port the resource/elemental core from `Controller/Vessel/`: ResourceSystem (+
+   Resource, element-level model `GetLevel` math) and whatever small SO configs it
+   needs (SO_Element …). Port SkimmerAdjustElementLevelByCrystalEffectTests if its
+   subject closure is tractable.
+3. Map the IVessel/IVesselStatus interface closure; port the interfaces once the
+   referenced types exist, then un-defer the 10 SOAP files from iteration 3
+   (VesselImpactor/debuff events, SilhouetteData, VesselHUDData, VesselPrefabContainer)
+   and MainMenuStateTests/GameObjectExtensionTests when their subjects land.
+4. Extend the CLI with a resource/elemental demo (crystal pickup → element level walk).
 5. Update this file (status tables, iteration log, NEXT UP), commit, push.
 
 ## Loop protocol (every iteration)

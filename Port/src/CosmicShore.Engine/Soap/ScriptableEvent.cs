@@ -31,11 +31,12 @@ namespace CosmicShore.Engine.Soap
         }
     }
 
-    // Common concrete event types, mirroring the original asset menu set.
+    // Concrete event types mirroring the original SOAP package's built-in set.
+    // Game-specific payload events (incl. ScriptableEventUlong, which the original
+    // package lacked) live in the ported game code under CosmicShore.ScriptableObjects.
     public class ScriptableEventBool : ScriptableEvent<bool> { }
     public class ScriptableEventInt : ScriptableEvent<int> { }
     public class ScriptableEventFloat : ScriptableEvent<float> { }
     public class ScriptableEventString : ScriptableEvent<string> { }
-    public class ScriptableEventUlong : ScriptableEvent<ulong> { }
     public class ScriptableEventVector3 : ScriptableEvent<Vector3> { }
 }

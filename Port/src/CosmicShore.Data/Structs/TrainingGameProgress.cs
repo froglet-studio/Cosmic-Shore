@@ -9,6 +9,13 @@ namespace CosmicShore.Data
         public int CurrentIntensity { get; set; }
         public TrainingGameTier[] Progress { get; set; }
 
+        // Port fix (documented in PORT_PLAN.md Deviations): in the Unity original,
+        // `new TrainingGameProgress()` zero-initialized the struct (null Progress,
+        // intensity 0) because C# 9 forbade parameterless struct ctors — the dummy-arg
+        // ctor below was the workaround and TrainingGameProgressTests' documented
+        // "fresh progress" contract was silently violated. C# 10+ allows the real fix.
+        public TrainingGameProgress() : this(1, null) { }
+
         public TrainingGameProgress(int dummy1=1, TrainingGameTier[] dummy2=null)
         {
             CurrentIntensity = 1;

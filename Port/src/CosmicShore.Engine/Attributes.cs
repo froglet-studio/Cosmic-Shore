@@ -64,4 +64,27 @@ namespace CosmicShore.Engine
         public readonly int order;
         public DefaultExecutionOrderAttribute(int order) { this.order = order; }
     }
+
+    /// <summary>Editor add-component menu path (inert until editor tooling exists).</summary>
+    [AttributeUsage(AttributeTargets.Class)]
+    public sealed class AddComponentMenuAttribute : Attribute
+    {
+        public readonly string menuName;
+        public AddComponentMenuAttribute(string menuName) { this.menuName = menuName; }
+    }
+
+    /// <summary>
+    /// Previous serialized name of a field — read by the asset pipeline (content phase)
+    /// to migrate data written under the old name.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = true)]
+    public sealed class FormerlySerializedAsAttribute : Attribute
+    {
+        public readonly string oldName;
+        public FormerlySerializedAsAttribute(string oldName) { this.oldName = oldName; }
+    }
+
+    /// <summary>Keeps the annotated member through code stripping (inert marker for now).</summary>
+    [AttributeUsage(AttributeTargets.All, Inherited = false)]
+    public sealed class PreserveAttribute : Attribute { }
 }

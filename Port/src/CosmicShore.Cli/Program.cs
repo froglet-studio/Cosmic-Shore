@@ -40,6 +40,7 @@ namespace CosmicShore.Cli
             RunStateMachineDemo();
             RunSimulationDemo(frames);
             RunRoundStatsDemo();
+            RunPortedLogicDemo();
 
             Console.WriteLine();
             if (Failures.Count == 0)
@@ -200,6 +201,56 @@ namespace CosmicShore.Cli
 
             ((IRoundStats)stats).Cleanup();
             Check(stats.Score == 0f && stats.CrystalsCollected == 0, "Cleanup resets stats between rounds");
+        }
+
+        // ── [4] Ported game logic: SOAP custom types + cell phase rules ──
+
+        static void RunPortedLogicDemo()
+        {
+            Console.WriteLine();
+            Console.WriteLine("[4] Ported game logic — SOAP custom types + cell phase hysteresis");
+
+            // CrystalStats SOAP channel (ported ScriptableEventCrystalStats + struct).
+            var crystalChannel = new CosmicShore.ScriptableObjects.ScriptableEventCrystalStats { name = "Event_CrystalStats" };
+            float totalValue = 0f;
+            crystalChannel.OnRaised += s => totalValue += s.Value;
+            crystalChannel.Raise(new Gameplay.CrystalStats { PlayerName = "HostPilot", Element = Element.Charge, Value = 1.5f });
+            crystalChannel.Raise(new Gameplay.CrystalStats { PlayerName = "HostPilot", Element = Element.Mass, Value = 2.5f });
+            Check(totalValue == 4f, $"CrystalStats events delivered through ported channel (total {totalValue})");
+
+            // Party roster via ported ScriptableListPartyPlayerData (equality by PlayerId).
+            var roster = new CosmicShore.ScriptableObjects.ScriptableListPartyPlayerData { name = "List_OnlinePlayers" };
+            int joins = 0, leaves = 0;
+            roster.OnItemAdded += _ => joins++;
+            roster.OnItemRemoved += _ => leaves++;
+            roster.Add(new CosmicShore.ScriptableObjects.PartyPlayerData("p1", "HostPilot", avatarId: 3));
+            roster.Add(new CosmicShore.ScriptableObjects.PartyPlayerData("p2", "WingMate", avatarId: 7));
+            roster.Remove(new CosmicShore.ScriptableObjects.PartyPlayerData("p2", "renamed-but-same-id", avatarId: 0));
+            Print($"  party roster: {joins} joins, {leaves} leaves, {roster.Count} online");
+            Check(joins == 2 && leaves == 1 && roster.Count == 1, "party roster list events + PlayerId equality");
+
+            // Cell phase walk (ported CellPhaseRules + default thresholds): climb with the
+            // prism count, hold inside the hysteresis band, multi-step descent in one call.
+            var thresholds = Utility.CellPhaseThresholds.Default;
+            var phase = CellPhase.Sprout;
+            var walk = new (int count, CellPhase expected)[]
+            {
+                (0, CellPhase.Sprout),
+                (1200, CellPhase.Quiet),
+                (5000, CellPhase.Settled),
+                (9000, CellPhase.Restless),
+                (12000, CellPhase.Frozen),
+                (9400, CellPhase.Restless),   // fell below FrozenExit, holds above RestlessExit
+                (700, CellPhase.Sprout),      // collapse: multi-step descent resolves at once
+            };
+            bool phasesOk = true;
+            foreach (var (count, expected) in walk)
+            {
+                phase = Utility.CellPhaseRules.Compute(count, phase, in thresholds);
+                Print($"  prisms={count,5} → {phase}");
+                phasesOk &= phase == expected;
+            }
+            Check(phasesOk, "cell phase transitions follow hysteresis thresholds");
         }
     }
 }
