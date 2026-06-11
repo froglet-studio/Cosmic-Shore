@@ -232,3 +232,273 @@ original (no bespoke widget).
 the colored wedges, and whether per-wedge ring SEGMENTS (coloring only the sectors a
 domain has crossed) read better than the current full concentric rings + colored
 wedge showing through. Tune via `DomainVolumeHexGraphic` "Phase threshold rings".
+
+---
+
+## Session 10 — Removed the biggest growth-side cheat: steady flora growth until Frenzy; phase ladder collapsed 6 → 3
+
+**Directive (operator):** "continuing to remove the biggest cheats. The first cheat
+… will also simplify our number of phases. Let's keep a steady growth and planting
+rate until frenzy. Let our fauna do their jobs."
+
+**The cheat removed.** Flora used to *self-limit* via two staggered phase gates —
+planting stopped at `Settled`, growth stopped at `Frozen` — a hard-coded throttle
+that capped the canopy well before the cell was full, faking the homeostasis the
+food web is supposed to produce. Now **flora plant AND grow at a steady rate until
+Frenzy** (`Cell.FloraGrowingEnabled = FloraPlantingEnabled = phase < Frenzy`). The
+only down-force on flora is the food web (opposing-domain fauna grazing) or a vessel
+ability. A cell with no active force on it climbs to Frenzy and stays there — a valid
+equilibrium (§0), not a defect.
+
+**Phases collapsed 6 → 3.** With flora no longer staggered on their own rungs, the
+extra phases existed only to stage flora-vs-fauna events that no longer differ.
+`CellPhase` is now `None / Calm / Restless / Frenzy`, mapping **1:1 onto the three
+fauna aggression bands** (Calm→L0, Restless→L1, Frenzy→L2) — the phase *is* the
+aggression band. `CellPhaseThresholds` dropped from 5 enter/exit pairs to **2**
+(`RestlessEnter/Exit`, `FrenzyEnter/Exit`). A new biome now authors two numbers, not
+five — and the HUD draws one intermediate ring (Restless) instead of five (directly
+resolving the session-9 ring-legibility worry).
+
+**Behavior preserved, density up.** The per-biome aggression boundaries are unchanged
+in value (Blob `RestlessEnter 3000 / FrenzyEnter 5400`; Skim Race `600 / 2000`;
+Default `8000 / 15000` = the old Restless/Rabid enters), so **fauna aggression
+behavior is identical** — only the redundant middle rungs were dropped. The single
+real behavior change: **flora fill denser** (they grow to `FrenzyEnter` instead of
+stopping at the old mid-range growth cap).
+
+**Files.** Enum `CellPhase`; `CellPhaseThresholds` (struct + `CellPhaseRules.Order`);
+`Cell` (gates, `AggressionLevel`, `FrenzyEnterThreshold`, inits); `LightFauna`
+(goal switch, danger-immune, drop-avoidance); `LightFaunaManager` (Quiet gates →
+`FaunaSpawningEnabled`); `AssembledFlora`/`BranchingFlora`/`RandomLifeSpawner`
+(comments); `DomainVolumeIndicator`/`DomainVolumeHexGraphic` (one ring); `CellNetworkSync`/
+`CellRuntimeDataSO` inits; the density-partition sim runner + its editor;
+`Blob Cell Config.asset` + `Skim Race Cell Config.asset` (threshold blocks rewritten,
+same values). Tests `CellPhaseRulesTests` + `EcologyEnumIntegrityTests` rewritten for
+the 3-phase model. Docs: ECOSYSTEM.md §0/§1/§2/§3/§4/§5/§5.1/§9/§10, both kickoff docs.
+
+**Serialization-safe.** Verified no on-disk asset serializes a raw `CellPhase`
+integer (only the threshold struct's *named* int fields, in two configs — both
+rewritten), so collapsing/renumbering the enum can't drift any scene/prefab/SOAP ref.
+
+### ⬅️ Validate on return (Session 10)
+1. **Menu (Blob):** flora should fill noticeably denser now (grows to ~5400, not the
+   old ~4200 plateau) and only freeze at frenzy. The tadpole/brittlestar food web
+   should graze it and let it breathe; if it sits frozen, that's a *valid* state —
+   tune the food web (forager `PopulationSize`, `starvationSeconds`) or lower
+   `Blob Cell Config FrenzyEnter`, **never** add decay.
+2. **Perf at the new density.** Steady-until-frenzy raises the steady-state prism
+   count in every biome. If a target device dips, lower that biome's `FrenzyEnter`
+   (one asset field). WildlifeBlitz now grows to 15000 (Default) vs the old ~10000 —
+   watch it specifically.
+3. **HUD ring.** The gauge now draws a single intermediate ring (Restless); confirm
+   it reads cleanly and the wedge-crossing still communicates "entering the hunting
+   band."
+4. **Run the edit-mode tests** (`CellPhaseRulesTests`, `EcologyEnumIntegrityTests`) —
+   rewritten for the 3-phase Default table (Restless 8000/7500, Frenzy 15000/14000).
+
+---
+
+## Session 11 — Fauna REPRODUCTION lands; spawner demoted to seeder; shark re-added; non-alloc perf
+
+**Directive (operator):** "really go hard exploring how far you can take this to
+become vibrant performant life." This session retires the LAST scaffolding cheat
+and stands up the full 3-tier Lotka–Volterra web.
+
+### 1. Reproduction — the population driver (ECOSYSTEM.md §6.1)
+Feeds convert to births. Every `NotifyFed()` (prism consume; a kill for predators)
+advances a per-individual counter; at `FeedsPerOffspring` feeds the fauna births
+`OffspringPerBirth` offspring next to itself, gated by a per-individual
+`ReproductionCooldownSeconds` and a hard per-cell, per-species `MaxLivePopulation`
+cap (performance backstop, NOT the primary control — starvation is). All knobs on
+`FaunaConfigurationSO`; `FeedsPerOffspring = 0` (default for un-authored assets,
+incl. all WildlifeBlitz configs) = reproduction off. Offspring inherit domain +
+lineage (`Fauna.AssignLineage` — host cell + species config) so they count in
+`Cell.GetLiveFaunaCount` and can breed in turn. Spawn-immunity (session 1) covers
+newborns automatically (stamped in `Awake`).
+
+### 2. Spawner → SEEDER (the cheat retirement)
+`RandomLifeSpawner`'s fauna loop now spawns only the *deficit* below the species'
+seed floor (`PopulationSize`) each period — bootstrap + extinction recovery — and
+stays out while the food web sustains the population (pure gating in
+`FaunaReproductionRules.SeedSpawnCount`; prey-floor gate unchanged).
+`IntensityWiseLifeSpawner` (WildlifeBlitz/Tournament) only gained lineage-binding
+(counting + config-opt-in reproduction); its 1/tick cadence is unchanged.
+
+### 3. Shark re-added to the Blob (menu) profile — full 3-tier web
+flora → tadpole (floor 25 / cap 60 / births @10 feeds) + brittlestar (4 / 24 / @8)
+→ shark (2 / 5 / births @3 kills, 30s cooldown). Skim Race stays predator-free on
+purpose (predators remove the foragers that scene exists to test). Authored:
+tadpole/brittlestar/shark configs in both biomes + `Blob Cell Spawn Profile`
+SupportedFaunas.
+
+### 4. Performance
+- Both behavior ticks (`LightFauna.UpdateBehavior`, `Boid.CalculateBehavior`) now
+  use `Physics.OverlapSphereNonAlloc` against a shared static 256-slot scratch on
+  the `Fauna` base — the per-tick `Collider[]` allocation was pure GC churn at
+  swarm scale (and reproduction makes swarms bigger).
+- `MaxLivePopulation` is the per-species frame-budget ceiling; size it to perf,
+  not to desired equilibrium.
+
+### 5. Multi-cell correctness (latent bug fixed in passing)
+`Fauna.cell` previously always read `cellData.Cell` — a SHARED runtime SO holding
+only the LAST cell that initialized it (wrong cell in multi-cell scenes, e.g.
+WildlifeBlitz's 4 cells). `Fauna.Initialize(cell)` now records the explicit host
+cell and `cell` prefers it; the SO path remains the fallback for scene-placed
+managers. `LightFauna`/`Boid` overrides call `base.Initialize`.
+
+**Tests:** `FaunaReproductionRulesTests` (19 cases) pin `ShouldBirth` (feed
+threshold, cooldown strictness, cap semantics incl. over-cap, 0 = disabled/uncapped)
+and `SeedSpawnCount` (deficit, floor, cap clamp).
+
+### ⬅️ Validate on return (Session 11)
+1. **Menu:** the food web should now BREATHE — tadpole swarm grows while grazing
+   (watch births: new tadpoles popping out of feeding ones), sharks pick off
+   herbivores and multiply on kills, populations crash when prey runs out, the
+   seeder re-seeds after a crash. If sharks dominate: raise their
+   `FeedsPerOffspring` / lower `MaxLivePopulation` (5 now). If tadpole births feel
+   spammy: raise `ReproductionCooldownSeconds` (6 now).
+2. **Skim Race:** swarm should now keep itself sized to obstacle mass via births
+   instead of the old +12-per-period drip. FPS at late laps is the metric.
+3. **Perf:** watch fauna counts vs frame time; `MaxLivePopulation` (60/24/40/16/5)
+   are first guesses — tune to budget.
+4. **Run `FaunaReproductionRulesTests`** with the other edit-mode tests.
+
+---
+
+## Session 12 — Predators truly HUNT: prey-seeking via the fauna registry + diet-aware seeding
+
+Resolves two documented v1 approximations in ECOSYSTEM.md §7 using the lineage
+registry session 11 built:
+
+1. **Real prey-seeking.** The per-species count registry is upgraded to track
+   live `Fauna` INSTANCES (`Cell.LiveFauna` — the cell sensing its inhabitants,
+   the fauna analogue of the prism density grid; sanctioned by §7's own "no
+   central fauna registry exists yet" note, not a privileged shortcut). A
+   predator's behavior tick now targets the **nearest live, non-immune
+   herbivore**, falling back to the phase-based density goal when no prey exists
+   (roam plausibly → starve). Skipping predation-immune newborns keeps sharks
+   from camping fresh births.
+2. **Diet-aware seeding.** A predator species now seeds on
+   `GetLiveHerbivoreCount() >= FaunaFoodFloor` instead of the prism-mass proxy —
+   no more churn of doomed sharks in a cell with mass but no herbivores.
+   `FaunaFoodFloor` doubles as both floors (N prisms / N herbivores). Added the
+   explicit `FaunaFoodFloor: 5` to the Blob profile (was relying on the
+   deserialization default).
+
+Registry hygiene: instances register in `AssignLineage`, unregister in
+`OnDestroy`, cleared on cell reset/init; destroyed-but-pending fauna are skipped
+by Unity-null checks in every scan. Manager-spawned fauna (no lineage) are
+invisible to the registry — acceptable, those legacy populations never
+instantiate (§7 dead `fauna2` note).
+
+### ⬅️ Validate on return (Session 12)
+1. **Menu:** sharks should now visibly CHASE tadpoles/brittlestars (not drift at
+   mass centroids), and should not appear at all until ≥5 herbivores are alive.
+2. If shark pursuit looks too lethal (herbivore population can't recover), the
+   first levers are shark `MaxLivePopulation` (5) and `FeedsPerOffspring` (3);
+   the herbivores' `predationImmunitySeconds` (6s, prefab/code default) is the
+   newborn-survival lever.
+
+---
+
+## Session 13 — Menu perf (5 fps -> modeled ~77 fps) + a headless tuning LOOP
+
+**Directive (operator):** "the main menu is dropping to a steady 5 fps; steady
+state must be >60. Build a way to close the loop so you can run the game, observe
+performance + population oscillations, and make changes WITHOUT a human in the loop."
+
+### The diagnosis (and my own regression)
+The steady-growth-to-Frenzy change (session 10) raised the menu's prism ceiling to
+`FrenzyEnter 5400`, and reproduction (session 11) pushed fauna to their caps (~90).
+That is the 5 fps: built a headless cost model and it shows the fauna
+`Physics.OverlapSphere` term (each creature querying a 50–70 m sphere into ~5400
+prism colliders, a few times/sec, ×90 fauna) ate ~70 % of the frame budget, and the
+5400 prism GameObjects set a hard per-frame ceiling on top.
+
+### The loop (the real deliverable) — `Tools/ecosim/`
+No Unity / C# in the container, so I built a **dependency-free Python simulator**:
+- `ecosim.py` reads the REAL Blob config assets, models the heavy steady state
+  (prisms pin at Frenzy, fauna at caps), and estimates FPS from a physically-grounded
+  cost model (`fps = (1000 − overlap_ms/s) / frame_fixed_ms`) calibrated to one real
+  anchor (5400,90 → 5 fps). Prints per-lever sensitivity + named candidate configs.
+- `calibration.csv` holds real `(prisms,fauna,fps)` samples; the first is the anchor.
+- `EcosystemPerfProbe.cs` (in-Unity, read-only, never ships unless added) logs
+  `[ECOSIM] prisms=… fauna=… fps=…` from the live `Cell` registry.
+- The loop: edit config -> `python3 Tools/ecosim/ecosim.py` -> read predicted fps ->
+  human plays menu -> paste probe line into calibration.csv -> ecosim recalibrates.
+  See `Tools/ecosim/README.md` and ECOSYSTEM.md §12.
+
+It is a lever-ranker, not an oracle (single calibration point + documented priors:
+`CLUSTERING`, `OVERLAP_SHARE`, `cell_radius_m`); each real sample tightens it.
+
+### The menu fix (Blob assets only — zero behavior risk)
+`FrenzyEnter 5400→1000`, `RestlessEnter 3000→600`; caps tadpole 60→24, brittlestar
+24→10, shark 5→3 (seed floors 25→12 / 4→3 / 2→2). Model: ~1000 prisms, ~37 fauna ->
+**~77 fps predicted** (was 5). The model puts the per-frame prism ceiling at ~80 fps
+for 1000 prisms, so Frenzy is now a PERFORMANCE budget, not a density dial.
+
+### ⬅️ Validate on return (Session 13) — and feed the loop
+1. **Capture the real number.** Add `EcosystemPerfProbe` to a Menu_Main GameObject
+   (or set the `ECOSIM_PROBE` define), play, read the `[ECOSIM]` line. Paste the
+   steady-state sample into `Tools/ecosim/calibration.csv` (most-trusted first) and
+   re-run ecosim — that calibrates the model to YOUR hardware.
+2. If the real menu is **still <60**: the model says cut `FrenzyEnter` further (it is
+   the dominant lever) — try 800 (model ~93 fps). If it's **well above 60**, add life
+   back (raise caps / FrenzyEnter) until it settles ~70–75 with margin.
+3. The other scenes (Skim Race, gameplay) run the same ecosystem; the same probe +
+   ecosim levers apply. I can add Skim Race as a second biome in ecosim on request.
+
+### Structural wins deferred (need a real before/after capture, can't do blind)
+Shrinking the shared `detectionRadius` (cubic on overlap) and driving grazing from
+the density grid instead of per-fauna OverlapSphere — the latter is the only way to
+make the food web dense AND cheap. Flagged in §12.
+
+---
+
+## Session 14 — Taming, not devouring: gentle the menu food web so gyroids stay sizable
+
+**Directive (operator, in-editor observation):** before these changes it was fun to
+fly around sizable gyroids; now the fauna eat too much of the gyroid, so there isn't
+enough to fly through. "We want the fauna taming the environment, not devouring it."
+
+### Diagnosis
+This is the predator–prey equilibrium landing in the wrong basin. With the perf-cut
+caps (herbivore cap 34: tadpole 24 + brittlestar 10) the standing swarm could
+out-graze flora growth, so the gyroids got stripped (boom/bust) instead of holding
+sizable. The reproduction layer made it worse — abundant gyroid → foragers feed →
+breed → graze harder → strip it.
+
+### Fix — the caps are the TAMING DIAL (menu/Blob only; Skim Race unchanged)
+Keep the *summed herbivore cap below the flora's food-supported count* so the fauna
+**cannot** out-graze flora; the gyroids then grow to `FrenzyEnter` and HOLD there,
+fauna trimming the edges:
+- tadpole (the voracious any-domain forager): floor 12→4, cap 24→6, slower births
+  (FeedsPerOffspring 10→20).
+- brittlestar: cap 10→5, births @8→16.
+- shark: floor 2→1, cap 3→2.
+- `FrenzyEnter 1000→1200` (gyroids a touch bigger — affordable now that fauna are
+  fewer), tighter Frenzy band `FrenzyExit 700→950` so they stay near full.
+
+Skim Race keeps its voracious foragers on purpose — there the goal is to DEVOUR the
+AI trail-obstacle buildup. Same forager species, opposite role, set purely by the
+per-biome cap. (No diet/behavior change — not a cheat; mass still conserved, food
+web still the only down-force. ECOSYSTEM.md §6.2.)
+
+### ecosim now models this
+Added a **gyroid outcome** report (`TAMED` vs `DEVOURED`) from
+`herbivore_cap` vs `food_supported = flora_growth/graze_rate`. The gentled config
+reads **TAMED, gyroids hold ~950–1200**, perf **~70 fps**. The old caps (34) read
+DEVOURED — matching what you saw. `FLORA_GROWTH_PER_S`/`GRAZE_PER_HERBIVORE_S` are
+model assumptions (ratio calibrated so old=devoured/new=tamed); refine against real
+probe gyroid observations.
+
+### ⬅️ Validate on return (Session 14)
+1. **Fly the menu.** Gyroids should now stay sizable and stable (held near Frenzy),
+   with a small darting fauna presence trimming — not stripping — them.
+2. If still over-grazed: cut herbivore caps further (tadpole is the main eater) — or
+   tell me the gyroid prism count from `EcosystemPerfProbe` and I'll recalibrate the
+   `flora_growth/graze` ratio so ecosim predicts your hardware/flora exactly.
+3. If now too sparse/lifeless: raise tadpole `MaxLivePopulation` a few at a time
+   (it's 6) until the swarm reads full again without stripping the gyroids.
+4. Gyroid SIZE is perf-capped (~1200 prisms ≈ 70 fps); bigger needs the structural
+   overlap/prism-cost fix (§12), not just a higher `FrenzyEnter`.

@@ -146,7 +146,7 @@ namespace CosmicShore.Utility
                 {
                     LifeFormsInCell = 0,
                     LiveBlockCount = 0,
-                    Phase = CellPhase.Sprout,
+                    Phase = CellPhase.Calm,
                     DominantDomain = Domains.Blue,
                 };
         }

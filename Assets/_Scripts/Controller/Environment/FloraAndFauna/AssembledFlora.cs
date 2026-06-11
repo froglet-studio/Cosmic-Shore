@@ -97,10 +97,11 @@ namespace CosmicShore.Gameplay
             // "ungrowing gyroid fragments" failure observed in-game.)
             if (healthTracker != null && healthTracker.Count >= maxTotalSpawnedObjects) return;
 
-            // Phase gate: existing flora freeze growth once the cell crosses Frozen
-            // (default 10000 prisms) and automatically resume when consumption brings
-            // the count back below the Frozen exit threshold. Cell.FloraGrowingEnabled
-            // is the single source of truth for this rule.
+            // Frenzy gate: flora grow at a steady rate until the cell crosses into Frenzy,
+            // then freeze, resuming automatically when an active force (fauna grazing /
+            // vessel abilities) brings the count back below the Frenzy exit threshold.
+            // Cell.FloraGrowingEnabled is the single source of truth — no early growth cap
+            // (that staggered self-limit was a cheat; the food web is the only down-force).
             if (cell && !cell.FloraGrowingEnabled) return;
 
             // Reawakening: a flora whose active branches were all consumed or exhausted
