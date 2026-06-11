@@ -7,11 +7,6 @@ namespace CosmicShore.Gameplay
     {
         int readyClientCount;
 
-        public void OnClickReturnToMainMenu()
-        {
-            CloseSession_ServerRpc();
-        }
-
         protected override void OnReadyClicked_()
         {
             RaiseToggleReadyButtonEvent(false);
@@ -64,12 +59,6 @@ namespace CosmicShore.Gameplay
         {
             RaiseToggleReadyButtonEvent(true);
             base.SetupNewRound();
-        }
-
-        [ServerRpc(RequireOwnership = false)]
-        void CloseSession_ServerRpc()
-        {
-            multiplayerSetup.LeaveSession().Forget();
         }
     }
 }

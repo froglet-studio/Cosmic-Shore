@@ -20,8 +20,7 @@ namespace CosmicShore.UI
     /// <summary>
     /// End-game scoreboard. Instantiates one <see cref="PlayerScoreCard"/> per player
     /// under <see cref="playerCardContainer"/>, tints each card to its player's domain
-    /// color, and shows a "{DOMAIN} VICTORY" banner. Always uses the multiplayer layout;
-    /// the legacy SinglePlayerView is never shown.
+    /// color, and shows a "{DOMAIN} VICTORY" banner.
     ///
     /// Subclasses override <see cref="FormatPlayerScore"/> and optionally
     /// <see cref="FormatSecondaryStat"/> / <see cref="SortPlayers"/> to customize display.
@@ -137,16 +136,14 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Shows Main Menu + Play Again for host / single-player, Leave Lobby for non-host clients.
+        /// Shows Main Menu + Play Again for the host, Leave Lobby for non-host clients.
         /// Non-host clients cannot restart the game — the host's Play Again forces everyone to replay,
         /// so exposing the button to clients would be misleading.
         /// </summary>
         void ConfigureLobbyButtons()
         {
             var nm = NetworkManager.Singleton;
-            bool isMultiplayer = gameData != null && gameData.IsMultiplayerMode;
-            bool isHost = nm != null && nm.IsServer;
-            bool isClient = isMultiplayer && !isHost;
+            bool isClient = nm == null || !nm.IsServer;
 
             if (mainMenuButton)   mainMenuButton.SetActive(!isClient);
             if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);
@@ -215,8 +212,7 @@ namespace CosmicShore.UI
         #region Multiplayer View (the only view)
 
         /// <summary>
-        /// Always-on multiplayer presentation. The legacy "SinglePlayerView" is gone —
-        /// solo play uses the multiplayer layout with a single card.
+        /// Builds the per-player card layout. Solo play renders as a single card.
         /// </summary>
         protected virtual void ShowMultiplayerView()
         {
@@ -504,14 +500,11 @@ namespace CosmicShore.UI
 
             // Defense in depth: non-host clients don't see the button
             // (ConfigureLobbyButtons gates it), but guard the call path too.
-            if (gameData.IsMultiplayerMode)
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer)
             {
-                var nm = NetworkManager.Singleton;
-                if (nm == null || !nm.IsServer)
-                {
-                    CSDebug.LogWarning("[Scoreboard] Play Again ignored — only the host can restart the game.");
-                    return;
-                }
+                CSDebug.LogWarning("[Scoreboard] Play Again ignored — only the host can restart the game.");
+                return;
             }
 
             gameController.RequestReplay();

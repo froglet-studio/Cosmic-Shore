@@ -10602,6 +10602,7 @@ MonoBehaviour:
   rematchDeniedPanel: {fileID: 3077184441755355337}
   rematchDeniedText: {fileID: 1138702273259042168}
   playAgainButton: {fileID: 2279452371261775173}
+  mainMenuButton: {fileID: 7469907960593864752}
   rematchPanelAutoDismissSeconds: 2
   animSettings: {fileID: 0}
 --- !u!114 &4484042448459437976
