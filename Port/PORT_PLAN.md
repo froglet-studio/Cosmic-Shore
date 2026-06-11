@@ -204,23 +204,30 @@ The prompter tests progress without prompting the loop. Contract:
   3 EditMode test files verbatim); xunit coroutine + ResourceSystem suites; CLI section
   [5] (crystal pickups, danger-prism debuff decay). 578 tests green (329 + 249).
 
-## NEXT UP (iteration 5)
+- **Iteration 5** (2026-06-11, short): XpData struct extracted from PlayFab-coupled
+  XpHandler + XpDataTests verbatim (585 tests green: 329 + 256). **Key finding for the
+  next iterations**: ElementalFloat → IVessel → IVesselStatus/IPlayer closure spans the
+  whole vessel layer (~12 classes: AIPilot, Prism, Skimmer, InputController,
+  VesselTransformer, SilhouetteController, VesselPrismController, HUD controllers,
+  action handlers, Material/Pose engine types). Deviation #9 stays open; plan the
+  vessel layer as a dedicated multi-iteration arc (survey → engine Material/Pose →
+  leaf classes → interfaces → restore deviations).
 
-Goal: widen the phase-2 simulation core toward the vessel layer so VesselStatus/ResourceSystem can port in
+## NEXT UP (iteration 6)
+
+Goal: start the vessel-layer arc so VesselStatus/ResourceSystem can port in
 iteration 4.
 
-1. Port ElementalFloat (locate the real class — `Controller/Vessel/**`), ITransform,
-   then ElementalShipComponent; restore ResourceSystem's base class (deviation #9a).
-2. Begin the IVessel/IVesselStatus closure bottom-up: port the small leaf types they
-   reference (VesselAnimation? Skimmer? — survey first, port what's tractable, stub
-   nothing). Target: interfaces compile so deviation #9b (RequireComponent) and the
-   10 deferred SOAP files can un-defer.
-3. Port XpData + XpDataTests, and survey HostConnectionDataSO for UGS coupling.
-4. Port `Utility/DataContainers/CellPhaseThresholds`-adjacent ecology configs and the
+1. **Vessel-layer arc, step 1 — survey & map**: write `docs/VESSEL_LAYER.md` listing
+   every type in the IVessel/IVesselStatus/IPlayer closure with line counts, Unity
+   deps, and a dependency-ordered porting sequence (leaf classes first). Add engine
+   `Material` (minimal: name + color/float/property store) and `Pose` struct.
+2. Step 2 — port ITransform + the closure's leaf data types per the survey.
+3. Port `Utility/DataContainers/CellPhaseThresholds`-adjacent ecology configs and the
    prism density/BlockDensityGrid pure-logic pieces if reachable.
-5. Grow the CLI toward an M2 vertical slice: one cell + crystals + 2 scripted vessels
+4. Grow the CLI toward an M2 vertical slice: one cell + crystals + 2 scripted vessels
    exchanging resource/elemental state on a seeded run.
-6. Update this file (status tables, iteration log, NEXT UP), commit, push.
+5. Update this file (status tables, iteration log, NEXT UP), commit, push.
 
 ## Loop protocol (every iteration)
 
