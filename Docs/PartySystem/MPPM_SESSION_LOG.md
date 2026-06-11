@@ -491,4 +491,106 @@ user-driven cancel).**
 
 ---
 
-<!-- Append future sessions below this divider as ## Session 2 — date, etc. -->
+## Session 2 — 2026-06-09 (host-return-with-party fix + cleanup + bleeding-edge merge)
+
+**Branch:** `claude/upbeat-dijkstra-kpu4e2` (PR #545).
+**Goal:** fix the reproduced MPPM bug "party-member clients stay stuck in
+the game scene when the host taps **Main Menu**", then clean up the dead
+code the fix exposed and merge the latest `Ys-bleeding-edge` scoring work.
+
+### What landed (in order)
+
+1. **Host-return-with-party fix** (`f33abbb6`). Root cause: the host's
+   scoreboard **Main Menu** button was wired (in the game scenes) into the
+   *session-ended* path — `OnClickReturnToMainMenu → CloseSession_ServerRpc
+   → MultiplayerSetup.LeaveSession → OnSessionEnded →
+   SceneLoader.HandleActiveSessionEnd → gameData.ResetAllData →
+   DestroyPlayerAndVessel`. On the host that **despawns the clients'
+   persistent `Player` NetworkObjects** mid-return, racing the network
+   scene load, so clients land in `Menu_Main` with nothing to rebuild from
+   and hang on the splash. Fix: unplug the host button from the
+   session-ended path — it now goes only through
+   `SceneLoader.ReturnToMainMenu`, which keeps the live Relay and carries
+   everyone. Deleted the Model-1 path (`OnClickReturnToMainMenu` +
+   `CloseSession_ServerRpc` from `MultiplayerDomainGamesController`,
+   `MultiplayerWildlifeBlitzMiniGame`, `MultiplayerFreestyleController`
+   + its `RemovePlayer_*` RPCs, and `MultiplayerSetup.LeaveSession`). Also
+   removed the spawner-owned network shutdown
+   (`ServerPlayerVesselInitializer.shutdownNetworkOnDespawn` +
+   `IsReturnToMenuTransition`) — under eager-Relay the network persists
+   across scene transitions; teardown stays with `PartyInviteController`
+   / `OnTransportFailure`. `HandleActiveSessionEnd`/`ResetAllData` are kept
+   for genuine disconnect/transport-failure. Added regression test **S9**
+   to `TESTS.md`.
+
+2. **Host-only buttons** (`781314cf`). **Main Menu** + **Play Again** are
+   host-only on both the scoreboard and the pause menu (a non-host client
+   sees "Leave Lobby"). The Scoreboard gating already existed but its
+   button references were unwired in the prefabs — wired `GameCanvas`,
+   `GameCanvas-HexRace`, `GameOverPanel`, `R_Pause_Menu_Panel`, and added
+   the same gating to `PauseMenu`.
+
+3. **Single-player dead-code cleanup** (`41912dc5`, `52c822ec`,
+   `7d27c08b`). Solo play = a host alone in its own party session, so the
+   non-networked / `IsMultiplayerMode==false` branches in the touched files
+   are dead: removed `SceneLoader`'s local-vs-network split (always
+   host-driven Netcode load + defensive fallback); collapsed `isMultiplayer`
+   in `PauseMenu`/`Scoreboard` gating; removed `Scoreboard.SinglePlayerBannerColor`.
+   (`GameDataSO.IsMultiplayerMode` kept — read project-wide.)
+
+4. **Dead-ref cleanup** (`42b09d36`). Removed the now-unused
+   `[Inject] MultiplayerSetup` from `MultiplayerMiniGameControllerBase` and
+   the unused `using System.Linq` from `MultiplayerFreestyleController`;
+   corrected the `shutdownNetworkOnDespawn` line in `CLAUDE.md`.
+
+5. **Scene un-wiring** (editor commits `8b24f08d`, `e52ab68e`, `297e8853`,
+   `ef6488ab`, `7b1c2880`, `ff74881c`). Removed the dead
+   `OnClickReturnToMainMenu` `EventListenerNoParam` response from all 6
+   game scenes that had it (HexRace, Tournament, Freestyle-MP, DuelForCell,
+   WildlifeBlitz-CoOp, 2v2). Verified the large YAML diffs were benign —
+   prefab-instance `stripped`-stub re-serialization + cleanup of a
+   pre-existing missing-script placeholder; **no functional component loss**
+   (GameObject counts unchanged; the "removed" `MultiplayerSetup`/TMP
+   entries live in the instanced CORE prefab).
+
+6. **NetworkManager.prefab** (`3fa4d2b0`). Removed an accidental duplicate
+   `DontDestroyOnLoad` component that rode along in an editor save
+   (the same pass's `MaxPacketQueueSize 128→512` left as-is).
+
+7. **Docs** (`d256f60b`). Fixed three reference-doc spots still describing
+   `SceneLoader` "auto-selecting local vs network loading".
+
+8. **Merge `origin/Ys-bleeding-edge`** (`ce4dc721`). Two conflicts, resolved
+   with the rule *never resurrect what this branch deleted; take only
+   genuinely-new features*:
+   - `MultiplayerDomainGamesController` — kept Ys's new server-authoritative
+     per-domain HUD score sync (`n_DomainSum0..2` + `SyncDomainSumsRoutine`);
+     did **not** re-add the deleted `OnClickReturnToMainMenu`/`CloseSession_ServerRpc`.
+   - `Scoreboard` — took Ys's scoring SSOT refactor in both conflict regions
+     (hardcoded banner colors + `domainColorPalette` gone in favor of
+     `ThemeManagerData.GetDomainUIColor`; `Results`-based cards; authoritative
+     `WinnerDomain`). Our host-only button gating + unwrapped Play Again
+     guard auto-merged outside the conflicts and were kept.
+   Verified whole-tree: zero references to anything either side deleted; all
+   of Ys's new compile deps present.
+
+### MPPM test result (2026-06-09)
+
+**1 host + 3 clients.** Host played a domain game to the scoreboard and
+tapped **Main Menu**. ✅ **All three clients returned to `Menu_Main`
+together** — the original bug (clients stuck in the game scene) is **fixed**;
+S9 satisfied for the return itself.
+
+**Two new defects surfaced on arrival → logged as B9 (deferred):**
+- One client's vessel **roamed in one direction, uncontrollable**.
+- Party domains were **not reset to the menu domain (Jade)** — vessels kept
+  their in-game domains.
+
+### Open items
+
+- **B9** — returning-client autopilot-drift + missing Jade-domain reset on
+  host-return (see `BUGS.md` B9). Deferred to a future session.
+
+---
+
+<!-- Append future sessions below this divider as ## Session 3 — date, etc. -->
