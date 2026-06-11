@@ -1,6 +1,6 @@
 # UGS Data Inventory — Cloud Save, Analytics, Leaderboards
 
-> Companion to `AARRR_INSTRUMENTATION.html` (the data-team event reference, rebuilt against this codebase).
+> Companion to `INSTRUMENTATION_DATA.html` (the instrumentation event reference, rebuilt against this codebase).
 > Scope: **VSlice and VDemo**. VLater items are tracked but not planned for implementation yet.
 > Sources: `UGSKeys.cs`, `UGSDataService.cs`, `CloudDataRepository.cs`, `UGSCloudSaveProvider.cs`,
 > `UGSStatsManager.cs`, `_Scripts/System/Instrumentation/`, `VesselTelemetry.cs` + subclasses.
@@ -44,7 +44,7 @@ string fallback on load.
 Writer: `PlayerDataService` (sole writer; `AddXP`, `AddCrystals`, `TrySpendCrystals`, `UnlockReward`,
 profile edits → `MarkDirty`). `ParticipationXpAwarder` adds 25 XP per game end.
 Read once per session, merged with cloud (`MergeCloudProfile` unions reward IDs).
-**Note for the data team: "omnicrystals" in the AARRR doc == `crystalBalance` here.**
+**Note for the data team: "omnicrystals" in the instrumentation doc == `crystalBalance` here.**
 
 ### 1.2 `PLAYER_STATS_PROFILE` — `PlayerStatsProfile` (`_Scripts/UI/PlayerStatsProfile.cs`)
 
@@ -187,7 +187,7 @@ a prerequisite for the VDemo pilot events (`pilot_recruited`, `vessel_upgraded`)
 ```
 
 Model + repository exist; `ReportMissionCompleted()` has no callers yet. This is where the episode
-revenue funnel (VSlice in the AARRR doc) will persist.
+revenue funnel (VSlice in the instrumentation doc) will persist.
 
 ### 1.11 Local-only persistence (not yet in cloud)
 
@@ -204,6 +204,12 @@ favorites is a referral signal), and should get cloud keys + events when touched
 ---
 
 ## 2. Current analytics footprint (what actually fires today)
+
+> **Decision (2026-06-11): UGS-only.** The Firebase analytics path is being retired — port
+> `user_ui_action` and `ad_impression` to UGS custom events, delete `FirebaseAnalyticsController`
+> wiring and the `cs_*` Firebase collector implementations (keep their taxonomy as the UGS event
+> spec). Removing the Firebase SDK from the project entirely is a separate ticket (check non-analytics
+> dependents first).
 
 ### 2.1 Live
 
@@ -245,6 +251,8 @@ itself doesn't exist).
 
 ### 3.1 VSlice — instrument now (hook points already exist)
 
+0. **Retire the Firebase analytics path** (UGS-only decision) — port `ui_action` + `ad_impression`
+   to UGS, delete dead collectors and `FirebaseAnalyticsController` wiring.
 1. **UGS Analytics event pipeline** — a single `CSAnalyticsManager`-style facade over
    `AnalyticsService.Instance.RecordEvent`, SOAP-event-driven, replacing the dead Firebase
    collectors. All events below route through it.

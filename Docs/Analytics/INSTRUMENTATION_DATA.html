@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Cosmic Shore — AARRR Instrumentation Reference</title>
+<title>Cosmic Shore Instrumentation Data</title>
 <style>
   :root {
     --bg: #f9f8f5;
@@ -147,7 +147,7 @@
 
 <div class="topbar">
   <div>
-    <h1>Cosmic Shore — AARRR instrumentation reference</h1>
+    <h1>Cosmic Shore Instrumentation Data</h1>
     <p class="subtitle">Data-team event wishlist mapped onto the actual codebase: every event carries an implementation status and a hook point. Focus: <strong>VSlice + VDemo</strong>.</p>
   </div>
   <button class="theme-toggle" id="themeToggle" aria-label="Toggle dark/light mode">🌙 Dark</button>
@@ -193,12 +193,12 @@
   </div>
 
   <div class="block" data-tier="vslice">
-  <div class="section-label">Firebase (parallel pipeline) <span class="ver-badge vs">VSlice</span></div>
+  <div class="section-label">Firebase — being retired (UGS-only decision, 2026-06-11) <span class="ver-badge vs">VSlice</span></div>
   <div class="events-grid">
-    <div class="event-row"><div><span class="event-name">app_open</span><span class="st st-live">LIVE</span></div><div class="event-desc">SDK init</div><div class="impl">FirebaseAnalyticsController</div></div>
-    <div class="event-row"><div><span class="event-name">ad_impression</span><span class="st st-live">LIVE</span></div><div class="event-desc">Rewarded ad loaded</div><div class="impl">AdsSystem.AdLoaded</div></div>
-    <div class="event-row"><div><span class="event-name">user_ui_action</span><span class="st st-live">LIVE</span></div><div class="event-desc">Menu navigation funnel (PlayGame, ViewHangarMenu, ViewArcadeMenu…)</div><div class="impl">UserActionSystem.OnUserActionCompleted — mirror these to UGS</div></div>
-    <div class="event-row"><div><span class="event-name">cs_* collector taxonomy (16 events)</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Arcade/training/mission/daily-challenge start+complete, purchases, watch-ad — fully defined, never initialized</div><div class="impl">CSAnalyticsManager + 7 collectors — port the taxonomy to UGS, don't resurrect Firebase init</div></div>
+    <div class="event-row"><div><span class="event-name">app_open</span><span class="st st-dormant">RETIRE</span></div><div class="event-desc">SDK init</div><div class="impl">FirebaseAnalyticsController — remove; UGS auto session events cover this</div></div>
+    <div class="event-row"><div><span class="event-name">ad_impression</span><span class="st st-dormant">RETIRE</span></div><div class="event-desc">Rewarded ad loaded</div><div class="impl">AdsSystem.AdLoaded — re-route to a UGS ad_impression custom event</div></div>
+    <div class="event-row"><div><span class="event-name">user_ui_action</span><span class="st st-dormant">PORT</span></div><div class="event-desc">Menu navigation funnel (PlayGame, ViewHangarMenu, ViewArcadeMenu…)</div><div class="impl">UserActionSystem.OnUserActionCompleted — port to UGS ui_action, then delete the Firebase path</div></div>
+    <div class="event-row"><div><span class="event-name">cs_* collector taxonomy (16 events)</span><span class="st st-dormant">DORMANT</span></div><div class="event-desc">Arcade/training/mission/daily-challenge start+complete, purchases, watch-ad — fully defined, never initialized</div><div class="impl">CSAnalyticsManager + 7 collectors — reuse the taxonomy in the UGS facade, delete the Firebase implementations</div></div>
   </div>
   </div>
 
@@ -584,6 +584,7 @@
   <div class="block" data-tier="vslice">
   <div class="note-box blue">
     <strong>Build order (VSlice):</strong><br>
+    0. Retire the Firebase analytics path — port <code>ui_action</code> + <code>ad_impression</code> to UGS, delete the dead collectors (decision: UGS for everything)<br>
     1. UGS Analytics event facade (SOAP-driven, replaces the dead Firebase collectors — reuse their event taxonomy)<br>
     2. <code>game_started</code> / <code>game_completed</code> (the two commented-out subscriptions — highest value per line of code)<br>
     3. Consent dialog + opt-out (compliance blocker)<br>
@@ -603,7 +604,7 @@
   </div>
 </div>
 
-<p class="filter-hint">Maintained at <code>Docs/Analytics/AARRR_INSTRUMENTATION.html</code> · data inventory &amp; optimization review at <code>Docs/Analytics/DATA_INVENTORY.md</code> · statuses audited against the codebase on 2026-06-11.</p>
+<p class="filter-hint">Maintained at <code>Docs/Analytics/INSTRUMENTATION_DATA.html</code> · data inventory &amp; optimization review at <code>Docs/Analytics/DATA_INVENTORY.md</code> · statuses audited against the codebase on 2026-06-11.</p>
 
 <script>
 (function () {
@@ -615,13 +616,13 @@
     btn.textContent = t === 'dark' ? '☀️ Light' : '🌙 Dark';
   }
   var saved = null;
-  try { saved = localStorage.getItem('cs-aarrr-theme'); } catch (e) {}
+  try { saved = localStorage.getItem('cs-instrumentation-theme'); } catch (e) {}
   var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
   applyTheme(saved || (prefersDark ? 'dark' : 'light'));
   btn.addEventListener('click', function () {
     var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
     applyTheme(next);
-    try { localStorage.setItem('cs-aarrr-theme', next); } catch (e) {}
+    try { localStorage.setItem('cs-instrumentation-theme', next); } catch (e) {}
   });
 
   // ── Status counts ──
