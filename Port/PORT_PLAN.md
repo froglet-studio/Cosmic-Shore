@@ -94,7 +94,12 @@ their semantics. SkimRace milestones: **S1-S3 SHIPPED** (windowed race: track/cr
 win-x64 zip in dist). **S4 in progress**: AI rival shipped (contested crystals, overtake
 targeting, rubber-band boost+speed) + gamepad input; KNOWN ISSUE — rival can't beat a
 perfect autopilot in AI-vs-AI demos (sweeps happen); vs humans it contests missed
-crystals. Next: rival balance telemetry, glow/bloom pass, mouse steering, sound.
+crystals. Shipped since: bloom post chain (bright-pass → half-res gaussian → tonemapped
+composite) with camera-proximity fades for trails/bursts; mouse steering; **procedural
+audio** (AudioEngine: synthesized PCM via OpenAL Soft — engine hum scaling with speed,
+boost layer, crystal chimes, countdown/go beeps, win/lose jingle; fail-safe silent mode
+when no device). Next: rival balance from prompter feedback, vessel-layer arc resumes
+(VESSEL_LAYER.md V1), richer vessel/crystal meshes, track variety.
 
 ## Phase roadmap
 

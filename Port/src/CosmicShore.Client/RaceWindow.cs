@@ -59,6 +59,9 @@ namespace CosmicShore.Client
         const int TrailMax = 110;
 
         Vector3 _camPos, _camLook;
+        AudioEngine _audio;
+        int _lastCountdownSecond = -1;
+        RaceState _lastRaceState = RaceState.Countdown;
         readonly List<(Vector3 pos, float age)> _bursts = new();
         int _frameIndex;
 
@@ -104,8 +107,9 @@ namespace CosmicShore.Client
                 };
 
             (_loop, _race, _rival) = SkimRaceFactory.Create(_seed, _crystalTarget, _pilot);
-            _race.OnCrystalCollected += (_, pos) => _bursts.Add((pos, 0f));
-            _rival.OnCrystalCollected += (_, pos) => _bursts.Add((pos, 0f));
+            _audio = new AudioEngine(disabled: _screenshotPath != null);
+            _race.OnCrystalCollected += (_, pos) => { _bursts.Add((pos, 0f)); _audio.CrystalChime(player: true); };
+            _rival.OnCrystalCollected += (_, pos) => { _bursts.Add((pos, 0f)); _audio.CrystalChime(player: false); };
 
             _program = CompileProgram();
             _uMvp = _gl.GetUniformLocation(_program, "uMvp");
@@ -504,6 +508,21 @@ void main()
             float lag = _screenshotPath != null ? 1f : Mathf.Clamp01(dt * 5f);
             _camPos = Vector3.Lerp(_camPos, desired, lag);
             _camLook = t3.position + t3.forward * 12f;
+
+            // audio: engine bed + countdown/finish stingers
+            _audio.SetEngineState(Mathf.Clamp01(_race.Speed / 62f), _pilot.Boost && _race.State == RaceState.Racing);
+            if (_race.State == RaceState.Countdown)
+            {
+                int second = (int)MathF.Ceiling(_race.Countdown);
+                if (second != _lastCountdownSecond) { _audio.CountdownBeep(); _lastCountdownSecond = second; }
+            }
+            if (_race.State != _lastRaceState)
+            {
+                if (_race.State == RaceState.Racing) _audio.GoBeep();
+                else if (_race.State == RaceState.Finished)
+                    _audio.FinishJingle(won: _race.Shared.WinnerPilot == _race.PilotId);
+                _lastRaceState = _race.State;
+            }
         }
 
         unsafe void OnRender(double dt)
