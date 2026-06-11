@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using Firebase.Analytics;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.Instrumentation.Firebase
 {
@@ -10,7 +11,7 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
         public async Task InitSDK()
         {
             await Task.Delay(1);    // Hide console warning until this is connected
-            Debug.Log("CSStoreDataCollectorFirebase - Initializing Training Data Collector.");
+            CSDebug.Log("CSStoreDataCollectorFirebase - Initializing Training Data Collector.");
         }
 
         public void LogEventPurchaseCaptain(string captainName)

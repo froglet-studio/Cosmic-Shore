@@ -40,6 +40,14 @@ namespace CosmicShore.Game.Arcade
                     gameData.SelectedIntensity.Value,
                     (int)localStats.Score
                 );
+
+                // Report per-vessel telemetry
+                if (gameData.LocalPlayer?.Vessel is Component vc
+                    && vc.TryGetComponent<VesselTelemetry>(out var vt))
+                {
+                    UGSStatsManager.Instance.ReportVesselTelemetry(
+                        vt, gameData.LocalPlayer.Vessel.VesselStatus.VesselType.ToString());
+                }
             }
         }
     }

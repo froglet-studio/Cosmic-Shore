@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -39,10 +40,10 @@ namespace CosmicShore.Game
 
         protected bool Validate(Cell host, CellConfigDataSO config, CellRuntimeDataSO runtime, GameDataSO gameData)
         {
-            if (!host) { Debug.LogError("[CellLifeSpawner] Host is null."); return false; }
-            if (!config) { Debug.LogError($"[CellLifeSpawner] Config is null for host '{host.name}'."); return false; }
-            if (!runtime) { Debug.LogError($"[CellLifeSpawner] Runtime is null for host '{host.name}'."); return false; }
-            if (!gameData) { Debug.LogError($"[CellLifeSpawner] GameData is null for host '{host.name}'."); return false; }
+            if (!host) { CSDebug.LogError("[CellLifeSpawner] Host is null."); return false; }
+            if (!config) { CSDebug.LogError($"[CellLifeSpawner] Config is null for host '{host.name}'."); return false; }
+            if (!runtime) { CSDebug.LogError($"[CellLifeSpawner] Runtime is null for host '{host.name}'."); return false; }
+            if (!gameData) { CSDebug.LogError($"[CellLifeSpawner] GameData is null for host '{host.name}'."); return false; }
             return true;
         }
 

@@ -1,22 +1,26 @@
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-public class SpawnableSingleTrailBlock : SpawnableAbstractBase
+public class SpawnableSingleTrailBlock : SpawnableBase
 {
     [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
     [SerializeField] Vector3 blockScale = Vector3.one;
-    static int BlocksSpawned = 0;
 
-    public override GameObject Spawn()
+    protected override SpawnPoint[] GeneratePoints()
     {
-        GameObject container = new();
-        container.name = "SingleTrailBlock" + BlocksSpawned++;
+        return new[] { new SpawnPoint(Vector3.zero, Quaternion.LookRotation(Vector3.forward), blockScale) };
+    }
 
-        var trail = new Trail();
-        CreateBlock(Vector3.zero, Vector3.forward, container.name + "::BLOCK::0", trail, blockScale, prism, container);
+    protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
+    {
+        foreach (var td in trailData)
+            SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
+    }
 
-        trails.Add(trail);
-        return container;
+    protected override int GetParameterHash()
+    {
+        return System.HashCode.Combine(blockScale, seed);
     }
 }

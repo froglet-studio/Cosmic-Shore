@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Projectiles
 {
@@ -33,7 +34,7 @@ namespace CosmicShore.Game.Projectiles
                 if (entry.poolManager == null) continue;
                 if (_pools.ContainsKey(entry.type))
                 {
-                    Debug.LogWarning($"Duplicate pool entry for type {entry.type} ignored.");
+                    CSDebug.LogWarning($"Duplicate pool entry for type {entry.type} ignored.");
                     continue;
                 }
 
@@ -51,7 +52,7 @@ namespace CosmicShore.Game.Projectiles
             
             if (!_pools.TryGetValue(type, out var pool))
             {
-                Debug.LogError($"No pool registered for ProjectileType: {type}");
+                CSDebug.LogError($"No pool registered for ProjectileType: {type}");
                 return null;
             }
 
@@ -65,7 +66,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (!_pools.TryGetValue(projectile.Type, out var pool))
             {
-                Debug.LogError($"No pool registered for ProjectileType: {projectile.Type}");
+                CSDebug.LogError($"No pool registered for ProjectileType: {projectile.Type}");
                 return;
             }
 

@@ -1,6 +1,7 @@
 using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.Serialization;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -31,13 +32,13 @@ namespace CosmicShore.Game
         {
             if (!cellData)
             {
-                Debug.LogError("No cell data found!");
+                CSDebug.LogError("No cell data found!");
                 return;
             }
             
             if (!shardFieldBus)
             {
-                Debug.LogWarning("[ShardToggleAction] No ShardFieldBus assigned!");
+                CSDebug.LogWarning("[ShardToggleAction] No ShardFieldBus assigned!");
                 return;
             }
             
@@ -45,13 +46,13 @@ namespace CosmicShore.Game
             {
                 var cell = cellData.Cell;
                 Vector3 highDensityPosition = cell.GetExplosionTarget(domain);
-                // Debug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={domain} Target={highDensityPosition}");
+                // CSDebug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={domain} Target={highDensityPosition}");
                 shardFieldBus.BroadcastPointAtPosition(highDensityPosition);
                 _redirectActive = true;
             }
             else
             {
-                // Debug.Log("[ShardToggleAction] Toggled OFF → restoring shards to crystal.");
+                // CSDebug.Log("[ShardToggleAction] Toggled OFF → restoring shards to crystal.");
                 shardFieldBus.BroadcastRestoreToCrystal();
                 _redirectActive = false;
             }

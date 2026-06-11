@@ -1,3 +1,4 @@
+using CosmicShore.Utility;
 ﻿using UnityEngine;
 
 namespace CosmicShore.Game.UI
@@ -20,7 +21,7 @@ namespace CosmicShore.Game.UI
             var ch = Channel;
             if (ch == null)
             {
-                Debug.LogWarning($"[NotificationAPI] Missing channel at Resources/{ChannelPath}");
+                CSDebug.LogWarning($"[NotificationAPI] Missing channel at Resources/{ChannelPath}");
                 return;
             }
             ch.Raise(new NotificationPayload(header, title));
@@ -32,7 +33,7 @@ namespace CosmicShore.Game.UI
             var ch = Channel;
             if (ch == null)
             {
-                Debug.LogWarning($"[NotificationAPI] Missing channel at Resources/{ChannelPath}");
+                CSDebug.LogWarning($"[NotificationAPI] Missing channel at Resources/{ChannelPath}");
                 return;
             }
             ch.Raise(payload);

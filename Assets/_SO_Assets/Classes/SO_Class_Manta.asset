@@ -14,7 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 1
   Name: Manta
-  Description: Soar at high speed through open spaces to create the biggest blocks in the Hypersea, or skim your opponents trail to steal theirs.
+  Description: Soar at high speed through open spaces to create the biggest blocks
+    in the Hypersea, or skim your opponents trail to steal theirs.
+  PrimaryElement: 3
+  Element: {fileID: 11400000, guid: 5fb31ca899377b14896945c643e92320, type: 2}
+  InitialResourceLevels:
+    Mass: 0
+    Charge: 0
+    Space: 0
+    Time: 0
   IconActive: {fileID: 21300000, guid: 3cf78c88592fff3419945dc7d6a4889a, type: 3}
   IconInactive: {fileID: 21300000, guid: d62dde48bde5ed94282c4279c33da034, type: 3}
   PreviewImage: {fileID: 21300000, guid: b3fe0f4b92e2cf74b830808e3f8d88fc, type: 3}
@@ -29,15 +37,11 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 260209c83d5be594a81043ebceea8ddf, type: 2}
   - {fileID: 11400000, guid: 2c4bb3cbbacfb02489a36a11aa4c3d1e, type: 2}
   - {fileID: 11400000, guid: 094b4c0cea37d4a4fb02edf8122006d1, type: 2}
-  Captains:
-  - {fileID: 11400000, guid: c7f13de7121d9a040a68f9988580feb0, type: 2}
-  - {fileID: 11400000, guid: 91999ba83c66ea648bf137138a53bf91, type: 2}
-  - {fileID: 11400000, guid: 2e5f4ffcc1432904db324d970ab221c4, type: 2}
-  - {fileID: 11400000, guid: 9e78c4ba90b2cf841b325a12353833dd, type: 2}
   Games:
   - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
   - {fileID: 11400000, guid: 176e63d5800dcf147b46497fd88e0fea, type: 2}
   - {fileID: 11400000, guid: c5f6d2d7142557647b39c30f48495c67, type: 2}
+  - {fileID: 11400000, guid: cf3e596b690022949856f2e4827430c7, type: 2}
   TrainingGames:
   - {fileID: 11400000, guid: 90452e7bccc992c458a9b701346fc9ad, type: 2}
   - {fileID: 11400000, guid: 90452e7bccc992c458a9b701346fc9ad, type: 2}
@@ -53,3 +57,5 @@ MonoBehaviour:
     LeftHandLabel: Solo
     RightHandLabel: Social
     Value: 0.15
+  isLocked: 1
+  UnlockCost: 4000

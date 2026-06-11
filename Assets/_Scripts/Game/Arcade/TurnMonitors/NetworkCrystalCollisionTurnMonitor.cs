@@ -2,18 +2,27 @@
 using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
     public class NetworkCrystalCollisionTurnMonitor : CrystalCollisionTurnMonitor
     {
-        [SerializeField] private HexRaceController controller;
+        [Tooltip("Assign the game controller (must implement ICrystalRaceController, e.g. HexRaceController or DragScoutingController).")]
+        [SerializeField] private MonoBehaviour controllerBehaviour;
 
+        private ICrystalRaceController _controller;
         private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(0);
 
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+
+            if (controllerBehaviour != null)
+                _controller = controllerBehaviour as ICrystalRaceController;
+
+            if (_controller == null && controllerBehaviour != null)
+                CSDebug.LogError($"[NetworkCrystalMonitor] Assigned controller '{controllerBehaviour.name}' does not implement ICrystalRaceController.");
         }
 
         public override void StartMonitor()
@@ -23,9 +32,9 @@ namespace CosmicShore.Game.Arcade
             if (!IsServer) return;
             int target = GetCrystalCollisionCount();
             _netCrystalCollisions.Value = target;
-            controller?.SetCrystalsToFinishServer(target);
+            _controller?.SetCrystalsToFinishServer(target);
 
-            Debug.Log($"[NetworkCrystalMonitor] Server set crystal target: {target} " +
+            CSDebug.Log($"[NetworkCrystalMonitor] Server set crystal target: {target} " +
                       $"(intensity={gameData.SelectedIntensity.Value})");
 
             foreach (var stat in gameData.RoundStatsList)
@@ -50,7 +59,7 @@ namespace CosmicShore.Game.Arcade
         void ServerSideCrystalSync(IRoundStats stats)
         {
             if (!IsServer) return;
-            controller?.NotifyCrystalsCollected(stats.Name, stats.CrystalsCollected);
+            _controller?.NotifyCrystalsCollected(stats.Name, stats.CrystalsCollected);
         }
 
         public override bool CheckForEndOfTurn()

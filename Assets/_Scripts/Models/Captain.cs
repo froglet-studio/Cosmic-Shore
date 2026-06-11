@@ -14,7 +14,7 @@ namespace CosmicShore.Models
         public Sprite Image;
         public Sprite Icon;
         public Sprite SelectedIcon;
-        public SO_Ship Ship;
+        public SO_Vessel Vessel;
         public Element PrimaryElement;
         [FormerlySerializedAs("Element")]
         public SO_Element SO_Element;
@@ -63,7 +63,7 @@ namespace CosmicShore.Models
             Image = so_Captain.Image;
             Icon = so_Captain.IconInactive;
             SelectedIcon = so_Captain.IconActive;
-            Ship = so_Captain.Ship;
+            Vessel = so_Captain.Vessel;
             PrimaryElement = so_Captain.PrimaryElement;
             SO_Element = so_Captain.Element;
             InitialResourceLevels = so_Captain.InitialResourceLevels;

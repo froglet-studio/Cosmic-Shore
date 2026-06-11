@@ -1,10 +1,11 @@
-﻿using UnityEngine;
+using UnityEngine;
 using System.Collections.Generic;
 using System.Text;
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using UnityEngine.Serialization;
 
-public class SpawnableLSystem : SpawnableAbstractBase
+public class SpawnableLSystem : SpawnableBase
 {
     public enum LSystemPreset
     {
@@ -42,9 +43,6 @@ public class SpawnableLSystem : SpawnableAbstractBase
     private int iterations;
     private float angle;
     private Dictionary<char, string> rulesDictionary = new Dictionary<char, string>();
-    private Stack<TransformInfo> transformStack = new Stack<TransformInfo>();
-
-    static int ObjectsSpawned = 0;
 
     private struct TransformInfo
     {
@@ -72,7 +70,7 @@ public class SpawnableLSystem : SpawnableAbstractBase
                 rulesDictionary['A'] = "F[&FL!A]/////[&FR!A]///////F!A";
                 rulesDictionary['F'] = "S //// F";
                 rulesDictionary['S'] = "F L";
-                rulesDictionary['L'] = "['''∧∧{-f+f+f-|-f+f+f}]";
+                rulesDictionary['L'] = "['''^^{-f+f+f-|-f+f+f}]";
                 break;
             case LSystemPreset.HilbertCurve3D:
                 axiom = "X";
@@ -117,17 +115,11 @@ public class SpawnableLSystem : SpawnableAbstractBase
         }
     }
 
-    public override GameObject Spawn()
+    protected override SpawnTrailData[] GenerateTrailData()
     {
-        GameObject container = new GameObject();
-        container.name = "LSystem" + ObjectsSpawned++;
-
         SetupPreset();
-
         string sequence = GenerateSequence();
-        DrawLSystem(sequence, container);
-
-        return container;
+        return BuildTrailData(sequence);
     }
 
     private string GenerateSequence()
@@ -152,15 +144,17 @@ public class SpawnableLSystem : SpawnableAbstractBase
         return result;
     }
 
-    private void DrawLSystem(string sequence, GameObject container)
+    private SpawnTrailData[] BuildTrailData(string sequence)
     {
+        var trailDataList = new List<SpawnTrailData>();
+        var transformStack = new Stack<TransformInfo>();
+
         Vector3 currentPosition = Vector3.zero;
         Quaternion currentRotation = Quaternion.identity;
         float currentWidth = baseWidth;
         float currentLength = baseLength;
 
-        Trail currentTrail = new Trail();
-        trails.Add(currentTrail);
+        var currentPoints = new List<SpawnPoint>();
 
         foreach (char c in sequence)
         {
@@ -169,8 +163,11 @@ public class SpawnableLSystem : SpawnableAbstractBase
                 case 'F':
                 case 'G':
                     Vector3 newPosition = currentPosition + currentRotation * Vector3.forward * currentLength;
-                    CreateBlock(currentPosition, newPosition, container.name + "::BLOCK::" + currentTrail.TrailList.Count,
-                                currentTrail, new Vector3(currentWidth, currentWidth, currentLength), prism, container);
+                    // Original: CreateBlock(currentPosition, newPosition, ...) with flip=true
+                    // flip=true means forward = position - lookPosition = currentPosition - newPosition
+                    var rotation = SpawnPoint.LookRotation(newPosition, currentPosition, Vector3.up);
+                    currentPoints.Add(new SpawnPoint(currentPosition, rotation,
+                        new Vector3(currentWidth, currentWidth, currentLength)));
                     currentPosition = newPosition;
                     break;
                 case '+':
@@ -202,8 +199,10 @@ public class SpawnableLSystem : SpawnableAbstractBase
                         width = currentWidth,
                         length = currentLength
                     });
-                    currentTrail = new Trail();
-                    trails.Add(currentTrail);
+                    // Flush current trail and start a new one
+                    if (currentPoints.Count > 0)
+                        trailDataList.Add(new SpawnTrailData(currentPoints.ToArray(), false, domain));
+                    currentPoints = new List<SpawnPoint>();
                     break;
                 case ']':
                     if (transformStack.Count > 0)
@@ -213,8 +212,10 @@ public class SpawnableLSystem : SpawnableAbstractBase
                         currentRotation = info.rotation;
                         currentWidth = info.width;
                         currentLength = info.length;
-                        currentTrail = new Trail();
-                        trails.Add(currentTrail);
+                        // Flush current trail and start a new one
+                        if (currentPoints.Count > 0)
+                            trailDataList.Add(new SpawnTrailData(currentPoints.ToArray(), false, domain));
+                        currentPoints = new List<SpawnPoint>();
                     }
                     break;
                 case '>':
@@ -228,5 +229,23 @@ public class SpawnableLSystem : SpawnableAbstractBase
                     break;
             }
         }
+
+        // Flush any remaining points
+        if (currentPoints.Count > 0)
+            trailDataList.Add(new SpawnTrailData(currentPoints.ToArray(), false, domain));
+
+        return trailDataList.ToArray();
+    }
+
+    protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
+    {
+        foreach (var td in trailData)
+            SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
+    }
+
+    protected override int GetParameterHash()
+    {
+        return System.HashCode.Combine(preset, baseLength, baseWidth, widthScaleReduction,
+            lengthScaleReduction, seed, customAxiom, customIterations);
     }
 }

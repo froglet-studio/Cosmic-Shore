@@ -7,6 +7,9 @@ using UnityEngine;
 public class FireGunAction : ShipAction
 {
     public event Action OnGunFired;
+
+    /// <summary>Static event: each time a gun fires a single shot. Param = player name.</summary>
+    public static event Action<string> OnShotFired;
     // TODO: WIP gun firing needs to be reworked
     [SerializeField] Gun gun;
 
@@ -45,7 +48,8 @@ public class FireGunAction : ShipAction
             Vector3 inheritedVelocity;
             if (VesselStatus.IsAttached) inheritedVelocity = gun.transform.forward;
             else inheritedVelocity = VesselStatus.Course;
-            OnGunFired?.Invoke(); 
+            OnGunFired?.Invoke();
+            OnShotFired?.Invoke(VesselStatus.PlayerName);
             gun.FireGun(projectileContainer.transform, Speed, inheritedVelocity * VesselStatus.Speed, ProjectileScale, true, ProjectileTime.Value, 0, FiringPatterns.Default, Energy);
         }
     }

@@ -3,6 +3,7 @@ using CosmicShore.Core;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Game.UI;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -62,7 +63,7 @@ namespace CosmicShore.Game.Arcade
                 _vesselTelemetry = vesselComponent.GetComponent<VesselTelemetry>();
 
             if (_vesselTelemetry == null)
-                Debug.LogWarning("[HexRaceScoreTracker] No VesselTelemetry found on local vessel.");
+                CSDebug.LogWarning("[HexRaceScoreTracker] No VesselTelemetry found on local vessel.");
 
             _isTracking = true;
         }
@@ -97,27 +98,38 @@ namespace CosmicShore.Game.Arcade
             gameData.LocalRoundStats.Score = finalScore;
 
             if (showDebugLogs)
-                Debug.Log($"<color=yellow>[HexRaceTracker] GAME END. Score: {finalScore:F2} | Winner: {isWinner} | Crystals Remaining: {crystalsRemaining}</color>");
+                CSDebug.Log($"<color=yellow>[HexRaceTracker] GAME END. Score: {finalScore:F2} | Winner: {isWinner} | Crystals Remaining: {crystalsRemaining}</color>");
 
             if (isWinner)
             {
-                // Cast to SquirrelVesselTelemetry to access vessel-specific stats for UGS.
-                // If the vessel type doesn't have those stats, they'll just be 0.
-                var squirrelTelemetry = _vesselTelemetry as SquirrelVesselTelemetry;
-
-                if (UGSStatsManager.Instance && _vesselTelemetry != null)
-                {
-                    UGSStatsManager.Instance.ReportHexRaceStats(
-                        GameModes.HexRace,
-                        gameData.SelectedIntensity.Value,
-                        squirrelTelemetry?.MaxCleanStreak ?? 0,
-                        _vesselTelemetry.MaxDriftTime,
-                        squirrelTelemetry?.JoustsWon ?? 0,
-                        finalScore
-                    );
-                }
-
+                // Report finish FIRST — this triggers the authoritative game-end flow
+                // (SyncFinalScores_ClientRpc sets RaceResultsReady and WinnerName).
+                // Telemetry must never block the critical path.
                 if (controller) controller.ReportLocalPlayerFinished(finalScore);
+
+                try
+                {
+                    var squirrelTelemetry = _vesselTelemetry as SquirrelVesselTelemetry;
+
+                    if (UGSStatsManager.Instance && _vesselTelemetry != null)
+                    {
+                        UGSStatsManager.Instance.ReportHexRaceStats(
+                            GameModes.HexRace,
+                            gameData.SelectedIntensity.Value,
+                            squirrelTelemetry?.MaxCleanStreak ?? 0,
+                            _vesselTelemetry.MaxDriftTime,
+                            squirrelTelemetry?.JoustsWon ?? 0,
+                            finalScore
+                        );
+                    }
+
+                    if (UGSStatsManager.Instance && _vesselTelemetry != null && _observedVessel != null)
+                        UGSStatsManager.Instance.ReportVesselTelemetry(_vesselTelemetry, _observedVessel.VesselType.ToString());
+                }
+                catch (System.Exception ex)
+                {
+                    CSDebug.LogError($"[HexRaceTracker] Telemetry reporting failed: {ex.Message}");
+                }
             }
 
             if (controller == null)
@@ -145,7 +157,7 @@ namespace CosmicShore.Game.Arcade
             };
 
             foreach (var kvp in stats)
-                Debug.Log($"[HexRaceScoreTracker] {kvp.Key}: {kvp.Value}");
+                CSDebug.Log($"[HexRaceScoreTracker] {kvp.Key}: {kvp.Value}");
 
             return stats;
         }

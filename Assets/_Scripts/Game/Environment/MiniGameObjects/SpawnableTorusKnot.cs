@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -19,7 +20,7 @@ namespace CosmicShore
     ///   z(t) = r · sin(q·t)
     /// where t ∈ [0, 2π) traces one full period when gcd(p,q) = 1.
     /// </summary>
-    public class SpawnableTorusKnot : SpawnableAbstractBase
+    public class SpawnableTorusKnot : SpawnableBase
     {
         [Header("Block Settings")]
         [SerializeField] Prism prism;
@@ -54,12 +55,9 @@ namespace CosmicShore
             Domains.Gold,
         };
 
-        static int ObjectsSpawned = 0;
-
-        public override GameObject Spawn()
+        protected override SpawnTrailData[] GenerateTrailData()
         {
-            var container = new GameObject($"TorusKnot{ObjectsSpawned++}");
-            int blockIndex = 0;
+            var trailDataList = new List<SpawnTrailData>();
 
             for (int s = 0; s < strands; s++)
             {
@@ -68,10 +66,7 @@ namespace CosmicShore
                     ? strandDomains[s % strandDomains.Length]
                     : domain;
 
-                var trail = new Trail();
-                trails.Add(trail);
-
-                Vector3 prevPosition = EvaluateKnot(0f, strandOffset);
+                var points = new SpawnPoint[blocksAlongKnot];
 
                 for (int i = 0; i < blocksAlongKnot; i++)
                 {
@@ -81,21 +76,26 @@ namespace CosmicShore
                     Vector3 position = EvaluateKnot(t, strandOffset);
                     Vector3 nextPosition = EvaluateKnot(tNext, strandOffset);
 
-                    CreateBlock(position, nextPosition,
-                        $"{container.name}::STRAND{s}::{blockIndex}",
-                        trail, blockScale, prism, container, strandDomain);
+                    var rotation = SpawnPoint.LookRotation(nextPosition, position, Vector3.up);
 
-                    prevPosition = position;
-                    blockIndex++;
+                    points[i] = new SpawnPoint(position, rotation, blockScale);
                 }
+
+                trailDataList.Add(new SpawnTrailData(points, false, strandDomain));
             }
 
-            return container;
+            return trailDataList.ToArray();
         }
 
-        public override GameObject Spawn(int intensityLevel)
+        protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
         {
-            return Spawn();
+            foreach (var td in trailData)
+                SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
+        }
+
+        protected override int GetParameterHash()
+        {
+            return System.HashCode.Combine(p, q, majorRadius, minorRadius, blocksAlongKnot, strands, seed, blockScale);
         }
 
         Vector3 EvaluateKnot(float t, float strandOffset)

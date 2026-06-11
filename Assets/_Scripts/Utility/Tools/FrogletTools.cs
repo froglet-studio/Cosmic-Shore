@@ -6,38 +6,46 @@ using UnityEngine;
 
 namespace CosmicShore.Utility.Tools
 {
-    public class FrogletTools : Editor
+    [InitializeOnLoad]
+    public static class FrogletTools
     {
-        [MenuItem("FrogletTools/MainScene", false, -1)]
-        private static void OpenMainScene()
+        static FrogletTools()
         {
-            // Open the Main Scene in the Editor (do not enter Play Mode)
+            LogControlWindow.LoadPrefs();
+        }
+
+        // ── Legacy menu items (all tools live in the Toolbox panel now) ──────
+
+        [MenuItem("FrogletTools/Legacy/Logging/All Logs", false, 100)]
+        static void LegacyLogAll() { CSDebug.LogLevel = CSLogLevel.All; PersistLogPrefs(); }
+
+        [MenuItem("FrogletTools/Legacy/Logging/Warnings & Errors Only", false, 101)]
+        static void LegacyLogWarn() { CSDebug.LogLevel = CSLogLevel.WarningsAndErrors; PersistLogPrefs(); }
+
+        [MenuItem("FrogletTools/Legacy/Logging/Off (Silent)", false, 102)]
+        static void LegacyLogOff() { CSDebug.LogLevel = CSLogLevel.Off; PersistLogPrefs(); }
+
+        [MenuItem("FrogletTools/Legacy/MainScene", false, 200)]
+        static void LegacyMainScene() =>
             EditorSceneManager.OpenScene("Assets/_Scenes/Menu_Main.unity", OpenSceneMode.Single);
-            Debug.LogFormat("{0} - {1} - Opening Tail Glider Main Menu scene. - Please wait a second for the scene to load.", nameof(FrogletTools), nameof(OpenMainScene));
-        }
-        
-        [MenuItem("FrogletTools/PhotoBooth", false, -1)]
-        private static void OpenPhotoBooth()
-        {
-            // Open the Photo Booth in the Editor (do not enter Play Mode)
+
+        [MenuItem("FrogletTools/Legacy/PhotoBooth", false, 201)]
+        static void LegacyPhotoBooth() =>
             EditorSceneManager.OpenScene("Assets/_Scenes/Tools/PhotoBooth.unity", OpenSceneMode.Single);
-            Debug.LogFormat("{0} - {1} - Opening Tail Glider Photo Booth.", nameof(FrogletTools), nameof(OpenPhotoBooth));
-        }
-        
-        [MenuItem("FrogletTools/RecordingStudio(WIP)", false, -1)]
-        private static void OpenRecordingStudio()
-        {
-            // Open the Photo Booth in the Editor (do not enter Play Mode)
+
+        [MenuItem("FrogletTools/Legacy/RecordingStudio(WIP)", false, 202)]
+        static void LegacyRecordingStudio() =>
             EditorSceneManager.OpenScene("Assets/_Scenes/Tools/Recording Studio.unity", OpenSceneMode.Single);
-            Debug.LogFormat("{0} - {1} - Opening Tail Glider Recording Studio.", nameof(FrogletTools), nameof(OpenRecordingStudio));
-        }
-        
-        [MenuItem("FrogletTools/PlayFabSandbox", false, -1)]
-        private static void OpenPlayFabSandbox()
+
+        [MenuItem("FrogletTools/Legacy/PlayFabSandbox", false, 203)]
+        static void LegacyPlayFabSandbox() =>
+            EditorSceneManager.OpenScene("Assets/_Scenes/TestScenes/Playfab Sandbox Test/Playfab Sandbox.unity", OpenSceneMode.Single);
+
+        static void PersistLogPrefs()
         {
-            // Open the Photo Booth in the Editor (do not enter Play Mode)
-            EditorSceneManager.OpenScene($"Assets/_Scenes/TestScenes/Playfab Sandbox Test/Playfab Sandbox.unity", OpenSceneMode.Single);
-            Debug.LogFormat("{0} - {1} - Opening PlayFab Test Sandbox.", nameof(FrogletTools), nameof(OpenPlayFabSandbox));
+            EditorPrefs.SetBool("CSDebug_LogEnabled", CSDebug.LogEnabled);
+            EditorPrefs.SetBool("CSDebug_WarningsEnabled", CSDebug.WarningsEnabled);
+            EditorPrefs.SetBool("CSDebug_ErrorsEnabled", CSDebug.ErrorsEnabled);
         }
     }
 }

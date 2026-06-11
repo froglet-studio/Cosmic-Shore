@@ -236,6 +236,7 @@ namespace CosmicShore.Game.IO
         public override void OnStrategyActivated()
         {
             base.OnStrategyActivated();
+            inputStatus.ActiveInputDevice = InputDeviceType.Keyboard;
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
         }

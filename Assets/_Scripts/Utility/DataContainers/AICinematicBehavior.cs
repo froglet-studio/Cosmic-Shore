@@ -1,5 +1,6 @@
 ﻿using CosmicShore.Game.AI;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Cinematics
 {
@@ -35,7 +36,7 @@ namespace CosmicShore.Game.Cinematics
             isActive = true;
             behaviorStartTime = Time.time;
             
-            Debug.Log($"[AICinematicBehavior] Starting behavior: {behaviorType}");
+            CSDebug.Log($"[AICinematicBehavior] Starting behavior: {behaviorType}");
             
             // Setup behavior-specific initialization
             switch (behaviorType)
@@ -53,15 +54,15 @@ namespace CosmicShore.Game.Cinematics
                     InitializeSpiral();
                     break;
                 case AICinematicBehaviorType.BarrelRoll:
-                    Debug.LogWarning("BarrelRoll not yet implemented - using MoveForward");
+                    CSDebug.LogWarning("BarrelRoll not yet implemented - using MoveForward");
                     InitializeMoveForward();
                     break;
                 case AICinematicBehaviorType.FlyBy:
-                    Debug.LogWarning("FlyBy not yet implemented - using MoveForward");
+                    CSDebug.LogWarning("FlyBy not yet implemented - using MoveForward");
                     InitializeMoveForward();
                     break;
                 case AICinematicBehaviorType.HoverSpin:
-                    Debug.LogWarning("HoverSpin not yet implemented - using MoveForward");
+                    CSDebug.LogWarning("HoverSpin not yet implemented - using MoveForward");
                     InitializeMoveForward();
                     break;
                 default:
@@ -76,7 +77,7 @@ namespace CosmicShore.Game.Cinematics
         public void StopCinematicBehavior()
         {
             isActive = false;
-            Debug.Log($"[AICinematicBehavior] Stopped behavior: {currentBehavior}");
+            CSDebug.Log($"[AICinematicBehavior] Stopped behavior: {currentBehavior}");
         }
 
         private void Update()
@@ -239,7 +240,7 @@ namespace CosmicShore.Game.Cinematics
         void ExecuteBarrelRoll()
         {
             // Will be implemented in future
-            Debug.Log("Barrel roll cinematic - To be implemented");
+            CSDebug.Log("Barrel roll cinematic - To be implemented");
         }
 
         /// <summary>
@@ -248,7 +249,7 @@ namespace CosmicShore.Game.Cinematics
         void ExecuteFlyBy()
         {
             // Will be implemented in future
-            Debug.Log("Fly-by cinematic - To be implemented");
+            CSDebug.Log("Fly-by cinematic - To be implemented");
         }
 
         /// <summary>
@@ -257,7 +258,7 @@ namespace CosmicShore.Game.Cinematics
         void ExecuteHoverSpin()
         {
             // Will be implemented in future
-            Debug.Log("Hover spin cinematic - To be implemented");
+            CSDebug.Log("Hover spin cinematic - To be implemented");
         }
 
         #endregion

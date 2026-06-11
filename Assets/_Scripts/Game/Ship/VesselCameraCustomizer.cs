@@ -2,6 +2,7 @@ using UnityEngine;
 using CosmicShore.Game;
 using CosmicShore.Game.CameraSystem;
 using CosmicShore.Utilities;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore
@@ -58,7 +59,7 @@ namespace CosmicShore
                 _cameraCtrl is CustomCameraController cccOrtho)
             {
                 cccOrtho.SetOrthographic(true, settings.orthographicSize);
-                Debug.Log($"[ShipCameraCustomizer] Orthographic override → size {settings.orthographicSize}");
+                CSDebug.Log($"[ShipCameraCustomizer] Orthographic override → size {settings.orthographicSize}");
             }
         }
         

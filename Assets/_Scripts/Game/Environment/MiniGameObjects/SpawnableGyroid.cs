@@ -1,10 +1,11 @@
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore
 {
-    public class SpawnableGyroid : SpawnableAbstractBase
+    public class SpawnableGyroid : SpawnableBase
     {
         [Header("Block Settings")]
         [SerializeField] Prism prism;
@@ -30,8 +31,6 @@ namespace CosmicShore
         [SerializeField] bool colorDangerousBlocks = true;
         [SerializeField] Domains dangerousDomain = Domains.Ruby;
 
-        static int ObjectsSpawned = 0;
-
         struct GyroidNode
         {
             public Vector3 Position;
@@ -40,16 +39,37 @@ namespace CosmicShore
             public int Depth;
         }
 
-        public override GameObject Spawn()
+        protected override SpawnTrailData[] GenerateTrailData()
         {
-            GameObject container = new GameObject();
-            container.name = "Gyroid" + ObjectsSpawned++;
+            var nodes = ComputeGyroidPositions();
+            var points = new SpawnPoint[nodes.Count];
+
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                var node = nodes[i];
+                points[i] = new SpawnPoint(node.Position, node.Rotation, blockScale);
+            }
+
+            // Store node data for SpawnLeafObjects to use for per-block domain coloring
+            _cachedNodes = nodes;
+
+            return new[] { new SpawnTrailData(points, false, domain) };
+        }
+
+        // Cache nodes for per-block domain assignment in SpawnLeafObjects
+        private List<GyroidNode> _cachedNodes;
+
+        protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
+        {
+            if (prism == null || _cachedNodes == null) return;
 
             var trail = new Trail();
-            var nodes = ComputeGyroidPositions();
+            var nodes = _cachedNodes;
 
-            foreach (var node in nodes)
+            for (int i = 0; i < nodes.Count; i++)
             {
+                var node = nodes[i];
+
                 bool isDangerous = node.BlockType is GyroidBlockType.GEs or GyroidBlockType.DE
                     or GyroidBlockType.EG or GyroidBlockType.EsD;
 
@@ -57,10 +77,9 @@ namespace CosmicShore
 
                 var block = Instantiate(prism);
                 block.ChangeTeam(blockDomain);
-                block.ownerID = "public";
+                block.ownerID = $"{container.name}::BLOCK::{i}";
                 block.transform.SetPositionAndRotation(node.Position, node.Rotation);
                 block.transform.SetParent(container.transform, false);
-                block.ownerID = $"{container.name}::BLOCK::{trail.TrailList.Count}";
                 block.TargetScale = blockScale;
                 block.Trail = trail;
                 block.Initialize();
@@ -68,12 +87,12 @@ namespace CosmicShore
             }
 
             trails.Add(trail);
-            return container;
         }
 
-        public override GameObject Spawn(int intensityLevel)
+        protected override int GetParameterHash()
         {
-            return Spawn();
+            return System.HashCode.Combine(seedBlockType, maxDepth, separationDistance, overlapCellSize,
+                System.HashCode.Combine(expandTopLeft, expandTopRight, expandBottomLeft, expandBottomRight, blockScale, seed));
         }
 
         List<GyroidNode> ComputeGyroidPositions()
@@ -82,7 +101,7 @@ namespace CosmicShore
             var occupiedCells = new HashSet<Vector3Int>();
             var queue = new Queue<GyroidNode>();
 
-            var seed = new GyroidNode
+            var seedNode = new GyroidNode
             {
                 Position = Vector3.zero,
                 Rotation = Quaternion.identity,
@@ -90,9 +109,9 @@ namespace CosmicShore
                 Depth = maxDepth
             };
 
-            queue.Enqueue(seed);
-            MarkOccupied(seed.Position, occupiedCells);
-            result.Add(seed);
+            queue.Enqueue(seedNode);
+            MarkOccupied(seedNode.Position, occupiedCells);
+            result.Add(seedNode);
 
             while (queue.Count > 0)
             {

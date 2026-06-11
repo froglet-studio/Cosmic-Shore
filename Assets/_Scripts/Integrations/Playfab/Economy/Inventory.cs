@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.PlayFab.Economy
 {
@@ -35,7 +36,7 @@ namespace CosmicShore.Integrations.PlayFab.Economy
 
         public void LoadFromDisk()
         {
-            Debug.Log("Inventory.LoadFromDisk");
+            CSDebug.Log("Inventory.LoadFromDisk");
             var tempInventory = DataAccessor.Load<Inventory>("inventory.data");
 
             crystals = tempInventory.crystals;

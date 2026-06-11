@@ -106,7 +106,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (_prismSpawnEvent == null)
             {
-                Debug.LogError("[AOEBlockCreation] Prism spawn event channel is not assigned.");
+                CSDebug.LogError("[AOEBlockCreation] Prism spawn event channel is not assigned.");
                 return null;
             }
 

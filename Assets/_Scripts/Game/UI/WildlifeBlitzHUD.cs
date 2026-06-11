@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using Obvious.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -52,7 +53,7 @@ namespace CosmicShore.Game.UI
             targetScoreToWin = newTarget;
             
             // ISSUE 1 FIX: Show target value at start
-            Debug.Log($"<color=cyan>[WildlifeBlitzHUD] Target set to {targetScoreToWin}</color>");
+            CSDebug.Log($"<color=cyan>[WildlifeBlitzHUD] Target set to {targetScoreToWin}</color>");
             UpdateScoreUI();
         }
 
@@ -88,7 +89,7 @@ namespace CosmicShore.Game.UI
             base.OnMiniGameTurnEnd();
             
             // ISSUE 1 FIX: Clear score display at end
-            Debug.Log("<color=yellow>[WildlifeBlitzHUD] Round ended - clearing displays</color>");
+            CSDebug.Log("<color=yellow>[WildlifeBlitzHUD] Round ended - clearing displays</color>");
             view.UpdateScoreUI("");
             UpdateLifeformCounterDisplay("");
         }

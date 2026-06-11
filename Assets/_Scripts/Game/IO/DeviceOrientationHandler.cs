@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using System.Collections;
 using CosmicShore.Core;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.IO
 {
@@ -71,7 +72,7 @@ namespace CosmicShore.Game.IO
                     inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
                     IInputStatus.CurrentOrientation = ScreenOrientation.LandscapeLeft;
                 }
-                Debug.Log($"Phone flip state change detected - new flip state: {phoneFlipState}, acceleration.x: {accelerationX}");
+                CSDebug.Log($"Phone flip state change detected - new flip state: {phoneFlipState}, acceleration.x: {accelerationX}");
             }
         }
 
@@ -86,7 +87,7 @@ namespace CosmicShore.Game.IO
                 }
                 coroutineRunner.StartCoroutine(AttitudeInitializationCoroutine());
             }
-            else Debug.Log("Attitude Sensor not available on this device");
+            else CSDebug.Log("Attitude Sensor not available on this device");
         }
 
         private IEnumerator AttitudeInitializationCoroutine()
@@ -97,7 +98,7 @@ namespace CosmicShore.Game.IO
             while (AttitudeSensor.current == null || !AttitudeSensor.current.enabled)
             {
                 yield return new WaitForSeconds(0.1f);
-                Debug.Log("Waiting for attitude sensor to be ready...");
+                CSDebug.Log("Waiting for attitude sensor to be ready...");
             }
 
             // Wait for the sensor to start providing real values
@@ -110,7 +111,7 @@ namespace CosmicShore.Game.IO
             {
                 lastAttitude = GetAttitude();
                 yield return new WaitForSeconds(0.1f);
-                Debug.Log($"Waiting for attitude sensor to stabilize...{lastAttitude}");
+                CSDebug.Log($"Waiting for attitude sensor to stabilize...{lastAttitude}");
             }
 
             inverseInitialRotation = Quaternion.Inverse(GyroToUnity(GetAttitude()) * derivedCorrection);

@@ -1,5 +1,6 @@
 ﻿using System.Reflection;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -32,7 +33,7 @@ namespace CosmicShore.Game
         {
             if (snowChangerPrefab == null)
             {
-                Debug.LogError("[SnowStressTestSpawner] Assign a SnowChanger prefab.");
+                CSDebug.LogError("[SnowStressTestSpawner] Assign a SnowChanger prefab.");
                 return;
             }
 
@@ -61,7 +62,7 @@ namespace CosmicShore.Game
                 count++;
             }
 
-            Debug.Log($"[SnowStressTestSpawner] Spawned {count} SnowChanger instance(s).");
+            CSDebug.Log($"[SnowStressTestSpawner] Spawned {count} SnowChanger instance(s).");
         }
 
         private void TrySetPrivateField<T>(SnowChanger sc, string fieldName, T value)
@@ -73,7 +74,7 @@ namespace CosmicShore.Game
             }
             else
             {
-                Debug.LogWarning($"[SnowStressTestSpawner] Could not set '{fieldName}'. Field missing or type mismatch.");
+                CSDebug.LogWarning($"[SnowStressTestSpawner] Could not set '{fieldName}'. Field missing or type mismatch.");
             }
         }
     }

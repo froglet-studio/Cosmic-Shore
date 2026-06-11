@@ -1,5 +1,6 @@
 using UnityEngine;
 using TMPro;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI
 {
@@ -9,7 +10,7 @@ namespace CosmicShore.App.UI
         [SerializeField] string prefix;
         void Start()
         {
-            //Debug.Log("Application Version : " + Application.version);
+            //CSDebug.Log("Application Version : " + Application.version);
             tmpText.text = prefix + " " + Application.version;
         }
     }

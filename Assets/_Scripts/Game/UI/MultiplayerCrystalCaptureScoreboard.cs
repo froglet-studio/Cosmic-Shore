@@ -6,13 +6,15 @@ namespace CosmicShore.Game.Arcade
     {
         protected override void ShowMultiplayerView()
         {
-            gameData.RoundStatsList.Sort((a, b) => b.Score.CompareTo(a.Score));
-            
-            var winner = gameData.RoundStatsList[0];
-            SetBannerForDomain(winner.Domain);
-            
+            if (gameData.RoundStatsList is { Count: > 0 })
+            {
+                gameData.RoundStatsList.Sort((a, b) => b.Score.CompareTo(a.Score));
+                SetBannerForDomain(gameData.RoundStatsList[0].Domain);
+            }
+            else if (BannerText) BannerText.text = "GAME OVER";
+
             DisplayPlayerScores();
-            
+
             if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
             if (MultiplayerView) MultiplayerView.gameObject.SetActive(true);
         }

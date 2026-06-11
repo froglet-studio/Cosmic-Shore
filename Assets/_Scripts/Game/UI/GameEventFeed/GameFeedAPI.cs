@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -27,7 +28,7 @@ namespace CosmicShore.Game.UI
             var ch = Channel;
             if (ch == null)
             {
-                Debug.LogWarning($"[GameFeedAPI] Missing channel at Resources/{ChannelPath}");
+                CSDebug.LogWarning($"[GameFeedAPI] Missing channel at Resources/{ChannelPath}");
                 return;
             }
             ch.Raise(new GameFeedPayload(message, domain, type));
@@ -40,6 +41,17 @@ namespace CosmicShore.Game.UI
             var defHex = ColorUtility.ToHtmlStringRGB(GetDomainColor(targetDomain));
 
             var message = $"<color=#{atkHex}><b>{attackerName}</b></color> jousted <color=#{defHex}><b>{targetName}</b></color>";
+
+            Post(message, Domains.Unassigned, GameFeedType.JoustHit);
+        }
+
+        public static void PostDogFightHit(string shooterName, Domains shooterDomain,
+                                            string victimName, Domains victimDomain)
+        {
+            var atkHex = ColorUtility.ToHtmlStringRGB(GetDomainColor(shooterDomain));
+            var defHex = ColorUtility.ToHtmlStringRGB(GetDomainColor(victimDomain));
+
+            var message = $"<color=#{atkHex}><b>{shooterName}</b></color> hit <color=#{defHex}><b>{victimName}</b></color>";
 
             Post(message, Domains.Unassigned, GameFeedType.JoustHit);
         }

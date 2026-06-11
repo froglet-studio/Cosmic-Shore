@@ -231,6 +231,7 @@ MonoBehaviour:
   playerNameText: {fileID: 4041450026359923739}
   playerScoreText: {fileID: 8046009182117486680}
   domainIndicatorImage: {fileID: 3788903420528318324}
+  playerAvatarImage: {fileID: 5554881382767586861}
 --- !u!1 &4836323123823065921
 GameObject:
   m_ObjectHideFlags: 0

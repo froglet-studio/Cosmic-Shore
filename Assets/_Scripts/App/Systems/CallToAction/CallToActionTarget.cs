@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.Systems.CTA
 {
@@ -18,7 +19,7 @@ namespace CosmicShore.App.Systems.CTA
         void WhenDutyCalls()
         {
             if (ActiveIndicator == null)
-                Debug.LogWarning($"CallToActionTarget does not have an ActiveIndicator set. GameObject Name: {gameObject.name}");
+                CSDebug.LogWarning($"CallToActionTarget does not have an ActiveIndicator set. GameObject Name: {gameObject.name}");
             else
                 ActiveIndicator.SetActive(true);
         }

@@ -1,6 +1,7 @@
 using UnityEngine;
 using CosmicShore.Core;
 using CosmicShore.Game;
+using CosmicShore.Utility;
 
 public class GunVesselTransformer : VesselTransformer
 {
@@ -35,7 +36,7 @@ public class GunVesselTransformer : VesselTransformer
                 if (Vessel.VesselStatus.AutoPilotEnabled && cameraManager != null)
                 {
                     cameraManager.SetNormalizedCloseCameraDistance(1);
-                    Debug.Log("camera distance now set to 1");
+                    CSDebug.Log("camera distance now set to 1");
                 }
 
                 break;
@@ -46,7 +47,7 @@ public class GunVesselTransformer : VesselTransformer
                 if (!Vessel.VesselStatus.AutoPilotEnabled && cameraManager != null)
                 {
                     cameraManager.SetNormalizedCloseCameraDistance(0);
-                    Debug.Log("camera distance now set to 0");
+                    CSDebug.Log("camera distance now set to 0");
                 }
 
                 break;

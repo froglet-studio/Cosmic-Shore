@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using CosmicShore.Game;
+using CosmicShore.Utility;
 
 namespace CosmicShore
 {
@@ -39,13 +40,13 @@ namespace CosmicShore
         {
             if (!managerData)
             {
-                Debug.LogError($"{nameof(LightFaunaManager)} on {name} is missing {nameof(LightFaunaManagerDataSO)}.");
+                CSDebug.LogError($"{nameof(LightFaunaManager)} on {name} is missing {nameof(LightFaunaManagerDataSO)}.");
                 return;
             }
 
             if (!lightFaunaPrefab)
             {
-                Debug.LogError($"{nameof(LightFaunaManager)} on {name} is missing LightFauna prefab reference.");
+                CSDebug.LogError($"{nameof(LightFaunaManager)} on {name} is missing LightFauna prefab reference.");
                 return;
             }
 

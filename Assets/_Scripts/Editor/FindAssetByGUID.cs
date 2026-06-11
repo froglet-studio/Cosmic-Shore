@@ -1,6 +1,7 @@
 using UnityEditor;
 using UnityEngine;
 using UnityEditor.SceneManagement;
+using CosmicShore.Utility;
 
 public class FindAssetByGUID : EditorWindow
 {
@@ -10,7 +11,7 @@ public class FindAssetByGUID : EditorWindow
     private string[] searchModes = { "Find Asset by GUID", "Find GameObject by File ID", "Find Sub-Asset (GUID + File ID)" };
     private Vector2 scrollPosition;
 
-    [MenuItem("FrogletTools/Find Asset by GUID")]
+    [MenuItem("FrogletTools/Legacy/Find Asset by GUID")]
     private static void ShowWindow()
     {
         GetWindow<FindAssetByGUID>("Asset & Object Finder");
@@ -54,9 +55,9 @@ public class FindAssetByGUID : EditorWindow
         // Info section
         GUILayout.Space(10);
         EditorGUILayout.HelpBox(
-            "• GUID: Identifies asset files uniquely across projects\n" +
-            "• File ID: Identifies objects within a scene or asset file\n" +
-            "• Sub-assets: Components, materials in prefabs, etc.",
+            "ï¿½ GUID: Identifies asset files uniquely across projects\n" +
+            "ï¿½ File ID: Identifies objects within a scene or asset file\n" +
+            "ï¿½ Sub-assets: Components, materials in prefabs, etc.",
             MessageType.Info);
     }
 
@@ -103,21 +104,21 @@ public class FindAssetByGUID : EditorWindow
     {
         if (string.IsNullOrEmpty(guid))
         {
-            Debug.LogWarning("Please enter a GUID");
+            CSDebug.LogWarning("Please enter a GUID");
             return;
         }
 
         string path = AssetDatabase.GUIDToAssetPath(guid);
         if (!string.IsNullOrEmpty(path))
         {
-            Debug.Log($"GUID {guid} maps to asset: {path}");
+            CSDebug.Log($"GUID {guid} maps to asset: {path}");
             Object asset = AssetDatabase.LoadAssetAtPath<Object>(path);
             EditorGUIUtility.PingObject(asset);
             Selection.activeObject = asset;
         }
         else
         {
-            Debug.LogWarning($"No asset found for GUID {guid}");
+            CSDebug.LogWarning($"No asset found for GUID {guid}");
         }
     }
 
@@ -125,7 +126,7 @@ public class FindAssetByGUID : EditorWindow
     {
         if (targetFileID == 0)
         {
-            Debug.LogWarning("Please enter a valid File ID");
+            CSDebug.LogWarning("Please enter a valid File ID");
             return;
         }
 
@@ -155,7 +156,7 @@ public class FindAssetByGUID : EditorWindow
             }
         }
 
-        Debug.LogWarning($"GameObject with File ID {targetFileID} not found in current scene.");
+        CSDebug.LogWarning($"GameObject with File ID {targetFileID} not found in current scene.");
     }
 
     private void FindInAllScenes(long targetFileID)
@@ -171,7 +172,7 @@ public class FindAssetByGUID : EditorWindow
 
             if (FindGameObjectInScene(targetFileID))
             {
-                Debug.Log($"Found in scene: {scene.name} ({scenePath})");
+                CSDebug.Log($"Found in scene: {scene.name} ({scenePath})");
                 return;
             }
         }
@@ -182,7 +183,7 @@ public class FindAssetByGUID : EditorWindow
             EditorSceneManager.OpenScene(currentScene.path, OpenSceneMode.Single);
         }
 
-        Debug.LogWarning($"GameObject with File ID {targetFileID} not found in any scene.");
+        CSDebug.LogWarning($"GameObject with File ID {targetFileID} not found in any scene.");
     }
 
     private bool FindGameObjectInScene(long targetFileID)
@@ -206,20 +207,20 @@ public class FindAssetByGUID : EditorWindow
     {
         if (string.IsNullOrEmpty(guid))
         {
-            Debug.LogWarning("Please enter a GUID");
+            CSDebug.LogWarning("Please enter a GUID");
             return;
         }
 
         if (fileID == 0)
         {
-            Debug.LogWarning("Please enter a valid File ID");
+            CSDebug.LogWarning("Please enter a valid File ID");
             return;
         }
 
         string assetPath = AssetDatabase.GUIDToAssetPath(guid);
         if (string.IsNullOrEmpty(assetPath))
         {
-            Debug.LogWarning($"No asset found for GUID {guid}");
+            CSDebug.LogWarning($"No asset found for GUID {guid}");
             return;
         }
 
@@ -232,14 +233,14 @@ public class FindAssetByGUID : EditorWindow
             long assetFileID = GetFileID(asset);
             if (assetFileID == fileID)
             {
-                Debug.Log($"Found sub-asset: {asset.name} ({asset.GetType().Name}) in {assetPath}");
+                CSDebug.Log($"Found sub-asset: {asset.name} ({asset.GetType().Name}) in {assetPath}");
                 EditorGUIUtility.PingObject(asset);
                 Selection.activeObject = asset;
                 return;
             }
         }
 
-        Debug.LogWarning($"No sub-asset found with File ID {fileID} in asset {assetPath}");
+        CSDebug.LogWarning($"No sub-asset found with File ID {fileID} in asset {assetPath}");
     }
 
     private void SelectAndLogGameObject(GameObject obj, long targetFileID)
@@ -248,7 +249,7 @@ public class FindAssetByGUID : EditorWindow
         EditorGUIUtility.PingObject(obj);
 
         string hierarchyPath = GetHierarchyPath(obj);
-        Debug.Log($"Found GameObject: {hierarchyPath} (File ID: {targetFileID})");
+        CSDebug.Log($"Found GameObject: {hierarchyPath} (File ID: {targetFileID})");
 
         // Also expand hierarchy to show the object
         EditorApplication.ExecuteMenuItem("Window/General/Hierarchy");
@@ -263,16 +264,16 @@ public class FindAssetByGUID : EditorWindow
             {
                 string assetGUID = AssetDatabase.AssetPathToGUID(path);
                 guid = assetGUID;
-                Debug.Log($"Selected asset GUID: {assetGUID} ({path})");
+                CSDebug.Log($"Selected asset GUID: {assetGUID} ({path})");
             }
             else
             {
-                Debug.LogWarning("Selected object is not an asset file");
+                CSDebug.LogWarning("Selected object is not an asset file");
             }
         }
         else
         {
-            Debug.LogWarning("No object selected");
+            CSDebug.LogWarning("No object selected");
         }
     }
 
@@ -282,11 +283,11 @@ public class FindAssetByGUID : EditorWindow
         {
             long selectedFileID = GetFileID(Selection.activeGameObject);
             fileID = selectedFileID;
-            Debug.Log($"Selected GameObject File ID: {selectedFileID} ({Selection.activeGameObject.name})");
+            CSDebug.Log($"Selected GameObject File ID: {selectedFileID} ({Selection.activeGameObject.name})");
         }
         else
         {
-            Debug.LogWarning("No GameObject selected");
+            CSDebug.LogWarning("No GameObject selected");
         }
     }
 

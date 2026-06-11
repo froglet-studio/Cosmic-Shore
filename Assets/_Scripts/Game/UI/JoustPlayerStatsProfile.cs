@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace CosmicShore.Game.Analytics
@@ -6,9 +6,7 @@ namespace CosmicShore.Game.Analytics
     [Serializable]
     public class JoustPlayerStatsProfile
     {
-        public int TotalJoustsWon;
-        public int TotalWins;
-        
+        // Key = "Mode_Intensity", Value = RaceTime (Lower is better)
         public Dictionary<string, float> BestRaceTimes = new();
 
         public bool TryUpdateBestTime(string levelKey, float newTime)
@@ -16,11 +14,11 @@ namespace CosmicShore.Game.Analytics
             if (BestRaceTimes.TryGetValue(levelKey, out var currentBest))
             {
                 if (newTime >= currentBest) return false;
-                
+
                 BestRaceTimes[levelKey] = newTime;
                 return true;
             }
-            
+
             BestRaceTimes.Add(levelKey, newTime);
             return true;
         }

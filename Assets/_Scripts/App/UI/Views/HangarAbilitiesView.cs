@@ -1,6 +1,7 @@
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -17,21 +18,21 @@ namespace CosmicShore.App.UI.Views
 
         void Start()
         {
-            if (AbilityName == null) Debug.LogWarning("HangarAbilitiesView - AbilityName Serialized Field is not set");
-            if (AbilityDescription == null) Debug.LogWarning("HangarAbilitiesView - ShipDescription Serialized Field is not set");
-            if (AbilityPreviewWindow == null) Debug.LogWarning("HangarAbilitiesView - AbilityPreviewWindow Serialized Field is not set");
-            if (ClassName == null) Debug.LogWarning("HangarAbilitiesView - ClassName Serialized Field is not set");
-            if (ClassLockedImage == null) Debug.LogWarning("HangarAbilitiesView - ClassLockedImage Serialized Field is not set");
-            if (TrainButton == null) Debug.LogWarning("HangarOverviewView - TrainButton Serialized Field is not set");
-            if (GoToStoreButton == null) Debug.LogWarning("HangarOverviewView - GoToStoreButton Serialized Field is not set");
+            if (AbilityName == null) CSDebug.LogWarning("HangarAbilitiesView - AbilityName Serialized Field is not set");
+            if (AbilityDescription == null) CSDebug.LogWarning("HangarAbilitiesView - ShipDescription Serialized Field is not set");
+            if (AbilityPreviewWindow == null) CSDebug.LogWarning("HangarAbilitiesView - AbilityPreviewWindow Serialized Field is not set");
+            if (ClassName == null) CSDebug.LogWarning("HangarAbilitiesView - ClassName Serialized Field is not set");
+            if (ClassLockedImage == null) CSDebug.LogWarning("HangarAbilitiesView - ClassLockedImage Serialized Field is not set");
+            if (TrainButton == null) CSDebug.LogWarning("HangarOverviewView - TrainButton Serialized Field is not set");
+            if (GoToStoreButton == null) CSDebug.LogWarning("HangarOverviewView - GoToStoreButton Serialized Field is not set");
         }
 
         public override void UpdateView()
         {
-            var model = SelectedModel as SO_ShipAbility;
+            var model = SelectedModel as SO_VesselAbility;
 
-            if (ClassName != null) ClassName.text = model.Ship.Name;
-            if (ClassLockedImage != null) ClassLockedImage.gameObject.SetActive(model.Ship.IsLocked);
+            if (ClassName != null) ClassName.text = model.Vessel.Name;
+            if (ClassLockedImage != null) ClassLockedImage.gameObject.SetActive(model.Vessel.IsLocked);
             if (AbilityName != null) AbilityName.text = model.Name;
             if (AbilityDescription != null) AbilityDescription.text = model.Description;
             if (AbilityPreviewWindow != null)
@@ -44,8 +45,8 @@ namespace CosmicShore.App.UI.Views
                 AbilityPreviewWindow.SetActive(true);
                 Canvas.ForceUpdateCanvases();
             }
-            if (TrainButton != null) TrainButton.gameObject.SetActive(!model.Ship.IsLocked);
-            if (GoToStoreButton != null) GoToStoreButton.gameObject.SetActive(model.Ship.IsLocked);
+            if (TrainButton != null) TrainButton.gameObject.SetActive(!model.Vessel.IsLocked);
+            if (GoToStoreButton != null) GoToStoreButton.gameObject.SetActive(model.Vessel.IsLocked);
         }
     }
 }

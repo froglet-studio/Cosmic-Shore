@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using System;
 using System.Linq;
+using CosmicShore.Utility;
 
 
 public class TrailViewer : MonoBehaviour
@@ -32,12 +33,12 @@ public class TrailViewer : MonoBehaviour
     {
         if (transparentBlocks != null)
         {
-            Debug.Log("Number of entries in originalMaterials: " + originalMaterials.Count);
+            CSDebug.Log("Number of entries in originalMaterials: " + originalMaterials.Count);
             foreach (Prism block in transparentBlocks)
             {
                 if (block.GetComponent<Renderer>().sharedMaterial.Equals(TransparentMaterial))
                 {
-                    Debug.Log("restoring material");
+                    CSDebug.Log("restoring material");
                     block.GetComponent<Renderer>().sharedMaterial = originalMaterials[block];  // Retrieve the original material
                 }
             }
@@ -61,7 +62,7 @@ public class TrailViewer : MonoBehaviour
             var block = attachedTrail.TrailList[i];
             if (!block.GetComponent<Renderer>().sharedMaterial.Equals(TransparentMaterial))
             {
-                Debug.Log("set material");
+                CSDebug.Log("set material");
                 tempMaterial = (block.GetComponent<Renderer>().material);
                 block.GetComponent<Renderer>().sharedMaterial = TransparentMaterial;
                 transparentBlocks.Add(block);

@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using CosmicShore.Core;
 using CosmicShore.Game;
 using CosmicShore.Utility.ClassExtensions;
@@ -34,6 +35,7 @@ namespace CosmicShore
 
                 if (shipStatus.VesselType == VesselClassType.Squirrel)
                 {
+                    AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.EnergyGain);
                     shipStatus.ResourceSystem.ChangeResourceAmount(energyResourceIndex, energyAmount);
                     foreach (var prism in Prisms)
                     {

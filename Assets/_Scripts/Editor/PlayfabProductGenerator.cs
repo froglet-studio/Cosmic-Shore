@@ -4,10 +4,11 @@ using PlayFab;
 using System;
 using CosmicShore.Integrations.PlayFab.Economy;
 using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Utility;
 
 public class PlayFabProductGenerator : EditorWindow
 {
-    SO_Ship selectedShip;
+    SO_Vessel selectedShip;
     SO_Captain selectedCaptain;
     static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
@@ -18,7 +19,7 @@ public class PlayFabProductGenerator : EditorWindow
     {
         // Null check for PlayFab Economy API instance
         _playFabEconomyInstanceAPI ??= new(AuthenticationManager.PlayFabAccount.AuthContext);
-        Debug.LogFormat("{0} - {1}: PlayFab Economy API initialized.", nameof(CatalogManager), nameof(InitializePlayFabEconomyAPI));
+        CSDebug.LogFormat("{0} - {1}: PlayFab Economy API initialized.", nameof(CatalogManager), nameof(InitializePlayFabEconomyAPI));
     }
 
     bool isProcessing;
@@ -35,7 +36,7 @@ public class PlayFabProductGenerator : EditorWindow
     void OnGUI()
     {
         GUILayout.Label("Generate Products from Vessel", EditorStyles.boldLabel);
-        selectedShip = (SO_Ship)EditorGUILayout.ObjectField("Vessel ScriptableObject", selectedShip, typeof(SO_Ship), false);
+        selectedShip = (SO_Vessel)EditorGUILayout.ObjectField("Vessel ScriptableObject", selectedShip, typeof(SO_Vessel), false);
 
         EditorGUI.BeginDisabledGroup(isProcessing);
         if (GUILayout.Button("Generate Products from Vessel"))
@@ -46,7 +47,7 @@ public class PlayFabProductGenerator : EditorWindow
             }
             else
             {
-                Debug.LogError("No Vessel ScriptableObject selected!");
+                CSDebug.LogError("No Vessel ScriptableObject selected!");
             }
         }
         EditorGUI.EndDisabledGroup();
@@ -64,14 +65,14 @@ public class PlayFabProductGenerator : EditorWindow
             }
             else
             {
-                Debug.LogError("No Captain ScriptableObject selected!");
+                CSDebug.LogError("No Captain ScriptableObject selected!");
             }
         }
     }
     */
 
     /*
-    private async void GenerateProductsFromShip(SO_Ship vessel)
+    private async void GenerateProductsFromShip(SO_Vessel vessel)
     {
         isProcessing = true;
         foreach (var captain in vessel.Captains)
@@ -89,7 +90,7 @@ public class PlayFabProductGenerator : EditorWindow
         // Check if the secret key is set
         if (string.IsNullOrEmpty(SecretKey))
         {
-            Debug.LogError("PlayFab Secret Key is not set. Make sure the environment variable is configured.");
+            CSDebug.LogError("PlayFab Secret Key is not set. Make sure the environment variable is configured.");
             return;
         }
 
@@ -106,11 +107,11 @@ public class PlayFabProductGenerator : EditorWindow
         {
             await EnsureTagsExists(tags);
             await CreateAndPublishCatalogItem("Captain", itemId, captain.Name, captain.Description, captain.BasePrice, "OC", tags);
-            Debug.Log($"Generated product for Captain: {captain.Name}");
+            CSDebug.Log($"Generated product for Captain: {captain.Name}");
         }
         else
         {
-            Debug.Log($"Captain product already exists: {captain.Name}");
+            CSDebug.Log($"Captain product already exists: {captain.Name}");
         }
 
         string currencyCode = captain.PrimaryElement switch
@@ -132,11 +133,11 @@ public class PlayFabProductGenerator : EditorWindow
             if (!upgradeExists)
             {
                 await CreateAndPublishCatalogItem("CaptainUpgrade", upgradeItemId, upgradeItemId, upgradeItemId, (i * 100), currencyCode, tags);
-                Debug.Log($"Generated upgrade {i} for Captain: {captain.Name}");
+                CSDebug.Log($"Generated upgrade {i} for Captain: {captain.Name}");
             }
             else
             {
-                Debug.Log($"Upgrade {i} for Captain already exists: {captain.Name}");
+                CSDebug.Log($"Upgrade {i} for Captain already exists: {captain.Name}");
             }
         }
     }
@@ -152,7 +153,7 @@ public class PlayFabProductGenerator : EditorWindow
         var taskCompletionSource = new TaskCompletionSource<GetCatalogItemsResult>();
         PlayFabAdminAPI.GetCatalogItems(request, result => taskCompletionSource.SetResult(result), error =>
         {
-            Debug.LogError("Error: " + error.GenerateErrorReport());
+            CSDebug.LogError("Error: " + error.GenerateErrorReport());
             taskCompletionSource.SetException(new Exception(error.ErrorMessage));
         });
 
@@ -178,7 +179,7 @@ public class PlayFabProductGenerator : EditorWindow
         var taskCompletionSource = new TaskCompletionSource<GetTitleDataResult>();
         PlayFabAdminAPI.GetTitleData(request, result => taskCompletionSource.SetResult(result), error =>
         {
-            Debug.LogError("Error: " + error.GenerateErrorReport());
+            CSDebug.LogError("Error: " + error.GenerateErrorReport());
             taskCompletionSource.SetException(new Exception(error.ErrorMessage));
         });
 
@@ -208,7 +209,7 @@ public class PlayFabProductGenerator : EditorWindow
             var updateTaskCompletionSource = new TaskCompletionSource<SetTitleDataResult>();
             PlayFabAdminAPI.SetTitleData(updateRequest, result => updateTaskCompletionSource.SetResult(result), error =>
             {
-                Debug.LogError("Error: " + error.GenerateErrorReport());
+                CSDebug.LogError("Error: " + error.GenerateErrorReport());
                 updateTaskCompletionSource.SetException(new Exception(error.ErrorMessage));
             });
 
@@ -258,7 +259,7 @@ public class PlayFabProductGenerator : EditorWindow
             taskCompletionSource.SetResult(result);
         }, error =>
         {
-            Debug.LogError("Error: " + error.GenerateErrorReport());
+            CSDebug.LogError("Error: " + error.GenerateErrorReport());
             taskCompletionSource.SetResult(null);
         });
 
@@ -296,7 +297,7 @@ public class PlayFabProductGenerator : EditorWindow
             taskCompletionSource.SetResult(result);
         }, error =>
         {
-            Debug.LogError("Error: " + error.GenerateErrorReport());
+            CSDebug.LogError("Error: " + error.GenerateErrorReport());
             taskCompletionSource.SetResult(null);
         });
 

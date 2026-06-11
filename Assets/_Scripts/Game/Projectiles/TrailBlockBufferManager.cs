@@ -5,6 +5,7 @@ using System.Collections;
 using CosmicShore.Utilities;
 using UnityEngine.Rendering;
 using UnityEngine.Serialization;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Game.Projectiles
@@ -105,7 +106,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (!teamBuffers.ContainsKey(domain))
             {
-                Debug.LogError($"No buffer exists for team {domain}");
+                CSDebug.LogError($"No buffer exists for team {domain}");
                 return CreateBlockForTeam(domain);
             }
 
@@ -117,7 +118,7 @@ namespace CosmicShore.Game.Projectiles
                 return block;
             }
             
-            Debug.LogWarning($"Buffer depleted for team {domain}! Falling back to direct instantiation.");
+            CSDebug.LogWarning($"Buffer depleted for team {domain}! Falling back to direct instantiation.");
             return CreateBlockForTeam(domain);
         }
 

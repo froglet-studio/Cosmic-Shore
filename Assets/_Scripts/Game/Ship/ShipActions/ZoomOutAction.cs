@@ -1,5 +1,6 @@
 using CosmicShore.Game.CameraSystem;
 using UnityEngine;
+using CosmicShore.Utility;
 
 public class ZoomOutAction : ShipAction
 {
@@ -79,7 +80,7 @@ public class ZoomOutAction : ShipAction
         
         _controller.SetCameraDistance(newZ);
         
-        Debug.Log($"[CamZoom] {_zoomDir,3} | Ratio={ratio:0.#} → Eff={eff:0.#} " + $"TargetZ={targetZ:0.#} ActZ={newZ:0.#}");
+        CSDebug.Log($"[CamZoom] {_zoomDir,3} | Ratio={ratio:0.#} → Eff={eff:0.#} " + $"TargetZ={targetZ:0.#} ActZ={newZ:0.#}");
 
         _prevRatio = ratio;
     }

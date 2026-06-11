@@ -42,6 +42,7 @@ namespace CosmicShore.Game
 
         public event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
         public event Action<IRoundStats> OnJoustCollisionChanged;
+        public event Action<IRoundStats> OnDogFightHitChanged;
 
         public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
         public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
@@ -67,7 +68,7 @@ namespace CosmicShore.Game
 
         int _crystalsCollectedLocal, _omniCrystalsCollectedLocal, _elementalCrystalsCollectedLocal;
         float _chargeCrystalValueLocal, _massCrystalValueLocal, _spaceCrystalValueLocal, _timeCrystalValueLocal;
-        int _skimmerShipCollisionsLocal, _joustCollisionsLocal;
+        int _skimmerShipCollisionsLocal, _joustCollisionsLocal, _dogFightHitsLocal;
 
         float _fullSpeedStraightAbilityActiveTimeLocal,
             _rightStickAbilityActiveTimeLocal,
@@ -160,6 +161,9 @@ namespace CosmicShore.Game
         readonly NetworkVariable<int> n_JoustCollisions =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
+        readonly NetworkVariable<int> n_DogFightHits =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_FullSpeedStraightAbilityActiveTime =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
@@ -196,6 +200,7 @@ namespace CosmicShore.Game
         /// without needing access to the private event backing field.
         /// </summary>
         public void InvokeOnJoustCollisionChanged() => RaiseSpecific(OnJoustCollisionChanged);
+        public void InvokeOnDogFightHitChanged() => RaiseSpecific(OnDogFightHitChanged);
 
         //–––––––––––––––––––––––––––––––––––––––––
         // PROPERTIES
@@ -536,6 +541,19 @@ namespace CosmicShore.Game
             }
         }
 
+        public int DogFightHits
+        {
+            get => IsSpawned ? n_DogFightHits.Value : _dogFightHitsLocal;
+            set
+            {
+                if (IsSpawned && IsServer) n_DogFightHits.Value = value;
+                else _dogFightHitsLocal = value;
+
+                if (!IsSpawned)
+                    RaiseSpecific(OnDogFightHitChanged);
+            }
+        }
+
         public float FullSpeedStraightAbilityActiveTime
         {
             get => IsSpawned ? n_FullSpeedStraightAbilityActiveTime.Value : _fullSpeedStraightAbilityActiveTimeLocal;
@@ -666,6 +684,7 @@ namespace CosmicShore.Game
 
             n_SkimmerShipCollisions.OnValueChanged       += (_, __) => RaiseSpecific(OnSkimmerShipCollisionsChanged);
             n_JoustCollisions.OnValueChanged             += (_, __) => RaiseSpecific(OnJoustCollisionChanged);
+            n_DogFightHits.OnValueChanged               += (_, __) => RaiseSpecific(OnDogFightHitChanged);
 
             n_FullSpeedStraightAbilityActiveTime.OnValueChanged += (_, __) => RaiseSpecific(OnFullSpeedStraightAbilityActiveTimeChanged);
             n_RightStickAbilityActiveTime.OnValueChanged        += (_, __) => RaiseSpecific(OnRightStickAbilityActiveTimeChanged);

@@ -1,9 +1,11 @@
 using CosmicShore.Core;
 using CosmicShore.Game;
+using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
-public class SpawnableWaypointTrack : SpawnableAbstractBase
+public class SpawnableWaypointTrack : SpawnableBase
 {
     [Header("Waypoints")]
     [Tooltip("List of position sets for each intensity level. The track will close from the last point back to the first.")]
@@ -36,7 +38,11 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
     [Tooltip("Which intensity level to preview in the editor")]
     [SerializeField] int previewIntensityLevel = 0;
 
-    static int TracksSpawned = 0;
+    protected override int GetParameterHash()
+    {
+        return System.HashCode.Combine(seed, blocksPerSegment, scale, markWaypoints,
+            waypointScaleMultiplier, waypointDomain, trackDomain, intensityLevel);
+    }
 
     private bool UseSpline(int intensityLevel)
     {
@@ -69,22 +75,19 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
         return CatmullRom(p0, p1, p2, p3, t);
     }
 
-    public override GameObject Spawn()
+    public override GameObject Spawn(int intensity = 1)
     {
-        return Spawn(intensityLevel: 1);
-    }
+        intensityLevel = intensity;
+        trails.Clear();
 
-    public override GameObject Spawn(int intensityLevel)
-    {
-        this.intenstyLevel = intensityLevel;
         if (!IsValidIntensityLevel(intensityLevel))
         {
-            Debug.LogError($"[WaypointTrack] Need at least 2 waypoints for intensity level {intensityLevel}.");
+            CSDebug.LogError($"[WaypointTrack] Need at least 2 waypoints for intensity level {intensityLevel}.");
             return new GameObject("EmptyTrack");
         }
 
         GameObject container = new GameObject();
-        container.name = $"WaypointTrack_{TracksSpawned++}";
+        container.name = $"WaypointTrack_{name}";
 
         var trail = new Trail();
         int totalBlocks = 0;
@@ -139,8 +142,17 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
                 Prism blockPrism = (isWaypointMarker && waypointPrism != null) ? waypointPrism : prism;
                 Domains blockDomain = isWaypointMarker ? waypointDomain : trackDomain;
 
-                CreateBlock(position, lookTarget, $"{container.name}::BLOCK::{totalBlocks}",
-                           trail, blockScale, blockPrism, container, blockDomain);
+                var rotation = SpawnPoint.LookRotation(position, lookTarget, Vector3.up);
+
+                var block = Instantiate(blockPrism, container.transform);
+                block.ChangeTeam(blockDomain);
+                block.ownerID = $"{container.name}::BLOCK::{totalBlocks}";
+                block.transform.localPosition = position;
+                block.transform.localRotation = rotation;
+                block.TargetScale = blockScale;
+                block.Trail = trail;
+                block.Initialize();
+                trail.Add(block);
 
                 totalBlocks++;
             }
@@ -148,7 +160,7 @@ public class SpawnableWaypointTrack : SpawnableAbstractBase
 
         trails.Add(trail);
 
-        Debug.Log($"[WaypointTrack] Generated track with {positions.Count} waypoints, " +
+        CSDebug.Log($"[WaypointTrack] Generated track with {positions.Count} waypoints, " +
            $"{totalBlocks} total blocks, spline={spline}, approximate length: {EstimateTrackLength(intensityLevel):F0} units");
 
         return container;

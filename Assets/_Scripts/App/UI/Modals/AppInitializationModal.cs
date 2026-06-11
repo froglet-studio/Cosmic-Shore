@@ -7,6 +7,7 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Modals
 {
@@ -74,7 +75,7 @@ namespace CosmicShore.App.UI.Modals
             }
             InitializingText.text = "Offline Mode";
 
-            Debug.LogWarning("Entering Offline Mode");
+            CSDebug.LogWarning("Entering Offline Mode");
             StartCoroutine(CloseCoroutine());
         }
 

@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using UnityEngine;
 using CosmicShore.Game;
 
@@ -10,6 +11,7 @@ public class ModifyVelocityActionSO
 
     public override void StartAction(ActionExecutorRegistry execs, IVesselStatus vesselStatus)
     {
+        AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.SpeedBurst);
         vesselStatus.VesselTransformer.ModifyVelocity(vesselStatus.Vessel.Transform.forward * magnitude, duration);
     }
 

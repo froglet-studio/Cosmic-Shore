@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Screens
 {
@@ -62,10 +63,10 @@ namespace CosmicShore.App.UI.Screens
 
         void OnFetchLeaderboard(List<LeaderboardManager.LeaderboardEntry> results)
         {
-            Debug.Log("OnFetchLeaderboard");
+            CSDebug.Log("OnFetchLeaderboard");
             foreach (var result in results)
             {
-                Debug.Log($"Leaderboard Result - {result.Position} | {result.DisplayName} | {result.Score}");
+                CSDebug.Log($"Leaderboard Result - {result.Position} | {result.DisplayName} | {result.Score}");
             }
 
             LeaderboardEntriesV2 = results;
@@ -94,7 +95,7 @@ namespace CosmicShore.App.UI.Screens
 
         public void SelectGame(int index)
         {
-            Debug.Log($"SelectGame: {index}");
+            CSDebug.Log($"SelectGame: {index}");
 
             // Deselect them all
             for (var i = 0; i < _displayCount; i++)
@@ -118,7 +119,7 @@ namespace CosmicShore.App.UI.Screens
             {
                 var selectionIndex = i;
                 var game = LeaderboardEligibleGames[i];
-                Debug.Log($"Populating Game Select List: {game.DisplayName}");
+                CSDebug.Log($"Populating Game Select List: {game.DisplayName}");
 
                 try
                 {
@@ -132,7 +133,7 @@ namespace CosmicShore.App.UI.Screens
                 }
                 catch (UnityException outOfBoundException)
                 {
-                    Debug.LogWarningFormat("{0} Leaderboard entries are more than the UI selections can handle, please add more game selections for them./n See error: {1}", nameof(LeaderboardsMenu), outOfBoundException.Message);
+                    CSDebug.LogWarningFormat("{0} Leaderboard entries are more than the UI selections can handle, please add more game selections for them./n See error: {1}", nameof(LeaderboardsMenu), outOfBoundException.Message);
                 }
                 
             }
@@ -144,12 +145,18 @@ namespace CosmicShore.App.UI.Screens
         {
             var options = new List<TMP_Dropdown.OptionData>();
 
-            // Only add "Any" selection if there is more than one captain class available
-            if (SelectedGame.Captains.Count > 1)
+            // Only add "Any" selection if there is more than one vessel available
+            if (SelectedGame.Vessels != null && SelectedGame.Vessels.Count > 1)
                 options.Add(new TMP_Dropdown.OptionData("Any"));
 
-            foreach (var captain in SelectedGame.Captains)
-                options.Add(new TMP_Dropdown.OptionData(captain.Ship.Class.ToString()));
+            if (SelectedGame.Vessels != null)
+            {
+                foreach (var vessel in SelectedGame.Vessels)
+                {
+                    if (vessel != null)
+                        options.Add(new TMP_Dropdown.OptionData(vessel.Class.ToString()));
+                }
+            }
 
             ShipClassSelection.options = options;
             ShipClassSelection.value = 0;
@@ -158,12 +165,12 @@ namespace CosmicShore.App.UI.Screens
 
         void PopulateGameHighScores()
         {
-            Debug.Log($"PopulateGameHighScores: {SelectedGame.DisplayName}");
+            CSDebug.Log($"PopulateGameHighScores: {SelectedGame.DisplayName}");
 
             // High Scores Container null check
             if (HighScoresContainer == null)
             {
-                Debug.LogWarning($"{nameof(HighScoresContainer)} game object destroyed.");
+                CSDebug.LogWarning($"{nameof(HighScoresContainer)} game object destroyed.");
                 return;
             }
 

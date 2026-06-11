@@ -2,6 +2,7 @@ using UnityEngine;
 using System.Collections;
 using CosmicShore.Game;
 using CosmicShore.Soap;
+using CosmicShore.Utility;
 
 /// <summary>
 /// Used for testing only (scene TestHarnessOctree).  Prints coordinates for three target sets (one for each color).
@@ -16,7 +17,7 @@ public class TestHarnessOctreeDensitySearch : MonoBehaviour
     {
         if (!cellData)
         {
-            Debug.LogError($"Cell data not found!");
+            CSDebug.LogError($"Cell data not found!");
             return;
         }
         
@@ -33,8 +34,8 @@ public class TestHarnessOctreeDensitySearch : MonoBehaviour
         foreach (Domains t in teams)
         {
             Vector3 explosionTarget = targetNode.GetExplosionTarget(t);
-            Debug.Log($"Found explosion target in node {targetNode.ID} for team {t}:");
-            Debug.Log($"Target position: {explosionTarget}, Block count density: {targetNode.countGrids[t].GetDensityAtPosition(explosionTarget)}");
+            CSDebug.Log($"Found explosion target in node {targetNode.ID} for team {t}:");
+            CSDebug.Log($"Target position: {explosionTarget}, Block count density: {targetNode.countGrids[t].GetDensityAtPosition(explosionTarget)}");
         }
     }
 }

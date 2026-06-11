@@ -9,6 +9,7 @@ using Unity.Netcode;
 using Unity.Services.Multiplayer;
 using UnityEngine;
 using IPlayer = CosmicShore.Game.IPlayer;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Soap
 {
@@ -50,7 +51,7 @@ namespace CosmicShore.Soap
         public IntVariable VesselClassSelectedIndex;
         public IntVariable SelectedPlayerCount;
         public IntVariable SelectedIntensity;
-        public SO_Captain PlayerCaptain;
+        public int SelectedTeamCount = 1;
         public ResourceCollection ResourceCollection;
         public ThemeManagerDataContainerSO ThemeManagerData;
         
@@ -58,11 +59,28 @@ namespace CosmicShore.Soap
         // Game Config / State
         public string SceneName;
         public GameModes GameMode;
+
+        /// <summary>
+        /// Domain the local player chose from the config UI.
+        /// Domains.Unassigned means "random" (use DomainAssigner as before).
+        /// </summary>
+        public Domains PreferredDomain = Domains.Unassigned;
+        /// <summary>
+        /// Plain int copy of SelectedIntensity that survives Soap's scene-load reset.
+        /// Set by Arcade.cs alongside SelectedIntensity.Value. Read at game end.
+        /// </summary>
+        public int PlayedIntensity = 1;
         public string LocalPlayerDisplayName;
+        public int LocalPlayerAvatarId;
         public bool IsDailyChallenge;
         public bool IsTraining;
         public bool IsMission;
         public bool IsMultiplayerMode;
+        /// <summary>
+        /// When true, lower scores are better (time-based modes).
+        /// Set automatically by SortRoundStats / CalculateDomainStats.
+        /// </summary>
+        public bool IsGolfRules { get; private set; }
         public List<IPlayer> Players = new();
         public List<IVessel> Vessels = new();
         public List<IRoundStats> RoundStatsList = new();
@@ -89,15 +107,19 @@ namespace CosmicShore.Soap
 
         public void SetupForMultiplayer()
         {
+            // Ensure the domain pool is fresh for the new session. The team count
+            // determines how many distinct domains are available for assignment.
+            DomainAssigner.Initialize(SelectedTeamCount);
+
             if (Players == null || Players.Count == 0)
                 return;
-            
+
             for (int i = Players.Count - 1; i >= 0; i--)
             {
                 Players[i].Vessel?.DestroyVessel();
                 Players[i].DestroyPlayer();
             }
-            
+
             Players.Clear();
         }
 
@@ -180,7 +202,7 @@ namespace CosmicShore.Soap
         {
             if (RoundStatsList == null || RoundStatsList.Count == 0)
             {
-                Debug.LogError("Cannot Replay game mode, no round stats data found!");
+                CSDebug.LogError("Cannot Replay game mode, no round stats data found!");
                 return;
             }
             
@@ -197,32 +219,34 @@ namespace CosmicShore.Soap
             VesselClassSelectedIndex.Value = 1;
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
-            
+            PlayedIntensity = 1;
+            PreferredDomain = Domains.Unassigned;
+
             ResetRuntimeData();
-            
-            DomainAssigner.Initialize();
+
+            DomainAssigner.Initialize(SelectedTeamCount);
         }
 
         public void AddPlayer(IPlayer p)
         {
-            if (p == null) 
+            if (p == null)
                 return;
 
             // Avoid duplicates by Name
             if (Players.All(player => player.Name != p.Name))
                 Players.Add(p);
-            
-            if (RoundStatsList.All(rs => rs.Name != p.Name)) 
+
+            if (RoundStatsList.All(rs => rs.Name != p.Name))
                 RoundStatsList.Add(p.RoundStats);
-            
+
             if (p.IsLocalUser)
             {
                 LocalPlayer = p;
                 LocalRoundStats = p.RoundStats;
             }
-            
+
             p.ResetForPlay();
-            
+
             if (!NetworkManager.Singleton || NetworkManager.Singleton.IsServer)
                 p.SetPoseOfVessel(GetRandomSpawnPose());
 
@@ -231,6 +255,7 @@ namespace CosmicShore.Soap
         
         public void SortRoundStats(bool golfRules)
         {
+            IsGolfRules = golfRules;
             if (golfRules)
                 RoundStatsList.Sort((score1, score2) => score1.Score.CompareTo(score2.Score));
             else
@@ -287,11 +312,33 @@ namespace CosmicShore.Soap
         public bool IsLocalDomainWinner(out DomainStats stats)
         {
             stats = default;
+            if (DomainStatsList == null || DomainStatsList.Count == 0 || LocalPlayer == null)
+                return false;
+
+            // The first entry in the sorted list is the winner
+            var winnerDomain = DomainStatsList[0];
+
+            // Find the local player's domain stats
             foreach (var stat in DomainStatsList.Where(stat => stat.Domain == LocalPlayer.Domain))
             {
                 stats = stat;
             }
-            return stats.Domain == LocalPlayer.Domain;
+
+            return winnerDomain.Domain == LocalPlayer.Domain;
+        }
+
+        /// <summary>
+        /// Returns the winning domain (first entry in the sorted DomainStatsList).
+        /// DomainStatsList must be sorted before calling this.
+        /// </summary>
+        public bool TryGetWinningDomain(out DomainStats winner)
+        {
+            winner = default;
+            if (DomainStatsList == null || DomainStatsList.Count == 0)
+                return false;
+
+            winner = DomainStatsList[0];
+            return true;
         }
         
         public void SetPlayersActive()
@@ -413,13 +460,13 @@ namespace CosmicShore.Soap
             won = false;
             if (RoundStatsList is null || RoundStatsList.Count == 0)
             {
-                Debug.LogError("No round stats found to calculate winner!");
+                CSDebug.LogError("No round stats found to calculate winner!");
                 return false;
             }
 
             if (!TryGetLocalPlayerStats(out IPlayer _, out roundStats))
             {
-                Debug.LogError("No round stats of active player found!");
+                CSDebug.LogError("No round stats of active player found!");
                 return false;   
             }
             
@@ -433,7 +480,7 @@ namespace CosmicShore.Soap
         {
             if (spawnTransforms == null)
             {
-                Debug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
+                CSDebug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
                 return;
             }
             
@@ -449,7 +496,7 @@ namespace CosmicShore.Soap
             
             if (SpawnPoses == null || SpawnPoses.Length == 0)
             {
-                Debug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
+                CSDebug.LogError("[ServerPlayerVesselInitializer] PlayerSpawnPoints array not set or empty.");
                 return;
             }
 
@@ -470,7 +517,7 @@ namespace CosmicShore.Soap
                 }
             }
 
-            Debug.LogError($"No player found {clientId}");
+            CSDebug.LogError($"No player found {clientId}");
             return false;
         }
 
@@ -510,10 +557,15 @@ namespace CosmicShore.Soap
         {
             if (_playerSpawnPoseList == null || _playerSpawnPoseList.Count == 0)
             {
+                if (SpawnPoses == null || SpawnPoses.Length == 0)
+                {
+                    CSDebug.LogError("[GameDataSO] SpawnPoses is null or empty — returning default pose at origin.");
+                    return new Pose(Vector3.zero, Quaternion.identity);
+                }
                 _playerSpawnPoseList = new List<Pose>(SpawnPoses.Length);
                 _playerSpawnPoseList = SpawnPoses.ToList();
             }
-            
+
             int index = UnityEngine.Random.Range(0, _playerSpawnPoseList.Count);
             var spawnPoint = _playerSpawnPoseList[index];
             _playerSpawnPoseList.RemoveAt(index);

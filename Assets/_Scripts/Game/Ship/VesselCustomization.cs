@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -36,12 +37,12 @@ namespace CosmicShore.Game
         {
             if (vesselStatus == null)
             {
-                Debug.LogError("VesselStatus is null. Cannot initialize VesselCustomization.");
+                CSDebug.LogError("VesselStatus is null. Cannot initialize VesselCustomization.");
                 return false;
             }
             if (_shipGeometries == null || _shipGeometries.Count == 0)
             {
-                Debug.LogError("Vessel geometries are not set. Cannot apply vessel material.");
+                CSDebug.LogError("Vessel geometries are not set. Cannot apply vessel material.");
                 return false;
             }
             return true;

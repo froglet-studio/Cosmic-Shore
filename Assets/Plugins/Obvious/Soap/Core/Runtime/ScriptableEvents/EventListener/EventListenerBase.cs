@@ -16,7 +16,11 @@ namespace Obvious.Soap
 
         [SerializeField] protected Binding _binding = Binding.UNTIL_DESTROY;
         [SerializeField] protected bool _disableAfterSubscribing = false;
-        protected readonly CancellationTokenSource _cancellationTokenSource = new CancellationTokenSource();
+
+        // Lazy-initialized: only allocated when the async delay path is actually used.
+        // Eliminates ~3 GC allocations per instance at Awake time.
+        private CancellationTokenSource _cancellationTokenSource;
+        protected CancellationToken CancellationToken => (_cancellationTokenSource ??= new CancellationTokenSource()).Token;
 
         protected abstract void ToggleRegistration(bool toggle);
 
@@ -44,7 +48,7 @@ namespace Obvious.Soap
             if (_binding == Binding.UNTIL_DISABLE)
             {
                 ToggleRegistration(false);
-                _cancellationTokenSource.Cancel();
+                _cancellationTokenSource?.Cancel();
             }
         }
 
@@ -53,7 +57,7 @@ namespace Obvious.Soap
             if (_binding == Binding.UNTIL_DESTROY)
             {
                 ToggleRegistration(false);
-                _cancellationTokenSource.Cancel();
+                _cancellationTokenSource?.Cancel();
             }
         }
     }

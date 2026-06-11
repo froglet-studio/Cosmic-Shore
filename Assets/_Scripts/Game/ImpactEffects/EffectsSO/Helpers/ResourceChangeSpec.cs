@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game
 {
@@ -19,11 +20,11 @@ namespace CosmicShore.Game
             if (_resourceIndex < 0 || _resourceIndex >= list.Count)
             {
 #if UNITY_EDITOR
-                Debug.LogWarning($"Resource index {_resourceIndex} out of range ({list.Count}).", context);
+                CSDebug.LogWarning($"Resource index {_resourceIndex} out of range ({list.Count}).", context);
 #endif
                 return;
             }
-            Debug.Log($"<color=green> Resource amount changed to {_resourceAmount}");
+            CSDebug.Log($"<color=green> Resource amount changed to {_resourceAmount}");
             
             if (_overrideAmount)
                 rs.SetResourceAmount(_resourceIndex, _resourceAmount);

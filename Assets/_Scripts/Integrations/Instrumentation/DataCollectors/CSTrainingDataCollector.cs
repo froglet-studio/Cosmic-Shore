@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using CosmicShore._Scripts.Integrations.Instrumentation.Firebase;
 using CosmicShore.Integrations.Instrumentation.Interfaces;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.Instrumentation.DataCollectors
 {
@@ -12,19 +13,19 @@ namespace CosmicShore.Integrations.Instrumentation.DataCollectors
         public async Task InitSDK()
         {
             await Task.Delay(1);    // Hide console warning until this is connected
-            Debug.Log("CSTrainingDataCollector - Initializing Training Data Collector.");
+            CSDebug.Log("CSTrainingDataCollector - Initializing Training Data Collector.");
         }
 
         public void LogEventStartTraining(string gameType, int intensity, string shipType)
         {
-            Debug.Log("CSTrainingDataCollector - Triggering Start Training event.");
+            CSDebug.Log("CSTrainingDataCollector - Triggering Start Training event.");
             _trainingDataCollectorFirebase.LogEventStartTraining(gameType, intensity, shipType);
         }
 
         public void LogEventCompleteTraining(
             string gameType, int intensity, string shipType, int score, int reward, DateTime playTime)
         {
-            Debug.Log("CSTrainingDataCollector - Triggering Complete Training event.");
+            CSDebug.Log("CSTrainingDataCollector - Triggering Complete Training event.");
             _trainingDataCollectorFirebase.LogEventCompleteTraining(
                 gameType, intensity, shipType, score, reward, playTime);
         }

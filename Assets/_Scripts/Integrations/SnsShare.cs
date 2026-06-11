@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine.UI;
 using UnityEngine;
 using CosmicShore.Game;
+using CosmicShore.Utility;
 
 
 /// <summary>
@@ -47,7 +48,7 @@ public class SnsShare : MonoBehaviour
 
         new NativeShare().AddFile(filePath)
             .SetSubject("").SetText("").SetUrl("")
-            .SetCallback((res, target) => { Debug.Log($"result {res}, target app: {target}"); Screen.orientation = ScreenOrientation.LandscapeLeft; })
+            .SetCallback((res, target) => { CSDebug.Log($"result {res}, target app: {target}"); Screen.orientation = ScreenOrientation.LandscapeLeft; })
             .Share();
         screenshotButton.gameObject.SetActive(true);
         //replayButton.gameObject.SetActive(true);

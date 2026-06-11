@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,6 +21,7 @@ namespace CosmicShore.App.UI.Elements
         {
             int sign = status ? 1 : -1;
             handleRectTransform.localPosition += sign * handleDisplacement;
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.OptionClick);
         }
 
         private void OnDestroy()

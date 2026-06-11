@@ -98,7 +98,7 @@ namespace CosmicShore
 
             var leaves = GetComponentsInChildren<HealthPrism>(true);
             if (leaves != null && leaves.Length != 0) yield break;
-            Debug.LogWarning($"{name}: BranchingFlora had no HealthPrisms after {seconds}s. Auto-dying.");
+            CSDebug.LogWarning($"{name}: BranchingFlora had no HealthPrisms after {seconds}s. Auto-dying.");
             Die();
         }
         void SeedBranches()

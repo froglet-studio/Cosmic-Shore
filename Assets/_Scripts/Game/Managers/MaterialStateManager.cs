@@ -4,6 +4,7 @@ using Unity.Jobs;
 using Unity.Mathematics;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -110,7 +111,7 @@ namespace CosmicShore.Core
                             }
                             catch (System.Exception e)
                             {
-                                Debug.LogError($"Error in animation completion callback: {e.Message}");
+                                CSDebug.LogError($"Error in animation completion callback: {e.Message}");
                             }
                             animator.OnAnimationComplete = null;
                         }

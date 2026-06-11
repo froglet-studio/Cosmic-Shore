@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -17,18 +18,18 @@ namespace CosmicShore.App.UI.Views
 
         void Start()
         {
-            if (ShipName == null) Debug.LogWarning("HangarOverviewView - ShipName Serialized Field is not set");
-            if (ShipDescription == null) Debug.LogWarning("HangarOverviewView - ShipDescription Serialized Field is not set");
-            if (ShipPreviewImage == null) Debug.LogWarning("HangarOverviewView - ShipPreviewImage Serialized Field is not set");
-            if (ShipLockedImage == null) Debug.LogWarning("HangarOverviewView - ShipLockedImage Serialized Field is not set");
-            if (TrainButton == null) Debug.LogWarning("HangarOverviewView - TrainButton Serialized Field is not set");
-            if (UnlockMessagePanel == null) Debug.LogWarning("HangarOverviewView - UnlockMessagePanel Serialized Field is not set");
-            if (HangarGameplayParameterDisplayGroup == null) Debug.LogWarning("HangarOverviewView - HangarGameplayParameterDisplayGroup Serialized Field is not set");
+            if (ShipName == null) CSDebug.LogWarning("HangarOverviewView - ShipName Serialized Field is not set");
+            if (ShipDescription == null) CSDebug.LogWarning("HangarOverviewView - ShipDescription Serialized Field is not set");
+            if (ShipPreviewImage == null) CSDebug.LogWarning("HangarOverviewView - ShipPreviewImage Serialized Field is not set");
+            if (ShipLockedImage == null) CSDebug.LogWarning("HangarOverviewView - ShipLockedImage Serialized Field is not set");
+            if (TrainButton == null) CSDebug.LogWarning("HangarOverviewView - TrainButton Serialized Field is not set");
+            if (UnlockMessagePanel == null) CSDebug.LogWarning("HangarOverviewView - UnlockMessagePanel Serialized Field is not set");
+            if (HangarGameplayParameterDisplayGroup == null) CSDebug.LogWarning("HangarOverviewView - HangarGameplayParameterDisplayGroup Serialized Field is not set");
         }
 
         public override void UpdateView()
         {
-            var model = SelectedModel as SO_Ship;
+            var model = SelectedModel as SO_Vessel;
 
             if (ShipName != null) ShipName.text = model.Name;
             if (ShipDescription != null) ShipDescription.text = model.Description;

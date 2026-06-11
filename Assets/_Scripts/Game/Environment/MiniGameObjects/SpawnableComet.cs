@@ -1,14 +1,14 @@
 using CosmicShore.Core;
-using CosmicShore.Utility;
+using CosmicShore.Game.Spawning;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
 namespace CosmicShore
 {
-    public class SpawnableComet : SpawnableAbstractBase
+    public class SpawnableComet : SpawnableBase
     {
         [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
-        static int CometsSpawned = 0;
 
         #region Attributes for Explosion Parameters
         [Header("Block Parameters")]
@@ -22,67 +22,72 @@ namespace CosmicShore
         [SerializeField] Vector3 Orgin;
         #endregion
 
-        public override GameObject Spawn()
+        protected override SpawnTrailData[] GenerateTrailData()
         {
-            GameObject container = new GameObject();
-            container.name = "COMET" + CometsSpawned++;
+            int totalRings = ringCountHead + ringCountTail;
+            var trailDataList = new List<SpawnTrailData>(totalRings);
 
-            var trail = new Trail();
-
-            // Head //
-            for (int ring = 0; ring < ringCountHead; ring++) //ring = X value
+            // Head
+            for (int ring = 0; ring < ringCountHead; ring++)
             {
-                trails.Add(new Trail());
-
-                // Creates increasing hemisphere
+                var points = new SpawnPoint[blockCount];
                 for (int block = 0; block < blockCount; block++)
                 {
-                    float scale = Mathf.Sqrt(Mathf.Pow(headRadius, 2) - Mathf.Pow(((ring / (float)ringCountHead) - 1) * headRadius, 2));   //y = sqrt(R^2 -X^2) scales the ring radius
-                    CreateRingBlock(block, ring % 2 * 0.5f, scale, -headRadius, ring * headRadius/ringCountHead , trails[ring], container);
-                }
-            }
-            // Tail //
-            for (int ring = ringCountHead; ring < ringCountTail + ringCountHead; ring++) //ring = X value
-            {
-                trails.Add(new Trail());
+                    float scale = Mathf.Sqrt(Mathf.Pow(headRadius, 2) - Mathf.Pow(((ring / (float)ringCountHead) - 1) * headRadius, 2));
+                    float tilt = -headRadius;
+                    float distanceTowardTail = ring * headRadius / ringCountHead;
+                    float phase = ring % 2 * 0.5f;
 
-                // Creates increasing hemisphere
+                    points[block] = CreateRingPoint(block, phase, scale, tilt, distanceTowardTail);
+                }
+                trailDataList.Add(new SpawnTrailData(points, false, domain));
+            }
+
+            // Tail
+            for (int ring = ringCountHead; ring < ringCountHead + ringCountTail; ring++)
+            {
+                var points = new SpawnPoint[blockCount];
                 for (int block = 0; block < blockCount; block++)
                 {
-                    float scale = (.5f*Mathf.Cos((ring - ringCountHead) / ((float)ringCountTail)*Mathf.PI) + .5f) * headRadius;
+                    float scale = (0.5f * Mathf.Cos((ring - ringCountHead) / ((float)ringCountTail) * Mathf.PI) + 0.5f) * headRadius;
+                    float tilt = -headRadius - ((ring - ringCountHead) / (float)ringCountTail * tailLength);
+                    float distanceTowardTail = ((ring - ringCountHead) * tailLength / ringCountTail) + headRadius;
+                    float phase = ring % 2 * 0.5f;
 
-                    CreateRingBlock(block, ring % 2 * 0.5f, scale,-headRadius - ((ring - ringCountHead) / (float)ringCountTail * tailLength),
-                        ((ring - ringCountHead) * tailLength / ringCountTail) + headRadius, trails[ring], container);
+                    points[block] = CreateRingPoint(block, phase, scale, tilt, distanceTowardTail);
                 }
+                trailDataList.Add(new SpawnTrailData(points, false, domain));
             }
-            return container;
+
+            return trailDataList.ToArray();
         }
 
-        //Phase (0-.5) offsets everyother ring
-        private void CreateRingBlock(int block, float phase, float scale, float tilt, float distanceTowardTail, Trail trail, GameObject container)
+        private SpawnPoint CreateRingPoint(int block, float phase, float scale, float tilt, float distanceTowardTail)
         {
-            var offset = scale * Mathf.Cos(((block + phase) / blockCount) * 2 * Mathf.PI) * transform.right +
-                         scale * Mathf.Sin(((block + phase) / blockCount) * 2 * Mathf.PI) * transform.up +
-                         distanceTowardTail * -transform.forward;
-            var tempBlockscale = new Vector3(blockScale.x * scale, blockScale.y, blockScale.z * scale);
+            var offset = scale * Mathf.Cos(((block + phase) / blockCount) * 2 * Mathf.PI) * Vector3.right +
+                         scale * Mathf.Sin(((block + phase) / blockCount) * 2 * Mathf.PI) * Vector3.up +
+                         distanceTowardTail * -Vector3.forward;
 
-            CreateBlock(transform.position + offset, tilt * transform.forward - (offset + transform.position), transform.forward, container.name + "::BLOCK::" + block, trail, tempBlockscale, prism, container, domain);
+            var position = offset;
+            var tempBlockScale = new Vector3(blockScale.x * scale, blockScale.y, blockScale.z * scale);
+
+            // lookDirection in the old code was: tilt * transform.forward - (offset + transform.position)
+            // In local space (origin at 0,0,0): tilt * forward - offset
+            var lookDirection = tilt * Vector3.forward - offset;
+            var rotation = SpawnPoint.LookRotation(lookDirection, Vector3.forward);
+
+            return new SpawnPoint(position, rotation, tempBlockScale);
         }
-        void CreateBlock(Vector3 position, Vector3 lookPosition, Vector3 up, string blockId, Trail trail, Vector3 scale, Core.Prism prism, GameObject container, Domains domain = Domains.Blue)
+
+        protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
         {
-            var Block = Instantiate(prism);
-            Block.ChangeTeam(domain);
-            Block.ownerID = "public";
-            if (SafeLookRotation.TryGet(lookPosition, up, out var rotation, Block))
-                Block.transform.SetPositionAndRotation(position, rotation);
-            else
-                Block.transform.position = position;
-            Block.transform.SetParent(container.transform, false);
-            Block.ownerID = blockId;
-            Block.TargetScale = scale;
-            Block.Trail = trail;
-            Block.Initialize();
-            trail.Add(Block);
+            foreach (var td in trailData)
+                SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
+        }
+
+        protected override int GetParameterHash()
+        {
+            return System.HashCode.Combine(seed, blockCount, ringCountHead, ringCountTail, headRadius, tailLength, blockScale, Orgin);
         }
     }
 }

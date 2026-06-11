@@ -3,6 +3,7 @@ using UnityEngine;
 using CosmicShore.DialogueSystem.Models;
 using CosmicShore.DialogueSystem.Events;
 using CosmicShore.DialogueSystem.View;
+using CosmicShore.Utility;
 
 namespace CosmicShore.DialogueSystem.Controller
 {
@@ -49,7 +50,7 @@ namespace CosmicShore.DialogueSystem.Controller
             var set = dialogueLibrary.GetSetById(setId);
             if (set == null)
             {
-                Debug.LogWarning($"DialogueManager ({gameObject.scene.name}): No DialogueSet found with ID '{setId}'.");
+                CSDebug.LogWarning($"DialogueManager ({gameObject.scene.name}): No DialogueSet found with ID '{setId}'.");
                 return;
             }
 
@@ -60,7 +61,7 @@ namespace CosmicShore.DialogueSystem.Controller
         {
             if (set == null || set.lines == null || set.lines.Count == 0)
             {
-                Debug.LogWarning("DialogueManager: DialogueSet is null or has no lines.");
+                CSDebug.LogWarning("DialogueManager: DialogueSet is null or has no lines.");
                 return;
             }
 
@@ -70,7 +71,7 @@ namespace CosmicShore.DialogueSystem.Controller
             _activeView = viewResolver.ResolveView(set);
             if (_activeView == null)
             {
-                Debug.LogError($"DialogueManager: No view found for channel {set.channel}.");
+                CSDebug.LogError($"DialogueManager: No view found for channel {set.channel}.");
                 return;
             }
 

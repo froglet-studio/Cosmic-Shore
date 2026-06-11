@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -31,7 +32,7 @@ public struct Cord
     }
 }
 
-public class SpawnableCord : SpawnableAbstractBase
+public class SpawnableCord : SpawnableBase
 {
     [SerializeField] Prism healthBlock;
     [SerializeField] Vector3 blockScale;
@@ -40,7 +41,6 @@ public class SpawnableCord : SpawnableAbstractBase
     [SerializeField] int blockCount = 50;
     [SerializeField] int verticesCount = 200;
     [SerializeField] float length = 150;
-    static int ObjectsSpawned = 0;
 
     List<Cord> Cords = new ();
 
@@ -50,33 +50,40 @@ public class SpawnableCord : SpawnableAbstractBase
     GameObject container;
     LineRenderer lineRenderer = new();
 
+    protected override int GetParameterHash()
+    {
+        return System.HashCode.Combine(seed, blockCount, verticesCount, length, blockScale);
+    }
+
     private void Start()
     {
         equilibriumDistanceSqr = Mathf.Pow(length / verticesCount, 2);
     }
 
-    public override GameObject Spawn()
+    public override GameObject Spawn(int intensity = 1)
     {
-        //List<Vector3> vertices;
-        
+        intensityLevel = intensity;
+        trails.Clear();
+
+        rng = seed != 0 ? new System.Random(seed) : new System.Random();
 
         container = new GameObject();
-        container.name = "Cord" + ObjectsSpawned++;
+        container.name = "Cord_" + name;
 
         Cord newCord = new Cord(verticesCount);
 
         var trail = new Trail();
         Vector3[] vertices = new Vector3[verticesCount];
 
-        var xc1 = Random.Range(4, 16);
-        var xc2 = Random.Range(.2f, 2);
-        var xc3 = Random.Range(-5, 5);
-        var xc4 = Random.Range(1, 3);
-        var yc1 = Random.Range(4, 16);
-        var yc2 = Random.Range(.2f, 2);
-        var yc3 = Random.Range(-5, 5);
-        var yc4 = Random.Range(1, 3);
-    
+        var xc1 = (float)rng.NextDouble() * (16 - 4) + 4;
+        var xc2 = (float)rng.NextDouble() * (2f - .2f) + .2f;
+        var xc3 = (float)rng.NextDouble() * (5 - (-5)) + (-5);
+        var xc4 = (float)rng.NextDouble() * (3 - 1) + 1;
+        var yc1 = (float)rng.NextDouble() * (16 - 4) + 4;
+        var yc2 = (float)rng.NextDouble() * (2f - .2f) + .2f;
+        var yc3 = (float)rng.NextDouble() * (5 - (-5)) + (-5);
+        var yc4 = (float)rng.NextDouble() * (3 - 1) + 1;
+
         lineRenderer = container.AddComponent<LineRenderer>();
         //lineRenderer.material = lineMaterial;
         lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
@@ -90,7 +97,7 @@ public class SpawnableCord : SpawnableAbstractBase
 
         for (int vertex = 0; vertex < verticesCount; vertex++)
         {
-           
+
             var t = (float)vertex / verticesCount * Mathf.PI * 12;
             var x = (Mathf.Sin(t) * xc1) + (Mathf.Sin(t * xc2 + xc3) * xc4);
             var y = (Mathf.Cos(t) * yc1) + (Mathf.Cos(t * yc2 + yc3) * yc4);
@@ -103,12 +110,23 @@ public class SpawnableCord : SpawnableAbstractBase
             int block;
             if (vertex%(verticesCount/blockCount) == 0)
             {
-                
+
                 block = vertex / (verticesCount/blockCount);
                 var lookPosition = (block == 0) ? position : trail.GetBlock(block - 1).transform.position;
-                CreateBlock(position, lookPosition, container.name + "::BLOCK::" + block, trail, blockScale, healthBlock, container);
-            } 
-             
+
+                var rotation = SpawnPoint.LookRotation(lookPosition, position, Vector3.up);
+
+                var spawnedBlock = Instantiate(healthBlock, container.transform);
+                spawnedBlock.ChangeTeam(domain);
+                spawnedBlock.ownerID = $"{container.name}::BLOCK::{block}";
+                spawnedBlock.transform.localPosition = position;
+                spawnedBlock.transform.localRotation = rotation;
+                spawnedBlock.TargetScale = blockScale;
+                spawnedBlock.Trail = trail;
+                spawnedBlock.Initialize();
+                trail.Add(spawnedBlock);
+            }
+
         }
         newCord.LineRendererInstance = lineRenderer;
         newCord.Vertices = vertices;
@@ -135,7 +153,7 @@ public class SpawnableCord : SpawnableAbstractBase
             offset += previousVector;
             if (vertexIndex > 1) Cords[cord].EnergizedQueue.Enqueue(vertexIndex - 1);
             Cords[cord].EnergizedQueue.Enqueue(vertexIndex);
-            qued = true;  
+            qued = true;
         }
         else if (previousDistanceSqr - equilibriumDistanceSqr < -tolerance)
         {
@@ -181,7 +199,7 @@ public class SpawnableCord : SpawnableAbstractBase
 
     private void Update()
     {
-        
+
         for (var cord = 0; cord < Cords.Count; cord++)
         {
             // Driven vertex is first
@@ -196,7 +214,7 @@ public class SpawnableCord : SpawnableAbstractBase
             }
             //check the queue
             int initialCount = Mathf.Min(Cords[cord].EnergizedQueue.Count, 300);
-            
+
             for (int i = 0; i < initialCount; i++)
             {
                 int item = Cords[cord].EnergizedQueue.Dequeue();

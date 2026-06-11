@@ -2,13 +2,16 @@
 using CosmicShore.Game.Arcade;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Soap;
+using DG.Tweening;
 using Obvious.Soap;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 using System;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -44,8 +47,13 @@ namespace CosmicShore.Game.UI
         [SerializeField] TMP_Text SinglePlayerScoreTextField;
         [SerializeField] TMP_Text SinglePlayerHighscoreTextField;
 
-        [Header("Multiplayer View")]
+        [Header("Multiplayer View — Team Scorecards")]
         [SerializeField] protected Transform MultiplayerView;
+        [Tooltip("Assign the 3 TeamScorecard components from the MultiplayerView hierarchy (winner displayed first).")]
+        [SerializeField] private TeamScorecard[] teamScorecards;
+        [SerializeField] private DomainColorPaletteSO domainColorPalette;
+
+        [Header("Multiplayer View — Legacy (used by game-mode subclasses)")]
         [SerializeField] protected List<TMP_Text> PlayerNameTextFields;
         [SerializeField] protected List<TMP_Text> PlayerScoreTextFields;
 
@@ -67,6 +75,9 @@ namespace CosmicShore.Game.UI
         [Tooltip("Seconds before invited/denied panels auto-dismiss")]
         [SerializeField] private float rematchPanelAutoDismissSeconds = 2f;
 
+        [Header("Animation (optional)")]
+        [SerializeField] private HUDAnimationSettingsSO animSettings;
+
         #endregion
 
         #region Private Fields
@@ -74,6 +85,11 @@ namespace CosmicShore.Game.UI
         private ScoreboardStatsProvider statsProvider;
         private Coroutine _invitedAutoDismiss;
         private Coroutine _deniedAutoDismiss;
+        private CanvasGroup _scoreboardCanvasGroup;
+        private RectTransform _scoreboardRect;
+        private Sequence _entranceSeq;
+        private Tween _scoreCounterTween;
+        private Tween _highScoreCounterTween;
 
         #endregion
 
@@ -83,7 +99,7 @@ namespace CosmicShore.Game.UI
         {
             statsProvider = GetComponent<ScoreboardStatsProvider>();
             if (!statsProvider)
-                Debug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
+                CSDebug.LogWarning("[Scoreboard] No ScoreboardStatsProvider found.");
             HideScoreboard();
         }
 
@@ -111,23 +127,31 @@ namespace CosmicShore.Game.UI
 
         void ShowScoreboard()
         {
-            if (!gameData) { Debug.LogError("[Scoreboard] GameData is null!"); return; }
+            if (!gameData) { CSDebug.LogError("[Scoreboard] GameData is null!"); return; }
 
             HideAllRematchPanels();
 
-            // Show multiplayer view when playing against opponents (online or AI).
-            // The multiplayerController being present means this is a multiplayer scene
-            // running with opponents, even in solo-with-AI mode.
-            if (gameData.IsMultiplayerMode || multiplayerController != null) ShowMultiplayerView();
-            else ShowSinglePlayerView();
+            // Show team-based multiplayer view when there are multiple teams
+            // (online multiplayer, solo-with-AI in multiplayer scenes, or
+            // single-player minigames with AI opponents filling team slots).
+            bool hasMultipleTeams = gameData.DomainStatsList is { Count: > 1 };
+            if (gameData.IsMultiplayerMode || multiplayerController != null || hasMultipleTeams)
+                ShowMultiplayerView();
+            else
+                ShowSinglePlayerView();
 
             PopulateDynamicStats();
 
-            if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(true);
+            if (scoreboardPanel)
+            {
+                scoreboardPanel.gameObject.SetActive(true);
+                PlayEntranceAnimation();
+            }
         }
 
         void HideScoreboard()
         {
+            _entranceSeq?.Kill();
             if (scoreboardPanel) scoreboardPanel.gameObject.SetActive(false);
             if(endGameObject) endGameObject.SetActive(false);
             HideAllRematchPanels();
@@ -158,6 +182,75 @@ namespace CosmicShore.Game.UI
             onDismiss?.Invoke();
         }
 
+        void PlayEntranceAnimation()
+        {
+            if (!scoreboardPanel) return;
+
+            _entranceSeq?.Kill();
+
+            if (!_scoreboardRect)
+                _scoreboardRect = scoreboardPanel.GetComponent<RectTransform>();
+            if (!_scoreboardCanvasGroup)
+            {
+                _scoreboardCanvasGroup = scoreboardPanel.GetComponent<CanvasGroup>();
+                if (!_scoreboardCanvasGroup)
+                    _scoreboardCanvasGroup = scoreboardPanel.gameObject.AddComponent<CanvasGroup>();
+            }
+
+            float duration = animSettings ? animSettings.scoreboardEntranceDuration : 0.35f;
+            float offset = animSettings ? animSettings.scoreboardSlideOffset : 120f;
+            var ease = animSettings ? animSettings.scoreboardEntranceEase : Ease.OutCubic;
+            float bannerPunchDur = animSettings ? animSettings.bannerPunchDuration : 0.3f;
+            float bannerPunchScale = animSettings ? animSettings.bannerPunchScale : 1.2f;
+            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
+
+            // Panel slide + fade
+            var targetPos = _scoreboardRect.anchoredPosition;
+            _scoreboardRect.anchoredPosition = new Vector2(targetPos.x, targetPos.y - offset);
+            _scoreboardCanvasGroup.alpha = 0f;
+
+            _entranceSeq = DOTween.Sequence()
+                .Join(_scoreboardRect.DOAnchorPos(targetPos, duration).SetEase(ease))
+                .Join(_scoreboardCanvasGroup.DOFade(1f, duration));
+
+            // Banner text punch
+            if (BannerText)
+            {
+                BannerText.transform.localScale = Vector3.one * 0.5f;
+                _entranceSeq.Join(BannerText.transform
+                    .DOScale(bannerPunchScale, bannerPunchDur * 0.5f)
+                    .SetEase(Ease.OutBack));
+                _entranceSeq.Append(BannerText.transform
+                    .DOScale(1f, bannerPunchDur * 0.5f)
+                    .SetEase(Ease.OutQuad));
+            }
+
+            _entranceSeq.SetUpdate(unscaled);
+        }
+
+        private void AnimateCounter(TMP_Text field, int target, ref Tween tween)
+        {
+            if (!field) return;
+
+            tween?.Kill();
+            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
+
+            field.text = "0";
+            float current = 0f;
+            tween = DOTween.To(() => current, x => current = x, target, 0.6f)
+                .SetDelay(0.15f)
+                .SetEase(Ease.OutCubic)
+                .OnUpdate(() => field.text = Mathf.RoundToInt(current).ToString())
+                .SetUpdate(unscaled);
+        }
+
+        void OnDestroy()
+        {
+            _entranceSeq?.Kill();
+            _scoreCounterTween?.Kill();
+            _highScoreCounterTween?.Kill();
+        }
+
         #endregion
 
         #region Single Player View
@@ -169,8 +262,7 @@ namespace CosmicShore.Game.UI
             if (BannerText)  BannerText.text   = won ? "VICTORY" : "DEFEAT";
 
             int playerScore = (int)localDomainStats.Score;
-            if (SinglePlayerScoreTextField)
-                SinglePlayerScoreTextField.text = playerScore.ToString();
+            AnimateCounter(SinglePlayerScoreTextField, playerScore, ref _scoreCounterTween);
 
             if (SinglePlayerHighscoreTextField)
             {
@@ -181,7 +273,7 @@ namespace CosmicShore.Game.UI
                     highScore = UGSStatsManager.Instance.GetEvaluatedHighScore(
                         modeEnum, gameData.SelectedIntensity.Value, playerScore);
                 }
-                SinglePlayerHighscoreTextField.text = ((int)highScore).ToString();
+                AnimateCounter(SinglePlayerHighscoreTextField, (int)highScore, ref _highScoreCounterTween);
             }
 
             if (MultiplayerView)  MultiplayerView.gameObject.SetActive(false);
@@ -194,9 +286,13 @@ namespace CosmicShore.Game.UI
 
         protected virtual void ShowMultiplayerView()
         {
-            gameData.IsLocalDomainWinner(out DomainStats winnerStats);
-            SetBannerForDomain(winnerStats.Domain);
-            DisplayPlayerScores();
+            // Show the actual winning team in the banner, not the local player's team
+            if (gameData.TryGetWinningDomain(out DomainStats winnerStats))
+                SetBannerForDomain(winnerStats.Domain);
+            else if (BannerText)
+                BannerText.text = "GAME OVER";
+
+            PopulateTeamScorecards();
 
             if (SingleplayerView) SingleplayerView.gameObject.SetActive(false);
             if (MultiplayerView)  MultiplayerView.gameObject.SetActive(true);
@@ -204,27 +300,123 @@ namespace CosmicShore.Game.UI
 
         protected virtual void SetBannerForDomain(Domains domain)
         {
-            switch (domain)
+            Color bannerColor = domain switch
             {
-                case Domains.Jade:
-                    if (BannerImage) BannerImage.color = JadeTeamBannerColor;
-                    if (BannerText)  BannerText.text   = "JADE VICTORY"; break;
-                case Domains.Ruby:
-                    if (BannerImage) BannerImage.color = RubyTeamBannerColor;
-                    if (BannerText)  BannerText.text   = "RUBY VICTORY"; break;
-                case Domains.Gold:
-                    if (BannerImage) BannerImage.color = GoldTeamBannerColor;
-                    if (BannerText)  BannerText.text   = "GOLD VICTORY"; break;
-                case Domains.Blue:
-                    if (BannerImage) BannerImage.color = BlueTeamBannerColor;
-                    if (BannerText)  BannerText.text   = "BLUE VICTORY"; break;
-                default:
-                    if (BannerText) BannerText.text = "GAME OVER"; break;
+                Domains.Jade => JadeTeamBannerColor,
+                Domains.Ruby => RubyTeamBannerColor,
+                Domains.Gold => GoldTeamBannerColor,
+                Domains.Blue => BlueTeamBannerColor,
+                _            => SinglePlayerBannerColor,
+            };
+
+            string bannerLabel = domain switch
+            {
+                Domains.Jade => "JADE VICTORY",
+                Domains.Ruby => "RUBY VICTORY",
+                Domains.Gold => "GOLD VICTORY",
+                Domains.Blue => "BLUE VICTORY",
+                _            => "GAME OVER",
+            };
+
+            if (BannerImage) BannerImage.color = bannerColor;
+            if (BannerText)  BannerText.text   = bannerLabel;
+        }
+
+        private void PopulateTeamScorecards()
+        {
+            if (teamScorecards == null || teamScorecards.Length == 0)
+                return;
+
+            // Group players by domain
+            var teamGroups = new Dictionary<Domains, List<IRoundStats>>();
+            foreach (var rs in gameData.RoundStatsList)
+            {
+                if (!teamGroups.TryGetValue(rs.Domain, out var list))
+                {
+                    list = new List<IRoundStats>(2);
+                    teamGroups[rs.Domain] = list;
+                }
+                list.Add(rs);
+            }
+
+            // Sort teams in the same order as DomainStatsList (winner first)
+            var sortedDomains = gameData.DomainStatsList
+                .Select(ds => ds.Domain)
+                .Where(d => teamGroups.ContainsKey(d))
+                .ToList();
+
+            // Include any domains that are in teamGroups but not in DomainStatsList
+            foreach (var domain in teamGroups.Keys)
+            {
+                if (!sortedDomains.Contains(domain))
+                    sortedDomains.Add(domain);
+            }
+
+            bool isGolfRules = gameData.IsGolfRules;
+
+            for (int i = 0; i < teamScorecards.Length; i++)
+            {
+                if (i >= sortedDomains.Count)
+                {
+                    teamScorecards[i].Show(false);
+                    continue;
+                }
+
+                teamScorecards[i].Show(true);
+
+                var domain = sortedDomains[i];
+                var players = teamGroups[domain];
+
+                // Team score: sum for normal modes, min (best time) for golf rules
+                float teamScoreValue;
+                if (isGolfRules)
+                    teamScoreValue = players.Min(p => p.Score);
+                else
+                    teamScoreValue = players.Sum(p => p.Score);
+
+                // Build player display data
+                var playerDisplays = new List<PlayerDisplayData>(players.Count);
+                foreach (var p in players)
+                {
+                    playerDisplays.Add(new PlayerDisplayData
+                    {
+                        Name  = p.Name,
+                        Score = FormatScore(p.Score, isGolfRules),
+                    });
+                }
+
+                // Domain color from palette, fallback to banner colors
+                Color domainColor = GetDomainColor(domain);
+
+                string teamName = domain.ToString().ToUpper();
+                string teamScore = FormatScore(teamScoreValue, isGolfRules);
+
+                teamScorecards[i].Populate(teamName, teamScore, domainColor, playerDisplays);
             }
         }
 
+        private string FormatScore(float score, bool isGolfRules)
+        {
+            if (isGolfRules)
+            {
+                // Time-based: format as MM:SS.f
+                var ts = TimeSpan.FromSeconds(score);
+                return ts.TotalMinutes >= 1
+                    ? $"{(int)ts.TotalMinutes}:{ts.Seconds:D2}.{ts.Milliseconds / 100}"
+                    : $"{ts.Seconds}.{ts.Milliseconds / 100}s";
+            }
+
+            return ((int)score).ToString();
+        }
+
+        /// <summary>
+        /// Legacy per-player score display used by game-mode-specific subclasses.
+        /// Base implementation populates PlayerNameTextFields / PlayerScoreTextFields flat lists.
+        /// </summary>
         protected virtual void DisplayPlayerScores()
         {
+            if (PlayerNameTextFields == null || PlayerScoreTextFields == null) return;
+
             var playerScores = gameData.RoundStatsList;
 
             for (int i = 0; i < playerScores.Count && i < PlayerNameTextFields.Count; i++)
@@ -243,6 +435,21 @@ namespace CosmicShore.Game.UI
             }
         }
 
+        private Color GetDomainColor(Domains domain)
+        {
+            if (domainColorPalette)
+                return domainColorPalette.Get(domain);
+
+            return domain switch
+            {
+                Domains.Jade => JadeTeamBannerColor,
+                Domains.Ruby => RubyTeamBannerColor,
+                Domains.Gold => GoldTeamBannerColor,
+                Domains.Blue => BlueTeamBannerColor,
+                _            => Color.white,
+            };
+        }
+
         #endregion
 
         #region Dynamic Stats
@@ -253,13 +460,35 @@ namespace CosmicShore.Game.UI
                 foreach (Transform child in statsContainer)
                     Destroy(child.gameObject);
 
-            if (!statsProvider || !statsContainer || !statRowPrefab) return;
+            if (!statsProvider || !statsContainer || !statRowPrefab)
+            {
+                CSDebug.LogWarning($"[Scoreboard] PopulateDynamicStats skipped — " +
+                    $"provider={(statsProvider != null ? "OK" : "NULL")}, " +
+                    $"container={(statsContainer != null ? "OK" : "NULL")}, " +
+                    $"rowPrefab={(statRowPrefab != null ? "OK" : "NULL")}");
+                return;
+            }
 
-            foreach (var stat in statsProvider.GetStats())
+            var stats = statsProvider.GetStats();
+            CSDebug.Log($"[Scoreboard] Populating {stats.Count} dynamic stat row(s)");
+
+            foreach (var stat in stats)
             {
                 var row = Instantiate(statRowPrefab, statsContainer);
                 row.Initialize(stat.Label, stat.Value, stat.Icon);
             }
+        }
+
+        #endregion
+
+        #region Return to Main Menu
+
+        public void OnReturnToMainMenuButtonPressed()
+        {
+            if (multiplayerController != null)
+                multiplayerController.LeaveSessionAndReturnToMenu();
+            else
+                CSDebug.LogWarning("[Scoreboard] No multiplayerController — cannot leave session.");
         }
 
         #endregion
@@ -275,7 +504,7 @@ namespace CosmicShore.Game.UI
             {
                 if (multiplayerController == null)
                 {
-                    Debug.LogError("[Scoreboard] multiplayerController not assigned!");
+                    CSDebug.LogError("[Scoreboard] multiplayerController not assigned!");
                     return;
                 }
 

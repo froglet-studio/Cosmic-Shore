@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using CosmicShore.Game.UI;
 using CosmicShore.Soap;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Game
@@ -48,6 +49,14 @@ namespace CosmicShore.Game
             if (stat != null) _allStats.Add(stat);
         }
 
+        // ── Runtime injection (used by VesselTelemetryBootstrapper) ────────────
+
+        /// <summary>
+        /// Sets gameData when the component is added at runtime via AddComponent.
+        /// Must be called before OnEnable fires.
+        /// </summary>
+        public void InjectGameData(GameDataSO data) => gameData = data;
+
         // ── Private accumulators ───────────────────────────────────────────────
 
         private float _currentDriftTime;
@@ -61,6 +70,13 @@ namespace CosmicShore.Game
             RegisterStat(maxBoostTimeStat);
             RegisterStat(prismsDamagedStat);
             RegisterStatsExtended();
+
+            CSDebug.Log($"[VesselTelemetry] {GetType().Name} Awake — " +
+                $"registered {_allStats.Count} stat(s), " +
+                $"gameData={(gameData != null ? "OK" : "NULL")}, " +
+                $"drift={(longestDriftStat != null ? "OK" : "NULL")}, " +
+                $"boost={(maxBoostTimeStat != null ? "OK" : "NULL")}, " +
+                $"prismsDmg={(prismsDamagedStat != null ? "OK" : "NULL")}");
         }
 
         protected virtual void OnEnable()
@@ -99,11 +115,17 @@ namespace CosmicShore.Game
 
             if (Vessel == null || !Vessel.IsLocalUser)
             {
+                Debug.LogWarning($"[VesselTelemetry] {GetType().Name} HandleTurnStarted — " +
+                    $"NOT tracking (Vessel={(Vessel != null ? Vessel.VesselType.ToString() : "NULL")}, " +
+                    $"IsLocal={Vessel?.IsLocalUser})");
                 IsTracking = false;
                 return;
             }
 
             IsTracking = true;
+            CSDebug.Log($"[VesselTelemetry] {GetType().Name} HandleTurnStarted — " +
+                $"tracking {Vessel.VesselType} for player '{Vessel.PlayerName}', " +
+                $"{_allStats.Count} stat(s) registered");
             OnTurnStartedExtended();
         }
 
@@ -113,6 +135,8 @@ namespace CosmicShore.Game
             FinalizeInProgressBoost();
             IsTracking = false;
             OnTurnEndedExtended();
+            CSDebug.Log($"[VesselTelemetry] {GetType().Name} HandleTurnEnded — " +
+                $"drift={MaxDriftTime:F2}s, boost={MaxBoostTime:F2}s, prismsDmg={PrismsDamaged}");
         }
 
         // ── Extension points ───────────────────────────────────────────────────

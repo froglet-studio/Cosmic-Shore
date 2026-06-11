@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using CosmicShore.Game.Arcade;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -37,7 +38,7 @@ namespace CosmicShore.Game.UI
         {
             if (scoreTracker == null)
             {
-                Debug.LogError("[UniversalStatsProvider] No ScoreTracker assigned!");
+                CSDebug.LogError("[UniversalStatsProvider] No ScoreTracker assigned!");
                 return;
             }
             
@@ -45,7 +46,7 @@ namespace CosmicShore.Game.UI
             
             if (statExposable == null)
             {
-                Debug.LogError(
+                CSDebug.LogError(
                     $"[UniversalStatsProvider] ScoreTracker '{scoreTracker.GetType().Name}' does not implement IStatExposable! " +
                     "Add IStatExposable interface to your tracker to expose stats."
                 );
@@ -70,7 +71,7 @@ namespace CosmicShore.Game.UI
             
             if (exposedStats == null || exposedStats.Count == 0)
             {
-                Debug.LogWarning("[UniversalStatsProvider] Tracker returned no stats");
+                CSDebug.LogWarning("[UniversalStatsProvider] Tracker returned no stats");
                 return stats;
             }
             
@@ -79,20 +80,20 @@ namespace CosmicShore.Game.UI
             {
                 if (binding.StatModule == null)
                 {
-                    Debug.LogWarning("[UniversalStatsProvider] Null StatModule in binding, skipping");
+                    CSDebug.LogWarning("[UniversalStatsProvider] Null StatModule in binding, skipping");
                     continue;
                 }
                 
                 if (string.IsNullOrEmpty(binding.StatKey))
                 {
-                    Debug.LogWarning($"[UniversalStatsProvider] StatModule '{binding.StatModule.Label}' has no stat key bound");
+                    CSDebug.LogWarning($"[UniversalStatsProvider] StatModule '{binding.StatModule.Label}' has no stat key bound");
                     continue;
                 }
                 
                 // Try to get the value from exposed stats
                 if (!exposedStats.TryGetValue(binding.StatKey, out var value))
                 {
-                    Debug.LogWarning($"[UniversalStatsProvider] Stat key '{binding.StatKey}' not found in tracker");
+                    CSDebug.LogWarning($"[UniversalStatsProvider] Stat key '{binding.StatKey}' not found in tracker");
                     continue;
                 }
                 
@@ -110,7 +111,7 @@ namespace CosmicShore.Game.UI
                 }
                 catch (Exception ex)
                 {
-                    Debug.LogError($"[UniversalStatsProvider] Error formatting stat '{binding.StatModule.Label}': {ex.Message}");
+                    CSDebug.LogError($"[UniversalStatsProvider] Error formatting stat '{binding.StatModule.Label}': {ex.Message}");
                 }
             }
             
@@ -154,7 +155,7 @@ namespace CosmicShore.Game.UI
             }
             catch (Exception ex)
             {
-                Debug.LogError($"[UniversalStatsProvider] Format error for '{module.Label}': {ex.Message}");
+                CSDebug.LogError($"[UniversalStatsProvider] Format error for '{module.Label}': {ex.Message}");
                 return value.ToString();
             }
         }

@@ -1,60 +1,60 @@
 using CosmicShore.Core;
-//using System.Collections;
-//using System.Collections.Generic;
-//using System.Diagnostics;
-//using System.Numerics;
+using CosmicShore.Game.Spawning;
 using UnityEngine;
 using UnityEngine.Serialization;
 
-//using static UnityEngine.ParticleSystem;
-
-public class SpawnableDriftCourse : SpawnableAbstractBase
+public class SpawnableDriftCourse : SpawnableBase
 {
     [FormerlySerializedAs("trailBlock")] [SerializeField] Prism prism;
-    static int ObjectsSpawned = 0;
-    [SerializeField] Vector3 blockScale = new Vector3(1,3,5);
+    [SerializeField] Vector3 blockScale = new Vector3(1, 3, 5);
     [SerializeField] float spawnDistance = 5f;
     [SerializeField] Vector3 Orgin;
     [SerializeField] int blocksPerSegment = 10;
 
-    public override GameObject Spawn()
+    protected override SpawnPoint[] GeneratePoints()
     {
-        GameObject container = new GameObject();
-        container.name = "DriftCourse" + ObjectsSpawned++;
-
-        var trail = new Trail();
-
         int blockCount = 2000;
+        var points = new SpawnPoint[blockCount];
 
         var position = new Vector3(Orgin.x, Orgin.y, Orgin.z);
         Quaternion rotation = Quaternion.identity;
 
         for (int block = 0; block < blockCount; block++)
-        {          
+        {
             if (block % blocksPerSegment == 0)
             {
                 ChangeDirection(position, out rotation);
             }
 
-            CreateBlock(position, rotation * Vector3.forward, container.name + "::BLOCK::" + block, trail, blockScale, prism, container);
+            var lookPosition = rotation * Vector3.forward;
+            var rot = SpawnPoint.LookRotation(lookPosition, position, Vector3.up);
+            points[block] = new SpawnPoint(position, rot, blockScale);
 
             var dir = rotation * Vector3.forward;
             position += spawnDistance * dir;
-            
         }
 
-        trails.Add(trail);
-        return container;
+        return points;
     }
 
     private Vector3 ChangeDirection(Vector3 direction, out Quaternion rotation)
     {
-        float altitude = Random.Range(70, 90);
-        float azimuth = Random.Range(0,360);
+        float altitude = (float)rng.NextDouble() * (90 - 70) + 70;
+        float azimuth = (float)rng.NextDouble() * 360;
 
         rotation = Quaternion.Euler(0f, 0f, azimuth) * Quaternion.Euler(0f, altitude, 0f);
         Vector3 newDirection = rotation * direction;
         return newDirection;
     }
 
+    protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
+    {
+        foreach (var td in trailData)
+            SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
+    }
+
+    protected override int GetParameterHash()
+    {
+        return System.HashCode.Combine(seed, blockScale, spawnDistance, Orgin, blocksPerSegment);
+    }
 }

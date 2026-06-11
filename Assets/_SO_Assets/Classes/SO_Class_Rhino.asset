@@ -14,7 +14,15 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Class: 3
   Name: Rhino
-  Description: Smash things with your face to gain boost and volume. Hunt down other players to stop them from making volume. Watch out for collateral damage.
+  Description: Smash things with your face to gain boost and volume. Hunt down other
+    players to stop them from making volume. Watch out for collateral damage.
+  PrimaryElement: 0
+  Element: {fileID: 0}
+  InitialResourceLevels:
+    Mass: 0
+    Charge: 0
+    Space: 0
+    Time: 0
   IconActive: {fileID: 21300000, guid: 8da001fa155b50849bdb405534e9284e, type: 3}
   IconInactive: {fileID: 21300000, guid: 9e2685470a877514c8cebdc154473e8a, type: 3}
   PreviewImage: {fileID: 21300000, guid: 1d50cd3184d75fe43acf5ace04e20554, type: 3}
@@ -29,11 +37,6 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 049001867ddf0504c93f7a903f691ca4, type: 2}
   - {fileID: 11400000, guid: 3a6e98f71229bf04ca1312735eb68c85, type: 2}
   - {fileID: 11400000, guid: 4ddfb75e3a79e4c458ed98d3cbf0b03e, type: 2}
-  Captains:
-  - {fileID: 11400000, guid: 04ba107a63ea9c14dab56a557a3ef18e, type: 2}
-  - {fileID: 11400000, guid: 6ee8c375aa521834d939fa197d667159, type: 2}
-  - {fileID: 11400000, guid: 50d61f2148b39544095d668e3d74de9c, type: 2}
-  - {fileID: 11400000, guid: e7b8074c970cd954fae8e2f4497037ff, type: 2}
   Games:
   - {fileID: 11400000, guid: dae692490d41dda488bf199e4fdb30af, type: 2}
   - {fileID: 11400000, guid: 3537310ecbdad2e449bbca31d2aa8599, type: 2}
@@ -54,3 +57,5 @@ MonoBehaviour:
     LeftHandLabel: Solo
     RightHandLabel: Social
     Value: 0.95
+  isLocked: 1
+  UnlockCost: 4000

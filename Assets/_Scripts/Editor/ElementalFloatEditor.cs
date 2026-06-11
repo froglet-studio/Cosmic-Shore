@@ -2,13 +2,14 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Reflection;
+using CosmicShore.Utility;
 
 public class ElementalFloatEditor : EditorWindow
 {
     static List<(GameObject, Component, FieldInfo, SerializedObject, SerializedProperty)> results = new List<(GameObject, Component, FieldInfo, SerializedObject, SerializedProperty)>();
     Vector2 scrollPosition;
 
-    [MenuItem("FrogletTools/ElementalFloat Editor")]
+    [MenuItem("FrogletTools/Legacy/ElementalFloat Editor")]
     public static void ShowWindow()
     {
         GetWindow<ElementalFloatEditor>("ElementalFloat Editor");
@@ -64,7 +65,7 @@ public class ElementalFloatEditor : EditorWindow
 
         if (selectedGameObject == null)
         {
-            Debug.LogWarning("No GameObject selected!");
+            CSDebug.LogWarning("No GameObject selected!");
             return;
         }
 

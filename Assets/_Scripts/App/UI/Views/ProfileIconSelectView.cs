@@ -7,6 +7,7 @@ using CosmicShore.Soap;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.UI.Views
 {
@@ -53,21 +54,26 @@ namespace CosmicShore.App.UI.Views
 
             if (!profileIcons)
             {
-                Debug.LogError("[ProfileIconSelectView] Missing SO_ProfileIconList reference.");
+                CSDebug.LogError("[ProfileIconSelectView] Missing SO_ProfileIconList reference.");
                 return;
             }
 
             if (!iconGrid)
             {
-                Debug.LogError("[ProfileIconSelectView] Missing GridLayoutGroup (iconGrid).");
+                CSDebug.LogError("[ProfileIconSelectView] Missing GridLayoutGroup (iconGrid).");
                 return;
             }
 
             if (!iconButtonPrefab)
             {
-                Debug.LogError("[ProfileIconSelectView] Missing iconButtonPrefab.");
+                CSDebug.LogError("[ProfileIconSelectView] Missing iconButtonPrefab.");
                 return;
             }
+
+            // Fall back to singleton if Inspector reference is missing or was
+            // broken by PlayerDataService detaching via DontDestroyOnLoad.
+            if (dataService == null)
+                dataService = PlayerDataService.Instance;
 
             // Wire display name buttons (if present)
             if (displayNameSaveButton)
@@ -133,7 +139,7 @@ namespace CosmicShore.App.UI.Views
 
             string existing = "";
 
-            if (dataService != null && dataService.IsInitialized && dataService.CurrentProfile != null)
+            if (dataService != null && dataService.CurrentProfile != null)
             {
                 existing = dataService.CurrentProfile.displayName;
             }
@@ -228,12 +234,12 @@ namespace CosmicShore.App.UI.Views
         {
             if (!_hasSelectedIcon)
             {
-                Debug.LogWarning("[ProfileIconSelectView] SaveProfileIconSelection called but no icon is selected.");
+                CSDebug.LogWarning("[ProfileIconSelectView] SaveProfileIconSelection called but no icon is selected.");
                 return;
             }
 
             int id = _selectedIcon.Id;
-            Debug.Log($"[ProfileIconSelectView] SaveProfileIconSelection: {id}");
+            CSDebug.Log($"[ProfileIconSelectView] SaveProfileIconSelection: {id}");
 
             // Cloud save through UGS profile service
             if (dataService != null && dataService.IsInitialized)
@@ -242,7 +248,7 @@ namespace CosmicShore.App.UI.Views
             }
             else
             {
-                Debug.LogWarning("[ProfileIconSelectView] profileService is null or not initialized. Avatar cached locally only.");
+                CSDebug.LogWarning("[ProfileIconSelectView] profileService is null or not initialized. Avatar cached locally only.");
             }
             
         }
@@ -257,7 +263,7 @@ namespace CosmicShore.App.UI.Views
             {
                 avatarId = dataService.CurrentProfile.avatarId;
                 hasId    = avatarId != 0;
-                Debug.Log($"[ProfileIconSelectView] Load from UGS: {avatarId}");
+                CSDebug.Log($"[ProfileIconSelectView] Load from UGS: {avatarId}");
             }
 
             return avatarId;
@@ -276,14 +282,22 @@ namespace CosmicShore.App.UI.Views
 
                 string newName = displayNameInput.text?.Trim();
 
-                 await dataService.SetDisplayNameAsync(newName);
-                dataService.RefreshProfileVisuals();
+                if (string.IsNullOrEmpty(newName) || newName.Length < 3 || newName.Length > 25)
+                {
+                    CSDebug.LogWarning("[ProfileIconSelectView] Display name must be between 3 and 25 characters.");
+                    return;
+                }
+
+                if (dataService != null)
+                {
+                    dataService.SetDisplayName(newName);
+                }
 
                 ModalWindowOut();
             }
             catch (Exception e)
             {
-                 // TODO handle exception
+                CSDebug.LogWarning($"[ProfileIconSelectView] SaveDisplayName failed: {e.Message}");
             }
         }
 

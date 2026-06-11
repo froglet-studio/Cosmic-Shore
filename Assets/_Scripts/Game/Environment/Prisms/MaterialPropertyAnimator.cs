@@ -1,5 +1,6 @@
 using UnityEngine;
 using System;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Core
 {
@@ -61,7 +62,7 @@ namespace CosmicShore.Core
             
             if (MeshRenderer == null)
             {
-                Debug.LogError($"MeshRenderer missing on {gameObject.name}");
+                CSDebug.LogError($"MeshRenderer missing on {gameObject.name}");
                 enabled = false;
                 return;
             }
@@ -118,9 +119,9 @@ namespace CosmicShore.Core
                 if (activeOpaqueMaterial != null && activeTransparentMaterial != null && MeshRenderer != null)
                 {
                     if (cachedPrism.prismProperties != null && cachedPrism.prismProperties.IsTransparent)
-                        MeshRenderer.material = activeTransparentMaterial;
+                        MeshRenderer.sharedMaterial = activeTransparentMaterial;
                     else
-                        MeshRenderer.material = activeOpaqueMaterial;
+                        MeshRenderer.sharedMaterial = activeOpaqueMaterial;
                 }
                 
                 materialsDirty = false;
@@ -128,7 +129,7 @@ namespace CosmicShore.Core
             }
             catch (Exception e)
             {
-                Debug.LogError($"Error validating materials: {e.Message}");
+                CSDebug.LogError($"Error validating materials: {e.Message}");
                 return false;
             }
         }
@@ -139,7 +140,7 @@ namespace CosmicShore.Core
 
             if (transparentMaterial == null || opaqueMaterial == null)
             {
-                Debug.LogError($"Invalid materials provided to {gameObject.name}");
+                CSDebug.LogError($"Invalid materials provided to {gameObject.name}");
                 return;
             }
 
@@ -155,7 +156,7 @@ namespace CosmicShore.Core
             }
             else
             {
-                var currentMaterial = MeshRenderer.material;
+                var currentMaterial = MeshRenderer.sharedMaterial;
                 StartBrightColor = currentMaterial.GetColor(BrightColorId);
                 StartDarkColor = currentMaterial.GetColor(DarkColorId);
                 StartSpread = currentMaterial.GetVector(SpreadId);
@@ -174,10 +175,10 @@ namespace CosmicShore.Core
                 activeTransparentMaterial = transparentMaterial;
                 activeOpaqueMaterial = opaqueMaterial;
                 
-                if (MeshRenderer != null && cachedPrism != null && 
+                if (MeshRenderer != null && cachedPrism != null &&
                     cachedPrism.prismProperties != null)
                 {
-                    MeshRenderer.material = cachedPrism.prismProperties.IsTransparent ?
+                    MeshRenderer.sharedMaterial = cachedPrism.prismProperties.IsTransparent ?
                         transparentMaterial : opaqueMaterial;
                 }
 
@@ -189,7 +190,7 @@ namespace CosmicShore.Core
         {
             if (MeshRenderer != null && ValidateMaterials())
             {
-                MeshRenderer.material = transparent ? activeTransparentMaterial : activeOpaqueMaterial;
+                MeshRenderer.sharedMaterial = transparent ? activeTransparentMaterial : activeOpaqueMaterial;
                 cachedPrism.prismProperties.IsTransparent = transparent;
             }
         }

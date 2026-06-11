@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using Lofelt.NiceVibrations;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.IO
 {
@@ -78,7 +79,7 @@ namespace CosmicShore.Game.IO
                 case HapticType.None:
                     return HapticPatterns.PresetType.None;
                 default:
-                    Debug.LogErrorFormat("{0} - {1} - Unsupported haptic types.", nameof(HapticController), nameof(GetPatternForHapticType));
+                    CSDebug.LogErrorFormat("{0} - {1} - Unsupported haptic types.", nameof(HapticController), nameof(GetPatternForHapticType));
                     return HapticPatterns.PresetType.None; // Return Failure for unsupported haptic types
             }
         }

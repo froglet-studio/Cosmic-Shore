@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using CosmicShore.Game;
 using UnityEngine;
+using CosmicShore.Utility;
 
 public class ChargeBoostAction : ShipAction
 {
@@ -175,5 +176,5 @@ public class ChargeBoostAction : ShipAction
     }
 
     [System.Diagnostics.Conditional("UNITY_EDITOR")]
-    void Log(string msg) { if (verbose) Debug.Log($"[ChargeBoostAction] {msg}", this); }
+    void Log(string msg) { if (verbose) CSDebug.Log($"[ChargeBoostAction] {msg}", this); }
 }

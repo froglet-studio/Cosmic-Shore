@@ -3,6 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
 using System.Linq;
+using CosmicShore.Utility;
 
 public class RuntimeTextureMemoryUsageWindow : EditorWindow
 {
@@ -147,7 +148,7 @@ public class RuntimeTextureMemoryUsageWindow : EditorWindow
         // Sort textures by memory usage
         sortedTextures = textureMemoryUsage.OrderByDescending(kvp => kvp.Value).ToList();
 
-        Debug.Log($"Runtime textures counted and sorted by memory usage: {sortedTextures.Count} found");
+        CSDebug.Log($"Runtime textures counted and sorted by memory usage: {sortedTextures.Count} found");
     }
 
     long CalculateTextureMemoryUsage(Texture2D texture)

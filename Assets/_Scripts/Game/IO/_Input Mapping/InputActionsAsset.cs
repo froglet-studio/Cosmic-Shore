@@ -14,6 +14,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Utilities;
+using CosmicShore.Utility;
 
 /// <summary>
 /// Provides programmatic access to <see cref="InputActionAsset" />, <see cref="InputActionMap" />, <see cref="InputAction" /> and <see cref="InputControlScheme" /> instances defined in asset "Assets/_Scripts/Game/IO/_Input Mapping/InputActionsAsset.inputactions".
@@ -59,13 +60,13 @@ using UnityEngine.InputSystem.Utilities;
 ///     // Invoked when "Move" action is either started, performed or canceled.
 ///     public void OnMove(InputAction.CallbackContext context)
 ///     {
-///         Debug.Log($"OnMove: {context.ReadValue&lt;Vector2&gt;()}");
+///         CSDebug.Log($"OnMove: {context.ReadValue&lt;Vector2&gt;()}");
 ///     }
 ///
 ///     // Invoked when "Attack" action is either started, performed or canceled.
 ///     public void OnAttack(InputAction.CallbackContext context)
 ///     {
-///         Debug.Log($"OnAttack: {context.ReadValue&lt;float&gt;()}");
+///         CSDebug.Log($"OnAttack: {context.ReadValue&lt;float&gt;()}");
 ///     }
 ///
 ///     #endregion

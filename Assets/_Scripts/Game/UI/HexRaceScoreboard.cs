@@ -7,6 +7,11 @@ namespace CosmicShore.Game.UI
     {
         protected override void ShowMultiplayerView()
         {
+            // Sort ascending (golf rules): winner's finish time < 10000 comes first,
+            // then losers ordered by crystals left (fewer left = higher placement).
+            if (gameData.RoundStatsList is { Count: > 0 })
+                gameData.RoundStatsList.Sort((a, b) => a.Score.CompareTo(b.Score));
+
             if (gameData.DomainStatsList is { Count: > 0 })
                 SetBannerForDomain(gameData.DomainStatsList[0].Domain);
             else if (gameData.RoundStatsList is { Count: > 0 })

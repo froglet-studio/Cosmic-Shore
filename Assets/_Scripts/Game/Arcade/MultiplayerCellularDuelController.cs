@@ -2,6 +2,7 @@ using System;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -37,13 +38,13 @@ namespace CosmicShore.Game.Arcade
             // swap the vessel types from player.NetDefaultVesselType.Value
             if (!player0.Vessel.Transform.TryGetComponent(out NetworkObject no0))
             {
-                Debug.LogError("No network object found in vessel. This should not happen!");
+                CSDebug.LogError("No network object found in vessel. This should not happen!");
                 return;
             }
             
             if (!player1.Vessel.Transform.TryGetComponent(out NetworkObject no1))
             {
-                Debug.LogError("No network object found in vessel. This should not happen!");
+                CSDebug.LogError("No network object found in vessel. This should not happen!");
                 return;
             }
             

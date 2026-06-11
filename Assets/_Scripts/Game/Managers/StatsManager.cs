@@ -144,10 +144,17 @@ namespace CosmicShore.Core
         public void ExecuteJoustCollision(string joustPlayerName)
         {
             if (!allowRecord) return;
-            
+
             if (!gameData.TryGetRoundStats(joustPlayerName, out var roundStats))
                 return;
             roundStats.JoustCollisions++;
+        }
+
+        public void ExecuteDogFightHit(string shooterPlayerName)
+        {
+            if (!gameData.TryGetRoundStats(shooterPlayerName, out var roundStats))
+                return;
+            roundStats.DogFightHits++;
         }
 
         public void PrismCreated(PrismStats prismStats)

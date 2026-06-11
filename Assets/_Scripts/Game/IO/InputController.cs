@@ -4,6 +4,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
 using CosmicShore.App.Systems;
 using CosmicShore.Utility.ClassExtensions;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Game.IO
@@ -22,6 +23,7 @@ namespace CosmicShore.Game.IO
         private IInputStrategy currentStrategy;
         private GamepadInputStrategy gamepadStrategy;
         private KeyboardInputStrategy keyboardStrategy;
+        private TouchInputStrategy touchStrategy;
         private DeviceOrientationHandler orientationHandler;
 
         private bool isInitialized;
@@ -68,7 +70,7 @@ namespace CosmicShore.Game.IO
 
             if (PauseSystem.Paused)
             {
-                // Debug.Log("InputController.Update: PauseSystem.Paused -> blocking input");
+                // CSDebug.Log("InputController.Update: PauseSystem.Paused -> blocking input");
                 return;
             }
 
@@ -113,11 +115,11 @@ namespace CosmicShore.Game.IO
                 currentStrategy?.SetInvertY(gameSetting.InvertYEnabled);
                 currentStrategy?.SetInvertThrottle(gameSetting.InvertThrottleEnabled);
                 
-                Debug.Log($"[InputController] Synced invert settings - Y: {gameSetting.InvertYEnabled}, Throttle: {gameSetting.InvertThrottleEnabled}");
+                CSDebug.Log($"[InputController] Synced invert settings - Y: {gameSetting.InvertYEnabled}, Throttle: {gameSetting.InvertThrottleEnabled}");
             }
             else
             {
-                Debug.LogWarning("[InputController] GameSetting.Instance is null, cannot sync invert settings!");
+                CSDebug.LogWarning("[InputController] GameSetting.Instance is null, cannot sync invert settings!");
             }
         }
 
@@ -125,8 +127,8 @@ namespace CosmicShore.Game.IO
         {
             if (Gamepad.current != null)
                 currentStrategy = gamepadStrategy;
-            //else if (SystemInfo.deviceType == DeviceType.Handheld)
-            //    currentStrategy = touchStrategy;
+            else if (SystemInfo.deviceType == DeviceType.Handheld)
+                currentStrategy = touchStrategy;
             else
                 currentStrategy = keyboardStrategy;
 
@@ -135,14 +137,12 @@ namespace CosmicShore.Game.IO
 
         private void InitializeStrategies()
         {
-            //touchStrategy = new TouchInputStrategy();
-            //keyboardMouseStrategy = new KeyboardMouseInputStrategy();
+            touchStrategy = new TouchInputStrategy();
             gamepadStrategy = new GamepadInputStrategy();
             keyboardStrategy = new KeyboardInputStrategy();
             orientationHandler = new DeviceOrientationHandler();
 
-            //touchStrategy.Initialize(vessel);
-            //keyboardMouseStrategy.Initialize(vessel);
+            touchStrategy.Initialize(InputStatus);
             gamepadStrategy.Initialize(InputStatus);
             keyboardStrategy.Initialize(InputStatus);
             orientationHandler.Initialize(InputStatus, this);
@@ -162,13 +162,13 @@ namespace CosmicShore.Game.IO
 
         private void UpdateInputStrategy()
         {
-            IInputStrategy newStrategy = null;
+            IInputStrategy newStrategy;
 
-            if (Gamepad.current != null && newStrategy != gamepadStrategy)
+            if (Gamepad.current != null)
                 newStrategy = gamepadStrategy;
-            //else if (Mouse.current.rightButton.isPressed)
-            //    newStrategy = keyboardMouseStrategy;
-            else 
+            else if (SystemInfo.deviceType == DeviceType.Handheld)
+                newStrategy = touchStrategy;
+            else
                 newStrategy = keyboardStrategy;
 
             if (newStrategy != null && newStrategy != currentStrategy)
@@ -190,14 +190,14 @@ namespace CosmicShore.Game.IO
 
         private void OnToggleInvertY(bool status)
         {
-            Debug.Log($"[InputController] OnToggleInvertY called with status: {status}");
+            CSDebug.Log($"[InputController] OnToggleInvertY called with status: {status}");
             InputStatus.InvertYEnabled = status;
             currentStrategy?.SetInvertY(status);
         }
 
         private void OnToggleInvertThrottle(bool status)
         {
-            Debug.Log($"[InputController] OnToggleInvertThrottle called with status: {status}");
+            CSDebug.Log($"[InputController] OnToggleInvertThrottle called with status: {status}");
             InputStatus.InvertThrottleEnabled = status;
             currentStrategy?.SetInvertThrottle(status);
         }

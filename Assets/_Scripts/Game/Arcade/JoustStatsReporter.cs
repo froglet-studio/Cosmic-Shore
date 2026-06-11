@@ -3,6 +3,7 @@ using System.Linq;
 using CosmicShore.Game.Analytics;
 using CosmicShore.Soap;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -46,7 +47,16 @@ namespace CosmicShore.Game.Arcade
                 localStats.JoustCollisions,
                 raceTime
             );
-            Debug.Log($"[JoustStats] Reported Win - Time: {raceTime:F2}s Jousts: {localStats.JoustCollisions}");
+
+            // Report per-vessel telemetry
+            if (gameData.LocalPlayer?.Vessel is Component vc
+                && vc.TryGetComponent<VesselTelemetry>(out var vt))
+            {
+                UGSStatsManager.Instance.ReportVesselTelemetry(
+                    vt, gameData.LocalPlayer.Vessel.VesselStatus.VesselType.ToString());
+            }
+
+            CSDebug.Log($"[JoustStats] Reported Win - Time: {raceTime:F2}s Jousts: {localStats.JoustCollisions}");
         }
     }
 }

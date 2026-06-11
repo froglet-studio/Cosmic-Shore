@@ -79,7 +79,7 @@ namespace CosmicShore
             var latest = GetLatestBlock();
             if (latest == null && requireExistingTrailBlock)
             {
-                Debug.LogWarning("[CloakSeedWallAction] No trail block found to plant seed on.");
+                CSDebug.LogWarning("[CloakSeedWallAction] No trail block found to plant seed on.");
                 return;
             }
 

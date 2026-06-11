@@ -4,6 +4,7 @@ using CosmicShore.Integrations.Instrumentation.Interfaces;
 using Firebase;
 using Firebase.Analytics;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.Instrumentation.Firebase
 {
@@ -88,17 +89,17 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
 
                         if (_dependencyStatus == DependencyStatus.Available)
                         {
-                            Debug.Log("Firebase for PC (Standalone) dependencies are available.");
+                            CSDebug.Log("Firebase for PC (Standalone) dependencies are available.");
                         }
                         else
                         {
-                            Debug.LogError($"Firebase dependencies are not resolved: {_dependencyStatus}");
-                            Debug.LogWarning("Please ensure Firebase SDKs for PC (Standalone) are correctly imported and configured.");
+                            CSDebug.LogError($"Firebase dependencies are not resolved: {_dependencyStatus}");
+                            CSDebug.LogWarning("Please ensure Firebase SDKs for PC (Standalone) are correctly imported and configured.");
                         }
                     }
                     else
                     {
-                        Debug.LogError("Failed to check Firebase PC (Standalone) dependencies.");
+                        CSDebug.LogError("Failed to check Firebase PC (Standalone) dependencies.");
                     }
                 });
         }
@@ -118,17 +119,17 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
 
                         if (_dependencyStatus == DependencyStatus.Available)
                         {
-                            Debug.Log("Firebase Android dependencies are available.");
+                            CSDebug.Log("Firebase Android dependencies are available.");
                         }
                         else
                         {
-                            Debug.LogError($"Firebase dependencies for Android are not resolved: {_dependencyStatus}");
-                            Debug.LogWarning("Please ensure Firebase SDKs are correctly imported and configured.");
+                            CSDebug.LogError($"Firebase dependencies for Android are not resolved: {_dependencyStatus}");
+                            CSDebug.LogWarning("Please ensure Firebase SDKs are correctly imported and configured.");
                         }
                     }
                     else
                     {
-                        Debug.LogError("Failed to check Firebase for Android dependencies.");
+                        CSDebug.LogError("Failed to check Firebase for Android dependencies.");
                     }
                 });
         }
@@ -148,17 +149,17 @@ namespace CosmicShore.Integrations.Instrumentation.Firebase
 
                         if (_dependencyStatus == DependencyStatus.Available)
                         {
-                            Debug.Log("Firebase IOS dependencies are available.");
+                            CSDebug.Log("Firebase IOS dependencies are available.");
                         }
                         else
                         {
-                            Debug.LogError($"Firebase dependencies for IOS are not resolved: {_dependencyStatus}");
-                            Debug.LogWarning("Please ensure Firebase SDKs are correctly imported and configured.");
+                            CSDebug.LogError($"Firebase dependencies for IOS are not resolved: {_dependencyStatus}");
+                            CSDebug.LogWarning("Please ensure Firebase SDKs are correctly imported and configured.");
                         }
                     }
                     else
                     {
-                        Debug.LogError("Failed to check Firebase IOS dependencies.");
+                        CSDebug.LogError("Failed to check Firebase IOS dependencies.");
                     }
                 });
         }

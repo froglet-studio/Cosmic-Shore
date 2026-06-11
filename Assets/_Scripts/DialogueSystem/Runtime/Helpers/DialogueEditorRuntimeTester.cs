@@ -1,3 +1,4 @@
+using CosmicShore.Utility;
 // using UnityEngine;
 // using CosmicShore.DialogueSystem.Models;
 // using UnityEditor;
@@ -9,7 +10,7 @@
 //     {
 //         public static void Test(DialogueSet set)
 //         {
-//             Debug.Log($"[TestInEditor] Playing Dialogue Set: {set.name} ({set.lines.Count} lines)");
+//             CSDebug.Log($"[TestInEditor] Playing Dialogue Set: {set.name} ({set.lines.Count} lines)");
 //
 // #if UNITY_EDITOR
 //             if (!Application.isPlaying)

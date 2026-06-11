@@ -44,14 +44,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 23bf7adfa7ddf1e4fb62264a73907ac6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  seed: 0
   domain: 3
-  intenstyLevel: 1
+  children: []
+  leafPrefab: {fileID: 0}
+  intensityLevel: 1
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
-  blockScale: {x: 1, y: 2, z: 12}
+  blockScale: {x: 1, y: 1, z: 13}
   periods: 2
-  samplesPerPeriod: 30
+  samplesPerPeriod: 20
   surfaceThreshold: 0.4
-  periodScale: 300
+  periodScale: 250
   colorBySide: 1
   positiveDomain: 3
   negativeDomain: 3

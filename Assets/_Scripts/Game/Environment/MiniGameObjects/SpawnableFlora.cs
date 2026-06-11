@@ -1,18 +1,24 @@
+using CosmicShore.Game.Spawning;
 using UnityEngine;
 
-public class SpawnableFlora : SpawnableAbstractBase
+public class SpawnableFlora : SpawnableBase
 {
     [SerializeField] Flora flora;
-    static int ObjectsSpawned = 0;
 
-    public override GameObject Spawn()
+    protected override SpawnPoint[] GeneratePoints()
     {
-        GameObject container = new GameObject();
-        container.name = "Flora" + ObjectsSpawned++;
+        return new[] { new SpawnPoint(Vector3.zero, Quaternion.identity) };
+    }
 
-        var flora = Instantiate(this.flora);
-        flora.transform.SetParent(container.transform);
+    protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
+    {
+        if (flora == null) return;
+        var instance = Instantiate(flora, container.transform);
+        instance.transform.localPosition = Vector3.zero;
+    }
 
-        return container;
+    protected override int GetParameterHash()
+    {
+        return System.HashCode.Combine(seed);
     }
 }

@@ -1,6 +1,7 @@
 using CosmicShore.Core;
 using System.Collections.Generic;
 using UnityEngine;
+using CosmicShore.Utility;
 
 
 namespace CosmicShore.Game.Animation
@@ -52,10 +53,10 @@ namespace CosmicShore.Game.Animation
             {
                 for (var i = 0; i < Transforms.Count; i++)
                 {
-                    // Debug.LogWarningFormat("{0} - {1} - index: {2}", "VesselAnimation" , nameof(Idle), i.ToString());
-                    // Debug.LogWarningFormat("{0} - {1} - transform value: {2}", "VesselAnimation" , nameof(Idle), Transforms[i]);
-                    // Debug.LogWarningFormat("{0} - {1} - transform value: {2}", "VesselAnimation" , nameof(Idle), InitialRotations[i].ToString());
-                    // Debug.LogWarningFormat("{0} - {1} - initial rotations max index: {2}", "VesselAnimation" , nameof(Idle), InitialRotations.Count.ToString());
+                    // CSDebug.LogWarningFormat("{0} - {1} - index: {2}", "VesselAnimation" , nameof(Idle), i.ToString());
+                    // CSDebug.LogWarningFormat("{0} - {1} - transform value: {2}", "VesselAnimation" , nameof(Idle), Transforms[i]);
+                    // CSDebug.LogWarningFormat("{0} - {1} - transform value: {2}", "VesselAnimation" , nameof(Idle), InitialRotations[i].ToString());
+                    // CSDebug.LogWarningFormat("{0} - {1} - initial rotations max index: {2}", "VesselAnimation" , nameof(Idle), InitialRotations.Count.ToString());
                     if (i < InitialRotations.Count)
                     {
                         ResetAnimation(Transforms[i], InitialRotations[i]);

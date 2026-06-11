@@ -1,9 +1,9 @@
 using System.Collections;
 using System.Linq;
 using CosmicShore.Game.UI;
-using Cysharp.Threading.Tasks;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -13,7 +13,7 @@ namespace CosmicShore.Game.Arcade
 
         public void OnClickReturnToMainMenu()
         {
-            CloseSession_ServerRpc();
+            LeaveSessionAndReturnToMenu();
         }
 
         protected override void OnCountdownTimerEnded()
@@ -31,14 +31,13 @@ namespace CosmicShore.Game.Arcade
             gameData.StartTurn();
         }
 
-        [ServerRpc(RequireOwnership = false)]
-        void CloseSession_ServerRpc()
-        {
-            multiplayerSetup.LeaveSession().Forget();
-        }
-
         protected override void OnReadyClicked_()
         {
+            if (gameData.LocalPlayer == null)
+            {
+                Debug.LogWarning("[MultiplayerDomainGamesController] OnReadyClicked_ skipped — LocalPlayer is null.");
+                return;
+            }
             RaiseToggleReadyButtonEvent(false);
             OnReadyClicked_ServerRpc(gameData.LocalPlayer.Name);
         }
@@ -49,7 +48,7 @@ namespace CosmicShore.Game.Arcade
             readyClientCount++;
 
             // Debug log to help track this state if issues persist
-            Debug.Log($"[Server] Player Ready. Count: {readyClientCount}/{gameData.SelectedPlayerCount}");
+            CSDebug.Log($"[Server] Player Ready. Count: {readyClientCount}/{gameData.SelectedPlayerCount}");
 
             // Broadcast which player is ready to all clients
             NotifyPlayerReady_ClientRpc(playerName);

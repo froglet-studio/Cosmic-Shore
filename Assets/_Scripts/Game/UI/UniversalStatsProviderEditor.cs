@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEditorInternal;
 using System.Collections.Generic;
 using CosmicShore.Game.Arcade;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -401,23 +402,23 @@ namespace CosmicShore.Game.UI
             
             if (stats.Count == 0)
             {
-                Debug.LogWarning("═══════════════════════════════════\n" +
+                CSDebug.LogWarning("═══════════════════════════════════\n" +
                                  "No stats configured or returned\n" +
                                  "═══════════════════════════════════");
                 return;
             }
             
-            Debug.Log("═══════════════════════════════════");
-            Debug.Log($"<color=cyan><b>  STATS PREVIEW ({stats.Count} total)</b></color>");
-            Debug.Log("═══════════════════════════════════");
+            CSDebug.Log("═══════════════════════════════════");
+            CSDebug.Log($"<color=cyan><b>  STATS PREVIEW ({stats.Count} total)</b></color>");
+            CSDebug.Log("═══════════════════════════════════");
             
             foreach (var stat in stats)
             {
                 var icon = stat.Icon != null ? "✓" : " ";
-                Debug.Log($"<color=cyan>[{icon}] <b>{stat.Label}</b>: {stat.Value}</color>");
+                CSDebug.Log($"<color=cyan>[{icon}] <b>{stat.Label}</b>: {stat.Value}</color>");
             }
             
-            Debug.Log("═══════════════════════════════════");
+            CSDebug.Log("═══════════════════════════════════");
         }
         
         #endregion

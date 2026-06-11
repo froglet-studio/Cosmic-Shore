@@ -1,3 +1,4 @@
+using CosmicShore.App.Systems.Audio;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -26,12 +27,14 @@ namespace CosmicShore.Game
             {
                 case PrismImpactor prismImpactee:
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselPrismEffects)) return;
+                    AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.VesselImpact);
                     foreach (var effect in vesselImpactorDataContainerSO.VesselPrismEffects)
                         effect.Execute(this, prismImpactee);
                     break;
 
                 case OmniCrystalImpactor omniCrystalImpactee:
                 {
+                    AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect);
                     var data = CrystalImpactData.FromCrystal(omniCrystalImpactee.Crystal);
                     if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
                         networkVesselImpactor.ExecuteOnHitOmniCrystal(data);
@@ -40,9 +43,9 @@ namespace CosmicShore.Game
                     break;
                 }
 
-                // ✅ NEW: Elemental crystal path
                 case ElementalCrystalImpactor elementalCrystalImpactee:
                 {
+                    AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect);
                     var data = CrystalImpactData.FromCrystal(elementalCrystalImpactee.Crystal);
                     if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
                         networkVesselImpactor.ExecuteOnHitElementalCrystal(data);
@@ -53,6 +56,7 @@ namespace CosmicShore.Game
 
                 case SkimmerImpactor skimmerImpactee:
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselSkimmerEffects)) return;
+                    AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.VesselImpact);
                     foreach (var effect in vesselImpactorDataContainerSO.VesselSkimmerEffects)
                         effect.Execute(this, skimmerImpactee);
                     break;

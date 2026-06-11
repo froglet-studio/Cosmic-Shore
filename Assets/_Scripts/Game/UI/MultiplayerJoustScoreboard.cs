@@ -1,7 +1,9 @@
 ﻿// MultiplayerJoustScoreboard.cs
 using System;
+using System.Linq;
 using CosmicShore.Game.Arcade;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -12,10 +14,23 @@ namespace CosmicShore.Game.UI
 
         protected override void ShowMultiplayerView()
         {
-            gameData.RoundStatsList.Sort((a, b) => a.Score.CompareTo(b.Score));
-            
-            var winner = gameData.RoundStatsList[0];
-            SetBannerForDomain(winner.Domain);
+            // Use the authoritative WinnerName from the joust controller
+            // instead of sorting by score, which can be unreliable if
+            // scores are reset before the scoreboard displays.
+            if (joustController != null && joustController.ResultsReady)
+            {
+                var winnerStats = gameData.RoundStatsList
+                    .FirstOrDefault(s => s.Name == joustController.WinnerName);
+                if (winnerStats != null)
+                    SetBannerForDomain(winnerStats.Domain);
+                else if (BannerText) BannerText.text = "GAME OVER";
+            }
+            else if (gameData.RoundStatsList is { Count: > 0 })
+            {
+                gameData.RoundStatsList.Sort((a, b) => a.Score.CompareTo(b.Score));
+                SetBannerForDomain(gameData.RoundStatsList[0].Domain);
+            }
+            else if (BannerText) BannerText.text = "GAME OVER";
 
             FormatMultiplayerJoustScores();
 
@@ -27,15 +42,15 @@ namespace CosmicShore.Game.UI
         {
             if (!joustController || !joustController.joustTurnMonitor)
             {
-                Debug.LogError("[MultiplayerJoustScoreboard] JoustController or TurnMonitor is null!");
+                CSDebug.LogError("[MultiplayerJoustScoreboard] JoustController or TurnMonitor is null!");
                 return;
             }
 
             var playerScores = gameData.RoundStatsList;
             int needed = joustController.joustTurnMonitor.CollisionsNeeded;
 
-            // Find local player name to determine who won
-            var localName = gameData.LocalPlayer?.Name;
+            // Use the authoritative WinnerName to determine who won
+            string winnerName = joustController.ResultsReady ? joustController.WinnerName : "";
 
             for (var i = 0; i < playerScores.Count && i < PlayerScoreTextFields.Count; i++)
             {
@@ -46,7 +61,7 @@ namespace CosmicShore.Game.UI
 
                 var stats = playerScores[i];
                 int joustsLeft = Mathf.Max(0, needed - stats.JoustCollisions);
-                bool thisPlayerWon = joustsLeft == 0; // completed all jousts
+                bool thisPlayerWon = stats.Name == winnerName;
 
                 if (thisPlayerWon)
                 {

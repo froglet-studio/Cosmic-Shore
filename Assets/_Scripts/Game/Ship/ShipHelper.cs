@@ -17,6 +17,8 @@ namespace CosmicShore.Game
         {
             shipControlActions.Clear();
 
+            if (inputEventShipActions == null) return;
+
             foreach (var map in inputEventShipActions)
             {
                 if (!shipControlActions.TryGetValue(map.InputEvent, out var list))
@@ -128,22 +130,27 @@ namespace CosmicShore.Game
                 }
             }
         }
-        public static void SetShipProperties(ThemeManagerDataContainerSO themeManagerData, IVessel vessel, SO_Captain so_captain = null)
+        public static void SetShipProperties(ThemeManagerDataContainerSO themeManagerData, IVessel vessel)
         {
-            // TODO - Get Captains from data containers
-            /*if (so_captain == null && CaptainManager.Instance != null)
+            if (themeManagerData == null)
             {
-                var so_captains = CaptainManager.Instance.GetAllSOCaptains().Where(x => x.Vessel.Class == vessel.VesselStatus.ShipType).ToList();
-                so_captain = so_captains[Random.Range(0, 3)];
-                var captain = CaptainManager.Instance.GetCaptainByName(so_captain.Name);
-                if (captain != null)
-                {
-                    vessel.AssignCaptain(so_captain);
-                    vessel.SetResourceLevels(captain.ResourceLevels);
-                }
-            }*/
+                Debug.LogError("[ShipHelper] ThemeManagerData is null — cannot set ship properties.");
+                return;
+            }
 
-            var materialSet = themeManagerData.TeamMaterialSets[vessel.VesselStatus.Domain];
+            if (themeManagerData.TeamMaterialSets == null)
+            {
+                Debug.LogError("[ShipHelper] TeamMaterialSets not initialized — ThemeManager may not have run.");
+                return;
+            }
+
+            var domain = vessel.VesselStatus.Domain;
+            if (!themeManagerData.TeamMaterialSets.TryGetValue(domain, out var materialSet))
+            {
+                Debug.LogError($"[ShipHelper] No material set found for domain {domain}.");
+                return;
+            }
+
             vessel.SetShipMaterial(materialSet.ShipMaterial);
             vessel.SetBlockSilhouettePrefab(materialSet.BlockSilhouettePrefab);
             vessel.SetAOEExplosionMaterial(materialSet.AOEExplosionMaterial);

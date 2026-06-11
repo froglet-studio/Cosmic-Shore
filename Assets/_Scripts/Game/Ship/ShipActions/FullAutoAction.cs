@@ -13,6 +13,9 @@ namespace CosmicShore
     {
         public event Action OnFullAutoStarted;
         public event Action OnFullAutoStopped;
+
+        /// <summary>Static event: each time a full-auto volley fires. Param = player name.</summary>
+        public static event Action<string> OnVolleyFired;
         
         // TODO: WIP gun firing needs to be reworked
         [SerializeField] Gun gunContainer;
@@ -89,6 +92,7 @@ namespace CosmicShore
                         gunContainer.FireGun(transform, speed.Value, inheritedVelocity * VesselStatus.Speed, ProjectileScale, true, projectileTime, 0, FiringPattern, Energy);
                     }
                     ResourceSystem.ChangeResourceAmount(ammoIndex, -ammoCost);
+                    OnVolleyFired?.Invoke(VesselStatus.PlayerName);
                 }
                 yield return new WaitForSeconds(1/firingRate);
             }

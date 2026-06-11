@@ -4,15 +4,27 @@ namespace CosmicShore.Game
 {
     public class LocalCrystalManager : CrystalManager
     {
+        [Header("Early Spawn")]
+        [Tooltip("When true, crystals spawn once all players are ready (before the ready button) instead of on turn start.")]
+        [SerializeField] private bool spawnOnClientReady;
+
         private void OnEnable()
         {
-            gameData.OnMiniGameTurnStarted.OnRaised += MiniGameTurnStarted;
+            if (spawnOnClientReady)
+                gameData.OnClientReady += MiniGameTurnStarted;
+            else
+                gameData.OnMiniGameTurnStarted.OnRaised += MiniGameTurnStarted;
+
             gameData.OnMiniGameTurnEnd.OnRaised += OnTurnEnded;
         }
 
         private void OnDisable()
         {
-            gameData.OnMiniGameTurnStarted.OnRaised -= MiniGameTurnStarted;
+            if (spawnOnClientReady)
+                gameData.OnClientReady -= MiniGameTurnStarted;
+            else
+                gameData.OnMiniGameTurnStarted.OnRaised -= MiniGameTurnStarted;
+
             gameData.OnMiniGameTurnEnd.OnRaised -= OnTurnEnded;
         }
 
@@ -34,6 +46,8 @@ namespace CosmicShore.Game
         {
             SpawnBatchIfMissing();
         }
+        
+        public void ManualTurnEnded() => OnTurnEnded();
         
         void OnTurnEnded()
         {

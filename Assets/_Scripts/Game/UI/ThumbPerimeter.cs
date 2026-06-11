@@ -3,6 +3,7 @@ using CosmicShore.Game.IO;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.UI
 {
@@ -40,7 +41,7 @@ namespace CosmicShore.Game.UI
 
         private void OnToggleJoystickVisuals(bool status)
         {
-            Debug.Log($"GameSettings.OnChangeJoystickVisualsStatus - status: {status}");
+            CSDebug.Log($"GameSettings.OnChangeJoystickVisualsStatus - status: {status}");
             imageEnabled = status;
         }
 

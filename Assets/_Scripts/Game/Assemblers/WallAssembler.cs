@@ -294,7 +294,7 @@ namespace CosmicShore
                     yield return new WaitForSeconds(1f);
                     if (TopIsBonded && BottomIsBonded)
                     {
-                        //Debug.Log("Bonded Top and Bottom");
+                        //CSDebug.Log("Bonded Top and Bottom");
                         StopAllCoroutines();
                         Prism.Grow();
                         if (TopMate.Mate.MateList.Count < 2)
@@ -416,7 +416,7 @@ namespace CosmicShore
                     if (siteType == SiteType.Top &&
                         (bondSite - mateComponent.globalBondSiteRight).sqrMagnitude < snapDistance)
                     {
-                        //Debug.Log("ReFound MateRight");
+                        //CSDebug.Log("ReFound MateRight");
                         mateComponent.Prism.ActivateShield();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Right };
                     }
@@ -424,7 +424,7 @@ namespace CosmicShore
                     if (siteType == SiteType.Bottom &&
                         (bondSite - mateComponent.globalBondSiteLeft).sqrMagnitude < snapDistance)
                     {
-                        //Debug.Log("ReFound MateLeft");
+                        //CSDebug.Log("ReFound MateLeft");
                         mateComponent.Prism.MakeDangerous();
                         return new BondMate { Mate = mateComponent, Substrate = siteType, Bondee = SiteType.Left };
                     }
@@ -437,7 +437,7 @@ namespace CosmicShore
                         float distance = (bondSite - mateComponent.globalBondSiteRight).sqrMagnitude;
                         if (distance < closestDistance)
                         {
-                            //Debug.Log("Found MateRight");
+                            //CSDebug.Log("Found MateRight");
                             closestDistance = distance;
                             closest = mateComponent;
                             bondee = SiteType.Right;
@@ -448,7 +448,7 @@ namespace CosmicShore
                         float distance = (bondSite - mateComponent.globalBondSiteLeft).sqrMagnitude;
                         if (distance < closestDistance)
                         {
-                            //Debug.Log("Found MateLeft");
+                            //CSDebug.Log("Found MateLeft");
                             closestDistance = distance;
                             closest = mateComponent;
                             bondee = SiteType.Left;
@@ -558,7 +558,7 @@ namespace CosmicShore
             RightMate = null;
             LeftMate  = null;
         
-            Debug.Log("WallAssembler stopped bonding");
+            CSDebug.Log("WallAssembler stopped bonding");
         }
 
         public void StopAssembly()
@@ -579,7 +579,7 @@ namespace CosmicShore
             LeftMate.StopAssembly();
             RightMate.StopAssembly();
             isStopped = true;
-            Debug.Log("Assembly Stopped");
+            CSDebug.Log("Assembly Stopped");
         }
     }
 }

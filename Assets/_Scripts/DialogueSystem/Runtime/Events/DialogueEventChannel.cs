@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.DialogueSystem.Events
 {
@@ -14,7 +15,7 @@ namespace CosmicShore.DialogueSystem.Events
         {
             if (string.IsNullOrEmpty(setId))
             {
-                Debug.LogWarning("DialogueEventChannel: Raised with empty setId.");
+                CSDebug.LogWarning("DialogueEventChannel: Raised with empty setId.");
                 return;
             }
 

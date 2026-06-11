@@ -1,3 +1,4 @@
+using CosmicShore.Services.Auth;
 using CosmicShore.Utilities;
 using Unity.Services.Analytics;
 using Unity.Services.Core;
@@ -10,12 +11,24 @@ namespace CosmicShore.Integrations.Instrumentation.UnityAnalytics
         private const bool IsConsented = true;
 
         private bool _isConnected = true;
-        // Start is called before the first frame update
+
         private async void Start()
         {
-            await UnityServices.InitializeAsync();
-            AskForConsents();
-            SetUserId();
+            try
+            {
+                // Use centralized UGS initialization via AuthenticationController
+                if (AuthenticationController.Instance != null)
+                    await AuthenticationController.Instance.EnsureInitializedAsync();
+                else
+                    await UnityServices.InitializeAsync(); // Fallback if no controller present
+
+                AskForConsents();
+                SetUserId();
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[UnityAnalytics] Failed to initialize: {ex.Message}");
+            }
         }
 
         private void OnEnable()

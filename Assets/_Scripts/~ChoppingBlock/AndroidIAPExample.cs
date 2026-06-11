@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Purchasing;
 using UnityEngine.Purchasing.Extension;
+using CosmicShore.Utility;
 
 public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
 {
@@ -39,17 +40,17 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
             {
 
                 catalogItems = response.Items;
-                Debug.Log(catalogItems);
+                CSDebug.Log(catalogItems);
                 foreach (var item in catalogItems)
                 {
-                    Debug.Log("   Title: " + item.Title);
-                    Debug.Log("   Content Type: " + item.ContentType);
+                    CSDebug.Log("   Title: " + item.Title);
+                    CSDebug.Log("   Content Type: " + item.ContentType);
                     foreach (var description in item.Description.Values)
                     {
-                        Debug.Log("   Description: " + description);
+                        CSDebug.Log("   Description: " + description);
                     }
-                    Debug.Log("   DefaultStackId: " + item.DefaultStackId);
-                    Debug.Log("   Id: " + item.Id);
+                    CSDebug.Log("   DefaultStackId: " + item.DefaultStackId);
+                    CSDebug.Log("   Id: " + item.Id);
                 }
 
                 inventoryItemReference.StackId = catalogItems[0].DefaultStackId;
@@ -68,20 +69,20 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
 
                 PlayFab.PlayFabEconomyAPI.AddInventoryItems(request, OnAddInventoryItemSuccess, OnAddInventoryItemError);
             },
-            (PlayFabError error) => { Debug.Log(error.ErrorDetails); });
+            (PlayFabError error) => { CSDebug.Log(error.ErrorDetails); });
     }
 
     void OnAddInventoryItemError(PlayFabError error)
     {
-        Debug.LogError(error.GenerateErrorReport());
+        CSDebug.LogError(error.GenerateErrorReport());
     }
 
     void OnAddInventoryItemSuccess(AddInventoryItemsResponse response)
     {
-        Debug.Log("OnAddInventoryItemSuccess");
+        CSDebug.Log("OnAddInventoryItemSuccess");
         foreach (var transactionId in response.TransactionIds)
         {
-            Debug.Log($"transaction id: {transactionId}");
+            CSDebug.Log($"transaction id: {transactionId}");
         }
 
         PlayFab.EconomyModels.GetInventoryItemsRequest getItemsRequest = new GetInventoryItemsRequest();
@@ -90,7 +91,7 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
             getItemsRequest,
             (GetInventoryItemsResponse response) =>
             {
-                Debug.Log("GetInventoryItemsResponse: " + response.Items);
+                CSDebug.Log("GetInventoryItemsResponse: " + response.Items);
 
                 foreach (var item in response.Items)
                 {
@@ -101,24 +102,24 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
                         },
                         (GetItemResponse response) => 
                         {
-                            Debug.Log("   Id: " + response.Item.Id);
+                            CSDebug.Log("   Id: " + response.Item.Id);
                             foreach (var key in response.Item.Title.Keys)
                             {
-                                Debug.Log("   Title Key: " + key);
-                                Debug.Log("   Title: " + response.Item.Title[key]);
+                                CSDebug.Log("   Title Key: " + key);
+                                CSDebug.Log("   Title: " + response.Item.Title[key]);
                             }
-                            Debug.Log("   Type: " + response.Item.Type);
-                            Debug.Log("   Image Count: " + response.Item.Images.Count);
-                            Debug.Log("   Content Type: " + item.Amount);
+                            CSDebug.Log("   Type: " + response.Item.Type);
+                            CSDebug.Log("   Image Count: " + response.Item.Images.Count);
+                            CSDebug.Log("   Content Type: " + item.Amount);
                         },
                         (PlayFabError error) => 
                         {
-                            Debug.LogError(error.GenerateErrorReport());
+                            CSDebug.LogError(error.GenerateErrorReport());
                         }
                     );
                 }
             },
-            (PlayFabError error) => { Debug.Log(error.ErrorDetails); });
+            (PlayFabError error) => { CSDebug.Log(error.ErrorDetails); });
     }
 
     public void BuyTomahawk()
@@ -139,11 +140,11 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
             purchaseInventoryItemsRequest,
             (PurchaseInventoryItemsResponse response) =>
             {
-                Debug.Log("Successfully purchased Tomahawk");
+                CSDebug.Log("Successfully purchased Tomahawk");
             },
             (PlayFabError error) =>
             {
-                Debug.LogError(error.GenerateErrorReport());
+                CSDebug.LogError(error.GenerateErrorReport());
             }
         );
     }
@@ -183,16 +184,16 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
             CreateAccount = true,
             AndroidDeviceId = SystemInfo.deviceUniqueIdentifier
         }, result => {
-            Debug.Log($"Logged in: {result.PlayFabId}");
+            CSDebug.Log($"Logged in: {result.PlayFabId}");
             // Refresh available items
             RefreshIAPItems();
             PlayerId = result.EntityToken.Entity.Id; // result.PlayFabId;
             m_AuthenticationContext = result.AuthenticationContext;
             EntityType = result.EntityToken.Entity.Type;
-            Debug.Log($"Entity Type: {EntityType}");
-            Debug.Log($"PlayerId: {PlayerId}");
+            CSDebug.Log($"Entity Type: {EntityType}");
+            CSDebug.Log($"PlayerId: {PlayerId}");
             GrantShards();
-        }, error => Debug.LogError(error.GenerateErrorReport()));
+        }, error => CSDebug.LogError(error.GenerateErrorReport()));
 #endif
 #if UNITY_IOS
         PlayFabClientAPI.LoginWithIOSDeviceID(new LoginWithIOSDeviceIDRequest()
@@ -201,16 +202,16 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
             DeviceId = SystemInfo.deviceUniqueIdentifier
             //iOSDeviceId = SystemInfo.deviceUniqueIdentifier
         }, result => {
-            Debug.Log($"Logged in: {result.PlayFabId}");
+            CSDebug.Log($"Logged in: {result.PlayFabId}");
             // Refresh available items
             RefreshIAPItems();
             PlayerId = result.EntityToken.Entity.Id; // result.PlayFabId;
             m_AuthenticationContext = result.AuthenticationContext;
             EntityType = result.EntityToken.Entity.Type;
-            Debug.Log($"Entity Type: {EntityType}");
-            Debug.Log($"PlayerId: {PlayerId}");
+            CSDebug.Log($"Entity Type: {EntityType}");
+            CSDebug.Log($"PlayerId: {PlayerId}");
             GrantShards();
-        }, error => Debug.LogError(error.GenerateErrorReport()));
+        }, error => CSDebug.LogError(error.GenerateErrorReport()));
 #endif
 
     }
@@ -222,7 +223,7 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
 
             // Make UnityIAP initialize
             InitializePurchasing();
-        }, error => Debug.LogError(error.GenerateErrorReport()));
+        }, error => CSDebug.LogError(error.GenerateErrorReport()));
     }
 
     // This is invoked manually on Start to initialize UnityIAP
@@ -262,13 +263,13 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
     // This is automatically invoked automatically when IAP service failed to initialized
     public void OnInitializeFailed(InitializationFailureReason error)
     {
-        Debug.Log("OnInitializeFailed InitializationFailureReason:" + error);
+        CSDebug.Log("OnInitializeFailed InitializationFailureReason:" + error);
     }
 
     // This is automatically invoked automatically when purchase failed
     public void OnPurchaseFailed(Product product, PurchaseFailureReason failureReason)
     {
-        Debug.Log(string.Format("OnPurchaseFailed: FAIL. Product: '{0}', PurchaseFailureReason: {1}", product.definition.storeSpecificId, failureReason));
+        CSDebug.Log(string.Format("OnPurchaseFailed: FAIL. Product: '{0}', PurchaseFailureReason: {1}", product.definition.storeSpecificId, failureReason));
     }
 
     // This is invoked automatically when successful purchase is ready to be processed
@@ -287,18 +288,18 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
         // Test edge case where product is unknown
         if (e.purchasedProduct == null)
         {
-            Debug.LogWarning("Attempted to process purchase with unknown product. Ignoring");
+            CSDebug.LogWarning("Attempted to process purchase with unknown product. Ignoring");
             return PurchaseProcessingResult.Complete;
         }
 
         // Test edge case where purchase has no receipt
         if (string.IsNullOrEmpty(e.purchasedProduct.receipt))
         {
-            Debug.LogWarning("Attempted to process purchase with no receipt: ignoring");
+            CSDebug.LogWarning("Attempted to process purchase with no receipt: ignoring");
             return PurchaseProcessingResult.Complete;
         }
 
-        Debug.Log("Processing transaction: " + e.purchasedProduct.transactionID);
+        CSDebug.Log("Processing transaction: " + e.purchasedProduct.transactionID);
 
         // Deserialize receipt
         var googleReceipt = GooglePurchase.FromJson(e.purchasedProduct.receipt);
@@ -316,8 +317,8 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
             ReceiptJson = googleReceipt.PayloadData.json,
             // Pass in the signature
             Signature = googleReceipt.PayloadData.signature
-        }, result => Debug.Log("Validation successful!"),
-           error => Debug.Log("Validation failed: " + error.GenerateErrorReport())
+        }, result => CSDebug.Log("Validation successful!"),
+           error => CSDebug.Log("Validation failed: " + error.GenerateErrorReport())
         );
 
         return PurchaseProcessingResult.Complete;
@@ -335,12 +336,12 @@ public class AndroidIAPExample : MonoBehaviour, IDetailedStoreListener
 
     public void OnInitializeFailed(InitializationFailureReason error, string message)
     {
-        Debug.Log("OnInitializeFailed: " + message);
+        CSDebug.Log("OnInitializeFailed: " + message);
     }
 
     public void OnPurchaseFailed(Product product, PurchaseFailureDescription failureDescription)
     {
-        Debug.Log("OnPurchaseFailed: " + failureDescription);
+        CSDebug.Log("OnPurchaseFailed: " + failureDescription);
     }
 }
 

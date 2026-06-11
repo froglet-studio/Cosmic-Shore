@@ -29,7 +29,7 @@ namespace CosmicShore.Game
             if (timeSinceLastUse < cooldown)
             {
                 float remaining = cooldown - timeSinceLastUse;
-                Debug.Log($"[DeployTeamCrystalAction] Ability on cooldown – {remaining:F1}s left");
+                CSDebug.Log($"[DeployTeamCrystalAction] Ability on cooldown – {remaining:F1}s left");
                 return;
             }
 
@@ -54,7 +54,7 @@ namespace CosmicShore.Game
 
             // 2️⃣ Mark ability as used
             _lastUseTime = Time.time;
-            Debug.Log($"[DeployTeamCrystalAction] Crystal deployed. Cooldown started ({cooldown}s)");
+            CSDebug.Log($"[DeployTeamCrystalAction] Crystal deployed. Cooldown started ({cooldown}s)");
         }
 
         Vector3 GetSpawnPoint()

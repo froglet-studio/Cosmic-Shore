@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using Obvious.Soap;
 using UnityEngine;
 
@@ -17,9 +17,9 @@ namespace CosmicShore.Game
         [SerializeField] private ScriptableEventBool stationaryModeChanged;
         [SerializeField] private ScriptableEventInputEventBlock onInputEventBlocked;
 
-        Coroutine _heatFillLoop;
         Coroutine _initialAmmoRoutine;
         IVesselStatus _vesselStatus;
+        bool _heatActive;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -33,7 +33,6 @@ namespace CosmicShore.Game
 
             Subscribe();
         }
-
 
         void Subscribe()
         {
@@ -59,6 +58,14 @@ namespace CosmicShore.Game
             }
 
             if (fireGunExecutor == null) return;
+
+            // In Dog Fight mode, missiles are disabled — hide the icon entirely
+            if (gameData && gameData.GameMode == GameModes.MultiplayerDogFight)
+            {
+                view.HideMissileIcon();
+                return;
+            }
+
             fireGunExecutor.OnAmmoChanged += HandleAmmoChanged;
             _initialAmmoRoutine = StartCoroutine(InitialAmmoPaintRoutine());
         }
@@ -88,7 +95,16 @@ namespace CosmicShore.Game
             if (_initialAmmoRoutine != null)
                 StopCoroutine(_initialAmmoRoutine);
 
-            StopHeatFillLoop();
+            _heatActive = false;
+        }
+
+        void Update()
+        {
+            if (!_heatActive || !view || !overheatingExecutor) return;
+
+            view.SetBoostState(
+                Mathf.Clamp01(overheatingExecutor.Heat01),
+                overheatingExecutor.IsOverheating);
         }
 
         private IEnumerator InitialAmmoPaintRoutine()
@@ -110,44 +126,15 @@ namespace CosmicShore.Game
             view.SetWeaponMode(isStationary);
         }
 
-        void OnHeatBuildStarted() => StartHeatFillLoop();
-        void OnOverheated()       => StartHeatFillLoop();
-        void OnHeatDecayStarted() => StartHeatFillLoop();
+        void OnHeatBuildStarted() => _heatActive = true;
+        void OnOverheated()       => _heatActive = true;
+        void OnHeatDecayStarted() => _heatActive = true;
 
         void OnHeatDecayCompleted()
         {
-            StopHeatFillLoop();
+            _heatActive = false;
             if (overheatingExecutor && view)
                 view.SetBoostState(overheatingExecutor.Heat01, false);
-        }
-
-        void StartHeatFillLoop()
-        {
-            StopHeatFillLoop();
-            _heatFillLoop = StartCoroutine(HeatFillRoutine());
-        }
-
-        void StopHeatFillLoop()
-        {
-            if (_heatFillLoop != null)
-            {
-                StopCoroutine(_heatFillLoop);
-                _heatFillLoop = null;
-            }
-        }
-
-        private IEnumerator HeatFillRoutine()
-        {
-            if (!view || !overheatingExecutor) yield break;
-
-            while (true)
-            {
-                float heat = Mathf.Clamp01(overheatingExecutor.Heat01);
-                bool  hot  = overheatingExecutor.IsOverheating;
-
-                view.SetBoostState(heat, hot);
-                yield return new WaitForSeconds(0.05f);
-            }
         }
 
         private void HandleAmmoChanged(float ammo01)

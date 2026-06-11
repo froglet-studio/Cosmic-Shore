@@ -65,13 +65,13 @@ public class Boid : Fauna
         embeddedHealthPrism = GetComponentInChildren<HealthPrism>(true);
         if (!embeddedHealthPrism)
         {
-            Debug.LogError($"{nameof(Boid)} on {name} has no embedded HealthPrism in children. Scaling cannot work.");
+            CSDebug.LogError($"{nameof(Boid)} on {name} has no embedded HealthPrism in children. Scaling cannot work.");
             return;
         }
 
         blockCollider = embeddedHealthPrism.GetComponent<BoxCollider>();
         if (!blockCollider)
-            Debug.LogWarning($"{nameof(Boid)} on {name}: embedded HealthPrism has no BoxCollider.");
+            CSDebug.LogWarning($"{nameof(Boid)} on {name}: embedded HealthPrism has no BoxCollider.");
 
         embeddedHealthPrism.ChangeTeam(domain);
 

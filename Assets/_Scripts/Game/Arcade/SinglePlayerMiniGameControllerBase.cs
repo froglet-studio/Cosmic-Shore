@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -20,7 +21,7 @@ namespace CosmicShore.Game.Arcade
         {
             if (gameData == null)
             {
-                Debug.LogError("GameDataSO is not assigned!", this);
+                CSDebug.LogError("GameDataSO is not assigned!", this);
                 return;
             }
             

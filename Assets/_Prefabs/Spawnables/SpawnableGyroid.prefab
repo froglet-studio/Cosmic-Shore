@@ -44,12 +44,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0ceccfe991f11564e876f7bec48fb65d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  seed: 0
   domain: 3
-  intenstyLevel: 1
+  children: []
+  leafPrefab: {fileID: 0}
+  intensityLevel: 1
   prism: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
   blockScale: {x: 11, y: 2.5, z: 0.5}
   seedBlockType: 1
-  maxDepth: 50
+  maxDepth: 30
   separationDistance: 3
   overlapCellSize: 8.1
   expandTopLeft: 1

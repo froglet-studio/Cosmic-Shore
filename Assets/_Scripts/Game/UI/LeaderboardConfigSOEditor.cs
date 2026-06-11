@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿#if UNITY_EDITOR
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Analytics
 {
@@ -310,7 +312,7 @@ namespace CosmicShore.Game.Analytics
         {
             if (index < 0 || index >= leaderboardMappingsProperty.arraySize)
             {
-                Debug.LogError($"Invalid index {index} when trying to delete mapping");
+                CSDebug.LogError($"Invalid index {index} when trying to delete mapping");
                 return;
             }
 
@@ -441,3 +443,4 @@ namespace CosmicShore.Game.Analytics
         }
     }
 }
+#endif

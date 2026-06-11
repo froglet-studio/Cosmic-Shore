@@ -1,6 +1,8 @@
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore
 {
@@ -20,7 +22,7 @@ namespace CosmicShore
     /// blocks along individual fibers (circles), while this places blocks on the 2D
     /// surface that those fibers collectively trace out.
     /// </summary>
-    public class SpawnableCliffordTorus : SpawnableAbstractBase
+    public class SpawnableCliffordTorus : SpawnableBase
     {
         [Header("Block Settings")]
         [SerializeField] Prism prism;
@@ -52,18 +54,18 @@ namespace CosmicShore
             Domains.Ruby,
         };
 
-        static int ObjectsSpawned = 0;
-
-        public override GameObject Spawn()
+        protected override SpawnTrailData[] GenerateTrailData()
         {
-            var container = new GameObject($"CliffordTorus{ObjectsSpawned++}");
-            int blockIndex = 0;
-
             float invSqrt2 = 1f / Mathf.Sqrt(2f);
+
+            // One trail per u-row
+            var trailDataList = new List<SpawnTrailData>();
 
             for (int iu = 0; iu < uSamples; iu++)
             {
                 float u = 2f * Mathf.PI * iu / uSamples;
+
+                var points = new List<SpawnPoint>();
 
                 for (int iv = 0; iv < vSamples; iv++)
                 {
@@ -92,35 +94,37 @@ namespace CosmicShore
                     if (float.IsInfinity(neighbor.x) || float.IsNaN(neighbor.x))
                         neighbor = position + Vector3.forward;
 
-                    // Color bands by v-parameter
-                    int bandIndex = iv * vDomains.Length / vSamples;
-                    Domains blockDomain = colorByV && vDomains.Length > 0
-                        ? vDomains[bandIndex % vDomains.Length]
-                        : domain;
+                    var rotation = SpawnPoint.LookRotation(neighbor, position, Vector3.up);
 
-                    var trail = GetOrCreateTrail(iu);
-
-                    CreateBlock(position, neighbor,
-                        $"{container.name}::SURFACE::{blockIndex}",
-                        trail, blockScale, prism, container, blockDomain);
-
-                    blockIndex++;
+                    points.Add(new SpawnPoint(position, rotation, blockScale));
                 }
+
+                // Color bands by v-parameter — pick domain for this row based on first valid iv
+                // Each point in the row may have a different v, but we assign per-trail domain
+                // based on the row index iu to match the original band-per-v behavior
+                // Actually, the original colored per-block based on iv. Since we have one trail
+                // per iu, and each trail spans all iv values, we need to pick a single domain
+                // per trail. We'll use the iu index to vary domains across trails.
+                Domains trailDomain = colorByV && vDomains.Length > 0
+                    ? vDomains[iu % vDomains.Length]
+                    : domain;
+
+                if (points.Count > 0)
+                    trailDataList.Add(new SpawnTrailData(points.ToArray(), false, trailDomain));
             }
 
-            return container;
+            return trailDataList.ToArray();
         }
 
-        public override GameObject Spawn(int intensityLevel)
+        protected override void SpawnLeafObjects(SpawnTrailData[] trailData, GameObject container)
         {
-            return Spawn();
+            foreach (var td in trailData)
+                SpawnPrismTrail(td.Points, container, prism, td.IsLoop, td.Domain);
         }
 
-        Trail GetOrCreateTrail(int index)
+        protected override int GetParameterHash()
         {
-            while (trails.Count <= index)
-                trails.Add(new Trail());
-            return trails[index];
+            return System.HashCode.Combine(uSamples, vSamples, projectionScale, projectionPole, blockScale, seed);
         }
 
         Vector3 StereographicProject(float x1, float x2, float x3, float x4)

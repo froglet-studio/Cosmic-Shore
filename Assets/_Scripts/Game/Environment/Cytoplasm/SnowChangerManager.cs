@@ -29,6 +29,9 @@ namespace CosmicShore.Game
         
         private void SpawnSnows()
         {
+            if (cellData.Config == null || cellData.Config.CytoplasmPrefab == null || cellData.CellTransform == null)
+                return;
+
             var snowChanger = Instantiate(cellData.Config.CytoplasmPrefab, cellData.CellTransform.position, Quaternion.identity);
             snowChanger.Initialize();
         }

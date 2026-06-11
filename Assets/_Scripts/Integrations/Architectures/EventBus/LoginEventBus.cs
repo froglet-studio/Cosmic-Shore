@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Integrations.Architectures.EventBus
 {
@@ -49,7 +50,7 @@ namespace CosmicShore.Integrations.Architectures.EventBus
         public void Dispose()
         {
             Events.Clear();
-            Debug.Log("LoginEventBus - Events cleared.");
+            CSDebug.Log("LoginEventBus - Events cleared.");
         }
     }
 }

@@ -1,33 +1,40 @@
 using System.Collections.Generic;
 using CosmicShore.Core;
+using CosmicShore.Game.Spawning;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Projectiles
 {
-    public class SpawnableFlower : SpawnableAbstractBase
+    public class SpawnableFlower : SpawnableBase
     {
         [SerializeField] List<Prism> lastTwoBlocks;
         [FormerlySerializedAs("trailBlock")] [SerializeField] protected Prism prism;
         [SerializeField] Vector3 blockScale = new Vector3(20f, 10f, 5f);
         [SerializeField] int depth = 6;
 
-        static int ObjectsSpawned = 0;
-
         Material material;
         public Material Material { get { return material; } set { material = new Material(value); } }
         public Domains Domain { get => domain; set => domain = value; }
 
-        public override GameObject Spawn()
+        protected override int GetParameterHash()
         {
+            return System.HashCode.Combine(seed, blockScale, depth);
+        }
+
+        public override GameObject Spawn(int intensity = 1)
+        {
+            intensityLevel = intensity;
+            trails.Clear();
+
             return Spawn(lastTwoBlocks);
         }
 
-        public GameObject Spawn(List<Prism> lastTwoBlocks) 
+        public GameObject Spawn(List<Prism> lastTwoBlocks)
         {
             GameObject container = new GameObject();
-            container.name = "Flower" + ObjectsSpawned++;
+            container.name = "Flower_" + name;
             SeedBlocks(lastTwoBlocks, container);
             return container;
         }

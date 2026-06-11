@@ -3,6 +3,7 @@ using System.Collections;
 using System.Linq;
 using CosmicShore.Game.Cinematics;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -46,7 +47,7 @@ namespace CosmicShore.Game.Arcade
                 ? $"WON BY {crystalDifference} CRYSTAL{(crystalDifference != 1 ? "S" : "")}"
                 : $"LOST BY {crystalDifference} CRYSTAL{(crystalDifference != 1 ? "S" : "")}";
 
-            Debug.Log($"[CrystalCapture] Local='{localName}' myScore={myScore} " +
+            CSDebug.Log($"[CrystalCapture] Local='{localName}' myScore={myScore} " +
                       $"opponentScore={opponentScore} didWin={didWin} diff={crystalDifference} " +
                       $"AllScores=[{string.Join(", ", gameData.RoundStatsList.Select(s => $"{s.Name}:{s.Score}"))}]");
 

@@ -11,15 +11,19 @@ using UnityEngine;
         public int           Intensity;
         public int           PlayerCount;
         public int           TeamCount;
-        public SO_Ship       SelectedShip;
+        public SO_Vessel     SelectedShip;
+
+        [Tooltip("Domain (team) the local player chose. Domains.Unassigned means random.")]
+        public Domains       SelectedDomain = Domains.Unassigned;
 
         public void ResetState()
         {
-            SelectedGame = null;
-            Intensity    = 0;
-            PlayerCount  = 0;
-            TeamCount    = 0;
-            SelectedShip = null;
+            SelectedGame   = null;
+            Intensity      = 0;
+            PlayerCount    = 0;
+            TeamCount      = 0;
+            SelectedShip   = null;
+            SelectedDomain = Domains.Unassigned;
         }
     }
 

@@ -49,7 +49,7 @@ namespace CosmicShore.Game.Projectiles
             baseBlockScale.z *= depthScale.Value;
             maxRadius        *= depthScale.Value;
 
-            rayDirection = transform.forward;
+            rayDirection = coneContainer.transform.forward;
             scaleCurve ??= AnimationCurve.Linear(0, 1, 1, 0.5f);
         }
 
@@ -73,6 +73,7 @@ namespace CosmicShore.Game.Projectiles
                 for (int ray = 0; ray < numberOfRays; ray++)
                 {
                     ct.ThrowIfCancellationRequested();
+                    if (!this) return; // guard against base conic animation destroying gameObject
 
                     Trail trail = new Trail();
                     trails.Add(trail);
@@ -115,8 +116,8 @@ namespace CosmicShore.Game.Projectiles
                 Quaternion aroundRay   = Quaternion.AngleAxis(randomRot, rayDirection);
                 Vector3 spreadDir      = aroundRay * spreadRot * rayDirection;
 
-                Vector3 pos = transform.position + spreadDir * radius;
-                Vector3 up  = transform.up;
+                Vector3 pos = coneContainer.transform.position + spreadDir * radius;
+                Vector3 up  = coneContainer.transform.up;
 
                 CreateBlock(pos, spreadDir, up, $"::Radial::{rayIndex}::{b}", trail, finalScale);
             }
@@ -134,7 +135,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (!_prismSpawnEvent)
             {
-                Debug.LogError("[AOERadialBlocks] Prism spawn event channel is not assigned.");
+                CSDebug.LogError("[AOERadialBlocks] Prism spawn event channel is not assigned.");
                 return null;
             }
 
@@ -155,14 +156,14 @@ namespace CosmicShore.Game.Projectiles
             var ret = _prismSpawnEvent.RaiseEvent(data);
             if (!ret.SpawnedObject)
             {
-                Debug.LogWarning("[AOERadialBlocks] PrismFactory returned null; spawn aborted.");
+                CSDebug.LogWarning("[AOERadialBlocks] PrismFactory returned null; spawn aborted.");
                 return null;
             }
 
             Prism prism = ret.SpawnedObject.GetComponent<Prism>();
             if (!prism)
             {
-                Debug.LogWarning("[AOERadialBlocks] Spawned object missing Prism component.");
+                CSDebug.LogWarning("[AOERadialBlocks] Spawned object missing Prism component.");
                 return null;
             }
 

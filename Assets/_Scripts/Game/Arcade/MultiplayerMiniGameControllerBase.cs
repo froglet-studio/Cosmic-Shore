@@ -5,6 +5,7 @@ using Cysharp.Threading.Tasks;
 using Unity.Collections;
 using Unity.Netcode;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Game.Arcade
 {
@@ -201,7 +202,7 @@ namespace CosmicShore.Game.Arcade
         [ClientRpc]
         void ResetForReplay_ClientRpc()
         {
-            Debug.Log("[MultiplayerController] Resetting Environment...");
+            CSDebug.Log("[MultiplayerController] Resetting Environment...");
             _isResetting = false;
 
             gameData.ResetStatsDataForReplay();
@@ -215,7 +216,7 @@ namespace CosmicShore.Game.Arcade
             if (gameData.OnResetForReplay != null)
                 gameData.OnResetForReplay.Raise();
             else
-                Debug.LogError("[MultiplayerController] OnResetForReplay Event missing!");
+                CSDebug.LogError("[MultiplayerController] OnResetForReplay Event missing!");
 
             OnResetForReplayCustom();
             RaiseToggleReadyButtonEvent(true);
@@ -231,6 +232,19 @@ namespace CosmicShore.Game.Arcade
         }
 
         protected virtual void OnResetForReplayCustom() { }
+
+        // ---------------- Leave Session ----------------
+
+        public void LeaveSessionAndReturnToMenu()
+        {
+            LeaveSession_ServerRpc();
+        }
+
+        [ServerRpc(RequireOwnership = false)]
+        void LeaveSession_ServerRpc()
+        {
+            multiplayerSetup.LeaveSession().Forget();
+        }
 
         // ---------------- Rematch ----------------
 
@@ -260,7 +274,7 @@ namespace CosmicShore.Game.Arcade
             if (localScoreboard != null)
                 localScoreboard.ShowRematchRequest(name);
             else
-                Debug.LogError("[MultiplayerController] localScoreboard not assigned — cannot show rematch request.");
+                CSDebug.LogError("[MultiplayerController] localScoreboard not assigned — cannot show rematch request.");
         }
 
         /// <summary>
@@ -289,7 +303,7 @@ namespace CosmicShore.Game.Arcade
             if (localScoreboard != null)
                 localScoreboard.ShowRematchDeclined(name);
             else
-                Debug.LogError("[MultiplayerController] localScoreboard not assigned — cannot show rematch declined.");
+                CSDebug.LogError("[MultiplayerController] localScoreboard not assigned — cannot show rematch declined.");
         }
     }
 }

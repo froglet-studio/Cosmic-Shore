@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.VFX;
+using CosmicShore.Utility;
 
 public class VFXPropertyModifier : MonoBehaviour
 {
@@ -35,7 +36,7 @@ public class VFXPropertyModifier : MonoBehaviour
             }
             else
             {
-                Debug.LogWarning("Property not found: " + propertyName);
+                CSDebug.LogWarning("Property not found: " + propertyName);
             }
 
             // Reinitialize the Visual Effect component to apply the changes

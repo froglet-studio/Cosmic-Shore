@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Utilities;
 using UnityEngine;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.Systems.Audio
 {
@@ -77,7 +78,7 @@ namespace CosmicShore.App.Systems.Audio
             {
                 Song song = new Song(so);
                 Playlist.Add(song.Title, song);
-                Debug.Log("Song " + song.Title + " added to Playlist");
+                CSDebug.Log("Song " + song.Title + " added to Playlist");
             }
         }
 

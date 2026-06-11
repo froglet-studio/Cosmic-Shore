@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: DolphinVesselChangeResourceByCrystalEffect
   m_EditorClassIdentifier: 
   _change:
-    _resourceIndex: 0
+    _resourceIndex: 1
     _resourceAmount: 0
     _overrideAmount: 1

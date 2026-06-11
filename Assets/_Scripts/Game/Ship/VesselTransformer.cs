@@ -54,6 +54,22 @@ public class VesselTransformer : MonoBehaviour
     protected Vector3 velocityShift = Vector3.zero;
     private bool isActive;
 
+    // ----------------------------- Analog Drift -----------------------------
+    private Vector3 _driftBaseRotations;
+    private bool _hasDriftBase;
+    private bool _singleDriftActive;
+    private bool _sharpDriftActive;
+    private bool _singleDriftParamsSet;
+    private bool _sharpDriftParamsSet;
+    private float _singleDriftRotMult = 1f;
+    private float _singleDriftDamp;
+    private float _sharpDriftRotMult = 1f;
+    private float _sharpDriftDamp;
+    private float _frameTriggerSum;
+    private bool _driftEaseOutPending;
+    private const float DRIFT_EASE_SPEED = 12f; // ~83ms for 0→1 ramp
+    public bool IsDriftActive => _singleDriftActive || _sharpDriftActive || _driftEaseOutPending;
+
     // ----------------------------- Update Loop -----------------------------
     protected virtual void Update()
     {
@@ -63,11 +79,31 @@ public class VesselTransformer : MonoBehaviour
         VesselStatus.blockRotation = transform.rotation;
 
         if (decayBoost) DecayBoost();
+
+        // Smooth trigger sum for non-analog input to simulate a quick trigger pull
+        float rawTriggerSum = GetTriggerSum();
+        bool needsEasing = InputStatus != null
+                        && InputStatus.ActiveInputDevice != InputDeviceType.Gamepad;
+        _frameTriggerSum = needsEasing
+            ? Mathf.MoveTowards(_frameTriggerSum, rawTriggerSum, DRIFT_EASE_SPEED * Time.deltaTime)
+            : rawTriggerSum;
+
+        // Finish deferred ease-out once the smoothed value decays to zero
+        if (_driftEaseOutPending && _frameTriggerSum < 0.01f)
+        {
+            _frameTriggerSum = 0f;
+            _driftEaseOutPending = false;
+            RestoreDriftBase();
+            if (VesselStatus != null)
+                VesselStatus.IsDrifting = false;
+        }
+
+        ApplyAnalogDrift();
         RotateShip();
-        
+
         if(VesselStatus.IsTranslationRestricted)
             return;
-        
+
         ApplyThrottleModifiers();
         ApplyVelocityModifiers();
         MoveShip();
@@ -86,7 +122,8 @@ public class VesselTransformer : MonoBehaviour
         boostChanged?.Raise(new BoostChangedPayload
         {
             BoostMultiplier = VesselStatus.BoostMultiplier,
-            MaxMultiplier = MaxBoostMultiplier
+            MaxMultiplier = MaxBoostMultiplier,
+            SourceDomain = Domains.None
         });
     }
 
@@ -114,6 +151,18 @@ public class VesselTransformer : MonoBehaviour
 
         // Movement
         velocityShift = Vector3.zero;
+
+        // Drift
+        _singleDriftActive = false;
+        _sharpDriftActive = false;
+        _singleDriftParamsSet = false;
+        _sharpDriftParamsSet = false;
+        _driftEaseOutPending = false;
+        RestoreDriftBase();
+        _singleDriftRotMult = 1f;
+        _singleDriftDamp = 0f;
+        _sharpDriftRotMult = 1f;
+        _sharpDriftDamp = 0f;
 
         // Remove lingering modifiers and states
         ThrottleModifiers.Clear();
@@ -173,6 +222,134 @@ public class VesselTransformer : MonoBehaviour
         accumulatedRotation = Quaternion.AngleAxis(angle, axis) * accumulatedRotation;
     }
 
+    // ----------------------------- Analog Drift Logic -----------------------------
+    /// <summary>
+    /// Called by DriftActionSO to register drift parameters. Saves base rotation
+    /// scalers on the first call and stores the target multiplier/damping.
+    /// </summary>
+    public void BeginDrift(float rotMult, float dampTarget, bool isSharp)
+    {
+        _driftEaseOutPending = false;
+
+        if (!_hasDriftBase)
+        {
+            _driftBaseRotations = new Vector3(PitchScaler, YawScaler, RollScaler);
+            _hasDriftBase = true;
+        }
+
+        if (isSharp)
+        {
+            _sharpDriftRotMult = rotMult;
+            _sharpDriftDamp = dampTarget;
+            _sharpDriftActive = true;
+            _sharpDriftParamsSet = true;
+        }
+        else
+        {
+            _singleDriftRotMult = rotMult;
+            _singleDriftDamp = dampTarget;
+            _singleDriftActive = true;
+            _singleDriftParamsSet = true;
+        }
+    }
+
+    /// <summary>
+    /// Called by DriftActionSO when a drift level ends. Drift params persist for
+    /// analog interpolation; only the active flag is cleared. Base rotations are
+    /// restored only when all drift levels are inactive.
+    /// </summary>
+    public void EndDrift(bool isSharp)
+    {
+        if (isSharp)
+            _sharpDriftActive = false;
+        else
+            _singleDriftActive = false;
+
+        if (!_singleDriftActive && !_sharpDriftActive)
+        {
+            bool needsEasing = InputStatus != null
+                            && InputStatus.ActiveInputDevice != InputDeviceType.Gamepad;
+            if (needsEasing)
+                _driftEaseOutPending = true;
+            else
+                RestoreDriftBase();
+        }
+    }
+
+    private void RestoreDriftBase()
+    {
+        if (!_hasDriftBase) return;
+        PitchScaler = _driftBaseRotations.x;
+        YawScaler = _driftBaseRotations.y;
+        RollScaler = _driftBaseRotations.z;
+        DriftDamping = 0f;
+        _hasDriftBase = false;
+    }
+
+    /// <summary>
+    /// Returns the combined analog trigger sum (0-2). For non-gamepad input,
+    /// returns a binary value based on which drift level is active.
+    /// </summary>
+    private float GetTriggerSum()
+    {
+        if (InputStatus == null)
+            return 0f;
+
+        if (InputStatus.ActiveInputDevice == InputDeviceType.Gamepad)
+            return InputStatus.LeftTriggerAnalog + InputStatus.RightTriggerAnalog;
+
+        // Non-gamepad fallback: binary intensity
+        if (_sharpDriftActive) return 2f;
+        if (_singleDriftActive) return 1f;
+        return 0f;
+    }
+
+    /// <summary>
+    /// Applies drift rotation scaling and damping each frame proportional to
+    /// the trigger intensity. Non-analog inputs are smoothed via MoveTowards
+    /// in Update() to simulate a quick human trigger pull.
+    /// </summary>
+    private void ApplyAnalogDrift()
+    {
+        if (!_hasDriftBase || VesselStatus == null || (!VesselStatus.IsDrifting && !_driftEaseOutPending))
+            return;
+
+        float triggerSum = _frameTriggerSum;
+
+        // Determine which drift params to use, falling back to whichever tier has been configured
+        float singleMult = _singleDriftParamsSet ? _singleDriftRotMult : _sharpDriftRotMult;
+        float sharpMult = _sharpDriftParamsSet ? _sharpDriftRotMult : singleMult;
+        float singleDamp = _singleDriftParamsSet ? _singleDriftDamp : _sharpDriftDamp;
+        float sharpDamp = _sharpDriftParamsSet ? _sharpDriftDamp : singleDamp;
+
+        float effectiveMult;
+        float effectiveDamp;
+
+        // Damping is inverted: higher value = course follows forward faster = less drift.
+        // At triggerSum 0 we want full damping (no drift feel), ramping down toward the
+        // configured values as triggers are pulled.
+        const float noDriftDamp = 1f;
+
+        if (triggerSum <= 1f)
+        {
+            // 0→1: no drift → full single drift
+            effectiveMult = Mathf.Lerp(1f, singleMult, triggerSum);
+            effectiveDamp = Mathf.Lerp(noDriftDamp, singleDamp, triggerSum);
+        }
+        else
+        {
+            // 1→2: full single drift → full sharp drift
+            float t = triggerSum - 1f;
+            effectiveMult = Mathf.Lerp(singleMult, sharpMult, t);
+            effectiveDamp = Mathf.Lerp(singleDamp, sharpDamp, t);
+        }
+
+        PitchScaler = _driftBaseRotations.x * effectiveMult;
+        YawScaler = _driftBaseRotations.y * effectiveMult;
+        RollScaler = _driftBaseRotations.z * effectiveMult;
+        DriftDamping = effectiveDamp;
+    }
+
     // ----------------------------- Movement Logic -----------------------------
     protected virtual void Pitch()
     {
@@ -222,11 +399,25 @@ public class VesselTransformer : MonoBehaviour
 
         VesselStatus.Speed = speed;
 
-        // If drifting, keep direction; otherwise, go straight
-        VesselStatus.Course = VesselStatus.IsDrifting
-            ? Vector3.Slerp(VesselStatus.Course, transform.forward,
-                DriftDamping * Time.deltaTime).normalized
-            : transform.forward;
+        // Drift course: blend between "go forward" and "drift course" based on analog intensity
+        if ((VesselStatus.IsDrifting || _driftEaseOutPending) && _hasDriftBase)
+        {
+            float driftAmount = Mathf.Clamp01(_frameTriggerSum);
+
+            // Compute the drifted course (slow convergence toward facing direction)
+            Vector3 driftedCourse = DriftDamping > 0.001f
+                ? Vector3.Slerp(VesselStatus.Course, transform.forward,
+                    DriftDamping * Time.deltaTime).normalized
+                : VesselStatus.Course;
+
+            // Blend: at driftAmount 0, Course = forward (no drift feel);
+            // at driftAmount 1, Course = fully drifted
+            VesselStatus.Course = Vector3.Slerp(transform.forward, driftedCourse, driftAmount);
+        }
+        else
+        {
+            VesselStatus.Course = transform.forward;
+        }
 
         transform.position += (speed * VesselStatus.Course + velocityShift) * Time.deltaTime;
     }

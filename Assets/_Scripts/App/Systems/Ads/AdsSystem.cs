@@ -4,6 +4,7 @@ using CosmicShore.Integrations.Firebase.Controller;
 #endif
 using UnityEngine;
 using UnityEngine.Advertisements;
+using CosmicShore.Utility;
 
 namespace CosmicShore.App.Systems.Ads
 {
@@ -65,9 +66,9 @@ namespace CosmicShore.App.Systems.Ads
            _gameId = _iOSGameId;
 #endif
 
-            Debug.Log($"InitializeAds: OnBeforeAdvertisement.Initialize - _gameId:{_gameId}");
+            CSDebug.Log($"InitializeAds: OnBeforeAdvertisement.Initialize - _gameId:{_gameId}");
             Advertisement.Initialize(_gameId, _skipAdForDevelopment, this);
-            Debug.Log($"InitializeAds: OnAfterAdvertisement.Initialize - _gameId:{_gameId}");
+            CSDebug.Log($"InitializeAds: OnAfterAdvertisement.Initialize - _gameId:{_gameId}");
 #endif
         }
 
@@ -76,7 +77,7 @@ namespace CosmicShore.App.Systems.Ads
         {
 #if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
             // IMPORTANT! Only load content AFTER initialization (in this example, initialization is handled in a different script).
-            Debug.Log($"Loading Ad: _adUnitId:{_adUnitId}");
+            CSDebug.Log($"Loading Ad: _adUnitId:{_adUnitId}");
             Advertisement.Load(_adUnitId, this);
 #endif        
         }
@@ -99,7 +100,7 @@ namespace CosmicShore.App.Systems.Ads
         {
 #if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
 
-            Debug.Log("AdsManager.OnInitializationComplete");
+            CSDebug.Log("AdsManager.OnInitializationComplete");
 
             AdInitializationComplete?.Invoke();
 #endif
@@ -108,7 +109,7 @@ namespace CosmicShore.App.Systems.Ads
         public void OnInitializationFailed(UnityAdsInitializationError error, string message)
         {
 #if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
-            Debug.Log($"AdsManager.OnInitializationFailed - error: {error}, message:  {message}");
+            CSDebug.Log($"AdsManager.OnInitializationFailed - error: {error}, message:  {message}");
             AdInitializationFailed?.Invoke();
 #endif
         }
@@ -118,7 +119,7 @@ namespace CosmicShore.App.Systems.Ads
         {
 
 #if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
-            Debug.Log("AdsManager.OnUnityAdsAdLoaded - adUnitId: " + adUnitId);
+            CSDebug.Log("AdsManager.OnUnityAdsAdLoaded - adUnitId: " + adUnitId);
             AdLoaded?.Invoke();
 #endif
         }
@@ -126,7 +127,7 @@ namespace CosmicShore.App.Systems.Ads
         public void OnUnityAdsFailedToLoad(string adUnitId, UnityAdsLoadError error, string message)
         {
 #if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
-            Debug.Log($"AdsManager.OnUnityAdsFailedToLoad - adUnitId:{adUnitId}, error: {error}, message: {message}");
+            CSDebug.Log($"AdsManager.OnUnityAdsFailedToLoad - adUnitId:{adUnitId}, error: {error}, message: {message}");
             AdFailedToLoad?.Invoke(adUnitId, error, message);
 #endif
         }
@@ -134,21 +135,21 @@ namespace CosmicShore.App.Systems.Ads
         public void OnUnityAdsShowClick(string adUnitId)
         {
 #if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
-            Debug.Log($"AdsManager.OnUnityAdsShowClick - adUnitId: {adUnitId}");
+            CSDebug.Log($"AdsManager.OnUnityAdsShowClick - adUnitId: {adUnitId}");
             AdShowClick?.Invoke(adUnitId);
 #endif
         }
         public void OnUnityAdsShowStart(string adUnitId)
         {
 #if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
-            Debug.Log($"AdsManager.OnUnityAdsShowStart - adUnitId: {adUnitId}");
+            CSDebug.Log($"AdsManager.OnUnityAdsShowStart - adUnitId: {adUnitId}");
             AdShowStart?.Invoke(adUnitId);
 #endif
         }
         public void OnUnityAdsShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
         {
 #if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
-            Debug.Log($"AdsManager.OnUnityAdsShowComplete - adUnitId: {adUnitId}, completionState: {showCompletionState}");
+            CSDebug.Log($"AdsManager.OnUnityAdsShowComplete - adUnitId: {adUnitId}, completionState: {showCompletionState}");
             Screen.orientation = ScreenOrientation.LandscapeLeft;
             AdShowComplete?.Invoke(adUnitId, showCompletionState);
 #endif
@@ -156,7 +157,7 @@ namespace CosmicShore.App.Systems.Ads
         public void OnUnityAdsShowFailure(string adUnitId, UnityAdsShowError error, string message)
         {
 #if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
-            Debug.Log($"AdsManager.OnUnityAdsShowFailure - adUnitId: {adUnitId}, error: {error}, message: {message}");
+            CSDebug.Log($"AdsManager.OnUnityAdsShowFailure - adUnitId: {adUnitId}, error: {error}, message: {message}");
             AdShowFailure?.Invoke(adUnitId, error, message);
 #endif
         }
@@ -164,40 +165,40 @@ namespace CosmicShore.App.Systems.Ads
         public void OnUnityAdsReady(string placementId)
         {
 #if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
-            Debug.Log($"AdsManager.OnUnityAdsReady - placementId: {placementId}");
+            CSDebug.Log($"AdsManager.OnUnityAdsReady - placementId: {placementId}");
 #endif
         }
 
         public void OnUnityAdsDidError(string message)
         {
 #if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
-            Debug.Log($"AdsManager.OnUnityAdsDidError - message: {message}");
+            CSDebug.Log($"AdsManager.OnUnityAdsDidError - message: {message}");
 #endif
         }
 
         public void OnUnityAdsDidStart(string placementId)
         {
 #if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
-            Debug.Log($"AdsManager.OnUnityAdsDidStart - placementId: {placementId}");
+            CSDebug.Log($"AdsManager.OnUnityAdsDidStart - placementId: {placementId}");
 #endif
         }
 
         public void OnUnityAdsDidFinish(string placementId, ShowResult showResult)
         {
 #if UNITY_EDITOR || UNITY_IOS || UNITY_ANDROID
-            Debug.Log($"AdsManager.OnUnityAdsDidStart - placementId: {placementId}, showResult: {showResult}");
+            CSDebug.Log($"AdsManager.OnUnityAdsDidStart - placementId: {placementId}, showResult: {showResult}");
 
             switch (showResult)
             {
                 case ShowResult.Finished:
-                    Debug.Log("The ad was successfully shown.");
+                    CSDebug.Log("The ad was successfully shown.");
                     OnUnityAdsShowComplete(_adUnitId, UnityAdsShowCompletionState.COMPLETED);
                     break;
                 case ShowResult.Skipped:
-                    Debug.Log("The ad was skipped before reaching the end.");
+                    CSDebug.Log("The ad was skipped before reaching the end.");
                     break;
                 case ShowResult.Failed:
-                    Debug.LogError("The ad failed to be shown.");
+                    CSDebug.LogError("The ad failed to be shown.");
                     break;
             }
 #endif
@@ -206,17 +207,17 @@ namespace CosmicShore.App.Systems.Ads
         /*
         public void OnAdShowComplete(string adUnitId, UnityAdsShowCompletionState showCompletionState)
         {
-            Debug.Log("GameManager.OnAdShowComplete");
+            CSDebug.Log("GameManager.OnAdShowComplete");
             Screen.orientation = ScreenOrientation.LandscapeLeft;
 
             if (showCompletionState.Equals(UnityAdsShowCompletionState.COMPLETED))
             {
-                Debug.Log("Unity Ads Rewarded Ad Completed. Extending game.");
+                CSDebug.Log("Unity Ads Rewarded Ad Completed. Extending game.");
 
             }
             if (showCompletionState.Equals(UnityAdsShowCompletionState.SKIPPED))
             {
-                Debug.Log("Unity Ads Rewarded Ad SKIPPED due to ad failure. Extending game.");
+                CSDebug.Log("Unity Ads Rewarded Ad SKIPPED due to ad failure. Extending game.");
 
             }
         }
