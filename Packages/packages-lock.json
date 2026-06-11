@@ -7,6 +7,13 @@
       "dependencies": {},
       "hash": "f213ff497e4ff462a77319cf677cf20cc0860ca9"
     },
+    "com.gustavopsantos.reflex": {
+      "version": "https://github.com/gustavopsantos/reflex.git?path=/Assets/Reflex/#14.1.0",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {},
+      "hash": "a855f992ab888d2e92027dc38b4db3ab42e5f679"
+    },
     "com.unity.2d.sprite": {
       "version": "1.0.0",
       "depth": 0,
@@ -460,6 +467,23 @@
       "dependencies": {},
       "url": "https://packages.unity.com"
     },
+    "com.unity.services.friends": {
+      "version": "1.1.1",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.services.core": "1.12.5",
+        "com.unity.services.wire": "1.2.6",
+        "com.unity.nuget.newtonsoft-json": "3.0.2",
+        "com.unity.modules.unitywebrequest": "1.0.0",
+        "com.unity.services.authentication": "2.7.4",
+        "com.unity.modules.unitywebrequestwww": "1.0.0",
+        "com.unity.modules.unitywebrequestaudio": "1.0.0",
+        "com.unity.modules.unitywebrequesttexture": "1.0.0",
+        "com.unity.modules.unitywebrequestassetbundle": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
+    },
     "com.unity.services.leaderboards": {
       "version": "2.3.3",
       "depth": 0,
@@ -631,13 +655,6 @@
       "source": "git",
       "dependencies": {},
       "hash": "d1ef610e9fe3ad0b490cce91594449fc0af809a6"
-    },
-    "jp.hadashikick.vcontainer": {
-      "version": "https://github.com/hadashiA/VContainer.git?path=VContainer/Assets/VContainer#1.6.3",
-      "depth": 0,
-      "source": "git",
-      "dependencies": {},
-      "hash": "afaeff82040994f7836afa9f5116eb52a4e54f69"
     },
     "com.unity.modules.accessibility": {
       "version": "1.0.0",

@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections;
-using CosmicShore.Game.Arcade;
-using CosmicShore.Game.XP;
-using CosmicShore.Soap;
+using System.Linq;
+using CosmicShore.Core;
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
+using CosmicShore.Utility;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using CosmicShore.Utility;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
     public class EndGameCinematicController : MonoBehaviour
     {
@@ -19,15 +22,33 @@ namespace CosmicShore.Game.Cinematics
         [Header("View")]
         [SerializeField] protected EndGameCinematicView view;
 
+        [Header("Crystal Reward (legacy UI — kept hidden)")]
+        [Tooltip("Legacy cinematic crystal-reward container. The winner crystal " +
+                 "reward is now awarded and displayed solely by the Scoreboard " +
+                 "(single source of truth — Docs/ScoringSystem/REFACTOR.md R3). " +
+                 "This reference is retained only so OnEnable can hide any " +
+                 "scene-authored reward UI that defaults to active.")]
+        [SerializeField] private GameObject crystalRewardRoot;
+
         protected bool isRunning;
         protected bool localPlayerWon;
         protected Coroutine runningRoutine;
         protected float cachedBoostMultiplier;
-        
+
+        /// <summary>Tracks the intensity level unlocked during this game session (0 = none).</summary>
+        private int _intensityUnlockedThisGame;
+
         protected virtual void OnEnable()
         {
             if (!gameData) return;
-            gameData.OnWinnerCalculated += OnWinnerCalculated;
+            gameData.OnWinnerCalculated.OnRaised += OnWinnerCalculated;
+
+            if (crystalRewardRoot)
+                crystalRewardRoot.SetActive(false);
+
+            _intensityUnlockedThisGame = 0;
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnIntensityUnlocked += HandleIntensityUnlocked;
 
             if (!view) return;
             view.Initialize();
@@ -37,7 +58,10 @@ namespace CosmicShore.Game.Cinematics
         protected virtual void OnDisable()
         {
             if (!gameData) return;
-            gameData.OnWinnerCalculated -= OnWinnerCalculated;
+            gameData.OnWinnerCalculated.OnRaised -= OnWinnerCalculated;
+
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnIntensityUnlocked -= HandleIntensityUnlocked;
 
             if (view)
                 view.OnContinuePressed -= HandleContinuePressed;
@@ -54,22 +78,19 @@ namespace CosmicShore.Game.Cinematics
             isRunning = false;
         }
 
+        void HandleIntensityUnlocked(GameModes mode, int intensity)
+        {
+            if (gameData != null && mode == gameData.GameMode)
+                _intensityUnlockedThisGame = intensity;
+        }
+
         protected virtual void OnWinnerCalculated()
         {
             if (isRunning) return;
             isRunning = true;
 
-            // Award XP based on placement
-            if (XPRewardService.Instance != null)
-            {
-                int xp = XPRewardService.Instance.AwardXP();
-                CSDebug.Log($"[EndGameCinematic] XP awarded: {xp}");
-            }
-            else
-            {
-                CSDebug.LogWarning("[EndGameCinematic] XPRewardService.Instance is null - XP not awarded. " +
-                                 "Ensure XPRewardService exists in the game scene.");
-            }
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
+
 
             var localPlayer = gameData.LocalPlayer;
             if (localPlayer?.Vessel?.VesselStatus != null)
@@ -99,10 +120,8 @@ namespace CosmicShore.Game.Cinematics
                 yield return new WaitForSeconds(delay);
             }
             yield return StartCoroutine(PlayScoreRevealSequence(cinematic));
-
-            // Show XP earned after score reveal
-            if (view)
-                view.ShowXPEarned();
+            yield return StartCoroutine(ShowIntensityUnlockSequence());
+            yield return StartCoroutine(ShowQuestCompletionSequence());
 
             if (view)
             {
@@ -119,7 +138,6 @@ namespace CosmicShore.Game.Cinematics
 
             if (view)
             {
-                view.HideXPEarned();
                 view.HideScoreRevealPanel();
             }
 
@@ -269,18 +287,75 @@ namespace CosmicShore.Game.Cinematics
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
 
+            // Domain modes: the ScoringRule produces the reveal (header / label / value /
+            // format) — the SAME source the scoreboard reads — so the two can't disagree
+            // (this is what closes BUGS.md B2 for the Joust loser line).
+            var rule = gameData != null ? gameData.ScoringRule : null;
+            if (rule != null)
+            {
+                var localName = gameData.LocalPlayer?.Name;
+                var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
+                if (localStats == null) yield break;
+
+                var reveal = rule.BuildReveal(gameData, localStats, DetermineLocalPlayerWon());
+                yield return view.PlayScoreRevealAnimation(
+                    $"{reveal.Header}\n<size=60%>{reveal.Label}</size>",
+                    reveal.Value,
+                    cinematic.scoreRevealSettings,
+                    reveal.FormatAsTime);
+                yield break;
+            }
+
+            // Legacy fallback (modes without a ScoringRule).
+            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
             gameData.IsLocalDomainWinner(out DomainStats stats);
-            int score = Mathf.Max(0, (int)stats.Score); 
-            
+            int score = Mathf.Max(0, (int)stats.Score);
             string displayText = cinematic.GetCinematicTextForScore(score);
-            
-            yield return view.PlayScoreRevealAnimation(
-                displayText,
-                score,
-                cinematic.scoreRevealSettings
-            );
+            yield return view.PlayScoreRevealAnimation(displayText, score, cinematic.scoreRevealSettings);
         }
-        
+
+        /// <summary>
+        /// Checks whether the just-finished game unlocked a new intensity level (3 or 4).
+        /// If so, shows a brief message via the quest-completion text panel before moving on.
+        /// Uses the _intensityUnlockedThisGame field set by the OnIntensityUnlocked event.
+        /// </summary>
+        protected virtual IEnumerator ShowIntensityUnlockSequence()
+        {
+            if (_intensityUnlockedThisGame <= 0) yield break;
+
+            var service = GameModeProgressionService.Instance;
+            var quest = service?.GetQuestForMode(gameData.GameMode);
+            string displayName = quest != null ? quest.DisplayName : gameData.GameMode.ToString();
+
+            ToastNotificationAPI.Show($"{displayName} Intensity {_intensityUnlockedThisGame} Unlocked!");
+            yield return new WaitForSeconds(1f);
+        }
+
+        /// <summary>
+        /// After the score reveal, checks if the current game mode's quest was completed.
+        /// If so, sets the SO runtime flag and shows a completion message in the cinematic view.
+        /// Relies on GameModeProgressionService having already evaluated the quest via HandleGameEnd.
+        /// </summary>
+        protected virtual IEnumerator ShowQuestCompletionSequence()
+        {
+            if (!view || !gameData) yield break;
+
+            var service = GameModeProgressionService.Instance;
+            if (service == null) yield break;
+
+            var mode = gameData.GameMode;
+            var quest = service.GetQuestForMode(mode);
+            if (quest == null || quest.IsPlaceholder) yield break;
+
+            if (service.IsQuestCompleted(mode))
+            {
+                quest.IsCompleted = true;
+                view.ShowQuestCompletion($"Quest Complete!\n{quest.DisplayName}");
+                CSDebug.Log($"[EndGameCinematic] Quest completed for {mode}: {quest.DisplayName}");
+                yield return new WaitForSeconds(2f);
+            }
+        }
+
         #endregion
 
         #region AI Control
@@ -320,7 +395,17 @@ namespace CosmicShore.Game.Cinematics
         /// </summary>
         protected virtual bool DetermineLocalPlayerWon()
         {
-            return gameData != null && gameData.IsLocalDomainWinner(out _);
+            if (gameData == null) return false;
+
+            // Domain modes set a server-authoritative WinnerDomain — the same value the
+            // scoreboard banner uses. The local player wins iff their domain is the winner.
+            if (gameData.WinnerDomain != Domains.Blue)
+            {
+                var localDomain = gameData.LocalPlayer?.Domain ?? Domains.Blue;
+                return localDomain == gameData.WinnerDomain;
+            }
+
+            return gameData.IsLocalDomainWinner(out _);
         }
 
         protected virtual CinematicDefinitionSO ResolveCinematicForThisScene()

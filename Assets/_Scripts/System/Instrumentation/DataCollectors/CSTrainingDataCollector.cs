@@ -1,0 +1,34 @@
+using System;
+using System.Threading.Tasks;
+using CosmicShore.Core;
+using UnityEngine;
+using CosmicShore.Utility;
+
+namespace CosmicShore.Core
+{
+    public class CSTrainingDataCollector : ITrainingAnalyzable
+    {
+        private readonly ITrainingAnalyzable _trainingDataCollectorFirebase = new CSTrainingDataCollectorFirebase();
+        public async Task InitSDK()
+        {
+            await Task.Delay(1);    // Hide console warning until this is connected
+            CSDebug.Log("CSTrainingDataCollector - Initializing Training Data Collector.");
+        }
+
+        public void LogEventStartTraining(string gameType, int intensity, string shipType)
+        {
+            CSDebug.Log("CSTrainingDataCollector - Triggering Start Training event.");
+            _trainingDataCollectorFirebase.LogEventStartTraining(gameType, intensity, shipType);
+        }
+
+        public void LogEventCompleteTraining(
+            string gameType, int intensity, string shipType, int score, int reward, DateTime playTime)
+        {
+            CSDebug.Log("CSTrainingDataCollector - Triggering Complete Training event.");
+            _trainingDataCollectorFirebase.LogEventCompleteTraining(
+                gameType, intensity, shipType, score, reward, playTime);
+        }
+    }
+    
+    
+}

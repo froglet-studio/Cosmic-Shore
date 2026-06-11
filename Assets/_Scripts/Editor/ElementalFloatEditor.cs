@@ -2,6 +2,7 @@
 using UnityEditor;
 using System.Collections.Generic;
 using System.Reflection;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 
 public class ElementalFloatEditor : EditorWindow
@@ -9,7 +10,7 @@ public class ElementalFloatEditor : EditorWindow
     static List<(GameObject, Component, FieldInfo, SerializedObject, SerializedProperty)> results = new List<(GameObject, Component, FieldInfo, SerializedObject, SerializedProperty)>();
     Vector2 scrollPosition;
 
-    [MenuItem("FrogletTools/ElementalFloat Editor")]
+    [MenuItem("FrogletTools/Legacy/ElementalFloat Editor")]
     public static void ShowWindow()
     {
         GetWindow<ElementalFloatEditor>("ElementalFloat Editor");

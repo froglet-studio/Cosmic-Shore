@@ -2,14 +2,12 @@ using UnityEngine;
 using UnityEditor;
 using PlayFab;
 using System;
-using CosmicShore.Integrations.PlayFab.Economy;
-using CosmicShore.Integrations.PlayFab.Authentication;
+using CosmicShore.Core;
 using CosmicShore.Utility;
 
 public class PlayFabProductGenerator : EditorWindow
 {
-    SO_Ship selectedShip;
-    SO_Captain selectedCaptain;
+    SO_Vessel selectedShip;
     static PlayFabEconomyInstanceAPI _playFabEconomyInstanceAPI;
 
     //static readonly string TitleId = "5B7B3";
@@ -36,7 +34,7 @@ public class PlayFabProductGenerator : EditorWindow
     void OnGUI()
     {
         GUILayout.Label("Generate Products from Vessel", EditorStyles.boldLabel);
-        selectedShip = (SO_Ship)EditorGUILayout.ObjectField("Vessel ScriptableObject", selectedShip, typeof(SO_Ship), false);
+        selectedShip = (SO_Vessel)EditorGUILayout.ObjectField("Vessel ScriptableObject", selectedShip, typeof(SO_Vessel), false);
 
         EditorGUI.BeginDisabledGroup(isProcessing);
         if (GUILayout.Button("Generate Products from Vessel"))
@@ -72,7 +70,7 @@ public class PlayFabProductGenerator : EditorWindow
     */
 
     /*
-    private async void GenerateProductsFromShip(SO_Ship vessel)
+    private async void GenerateProductsFromShip(SO_Vessel vessel)
     {
         isProcessing = true;
         foreach (var captain in vessel.Captains)

@@ -148,6 +148,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -360,6 +362,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -572,6 +576,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -784,6 +790,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -996,6 +1004,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -1208,6 +1218,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -1420,6 +1432,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -1632,6 +1646,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -1844,6 +1860,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -2056,6 +2074,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -2268,6 +2288,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -2480,6 +2502,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -2692,6 +2716,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -3025,6 +3051,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -3237,6 +3265,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -3449,6 +3479,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -3661,6 +3693,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -3873,6 +3907,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -4085,6 +4121,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -4297,6 +4335,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -4509,6 +4549,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -4721,6 +4763,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -4933,6 +4977,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -5145,6 +5191,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -5357,6 +5405,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -5569,6 +5619,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -5781,6 +5833,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -5993,6 +6047,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -6205,6 +6261,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -6417,6 +6475,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -6629,6 +6689,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -6841,6 +6903,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -7053,6 +7117,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -7265,6 +7331,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -7477,6 +7545,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -7689,6 +7759,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -7901,6 +7973,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -8113,6 +8187,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -8325,6 +8401,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -8537,6 +8615,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -8749,6 +8829,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -8961,6 +9043,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -9173,6 +9257,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -9385,6 +9471,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -9597,6 +9685,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -9809,6 +9899,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -10021,6 +10113,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -10233,6 +10327,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -10445,6 +10541,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -10657,6 +10755,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -10869,6 +10969,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -11081,6 +11183,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -11293,6 +11397,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -11505,6 +11611,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -11717,6 +11825,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -11929,6 +12039,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -12141,6 +12253,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -12353,6 +12467,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -12565,6 +12681,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -12777,6 +12895,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -12989,6 +13109,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -13201,6 +13323,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -13413,6 +13537,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -13625,6 +13751,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -13837,6 +13965,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -14049,6 +14179,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -14261,6 +14393,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -14473,6 +14607,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -14685,6 +14821,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -14897,6 +15035,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -15109,6 +15249,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -15321,6 +15463,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -15533,6 +15677,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -15745,6 +15891,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -15957,6 +16105,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -16169,6 +16319,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -16381,6 +16533,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -16593,6 +16747,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -16805,6 +16961,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -17017,6 +17175,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -17229,6 +17389,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -17441,6 +17603,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -17653,6 +17817,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -17865,6 +18031,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -18077,6 +18245,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -18289,6 +18459,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -18501,6 +18673,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -18713,6 +18887,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -18925,6 +19101,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
@@ -19137,6 +19315,8 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,

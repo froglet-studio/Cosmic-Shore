@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 
-namespace CosmicShore.Utilities
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// ScriptableObject class that contains a list of a given type. The instance of this Scriptable Object

@@ -62,6 +62,7 @@ MonoBehaviour:
   growPeriod: 0.25
   PlantPeriod: 30
   stunDuration: 2
+  plantRadiusCellFraction: 0.2
   depth: 0
   maxTotalSpawnedObjects: 500
   maxDepth: 30
@@ -209,6 +210,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Crystal: {fileID: 678972201625215709}
+  elementalCrystalShipEffects:
+  - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
   moveToVesselDuration: 3
   easeMoveToVessel: 1
 --- !u!114 &5991995580429407985

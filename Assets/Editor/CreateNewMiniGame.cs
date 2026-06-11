@@ -5,7 +5,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.SceneManagement;
 
-namespace CosmicShore
+namespace CosmicShore.Editor
 {
 
     public class CreateNewMiniGame : EditorWindow
@@ -22,7 +22,7 @@ namespace CosmicShore
         string sceneSavePath = "Assets/_Scenes/MiniGames/_New/";
         string newMiniGameName = string.Empty;
 
-        [MenuItem("FrogletTools/Create/MiniGame")]
+        [MenuItem("FrogletTools/Legacy/Create/MiniGame")]
 
         public static void GetWindow()
         {
@@ -95,7 +95,6 @@ namespace CosmicShore
 
                 // Set the new scene as the active scene
                 EditorSceneManager.SetActiveScene(newScene);
-
 
 
                 // Save the changes

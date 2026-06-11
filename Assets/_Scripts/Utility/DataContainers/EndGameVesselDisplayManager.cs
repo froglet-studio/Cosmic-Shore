@@ -1,11 +1,13 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using CosmicShore.Soap;
+using CosmicShore.ScriptableObjects;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Data;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Manages spawning and displaying vessel icons for end-game screen.
@@ -15,7 +17,7 @@ namespace CosmicShore.Game.Cinematics
     public class EndGameVesselDisplayManager : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] private GameDataSO gameData;
+        [Inject] private GameDataSO gameData;
         [SerializeField] private VesselIconLibrarySO vesselIconLibrary;
 
         [Header("Vessel Display")]
@@ -99,9 +101,20 @@ namespace CosmicShore.Game.Cinematics
                 return vesselData;
             }
 
-            // Determine rankings based on scores
-            var sortedStats = new List<IRoundStats>(gameData.RoundStatsList);
-            sortedStats.Sort((a, b) => b.Score.CompareTo(a.Score)); // Sort descending by score
+            // Rank from the authoritative, rule-produced results list — the single source of truth
+            // every other end-game surface reads (Docs/ScoringSystem/REFACTOR.md R10). It is
+            // golf-aware (HexRace/Joust: lower finish time = better), which a raw Score sort here is
+            // NOT: a descending-Score sort ranked the loser's 10000+ sentinel above the winner's time.
+            bool hasResults = gameData.Results != null && gameData.Results.Count > 0;
+
+            // Fallback only for modes that never produce Results (e.g. WildlifeBlitz, which doesn't
+            // call SetResults): keep the legacy descending-Score order so they don't regress.
+            List<IRoundStats> fallbackOrder = null;
+            if (!hasResults)
+            {
+                fallbackOrder = new List<IRoundStats>(gameData.RoundStatsList);
+                fallbackOrder.Sort((a, b) => b.Score.CompareTo(a.Score));
+            }
 
             // Create display data for each player
             for (int i = 0; i < gameData.Players.Count; i++)
@@ -113,16 +126,9 @@ namespace CosmicShore.Game.Cinematics
                     continue;
                 }
 
-                // Find ranking
-                int ranking = 1;
-                for (int j = 0; j < sortedStats.Count; j++)
-                {
-                    if (sortedStats[j].Name == player.Name)
-                    {
-                        ranking = j + 1;
-                        break;
-                    }
-                }
+                int ranking = hasResults
+                    ? ResolveRankingFromResults(player.Name)
+                    : ResolveRankingFromFallback(player.Name, fallbackOrder);
 
                 // Get vessel type
                 VesselClassType vesselType = player.Vessel.VesselStatus.VesselType;
@@ -143,6 +149,26 @@ namespace CosmicShore.Game.Cinematics
             vesselData.Sort((a, b) => a.ranking.CompareTo(b.ranking));
 
             return vesselData;
+        }
+
+        /// <summary>Rank from the rule-produced <see cref="GameDataSO.Results"/> SSOT (matched by name).</summary>
+        int ResolveRankingFromResults(string playerName)
+        {
+            foreach (var result in gameData.Results)
+                if (result.Name == playerName)
+                    return result.Rank;
+
+            // Not in Results (shouldn't happen) — rank last so a missing entry never claims 1st.
+            return gameData.Results.Count + 1;
+        }
+
+        /// <summary>Legacy descending-Score order, used only when the mode produced no Results.</summary>
+        int ResolveRankingFromFallback(string playerName, List<IRoundStats> ordered)
+        {
+            for (int j = 0; j < ordered.Count; j++)
+                if (ordered[j].Name == playerName)
+                    return j + 1;
+            return 1;
         }
 
         /// <summary>

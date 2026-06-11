@@ -1,8 +1,9 @@
-﻿using CosmicShore.Game.AI;
+﻿using CosmicShore.Gameplay;
 using UnityEngine;
 using CosmicShore.Utility;
+using CosmicShore.Data;
 
-namespace CosmicShore.Game.Cinematics
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Handles AI-driven cinematic behaviors for vessels during end-game sequences.
@@ -10,7 +11,6 @@ namespace CosmicShore.Game.Cinematics
     /// </summary>
     public class AICinematicBehavior : MonoBehaviour
     {
-        [SerializeField] private float forwardSpeed = 20f;
         [SerializeField] private float loopRadius = 15f;
         [SerializeField] private float loopSpeed = 2f;
         

@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e8006f53f1bd8340aaeb45fd0d75da7, type: 3}
+  m_Name: HUDAnimationSettings
+  m_EditorClassIdentifier: 
+  cardEntranceDuration: 0.3
+  cardEntranceStartScale: 0.6
+  cardEntranceEase: 9
+  cardEntranceStagger: 0.08
+  scorePunchScale: 1.15
+  scorePunchDuration: 0.2
+  scorePunchEase: 27
+  counterRollDuration: 0.35
+  counterRollEase: 6
+  scoreGainColor: {r: 0.4539427, g: 0.9528302, b: 0.57866454, a: 1}
+  scoreLossColor: {r: 1, g: 0.4743572, b: 0.4009434, a: 1}
+  scoreColorFlashDuration: 0.4
+  countdownScaleEase: 6
+  countdownFadeInDuration: 0.1
+  countdownUrgentColor: {r: 1, g: 0.6150805, b: 0.5613208, a: 1}
+  countdownUrgentStartIndex: 2
+  hudFadeDuration: 0.25
+  hudFadeInEase: 6
+  hudFadeOutEase: 5
+  connectingFadeDuration: 0.3
+  scoreboardEntranceDuration: 0.35
+  scoreboardSlideOffset: 120
+  scoreboardEntranceEase: 9
+  scoreboardRowStagger: 0.1
+  bannerPunchDuration: 0.3
+  bannerPunchScale: 1.2
+  vesselHudFadeDuration: 0.2
+  useUnscaledTime: 1

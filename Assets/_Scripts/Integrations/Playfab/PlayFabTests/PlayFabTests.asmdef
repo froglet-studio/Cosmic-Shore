@@ -1,9 +1,0 @@
-{
-    "name": "PlayFabTests",
-    "optionalUnityReferences": [
-        "TestAssemblies"
-    ],
-    "includePlatforms": [
-        "Editor"
-    ]
-}

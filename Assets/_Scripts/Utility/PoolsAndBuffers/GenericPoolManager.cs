@@ -5,8 +5,9 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Pool;
 using CosmicShore.Utility;
+using System.Linq;
 
-namespace CosmicShore.Core
+namespace CosmicShore.Utility
 {
     public abstract class GenericPoolManager<T> : MonoBehaviour where T : Component
     {
@@ -125,6 +126,31 @@ namespace CosmicShore.Core
             }
             
             CSDebug.Log($"[PoolManager] Cleaned up {processed} items gracefully.");
+        }
+
+        /// <summary>
+        /// Synchronously returns all active objects to the pool.
+        /// Use during scene transitions where correctness matters more than smoothness.
+        /// Checks activeSelf to guard against double-release if the async path already released some items.
+        /// </summary>
+        public void ReleaseAllActive()
+        {
+            var itemsToRelease = new List<T>(_activeObjects);
+            _activeObjects.Clear();
+
+            int count = 0;
+            foreach (var item in itemsToRelease)
+            {
+                if (item && item.gameObject.activeSelf)
+                {
+                    item.transform.SetParent(transform);
+                    pool.Release(item);
+                    count++;
+                }
+            }
+
+            if (count > 0)
+                CSDebug.Log($"[PoolManager] Scene-transition cleanup: released {count} items synchronously.");
         }
 
         public void Clear() => pool.Clear();

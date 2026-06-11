@@ -40,10 +40,12 @@ Short-lived branches for actual work:
 
 - `feature/arcade-swap-tray-powerup`
 - `feature/app-apple-signin-flow`
+- `feature/multiplayer-hex-race`
 - `bugfix/ads-appodeal-init-conflict`
 - `bugfix/game-round2-score-delta`
 - `chore/ci-unity-builder-cache`
 - `chore/app-localization-cleanup`
+- `chore/bootstrap-scene-flow`
 
 > One logical task per branch. If you feel like "this branch is doing 5 different things", split it.
 
@@ -327,6 +329,7 @@ Goal: Make future Cosmic Shore devs feel confident reading this code.
   - `Library/`, `Temp/`, `Logs/`, `Obj/`, `Build/`, `.vs/`, `.user`, etc.
 - Do commit:
   - `Assets/`, `ProjectSettings/`, `Packages/`, `.editorconfig`, `*.meta` (yes, metas are required).
+  - Assembly definition files (`*.asmdef`) — these define the C# compilation units.
 - Scenes & prefabs:
   - Save changes intentionally; avoid noisy edits in unrelated scenes.
 - Platform-specific configs (e.g. iOS/Android settings):
