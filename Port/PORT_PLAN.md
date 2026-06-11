@@ -59,7 +59,7 @@ The prompter tests progress without prompting the loop. Contract:
 
 | Tag | What became testable | Command | Status |
 |---|---|---|---|
-| `port-m1` | CLI engine smoke + sim skeleton | `cd Port && dotnet run --project src/CosmicShore.Cli` | ⬜ next |
+| `port-m1` | CLI engine smoke + deterministic sim (loop, lifecycle, tasks, DI, SOAP, RoundStats) | `cd Port && dotnet run --project src/CosmicShore.Cli` | ✅ 2026-06-11 |
 | `port-m2` | First full headless game-mode round (AI vs AI) | `… -- --mode <mode> --seed <n>` | ⬜ |
 | `port-m3` | First rendered frame (PNG artifact in chat + repo) | pull + open artifact | ⬜ |
 | `port-m4` | First interactive desktop build | `… -- --render` | ⬜ |
@@ -76,7 +76,7 @@ The prompter tests progress without prompting the loop. Contract:
 | Phase | Scope | Status |
 |---|---|---|
 | **0 — Foundation** | Toolchain, solution, engine math/SOAP/attrs/net-primitives, Data layer, test harness | ✅ **DONE** (iteration 1) |
-| **1 — Engine core** | First-party async (UniTask replacement), DI container (Reflex replacement), asset registry (ScriptableObject .asset → JSON), update loop + scheduler, logging (Debug.Log replacement), GameObject/Transform/component model decision | ⬜ in progress — **next** |
+| **1 — Engine core** | First-party async (UniTask replacement ✅), DI container (Reflex replacement ✅), update loop + scheduler ✅, logging ✅, GameObject/Transform/MonoBehaviour/Scene model ✅ (see `docs/ENGINE_CORE.md`); asset registry (.asset → JSON) deferred to content phase | ✅ **DONE** (iteration 2) — remaining: asset registry, prefab factories, multi-scene |
 | **2 — Simulation core** | ResourceSystem, VesselStatus + transformer/controller, Prism/Trail/TrailFollower, impact-effects matrix (impactors × effect SOs), crystals, cells (CellPhase/aggression), flora/fauna ecosystem (conserved mass!), elementals | ⬜ |
 | **3 — Game modes** | MiniGameControllerBase hierarchy (template method: rounds→turns→countdown→gameplay→end), turn monitors, scoring (incl. golf rules), AI pilot/gunner, all 36 GameModes' controllers (priority: Freestyle, CellularDuel, WildlifeBlitz, HexRace, Joust, CrystalCapture) | ⬜ |
 | **4 — Networking** | First-party transport + replication: NetworkVariable wire sync, RPC equivalent, server-authoritative session flow, host/client lifecycle, replacing Unity Netcode + UGS Relay/Sessions/Lobby with self-hosted session server | ⬜ |
@@ -132,10 +132,10 @@ The prompter tests progress without prompting the loop. Contract:
 
 | Unity-era dependency | Replacement strategy | Phase | Status |
 |---|---|---|---|
-| Unity engine core (GameObject/MonoBehaviour/scenes) | First-party component/scene model in `CosmicShore.Engine` (design doc before code — see NEXT UP) | 1 | ⬜ |
-| UniTask | First-party awaitable scheduler on the engine update loop (`CosmicShore.Engine.Tasks`); main-thread affinity guaranteed by design — no `.AsMainThread()` needed once all continuations resume on the loop | 1 | ⬜ |
+| Unity engine core (GameObject/MonoBehaviour/scenes) | ✅ First-party component/scene model in `CosmicShore.Engine` (`docs/ENGINE_CORE.md`); Instantiate/prefabs + multi-scene deferred to content phase; physics deferred to phase 2 | 1 | ✅ core |
+| UniTask | ✅ `CosmicShore.Engine.Tasks` (`GameTask.*`, structural main-thread affinity, synchronous cancellation parity) — `.AsMainThread()` retired | 1 | ✅ |
 | Obvious.Soap | ✅ `CosmicShore.Engine.Soap` | 0 | ✅ |
-| Reflex DI | First-party container (registration API mirroring AppManager.InstallBindings usage: RegisterValue/RegisterFactory-lazy + `[Inject]`) | 1 | ⬜ |
+| Reflex DI | ✅ `CosmicShore.Engine.Injection.Container` (RegisterValue/RegisterFactory-lazy, `[Inject]`, child scopes, InjectGameObject) | 1 | ✅ |
 | Unity Netcode for GameObjects | First-party replication over UDP/TCP (NetworkVariable sync + RPC); API contract already established in `Engine.Networking` | 4 | ⬜ |
 | UGS (Auth, Relay, Sessions/Lobby, Friends, CloudSave, Leaderboards, Analytics) | Self-hosted session/identity service (single small server, JSON protocol) + local-first offline mode | 6 | ⬜ |
 | PlayFab (economy, catalog) | Same self-hosted service | 6 | ⬜ |
@@ -156,25 +156,41 @@ The prompter tests progress without prompting the loop. Contract:
 | 2 | `NetworkVariable<T>` change callback uses `EqualityComparer<T>.Default` dedup; Unity Netcode dedups on serialized-value equality. Behaviorally identical for the value types used. | — |
 | 3 | SOAP `ScriptableEvent` drops Unity-inspector listener components; subscription is code-only until the scene/component model lands (phase 1). Inspector-wired `EventListener*` components become scene-asset-driven bindings in phase 7. | No scenes yet. |
 
-## NEXT UP (iteration 2)
+## Iteration log
 
-1. **Design doc first**: `Port/docs/ENGINE_CORE.md` — decide the GameObject/Transform/
-   component model (recommendation: keep `MonoBehaviour`-shaped API — `Awake/Start/
-   Update/OnEnable` driven by a first-party `Scene` + `GameLoop` — so gameplay files
-   port verbatim), the update-loop architecture, and the async model replacing UniTask.
-2. Implement `CosmicShore.Engine.Tasks` (awaitable scheduler: `GameTask.Yield()`,
-   `Delay`, `WaitUntil` driven by the game loop; CancellationToken support) + tests.
-3. Implement the DI container (`CosmicShore.Engine.Injection`): `RegisterValue`,
-   lazy `RegisterFactory`, `[Inject]` field injection, container scopes + tests.
-4. Implement `Debug` logging shim (`Debug.Log/LogWarning/LogError`) → pluggable sink.
-5. **Create `CosmicShore.Cli` (milestone M1)**: console runner that boots the engine
-   loop, walks the ApplicationState machine via SOAP events, prints a version/status
-   banner and a deterministic engine smoke transcript. Tag `port-m1`, notify prompter
-   per the testing protocol above.
-6. Port `_Scripts/Utility/ClassExtensions/` pure-logic extensions (skip UniTaskExtensions
-   — superseded by Engine.Tasks) and any other Unity-free utility code + their existing
-   tests from `_Scripts/Tests/EditMode/`.
-7. Update this file (status tables, milestone log, NEXT UP), commit, push.
+- **Iteration 1** (2026-06-10): Phase 0 — toolchain, solution, engine math/SOAP/attrs/
+  net primitives, full Data layer, 259 tests.
+- **Iteration 2** (2026-06-11): Phase 1 — component/scene model (GameObject, Transform,
+  MonoBehaviour with reflective lifecycle discovery, fake-null Object contract),
+  GameLoop (fixed-step accumulator, phase ordering), `Engine.Tasks` (GameTask awaitables,
+  synchronous-cancellation parity, GameSynchronizationContext), `Engine.Injection`
+  Container, Debug/ColorUtility/LayerMask, `CosmicShore.Game` project with first ported
+  Utility files (CSDebug, DebugExtensions, GameObjectExtension, TransformExtensions with
+  GameTask), ported IRoundStatsCleanupTests, `docs/ENGINE_CORE.md`, **CosmicShore.Cli
+  milestone M1** (tag `port-m1`). 322 tests.
+
+## NEXT UP (iteration 3)
+
+Goal: finish the pure-logic substrate so VesselStatus/ResourceSystem can port in
+iteration 4.
+
+1. Port the custom SOAP types from `_Scripts/ScriptableObjects/SOAP/` (16 subdirs:
+   ClassType, CrystalStats, PrismStats, AbilityStats, InputEvents, Quaternion,
+   Transform, PipData, VesselHUDData, SilhouetteData, GameplaySFX, PartyData,
+   FriendData, AuthenticationData, ApplicationState, ScriptableEventWithReturn,
+   + VesselPrefabContainer) into `CosmicShore.Game/ScriptableObjects/SOAP/` —
+   most are thin `ScriptableVariable`/`ScriptableEvent` subclasses + data structs.
+   Port their EditMode tests (PartyInviteDataTests, PartyPlayerDataTests, …).
+2. Port Unity-free utility code: `Utility/DisposableGroup` (+ tests), GeometryUtils
+   (+ tests), `Utility/DataContainers/` pure-logic pieces (SceneNameListSO, simple
+   containers — defer GameDataSO until Player exists).
+3. Port remaining EditMode tests whose subjects now exist (EnumIntegrityTests,
+   EnumIntegrityExtendedTests, EcologyEnumIntegrityTests, ResourceCollectionTests,
+   TrainingGameProgressTests, ShipModifierTests, MainMenuStateTests, CSDebugTests,
+   GameObjectExtensionTests, CellPhaseRulesTests + subject if pure logic).
+4. Extend the CLI smoke with one new section exercising the SOAP custom types
+   (e.g. CrystalStats event round-trip).
+5. Update this file (status tables, iteration log, NEXT UP), commit, push.
 
 ## Loop protocol (every iteration)
 

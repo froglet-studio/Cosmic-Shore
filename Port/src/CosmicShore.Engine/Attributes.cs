@@ -53,4 +53,15 @@ namespace CosmicShore.Engine
         public string fileName;
         public int order;
     }
+
+    /// <summary>
+    /// Orders lifecycle callbacks across behaviour types (lower runs earlier).
+    /// Same contract as the original engine attribute (e.g. AppManager at -100).
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Class)]
+    public sealed class DefaultExecutionOrderAttribute : Attribute
+    {
+        public readonly int order;
+        public DefaultExecutionOrderAttribute(int order) { this.order = order; }
+    }
 }
