@@ -119,9 +119,12 @@ against a Silk→shim device bridge (XSum/YSum/XDiff/YDiff: dual-stick sums = pi
 difference = roll, stick spread = throttle), and the flight model is VesselTransformer
 parity (free AngleAxis rotation about own axes, scalers 130/130/130, throttle 50·XDiff
 + 10 min speed, LERP 1.5, boost as throttle multiplier). Keyboard fallback: WASD+arrows
-as two sticks. NEXT (prompter): Squirrel vessel model — binary FBX at
-Assets/_Models/Vessel Models/SquirrelVessel_CosmicShoresTest1.fbx; write a focused FBX
-geometry extractor (verts+indices → baked mesh) next tick. Fidelity arc: **V1 DONE** (engine E3-E8/E10: RPC attrs, profiling shim, Screen/
+as two sticks. **SQUIRREL HULL SHIPPED**: first-party binary-FBX extractor (Python, in-session) parsed
+SquirrelVessel_CosmicShoresTest1.fbx (13,660 tris) → axis-remapped/normalized →
+Assets/squirrel.mesh embedded resource → flat-lit at load in jade/ruby palettes; dart
+remains fallback. **Gamepad yaw inverted** post-strategy (prompter preference; XDiff/
+YDiff semantics untouched). NEXT: prompter verifies Squirrel nose orientation in motion
+(flip is one sign in the extractor), drift/trail feel, rival tuning. Fidelity arc: **V1 DONE** (engine E3-E8/E10: RPC attrs, profiling shim, Screen/
 Application/PlayerPrefs/Resources statics, Object.DontDestroyOnLoad/Instantiate/
 FindFirstObjectByType, Physics+collider stubs; NetworkBehaviour now : MonoBehaviour
 (parity); ported PauseSystem, SafeLookRotation, Singleton family, NetMarkers,

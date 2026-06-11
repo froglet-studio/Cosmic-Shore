@@ -373,8 +373,51 @@ void main()
 
         void BuildVesselMesh()
         {
-            (_vesselVao, _vesselVbo, _vesselVertexCount) = BuildDart(jade: true);
-            (_rivalVao, _rivalVbo, _rivalVertexCount) = BuildDart(jade: false);
+            // The Squirrel's real hull, extracted from the game's FBX and baked with
+            // flat per-face lighting in the pilot palette. Dart stays as fallback.
+            try
+            {
+                (_vesselVao, _vesselVbo, _vesselVertexCount) = BuildSquirrel(jade: true);
+                (_rivalVao, _rivalVbo, _rivalVertexCount) = BuildSquirrel(jade: false);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"squirrel mesh unavailable ({e.Message}) — dart fallback");
+                (_vesselVao, _vesselVbo, _vesselVertexCount) = BuildDart(jade: true);
+                (_rivalVao, _rivalVbo, _rivalVertexCount) = BuildDart(jade: false);
+            }
+        }
+
+        (uint vao, uint vbo, int count) BuildSquirrel(bool jade)
+        {
+            using var stream = typeof(RaceWindow).Assembly
+                .GetManifestResourceStream("CosmicShore.Client.Assets.squirrel.mesh")
+                ?? throw new InvalidOperationException("embedded squirrel.mesh missing");
+            using var reader = new System.IO.BinaryReader(stream);
+            int triCount = reader.ReadInt32();
+
+            // two-light flat shade in the pilot palette, emissive floor for the neon look
+            var keyLight = new Vector3(0.42f, 0.78f, -0.46f).normalized;
+            var rimLight = new Vector3(-0.3f, -0.2f, 0.93f).normalized;
+            (float r, float g, float b) baseColor = jade ? (0.07f, 1f, 0.62f) : (1f, 0.17f, 0.32f);
+
+            var dataList = new List<float>(triCount * 3 * 7);
+            for (int t = 0; t < triCount; t++)
+            {
+                for (int v = 0; v < 3; v++)
+                {
+                    float px = reader.ReadSingle(), py = reader.ReadSingle(), pz = reader.ReadSingle();
+                    float nx = reader.ReadSingle(), ny = reader.ReadSingle(), nz = reader.ReadSingle();
+                    var normal = new Vector3(nx, ny, nz);
+                    float key = MathF.Max(0f, Vector3.Dot(normal, keyLight));
+                    float rim = MathF.Max(0f, Vector3.Dot(normal, rimLight));
+                    float shade = 0.22f + 0.62f * key + 0.3f * rim;
+                    Push(dataList, new Vector3(px, py, pz),
+                        baseColor.r * shade, baseColor.g * shade, baseColor.b * shade, 0.95f);
+                }
+            }
+            var (vao, vbo) = UploadStatic(dataList.ToArray());
+            return (vao, vbo, triCount * 3);
         }
 
         (uint vao, uint vbo, int count) BuildDart(bool jade)
@@ -464,6 +507,11 @@ void main()
                 _prevStart = start;
 
                 _gamepadStrategy.ProcessInput(); // the real scheme computes sums/diffs
+
+                // Prompter preference (2026-06-11): inverted yaw on gamepad. Applied
+                // after the ported strategy so XDiff throttle and YDiff roll semantics
+                // stay authentic; only the steering sense flips.
+                _playerStatus.XSum = -_playerStatus.XSum;
                 return;
             }
 
