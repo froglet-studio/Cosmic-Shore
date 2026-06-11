@@ -159,7 +159,13 @@ namespace CosmicShore.Gameplay
         {
             try
             {
-                foreach (var device in InputSystem.devices)
+                // Snapshot first: promoting a device causes the Input System to recreate it,
+                // which mutates InputSystem.devices mid-iteration.
+                var snapshot = new List<InputDevice>();
+                foreach (var d in InputSystem.devices)
+                    snapshot.Add(d);
+
+                foreach (var device in snapshot)
                 {
                     if (device is Gamepad)
                         continue;
@@ -257,55 +263,69 @@ namespace CosmicShore.Gameplay
             }
 
             var layoutName = MakeLayoutName(description, descriptor);
-            if (!s_RegisteredLayouts.Contains(layoutName))
+
+            // Already registered this model? Just use it.
+            //
+            // This early-out is also what keeps us from crashing: RegisterLayoutBuilder with a
+            // matcher makes the Input System SYNCHRONOUSLY recreate every device that matches,
+            // which re-invokes this very handler (RecreateDevicesUsingLayoutWithInferiorMatch ->
+            // TryFindMatchingControlLayout -> OnFindLayoutForDevice). Because we add the name to
+            // s_RegisteredLayouts BEFORE calling RegisterLayoutBuilder (below), that re-entrant
+            // call lands here and returns the name instead of registering again. Without the
+            // mark-before-register ordering this recursed until the stack overflowed and took
+            // the editor down with it.
+            if (s_RegisteredLayouts.Contains(layoutName))
+                return layoutName;
+
+            Quirks.TryGetValue((descriptor.vendorId, descriptor.productId), out var quirk);
+
+            int reportSizeBytes = Mathf.Max(1, descriptor.inputReportSize);
+            var capturedMap = map;
+            var capturedQuirk = quirk;
+            var capturedName = layoutName;
+            var displayName = string.IsNullOrEmpty(description.product)
+                ? "HID Gamepad"
+                : description.product;
+
+            // Match on vendor/product when the device reports them; otherwise fall back to
+            // manufacturer/product strings so zero-id Bluetooth pads still resolve uniquely.
+            var matcher = new InputDeviceMatcher().WithInterface("HID");
+            if (descriptor.vendorId != 0 || descriptor.productId != 0)
             {
-                Quirks.TryGetValue((descriptor.vendorId, descriptor.productId), out var quirk);
+                matcher = matcher
+                    .WithCapability("vendorId", descriptor.vendorId)
+                    .WithCapability("productId", descriptor.productId);
+            }
+            else
+            {
+                if (!string.IsNullOrEmpty(description.manufacturer))
+                    matcher = matcher.WithManufacturer(description.manufacturer);
+                if (!string.IsNullOrEmpty(description.product))
+                    matcher = matcher.WithProduct(description.product);
+            }
 
-                int reportSizeBytes = Mathf.Max(1, descriptor.inputReportSize);
-                var capturedMap = map;
-                var capturedQuirk = quirk;
-                var capturedName = layoutName;
-                var displayName = string.IsNullOrEmpty(description.product)
-                    ? "HID Gamepad"
-                    : description.product;
-
-                // Match on vendor/product when the device reports them; otherwise fall back to
-                // manufacturer/product strings so zero-id Bluetooth pads still resolve uniquely.
-                var matcher = new InputDeviceMatcher().WithInterface("HID");
-                if (descriptor.vendorId != 0 || descriptor.productId != 0)
-                {
-                    matcher = matcher
-                        .WithCapability("vendorId", descriptor.vendorId)
-                        .WithCapability("productId", descriptor.productId);
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(description.manufacturer))
-                        matcher = matcher.WithManufacturer(description.manufacturer);
-                    if (!string.IsNullOrEmpty(description.product))
-                        matcher = matcher.WithProduct(description.product);
-                }
-
-                try
-                {
-                    InputSystem.RegisterLayoutBuilder(
-                        () => BuildLayout(capturedName, displayName, capturedMap, capturedQuirk, reportSizeBytes),
-                        capturedName,
-                        baseLayout: "Gamepad",
-                        matches: matcher);
-                    s_RegisteredLayouts.Add(layoutName);
-                    UnityEngine.Debug.Log($"[HidGamepadSupport] PROMOTED HID device '{displayName}' " +
-                                $"(vendor 0x{descriptor.vendorId:X4}, product 0x{descriptor.productId:X4}) " +
-                                $"to Gamepad layout '{layoutName}' — leftStick={map.HasLeftStick}, " +
-                                $"rightStick={map.HasRightStick}, buttons={map.ButtonCount}. " +
-                                $"It should now appear as Gamepad.current.");
-                }
-                catch (System.Exception e)
-                {
-                    UnityEngine.Debug.LogWarning($"[HidGamepadSupport] Failed to register Gamepad layout for " +
-                                       $"'{displayName}': {e.Message}. Falling back to default Joystick.");
-                    return null;
-                }
+            // Mark BEFORE registering so the re-entrant recreate cascade short-circuits above.
+            s_RegisteredLayouts.Add(layoutName);
+            try
+            {
+                InputSystem.RegisterLayoutBuilder(
+                    () => BuildLayout(capturedName, displayName, capturedMap, capturedQuirk, reportSizeBytes),
+                    capturedName,
+                    baseLayout: "Gamepad",
+                    matches: matcher);
+                UnityEngine.Debug.Log($"[HidGamepadSupport] PROMOTED HID device '{displayName}' " +
+                            $"(vendor 0x{descriptor.vendorId:X4}, product 0x{descriptor.productId:X4}) " +
+                            $"to Gamepad layout '{layoutName}' — leftStick={map.HasLeftStick}, " +
+                            $"rightStick={map.HasRightStick}, buttons={map.ButtonCount}. " +
+                            $"It should now appear as Gamepad.current.");
+            }
+            catch (System.Exception e)
+            {
+                // Allow a later retry and don't leave a phantom registration behind.
+                s_RegisteredLayouts.Remove(layoutName);
+                UnityEngine.Debug.LogWarning($"[HidGamepadSupport] Failed to register Gamepad layout for " +
+                                   $"'{displayName}': {e.Message}. Falling back to default Joystick.");
+                return null;
             }
 
             return layoutName;
@@ -453,6 +473,29 @@ namespace CosmicShore.Gameplay
         }
 
         private static InputControlLayout BuildLayout(string layoutName, string displayName,
+            ControlMap map, Quirk quirk, int reportSizeBytes)
+        {
+            // This closure is invoked by the Input System later, during device creation, OUTSIDE
+            // the try/catch around RegisterLayoutBuilder. If it threw, the exception would
+            // propagate into native input code. Guard it: on any failure, fall back to a bare
+            // Gamepad-derived layout (neutral, never crashes) rather than throwing.
+            try
+            {
+                return BuildLayoutCore(layoutName, displayName, map, quirk, reportSizeBytes);
+            }
+            catch (System.Exception e)
+            {
+                UnityEngine.Debug.LogWarning($"[HidGamepadSupport] BuildLayout failed for '{layoutName}': " +
+                                             $"{e.Message}. Using a neutral Gamepad layout.");
+                return new InputControlLayout.Builder()
+                    .WithName(layoutName)
+                    .WithDisplayName(displayName)
+                    .Extend("Gamepad")
+                    .Build();
+            }
+        }
+
+        private static InputControlLayout BuildLayoutCore(string layoutName, string displayName,
             ControlMap map, Quirk quirk, int reportSizeBytes)
         {
             // A byte the device never writes (one past the input report) is guaranteed to stay
