@@ -53,7 +53,12 @@ The prompter tests progress without prompting the loop. Contract:
    notification with the exact command (or file) to try. (Annotated `port-mN` tags are
    created locally, but this environment's git proxy only accepts branch pushes — the
    log + commit message are the durable record.)
-5. **Local prerequisites for the prompter** (one-time):
+5. **Standalone binaries on request / at milestones.** No-install executables build with:
+   `dotnet publish src/CosmicShore.Cli -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true`
+   (swap `-r` for `linux-x64` / `osx-arm64`; ~36 MB single file; no trimming — the
+   engine's reflective lifecycle discovery forbids it). The exe holds its console window
+   open when double-clicked (`--no-wait` skips). Delivered into the chat at milestones.
+6. **Local prerequisites for the prompter** (only for running from source):
    `winget install Microsoft.DotNet.SDK.10` (Windows) / `brew install dotnet-sdk` (macOS),
    then `git fetch origin claude/quirky-cannon-sk8a02 && git checkout claude/quirky-cannon-sk8a02`.
 

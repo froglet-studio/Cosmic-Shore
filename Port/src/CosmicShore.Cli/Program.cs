@@ -43,15 +43,29 @@ namespace CosmicShore.Cli
             RunPortedLogicDemo();
 
             Console.WriteLine();
+            int exitCode;
             if (Failures.Count == 0)
             {
                 Console.WriteLine("RESULT: PASS — all engine smoke checks green.");
-                return 0;
+                exitCode = 0;
+            }
+            else
+            {
+                Console.WriteLine($"RESULT: FAIL — {Failures.Count} check(s) failed:");
+                foreach (var failure in Failures) Console.WriteLine($"  ✗ {failure}");
+                exitCode = 1;
             }
 
-            Console.WriteLine($"RESULT: FAIL — {Failures.Count} check(s) failed:");
-            foreach (var failure in Failures) Console.WriteLine($"  ✗ {failure}");
-            return 1;
+            // Double-clicked .exe on Windows: hold the window open so the transcript is
+            // readable. Scripted/terminal runs with redirected input are unaffected.
+            if (OperatingSystem.IsWindows() && !Console.IsInputRedirected && Array.IndexOf(args, "--no-wait") < 0)
+            {
+                Console.WriteLine();
+                Console.Write("Press Enter to exit...");
+                Console.ReadLine();
+            }
+
+            return exitCode;
         }
 
         static void Print(string message)
