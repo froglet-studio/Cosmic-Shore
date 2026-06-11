@@ -1,0 +1,58 @@
+using System;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
+using CosmicShore.Engine;
+namespace CosmicShore.Gameplay
+{
+    public interface IInputStatus
+    {
+        public event Action<bool> OnToggleInputPaused;
+        
+        static ScreenOrientation CurrentOrientation;
+
+        ScriptableEventInputEvents OnButtonPressed {get;}
+        ScriptableEventInputEvents OnButtonReleased {get;}
+        
+        // PORT Deviation #10a: restored when InputController lands (VESSEL_LAYER V5)
+        // InputController InputController { get; set; }
+
+        // Floats
+        float XSum { get; set; }
+        float YSum { get; set; }
+        float XDiff { get; set; }
+        float YDiff { get; set; }
+        float Throttle { get; set; }
+        float LeftTriggerAnalog { get; set; }
+        float RightTriggerAnalog { get; set; }
+
+        // Booleans
+        bool Idle { get; set; }
+        bool Paused { get; set; }
+        bool IsGyroEnabled { get; set; }
+        bool InvertYEnabled { get; set; }
+        bool InvertThrottleEnabled { get; set; }
+        bool OneTouchLeft { get; set; }
+        bool CommandStickControls { get; set; }
+        InputDeviceType ActiveInputDevice { get; set; }
+
+        // Vectors
+        Vector2 RightJoystickHome { get; set; }
+        Vector2 LeftJoystickHome { get; set; }
+        Vector2 RightClampedPosition { get; set; }
+        Vector2 LeftClampedPosition { get; set; }
+        Vector2 RightJoystickStart { get; set; }
+        Vector2 LeftJoystickStart { get; set; }
+        Vector2 RightNormalizedJoystickPosition { get; set; }
+        Vector2 LeftNormalizedJoystickPosition { get; set; }
+        Vector2 EasedRightJoystickPosition { get; set; }
+        Vector2 EasedLeftJoystickPosition { get; set; }
+        Vector2 SingleTouchValue { get; set; }
+        Vector3 ThreeDPosition { get; set; }
+
+        // PORT Deviation #10a: restored when InputController lands (VESSEL_LAYER V5)
+        // Quaternion GetGyroRotation();
+        void ResetForReplay();
+    }
+
+}

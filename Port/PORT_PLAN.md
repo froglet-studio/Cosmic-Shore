@@ -103,8 +103,12 @@ Application/PlayerPrefs/Resources statics, Object.DontDestroyOnLoad/Instantiate/
 FindFirstObjectByType, Physics+collider stubs; NetworkBehaviour now : MonoBehaviour
 (parity); ported PauseSystem, SafeLookRotation, Singleton family, NetMarkers,
 BoostChangedPayload+event, InputEventBlockPayload, CellItem; ApplicationLifecycleManager
-IsQuitting extraction). Next: V2 (input shim E1 + IInputStatus/IInputStrategy/
-BaseInputStrategy/KeyboardInputStrategy), rival balance from prompter feedback,
+IsQuitting extraction). **V2 DONE** (engine E1 inert input-device shim: Keyboard/Gamepad/Mouse/AttitudeSensor/
+EnhancedTouch; ported IInputStatus [Deviation #10a open: InputController property +
+GetGyroRotation commented until V5], IInputStrategy, BaseInputStrategy,
+KeyboardInputStrategy — the live loose-file strategy per the survey). Next: V3
+(TouchInputStrategy + GamepadInputStrategy) + input-layer unit tests (Ease curve,
+inert ProcessInput on a stub IInputStatus), rival balance from prompter feedback,
 richer meshes/track variety.
 
 ## Phase roadmap
