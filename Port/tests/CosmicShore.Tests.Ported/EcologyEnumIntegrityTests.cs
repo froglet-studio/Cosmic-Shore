@@ -33,16 +33,15 @@ namespace CosmicShore.Tests
                 "FaunaDiet member count changed — update tests + any diet switch logic.");
         }
 
-        // ---- CellPhase (drives flora planting/growth + fauna aggression) ----
+        // ---- CellPhase (drives flora growth + fauna aggression) ----
+        // 3-phase ladder since the steady-until-frenzy collapse (Docs/ECOSYSTEM.md §0/§5):
+        // phase maps 1:1 onto CellAggressionLevel.
 
         [Test]
         [TestCase(CellPhase.None, 0)]
-        [TestCase(CellPhase.Sprout, 1)]
-        [TestCase(CellPhase.Quiet, 2)]
-        [TestCase(CellPhase.Settled, 3)]
-        [TestCase(CellPhase.Restless, 4)]
-        [TestCase(CellPhase.Frozen, 5)]
-        [TestCase(CellPhase.Rabid, 6)]
+        [TestCase(CellPhase.Calm, 1)]
+        [TestCase(CellPhase.Restless, 2)]
+        [TestCase(CellPhase.Frenzy, 3)]
         public void CellPhase_HasCorrectIntegerValue(CellPhase phase, int expected)
         {
             Assert.AreEqual(expected, (int)phase,
@@ -50,15 +49,19 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void CellPhase_IsMonotonicAscending_SproutToRabid()
+        public void CellPhase_HasExpectedMemberCount()
         {
-            // The phase gates (FloraPlantingEnabled < Settled, FloraGrowingEnabled < Frozen,
-            // AggressionLevel by phase) rely on the ordering Sprout < … < Rabid.
-            Assert.Less((int)CellPhase.Sprout, (int)CellPhase.Quiet);
-            Assert.Less((int)CellPhase.Quiet, (int)CellPhase.Settled);
-            Assert.Less((int)CellPhase.Settled, (int)CellPhase.Restless);
-            Assert.Less((int)CellPhase.Restless, (int)CellPhase.Frozen);
-            Assert.Less((int)CellPhase.Frozen, (int)CellPhase.Rabid);
+            Assert.AreEqual(4, Enum.GetValues(typeof(CellPhase)).Length,
+                "CellPhase member count changed — update tests, CellPhaseThresholds, and the aggression map.");
+        }
+
+        [Test]
+        public void CellPhase_IsMonotonicAscending_CalmToFrenzy()
+        {
+            // The gates (FloraGrowingEnabled < Frenzy, AggressionLevel by phase) rely on
+            // the ordering Calm < Restless < Frenzy.
+            Assert.Less((int)CellPhase.Calm, (int)CellPhase.Restless);
+            Assert.Less((int)CellPhase.Restless, (int)CellPhase.Frenzy);
         }
 
         // ---- CellAggressionLevel ----

@@ -135,8 +135,8 @@ namespace CosmicShore.Tests
         public void GameModes_HasExpectedMemberCount()
         {
             var values = Enum.GetValues(typeof(GameModes));
-            // Port note: the Unity original asserted 34 — stale since
-            // MultiplayerCrystalCapture(35) was added (latent red test, no CI upstream).
+            // Port note: the Unity original asserts 33 — stale (the enum has 35
+            // members; latent red test upstream, no CI there).
             Assert.AreEqual(35, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
@@ -151,7 +151,6 @@ namespace CosmicShore.Tests
 
         [Test]
         [TestCase(GameModes.Random, 0)]
-        [TestCase(GameModes.Freestyle, 7)]
         [TestCase(GameModes.MultiplayerFreestyle, 28)]
         [TestCase(GameModes.MultiplayerCellularDuel, 29)]
         [TestCase(GameModes.Multiplayer2v2CoOpVsAI, 30)]

@@ -113,12 +113,9 @@ public class EnumFreezeTests
 
     [Theory]
     [InlineData(CellPhase.None, 0)]
-    [InlineData(CellPhase.Sprout, 1)]
-    [InlineData(CellPhase.Quiet, 2)]
-    [InlineData(CellPhase.Settled, 3)]
-    [InlineData(CellPhase.Restless, 4)]
-    [InlineData(CellPhase.Frozen, 5)]
-    [InlineData(CellPhase.Rabid, 6)]
+    [InlineData(CellPhase.Calm, 1)]
+    [InlineData(CellPhase.Restless, 2)]
+    [InlineData(CellPhase.Frenzy, 3)]
     public void CellPhase_Values_Frozen(CellPhase phase, int expected)
         => Assert.Equal(expected, (int)phase);
 

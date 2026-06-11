@@ -134,11 +134,10 @@ namespace CosmicShore.Tests
         [Test]
         public void ImpactEffects_DuplicateValues_AreExactlyTheKnownLegacySet()
         {
-            // Port note: the Unity original asserted uniqueness, but the shipped enum
-            // intentionally merges two legacy effect groups sharing values 1-8 and 10
-            // (e.g. FillCharge == DrainHalfAmmo == 1). Those values are wire/save format
-            // and cannot change, so this test freezes the known duplicate set instead —
-            // any NEW collision still fails. (Latent red test upstream, no CI.)
+            // Port note: the Unity original asserts uniqueness, but the shipped enum
+            // intentionally merges two legacy effect groups sharing values 1-8 and 10.
+            // Those values are wire/save format — freeze the known duplicate set instead
+            // so NEW collisions still fail. (Latent red test upstream, no CI.)
             var type = typeof(ImpactEffects);
             var values = Enum.GetValues(type).Cast<int>().ToList();
             var duplicates = values.GroupBy(v => v).Where(g => g.Count() > 1).Select(g => g.Key).OrderBy(v => v).ToArray();

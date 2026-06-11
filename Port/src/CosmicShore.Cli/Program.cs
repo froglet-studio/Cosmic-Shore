@@ -247,16 +247,14 @@ namespace CosmicShore.Cli
             // Cell phase walk (ported CellPhaseRules + default thresholds): climb with the
             // prism count, hold inside the hysteresis band, multi-step descent in one call.
             var thresholds = Utility.CellPhaseThresholds.Default;
-            var phase = CellPhase.Sprout;
+            var phase = CellPhase.Calm;
             var walk = new (int count, CellPhase expected)[]
             {
-                (0, CellPhase.Sprout),
-                (1200, CellPhase.Quiet),
-                (5000, CellPhase.Settled),
-                (9000, CellPhase.Restless),
-                (12000, CellPhase.Frozen),
-                (9400, CellPhase.Restless),   // fell below FrozenExit, holds above RestlessExit
-                (700, CellPhase.Sprout),      // collapse: multi-step descent resolves at once
+                (0, CellPhase.Calm),
+                (9000, CellPhase.Restless),   // ≥ RestlessEnter (8000)
+                (16000, CellPhase.Frenzy),    // ≥ FrenzyEnter (15000)
+                (14500, CellPhase.Frenzy),    // hysteresis band: holds above FrenzyExit (14000)
+                (700, CellPhase.Calm),        // collapse: multi-step descent resolves at once
             };
             bool phasesOk = true;
             foreach (var (count, expected) in walk)
