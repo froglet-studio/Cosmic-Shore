@@ -709,6 +709,20 @@ party-session path did not.
    and `OnPartyJoinCompleted` raise `Hide` so a stale Retry can never
    resurface on a transition splash. Retry remains for idle/boot
    contexts (auth-scene exhaustion, lobby escalation in menu).
+3. Runtime self-heal (scene-independent): the panel itself was lost from
+   `Bootstrap.unity` once via a script-GUID break (`BootStatusPanel.cs`
+   was committed without its `.meta`; a later "Add meta files" commit
+   minted a different GUID), leaving the authored retry button
+   orphaned-ACTIVE on every splash with nothing driving it — and scene
+   merges can silently resurrect that broken state even after the scene
+   repair. `BootStatusBroadcaster.EnsureStatusPanelWired` (Awake + Start)
+   now recreates the panel at runtime if missing;
+   `BootStatusPanel.Bind`/`EnsureWired` auto-find the status text +
+   retry button among the splash canvas children, take the outbound
+   retry channel from `HostConnectionService.BootStatusRetryRequestedEvent`,
+   and force-hide the button on bind regardless of its authored active
+   state. `AuthenticationSceneController` also clears its latched Retry
+   once the relay session confirms after exhaustion.
 
 **Repro.** 1 host + 1 MPPM client → client accepts invite → watch the
 join splash for the retry button; then both ready-up a game and watch
