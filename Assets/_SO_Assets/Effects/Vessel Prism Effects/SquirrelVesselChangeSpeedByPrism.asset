@@ -12,5 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8ac594798c951da4182b02940e416d30, type: 3}
   m_Name: SquirrelVesselChangeSpeedByPrism
   m_EditorClassIdentifier: 
-  speedModifierDuration: 0.05
+  speedModifierDuration: 1
   massScaling: 0.1
+  dangerSlowMultiplier: 3
+  maxSlowStrength: 0.5
+  dangerSlowDurationMultiplier: 3
