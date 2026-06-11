@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using UnityEngine;
@@ -25,9 +23,6 @@ namespace CosmicShore.UI
 
         [Header("Data")]
         [Inject] private GameDataSO gameData;
-
-        [Header("Domain Styling")]
-        [SerializeField] private List<DomainColorDef> domainColors;
 
         private void Awake()
         {
@@ -233,17 +228,10 @@ namespace CosmicShore.UI
             }
         }
 
-        public Color GetColorForDomain(Domains domain)
-        {
-            var def = domainColors.FirstOrDefault(d => d.Domain == domain);
-            return def.Equals(default(DomainColorDef)) ? Color.white : def.Color;
-        }
-
-        [Serializable]
-        public struct DomainColorDef
-        {
-            public Domains Domain;
-            public Color Color;
-        }
+        // Single source of truth — the same ColorSet the vessels and prisms use (R5).
+        public Color GetColorForDomain(Domains domain) =>
+            gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.GetDomainUIColor(domain)
+                : Color.white;
     }
 }

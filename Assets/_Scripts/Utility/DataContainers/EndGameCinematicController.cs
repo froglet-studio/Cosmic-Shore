@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections;
+using System.Linq;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
-using DG.Tweening;
-using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -23,21 +22,13 @@ namespace CosmicShore.Utility
         [Header("View")]
         [SerializeField] protected EndGameCinematicView view;
 
-        [Header("Crystal Reward")]
-        [Tooltip("Amount of crystals awarded per game.")]
-        [SerializeField] private int crystalsPerGame = 5;
-        [Tooltip("Root GameObject to enable/disable for the crystal reward display.")]
+        [Header("Crystal Reward (legacy UI — kept hidden)")]
+        [Tooltip("Legacy cinematic crystal-reward container. The winner crystal " +
+                 "reward is now awarded and displayed solely by the Scoreboard " +
+                 "(single source of truth — Docs/ScoringSystem/REFACTOR.md R3). " +
+                 "This reference is retained only so OnEnable can hide any " +
+                 "scene-authored reward UI that defaults to active.")]
         [SerializeField] private GameObject crystalRewardRoot;
-        [Tooltip("Text showing how many crystals were earned.")]
-        [SerializeField] private TMP_Text crystalRewardText;
-        [Tooltip("Duration of the fade-in animation.")]
-        [SerializeField] private float crystalFadeDuration = 0.5f;
-        [Tooltip("If true, skip the crystal reward flow here — the Scoreboard is expected to award and display crystals instead (prevents double-awarding).")]
-        [SerializeField] private bool delegateCrystalRewardToScoreboard = true;
-
-        [Header("XP Reward")]
-        [Tooltip("Participation XP awarded to the local player every game (win or lose). Feeds the menu XP progress bar. Set 0 to disable.")]
-        [SerializeField] private int xpPerGame = 25;
 
         protected bool isRunning;
         protected bool localPlayerWon;
@@ -129,7 +120,6 @@ namespace CosmicShore.Utility
                 yield return new WaitForSeconds(delay);
             }
             yield return StartCoroutine(PlayScoreRevealSequence(cinematic));
-            yield return StartCoroutine(AwardCrystalReward());
             yield return StartCoroutine(ShowIntensityUnlockSequence());
             yield return StartCoroutine(ShowQuestCompletionSequence());
 
@@ -296,63 +286,32 @@ namespace CosmicShore.Utility
 
             view.ShowScoreRevealPanel();
             view.HideContinueButton();
+
+            // Domain modes: the ScoringRule produces the reveal (header / label / value /
+            // format) — the SAME source the scoreboard reads — so the two can't disagree
+            // (this is what closes BUGS.md B2 for the Joust loser line).
+            var rule = gameData != null ? gameData.ScoringRule : null;
+            if (rule != null)
+            {
+                var localName = gameData.LocalPlayer?.Name;
+                var localStats = gameData.RoundStatsList.FirstOrDefault(s => s.Name == localName);
+                if (localStats == null) yield break;
+
+                var reveal = rule.BuildReveal(gameData, localStats, DetermineLocalPlayerWon());
+                yield return view.PlayScoreRevealAnimation(
+                    $"{reveal.Header}\n<size=60%>{reveal.Label}</size>",
+                    reveal.Value,
+                    cinematic.scoreRevealSettings,
+                    reveal.FormatAsTime);
+                yield break;
+            }
+
+            // Legacy fallback (modes without a ScoringRule).
             AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
-
             gameData.IsLocalDomainWinner(out DomainStats stats);
-            int score = Mathf.Max(0, (int)stats.Score); 
-            
+            int score = Mathf.Max(0, (int)stats.Score);
             string displayText = cinematic.GetCinematicTextForScore(score);
-            
-            yield return view.PlayScoreRevealAnimation(
-                displayText,
-                score,
-                cinematic.scoreRevealSettings
-            );
-        }
-        
-        protected virtual IEnumerator AwardCrystalReward()
-        {
-            // Participation XP is awarded to the local player every game and is independent of
-            // the crystal-reward delegation below (which only pays the winner via the scoreboard).
-            AwardParticipationXp();
-
-            if (crystalsPerGame <= 0) yield break;
-            if (delegateCrystalRewardToScoreboard) yield break;
-
-            var service = PlayerDataService.Instance;
-            if (service != null)
-            {
-                int newBalance = service.AddCrystals(crystalsPerGame);
-                CSDebug.Log($"[EndGameCinematic] Awarded {crystalsPerGame} crystals. New balance: {newBalance}");
-            }
-
-            if (crystalRewardRoot && crystalRewardText)
-            {
-                crystalRewardText.text = $"+{crystalsPerGame}";
-                crystalRewardRoot.SetActive(true);
-
-                var cg = crystalRewardRoot.GetComponent<CanvasGroup>();
-                if (cg)
-                {
-                    cg.alpha = 0f;
-                    yield return cg.DOFade(1f, crystalFadeDuration)
-                        .SetEase(Ease.OutQuad)
-                        .WaitForCompletion();
-                }
-
-                yield return new WaitForSeconds(1.5f);
-            }
-        }
-
-        void AwardParticipationXp()
-        {
-            if (xpPerGame <= 0) return;
-
-            var service = PlayerDataService.Instance;
-            if (service == null) return;
-
-            int total = service.AddXP(xpPerGame);
-            CSDebug.Log($"[EndGameCinematic] Awarded {xpPerGame} XP. Total: {total}");
+            yield return view.PlayScoreRevealAnimation(displayText, score, cinematic.scoreRevealSettings);
         }
 
         /// <summary>
@@ -436,7 +395,17 @@ namespace CosmicShore.Utility
         /// </summary>
         protected virtual bool DetermineLocalPlayerWon()
         {
-            return gameData != null && gameData.IsLocalDomainWinner(out _);
+            if (gameData == null) return false;
+
+            // Domain modes set a server-authoritative WinnerDomain — the same value the
+            // scoreboard banner uses. The local player wins iff their domain is the winner.
+            if (gameData.WinnerDomain != Domains.Blue)
+            {
+                var localDomain = gameData.LocalPlayer?.Domain ?? Domains.Blue;
+                return localDomain == gameData.WinnerDomain;
+            }
+
+            return gameData.IsLocalDomainWinner(out _);
         }
 
         protected virtual CinematicDefinitionSO ResolveCinematicForThisScene()

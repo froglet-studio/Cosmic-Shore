@@ -52,8 +52,8 @@ namespace CosmicShore.Gameplay
         void UpdateDomainRemainingUI()
         {
             if (gameData.LocalPlayer == null) return;
-            int domainSum = gameData.SumJoustCollisionsByDomain(gameData.LocalPlayer.Domain);
-            int remaining = Mathf.Max(0, CollisionsNeeded - domainSum);
+            // Remaining = local player's DOMAIN joust deficit (the rule owns target + sum).
+            int remaining = gameData.ScoringRule.Remaining(gameData, gameData.LocalPlayer.Domain);
             if (onUpdateTurnMonitorDisplay)
                 onUpdateTurnMonitorDisplay.Raise(remaining.ToString());
         }
@@ -106,10 +106,9 @@ namespace CosmicShore.Gameplay
             // Only server ends the turn authoritatively
             if (!IsServer) return false;
 
-            // Team-aware end condition: the turn ends when any active domain's
-            // summed JoustCollisions reaches the target. Domain teammates (humans
-            // and AI on the same domain) finish the objective together.
-            return gameData.TryGetDomainReachingJoustTarget(CollisionsNeeded, out _);
+            // End condition delegated to the mode's ScoringRule: an active domain's summed
+            // jousts reaching the target. Domain teammates finish the objective together.
+            return gameData.ScoringRule.IsObjectiveReached(gameData, out _);
         }
     }
 }

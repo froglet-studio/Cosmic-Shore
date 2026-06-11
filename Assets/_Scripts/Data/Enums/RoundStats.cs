@@ -84,8 +84,10 @@ namespace CosmicShore.Data
         readonly NetworkVariable<FixedString64Bytes> n_Name =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
-        readonly NetworkVariable<Domains> n_Domain =
-            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        // RoundStats.Domain is NOT a NetworkVariable. Domain is owned authoritatively by
+        // Player.NetDomain; RoundStats.Domain is a local mirror that Player keeps in sync on every
+        // peer (InitializeForMultiplayerMode + OnNetDomainChanged). One networked source of truth,
+        // no second (lagging) replication. See Docs/ScoringSystem BUGS.md B10 / TODOS.md.
 
         readonly NetworkVariable<float> n_Score =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
@@ -220,8 +222,13 @@ namespace CosmicShore.Data
             get => _domainLocal;
             set
             {
+                if (_domainLocal == value) return;
                 _domainLocal = value;
-                if (IsSpawned && IsServer) n_Domain.Value = value;
+                // Local mirror only — Player keeps this in sync on every peer from the authoritative
+                // Player.NetDomain (InitializeForMultiplayerMode + OnNetDomainChanged), so there is no
+                // per-RoundStats NetworkVariable to write. Notify observers (e.g. the in-game HUD) so
+                // they reconcile.
+                OnAnyStatChanged?.Invoke(this);
             }
         }
 
@@ -641,7 +648,6 @@ namespace CosmicShore.Data
         {
             // --- Initial sync from current NetworkVariable state ---
             _nameLocal   = n_Name.Value.ToString();
-            _domainLocal = n_Domain.Value;
             _scoreLocal  = n_Score.Value;
 
             _volumeCreatedLocal           = n_VolumeCreated.Value;
@@ -681,8 +687,12 @@ namespace CosmicShore.Data
 
             // --- Replication callbacks: sync local field, then fire event ---
 
-            n_Name.OnValueChanged   += (_, v) => _nameLocal = v.ToString();
-            n_Domain.OnValueChanged += (_, v) => _domainLocal = v;
+            n_Name.OnValueChanged += (_, v) =>
+            {
+                _nameLocal = v.ToString();
+                // A late-replicated name must notify observers (some HUD lookups key by name).
+                OnAnyStatChanged?.Invoke(this);
+            };
 
             n_Score.OnValueChanged += (_, v) =>
             {

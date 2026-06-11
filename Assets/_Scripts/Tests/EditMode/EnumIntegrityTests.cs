@@ -136,7 +136,7 @@ namespace CosmicShore.Tests
         public void GameModes_HasExpectedMemberCount()
         {
             var values = Enum.GetValues(typeof(GameModes));
-            Assert.AreEqual(34, values.Length,
+            Assert.AreEqual(33, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 
@@ -150,7 +150,6 @@ namespace CosmicShore.Tests
 
         [Test]
         [TestCase(GameModes.Random, 0)]
-        [TestCase(GameModes.Freestyle, 7)]
         [TestCase(GameModes.MultiplayerFreestyle, 28)]
         [TestCase(GameModes.MultiplayerCellularDuel, 29)]
         [TestCase(GameModes.Multiplayer2v2CoOpVsAI, 30)]

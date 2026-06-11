@@ -70,6 +70,12 @@ namespace CosmicShore.Gameplay
                     // Copy other properties as needed
                     return newAssembler;
                 }
+                else if (growthInfo is SchwarzPGrowthInfo schwarzPGrowthInfo)
+                {
+                    var newAssembler = gameObject.GetComponent<SchwarzPAssembler>();
+                    newAssembler.Program(schwarzPGrowthInfo);
+                    return newAssembler;
+                }
                 // Add other assembler types here as needed
                 else
                 {

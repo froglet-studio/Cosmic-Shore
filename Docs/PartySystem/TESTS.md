@@ -4,10 +4,9 @@ MPPM (Multiplayer Play Mode) scenarios used as the regression gate for
 every party-side commit. All tests run in Unity Editor with 3-4 virtual
 players.
 
-> **Convention.** "VP1" = the host's virtual player; "VP2", "VP3", "VP4"
-> = joining clients. Each VP is a separate Editor instance under MPPM.
-> Tests reference NetDiag log classes (`class=Offline`, `class=SessionGone`,
-> etc.) — see `../NetworkDiagnostics/README.md` for the helper.
+> **Convention.** See `../README.md` § "MPPM test convention" for VP
+> naming and NetDiag class references. In party tests, **VP1 = host**;
+> VP2–VP4 = joining clients.
 
 ## Smoke gate — run on every commit
 
@@ -61,6 +60,36 @@ populates with VP2, VP3.
 **Pass criterion.** Same as S1 — proves the leave path leaves no
 state divergence.
 
+### S9. Host return to menu with full party (post-game)
+
+Regression for the "clients stuck in the game scene when the host taps
+Main Menu" bug. The host's deliberate return must keep the party on one
+live Relay and carry every client back — it must NOT route through the
+disconnect/`OnSessionEnded` path (which despawns the clients' persistent
+`Player` objects).
+
+**Setup.** Run S1 to completion (VP1 host + VP2 client together in
+Menu_Main, both in autopilot).
+
+**Steps.**
+1. VP1 launches a multiplayer game (e.g. HexRace) from the Arcade menu;
+   confirm VP2 follows into the game scene (launch regression).
+2. Play to the end so the scoreboard appears.
+3. On VP1 (host), tap **Main Menu** on the scoreboard.
+
+**Pass criterion.**
+- VP1 **and** VP2 both load Menu_Main and roam in autopilot (lavalamp),
+  exactly like first entry.
+- Each client logs `[FLOW-6] … Raising OnClientReady` then
+  `[FLOW-8] [SceneLoader] FadeFromSplashOnReady` (splash clears).
+- VP1's log shows **no** client `Player` despawn during the return
+  (`DestroyPlayerAndVessel` must not run on the host-initiated return).
+- The Relay session id is unchanged across game → menu (party intact);
+  Party Area still shows 2/4 members.
+- Non-host VP2 never sees the scoreboard's Main Menu button — only the
+  host returns the whole party (VP2 has "Leave Lobby" instead, see S3).
+- Repeat the menu → game → menu cycle 2–3× with no leftover state.
+
 ## Stress gate — run on every refactor commit
 
 ### Stress-1. Five-accept smoke
@@ -83,80 +112,39 @@ NetDiag log lines.
 
 ### Stress-3. Mid-accept Leave
 
-VP2 accepts an invite, then immediately taps Leave (during the
-transition before `Accept flow completed successfully`).
-
-**Pass criterion.**
-- VP2 returns to solo Menu_Main cleanly.
-- Log shows `[PartyInviteController] Accept flow cancelled.` (not
-  the generic catch path).
-- If the generic catch fires instead, NetDiag should classify as
-  `class=Cancelled`.
+Same action as **S7** (User-cancel Accept) in the Failure-mode gate
+below — run it here as the per-refactor stress check. Pass: VP2 returns
+to solo Menu_Main cleanly and the log shows
+`[PartyInviteController] Accept flow cancelled.` (see S7 for the full
+diagnostic criterion).
 
 ## Failure-mode gate — run when investigating a bug
 
-These tests intentionally provoke failures. Each pass criterion is
-**diagnostic-only** — the NetDiag log must correctly identify the
-failure class. Whether the system *responds* differently to each class
-is `../NetworkDiagnostics/README.md` "Possible solutions" territory.
+These intentionally provoke a failure to confirm the NetDiag overlay
+labels it correctly (diagnostic-only — whether the system *responds*
+differently per class is the "Possible solutions" menu in each test in
+`../NetworkDiagnostics/TESTS.md`).
 
-### S5. Offline-during-Accept
+The four party failure scenarios are the **party-context runs** of the
+diagnostic Tests A–E. The procedures live once in
+`../NetworkDiagnostics/TESTS.md`; this table maps each party scenario to
+its test and the expected joiner result — don't restate the steps here.
 
-**Setup.** VP1 invites VP2.
+| Party scenario | Procedure | Expected on the joiner |
+|---|---|---|
+| **S5.** Offline during Accept (WiFi off right before Accept) | Test A | `NetDiag: class=Offline` + `[NetworkMonitor] Online → Offline` |
+| **S6.** SessionGone (stop VP1 before VP2 accepts) | Test B | `NetDiag: class=SessionGone` (reachability fine) |
+| **S7.** User-cancel (accept, then immediately Leave / stop the joiner VP mid-flow) | Test C | `[PartyInviteController] Accept flow cancelled.` — or `class=Cancelled` if it reaches the generic catch |
+| **S8.** YS3 4-VP repro (VP1 invites VP2 + VP3 + VP4) | Test D | a `class=…` snapshot — triage per Test D (`Unknown`/`Transient` → bug; `Cancelled` from VP teardown → `TODOS.md`) |
 
-**Steps.** Toggle the client machine's WiFi off **right before** VP2
-presses Accept.
-
-**Diagnostic pass.** VP2's log contains:
-- `[NetworkMonitor] Online → Offline (reach=NotReachable, t=…)` within 5 s.
-- The eventual catch line carries `NetDiag: class=Offline | …`.
-
-The bounce-to-solo-menu behavior is the existing baseline — not the
-test target.
-
-### S6. SessionGone (host quits mid-accept)
-
-**Setup.** VP1 invites VP2.
-
-**Steps.**
-1. Wait for VP2 to see the invite popup.
-2. Stop VP1's editor instance.
-3. VP2 presses Accept.
-
-**Diagnostic pass.** VP2's catch log carries
-`NetDiag: class=SessionGone | reach=ReachableViaLAN | monitor=Online | …`.
-Distinguishable from S5: reachability is fine, session is gone.
-
-### S7. User-cancel Accept
-
-**Setup.** VP1 invites VP2.
-
-**Steps.** VP2 presses Accept, then immediately Leave (while the accept
-flow is in-flight).
-
-**Diagnostic pass.** Log shows
-`[PartyInviteController] Accept flow cancelled.` — the
-`OperationCanceledException` branch. If the generic catch fires instead,
-NetDiag should classify as `class=Cancelled`.
-
-### S8. YS3 4-VP repro
-
-**Setup.** 4 VPs. VP1 invites VP2, VP3, VP4 (concurrent or staggered).
-
-**Steps.** Trigger the original YS3 failure scenario from the
-diagnostics overlay plan.
-
-**Diagnostic pass.** If any joiner fails, the catch line carries a
-`NetDiag: class=…` snapshot. The class determines whether YS3 stays on
-the bug list (`class=Unknown` / `class=Transient` → investigate) or
-gets reclassified as environment (`class=Cancelled` from MPPM VP
-teardown → file under `TODOS.md`).
+The bounce-to-solo-menu behavior is the existing baseline, not the test
+target.
 
 ## What success on these tests means
 
 | Gate | Required for |
 |---|---|
-| S1, S2, S3, S4 | Every party-system commit |
+| S1, S2, S3, S4, S9 | Every party-system commit |
 | Stress-1, Stress-2, Stress-3 | Every refactor commit (Refactor 1, 2, 3 from `REFACTOR.md`) |
 | S5, S6, S7, S8 | Run when investigating a specific bug; not a per-commit gate |
 

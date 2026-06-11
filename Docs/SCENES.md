@@ -1,6 +1,24 @@
 # Scene & Game Mode Reference
 
-Comprehensive documentation of all Unity scenes, game modes, and their related systems in Cosmic Shore. Last updated March 2026.
+Comprehensive documentation of all Unity scenes, game modes, and their related systems in Cosmic Shore. Last updated June 2026.
+
+---
+
+## Naming: "Lava Lamp" and "Freestyle" are the same thing
+
+The open-ended flying experience hosted in **Menu_Main** has two names depending on
+perspective: when you are *viewing* it from the menu (autopilot vessels drifting behind
+the UI) it is called the **lava lamp**; when you are *playing* it (tap the crystal,
+take control) it is called **freestyle**. One system, two names — there is no separate
+freestyle game.
+
+A standalone arcade game called "Freestyle" (`GameModes.Freestyle = 7`,
+`MinigameFreestyle.unity`, `SinglePlayerFreestyleController`) used to exist. It was a
+vestige of the pre-lava-lamp era and has been removed — do not reintroduce it. Its
+shape-drawing flow (planned for lava-lamp Phase 2) can be recovered from git history;
+the supporting scripts (`ShapeDrawingManager`, `SegmentSpawner`, spawnable shapes)
+remain in the codebase. `MultiplayerFreestyle (28)` is a separate multiplayer sandbox
+game scene and still exists.
 
 ---
 
@@ -19,7 +37,6 @@ Comprehensive documentation of all Unity scenes, game modes, and their related s
 
 | Scene | Path | Game Mode | Controller |
 |---|---|---|---|
-| **MinigameFreestyle** | `_Scenes/Singleplayer Scenes/` | `Freestyle (7)` | `SinglePlayerFreestyleController` |
 | **MinigameCellularDuel** | `_Scenes/Singleplayer Scenes/` | `CellularDuel (8)` | `SinglePlayerCellularDuelController` |
 | **MinigameWildlifeBlitz** | `_Scenes/Singleplayer Scenes/` | `WildlifeBlitz (26)` | `SinglePlayerWildlifeBlitzController` |
 
@@ -175,7 +192,6 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 ├── SinglePlayerMiniGameControllerBase (abstract)
 │   │   Start(): subscribe to SOAP events, InitializeGame(), InvokeClientReady()
 │   │
-│   ├── SinglePlayerFreestyleController    — shape drawing + open-ended freestyle
 │   ├── SinglePlayerCellularDuelController — vessel swap on turn end (2-player vs AI)
 │   ├── SinglePlayerSlipnStrideController  — procedural course with intensity scaling
 │   ├── SinglePlayerWildlifeBlitzController — blitz scoring with wildlife turn monitor
@@ -215,7 +231,6 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 4 | `ShootingGallery` | SP Arcade | Shared | Scene-configured |
 | 5 | `BlockBandit` | SP Arcade | Shared | Scene-configured |
 | 6 | `RiskyDriftness` | SP Arcade | Shared | Scene-configured |
-| 7 | `Freestyle` | SP Freestyle | MinigameFreestyle | `SinglePlayerFreestyleController` |
 | 8 | `CellularDuel` | SP Competitive | MinigameCellularDuel | `SinglePlayerCellularDuelController` |
 | 9 | `DashNGrab` | SP Arcade | Shared | Scene-configured |
 | 10 | `CellularBrawl` | SP Competitive | Shared | Scene-configured |
@@ -244,30 +259,26 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 34 | `MultiplayerJoust` | MP | MinigameJoust_Gameplay | `MultiplayerJoustController` |
 | 35 | `MultiplayerCrystalCapture` | MP | MinigameCrystalCaptureMultiplayer_Gameplay | `MultiplayerCrystalCaptureController` |
 
-Note: ID 31 is skipped in the enum. Many single-player arcade modes (1-6, 9-25, 27) share scenes configured by `SO_ArcadeGame` assets rather than having dedicated scene files; they use the same underlying scene infrastructure with different turn monitors, scoring, and environment configurations.
+Note: IDs 7 and 31 are skipped in the enum. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document). Many single-player arcade modes (1-6, 9-25, 27) share scenes configured by `SO_ArcadeGame` assets rather than having dedicated scene files; they use the same underlying scene infrastructure with different turn monitors, scoring, and environment configurations.
 
 ---
 
 ## Game Mode Details
 
-### Freestyle (Single-Player)
+### Freestyle (Menu_Main lava lamp)
 
-**Scene**: `MinigameFreestyle.unity`
-**Controller**: `SinglePlayerFreestyleController`
-**Base**: `SinglePlayerMiniGameControllerBase`
+Freestyle is not a standalone game — it is the playable side of the Menu_Main lava lamp
+(see the naming note at the top of this document and the "Lava-Lamp Mode" section of
+CLAUDE.md). Tap the crystal in Menu_Main to take control of your vessel; tap the center
+to return to autopilot/menu.
 
-Open-ended creative mode with shape drawing integration. The player flies freely, collecting crystals and drawing trails. Colliding with shape triggers transitions to a shape-drawing mini-game.
+The retired standalone game's shape-drawing flow (collision → freeze player → nuke
+environment → shape preview → countdown → draw shape → evaluate → restore environment)
+is planned to return as lava-lamp Phase 2. The supporting scripts still exist:
 
-**Key features**:
-- `HasEndGame => false` — never ends
-- Shape drawing flow: collision → freeze player → nuke environment → shape preview → countdown → draw shape → evaluate → restore environment
-- Environment systems (`SegmentSpawner`, `Cell`, `LocalCrystalManager`) toggle on/off during shape transitions
-- Player's domain color changes to match the shape domain during shape mode
-
-**Key files**:
-- `SinglePlayerFreestyleController.cs` — `_Scripts/Controller/Arcade/`
 - `ShapeDrawingManager` — manages shape preview → draw → score flow
 - `SegmentSpawner.cs` — spawns trail segments with shape triggers
+- `SinglePlayerFreestyleController.cs` — removed; recover the flow from git history when porting
 
 ### Cellular Duel (Single-Player)
 
@@ -469,7 +480,7 @@ SceneLoader.LaunchGame() [MonoBehaviour, Bootstrap DontDestroyOnLoad, subscribed
       MultiplayerMiniGameControllerBase.OnNetworkSpawn() in the game scene
       ├─ gameData.ResetRuntimeData()
       ├─ Wait 0.5s for RPC delivery
-      └─ Network or local scene load
+      └─ Host-driven Netcode scene load (local fallback only if no NetworkManager)
 ```
 
 ---
@@ -597,7 +608,6 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Crystal Capture | `MultiplayerCrystalCaptureController.cs` | `_Scripts/Controller/Arcade/` |
 | Freestyle (MP) | `MultiplayerFreestyleController.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (MP) | `MultiplayerWildlifeBlitzMiniGame.cs` | `_Scripts/Controller/Arcade/` |
-| Freestyle (SP) | `SinglePlayerFreestyleController.cs` | `_Scripts/Controller/Arcade/` |
 | Cellular Duel (SP) | `SinglePlayerCellularDuelController.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (SP) | `SinglePlayerWildlifeBlitzController.cs` | `_Scripts/Controller/Arcade/` |
 | SlipNStride | `SinglePlayerSlipnStrideController.cs` | `_Scripts/Controller/Arcade/` |
