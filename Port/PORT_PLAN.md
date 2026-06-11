@@ -100,7 +100,15 @@ crystals. Shipped since: bloom post chain (bright-pass → half-res gaussian →
 composite) with camera-proximity fades for trails/bursts; mouse steering; **procedural
 audio** (AudioEngine: synthesized PCM via OpenAL Soft — engine hum scaling with speed,
 boost layer, crystal chimes, countdown/go beeps, win/lose jingle; fail-safe silent mode
-when no device). Fidelity arc: **V1 DONE** (engine E3-E8/E10: RPC attrs, profiling shim, Screen/
+when no device). **FIRST HUMAN FLIGHT 2026-06-11** (prompter, gamepad). Feedback applied same-day:
+SkimRace now uses the AUTHENTIC control scheme — the ported GamepadInputStrategy runs
+against a Silk→shim device bridge (XSum/YSum/XDiff/YDiff: dual-stick sums = pitch/yaw,
+difference = roll, stick spread = throttle), and the flight model is VesselTransformer
+parity (free AngleAxis rotation about own axes, scalers 130/130/130, throttle 50·XDiff
++ 10 min speed, LERP 1.5, boost as throttle multiplier). Keyboard fallback: WASD+arrows
+as two sticks. NEXT (prompter): Squirrel vessel model — binary FBX at
+Assets/_Models/Vessel Models/SquirrelVessel_CosmicShoresTest1.fbx; write a focused FBX
+geometry extractor (verts+indices → baked mesh) next tick. Fidelity arc: **V1 DONE** (engine E3-E8/E10: RPC attrs, profiling shim, Screen/
 Application/PlayerPrefs/Resources statics, Object.DontDestroyOnLoad/Instantiate/
 FindFirstObjectByType, Physics+collider stubs; NetworkBehaviour now : MonoBehaviour
 (parity); ported PauseSystem, SafeLookRotation, Singleton family, NetMarkers,

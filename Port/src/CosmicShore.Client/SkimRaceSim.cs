@@ -87,7 +87,8 @@ namespace CosmicShore.Client
     /// </summary>
     public sealed class SkimRaceController : MonoBehaviour
     {
-        public PilotInput Input;
+        public SkimInputStatus Status;
+        public bool BoostHeld;
         public SkimTrack Track;
         public ResourceSystem Resources;
         public RoundStats Stats;
@@ -105,18 +106,21 @@ namespace CosmicShore.Client
         public float BankAngle;
         public event Action<int, Vector3> OnCrystalCollected;
 
-        const float BaseSpeed = 34f;
-        const float BoostSpeed = 62f;
-        const float TurnRate = 75f;       // deg/sec
+        // VesselTransformer parity (the original's serialized defaults):
+        // free rotation about the vessel's own axes, throttle from stick spread.
+        const float PitchScaler = 130f;
+        const float YawScaler = 130f;
+        const float RollScaler = 130f;
+        const float ThrottleScaler = 50f;
+        const float MinimumSpeed = 10f;
+        const float LERP_AMOUNT = 1.5f;
+        const float BoostMultiplier = 2.1f;
         const float CollectRadius = 4.2f; // generous skim radius
         const float BoostDrainPerSecond = 0.45f;
 
-        float _pitchDeg, _yawDeg;
-
         void Update()
         {
-            if (Track is null || Shared is null) return;
-            if (Input is { Restart: true }) { Input.Restart = false; }
+            if (Track is null || Shared is null || Status is null) return;
 
             switch (State)
             {
@@ -126,7 +130,7 @@ namespace CosmicShore.Client
                     return;
                 case RaceState.Finished:
                     transform.position += transform.forward * (Speed * Time.deltaTime);
-                    Speed = Mathf.Lerp(Speed, BaseSpeed * 0.4f, Time.deltaTime);
+                    Speed = Mathf.Lerp(Speed, MinimumSpeed, Time.deltaTime);
                     return;
             }
 
@@ -134,30 +138,27 @@ namespace CosmicShore.Client
 
             ElapsedTime += Time.deltaTime;
 
-            float pitchInput, yawInput;
-            bool boostInput;
-            if (IsAI) SynthesizeAIInput(out pitchInput, out yawInput, out boostInput);
-            else (pitchInput, yawInput, boostInput) = (Input.Pitch, Input.Yaw, Input.Boost);
+            if (IsAI) SynthesizeAIInput();
 
-            bool boosting = boostInput && Resources.Resources[0].CurrentAmount > 0.02f;
+            // Boost gates on the ported boost resource, then multiplies the throttle
+            // term exactly like VesselTransformer's boostAmount.
+            bool boosting = BoostHeld && Resources.Resources[0].CurrentAmount > 0.02f;
             if (boosting)
                 Resources.ChangeResourceAmount(0, -BoostDrainPerSecond * Time.deltaTime);
-            float targetSpeed = boosting ? BoostSpeed : BaseSpeed;
-            if (IsAI && Opponent != null)
-            {
-                // rubber-band speed: claw back when trailing, coast when far ahead
-                int crystalLead = Stats.CrystalsCollected - Opponent.Stats.CrystalsCollected;
-                if (crystalLead <= -2) targetSpeed *= 1.22f;
-                else if (crystalLead >= 3) targetSpeed *= 0.85f;
-            }
-            Speed = Mathf.Lerp(Speed, targetSpeed, Time.deltaTime * 3f);
+            float boostAmount = boosting ? BoostMultiplier : 1f;
 
-            float turn = TurnRate * SkillTurnScale;
-            _yawDeg += yawInput * turn * Time.deltaTime;
-            // +X Euler is nose-down, so positive (stick-up) pitch input SUBTRACTS
-            _pitchDeg = Mathf.Clamp(_pitchDeg - pitchInput * turn * Time.deltaTime, -70f, 70f);
-            BankAngle = Mathf.Lerp(BankAngle, -yawInput * 38f, Time.deltaTime * 6f);
-            transform.rotation = Quaternion.Euler(_pitchDeg, _yawDeg, 0f);
+            // ── Cosmic Shore flight model (VesselTransformer parity) ──
+            float turnScale = SkillTurnScale * Time.deltaTime;
+            var rotation = transform.rotation;
+            rotation = Quaternion.AngleAxis(Status.YSum * PitchScaler * turnScale, transform.right) * rotation;
+            rotation = Quaternion.AngleAxis(Status.XSum * YawScaler * turnScale, transform.up) * rotation;
+            rotation = Quaternion.AngleAxis(Status.YDiff * RollScaler * turnScale, transform.forward) * rotation;
+            transform.rotation = rotation.normalized;
+
+            Speed = Mathf.Lerp(
+                Speed,
+                Status.XDiff * ThrottleScaler * boostAmount + MinimumSpeed,
+                LERP_AMOUNT * Time.deltaTime);
             transform.position += transform.forward * (Speed * Time.deltaTime);
 
             // Contested skim collection.
@@ -183,9 +184,11 @@ namespace CosmicShore.Client
         }
 
         /// <summary>Seek the nearest unclaimed crystal ahead; boost when lined up.</summary>
-        void SynthesizeAIInput(out float pitch, out float yaw, out bool boost)
+        void SynthesizeAIInput()
         {
-            pitch = 0f; yaw = 0f; boost = false;
+            Status.XSum = 0f; Status.YSum = 0f; Status.YDiff = 0f;
+            Status.XDiff = 0.55f;
+            BoostHeld = false;
             // nearest two unclaimed crystals ahead
             Vector3? first = null, second = null;
             float bestZ = float.MaxValue, secondZ = float.MaxValue;
@@ -208,27 +211,38 @@ namespace CosmicShore.Client
                 if (theirs < mine * 0.8f) target = second;
             }
             if (!target.HasValue) return;
+            ApplySeek(target.Value);
+        }
 
-            var local = Quaternion.Inverse(transform.rotation) * (target.Value - transform.position);
-            yaw = Mathf.Clamp(local.x * 0.25f, -1f, 1f);
-            pitch = Mathf.Clamp(local.y * 0.25f, -1f, 1f);
-            bool linedUp = Mathf.Abs(yaw) < 0.35f && Mathf.Abs(pitch) < 0.35f;
+        void ApplySeek(Vector3 target)
+        {
+
+            var local = Quaternion.Inverse(transform.rotation) * (target - transform.position);
+            // Sign parity with the strategies: stick right ⇒ XSum positive ⇒ yaw right;
+            // stick up ⇒ YSum negative ⇒ nose up (+X axis rotation is nose-down).
+            Status.XSum = Mathf.Clamp(local.x * 0.25f, -1f, 1f);
+            Status.YSum = Mathf.Clamp(-local.y * 0.25f, -1f, 1f);
+            bool linedUp = Mathf.Abs(Status.XSum) < 0.35f && Mathf.Abs(Status.YSum) < 0.35f;
+
             // Rubber-band both directions: hold boost for the opening seconds (give the
             // player the early line), spend freely when trailing, coast when leading —
             // otherwise the leader sweeps every contested crystal on the shared line.
             int lead = Opponent != null ? Stats.CrystalsCollected - Opponent.Stats.CrystalsCollected : 0;
+            Status.XDiff = lead >= 3 ? 0.4f : lead <= -2 ? 1f : 0.62f;
             float reserve = lead >= 3 ? 0.95f : lead <= -2 ? 0.12f : 0.4f;
-            boost = linedUp && ElapsedTime > 5f && Resources.Resources[0].CurrentAmount > reserve;
+            BoostHeld = linedUp && ElapsedTime > 5f && Resources.Resources[0].CurrentAmount > reserve;
         }
 
         public void ResetPilot(float lateralOffset)
         {
             ((IRoundStats)Stats).Cleanup();
             Resources.ResetResource(0);
+            Status?.ResetForReplay();
+            BoostHeld = false;
             var start = Track.PointAt(0f);
             transform.position = new Vector3(start.x + lateralOffset, start.y, -30f);
             transform.rotation = Quaternion.identity;
-            _pitchDeg = 0f; _yawDeg = 0f; BankAngle = 0f;
+            BankAngle = 0f;
             Speed = 0f;
             ElapsedTime = 0f;
             Countdown = 3f;
@@ -240,7 +254,7 @@ namespace CosmicShore.Client
     public static class SkimRaceFactory
     {
         public static (GameLoop loop, SkimRaceController player, SkimRaceController rival) Create(
-            int seed, int trackCrystals, PilotInput input)
+            int seed, int trackCrystals, SkimInputStatus playerStatus)
         {
             var loop = new GameLoop("SkimRace");
             var track = new SkimTrack(seed);
@@ -269,8 +283,12 @@ namespace CosmicShore.Client
             }
 
             var player = Build("Pilot", Domains.Jade, 0, isAI: false);
-            player.Input = input;
+            player.Status = playerStatus;
+            // Boost rides the authentic event channel: Button1 (gamepad A / keyboard).
+            playerStatus.OnButtonPressed.OnRaised += e => { if (e == InputEvents.Button1Action) player.BoostHeld = true; };
+            playerStatus.OnButtonReleased.OnRaised += e => { if (e == InputEvents.Button1Action) player.BoostHeld = false; };
             var rival = Build("Rival", Domains.Ruby, 1, isAI: true);
+            rival.Status = new SkimInputStatus();
             rival.SkillTurnScale = 0.92f; // beatable, but honest lines
             rival.Opponent = player;
             player.Opponent = rival;

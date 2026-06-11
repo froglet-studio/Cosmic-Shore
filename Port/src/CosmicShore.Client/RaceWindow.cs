@@ -6,8 +6,12 @@ using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
+using EngineInput = CosmicShore.Engine.InputSystem;
 using Vector3 = CosmicShore.Engine.Vector3;
 using Quaternion = CosmicShore.Engine.Quaternion;
+using Vector2 = CosmicShore.Engine.Vector2;
 
 namespace CosmicShore.Client
 {
@@ -31,7 +35,10 @@ namespace CosmicShore.Client
         GameLoop _loop;
         SkimRaceController _race;
         SkimRaceController _rival;
-        readonly PilotInput _pilot = new();
+        readonly SkimInputStatus _playerStatus = new();
+        readonly GamepadInputStrategy _gamepadStrategy = new(); // the ported, authentic dual-stick scheme
+        EngineInput.Gamepad _shimPad;
+        bool _prevA, _prevStart;
 
         uint _program;
         int _uMvp;
@@ -109,7 +116,9 @@ namespace CosmicShore.Client
                     }
                 };
 
-            (_loop, _race, _rival) = SkimRaceFactory.Create(_seed, _crystalTarget, _pilot);
+            (_loop, _race, _rival) = SkimRaceFactory.Create(_seed, _crystalTarget, _playerStatus);
+            _gamepadStrategy.Initialize(_playerStatus);
+            _gamepadStrategy.OnStrategyActivated();
             _audio = new AudioEngine(disabled: _screenshotPath != null);
             _race.OnCrystalCollected += (_, pos) => { _bursts.Add((pos, 0f)); _audio.CrystalChime(player: true); };
             _rival.OnCrystalCollected += (_, pos) => { _bursts.Add((pos, 0f)); _audio.CrystalChime(player: false); };
@@ -406,79 +415,81 @@ void main()
 
         void OnUpdate(double dt)
         {
-            // keyboard → pilot intent
-            float pitch = 0f, yaw = 0f;
-            bool boost = false;
-            foreach (var keyboard in _inputContext.Keyboards)
-            {
-                if (keyboard.IsKeyPressed(Key.W) || keyboard.IsKeyPressed(Key.Up)) pitch += 1f;
-                if (keyboard.IsKeyPressed(Key.S) || keyboard.IsKeyPressed(Key.Down)) pitch -= 1f;
-                if (keyboard.IsKeyPressed(Key.A) || keyboard.IsKeyPressed(Key.Left)) yaw -= 1f;
-                if (keyboard.IsKeyPressed(Key.D) || keyboard.IsKeyPressed(Key.Right)) yaw += 1f;
-                if (keyboard.IsKeyPressed(Key.Space)) boost = true;
-            }
-            foreach (var mouse in _inputContext.Mice)
-            {
-                if (mouse.IsButtonPressed(Silk.NET.Input.MouseButton.Right))
-                {
-                    float cx = _window.Size.X * 0.5f, cy = _window.Size.Y * 0.5f;
-                    yaw += Mathf.Clamp((mouse.Position.X - cx) / (cx * 0.6f), -1f, 1f);
-                    pitch += Mathf.Clamp((cy - mouse.Position.Y) / (cy * 0.6f), -1f, 1f);
-                }
-            }
-            foreach (var gamepad in _inputContext.Gamepads)
-            {
-                if (gamepad.Thumbsticks.Count > 0)
-                {
-                    var stick = gamepad.Thumbsticks[0];
-                    if (MathF.Abs(stick.X) > 0.15f) yaw += stick.X;
-                    if (MathF.Abs(stick.Y) > 0.15f) pitch -= stick.Y; // stick down = pull up
-                }
-                foreach (var trigger in gamepad.Triggers)
-                    if (trigger.Position > 0.3f) boost = true;
-                foreach (var button in gamepad.Buttons)
-                    if (button.Name == ButtonName.A && button.Pressed) boost = true;
-            }
-            yaw = Mathf.Clamp(yaw, -1f, 1f);
-            pitch = Mathf.Clamp(pitch, -1f, 1f);
+            if (_screenshotPath != null) return; // sim + autopilot tick in OnRender
 
-            // headless screenshot mode: autopilot recomputed per sim tick in OnRender
-            if (_screenshotPath != null)
-            {
-                return;
-            }
-            if (false)
-            {
-                if (_race.State == RaceState.Countdown) { _race.Countdown = 0.01f; _rival.Countdown = 0.01f; }
-                var t0 = _race.transform;
-                Vector3? target = null;
-                float best = float.MaxValue;
-                for (int i = 0; i < _race.Track.Crystals.Count; i++)
-                {
-                    if (_race.Shared.IsTaken(i)) continue;
-                    var c = _race.Track.Crystals[i];
-                    float ahead = c.z - t0.position.z;
-                    if (ahead < -5f) continue;
-                    if (ahead < best) { best = ahead; target = c; }
-                }
-                if (target.HasValue)
-                {
-                    var local = Quaternion.Inverse(t0.rotation) * (target.Value - t0.position);
-                    yaw = Mathf.Clamp(local.x * 0.25f, -1f, 1f);
-                    pitch = Mathf.Clamp(local.y * 0.25f, -1f, 1f);
-                }
-                boost = _frameIndex > 150;
-            }
-
-            _pilot.Pitch = pitch;
-            _pilot.Yaw = yaw;
-            _pilot.Boost = boost;
+            ApplyHumanInput();
 
             if (_screenshotPath == null)
                 _loop.Tick((float)dt); // the ported engine drives the sim (real time)
 
             EmitTrailAndCamera((float)dt);
 
+        }
+
+        /// <summary>
+        /// Feed Silk.NET devices into the engine input shim, then run the PORTED
+        /// GamepadInputStrategy — the authentic Cosmic Shore dual-stick scheme:
+        /// XSum=yaw, YSum=pitch, YDiff=roll, XDiff=stick-spread throttle. Keyboard
+        /// fallback writes the same fields (WASD=left stick, arrows=right stick).
+        /// </summary>
+        void ApplyHumanInput()
+        {
+            var silkPad = _inputContext.Gamepads.Count > 0 ? _inputContext.Gamepads[0] : null;
+            if (silkPad != null && silkPad.Thumbsticks.Count >= 2)
+            {
+                _shimPad ??= EngineInput.Gamepad.current = new EngineInput.Gamepad();
+
+                // Silk thumbstick Y is +down; the original scheme expects +up.
+                _shimPad.leftStick.value = new Vector2(silkPad.Thumbsticks[0].X, -silkPad.Thumbsticks[0].Y);
+                _shimPad.rightStick.value = new Vector2(silkPad.Thumbsticks[1].X, -silkPad.Thumbsticks[1].Y);
+                _shimPad.leftTrigger.value = silkPad.Triggers.Count > 0 ? silkPad.Triggers[0].Position : 0f;
+                _shimPad.rightTrigger.value = silkPad.Triggers.Count > 1 ? silkPad.Triggers[1].Position : 0f;
+
+                bool a = false, start = false;
+                foreach (var button in silkPad.Buttons)
+                {
+                    if (button.Name == ButtonName.A) a = button.Pressed;
+                    if (button.Name == ButtonName.Start) start = button.Pressed;
+                }
+                _shimPad.buttonSouth.isPressed = a;
+                _shimPad.buttonSouth.wasPressedThisFrame = a && !_prevA;
+                _shimPad.buttonSouth.wasReleasedThisFrame = !a && _prevA;
+                _prevA = a;
+                if (start && !_prevStart)
+                {
+                    SkimRaceFactory.ResetRace(_race.Shared, _race, _rival);
+                    _trail.Clear();
+                    _rivalTrail.Clear();
+                }
+                _prevStart = start;
+
+                _gamepadStrategy.ProcessInput(); // the real scheme computes sums/diffs
+                return;
+            }
+
+            // Keyboard fallback in the same idiom: WASD = left stick, arrows = right.
+            float lx = 0f, ly = 0f, rx = 0f, ry = 0f;
+            bool space = false;
+            foreach (var keyboard in _inputContext.Keyboards)
+            {
+                if (keyboard.IsKeyPressed(Key.W)) ly += 1f;
+                if (keyboard.IsKeyPressed(Key.S)) ly -= 1f;
+                if (keyboard.IsKeyPressed(Key.A)) lx -= 1f;
+                if (keyboard.IsKeyPressed(Key.D)) lx += 1f;
+                if (keyboard.IsKeyPressed(Key.Up)) ry += 1f;
+                if (keyboard.IsKeyPressed(Key.Down)) ry -= 1f;
+                if (keyboard.IsKeyPressed(Key.Left)) rx -= 1f;
+                if (keyboard.IsKeyPressed(Key.Right)) rx += 1f;
+                if (keyboard.IsKeyPressed(Key.Space)) space = true;
+            }
+            // No second stick touched → mirror the left so single-hand play still flies.
+            if (rx == 0f && ry == 0f && (lx != 0f || ly != 0f)) { rx = lx; ry = ly; }
+            _playerStatus.XSum = Mathf.Clamp(rx + lx, -1f, 1f);
+            _playerStatus.YSum = Mathf.Clamp(-(ry + ly), -1f, 1f);
+            _playerStatus.YDiff = Mathf.Clamp(ry - ly, -1f, 1f);
+            _playerStatus.XDiff = (Mathf.Clamp(rx - lx, -2f, 2f) + 2f) / 4f + (space ? 0.5f : 0.12f);
+            _playerStatus.XDiff = Mathf.Clamp01(_playerStatus.XDiff);
+            _race.BoostHeld = space;
         }
 
         void EmitTrailAndCamera(float dt)
@@ -514,7 +525,7 @@ void main()
             _camLook = t3.position + t3.forward * 12f;
 
             // audio: engine bed + countdown/finish stingers
-            _audio.SetEngineState(Mathf.Clamp01(_race.Speed / 62f), _pilot.Boost && _race.State == RaceState.Racing);
+            _audio.SetEngineState(Mathf.Clamp01(_race.Speed / 115f), _race.BoostHeld && _race.State == RaceState.Racing);
             if (_race.State == RaceState.Countdown)
             {
                 int second = (int)MathF.Ceiling(_race.Countdown);
@@ -727,17 +738,18 @@ void main()
             if (target.HasValue)
             {
                 var local = Quaternion.Inverse(t0.rotation) * (target.Value - t0.position);
-                _pilot.Yaw = Mathf.Clamp(local.x * 0.25f, -1f, 1f);
-                _pilot.Pitch = Mathf.Clamp(local.y * 0.25f, -1f, 1f);
+                _playerStatus.XSum = Mathf.Clamp(local.x * 0.25f, -1f, 1f);
+                _playerStatus.YSum = Mathf.Clamp(-local.y * 0.25f, -1f, 1f);
             }
-            _pilot.Boost = _frameIndex > 60 && _race.Resources.Resources[0].CurrentAmount > 0.2f;
+            _playerStatus.XDiff = _frameIndex > 60 ? 1f : 0.62f;
+            _race.BoostHeld = _frameIndex > 60 && _race.Resources.Resources[0].CurrentAmount > 0.2f;
         }
 
         unsafe void SetMvp(Matrix4x4 mvp) => _gl.UniformMatrix4(_uMvp, 1, false, (float*)&mvp);
 
         unsafe void DrawTrail(Matrix4x4 viewProjection)
         {
-            DrawRibbon(viewProjection, _trail, _trailVao, _trailVbo, _pilot.Boost, jade: true);
+            DrawRibbon(viewProjection, _trail, _trailVao, _trailVbo, _race.BoostHeld, jade: true);
             DrawRibbon(viewProjection, _rivalTrail, _rivalTrailVao, _rivalTrailVbo, false, jade: false);
         }
 
