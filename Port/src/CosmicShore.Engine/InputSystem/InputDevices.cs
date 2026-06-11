@@ -69,8 +69,14 @@ namespace CosmicShore.Engine.InputSystem
     {
         public static Mouse current;
 
+        /// <summary>All attached mice (empty until a platform input backend registers devices).</summary>
+        public static readonly System.Collections.Generic.List<Mouse> all = new();
+
         public readonly MouseButtonControl leftButton = new(), rightButton = new(), middleButton = new();
         public readonly PositionControl position = new(), delta = new(), scroll = new();
+        public string name = "Mouse";
+        public string deviceId = "";
+        public string displayName = "Mouse";
     }
 
     public sealed class QuaternionControl
@@ -79,16 +85,27 @@ namespace CosmicShore.Engine.InputSystem
         public Quaternion ReadValue() => value;
     }
 
+    public sealed class Accelerometer
+    {
+        public static Accelerometer current;
+        public bool enabled;
+        public StickControl acceleration = new();
+    }
+
     public sealed class AttitudeSensor
     {
         public static AttitudeSensor current;
         public QuaternionControl attitude = new();
+        public bool enabled;
     }
 
     public enum TouchPhase { None = 0, Began = 1, Moved = 2, Ended = 3, Canceled = 4, Stationary = 5 }
 
     public static class InputSystem
     {
+        /// <summary>All registered devices (empty until platform backends register).</summary>
+        public static readonly System.Collections.Generic.List<object> devices = new();
+
         public static void EnableDevice(object device) { }
         public static void DisableDevice(object device) { }
     }

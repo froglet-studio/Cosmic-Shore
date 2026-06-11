@@ -141,9 +141,12 @@ GetGyroRotation commented until V5], IInputStrategy, BaseInputStrategy,
 KeyboardInputStrategy — the live loose-file strategy per the survey). **V3 DONE** (TouchInputStrategy + GamepadInputStrategy verbatim; shim grew Screen.dpi/
 currentResolution + unified TouchPhase — the original shares one enum across
 namespaces; InputStrategyTests: all three strategies run inert without faulting, invert
-toggles write through). Next: V4 (DualMouseInputStrategy, MultiMouseService,
-DeviceOrientationHandler), rival balance from prompter feedback, richer meshes/track
-variety.
+toggles write through). **V4 DONE** (DualMouseInputStrategy, MultiMouse folder — Win32 raw-input provider
+compiles out under our defines, verbatim — DeviceOrientationHandler; shim grew Mouse.all/
+displayName, InputSystem.devices, Accelerometer, AttitudeSensor.enabled, Cursor/
+CursorLockMode, Screen autorotate flags). The IO SCC is now fully ported except
+InputStatus(V7) + InputController(V5). Next: V5 (GameSetting + InputController, closes
+deviation #10a), rival balance from prompter feedback, richer meshes/track variety.
 
 ## Phase roadmap
 

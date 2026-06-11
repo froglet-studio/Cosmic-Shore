@@ -35,6 +35,10 @@ namespace CosmicShore.Engine
         public static float dpi = 96f;
         public static ScreenOrientation orientation = ScreenOrientation.LandscapeLeft;
         public static bool sleepTimeout;
+        public static bool autorotateToPortrait;
+        public static bool autorotateToPortraitUpsideDown;
+        public static bool autorotateToLandscapeLeft;
+        public static bool autorotateToLandscapeRight;
         public static Resolution currentResolution => new() { width = width, height = height, refreshRate = 60 };
     }
 
@@ -125,6 +129,15 @@ namespace CosmicShore.Engine
                 if (asset is T match) results.Add(match);
             return results.ToArray();
         }
+    }
+
+    public enum CursorLockMode { None = 0, Locked = 1, Confined = 2 }
+
+    /// <summary>Cursor state holder; the windowing backend applies it (phase 5).</summary>
+    public static class Cursor
+    {
+        public static bool visible = true;
+        public static CursorLockMode lockState = CursorLockMode.None;
     }
 
     public struct RaycastHit
