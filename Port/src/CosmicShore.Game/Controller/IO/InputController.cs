@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] public bool Portrait;
         [Inject] GameSetting gameSetting;
-        // PORT Deviation #10b (restore at V6): IVessel vessel;
+        IVessel vessel;
 
         private IInputStrategy currentStrategy;
         private GamepadInputStrategy gamepadStrategy;
@@ -205,7 +205,7 @@ namespace CosmicShore.Gameplay
         {
             if (IsPortrait)
             {
-                // PORT Deviation #10b (restore at V6): vessel.SetShipUp(90);
+                vessel.SetShipUp(90);
             }
             IInputStatus.CurrentOrientation = Screen.orientation;
         }*/

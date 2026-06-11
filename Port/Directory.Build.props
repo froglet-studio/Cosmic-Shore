@@ -7,7 +7,9 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
     <!-- CS0649 ("field never assigned") fires on every [Inject]/[SerializeField] member;
-         the Unity compiler suppressed it for serialized fields, so the port does too. -->
-    <NoWarn>$(NoWarn);CS0649</NoWarn>
+         the Unity compiler suppressed it for serialized fields, so the port does too.
+         CS0169 ("field never used") fires on verbatim Unity-era private fields whose
+         only usages are commented (e.g. InputController.vessel) or inspector-driven. -->
+    <NoWarn>$(NoWarn);CS0649;CS0169</NoWarn>
   </PropertyGroup>
 </Project>

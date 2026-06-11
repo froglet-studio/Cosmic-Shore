@@ -164,9 +164,14 @@ InputStatus(V7) + InputController(V5). **V5 DONE** (GameSetting [282L; Deviation
 services phase; pure PlayerSettingsCloudData model ported] + InputController [275L;
 Deviation #10b: IVessel field/usages commented, restore at V6; Deviation #15:
 TryAddInputStatus fail-loud until concrete InputStatus at V7]; **Deviation #10a
-CLOSED** — IInputStatus verbatim again). V6 IN PROGRESS (ITransform ported). Next: V6 remainder — the keystone (ITransform, IVessel,
-IPlayer, IVesselStatus #10c, ElementalFloat, ElementalShipComponent; restores #9 and
-#10b), rival balance from prompter feedback.
+CLOSED** — IInputStatus verbatim again). **V6 DONE** (keystone: IVessel + IPlayer +
+IVesselStatus [Deviation #10c open — 13 members commented pending V7-V19 types] +
+ElementalFloat + ElementalShipComponent + IVesselHUDController +
+R_ShipElementStatsHandler + ShipActionSO/ShipActionExecutorBase/ActionExecutorRegistry/
+legacy ShipAction; AudioSystem shell pulled forward as Deviation #11; **Deviations #9
+and #10b CLOSED** — ResourceSystem : ElementalShipComponent + RequireComponent restored,
+InputController.vessel field live). Next: V7 (engine E2 renderer stubs; InputStatus,
+VesselAnimation + IVesselStatus member restore), rival balance from prompter feedback.
 
 ## Phase roadmap
 
@@ -257,7 +262,10 @@ IPlayer, IVesselStatus #10c, ElementalFloat, ElementalShipComponent; restores #9
 | 6 | **Upstream latent red test reframed**: `ImpactEffects_AllValuesAreUnique` contradicts the shipped enum, which intentionally merges legacy effect groups sharing values 1-8, 10. Values are wire format — port freezes the exact duplicate set instead so NEW collisions still fail. | Enum values untouchable. |
 | 7 | 10 SOAP files deferred pending gameplay types: ScriptableEventVesselImpactor / ExplosionDebuffApplied / SkimmerDebuffApplied (IVessel/IVesselStatus/VesselImpactor), ScriptableSilhouetteData/* (SilhouetteController), ScriptableVesselHUDData/* (MiniGameHUD), VesselPrefabContainer (IVesselStatus). MainMenuStateTests (MainMenuController) and GameObjectExtensionTests (physics types) likewise port with their subjects. | Tracked in NEXT UP. |
 | 8 | Stat structs (CellStats/CrystalStats/PrismStats/AbilityStats), PrismType, and audio category enums are extracted into their own port files (source noted in headers) because their host classes (StatsManager, PrismFactory, AudioSystem) port in later phases. | File-split only; content verbatim. |
-| 9 | ResourceSystem temporary deviations: (a) base class `ElementalShipComponent` → `MonoBehaviour` until IVessel/ElementalFloat port; (b) `[RequireComponent(typeof(IVesselStatus))]` commented until IVesselStatus ports. Class body verbatim. Restore both when the vessel layer lands. | Unblocks the elemental core. |
+| 9 | ResourceSystem temporary deviations: (a) base class `ElementalShipComponent` → `MonoBehaviour` until IVessel/ElementalFloat port; (b) `[RequireComponent(typeof(IVesselStatus))]` commented until IVesselStatus ports. Class body verbatim. **CLOSED at V6 (2026-06-11)** — both restored verbatim. | Unblocks the elemental core. |
+| 10c | `IVesselStatus` landed (V6) with 13 members commented pending their types: `AIPilot`, `AICinematicBehavior`, `AutoPilotEnabled` (→V18), `AttachedPrism` (→V15), `VesselAnimation` (→V7), `VesselTransformer` (→V8), `Customization` (→V9), `NearFieldSkimmer`/`FarFieldSkimmer` (→V16), `VesselPrismController`/`ActionHandler` (→V17), `VesselCameraCustomizer`/`Silhouette` (→V19). Each restore iteration uncomments its members; V19 closes. | Stages the vessel SCC per VESSEL_LAYER.md. |
+| 11 | `AudioSystem` type-preserving shell (`Instance`, two `PlayGameplaySFX` overloads; bodies no-op) — pulled forward from V15 to V6 because `ActionExecutorRegistry` needs the type. Real port with the phase-5 audio backend. | Keeps ActionExecutorRegistry verbatim. |
+| 16 | `Directory.Build.props` adds CS0169 to NoWarn (alongside CS0649): verbatim Unity-era private fields whose only usages are commented (e.g. `InputController.vessel` until its orientation block revives) or inspector-driven fire it; the Unity compiler tolerated them. | Verbatim fields without warning noise. |
 
 ## Iteration log
 
@@ -320,21 +328,35 @@ IPlayer, IVesselStatus #10c, ElementalFloat, ElementalShipComponent; restores #9
   smoke PASS, headless Client screenshot smoke reaches `Racing` with the squirrel hull
   rendering. Dist zips untouched (game code unchanged).
 
-## NEXT UP (iteration 6)
+- **Iteration 6** (2026-06-11): **V6 keystone — the vessel-layer trio lands.**
+  IVessel, IPlayer, IVesselStatus (Deviation #10c: 13 members commented pending
+  V7-V19 types), ElementalFloat (LerpUnclamped scaling over levels -5..15),
+  ElementalShipComponent (reflective ElementalFloat binding), IVesselHUDController,
+  R_ShipElementStatsHandler, ShipActionSO + ShipActionExecutorBase +
+  ActionExecutorRegistry + legacy ShipAction; AudioSystem type-preserving shell
+  (Deviation #11, pulled forward from V15 — ActionExecutorRegistry needs the type).
+  **Deviations #9 and #10b CLOSED**: ResourceSystem : ElementalShipComponent +
+  `[RequireComponent(typeof(IVesselStatus))]` restored verbatim;
+  `InputController.vessel` field live again. CS0169 added to NoWarn (Deviation #16);
+  CellItem duplicate-using substitution artifact fixed. New ElementalFloatTests:
+  scaling theory across the full level range, disabled-float inertness, reflective
+  name composition (`Type.field`), registry init/lookup/fallback, IVesselStatus
+  null-player defaults frozen ("No-name" / Jade). **594 tests green (342 + 252)**;
+  headless client smoke unaffected.
 
-Goal: start the vessel-layer arc so VesselStatus/ResourceSystem can port in
-iteration 4.
+## NEXT UP (iteration 7)
 
-1. **Vessel-layer arc, step 1 — survey & map**: write `docs/VESSEL_LAYER.md` listing
-   every type in the IVessel/IVesselStatus/IPlayer closure with line counts, Unity
-   deps, and a dependency-ordered porting sequence (leaf classes first). Add engine
-   `Material` (minimal: name + color/float/property store) and `Pose` struct.
-2. Step 2 — port ITransform + the closure's leaf data types per the survey.
-3. Port `Utility/DataContainers/CellPhaseThresholds`-adjacent ecology configs and the
-   prism density/BlockDensityGrid pure-logic pieces if reachable.
-4. Grow the CLI toward an M2 vertical slice: one cell + crystals + 2 scripted vessels
+Goal: V7 of the vessel-layer arc + sprint feedback.
+
+1. **V7**: engine E2 (renderer stubs per VESSEL_LAYER.md). Port `InputStatus`
+   (concrete; closes Deviation #15's fail-loud TryAddInputStatus) and
+   `VesselAnimation`; uncomment their IVesselStatus members (#10c partial restore).
+2. Sprint: rival balance from prompter feedback (S4 KNOWN ISSUE — rival can't beat a
+   perfect autopilot; vs humans it contests missed crystals). Tune overtake/rubber-band
+   so AI-vs-AI demos stay competitive.
+3. Grow the CLI toward an M2 vertical slice: one cell + crystals + 2 scripted vessels
    exchanging resource/elemental state on a seeded run.
-5. Update this file (status tables, iteration log, NEXT UP), commit, push.
+4. Update this file (status tables, iteration log, NEXT UP), commit, push.
 
 ## Loop protocol (every iteration)
 

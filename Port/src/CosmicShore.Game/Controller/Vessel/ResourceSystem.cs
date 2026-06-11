@@ -6,9 +6,8 @@ using CosmicShore.Engine;
 
 namespace CosmicShore.Gameplay
 {
-    // PORT: [RequireComponent(typeof(IVesselStatus))] — restore when the vessel layer ports (Deviations log)
-    // PORT: base was ElementalShipComponent — restore when IVessel/ElementalFloat port (Deviations log)
-    public class ResourceSystem : MonoBehaviour
+    [RequireComponent(typeof(IVesselStatus))]
+    public class ResourceSystem : ElementalShipComponent
     {
         [SerializeField] public List<Resource> Resources;
         public event Action<int, float, float> OnResourceChanged; 
