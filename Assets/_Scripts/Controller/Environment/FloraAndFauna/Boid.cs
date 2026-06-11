@@ -315,8 +315,29 @@ namespace CosmicShore.Gameplay
 
         protected override void OnDeath(string killerName = "")
         {
+            if (isKilled) return;
             isKilled = true;
             StopAllCoroutines();
+            // Continuity rule — nothing pops out of existence. The sealed Fauna.Die already
+            // dropped this boid's elemental crystal (mass conserved); shrink the body out
+            // (suction-like) instead of instantly destroying it, then remove the husk.
+            if (isActiveAndEnabled && gameObject.activeInHierarchy)
+                StartCoroutine(FadeOutAndRemove());
+            else
+                Destroy(gameObject);
+        }
+
+        IEnumerator FadeOutAndRemove()
+        {
+            Vector3 from = transform.localScale;
+            float t = 0f;
+            const float dur = 0.4f;
+            while (t < dur)
+            {
+                t += Time.deltaTime;
+                transform.localScale = Vector3.Lerp(from, Vector3.zero, t / dur);
+                yield return null;
+            }
             Destroy(gameObject);
         }
 
