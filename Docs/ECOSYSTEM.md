@@ -39,6 +39,25 @@ active force a reason or ability to consume that mass (tune fauna diet/reach/
 spawning, or vessel abilities) — **never** to add decay. See CLAUDE.md → "Mass"
 fundamental and "Don't cheat emergence."
 
+**Universality — this invariant has no exempt contexts.** The HyperSea has one
+rule set and everything follows it: game scenes, Menu_Main's lava-lamp/freestyle,
+tools and test scenes. There is **no "cosmetic," "menu-only," or "perf special
+case" exemption** — the menu autopilot vessel *is* the freestyle gameplay vessel
+(lava lamp == freestyle; see CLAUDE.md → "Lava-Lamp Mode"), so any removal
+mechanism attached to it is gameplay decay.
+
+> **Rejected cheat (reverted): the menu trail cap.** Commit `64d8f0c8` added a
+> per-trail ring-buffer cap (`VesselPrismController.maxTrailBlocks` +
+> `Trail.RemoveOldest`) that silently recycled the oldest trail prism on every
+> new spawn, set to 200 on the Menu_Main vessel to bound idle-time prism growth.
+> It was rationalized as cosmetic and "gameplay unaffected" — but the cap
+> followed the player into freestyle flight as an age-based trail limit, the
+> exact passive-removal cheat this section rejects. Reverted. If menu-idle
+> accumulation is a perf problem, use the universal systems: **fauna cleanup**
+> (cleanup is one of the fauna's many jobs — foragers consume trail mass through
+> the food web, §6–§7) or **pause/throttle the spawner** while idling (not creating
+> mass is allowed; aging it out is not).
+
 **Growth-side cheats — all retired.** Two artificial throttles used to fake the
 homeostasis the food web is meant to produce, both now gone:
 
