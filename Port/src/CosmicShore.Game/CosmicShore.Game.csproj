@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />
+    <ProjectReference Include="../CosmicShore.Data/CosmicShore.Data.csproj" />
+  </ItemGroup>
+
+</Project>

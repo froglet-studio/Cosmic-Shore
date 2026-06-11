@@ -35,6 +35,10 @@ The prompter tests progress without prompting the loop. Contract:
 
 1. **Green branch invariant.** Every push to `claude/quirky-cannon-sk8a02` has
    `cd Port && dotnet build && dotnet test` green. The branch is always safe to pull.
+   This includes **buildable from a fresh clone**: `git ls-files Port | grep -c 'csproj$'`
+   must equal 7 — the root Unity `.gitignore` (`*.csproj`/`*.sln`) silently excluded
+   every project file until 2026-06-11 (negations added), which shipped a branch whose
+   source couldn't build on the prompter's machine.
 2. **Runnable harness: `CosmicShore.Cli`** (`src/CosmicShore.Cli`, lands iteration 2).
    One command to exercise the current port on any machine with the .NET 10 SDK:
    `cd Port && dotnet run --project src/CosmicShore.Cli`. It grows with the port:
@@ -298,6 +302,23 @@ IPlayer, IVesselStatus #10c, ElementalFloat, ElementalShipComponent; restores #9
   action handlers, Material/Pose engine types). Deviation #9 stays open; plan the
   vessel layer as a dedicated multi-iteration arc (survey → engine Material/Pose →
   leaf classes → interfaces → restore deviations).
+
+- **Infra rescue** (2026-06-11, fresh session): prompter's first from-source run
+  (`dotnet run --project Port\src\CosmicShore.Client`) failed — "Couldn't find a
+  project to run". Root cause: the Unity root `.gitignore` ignores `*.csproj`/`*.sln`,
+  so all seven csproj files had NEVER been pushed (the `.slnx` survived only because
+  `*.sln` doesn't match it). Fixed: `.gitignore` negations (`!Port/**/*.csproj` etc.)
+  + all seven csprojs reconstructed and committed (graph: Engine ← Data ← Game ←
+  Cli/Client; xunit project needs `<Using Include="Xunit" />`; Client pins
+  Silk.NET 2.22.0 + Silk.NET.OpenAL.Soft.Native 1.23.1, embeds `Assets/squirrel.mesh`,
+  AllowUnsafeBlocks). Second find: Silk.NET's loader does not probe
+  `runtimes/<rid>/native/` on this stack ("GlfwPlatform - not applicable" despite the
+  native restoring; verified `dlopen`/`NativeLibrary` load it fine) — new
+  `CopySilkNativesBesideApp` target in the Client csproj copies the building machine's
+  `$(NETCoreSdkRuntimeIdentifier)` natives flat into the output, fixing `dotnet run`
+  on every OS. Verified: build clean, **582 tests green (330 xunit + 252 NUnit)**, CLI
+  smoke PASS, headless Client screenshot smoke reaches `Racing` with the squirrel hull
+  rendering. Dist zips untouched (game code unchanged).
 
 ## NEXT UP (iteration 6)
 

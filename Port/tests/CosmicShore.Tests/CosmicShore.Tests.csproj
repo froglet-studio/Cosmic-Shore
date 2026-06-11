@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Test files use [Fact]/[Theory]/Assert unqualified without per-file usings. -->
+    <Using Include="Xunit" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/CosmicShore.Engine/CosmicShore.Engine.csproj" />
+    <ProjectReference Include="../../src/CosmicShore.Data/CosmicShore.Data.csproj" />
+    <ProjectReference Include="../../src/CosmicShore.Game/CosmicShore.Game.csproj" />
+  </ItemGroup>
+
+</Project>
