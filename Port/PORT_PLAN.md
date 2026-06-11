@@ -78,6 +78,22 @@ The prompter tests progress without prompting the loop. Contract:
   crates.io blocked; npm available (unused).
 - Build: `cd Port && dotnet build && dotnet test` — must be green before every commit.
 
+## SPRINT MODE (prompter directive, 2026-06-11)
+
+> "Sprint toward gameplay, visuals, etc. … /loop until we have a clone of skim race
+> that I can test."
+
+Priorities inverted until **SkimRace** ships: a windowed, flyable crystal-skimming race
+(HexRace rules — steer down a neon track, collect the crystal target, finish time is
+the score) built on the already-ported sim (ResourceSystem, RoundStats, SOAP). Stack:
+`src/CosmicShore.Client` on Silk.NET (MIT: windowing/OpenGL/input), verified headlessly
+here via Xvfb+Mesa screenshots, shipped as win-x64 zips in `Port/dist/`. The verbatim
+fidelity arc (VESSEL_LAYER.md V1-V19, phases 2-8) continues underneath sprint
+iterations — sprint code reuses ported systems wherever they exist and must not fork
+their semantics. SkimRace milestones: **S1** window+starfield+vessel+camera (screenshot
+to prompter), **S2** track+crystals+collection+trail, **S3** HUD+finish+timing = M2/M4
+combined, **S4** polish (glow, palette, gamepad).
+
 ## Phase roadmap
 
 | Phase | Scope | Status |
