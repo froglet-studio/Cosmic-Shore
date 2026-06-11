@@ -36,6 +36,13 @@ namespace CosmicShore.Client
         uint _program;
         int _uMvp;
 
+        // post chain: scene FBO → bright → blur ping/pong (half res) → composite
+        uint _postProgram, _blurProgram, _compositeProgram;
+        uint _sceneFbo, _sceneTex, _sceneDepth;
+        uint _pingFbo, _pingTex, _pongFbo, _pongTex;
+        uint _fsVao, _fsVbo;
+        int _fbWidth, _fbHeight;
+
         // geometry
         uint _starVao, _starVbo; int _starCount;
         uint _railVao, _railVbo; int _railCount;
@@ -117,6 +124,12 @@ namespace CosmicShore.Client
             _hudVbo = _gl.GenBuffer();
             ConfigureDynamicVao(_hudVao, _hudVbo);
 
+            _postProgram = CompileProgram(FullscreenVertexSrc, BrightFragmentSrc);
+            _blurProgram = CompileProgram(FullscreenVertexSrc, BlurFragmentSrc);
+            _compositeProgram = CompileProgram(FullscreenVertexSrc, CompositeFragmentSrc);
+            BuildFullscreenTriangle();
+            EnsureRenderTargets();
+
             _gl.Enable(EnableCap.Blend);
             _gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One); // additive neon
             _gl.Enable(EnableCap.DepthTest);
@@ -125,9 +138,9 @@ namespace CosmicShore.Client
             _camPos = _race.transform.position - new Vector3(0f, -2.5f, 9f);
         }
 
-        uint CompileProgram()
-        {
-            const string vertexSrc = @"#version 330 core
+        uint CompileProgram() => CompileProgram(MainVertexSrc, MainFragmentSrc);
+
+        const string MainVertexSrc = @"#version 330 core
 layout(location=0) in vec3 aPos;
 layout(location=1) in vec4 aColor;
 uniform mat4 uMvp;
@@ -138,11 +151,61 @@ void main()
     vColor = aColor;
     gl_PointSize = max(1.0, 7.0 / max(gl_Position.w * 0.06, 1.0));
 }";
-            const string fragmentSrc = @"#version 330 core
+        const string MainFragmentSrc = @"#version 330 core
 in vec4 vColor;
 out vec4 frag;
 void main() { frag = vColor; }";
 
+        const string FullscreenVertexSrc = @"#version 330 core
+layout(location=0) in vec2 aPos;
+out vec2 vUv;
+void main() { vUv = aPos * 0.5 + 0.5; gl_Position = vec4(aPos, 0.0, 1.0); }";
+
+        const string BrightFragmentSrc = @"#version 330 core
+in vec2 vUv;
+out vec4 frag;
+uniform sampler2D uTex;
+void main()
+{
+    vec3 c = texture(uTex, vUv).rgb;
+    float lum = dot(c, vec3(0.30, 0.55, 0.15));
+    frag = vec4(c * smoothstep(0.32, 0.75, lum), 1.0);
+}";
+
+        const string BlurFragmentSrc = @"#version 330 core
+in vec2 vUv;
+out vec4 frag;
+uniform sampler2D uTex;
+uniform vec2 uDir; // (1/w,0) or (0,1/h)
+void main()
+{
+    float weights[5] = float[](0.227027, 0.194594, 0.121622, 0.054054, 0.016216);
+    vec3 sum = texture(uTex, vUv).rgb * weights[0];
+    for (int i = 1; i < 5; i++)
+    {
+        sum += texture(uTex, vUv + uDir * float(i) * 1.6).rgb * weights[i];
+        sum += texture(uTex, vUv - uDir * float(i) * 1.6).rgb * weights[i];
+    }
+    frag = vec4(sum, 1.0);
+}";
+
+        const string CompositeFragmentSrc = @"#version 330 core
+in vec2 vUv;
+out vec4 frag;
+uniform sampler2D uScene;
+uniform sampler2D uBloom;
+void main()
+{
+    vec3 scene = texture(uScene, vUv).rgb;
+    vec3 bloom = texture(uBloom, vUv).rgb;
+    vec3 c = scene + bloom * 1.35;          // additive glow
+    c = c / (c + vec3(0.55));               // soft tonemap keeps neon from clipping
+    c = pow(c, vec3(0.85));                 // slight lift
+    frag = vec4(c, 1.0);
+}";
+
+        uint CompileProgram(string vertexSrc, string fragmentSrc)
+        {
             uint vs = _gl.CreateShader(ShaderType.VertexShader);
             _gl.ShaderSource(vs, vertexSrc);
             _gl.CompileShader(vs);
@@ -346,6 +409,15 @@ void main() { frag = vColor; }";
                 if (keyboard.IsKeyPressed(Key.D) || keyboard.IsKeyPressed(Key.Right)) yaw += 1f;
                 if (keyboard.IsKeyPressed(Key.Space)) boost = true;
             }
+            foreach (var mouse in _inputContext.Mice)
+            {
+                if (mouse.IsButtonPressed(Silk.NET.Input.MouseButton.Right))
+                {
+                    float cx = _window.Size.X * 0.5f, cy = _window.Size.Y * 0.5f;
+                    yaw += Mathf.Clamp((mouse.Position.X - cx) / (cx * 0.6f), -1f, 1f);
+                    pitch += Mathf.Clamp((cy - mouse.Position.Y) / (cy * 0.6f), -1f, 1f);
+                }
+            }
             foreach (var gamepad in _inputContext.Gamepads)
             {
                 if (gamepad.Thumbsticks.Count > 0)
@@ -443,6 +515,8 @@ void main() { frag = vColor; }";
                 _loop.Tick(1f / 60f); // deterministic sim frames
                 EmitTrailAndCamera(1f / 60f);
             }
+            EnsureRenderTargets();
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, _sceneFbo);
             _gl.Viewport(0, 0, (uint)_window.FramebufferSize.X, (uint)_window.FramebufferSize.Y);
             _gl.ClearColor(0.012f, 0.0f, 0.045f, 1f); // deep space indigo
             _gl.Clear((uint)(ClearBufferMask.ColorBufferBit | ClearBufferMask.DepthBufferBit));
@@ -478,6 +552,9 @@ void main() { frag = vColor; }";
             // collection bursts: expanding fading octahedra
             foreach (var (pos, age) in _bursts)
             {
+                // bursts spawn on the camera's own path — cull when too close or they
+                // bloom into screen-filling wedges
+                if ((pos - _camPos).magnitude < 7f) continue;
                 float scale = 1f + age * 7f;
                 var model = Matrix4x4.CreateScale(scale) * Matrix4x4.CreateTranslation(pos);
                 SetMvp(model * viewProjection);
@@ -509,11 +586,105 @@ void main() { frag = vColor; }";
             DrawTrail(viewProjection);
             DrawHud();
 
+            // post: bright extract → 2× separable blur (half res) → tonemapped composite
+            _gl.Disable(EnableCap.Blend);
+            _gl.Disable(EnableCap.DepthTest);
+            int hw = _fbWidth / 2, hh = _fbHeight / 2;
+            BlitPass(_postProgram, _sceneTex, _pingFbo, hw, hh, 0f, 0f);
+            for (int i = 0; i < 2; i++)
+            {
+                BlitPass(_blurProgram, _pingTex, _pongFbo, hw, hh, 1f / hw, 0f);
+                BlitPass(_blurProgram, _pongTex, _pingFbo, hw, hh, 0f, 1f / hh);
+            }
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+            _gl.Viewport(0, 0, (uint)_fbWidth, (uint)_fbHeight);
+            _gl.UseProgram(_compositeProgram);
+            _gl.ActiveTexture(TextureUnit.Texture0);
+            _gl.BindTexture(TextureTarget.Texture2D, _sceneTex);
+            _gl.Uniform1(_gl.GetUniformLocation(_compositeProgram, "uScene"), 0);
+            _gl.ActiveTexture(TextureUnit.Texture1);
+            _gl.BindTexture(TextureTarget.Texture2D, _pingTex);
+            _gl.Uniform1(_gl.GetUniformLocation(_compositeProgram, "uBloom"), 1);
+            _gl.BindVertexArray(_fsVao);
+            _gl.DrawArrays(PrimitiveType.Triangles, 0, 3);
+            _gl.Enable(EnableCap.Blend);
+            _gl.Enable(EnableCap.DepthTest);
+
             if (_screenshotPath != null && _frameIndex >= _screenshotFrame)
             {
                 CaptureScreenshot();
                 _window.Close();
             }
+        }
+
+        unsafe void BuildFullscreenTriangle()
+        {
+            _fsVao = _gl.GenVertexArray();
+            _fsVbo = _gl.GenBuffer();
+            _gl.BindVertexArray(_fsVao);
+            _gl.BindBuffer(BufferTargetARB.ArrayBuffer, _fsVbo);
+            float[] verts = { -1f, -1f, 3f, -1f, -1f, 3f };
+            fixed (float* p = verts)
+                _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(verts.Length * sizeof(float)), p, BufferUsageARB.StaticDraw);
+            _gl.EnableVertexAttribArray(0);
+            _gl.VertexAttribPointer(0, 2, VertexAttribPointerType.Float, false, 2 * sizeof(float), (void*)0);
+        }
+
+        unsafe (uint fbo, uint tex) CreateColorTarget(int width, int height)
+        {
+            uint fbo = _gl.GenFramebuffer();
+            uint tex = _gl.GenTexture();
+            _gl.BindTexture(TextureTarget.Texture2D, tex);
+            _gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba8, (uint)width, (uint)height, 0,
+                PixelFormat.Rgba, PixelType.UnsignedByte, null);
+            _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)TextureMinFilter.Linear);
+            _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)TextureMagFilter.Linear);
+            _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)TextureWrapMode.ClampToEdge);
+            _gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)TextureWrapMode.ClampToEdge);
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, fbo);
+            _gl.FramebufferTexture2D(FramebufferTarget.Framebuffer, FramebufferAttachment.ColorAttachment0,
+                TextureTarget.Texture2D, tex, 0);
+            return (fbo, tex);
+        }
+
+        unsafe void EnsureRenderTargets()
+        {
+            int w = Math.Max(8, _window.FramebufferSize.X), h = Math.Max(8, _window.FramebufferSize.Y);
+            if (w == _fbWidth && h == _fbHeight) return;
+            _fbWidth = w; _fbHeight = h;
+
+            if (_sceneFbo != 0)
+            {
+                _gl.DeleteFramebuffer(_sceneFbo); _gl.DeleteTexture(_sceneTex); _gl.DeleteRenderbuffer(_sceneDepth);
+                _gl.DeleteFramebuffer(_pingFbo); _gl.DeleteTexture(_pingTex);
+                _gl.DeleteFramebuffer(_pongFbo); _gl.DeleteTexture(_pongTex);
+            }
+
+            (_sceneFbo, _sceneTex) = CreateColorTarget(w, h);
+            _sceneDepth = _gl.GenRenderbuffer();
+            _gl.BindRenderbuffer(RenderbufferTarget.Renderbuffer, _sceneDepth);
+            _gl.RenderbufferStorage(RenderbufferTarget.Renderbuffer, InternalFormat.DepthComponent24, (uint)w, (uint)h);
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, _sceneFbo);
+            _gl.FramebufferRenderbuffer(FramebufferTarget.Framebuffer, FramebufferAttachment.DepthAttachment,
+                RenderbufferTarget.Renderbuffer, _sceneDepth);
+
+            (_pingFbo, _pingTex) = CreateColorTarget(w / 2, h / 2);
+            (_pongFbo, _pongTex) = CreateColorTarget(w / 2, h / 2);
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, 0);
+        }
+
+        void BlitPass(uint program, uint sourceTex, uint targetFbo, int width, int height, float dirX, float dirY)
+        {
+            _gl.BindFramebuffer(FramebufferTarget.Framebuffer, targetFbo);
+            _gl.Viewport(0, 0, (uint)width, (uint)height);
+            _gl.UseProgram(program);
+            _gl.ActiveTexture(TextureUnit.Texture0);
+            _gl.BindTexture(TextureTarget.Texture2D, sourceTex);
+            _gl.Uniform1(_gl.GetUniformLocation(program, "uTex"), 0);
+            int dirLoc = _gl.GetUniformLocation(program, "uDir");
+            if (dirLoc >= 0) _gl.Uniform2(dirLoc, dirX, dirY);
+            _gl.BindVertexArray(_fsVao);
+            _gl.DrawArrays(PrimitiveType.Triangles, 0, 3);
         }
 
         void ApplyScreenshotAutopilot()
@@ -560,6 +731,10 @@ void main() { frag = vColor; }";
                 // newest points ramp in so the chase cam never sits inside the ribbon
                 int fromNewest = trail.Count - 1 - i;
                 if (fromNewest < 16) alpha *= fromNewest / 16f;
+                // and ANY ribbon fades near the camera (rival trails crossing the
+                // frustum otherwise bloom into giant wedges)
+                float camDistance = (trail[i].pos - _camPos).magnitude;
+                alpha *= Mathf.Clamp01((camDistance - 3f) / 7f);
                 float r, g, b;
                 if (jade) { r = 0.15f + (1f - age) * 0.8f; g = 0.35f + age * 0.55f; b = 1f; }
                 else { r = 1f; g = 0.2f + age * 0.4f; b = 0.25f + (1f - age) * 0.5f; }
