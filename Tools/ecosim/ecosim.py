@@ -163,6 +163,60 @@ class PerfModel:
 
 
 # --------------------------------------------------------------------------
+#  Food-web outcome: are the gyroids TAMED (held sizable) or DEVOURED (stripped)?
+# --------------------------------------------------------------------------
+#
+# The gameplay question (freestyle / menu): do the flora gyroids stay sizable to
+# fly through, or do the fauna eat them to the ground? It's the predator-prey
+# equilibrium, set by ONE comparison:
+#
+#   food_supported_herbivores = flora_growth_per_s / graze_per_herbivore_s
+#       (the herbivore count whose total grazing exactly equals flora growth)
+#
+#   * herbivore CAP <= food_supported  -> fauna can't out-graze flora; the gyroids
+#       grow to FrenzyEnter and HOLD there (sizable, stable). Fauna "tame" the edges.
+#   * herbivore CAP >  food_supported  -> fauna out-graze flora; they eat the gyroids
+#       down to a low level and boom/bust (starve, regrow). "Devoured" — not fun.
+#
+# So the fauna caps are the TAMING DIAL. Keep the summed herbivore cap at or below
+# food_supported and the environment stays sizable. (flora/graze rates are MODEL
+# ASSUMPTIONS; their RATIO is what matters and is calibrated so the over-grazing
+# config the player reported reads DEVOURED — refine via EcosystemPerfProbe gyroid
+# observations.)
+
+FLORA_GROWTH_PER_S = 20.0       # MODEL ASSUMPTION: prisms/s the flora add while < Frenzy
+GRAZE_PER_HERBIVORE_S = 1.15    # MODEL ASSUMPTION: prisms/s one herbivore removes
+FOOD_SUPPORTED = FLORA_GROWTH_PER_S / GRAZE_PER_HERBIVORE_S  # ~17 herbivores
+
+
+def gyroid_outcome(biome):
+    herb_cap = sum((s.max_pop or s.seed_floor) for s in biome.species if s.diet == "herbivore")
+    holds = herb_cap <= FOOD_SUPPORTED
+    if holds:
+        # Gyroids reach FrenzyEnter and breathe in the [FrenzyExit, FrenzyEnter] band.
+        gy_lo, gy_hi = biome.frenzy_exit, biome.frenzy_enter
+        verdict = "TAMED — gyroids hold sizable (fly-through preserved)"
+    else:
+        # Over-grazed: fauna pull prisms down to roughly where graze == growth, i.e.
+        # the population can only be fed at a low prism level. Rough stripped band.
+        over = herb_cap / max(1.0, FOOD_SUPPORTED)
+        gy_hi = int(biome.frenzy_enter / over)
+        gy_lo = int(gy_hi * 0.4)
+        verdict = f"DEVOURED — herbivore cap {herb_cap} > food-supported {FOOD_SUPPORTED:.0f} (gyroids stripped, boom/bust)"
+    return holds, gy_lo, gy_hi, herb_cap, verdict
+
+
+def report_gyroids(biome):
+    holds, lo, hi, herb_cap, verdict = gyroid_outcome(biome)
+    print(f"\n--- GYROID OUTCOME (taming vs devouring) ---")
+    print(f"  herbivore cap (summed) {herb_cap}  vs food-supported {FOOD_SUPPORTED:.0f}  "
+          f"(flora {FLORA_GROWTH_PER_S}/s / graze {GRAZE_PER_HERBIVORE_S}/s)")
+    print(f"  {verdict}")
+    print(f"  steady gyroid prisms ~ {lo}-{hi}")
+    return holds
+
+
+# --------------------------------------------------------------------------
 #  Steady state from config
 # --------------------------------------------------------------------------
 #
@@ -296,6 +350,7 @@ def main():
     prisms, states, counts = steady_state(biome)
     report(perf, prisms, states, counts, "as-authored (Frenzy pin, caps)")
 
+    report_gyroids(biome)
     per_lever_breakdown(perf)
     named_candidates(perf)
 

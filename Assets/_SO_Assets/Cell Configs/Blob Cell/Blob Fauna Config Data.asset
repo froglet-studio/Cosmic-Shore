@@ -16,7 +16,7 @@ MonoBehaviour:
   InitialSpawnCount: 3
   PopulationSize: 3
   SpawnProbability: 1
-  FeedsPerOffspring: 8
+  FeedsPerOffspring: 16
   OffspringPerBirth: 1
-  ReproductionCooldownSeconds: 10
-  MaxLivePopulation: 10
+  ReproductionCooldownSeconds: 14
+  MaxLivePopulation: 5

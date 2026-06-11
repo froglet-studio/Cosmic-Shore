@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: Blob Tadpole Fauna Config Data
   m_EditorClassIdentifier:
   FaunaPrefab: {fileID: 5945480239701989318, guid: c7fd418d426de8740ac888dcc23a5d24, type: 3}
-  InitialSpawnCount: 12
-  PopulationSize: 12
+  InitialSpawnCount: 4
+  PopulationSize: 4
   SpawnProbability: 1
-  FeedsPerOffspring: 10
+  FeedsPerOffspring: 20
   OffspringPerBirth: 1
-  ReproductionCooldownSeconds: 6
-  MaxLivePopulation: 24
+  ReproductionCooldownSeconds: 10
+  MaxLivePopulation: 6

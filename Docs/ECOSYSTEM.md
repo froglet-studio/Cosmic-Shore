@@ -330,8 +330,38 @@ is now retired. **Feeds convert to births**:
 low ⇒ fauna starve before reaching prey; raise it), `FaunaFoodFloor` (min prey
 before seeding), `PopulationSize` (seed floor), `BaseFaunaSpawnTime` (seed period),
 `FeedsPerOffspring` (lower ⇒ steeper population upswing on rich prey),
-`ReproductionCooldownSeconds` (birth burst throttle), `MaxLivePopulation`
-(performance ceiling — size to frame budget, not to desired equilibrium).
+`ReproductionCooldownSeconds` (birth burst throttle), `MaxLivePopulation` (the
+**taming dial**, §6.2 — *and* a performance ceiling, §12).
+
+### 6.2 Taming vs devouring — the caps dial (gameplay balance)
+
+The food web has two qualitatively different equilibria, and which one a cell sits
+in is the difference between "fun to fly through" and "stripped bare". It is set by
+one comparison:
+
+> **food-supported herbivores** = `flora_growth_rate / per-herbivore_graze_rate`
+> — the standing herbivore count whose total grazing exactly equals flora growth.
+
+- **Summed herbivore `MaxLivePopulation` ≤ food-supported** → fauna *cannot*
+  out-graze flora. Mass grows to `FrenzyEnter` and **holds** (breathing in the
+  `[FrenzyExit, FrenzyEnter]` band). The fauna **tame** the edges; the environment
+  stays sizable. This is what freestyle/menu wants (fly through gyroids).
+- **Summed herbivore cap > food-supported** → fauna out-graze flora, eat the mass
+  to the ground, then starve and let it regrow — a boom/bust that keeps the
+  environment **stripped**. This is what an aggressive trail-cleanup wants (Skim
+  Race: graze the AI obstacle buildup down) but ruins a fly-through scene.
+
+So the **same** forager species is *taming* or *devouring* purely by its **cap per
+biome** — no behavior/diet change needed. The menu holds its herbivore cap low
+(below food-supported) to preserve the gyroids; Skim Race keeps it high to clear
+the track. `Tools/ecosim/ecosim.py` reports this outcome (`TAMED` vs `DEVOURED`)
+per config; refine the `FLORA_GROWTH_PER_S` / `GRAZE_PER_HERBIVORE_S` ratio against
+real `EcosystemPerfProbe` gyroid observations.
+
+> This does **not** reintroduce a cheat: mass is still conserved and the only
+> down-force is the food web (§0). "Taming" just means sizing the predator so the
+> predator–prey fixed point lands at a sizable prey level instead of a stripped
+> one — a parameter choice, not a hard-coded culler.
 
 ---
 
@@ -432,18 +462,20 @@ The food web is wired into two scenes to test the ecosystem's ability to manage
 **trail** prisms (player/AI mass), not just flora:
 
 **A. Menu_Main freestyle toy box** (`Blob Cell Config → Blob Cell Spawn Profile`).
-The **full 3-tier food web**: flora + tadpole forager (seed floor 12, cap 24,
-births on 10 feeds) + brittlestar (floor 3, cap 10, births on 8 feeds) + **shark**
-(floor 2, cap 3, births on 3 kills — re-added now that spawn immunity covers
-co-spawned prey). These caps are **performance-bounded** (§12: each fauna's
-per-tick `OverlapSphere` is a top frame cost); raise them only if the
-`EcosystemPerfProbe` shows frame headroom. The autopilot/player vessel lays trails; the tadpole grazes any
-unshielded non-fauna mass (incl. the dominant trail + flora), the brittlestar
-grazes opposing mass, the shark eats both herbivores. Goal: a self-sustaining
-scene that stays visually interesting and playable **indefinitely** — flora feed
-herbivores, herbivores feed sharks, every tier rises and crashes with its prey.
-Levers: per-species reproduction knobs (§6.1), `Blob Cell Spawn Profile`
-`BaseFaunaSpawnTime` / `FaunaFoodFloor`, `starvationSeconds` / `consumeRadius`.
+The goal here is **flying through sizable gyroids**, so the food web is tuned to
+**TAME, not devour** (see §6.2): a small 3-tier presence — tadpole forager (seed
+floor 4, cap 6, slow births @20 feeds) + brittlestar (floor 3, cap 5, @16) +
+**shark** (floor 1, cap 2, @6 kills). Summed herbivore cap (11) is held **below
+the flora's food-supported count** so the fauna cannot out-graze flora growth —
+the gyroids grow to `FrenzyEnter` (1200) and **hold** there (breathing in the
+~950–1200 band), with the fauna trimming the edges. A bigger or faster-breeding
+swarm flips it to *devouring* (gyroids stripped, boom/bust) — exactly the
+over-grazing the perf-cut numbers first caused. The tadpole grazes any unshielded
+non-fauna mass (incl. the dominant gyroid), the brittlestar grazes opposing mass,
+the shark eats both herbivores. Caps are also **performance-bounded** (§12: each
+fauna's per-tick `OverlapSphere` is a top frame cost). Levers: per-species
+`MaxLivePopulation` (the taming dial, §6.2) + reproduction knobs (§6.1),
+`FrenzyEnter` (gyroid size, perf-capped), `starvationSeconds` / `consumeRadius`.
 
 **B. Skim Race** (`MinigameHexRace`, dedicated `Skim Race Cell Config → Skim Race
 Spawn Profile`, isolated from the 6 other scenes that share the Barren config).
@@ -726,12 +758,14 @@ lets the *agent* tune perf without a human watching the profiler.
 
 ### Menu fix (shipped)
 
-`Blob Cell Config` `FrenzyEnter 5400 → 1000`, `RestlessEnter 3000 → 600`; fauna caps
-cut ~⅔ (tadpole 60→24, brittlestar 24→10, shark 5→3). Menu-scoped (Blob assets
-only — zero behavior / shared-data-SO risk). Modeled steady state: ~1000 prisms,
-~37 fauna → predicted **~77 fps** (was ~5). Vibrancy now comes from motion + the
-birth/death churn, not a static prism wall; push density back up only if the probe
-shows headroom.
+`Blob Cell Config` `FrenzyEnter 5400 → 1200`, `RestlessEnter 3000 → 700`; fauna caps
+cut hard — first for perf, then further for **taming** (§6.2) when the first cut
+still over-grazed the gyroids: tadpole 60→6, brittlestar 24→5, shark 5→2 (summed
+herbivore cap 11, held below the flora's food-supported count so the gyroids hold
+sizable). Menu-scoped (Blob assets only — zero behavior / shared-data-SO risk).
+Modeled steady state: ~1200 prisms, ~13 fauna → predicted **~70 fps** (was ~5), with
+the gyroids **TAMED** (held ~950–1200, not stripped). `MaxLivePopulation` does
+double duty here: the §6.2 taming dial *and* the per-frame `OverlapSphere` budget.
 
 ### The closed loop (agent-runnable, no Unity)
 

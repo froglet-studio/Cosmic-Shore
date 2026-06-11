@@ -452,3 +452,53 @@ for 1000 prisms, so Frenzy is now a PERFORMANCE budget, not a density dial.
 Shrinking the shared `detectionRadius` (cubic on overlap) and driving grazing from
 the density grid instead of per-fauna OverlapSphere — the latter is the only way to
 make the food web dense AND cheap. Flagged in §12.
+
+---
+
+## Session 14 — Taming, not devouring: gentle the menu food web so gyroids stay sizable
+
+**Directive (operator, in-editor observation):** before these changes it was fun to
+fly around sizable gyroids; now the fauna eat too much of the gyroid, so there isn't
+enough to fly through. "We want the fauna taming the environment, not devouring it."
+
+### Diagnosis
+This is the predator–prey equilibrium landing in the wrong basin. With the perf-cut
+caps (herbivore cap 34: tadpole 24 + brittlestar 10) the standing swarm could
+out-graze flora growth, so the gyroids got stripped (boom/bust) instead of holding
+sizable. The reproduction layer made it worse — abundant gyroid → foragers feed →
+breed → graze harder → strip it.
+
+### Fix — the caps are the TAMING DIAL (menu/Blob only; Skim Race unchanged)
+Keep the *summed herbivore cap below the flora's food-supported count* so the fauna
+**cannot** out-graze flora; the gyroids then grow to `FrenzyEnter` and HOLD there,
+fauna trimming the edges:
+- tadpole (the voracious any-domain forager): floor 12→4, cap 24→6, slower births
+  (FeedsPerOffspring 10→20).
+- brittlestar: cap 10→5, births @8→16.
+- shark: floor 2→1, cap 3→2.
+- `FrenzyEnter 1000→1200` (gyroids a touch bigger — affordable now that fauna are
+  fewer), tighter Frenzy band `FrenzyExit 700→950` so they stay near full.
+
+Skim Race keeps its voracious foragers on purpose — there the goal is to DEVOUR the
+AI trail-obstacle buildup. Same forager species, opposite role, set purely by the
+per-biome cap. (No diet/behavior change — not a cheat; mass still conserved, food
+web still the only down-force. ECOSYSTEM.md §6.2.)
+
+### ecosim now models this
+Added a **gyroid outcome** report (`TAMED` vs `DEVOURED`) from
+`herbivore_cap` vs `food_supported = flora_growth/graze_rate`. The gentled config
+reads **TAMED, gyroids hold ~950–1200**, perf **~70 fps**. The old caps (34) read
+DEVOURED — matching what you saw. `FLORA_GROWTH_PER_S`/`GRAZE_PER_HERBIVORE_S` are
+model assumptions (ratio calibrated so old=devoured/new=tamed); refine against real
+probe gyroid observations.
+
+### ⬅️ Validate on return (Session 14)
+1. **Fly the menu.** Gyroids should now stay sizable and stable (held near Frenzy),
+   with a small darting fauna presence trimming — not stripping — them.
+2. If still over-grazed: cut herbivore caps further (tadpole is the main eater) — or
+   tell me the gyroid prism count from `EcosystemPerfProbe` and I'll recalibrate the
+   `flora_growth/graze` ratio so ecosim predicts your hardware/flora exactly.
+3. If now too sparse/lifeless: raise tadpole `MaxLivePopulation` a few at a time
+   (it's 6) until the swarm reads full again without stripping the gyroids.
+4. Gyroid SIZE is perf-capped (~1200 prisms ≈ 70 fps); bigger needs the structural
+   overlap/prism-cost fix (§12), not just a higher `FrenzyEnter`.
