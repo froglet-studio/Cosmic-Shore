@@ -138,13 +138,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             return Math.Max(0, Math.Min(100, score));
         }
 
-        static string BoundVerdict(BenchmarkStatistics s)
-        {
-            if (s.avgCpuFrameTimeMs <= 0.001f && s.avgGpuFrameTimeMs <= 0.001f) return "Unknown";
-            if (s.avgGpuFrameTimeMs > s.avgCpuFrameTimeMs * 1.1f) return "GPU-bound";
-            if (s.avgCpuFrameTimeMs > s.avgGpuFrameTimeMs * 1.1f) return "CPU-bound";
-            return "Balanced";
-        }
+        static string BoundVerdict(BenchmarkStatistics s) =>
+            FrameBoundness.Classify(s.avgCpuFrameTimeMs, s.avgGpuFrameTimeMs);
 
         static bool TryEvaluate(HintRule rule, BenchmarkStatistics s, List<SpikeEntry> spikes, out BenchmarkHint hint)
         {

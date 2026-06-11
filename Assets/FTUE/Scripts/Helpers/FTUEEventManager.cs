@@ -24,7 +24,7 @@ namespace CosmicShore.Core
             => OnCTAClicked?.Invoke(id);
         
         /// <summary>
-        /// Fired when the player enters the Freestyle game mode.
+        /// Fired when the player enters a game mode.
         /// Is only fired if the user has not completed the FTUE.
         /// </summary>
         public static event Action<GameModes> OnGameModeStarted;

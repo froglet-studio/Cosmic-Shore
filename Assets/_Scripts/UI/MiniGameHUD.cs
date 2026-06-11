@@ -600,7 +600,6 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Resets UI state for re-entering the game flow after shape drawing.
-        /// Called externally by SinglePlayerFreestyleController.
         /// </summary>
         public void ShowConnectingFlow() => ResetForReplay();
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);
