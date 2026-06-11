@@ -149,7 +149,7 @@ InputStatus(V7) + InputController(V5). **V5 DONE** (GameSetting [282L; Deviation
 services phase; pure PlayerSettingsCloudData model ported] + InputController [275L;
 Deviation #10b: IVessel field/usages commented, restore at V6; Deviation #15:
 TryAddInputStatus fail-loud until concrete InputStatus at V7]; **Deviation #10a
-CLOSED** — IInputStatus verbatim again). Next: V6 — the keystone (ITransform, IVessel,
+CLOSED** — IInputStatus verbatim again). V6 IN PROGRESS (ITransform ported). Next: V6 remainder — the keystone (ITransform, IVessel,
 IPlayer, IVesselStatus #10c, ElementalFloat, ElementalShipComponent; restores #9 and
 #10b), rival balance from prompter feedback.
 
