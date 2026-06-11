@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void BeginBatchProcessing()
         {
-            var registry = PrismAOERegistry.Instance;
+            var registry = PrismSpatialIndex.Instance;
             if (registry == null || !registry.IsAvailable) return;
             _useBatchProcessing = true;
             // Reuse cached HashSet to avoid GC allocation per explosion
@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Processes one frame of batch AOE damage via the PrismAOERegistry.
+        /// Processes one frame of batch AOE damage via the PrismSpatialIndex.
         /// Called from AOEExplosion.ExplodeAsync each frame instead of relying on Physics.
         /// Returns true if the explosion should continue, false if it should be destroyed
         /// (e.g. hit a super-shielded enemy prism).
@@ -56,7 +56,7 @@ namespace CosmicShore.Gameplay
         public bool ProcessBatchFrame(Vector3 center, float radius, float speed, float inertia)
         {
             if (!_useBatchProcessing) return true;
-            var registry = PrismAOERegistry.Instance;
+            var registry = PrismSpatialIndex.Instance;
             if (registry == null) return true;
 
             return registry.ProcessExplosionFrame(
@@ -124,7 +124,7 @@ namespace CosmicShore.Gameplay
             // physically blocked by the shield: destroy the explosion VFX so
             // it doesn't visibly expand through the prism, and skip all
             // damage / steal / shield-decay state changes. Mirrors the
-            // PrismAOERegistry Burst path. Ways to break super-shields will
+            // PrismSpatialIndex Burst path. Ways to break super-shields will
             // be added later as targeted opt-in mechanics.
             if (prism.prismProperties.IsSuperShielded)
             {
