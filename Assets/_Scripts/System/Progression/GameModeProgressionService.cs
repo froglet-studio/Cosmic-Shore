@@ -1,6 +1,7 @@
 using System;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
@@ -581,8 +582,8 @@ namespace CosmicShore.Core
                     return localStats?.JoustCollisions ?? 0;
 
                 case QuestTargetType.RaceTimeUnder:
-                    float time = localStats?.Score ?? 10000f;
-                    return time < 10000f ? time : 0f;
+                    float time = localStats?.Score ?? GolfScoreSentinels.DnfThreshold;
+                    return GolfScoreSentinels.IsFinishTime(time) ? time : 0f;
 
                 case QuestTargetType.WinMatch:
                     if (gameData.RoundStatsList != null && gameData.RoundStatsList.Count > 0 &&
@@ -647,9 +648,9 @@ namespace CosmicShore.Core
 
                 case QuestTargetType.RaceTimeUnder:
                     // For race time, a lower score is better.
-                    // Score of 10000+ means DNF, ignore it.
-                    float time = localStats?.Score ?? 10000f;
-                    return time < 10000f ? time : 0f;
+                    // A score at/above the DNF threshold means DNF, ignore it.
+                    float time = localStats?.Score ?? GolfScoreSentinels.DnfThreshold;
+                    return GolfScoreSentinels.IsFinishTime(time) ? time : 0f;
 
                 case QuestTargetType.JoustsWon:
                     return localStats?.JoustCollisions ?? 0;

@@ -2,7 +2,7 @@
 
 Living tracker for party-side issues found in MPPM testing. Companion
 to `ARCHITECTURE.md` (locked design), `REFACTOR.md` (active refactor
-queue), and `../NetworkDiagnostics/README.md` (catch-block diagnostics).
+queue), and `../NetworkDiagnostics/ARCHITECTURE.md` (catch-block diagnostics).
 
 Presence-lobby-specific bugs (B1, B4, B6 from the old tracker) moved
 to `../PresenceSystem/BUGS.md`.
@@ -15,6 +15,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B3 | TC4 bounce leaves 2 vessels + dead controls | ~85% | 🔴 |
 | B5 | TC2/TC4 second joiner fails to join | Uncertain (diagnose first) | 🔴 |
 | B7 | Client pair-init runs before remote identity replicates (`InitializePair Player=` empty, vessel-type `Random`) | Verified mostly benign | ⚪ |
+| B9 | Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) | Observed (not yet diagnosed) | 🔴 |
 
 ---
 
@@ -619,14 +620,60 @@ write flaky) is tracked separately in `../PresenceSystem/BUGS.md` B1.
 
 ---
 
+## B9 — Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) 🔴
+
+**Observed (MPPM, 1 host + 3 clients, 2026-06-09 — Session 2).** The S9
+host-return fix works: the host taps **Main Menu** on the scoreboard and
+all three clients return to `Menu_Main` together on the same live Relay.
+But two defects surface on arrival:
+
+1. **One client's vessel roams in a single direction and is
+   uncontrollable.** It drifts straight — autopilot doesn't fly it
+   normally and the player can't take control. Reproduced on "client 3"
+   (one of the three); the other two roamed normally.
+2. **Party domains are not reset to the menu domain (Jade).** Returning
+   vessels keep their in-game domains (Jade/Ruby/Gold) instead of all
+   re-syncing to Jade the way a fresh `Menu_Main` entry does.
+
+**Hypothesis (one shared root — not yet investigated).** The menu's
+per-client autopilot **and** domain reset are driven by
+`MainMenuController.HandleMenuReady → ActivateLocalPlayerAutopilot()`,
+which for the **local/owned** vessel calls `ApplyMenuDomain(player)`
+(resets `NetDomain` to Jade), then `StartPlayer()`,
+`Vessel.ToggleAIPilot(true)`, `InputController.SetPause(true)`. Non-local
+pairs go through `HandlePlayerPairInitialized`, which re-activates
+autopilot but does **not** call `ApplyMenuDomain`. If a returning
+client's local pair-init / `OnClientReady` doesn't complete cleanly on
+the game→menu network reload (suspect a timing/race in
+`ClientPlayerVesselInitializer`'s roster-pull on this path, distinct from
+the initial party-join path), that client gets **neither** the autopilot
+re-activation **nor** the Jade reset — explaining both symptoms at once.
+The straight-line drift also points at stale gameplay input/throttle
+leaking into the menu without a hard reset.
+
+**For next session.**
+- Confirm whether the stuck client ever fired `HandleMenuReady` /
+  `ActivateLocalPlayerAutopilot` on return (look for the FLOW-6
+  `OnClientReady` + autopilot logs). If not, fix the per-client re-init
+  reliability on the game→menu reload.
+- Apply the menu-domain (Jade) reset to **every** returning party member,
+  not just the locally-owned vessel — likely drive it server-side per
+  `Player` in the `Menu_Main` respawn so it can't depend on each client's
+  local activation firing.
+- Hard-reset vessel input / AI-pilot state on return so no held
+  throttle/heading carries from the game into the menu autopilot.
+
+**Repro.** 1 host + 3 MPPM clients → party up in `Menu_Main` → host
+launches a domain game (e.g. Skim Race) → play to the scoreboard → host
+taps **Main Menu** → watch each client's vessel control + domain color.
+
+**Status.** 🔴 Open — deferred to a future session (logged Session 2).
+
+---
+
 ## How we work bugs
 
-- One bug at a time, in priority order (B2 → B5 → B3 → B7).
-- For each: confirm root cause via NetDiag log capture if possible →
-  agree the approach → implement on `claude/blissful-tesla-9nefa` as
-  its own commit with risk table → update status.
-- The presence-lobby cluster (B1, B4, B6) is the locked-design area
-  and lives in `../PresenceSystem/BUGS.md` — read
-  `ARCHITECTURE.md` and `../PresenceSystem/ARCHITECTURE.md` before
-  touching `HostConnectionService` / `PresenceLobbyService` / invite
-  services. Do not reintroduce LAZY session creation.
+Method: see `../README.md` § "How we work bugs". Party-side priority
+order: **B2 → B5 → B3 → B7** (B8 fixed). The presence-lobby cluster
+(B1, B4, B6) is the locked-design area and lives in
+`../PresenceSystem/BUGS.md`.

@@ -172,17 +172,22 @@ source guard**: warns when origin/platform differ (only same-source deltas are v
 - **Keys:** F7 toggle · F6 Advanced/Simple · F5 Run Diagnostic. On-screen buttons mirror these +
   `–/+` duration.
 - **Two side-by-side blocks**, color-coded by health:
-  - Left = local frame cost: **FPS, Frame Time**, **Render** (Draw/Batches/SetPass/Tris/Verts),
-    **Memory** (GC KB/frame).
+  - Left = local frame cost: **FPS, Frame Time, CPU (busy), GPU, Bound** (live verdict via
+    `FrameBoundness`), **CPU / GPU** thread breakdown (advanced: Total/Main/Wait/Render Thread),
+    **Render** (Draw/Batches/SetPass/Tris/Verts), **Memory** (GC KB/frame, Managed, Unity Alloc,
+    Reserved % of device RAM, Gfx Driver, Device RAM/VRAM).
   - Right = connection: **Network** (Ping=UTP RTT, NetVars, RPCs, Bytes/f), **Region** (OS region +
     UTC offset).
 - **Run Diagnostic (F5):** records N seconds, flags spikes (`> max(33.3ms, 1.75×mean)`), writes
-  `Documents/CosmicShore Diagnostics/diag_<scene>_<ts>.json` + `.txt`. Works in editor and build.
-- Reads the **same** `ProfilerRecorder`s + `NetMarkers` counters as the Runner → numbers match.
+  `Documents/CosmicShore Diagnostics/diag_<scene>_<ts>.json` + `.txt` — incl. avg CPU/busy/GPU ms,
+  bound verdict, and alloc/reserved memory. Works in editor and build.
+- Reads the **same** `ProfilerRecorder`s + `NetMarkers` counters as the Runner, and the same
+  `FrameBoundness` classification as `BenchmarkAnalysis.boundVerdict` → numbers and verdicts match.
 
 ### BenchmarkHUDOverlay (F9) — editor IMGUI eyeball
 - Spawned from Runtime Capture's *Spawn Live HUD Overlay* (or drop the component). `OnGUI` text:
-  FPS / frame (avg+max) / Draw / SetPass / Tris / GC, plus optional game-load counts via GameDataSO.
+  FPS / frame (avg+max) / CPU busy+total / GPU / bound verdict / Draw / SetPass / Tris / GC /
+  memory (alloc, reserved, gfx driver, device caps), plus optional game-load counts via GameDataSO.
 
 ---
 

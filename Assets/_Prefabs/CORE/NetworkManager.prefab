@@ -93,7 +93,7 @@ MonoBehaviour:
   m_ProtocolType: 0
   m_UseWebSockets: 0
   m_UseEncryption: 0
-  m_MaxPacketQueueSize: 128
+  m_MaxPacketQueueSize: 512
   m_MaxPayloadSize: 262144
   m_HeartbeatTimeoutMS: 500
   m_ConnectTimeoutMS: 1000

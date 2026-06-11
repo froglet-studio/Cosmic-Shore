@@ -45,14 +45,6 @@ namespace CosmicShore.Gameplay
         // so there is no leak.
         protected override bool DestroyVesselWithScene => false;
 
-        protected override void Awake()
-        {
-            // Menu_Main must NOT shutdown NetworkManager on despawn —
-            // the host must persist across scene transitions to game scenes.
-            shutdownNetworkOnDespawn = false;
-            base.Awake();
-        }
-
         protected override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

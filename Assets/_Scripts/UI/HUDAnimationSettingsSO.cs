@@ -63,8 +63,6 @@ namespace CosmicShore.UI
         [Tooltip("Vertical offset the scoreboard slides in from")]
         public float scoreboardSlideOffset = 120f;
         public Ease scoreboardEntranceEase = Ease.OutCubic;
-        [Tooltip("Delay between each player row appearing")]
-        public float scoreboardRowStagger = 0.1f;
         [Tooltip("Duration for banner text scale punch")]
         public float bannerPunchDuration = 0.3f;
         [Tooltip("Banner text punch scale overshoot")]

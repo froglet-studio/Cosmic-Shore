@@ -136,7 +136,7 @@ insufficient. Today's classifier covers the cases we know about.
    (which includes `e.GetType().Name`).
 2. A new branch added to `ClassifyException` in the appropriate
    position (more specific cases first).
-3. A documentation entry in `README.md` § "Classification rules".
+3. A documentation entry in `ARCHITECTURE.md` § "Classification rules".
 
 **Open question.** Should `class=Unknown` itself escalate to an
 error-level log? Currently it's Warning. Argument for Error: it

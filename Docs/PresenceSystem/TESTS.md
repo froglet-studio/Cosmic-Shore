@@ -4,10 +4,8 @@ Presence-lobby-specific MPPM scenarios. For party (Relay) gameplay
 tests see `../PartySystem/TESTS.md`. For NetDiag-specific tests see
 `../NetworkDiagnostics/TESTS.md`.
 
-> **Convention.** "VP1" = first virtual player; "VP2", "VP3" = others.
-> Each VP is a separate Editor instance under MPPM. Tests reference
-> NetDiag log classes (`class=Offline`, etc.) — see
-> `../NetworkDiagnostics/README.md`.
+> **Convention.** See `../README.md` § "MPPM test convention" for VP
+> naming and NetDiag class references.
 
 ## Smoke gate — run on every presence-side commit
 

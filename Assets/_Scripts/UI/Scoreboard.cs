@@ -20,8 +20,7 @@ namespace CosmicShore.UI
     /// <summary>
     /// End-game scoreboard. Instantiates one <see cref="PlayerScoreCard"/> per player
     /// under <see cref="playerCardContainer"/>, tints each card to its player's domain
-    /// color, and shows a "{DOMAIN} VICTORY" banner. Always uses the multiplayer layout;
-    /// the legacy SinglePlayerView is never shown.
+    /// color, and shows a "{DOMAIN} VICTORY" banner.
     ///
     /// Subclasses override <see cref="FormatPlayerScore"/> and optionally
     /// <see cref="FormatSecondaryStat"/> / <see cref="SortPlayers"/> to customize display.
@@ -48,19 +47,12 @@ namespace CosmicShore.UI
         [Header("Banner")]
         [SerializeField] Image BannerImage;
         [SerializeField] protected TMP_Text BannerText;
-        [SerializeField] Color SinglePlayerBannerColor = new Color(0.2f, 0.6f, 0.9f);
-        [SerializeField] Color JadeTeamBannerColor    = new Color(0.0f, 0.8f, 0.4f);
-        [SerializeField] Color RubyTeamBannerColor    = new Color(0.9f, 0.2f, 0.2f);
-        [SerializeField] Color GoldTeamBannerColor    = new Color(1.0f, 0.8f, 0.0f);
-        [SerializeField] Color BlueTeamBannerColor    = new Color(0.2f, 0.4f, 0.9f);
 
         [Header("Player Score Cards")]
         [Tooltip("Container transform that will host one PlayerScoreCard per player (e.g. ScrollView/Viewport/Content).")]
         [SerializeField] protected Transform playerCardContainer;
         [Tooltip("Prefab instance to clone for each player row.")]
         [SerializeField] protected PlayerScoreCard playerCardPrefab;
-        [Tooltip("Domain color palette for card background tint (falls back to banner colors if unassigned).")]
-        [SerializeField] protected DomainColorPaletteSO domainColorPalette;
         [Tooltip("Profile icon list used to resolve player avatars by AvatarId.")]
         [SerializeField] protected SO_ProfileIconList profileIconList;
         [Tooltip("AI profile list used to resolve AI avatars by name.")]
@@ -144,16 +136,14 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Shows Main Menu + Play Again for host / single-player, Leave Lobby for non-host clients.
+        /// Shows Main Menu + Play Again for the host, Leave Lobby for non-host clients.
         /// Non-host clients cannot restart the game — the host's Play Again forces everyone to replay,
         /// so exposing the button to clients would be misleading.
         /// </summary>
         void ConfigureLobbyButtons()
         {
             var nm = NetworkManager.Singleton;
-            bool isMultiplayer = gameData != null && gameData.IsMultiplayerMode;
-            bool isHost = nm != null && nm.IsServer;
-            bool isClient = isMultiplayer && !isHost;
+            bool isClient = nm == null || !nm.IsServer;
 
             if (mainMenuButton)   mainMenuButton.SetActive(!isClient);
             if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);
@@ -222,15 +212,25 @@ namespace CosmicShore.UI
         #region Multiplayer View (the only view)
 
         /// <summary>
-        /// Always-on multiplayer presentation. The legacy "SinglePlayerView" is gone —
-        /// solo play uses the multiplayer layout with a single card.
+        /// Builds the per-player card layout. Solo play renders as a single card.
         /// </summary>
         protected virtual void ShowMultiplayerView()
         {
-            var orderedStats = SortPlayers(gameData.RoundStatsList);
+            // Prefer the single source of truth: the mode's ranked + formatted results
+            // (GameDataSO.Results, produced once by the ScoringRule). Modes that don't
+            // produce results (freestyle, DuelForCell) fall back to the legacy path.
+            if (gameData.Results is { Count: > 0 })
+            {
+                var winnerDomain = gameData.WinnerDomain != Domains.Blue
+                    ? gameData.WinnerDomain
+                    : gameData.Results[0].Domain;
+                SetBannerForDomain(winnerDomain);
+                PopulateFromResults(gameData.Results);
+                return;
+            }
 
-            Domains winnerDomain = DetermineWinnerDomain(orderedStats);
-            SetBannerForDomain(winnerDomain);
+            var orderedStats = SortPlayers(gameData.RoundStatsList);
+            SetBannerForDomain(DetermineWinnerDomain(orderedStats));
             PopulatePlayerCards(orderedStats);
         }
 
@@ -246,11 +246,21 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Default: first domain in DomainStatsList → first player's domain → Unassigned.
-        /// Subclasses can override if they need different winner-domain logic.
+        /// Winning domain for the banner. Prefers the server-authoritative
+        /// <see cref="GameDataSO.WinnerDomain"/> — the SAME value the end-game
+        /// cinematic uses — so the banner and the cinematic can't disagree on a tie
+        /// and there is one source of truth for "who won". Modes that don't set it
+        /// (single-player / co-op / DuelForCell) leave it <see cref="Domains.Blue"/>
+        /// — it is reset on every scene load (SceneLoader → GameDataSO.ResetRuntimeData)
+        /// and on replay (ResetRuntimeDataForReplay) — and fall back to the per-domain
+        /// sum order exactly as before. Subclasses may override.
+        /// (Interim step: R10 will replace WinnerDomain + DomainStatsList with one
+        /// synced ranked-results list — see Docs/ScoringSystem/REFACTOR.md.)
         /// </summary>
         protected virtual Domains DetermineWinnerDomain(List<IRoundStats> orderedStats)
         {
+            if (gameData.WinnerDomain != Domains.Blue)
+                return gameData.WinnerDomain;
             if (gameData.DomainStatsList is { Count: > 0 })
                 return gameData.DomainStatsList[0].Domain;
             if (orderedStats is { Count: > 0 })
@@ -332,6 +342,46 @@ namespace CosmicShore.UI
             AwardCrystalsIfLocalWinner(winnerName);
         }
 
+        /// <summary>
+        /// Renders cards from the single source of truth — the mode's ranked, formatted
+        /// <see cref="GameDataSO.Results"/>. Order, primary text and secondary line all come
+        /// from the ScoringRule, so the scoreboard and the end-game cinematic can't disagree.
+        /// </summary>
+        void PopulateFromResults(List<ScoreResult> results)
+        {
+            ClearPlayerCards();
+
+            if (results == null || results.Count == 0) return;
+            if (!playerCardContainer || !playerCardPrefab)
+            {
+                CSDebug.LogWarning($"[Scoreboard] PopulateFromResults skipped — " +
+                    $"container={(playerCardContainer != null ? "OK" : "NULL")}, " +
+                    $"prefab={(playerCardPrefab != null ? "OK" : "NULL")}");
+                return;
+            }
+
+            string winnerName = results[0].Name;
+
+            for (int i = 0; i < results.Count; i++)
+            {
+                var r = results[i];
+                var card = Instantiate(playerCardPrefab, playerCardContainer);
+
+                card.Setup(r.Name, r.ScoreText, GetDomainColor(r.Domain), i);
+                card.SetAvatar(ResolveAvatarSpriteByName(r.Name));
+
+                if (!string.IsNullOrEmpty(r.Secondary))
+                    card.ShowSecondaryStat(r.Secondary);
+
+                if (winnerCrystalReward > 0 && r.Name == winnerName)
+                    card.ShowCrystalReward(winnerCrystalReward);
+
+                _spawnedCards.Add(card);
+            }
+
+            AwardCrystalsIfLocalWinner(winnerName);
+        }
+
         void ClearPlayerCards()
         {
             foreach (var card in _spawnedCards)
@@ -361,29 +411,26 @@ namespace CosmicShore.UI
             CSDebug.Log($"[Scoreboard] Awarded {winnerCrystalReward} crystals to '{localName}'. New balance: {newBalance}");
         }
 
+        // Single source of truth for domain color: the same ColorSet the vessels and
+        // prisms read from (GameDataSO.ThemeManagerData.ColorSet -> TrailHighlightColor).
+        // No per-Scoreboard palette or hardcoded fallbacks — see Docs/ScoringSystem/REFACTOR.md R5.
         Color GetDomainColor(Domains domain)
         {
-            if (domainColorPalette)
-                return domainColorPalette.Get(domain);
-
-            return domain switch
-            {
-                Domains.Jade => JadeTeamBannerColor,
-                Domains.Ruby => RubyTeamBannerColor,
-                Domains.Gold => GoldTeamBannerColor,
-                Domains.Blue => BlueTeamBannerColor,
-                _            => SinglePlayerBannerColor,
-            };
+            return gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.GetDomainUIColor(domain)
+                : Color.gray;
         }
 
-        Sprite ResolveAvatarSprite(IRoundStats stats)
+        Sprite ResolveAvatarSprite(IRoundStats stats) => ResolveAvatarSpriteByName(stats.Name);
+
+        Sprite ResolveAvatarSpriteByName(string playerName)
         {
             // AI players — look up by name in AI profile list (struct, not nullable)
             if (aiProfileList != null && aiProfileList.aiProfiles != null)
             {
                 foreach (var p in aiProfileList.aiProfiles)
                 {
-                    if (p.Name == stats.Name)
+                    if (p.Name == playerName)
                         return p.AvatarSprite;
                 }
             }
@@ -391,7 +438,7 @@ namespace CosmicShore.UI
             // Human players — look up by AvatarId via gameData.Players
             if (profileIconList != null && profileIconList.profileIcons != null && gameData?.Players != null)
             {
-                var player = gameData.Players.FirstOrDefault(pl => pl.Name == stats.Name);
+                var player = gameData.Players.FirstOrDefault(pl => pl.Name == playerName);
                 if (player != null)
                 {
                     foreach (var icon in profileIconList.profileIcons)
@@ -453,14 +500,11 @@ namespace CosmicShore.UI
 
             // Defense in depth: non-host clients don't see the button
             // (ConfigureLobbyButtons gates it), but guard the call path too.
-            if (gameData.IsMultiplayerMode)
+            var nm = NetworkManager.Singleton;
+            if (nm == null || !nm.IsServer)
             {
-                var nm = NetworkManager.Singleton;
-                if (nm == null || !nm.IsServer)
-                {
-                    CSDebug.LogWarning("[Scoreboard] Play Again ignored — only the host can restart the game.");
-                    return;
-                }
+                CSDebug.LogWarning("[Scoreboard] Play Again ignored — only the host can restart the game.");
+                return;
             }
 
             gameController.RequestReplay();
