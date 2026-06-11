@@ -1,7 +1,7 @@
-using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.UI
 {
@@ -16,13 +16,12 @@ namespace CosmicShore.UI
                 ? _channel
                 : (_channel = Resources.Load<ScriptableEventGameFeedPayload>(ChannelPath));
 
-        private static readonly Dictionary<Domains, Color> DomainColors = new()
-        {
-            { Domains.Jade, new Color(0.0f, 0.8f, 0.4f) },
-            { Domains.Ruby, new Color(0.9f, 0.2f, 0.2f) },
-            { Domains.Gold, new Color(1.0f, 0.8f, 0.0f) },
-            { Domains.Blue, new Color(0.2f, 0.4f, 0.9f) },
-        };
+        /// <summary>
+        /// Domain color source — the same <see cref="SO_ColorSet"/> the vessels and prisms
+        /// use. Assigned once by ThemeManager at game start (single source of truth — R5).
+        /// Null before a themed scene loads, in which case GetDomainColor falls back to white.
+        /// </summary>
+        public static SO_ColorSet ColorSet { private get; set; }
 
         public static void Post(string message, Domains domain, GameFeedType type = GameFeedType.Generic)
         {
@@ -46,9 +45,7 @@ namespace CosmicShore.UI
             Post(message, Domains.Blue, GameFeedType.JoustHit);
         }
 
-        public static Color GetDomainColor(Domains domain)
-        {
-            return DomainColors.TryGetValue(domain, out var color) ? color : Color.white;
-        }
+        public static Color GetDomainColor(Domains domain) =>
+            ColorSet != null ? ColorSet.GetDomainUIColor(domain) : Color.white;
     }
 }

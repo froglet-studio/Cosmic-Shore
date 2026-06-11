@@ -161,13 +161,11 @@ namespace CosmicShore.Core
                 return;
             }
 
-            bool useNetworkSceneLoading = nm != null && nm.IsServer;
-
             // Game config sync to clients is now handled by
             // MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()
             // in the game scene's OnNetworkSpawn, rather than here before scene load.
 
-            LoadSceneAsync(gameData.SceneName, useNetworkSceneLoading).Forget();
+            LoadSceneAsync(gameData.SceneName).Forget();
         }
 
         void FadeFromSplashOnReady()
@@ -184,11 +182,6 @@ namespace CosmicShore.Core
         public void ReturnToMainMenu()
         {
             _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
-
-            // Prevent the game scene's ServerPlayerVesselInitializer from calling
-            // NetworkManager.Shutdown() during the scene transition. The network
-            // must stay alive for Menu_Main's vessel spawning pipeline.
-            gameData.IsReturnToMenuTransition = true;
 
             // Clear stale return-to-screen/modal state so Menu_Main starts clean
             // on HOME with no modals open. These keys are set by ScreenSwitcher
@@ -209,16 +202,18 @@ namespace CosmicShore.Core
                 return;
             }
 
-            bool useNetworkSceneLoading = nm != null && nm.IsServer;
-            LoadSceneAsync(menuScene, useNetworkSceneLoading).Forget();
+            LoadSceneAsync(menuScene).Forget();
         }
 
-        async UniTaskVoid LoadSceneAsync(string sceneName, bool useNetworkSceneLoading)
+        async UniTaskVoid LoadSceneAsync(string sceneName)
         {
-            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}, network={useNetworkSceneLoading}</color>");
+            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}</color>");
             gameData.InvokeSceneTransition(false);
 
-            if (useNetworkSceneLoading)
+            var nm = NetworkManager.Singleton;
+            bool isServer = nm != null && nm.IsServer;
+
+            if (isServer)
                 ClearPlayerVesselReferences();
 
             gameData.ResetRuntimeData();
@@ -228,27 +223,16 @@ namespace CosmicShore.Core
                 DelayType.UnscaledDeltaTime
             );
 
-            if (!useNetworkSceneLoading)
-            {
-                SceneManager.LoadScene(sceneName);
-                return;
-            }
-
-            var nm = NetworkManager.Singleton;
-            if (nm == null)
-            {
-                Debug.LogWarning("[SceneLoader] NetworkManager missing. Falling back to local load.");
-                SceneManager.LoadScene(sceneName);
-                return;
-            }
-
-            if (nm.IsServer && nm.SceneManager != null)
+            if (isServer && nm.SceneManager != null)
             {
                 nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
             }
             else
             {
-                Debug.LogWarning("[SceneLoader] Not server or SceneManager null — cannot load network scene.");
+                // Defensive fallback: no active server (should not happen under the
+                // always-hosted model). Load locally so a scene transition never hangs.
+                Debug.LogWarning("[SceneLoader] No active server — falling back to local scene load.");
+                SceneManager.LoadScene(sceneName);
             }
         }
 
@@ -308,15 +292,12 @@ namespace CosmicShore.Core
                 return;
             }
 
-            // Eager per-user Relay: the party Relay session is NOT cleared here.
-            // MultiplayerSetup.LeaveSession() raises OnSessionEnded but leaves the
-            // shared gameData.ActiveSession reference intact (Commit 8 unified it
-            // with PartySessionService.ActiveSession; nulling here would orphan
-            // the live Relay).  HCS still has a live Relay and NM is still
-            // running.  ReturnToMainMenu() uses nm.SceneManager.LoadScene to
-            // carry all party members back to Menu_Main on the same Relay
-            // connection — no disconnection, no re-creation.
-
+            // Genuine session end — a client lost its connection (OnClientDisconnect)
+            // or the transport failed (OnTransportFailure). The host's deliberate
+            // "Main Menu" return does NOT route here; it goes straight through
+            // ReturnToMainMenu(), which keeps the live Relay so the whole party
+            // reloads Menu_Main together. Here the session is already gone, so we
+            // return to the menu and fully reset local game state.
             ReturnToMainMenu();
             gameData.ResetAllData();
         }

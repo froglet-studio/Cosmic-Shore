@@ -121,8 +121,10 @@ namespace CosmicShore.Gameplay
         public bool IsMultiplayerOwner => IsSpawned && IsOwner && !IsInitializedAsAI;
         public bool IsNetworkOwner => IsSpawned && IsOwner;
         public bool IsNetworkClient => IsSpawned && !IsOwner;
-        public bool IsSinglePlayerOwner => !IsSpawned && !IsInitializedAsAI;
-        public bool IsLocalUser => IsMultiplayerOwner || IsSinglePlayerOwner;
+        // No offline single-player: every session is a Relay host (solo or party). The local user
+        // is the owner of a non-AI Player on this machine — AI shares the host's OwnerClientId, so
+        // it is still excluded (IsMultiplayerOwner == IsSpawned && IsOwner && !IsInitializedAsAI).
+        public bool IsLocalUser => IsMultiplayerOwner;
        
         IPlayer.InitializeData InitializeData;
         
@@ -153,11 +155,16 @@ namespace CosmicShore.Gameplay
             AvatarId = NetAvatarId.Value;
             Vessel = vessel;
 
+            // RoundStats.Domain is a LOCAL mirror of the player's domain on EVERY peer —
+            // Player.NetDomain is the single networked source (RoundStats.n_Domain is retired). Set
+            // it on clients too, so a client's own RoundStats.Domain is correct immediately instead
+            // of via a lagging second replication.
+            RoundStats.Domain = Domain;
+
             if (!IsServer)
                 return;
 
             RoundStats.Name = Name;
-            RoundStats.Domain = Domain;
 
             SetGameObjectName();
         }
@@ -433,12 +440,12 @@ namespace CosmicShore.Gameplay
         {
             Domain = newValue;
 
-            // (a) Server keeps RoundStats authoritative; clients receive the change
-            // via RoundStats.n_Domain.OnValueChanged — so writing here on the server
-            // alone keeps every consumer of RoundStats.Domain (scoreboards, end-game
-            // controllers, GameFeedAPI colorers) live across modal re-picks,
-            // NormalizeUnassignedHumans rerolls, and shape-mode SetDomain calls.
-            if (IsServer && _roundStats)
+            // RoundStats.Domain is a LOCAL mirror derived from Player.NetDomain — the single
+            // authoritative networked domain source (RoundStats.n_Domain is retired). Update it on
+            // EVERY peer here so all consumers (scoreboards, end-game, GameFeedAPI colorers) stay
+            // correct across initial picks, modal re-picks, and rerolls, without a second
+            // RoundStats-level replication that could lag behind.
+            if (_roundStats)
                 _roundStats.Domain = newValue;
 
             // (b) Repaint the vessel materials. Skipped pre-spawn (no themeManagerData

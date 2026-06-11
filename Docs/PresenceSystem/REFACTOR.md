@@ -3,10 +3,11 @@
 `PresenceLobbyService` (`Assets/_Scripts/Controller/Party/Services/PresenceLobbyService.cs`)
 is the remaining presence-side refactor target.
 
-> **Per-commit risk gate.** Every refactor commit ships with its own
-> risk table. No commit is pushed without first walking through which
-> risks apply. See `../NetworkDiagnostics/README.md` for the diagnostic
-> overlay that makes any regression interpretable.
+> **Per-commit risk gate.** Same protocol as the party-side refactors —
+> see `../README.md` § "Per-commit refactor protocol" (canonical detail
+> in `../PartySystem/REFACTOR.md`). The
+> `../NetworkDiagnostics/ARCHITECTURE.md` overlay makes any regression
+> interpretable.
 
 ## Refactor — `PresenceLobbyService`
 
@@ -84,14 +85,11 @@ coordinate here:
 
 ## Per-refactor commit cadence
 
-Within each refactor:
-
-- One concern per commit — extract one piece, then commit.
-- Each commit compiles, passes existing tests, and is independently
-  buildable.
-- 3-VP MPPM smoke required per commit (see `TESTS.md`).
-- Risk table for the specific commit added inline before push.
-- Push only after explicit risk discussion.
+Same cadence and 6-step "read source fresh" revision protocol as the
+party-side refactors — canonical in `../PartySystem/REFACTOR.md`
+(§ "Per-refactor commit cadence" + § "Per-commit revision protocol"),
+summarized in `../README.md` § "Per-commit refactor protocol". 3-VP MPPM
+smoke per commit (see `TESTS.md`).
 
 ## Related docs
 
@@ -99,4 +97,4 @@ Within each refactor:
 - `BUGS.md` — open bugs to consider during refactor
 - `TESTS.md` — manual test procedures
 - `../PartySystem/REFACTOR.md` — companion refactor backlog for the party (Relay) layer
-- `../NetworkDiagnostics/README.md` — diagnostic overlay every refactor commit ships behind
+- `../NetworkDiagnostics/ARCHITECTURE.md` — diagnostic overlay every refactor commit ships behind

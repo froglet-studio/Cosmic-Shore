@@ -39,11 +39,6 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] protected VesselPrefabContainer vesselPrefabContainer;
 
-        [Header("Lifecycle")]
-        [Tooltip("When true, NetworkManager.Shutdown() is called on despawn (game scenes). " +
-                 "Set to false for Menu_Main so the host persists across scene transitions.")]
-        [SerializeField] protected bool shutdownNetworkOnDespawn = true;
-
         [Header("Spawn Points")]
         [Tooltip("Scene-placed spawn transforms. If set, overrides GameDataSO.SpawnPoses on network spawn.")]
         [SerializeField] protected Transform[] playerSpawnPoints;
@@ -160,12 +155,11 @@ namespace CosmicShore.Gameplay
             _cts?.Dispose();
             _cts = null;
 
-            // Skip shutdown during replay scene reload or return-to-menu transitions —
-            // the network must stay alive for the server to reload the scene on all clients
-            // and for Menu_Main's vessel spawning pipeline.
-            if (shutdownNetworkOnDespawn && !gameData.IsReplayReload
-                && !gameData.IsReturnToMenuTransition && NetworkManager.Singleton)
-                NetworkManager.Singleton.Shutdown();
+            // The network is intentionally NOT shut down here. Under the eager-Relay
+            // design the party/Relay session persists across every scene transition
+            // (game ↔ Menu_Main, replay). Network teardown is owned exclusively by the
+            // explicit leave/quit paths (PartyInviteController.LeavePartyAndReturnToMenuAsync,
+            // MultiplayerSetup.OnTransportFailure) — never by a vessel spawner's despawn.
         }
 
         /// <summary>

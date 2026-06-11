@@ -4992,7 +4992,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 3297698130137550920}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1b6bb8d7ce794f1ba13dfa6c5b9a34cc, type: 3}
+  m_Script: {fileID: 11500000, guid: 86e7b4ae1c1b4eca9e999b64aff764c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   view: {fileID: 6157464410317896823}
@@ -10566,7 +10566,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 6843446438357240341}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 99f3625d5fec4367851e0f69076ff617, type: 3}
+  m_Script: {fileID: 11500000, guid: ad1572ebe0d06f143bbc8789e520819f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
@@ -10602,6 +10602,7 @@ MonoBehaviour:
   rematchDeniedPanel: {fileID: 3077184441755355337}
   rematchDeniedText: {fileID: 1138702273259042168}
   playAgainButton: {fileID: 2279452371261775173}
+  mainMenuButton: {fileID: 7469907960593864752}
   rematchPanelAutoDismissSeconds: 2
   animSettings: {fileID: 0}
 --- !u!114 &4484042448459437976
@@ -16343,7 +16344,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 7572978955847930571}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe458c43469c4d6ba3ba2a646751a3fc, type: 3}
+  m_Script: {fileID: 11500000, guid: 585e900e2ee74668919ca01a846434df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}

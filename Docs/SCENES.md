@@ -480,7 +480,7 @@ SceneLoader.LaunchGame() [MonoBehaviour, Bootstrap DontDestroyOnLoad, subscribed
       MultiplayerMiniGameControllerBase.OnNetworkSpawn() in the game scene
       ├─ gameData.ResetRuntimeData()
       ├─ Wait 0.5s for RPC delivery
-      └─ Network or local scene load
+      └─ Host-driven Netcode scene load (local fallback only if no NetworkManager)
 ```
 
 ---
