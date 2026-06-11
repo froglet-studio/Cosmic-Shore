@@ -101,6 +101,12 @@ namespace CosmicShore.Gameplay
                 hp.Initialize("tadpole");
             }
 
+            // Locked invariant: every lifeform carries one elemental crystal it drops as
+            // a powerup on death (mass conserved). EnsureElementalCrystal uses the prefab's
+            // authored crystal if present (validator-enforced fast path) or provisions one;
+            // the sealed Fauna.Die drops it on any death path (predation / forager starvation).
+            crystal = LifeFormCrystal.EnsureElementalCrystal(this);
+
             currentVelocity = transform.forward * Random.Range(minSpeed, Mathf.Max(minSpeed, maxSpeed));
             float initialDelay = normalizedIndex * behaviorUpdateRate;
             StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
@@ -314,10 +320,31 @@ namespace CosmicShore.Gameplay
             desiredRotation = SafeLookRotation.TryGet(currentVelocity, out var desiredRot, this) ? desiredRot : transform.rotation;
         }
 
-        protected override void Die(string killerName = "")
+        protected override void OnDeath(string killerName = "")
         {
+            if (isKilled) return;
             isKilled = true;
             StopAllCoroutines();
+            // Continuity rule — nothing pops out of existence. The sealed Fauna.Die already
+            // dropped this boid's elemental crystal (mass conserved); shrink the body out
+            // (suction-like) instead of instantly destroying it, then remove the husk.
+            if (isActiveAndEnabled && gameObject.activeInHierarchy)
+                StartCoroutine(FadeOutAndRemove());
+            else
+                Destroy(gameObject);
+        }
+
+        IEnumerator FadeOutAndRemove()
+        {
+            Vector3 from = transform.localScale;
+            float t = 0f;
+            const float dur = 0.4f;
+            while (t < dur)
+            {
+                t += Time.deltaTime;
+                transform.localScale = Vector3.Lerp(from, Vector3.zero, t / dur);
+                yield return null;
+            }
             Destroy(gameObject);
         }
 

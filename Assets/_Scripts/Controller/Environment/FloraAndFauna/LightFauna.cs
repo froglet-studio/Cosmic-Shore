@@ -22,6 +22,10 @@ namespace CosmicShore.Gameplay
         private Vector3 desiredDirection;
         private Quaternion desiredRotation;
 
+        // True once death has begun the wither animation. Freezes movement/behavior so the
+        // husk withers in place instead of drifting, and makes the death path idempotent.
+        bool _withering;
+
         [HideInInspector] public float Phase;
 
         public LightFaunaManager LightFaunaManager { get; set; }
@@ -64,6 +68,12 @@ namespace CosmicShore.Gameplay
                 hp.Initialize("FaunaPrefab");
             }
 
+            // Locked invariant: every lifeform carries one elemental crystal it drops as
+            // a powerup on death (mass conserved). EnsureElementalCrystal uses the prefab's
+            // authored crystal if present (validator-enforced fast path) or provisions one;
+            // the sealed Fauna.Die drops it on any death path.
+            crystal = LifeFormCrystal.EnsureElementalCrystal(this);
+
             float minSpeed = Mathf.Max(0f, data.minSpeed);
             float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed);
 
@@ -71,12 +81,77 @@ namespace CosmicShore.Gameplay
             StartCoroutine(UpdateBehaviorCoroutine());
         }
 
-        protected override void Die(string killerName = "")
+        /// <summary>
+        /// Death = wither, never a pop. The sealed <see cref="Fauna.Die"/> has already dropped
+        /// this creature's elemental crystal (mass conserved); here the body withers from its
+        /// extremities inward so it FADES out of existence rather than vanishing — the
+        /// platform-wide continuity rule. Only the husk is removed, after the body is gone.
+        /// </summary>
+        protected override void OnDeath(string killerName = "")
+        {
+            if (_withering) return;
+            _withering = true;
+            currentVelocity = Vector3.zero;
+
+            if (isActiveAndEnabled && gameObject.activeInHierarchy)
+                StartCoroutine(WitherCoroutine());
+            else
+                RemoveHusk(); // can't animate while inactive (scene teardown) — remove directly
+        }
+
+        void RemoveHusk()
         {
             if (LightFaunaManager)
                 LightFaunaManager.RemoveFauna(this);
             else
                 Destroy(gameObject);
+        }
+
+        /// <summary>
+        /// Collapses the body one spindle ring at a time, FARTHEST-from-centre first, so the
+        /// creature visibly withers inward (a shark's fins / a brittlestar's arms evaporate
+        /// before the core body — emergent from geometry, no per-prefab special-casing). Reuses
+        /// the same <see cref="Spindle.ForceWither"/> evaporation flora use on death; a body
+        /// with no spindle structure falls back to suctioning its prisms inward. Honors the
+        /// continuity rule (nothing disappears instantly), then removes the spent husk.
+        /// </summary>
+        IEnumerator WitherCoroutine()
+        {
+            float interval = data && data.witherRingInterval > 0f ? data.witherRingInterval : 0.25f;
+
+            var spindles = GetComponentsInChildren<Spindle>(true)
+                .Where(s => s)
+                .OrderByDescending(s => (s.transform.position - transform.position).sqrMagnitude)
+                .ToList();
+
+            if (spindles.Count > 0)
+            {
+                // Outer rings first: by the time an inner ring's turn comes its children are
+                // already gone, so ForceWither just collapses that ring.
+                for (int i = 0; i < spindles.Count; i++)
+                {
+                    if (spindles[i]) spindles[i].ForceWither();
+                    if (interval > 0f) yield return new WaitForSeconds(interval);
+                    else yield return null;
+                }
+            }
+            else
+            {
+                // No spindle structure (e.g. a single-prism body) — suction the body prisms
+                // inward toward the centre so the body still leaves continuously, not instantly.
+                var prisms = GetComponentsInChildren<HealthPrism>(true)
+                    .Where(p => p)
+                    .OrderByDescending(p => (p.transform.position - transform.position).sqrMagnitude)
+                    .ToList();
+                for (int i = 0; i < prisms.Count; i++)
+                {
+                    if (prisms[i]) prisms[i].Consume(transform, domain, PLAYER_NAME, true);
+                    if (interval > 0f) yield return new WaitForSeconds(interval);
+                    else yield return null;
+                }
+            }
+
+            RemoveHusk();
         }
 
         IEnumerator UpdateBehaviorCoroutine()
@@ -152,7 +227,7 @@ namespace CosmicShore.Gameplay
 
         void UpdateBehavior()
         {
-            if (!data)
+            if (!data || _withering)
                 return;
 
             // Prey-linked population control: a fauna that hasn't fed in starvationSeconds
