@@ -213,6 +213,14 @@ Sequence **with R1** (unified always-networked path) — both touch the scoring 
 - 🟡 **C** (R1) — partially advanced: `IsLocalUser` → `IsMultiplayerOwner` (commit `10e541fc`, no
   offline single-player branch). Still open: remove the `IsMultiplayerMode` scoring branches
   (`Scoreboard.cs:147,454`) and retire `DomainStatsList[0]` as a winner source.
+- 🔴 **D** (next session) — **server-ORDERED results sync**: the rows are still re-SORTED on every
+  peer (`SyncFinalScores_ClientRpc` → `rule.BuildResults` over the local `RoundStatsList`), so tied
+  rows order differently host vs client. Sort once on the server, ship rows in rank order (+ the
+  formatted `ScoreText`/`Secondary` strings), clients build `Results` from the arrays verbatim. Plus
+  the per-player `LastCrystalCollectedTime` tie-break (owner rule, pending one ranking decision) and
+  the podium name-join hardening. **Full work package, design + commit sequence:
+  `RANKING_SYNC_PLAN.md`** (Steps 4–7; includes follow-ups F1 SOAP-ResetOn guard, F2
+  `RequestedDomainCount` comment drift, F3 optional ClientReady dedupe).
 
 ### R11 — ⚪ [deferred · needs device + UGS testing] Fully retire `GolfScoreSentinels`
 Follow-on to **R4**, which deliberately stopped at *centralizing* the sentinel into one file. This
