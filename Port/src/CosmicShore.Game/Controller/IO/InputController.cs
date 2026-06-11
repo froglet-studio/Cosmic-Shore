@@ -269,11 +269,8 @@ namespace CosmicShore.Gameplay
         public static bool UsingGamepad() =>
             Gamepad.current != null;
 
-        // PORT Deviation #15: concrete InputStatus lands at VESSEL_LAYER V7;
-        // until then hosts assign an IInputStatus before enabling this controller.
         IInputStatus TryAddInputStatus() =>
-            InputStatus ?? throw new System.InvalidOperationException(
-                "InputStatus not assigned (ported InputStatus arrives at V7)");
+            gameObject.GetOrAdd<InputStatus>();
 
     }
 }

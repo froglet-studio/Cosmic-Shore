@@ -170,8 +170,12 @@ ElementalFloat + ElementalShipComponent + IVesselHUDController +
 R_ShipElementStatsHandler + ShipActionSO/ShipActionExecutorBase/ActionExecutorRegistry/
 legacy ShipAction; AudioSystem shell pulled forward as Deviation #11; **Deviations #9
 and #10b CLOSED** — ResourceSystem : ElementalShipComponent + RequireComponent restored,
-InputController.vessel field live). Next: V7 (engine E2 renderer stubs; InputStatus,
-VesselAnimation + IVesselStatus member restore), rival balance from prompter feedback.
+InputController.vessel field live). **V7 DONE** (engine E2 renderer data stubs:
+Renderer/MeshRenderer/SkinnedMeshRenderer [blend-shape store]/TrailRenderer/Camera;
+InputStatus verbatim — IsSpawned-switched local/NetworkVariable storage, owner-gated
+writes, **Deviation #15 CLOSED** [TryAddInputStatus → GetOrAdd&lt;InputStatus&gt; verbatim];
+VesselAnimation verbatim + its IVesselStatus member uncommented [#10c partial restore]).
+Next: V8 (VesselTransformer + member restore), rival balance from prompter feedback.
 
 ## Phase roadmap
 
@@ -344,13 +348,28 @@ VesselAnimation + IVesselStatus member restore), rival balance from prompter fee
   null-player defaults frozen ("No-name" / Jade). **594 tests green (342 + 252)**;
   headless client smoke unaffected.
 
-## NEXT UP (iteration 7)
+- **Iteration 7** (2026-06-11): **V7 — input/animation layer.** Engine E2 renderer
+  data stubs (`Renderer` material array + non-cloning `material` [documented engine
+  deviation], `SkinnedMeshRenderer` blend-shape weight store, `TrailRenderer`,
+  data-only `Camera` with first-enabled `main`). Ported verbatim: `InputStatus`
+  (292L — IsSpawned-switched local/NetworkVariable storage for all 25 input channels,
+  owner-gated writes, pause toggle event on both local and replicated paths,
+  ResetForReplay preserving player invert preferences) and `VesselAnimation` (152L —
+  abstract puppetry driver: idle/dual-stick/single-stick routing, element→blend-shape
+  mapping, engine/body flare material writes). **Deviation #15 CLOSED**
+  (`TryAddInputStatus` → `gameObject.GetOrAdd<InputStatus>()` verbatim); #10c partial
+  restore (`VesselAnimation` member live in IVesselStatus). Test doubles extracted to
+  shared `VesselLayerTestDoubles.cs`; 16 new tests (InputStatus spawn/ownership/reset
+  matrix, InputController Awake wiring, shape-key theory, flare, Update routing).
+  **610 tests green (358 + 252)**; client smoke unaffected.
 
-Goal: V7 of the vessel-layer arc + sprint feedback.
+## NEXT UP (iteration 8)
 
-1. **V7**: engine E2 (renderer stubs per VESSEL_LAYER.md). Port `InputStatus`
-   (concrete; closes Deviation #15's fail-loud TryAddInputStatus) and
-   `VesselAnimation`; uncomment their IVesselStatus members (#10c partial restore).
+Goal: V8 of the vessel-layer arc + sprint feedback.
+
+1. **V8**: port `VesselTransformer` (518L, single-file oversize accepted) +
+   uncomment its IVesselStatus member (#10c partial restore). Behavior tests for the
+   flight model (AngleAxis rotation, throttle/boost composition, modifier structs).
 2. Sprint: rival balance from prompter feedback (S4 KNOWN ISSUE — rival can't beat a
    perfect autopilot; vs humans it contests missed crystals). Tune overtake/rubber-band
    so AI-vs-AI demos stay competitive.

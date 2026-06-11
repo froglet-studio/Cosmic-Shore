@@ -84,7 +84,7 @@ namespace CosmicShore.Gameplay
         bool IsPortrait { get; set; }
 
         ResourceSystem ResourceSystem { get; }
-        // PORT Deviation #10c (restore at V7): VesselAnimation VesselAnimation { get; }
+        VesselAnimation VesselAnimation { get; }
         // PORT Deviation #10c (restore at V19): VesselCameraCustomizer VesselCameraCustomizer { get; }
 
         List<GameObject> ShipGeometries { get; set; }
