@@ -152,9 +152,27 @@ YDiff semantics untouched). **Gamepad roll inverted** post-strategy alongside it
 (prompter, 2026-06-11 second feedback round, first from-source flight): yaw-inverted
 steering banks opposite the turn unless roll flips too; AI and keyboard paths
 untouched. Both dist zips rebuilt on the corrected publish recipe (loose natives
-beside the exe — see testing-protocol item 5). NEXT: prompter verifies roll feel +
-Squirrel nose orientation in motion (flip is one sign in the extractor), drift/trail
-feel, rival tuning. Fidelity arc: **V1 DONE** (engine E3-E8/E10: RPC attrs, profiling shim, Screen/
+beside the exe — see testing-protocol item 5). **S5 SHIPPED** (prompter directives,
+2026-06-11 third feedback round): **closed circuit** (seeded ring, integer-harmonic
+radius/altitude undulation so the loop closes exactly; loop-frame rails + gates;
+loop-angle AI/autopilot targeting replaces the old "+z ahead" logic), **persistent
+trails** (sim-owned skimmable race state, emitted along the velocity path, never
+culled — reset is the only sink, per conserved-mass rules), **trail-skim energy**
+(rival's trail always counts, own trail after 3s aging — lap back onto it; linear
+falloff over 7u; passive regen cut 0.12→0.04 so skimming is THE energy source),
+**energy raises top speed** (throttle term ×(1+0.6·energy)), **analog trigger drift**
+(triggers decouple velocity from the nose: course re-aligns at 7/s gripped → 0.55/s
+at full pull; drift-skimming charges up to 2×; keyboard Shift = full drift; magenta
+HUD gauge + energy bar flares while skimming). Crystals respawn 12s after claim so
+every lap is live; win target raised to the full station count (default 30) so races
+span 2+ laps and the lap-back-onto-your-trail loop actually engages. Verified
+headlessly: lap-1 diagnostic shows skim False (no ribbon to ride yet), lap-2 shows
+skim True for both pilots with the trailing rival charging off the leader's ribbon —
+an emergent slipstream catch-up. Artifact: `artifacts/skimrace_s5_circuit_trails.png`.
+KNOWN (next round): superhuman screenshot-autopilot beats the rival 30-9 — rival
+tuning should now exploit skim energy + drift deliberately. NEXT: prompter verifies
+drift feel/trail feel on the circuit, rival tuning, Squirrel nose orientation in
+motion (flip is one sign in the extractor). Fidelity arc: **V1 DONE** (engine E3-E8/E10: RPC attrs, profiling shim, Screen/
 Application/PlayerPrefs/Resources statics, Object.DontDestroyOnLoad/Instantiate/
 FindFirstObjectByType, Physics+collider stubs; NetworkBehaviour now : MonoBehaviour
 (parity); ported PauseSystem, SafeLookRotation, Singleton family, NetMarkers,

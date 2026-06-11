@@ -61,9 +61,10 @@ namespace CosmicShore.Client
         uint _rivalTrailVao, _rivalTrailVbo;
         uint _hudVao, _hudVbo;
 
-        readonly List<(Vector3 pos, Vector3 right)> _trail = new();
-        readonly List<(Vector3 pos, Vector3 right)> _rivalTrail = new();
-        const int TrailMax = 110;
+        // trails live in the sim now (persistent race state, skimmable); these are
+        // reusable vertex scratch buffers so the per-frame ribbon rebuild doesn't churn GC
+        readonly List<float> _trailVerts = new();
+        readonly List<float> _rivalTrailVerts = new();
 
         Vector3 _camPos, _camLook;
         AudioEngine _audio;
@@ -109,11 +110,7 @@ namespace CosmicShore.Client
                 {
                     if (key == Key.Escape) _window.Close();
                     if (key == Key.R)
-                    {
                         SkimRaceFactory.ResetRace(_race.Shared, _race, _rival);
-                        _trail.Clear();
-                        _rivalTrail.Clear();
-                    }
                 };
 
             (_loop, _race, _rival) = SkimRaceFactory.Create(_seed, _crystalTarget, _playerStatus);
@@ -265,9 +262,9 @@ void main()
 
         unsafe void ConfigureDynamicVao(uint vao, uint vbo)
         {
+            // layout only — dynamic users re-BufferData each frame (trails grow unbounded)
             _gl.BindVertexArray(vao);
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
-            _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(TrailMax * 2 * 7 * sizeof(float) * 4), null, BufferUsageARB.DynamicDraw);
             SetVertexLayout();
         }
 
@@ -291,10 +288,10 @@ void main()
             var data = new List<float>();
             for (int i = 0; i < 2600; i++)
             {
-                // shell of stars around the course volume
+                // shell of stars around the circuit (the closed loop is origin-centered)
                 var dir = new Vector3((float)rng.NextDouble() * 2f - 1f, (float)rng.NextDouble() * 2f - 1f, (float)rng.NextDouble() * 2f - 1f).normalized;
-                float radius = 380f + (float)rng.NextDouble() * 700f;
-                var p = dir * radius + new Vector3(0f, 0f, SkimTrack.Length * 0.5f);
+                float radius = 460f + (float)rng.NextDouble() * 700f;
+                var p = dir * radius;
                 float t = (float)rng.NextDouble();
                 // white core stars with magenta/cyan dust
                 (float r, float g, float b) = t < 0.72f ? (0.85f, 0.88f, 1f) : t < 0.86f ? (0.95f, 0.45f, 0.95f) : (0.4f, 0.95f, 1f);
@@ -309,13 +306,17 @@ void main()
         {
             var track = _race.Track;
             var rails = new List<float>();
-            // twin neon guide rails offset left/right of the centerline
+            // twin neon guide rails offset left/right of the closed centerline, in the
+            // loop's local frame (outward side vector + a slight drop below the line)
+            int samples = track.Centerline.Count - 1; // last point repeats the first
             for (int side = -1; side <= 1; side += 2)
             {
-                for (int i = 0; i < track.Centerline.Count - 1; i++)
+                for (int i = 0; i < samples; i++)
                 {
-                    var a = track.Centerline[i] + new Vector3(7.5f * side, -2.5f, 0f);
-                    var b = track.Centerline[i + 1] + new Vector3(7.5f * side, -2.5f, 0f);
+                    float t0 = i / (float)samples * MathF.Tau;
+                    float t1 = (i + 1) / (float)samples * MathF.Tau;
+                    var a = track.Centerline[i] + track.SideAt(t0) * (7.5f * side) - Vector3.up * 2.5f;
+                    var b = track.Centerline[i + 1] + track.SideAt(t1) * (7.5f * side) - Vector3.up * 2.5f;
                     float pulse = 0.55f + 0.25f * Mathf.Sin(i * 0.22f);
                     Push(rails, a, 0.05f, 0.85f * pulse, 1f * pulse, 0.85f);
                     Push(rails, b, 0.05f, 0.85f * pulse, 1f * pulse, 0.85f);
@@ -324,18 +325,22 @@ void main()
             _railCount = rails.Count / 7;
             (_railVao, _railVbo) = UploadStatic(rails.ToArray());
 
-            // magenta gate rings every ~84u
+            // magenta gate rings around the loop, facing along the direction of travel
             var rings = new List<float>();
-            for (float z = 60f; z < SkimTrack.Length; z += 84f)
+            const int gateCount = 16;
+            for (int gate = 0; gate < gateCount; gate++)
             {
-                var center = track.PointAt(z);
+                float t = gate / (float)gateCount * MathF.Tau;
+                var center = track.PointAt(t);
+                var side = track.SideAt(t);
+                var lift = Vector3.Cross(track.TangentAt(t), side).normalized;
                 const int segments = 26;
                 for (int i = 0; i < segments; i++)
                 {
                     float t0 = i / (float)segments * MathF.Tau;
                     float t1 = (i + 1) / (float)segments * MathF.Tau;
-                    var a = center + new Vector3(MathF.Cos(t0) * 11f, MathF.Sin(t0) * 11f, 0f);
-                    var b = center + new Vector3(MathF.Cos(t1) * 11f, MathF.Sin(t1) * 11f, 0f);
+                    var a = center + side * (MathF.Cos(t0) * 11f) + lift * (MathF.Sin(t0) * 11f);
+                    var b = center + side * (MathF.Cos(t1) * 11f) + lift * (MathF.Sin(t1) * 11f);
                     Push(rings, a, 1f, 0.25f, 0.85f, 0.5f);
                     Push(rings, b, 1f, 0.25f, 0.85f, 0.5f);
                 }
@@ -499,11 +504,7 @@ void main()
                 _shimPad.buttonSouth.wasReleasedThisFrame = !a && _prevA;
                 _prevA = a;
                 if (start && !_prevStart)
-                {
                     SkimRaceFactory.ResetRace(_race.Shared, _race, _rival);
-                    _trail.Clear();
-                    _rivalTrail.Clear();
-                }
                 _prevStart = start;
 
                 _gamepadStrategy.ProcessInput(); // the real scheme computes sums/diffs
@@ -522,7 +523,7 @@ void main()
 
             // Keyboard fallback in the same idiom: WASD = left stick, arrows = right.
             float lx = 0f, ly = 0f, rx = 0f, ry = 0f;
-            bool space = false;
+            bool space = false, shift = false;
             foreach (var keyboard in _inputContext.Keyboards)
             {
                 if (keyboard.IsKeyPressed(Key.W)) ly += 1f;
@@ -534,6 +535,7 @@ void main()
                 if (keyboard.IsKeyPressed(Key.Left)) rx -= 1f;
                 if (keyboard.IsKeyPressed(Key.Right)) rx += 1f;
                 if (keyboard.IsKeyPressed(Key.Space)) space = true;
+                if (keyboard.IsKeyPressed(Key.ShiftLeft) || keyboard.IsKeyPressed(Key.ShiftRight)) shift = true;
             }
             // No second stick touched → mirror the left so single-hand play still flies.
             if (rx == 0f && ry == 0f && (lx != 0f || ly != 0f)) { rx = lx; ry = ly; }
@@ -542,26 +544,16 @@ void main()
             _playerStatus.YDiff = Mathf.Clamp(ry - ly, -1f, 1f);
             _playerStatus.XDiff = (Mathf.Clamp(rx - lx, -2f, 2f) + 2f) / 4f + (space ? 0.5f : 0.12f);
             _playerStatus.XDiff = Mathf.Clamp01(_playerStatus.XDiff);
+            // keyboard has no analog triggers — Shift is full drift
+            _playerStatus.LeftTriggerAnalog = shift ? 1f : 0f;
+            _playerStatus.RightTriggerAnalog = 0f;
             _race.BoostHeld = space;
         }
 
         void EmitTrailAndCamera(float dt)
         {
             var t3 = _race.transform;
-            EmitFor(_race, _trail);
-            EmitFor(_rival, _rivalTrail);
-
-            static void EmitFor(SkimRaceController pilot, List<(Vector3 pos, Vector3 right)> buffer)
-            {
-                if (pilot.State == RaceState.Countdown || pilot.Speed <= 4f) return;
-                var t = pilot.transform;
-                var emit = t.position - t.forward * 1.6f - t.up * 0.6f;
-                if (buffer.Count == 0 || (emit - buffer[^1].pos).sqrMagnitude > 0.2f)
-                {
-                    buffer.Add((emit, t.right));
-                    if (buffer.Count > TrailMax) buffer.RemoveAt(0);
-                }
-            }
+            // trail emission lives in the sim (persistent, skimmable race state)
 
             for (int i = _bursts.Count - 1; i >= 0; i--)
             {
@@ -778,15 +770,16 @@ void main()
         {
             if (_race.State == RaceState.Countdown) { _race.Countdown = 0.01f; _rival.Countdown = 0.01f; }
             var t0 = _race.transform;
+            // next unclaimed station by forward loop distance (mirrors the AI)
+            float myAngle = SkimTrack.AngleOf(t0.position);
             Vector3? target = null;
             float best = float.MaxValue;
             for (int i = 0; i < _race.Track.Crystals.Count; i++)
             {
                 if (_race.Shared.IsTaken(i)) continue;
-                var c = _race.Track.Crystals[i];
-                float ahead = c.z - t0.position.z;
-                if (ahead < -5f) continue;
-                if (ahead < best) { best = ahead; target = c; }
+                float delta = SkimTrack.ForwardDelta(myAngle, _race.Track.CrystalAngles[i]);
+                if (delta < 0.02f) continue;
+                if (delta < best) { best = delta; target = _race.Track.Crystals[i]; }
             }
             if (target.HasValue)
             {
@@ -802,40 +795,44 @@ void main()
 
         unsafe void DrawTrail(Matrix4x4 viewProjection)
         {
-            DrawRibbon(viewProjection, _trail, _trailVao, _trailVbo, _race.BoostHeld, jade: true);
-            DrawRibbon(viewProjection, _rivalTrail, _rivalTrailVao, _rivalTrailVbo, false, jade: false);
+            DrawRibbon(viewProjection, _race.Trail, _trailVerts, _trailVao, _trailVbo, jade: true);
+            DrawRibbon(viewProjection, _rival.Trail, _rivalTrailVerts, _rivalTrailVao, _rivalTrailVbo, jade: false);
         }
 
-        unsafe void DrawRibbon(Matrix4x4 viewProjection, List<(Vector3 pos, Vector3 right)> trail,
-            uint vao, uint vbo, bool boosting, bool jade)
+        unsafe void DrawRibbon(Matrix4x4 viewProjection, List<TrailPoint> trail, List<float> data,
+            uint vao, uint vbo, bool jade)
         {
             if (trail.Count < 2) return;
-            var data = new List<float>(trail.Count * 14);
+            data.Clear(); // reusable scratch — capacity persists across frames
+            float now = Time.time;
             for (int i = 0; i < trail.Count; i++)
             {
-                float age = i / (float)(trail.Count - 1);        // 0 old → 1 fresh
-                float width = 0.08f + age * (boosting ? 0.55f : 0.32f);
-                float alpha = age * age * 0.65f;
+                // persistent prismscape: aged trail settles to a steady neon body
+                // (mass is conserved — it dims into "set" prisms, never disappears);
+                // the fresh end flares wide and bright like exhaust
+                float freshness = Mathf.Clamp01(1f - (now - trail[i].Time) / 4f);
+                float width = 0.26f + freshness * 0.34f;
+                float alpha = 0.34f + freshness * freshness * 0.4f;
                 // newest points ramp in so the chase cam never sits inside the ribbon
                 int fromNewest = trail.Count - 1 - i;
                 if (fromNewest < 16) alpha *= fromNewest / 16f;
-                // and ANY ribbon fades near the camera (rival trails crossing the
-                // frustum otherwise bloom into giant wedges)
-                float camDistance = (trail[i].pos - _camPos).magnitude;
+                // and ANY ribbon fades near the camera (trails crossing the frustum
+                // otherwise bloom into giant wedges)
+                float camDistance = (trail[i].Pos - _camPos).magnitude;
                 alpha *= Mathf.Clamp01((camDistance - 3f) / 7f);
                 float r, g, b;
-                if (jade) { r = 0.15f + (1f - age) * 0.8f; g = 0.35f + age * 0.55f; b = 1f; }
-                else { r = 1f; g = 0.2f + age * 0.4f; b = 0.25f + (1f - age) * 0.5f; }
-                var (pos, right) = trail[i];
-                Push(data, pos - right * width, r, g, b, alpha);
-                Push(data, pos + right * width, r, g, b, alpha);
+                if (jade) { r = 0.15f + freshness * 0.55f; g = 0.55f + freshness * 0.4f; b = 1f; }
+                else { r = 1f; g = 0.2f + freshness * 0.4f; b = 0.35f + freshness * 0.3f; }
+                var point = trail[i];
+                Push(data, point.Pos - point.Right * width, r, g, b, alpha);
+                Push(data, point.Pos + point.Right * width, r, g, b, alpha);
             }
             _gl.DepthMask(false);
             _gl.BindVertexArray(vao);
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
             var array = data.ToArray();
             fixed (float* p = array)
-                _gl.BufferSubData(BufferTargetARB.ArrayBuffer, 0, (nuint)(array.Length * sizeof(float)), p);
+                _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(array.Length * sizeof(float)), p, BufferUsageARB.DynamicDraw);
             SetMvp(viewProjection);
             _gl.DrawArrays(PrimitiveType.TriangleStrip, 0, (uint)(array.Length / 7));
             _gl.DepthMask(true);
@@ -898,12 +895,18 @@ void main()
             // rival count, top-right, ruby
             Number(_rival.Stats.CrystalsCollected, 2, w - 120f, h - 58f, 26f, 1f, 0.25f, 0.35f, 0.95f);
 
-            // boost bar bottom center (reads the ported ResourceSystem)
+            // energy bar bottom center (reads the ported ResourceSystem) — energy IS
+            // top speed now; the fill flares white-hot while skimming a trail
             float boost = _race.Resources.Resources[0].CurrentAmount;
             float barWidth = w * 0.3f, bx = (w - barWidth) * 0.5f;
             Segment(bx, 36f, bx + barWidth, 36f, 0.2f, 0.4f, 0.6f, 0.35f);
+            (float er, float eg, float eb) = _race.IsSkimming ? (0.75f, 1f, 1f) : (0.2f, 0.9f, 1f);
             for (int i = 0; i < 3; i++) // thick neon fill
-                Segment(bx, 33f + i * 3f, bx + barWidth * boost, 33f + i * 3f, 0.2f, 0.9f, 1f, 0.85f);
+                Segment(bx, 33f + i * 3f, bx + barWidth * boost, 33f + i * 3f, er, eg, eb, _race.IsSkimming ? 1f : 0.85f);
+
+            // analog drift gauge: thin magenta strip riding above the energy bar
+            if (_race.DriftAmount > 0.02f)
+                Segment(bx, 44f, bx + barWidth * _race.DriftAmount, 44f, 1f, 0.3f, 0.9f, 0.9f);
 
             // countdown / finish banner: oversized center digits
             if (_race.State == RaceState.Countdown)
@@ -945,7 +948,9 @@ void main()
                 _gl.ReadPixels(0, 0, (uint)w, (uint)h, PixelFormat.Rgba, PixelType.UnsignedByte, p);
             MiniPng.Write(_screenshotPath, pixels, w, h);
             Console.WriteLine($"screenshot → {_screenshotPath} ({w}x{h}) frame {_frameIndex}, " +
-                $"crystals {_race.Stats.CrystalsCollected} vs rival {_rival.Stats.CrystalsCollected} (target {_race.WinTarget}), state {_race.State}");
+                $"crystals {_race.Stats.CrystalsCollected} vs rival {_rival.Stats.CrystalsCollected} (target {_race.WinTarget}), state {_race.State}, " +
+                $"energy {_race.Resources.Resources[0].CurrentAmount:F2}/{_rival.Resources.Resources[0].CurrentAmount:F2}, " +
+                $"skim {_race.IsSkimming}/{_rival.IsSkimming}, trail {_race.Trail.Count}/{_rival.Trail.Count}");
         }
     }
 }
