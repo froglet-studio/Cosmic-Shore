@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -11,6 +12,16 @@ namespace CosmicShore.UI
     ///
     /// Open/Closed: adding a new boot phase = new label field + one new
     /// subscription here. The panel and event channels stay closed.
+    ///
+    /// Retry policy: the retry surface (<see cref="BootStatusMode.Retry"/>) is
+    /// reserved for idle/boot contexts where no other recovery driver is
+    /// active — auth-scene retry exhaustion, or lobby-refresh escalation while
+    /// sitting in the menu. During expected transitions the splash is
+    /// deliberately opaque and those flows own their own failure recovery
+    /// (PartyInviteController bounces to a solo menu; a genuine session loss
+    /// during a game launch routes through OnActiveSessionEnd back to the
+    /// menu), so connection-lost raises in those windows are suppressed here
+    /// rather than rendered as a misleading "tap retry".
     ///
     /// Lives on the same GameObject as <see cref="BootStatusPanel"/> (child
     /// of the Bootstrap splash canvas, persisted via the canvas's DDOL root).
@@ -35,6 +46,11 @@ namespace CosmicShore.UI
         private bool _hostReadyReached;
         private bool _signedInSubscribed;
 
+        // True between OnLaunchGame (loading splash went opaque) and the next
+        // OnClientReady (vessel initialized in the loaded scene). Connection-lost
+        // raises inside this window are not retry-worthy — see class doc.
+        private bool _inLaunchTransition;
+
         void OnEnable()
         {
             if (connectionData != null)
@@ -43,10 +59,15 @@ namespace CosmicShore.UI
                     connectionData.OnHostConnectionEstablished.OnRaised += HandleHostConnectionEstablished;
                 if (connectionData.OnHostConnectionLost != null)
                     connectionData.OnHostConnectionLost.OnRaised += HandleHostConnectionLost;
+                if (connectionData.OnPartyJoinCompleted != null)
+                    connectionData.OnPartyJoinCompleted.OnRaised += HandlePartyJoinCompleted;
             }
 
             if (gameData != null && gameData.OnClientReady != null)
                 gameData.OnClientReady.OnRaised += HandleClientReady;
+
+            if (gameData != null && gameData.OnLaunchGame != null)
+                gameData.OnLaunchGame.OnRaised += HandleLaunchGame;
 
             TrySubscribeSignedIn();
         }
@@ -71,10 +92,15 @@ namespace CosmicShore.UI
                     connectionData.OnHostConnectionEstablished.OnRaised -= HandleHostConnectionEstablished;
                 if (connectionData.OnHostConnectionLost != null)
                     connectionData.OnHostConnectionLost.OnRaised -= HandleHostConnectionLost;
+                if (connectionData.OnPartyJoinCompleted != null)
+                    connectionData.OnPartyJoinCompleted.OnRaised -= HandlePartyJoinCompleted;
             }
 
             if (gameData != null && gameData.OnClientReady != null)
                 gameData.OnClientReady.OnRaised -= HandleClientReady;
+
+            if (gameData != null && gameData.OnLaunchGame != null)
+                gameData.OnLaunchGame.OnRaised -= HandleLaunchGame;
 
             if (_signedInSubscribed && authData?.Value?.OnSignedIn != null)
             {
@@ -114,10 +140,39 @@ namespace CosmicShore.UI
         private void HandleHostConnectionLost()
         {
             _hostReadyReached = false;
+
+            // Expected-transition windows — suppress the retry surface and let
+            // the owning flow recover (see class doc). Without these guards a
+            // connection-lost raised while the loading splash is opaque renders
+            // a prominent, wrong "tap retry" over a transition that is
+            // progressing normally.
+            if (_inLaunchTransition)
+                return;
+            var partyTransition = PartyInviteController.Instance;
+            if (partyTransition != null && partyTransition.IsTransitioning)
+                return;
+
             requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Retry, labelConnectionLost));
         }
 
-        private void HandleClientReady()
+        private void HandleLaunchGame()
+        {
+            // A game-launch splash just went opaque (SceneLoader.LaunchGame on
+            // every instance — host and clients). Clear whatever status was
+            // last shown — in particular a stale Retry left over from a
+            // connection blip the auto-recovery already handled — so the
+            // loading splash presents clean branding.
+            _inLaunchTransition = true;
+            requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Hide));
+        }
+
+        private void HandlePartyJoinCompleted()
             => requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Hide));
+
+        private void HandleClientReady()
+        {
+            _inLaunchTransition = false;
+            requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Hide));
+        }
     }
 }

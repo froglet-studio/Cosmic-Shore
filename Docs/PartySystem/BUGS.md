@@ -16,6 +16,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B5 | TC2/TC4 second joiner fails to join | Uncertain (diagnose first) | 🔴 |
 | B7 | Client pair-init runs before remote identity replicates (`InitializePair Player=` empty, vessel-type `Random`) | Verified mostly benign | ⚪ |
 | B9 | Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) | Observed (not yet diagnosed) | 🔴 |
+| B10 | Spurious "Connection lost. Tap retry." on the joiner's splash during invite-accept (stale party-refresh tick) | ~90% (code-traced) | 🟢 fixed (pending MPPM verify) |
 
 ---
 
@@ -668,6 +669,54 @@ launches a domain game (e.g. Skim Race) → play to the scoreboard → host
 taps **Main Menu** → watch each client's vessel control + domain color.
 
 **Status.** 🔴 Open — deferred to a future session (logged Session 2).
+
+---
+
+## B10 — Spurious "Connection lost. Tap retry." on the joiner's splash during invite-accept 🟢 (fixed, pending MPPM verify)
+
+**Symptom.** A client accepts a host's invite: the join splash goes
+opaque and the boot-status retry button appears with "Connection lost.
+Tap retry." even though the join is progressing normally and completes.
+The Retry mode then sticks (nothing re-raises a Status/Hide on that
+client), invisible while the splash is transparent in the menu, and
+resurfaces on the next opaque splash — e.g. the all-players-ready game
+launch — looking like "retry button shows on the loading splash".
+
+**Root cause (~90%, code-traced).** `AcceptInviteAsync` (HCS)
+deliberately leaves the joiner's own solo Relay session
+(`_partySessionService.LeaveAsync()`) before `JoinByIdAsync`. A
+party-refresh tick already in flight against that old session
+(`RefreshPartyMembersAsync` → `await _partySessionService.RefreshAsync()`)
+lands with `SessionDeleted`/`NotInLobby` *after* the join has populated
+`PartyMembers` with the host. The catch classified that as
+`IsDefiniteSessionGoneException` → `HandleDefiniteSessionGoneAsync` →
+`hadRemoteMembers == true` → spurious `OnHostConnectionLost` (rendered as
+Retry by `BootStatusBroadcaster`), plus a `ClearSession()` +
+`EnsurePartySessionAsync()` recovery racing the just-joined session. The
+presence-lobby refresh path (`RefreshAsync` outer catch) has an
+`IsTransitioning` guard for exactly this transition-teardown noise; the
+party-session path did not.
+
+**Fix (this branch — `claude/zealous-keller-uecdu1`).**
+1. `RefreshPartyMembersAsync` captures the session it polled and its
+   catch now early-outs when (a) that session is no longer
+   `ActiveSession` (stale-tick — the error describes the old session) or
+   (b) `PartyInviteController.IsTransitioning` (mirrors the lobby-path
+   guard).
+2. `BootStatusBroadcaster` policy hardening: connection-lost raises are
+   suppressed while a party transition is in flight and during the
+   launch window (`OnLaunchGame` → next `OnClientReady`); `OnLaunchGame`
+   and `OnPartyJoinCompleted` raise `Hide` so a stale Retry can never
+   resurface on a transition splash. Retry remains for idle/boot
+   contexts (auth-scene exhaustion, lobby escalation in menu).
+
+**Repro.** 1 host + 1 MPPM client → client accepts invite → watch the
+join splash for the retry button; then both ready-up a game and watch
+the launch splash.
+
+**Evidence.** `HostConnectionService.cs` (`RefreshPartyMembersAsync`
+catch, `HandleDefiniteSessionGoneAsync`, `AcceptInviteAsync` leave→join),
+`BootStatusBroadcaster.cs`, `PartyInviteController.AcceptInviteAsync`.
 
 ---
 
