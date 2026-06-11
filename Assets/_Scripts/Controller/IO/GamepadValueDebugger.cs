@@ -90,8 +90,13 @@ namespace CosmicShore.Gameplay
                 _lastLogTime = Time.unscaledTime;
                 _lastLeft = l;
                 _lastRight = r;
+                // Unprocessed = value straight out of the state-block format, before normalize/
+                // invert processors. Reveals whether the axis format (signed vs unsigned) is right.
+                float lxu = pad.leftStick.x.ReadUnprocessedValue();
+                float lyu = pad.leftStick.y.ReadUnprocessedValue();
                 Debug.Log($"[GamepadValueDebugger] leftStick={Fmt(l)}  rightStick={Fmt(r)}  " +
-                          $"L2={pad.leftTrigger.ReadValue():F2}  R2={pad.rightTrigger.ReadValue():F2}");
+                          $"L2={pad.leftTrigger.ReadValue():F2}  R2={pad.rightTrigger.ReadValue():F2}  " +
+                          $"| leftStick raw(x,y)=({lxu:F2}, {lyu:F2})");
             }
         }
 

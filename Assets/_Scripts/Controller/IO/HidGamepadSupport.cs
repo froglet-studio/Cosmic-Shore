@@ -604,6 +604,12 @@ namespace CosmicShore.Gameplay
 
             if (!string.IsNullOrEmpty(parameters))
                 c.WithParameters(parameters);
+
+            if (VerboseLogging)
+                UnityEngine.Debug.Log($"[HidGamepadSupport] axis '{name}': present={axis.Present} " +
+                    $"offsetBits={axis.OffsetBits} sizeBits={sizeBits} logicalMin={axis.LogicalMin} " +
+                    $"logicalMax={axis.LogicalMax} signed={signed} format={format} invert={invert} " +
+                    $"params='{parameters}'");
         }
 
         private static string AxisFormat(int sizeBits, bool signed)
