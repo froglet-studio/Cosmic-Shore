@@ -31,7 +31,8 @@ namespace CosmicShore.Core
 
         private void HandleGameModeStarted(GameModes mode)
         {
-            if (_ftueProgress.currentPhase == TutorialPhase.Phase2_GameplayTimer)
+            if (mode == GameModes.Freestyle
+             && _ftueProgress.currentPhase == TutorialPhase.Phase2_GameplayTimer)
             {
                 CheckFTUE();
             }

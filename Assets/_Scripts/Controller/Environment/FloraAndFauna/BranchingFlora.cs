@@ -118,10 +118,9 @@ namespace CosmicShore.Gameplay
             // (Was: a lifetime spawn counter that never decremented — see AssembledFlora.)
             if (healthTracker != null && healthTracker.Count >= maxTotalSpawnedObjects) return;
 
-            // Frenzy gate: growth runs at a steady rate until Frenzy, then pauses and
-            // resumes when an active force (fauna grazing / vessel abilities) brings the
-            // cell back below the Frenzy exit threshold. Cell.FloraGrowingEnabled is the
-            // single source of truth — no early growth cap.
+            // Phase gate (was missing here entirely — only AssembledFlora had it):
+            // growth pauses at Frozen and resumes when consumption brings the cell back
+            // below the Frozen exit threshold.
             if (cell && !cell.FloraGrowingEnabled) return;
 
             // Reawakening: re-seed trunk branches when all of them have grown out or

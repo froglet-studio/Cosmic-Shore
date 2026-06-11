@@ -101,66 +101,26 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// THE canonical spatial index of all live prism mass. One registration
-    /// lifecycle, multiple query views — see Docs/SPATIAL_INDEX.md before adding
-    /// any new spatial query against prisms (Physics.OverlapSphere / CheckBox
-    /// against prisms is an anti-pattern; query this index instead).
-    ///
-    /// Views served:
-    ///   1. AOE damage    — Burst brute-force sphere scan over the hot array
-    ///                      (ExplosionImpactor.ProcessBatchFrame).
-    ///   2. Occupancy     — bucket hash grid + reservation set. Growth systems
-    ///                      (GyroidAssembler / WallAssembler / SchwarzPAssembler)
-    ///                      call TryReserve at the grow DECISION, before
-    ///                      Instantiate — this closes the race that
-    ///                      Physics.CheckBox could never close (prism colliders
-    ///                      are disabled for the first Prism.waitTime seconds
-    ///                      after spawn).
-    ///   3. (Phase 2)     — QuerySphere/FindNearest for fauna senses, mate
-    ///                      finding, trail passives. See Docs/SPATIAL_INDEX.md.
+    /// Maintains hot/cold split NativeArrays of prism data for Burst-compiled AOE damage.
     ///
     /// Data layout (hot/cold split):
     ///   _spatial[i] — PrismSpatialData (16B) — read by Burst job for ALL prisms
     ///   _damage[i]  — PrismDamageData  (8B)  — read on main thread for HIT prisms only
     ///   _prisms[i]  — Prism reference         — managed array for applying damage
-    ///   _buckets    — int3 bucket key → index — incremental, prisms are mostly static
     ///
     /// The Burst job scans only _spatial, keeping the working set tight.
     /// Domain/shield/volume data in _damage is never loaded into cache during the scan —
     /// it's only touched for the small set of prisms that actually got hit.
     ///
-    /// Registration lifecycle (all main-thread):
-    ///   Assembler.GetGrowthInfo()  → TryReserve(pos) BEFORE Instantiate (growth only)
-    ///   Prism.CreateBlockCoroutine → Register(prism) → stores index on Prism,
-    ///                                consumes the matching reservation
-    ///   Prism.SetupDestruction     → MarkDestroyed(index) → AOE skips, bucket freed
-    ///   Prism.Restore              → MarkRestored(index) → re-enters AOE + bucket
-    ///   Prism.OnDisable/OnDestroy  → Unregister(index) → frees slot
-    ///   PrismStateManager          → UpdateShieldState(index, ...) on state change
-    ///   GyroidAssembler movers     → UpdatePosition(index, pos) when steering blocks
+    /// Registration lifecycle:
+    ///   Prism.Initialize()   → Register(prism) → stores index on Prism
+    ///   Prism.ReturnToPool() → Unregister(index) → frees slot
+    ///   PrismStateManager    → UpdateShieldState(index, ...) on state change
     /// </summary>
-    public class PrismSpatialIndex : Singleton<PrismSpatialIndex>
+    public class PrismAOERegistry : Singleton<PrismAOERegistry>
     {
         private const int INITIAL_CAPACITY = 4096;
         private const int JOB_BATCH_SIZE = 256;
-
-        /// <summary>
-        /// Edge length of the occupancy hash-grid buckets. Sized to the gyroid
-        /// bond spacing (~8m: |DeltaPosition| ≈ 2.7 × separationDistance 3) so an
-        /// occupancy probe of radius ≤ half-spacing touches at most 8 buckets.
-        /// </summary>
-        public const float BucketSizeMeters = 8f;
-
-        /// <summary>Quantization step for reservation keys (half bond spacing).</summary>
-        private const float ReservationQuantum = 4f;
-
-        /// <summary>
-        /// Safety net for reservations that are claimed but never confirmed by a
-        /// Register (spawn skipped, prism AOE-killed inside Prism.waitTime, caller
-        /// abandoned the GrowthInfo). Spawn-to-register is waitTime (0.6s) plus one
-        /// flora grow cadence, so 5s is comfortably past any legitimate confirm.
-        /// </summary>
-        public const float ReservationTtlSeconds = 5f;
 
         /// <summary>
         /// Maximum NEW prism hits to process per frame per explosion.
@@ -184,30 +144,13 @@ namespace CosmicShore.Gameplay
         private readonly Stack<int> _freeList = new(256);
         private NativeList<int> _hitIndices;
 
-        // Occupancy view: bucket key → registry index, one entry per LIVE
-        // (active, not destroyed) prism. Maintained incrementally by
-        // Register / MarkDestroyed / MarkRestored / Unregister / UpdatePosition.
-        private NativeParallelMultiHashMap<int3, int> _buckets;
-        private int _bucketEntryCount;
-
-        // Reservation view: quantized position → claim. Managed dictionary is fine
-        // here — reservations are few (bounded by spawn rate × TTL) and main-thread.
-        private struct Reservation
-        {
-            public Vector3 Position;
-            public float Expires;
-        }
-        private readonly Dictionary<Vector3Int, Reservation> _reservations = new();
-        private readonly List<Vector3Int> _scratchKeys = new(16);
-        private float _nextReservationPrune;
-
         public bool IsAvailable => _spatial.IsCreated;
 
-        public static PrismSpatialIndex EnsureInstance()
+        public static PrismAOERegistry EnsureInstance()
         {
             if (Instance != null) return Instance;
-            var go = new GameObject("[PrismSpatialIndex]");
-            go.AddComponent<PrismSpatialIndex>();
+            var go = new GameObject("[PrismAOERegistry]");
+            go.AddComponent<PrismAOERegistry>();
             return Instance;
         }
 
@@ -218,161 +161,7 @@ namespace CosmicShore.Gameplay
             _damage = new NativeArray<PrismDamageData>(INITIAL_CAPACITY, Allocator.Persistent);
             _prisms = new Prism[INITIAL_CAPACITY];
             _hitIndices = new NativeList<int>(512, Allocator.Persistent);
-            _buckets = new NativeParallelMultiHashMap<int3, int>(INITIAL_CAPACITY, Allocator.Persistent);
         }
-
-        #region Bucket grid
-
-        private static int3 BucketKey(float3 position) =>
-            (int3)math.floor(position / BucketSizeMeters);
-
-        private void AddToBucket(int index, float3 position)
-        {
-            if (_bucketEntryCount >= _buckets.Capacity)
-                _buckets.Capacity = _buckets.Capacity * 2;
-            _buckets.Add(BucketKey(position), index);
-            _bucketEntryCount++;
-        }
-
-        private void RemoveFromBucket(int index, float3 position)
-        {
-            var key = BucketKey(position);
-            if (!_buckets.TryGetFirstValue(key, out int value, out var it)) return;
-            do
-            {
-                if (value != index) continue;
-                _buckets.Remove(it);
-                _bucketEntryCount--;
-                return;
-            } while (_buckets.TryGetNextValue(out value, ref it));
-        }
-
-        /// <summary>
-        /// True if any LIVE prism (active, not destroyed — reservations excluded)
-        /// sits within <paramref name="radius"/> of <paramref name="position"/>.
-        /// O(buckets covered), no physics, no allocation.
-        /// </summary>
-        public bool IsAnyPrismWithin(Vector3 position, float radius)
-        {
-            if (!_buckets.IsCreated) return false;
-            float3 center = position;
-            float radiusSq = radius * radius;
-            int3 min = (int3)math.floor((center - radius) / BucketSizeMeters);
-            int3 max = (int3)math.floor((center + radius) / BucketSizeMeters);
-
-            for (int x = min.x; x <= max.x; x++)
-            for (int y = min.y; y <= max.y; y++)
-            for (int z = min.z; z <= max.z; z++)
-            {
-                if (!_buckets.TryGetFirstValue(new int3(x, y, z), out int idx, out var it))
-                    continue;
-                do
-                {
-                    var s = _spatial[idx];
-                    if ((s.Flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue &&
-                        math.distancesq(s.Position, center) <= radiusSq)
-                        return true;
-                } while (_buckets.TryGetNextValue(out idx, ref it));
-            }
-            return false;
-        }
-
-        #endregion
-
-        #region Reservations
-
-        private static Vector3Int ReservationKey(Vector3 position) => new(
-            Mathf.FloorToInt(position.x / ReservationQuantum),
-            Mathf.FloorToInt(position.y / ReservationQuantum),
-            Mathf.FloorToInt(position.z / ReservationQuantum));
-
-        /// <summary>
-        /// Atomically checks that nothing occupies <paramref name="position"/>
-        /// (no live prism, no unexpired reservation within
-        /// <paramref name="clearRadius"/>) and claims it. Call at the grow
-        /// DECISION, before Instantiate — the claim is what closes the
-        /// spawn-vs-spawn race that collider-based checks can't see. The claim is
-        /// consumed when the spawned prism registers at (or near) the reserved
-        /// position, or lapses after <see cref="ReservationTtlSeconds"/>.
-        /// </summary>
-        public bool TryReserve(Vector3 position, float clearRadius)
-        {
-            PruneExpiredReservations();
-            if (IsAnyPrismWithin(position, clearRadius)) return false;
-            if (HasActiveReservationWithin(position, clearRadius)) return false;
-            _reservations[ReservationKey(position)] = new Reservation
-            {
-                Position = position,
-                Expires = Time.time + ReservationTtlSeconds
-            };
-            return true;
-        }
-
-        /// <summary>Read-only occupancy probe: live prism or active reservation in range.</summary>
-        public bool IsPositionOccupied(Vector3 position, float clearRadius) =>
-            IsAnyPrismWithin(position, clearRadius) ||
-            HasActiveReservationWithin(position, clearRadius);
-
-        /// <summary>Explicitly cancels a claim made by <see cref="TryReserve"/>.</summary>
-        public void ReleaseReservation(Vector3 position) =>
-            _reservations.Remove(ReservationKey(position));
-
-        private bool HasActiveReservationWithin(Vector3 position, float clearRadius)
-        {
-            if (_reservations.Count == 0) return false;
-            float radiusSq = clearRadius * clearRadius;
-            float now = Time.time;
-            Vector3Int min = ReservationKey(position - Vector3.one * clearRadius);
-            Vector3Int max = ReservationKey(position + Vector3.one * clearRadius);
-            for (int x = min.x; x <= max.x; x++)
-            for (int y = min.y; y <= max.y; y++)
-            for (int z = min.z; z <= max.z; z++)
-            {
-                if (!_reservations.TryGetValue(new Vector3Int(x, y, z), out var r)) continue;
-                if (r.Expires <= now) continue; // lapsed — prune pass will collect it
-                if ((r.Position - position).sqrMagnitude <= radiusSq) return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Called by <see cref="Register"/>: the spawned prism has materialized, so
-        /// the claim that protected its site is fulfilled. Matched by proximity, not
-        /// exact key — re-parenting under a spindle round-trips the position through
-        /// parent matrices, so the registered position can drift a few millimetres
-        /// (and across a quantization boundary) from the reserved one.
-        /// </summary>
-        private void ConsumeReservationNear(Vector3 position)
-        {
-            if (_reservations.Count == 0) return;
-            const float confirmRadiusSq = 2f * 2f;
-            _scratchKeys.Clear();
-            foreach (var kvp in _reservations)
-            {
-                if ((kvp.Value.Position - position).sqrMagnitude <= confirmRadiusSq)
-                    _scratchKeys.Add(kvp.Key);
-            }
-            foreach (var key in _scratchKeys)
-                _reservations.Remove(key);
-        }
-
-        /// <summary>Lazy TTL sweep, amortized to at most one pass per second.</summary>
-        private void PruneExpiredReservations()
-        {
-            if (_reservations.Count == 0 || Time.time < _nextReservationPrune) return;
-            _nextReservationPrune = Time.time + 1f;
-            float now = Time.time;
-            _scratchKeys.Clear();
-            foreach (var kvp in _reservations)
-            {
-                if (kvp.Value.Expires <= now)
-                    _scratchKeys.Add(kvp.Key);
-            }
-            foreach (var key in _scratchKeys)
-                _reservations.Remove(key);
-        }
-
-        #endregion
 
         #region Registration
 
@@ -401,10 +190,9 @@ namespace CosmicShore.Gameplay
             if (prism.prismProperties is { IsShielded: true }) flags |= PrismFlags.IsShielded;
             if (prism.prismProperties is { IsSuperShielded: true }) flags |= PrismFlags.IsSuperShielded;
 
-            float3 position = (float3)(Vector3)prism.transform.position;
             _spatial[index] = new PrismSpatialData
             {
-                Position = position,
+                Position = (float3)(Vector3)prism.transform.position,
                 Flags = flags
             };
 
@@ -414,10 +202,6 @@ namespace CosmicShore.Gameplay
                 Domain = (int)prism.Domain
             };
 
-            AddToBucket(index, position);
-            // The prism this reservation protected has materialized — fulfil it.
-            ConsumeReservationNear(prism.transform.position);
-
             return index;
         }
 
@@ -426,12 +210,6 @@ namespace CosmicShore.Gameplay
             if (!_spatial.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
-            // Already freed (e.g. OnDisable then ResetState both fire) — don't
-            // double-push the slot onto the free list.
-            if (s.Flags == 0 && _prisms[index] == null) return;
-            // Live entries hold a bucket slot; destroyed ones were already removed.
-            if ((s.Flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue)
-                RemoveFromBucket(index, s.Position);
             s.Flags = 0; // clear all flags including IsActive
             _spatial[index] = s;
             _prisms[index] = null;
@@ -443,58 +221,7 @@ namespace CosmicShore.Gameplay
             if (!_spatial.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
-            if ((s.Flags & PrismFlags.Destroyed) != 0) return; // already destroyed
-            // Destroyed mass no longer occupies space — growth may fill the site.
-            if ((s.Flags & PrismFlags.IsActive) != 0)
-                RemoveFromBucket(index, s.Position);
             s.Flags |= PrismFlags.Destroyed;
-            _spatial[index] = s;
-        }
-
-        /// <summary>
-        /// Re-activates a destroyed entry (trail restore mechanics). Refreshes the
-        /// stored position and re-enters the occupancy bucket — restored mass
-        /// blocks growth and takes AOE damage again. (Before the spatial-index
-        /// unification, Restore never told the registry anything, so restored
-        /// prisms stayed permanently invisible to batch AOE.)
-        /// </summary>
-        public void MarkRestored(int index)
-        {
-            if (!_spatial.IsCreated) return;
-            if (index < 0 || index >= _highWaterMark) return;
-            var s = _spatial[index];
-            if ((s.Flags & PrismFlags.Destroyed) == 0) return; // not destroyed
-            var prism = _prisms[index];
-            if (prism != null)
-                s.Position = (float3)(Vector3)prism.transform.position;
-            s.Flags &= unchecked((byte)~PrismFlags.Destroyed);
-            _spatial[index] = s;
-            if ((s.Flags & PrismFlags.IsActive) != 0)
-                AddToBucket(index, s.Position);
-        }
-
-        /// <summary>
-        /// Keeps the index honest for the few prisms that move after registration
-        /// (gyroid bonding steers existing blocks into bond sites). Cheap when the
-        /// bucket key is unchanged; rebuckets otherwise.
-        /// </summary>
-        public void UpdatePosition(int index, Vector3 position)
-        {
-            if (!_spatial.IsCreated) return;
-            if (index < 0 || index >= _highWaterMark) return;
-            var s = _spatial[index];
-            float3 newPosition = position;
-            if ((s.Flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue)
-            {
-                int3 oldKey = BucketKey(s.Position);
-                int3 newKey = BucketKey(newPosition);
-                if (!oldKey.Equals(newKey))
-                {
-                    RemoveFromBucket(index, s.Position);
-                    AddToBucket(index, newPosition);
-                }
-            }
-            s.Position = newPosition;
             _spatial[index] = s;
         }
 
@@ -707,7 +434,6 @@ namespace CosmicShore.Gameplay
             if (_spatial.IsCreated) _spatial.Dispose();
             if (_damage.IsCreated) _damage.Dispose();
             if (_hitIndices.IsCreated) _hitIndices.Dispose();
-            if (_buckets.IsCreated) _buckets.Dispose();
         }
 
         #endregion

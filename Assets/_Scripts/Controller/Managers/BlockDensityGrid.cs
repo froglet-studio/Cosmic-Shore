@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
     ///      the target TRACK remaining mass as fauna consume a cluster's core —
     ///      without it the answer stays pinned to the (smoothed) cluster centre
     ///      even after the centre has been eaten hollow, and consumption stalls
-    ///      (the temporal sim's "plateau at Frenzy" failure mode).
+    ///      (the temporal sim's "plateau at Frozen" failure mode).
     ///
     /// Outputs: result[0] = world-space densest point;
     ///          resultMeta[0] = peak smoothed density (0 ⇒ the grid is empty).

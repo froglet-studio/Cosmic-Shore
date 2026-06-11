@@ -6,63 +6,81 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// Per-biome up/down thresholds that drive <see cref="Cell"/>'s phase transitions.
-    /// With the 3-phase ladder (Calm → Restless → Frenzy) there are just two boundaries
-    /// to author: where fauna start hunting (Restless) and where the cell hits the frenzy
-    /// ceiling (Frenzy). Each has an UpEnter (climb threshold from the previous phase) and
-    /// a DownExit (fall threshold back to the previous phase). The gap between them is the
+    /// Each phase has an UpEnter (climb threshold from the previous phase) and a DownExit
+    /// (fall threshold back to the previous phase). The gap between them is the
     /// hysteresis band; LiveBlockCount values in the band leave the phase unchanged.
-    /// Calm has no entry threshold — it's the starting state at zero prisms.
+    /// Sprout has no entry threshold — it's the starting state at zero prisms.
     /// </summary>
     [Serializable]
     public struct CellPhaseThresholds
     {
+        [Min(0)] public int QuietEnter;
+        [Min(0)] public int QuietExit;
+        [Min(0)] public int SettledEnter;
+        [Min(0)] public int SettledExit;
         [Min(0)] public int RestlessEnter;
         [Min(0)] public int RestlessExit;
-        [Min(0)] public int FrenzyEnter;
-        [Min(0)] public int FrenzyExit;
+        [Min(0)] public int FrozenEnter;
+        [Min(0)] public int FrozenExit;
+        [Min(0)] public int RabidEnter;
+        [Min(0)] public int RabidExit;
 
         public static CellPhaseThresholds Default => new()
         {
+            QuietEnter = 1000, QuietExit = 800,
+            SettledEnter = 4000, SettledExit = 3500,
             RestlessEnter = 8000, RestlessExit = 7500,
-            FrenzyEnter = 15000, FrenzyExit = 14000,
+            FrozenEnter = 10000, FrozenExit = 9500,
+            RabidEnter = 15000, RabidExit = 14000,
         };
 
         public int GetEnterThreshold(CellPhase phase) => phase switch
         {
-            CellPhase.Calm => 0,
+            CellPhase.Sprout => 0,
+            CellPhase.Quiet => QuietEnter,
+            CellPhase.Settled => SettledEnter,
             CellPhase.Restless => RestlessEnter,
-            CellPhase.Frenzy => FrenzyEnter,
+            CellPhase.Frozen => FrozenEnter,
+            CellPhase.Rabid => RabidEnter,
             _ => int.MaxValue,
         };
 
         public int GetExitThreshold(CellPhase phase) => phase switch
         {
-            CellPhase.Calm => 0,
+            CellPhase.Sprout => 0,
+            CellPhase.Quiet => QuietExit,
+            CellPhase.Settled => SettledExit,
             CellPhase.Restless => RestlessExit,
-            CellPhase.Frenzy => FrenzyExit,
+            CellPhase.Frozen => FrozenExit,
+            CellPhase.Rabid => RabidExit,
             _ => 0,
         };
 
         /// <summary>
         /// True when every threshold is zero — the deserialized state of a CellConfig
-        /// asset that existed before <c>PhaseThresholds</c> was added (or one whose
-        /// legacy 5-phase fields were dropped by the 3-phase migration). Lets callers
+        /// asset that existed before <c>PhaseThresholds</c> was added. Lets callers
         /// substitute <see cref="Default"/> instead of letting every cell collapse
-        /// straight to Frenzy because count >= 0 satisfies every UpEnter.
+        /// straight to Rabid because count >= 0 satisfies every UpEnter.
         /// </summary>
         public bool IsAllZero =>
+            QuietEnter == 0 && QuietExit == 0 &&
+            SettledEnter == 0 && SettledExit == 0 &&
             RestlessEnter == 0 && RestlessExit == 0 &&
-            FrenzyEnter == 0 && FrenzyExit == 0;
+            FrozenEnter == 0 && FrozenExit == 0 &&
+            RabidEnter == 0 && RabidExit == 0;
     }
 
     public static class CellPhaseRules
     {
-        // Ordered ascending so an int index walks Calm → Frenzy.
+        // Ordered ascending so an int index walks Sprout → Rabid.
         static readonly CellPhase[] Order =
         {
-            CellPhase.Calm,
+            CellPhase.Sprout,
+            CellPhase.Quiet,
+            CellPhase.Settled,
             CellPhase.Restless,
-            CellPhase.Frenzy,
+            CellPhase.Frozen,
+            CellPhase.Rabid,
         };
 
         /// <summary>

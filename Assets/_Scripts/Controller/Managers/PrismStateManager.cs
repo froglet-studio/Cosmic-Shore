@@ -152,9 +152,9 @@ namespace CosmicShore.Gameplay
 
         private void SyncAOERegistryShieldState()
         {
-            if (prism.SpatialIndexId >= 0)
-                PrismSpatialIndex.Instance?.UpdateShieldState(
-                    prism.SpatialIndexId,
+            if (prism.AOERegistryIndex >= 0)
+                PrismAOERegistry.Instance?.UpdateShieldState(
+                    prism.AOERegistryIndex,
                     prism.prismProperties.IsShielded,
                     prism.prismProperties.IsSuperShielded);
         }

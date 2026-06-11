@@ -1,4 +1,3 @@
-#if UNITY_EDITOR
 using System;
 using System.Reflection;
 using NUnit.Framework;
@@ -137,4 +136,3 @@ namespace CosmicShore.Gameplay
         }
     }
 }
-#endif

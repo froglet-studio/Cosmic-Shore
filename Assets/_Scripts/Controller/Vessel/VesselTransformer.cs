@@ -396,17 +396,12 @@ public class VesselTransformer : MonoBehaviour
                 InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed,
                 LERP_AMOUNT * Time.deltaTime);
 
-            // Modifiers scale this frame's output speed only. Multiplying into the
-            // persistent smoothed `speed` field compounds the modifier every frame,
-            // saturating any sub-1 multiplier to a near-stop within a few frames —
-            // which makes modifier strength untunable (a 0.5 floor and a 0.0 floor
-            // both collapse to ~zero).
-            float effectiveSpeed = speed * throttleMultiplier;
+            speed *= throttleMultiplier;
 
             if (toggleManualThrottle)
-                effectiveSpeed = Mathf.Lerp(0, effectiveSpeed, InputStatus.Throttle);
+                speed = Mathf.Lerp(0, speed, InputStatus.Throttle);
 
-            VesselStatus.Speed = effectiveSpeed;
+            VesselStatus.Speed = speed;
 
             // Drift course: blend between "go forward" and "drift course" based on analog intensity
             if ((VesselStatus.IsDrifting || _driftEaseOutPending) && _hasDriftBase)
@@ -428,7 +423,7 @@ public class VesselTransformer : MonoBehaviour
                 VesselStatus.Course = transform.forward;
             }
 
-            transform.position += (effectiveSpeed * VesselStatus.Course + velocityShift) * Time.deltaTime;
+            transform.position += (speed * VesselStatus.Course + velocityShift) * Time.deltaTime;
         }
 
         // ----------------------------- Modifiers -----------------------------

@@ -47,13 +47,11 @@ namespace CosmicShore.Gameplay
         private Vector3 _lastDestructionScale = Vector3.one;
 
         /// <summary>
-        /// Index into PrismSpatialIndex's contiguous NativeArray — the canonical
-        /// spatial index of all live prism mass (AOE damage queries + growth
-        /// occupancy; see Docs/SPATIAL_INDEX.md).
-        /// Used for O(1) updates to cache-line-packed spatial data.
+        /// Index into PrismAOERegistry's contiguous NativeArray.
+        /// Used for O(1) updates to cache-line-packed AOE data.
         /// -1 means not registered.
         /// </summary>
-        internal int SpatialIndexId = -1;
+        internal int AOERegistryIndex = -1;
 
         /// <summary>
         /// The cell whose per-domain density grids this prism is registered in, or null.
@@ -192,11 +190,11 @@ namespace CosmicShore.Gameplay
 
         private void ResetState()
         {
-            // Unregister from the spatial index (AOE batch processing + occupancy)
-            if (SpatialIndexId >= 0)
+            // Unregister from AOE batch processing
+            if (AOERegistryIndex >= 0)
             {
-                PrismSpatialIndex.Instance?.Unregister(SpatialIndexId);
-                SpatialIndexId = -1;
+                PrismAOERegistry.Instance?.Unregister(AOERegistryIndex);
+                AOERegistryIndex = -1;
             }
 
             // Pool-reuse safety: a prism returned to the pool without going through
@@ -268,12 +266,10 @@ namespace CosmicShore.Gameplay
                 Volume = prismProperties.volume,
             });
 
-            // Register with the spatial index: cache-friendly batch AOE processing
-            // AND growth occupancy (Register consumes the TryReserve claim that
-            // protected this prism's site through the disabled-collider window).
-            var spatialIndex = PrismSpatialIndex.EnsureInstance();
-            if (spatialIndex != null && spatialIndex.IsAvailable)
-                SpatialIndexId = spatialIndex.Register(this);
+            // Register with AOE registry for cache-friendly batch explosion processing
+            var registry = PrismAOERegistry.EnsureInstance();
+            if (registry != null && registry.IsAvailable)
+                AOERegistryIndex = registry.Register(this);
 
             // Register with the containing cell's density grids — this is what makes
             // trail mass visible to fauna anti-domain targeting and to the cell's
@@ -321,10 +317,9 @@ namespace CosmicShore.Gameplay
             destroyed = true;
             devastated = devastate;
 
-            // Mark destroyed in the spatial index: the AOE Burst job skips this
-            // prism and its occupancy bucket frees, so growth can fill the site.
-            if (SpatialIndexId >= 0)
-                PrismSpatialIndex.Instance?.MarkDestroyed(SpatialIndexId);
+            // Mark destroyed in AOE registry so Burst job skips this prism
+            if (AOERegistryIndex >= 0)
+                PrismAOERegistry.Instance?.MarkDestroyed(AOERegistryIndex);
 
             _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
             {
@@ -461,28 +456,10 @@ namespace CosmicShore.Gameplay
                 // Restored mass re-enters the cell's density grids.
                 RegisterWithCell();
 
-                // ...and the spatial index, so it takes batch AOE damage and blocks
-                // growth again. (Pre-unification bug: Restore never told the AOE
-                // registry, leaving restored prisms permanently invisible to it.)
-                if (SpatialIndexId >= 0)
-                    PrismSpatialIndex.Instance?.MarkRestored(SpatialIndexId);
-
                 blockCollider.enabled = true;
                 meshRenderer.enabled = true;
                 destroyed = false;
             }
-        }
-
-        /// <summary>
-        /// Movers (gyroid bonding steering a block into a bond site) must call this
-        /// so the spatial index's stored position — read by AOE damage queries and
-        /// growth occupancy probes — tracks the transform. Cheap when the occupancy
-        /// bucket is unchanged.
-        /// </summary>
-        public void NotifyPositionChanged()
-        {
-            if (SpatialIndexId >= 0)
-                PrismSpatialIndex.Instance?.UpdatePosition(SpatialIndexId, transform.position);
         }
 
         private void OnDisable()
@@ -490,16 +467,6 @@ namespace CosmicShore.Gameplay
             // Pool return / deactivation: a disabled prism must not keep attracting
             // fauna or holding up the cell's LiveBlockCount until its next reuse.
             UnregisterFromCell();
-
-            // Same for the spatial index: a pooled-but-not-yet-reused prism must not
-            // keep taking AOE damage or blocking growth at its stale position.
-            // (Pre-unification, cleanup waited for the next Initialize → ResetState,
-            // leaving a live-looking entry behind for the whole pool dwell time.)
-            if (SpatialIndexId >= 0)
-            {
-                PrismSpatialIndex.Instance?.Unregister(SpatialIndexId);
-                SpatialIndexId = -1;
-            }
         }
 
         private void OnDestroy()
@@ -513,12 +480,6 @@ namespace CosmicShore.Gameplay
             // Scene teardown / explicit Destroy: don't leave a stale entry in the
             // cell's grids and LiveBlockCount.
             UnregisterFromCell();
-
-            if (SpatialIndexId >= 0)
-            {
-                PrismSpatialIndex.Instance?.Unregister(SpatialIndexId);
-                SpatialIndexId = -1;
-            }
         }
     }
 }

@@ -4,7 +4,7 @@ Canonical engineering reference for the Cosmic Shore party / presence /
 network subsystems, plus cross-cutting infrastructure docs. This README
 is the navigation index; each linked doc is self-contained.
 
-## Layout 
+## Layout
 
 ```
 Docs/

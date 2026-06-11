@@ -11,9 +11,7 @@ namespace CosmicShore.Data
         ShootingGallery = 4,
         BlockBandit = 5,
         RiskyDriftness = 6,
-        // 7 (Freestyle) retired: the standalone arcade Freestyle game was removed.
-        // Freestyle now refers to the Menu_Main lava-lamp experience (see CLAUDE.md,
-        // "Lava-Lamp Mode"). Do not reuse ID 7.
+        Freestyle = 7,
         CellularDuel = 8,
         DashNGrab = 9,
         CellularBrawl = 10,

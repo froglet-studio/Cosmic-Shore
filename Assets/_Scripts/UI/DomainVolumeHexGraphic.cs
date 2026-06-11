@@ -19,12 +19,11 @@ namespace CosmicShore.UI
     /// Each sector ALWAYS spans its full angular width; volume is shown by RADIAL
     /// DEPTH — the colored band grows from the outer hexagon edge inward toward the
     /// centre as the domain's mass approaches the frenzy threshold. The END of the
-    /// wedge (the centre hexagon) is the final Frenzy state.
+    /// wedge (the centre hexagon) is the final frenzy (Rabid) state.
     ///
-    /// Overlaid on top are CONCENTRIC THRESHOLD RINGS — one per intermediate cell phase
-    /// boundary (Restless; Frenzy itself is the centre / boundary hexagon) — placed at the
-    /// radius a wedge reaches when its mass equals that threshold. As a domain's wedge
-    /// fills inward it PASSES
+    /// Overlaid on top are CONCENTRIC THRESHOLD RINGS — one per cell phase boundary
+    /// (Quiet/Settled/Restless/Frozen/Rabid) — placed at the radius a wedge reaches
+    /// when its mass equals that threshold. As a domain's wedge fills inward it PASSES
     /// THROUGH each ring; a ring DISAPPEARS once a wedge has filled past it, so only the
     /// upcoming thresholds are shown and the colored wedges aren't visually cluttered.
     /// "Which domain" reads off the colored wedge extending past where the ring was.

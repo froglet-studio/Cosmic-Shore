@@ -13,9 +13,6 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField] private float addPerHit = 0.1f;
 
-        [Tooltip("Multiplies the energy gained per hit when the skimmed prism is dangerous")]
-        [SerializeField] private float dangerEnergyMultiplier = 10f;
-
         [Header("Shared Config (single source of truth)")]
         [SerializeField] private ScriptableVariable<float> boostBaseMultiplier; // initial/base
         [SerializeField] private ScriptableVariable<float> boostMaxMultiplier;  // max
@@ -36,11 +33,7 @@ namespace CosmicShore.Gameplay
 
             status.IsBoosting = true;
 
-            float add = addPerHit;
-            if (prismImpactee.Prism.prismProperties.IsDangerous)
-                add *= dangerEnergyMultiplier;
-
-            float next = status.BoostMultiplier + add;
+            float next = status.BoostMultiplier + addPerHit;
             next = Mathf.Clamp(next, baseMult, maxMult);
 
             status.BoostMultiplier = next;

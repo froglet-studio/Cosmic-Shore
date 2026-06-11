@@ -12,8 +12,9 @@ namespace CosmicShore.Tests
     ///   - descend when count falls below the current phase's DownExit,
     ///   - and HOLD inside the hysteresis band (Exit..Enter) so the cell never chatters
     ///     on the boundary (which would make flora/fauna gating flicker).
-    /// The ladder is the 3-phase Calm → Restless → Frenzy. Uses the Default table:
-    ///   Restless 8000/7500, Frenzy 15000/14000.
+    /// Uses the Default threshold table:
+    ///   Quiet 1000/800, Settled 4000/3500, Restless 8000/7500, Frozen 10000/9500,
+    ///   Rabid 15000/14000.
     /// </summary>
     [TestFixture]
     public class CellPhaseRulesTests
@@ -23,93 +24,99 @@ namespace CosmicShore.Tests
         // ---- Climbing ----
 
         [Test]
-        public void Calm_AtZero_StaysCalm()
+        public void Sprout_AtZero_StaysSprout()
         {
-            Assert.AreEqual(CellPhase.Calm, CellPhaseRules.Compute(0, CellPhase.Calm, T));
+            Assert.AreEqual(CellPhase.Sprout, CellPhaseRules.Compute(0, CellPhase.Sprout, T));
         }
 
         [Test]
-        public void Calm_JustBelowRestlessEnter_StaysCalm()
+        public void Sprout_JustBelowQuietEnter_StaysSprout()
         {
-            Assert.AreEqual(CellPhase.Calm, CellPhaseRules.Compute(7999, CellPhase.Calm, T));
+            Assert.AreEqual(CellPhase.Sprout, CellPhaseRules.Compute(999, CellPhase.Sprout, T));
         }
 
         [Test]
-        public void Calm_AtRestlessEnter_ClimbsToRestless()
+        public void Sprout_AtQuietEnter_ClimbsToQuiet()
         {
-            Assert.AreEqual(CellPhase.Restless, CellPhaseRules.Compute(8000, CellPhase.Calm, T));
+            Assert.AreEqual(CellPhase.Quiet, CellPhaseRules.Compute(1000, CellPhase.Sprout, T));
         }
 
         [Test]
-        public void Restless_AtFrenzyEnter_ClimbsToFrenzy()
+        public void Quiet_AtSettledEnter_ClimbsToSettled()
         {
-            Assert.AreEqual(CellPhase.Frenzy, CellPhaseRules.Compute(15000, CellPhase.Restless, T));
+            Assert.AreEqual(CellPhase.Settled, CellPhaseRules.Compute(4000, CellPhase.Quiet, T));
+        }
+
+        [Test]
+        public void Frozen_AtRabidEnter_ClimbsToRabid()
+        {
+            Assert.AreEqual(CellPhase.Rabid, CellPhaseRules.Compute(15000, CellPhase.Frozen, T));
         }
 
         // ---- Hysteresis: counts inside the band hold the current phase ----
 
         [Test]
-        public void Restless_InsideBand_StaysRestless()
+        public void Quiet_InsideBand_StaysQuiet()
         {
-            // 9000 is between RestlessExit (7500) and FrenzyEnter (15000): no climb, no descend.
-            Assert.AreEqual(CellPhase.Restless, CellPhaseRules.Compute(9000, CellPhase.Restless, T));
+            // 900 is between QuietExit (800) and SettledEnter (4000): no climb, no descend.
+            Assert.AreEqual(CellPhase.Quiet, CellPhaseRules.Compute(900, CellPhase.Quiet, T));
         }
 
         [Test]
-        public void Restless_AtExitThreshold_StaysRestless()
+        public void Quiet_AtExitThreshold_StaysQuiet()
         {
-            // Descend is strict (count < Exit), so exactly RestlessExit holds Restless.
-            Assert.AreEqual(CellPhase.Restless, CellPhaseRules.Compute(7500, CellPhase.Restless, T));
+            // Descend is strict (count < Exit), so exactly QuietExit holds Quiet.
+            Assert.AreEqual(CellPhase.Quiet, CellPhaseRules.Compute(800, CellPhase.Quiet, T));
         }
 
         [Test]
         public void Hysteresis_NoChatterAcrossOscillation()
         {
-            // A count oscillating within Restless's band must never leave Restless.
-            var phase = CellPhase.Restless;
-            foreach (var count in new[] { 7600, 14999, 7501, 9500, 7500 })
+            // A count oscillating within Quiet's band must never leave Quiet.
+            var phase = CellPhase.Quiet;
+            foreach (var count in new[] { 850, 999, 801, 950, 800 })
             {
                 phase = CellPhaseRules.Compute(count, phase, T);
-                Assert.AreEqual(CellPhase.Restless, phase, $"chattered at count {count}");
+                Assert.AreEqual(CellPhase.Quiet, phase, $"chattered at count {count}");
             }
         }
 
         [Test]
         public void Climb_RequiresEnter_NotExit()
         {
-            // From Restless at 14999 (>= FrenzyExit 14000 but < FrenzyEnter 15000) we must NOT
-            // climb to Frenzy — climbing keys off Enter, descending off Exit.
-            Assert.AreEqual(CellPhase.Restless, CellPhaseRules.Compute(14999, CellPhase.Restless, T));
+            // From Quiet at 3999 (>= SettledExit 3500 but < SettledEnter 4000) we must NOT
+            // climb to Settled — climbing keys off Enter, descending off Exit.
+            Assert.AreEqual(CellPhase.Quiet, CellPhaseRules.Compute(3999, CellPhase.Quiet, T));
         }
 
         // ---- Descending ----
 
         [Test]
-        public void Restless_BelowRestlessExit_DropsToCalm()
+        public void Quiet_BelowQuietExit_DropsToSprout()
         {
-            Assert.AreEqual(CellPhase.Calm, CellPhaseRules.Compute(7499, CellPhase.Restless, T));
+            Assert.AreEqual(CellPhase.Sprout, CellPhaseRules.Compute(799, CellPhase.Quiet, T));
         }
 
         [Test]
-        public void Frenzy_BelowFrenzyExit_DropsToRestless_StopsAtBand()
+        public void Settled_BelowSettledExit_DropsToQuiet_StopsAtBand()
         {
-            // 9000 < FrenzyExit (14000) so it leaves Frenzy, but 9000 > RestlessExit (7500) so
-            // it stops at Restless rather than collapsing further.
-            Assert.AreEqual(CellPhase.Restless, CellPhaseRules.Compute(9000, CellPhase.Frenzy, T));
+            // 900 < SettledExit (3500) so it leaves Settled, but 900 > QuietExit (800) so it
+            // stops at Quiet rather than collapsing further.
+            Assert.AreEqual(CellPhase.Quiet, CellPhaseRules.Compute(900, CellPhase.Settled, T));
         }
 
         // ---- Multi-step transitions resolve in one call ----
 
         [Test]
-        public void Spike_FromCalm_JumpsToFrenzy()
+        public void Spike_FromSprout_JumpsToRabid()
         {
-            Assert.AreEqual(CellPhase.Frenzy, CellPhaseRules.Compute(15000, CellPhase.Calm, T));
+            Assert.AreEqual(CellPhase.Rabid, CellPhaseRules.Compute(15000, CellPhase.Sprout, T));
         }
 
         [Test]
-        public void Crash_FromFrenzy_DropsToCalm()
+        public void Crash_FromRabid_DropsToSprout()
         {
-            Assert.AreEqual(CellPhase.Calm, CellPhaseRules.Compute(0, CellPhase.Frenzy, T));
+            Assert.AreEqual(CellPhase.Sprout, CellPhaseRules.Compute(0, CellPhase.Rabid, T));
         }
 
         // ---- Threshold table invariants ----
@@ -118,15 +125,21 @@ namespace CosmicShore.Tests
         public void Default_EnterAlwaysAboveExit_PerPhase()
         {
             // The hysteresis band must be positive at every boundary, else the cell can
-            // chatter. (Calm has no band — it's the floor.)
+            // chatter. (Sprout has no band — it's the floor.)
+            Assert.Greater(T.QuietEnter, T.QuietExit);
+            Assert.Greater(T.SettledEnter, T.SettledExit);
             Assert.Greater(T.RestlessEnter, T.RestlessExit);
-            Assert.Greater(T.FrenzyEnter, T.FrenzyExit);
+            Assert.Greater(T.FrozenEnter, T.FrozenExit);
+            Assert.Greater(T.RabidEnter, T.RabidExit);
         }
 
         [Test]
         public void Default_EntersMonotonicAscending()
         {
-            Assert.Less(T.RestlessEnter, T.FrenzyEnter);
+            Assert.Less(T.QuietEnter, T.SettledEnter);
+            Assert.Less(T.SettledEnter, T.RestlessEnter);
+            Assert.Less(T.RestlessEnter, T.FrozenEnter);
+            Assert.Less(T.FrozenEnter, T.RabidEnter);
         }
 
         [Test]
@@ -144,16 +157,19 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void GetEnterThreshold_CalmIsZero()
+        public void GetEnterThreshold_SproutIsZero()
         {
-            Assert.AreEqual(0, T.GetEnterThreshold(CellPhase.Calm));
+            Assert.AreEqual(0, T.GetEnterThreshold(CellPhase.Sprout));
         }
 
         [Test]
         public void GetEnterThreshold_MatchesTablePerPhase()
         {
+            Assert.AreEqual(T.QuietEnter, T.GetEnterThreshold(CellPhase.Quiet));
+            Assert.AreEqual(T.SettledEnter, T.GetEnterThreshold(CellPhase.Settled));
             Assert.AreEqual(T.RestlessEnter, T.GetEnterThreshold(CellPhase.Restless));
-            Assert.AreEqual(T.FrenzyEnter, T.GetEnterThreshold(CellPhase.Frenzy));
+            Assert.AreEqual(T.FrozenEnter, T.GetEnterThreshold(CellPhase.Frozen));
+            Assert.AreEqual(T.RabidEnter, T.GetEnterThreshold(CellPhase.Rabid));
         }
     }
 }

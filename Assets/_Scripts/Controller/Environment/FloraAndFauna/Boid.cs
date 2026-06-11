@@ -74,8 +74,6 @@ namespace CosmicShore.Gameplay
 
         public override void Initialize(Cell cell)
         {
-            base.Initialize(cell); // record the explicit host cell (multi-cell correctness)
-
             embeddedHealthPrism = GetComponentInChildren<HealthPrism>(true);
             if (!embeddedHealthPrism)
             {
@@ -126,12 +124,6 @@ namespace CosmicShore.Gameplay
         {
             if (initialDelay > 0f)
                 yield return new WaitForSeconds(initialDelay);
-            else
-                // Never run the first behavior tick synchronously inside StartCoroutine:
-                // reproduction spawns offspring from a parent that is mid-iteration over
-                // the shared Fauna.OverlapScratch, and an immediate OverlapSphereNonAlloc
-                // here would clobber the parent's snapshot.
-                yield return null;
 
             while (true)
             {
@@ -179,13 +171,12 @@ namespace CosmicShore.Gameplay
             float averageSpeed = 0.0f;
             separatedBoids.Clear();
 
-            // Shared non-alloc scratch (Fauna.OverlapScratch) — at swarm scale the old
-            // per-tick Collider[] allocation was pure GC churn.
-            int colliderCount = Physics.OverlapSphereNonAlloc(transform.position, cohesionRadius, OverlapScratch);
+            var boidsInVicinity = Physics.OverlapSphere(transform.position, cohesionRadius);
+            int colliderCount = boidsInVicinity.Length;
 
             for (int i = 0; i < colliderCount; i++)
             {
-                Collider collider = OverlapScratch[i];
+                Collider collider = boidsInVicinity[i];
                 if (!collider) continue;
 
                 // Ignore our own collider (if present)
@@ -276,7 +267,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            int totalBoids = colliderCount - 1;
+            int totalBoids = boidsInVicinity.Length - 1;
 
             if (totalBoids > 0)
             {

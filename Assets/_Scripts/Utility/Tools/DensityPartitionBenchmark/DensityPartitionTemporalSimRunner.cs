@@ -19,11 +19,11 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     ///
     /// It models the production loop faithfully enough to be load-bearing:
     ///   - Flora at fixed positions spawn prisms of their own domain while the
-    ///     cell phase is below Frenzy (FloraGrowingEnabled) — steady until frenzy.
+    ///     cell phase is below Frozen (FloraGrowingEnabled).
     ///   - Cell phase is driven by total prism count through CellPhaseRules /
     ///     CellPhaseThresholds — the real production transition table.
-    ///   - Fauna spawn for the *dominant* domain once the cell holds mass, seek the
-    ///     density algorithm's anti-own-domain target (any-domain at Frenzy), and
+    ///   - Fauna spawn for the *dominant* domain once phase >= Quiet, seek the
+    ///     density algorithm's anti-own-domain target (any-domain at Rabid), and
     ///     continuously sweep an orbit sphere around it (re-rolling a sub-goal on
     ///     arrival — the sim's stand-in for boid separation spreading the swarm),
     ///     consuming opposing-domain prisms within consumeRadius along the way.
@@ -95,7 +95,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
         [Header("Phase thresholds")]
         [Tooltip("CellPhaseThresholds.Default scaled by this. Default is tuned for thousands " +
-                 "of prisms; 0.15 gives Restless~1200 / Frenzy~2250 for a fast sim.")]
+                 "of prisms; 0.15 gives Quiet~150 / Frozen~1500 / Rabid~2250 for a fast sim.")]
         [Range(0.02f, 1f)] public float thresholdScale = 0.15f;
 
         [Header("Fauna")]
@@ -118,7 +118,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         [Min(0f)] public float faunaGoalOrbitRadius = 120f;
         [Tooltip("Max simultaneous fauna.")]
         [Min(1)] public int faunaPopulationCap = 40;
-        [Tooltip("Seconds between fauna spawns (for the dominant domain) once the cell holds mass.")]
+        [Tooltip("Seconds between fauna spawns (for the dominant domain) once phase >= Quiet.")]
         [Min(0.25f)] public float faunaSpawnIntervalSeconds = 2f;
 
         [Header("Output")]
@@ -143,8 +143,9 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                           $"+ {outerFloraCount} outer shell (>500m) across {Math.Max(1, outerClusterCount)} clusters, " +
                           $"σ={floraClusterScatterRadius:F0}m");
             var th = ScaledThresholds();
-            sb.AppendLine($"Phase thresholds (Default × {thresholdScale:F2}): " +
-                          $"Restless {th.RestlessEnter}/{th.RestlessExit}  Frenzy {th.FrenzyEnter}/{th.FrenzyExit}");
+            sb.AppendLine($"Phase thresholds (Default × {thresholdScale:F2}): Quiet {th.QuietEnter}/{th.QuietExit}  " +
+                          $"Settled {th.SettledEnter}/{th.SettledExit}  Restless {th.RestlessEnter}/{th.RestlessExit}  " +
+                          $"Frozen {th.FrozenEnter}/{th.FrozenExit}  Rabid {th.RabidEnter}/{th.RabidExit}");
             float floraRate = (innerFloraCount + outerFloraCount) / Mathf.Max(0.01f, floraGrowthIntervalSeconds);
             sb.AppendLine($"Flora production capacity: {floraRate:F0} prisms/s   " +
                           $"Fauna consumption capacity: ~{faunaPopulationCap * faunaConsumePerTickInRange / Mathf.Max(0.01f, tickIntervalSeconds):F0} prisms/s (cap × rate)");
@@ -232,15 +233,15 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 sb.AppendLine("  ALL THREE PLATEAU — algorithm choice is not the load-bearing dimension here.");
                 sb.AppendLine("  Tune parameters: shorten faunaGoalUpdateIntervalSeconds (fauna retarget more");
                 sb.AppendLine("  often as they deplete a cluster), raise faunaPopulationCap, or lower");
-                sb.AppendLine("  thresholdScale so the Frenzy entry/exit band is tighter relative to flora");
+                sb.AppendLine("  thresholdScale so the Frozen entry/exit band is tighter relative to flora");
                 sb.AppendLine("  production rate.");
             }
             else
             {
                 sb.AppendLine("  Mixed result — inspect the per-run tables above. The robust discriminator is");
                 sb.AppendLine("  whether outer-shell mass is BOUNDED (count rises and falls) vs UNBOUNDED");
-                sb.AppendLine("  (count never decreases). A run that plateaus in Frenzy will look UNBOUNDED");
-                sb.AppendLine("  because Frenzy freezes flora at the moment of entry; that's a phase-lock,");
+                sb.AppendLine("  (count never decreases). A run that plateaus in Frozen will look UNBOUNDED");
+                sb.AppendLine("  because Frozen freezes flora at the moment of entry; that's a phase-lock,");
                 sb.AppendLine("  not a grid-blindness problem.");
             }
 
@@ -338,7 +339,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             var fauna = new List<SimFauna>(faunaPopulationCap);
             var benchPrisms = new List<BenchmarkPrism>(4096); // reused per tick
 
-            CellPhase phase = CellPhase.Calm;
+            CellPhase phase = CellPhase.Sprout;
             float faunaSpawnClock = 0f;
             int tickCount = Mathf.CeilToInt(simDurationSeconds / tickIntervalSeconds);
             float dt = tickIntervalSeconds;
@@ -370,15 +371,16 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 CellAggressionLevel aggression = phase switch
                 {
                     CellPhase.Restless => CellAggressionLevel.Level1,
-                    CellPhase.Frenzy => CellAggressionLevel.Level2,
+                    CellPhase.Frozen => CellAggressionLevel.Level1,
+                    CellPhase.Rabid => CellAggressionLevel.Level2,
                     _ => CellAggressionLevel.Level0,
                 };
                 Domains dominant =
                     jade >= ruby && jade >= gold ? Domains.Jade :
                     ruby >= gold ? Domains.Ruby : Domains.Gold;
 
-                // --- 2. Flora growth (gated: phase < Frenzy, matching FloraGrowingEnabled) ---
-                bool floraGrowing = phase < CellPhase.Frenzy;
+                // --- 2. Flora growth (gated: phase < Frozen, matching FloraGrowingEnabled) ---
+                bool floraGrowing = phase < CellPhase.Frozen;
                 if (floraGrowing)
                 {
                     for (int i = 0; i < flora.Count; i++)
@@ -399,8 +401,8 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                     }
                 }
 
-                // --- 3. Fauna spawn (gated: cell holds mass, for the dominant domain) ---
-                bool faunaSpawning = total > 0;
+                // --- 3. Fauna spawn (gated: phase >= Quiet, for the dominant domain) ---
+                bool faunaSpawning = phase >= CellPhase.Quiet;
                 faunaSpawnClock += dt;
                 if (faunaSpawning && faunaSpawnClock >= faunaSpawnIntervalSeconds && fauna.Count < faunaPopulationCap)
                 {
@@ -438,7 +440,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                         if (fa.GoalClock >= faunaGoalUpdateIntervalSeconds)
                         {
                             fa.GoalClock = 0f;
-                            // Level2 (Frenzy): any-domain densest. Else: anti-own-domain.
+                            // Level2 (Rabid): any-domain densest. Else: anti-own-domain.
                             Domains? exclude = aggression == CellAggressionLevel.Level2 ? (Domains?)null : fa.Domain;
                             var r = DensityPartitionBenchmarkAlgorithms.Search(
                                 benchPrisms, exclude, cellMembraneRadius, densityOpt);
@@ -564,18 +566,18 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             }
             result.CycleCount = cycles;
 
-            // Frenzy entries: count Frenzy-phase transitions across the whole run.
+            // Rabid entries: count Rabid-phase transitions across the whole run.
             int rabidEntries = 0;
             bool wasRabid = false;
             for (int i = 0; i < series.Count; i++)
             {
-                bool isRabid = series[i].Phase == CellPhase.Frenzy;
+                bool isRabid = series[i].Phase == CellPhase.Rabid;
                 if (isRabid && !wasRabid) rabidEntries++;
                 wasRabid = isRabid;
             }
             result.RabidEntries = rabidEntries;
 
-            // Plateau threshold: 5%. The Frenzy entry/exit band is naturally ~5%
+            // Plateau threshold: 5%. The Frozen entry/exit band is naturally ~5%
             // wide (1500/1425 = 5% of 1500), so a healthy primary cycle that
             // overshoots the band edges should easily exceed 5% swing. Anything
             // tighter than that is either a true plateau or a faint oscillation
@@ -586,17 +588,17 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             var last = series[series.Count - 1];
             if (result.IsPlateau)
             {
-                if (maxTotal < thresholds.RestlessEnter)
-                    result.Verdict = $"COLLAPSE — total pinned at {maxTotal} (< Restless enter {thresholds.RestlessEnter}), fauna ate everything";
-                else if (last.Phase == CellPhase.Frenzy)
-                    result.Verdict = $"PLATEAU at FRENZY — total pinned ~{minTotal}-{maxTotal}, phase stuck at Frenzy, peak outer-shell prisms {peakOuter}";
+                if (maxTotal < thresholds.QuietEnter)
+                    result.Verdict = $"COLLAPSE — total pinned at {maxTotal} (< Quiet enter {thresholds.QuietEnter}), fauna ate everything";
+                else if (last.Phase == CellPhase.Rabid)
+                    result.Verdict = $"PLATEAU at RABID — total pinned ~{minTotal}-{maxTotal}, phase stuck at Rabid, peak outer-shell prisms {peakOuter}";
                 else
                     result.Verdict = $"PLATEAU — total pinned ~{minTotal}-{maxTotal} (swing {swing * 100f:F0}%), phase {last.Phase}";
             }
             else
             {
                 result.Verdict = $"OSCILLATING — total swings {minTotal}-{maxTotal} (~{swing * 100f:F0}%), " +
-                                 $"{cycles} cycles in steady window, {rabidEntries} Frenzy dips, peak outer-shell {peakOuter}";
+                                 $"{cycles} cycles in steady window, {rabidEntries} Rabid dips, peak outer-shell {peakOuter}";
             }
         }
 
@@ -613,7 +615,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             }
             sb.AppendLine();
             sb.AppendLine($"  steady-state total: {r.MinTotalSteady:F0}-{r.MaxTotalSteady:F0}   " +
-                          $"cycles: {r.CycleCount}   Frenzy dips: {r.RabidEntries}");
+                          $"cycles: {r.CycleCount}   Rabid dips: {r.RabidEntries}");
             sb.AppendLine($"  outer-shell prisms (steady): {r.OuterShellMinSteady}-{r.OuterShellMaxSteady}, peak {r.PeakOuterShellPrisms}   " +
                           $"=> outer-shell mass {(r.OuterShellBounded ? "BOUNDED (fauna reach it)" : "UNBOUNDED (never consumed — grid is blind to it)")}");
             sb.AppendLine();
@@ -630,8 +632,11 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             int Sc(int v) => Mathf.Max(1, Mathf.RoundToInt(v * s));
             return new CellPhaseThresholds
             {
+                QuietEnter = Sc(d.QuietEnter), QuietExit = Sc(d.QuietExit),
+                SettledEnter = Sc(d.SettledEnter), SettledExit = Sc(d.SettledExit),
                 RestlessEnter = Sc(d.RestlessEnter), RestlessExit = Sc(d.RestlessExit),
-                FrenzyEnter = Sc(d.FrenzyEnter), FrenzyExit = Sc(d.FrenzyExit),
+                FrozenEnter = Sc(d.FrozenEnter), FrozenExit = Sc(d.FrozenExit),
+                RabidEnter = Sc(d.RabidEnter), RabidExit = Sc(d.RabidExit),
             };
         }
 

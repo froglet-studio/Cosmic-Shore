@@ -27,17 +27,15 @@ namespace CosmicShore.Gameplay
         public LightFaunaManager LightFaunaManager { get; set; }
 
         /// <summary>
-        /// True when the host cell's phase is <see cref="CellPhase.Frenzy"/>: aggression-2
+        /// True when the host cell's phase is <see cref="CellPhase.Rabid"/>: aggression-2
         /// fauna ignore danger-prism damage. Read by impactor pipelines that would
         /// otherwise debuff/damage the fauna on dangerous-prism contact. Centralizing
         /// the rule here keeps the impact code path from re-deriving phase semantics.
         /// </summary>
-        public bool IsDangerImmune => cell && cell.Phase >= CellPhase.Frenzy;
+        public bool IsDangerImmune => cell && cell.Phase >= CellPhase.Rabid;
 
         public override void Initialize(Cell cell)
         {
-            base.Initialize(cell); // record the explicit host cell (multi-cell correctness)
-
             if (!data)
             {
                 CSDebug.LogError($"{nameof(LightFauna)} on {name} is missing {nameof(LightFaunaDataSO)}.");
@@ -120,35 +118,6 @@ namespace CosmicShore.Gameplay
 
         bool IsBerserk => cell != null && cell.AggressionLevel == CellAggressionLevel.Level2;
 
-        /// <summary>
-        /// Nearest live, non-immune herbivore in the host cell's fauna registry.
-        /// O(live fauna) per behavior tick — the registry is small (bounded by the
-        /// per-species MaxLivePopulation caps).
-        /// </summary>
-        bool TryFindNearestPreyFauna(out Vector3 position)
-        {
-            position = default;
-            var host = cell;
-            if (host == null) return false;
-
-            var fauna = host.LiveFauna;
-            Fauna best = null;
-            float bestSqr = float.PositiveInfinity;
-            for (int i = 0; i < fauna.Count; i++)
-            {
-                var f = fauna[i];
-                if (!f || f == this) continue;
-                if (f.Diet != FaunaDiet.Herbivore || !f.IsAlivePrey || f.IsPredationImmune) continue;
-
-                float d = (f.transform.position - transform.position).sqrMagnitude;
-                if (d < bestSqr) { bestSqr = d; best = f; }
-            }
-
-            if (!best) return false;
-            position = best.transform.position;
-            return true;
-        }
-
         void UpdateBehavior()
         {
             if (!data)
@@ -167,27 +136,19 @@ namespace CosmicShore.Gameplay
             // Phase-driven goal. Each phase swaps the goal source rather than killing/spawning
             // systems, so the same fauna instance can transition through aggression levels
             // as the cell's phase changes around it.
-            //   Calm:     aggression 0 — head toward crystal
-            //   Restless: aggression 1 — head toward nearest opposing-color centroid
-            //   Frenzy:   aggression 2 — head toward nearest centroid (any domain)
-            var phase = cell ? cell.Phase : CellPhase.Calm;
+            //   Quiet/Settled: aggression 0 — head toward crystal
+            //   Restless/Frozen: aggression 1 — head toward nearest opposing-color centroid
+            //   Rabid: aggression 2 — head toward nearest centroid (any domain)
+            var phase = cell ? cell.Phase : CellPhase.Sprout;
             Goal = phase switch
             {
                 CellPhase.Restless => cell.GetExplosionTarget(domain),
-                CellPhase.Frenzy => cell.GetDensestRegionAnyDomain(),
+                CellPhase.Frozen => cell.GetExplosionTarget(domain),
+                CellPhase.Rabid => cell.GetDensestRegionAnyDomain(),
                 _ => (cellData && cellData.CrystalTransform)
                        ? cellData.CrystalTransform.position
                        : (cell ? cell.transform.position : transform.position),
             };
-
-            // Predators hunt PREY, not mass: seek the nearest live herbivore the cell
-            // senses (Cell.LiveFauna — the fauna analogue of the prism density grid).
-            // Replaces the v1 approximation where predators converged on prism-density
-            // centroids and only met herbivores incidentally. Skips predation-immune
-            // newborns so a shark doesn't camp a fresh birth; with no herbivores alive
-            // the phase-based goal above stands (roam plausibly, then starve).
-            if (diet == FaunaDiet.Predator && TryFindNearestPreyFauna(out var preyPos))
-                Goal = preyPos;
 
             if (!IsFinite(Goal) || Goal.sqrMagnitude < 0.001f)
             {
@@ -206,15 +167,12 @@ namespace CosmicShore.Gameplay
             // Aggression 2 drops friendly avoidance (same-domain ships, fauna, and
             // health prisms stop contributing to separation). Cross-domain entities
             // still push us away so we don't clip through enemy mass.
-            bool dropFriendlyAvoidance = phase >= CellPhase.Frenzy;
+            bool dropFriendlyAvoidance = phase >= CellPhase.Rabid;
 
-            // Shared non-alloc scratch (Fauna.OverlapScratch) — at swarm scale the old
-            // per-tick Collider[] allocation was pure GC churn.
-            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, OverlapScratch);
+            var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
 
-            for (int ci = 0; ci < hitCount; ci++)
+            foreach (var collider in nearbyColliders)
             {
-                var collider = OverlapScratch[ci];
                 if (!collider || collider.gameObject == gameObject) continue;
 
                 Vector3 diff = transform.position - collider.transform.position;

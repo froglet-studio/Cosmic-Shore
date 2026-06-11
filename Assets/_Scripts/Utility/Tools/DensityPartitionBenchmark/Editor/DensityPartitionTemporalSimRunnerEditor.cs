@@ -47,7 +47,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark.Editor
                 "or accumulates forever (the grid is blind to it).\n" +
                 "This is also an ecology tuning bench: adjust the flora/fauna rate fields " +
                 "to search for the parameter regime that produces the two-frequency " +
-                "oscillation (fast Calm<->Restless cycle + slow Frenzy dips).",
+                "oscillation (fast Restless<->Frozen cycle + slow Rabid dips).",
                 MessageType.Info);
         }
     }

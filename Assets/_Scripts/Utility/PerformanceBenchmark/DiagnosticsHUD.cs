@@ -8,7 +8,6 @@ using Unity.Netcode.Transports.UTP;
 using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.Profiling;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
@@ -21,11 +20,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// (stripped from Release). Shows live performance data and can record a "diagnostic" — a
     /// timed spike capture written to the user's Documents folder as JSON + a readable .txt.
     ///
-    /// • Normal mode: FPS + Frame Time (ms) + CPU/GPU split (busy CPU work vs GPU time) and a
-    ///   live bound verdict (CPU-bound / GPU-bound / Balanced / Capped) via FrameTimingManager.
-    /// • Advanced mode: + CPU thread breakdown (total, main thread, present wait, render thread),
-    ///   draw calls / batches / triangles / SetPass, memory (GC per frame, managed heap, Unity
-    ///   allocated, reserved vs device RAM, graphics driver, device RAM/VRAM), and network
+    /// • Normal mode: FPS + Frame Time (ms).
+    /// • Advanced mode: + draw calls / batches / triangles / SetPass, GC per frame, and network
     ///   (RTT/ping, NetVars dirty, RPCs, bytes per frame).
     /// • Run Diagnostic: records spikes for the selected seconds (works in editor and build),
     ///   then saves Documents/CosmicShore Diagnostics/diag_*.json (+ .txt).
@@ -58,17 +54,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         float _smoothedMs, _refreshTimer;
         float _displayFps, _displayMs;
 
-        // CPU/GPU split via FrameTimingManager (always active in editor + dev builds; GPU time
-        // is 0 on platforms without GPU timing support). Raw = latest frame, _sm* = smoothed.
-        readonly FrameTiming[] _frameTimings = new FrameTiming[1];
-        float _rawCpuMs, _rawGpuMs, _rawMainMs, _rawWaitMs, _rawRenderMs;
-        float _smCpuMs, _smGpuMs, _smMainMs, _smWaitMs, _smRenderMs;
-
         // recording
         bool _recording;
         float _recStart, _recEnd, _recRunningSum;
-        float _recCpuSum, _recBusyCpuSum, _recGpuSum;
-        int _recFrames, _recTimedFrames;
+        int _recFrames;
         readonly List<float> _recFrameMs = new(8192);
         readonly List<DiagSpike> _recSpikes = new(256);
         string _lastSavedPath = "";
@@ -153,22 +142,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             float ms = Time.unscaledDeltaTime * 1000f;
             _smoothedMs = _smoothedMs <= 0f ? ms : Mathf.Lerp(_smoothedMs, ms, 0.1f);
 
-            // Latest CPU/GPU frame timings (data lags ~4 frames behind by design).
-            FrameTimingManager.CaptureFrameTimings();
-            if (FrameTimingManager.GetLatestTimings(1, _frameTimings) > 0)
-            {
-                _rawCpuMs = (float)_frameTimings[0].cpuFrameTime;
-                _rawGpuMs = (float)_frameTimings[0].gpuFrameTime;
-                _rawMainMs = (float)_frameTimings[0].cpuMainThreadFrameTime;
-                _rawWaitMs = (float)_frameTimings[0].cpuMainThreadPresentWaitTime;
-                _rawRenderMs = (float)_frameTimings[0].cpuRenderThreadFrameTime;
-                Smooth(ref _smCpuMs, _rawCpuMs);
-                Smooth(ref _smGpuMs, _rawGpuMs);
-                Smooth(ref _smMainMs, _rawMainMs);
-                Smooth(ref _smWaitMs, _rawWaitMs);
-                Smooth(ref _smRenderMs, _rawRenderMs);
-            }
-
             if (_recording) SampleRecording(ms);
 
             _refreshTimer += Time.unscaledDeltaTime;
@@ -223,22 +196,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             Row(la, va, "FPS", Col(FpsColor(_displayFps), _displayFps.ToString("F0")));
             Row(la, va, "Frame Time", Col(MsColor(_displayMs), _displayMs.ToString("F1") + " ms"));
 
-            // CPU vs GPU dependence — busy CPU (work minus present wait) against GPU time,
-            // plus the verdict for which side limits the frame.
-            float busyCpuMs = FrameBoundness.BusyCpuMs(_smCpuMs, _smMainMs, _smWaitMs, _smRenderMs);
-            Row(la, va, "CPU (busy)", MsValue(busyCpuMs));
-            Row(la, va, "GPU", MsValue(_smGpuMs));
-            Row(la, va, "Bound", BoundValue(busyCpuMs));
-
             if (_advanced)
             {
-                // Left block — local frame cost (cpu/gpu threads + render + memory).
-                Header(la, va, "CPU / GPU");
-                Row(la, va, "CPU Total", MsValue(_smCpuMs));
-                Row(la, va, "Main Thread", MsValue(_smMainMs));
-                Row(la, va, "Wait (present)", _smWaitMs > 0.001f ? Col(Dim, _smWaitMs.ToString("F1") + " ms") : Col(Dim, "n/a"));
-                Row(la, va, "Render Thread", MsValue(_smRenderMs));
-
+                // Left block — local frame cost (render + memory).
                 Header(la, va, "Render");
                 Row(la, va, "Draw Calls", Col(White, RInt(_drawCalls).ToString()));
                 Row(la, va, "Batches", Col(White, RInt(_batches).ToString()));
@@ -249,12 +209,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 Header(la, va, "Memory");
                 float gcKB = RLong(_gcAlloc) / 1024f;
                 Row(la, va, "GC / frame", Col(gcKB > 4f ? Warn : Good, gcKB.ToString("F1") + " KB"));
-                Row(la, va, "Managed", Col(White, Mb(Profiler.GetMonoUsedSizeLong())));
-                Row(la, va, "Unity Alloc", Col(White, Mb(Profiler.GetTotalAllocatedMemoryLong())));
-                Row(la, va, "Reserved", ReservedRamValue(Profiler.GetTotalReservedMemoryLong()));
-                long gfxBytes = Profiler.GetAllocatedMemoryForGraphicsDriver();
-                Row(la, va, "Gfx Driver", gfxBytes > 0 ? Col(White, Mb(gfxBytes)) : Col(Dim, "n/a"));
-                Row(la, va, "Device", Col(Dim, DeviceMemory()));
 
                 // Right block — connection (network + region).
                 Header(lb, vb, "Network");
@@ -302,41 +256,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _utcCache = $"UTC{sign}{Math.Abs(off.Hours):D2}:{Math.Abs(off.Minutes):D2}";
             return _utcCache;
         }
-
-        // ── cpu/gpu + memory helpers ──────────────────────────────────────
-        static void Smooth(ref float current, float sample) =>
-            current = current <= 0f ? sample : Mathf.Lerp(current, sample, 0.1f);
-
-        static string MsValue(float msVal) =>
-            msVal > 0.001f ? Col(MsColor(msVal), msVal.ToString("F1") + " ms") : Col(Dim, "n/a");
-
-        string BoundValue(float busyCpuMs)
-        {
-            string verdict = FrameBoundness.Classify(busyCpuMs, _smGpuMs);
-            if (verdict == FrameBoundness.Unknown) return Col(Dim, "n/a");
-            if (FrameBoundness.IsAtCap(_displayFps, out float cap))
-                return Col(Good, "Capped @" + cap.ToString("F0"));
-            return Col(FpsColor(_displayFps), verdict);
-        }
-
-        static string Mb(long bytes) => (bytes / (1024f * 1024f)).ToString("F0") + " MB";
-
-        // Reserved (Unity's total footprint) against the device's physical RAM — the number
-        // that predicts OS kills on mobile.
-        static string ReservedRamValue(long reservedBytes)
-        {
-            float reservedMb = reservedBytes / (1024f * 1024f);
-            int sysMb = SystemInfo.systemMemorySize;
-            if (sysMb <= 0) return Col(White, reservedMb.ToString("F0") + " MB");
-            float pct = reservedMb / sysMb * 100f;
-            string color = pct < 25f ? Good : pct < 50f ? Warn : Bad;
-            return Col(color, $"{reservedMb:F0} MB ({pct:F0}%)");
-        }
-
-        string DeviceMemory() =>
-            _deviceMemCache ??= SystemInfo.systemMemorySize + " MB RAM · " +
-                                SystemInfo.graphicsMemorySize + " MB VRAM";
-        string _deviceMemCache;
 
         // Position the two blocks side by side, each sub-column sized to its widest row, then fit
         // the panel and slide the button row up under whichever block is taller.
@@ -398,9 +317,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _recStart = Time.unscaledTime;
             _recEnd = _recStart + _diagSeconds;
             _recFrames = 0;
-            _recTimedFrames = 0;
             _recRunningSum = 0f;
-            _recCpuSum = _recBusyCpuSum = _recGpuSum = 0f;
             _recFrameMs.Clear();
             _recSpikes.Clear();
             UpdateDiagButtonLabel();
@@ -411,14 +328,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _recFrames++;
             _recRunningSum += frameMs;
             _recFrameMs.Add(frameMs);
-
-            if (_rawCpuMs > 0.001f || _rawGpuMs > 0.001f)
-            {
-                _recTimedFrames++;
-                _recCpuSum += _rawCpuMs;
-                _recBusyCpuSum += FrameBoundness.BusyCpuMs(_rawCpuMs, _rawMainMs, _rawWaitMs, _rawRenderMs);
-                _recGpuSum += _rawGpuMs;
-            }
 
             float mean = _recFrames > 0 ? _recRunningSum / _recFrames : frameMs;
             float threshold = Mathf.Max(33.3f, 1.75f * mean);
@@ -433,9 +342,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     tris = RLong(_triangles),
                     gcKB = RLong(_gcAlloc) / 1024f,
                     rttMs = Rtt(),
-                    // Frame-timing data lags ~4 frames, so this attributes the spike approximately.
-                    cpuMs = _rawCpuMs,
-                    gpuMs = _rawGpuMs,
                 });
             }
 
@@ -468,16 +374,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 rttMs = Rtt(),
                 spikes = new List<DiagSpike>(_recSpikes),
             };
-            if (_recTimedFrames > 0)
-            {
-                r.avgCpuMs = _recCpuSum / _recTimedFrames;
-                r.avgCpuBusyMs = _recBusyCpuSum / _recTimedFrames;
-                r.avgGpuMs = _recGpuSum / _recTimedFrames;
-            }
-            r.boundVerdict = FrameBoundness.Classify(r.avgCpuBusyMs, r.avgGpuMs);
-            r.allocMB = Profiler.GetTotalAllocatedMemoryLong() / (1024 * 1024);
-            r.reservedMB = Profiler.GetTotalReservedMemoryLong() / (1024 * 1024);
-            r.systemMB = SystemInfo.systemMemorySize;
             if (n > 0)
             {
                 var sorted = new List<float>(_recFrameMs); sorted.Sort();
@@ -519,15 +415,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             sb.AppendLine($"duration {r.durationSec}s · {r.frames} frames · avg {r.avgFps:F1} fps " +
                           $"({r.avgFrameMs:F1} ms) · p99 {r.p99FrameMs:F1} ms · max {r.maxFrameMs:F1} ms");
             sb.AppendLine($"draws {r.draws} · tris {r.tris:N0} · RTT {(r.rttMs >= 0 ? r.rttMs.ToString("F0") + " ms" : "n/a")}");
-            sb.AppendLine($"cpu {r.avgCpuMs:F1} ms (busy {r.avgCpuBusyMs:F1}) · " +
-                          $"gpu {(r.avgGpuMs > 0.001f ? r.avgGpuMs.ToString("F1") + " ms" : "n/a")} · {r.boundVerdict} · " +
-                          $"mem {r.allocMB}/{r.reservedMB} MB (device {r.systemMB} MB)");
             sb.AppendLine($"spikes ({r.spikes?.Count ?? 0}):");
             if (r.spikes != null)
                 foreach (var s in r.spikes)
                     sb.AppendLine($"  [{s.t:F1}s] {s.ms:F1} ms ({s.fps:F0} fps) · draws {s.draws} · " +
                                   $"tris {s.tris:N0} · GC {s.gcKB:F1} KB" +
-                                  (s.cpuMs > 0.001f || s.gpuMs > 0.001f ? $" · cpu {s.cpuMs:F1} / gpu {s.gpuMs:F1} ms" : "") +
                                   (s.rttMs >= 0 ? $" · RTT {s.rttMs:F0} ms" : ""));
             return sb.ToString();
         }
@@ -662,7 +554,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         class DiagSpike
         {
             public float t, ms, fps, gcKB;
-            public float cpuMs, gpuMs;
             public int draws;
             public long tris;
             public double rttMs;
@@ -673,10 +564,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             public string scene, timestamp;
             public float durationSec, avgFps, avgFrameMs, p99FrameMs, maxFrameMs;
-            public float avgCpuMs, avgCpuBusyMs, avgGpuMs;
-            public string boundVerdict;
-            public long allocMB, reservedMB;
-            public int systemMB;
             public int frames, draws;
             public long tris;
             public double rttMs;

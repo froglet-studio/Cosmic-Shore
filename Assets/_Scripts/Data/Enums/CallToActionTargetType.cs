@@ -31,7 +31,7 @@ namespace CosmicShore.Data
         PlayGameCosmicDrift = 406,
         PlayGameBlockBandit = 407,
         PlayGameShootingGallery = 408,
-        // 409 (PlayGameFreestyle) retired with the standalone arcade Freestyle game.
+        PlayGameFreestyle = 409,
         PlayGameCellularDuel = 410,
         PlayGameCellularBrawl = 411,
         PlayGameDashAndGrab = 412,

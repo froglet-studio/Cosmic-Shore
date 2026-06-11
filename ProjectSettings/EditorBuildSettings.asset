@@ -21,6 +21,9 @@ EditorBuildSettings:
     path: Assets/_Scenes/Singleplayer Scenes/MinigameWildlifeBlitz.unity
     guid: d5418cffe1da8b840bcc2e1a92a7b1db
   - enabled: 1
+    path: Assets/_Scenes/Singleplayer Scenes/MinigameFreestyle.unity
+    guid: 6f71535b00043c345b3216d994f22499
+  - enabled: 1
     path: Assets/_Scenes/Singleplayer Scenes/MinigameCellularDuel.unity
     guid: a0793cb7cf4069b44ba82acfddb04f11
   - enabled: 0

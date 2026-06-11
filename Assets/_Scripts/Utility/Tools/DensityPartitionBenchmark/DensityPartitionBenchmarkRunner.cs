@@ -16,7 +16,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     ///
     /// The runner never spawns real Prism MonoBehaviours — every algorithm operates
     /// on a synthetic BenchmarkPrism list produced by BenchmarkScenario.Build().
-    /// That keeps the harness independent of GameDataSO injection, PrismSpatialIndex
+    /// That keeps the harness independent of GameDataSO injection, PrismAOERegistry
     /// initialization, Cell membrane setup, and the rest of the production
     /// lifecycle that doesn't survive Edit Mode. The trade-off is that integration
     /// bugs in HealthBlockTracker / Cell.AddBlock aren't exercised — those are
