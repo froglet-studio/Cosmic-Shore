@@ -1074,16 +1074,19 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// True if the local player should fire gameData.InvokeGameLaunch() — i.e.
-        /// they are the launch authority. Three cases launch locally:
+        /// True if the local player is the launch authority — i.e. they sync the
+        /// authoritative launch config into GameDataSO and their SceneLoader
+        /// performs the actual scene load. Three cases hold launch authority:
         /// (a) no sync manager at all (legacy solo path),
         /// (b) sync manager exists but the local player is not in a multi-human
         ///     party session (PartyMembers <= 1, i.e. just self — presence-lobby
         ///     membership is irrelevant),
         /// (c) the local player is the host of an active multi-human party session.
         ///
-        /// Non-host party clients return false: their modal closes silently and
-        /// they ride Netcode scene replication into the game scene.
+        /// Non-host party clients return false: they skip the data sync but still
+        /// raise InvokeGameLaunch locally so SceneLoader shows the loading splash
+        /// and enters LoadingGame — its connected-client guard defers the actual
+        /// scene load to the server's Netcode scene replication.
         /// </summary>
         internal static bool ShouldLocalPlayerLaunch(HostConnectionDataSO data, bool hasSyncManager)
         {
@@ -1098,8 +1101,9 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Called on ALL instances (host + clients) when every human player
-        /// has pressed Start/Confirm. The host launches the game; clients
-        /// close their modal (they'll be pulled into the game scene via Netcode).
+        /// has pressed Start/Confirm. The host syncs launch config and loads the
+        /// scene; clients show the loading splash and close their modal (they'll
+        /// be pulled into the game scene via Netcode scene replication).
         /// </summary>
         void HandleAllPlayersReady()
         {
@@ -1111,9 +1115,17 @@ namespace CosmicShore.UI
             {
                 audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
                 SyncAllGameDataForLaunch();
-                Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch()</color>");
-                gameData.InvokeGameLaunch();
             }
+
+            // Every instance raises the launch event. On the launch authority,
+            // SceneLoader.LaunchGame loads the scene; on non-host party clients
+            // it shows the loading splash, enters LoadingGame, and arms the
+            // splash fade, while its connected-client guard defers the actual
+            // scene load to the server's Netcode scene replication. Without
+            // this, clients sit on the menu/modal with no transition visual
+            // until the network scene load arrives.
+            Debug.Log($"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch() (launchAuthority={shouldLaunch})</color>");
+            gameData.InvokeGameLaunch();
 
             // Clear runtime state so it can't resurface after returning to menu
             _selectedGame = null;

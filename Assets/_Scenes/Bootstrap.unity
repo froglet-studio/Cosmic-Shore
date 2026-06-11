@@ -414,7 +414,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &203003805
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1156,9 +1156,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 820208339}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 923a1692e687af44daf6f67a2ef2ccb3, type: 3}
+  m_Script: {fileID: 11500000, guid: d9f5c531885ef6f4ba7346c2fed6a897, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  statusText: {fileID: 1713505288}
+  retryButton: {fileID: 203003806}
+  inboundRequestEvent: {fileID: 11400000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2e84b,
+    type: 2}
+  outboundRetryEvent: {fileID: 11400000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2e95c, type: 2}
 --- !u!114 &820208347
 MonoBehaviour:
   m_ObjectHideFlags: 0
