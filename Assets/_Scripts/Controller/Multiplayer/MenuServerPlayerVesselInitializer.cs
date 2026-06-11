@@ -32,6 +32,14 @@ namespace CosmicShore.Gameplay
                  "trigger colliders stay bounded while the menu idles. 0 = unbounded.")]
         [SerializeField] int menuTrailBlockCap = 200;
 
+        [Header("Menu Domain")]
+        [Tooltip("Domain (team color) forced on every human's menu vessel. Jade by default " +
+                 "so the autopilot renders green and the cell's flora/fauna react to a " +
+                 "consistent domain. Server-write only: replicates to all peers via " +
+                 "Player.NetDomain → OnNetDomainChanged (mirrors + full repaint). This is " +
+                 "the ONLY menu domain reset — client code must never write domain locally.")]
+        [SerializeField] Domains menuVesselDomain = Domains.Jade;
+
         bool _isSwapping;
 
         /// <summary>Whether a vessel swap is currently in progress.</summary>
@@ -64,10 +72,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Menu override: after the base spawns + initializes the vessel, activate autopilot.
+        /// Menu override: reset the player's domain to the menu domain BEFORE the base
+        /// spawns + paints the vessel, then activate autopilot after.
+        /// Server-authoritative — the ONLY menu domain reset. Runs on every menu entry
+        /// path (fresh start, party join, host-return from a game) and applies identically
+        /// to the solo host and to party members: there is no separate single-player path.
+        /// Writing before base means the vessel paints the menu domain at init; if the
+        /// delta reaches a client after its pair-init instead, Player.OnNetDomainChanged
+        /// re-syncs the mirrors and repaints (ShipHelper.SetShipProperties).
         /// </summary>
         protected override async UniTask OnPlayerReadyToSpawnAsync(Player player, CancellationToken ct)
         {
+            if (!player.NetIsAI.Value && player.NetDomain.Value != menuVesselDomain)
+                player.NetDomain.Value = menuVesselDomain;
+
             await base.OnPlayerReadyToSpawnAsync(player, ct);
             ActivateAutopilot(player);
         }
