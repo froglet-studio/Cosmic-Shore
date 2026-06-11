@@ -73,6 +73,19 @@ The prompter tests progress without prompting the loop. Contract:
 | `port-m3` | First rendered frame (PNG artifact in chat + repo) | pull + open artifact | ⬜ |
 | `port-m4` | First interactive desktop build | `… -- --render` | ⬜ |
 
+## Session resume protocol (fresh session / fresh container)
+
+The loop's memory is THIS FILE plus the branch — no chat context is load-bearing.
+To resume in a brand-new session, the prompter pastes exactly:
+
+> /loop run Port/setup.sh if the toolchain is missing, then continue the Cosmic Shore
+> port per Port/PORT_PLAN.md: SPRINT MODE (SkimRace toward full Cosmic Shore parity)
+> + the fidelity arc (docs/VESSEL_LAYER.md). Keep dotnet test green, update this plan,
+> commit and push to claude/quirky-cannon-sk8a02, ship playable zips to Port/dist.
+
+That re-arms the heartbeat, rebuilds the toolchain (~3-5 min via setup.sh), and picks
+up at NEXT UP. Mid-iteration work is never stranded: every iteration ends pushed.
+
 ## Toolchain (re-verify each fresh container)
 
 - .NET 10 SDK at `/opt/dotnet` (installed via `dotnet-install.sh --channel LTS`;
