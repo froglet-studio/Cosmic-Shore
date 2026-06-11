@@ -558,8 +558,51 @@ namespace CosmicShore.UI
             RefreshTileVisibility();
         }
 
+        /// <summary>
+        /// Resolves the local human's own Player for owner-writes (domain pick RPC,
+        /// vessel type). Primary source is gameData.LocalPlayer; falls back to
+        /// NetworkManager.LocalClient.PlayerObject because LocalPlayer can be null or
+        /// stale on a client whose menu pair-init hasn't completed (game→menu return),
+        /// or after RemovePlayerData's Players[0] repair pointed it at another player
+        /// (on the host that can even be an AI, which shares the host's client id —
+        /// hence the IsInitializedAsAI guard).
+        /// Returns null only when no owned Player exists — callers must treat that as
+        /// an error, not skip silently: a swallowed pick leaves the player on a stale
+        /// domain for the whole next game while the tile UI claims otherwise.
+        /// </summary>
+        Player ResolveLocalOwnedPlayer()
+        {
+            if (gameData != null
+                && gameData.LocalPlayer is Player cached
+                && cached.IsOwner && !cached.IsInitializedAsAI)
+                return cached;
+
+            var nm = NetworkManager.Singleton;
+            var playerObj = nm != null ? nm.LocalClient?.PlayerObject : null;
+            if (playerObj != null && playerObj.TryGetComponent<Player>(out var resolved) && resolved.IsOwner)
+            {
+                Debug.LogWarning("[ArcadeConfigModal] gameData.LocalPlayer was null/stale — " +
+                                 "resolved local Player via NetworkManager.LocalClient instead.");
+                return resolved;
+            }
+
+            return null;
+        }
+
         void HandleDomainSelected(Domains domain)
         {
+            // Resolve BEFORE touching any UI state: if the pick cannot reach the server,
+            // the tile must not highlight — the UI shown to the player always matches the
+            // server's truth (chip movement is already NetDomain-event-driven).
+            var player = ResolveLocalOwnedPlayer();
+            if (player == null)
+            {
+                Debug.LogError($"[ArcadeConfigModal] Domain pick '{domain}' DROPPED — no owned local " +
+                               "Player resolved (pair-init incomplete after scene return?). " +
+                               "Pick not sent to server; tile selection unchanged.");
+                return;
+            }
+
             if (config != null)
                 config.SelectedDomain = domain;
 
@@ -567,8 +610,7 @@ namespace CosmicShore.UI
             // The chip movement is purely event-driven — Player.NetDomain.OnValueChanged
             // fires on every client (including the host) and triggers the surgical
             // reparent in HandlePlayerDomainChanged. No refresh-everything-each-event.
-            if (gameData != null && gameData.LocalPlayer is Player player && player.IsOwner)
-                player.RequestSetDomain_ServerRpc(domain);
+            player.RequestSetDomain_ServerRpc(domain);
 
             SyncGameDataDomain();
             RefreshTileVisibility();
@@ -1158,17 +1200,22 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Writes the selected vessel class directly to the local Player's
-        /// NetDefaultVesselType NetworkVariable (owner-writable). This ensures
-        /// each client's vessel choice is propagated to the server independently
-        /// of gameData.selectedVesselClass (which carries the host's choice).
+        /// NetDefaultVesselType NetworkVariable (owner-writable — legal from the
+        /// owning client, unlike NetDomain). This ensures each client's vessel
+        /// choice is propagated to the server independently of
+        /// gameData.selectedVesselClass (which carries the host's choice).
         /// </summary>
         void SyncLocalPlayerVesselType(SO_Vessel ship)
         {
-            if (gameData.LocalPlayer is not Player localPlayer) return;
-            if (!localPlayer.IsOwner) return;
+            var localPlayer = ResolveLocalOwnedPlayer();
+            if (localPlayer == null)
+            {
+                Debug.LogError("[ArcadeConfigModal] Vessel selection DROPPED — no owned local Player " +
+                               "resolved. NetDefaultVesselType not updated; spawn would use a stale class.");
+                return;
+            }
 
-            var vesselType = ship ? ship.Class : VesselClassType.Dolphin;
-            localPlayer.NetDefaultVesselType.Value = vesselType;
+            localPlayer.NetDefaultVesselType.Value = ship ? ship.Class : VesselClassType.Dolphin;
         }
 
         #endregion
