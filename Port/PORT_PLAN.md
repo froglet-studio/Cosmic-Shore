@@ -57,13 +57,17 @@ The prompter tests progress without prompting the loop. Contract:
    notification with the exact command (or file) to try. (Annotated `port-mN` tags are
    created locally, but this environment's git proxy only accepts branch pushes — the
    log + commit message are the durable record.)
-5. **Standalone binaries on request / at milestones.** No-install executables build with
-   (NOTE `IncludeNativeLibrariesForSelfExtract` — without it GLFW/OpenAL natives land
-   BESIDE the exe and a bare-exe zip fails to load, which shipped once):
-   `dotnet publish <proj> -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true`
-   (swap `-r` for `linux-x64` / `osx-arm64`; ~36 MB single file; no trimming — the
-   engine's reflective lifecycle discovery forbids it). The exe holds its console window
-   open when double-clicked (`--no-wait` skips). Delivered into the chat at milestones.
+5. **Standalone binaries on request / at milestones.** No-install executables build with:
+   `dotnet publish <proj> -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true`
+   (swap `-r` for `linux-x64` / `osx-arm64`; ~39 MB exe; no trimming — the engine's
+   reflective lifecycle discovery forbids it). **Do NOT add
+   `IncludeNativeLibrariesForSelfExtract`** — verified 2026-06-11: Silk.NET's loader
+   cannot load self-extracted natives ("GlfwPlatform - not applicable"); it only finds
+   natives BESIDE the exe (same root cause as the `CopySilkNativesBesideApp` build
+   target). Without the flag, glfw3/soft_oal land beside the exe in the publish dir —
+   **zip them together with the exe** (the one historical bad ship was a bare-exe zip
+   missing those loose natives). The exe holds its console window open when
+   double-clicked (`--no-wait` skips). Delivered into the chat at milestones.
 6. **Fast test loop for the prompter** (replaces manual zip downloads):
    one-time `git clone` + checkout `claude/quirky-cannon-sk8a02`, then double-click
    `Port/play-latest.bat` after each push — it pulls, extracts dist, and launches
@@ -144,8 +148,13 @@ as two sticks. **SQUIRREL HULL SHIPPED**: first-party binary-FBX extractor (Pyth
 SquirrelVessel_CosmicShoresTest1.fbx (13,660 tris) → axis-remapped/normalized →
 Assets/squirrel.mesh embedded resource → flat-lit at load in jade/ruby palettes; dart
 remains fallback. **Gamepad yaw inverted** post-strategy (prompter preference; XDiff/
-YDiff semantics untouched). NEXT: prompter verifies Squirrel nose orientation in motion
-(flip is one sign in the extractor), drift/trail feel, rival tuning. Fidelity arc: **V1 DONE** (engine E3-E8/E10: RPC attrs, profiling shim, Screen/
+YDiff semantics untouched). **Gamepad roll inverted** post-strategy alongside it
+(prompter, 2026-06-11 second feedback round, first from-source flight): yaw-inverted
+steering banks opposite the turn unless roll flips too; AI and keyboard paths
+untouched. Both dist zips rebuilt on the corrected publish recipe (loose natives
+beside the exe — see testing-protocol item 5). NEXT: prompter verifies roll feel +
+Squirrel nose orientation in motion (flip is one sign in the extractor), drift/trail
+feel, rival tuning. Fidelity arc: **V1 DONE** (engine E3-E8/E10: RPC attrs, profiling shim, Screen/
 Application/PlayerPrefs/Resources statics, Object.DontDestroyOnLoad/Instantiate/
 FindFirstObjectByType, Physics+collider stubs; NetworkBehaviour now : MonoBehaviour
 (parity); ported PauseSystem, SafeLookRotation, Singleton family, NetMarkers,

@@ -512,6 +512,11 @@ void main()
                 // after the ported strategy so XDiff throttle and YDiff roll semantics
                 // stay authentic; only the steering sense flips.
                 _playerStatus.XSum = -_playerStatus.XSum;
+                // Prompter preference (2026-06-11, second feedback round): roll sense
+                // flips with it — yaw-inverted steering banks opposite to the turn
+                // unless roll inverts too. Same post-strategy treatment; the ported
+                // strategy's YDiff wire semantic stays authentic, AI input untouched.
+                _playerStatus.YDiff = -_playerStatus.YDiff;
                 return;
             }
 
