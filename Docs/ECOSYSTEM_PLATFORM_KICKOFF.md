@@ -68,12 +68,13 @@ section; everything after it is the supporting context that prompt refers to.
 **The fundamentals in play:** Domain, Mass (= prisms, conserved), Cells (`CellType`
 + phases), Elementals, Prisms/Prismscapes, Flora & Fauna, Vessels. See CLAUDE.md.
 
-**Cell phase spine.** `Cell` derives a `CellPhase`
-(Sprout→Quiet→Settled→Restless→Frozen→Rabid) from its live prism count via
-`CellPhaseRules.Compute(count, current, thresholds)` with up/down hysteresis.
-Thresholds live per-biome on `CellConfigDataSO.PhaseThresholds`
-(`CellPhaseThresholds`), falling back to `CellPhaseThresholds.Default` for legacy
-zeroed assets. Phase drives flora gates and fauna aggression — **not** spawn rate.
+**Cell phase spine.** `Cell` derives a `CellPhase` (Calm → Restless → Frenzy — a
+3-rung ladder; the phase *is* the fauna aggression band) from its live prism count
+via `CellPhaseRules.Compute(count, current, thresholds)` with up/down hysteresis.
+Thresholds live per-biome on `CellConfigDataSO.PhaseThresholds` (`CellPhaseThresholds`
+— now just `RestlessEnter/Exit` + `FrenzyEnter/Exit`), falling back to
+`CellPhaseThresholds.Default` for legacy zeroed assets. Phase drives the single flora
+gate (grow + plant until Frenzy) and fauna aggression — **not** spawn rate.
 
 **3-species food web (`FaunaDiet` = Herbivore | Predator).**
 - **Tadpole** (`Boid`, `forager=true`, herbivore): emergent forager. Seeks the
@@ -92,10 +93,16 @@ zeroed assets. Phase drives flora gates and fauna aggression — **not** spawn r
 seek itself. `CellConfigDataSO.SenseRadiusOverride` decouples grid coverage from the
 membrane's visual radius (Skim Race uses 3000 so fauna sense the whole long track).
 
-**Retired scaffolding.** The flora **regrowth pulse is gone** —
-`Cell.FloraGrowingEnabled => phase < Frozen`. The fixed-period fauna spawner is
-still in place (a known first-approximation cheat; retire it via reproduction —
-work item 4 below).
+**Retired scaffolding.** The flora **regrowth pulse**, the flora **phase-gated
+self-limit**, AND the **fixed-period spawner as population driver** are all gone.
+Flora plant + grow at a **steady rate until Frenzy**
+(`Cell.FloraGrowingEnabled = FloraPlantingEnabled = phase < Frenzy`); the food web
+is the only down-force (removing the staggered self-limit collapsed the phase
+ladder 6→3). **Reproduction is the population driver** (work item 4 — LANDED):
+feeds convert to births (`FeedsPerOffspring`/`OffspringPerBirth`/cooldown/cap on
+`FaunaConfigurationSO`), and the spawner is demoted to a seeder that only tops a
+species up to its seed floor (bootstrap + extinction recovery). See ECOSYSTEM.md
+§6.1.
 
 **Two test scenes wired** (`Docs/ECOSYSTEM.md` §7.2):
 - *Menu_Main* freestyle toy box (Blob Cell) — vibrant, indefinitely watchable.
@@ -146,10 +153,13 @@ every cheat with an emergent force.** Start at the top.
    so arbitrary multi-tier food webs compose from config. This is the key that
    unlocks "countless ecosystems."
 
-4. **Fauna reproduction → retire the fixed-period spawner cheat.**
-   Well-fed fauna reproduce; the spawner becomes a one-time *seeder*. Population
-   becomes a true function of the food web (genuine Lotka–Volterra oscillation with
-   the predator/herbivore tiers). This removes the last scaffolding cheat.
+4. **Fauna reproduction → retire the fixed-period spawner cheat. ✅ LANDED.**
+   Well-fed fauna reproduce (`FaunaConfigurationSO` reproduction knobs;
+   `Fauna.NotifyFed → TryReproduce`; `FaunaReproductionRules` + tests); the spawner
+   is a *seeder* that only tops a species up to its seed floor. Population is a
+   true function of the food web — genuine Lotka–Volterra with the
+   predator/herbivore tiers (the 3-tier Blob web incl. the shark is authored).
+   See ECOSYSTEM.md §6.1.
 
 5. **Elemental integration (ties ecology to gameplay through the right fundamental).**
    Flora/fauna express their effects via **Elementals** (Charge/Mass/Space/Time),

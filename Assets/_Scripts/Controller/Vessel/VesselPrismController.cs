@@ -51,13 +51,6 @@ namespace CosmicShore.Gameplay
         float waitTime;
         [SerializeField] float startDelay = 2.1f;
 
-        [Header("Trail Cap")]
-        [Tooltip("Max blocks per trail before the oldest is recycled back to the pool. " +
-                 "0 = unlimited (default — gameplay trails are never capped). Set > 0 only for " +
-                 "cosmetic contexts like the Menu_Main lava-lamp autopilot so trail geometry and " +
-                 "trigger colliders don't grow without bound while idling.")]
-        [SerializeField] int maxTrailBlocks = 0;
-
         // Trails
         public Trail Trail = new Trail();
         readonly Trail Trail2 = new Trail();
@@ -272,29 +265,6 @@ namespace CosmicShore.Gameplay
             // Events
             OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);
             OnBlockSpawned?.Invoke(prism);
-
-            EnforceTrailCap(trail);
-        }
-
-        /// <summary>
-        /// When a cap is configured (maxTrailBlocks &gt; 0), recycle the oldest blocks
-        /// back to the pool so the trail stays a fixed-length ring trailing the vessel.
-        /// No-op in gameplay where maxTrailBlocks is 0, leaving trails unbounded as before.
-        /// Recycling uses ReturnToPool (the normal despawn path) — it does NOT raise the
-        /// block-destroyed event, so no scoring/VFX side effects.
-        /// </summary>
-        public void SetMaxTrailBlocks(int max) => maxTrailBlocks = Mathf.Max(0, max);
-
-        void EnforceTrailCap(Trail trail)
-        {
-            if (maxTrailBlocks <= 0) return;
-
-            while (trail.TrailList.Count > maxTrailBlocks)
-            {
-                var recycled = trail.RemoveOldest();
-                if (!recycled) break;
-                recycled.ReturnToPool();
-            }
         }
 
         public List<Prism> GetLastTwoBlocks()

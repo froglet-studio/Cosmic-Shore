@@ -16,8 +16,11 @@ namespace CosmicShore.Core
         [SerializeField] private GameObject missionsGameObject;
         [SerializeField] private List<CallToActionTarget> gameCards;
         [SerializeField] private ScreenSwitcher screenSwitcher;
-        [SerializeField] private IAnimator animator; 
+        [SerializeField] private IAnimator animator;
         [SerializeField] private TutorialFlowController flowController;
+        [Tooltip("The one game card left unlocked during the tutorial. Defaults to the first " +
+                 "game in the quest progression chain (Crystal Capture).")]
+        [SerializeField] private CallToActionTargetType tutorialGameTarget = CallToActionTargetType.PlayGameMultiplayerCrystalCapture;
 
         public void SetupPreIntroUI()
         {
@@ -29,7 +32,7 @@ namespace CosmicShore.Core
         public void PrepareArcadeScreen()
         {
             //screenSwitcher.OnClickArcadeNav();
-            LockAllExceptFreestyle();
+            LockAllExceptTutorialGame();
         }
 
         public IEnumerator ExecutePayload(TutorialStepPayload payload, Action onComplete)
@@ -56,14 +59,14 @@ namespace CosmicShore.Core
             }
         }
 
-        private void LockAllExceptFreestyle()
+        private void LockAllExceptTutorialGame()
         {
             foreach (var card in gameCards)
             {
                 var btn = card.GetComponentInChildren<UnityEngine.UI.Button>();
                 if (btn == null)
                 {
-                    Debug.LogWarning($"[{nameof(LockAllExceptFreestyle)}] no Button found on {card.name}");
+                    Debug.LogWarning($"[{nameof(LockAllExceptTutorialGame)}] no Button found on {card.name}");
                     continue;
                 }
                 else
@@ -71,8 +74,8 @@ namespace CosmicShore.Core
                     Debug.Log("Button found");
                 }
 
-                bool isFreestyle = card.TargetID == CallToActionTargetType.PlayGameFreestyle;
-                btn.interactable = isFreestyle;
+                bool isTutorialGame = card.TargetID == tutorialGameTarget;
+                btn.interactable = isTutorialGame;
             }
         }
     }

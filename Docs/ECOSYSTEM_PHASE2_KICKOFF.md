@@ -43,18 +43,22 @@ fundamentals whose interactions produce rich, self-balancing, surprising behavio
   live, and despawn if they can't feed for `starvationSeconds`; production pauses
   below `FaunaFoodFloor`. Prism-count→phase→**aggression** drives *behavior* (seek
   crystal / opposing centroid / densest), not spawn rate.
-- **Flora:** plant `Phase < Settled`, grow `Phase < Frozen`. The **regrowth pulse
-  is retired** (`FloraGrowingEnabled = phase < Frozen`); a full cell now stays
-  full until an active force eats it (valid state per §0).
+- **Flora:** plant + grow at a **steady rate until Frenzy** (`FloraPlantingEnabled =
+  FloraGrowingEnabled = phase < Frenzy`). The regrowth pulse **and** the staggered
+  phase-gated self-limit are both retired (that collapsed the phase ladder 6→3:
+  Calm/Restless/Frenzy); a full cell now stays full until an active force eats it
+  (valid state per §0).
 - **Diet split landed (code):** `FaunaDiet` (Herbivore default | Predator) on the
   `Fauna` base; `LightFauna` consume branches by diet (herbivore→prisms,
   predator→herbivore fauna via `Predated`); both bounded by the shared starvation
   clock = two-tier Lotka–Volterra. **Predators aren't active until authored** —
   see ECOSYSTEM.md §7.1 (predator prefab + config + wire into a `SpawnProfileSO`).
-- **Density:** Blob (menu) thresholds scaled ~6× (Frozen 4200 / Rabid 5400).
-- **One cheat still in place — to retire:** the **fixed-period fauna spawner** (a
-  hard-coded population source → step 3, reproduction). The regrowth pulse is
-  already gone; prism decay was rejected (§0), not added.
+- **Density:** Blob (menu) thresholds `RestlessEnter 600 / FrenzyEnter 1000`
+  (perf-bounded — prism count is the dominant frame cost; see ECOSYSTEM.md §12).
+- **All scaffolding cheats retired:** regrowth pulse, flora self-limit, and the
+  fixed-period spawner as population source (now reproduction-driven; the timer
+  only seeds back up to the floor — ECOSYSTEM.md §6.1). Prism decay was rejected
+  (§0), not added.
 
 ### ⚠️ Locked invariant — mass is conserved (no passive decay). Read ECOSYSTEM.md §0.
 A prism (flora health-prism or vessel-spawned) is removed **only by active
@@ -71,17 +75,18 @@ emergence.")
 ### Phase 2 build order (ECOSYSTEM.md §10 — each step ships alone, composes with the fundamentals, and retires a cheat)
 1. **~~Prism mortality / decay~~ — REJECTED (see §0 above).** A timed culler is
    just the regrowth pulse inverted — a cheat. The down-force is the food web, not
-   decay. **Done instead:** the regrowth pulse is retired
-   (`FloraGrowingEnabled = phase < Frozen`).
+   decay. **Done instead:** the regrowth pulse *and* the flora phase-gated
+   self-limit are both retired (`FloraGrowingEnabled = FloraPlantingEnabled =
+   phase < Frenzy`; steady growth until frenzy, phase ladder collapsed 6→3).
 2. **Predator / herbivore split — code DONE, authoring/tuning remains.** The diet
    machinery is in (`FaunaDiet`, `Fauna.diet`/`Predated`, `LightFauna` consume
    branch); both diets share the starvation bound → Lotka–Volterra. **Next:**
    author a predator prefab + `FaunaConfigurationSO`, wire alongside the herbivore
    config in a `SpawnProfileSO`, then tune to a breathing equilibrium (§7.1). This
    is the active down-force that lets accumulations come down through the food web.
-3. **Fauna reproduction** — *retires the fixed-period-spawner cheat.* Well-fed
-   fauna breed; the spawner becomes a one-time seeder. Population becomes a true
-   function of the food web.
+3. **Fauna reproduction — ✅ LANDED (ECOSYSTEM.md §6.1).** Well-fed fauna breed;
+   the spawner is a seeder topping species up to their seed floor. Population is a
+   true function of the food web.
 4. **Elemental integration** — flora/fauna express effects through **Elementals**
    so vessels *feel* the ecology.
 5. **Domain territory dynamics** · 6. **flora succession** · 7. **cross-cell migration.**

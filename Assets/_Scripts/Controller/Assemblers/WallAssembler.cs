@@ -197,7 +197,16 @@ namespace CosmicShore.Gameplay
                     Vector3 newPosition = CalculatePosition(site);
                     Quaternion newRotation = CalculateRotation(site);
 
-                    if (!Physics.CheckBox(newPosition, Prism.transform.localScale / 2f))
+                    // Occupancy via PrismSpatialIndex.TryReserve instead of
+                    // Physics.CheckBox — same fix as GyroidAssembler.GetGrowthInfo:
+                    // the physics probe couldn't see prisms inside their 0.6s
+                    // disabled-collider spawn window (and localScale here was the
+                    // *animating* value, near-zero through grow-in). The claim is
+                    // consumed when the spawned prism registers, or lapses via TTL.
+                    float clearRadius = Mathf.Max(2f, 0.4f * (newPosition - transform.position).magnitude);
+                    var spatialIndex = PrismSpatialIndex.EnsureInstance();
+                    if (spatialIndex == null || !spatialIndex.IsAvailable ||
+                        spatialIndex.TryReserve(newPosition, clearRadius))
                     {
                         SetBondSiteStatus(site, true);
                         return new GrowthInfo
