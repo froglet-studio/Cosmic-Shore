@@ -192,6 +192,62 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
         }
 
         [Test]
+        public void Compute_ThreadBreakdown_AveragesAndBusyCpu()
+        {
+            var snapshots = new List<FrameSnapshot>
+            {
+                // main 16, wait 10, render 4 → busy = max(6, 4) = 6
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, cpuFrameTimeMs = 16.6f,
+                    cpuMainThreadTimeMs = 16f, cpuPresentWaitTimeMs = 10f, cpuRenderThreadTimeMs = 4f },
+                // main 12, wait 2, render 11 → busy = max(10, 11) = 11
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, cpuFrameTimeMs = 16.6f,
+                    cpuMainThreadTimeMs = 12f, cpuPresentWaitTimeMs = 2f, cpuRenderThreadTimeMs = 11f },
+            };
+
+            var stats = BenchmarkStatistics.Compute(snapshots, 2f);
+
+            Assert.AreEqual(14f, stats.avgCpuMainThreadTimeMs, 0.01f);
+            Assert.AreEqual(6f, stats.avgCpuPresentWaitTimeMs, 0.01f);
+            Assert.AreEqual(7.5f, stats.avgCpuRenderThreadTimeMs, 0.01f);
+            Assert.AreEqual(8.5f, stats.avgCpuBusyTimeMs, 0.01f);
+            Assert.AreEqual(11f, stats.maxCpuBusyTimeMs, 0.01f);
+            // Effective CPU prefers busy time when thread data is present.
+            Assert.AreEqual(8.5f, stats.EffectiveCpuTimeMs, 0.01f);
+        }
+
+        [Test]
+        public void Compute_NoThreadData_BusyFallsBackToTotal()
+        {
+            // Pre-v2 data: only the cpu total — busy must equal the total so verdicts
+            // stay backward-compatible.
+            var snapshots = new List<FrameSnapshot>
+            {
+                new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, cpuFrameTimeMs = 12f },
+            };
+
+            var stats = BenchmarkStatistics.Compute(snapshots, 1f);
+
+            Assert.AreEqual(12f, stats.avgCpuBusyTimeMs, 0.01f);
+            Assert.AreEqual(12f, stats.EffectiveCpuTimeMs, 0.01f);
+        }
+
+        [Test]
+        public void Compute_PhysicsTime_AveragesMaxAndShare()
+        {
+            var snapshots = new List<FrameSnapshot>
+            {
+                new FrameSnapshot { deltaTimeMs = 20f, fps = 50f, physicsTimeMs = 2f },
+                new FrameSnapshot { deltaTimeMs = 20f, fps = 50f, physicsTimeMs = 6f },
+            };
+
+            var stats = BenchmarkStatistics.Compute(snapshots, 2f);
+
+            Assert.AreEqual(4f, stats.avgPhysicsTimeMs, 0.01f);
+            Assert.AreEqual(6f, stats.maxPhysicsTimeMs, 0.01f);
+            Assert.AreEqual(20f, stats.physicsSharePercent, 0.1f); // 4 of 20 ms
+        }
+
+        [Test]
         public void Compute_RisingMemory_ProducesPositiveSlope()
         {
             // Memory 100, 200, 300 over frame indices 0,1,2 → slope = 100 bytes/frame.

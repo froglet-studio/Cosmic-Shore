@@ -18,6 +18,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public float cpuFrameTimeMs;
         public float gpuFrameTimeMs;
 
+        // CPU thread breakdown (ms) from FrameTimingManager — separates real work from the
+        // idle wait-for-present so capped runs don't misread as CPU-bound (schema v2). 0 when
+        // unavailable.
+        public float cpuMainThreadTimeMs;    // frame start → main thread done (incl. present wait)
+        public float cpuPresentWaitTimeMs;   // main-thread time spent waiting for Present()
+        public float cpuRenderThreadTimeMs;  // first render-thread job → Present() submitted
+
         // Rendering
         public int drawCalls;
         public int batches;
@@ -32,6 +39,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // Physics
         public int activeRigidbodies;
+        public float physicsTimeMs;          // Physics.Processing marker time (ms, schema v2)
 
         // Netcode (NGO) — 0 when uninstrumented / non-networked. netcodeTimeMs is the summed
         // self time of the CSM.Net.* markers this frame.

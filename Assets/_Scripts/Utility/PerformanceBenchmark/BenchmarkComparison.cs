@@ -75,6 +75,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 new MetricDelta("P99 Frame Time (ms)", bStats.p99FrameTimeMs, cStats.p99FrameTimeMs, true, neutralThresholdPercent),
                 new MetricDelta("StdDev Frame Time (ms)", bStats.stdDevFrameTimeMs, cStats.stdDevFrameTimeMs, true, neutralThresholdPercent),
 
+                // CPU / GPU / physics (lower is better; 0 on both sides reads as neutral)
+                new MetricDelta("Busy CPU (ms)", bStats.EffectiveCpuTimeMs, cStats.EffectiveCpuTimeMs, true, neutralThresholdPercent),
+                new MetricDelta("Avg GPU (ms)", bStats.avgGpuFrameTimeMs, cStats.avgGpuFrameTimeMs, true, neutralThresholdPercent),
+                new MetricDelta("Physics Share (%)", bStats.physicsSharePercent, cStats.physicsSharePercent, true, neutralThresholdPercent),
+
                 // Rendering (lower is better)
                 new MetricDelta("Avg Draw Calls", bStats.avgDrawCalls, cStats.avgDrawCalls, true, neutralThresholdPercent),
                 new MetricDelta("Avg Batches", bStats.avgBatches, cStats.avgBatches, true, neutralThresholdPercent),

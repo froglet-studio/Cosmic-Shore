@@ -477,7 +477,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 sb.AppendLine($"frames {s.totalFrames} · {s.durationSeconds:F0}s · avg {s.avgFps:F1} fps (worst1% {s.p1Fps:F1})");
                 sb.AppendLine($"frame ms: avg {s.avgFrameTimeMs:F1} · p95 {s.p95FrameTimeMs:F1} · p99 {s.p99FrameTimeMs:F1} · max {s.maxFrameTimeMs:F1} · stddev {s.stdDevFrameTimeMs:F1}");
                 if (s.avgCpuFrameTimeMs > 0.001f || s.avgGpuFrameTimeMs > 0.001f)
-                    sb.AppendLine($"CPU {s.avgCpuFrameTimeMs:F1} / GPU {s.avgGpuFrameTimeMs:F1} ms ({report.analysis?.boundVerdict})");
+                    sb.AppendLine($"CPU {s.EffectiveCpuTimeMs:F1} busy ({s.avgCpuFrameTimeMs:F1} total) / GPU {s.avgGpuFrameTimeMs:F1} ms ({report.analysis?.boundVerdict})");
+                if (s.avgCpuMainThreadTimeMs > 0.001f)
+                    sb.AppendLine($"threads ms: main {s.avgCpuMainThreadTimeMs:F1} (wait {s.avgCpuPresentWaitTimeMs:F1}) · render {s.avgCpuRenderThreadTimeMs:F1} · " +
+                                  $"physics {s.avgPhysicsTimeMs:F2} ({s.physicsSharePercent:F1}%) · netcode {s.avgNetcodeTimeMs:F2} ({s.netcodeSharePercent:F1}%)");
                 sb.AppendLine($"draws {s.avgDrawCalls:F0} · tris {s.avgTriangles:F0} · GC {(s.totalFrames > 0 ? (s.totalGcAllocated / (float)s.totalFrames) / 1024f : 0):F1} KB/frame");
             }
             var spikes = report.spikes;

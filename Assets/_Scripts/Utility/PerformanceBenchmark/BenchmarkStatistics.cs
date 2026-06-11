@@ -27,6 +27,22 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public float avgGpuFrameTimeMs;
         public float maxGpuFrameTimeMs;
 
+        // CPU thread breakdown (ms, schema v2) — 0 on pre-v2 reports / unsupported platforms.
+        public float avgCpuMainThreadTimeMs;
+        public float avgCpuPresentWaitTimeMs;
+        public float avgCpuRenderThreadTimeMs;
+
+        // Busy CPU = max(main thread − present wait, render thread) per frame — actual CPU
+        // work with the vsync/targetFrameRate idle removed. Equals the raw total on pre-v2
+        // data (no thread times), so verdicts stay backward-compatible.
+        public float avgCpuBusyTimeMs;
+        public float maxCpuBusyTimeMs;
+
+        /// <summary>CPU number the bound verdict compares against GPU: busy time when
+        /// available, else the raw total. Not serialized (derived).</summary>
+        public float EffectiveCpuTimeMs =>
+            avgCpuBusyTimeMs > 0.001f ? avgCpuBusyTimeMs : avgCpuFrameTimeMs;
+
         // FPS
         public float avgFps;
         public float minFps;
@@ -57,6 +73,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // Physics
         public float avgActiveRigidbodies;
+        public float avgPhysicsTimeMs;       // Physics.Processing (schema v2)
+        public float maxPhysicsTimeMs;
+        public float physicsSharePercent;    // avg physics time as a % of avg frame time
 
         // Netcode (NGO)
         public float avgNetcodeTimeMs;
@@ -107,6 +126,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             long sumPlayers = 0;
             float sumCpu = 0;
             float sumGpu = 0;
+            float sumCpuMain = 0;
+            float sumCpuWait = 0;
+            float sumCpuRender = 0;
+            float sumCpuBusy = 0;
+            float sumPhysicsMs = 0;
             float sumNetcode = 0;
             long sumRpcs = 0;
             long sumNetVars = 0;
@@ -144,6 +168,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 sumPlayers += s.activePlayers;
                 sumCpu += s.cpuFrameTimeMs;
                 sumGpu += s.gpuFrameTimeMs;
+                sumCpuMain += s.cpuMainThreadTimeMs;
+                sumCpuWait += s.cpuPresentWaitTimeMs;
+                sumCpuRender += s.cpuRenderThreadTimeMs;
+                float busy = FrameBoundness.BusyCpuMs(
+                    s.cpuFrameTimeMs, s.cpuMainThreadTimeMs, s.cpuPresentWaitTimeMs, s.cpuRenderThreadTimeMs);
+                sumCpuBusy += busy;
+                if (busy > stats.maxCpuBusyTimeMs) stats.maxCpuBusyTimeMs = busy;
+                sumPhysicsMs += s.physicsTimeMs;
+                if (s.physicsTimeMs > stats.maxPhysicsTimeMs) stats.maxPhysicsTimeMs = s.physicsTimeMs;
                 sumNetcode += s.netcodeTimeMs;
                 sumRpcs += s.rpcsSent;
                 sumNetVars += s.netVarsDirty;
@@ -186,6 +219,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             stats.avgActivePlayers = (float)sumPlayers / n;
             stats.avgCpuFrameTimeMs = sumCpu / n;
             stats.avgGpuFrameTimeMs = sumGpu / n;
+            stats.avgCpuMainThreadTimeMs = sumCpuMain / n;
+            stats.avgCpuPresentWaitTimeMs = sumCpuWait / n;
+            stats.avgCpuRenderThreadTimeMs = sumCpuRender / n;
+            stats.avgCpuBusyTimeMs = sumCpuBusy / n;
+            stats.avgPhysicsTimeMs = sumPhysicsMs / n;
+            stats.physicsSharePercent = stats.avgFrameTimeMs > 0.001f
+                ? stats.avgPhysicsTimeMs / stats.avgFrameTimeMs * 100f
+                : 0f;
             stats.avgNetcodeTimeMs = sumNetcode / n;
             stats.avgRpcsSent = (float)sumRpcs / n;
             stats.avgNetVarsDirty = (float)sumNetVars / n;
