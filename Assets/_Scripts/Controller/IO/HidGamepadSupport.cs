@@ -432,13 +432,17 @@ namespace CosmicShore.Gameplay
                 if (element.reportType != HID.HIDReportType.Input)
                     continue;
 
+                int logicalMin = element.logicalMin;
+                int logicalMax = element.logicalMax;
+                SignExtendLogicalRange(ref logicalMin, ref logicalMax, element.reportSizeInBits);
+
                 var axis = new AxisInfo
                 {
                     Present = true,
                     OffsetBits = element.reportOffsetInBits,
                     SizeBits = element.reportSizeInBits,
-                    LogicalMin = element.logicalMin,
-                    LogicalMax = element.logicalMax,
+                    LogicalMin = logicalMin,
+                    LogicalMax = logicalMax,
                 };
 
                 if (element.usagePage == HID.UsagePage.GenericDesktop)
@@ -610,6 +614,26 @@ namespace CosmicShore.Gameplay
                     $"offsetBits={axis.OffsetBits} sizeBits={sizeBits} logicalMin={axis.LogicalMin} " +
                     $"logicalMax={axis.LogicalMax} signed={signed} format={format} invert={invert} " +
                     $"params='{parameters}'");
+        }
+
+        // HID encodes a negative Logical Minimum within the field's own bit width. Some
+        // descriptors (notably the SteelSeries Nimbus) surface it as a large unsigned value —
+        // e.g. logicalMin=129, logicalMax=127 for an 8-bit axis, which actually means
+        // -127..127, a signed axis centered at 0. The tell is logicalMin > logicalMax. When we
+        // see that, sign-extend the bounds for the field width so the axis is recognized as
+        // signed and centers correctly. (Unity's own HID fallback misses this, which is why the
+        // Nimbus is erratic as a plain Joystick too.)
+        private static void SignExtendLogicalRange(ref int logicalMin, ref int logicalMax, int sizeBits)
+        {
+            if (sizeBits <= 0 || sizeBits >= 32 || logicalMin <= logicalMax)
+                return;
+
+            long range = 1L << sizeBits;
+            long signBit = 1L << (sizeBits - 1);
+            if (logicalMin >= signBit)
+                logicalMin = (int)(logicalMin - range);
+            if (logicalMax >= signBit)
+                logicalMax = (int)(logicalMax - range);
         }
 
         private static string AxisFormat(int sizeBits, bool signed)
