@@ -46,8 +46,8 @@ not as session properties. This is intentional:
 
 | Property key | Writer | Reader | Meaning |
 |---|---|---|---|
-| `displayName` | Self | Everyone | UI label |
-| `avatarId` | Self | Everyone | Avatar art |
+| `displayName` | Self | Everyone | UI label. Reconciled every refresh tick (see below) — first-run users join with the default "Pilot####" before the username panel, so the rename must heal even if a save is eaten (B10). |
+| `avatarId` | Self | Everyone | Avatar art. Reconciled with `displayName`. |
 | `partyCount` | Self | Everyone | "I'm in a party of N" — for "In Lobby N/4" badges |
 | `partyMax` | Self | Everyone | The cap N is referring to |
 | `invite_target` | Sender | Recipient (via refresh-loop scan) | Player ID of the recipient |
@@ -77,6 +77,7 @@ cluster — see `BUGS.md` B1.
 |---|---|---|
 | Presence-lobby active session reference | `PresenceLobbyService` only | `HostConnectionService` (via `IPresenceLobbyService.ActiveLobby`) |
 | Local player's lobby properties | `LobbyPropertyWriter.SaveWithRetryAsync` (mutex-protected) | All party services that need to publish |
+| Identity + party-state properties (`displayName`, `avatarId`, `partyCount`, `partyMax`, `matchName`) | `HostConnectionService.PublishPartyStateIfChangedAsync` only — change-detected per refresh tick; published-state trackers advance only on successful save, so an eaten write (B1 stale-index / rate limit) self-heals next tick. Trackers reset on every lobby (re)join because the join publishes a pre-request snapshot. | Everyone (via `RefreshOnlinePlayersDiff` → `OnlinePlayers`) |
 | `HostConnectionDataSO.OnlinePlayers` list | `HostConnectionService.RefreshOnlinePlayersDiff` | UI components (`OnlinePlayersPanel`, `PartyAreaPanel`, `PartyArcadeView`) |
 | `HostConnectionDataSO.PartyMembers` list | `HostConnectionService` (member-sync paths) | UI |
 

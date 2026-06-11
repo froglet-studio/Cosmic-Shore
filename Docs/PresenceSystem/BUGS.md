@@ -15,6 +15,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B1 | `ArgumentOutOfRangeException` (LobbyPatcher) spam at game start | High (cause) | 🟢 (needs Editor retest) |
 | B4 | TC1 second invite not delivered + party members vanish from 3rd player's panel | High, needs retest | 🔴 |
 | B6 | TC3 NRE (`WrappedLobbyService`) + empty online/request lists | Medium | 🔴 |
+| B10 | First-run username never reaches other players' online list (stays "Pilot####" until restart) | High (cause) | 🟢 (needs MPPM retest) |
 
 > **Working order.** Diagnostics-first. The presence-lobby cluster (B4,
 > B6) is the locked-design area — read `ARCHITECTURE.md` and
@@ -267,6 +268,75 @@ B1 write-path churn (see B1's Session 1 note). So B6's NRE and B1's
 stale-index are the same SDK defect — B6 is the read-path symptom, B1
 the write/delta-path symptom. Overlay classifies the read-path NRE
 `Transient` and recovers (keeps session, retries next tick).
+
+---
+
+## B10 — First-run username never reaches other players' online list 🟢 (fixed; needs MPPM retest)
+
+**Symptom.** A first-run user confirms their username (e.g. "Ys3") on the
+Authentication scene's username panel. Other players' presence/online
+list keeps showing the auto-generated default ("Pilot####",
+`PlayerDataService.CreateLocalDefaultProfile`) for the whole session.
+Restarting the renamed client makes the new name appear for everyone.
+
+**Root cause (high confidence).** Two compounding facts:
+
+1. **Identity is published eagerly with the default name.** The presence
+   lobby is joined (and the solo Relay party session created) on auth
+   sign-in — *before* the username panel is shown — so the join-time
+   `PlayerProperties` snapshot carries `Pilot####`.
+2. **The rename republish was a one-shot, fire-and-forget write with no
+   reconciliation.** `SetDisplayName` → `OnProfileChanged` →
+   `HandleProfileChanged` → `RepublishLocalIdentityAsync()` performed a
+   single `SaveCurrentPlayerDataAsync` via `LobbyPropertyWriter.WriteAsync`,
+   whose catch swallows the final failure as a warning. That single write
+   fires inside the startup write-burst window where lobby saves are
+   documented to fail persistently (B1: SDK stale-index defect exhausting
+   all `SaveWithRetryAsync` retries, observed "continuously"; plus the
+   ~1 write/s UGS rate limit). The per-tick publisher
+   `PublishPartyStateIfChangedAsync` reconciled only
+   `partyCount`/`partyMax`/`matchName` — **not** `displayName`/`avatarId` —
+   so an eaten identity write stayed lost forever.
+
+Restart "fixes" it because join/create-time `PlayerProperties` travel in
+the join request body — a different API surface unaffected by the broken
+post-join save path — and by then the cloud profile already holds the
+new name.
+
+**Fix (shipped).** Identity is now part of the self-healing per-tick
+publisher (`HostConnectionService.PublishPartyStateIfChangedAsync`):
+
+- `_publishedDisplayName` / `_publishedAvatarId` trackers advance only
+  after a successful save, so a failed save retries on the next 1.5 s
+  refresh tick until it lands.
+- `ApplyPostLobbyJoinState` resets the trackers on every (re)join, which
+  also heals the "username confirmed while the join was in flight" race
+  (the join published a pre-request snapshot).
+- `HandleProfileChanged` and the post-join catch-up now route through
+  `PublishPresenceImmediateAsync` (same mutex-safe publisher) — the
+  rename still pushes instantly when the save succeeds, and bespoke
+  `RepublishLocalIdentityAsync` is deleted. Side benefit: XP/crystal
+  profile churn no longer triggers unconditional lobby writes (the old
+  republish wrote on *every* `OnProfileChanged`, feeding the B1 churn).
+
+**Out of scope (noted).** The Relay party session's own player
+properties (`PartySessionService.BuildLocalPlayerProperties`) still
+carry the create-time name snapshot. Party-panel rows are seeded from
+invite payloads / presence data (live values), so no user-visible
+staleness is known there; revisit only if a party-panel variant of this
+bug is observed.
+
+**Retest (MPPM).** VP1 fresh profile → confirm username while VP2 sits
+in Menu_Main with the online panel open → VP2's row for VP1 must update
+to the new name within a few refresh ticks (≤ ~5 s), no VP1 restart.
+
+**Evidence.** `HostConnectionService.cs` (`PublishPartyStateIfChangedAsync`,
+`ApplyPostLobbyJoinState`, `HandleProfileChanged`,
+`EnsureInitializedAsync` post-join publish);
+`LobbyPropertyWriter.cs:103-127` (catch swallows final failure); B1
+MPPM Session 1 notes (write-path retry exhaustion);
+`AuthenticationSceneController.OnConfirmUsernameAsync`;
+`PlayerDataService.SetDisplayName`.
 
 ---
 
