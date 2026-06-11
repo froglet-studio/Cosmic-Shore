@@ -55,9 +55,15 @@ understood as a **view** of the same lifecycle, not an independent system.
    trail passives (ScoutTrailPrismScaler). Replaced the Physics.OverlapSphere
    calls those systems used to make against prism colliders.
 
- Cell.AddBlock / RemoveBlock (75m per-domain density grids, fauna targeting)
- — same lifecycle moments, coarse-density view. Phase 3 moves their call
-   sites onto the index's events so the streams cannot diverge.
+ _cells[i] (Cell.AddBlock / RemoveBlock — 75m per-domain density grids,
+ fauna targeting, cell phase LiveBlockCount)
+ — the coarse-density view, driven by the SAME lifecycle since Phase 3:
+   Register/MarkRestored bind the containing cell, MarkDestroyed/Unregister
+   release it, ForwardDomainChangeToCell re-files steals. One stream feeds
+   both the fine and coarse views, so they cannot diverge. Fauna bodies are
+   excluded from this view only (BindCell skips them). The flora ownership
+   stream (HealthBlockTracker → Cell.AddBlock for the LifeForm's host cell)
+   remains a second, idempotent contributor.
 ```
 
 ### Data structures
@@ -132,10 +138,11 @@ blocked for up to 5s). `AssembledFlora` orders its random-skip *before*
 | `IsAnyPrismWithin(pos, radius)` | Anyone (read-only) | Live prism in range (claims excluded) |
 | `QuerySphere(pos, radius, results)` | Anyone (read-only) | Gather live prisms in range into a caller scratch list — the replacement for `Physics.OverlapSphere` against prisms |
 | `ReleaseReservation(pos)` | A claimant that changed its mind | Explicit cancel |
-| `Register(prism)` | `Prism.CreateBlockCoroutine` **only** | Enter the index; consumes matching claim |
-| `Unregister(index)` | `Prism` OnDisable/OnDestroy/ResetState **only** | Leave the index |
-| `MarkDestroyed(index)` | `Prism.SetupDestruction` **only** | AOE skips; occupancy frees |
-| `MarkRestored(index)` | `Prism.Restore` **only** | Re-enter AOE + occupancy |
+| `Register(prism)` | `Prism.CreateBlockCoroutine` (+ `Prism.Restore` for spawn-window-killed prisms) | Enter the index; consumes matching claim; binds the containing cell's density grids |
+| `Unregister(index)` | `Prism` OnDisable/OnDestroy/ResetState **only** | Leave the index; releases the cell binding |
+| `MarkDestroyed(index)` | `Prism.SetupDestruction` **only** | AOE skips; occupancy frees; leaves the cell grids |
+| `MarkRestored(index)` | `Prism.Restore` **only** | Re-enter AOE + occupancy + cell grids |
+| `ForwardDomainChangeToCell(index)` | `Prism.HandleTeamChangedForCell` **only** | Re-file a stolen prism in its cell's per-domain grids (does NOT touch AOE cold data) |
 | `UpdatePosition(index, pos)` | `Prism.NotifyPositionChanged` (movers) | Keep stored position honest |
 | `UpdateShieldState(index, ...)` | `PrismStateManager` **only** | Shield flags for AOE |
 | `ProcessExplosionFrame(...)` | `ExplosionImpactor` **only** | Batch AOE damage (Burst) |
@@ -179,10 +186,10 @@ Nothing in this system decays, culls, or auto-corrects prism populations.
   by the movers contract. What stays forbidden is registering anything that
   isn't a prism (a synthetic "boid marker" entry, a vessel, a crystal) just to
   get neighbor queries — that would corrupt the AOE and occupancy views, which
-  assume every entry is damageable, consumable mass. (Cell *density grids*
-  still exclude fauna bodies — see `Prism.RegisterWithCell` — because a
-  forager swarm must not read as its own mass concentration; that exclusion is
-  about the coarse density view, not this index.)
+  assume every entry is damageable, consumable mass. (The cell *density* view
+  still excludes fauna bodies — `PrismSpatialIndex.BindCell` skips them —
+  because a forager swarm must not read as its own mass concentration; that
+  exclusion is about the coarse density view only.)
 - **Unregistered mound blocks** — `Boid.NewBlock` builds mound blocks without
   `Prism.Initialize`, so they never register. The two queries that must find
   them stay physics-based on the dedicated `Mound` layer:
@@ -211,8 +218,11 @@ registry for its own lattice, `TryReserve` for the world.
   boxes. A fat trail block whose *center* is outside `clearRadius` can still
   visually intersect a grown gyroid block — same tolerance the game already
   has for trails crossing trails.
-- `Cell.AddBlock`/`RemoveBlock` call sites are still in `Prism` (Phase 3 moves
-  them onto index events).
+- The cell density binding is **registration-time**: `UpdatePosition` does not
+  re-resolve the containing cell when a mover (gyroid steering, fauna body —
+  the latter excluded from this view anyway) crosses a cell membrane. Same
+  behavior the old `Prism.RegisterWithCell` had; revisit only if movers start
+  crossing cells at scale.
 - `Boid.NewBlock` mound blocks bypass `Prism.Initialize` and therefore never
   register (no AOE, no occupancy, no neighborhood visibility) — mound
   mate-finding compensates with a Mound-layer collider probe (see "What NOT to
@@ -226,7 +236,7 @@ registry for its own lattice, `TryReserve` for the world.
 |---|---|---|
 | 1 | Bucket grid + reservations; `GyroidAssembler`/`WallAssembler`/`SchwarzPAssembler` switch from `Physics.CheckBox` to `TryReserve`; lifecycle holes fixed (`Restore` re-entry, pool-return staleness, mover positions) | **Shipped** |
 | 2 | `QuerySphere` neighborhood view replaces the remaining physics queries against prisms: `GyroidAssembler.FindClosestMate` (+ fixes its stale `OverlapSphereNonAlloc` array bug, keeps a Mound-layer probe for unregistered mound blocks), `WallAssembler` mate-finding (was allocating `OverlapSphere`; its `MoveMateToSite` now also upholds the movers contract), `ScoutTrailPrismScaler` (adaptive `IsAnyPrismWithin`), `LightFauna` (prisms via index, vessels via prism-masked physics), `Boid` prism-attraction + boid-neighbor scan (fully index-based). Fauna bodies uphold the movers contract via `Fauna.NotifyBodyPrismsMoved` — also fixes batch AOE hitting creatures at their spawn point. A planned `FindNearest` view was folded into callers' own scoring loops (every caller filters candidates with custom logic). | **Shipped** |
-| 3 | `Cell.AddBlock`/`RemoveBlock` driven by index registration events — one stream feeds both the fine (occupancy) and coarse (density) views | Planned |
+| 3 | Cell density grids driven by the index lifecycle: `Register`/`MarkRestored` bind the containing cell (`Cell.AddBlock`), `MarkDestroyed`/`Unregister` release it, `ForwardDomainChangeToCell` re-files steals. `Prism` lost `_registeredCell`/`RegisterWithCell`/`UnregisterFromCell` — every lifecycle moment makes ONE index call and the coarse view follows. Bonus consistency fix: restoring a prism that was killed inside its spawn window (never registered) now does a full `Register`, where the old code put it in the cell grids but left it invisible to AOE/occupancy. The flora ownership stream (`HealthBlockTracker`) remains a second, idempotent `Cell.AddBlock` contributor. | **Shipped** |
 | 4 | Optional: bucket-accelerated AOE if profiling ever demands it. (A second index instance over fauna is no longer needed for current populations — fauna bodies are registered prisms and their senses already ride this index; it would only return if a non-prism fauna population appears.) | Candidate |
 
 ## Adding a consumer (checklist)

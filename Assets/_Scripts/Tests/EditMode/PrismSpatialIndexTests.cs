@@ -238,6 +238,44 @@ namespace CosmicShore.Tests
             Assert.IsTrue(_index.TryReserve(new Vector3(50f, 0f, 0f), 3f),
                 "A site beyond clearRadius must remain claimable.");
         }
+
+        // ---- Cell density view (Phase 3) ------------------------------------
+        // Binding against a REAL cell needs Cell's runtime grid builder + config
+        // and is play-mode territory; what edit mode can lock down is that the
+        // cell-view hooks riding every lifecycle call are robust with no cells
+        // present (Cell.ActiveCells only populates via OnEnable at runtime, so
+        // every Register/MarkDestroyed/MarkRestored/Unregister above already
+        // exercises BindCell/UnbindCell with a null binding) and that the
+        // domain-change forwarder rejects bad indices.
+
+        [Test]
+        public void ForwardDomainChangeToCell_InvalidOrUnboundIndex_DoesNotThrow()
+        {
+            var prism = SpawnRegisteredPrism(Vector3.zero);
+
+            Assert.DoesNotThrow(() => _index.ForwardDomainChangeToCell(-1));
+            Assert.DoesNotThrow(() => _index.ForwardDomainChangeToCell(9999));
+            // Valid slot, but no cell bound (open space) — must be a clean no-op.
+            Assert.DoesNotThrow(() => _index.ForwardDomainChangeToCell(prism.SpatialIndexId));
+        }
+
+        [Test]
+        public void FullLifecycle_WithNoCellsPresent_KeepsQueryViewsConsistent()
+        {
+            // Register → destroy → restore → unregister, end to end, with the
+            // cell-view hooks firing at every step against an empty cell registry.
+            var prism = SpawnRegisteredPrism(Vector3.zero);
+
+            _index.MarkDestroyed(prism.SpatialIndexId);
+            Assert.IsFalse(_index.IsAnyPrismWithin(Vector3.zero, 10f));
+
+            _index.MarkRestored(prism.SpatialIndexId);
+            Assert.IsTrue(_index.IsAnyPrismWithin(Vector3.zero, 10f));
+
+            _index.Unregister(prism.SpatialIndexId);
+            Assert.IsFalse(_index.IsAnyPrismWithin(Vector3.zero, 10f));
+            Assert.AreEqual(0, _index.QuerySphere(Vector3.zero, 10f, _results));
+        }
     }
 }
 #endif

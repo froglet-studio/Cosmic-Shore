@@ -123,6 +123,11 @@ namespace CosmicShore.Gameplay
     ///                      (ScoutTrailPrismScaler) — no physics broadphase, no
     ///                      per-collider GetComponent, no scratch-array
     ///                      truncation. See Docs/SPATIAL_INDEX.md.
+    ///   4. Cell density  — Register/MarkRestored file each prism into its
+    ///                      containing cell's per-domain density grids
+    ///                      (Cell.AddBlock); MarkDestroyed/Unregister remove it.
+    ///                      The coarse view rides the same lifecycle stream as
+    ///                      the fine views, so they cannot diverge (Phase 3).
     ///
     /// Data layout (hot/cold split):
     ///   _spatial[i] — PrismSpatialData (16B) — read by Burst job for ALL prisms
@@ -137,10 +142,16 @@ namespace CosmicShore.Gameplay
     /// Registration lifecycle (all main-thread):
     ///   Assembler.GetGrowthInfo()  → TryReserve(pos) BEFORE Instantiate (growth only)
     ///   Prism.CreateBlockCoroutine → Register(prism) → stores index on Prism,
-    ///                                consumes the matching reservation
-    ///   Prism.SetupDestruction     → MarkDestroyed(index) → AOE skips, bucket freed
-    ///   Prism.Restore              → MarkRestored(index) → re-enters AOE + bucket
-    ///   Prism.OnDisable/OnDestroy  → Unregister(index) → frees slot
+    ///                                consumes the matching reservation, binds the
+    ///                                containing cell's density grids
+    ///   Prism.SetupDestruction     → MarkDestroyed(index) → AOE skips, bucket
+    ///                                freed, cell grids release the prism
+    ///   Prism.Restore              → MarkRestored(index) → re-enters AOE +
+    ///                                bucket + cell grids
+    ///   Prism.OnDisable/OnDestroy  → Unregister(index) → frees slot, releases
+    ///                                the cell binding
+    ///   PrismTeamManager (steal)   → ForwardDomainChangeToCell(index) re-files
+    ///                                the prism in its cell's per-domain grids
     ///   PrismStateManager          → UpdateShieldState(index, ...) on state change
     ///   Assembler movers / fauna   → UpdatePosition(index, pos) — anything that
     ///                                moves a registered prism (gyroid/wall bond
@@ -188,6 +199,12 @@ namespace CosmicShore.Gameplay
         // Managed: Prism references for applying damage callbacks
         private Prism[] _prisms;
 
+        // Managed: the cell whose per-domain density grids each prism is filed in
+        // (the coarse view of this same lifecycle), or null — open space, fauna
+        // bodies, slot free. Bound on Register/MarkRestored, released on
+        // MarkDestroyed/Unregister.
+        private Cell[] _cells;
+
         private int _highWaterMark;
         private readonly Stack<int> _freeList = new(256);
         private NativeList<int> _hitIndices;
@@ -225,6 +242,7 @@ namespace CosmicShore.Gameplay
             _spatial = new NativeArray<PrismSpatialData>(INITIAL_CAPACITY, Allocator.Persistent);
             _damage = new NativeArray<PrismDamageData>(INITIAL_CAPACITY, Allocator.Persistent);
             _prisms = new Prism[INITIAL_CAPACITY];
+            _cells = new Cell[INITIAL_CAPACITY];
             _hitIndices = new NativeList<int>(512, Allocator.Persistent);
             _buckets = new NativeParallelMultiHashMap<int3, int>(INITIAL_CAPACITY, Allocator.Persistent);
         }
@@ -460,11 +478,81 @@ namespace CosmicShore.Gameplay
 
         #endregion
 
+        #region Cell density view
+
+        /// <summary>
+        /// Files the prism into the per-domain density grids of the cell that
+        /// spatially contains it — the COARSE view of this same registration
+        /// lifecycle (fauna anti-domain targeting reads the grids; the cell phase
+        /// system reads LiveBlockCount). Before Phase 3 these call sites lived in
+        /// Prism beside every index call; folding them in here means the fine
+        /// (occupancy/AOE) and coarse (density) views are fed by one stream and
+        /// cannot diverge.
+        ///
+        /// Fauna bodies (LightFauna / Boid HealthPrisms) are creatures, not
+        /// environment mass: they must NOT inflate the cell's phase count or
+        /// pollute the density grid — otherwise a forager swarm reads as its own
+        /// "mass concentration" and seeks itself instead of the trail/flora
+        /// buildup. Only HealthPrisms can be fauna bodies, so the
+        /// GetComponentInParent walk is gated to that subtype to keep ordinary
+        /// trail-prism registrations cheap. (They stay in the AOE and occupancy
+        /// views — they are damageable, space-occupying mass.)
+        ///
+        /// Coexists with the flora ownership stream: HealthBlockTracker also
+        /// AddBlocks flora health prisms into the LifeForm's host cell.
+        /// Cell.AddBlock no-ops on already-tracked prisms and RemoveBlock
+        /// tolerates double removal, so the two contributors stay consistent.
+        /// </summary>
+        private void BindCell(int index, Prism prism, Vector3 position)
+        {
+            if (prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null)
+            {
+                _cells[index] = null;
+                return;
+            }
+            var cell = Cell.FindCellContaining(position);
+            _cells[index] = cell;
+            if (cell) cell.AddBlock(prism);
+        }
+
+        /// <summary>
+        /// Removes the prism from its bound cell's density grids. Idempotent —
+        /// the destroyed→unregistered path calls this twice. The prism ref is
+        /// passed (not read from _prisms) so Unregister can unbind before it
+        /// frees the slot; Cell.RemoveBlock handles destroyed-but-non-null refs
+        /// by design, so no Unity-aliveness gate here.
+        /// </summary>
+        private void UnbindCell(int index, Prism prism)
+        {
+            var cell = _cells[index];
+            _cells[index] = null;
+            if (cell) cell.RemoveBlock(prism);
+        }
+
+        /// <summary>
+        /// Re-files a tracked prism whose domain changed (steal / ChangeTeam) in
+        /// its bound cell's per-domain grids. Caller:
+        /// Prism.HandleTeamChangedForCell only. Deliberately does NOT touch the
+        /// AOE cold data — wiring UpdateDomain into the damage view changes AOE
+        /// friend/foe results and must be its own tested change (see
+        /// Docs/SPATIAL_INDEX.md "Known gaps").
+        /// </summary>
+        public void ForwardDomainChangeToCell(int index)
+        {
+            if (index < 0 || index >= _highWaterMark) return;
+            var cell = _cells[index];
+            var prism = _prisms[index];
+            if (cell && prism) cell.NotifyBlockDomainChanged(prism);
+        }
+
+        #endregion
+
         #region Registration
 
         /// <summary>
-        /// Registers a prism for batch AOE processing. Returns the registry index
-        /// which should be stored on the Prism for O(1) updates and unregistration.
+        /// Registers a prism for batch AOE processing, growth occupancy, and the
+        /// containing cell's density grids. Returns the registry index which
+        /// should be stored on the Prism for O(1) updates and unregistration.
         /// </summary>
         public int Register(Prism prism)
         {
@@ -503,6 +591,8 @@ namespace CosmicShore.Gameplay
             AddToBucket(index, position);
             // The prism this reservation protected has materialized — fulfil it.
             ConsumeReservationNear(prism.transform.position);
+            // Coarse view: file into the containing cell's density grids.
+            BindCell(index, prism, (Vector3)position);
 
             return index;
         }
@@ -518,6 +608,8 @@ namespace CosmicShore.Gameplay
             // Live entries hold a bucket slot; destroyed ones were already removed.
             if ((s.Flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue)
                 RemoveFromBucket(index, s.Position);
+            // Coarse view: leave the cell grids (no-op if MarkDestroyed already did).
+            UnbindCell(index, _prisms[index]);
             s.Flags = 0; // clear all flags including IsActive
             _spatial[index] = s;
             _prisms[index] = null;
@@ -535,6 +627,10 @@ namespace CosmicShore.Gameplay
                 RemoveFromBucket(index, s.Position);
             s.Flags |= PrismFlags.Destroyed;
             _spatial[index] = s;
+            // Coarse view: destroyed mass must stop attracting fauna, and the
+            // cell's LiveBlockCount must fall so the phase system can descend
+            // (the consumption half of the oscillation).
+            UnbindCell(index, _prisms[index]);
         }
 
         /// <summary>
@@ -557,6 +653,10 @@ namespace CosmicShore.Gameplay
             _spatial[index] = s;
             if ((s.Flags & PrismFlags.IsActive) != 0)
                 AddToBucket(index, s.Position);
+            // Coarse view: restored mass re-enters the cell's density grids
+            // (re-resolved at the restored position, like the old
+            // Prism.RegisterWithCell call this replaces).
+            if (prism) BindCell(index, prism, (Vector3)s.Position);
         }
 
         /// <summary>
@@ -778,10 +878,14 @@ namespace CosmicShore.Gameplay
             _damage.Dispose();
             _damage = newDamage;
 
-            // Grow managed array
+            // Grow managed arrays
             var newPrisms = new Prism[newSize];
             System.Array.Copy(_prisms, newPrisms, _prisms.Length);
             _prisms = newPrisms;
+
+            var newCells = new Cell[newSize];
+            System.Array.Copy(_cells, newCells, _cells.Length);
+            _cells = newCells;
         }
 
         #endregion
