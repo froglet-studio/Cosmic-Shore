@@ -2,7 +2,7 @@
 
 Living tracker for presence-lobby-side issues found in MPPM testing.
 Companion to `ARCHITECTURE.md` (current state), `REFACTOR.md` (active
-refactor queue), and `../NetworkDiagnostics/README.md` (catch-block
+refactor queue), and `../NetworkDiagnostics/ARCHITECTURE.md` (catch-block
 diagnostics).
 
 Party-side bugs (B2, B3, B5, B7 from the old tracker) moved to
@@ -272,10 +272,7 @@ the write/delta-path symptom. Overlay classifies the read-path NRE
 
 ## How we work bugs
 
-- One bug at a time, in priority order (B1 retest → B4 → B6).
-- For each: confirm root cause via NetDiag log capture if possible →
-  agree the approach → implement on `claude/blissful-tesla-9nefa` as
-  its own commit with risk table → update status.
-- This is the fragile, locked-design area. Read `ARCHITECTURE.md` and
-  `../PartySystem/ARCHITECTURE.md` first. Do not reintroduce LAZY
-  session creation.
+Method: see `../README.md` § "How we work bugs". This is the fragile,
+locked-design area — read `ARCHITECTURE.md` and
+`../PartySystem/ARCHITECTURE.md` first. Presence-side priority order:
+**B1 retest → B4 → B6**.

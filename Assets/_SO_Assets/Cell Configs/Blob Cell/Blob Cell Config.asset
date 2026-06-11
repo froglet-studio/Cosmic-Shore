@@ -27,14 +27,7 @@ MonoBehaviour:
   - {fileID: 8058406376250941529, guid: daa37ae0e7af4b04383c1c4e6e76817d, type: 3}
   SpawnProfile: {fileID: 11400000, guid: 4c06f97afbda28c4ea70d435976318d2, type: 2}
   PhaseThresholds:
-    QuietEnter: 36000
-    QuietExit: 21600
-    SettledEnter: 108000
-    SettledExit: 64800
-    RestlessEnter: 180000
-    RestlessExit: 108000
-    FrozenEnter: 252000
-    FrozenExit: 151200
-    RabidEnter: 324000
-    RabidExit: 194400
-    CountFrenzyCap: 12000
+    RestlessEnter: 700
+    RestlessExit: 500
+    FrenzyEnter: 1200
+    FrenzyExit: 950

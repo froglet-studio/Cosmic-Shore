@@ -10,24 +10,29 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Drives the hexagonal domain-volume gauge on the pause / freestyle-toggle
-    /// button. Reads the local player's cell each tick and feeds per-domain fill
-    /// fractions + the dominant domain to a <see cref="DomainVolumeHexGraphic"/>.
+    /// Drives the hexagonal domain-volume gauge on the universal in-game pause /
+    /// freestyle-toggle button. Reads the local player's cell each tick and feeds
+    /// per-domain fill fractions + the dominant domain + the cell's phase thresholds
+    /// to a <see cref="DomainVolumeHexGraphic"/>.
     ///
-    /// Spec (restored): a pointy-top hexagon, each domain owning a fixed 1/3
-    /// (two of six edges) — Jade top, Ruby lower-left, Gold lower-right. Each sector
-    /// always spans its full angular width; the colored band fills RADIALLY INWARD
-    /// toward the centre as the domain's mass approaches the frenzy (Rabid) threshold.
-    /// The centre hexagon is tinted by the dominant domain.
+    /// Look (universal across menu and all gameplay scenes): a pointy-top hexagon,
+    /// each domain owning a fixed 1/3 (two of six edges) — Jade top, Ruby lower-left,
+    /// Gold lower-right. Each sector always spans its full angular width; the colored
+    /// band fills RADIALLY INWARD toward the centre as the domain's mass approaches the
+    /// Frenzy threshold, the centre being the frenzy state. Concentric threshold
+    /// rings mark each cell phase boundary; as a wedge fills inward it passes through
+    /// them, the crossed ring brightening to signal that domain is pushing the cell into
+    /// the next aggression zone.
     ///
     /// ZERO-AUTHORING (ElementalBarsView pattern): when no graphic is wired the
     /// component creates a full-rect child <see cref="DomainVolumeHexGraphic"/> at
-    /// runtime, and (optionally) a diagnostic readout below the button. MenuMiniGameHUD
-    /// self-attaches this to its pause button and hands over the injected GameDataSO.
+    /// runtime, and hides the host button's authored face. MenuMiniGameHUD and
+    /// MiniGameHUD self-attach this to their pause button and hand over the injected
+    /// GameDataSO.
     ///
-    /// Reads <see cref="Cell.GetDomainVolume"/> and
-    /// <see cref="Cell.RabidEnterThreshold"/> (both VOLUME now); resolves the cell via the
-    /// local player's vessel position, falling back to the nearest active cell.
+    /// Reads <see cref="Cell.GetDomainBlockCount"/>, <see cref="Cell.FrenzyEnterThreshold"/>
+    /// and <see cref="Cell.ResolvedThresholds"/>; resolves the cell via the local
+    /// player's vessel position, falling back to the nearest active cell.
     /// </summary>
     [DisallowMultipleComponent]
     public class DomainVolumeIndicator : MonoBehaviour
@@ -59,6 +64,14 @@ namespace CosmicShore.UI
         int _dominant = -1;
         float _spawnCycle;
 
+        // Intermediate phase enter thresholds as fractions of FrenzyEnter (ascending):
+        // where the concentric rings sit. With the 3-phase ladder there is exactly one
+        // boundary strictly inside the frenzy extent — Restless (Frenzy itself sits at the
+        // centre / boundary hexagon). Refreshed each sample so a config swap (or late cell
+        // resolution) is picked up.
+        readonly float[] _thresholdFracs = new float[1];
+        bool _hasThresholds;
+
         /// <summary>
         /// Explicit dependency handoff for the AddComponent path: runtime-added
         /// components never receive Reflex scene injection, so the creator passes its
@@ -77,6 +90,7 @@ namespace CosmicShore.UI
 
             _jadeNow = _rubyNow = _goldNow = 0f;
             _jadeTarget = _rubyTarget = _goldTarget = 0f;
+            _hasThresholds = false;
             _nextSampleAt = 0f;
             PushState();
         }
@@ -157,27 +171,38 @@ namespace CosmicShore.UI
             {
                 _jadeTarget = _rubyTarget = _goldTarget = 0f;
                 _dominant = -1;
+                _hasThresholds = false;
                 return;
             }
 
-            float rabid = cell.RabidEnterThreshold;
-            float jade = cell.GetDomainVolume(Domains.Jade);
-            float ruby = cell.GetDomainVolume(Domains.Ruby);
-            float gold = cell.GetDomainVolume(Domains.Gold);
+            int frenzy = cell.FrenzyEnterThreshold;
+            int jade = cell.GetDomainBlockCount(Domains.Jade);
+            int ruby = cell.GetDomainBlockCount(Domains.Ruby);
+            int gold = cell.GetDomainBlockCount(Domains.Gold);
 
-            if (rabid > 0f)
+            if (frenzy > 0)
             {
-                // Per-domain radial fill = that domain's VOLUME (mass) as a fraction of the
-                // frenzy threshold. A single domain reaching the full threshold (which alone
-                // trips frenzy) fills its sector all the way to the centre. Volume, not count,
-                // so the gauge shows players exactly what they're building.
-                _jadeTarget = Mathf.Clamp01(jade / rabid);
-                _rubyTarget = Mathf.Clamp01(ruby / rabid);
-                _goldTarget = Mathf.Clamp01(gold / rabid);
+                // Per-domain radial fill = that domain's mass as a fraction of the
+                // frenzy threshold. A single domain reaching the full threshold (which
+                // alone trips frenzy) fills its sector all the way to the centre.
+                _jadeTarget = Mathf.Clamp01((float)jade / frenzy);
+                _rubyTarget = Mathf.Clamp01((float)ruby / frenzy);
+                _goldTarget = Mathf.Clamp01((float)gold / frenzy);
+
+                // Concentric ring position: the Restless enter threshold as a fraction of
+                // FrenzyEnter. A wedge reaching the ring has, by construction, Restless's
+                // worth of mass — so the wedge passing through it IS that domain pushing
+                // the cell into the hunting band. Frenzy sits at fraction 1 (centre /
+                // boundary hexagon), so it needs no separate ring.
+                var t = cell.ResolvedThresholds;
+                float denom = Mathf.Max(1, t.FrenzyEnter);
+                _thresholdFracs[0] = t.RestlessEnter / denom;
+                _hasThresholds = true;
             }
             else
             {
                 _jadeTarget = _rubyTarget = _goldTarget = 0f;
+                _hasThresholds = false;
             }
 
             // Dominant domain → centre hexagon tint. -1 when the cell is empty.
@@ -189,9 +214,9 @@ namespace CosmicShore.UI
             _spawnCycle = cell.FaunaSpawnCycleFraction;
         }
 
-        static int ResolveDominant(float jade, float ruby, float gold)
+        static int ResolveDominant(int jade, int ruby, int gold)
         {
-            if (jade <= 0f && ruby <= 0f && gold <= 0f) return -1;
+            if (jade <= 0 && ruby <= 0 && gold <= 0) return -1;
             if (jade >= ruby && jade >= gold) return 0;
             if (ruby >= gold) return 1;
             return 2;
@@ -224,7 +249,8 @@ namespace CosmicShore.UI
             // cached cell to avoid re-running cell resolution every frame.
             float cycle = _cachedCell ? _cachedCell.FaunaSpawnCycleFraction : _spawnCycle;
             // SetState rebuilds the mesh only on a meaningful delta.
-            hexGraphic.SetState(_jadeNow, _rubyNow, _goldNow, jadeC, rubyC, goldC, _dominant, cycle);
+            hexGraphic.SetState(_jadeNow, _rubyNow, _goldNow, jadeC, rubyC, goldC, _dominant, cycle,
+                                _hasThresholds ? _thresholdFracs : null);
         }
 
         // ------------------------------------------------------------------

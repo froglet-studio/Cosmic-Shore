@@ -67,6 +67,11 @@ NetDiag log lines from the previous 24 hours of MPPM runs and tally
 the class frequencies. File the tally in `BUGS.md` under the relevant
 bug.
 
+**Mechanism.** The generic class-count aggregation tool is tracked in
+`../NetworkDiagnostics/TODOS.md` § "TODO-8. Aggregate NetDiag class
+counts across MPPM runs"; this entry is the presence-specific *use* of
+that data (deciding `LobbyMembershipMonitor` states).
+
 ## UI / UX
 
 ### TODO-P6. "Reconnecting…" indicator

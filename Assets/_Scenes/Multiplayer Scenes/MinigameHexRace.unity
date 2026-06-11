@@ -865,7 +865,7 @@ PrefabInstance:
     - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
       propertyPath: cellTypeChoiceOptions
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
@@ -875,8 +875,8 @@ PrefabInstance:
     - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
       propertyPath: 'CellConfigs.Array.data[0]'
-      value: 
-      objectReference: {fileID: 11400000, guid: 8f83a19d70465a747861017897c08403,
+      value:
+      objectReference: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6,
         type: 2}
     - target: {fileID: 7701641087306297103, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
@@ -1214,23 +1214,6 @@ MonoBehaviour:
   _disableAfterSubscribing: 0
   _eventResponses:
   - Delay: 0
-    ScriptableEvent: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
-    Response:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 1078953729}
-          m_TargetAssemblyTypeName: CosmicShore.Gameplay.HexRaceController, Assembly-CSharp
-          m_MethodName: OnClickReturnToMainMenu
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
-  - Delay: 0
     ScriptableEvent: {fileID: 11400000, guid: e7886dabf1acf704786153773a2d241a, type: 2}
     Response:
       m_PersistentCalls:
@@ -1305,7 +1288,6 @@ MonoBehaviour:
   clientPlayerVesselInitializer: {fileID: 1078953724}
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
-  shutdownNetworkOnDespawn: 1
   playerSpawnPoints:
   - {fileID: 1194123993}
   - {fileID: 696378175}
@@ -1355,7 +1337,7 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
-  CrystalCollisions: 0
+  CrystalCollisions: 10
   optionalEnvironment: {fileID: 1899528610}
   optionalLaps: 4
 --- !u!114 &1078953729
@@ -1384,6 +1366,7 @@ MonoBehaviour:
   helix: {fileID: 0}
   helixIntensityScaling: 4
   seed: 0
+  rule: {fileID: 11400000, guid: 63bafccfd69743c086ad1bdc7623cc4c, type: 2}
 --- !u!114 &1078953731
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1491,7 +1474,6 @@ MonoBehaviour:
   - Mode: 2
     Multiplier: 1
   turnMonitor: {fileID: 1078953728}
-  penaltyScoreBase: 10000
   showDebugLogs: 1
 --- !u!1 &1194123992
 GameObject:

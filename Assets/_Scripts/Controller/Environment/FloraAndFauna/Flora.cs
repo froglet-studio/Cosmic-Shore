@@ -44,12 +44,8 @@ namespace CosmicShore.Gameplay
 
         public override void AddHealthBlock(HealthPrism healthPrism)
         {
-            // Set the eventual leaf size BEFORE registering with the cell so the cell's
-            // per-domain VOLUME tally snapshots the prism's real target mass (leafSize),
-            // not the tiny prefab-authored scale it carries the instant it spawns.
-            // (Docs/ECOSYSTEM.md §1 — volume is the cell's primary signal.)
-            healthPrism.TargetScale = leafSize;
             base.AddHealthBlock(healthPrism);
+            healthPrism.TargetScale = leafSize;
         }
 
         public override void Initialize(Cell cell)

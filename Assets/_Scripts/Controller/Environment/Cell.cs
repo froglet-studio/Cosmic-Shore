@@ -52,34 +52,36 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Radius used for mass SENSING — prism registration (<see cref="ContainsPosition"/>)
+        /// and the density grids that fauna seek mass with. Defaults to the visual
+        /// <see cref="MembraneRadius"/>, but a CellConfig can override it
+        /// (<c>SenseRadiusOverride</c>) to sense across a larger arena than the membrane
+        /// visual — e.g. the Skim Race track — so fauna find + seek mass track-wide instead
+        /// of only inside the central bubble. Independent of the membrane so the visual /
+        /// its baked animation are untouched. See Docs/ECOSYSTEM.md §7.2.
+        /// </summary>
+        public float SenseRadius
+        {
+            get
+            {
+                float over = cellConfigData != null ? cellConfigData.SenseRadiusOverride : 0f;
+                return over > 0f ? over : MembraneRadius;
+            }
+        }
+
         public Dictionary<Domains, BlockCountDensityGrid> countGrids = new();
         public Dictionary<Domains, BlockVolumeDensityGrid> volumeGrids = new();
         readonly Dictionary<Domains, float> teamVolumes = new();
         readonly Dictionary<Domains, int> domainBlockCounts = new();
 
         readonly List<GameObject> spawnedLifeForms = new();
-        // Prism → the (domain, volume) it was REGISTERED under. RemoveBlock decrements the
-        // grids/counts/teamVolumes for the registration-time snapshot, not the prism's
-        // current state — so steals / ChangeTeam or growth between Add and Remove can't
-        // desync the per-domain bookkeeping (the §2.3.1 phantom-count class of bug).
-        readonly Dictionary<Prism, RegisteredBlock> trackedBlocks = new();
-
-        // Snapshot of a prism's domain + mass at registration time. Mass (volume) is the
-        // prism's target-scale volume; both count and volume feed the owning domain.
-        readonly struct RegisteredBlock
-        {
-            public readonly Domains Domain;
-            public readonly float Volume;
-            public RegisteredBlock(Domains domain, float volume) { Domain = domain; Volume = volume; }
-        }
+        // Prism → the domain it was REGISTERED under. RemoveBlock decrements the
+        // grids/counts for the registration-time domain, not the prism's current
+        // one — so steals / ChangeTeam between Add and Remove can't desync the
+        // per-domain bookkeeping (the §2.3.1 phantom-count class of bug).
+        readonly Dictionary<Prism, Domains> trackedBlocks = new();
         SnowChanger spawnedCytoplasm;
-
-        // Bounded ring of crystals left behind by withered (starved) fauna. Without a cap a
-        // long session would accumulate them unbounded (each is a live GameObject + collider
-        // + models) — a slow perf/stability leak, since the menu autopilot rarely collects
-        // them. Oldest beyond the cap is destroyed. Cleared with the rest of the cell's mass.
-        const int MaxWitherCrystals = 16;
-        readonly Queue<Crystal> witherCrystals = new();
 
         // ---------------------------------------------------------------------
         // Static spatial registry. Pooled prefab-spawned objects (trail prisms)
@@ -89,6 +91,13 @@ namespace CosmicShore.Gameplay
         // every cell's runtime SO at once.
         // ---------------------------------------------------------------------
         static readonly List<Cell> ActiveCells = new();
+
+        /// <summary>
+        /// Read-only view of the enabled cells in the scene. Exposed for read-only
+        /// diagnostics (e.g. <see cref="EcosystemPerfProbe"/> summing prisms + live
+        /// fauna across cells); do not mutate or cache across frames.
+        /// </summary>
+        public static IReadOnlyList<Cell> ActiveCellsSnapshot => ActiveCells;
 
         /// <summary>
         /// The enabled cell whose membrane contains <paramref name="position"/>,
@@ -127,54 +136,36 @@ namespace CosmicShore.Gameplay
             return best;
         }
 
-        CellPhase phase = CellPhase.Sprout;
+        CellPhase phase = CellPhase.Calm;
 
         /// <summary>
-        /// Live count of unique prisms tracked through Add/RemoveBlock. Since the ecology
-        /// went "all in on volume", count is NO LONGER the gameplay driver — it survives
-        /// only as a cheap performance/safety signal (the high-end frenzy backstop in
-        /// <see cref="Update"/>) and for debug/telemetry. <see cref="LiveVolume"/> is the
-        /// real state variable. (Docs/ECOSYSTEM.md §1.)
+        /// Live count of unique prisms tracked through Add/RemoveBlock. Read-only signal
+        /// for systems that respond to prism load (e.g., LightFaunaManager scales its
+        /// fauna population with this so consumption keeps pace with growth, and the
+        /// phase system gates flora and fauna behavior on it).
         /// </summary>
         public int LiveBlockCount => trackedBlocks.Count;
 
         /// <summary>
-        /// Total live VOLUME (mass) tracked in the cell — the sum of every prism's
-        /// registration-time volume across all domains. This is the cell's primary state
-        /// variable: phase, dominant domain, prey, and the HUD all key off volume, not
-        /// count, so what players see (mass) is what the underpinnings react to.
-        /// (Docs/ECOSYSTEM.md §1.)
-        /// </summary>
-        public float LiveVolume
-        {
-            get
-            {
-                float v = 0f;
-                foreach (var kv in teamVolumes) v += kv.Value;
-                return v;
-            }
-        }
-
-        /// <summary>
-        /// Live leader by per-domain prism VOLUME (mass). Recomputed on demand so the
-        /// answer always reflects current Add/RemoveBlock-driven volume. Returns
-        /// <see cref="Domains.Blue"/> (the "no team" sentinel) when the cell holds no
-        /// mass yet. Ties resolve in fixed order (Jade > Ruby > Gold > Blue).
+        /// Live leader by per-domain prism count. Recomputed on demand so the answer
+        /// always reflects the current Add/RemoveBlock-driven counts. Returns
+        /// <see cref="Domains.Blue"/> (the "no team" sentinel) when the cell has no
+        /// prisms tracked yet. Ties resolve in fixed order (Jade > Ruby > Gold > Blue).
         /// </summary>
         public Domains DominantDomain
         {
             get
             {
                 Domains leader = Domains.Blue;
-                float leaderVolume = 0f;
+                int leaderCount = 0;
                 Domains[] order = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
                 foreach (var d in order)
                 {
-                    if (!teamVolumes.TryGetValue(d, out float v)) continue;
-                    if (v > leaderVolume)
+                    if (!domainBlockCounts.TryGetValue(d, out int c)) continue;
+                    if (c > leaderCount)
                     {
                         leader = d;
-                        leaderVolume = v;
+                        leaderCount = c;
                     }
                 }
                 return leader;
@@ -182,28 +173,30 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Live VOLUME (mass) tracked under <paramref name="domain"/> — the per-domain
-        /// signal <see cref="DominantDomain"/> and the HUD read. Returns 0 for domains
-        /// with no mass. (Alias of <see cref="GetTeamVolume"/>, named to match the HUD's
-        /// per-domain reads.)
-        /// </summary>
-        public float GetDomainVolume(Domains domain) => GetTeamVolume(domain);
-
-        /// <summary>
-        /// Live count of prisms tracked under <paramref name="domain"/>. Count is the
-        /// demoted performance signal now (volume drives gameplay — see
-        /// <see cref="GetDomainVolume"/>); kept for debug/telemetry. Returns 0 for
-        /// untracked domains.
+        /// Live count of prisms tracked under <paramref name="domain"/>. Mirrors the
+        /// per-domain bookkeeping that <see cref="DominantDomain"/> reads, exposed so
+        /// HUD widgets (volume wedges, etc.) don't need to walk Add/RemoveBlock state
+        /// themselves. Returns 0 for untracked domains.
         /// </summary>
         public int GetDomainBlockCount(Domains domain) =>
             domainBlockCounts.TryGetValue(domain, out int c) ? c : 0;
 
         /// <summary>
-        /// Live VOLUME at which the cell crosses into Rabid (frenzy). HUD widgets use this
-        /// as the "max" — when a domain's volume approaches it, the cell is about to enter
-        /// Level2 aggression. (Thresholds are volume now; see <see cref="CellPhaseThresholds"/>.)
+        /// LiveBlockCount at which the cell crosses into Frenzy. HUD widgets use this as
+        /// the "max" — when summed mass approaches it, the cell is about to enter Level2
+        /// aggression (and flora freeze) and the UI should communicate that.
         /// </summary>
-        public int RabidEnterThreshold => ResolveThresholds().RabidEnter;
+        public int FrenzyEnterThreshold => ResolveThresholds().FrenzyEnter;
+
+        /// <summary>
+        /// The full resolved phase-threshold table for this cell (config table, or
+        /// <see cref="CellPhaseThresholds.Default"/> when no config / legacy zeroed
+        /// asset). Exposed so the concentric-hexagon volume indicator can draw one
+        /// ring per phase boundary (Restless, then Frenzy at the centre) at a radius
+        /// proportional to its enter threshold, lighting each ring as the cell's
+        /// summed mass crosses it. Read-only — the cell is the single writer.
+        /// </summary>
+        public CellPhaseThresholds ResolvedThresholds => ResolveThresholds();
 
         /// <summary>
         /// True once this cell's CellConfig has been assigned (Initialize ran). While
@@ -215,9 +208,10 @@ namespace CosmicShore.Gameplay
 
         // ---------------------------------------------------------------------
         //  Fauna spawn cycle telemetry — read by the volume-indicator ring HUD.
-        //  Written by RandomLifeSpawner's fauna loop (RecordFaunaSpawn) each periodic
-        //  spawn. The Cell exposes a 0..1 progress fraction toward the next spawn so the
-        //  indicator can draw a rotating ring without knowing the spawner's internals.
+        //  Written by IntensityWiseLifeSpawner.SpawnFaunaTypeLoop when it ticks a
+        //  periodic fauna spawn. The Cell exposes a 0..1 progress fraction toward
+        //  the next spawn so the indicator can draw a rotating ring without
+        //  knowing anything about the spawner's internals.
         // ---------------------------------------------------------------------
 
         float _lastFaunaSpawnTime = -1f;
@@ -225,7 +219,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Records that a periodic fauna spawn just happened. The spawn-cycle ring
         /// resets to 0% and counts back up to 100% over the next CurrentFaunaSpawnPeriod
-        /// seconds. Called by RandomLifeSpawner's fauna loop.
+        /// seconds. Called by IntensityWiseLifeSpawner's fauna loop.
         /// </summary>
         public void RecordFaunaSpawn() => _lastFaunaSpawnTime = Time.time;
 
@@ -270,54 +264,69 @@ namespace CosmicShore.Gameplay
         public CellPhase Phase => phase;
 
         // ---------------------------------------------------------------------
-        // Derived gates — orthogonal projections of Phase the consumers actually
-        // care about. The user spec mixes flora and fauna events along a single
-        // prism-count axis; these properties decouple the two systems' rules so
-        // each consumer reads only what it needs.
+        // Derived gates — projections of Phase the consumers actually care about.
+        // Flora planting and growing now share ONE rule (steady until Frenzy); fauna
+        // read the aggression band. These properties give each consumer exactly the
+        // boolean it needs without re-deriving phase semantics.
         // ---------------------------------------------------------------------
 
-        /// <summary>True while the cell still allows new flora to be planted (Phase &lt; Settled).</summary>
-        public bool FloraPlantingEnabled => phase < CellPhase.Settled;
-
         /// <summary>
-        /// True while existing flora may grow new prisms: below Frozen. Growth stops once
-        /// the cell fills past Frozen (overpopulation) and resumes only when CONSUMPTION
-        /// brings the live count back below the Frozen-exit threshold — the cell breathes
-        /// through the food web (other-domain fauna grazing the dominant canopy, then
-        /// starving as it thins), not a hard-coded regrowth pulse or an imposed prism
-        /// lifespan. See Docs/ECOSYSTEM.md.
+        /// True while new flora may be planted AND existing flora may grow: the cell is
+        /// below Frenzy. Planting and growth run at a STEADY rate all the way up — there
+        /// is no early planting cap and no mid-range growth cap (those staggered phase
+        /// gates were a growth-side cheat: a hard-coded self-limit faking the homeostasis
+        /// the food web is meant to produce). The only down-force on flora is the food web
+        /// (opposing-domain fauna grazing the prisms) or vessel abilities. Once a cell
+        /// fills to Frenzy, growth stops and stays stopped until an ACTIVE force lowers the
+        /// live prism count back below the Frenzy exit threshold (hysteresis), at which
+        /// point growth resumes on its own. Mass is conserved: no passive decay, no growth
+        /// oscillator — a frozen-solid cell is a valid state, not a defect to auto-correct.
+        /// See Docs/ECOSYSTEM.md §0/§5.
         /// </summary>
-        public bool FloraGrowingEnabled => phase < CellPhase.Frozen;
-
-        /// <summary>True once the cell has crossed the fauna-spawn threshold (Phase &gt;= Quiet).</summary>
-        public bool FaunaSpawningEnabled => phase >= CellPhase.Quiet;
+        public bool FloraGrowingEnabled => phase < CellPhase.Frenzy;
 
         /// <summary>
-        /// Prey signal for a fauna of <paramref name="domain"/>: live VOLUME (mass) NOT of
-        /// that domain (fauna consume any prism whose domain differs from their own). Drives
+        /// True while new flora may be planted. Identical to <see cref="FloraGrowingEnabled"/>
+        /// — planting and growth share the single "below Frenzy" rule now (steady until
+        /// frenzy). Kept as a separate name so spawner code reads intent at the call site.
+        /// </summary>
+        public bool FloraPlantingEnabled => FloraGrowingEnabled;
+
+        /// <summary>
+        /// True once the cell holds any mass — the spawn floor for the timer-driven
+        /// IntensityWise fauna loop. Decoupled from the phase ladder (the old Quiet rung
+        /// that gated this no longer exists); the prey-linked RandomLifeSpawner gates on
+        /// <see cref="OpposingBlockCount"/> + FaunaFoodFloor instead, which is the real
+        /// population bound (Docs/ECOSYSTEM.md §6).
+        /// </summary>
+        public bool FaunaSpawningEnabled => LiveBlockCount > 0;
+
+        /// <summary>
+        /// Prey signal for a fauna of <paramref name="domain"/>: live prisms NOT of that
+        /// domain (fauna consume any prism whose domain differs from their own). Drives
         /// prey-linked population control — production pauses and fauna starve when this
-        /// runs low. Volume, not count, so prey tracks what players see. See Docs/ECOSYSTEM.md §6.
+        /// hits zero. See Docs/ECOSYSTEM.md §6.
         /// </summary>
-        public float OpposingVolume(Domains domain) =>
-            Mathf.Max(0f, LiveVolume - GetDomainVolume(domain));
+        public int OpposingBlockCount(Domains domain) =>
+            Mathf.Max(0, LiveBlockCount - GetDomainBlockCount(domain));
 
         /// <summary>
-        /// Fauna aggression level derived from <see cref="Phase"/>:
-        ///   Sprout/Quiet/Settled → Level0  (head toward crystal, normal cadence)
-        ///   Restless/Frozen      → Level1  (head toward opposing-color centroid)
-        ///   Rabid                → Level2  (any-domain centroid, drop friendly avoidance)
+        /// Fauna aggression level derived from <see cref="Phase"/> — a 1:1 mapping now
+        /// that flora are no longer staggered on separate rungs:
+        ///   Calm     → Level0  (head toward crystal, normal cadence)
+        ///   Restless → Level1  (head toward opposing-color centroid)
+        ///   Frenzy   → Level2  (any-domain centroid, drop friendly avoidance, danger-immune)
         /// </summary>
         public CellAggressionLevel AggressionLevel => phase switch
         {
             CellPhase.Restless => CellAggressionLevel.Level1,
-            CellPhase.Frozen => CellAggressionLevel.Level1,
-            CellPhase.Rabid => CellAggressionLevel.Level2,
+            CellPhase.Frenzy => CellAggressionLevel.Level2,
             _ => CellAggressionLevel.Level0,
         };
 
         /// <summary>
         /// "Controlling color" for fauna spawns. Prefers the cell's live
-        /// <see cref="DominantDomain"/> (per-domain volume leader), then falls
+        /// <see cref="DominantDomain"/> (per-domain prism count leader), then falls
         /// back to gameData's controlling team by remaining volume, then to the local
         /// player's domain (useful in Menu_Main where there is no scored controlling
         /// team), then to Jade as a last resort. Never returns Blue (the "no team"
@@ -367,25 +376,12 @@ namespace CosmicShore.Gameplay
             // (CellNetworkSync) overlays this on networked clients via OnValueChanged
             // — server's compute wins when the two diverge — but for single-player and
             // for the server itself this is the only path that advances phase. Without
-            // it, no fauna ever spawn because phase stays at Sprout forever.
+            // it, no fauna ever spawn because phase stays at Calm forever.
             if (Time.time < _nextPhaseTickAt) return;
             _nextPhaseTickAt = Time.time + PhaseTickIntervalSeconds;
 
             var thresholds = ResolveThresholds();
-
-            // Phase is driven by VOLUME (mass) — what players see and react to. The
-            // thresholds are volume values. (int) is safe: cell volume stays well within
-            // int range and the thresholds are integers anyway.
-            var newPhase = CellPhaseRules.Compute((int)LiveVolume, phase, in thresholds);
-
-            // Performance/safety backstop: an extreme prism COUNT forces frenzy (Rabid)
-            // regardless of volume, so a pathological count spike (e.g. a flood of tiny
-            // prisms whose volume stays low) can't blow past the budget unthrottled. Rabid
-            // halts flora growth and sends fauna berserk to cull. Rare by design — set the
-            // cap well above any normal operating count. CountFrenzyCap <= 0 disables it.
-            if (thresholds.CountFrenzyCap > 0 && LiveBlockCount >= thresholds.CountFrenzyCap)
-                newPhase = CellPhase.Rabid;
-
+            var newPhase = CellPhaseRules.Compute(LiveBlockCount, phase, in thresholds);
             ApplyAuthoritativePhaseAndDomain(newPhase, DominantDomain);
         }
 
@@ -396,12 +392,13 @@ namespace CosmicShore.Gameplay
 
             // Existing CellConfig assets serialized before PhaseThresholds existed
             // deserialize as struct zero — Unity does not apply the C# initializer.
-            // Substitute the Default table so legacy biomes don't snap to Rabid the
+            // Substitute the Default table so legacy biomes don't snap to Frenzy the
             // moment the first prism is added.
             var t = cfg.PhaseThresholds;
             return t.IsAllZero ? CellPhaseThresholds.Default : t;
         }
 
+        readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
         readonly ICellLifeSpawner randomSpawner = new RandomLifeSpawner();
         ICellLifeSpawner activeSpawner;
         bool postInitilized = false;
@@ -485,8 +482,9 @@ namespace CosmicShore.Gameplay
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
-            ClearWitherCrystals();
-            phase = CellPhase.Sprout;
+            liveFaunaCounts.Clear();
+            liveFauna.Clear();
+            phase = CellPhase.Calm;
 
             if (spawnedCytoplasm)
             {
@@ -531,35 +529,66 @@ namespace CosmicShore.Gameplay
             UpdateCellStats();
         }
 
-        /// <summary>
-        /// Registers a crystal left behind by a withered (starved) fauna and bounds how many
-        /// persist: the oldest beyond <see cref="MaxWitherCrystals"/> is destroyed, so they
-        /// can't accumulate into a perf/stability leak over a long session.
-        /// </summary>
-        public void RegisterWitherCrystal(Crystal crystal)
-        {
-            if (!crystal) return;
-            witherCrystals.Enqueue(crystal);
-            while (witherCrystals.Count > MaxWitherCrystals)
-            {
-                var oldest = witherCrystals.Dequeue();
-                if (oldest) Destroy(oldest.gameObject);
-            }
-        }
-
-        void ClearWitherCrystals()
-        {
-            while (witherCrystals.Count > 0)
-            {
-                var c = witherCrystals.Dequeue();
-                if (c) Destroy(c.gameObject);
-            }
-        }
-
         public void UnregisterSpawnedObject(GameObject obj)
         {
             if (spawnedLifeForms.Remove(obj))
                 UpdateCellStats();
+        }
+
+        // ---------------------------------------------------------------------
+        //  Live fauna registry — instances plus per-species counts (keyed by the
+        //  FaunaConfigurationSO that defines the species). Fauna register on
+        //  AssignLineage (spawner and reproduction paths both) and unregister in
+        //  OnDestroy. This registry is the cell "sensing" its inhabitants — the
+        //  fauna analogue of the prism density grid: counts feed the seeder
+        //  (top up to seed floor) and reproduction (MaxLivePopulation backstop);
+        //  instances feed predator prey-seeking (nearest live herbivore) and the
+        //  predator seeding gate. Manager-spawned fauna (no lineage) are invisible
+        //  to it — acceptable, those legacy populations never instantiate (§7).
+        //  See Docs/ECOSYSTEM.md §6/§7.
+        // ---------------------------------------------------------------------
+
+        readonly Dictionary<FaunaConfigurationSO, int> liveFaunaCounts = new();
+        readonly List<Fauna> liveFauna = new();
+
+        /// <summary>Live population of the species defined by <paramref name="config"/> in this cell.</summary>
+        public int GetLiveFaunaCount(FaunaConfigurationSO config) =>
+            config && liveFaunaCounts.TryGetValue(config, out int c) ? c : 0;
+
+        /// <summary>All lineage-registered live fauna in this cell (any species, any diet).</summary>
+        public IReadOnlyList<Fauna> LiveFauna => liveFauna;
+
+        /// <summary>
+        /// Live herbivores still eligible as prey — the prey signal for predator
+        /// seeding (a real herbivore count, not the prism-mass proxy).
+        /// </summary>
+        public int GetLiveHerbivoreCount()
+        {
+            int n = 0;
+            for (int i = 0; i < liveFauna.Count; i++)
+            {
+                var f = liveFauna[i];
+                if (f && f.Diet == FaunaDiet.Herbivore && f.IsAlivePrey) n++;
+            }
+            return n;
+        }
+
+        public void RegisterLiveFauna(Fauna fauna)
+        {
+            if (!fauna || !fauna.SourceConfig) return;
+            liveFaunaCounts.TryGetValue(fauna.SourceConfig, out int c);
+            liveFaunaCounts[fauna.SourceConfig] = c + 1;
+            liveFauna.Add(fauna);
+        }
+
+        public void UnregisterLiveFauna(Fauna fauna)
+        {
+            // `is null` guard only — a destroyed-but-non-null fauna must still be
+            // removable from the registry during teardown.
+            if (fauna is null || !fauna.SourceConfig) return;
+            if (liveFaunaCounts.TryGetValue(fauna.SourceConfig, out int c) && c > 0)
+                liveFaunaCounts[fauna.SourceConfig] = c - 1;
+            liveFauna.Remove(fauna);
         }
 
         void Initialize()
@@ -567,8 +596,9 @@ namespace CosmicShore.Gameplay
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
-            ClearWitherCrystals();
-            phase = CellPhase.Sprout;
+            liveFaunaCounts.Clear();
+            liveFauna.Clear();
+            phase = CellPhase.Calm;
 
             // Bind runtime -> this cell
             runtime.Cell = this;
@@ -628,13 +658,12 @@ namespace CosmicShore.Gameplay
 
         void SetupDensityGrids()
         {
-            // Size the density grids to the cell's actual membrane, not the old
-            // hard-coded 1000m cube anchored at world origin. With a 1200m-radius
-            // membrane the fixed cube saw only ~14% of the cell's volume — outer-
-            // shell mass was invisible to FindDensestRegion, so fauna were never
-            // directed at it and it accumulated unconsumed. See
+            // Size the density grids to the cell's SENSE radius (membrane radius by
+            // default, or a CellConfig override for large arenas like the Skim Race track).
+            // With a 1200m membrane the old fixed cube saw only ~14% of the cell — outer
+            // mass was invisible to FindDensestRegion so fauna never sought it. See
             // Docs/DENSITY_PARTITIONING_AUDIT.md.
-            float membraneRadius = MembraneRadius;
+            float membraneRadius = SenseRadius;
             float worldDiameter = membraneRadius > 0f
                 ? membraneRadius * 2f
                 : 2400f; // fallback when the membrane prefab is missing
@@ -700,11 +729,9 @@ namespace CosmicShore.Gameplay
         {
             StopSpawner();
 
-            // One spawner model for every cell. Intensity selects the CellConfig
-            // (see AssignConfig's CellTypeChoiceOptions.IntensityWise) — and each config
-            // carries its own tuned SpawnProfile — so there is no separate intensity-wise
-            // spawner; RandomLifeSpawner drives them all. (Docs/ECOSYSTEM.md §5.)
-            activeSpawner = randomSpawner;
+            activeSpawner = cellTypeChoiceOptions == CellTypeChoiceOptions.IntensityWise
+                ? intensitySpawner
+                : randomSpawner;
 
             activeSpawner.Start(this, cellConfigData, runtime, gameData);
 
@@ -736,12 +763,10 @@ namespace CosmicShore.Gameplay
             if (block is null) return;
             if (trackedBlocks.ContainsKey(block)) return; // already counted
 
-            // Snapshot the domain + volume at registration time — RemoveBlock uses this
-            // snapshot so a team change (steal) or growth between Add and Remove can't
-            // desync the grids/counts/volume.
+            // Snapshot the domain at registration time — RemoveBlock uses this snapshot
+            // so a team change (steal) between Add and Remove can't desync the grids.
             Domains registeredDomain = block ? block.Domain : Domains.Blue;
-            float registeredVolume = block ? PrismVolume(block) : 0f;
-            trackedBlocks[block] = new RegisteredBlock(registeredDomain, registeredVolume);
+            trackedBlocks[block] = registeredDomain;
 
             if (block)
             {
@@ -754,20 +779,14 @@ namespace CosmicShore.Gameplay
 
                 domainBlockCounts.TryGetValue(registeredDomain, out int count);
                 domainBlockCounts[registeredDomain] = count + 1;
-
-                // Every prism — flora HealthPrism or vessel trail prism — also feeds its
-                // domain's VOLUME tally, so per-domain volume reflects ALL mass (not just
-                // the legacy scored-team total, which Cell.ChangeVolume otherwise never fed).
-                ChangeVolume(registeredDomain, registeredVolume);
             }
         }
 
         public void RemoveBlock(Prism block)
         {
             if (block is null) return;
-            if (!trackedBlocks.Remove(block, out RegisteredBlock tracked)) return; // not counted
+            if (!trackedBlocks.Remove(block, out Domains registeredDomain)) return; // not counted
 
-            Domains registeredDomain = tracked.Domain;
             if (block)
             {
                 Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
@@ -779,21 +798,7 @@ namespace CosmicShore.Gameplay
 
                 if (domainBlockCounts.TryGetValue(registeredDomain, out int count) && count > 0)
                     domainBlockCounts[registeredDomain] = count - 1;
-
-                // Subtract exactly the volume Add registered (the snapshot), keeping the
-                // per-domain volume tally symmetric with count even if the prism grew or
-                // changed team while it was alive.
-                ChangeVolume(registeredDomain, -tracked.Volume);
             }
-        }
-
-        // A prism's mass = its target-scale volume, matching PrismScaleAnimator.UpdateVolume
-        // (TargetScale.x*y*z). Read at registration so a prism counts its eventual size, not
-        // the near-zero scale it has the instant it spawns.
-        static float PrismVolume(Prism block)
-        {
-            var s = block.TargetScale;
-            return Mathf.Abs(s.x * s.y * s.z);
         }
 
         /// <summary>
@@ -869,10 +874,11 @@ namespace CosmicShore.Gameplay
 
         public bool ContainsPosition(Vector3 position)
         {
-            // MembraneRadius reads CapsuleMembrane.Radius when present (the authored
-            // radius), falling back to localScale.x — strictly more correct than the
-            // old raw localScale read for capsule membranes.
-            float radius = MembraneRadius;
+            // Use SenseRadius (membrane radius, or a CellConfig override for large arenas)
+            // so prisms across the whole sensed space register with the cell — not just
+            // those inside the visual membrane. This is what lets fauna find + seek mass
+            // across the full Skim Race track. See SenseRadius / Docs/ECOSYSTEM.md §7.2.
+            float radius = SenseRadius;
             if (radius <= 0f) return false;
             return Vector3.Distance(position, transform.position) < radius;
         }

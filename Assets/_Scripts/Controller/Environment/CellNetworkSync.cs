@@ -15,9 +15,9 @@ namespace CosmicShore.Gameplay
     ///     with the server's via <see cref="Cell.ApplyAuthoritativePhaseAndDomain"/>.
     ///
     /// Flora and fauna spawning is non-deterministic per-side (each client runs its own
-    /// RandomLifeSpawner with local Random.value rolls), so per-side cell mass drifts.
-    /// Server replication keeps shared gameplay rules (fauna goals, weights, danger
-    /// immunity) consistent on top of that drift.
+    /// IntensityWiseLifeSpawner with local Random.value rolls), so per-side LiveBlockCount
+    /// drifts. Server replication keeps shared gameplay rules (fauna goals, weights,
+    /// danger immunity) consistent on top of that drift.
     ///
     /// This component is OPTIONAL: Cell works without it in single-player or in scenes
     /// where the Cell GameObject has no NetworkObject. Add it (alongside a NetworkObject)
@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] Cell cell;
 
         readonly NetworkVariable<int> _netLiveBlockCount = new(0);
-        readonly NetworkVariable<CellPhase> _netPhase = new(CellPhase.Sprout);
+        readonly NetworkVariable<CellPhase> _netPhase = new(CellPhase.Calm);
         readonly NetworkVariable<Domains> _netDominantDomain = new(Domains.Blue);
 
         float _nextMirrorAt;

@@ -22,35 +22,27 @@ namespace CosmicShore.Gameplay
         private Vector3 desiredDirection;
         private Quaternion desiredRotation;
 
-        // True once starvation has begun the wither-to-crystal death animation. Freezes
-        // behavior + movement so the creature collapses in place instead of drifting.
-        bool _withering;
-
         [HideInInspector] public float Phase;
 
         public LightFaunaManager LightFaunaManager { get; set; }
 
         /// <summary>
-        /// True when the host cell's phase is <see cref="CellPhase.Rabid"/>: aggression-2
+        /// True when the host cell's phase is <see cref="CellPhase.Frenzy"/>: aggression-2
         /// fauna ignore danger-prism damage. Read by impactor pipelines that would
         /// otherwise debuff/damage the fauna on dangerous-prism contact. Centralizing
         /// the rule here keeps the impact code path from re-deriving phase semantics.
         /// </summary>
-        public bool IsDangerImmune => cell && cell.Phase >= CellPhase.Rabid;
+        public bool IsDangerImmune => cell && cell.Phase >= CellPhase.Frenzy;
 
         public override void Initialize(Cell cell)
         {
+            base.Initialize(cell); // record the explicit host cell (multi-cell correctness)
+
             if (!data)
             {
                 CSDebug.LogError($"{nameof(LightFauna)} on {name} is missing {nameof(LightFaunaDataSO)}.");
                 return;
             }
-
-            // Guarantee the lifeform invariant: every lifeform carries one elemental crystal
-            // that drops as a powerup on death. The wither (WitherToCrystalCoroutine) drops
-            // whatever crystal this resolves; ensuring it here means a fauna can never starve
-            // out without leaving an elemental powerup.
-            LifeFormCrystal.EnsureElementalCrystal(this);
 
             // The fauna body is composed of nested HealthPrism prefab instances
             // (e.g. MassBrittlestarFauna embeds DynamicHealthBlock children). They
@@ -84,85 +76,6 @@ namespace CosmicShore.Gameplay
                 LightFaunaManager.RemoveFauna(this);
             else
                 Destroy(gameObject);
-        }
-
-        /// <summary>
-        /// Starts the starvation death: the creature withers from its extremity spindles
-        /// inward to the center and leaves its core crystal behind. Idempotent — only the
-        /// first call takes effect.
-        /// </summary>
-        void BeginWither()
-        {
-            if (_withering) return;
-            _withering = true;
-            currentVelocity = Vector3.zero;
-            StartCoroutine(WitherToCrystalCoroutine());
-        }
-
-        /// <summary>
-        /// Collapses the body one spindle ring at a time, farthest-from-center first, so the
-        /// creature visibly withers inward; then activates its core crystal as the remnant.
-        /// Reuses the same <see cref="Spindle.ForceWither"/> evaporation and
-        /// <see cref="Crystal.ActivateCrystal"/> hand-off that flora use on death, so the
-        /// creature's mass returns to the cell as a collectible, flora-nucleating crystal
-        /// rather than vanishing. (Docs/ECOSYSTEM.md.)
-        /// </summary>
-        IEnumerator WitherToCrystalCoroutine()
-        {
-            // Detach the core crystal up front so collapsing the body doesn't destroy it with
-            // its parent spindle. Park it on the cell, hidden, until the body is gone.
-            var crystal = GetComponentInChildren<Crystal>(true);
-            if (crystal)
-            {
-                crystal.transform.SetParent(cell ? cell.transform : null, worldPositionStays: true);
-                crystal.gameObject.SetActive(false);
-            }
-
-            // Extremity → center: evaporate spindles farthest-from-center first. Because the
-            // outer rings go first, by the time an inner spindle's turn comes its children are
-            // already gone, so ForceWither just collapses that ring (it's a no-op on an
-            // already-withering spindle). Each spindle takes its own HealthPrisms with it.
-            var spindles = GetComponentsInChildren<Spindle>(true)
-                .Where(s => s)
-                .OrderByDescending(s => (s.transform.position - transform.position).sqrMagnitude)
-                .ToList();
-
-            // <= 0 falls back to a sensible default so existing LightFaunaDataSO assets
-            // (which deserialize a not-yet-authored field as 0) still wither visibly
-            // instead of collapsing every ring in one frame.
-            float interval = data && data.witherRingInterval > 0f ? data.witherRingInterval : 0.25f;
-            for (int i = 0; i < spindles.Count; i++)
-            {
-                if (spindles[i]) spindles[i].ForceWither();
-                if (interval > 0f) yield return new WaitForSeconds(interval);
-                else yield return null;
-            }
-
-            // Leave the crystal behind at the center — but NEVER let a crystal hand-off
-            // failure strand a withered husk: the creature must always despawn. Activation is
-            // guarded (a missing/mis-wired crystal cellData logs instead of leaking a fauna),
-            // and the cell bounds how many wither-crystals persist so a long session can't
-            // accumulate them. Config can also turn the crystal off entirely (isolation).
-            bool leaveCrystal = crystal && (data == null || data.leaveCrystalOnWither);
-            if (leaveCrystal)
-            {
-                crystal.gameObject.SetActive(true);
-                try { crystal.ActivateCrystal(); }
-                catch (System.Exception e)
-                {
-                    CSDebug.LogError($"{name}: wither crystal activation failed ({e.Message}); discarding it.");
-                    Destroy(crystal.gameObject);
-                    leaveCrystal = false;
-                }
-                if (leaveCrystal && cell) cell.RegisterWitherCrystal(crystal);
-            }
-            else if (crystal)
-            {
-                // Crystal disabled by config — discard the parked core so it isn't orphaned.
-                Destroy(crystal.gameObject);
-            }
-
-            Die("starvation");
         }
 
         IEnumerator UpdateBehaviorCoroutine()
@@ -207,23 +120,45 @@ namespace CosmicShore.Gameplay
 
         bool IsBerserk => cell != null && cell.AggressionLevel == CellAggressionLevel.Level2;
 
+        /// <summary>
+        /// Nearest live, non-immune herbivore in the host cell's fauna registry.
+        /// O(live fauna) per behavior tick — the registry is small (bounded by the
+        /// per-species MaxLivePopulation caps).
+        /// </summary>
+        bool TryFindNearestPreyFauna(out Vector3 position)
+        {
+            position = default;
+            var host = cell;
+            if (host == null) return false;
+
+            var fauna = host.LiveFauna;
+            Fauna best = null;
+            float bestSqr = float.PositiveInfinity;
+            for (int i = 0; i < fauna.Count; i++)
+            {
+                var f = fauna[i];
+                if (!f || f == this) continue;
+                if (f.Diet != FaunaDiet.Herbivore || !f.IsAlivePrey || f.IsPredationImmune) continue;
+
+                float d = (f.transform.position - transform.position).sqrMagnitude;
+                if (d < bestSqr) { bestSqr = d; best = f; }
+            }
+
+            if (!best) return false;
+            position = best.transform.position;
+            return true;
+        }
+
         void UpdateBehavior()
         {
             if (!data)
                 return;
 
-            // Already dying — let the wither animation run; no more hunting/feeding.
-            if (_withering)
-                return;
-
             // Prey-linked population control: a fauna that hasn't fed in starvationSeconds
-            // dies, so the live population self-bounds to available prey (Docs/ECOSYSTEM.md §6).
-            // Death is not a vanish: the creature withers from its extremity spindles inward
-            // and leaves its core crystal behind (BeginWither), recycling its mass back into
-            // the cell as a collectible, flora-nucleating crystal.
+            // despawns, so the live population self-bounds to available prey (Docs/ECOSYSTEM.md §6).
             if (IsStarving)
             {
-                BeginWither();
+                Die("starvation");
                 return;
             }
 
@@ -232,19 +167,27 @@ namespace CosmicShore.Gameplay
             // Phase-driven goal. Each phase swaps the goal source rather than killing/spawning
             // systems, so the same fauna instance can transition through aggression levels
             // as the cell's phase changes around it.
-            //   Quiet/Settled: aggression 0 — head toward crystal
-            //   Restless/Frozen: aggression 1 — head toward nearest opposing-color centroid
-            //   Rabid: aggression 2 — head toward nearest centroid (any domain)
-            var phase = cell ? cell.Phase : CellPhase.Sprout;
+            //   Calm:     aggression 0 — head toward crystal
+            //   Restless: aggression 1 — head toward nearest opposing-color centroid
+            //   Frenzy:   aggression 2 — head toward nearest centroid (any domain)
+            var phase = cell ? cell.Phase : CellPhase.Calm;
             Goal = phase switch
             {
                 CellPhase.Restless => cell.GetExplosionTarget(domain),
-                CellPhase.Frozen => cell.GetExplosionTarget(domain),
-                CellPhase.Rabid => cell.GetDensestRegionAnyDomain(),
+                CellPhase.Frenzy => cell.GetDensestRegionAnyDomain(),
                 _ => (cellData && cellData.CrystalTransform)
                        ? cellData.CrystalTransform.position
                        : (cell ? cell.transform.position : transform.position),
             };
+
+            // Predators hunt PREY, not mass: seek the nearest live herbivore the cell
+            // senses (Cell.LiveFauna — the fauna analogue of the prism density grid).
+            // Replaces the v1 approximation where predators converged on prism-density
+            // centroids and only met herbivores incidentally. Skips predation-immune
+            // newborns so a shark doesn't camp a fresh birth; with no herbivores alive
+            // the phase-based goal above stands (roam plausibly, then starve).
+            if (diet == FaunaDiet.Predator && TryFindNearestPreyFauna(out var preyPos))
+                Goal = preyPos;
 
             if (!IsFinite(Goal) || Goal.sqrMagnitude < 0.001f)
             {
@@ -263,12 +206,15 @@ namespace CosmicShore.Gameplay
             // Aggression 2 drops friendly avoidance (same-domain ships, fauna, and
             // health prisms stop contributing to separation). Cross-domain entities
             // still push us away so we don't clip through enemy mass.
-            bool dropFriendlyAvoidance = phase >= CellPhase.Rabid;
+            bool dropFriendlyAvoidance = phase >= CellPhase.Frenzy;
 
-            var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
+            // Shared non-alloc scratch (Fauna.OverlapScratch) — at swarm scale the old
+            // per-tick Collider[] allocation was pure GC churn.
+            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, OverlapScratch);
 
-            foreach (var collider in nearbyColliders)
+            for (int ci = 0; ci < hitCount; ci++)
             {
+                var collider = OverlapScratch[ci];
                 if (!collider || collider.gameObject == gameObject) continue;
 
                 Vector3 diff = transform.position - collider.transform.position;
@@ -285,6 +231,36 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
+                // Predator diet: hunt herbivore fauna. Another creature's body shows up
+                // here as its child HealthPrisms, so walk up to the owning Fauna. We match
+                // the Fauna BASE (not LightFauna) so a predator eats ANY herbivore species
+                // — LightFauna (brittlestar) and Boid (tadpole) alike. The creature is the
+                // nearest Fauna ancestor of its body colliders, so managers (also Fauna,
+                // but with no body in the scene) are never returned. A predator's own body
+                // resolves to `this` and is skipped; other predators (Diet != Herbivore)
+                // are neighbors, not prey, so predators don't cannibalize. Predation
+                // ignores domain — it is a diet relationship, not a team fight — so
+                // predators always have prey even in a single-domain cell.
+                if (diet == FaunaDiet.Predator)
+                {
+                    var prey = collider.GetComponentInParent<Fauna>();
+                    if (prey && prey != this && prey.Diet == FaunaDiet.Herbivore)
+                    {
+                        neighborCount++;
+                        if (distance < separationRadius)
+                            separation += diff.normalized / distance;
+
+                        // Predated() respects the prey's post-spawn immunity window and
+                        // returns false if the prey couldn't be eaten — only feed on a real kill.
+                        if (prey.IsAlivePrey && distance < consumeRadius && prey.Predated(PLAYER_NAME))
+                            NotifyFed();
+                        continue;
+                    }
+                    // Not prey (flora / trail / ship / another predator): predators don't
+                    // eat prism mass, so fall through for separation only — the consume
+                    // calls below are gated to Herbivore.
+                }
+
                 // Handle other fauna/health prisms
                 var otherHealthBlock = collider.GetComponent<HealthPrism>();
                 if (otherHealthBlock)
@@ -298,7 +274,8 @@ namespace CosmicShore.Gameplay
                     if (distance < separationRadius && !(dropFriendlyAvoidance && sameDomain))
                         separation += diff.normalized / distance;
 
-                    if (distance < consumeRadius && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
+                    // Herbivores eat opposing-domain plant/trail mass; predators never eat prisms.
+                    if (diet == FaunaDiet.Herbivore && distance < consumeRadius && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
                     {
                         otherHealthBlock.Consume(transform, domain, PLAYER_NAME, true);
                         NotifyFed();
@@ -309,7 +286,7 @@ namespace CosmicShore.Gameplay
 
                 // Handle blocks
                 Prism block = collider.GetComponent<Prism>();
-                if (block && block.Domain != domain && distance < consumeRadius)
+                if (block && diet == FaunaDiet.Herbivore && block.Domain != domain && distance < consumeRadius)
                 {
                     block.Consume(transform, domain, PLAYER_NAME, true);
                     NotifyFed();
@@ -339,10 +316,6 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            // Frozen while withering — the body collapses in place, it doesn't drift away.
-            if (_withering)
-                return;
-
             transform.position += currentVelocity * Time.deltaTime;
 
             float lerpSpeed = data ? Mathf.Max(0f, data.rotationLerpSpeed) : 5f;

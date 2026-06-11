@@ -77,6 +77,16 @@ namespace CosmicShore.Core
         EnergyGain = 18,
         SpeedBurst = 19,
         CrystalSkim = 20,
+        JoustScored = 21,
+        JoustReceived = 22,
+        ElementChargeReceived = 23,
+        ElementMassReceived = 24,
+        ElementSpaceReceived = 25,
+        ElementTimeReceived = 26,
+        ComebackCharge = 27,
+        ComebackMass = 28,
+        ComebackSpace = 29,
+        ComebackTime = 30,
     }
 
     [DefaultExecutionOrder(-1)]
@@ -202,6 +212,38 @@ namespace CosmicShore.Core
 
         [SerializeField, Tooltip("Played for GameplaySFXCategory.CrystalSkim.")]
         EventReference crystalSkimEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustScored — local player's skimmer overtook an opponent.")]
+        EventReference joustScoredEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustReceived — local player was overtaken by an opponent's skimmer.")]
+        EventReference joustReceivedEvent;
+
+        [Header("Elemental Crystal Receive Events (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementChargeReceived — local player collected a Charge crystal.")]
+        EventReference elementChargeReceivedEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementMassReceived — local player collected a Mass crystal.")]
+        EventReference elementMassReceivedEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementSpaceReceived — local player collected a Space crystal.")]
+        EventReference elementSpaceReceivedEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementTimeReceived — local player collected a Time crystal.")]
+        EventReference elementTimeReceivedEvent;
+
+        [Header("Comeback Boost Events (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackCharge — local player receives a Charge comeback buff.")]
+        EventReference comebackChargeEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackMass — local player receives a Mass comeback buff.")]
+        EventReference comebackMassEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackSpace — local player receives a Space comeback buff.")]
+        EventReference comebackSpaceEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackTime — local player receives a Time comeback buff.")]
+        EventReference comebackTimeEvent;
 
         [Header("Gameplay SFX Tuning")]
         [SerializeField, Range(0f, 1f), Tooltip(
@@ -659,6 +701,16 @@ namespace CosmicShore.Core
                 {GameplaySFXCategory.EnergyGain, energyGainEvent},
                 {GameplaySFXCategory.SpeedBurst, speedBurstEvent},
                 {GameplaySFXCategory.CrystalSkim, crystalSkimEvent},
+                {GameplaySFXCategory.JoustScored, joustScoredEvent},
+                {GameplaySFXCategory.JoustReceived, joustReceivedEvent},
+                {GameplaySFXCategory.ElementChargeReceived, elementChargeReceivedEvent},
+                {GameplaySFXCategory.ElementMassReceived, elementMassReceivedEvent},
+                {GameplaySFXCategory.ElementSpaceReceived, elementSpaceReceivedEvent},
+                {GameplaySFXCategory.ElementTimeReceived, elementTimeReceivedEvent},
+                {GameplaySFXCategory.ComebackCharge, comebackChargeEvent},
+                {GameplaySFXCategory.ComebackMass, comebackMassEvent},
+                {GameplaySFXCategory.ComebackSpace, comebackSpaceEvent},
+                {GameplaySFXCategory.ComebackTime, comebackTimeEvent},
             };
         }
     }

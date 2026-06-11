@@ -36,6 +36,12 @@ namespace CosmicShore.UI
         [Header("Related UI Components")]
         [SerializeField] private Scoreboard scoreboard;
 
+        [Header("Volume / Pause Button (universal domain-volume gauge)")]
+        [Tooltip("The in-game pause button. The domain-volume hex gauge is auto-attached to it so the SAME gauge trains as the pause button across every gameplay scene. Leave null to auto-find a button named \"Volume / Pause Button\" under the HUD canvas.")]
+        [SerializeField] protected UnityEngine.UI.Button volumePauseButton;
+        [Tooltip("Optional pre-placed indicator. Leave null to attach/create one on the volume-pause button at runtime.")]
+        [SerializeField] protected DomainVolumeIndicator volumeIndicator;
+
         [Header("Event Channels")]
         [SerializeField] private ScriptableEventInt onMoundDroneSpawned;
         [SerializeField] private ScriptableEventInt onQueenDroneSpawned;
@@ -139,17 +145,16 @@ namespace CosmicShore.UI
 
         protected virtual void Start()
         {
-            Debug.Log($"<color=#FFFFFF><b>[FLOW-HUD] [MiniGameHUD] Start — gameData={gameData != null}, enableCinematic={enablePreGameCinematic}</b></color>");
             SubscribeToEvents();
 
             EnsureObjectiveIndicator();
+            EnsureVolumeIndicator();
 
             // If OnClientReady already fired before we subscribed (client race condition:
             // RPCs can resolve in the same frame as scene load, before Start() runs),
             // handle it now. LocalPlayer.Vessel being set means InitializePair() already ran.
             if (gameData?.LocalPlayer?.Vessel != null)
             {
-                Debug.Log("<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] Late subscription — OnClientReady already fired, handling now</b></color>");
                 HandleClientReady().Forget();
             }
         }
@@ -172,6 +177,49 @@ namespace CosmicShore.UI
 
             Transform canvasRoot = transform.parent != null ? transform.parent : transform;
             _autoCreatedIndicator = ObjectiveIndicator.CreateRuntime(canvasRoot, provider);
+        }
+
+        /// <summary>
+        /// Attaches the universal domain-volume hex gauge to this scene's "Volume /
+        /// Pause Button" so the same gauge trains players as the in-game pause button
+        /// everywhere (it mirrors MenuMiniGameHUD.EnsureDomainVolumeIndicator for the
+        /// menu). The button keeps its authored onClick (open PauseMenu) — the gauge
+        /// only replaces the button's face. Runs in Start so the injected gameData can
+        /// be handed to the runtime-added component (which never gets Reflex injection).
+        /// </summary>
+        protected virtual void EnsureVolumeIndicator()
+        {
+            var button = ResolveVolumePauseButton();
+            if (!button) return;
+
+            if (!volumeIndicator)
+                volumeIndicator = button.GetComponent<DomainVolumeIndicator>();
+            if (!volumeIndicator)
+                volumeIndicator = button.gameObject.AddComponent<DomainVolumeIndicator>();
+
+            volumeIndicator.SetGameData(gameData);
+        }
+
+        /// <summary>
+        /// Returns the serialized volume-pause button, or auto-finds one named
+        /// "Volume / Pause Button" under the HUD canvas so the gauge appears without
+        /// per-prefab wiring (the GameCanvas prefabs already carry that button).
+        /// </summary>
+        UnityEngine.UI.Button ResolveVolumePauseButton()
+        {
+            if (volumePauseButton) return volumePauseButton;
+
+            var canvas = GetComponentInParent<Canvas>();
+            Transform root = canvas ? canvas.transform : transform.root;
+            foreach (var btn in root.GetComponentsInChildren<UnityEngine.UI.Button>(true))
+            {
+                if (btn && btn.name == "Volume / Pause Button")
+                {
+                    volumePauseButton = btn;
+                    return btn;
+                }
+            }
+            return null;
         }
 
         IObjectiveProvider CreateObjectiveProviderForGameMode(GameModes mode)
@@ -246,7 +294,6 @@ namespace CosmicShore.UI
 
         private void OnClientReady()
         {
-            Debug.Log("<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] OnClientReady received!</b></color>");
             HandleClientReady().Forget();
         }
 
@@ -256,7 +303,6 @@ namespace CosmicShore.UI
 
             try
             {
-                Debug.Log($"<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] HandleClientReady — LocalPlayer={gameData?.LocalPlayer?.Name}, Vessel={gameData?.LocalPlayer?.Vessel != null}</b></color>");
                 Show();
                 CleanupUI();
                 HideLocalVesselHUD();
@@ -269,7 +315,6 @@ namespace CosmicShore.UI
                 if (enablePreGameCinematic && preGameCinematic != null)
                 {
                     Transform playerTarget = gameData?.LocalPlayer?.Vessel?.Transform;
-                    Debug.Log($"<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] Pre-game cinematic: enabled={enablePreGameCinematic}, controller={preGameCinematic != null}, playerTarget={playerTarget != null}</b></color>");
                     if (playerTarget != null)
                     {
                         bool cinematicDone = false;
@@ -278,17 +323,15 @@ namespace CosmicShore.UI
 
                         while (!cinematicDone)
                             await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);
-                        Debug.Log("<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] Pre-game cinematic DONE</b></color>");
                     }
                 }
 
-                Debug.Log("<color=#FFFFFF><b>[FLOW-8] [MiniGameHUD] ToggleReadyButton(true) — Ready button visible</b></color>");
                 _readyButtonUnlocked = true;
                 ToggleReadyButton(true);
             }
             catch (OperationCanceledException)
             {
-                Debug.Log("<color=#FFA500>[FLOW-8] [MiniGameHUD] HandleClientReady CANCELLED</color>");
+                // cancelled — nothing to do
             }
         }
 
@@ -337,7 +380,7 @@ namespace CosmicShore.UI
 
             var localPlayer = gameData.LocalPlayer;
             var card = Instantiate(view.PlayerScoreEntryPrefab, view.PlayerScoreContainer);
-            var teamColor = view.GetColorForDomain(localPlayer.RoundStats?.Domain ?? Domains.Jade);
+            var teamColor = ResolveDomainColor(localPlayer.RoundStats?.Domain ?? Domains.Jade);
             card.Setup(localPlayer.Name, 0, teamColor, true, 0);
 
             var sprite = ResolveAvatarSprite(localPlayer.AvatarId);
@@ -345,6 +388,16 @@ namespace CosmicShore.UI
 
             _localPlayerCard = card;
         }
+
+        /// <summary>
+        /// Single source of truth for a domain's UI color — the same ColorSet the vessels
+        /// and prisms read from (ThemeManagerData.ColorSet -> TrailHighlightColor). Neutral
+        /// gray if the theme isn't available. See Docs/ScoringSystem/REFACTOR.md R5.
+        /// </summary>
+        protected Color ResolveDomainColor(Domains domain) =>
+            gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.GetDomainUIColor(domain)
+                : Color.gray;
 
         private void CleanupLocalPlayerCard()
         {
@@ -370,7 +423,7 @@ namespace CosmicShore.UI
                 if (stats == localRoundStats) continue;
 
                 var card = Instantiate(view.PlayerScoreEntryPrefab, view.PlayerScoreContainer);
-                var teamColor = view.GetColorForDomain(stats.Domain);
+                var teamColor = ResolveDomainColor(stats.Domain);
                 card.Setup(stats.Name, (int)stats.Score, teamColor, false, staggerIdx++);
 
                 // Resolve avatar: try AI profile first, then fall back to player AvatarId
@@ -547,7 +600,6 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Resets UI state for re-entering the game flow after shape drawing.
-        /// Called externally by SinglePlayerFreestyleController.
         /// </summary>
         public void ShowConnectingFlow() => ResetForReplay();
         public void UpdateTurnMonitorDisplay(string message) => view.UpdateCountdownTimer(message);

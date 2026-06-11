@@ -13,7 +13,6 @@ namespace CosmicShore.Gameplay
 {
     public abstract class MultiplayerMiniGameControllerBase : MiniGameControllerBase
     {
-        [Inject] protected MultiplayerSetup multiplayerSetup;
         [Inject] private SceneTransitionManager _sceneTransitionManager;
 
         protected virtual int InitDelayMs => 1000;

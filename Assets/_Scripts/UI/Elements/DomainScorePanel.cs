@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
-using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -13,6 +12,8 @@ namespace CosmicShore.UI
     /// Shows the team's aggregated objective progress on top and a horizontal
     /// row of small player avatars (humans + AI on the same domain) below it.
     /// Used by <see cref="MultiplayerHUD"/> for HexRace / Joust / CrystalCapture.
+    ///
+    /// Sum-number animation is delegated to <see cref="ScoreNumberAnimator"/>.
     /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
     public class DomainScorePanel : MonoBehaviour
@@ -39,20 +40,18 @@ namespace CosmicShore.UI
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
         private CanvasGroup _canvasGroup;
-        private int _displayedSum;
-        private Color _baseTextColor;
-        private Tween _punchTween;
-        private Tween _rollTween;
-        private Tween _colorFlashTween;
+        private ScoreNumberAnimator _sumAnimator;
         private readonly List<PlayerScoreEntry> _spawnedAvatars = new();
 
         public Domains Domain { get; private set; } = Domains.Blue;
+
+        private ScoreNumberAnimator SumAnimator =>
+            _sumAnimator ??= new ScoreNumberAnimator(domainSumText, animSettings);
 
         void Awake()
         {
             _canvasGroup = GetComponent<CanvasGroup>();
             if (!_canvasGroup) _canvasGroup = gameObject.AddComponent<CanvasGroup>();
-            if (domainSumText) _baseTextColor = domainSumText.color;
         }
 
         /// <summary>
@@ -63,13 +62,7 @@ namespace CosmicShore.UI
         public void Setup(Domains domain, Color domainColor, int initialSum)
         {
             Domain = domain;
-            _displayedSum = initialSum;
-
-            if (domainSumText)
-            {
-                domainSumText.text = initialSum.ToString();
-                domainSumText.color = _baseTextColor;
-            }
+            SumAnimator.SetImmediate(initialSum);
             ApplyIndicatorColor(domainColor, indicatorAlpha);
             ApplyAccentColor(domainColor, accentAlpha);
         }
@@ -88,29 +81,21 @@ namespace CosmicShore.UI
         public void Setup(Domains domain, DomainColorSet colorSet, int initialSum)
         {
             Domain = domain;
-            _displayedSum = initialSum;
 
             if (colorSet == null)
             {
                 // Theme palette unavailable — fall back to neutral white sum and hide the accent.
-                if (domainSumText)
-                {
-                    domainSumText.text = initialSum.ToString();
-                    domainSumText.color = _baseTextColor;
-                }
+                SumAnimator.SetImmediate(initialSum);
                 if (domainIndicatorImage) domainIndicatorImage.gameObject.SetActive(true);
                 if (accentImage) accentImage.gameObject.SetActive(false);
                 return;
             }
 
-            if (domainSumText)
-            {
-                domainSumText.text = initialSum.ToString();
-                var textColor = colorSet.BrightCrystalColor;
-                textColor.a = 1f;
-                _baseTextColor = textColor;
-                domainSumText.color = textColor;
-            }
+            var textColor = colorSet.BrightCrystalColor;
+            textColor.a = 1f;
+            SumAnimator.SetBaseColor(textColor);
+            SumAnimator.SetImmediate(initialSum);
+
             ApplyIndicatorColor(colorSet.ShipColor1, indicatorAlpha);
             ApplyAccentColor(colorSet.ShipColor2, accentAlpha);
         }
@@ -146,90 +131,11 @@ namespace CosmicShore.UI
             _spawnedAvatars.Clear();
         }
 
-        public void UpdateSum(int newSum)
-        {
-            if (!domainSumText) return;
-
-            if (newSum == _displayedSum)
-            {
-                domainSumText.text = newSum.ToString();
-                return;
-            }
-
-            int from = _displayedSum;
-            _displayedSum = newSum;
-
-            PlayCounterRoll(from, newSum);
-            PlayScorePunch();
-            PlayColorFlash(newSum > from);
-        }
-
-        void PlayScorePunch()
-        {
-            if (!domainSumText) return;
-            _punchTween?.Kill();
-
-            float scale = animSettings ? animSettings.scorePunchScale : 1.15f;
-            float duration = animSettings ? animSettings.scorePunchDuration : 0.2f;
-            var ease = animSettings ? animSettings.scorePunchEase : Ease.OutBack;
-            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
-
-            domainSumText.transform.localScale = Vector3.one;
-            _punchTween = domainSumText.transform
-                .DOScale(scale, duration * 0.4f)
-                .SetEase(ease)
-                .OnComplete(() =>
-                {
-                    _punchTween = domainSumText.transform
-                        .DOScale(1f, duration * 0.6f)
-                        .SetEase(Ease.OutQuad)
-                        .SetUpdate(unscaled);
-                })
-                .SetUpdate(unscaled);
-        }
-
-        void PlayCounterRoll(int from, int to)
-        {
-            if (!domainSumText) return;
-            _rollTween?.Kill();
-
-            float duration = animSettings ? animSettings.counterRollDuration : 0.35f;
-            var ease = animSettings ? animSettings.counterRollEase : Ease.OutQuad;
-            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
-
-            float current = from;
-            _rollTween = DOTween.To(() => current, x => current = x, to, duration)
-                .SetEase(ease)
-                .OnUpdate(() => domainSumText.text = Mathf.RoundToInt(current).ToString())
-                .SetUpdate(unscaled);
-        }
-
-        void PlayColorFlash(bool isGain)
-        {
-            if (!domainSumText) return;
-            _colorFlashTween?.Kill();
-
-            var flashColor = isGain
-                ? (animSettings ? animSettings.scoreGainColor : new Color(0.2f, 1f, 0.4f, 1f))
-                : (animSettings ? animSettings.scoreLossColor : new Color(1f, 0.3f, 0.2f, 1f));
-            float duration = animSettings ? animSettings.scoreColorFlashDuration : 0.4f;
-            bool unscaled = animSettings == null || animSettings.useUnscaledTime;
-
-            domainSumText.color = flashColor;
-            _colorFlashTween = DOTween.To(
-                    () => domainSumText.color,
-                    c => domainSumText.color = c,
-                    _baseTextColor,
-                    duration)
-                .SetEase(Ease.OutQuad)
-                .SetUpdate(unscaled);
-        }
+        public void UpdateSum(int newSum) => SumAnimator.AnimateTo(newSum);
 
         void OnDestroy()
         {
-            _punchTween?.Kill();
-            _rollTween?.Kill();
-            _colorFlashTween?.Kill();
+            _sumAnimator?.Kill();
         }
     }
 }

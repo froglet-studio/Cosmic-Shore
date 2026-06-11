@@ -1,8 +1,10 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using DG.Tweening;
 using Obvious.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 
 namespace CosmicShore.UI
@@ -24,8 +26,7 @@ namespace CosmicShore.UI
         [SerializeField] private ScriptableVariable<float> boostBaseMultiplier;
         [SerializeField] private ScriptableVariable<float> boostMaxMultiplier;
 
-        [Header("Colors")]
-        [SerializeField] private DomainColorPaletteSO domainColors;
+        [Inject] private GameDataSO gameData;
 
         [Header("Flash Durations")]
         [SerializeField] private float joustFlashDuration = 1f;
@@ -35,6 +36,12 @@ namespace CosmicShore.UI
         private Domains _lastSourceDomain = Domains.Blue;
         private Tween _joustFlashTween;
         private Tween _shieldFlashTween;
+
+        // Single source of truth — the same ColorSet the vessels and prisms use (R5).
+        private Color ResolveDomainColor(Domains domain) =>
+            gameData != null && gameData.ThemeManagerData != null
+                ? gameData.ThemeManagerData.GetDomainUIColor(domain)
+                : Color.white;
 
         public override void Initialize(IVesselStatus vesselStatus)
         {
@@ -52,9 +59,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            Color playerColor = domainColors != null
-                ? domainColors.Get(vesselStatus.Domain)
-                : Color.white;
+            Color playerColor = ResolveDomainColor(vesselStatus.Domain);
 
             view.Initialize();
             view.SetPlayerDomainColor(playerColor);
@@ -133,10 +138,8 @@ namespace CosmicShore.UI
                 _lastSourceDomain = Domains.Blue;
             }
 
-            Color sourceColor = Color.white;
             bool hasSourceDomain = effectiveDomain != Domains.Blue;
-            if (hasSourceDomain && domainColors != null)
-                sourceColor = domainColors.Get(effectiveDomain);
+            Color sourceColor = hasSourceDomain ? ResolveDomainColor(effectiveDomain) : Color.white;
 
             view.SetBoostState(Mathf.Clamp01(boost01), isBoosted, isFull,
                 sourceColor, hasSourceDomain);

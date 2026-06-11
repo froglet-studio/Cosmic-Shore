@@ -93,9 +93,7 @@ namespace CosmicShore.Gameplay
             healthTracker = new HealthBlockTracker(healthBlocksForMaturity, minHealthBlocks, cell);
             spindleTracker = new SpindleTracker();
 
-            // Guarantee the lifeform invariant: every lifeform carries one elemental crystal
-            // that drops as a powerup on death (LifeFormCrystal fixes/provisions if needed).
-            crystal = LifeFormCrystal.EnsureElementalCrystal(this);
+            crystal = GetComponentInChildren<Crystal>();
 
             BindEmbeddedParts();
 

@@ -3,6 +3,13 @@
 Parking lot for minor improvements that don't rise to a refactor commit
 or a bug. Each entry has enough context that it can be picked up cold.
 
+> **Looking for the big-picture “what should I work on next?”** — the
+> cross-cutting roadmap (host-loss resilience, multi-joiner reliability,
+> push-vs-poll, scale/cost, production observability, CI) plus the
+> strengths-to-preserve invariants live in
+> `../MultiplayerArchitecture/ROADMAP.md`. This file is the granular
+> party-side parking lot beneath it.
+
 ## Code health
 
 ### TODO-1. Remove `HostConnectionService.Instance` static accessor
@@ -40,14 +47,12 @@ references in `Assets/`.
 
 ## Diagnostics
 
-### TODO-4. Adopt NetDiag in non-party catch sites
+### TODO-4. Adopt NetDiag in non-party catch sites → see NetworkDiagnostics
 
-**Why.** The helper exists; only party-side catches use it today.
-`AuthenticationServiceFacade`, `FriendsServiceFacade`, PlayFab paths,
-IAP, leaderboards-write could all benefit.
-
-**See** `../NetworkDiagnostics/TODOS.md` § "Broader adoption" for the
-pattern and the list of candidate sites.
+Canonical: `../NetworkDiagnostics/TODOS.md` § "TODO-2. Broader adoption
+— non-party UGS catches" (pattern + candidate site list:
+`AuthenticationServiceFacade`, `FriendsServiceFacade`, PlayFab, IAP,
+leaderboards-write). Not duplicated here.
 
 ## UI / UX (deferred — needs design pass)
 
@@ -97,20 +102,12 @@ generous window (e.g. 60 s) to avoid false rejections.
 
 ## Performance / polish
 
-### TODO-8. Coalesce startup property writes
+### TODO-8. Coalesce startup property writes → see PresenceSystem
 
-**Why.** Multiple clients joining the presence lobby
-near-simultaneously and writing player properties rapidly is one of
-the contributors to B1 (`LobbyPatcher` exception spam — see
-`../PresenceSystem/BUGS.md`). Coalescing the property writes at startup
-would reduce SDK delta churn.
-
-**Touchpoint.** `LobbyPropertyWriter.SaveWithRetryAsync` (already does
-post-save refresh — may need to batch).
-
-**Risk.** Touches the fragile lobby property write path. Worth doing
-*only* if B1 returns after the `BenignLobbyLogFilter` proves
-insufficient.
+This is a presence-lobby write-path concern (the `LobbyPropertyWriter`
+startup churn that contributes to B1). Tracked canonically in
+`../PresenceSystem/TODOS.md` § "TODO-P2. Coalesce startup property
+writes" — not duplicated here.
 
 ### TODO-9. Document `LobbyRefreshScheduler.Boost()` semantics
 

@@ -1,0 +1,16 @@
+sequenceDiagram
+  autonumber
+  participant S as Sender (host)
+  participant L as Presence Lobby
+  participant R as Recipient
+  S->>L: SendInvite → write invite_target + invite_data (real session id)
+  Note over S,L: eager Relay means the id is real, never PENDING
+  L-->>R: refresh scan (every few s) finds invite_target == me
+  R->>R: OnInviteReceived → show Accept / Decline
+  R->>L: Accept → write accepted_invite handshake
+  R->>R: shutdown own solo Relay (NetworkTransition.ShutdownAsync)
+  R->>S: JoinSessionById(senderSessionId) over Relay
+  S->>S: host spawns recipient vessel + autopilot
+  S-->>R: InitializeAllPlayersAndVessels ClientRpc
+  R->>R: OnClientReady → OnPartyJoinCompleted
+  Note over S,R: host cross-checks session.Players to ignore stale joined_party re-adds (B8 fix)

@@ -21,11 +21,7 @@ namespace CosmicShore.Gameplay
             if (spawnProfile.SupportedFloras is not { Count: > 0 })
                 yield break;
 
-            // No domain asymmetry: all three playable domains seed flora (excluded = null).
-            // Which domain ends up controlling a cell emerges from consumption (controlling-
-            // color fauna grazing the minorities) and from players laying their own domain's
-            // prisms — not from biasing which colors are allowed to seed. (Docs/ECOSYSTEM.md §5.)
-            Domains? excluded = null;
+            var excluded = GetExcludedDomain(spawnProfile.FloraExcludeLocalDomain, gameData, fallbackLocal: Domains.Blue);
 
             foreach (var floraCfg in spawnProfile.SupportedFloras)
             {
@@ -71,11 +67,10 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < initialCount; i++)
             {
-                // Phase gate: plant only while the cell still allows new flora
-                // (Phase < Settled). Replaces the old scored-volume ceiling, which
-                // reads ~0 in Menu_Main and so never bounded planting there — tying
-                // planting to the cell's own live prism mass is what lets the
-                // grow/consume cycle close.
+                // Frenzy gate: plant at a steady rate until the cell hits Frenzy
+                // (Phase < Frenzy). No early planting cap — flora keep planting + growing
+                // and the food web (fauna grazing) is the only down-force. Replaces the
+                // old scored-volume ceiling (~0 in Menu_Main, so it never bounded planting).
                 if (host && host.FloraPlantingEnabled)
                     SpawnFlora(host, floraCfg.FloraPrefab, excluded);
 
@@ -91,7 +86,7 @@ namespace CosmicShore.Gameplay
             }
 
             // Continuous — keeps ticking so planting resumes if the cell falls back
-            // across the planting hysteresis floor (Phase drops below Settled again).
+            // across the Frenzy hysteresis floor (Phase drops below Frenzy again).
             while (true)
             {
                 float waitPeriod = floraCfg.OverrideDefaultPlantPeriod
@@ -117,29 +112,42 @@ namespace CosmicShore.Gameplay
             if (spawnProfile.InitialFaunaSpawnWaitTime > 0f)
                 yield return new WaitForSeconds(spawnProfile.InitialFaunaSpawnWaitTime);
 
-            // Timer-driven spawning at a FIXED period — no phase gate, no aggression
-            // scaling. Prism count drives fauna *aggression/behavior* (see Fauna /
-            // LightFauna); the timer drives *when* they spawn. Each tick emits a
-            // fixed-size population in the cell's controlling color, but only while there
-            // is prey to eat: production pauses when opposing prism mass is below
-            // FaunaFoodFloor, and starving fauna wither — so the population self-bounds
-            // to prey. (Docs/ECOSYSTEM.md §6, option C: prey-linked.)
+            // SEEDER, not population driver: each fixed period the loop only tops the
+            // species back up to its seed floor (PopulationSize) — bootstrap on scene
+            // start, and recovery after a starvation/predation crash so extinction is
+            // never permanent. Above the floor the population is driven by REPRODUCTION
+            // (well-fed fauna birth offspring, Fauna.TryReproduce) and bounded by
+            // starvation — the food web, not this timer. Production still pauses when
+            // opposing prism mass is below FaunaFoodFloor (no prey ⇒ no seeding either).
+            // (Docs/ECOSYSTEM.md §6: prey-linked production + starvation + reproduction.)
             float period = Mathf.Max(0.05f, spawnProfile.BaseFaunaSpawnTime);
+
+            // Prey signal by diet: herbivore species seed on prism prey (opposing
+            // mass), predator species on the LIVE HERBIVORE count — the real food,
+            // not the old prism-mass proxy (Docs/ECOSYSTEM.md §7 "spawn gating"
+            // refinement). FaunaFoodFloor doubles as both floors: N prisms for a
+            // herbivore, N herbivores for a predator.
+            bool isPredator = faunaCfg.FaunaPrefab && faunaCfg.FaunaPrefab.Diet == FaunaDiet.Predator;
 
             while (true)
             {
                 if (!host) yield break;
 
-                // No asymmetry between domains: fauna spawn in ONE color, the cell's
-                // controlling color, and hunt opposing mass. Production pauses when prey is
-                // scarce; starving fauna wither (see LightFauna) — the food web, not a per-
-                // domain spawn heuristic, regulates the cell. (Docs/ECOSYSTEM.md §5–6.)
                 Domains color = host.ControllingDomain;
-                if (host.OpposingVolume(color) >= spawnProfile.FaunaFoodFloor)
-                    SpawnFaunaPopulation(host, runtime, faunaCfg, color);
+                int deficit = FaunaReproductionRules.SeedSpawnCount(
+                    host.GetLiveFaunaCount(faunaCfg),
+                    Mathf.Max(1, faunaCfg.PopulationSize),
+                    faunaCfg.MaxLivePopulation);
 
-                // Reset the spawn-cycle ring each period whether or not prey allowed a
-                // burst — the ring reflects the fixed timer cadence, not the food gate.
+                int preySignal = isPredator
+                    ? host.GetLiveHerbivoreCount()
+                    : host.OpposingBlockCount(color);
+
+                if (deficit > 0 && preySignal >= spawnProfile.FaunaFoodFloor)
+                    SpawnFaunaPopulation(host, runtime, faunaCfg, color, deficit);
+
+                // Reset the spawn-cycle ring each period whether or not seeding happened —
+                // the ring reflects the fixed timer cadence, not the food/deficit gates.
                 host.RecordFaunaSpawn();
 
                 yield return new WaitForSeconds(period);
@@ -147,21 +155,31 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Spawns one fixed-size population in <paramref name="color"/> — the cell's
+        /// Spawns <paramref name="count"/> fauna in <paramref name="color"/> — the cell's
         /// controlling domain. Spawning in the controller's color fixes "no Jade fauna
         /// when Jade controls" and lets the dominant color's fauna hunt the minority.
-        /// Seeks the crystal when present, the cell centre otherwise; each member adds
-        /// its own orbit offset (Fauna) so the swarm spreads instead of stacking.
+        /// Each spawn is lineage-bound to its species config so it counts toward the
+        /// per-cell population and can reproduce. Seeks the densest mass concentration
+        /// when present, the crystal/cell anchor otherwise.
         /// </summary>
-        void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, FaunaConfigurationSO faunaCfg, Domains color)
+        // Jitter radius around the mass concentration when spawning a population, so the
+        // swarm spreads over the buildup instead of stacking on one point.
+        const float FaunaSpawnJitter = 150f;
+
+        void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, FaunaConfigurationSO faunaCfg, Domains color, int count)
         {
-            int count = Mathf.Max(1, faunaCfg.PopulationSize);
-            Vector3 goal = TryGetCrystalGoal(runtime, out var crystalGoal)
-                ? crystalGoal
-                : host.transform.position;
+            // Spawn new fauna right ON the prioritized mass concentration (the densest region
+            // the cell senses) so they appear on the buildup they'll forage, not at the
+            // distant cell centre — they start clearing immediately. GetDensestRegionAnyDomain
+            // falls back to the crystal/cell anchor when there's no mass yet.
+            Vector3 goal = host.GetDensestRegionAnyDomain();
 
             for (int i = 0; i < count; i++)
-                SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color);
+            {
+                Vector3 spawnPos = goal + UnityEngine.Random.insideUnitSphere * FaunaSpawnJitter;
+                var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color, spawnPos);
+                if (fauna) fauna.AssignLineage(host, faunaCfg);
+            }
         }
     }
 }

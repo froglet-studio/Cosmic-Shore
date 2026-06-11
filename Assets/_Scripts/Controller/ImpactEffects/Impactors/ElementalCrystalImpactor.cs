@@ -35,7 +35,7 @@ namespace CosmicShore.Gameplay
 
             isImpacting = true;
             _hasBeenCollected = true;
-
+            
             var col = Crystal.GetComponent<Collider>();
             if (col) col.enabled = false;
 

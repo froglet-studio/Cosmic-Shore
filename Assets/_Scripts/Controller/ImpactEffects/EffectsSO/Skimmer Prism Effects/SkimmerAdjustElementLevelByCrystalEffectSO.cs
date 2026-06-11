@@ -1,3 +1,5 @@
+using CosmicShore.Core;
+using CosmicShore.Data;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -36,6 +38,21 @@ namespace CosmicShore.Gameplay
             float gain = ComputeLevelGain(
                 crystal.transform.lossyScale.x, levelPerUnitScale, maxLevelGainPerCrystal);
             resourceSystem.AdjustLevel(crystal.crystalProperties.Element, gain);
+
+            // Play per-element audio for the collecting vessel if it belongs to the local player.
+            if (impactor.Skimmer.VesselStatus.IsLocalUser)
+            {
+                var category = crystal.crystalProperties.Element switch
+                {
+                    Element.Charge => GameplaySFXCategory.ElementChargeReceived,
+                    Element.Mass   => GameplaySFXCategory.ElementMassReceived,
+                    Element.Space  => GameplaySFXCategory.ElementSpaceReceived,
+                    Element.Time   => GameplaySFXCategory.ElementTimeReceived,
+                    _              => (GameplaySFXCategory)(-1),
+                };
+                if ((int)category != -1)
+                    AudioSystem.Instance?.PlayGameplaySFX(category);
+            }
         }
 
         /// <summary>
