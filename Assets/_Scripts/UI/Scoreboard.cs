@@ -73,6 +73,9 @@ namespace CosmicShore.UI
         [Tooltip("Leave Lobby button — non-host clients only. Disconnects from the party session and returns to Menu_Main.")]
         [SerializeField] private GameObject leaveLobbyButton;
 
+        [Tooltip("Main-menu SOAP event — the same asset the Main Menu button raises (via PauseMenu.OnClickMainMenu) and SceneLoader listens to. When it fires, the host nav buttons hide so the transition can't be spam-clicked.")]
+        [SerializeField] private ScriptableEventNoParam onClickToMainMenu;
+
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
@@ -105,6 +108,11 @@ namespace CosmicShore.UI
 
             var resetEvent = OnResetForReplay ?? gameData?.OnResetForReplay;
             if (resetEvent != null) resetEvent.OnRaised += HideScoreboard;
+
+            // Hide the host nav buttons the moment the main-menu transition is
+            // committed (the event only fires after PauseMenu's host guard), so the
+            // host can't spam Main Menu / Play Again while the scene unloads.
+            if (onClickToMainMenu != null) onClickToMainMenu.OnRaised += HideHostNavButtons;
         }
 
         void OnDisable()
@@ -114,6 +122,8 @@ namespace CosmicShore.UI
 
             var resetEvent = OnResetForReplay ?? gameData?.OnResetForReplay;
             if (resetEvent != null) resetEvent.OnRaised -= HideScoreboard;
+
+            if (onClickToMainMenu != null) onClickToMainMenu.OnRaised -= HideHostNavButtons;
         }
 
         #endregion
@@ -507,7 +517,20 @@ namespace CosmicShore.UI
                 return;
             }
 
+            HideHostNavButtons();
             gameController.RequestReplay();
+        }
+
+        /// <summary>
+        /// Hides the host-only navigation buttons (Play Again + Main Menu) once a
+        /// navigation action is committed — Play Again clicked or the main-menu SOAP
+        /// event raised — so the host can't spam-click during the scene transition.
+        /// The next game end re-activates them via <see cref="ConfigureLobbyButtons"/>.
+        /// </summary>
+        void HideHostNavButtons()
+        {
+            if (playAgainButton) playAgainButton.SetActive(false);
+            if (mainMenuButton)  mainMenuButton.SetActive(false);
         }
 
         /// <summary>
