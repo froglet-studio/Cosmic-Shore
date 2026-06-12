@@ -411,6 +411,7 @@ namespace CosmicShore.Utility
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
             RequestedAIBackfillCount = 0;
+            RequestedDomainCount = 3;
 
             IsReplayReload = false;
 

@@ -5,10 +5,11 @@ Manual verification for the Scoring System's two surfaces: the in-game HUD
 Mode (MPPM)** per `Docs/README.md` (VP1 = host, VP2+ = joining players). Read
 `ARCHITECTURE.md` first.
 
-Run the relevant subset after any scoreboard change; run all of T1–T14 before
+Run the relevant subset after any scoreboard change; run all of T1–T15 before
 landing an item from `REFACTOR.md`. T11–T12 are the multiplayer client-sync cases
 (BUGS.md B8/B9) and need two players (MPPM VP1 host + VP2 client). T13–T14 cover
-the Play Again scene-reload replay and nav-button gating (BUGS.md B13/B14).
+the Play Again scene-reload replay and nav-button gating (BUGS.md B13/B14); T15 is
+the multiplayer menu-relaunch lifecycle case (BUGS.md B15, MPPM).
 
 ## Surface A — In-game HUD
 
@@ -60,6 +61,24 @@ VP2's domain — no freeze (the "stuck at 6" repro). Confirm VP1's box on VP2's 
 also still tracks. Run all three modes — the fix is shared
 (`MultiplayerDomainGamesController` + per-mode `rule.Metric`); **Joust requires its
 scene be domain-wired** (`TODOS.md` TD2). A ~100ms value refresh cadence is expected.
+
+### T15 — Game end survives the menu → game → menu cycle (B15)
+VP1 host + ≥1 client, party in Menu_Main. Regression for the stale-RoundStats-
+subscriber leak: `RoundStats` persists on the Player NetworkObject across scene
+transitions, so any handler left attached by the previous game kills or corrupts
+the next game's end flow.
+1. Launch HexRace, play to the objective. **Expect:** the end flow fires on
+   every machine (turn end → cinematic → scoreboard). Host taps **Main Menu**;
+   everyone returns together (S9).
+2. Relaunch HexRace, play to the objective again. **Expect:** the end flow fires
+   again on every machine — no silent never-ending race.
+3. **Poison-path variant:** repeat, but exit the FIRST race mid-turn via
+   pause-menu **Main Menu** (the turn-end cleanup never runs on this path).
+   The second race must still end cleanly.
+4. Repeat the full cycle 2–3× per `../PartySystem/TESTS.md` S9.
+Console: the `[FLOW-10]` pair (`TurnMonitorController` end-condition raise +
+`HexRaceController` objective-reached) appears at every game end; no
+`MissingReferenceException` from stat-event handlers in either game.
 
 ## Surface B — Final scoreboard
 

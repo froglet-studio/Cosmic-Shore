@@ -21,9 +21,15 @@ namespace CosmicShore.Gameplay
         public override void StartMonitor()
         {
             CrystalCollisions = GetCrystalCollisionCount();
-            
+
             InitializeOwnStats();
-            if (ownStats != null) ownStats.OnCrystalsCollectedChanged += UpdateCrystals;
+            if (ownStats != null)
+            {
+                // Idempotent: StartMonitor can be invoked more than once per turn
+                // (e.g. duplicated SOAP subscriptions) — never double-attach.
+                ownStats.OnCrystalsCollectedChanged -= UpdateCrystals;
+                ownStats.OnCrystalsCollectedChanged += UpdateCrystals;
+            }
             UpdateCrystals(ownStats);
             base.StartMonitor();
         }
