@@ -5,9 +5,10 @@ Manual verification for the Scoring System's two surfaces: the in-game HUD
 Mode (MPPM)** per `Docs/README.md` (VP1 = host, VP2+ = joining players). Read
 `ARCHITECTURE.md` first.
 
-Run the relevant subset after any scoreboard change; run all of T1–T12 before
+Run the relevant subset after any scoreboard change; run all of T1–T14 before
 landing an item from `REFACTOR.md`. T11–T12 are the multiplayer client-sync cases
-(BUGS.md B8/B9) and need two players (MPPM VP1 host + VP2 client).
+(BUGS.md B8/B9) and need two players (MPPM VP1 host + VP2 client). T13–T14 cover
+the Play Again scene-reload replay and nav-button gating (BUGS.md B13/B14).
 
 ## Surface A — In-game HUD
 
@@ -78,8 +79,28 @@ against the end-game reveal (**BUGS.md B2** — they should match once fixed).
 
 ### T8 — Host vs client lobby buttons (MPPM)
 Two VPs in one game. On end: **host (VP1)** sees Main Menu + Play Again;
-**client (VP2)** sees Leave Lobby only. Host Play Again restarts everyone;
-client Leave Lobby returns only VP2 to Menu_Main.
+**client (VP2)** sees neither (BUGS.md B14 — the three domain scenes wire
+`playAgainButton`/`mainMenuButton`; no Leave Lobby button exists in the
+GameCanvas-HexRace prefab yet, so `leaveLobbyButton` stays null and clients
+simply follow the host's navigation). Host Play Again restarts everyone; host
+Main Menu returns everyone to Menu_Main via the Netcode scene load.
+
+### T13 — Play Again performs a full scene-reload replay (BUGS.md B13)
+Per mode (HexRace / Joust / Crystal Capture), solo with AI backfill. Finish a
+game, click Play Again on the scoreboard. **Expect:** fade to black → network
+scene reload → fade in on vessel spawn → Ready button → countdown → a FRESH
+match: objective counter back at the full target (e.g. Joust shows 3 jousts
+remaining), score 0, AI respawned (no duplicates, no `[Invalid Destroy]`
+errors), environment regenerated. Repeat Play Again a second time to confirm
+the loop is stable.
+
+### T14 — Nav buttons hide once navigation commits (BUGS.md B14)
+As host, finish a game. Click **Play Again** → both Play Again and Main Menu
+disappear immediately (no second click possible during the fade/reload). Next
+game end: both buttons are back (`ConfigureLobbyButtons`). Repeat with
+**Main Menu** → both buttons disappear the moment the click is accepted (the
+hide rides the `EventOnClickToMainMenuButton` raise, after PauseMenu's host
+guard) and the whole party returns to Menu_Main.
 
 ### T9 — Crystal award once
 Win as the local player. **Expect:** crystal balance increases by exactly the
