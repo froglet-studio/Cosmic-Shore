@@ -151,6 +151,10 @@ namespace CosmicShore.Gameplay
                 {
                     if (exp.Renderer != null && exp.Renderer.enabled && !exp.IsActive)
                         exp.Renderer.enabled = false;
+                    // Entity-path zombies: companion entity left visible without
+                    // an active animation driving it.
+                    if (!exp.IsActive && exp.UsesEntityRenderPath)
+                        CosmicShore.ECS.PrismRenderService.SetVisible(in exp.RenderHandle, false);
                 }
 
                 var allImplosions = FindObjectsByType<PrismImplosion>(FindObjectsSortMode.None);
@@ -241,19 +245,32 @@ namespace CosmicShore.Gameplay
                 if (!math.any(math.isnan(newPos)))
                     exp.transform.position = new Vector3(newPos.x, newPos.y, newPos.z);
 
-                // Update shader properties (read-modify-write to preserve team colors)
-                var renderer = exp.Renderer;
-                if (renderer != null)
+                if (exp.UsesEntityRenderPath)
                 {
-                    renderer.GetPropertyBlock(sharedMPB);
-                    sharedMPB.SetFloat(ExplosionAmountID, data.explosionAmount);
-                    sharedMPB.SetFloat(OpacityID, data.opacity);
-                    renderer.SetPropertyBlock(sharedMPB);
+                    // Instanced path: shader params + matrix sink into the
+                    // companion entity. First frame also unhides it (same
+                    // no-flash contract as the renderer-enable below).
+                    exp.SyncRenderTransform();
+                    CosmicShore.ECS.PrismRenderService.SetExplosionParams(
+                        in exp.RenderHandle, data.velocity, data.explosionAmount, data.opacity);
+                    exp.EnableVisual();
+                }
+                else
+                {
+                    // Legacy path: per-renderer MPB (read-modify-write to preserve team colors)
+                    var renderer = exp.Renderer;
+                    if (renderer != null)
+                    {
+                        renderer.GetPropertyBlock(sharedMPB);
+                        sharedMPB.SetFloat(ExplosionAmountID, data.explosionAmount);
+                        sharedMPB.SetFloat(OpacityID, data.opacity);
+                        renderer.SetPropertyBlock(sharedMPB);
 
-                    // Enable renderer on first animated frame — TriggerExplosion disables it
-                    // to prevent a one-frame flash of the unanimated mesh.
-                    if (!renderer.enabled)
-                        renderer.enabled = true;
+                        // Enable renderer on first animated frame — TriggerExplosion disables it
+                        // to prevent a one-frame flash of the unanimated mesh.
+                        if (!renderer.enabled)
+                            renderer.enabled = true;
+                    }
                 }
 
                 if (data.elapsed >= data.maxDuration)
@@ -321,15 +338,25 @@ namespace CosmicShore.Gameplay
                 imp.Progress = data.progress;
                 imp.GrowDelayRemaining = data.growDelayRemaining;
 
-                // Update shader properties (read-modify-write to preserve team colors)
-                var renderer = imp.Renderer;
-                if (renderer != null)
+                if (imp.UsesEntityRenderPath)
                 {
-                    renderer.GetPropertyBlock(sharedMPB);
-                    sharedMPB.SetFloat(ImplosionProgressID, data.progress);
-                    sharedMPB.SetVector(ConvergencePointID,
-                        new Vector4(data.targetPosition.x, data.targetPosition.y, data.targetPosition.z, 0));
-                    renderer.SetPropertyBlock(sharedMPB);
+                    // Instanced path: progress + convergence point sink into the
+                    // companion entity's overrides.
+                    CosmicShore.ECS.PrismRenderService.SetImplosionParams(
+                        in imp.RenderHandle, data.progress, data.targetPosition);
+                }
+                else
+                {
+                    // Legacy path: per-renderer MPB (read-modify-write to preserve team colors)
+                    var renderer = imp.Renderer;
+                    if (renderer != null)
+                    {
+                        renderer.GetPropertyBlock(sharedMPB);
+                        sharedMPB.SetFloat(ImplosionProgressID, data.progress);
+                        sharedMPB.SetVector(ConvergencePointID,
+                            new Vector4(data.targetPosition.x, data.targetPosition.y, data.targetPosition.z, 0));
+                        renderer.SetPropertyBlock(sharedMPB);
+                    }
                 }
 
                 if (data.isComplete == 1)

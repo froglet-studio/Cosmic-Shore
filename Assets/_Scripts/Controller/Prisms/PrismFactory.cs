@@ -259,6 +259,20 @@ namespace CosmicShore.Gameplay
             if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(domain, out var colorSet))
                 return;
 
+            // Effect components route team colors to whichever render path is
+            // active (companion entity overrides or legacy MPB) when their
+            // animation starts — the factory just hands them the palette.
+            if (obj.TryGetComponent(out CosmicShore.Utility.PrismExplosion explosion))
+            {
+                explosion.SetTeamColors(colorSet.InsideBlockColor, colorSet.OutsideBlockColor);
+                return;
+            }
+            if (obj.TryGetComponent(out CosmicShore.Utility.PrismImplosion implosion))
+            {
+                implosion.SetTeamColors(colorSet.InsideBlockColor, colorSet.OutsideBlockColor);
+                return;
+            }
+
             var renderer = obj.GetComponent<Renderer>();
             if (renderer && materialSet)
             {

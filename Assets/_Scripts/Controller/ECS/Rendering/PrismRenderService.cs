@@ -22,6 +22,18 @@ namespace CosmicShore.ECS
     }
 
     /// <summary>
+    /// Which per-instance override components a companion entity carries.
+    /// Prism: the color trio. Explosion/Implosion: color trio + the effect
+    /// shader's animated parameters.
+    /// </summary>
+    public enum PrismRenderOverrideSet
+    {
+        Prism,
+        Explosion,
+        Implosion,
+    }
+
+    /// <summary>
     /// Bridge between the GameObject prism pipeline and Entities Graphics
     /// (BatchRendererGroup) instanced rendering.
     ///
@@ -169,7 +181,8 @@ namespace CosmicShore.ECS
         /// invalid handle (and the caller stays on the MeshRenderer path) when
         /// the toggle is off or no ECS world / graphics system exists.
         /// </summary>
-        public static PrismRenderHandle Create(Mesh mesh, Material material, in Matrix4x4 localToWorld, int layer)
+        public static PrismRenderHandle Create(Mesh mesh, Material material, in Matrix4x4 localToWorld, int layer,
+            PrismRenderOverrideSet overrideSet = PrismRenderOverrideSet.Prism)
         {
             if (!Enabled || mesh == null || material == null || !TryEnsure())
                 return PrismRenderHandle.Invalid;
@@ -196,7 +209,20 @@ namespace CosmicShore.ECS
             em.AddComponentData(entity, new PrismDarkColorOverride { Value = ReadColor(material, DarkColorId) });
             em.AddComponentData(entity, new PrismSpreadOverride { Value = ReadVector3(material, SpreadId) });
 
-            // Born hidden — Prism.ApplyRenderPath shows it when the spawn window opens.
+            switch (overrideSet)
+            {
+                case PrismRenderOverrideSet.Explosion:
+                    em.AddComponentData(entity, new PrismVelocityOverride { Value = float3.zero });
+                    em.AddComponentData(entity, new PrismExplosionAmountOverride { Value = 0f });
+                    em.AddComponentData(entity, new PrismOpacityOverride { Value = 1f });
+                    break;
+                case PrismRenderOverrideSet.Implosion:
+                    em.AddComponentData(entity, new PrismImplosionStateOverride { Value = 0f });
+                    em.AddComponentData(entity, new PrismImplosionLocationOverride { Value = float3.zero });
+                    break;
+            }
+
+            // Born hidden — the owner shows it when its visual actually starts.
             em.AddComponent<DisableRendering>(entity);
 
             LiveEntityCount++;
@@ -252,6 +278,35 @@ namespace CosmicShore.ECS
             em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = bright });
             em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = dark });
             em.SetComponentData(handle.Entity, new PrismSpreadOverride { Value = spread });
+        }
+
+        /// <summary>Team colors for effect entities (PrismFactory.ConfigureForTeam).
+        /// Leaves _Spread at the material's authored value, matching the legacy MPB.</summary>
+        public static void SetTeamColors(in PrismRenderHandle handle, in float4 bright, in float4 dark)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = bright });
+            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = dark });
+        }
+
+        /// <summary>Per-frame explosion shader params from PrismEffectsManager's Burst job output.</summary>
+        public static void SetExplosionParams(in PrismRenderHandle handle, in float3 velocity, float explosionAmount, float opacity)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            em.SetComponentData(handle.Entity, new PrismVelocityOverride { Value = velocity });
+            em.SetComponentData(handle.Entity, new PrismExplosionAmountOverride { Value = explosionAmount });
+            em.SetComponentData(handle.Entity, new PrismOpacityOverride { Value = opacity });
+        }
+
+        /// <summary>Per-frame implosion shader params from PrismEffectsManager's Burst job output.</summary>
+        public static void SetImplosionParams(in PrismRenderHandle handle, float state, in float3 location)
+        {
+            if (!IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            em.SetComponentData(handle.Entity, new PrismImplosionStateOverride { Value = state });
+            em.SetComponentData(handle.Entity, new PrismImplosionLocationOverride { Value = location });
         }
 
         /// <summary>Destroys the companion entity (prism GameObject destruction / scene teardown).</summary>

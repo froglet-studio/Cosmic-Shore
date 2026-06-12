@@ -33,4 +33,43 @@ namespace CosmicShore.ECS
     {
         public float3 Value;
     }
+
+    // ----------------------------------------------------------------------
+    // Explosion VFX overrides (ExplodingBlockGraph: _Velocity f3,
+    // _ExplosionAmount f1, _Opacity f1 — sizes verified against the graph).
+    // ----------------------------------------------------------------------
+
+    [MaterialProperty("_Velocity")]
+    public struct PrismVelocityOverride : IComponentData
+    {
+        public float3 Value;
+    }
+
+    [MaterialProperty("_ExplosionAmount")]
+    public struct PrismExplosionAmountOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    [MaterialProperty("_Opacity")]
+    public struct PrismOpacityOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    // ----------------------------------------------------------------------
+    // Implosion / grow VFX overrides (SuctionGraph: _State f1, _Location f3).
+    // ----------------------------------------------------------------------
+
+    [MaterialProperty("_State")]
+    public struct PrismImplosionStateOverride : IComponentData
+    {
+        public float Value;
+    }
+
+    [MaterialProperty("_Location")]
+    public struct PrismImplosionLocationOverride : IComponentData
+    {
+        public float3 Value;
+    }
 }

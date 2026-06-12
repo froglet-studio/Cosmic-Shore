@@ -251,12 +251,28 @@ Caveats (accepted for this checkpoint):
 - Entities Graphics requires Vulkan/Metal/DX — PC targets fine; the Android GLES3
   decision from §3 still stands for mobile.
 
-### Checkpoint B — explosion/implosion VFX on entities (next)
+### Checkpoint B — explosion/implosion VFX on entities (DONE, needs in-editor verification)
 
-`PrismEffectsManager` already computes everything in Burst; replace its
-per-renderer `GetPropertyBlock`/`SetPropertyBlock` + transform writes with entity
-override components (`_ExplosionAmount`/`_Opacity`/`_Velocity`, `_State`/`_Location`)
-on pooled effect entities.
+`PrismEffectsManager` already computed everything in Burst; its per-renderer
+`GetPropertyBlock`/`SetPropertyBlock` sinks now route into companion-entity
+overrides, so a 64-effect swarm-eat storm renders as one instanced batch per
+effect material instead of 64 draws + SetPass.
+
+| Piece | File |
+|---|---|
+| Effect override comps: `_Velocity` f3 / `_ExplosionAmount` f1 / `_Opacity` f1 (ExplodingBlockGraph), `_State` f1 / `_Location` f3 (SuctionGraph) — sizes verified against both graphs | `Controller/ECS/Rendering/PrismRenderProperties.cs` |
+| `PrismRenderOverrideSet` on Create + `SetTeamColors` / `SetExplosionParams` / `SetImplosionParams` | `Controller/ECS/Rendering/PrismRenderService.cs` |
+| Companion entity per pooled effect, pending team colors, no-flash first-frame show (`EnableVisual`), hide on complete/disable, destroy with GameObject | `Utility/Effects/PrismExplosion.cs`, `Utility/Effects/PrismImplosion.cs` |
+| Per-frame param routing (entity vs legacy MPB), entity-aware zombie audit | `Controller/Managers/PrismEffectsManager.cs` |
+| `ConfigureForTeam` hands the palette to the effect (path-agnostic) instead of writing MPB directly | `Controller/Prisms/PrismFactory.cs` |
+
+Verification additions:
+8. Destroy a wall of prisms (AOE) — explosions fly/fade identically, implosions
+   suck toward the consumer identically; Frame Debugger shows effect draws
+   collapsed into ≤2 instanced batches. Zombie audit lines stay quiet.
+9. `EcosystemPerfProbe` now logs `ents=` (live companion entities) next to
+   `prisms=` — ents≈prisms confirms the batched path is carrying the population;
+   ents=0 means legacy fallback engaged.
 
 ### Checkpoint C — lifecycle ISystems; Checkpoint D — GameObject-as-proximity-LOD
 
