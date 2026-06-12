@@ -201,6 +201,59 @@ domain on both peers).
 Files: `_Scripts/Utility/DataContainers/GameDataSO.cs`,
 `_Scripts/Controller/Arcade/MultiplayerDomainGamesController.cs`.
 
+### B13 — 🟢 Scoreboard Play Again dead in Joust + Crystal Capture (null onClick target)
+Clicking Play Again on the Joust scoreboard did nothing (Crystal Capture had the
+identical defect). The controller side was already correct
+(`UseSceneReloadForReplay=true` since `21d538d3`) — the click never reached it.
+Root cause is a scene-wiring class: all three domain scenes share the
+`GameCanvas-HexRace` prefab, whose `PlayAgainButton.onClick` persistent call
+targets the prefab's INTERNAL `Scoreboard` component. Joust and Crystal Capture
+remove that internal Scoreboard from the instance and add their own scene-level
+`Scoreboard` (correctly wired to the mode's controller) — but the button was
+never retargeted: Joust's scene override pointed the call at `{fileID: 0}`, and
+Crystal Capture left the prefab default pointing at the now-removed component.
+A persistent call with a null target is silently skipped, so the button played
+its click audio and nothing else. HexRace never hit this because it KEEPS the
+prefab's internal Scoreboard and overrides only its `gameController`
+(`multiplayerController` legacy path), which also proves the call's stale
+`m_TargetAssemblyTypeName` (the deleted `HexRaceScoreboard` type) is harmless at
+runtime when the target is set — Unity resolves the method from the live
+target's type. **Done** (commit `e21c778a`): both scenes override
+`m_OnClick…m_Calls[0].m_Target` on the PlayAgainButton to the scene-added
+Scoreboard (+ refresh the type name to `CosmicShore.UI.Scoreboard`).
+**✅ Verified in engine** (Joust: Play Again reloads the scene and a fresh match
+plays; owner-tested). Wiring requirement recorded in `JOUST.md` §9 /
+`CRYSTAL_CAPTURE.md` §9 so the next scene edit doesn't reintroduce it.
+Files: `_Scenes/Multiplayer Scenes/MinigameJoust_Gameplay.unity`,
+`_Scenes/Multiplayer Scenes/MinigameCrystalCaptureMultiplayer_Gameplay.unity`.
+
+### B14 — 🟢 Host-only scoreboard nav gating no-oped (fields unwired) + no anti-spam hide
+Same defect class as B6 (field unwired ⇒ silent no-op): `ConfigureLobbyButtons`
+hides Play Again / Main Menu for non-host clients, but the GameCanvas-HexRace
+prefab's serialized Scoreboard data predates the `playAgainButton` /
+`mainMenuButton` fields, so they deserialized null and the gating silently
+no-oped — clients saw both buttons in ALL three domain modes (clicks were only
+blocked code-side by the host guards). Additionally nothing hid the buttons
+after a host click, so the host could spam Play Again / Main Menu during the
+transition (the controller's `_isResetting` gate is even released early on the
+host by `PrepareForSceneReload_ClientRpc` running locally, so UI-level gating
+matters). **Done** (commit `3a021e50`):
+- `Scoreboard.HideHostNavButtons()` hides both buttons once a navigation
+  commits — Play Again directly in `OnPlayAgainButtonPressed`; Main Menu via a
+  new `onClickToMainMenu` field subscribed to `EventOnClickToMainMenuButton`
+  (the same asset `PauseMenu.OnClickMainMenu` raises AFTER its host guard, so a
+  rejected client click never falsely hides). `ConfigureLobbyButtons`
+  re-activates on the next game end.
+- Wired `playAgainButton` (PlayAgainButton GO), `mainMenuButton` (HomeButton
+  GO), and the event asset in all three scenes — stripped-GO references on the
+  scene-added Scoreboards (Joust/CC), property overrides on the prefab's
+  internal Scoreboard (HexRace).
+**✅ Verified in engine** (owner-tested). Clients see neither nav button and
+follow the host via the Netcode scene load; `PauseMenu` already gated its own
+Restart/Main Menu the same way.
+Files: `_Scripts/UI/Scoreboard.cs` + the three scene files above +
+`_Scenes/Multiplayer Scenes/MinigameHexRace.unity`.
+
 ---
 
 B1–B4, B6, B7, B8 fixed (verify only — B6 also warrants a visual position check).
@@ -208,6 +261,8 @@ B9 (count) + B10 (domain icon placement) fixed for the **domain** layout and **v
 in a 2-human engine test** (broader mode coverage continuing; legacy-layout residual
 tracked in `TODOS.md` TD1). B11 (client-local menu domain writes) + B12 (stale
 pre-party RoundStats shadow) fixed 2026-06-11 — B12 verified in engine; B11's
-host-return sweep pending (`../PartySystem/BUGS.md` B9). B5 remains
-scheduled into **R10** (the unified ranked `ScoreResult` list dissolves it). No open
-read-through findings remain.
+host-return sweep pending (`../PartySystem/BUGS.md` B9). B13 (dead Play Again,
+Joust + CC) + B14 (unwired host-nav gating + anti-spam hide) fixed 2026-06-12 and
+owner-verified in engine (Joust; HexRace/CC share the same fix shape — sweep with
+`TESTS.md` T13/T14). B5 remains scheduled into **R10** (the unified ranked
+`ScoreResult` list dissolves it). No open read-through findings remain.
