@@ -516,6 +516,15 @@ Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — inf
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
 
+Shape-content groundwork part 2 (landed alongside iteration 18): 25 more
+spawnables ported verbatim (BaseballCurve, Batman, CardioidSmear, CliffordTorus,
+Comet, DartBoard, DriftCourse, Helicoid, HopfFibration, Infinity, Lightning,
+LinkedRings, Pumpkin, RaceTrack, SchwarzPSurface, SingleTrailBlock, Smiley,
+Spherene, Spiral, Star, TorusKnot, Tube, Wave, Zigzag, ShapeSign). Still blocked:
+SpawnableCrystal/SpawnableFlora/SpawnableWaypointTrack (CrystalManager — rung-3
+lane), SpawnableGyroid/SpawnableWall (Assembler family — assembler-agent lane),
+SpawnableLSystem (check deps when lanes clear).
+
 Shape-content groundwork (landed alongside iteration 18): `SpawnableShapeBase` +
 8 shape spawnables (Circle, Ellipsoid, Helix, Cylinder, Diamond, Arrow, Heart,
 FiveRings) + `ShapeDefinition` + `ShapeCollisionTrigger` + `ShapeSign`(+Events)
