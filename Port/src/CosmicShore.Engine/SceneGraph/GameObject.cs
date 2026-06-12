@@ -13,6 +13,14 @@ namespace CosmicShore.Engine
         readonly List<Component> _components = new();
 
         public Transform transform { get; }
+
+        /// <summary>
+        /// Self-reference, matching the original engine's GameObject.gameObject property —
+        /// ported call sites occasionally chain it (e.g. VesselStatus's
+        /// <c>gameObject.gameObject.GetOrAdd&lt;AIPilot&gt;()</c>).
+        /// </summary>
+        public GameObject gameObject => this;
+
         public Scene scene { get; internal set; }
         public int layer;
         public string tag = "Untagged";

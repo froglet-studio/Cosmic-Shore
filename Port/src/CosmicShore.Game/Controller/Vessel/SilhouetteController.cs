@@ -137,10 +137,7 @@ namespace CosmicShore.Gameplay
 
         void OnBlockCreated(float xShift, float wavelength, float scaleX, float scaleY, float scaleZ)
         {
-            // PORT Deviation (V19, restore when AIPilot ports — IVesselStatus.AutoPilotEnabled is a #10c-commented
-            // member; until then treat autopilot as disabled. Original:
-            // if (_vessel?.VesselStatus == null || _vessel.VesselStatus.AutoPilotEnabled) return;):
-            if (_vessel?.VesselStatus == null) return;
+            if (_vessel?.VesselStatus == null || _vessel.VesselStatus.AutoPilotEnabled) return;
 
             _xShift = xShift;
             _wavelength = wavelength;

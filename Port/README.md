@@ -54,7 +54,7 @@ same member names — except for these mechanical using-directive substitutions:
 | `using Unity.Collections;` | `using CosmicShore.Engine.Collections;` |
 | `using Obvious.Soap;` | `using CosmicShore.Engine.Soap;` |
 | `using Reflex.Attributes;` / `using Reflex.Core;` / `using Reflex.Injectors;` | `using CosmicShore.Engine.Injection;` |
-| `using Unity.Services.Authentication;` | `using CosmicShore.Engine.Services;` |
+| `using Unity.Services.Authentication;` / `using Unity.Services.Core;` | `using CosmicShore.Engine.Services;` |
 | `using Cysharp.Threading.Tasks;` | (phase 1: first-party async — see PORT_PLAN) |
 
 Every ported enum's numeric values are frozen by tests in
