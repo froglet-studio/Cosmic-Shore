@@ -254,6 +254,23 @@ namespace CosmicShore.UI
             _lifecycleCts = null;
         }
 
+        /// <summary>
+        /// Mid-turn scene exits (pause-menu Main Menu) destroy the HUD without
+        /// OnMiniGameTurnEnd ever firing, leaking the per-stats handlers onto the
+        /// players' RoundStats — which live on the persistent Player NetworkObjects
+        /// and survive into the next game. Mirror the turn-end cleanup here so
+        /// destruction always detaches them. See Docs/ScoringSystem/BUGS.md B13.
+        /// </summary>
+        protected virtual void OnDestroy()
+        {
+            if (localRoundStats != null)
+                localRoundStats.OnScoreChanged -= UpdateScoreUI;
+
+            foreach (var kvp in _aiScoreHandlers)
+                kvp.Key.OnScoreChanged -= kvp.Value;
+            _aiScoreHandlers.Clear();
+        }
+
         protected virtual void SubscribeToEvents()
         {
             if (gameData != null)

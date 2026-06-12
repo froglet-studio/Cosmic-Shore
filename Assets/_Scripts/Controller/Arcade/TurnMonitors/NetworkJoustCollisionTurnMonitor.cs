@@ -1,4 +1,5 @@
 // NetworkJoustCollisionTurnMonitor.cs
+using System.Collections.Generic;
 using CosmicShore.Data;
 using Unity.Netcode;
 using System.Linq;
@@ -15,6 +16,13 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class NetworkJoustCollisionTurnMonitor : JoustCollisionTurnMonitor
     {
+        // Stats this monitor actually subscribed to. Unsubscription must run off THIS
+        // list, never gameData.RoundStatsList: on a mid-turn scene exit, SceneLoader's
+        // ResetRuntimeData clears the roster BEFORE the old scene's objects are
+        // destroyed, so a list-based unsubscribe loop detaches nothing and the handlers
+        // leak onto the persistent human RoundStats (Docs/ScoringSystem/BUGS.md B13).
+        readonly List<IRoundStats> _subscribedStats = new();
+
         public override void StartMonitor()
         {
             base.StartMonitor();
@@ -29,8 +37,10 @@ namespace CosmicShore.Gameplay
             // DOMAIN aggregate, which changes whenever ANY teammate jousts.
             foreach (var stat in gameData.RoundStatsList)
             {
+                if (stat == null || _subscribedStats.Contains(stat)) continue;
                 stat.OnJoustCollisionChanged += OnCollisionChanged;
                 stat.OnJoustCollisionChanged += OnAnyJoustChangedUI;
+                _subscribedStats.Add(stat);
             }
 
             UpdateDomainRemainingUI();
@@ -38,13 +48,23 @@ namespace CosmicShore.Gameplay
 
         public override void StopMonitor()
         {
-            foreach (var stat in gameData.RoundStatsList)
+            foreach (var stat in _subscribedStats)
             {
+                if (stat == null) continue;
                 stat.OnJoustCollisionChanged -= OnCollisionChanged;
                 stat.OnJoustCollisionChanged -= OnAnyJoustChangedUI;
             }
+            _subscribedStats.Clear();
 
             base.StopMonitor();
+        }
+
+        public override void OnDestroy()
+        {
+            // Safety net for destruction paths that bypass StopMonitor — detaching
+            // from the persistent RoundStats must never depend on the turn ending.
+            StopMonitor();
+            base.OnDestroy();
         }
 
         void OnAnyJoustChangedUI(IRoundStats _) => UpdateDomainRemainingUI();

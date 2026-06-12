@@ -201,6 +201,86 @@ domain on both peers).
 Files: `_Scripts/Utility/DataContainers/GameDataSO.cs`,
 `_Scripts/Controller/Arcade/MultiplayerDomainGamesController.cs`.
 
+### B13 — 🟡 Game end dead on the SECOND game after a menu return (stale RoundStats subscribers)
+**Reported (2026-06-12).** Party returns to Menu_Main together, host relaunches
+HexRace, the race plays normally — but when a domain reaches the crystal target,
+the Game End flow never fires (no turn end, no cinematic, no scoreboard, on any
+machine). S9's "repeat the menu → game → menu cycle with no leftover state" is
+the failing case.
+
+**Root cause (audit).** `RoundStats` lives on the persistent Player
+NetworkObject and survives every scene transition; its C# stat events
+(`OnScoreChanged`, `OnAnyStatChanged`, `OnCrystalsCollectedChanged`,
+`OnJoustCollisionChanged`, …) are subscribed each turn by SCENE objects — HUDs
+(`MiniGameHUD`/`MultiplayerHUD`), network turn monitors, and `BaseScoring`
+strategies. Two compounding defects let those subscriptions outlive their
+owners and ride into the next game:
+
+1. **Turn-end-gated cleanup.** The HUDs detach their per-stats handlers only in
+   `OnMiniGameTurnEnd`. A mid-turn exit (pause-menu **Main Menu**) destroys
+   them without that event ever firing — nothing detached.
+2. **List-based unsubscription vs. reset ordering.** The monitors, the HUD's
+   `UnsubscribeFromAllStats`, and `BaseScoring.Unsubscribe` all iterated
+   `gameData.RoundStatsList` to detach. `SceneLoader.LoadSceneAsync` calls
+   `ResetRuntimeData()` (clearing that list) ~0.5 s BEFORE the old scene's
+   objects are destroyed, so every list-based unsubscribe loop ran over an
+   EMPTY list and detached nothing — even cleanups that DID run at teardown
+   (e.g. `TurnMonitorController.OnDisable → StopMonitors`, and
+   `BaseScoreTracker`'s `OnClickToMainMenu → OnTurnEnded` abort hook).
+
+The leaked delegates then fire inside the next game's stat-setter chains
+(`RoundStats` setters raise events synchronously from the NetworkVariable
+`OnValueChanged`). Consequences range from silent corruption (a dead
+`CrystalsCollectedScoring.UpdateScore` is pure C# — it overwrites the new
+game's `Score` from a destroyed tracker) to chain-aborting exceptions when a
+dead handler touches a destroyed view: the turn-start raise
+(`StartMonitors` never runs → `CheckForEndOfTurn` never polled) or the
+turn-end chain (`AssignScores`' Score writes throw mid-raise after
+`TurnMonitorController` has already latched `_isRunning=false`) — either way
+the game end is permanently lost while gameplay continues normally, matching
+the report. Self-perpetuating: the only way out of an endless race is another
+mid-turn Main-Menu exit, which re-poisons the next game.
+
+**Fix (this commit).**
+- **Chokepoint reset:** new `RoundStats.ClearEventSubscriptions()` severs every
+  external stat-event delegate. Called from `Player.PrepareForNewScene()`
+  (server, BEFORE `Cleanup()` so the zeroing writes can't raise into dead
+  handlers) and `Player.InitializeForMultiplayerMode()` (every peer, once per
+  pair-init per scene, before any of the new scene's subscribers attach) — so
+  every scene entry starts with a clean subscriber list regardless of how the
+  previous scene exited.
+- **Own-records unsubscription:** `NetworkCrystalCollisionTurnMonitor`,
+  `NetworkJoustCollisionTurnMonitor`, `MultiplayerHUD`, and
+  `CrystalsCollectedScoring` now track the stats they subscribed to and detach
+  from that record (plus `OnDestroy` safety nets on the monitors and HUDs) —
+  no more dependence on `RoundStatsList` still being populated at teardown.
+- **Deterministic monitor lifecycle:** `TurnMonitorController.SubscribeToEvents`
+  is idempotent (OnEnable + OnNetworkSpawn both ran it in networked scenes,
+  double-subscribing `StartMonitors`/`StopMonitors`);
+  `CrystalCollisionTurnMonitor` made its `ownStats` subscribe idempotent.
+- **Diagnostics:** `[FLOW-10]` logs at the two end-detection chokepoints
+  (`TurnMonitorController` raise, `HexRaceController.OnTurnEndedCustom`
+  objective-reached) so any future break pinpoints the failing link.
+- Also fixed: `CrystalsCollectedScoring.Subscribe`'s early-`return` (one
+  unresolved name skipped all remaining players);
+  `GameDataSO.ResetAllData()` now resets `RequestedDomainCount` as
+  `ResetRuntimeData`'s comment already claimed.
+
+**Verify (MPPM, host + ≥1 client):** (a) menu → HexRace → finish → scoreboard →
+Main Menu → HexRace again → finish: end flow fires on every machine; (b) same
+but exit the FIRST race mid-turn via pause-menu Main Menu — the second race
+must still end cleanly; (c) repeat 2–3× per S9.
+
+Files: `_Scripts/Data/Enums/RoundStats.cs`, `_Scripts/Controller/Player/Player.cs`,
+`_Scripts/Controller/Arcade/TurnMonitorController.cs`,
+`_Scripts/Controller/Arcade/TurnMonitors/NetworkCrystalCollisionTurnMonitor.cs`,
+`_Scripts/Controller/Arcade/TurnMonitors/CrystalCollisionTurnMonitor.cs`,
+`_Scripts/Controller/Arcade/TurnMonitors/NetworkJoustCollisionTurnMonitor.cs`,
+`_Scripts/UI/MiniGameHUD.cs`, `_Scripts/UI/MultiplayerHUD.cs`,
+`_Scripts/Controller/Arcade/Scoring/CrystalsCollectedScoring.cs`,
+`_Scripts/Utility/DataContainers/GameDataSO.cs`,
+`_Scripts/Controller/Arcade/HexRaceController.cs`.
+
 ---
 
 B1–B4, B6, B7, B8 fixed (verify only — B6 also warrants a visual position check).
@@ -208,6 +288,8 @@ B9 (count) + B10 (domain icon placement) fixed for the **domain** layout and **v
 in a 2-human engine test** (broader mode coverage continuing; legacy-layout residual
 tracked in `TODOS.md` TD1). B11 (client-local menu domain writes) + B12 (stale
 pre-party RoundStats shadow) fixed 2026-06-11 — B12 verified in engine; B11's
-host-return sweep pending (`../PartySystem/BUGS.md` B9). B5 remains
+host-return sweep pending (`../PartySystem/BUGS.md` B9). B13 (stale RoundStats
+subscribers killing the second game's end flow) fixed 2026-06-12 — pending the
+in-engine repeat-cycle verification. B5 remains
 scheduled into **R10** (the unified ranked `ScoreResult` list dissolves it). No open
 read-through findings remain.

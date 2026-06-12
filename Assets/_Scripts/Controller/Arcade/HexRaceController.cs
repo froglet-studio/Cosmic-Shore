@@ -231,6 +231,7 @@ namespace CosmicShore.Gameplay
             if (!rule.IsObjectiveReached(gameData, out var winningDomain))
                 return;
 
+            Debug.Log($"<color=#00CED1>[FLOW-10] [HexRaceController] Objective reached — domain {winningDomain} wins. Broadcasting final scores.</color>");
             _raceEnded = true;
 
             float finishTime = gameData.LocalRoundStats?.Score ?? 0f;

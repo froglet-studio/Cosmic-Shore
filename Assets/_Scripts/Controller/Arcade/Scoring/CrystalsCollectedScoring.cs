@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -8,6 +9,13 @@ namespace CosmicShore.Gameplay
     {
         readonly CrystalType crystalType;
         bool scaleWithSize;
+
+        // Stats this scoring actually subscribed to. Unsubscription must run off THIS
+        // list, never GameData.RoundStatsList: on a mid-turn scene exit the roster is
+        // cleared before the tracker tears down, so a list-based unsubscribe detaches
+        // nothing and the dead UpdateScore keeps writing Score into the NEXT game's
+        // persistent RoundStats (Docs/ScoringSystem/BUGS.md B13).
+        readonly List<IRoundStats> _subscribedStats = new();
 
         public enum CrystalType
         {
@@ -27,22 +35,25 @@ namespace CosmicShore.Gameplay
         {
             foreach (var playerScore in GameData.RoundStatsList)
             {
+                // continue, not return — one unresolved player must not skip the rest.
                 if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
-                    return;
+                    continue;
+                if (_subscribedStats.Contains(roundStats))
+                    continue;
 
                 roundStats.OnCrystalsCollectedChanged += UpdateScore;
+                _subscribedStats.Add(roundStats);
             }
         }
 
         public override void Unsubscribe()
         {
-            foreach (var playerScore in GameData.RoundStatsList)
+            foreach (var roundStats in _subscribedStats)
             {
-                if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
-                    return;
-
+                if (roundStats == null) continue;
                 roundStats.OnCrystalsCollectedChanged -= UpdateScore;
             }
+            _subscribedStats.Clear();
         }
         
         void UpdateScore(IRoundStats roundStats)
