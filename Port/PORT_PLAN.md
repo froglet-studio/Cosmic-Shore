@@ -478,6 +478,14 @@ Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — inf
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
 
+Rung-4 groundwork (landed alongside iteration 17): `ElementalComebackSystem` +
+`SO_ElementalComebackProfile` ported verbatim — comeback buffs sized to the DOMAIN
+deficit through the elementals fundamental (leading-domain players get nothing even
+when personally trailing; clamped to the 0.0–1.5 band so base pips stay reserved
+for the overtake effect). 7 tests cover profile selection, domain aggregation,
+clamping, initial levels, and turn-end deactivation. When rung 4 lands in the
+client: attach alongside the race director with a profile + the shared GameDataSO.
+
 Rung-5 groundwork (landed alongside iteration 17): `ThemeManager` ported verbatim
 (the single writer of `ThemeManagerDataContainerSO.TeamMaterialSets` — generates the
 4 per-domain SO_MaterialSet copies from SO_ColorSet, and hands the ColorSet to
