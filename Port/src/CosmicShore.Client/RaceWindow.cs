@@ -128,7 +128,14 @@ namespace CosmicShore.Client
                 keyboard.KeyDown += (_, key, _) =>
                 {
                     if (key == Key.Escape) _window.Close();
-                    if (key == Key.R)
+                    if (key == Key.R || (key == Key.Enter && _race.State == RaceState.Finished))
+                        SkimRaceFactory.ResetRace(_race.Shared);
+                };
+            // replay button: any click on the finish screen starts the rematch
+            foreach (var mouse in _inputContext.Mice)
+                mouse.MouseDown += (_, _) =>
+                {
+                    if (_race.State == RaceState.Finished)
                         SkimRaceFactory.ResetRace(_race.Shared);
                 };
 
@@ -448,6 +455,9 @@ void main()
                 {
                     float px = reader.ReadSingle(), py = reader.ReadSingle(), pz = reader.ReadSingle();
                     float nx = reader.ReadSingle(), ny = reader.ReadSingle(), nz = reader.ReadSingle();
+                    // Prompter feedback (2026-06-12): hull faced backwards — rotate the
+                    // baked mesh 180° about up (proper rotation: winding/shading intact)
+                    px = -px; pz = -pz; nx = -nx; nz = -nz;
                     var normal = new Vector3(nx, ny, nz);
                     float key = MathF.Max(0f, Vector3.Dot(normal, keyLight));
                     float rim = MathF.Max(0f, Vector3.Dot(normal, rimLight));
@@ -533,10 +543,14 @@ void main()
                 _shimPad.buttonSouth.isPressed = a;
                 _shimPad.buttonSouth.wasPressedThisFrame = a && !_prevA;
                 _shimPad.buttonSouth.wasReleasedThisFrame = !a && _prevA;
+                bool aPressed = a && !_prevA;
                 _prevA = a;
                 if (start && !_prevStart)
                     SkimRaceFactory.ResetRace(_race.Shared);
                 _prevStart = start;
+                // replay button: A on the finish screen starts the rematch
+                if (aPressed && _race.State == RaceState.Finished)
+                    SkimRaceFactory.ResetRace(_race.Shared);
 
                 _gamepadStrategy.ProcessInput(); // the real scheme computes sums/diffs
 
@@ -1020,6 +1034,27 @@ void main()
                     Segment(rx0 + 12f, rowY, rx0, rowY + 12f, dc.r, dc.g, dc.b, ma);
                     Number(rank + 1, 1, rx0 + 44f, rowY, 24f, 1f, 1f, 1f, me ? 1f : 0.7f);
                     Number(pilot.Stats.CrystalsCollected, 2, rx0 + 100f, rowY, 24f, dc.r, dc.g, dc.b, 0.95f);
+                }
+
+                // replay button: pulsing circular arrow under the standings —
+                // A / Enter / R / Start / click all start the rematch
+                {
+                    float cx = w * 0.5f, cy = rowY - 26f, radius = 20f;
+                    float pulse = 0.55f + 0.4f * Mathf.Sin(Time.time * 3f);
+                    const int arcSegments = 20;
+                    const float arcStart = 0.6f, arcEnd = MathF.Tau - 0.6f; // gap at the right
+                    for (int i = 0; i < arcSegments; i++)
+                    {
+                        float a0 = arcStart + (arcEnd - arcStart) * (i / (float)arcSegments);
+                        float a1 = arcStart + (arcEnd - arcStart) * ((i + 1) / (float)arcSegments);
+                        Segment(cx + MathF.Cos(a0) * radius, cy + MathF.Sin(a0) * radius,
+                                cx + MathF.Cos(a1) * radius, cy + MathF.Sin(a1) * radius,
+                                0.5f, 0.95f, 1f, pulse);
+                    }
+                    // arrowhead at the arc's end
+                    float tipX = cx + MathF.Cos(arcStart) * radius, tipY = cy + MathF.Sin(arcStart) * radius;
+                    Segment(tipX, tipY, tipX + 9f, tipY + 4f, 0.5f, 0.95f, 1f, pulse);
+                    Segment(tipX, tipY, tipX - 2f, tipY + 10f, 0.5f, 0.95f, 1f, pulse);
                 }
             }
 

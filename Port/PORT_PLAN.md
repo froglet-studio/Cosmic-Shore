@@ -426,18 +426,25 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
   matrix, InputController Awake wiring, shape-key theory, flare, Update routing).
   **610 tests green (358 + 252)**; client smoke unaffected.
 
-## NEXT UP (iteration 9)
+## NEXT UP (iteration 10)
 
-**Session-limit handoff (2026-06-12 ~00:30 UTC):** four parallel port agents
-(V10 GameDataSO, V11 cells, V13 prism managers, V14 trail layer) were cut off by
-the session usage limit (resets 01:30 UTC). Salvaged into the branch (compiles
-green, NOT complete): engine `ISession`+`NetworkManager` stubs (V10 prep), engine
-`Vector3Int`+`Sprite`, `BlockDensityGrid`, `CellConfigDataSO` (V11, missing
-CellRuntimeDataSO + tests). V13/V14 produced no files before cutoff. Client gained
-a finish-state victory lap (vessels cruise the circuit under the scoreboard).
-Resume by FINISHING V10 + V11 against the salvage, then V13/V14.
+**Parallel-agent round complete (2026-06-12):** V10 (GameDataSO + ScoreResult +
+engine Random), V11 (CellRuntimeDataSO + Crystal shell; GameDataSO-keyed deviations
+restored same-day), V13 (prism manager trio + PrismTimerManager), V14 (trail layer +
+engine MaterialPropertyBlock) all agent-ported in isolated worktrees and integrated
+behind independent build+test gates. 728 tests green. Prompter feedback shipped:
+hull 180° flip at mesh load (was facing backwards), replay button on the finish
+screen (pulsing glyph; A / Enter / R / Start / click all rematch).
 
-Goal: V10 of the vessel-layer arc + sprint feedback.
+Goal: V12 + V15 (now unblocked) + sprint feedback.
+
+1. **V12**: port `Cell` (~825L, single-file oversize) against the landed cell layer;
+   restore CellRuntimeDataSO's Cell-keyed deviations.
+2. **V15**: `PrismAOERegistry` (managed-array port) + `Prism` (+`AttachedPrism` and
+   all V13/V14 Prism-keyed deviation restores).
+3. Then V16-V19 per VESSEL_LAYER.md (Skimmer, VesselPrismController, AIPilot, camera
+   layer + final #10c close).
+4. Update this file, commit, push.
 
 1. **V10**: port `GameDataSO` (~783L, single-file oversize accepted) + engine
    `ISession` placeholder. Then V11 (CellConfigDataSO, BlockDensityGrid,
