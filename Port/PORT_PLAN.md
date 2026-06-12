@@ -486,6 +486,51 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
   exit 0 — frame 1200: `crystals [7,2,5,2], claims 16, levels C6/M0/S1/T0, trail 786`
   (per-pilot level attribution now exact; prism determinism preserved vs rung 2).
 
+- **Iteration 19** (2026-06-12): **Convergence rung 4 — real scoring + HUD semantics
+  in the playable client.** Ported verbatim: `NetworkCrystalCollisionTurnMonitor`
+  (NetworkVariable target sync → `GameDataSO.CrystalTargetCount`; CheckForEndOfTurn
+  delegates to `gameData.ScoringRule.IsObjectiveReached`; domain-deficit remaining
+  display) + `TurnMonitorController` (OnMiniGameTurnStarted → StartMonitors;
+  per-frame end check → `InvokeGameTurnConditionsMet`). Client: the scoring rig
+  (monitor + controller + `ElementalComebackSystem`) is built per race, host-mode
+  `Spawn()`ed (IsServer=true — the scene-placed-NetworkBehaviour contract) and torn
+  down in `Shutdown()` (the monitor's async heartbeat must not outlive the race);
+  GameDataSO gains the full turn-event set, `GameMode=HexRace`,
+  `RequestedDomainCount`, a `HexRaceScoringRuleSO` instance, and reflection-mirrored
+  `LocalPlayer`/`LocalRoundStats` (single-process: the human IS the local user).
+  Rivals are balanced over the ACTIVE domains (`ActiveDomains[(i+1)%3]` — a 4th
+  pilot becomes the human's Jade teammate; Blue no longer races, it can't win a
+  domain-aggregated objective). The director's per-pilot win count is DELETED — the
+  race finishes off `OnMiniGameTurnEnd` with the HexRaceController end flow
+  collapsed to single-process (AssignScores: winners = finishTime, losers =
+  10000 + domain deficit tying within a domain; SortRoundStats(golf);
+  CalculateDomainStats; SetResults(BuildResults); InvokeWinnerCalculated +
+  InvokeMiniGameEnd); mid-race restart abandons the turn unscored through the same
+  protocol. Director publishes per-domain `SetDomainMetricSum`
+  (MultiplayerDomainGamesController's server role) → RaceWindow HUD shows ally vs
+  opposing DOMAIN totals + the monitor's remaining; the finish scoreboard renders
+  `gameData.RoundStatsList` golf order and VICTORY/DEFEAT is by `WinnerDomain`.
+  Comeback runs verbatim with the real HexRaceComebackProfile values (Squirrel:
+  Space 3 / Time 3, CrystalsCollected source) — trailing domains rise through the
+  elementals fundamental; composition note: the verbatim comeback overwrites base
+  levels to baseline+bonus each 1s tick while a turn runs, so claim-earned levels
+  are transient mid-race (identical to the original HexRace — levels are
+  comeback-anchored; Mass/Charge weights are 0 in the real profile). **Energy
+  economy balanced (NEXT-UP item 2 closed): `GainPerPrism` 0.045 → 0.025
+  (~0.25/s plain ribbon ride, ~0.5/s drift-skimming), boost drain 0.45 → 0.55/s**
+  — boosting now outpaces plain skim gain (-0.3/s net) and only drift-skimming
+  nearly sustains it (-0.05/s), so the bar breathes instead of pegging while
+  boosting (idle non-boosting riders still cap — energy is spent by boosting).
+  New tests: ClientConvergenceTests rung-4 quartet — domain-aggregated end (split
+  target across teammates, zero director claims), golf standings (winners share
+  finishTime; losing domains tie on Encode(deficit); RoundStatsList sorted;
+  Results ranked), comeback buffs trailing domain only, full short race through
+  the real pipeline. **1143 tests green in BOTH configs (891 + 252)**; headless
+  300/1200-frame runs exit 0 — frame 1200: `crystals [6,1,4,1], claims 12,
+  domains J7/R1/G4 (remaining 23), trail 786` — identical across repeat runs
+  (prism determinism preserved; claim pattern re-baselined by the domain remap +
+  comeback Space/Time buffs).
+
 ## PRIME AXIS — CLIENT CONVERGENCE (prompter reorientation, 2026-06-12)
 
 > "our goal is to convert everything over so a player cannot tell the difference
@@ -551,26 +596,53 @@ the next rung.
    insideUnitSphere/onUnitSphere; Instantiate gained the (pos, rot, parent)
    overload. Renderer draws live crystal transforms (claimed elemental crystals
    visibly fly to their claimer).
-4. **Real scoring + HUD semantics**: HexRaceScoringRuleSO domain-aggregated end,
-   golf standings; domains share totals.
+4. **Real scoring + HUD semantics** ✅ (iteration 19): the race ends through the
+   REAL pipeline — `NetworkCrystalCollisionTurnMonitor` + `TurnMonitorController`
+   ported verbatim and Spawn()ed host-mode in the client; the monitor publishes the
+   crystal target into `GameDataSO.CrystalTargetCount` and its `CheckForEndOfTurn`
+   delegates to `HexRaceScoringRuleSO.IsObjectiveReached` over
+   `ScoringMetrics.SumByDomain` — teammates share their domain total (rivals are
+   now balanced over the ACTIVE domains, `ActiveDomains[(i+1)%3]`, so a 4th pilot
+   is the human's Jade teammate; Blue no longer races). The director's claim-count
+   win check is deleted: it finishes the race off `OnMiniGameTurnEnd`
+   (HexRaceController.OnTurnEndedCustom + SyncFinalScores_ClientRpc collapsed to
+   single-process): `rule.AssignScores` (winners = finishTime; losers =
+   10000 + domain deficit, tying within a domain), `SortRoundStats(golf)`,
+   `CalculateDomainStats`, `SetResults(rule.BuildResults)`, `InvokeWinnerCalculated`
+   + `InvokeMiniGameEnd`. The RaceWindow scoreboard renders `gameData.RoundStatsList`
+   golf order; VICTORY = your DOMAIN won (`gameData.WinnerDomain`); the in-race HUD
+   shows ally-domain total vs opposing-domain totals via
+   `GameDataSO.GetDomainMetricSum` (the director publishes SumByDomain — the
+   MultiplayerDomainGamesController server role) + the monitor's display-channel
+   remaining. `ElementalComebackSystem` runs verbatim beside the race with the real
+   HexRaceComebackProfile values (Squirrel: Space 3 / Time 3,
+   ScoreDifferenceSource.CrystalsCollected) — trailing DOMAINS rise through the
+   elementals fundamental; note the verbatim comeback overwrites base element
+   levels to baseline+bonus each 1s tick while a turn is active, so claim-earned
+   levels are transient during a race (the original HexRace behaves identically —
+   levels are comeback-anchored; Mass/Charge weights are 0 in the real profile).
+   Mid-race restart ends the turn through the real protocol
+   (`InvokeGameTurnConditionsMet` with the director already out of Racing →
+   unscored). LocalPlayer/LocalRoundStats are reflection-mirrored onto GameDataSO
+   (single-process: the human IS the local user). Energy economy balanced (see
+   iteration log). Verified headless frame 1200: `crystals [6,1,4,1], claims 12,
+   domains J7/R1/G4 (remaining 23), trail 786` — deterministic across runs.
 5. **Real look**: SO_ColorSet domain palettes + SO_MaterialSet-driven visuals.
 6. Onward: cells/fauna ambience, more vessel classes, game modes — always through
    the real systems.
 
-## NEXT UP (iteration 19)
+## NEXT UP (iteration 20)
 
-1. **Rung 4**: real scoring + HUD semantics in the client — HexRaceScoringRuleSO
-   domain-aggregated end through the ported CrystalCollisionTurnMonitor +
-   ElementalComebackSystem (groundwork below), golf standings; domains share
-   totals. The SkimRace claim flow already lands on RoundStats through the
-   manager's claim reports, so the rule can read ScoringMetrics.SumByDomain as-is.
-2. Balance note from rung 2 verification (still open): skim energy pegs at 1.00
-   for trail-riding pilots (~10 prism enters/s × 0.045). Consider tuning
-   GainPerPrism / boost drain when rung 4's scoring makes the energy economy
-   player-visible.
-3. Team-crystal renderer polish (optional): team stations currently draw with
+1. **Rung 5**: real look — instantiate a ThemeManager with a wired
+   ThemeManagerDataContainerSO at client startup (rung-5 groundwork below),
+   SO_ColorSet domain palettes + SO_MaterialSet-driven prism/vessel draw colors
+   (GetTeam*Material per domain replacing the GL layer's hardcoded DomainColor).
+2. Team-crystal renderer polish (optional): team stations currently draw with
    their element tint only — consider a domain-colored ring/tint so the lock is
    readable before contact.
+3. AI boost (optional balance): rivals never boost (the real AIPilot doesn't
+   drive the SkimRace boost rule), so their energy bars sit full — consider an
+   AIPilot-driven boost intent when balance work resumes.
 4. Update this file, commit, push.
 
 Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — info

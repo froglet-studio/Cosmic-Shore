@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
         protected IRoundStats ownStats;
 
         [Header("Optional Configuration")]
-        // PORT Deviation (restore when SpawnableWaypointTrack ports): [SerializeField] SpawnableWaypointTrack optionalEnvironment;
+        [SerializeField] SpawnableWaypointTrack optionalEnvironment;
         [SerializeField] int optionalLaps = 4;
 
         public override void StartMonitor()
@@ -67,9 +67,8 @@ namespace CosmicShore.Gameplay
             // Inspector value takes priority — non-zero means explicit override
             if (CrystalCollisions != 0) return CrystalCollisions;
 
-            // PORT Deviation (restore when SpawnableWaypointTrack ports):
-            // if (optionalEnvironment)
-            //     return optionalEnvironment.waypoints[optionalEnvironment.intensityLevel - 1].positions.Count * optionalLaps;
+            if (optionalEnvironment)
+                return optionalEnvironment.waypoints[optionalEnvironment.intensityLevel - 1].positions.Count * optionalLaps;
 
             CSDebug.LogWarning($"[CrystalCollisionTurnMonitor] No crystal collision count set for {gameObject.name}. Defaulting to 39.");
             return 39;

@@ -8,6 +8,7 @@ using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 using EngineInput = CosmicShore.Engine.InputSystem;
 using Vector3 = CosmicShore.Engine.Vector3;
 using Quaternion = CosmicShore.Engine.Quaternion;
@@ -974,16 +975,38 @@ void main()
             Segment(tx + ts * 1.85f, ty + ts * 0.25f, tx + ts * 1.85f, ty + ts * 0.35f, 0.5f, 0.95f, 1f, 0.9f);
             Number(total % 60, 2, tx + ts * 2.1f, ty, ts, 0.5f, 0.95f, 1f, 0.9f);
 
-            // crystal count / target, top-left, golden — with a diamond glyph
-            Segment(34f, h - 44f, 46f, h - 30f, 1f, 0.82f, 0.25f, 0.95f);
+            // domain panels (rung 4 — the real MultiplayerHUD semantic): ally domain's
+            // summed crystals / target on the left, opposing domains' sums on the right.
+            // The sums are GameDataSO.GetDomainMetricSum — the director publishes
+            // ScoringMetrics.SumByDomain exactly like MultiplayerDomainGamesController's
+            // server routine; the target is the REAL turn monitor's published
+            // GameDataSO.CrystalTargetCount.
+            var gameData = _race.GameData;
+            var humanDomain = _pilot.Domain;
+            var (ar, ag, ab) = DomainColor(humanDomain);
+            Segment(34f, h - 44f, 46f, h - 30f, 1f, 0.82f, 0.25f, 0.95f); // golden diamond glyph
             Segment(46f, h - 30f, 58f, h - 44f, 1f, 0.82f, 0.25f, 0.95f);
             Segment(58f, h - 44f, 46f, h - 58f, 1f, 0.82f, 0.25f, 0.95f);
             Segment(46f, h - 58f, 34f, h - 44f, 1f, 0.82f, 0.25f, 0.95f);
-            Number(_pilot.Stats.CrystalsCollected, 2, 72f, h - 58f, 26f, 0.3f, 1f, 0.7f, 0.95f);
+            Number(gameData.GetDomainMetricSum(humanDomain), 2, 72f, h - 58f, 26f, ar, ag, ab, 0.95f);
             Segment(122f, h - 36f, 134f, h - 54f, 1f, 0.85f, 0.3f, 0.6f); // slash
-            Number(_race.WinTarget, 2, 142f, h - 58f, 26f, 1f, 0.85f, 0.3f, 0.6f);
-            // best rival count, top-right, ruby
-            Number(_race.BestOtherCrystals(_pilot), 2, w - 120f, h - 58f, 26f, 1f, 0.25f, 0.35f, 0.95f);
+            Number(_race.CrystalTarget, 2, 142f, h - 58f, 26f, 1f, 0.85f, 0.3f, 0.6f);
+            // remaining-to-target for the ally domain — the turn monitor's display channel
+            Number(_race.RemainingToTarget, 2, 72f, h - 96f, 18f, 0.5f, 0.95f, 1f, 0.7f);
+
+            // opposing domains' totals, top-right, each in its domain color
+            {
+                int dc2 = Math.Clamp(gameData.RequestedDomainCount, 1, GameDataSO.ActiveDomains.Length);
+                int panel = 0;
+                for (int i = 0; i < dc2; i++)
+                {
+                    var domain = GameDataSO.ActiveDomains[i];
+                    if (domain == humanDomain) continue;
+                    var (dr, dg, db) = DomainColor(domain);
+                    Number(gameData.GetDomainMetricSum(domain), 2, w - 120f - panel * 70f, h - 58f, 26f, dr, dg, db, 0.95f);
+                    panel++;
+                }
+            }
 
             // race position (P/total) and lap, under the rival count
             int position = _race.PositionOf(_pilot);
@@ -1040,30 +1063,29 @@ void main()
                 Digit(Math.Max(1, (int)MathF.Ceiling(_race.Countdown)), w * 0.5f - 30f, h * 0.5f - 40f, 80f, 1f, 0.3f, 0.9f, 0.95f);
             else if (_race.State == RaceState.Finished)
             {
-                // gold digits = you took the race; ruby = somebody else did
-                bool won = _race.WinnerPilot == 0;
+                // gold digits = your DOMAIN took the race (teammates win together); ruby = a
+                // rival domain did. WinnerDomain is the scoring rule's domain-aggregated call.
+                bool won = humanDomain == gameData.WinnerDomain;
                 (float fr, float fg, float fb) = won ? (1f, 0.85f, 0.3f) : (1f, 0.2f, 0.3f);
-                var winner = _race.WinnerPilot >= 0 ? _race.Pilots[_race.WinnerPilot] : null;
-                float finalTime = winner?.Stats.Score ?? 0f;
+                // Golf scoring: the first row of the rule-sorted RoundStatsList carries the
+                // winning domain's finish time (losers carry the 10000+deficit sentinel).
+                float finalTime = gameData.RoundStatsList.Count > 0 ? gameData.RoundStatsList[0].Score : 0f;
                 int centiseconds = (int)(finalTime * 100f) % 100;
                 float fs = 44f, fx = w * 0.5f - fs * 2.6f, fy = h * 0.62f;
                 Number((int)finalTime / 60, 2, fx, fy, fs, fr, fg, fb, 1f);
                 Number((int)finalTime % 60, 2, fx + fs * 2.0f, fy, fs, fr, fg, fb, 0.85f);
                 Number(centiseconds, 2, fx + fs * 4.0f, fy, fs, fr, fg, fb, 0.7f);
 
-                // scoreboard: the whole field ranked — domain marker, position, crystals
-                var standings = new List<SkimRacePilot>(_race.Pilots);
-                standings.Sort((x, y) =>
-                {
-                    int byCrystals = y.Stats.CrystalsCollected.CompareTo(x.Stats.CrystalsCollected);
-                    return byCrystals != 0 ? byCrystals : y.TotalProgress.CompareTo(x.TotalProgress);
-                });
+                // scoreboard: gameData.RoundStatsList IS the standings — golf-sorted by the
+                // real pipeline (SortRoundStats(golfRules: true) after the rule's
+                // AssignScores). Domain marker, rank, crystals per row.
+                var standings = gameData.RoundStatsList;
                 float rowY = h * 0.62f - 64f;
                 for (int rank = 0; rank < standings.Count; rank++, rowY -= 42f)
                 {
-                    var pilot = standings[rank];
-                    var dc = DomainColor(pilot.Domain);
-                    bool me = ReferenceEquals(pilot, _pilot);
+                    var stats = standings[rank];
+                    var dc = DomainColor(stats.Domain);
+                    bool me = ReferenceEquals(stats, _pilot.Stats);
                     float rx0 = w * 0.5f - 120f;
                     // domain marker: filled diamond (player's pulses brighter)
                     float ma = me ? 1f : 0.7f;
@@ -1072,7 +1094,7 @@ void main()
                     Segment(rx0 + 24f, rowY + 12f, rx0 + 12f, rowY, dc.r, dc.g, dc.b, ma);
                     Segment(rx0 + 12f, rowY, rx0, rowY + 12f, dc.r, dc.g, dc.b, ma);
                     Number(rank + 1, 1, rx0 + 44f, rowY, 24f, 1f, 1f, 1f, me ? 1f : 0.7f);
-                    Number(pilot.Stats.CrystalsCollected, 2, rx0 + 100f, rowY, 24f, dc.r, dc.g, dc.b, 0.95f);
+                    Number(stats.CrystalsCollected, 2, rx0 + 100f, rowY, 24f, dc.r, dc.g, dc.b, 0.95f);
                 }
 
                 // replay button: pulsing circular arrow under the standings —
@@ -1127,8 +1149,11 @@ void main()
                 totalTrail += pilot.TrailPrisms.Count;
                 counts.Add($"{pilot.Stats.CrystalsCollected}");
             }
+            var gameData = _race.GameData;
             Console.WriteLine($"screenshot → {_screenshotPath} ({w}x{h}) frame {_frameIndex}, " +
-                $"crystals [{string.Join(",", counts)}] (target {_race.WinTarget}, claims {_race.TotalClaims}), state {_race.State}, " +
+                $"crystals [{string.Join(",", counts)}] (target {_race.CrystalTarget}, claims {_race.TotalClaims}), state {_race.State}, " +
+                $"domains J{gameData.GetDomainMetricSum(Domains.Jade)}/R{gameData.GetDomainMetricSum(Domains.Ruby)}" +
+                $"/G{gameData.GetDomainMetricSum(Domains.Gold)} (remaining {_race.RemainingToTarget}), " +
                 $"P{_race.PositionOf(_pilot)} lap {_pilot.Lap}, speed {_pilot.Status.Speed:F1}, " +
                 $"energy {_pilot.Resources.Resources[0].CurrentAmount:F2}, skim {_pilot.IsSkimming}, " +
                 $"levels C{_pilot.Resources.GetLevel(Element.Charge)}/M{_pilot.Resources.GetLevel(Element.Mass)}" +

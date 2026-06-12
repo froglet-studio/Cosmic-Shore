@@ -190,9 +190,15 @@ namespace CosmicShore.Client
     /// chain. Trails are REAL Prisms spawned by each rig's VesselPrismController (factory:
     /// SkimRacePrismFactory), and trail-skim energy flows through the REAL skimmer pipeline
     /// (trigger SphereCollider on the near-field Skimmer → SkimmerImpactor →
-    /// SkimRaceTrailSkimEnergyEffectSO). This director only applies the StatsManager-shaped
-    /// bookkeeping and the SkimRace rules:
-    ///   countdown/win/replay · energy→top-speed
+    /// SkimRaceTrailSkimEnergyEffectSO). Scoring (rung 4) is the REAL game's: the ported
+    /// NetworkCrystalCollisionTurnMonitor + TurnMonitorController end the race through
+    /// HexRaceScoringRuleSO.IsObjectiveReached over domain-aggregated RoundStats
+    /// (ScoringMetrics.SumByDomain — teammates share their domain total), the rule assigns
+    /// the golf scores (winners = finish time, losers = 10000 + domain deficit) and builds
+    /// the ranked Results on the shared GameDataSO, and the ported ElementalComebackSystem
+    /// buffs trailing DOMAINS through the elementals fundamental. This director only applies
+    /// the StatsManager-shaped bookkeeping and the SkimRace rules:
+    ///   countdown/replay · energy→top-speed
     ///   (the real VesselTransformer.ThrottleScalerMultiplier ElementalFloat hook) ·
     ///   boost gating/drain (BoostActionSO shape: VesselStatus.IsBoosting × BoostMultiplier) ·
     ///   two-tier analog drift (DriftActionSO shape: VesselTransformer.BeginDrift/EndDrift).
@@ -211,7 +217,11 @@ namespace CosmicShore.Client
         public const float CollectRadius = 10f;
         public const float VesselContactRadius = 2f;    // vessel contact-bubble SphereCollider
         const float TopSpeedEnergyGain = 0.6f;          // full energy bar = +60% top speed
-        const float BoostDrainPerSecond = 0.45f;
+        // Energy economy (rung 4 balance pass): boost burns faster than a plain ribbon
+        // ride charges (GainPerPrism 0.025 × ~10 enters/s ≈ 0.25/s), so only drift-
+        // skimming (~0.5/s) nearly sustains a boost — energy is a managed resource,
+        // not a pegged bar. See SkimRaceTrailSkimEnergyEffectSO.GainPerPrism.
+        const float BoostDrainPerSecond = 0.55f;
         const float MassWidthPerLevel = 0.03f;          // VesselPrismController.XScaler per Mass level
         const float TimePerLevel = 0.06f;               // boost drain reduction per Time level (floor 40%)
 
@@ -227,14 +237,24 @@ namespace CosmicShore.Client
         public CellRuntimeDataSO CourseData { get; private set; }
         /// <summary>The race's CrystalManager-family manager — owns all station crystal lifetime.</summary>
         public SkimRaceCrystalManager Crystals { get; private set; }
+        /// <summary>The REAL turn monitor that ends the race (rule-driven, domain-aggregated).</summary>
+        public NetworkCrystalCollisionTurnMonitor TurnMonitor { get; private set; }
         public readonly List<SkimRacePilot> Pilots = new();
         public SkimRacePilot HumanPilot => Pilots[0];
 
         public int WinTarget { get; private set; }
+        /// <summary>The authoritative crystal target — published into the shared GameDataSO by the
+        /// REAL NetworkCrystalCollisionTurnMonitor when the turn starts (WinTarget until then).</summary>
+        public int CrystalTarget => GameData.CrystalTargetCount > 0 ? GameData.CrystalTargetCount : WinTarget;
+        /// <summary>The local domain's remaining-to-target, raised by the REAL turn monitor's
+        /// display channel (NetworkCrystalCollisionTurnMonitor.UpdateCrystalsRemainingUI →
+        /// ScoringRule.Remaining for the local player's domain).</summary>
+        public int RemainingToTarget { get; private set; }
         public RaceState State { get; private set; } = RaceState.Countdown;
         public float Countdown { get; private set; } = 3f;
         public float ElapsedTime { get; private set; }
-        /// <summary>Index into <see cref="Pilots"/>; -1 while the race runs. Human is 0.</summary>
+        /// <summary>Index into <see cref="Pilots"/> of the winning domain's representative (the
+        /// best contributor — GameDataSO.WinnerName); -1 while the race runs. Human is 0.</summary>
         public int WinnerPilot { get; private set; } = -1;
         /// <summary>Scored crystal claims this race (diagnostics + tests).</summary>
         public int TotalClaims { get; private set; }
@@ -244,10 +264,13 @@ namespace CosmicShore.Client
 
         bool _humanAutopilot;     // victory lap / screenshot mode hand the human to the real AIPilot
         SkimRacePrismFactory _prismFactory; // answers every rig's prism spawn channel
+        GameObject _scoringRig;   // turn monitor + monitor controller + comeback system
         readonly List<Crystal> _scratchCrystals = new(); // SyncPilotCourses sort buffer
 
         internal void InitializeRace(SkimTrack track, GameDataSO gameData, CellRuntimeDataSO courseData,
             SkimRacePrismFactory prismFactory, SkimRaceCrystalManager crystalManager,
+            NetworkCrystalCollisionTurnMonitor turnMonitor, GameObject scoringRig,
+            ScriptableEventString onTurnMonitorDisplay,
             List<SkimRacePilot> pilots, int winTarget,
             ScriptableEventInputEvents onButtonPressed, ScriptableEventInputEvents onButtonReleased)
         {
@@ -256,8 +279,11 @@ namespace CosmicShore.Client
             CourseData = courseData;
             _prismFactory = prismFactory;
             Crystals = crystalManager;
+            TurnMonitor = turnMonitor;
+            _scoringRig = scoringRig;
             Pilots.AddRange(pilots);
             WinTarget = winTarget;
+            RemainingToTarget = winTarget;
 
             // Claims arrive from INSIDE the real impactor dispatch (per-crystal SOAP
             // channels for vessel claims; the elemental claim effect for skimmer claims),
@@ -268,6 +294,20 @@ namespace CosmicShore.Client
             // the primary registry's OnCellItemsUpdated — keep every pilot's personal
             // course sorted off that one channel instead of director-staged ticks.
             CourseData.OnCellItemsUpdated.OnRaised += SyncPilotCourses;
+
+            // The REAL end-of-race signal: TurnMonitorController polls the monitor each
+            // frame and raises InvokeGameTurnConditionsMet when the scoring rule's
+            // domain-aggregated objective is reached. The director finishes the race off
+            // that SOAP event — never off its own claim count.
+            GameData.OnMiniGameTurnEnd.OnRaised += HandleTurnConditionsMet;
+
+            // The monitor's HUD channel (the same onUpdateTurnMonitorDisplay the original
+            // MiniGameHUD listens to) — cached for the GL HUD's remaining readout.
+            onTurnMonitorDisplay.OnRaised += display =>
+            {
+                if (int.TryParse(display, out int remaining))
+                    RemainingToTarget = remaining;
+            };
 
             // The human's ported GamepadInputStrategy raises these SOAP channels (shared
             // across the rig clones exactly like the real prefab assets; AI never raises).
@@ -413,10 +453,11 @@ namespace CosmicShore.Client
         /// Fires from INSIDE the real impactor dispatch — the manager re-raises the
         /// per-crystal claim signals (OnCrystalCollected SOAP channel for vessel claims,
         /// the elemental claim effect for skimmer claims) with the station attached.
-        /// Applies ONLY the StatsManager-shaped bookkeeping and checks the win target:
-        /// elemental levels and claim energy were already granted by the effect SOs
-        /// inside the impactor chain, and the respawn window is staged by the manager
-        /// through the real Crystal.Respawn() path.
+        /// Applies ONLY the StatsManager-shaped bookkeeping: elemental levels and claim
+        /// energy were already granted by the effect SOs inside the impactor chain, the
+        /// respawn window is staged by the manager through the real Crystal.Respawn()
+        /// path, and the END of the race belongs to the real turn-monitor + scoring-rule
+        /// pipeline reading these RoundStats (never to a director count).
         /// </summary>
         void HandleStationClaimed(int station, Element element, string playerName)
         {
@@ -432,10 +473,8 @@ namespace CosmicShore.Client
                 stats.OmniCrystalsCollected++;
             else
                 stats.ElementalCrystalsCollected++;
+            PublishDomainSums(); // in-game HUD domain panels (the controller's server role)
             OnCrystalClaimed?.Invoke(station, Track.Crystals[station], !pilot.IsAI);
-
-            if (stats.CrystalsCollected >= WinTarget)
-                FinishRace(pilot);
         }
 
         SkimRacePilot FindPilot(string playerName)
@@ -446,11 +485,48 @@ namespace CosmicShore.Client
             return null;
         }
 
-        void FinishRace(SkimRacePilot winner)
+        /// <summary>
+        /// Mirrors MultiplayerDomainGamesController's server role (SyncDomainSumsRoutine →
+        /// n_DomainSum NetworkVariables → SetDomainMetricSum on every peer), collapsed to
+        /// single-process: each active domain's summed scoring metric lands in the shared
+        /// GameDataSO, where the real MultiplayerHUD's domain panels read it.
+        /// </summary>
+        void PublishDomainSums()
         {
-            WinnerPilot = Pilots.IndexOf(winner);
-            winner.Stats.Score = ElapsedTime;   // HexRace golf scoring: time, lower is better
+            var rule = GameData.ScoringRule;
+            for (int i = 0; i < GameDataSO.ActiveDomains.Length; i++)
+                GameData.SetDomainMetricSum(GameDataSO.ActiveDomains[i],
+                    ScoringMetrics.SumByDomain(GameData, rule.Metric, GameDataSO.ActiveDomains[i]));
+        }
+
+        /// <summary>
+        /// The REAL race end — HexRaceController.OnTurnEndedCustom + SyncFinalScores_ClientRpc
+        /// collapsed to single-process. Raised by TurnMonitorController.InvokeGameTurnConditionsMet
+        /// when NetworkCrystalCollisionTurnMonitor's CheckForEndOfTurn sees the scoring rule's
+        /// domain-aggregated objective met. The rule owns the winner resolution, the golf scores
+        /// (winning domain = finish time; losers = 10000 + domain deficit, tying within a domain),
+        /// and the ranked Results; the scoreboard renders gameData.RoundStatsList's golf order.
+        /// </summary>
+        void HandleTurnConditionsMet()
+        {
+            if (State != RaceState.Racing) return; // mid-race restart abandons the turn unscored
+
+            var rule = GameData.ScoringRule;
+            if (!rule.IsObjectiveReached(GameData, out var winningDomain)) return;
+
+            float finishTime = ElapsedTime;
+            rule.AssignScores(GameData, winningDomain, finishTime);
+            GameData.WinnerDomain = winningDomain;
+            GameData.SortRoundStats(golfRules: true);     // scoreboard order — lower is better
+            GameData.CalculateDomainStats(golfRules: true);
+            GameData.SetResults(rule.BuildResults(GameData)); // derives WinnerName from rank 1
+            PublishDomainSums();
+            GameData.InvokeWinnerCalculated();
+            GameData.InvokeMiniGameEnd();                 // comeback system deactivates here
+
             State = RaceState.Finished;
+            var representative = FindPilot(GameData.WinnerName); // best contributor on the winning domain
+            WinnerPilot = representative != null ? Pilots.IndexOf(representative) : -1;
 
             foreach (var pilot in Pilots)
             {
@@ -521,9 +597,19 @@ namespace CosmicShore.Client
 
         // ── standings ────────────────────────────────────────────────
 
-        /// <summary>1-based race position: crystals first, distance travelled breaks ties.</summary>
+        /// <summary>
+        /// 1-based race position. Finished: the golf ordering — the pilot's row in the
+        /// rule-sorted <see cref="GameDataSO.RoundStatsList"/> (lower Score = better).
+        /// Mid-race: the live metric (crystals), distance travelled breaking ties.
+        /// </summary>
         public int PositionOf(SkimRacePilot pilot)
         {
+            if (State == RaceState.Finished)
+            {
+                int index = GameData.RoundStatsList.IndexOf(pilot.Stats);
+                if (index >= 0) return index + 1;
+            }
+
             int position = 1;
             for (int i = 0; i < Pilots.Count; i++)
             {
@@ -535,16 +621,6 @@ namespace CosmicShore.Client
                     position++;
             }
             return position;
-        }
-
-        /// <summary>Best crystal count among everyone except this pilot (HUD).</summary>
-        public int BestOtherCrystals(SkimRacePilot pilot)
-        {
-            int best = 0;
-            for (int i = 0; i < Pilots.Count; i++)
-                if (!ReferenceEquals(Pilots[i], pilot) && Pilots[i].Stats.CrystalsCollected > best)
-                    best = Pilots[i].Stats.CrystalsCollected;
-            return best;
         }
 
         // ── lifecycle ────────────────────────────────────────────────
@@ -571,6 +647,13 @@ namespace CosmicShore.Client
             Countdown = 3f;
             State = RaceState.Countdown;
 
+            // Mid-race restart: end the running turn through the real protocol FIRST —
+            // TurnMonitorController stops its monitors and the comeback system deactivates
+            // off OnMiniGameTurnEnd. Scoring is skipped because State already left Racing
+            // (HandleTurnConditionsMet's guard) — the abandoned turn is unscored.
+            if (GameData.IsTurnRunning)
+                GameData.InvokeGameTurnConditionsMet();
+
             if (_humanAutopilot)
             {
                 HumanPilot.Player.Vessel.ToggleAIPilot(false);
@@ -591,6 +674,16 @@ namespace CosmicShore.Client
 
             for (int i = 0; i < Pilots.Count; i++)
                 ResetPilot(Pilots[i]);
+
+            // Race-state reset on the shared GameDataSO — the client equivalent of the
+            // original's scene-reload replay (UseSceneReloadForReplay rebuilds these via
+            // ResetRuntimeData + a fresh OnNetworkSpawn). Stats were cleaned per pilot above.
+            GameData.WinnerName = "";
+            GameData.WinnerDomain = Domains.Blue;
+            GameData.Results.Clear();
+            GameData.CrystalTargetCount = 0; // republished by the monitor at StartTurn
+            RemainingToTarget = WinTarget;
+            PublishDomainSums(); // back to zeros
 
             // Fresh course through the manager (its generation bump drops stale in-flight
             // claim handlers); each spawn raises OnCellItemsUpdated → SyncPilotCourses.
@@ -644,11 +737,17 @@ namespace CosmicShore.Client
         /// <summary>
         /// Deterministic wind-down: stops every rig's async prism spawn loop
         /// (VesselPrismController.StartSpawn runs async-void — left running it outlives
-        /// the race and hangs test hosts) and the AI/drift loops via the real reset path.
-        /// Idempotent; the window calls it on close and tests call it in teardown.
+        /// the race and hangs test hosts), the REAL turn monitor's async heartbeat (same
+        /// trap), the comeback system (via the scoring rig's OnDisable), and the AI/drift
+        /// loops via the real reset path. Idempotent; the window calls it on close and
+        /// tests call it in teardown.
         /// </summary>
         public void Shutdown()
         {
+            if (_scoringRig)
+                _scoringRig.SetActive(false); // TurnMonitorController.OnDisable → StopMonitors
+            TurnMonitor?.StopMonitor();       // idempotent — the async loop must not outlive the race
+
             foreach (var pilot in Pilots)
             {
                 pilot.Status.VesselPrismController.StopSpawn();
@@ -732,6 +831,8 @@ namespace CosmicShore.Client
                 theme.TeamMaterialSets[domain] = set;
             }
 
+            rivalCount = Math.Clamp(rivalCount, 1, 7);
+
             var gameData = ScriptableObject.CreateInstance<GameDataSO>();
             gameData.ThemeManagerData = theme;
             gameData.OnInitializeGame = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
@@ -739,6 +840,19 @@ namespace CosmicShore.Client
             gameData.OnVesselNetworkSpawned = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
             gameData.selectedVesselClass = ScriptableObject.CreateInstance<VesselClassTypeVariable>();
             gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
+
+            // ── the scoring layer (rung 4): the REAL HexRace semantics on the shared
+            // GameDataSO — turn events drive the turn-monitor family + comeback system,
+            // the rule owns objective/winner/scores/results over domain aggregates ──
+            gameData.OnMiniGameTurnStarted = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+            gameData.OnMiniGameTurnEnd = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+            gameData.OnMiniGameEnd = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+            gameData.OnWinnerCalculated = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+            gameData.SelectedIntensity = ScriptableObject.CreateInstance<IntVariable>();
+            gameData.SelectedIntensity.Value = 1;
+            gameData.GameMode = GameModes.HexRace; // SkimRace runs the HexRace scoring semantics
+            gameData.RequestedDomainCount = Math.Min(GameDataSO.ActiveDomains.Length, rivalCount + 1);
+            gameData.ScoringRule = ScriptableObject.CreateInstance<HexRaceScoringRuleSO>();
 
             // ── the course registries (V11): one primary registry owns the crystals
             // (Crystal.DestroyCrystal removes itself there), and each pilot gets a
@@ -762,7 +876,6 @@ namespace CosmicShore.Client
             // racing — never Blue: TeamCrystalImpactor gates on strict equality while
             // CanBeCollected treats Blue as "anyone", so a Blue lock would put a crystal
             // in every course that only a Blue pilot could take.
-            rivalCount = Math.Clamp(rivalCount, 1, 7);
             var teamLockDomains = new List<Domains> { Domains.Jade };
             if (rivalCount >= 1) teamLockDomains.Add(Domains.Ruby);
             if (rivalCount >= 2) teamLockDomains.Add(Domains.Gold);
@@ -844,22 +957,75 @@ namespace CosmicShore.Client
                     isAI: false, skill: 1f, GridOffsets[0]),
             };
 
-            // Ruby/Gold/Blue rivals with seeded skill — same flight model, different lines.
-            // Blue is the neutral domain; it joins last.
-            var rivalDomains = new[] { Domains.Ruby, Domains.Gold, Domains.Blue };
+            // Single-process client: the human IS the local user. The networked original
+            // sets LocalPlayer in AddPlayer from Player.IsLocalUser (owner network spawn,
+            // non-AI); the single-player spawn path never network-spawns, so wire the
+            // mirror here — the turn monitor (ownStats + remaining display), the comeback
+            // audio gate, and the HUD ally-domain panel all read it.
+            typeof(GameDataSO).GetProperty(nameof(GameDataSO.LocalPlayer))!
+                .SetValue(gameData, pilots[0].Player);
+            typeof(GameDataSO).GetProperty(nameof(GameDataSO.LocalRoundStats))!
+                .SetValue(gameData, pilots[0].Player.RoundStats);
+
+            // Balanced rival domains over the ACTIVE set — the GetBalancedDomain shape
+            // (Jade → Ruby → Gold tie-break, like ServerPlayerVesselInitializerWithAI):
+            // the human is Jade; rival i takes ActiveDomains[(i+1) % 3], so a 4th pilot
+            // becomes the human's Jade TEAMMATE — domains share totals under the rung-4
+            // scoring semantics, and every pilot races for a domain that can actually win.
             var personalityRng = new Random(seed * 31 + 7);
             for (int i = 0; i < rivalCount; i++)
             {
                 // skill skews high so back-of-field rivals stay in the race
                 float skill = 0.3f + (float)personalityRng.NextDouble() * 0.7f; // AIPilot.skillLevel
                 pilots.Add(SpawnPilot(playerSpawner, gameData, vesselTemplate, $"Rival {i + 1}",
-                    rivalDomains[i % rivalDomains.Length], isAI: true, skill,
+                    GameDataSO.ActiveDomains[(i + 1) % GameDataSO.ActiveDomains.Length], isAI: true, skill,
                     GridOffsets[(i + 1) % GridOffsets.Length]));
             }
+
+            // ── the scoring rig (rung 4): the REAL turn-monitor family ends the race and
+            // the REAL comeback system buffs trailing domains. Scene-placed NetworkBehaviours
+            // are spawned by Netcode scene management in the original; single-process
+            // host-mode Spawn() is the same contract (IsServer = true). ──
+            var onTurnMonitorDisplay = ScriptableObject.CreateInstance<ScriptableEventString>();
+            var scoringRig = new GameObject("SkimRaceScoringRig");
+            scoringRig.SetActive(false); // configure-before-activation
+
+            var turnMonitor = scoringRig.AddComponent<NetworkCrystalCollisionTurnMonitor>();
+            SetPrivateField(turnMonitor, "gameData", gameData);
+            SetPrivateField(turnMonitor, "CrystalCollisions", winTarget); // inspector override > waypoints > 39
+            SetPrivateField(turnMonitor, "onUpdateTurnMonitorDisplay", onTurnMonitorDisplay);
+
+            var turnMonitorController = scoringRig.AddComponent<TurnMonitorController>();
+            SetPrivateField(turnMonitorController, "gameData", gameData);
+            SetPrivateField(turnMonitorController, "monitors", new List<TurnMonitor> { turnMonitor });
+
+            // The real HexRaceComebackProfile.asset values: the Squirrel entry buffs Space
+            // and Time (3 levels per crystal of TEAM deficit); Mass/Charge weights are 0.
+            var comebackProfile = ScriptableObject.CreateInstance<SO_ElementalComebackProfile>();
+            SetPrivateField(comebackProfile, "vesselConfigs",
+                new List<SO_ElementalComebackProfile.VesselComebackConfig>
+                {
+                    new()
+                    {
+                        VesselClass = VesselClassType.Squirrel,
+                        SpaceWeight = 3f,
+                        TimeWeight = 3f,
+                    },
+                });
+            var comeback = scoringRig.AddComponent<ElementalComebackSystem>();
+            SetPrivateField(comeback, "comebackProfile", comebackProfile);
+            // differenceSource defaults to ScoreDifferenceSource.CrystalsCollected — the
+            // HexRace configuration (Score tracks elapsed time equally for everyone).
+            container.InjectGameObject(scoringRig); // [Inject] GameDataSO on the comeback system
+
+            turnMonitor.Spawn();           // IsServer = true → owns target publish + end check
+            turnMonitorController.Spawn(); // subscribes to the turn events via OnNetworkSpawn
+            scoringRig.SetActive(true);
 
             var directorGo = new GameObject("SkimRaceDirector");
             var director = directorGo.AddComponent<SkimRaceDirector>();
             director.InitializeRace(track, gameData, courseData, prismFactory, crystalManager,
+                turnMonitor, scoringRig, onTurnMonitorDisplay,
                 pilots, winTarget, onButtonPressed, onButtonReleased);
             return (loop, director);
         }

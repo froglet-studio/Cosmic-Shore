@@ -195,7 +195,11 @@ namespace CosmicShore.Client
     {
         [Header("SkimRace energy rule")]
         [Tooltip("Energy added per prism the skimmer sweeps (before bonuses).")]
-        public float GainPerPrism = 0.045f;
+        // Rung-4 balance pass: 0.045 pegged the bar at 1.00 for any trail-rider
+        // (~10 enters/s ≈ 0.45/s, matching the old boost drain exactly). At 0.025 a
+        // clean ribbon ride charges ~0.25/s against the 0.55/s boost drain — only
+        // drift-skimming (×2 → ~0.5/s) nearly sustains a boost, so the bar breathes.
+        public float GainPerPrism = 0.025f;
         [Tooltip("Extra multiplier at full analog drift (1 = up to 2x while drifting).")]
         public float DriftBonus = 1f;
         [Tooltip("Charge-element bonus per level.")]

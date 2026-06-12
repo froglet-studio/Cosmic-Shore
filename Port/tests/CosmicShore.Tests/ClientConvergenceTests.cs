@@ -33,7 +33,14 @@ namespace CosmicShore.Tests;
 //     (the real SkimmerAdjustElementLevelByCrystalEffectSO /
 //     VesselIncrementLevelByCrystalEffectSO + the SkimRace race-rule effects), and
 //     crystal lifetime runs the real Crystal.Respawn() → CrystalManager chain
-//     (SkimRaceCrystalManager).
+//     (SkimRaceCrystalManager),
+//   • (rung 4) scoring is the REAL game's: the ported NetworkCrystalCollisionTurnMonitor
+//     + TurnMonitorController end the race through HexRaceScoringRuleSO's
+//     domain-aggregated objective (ScoringMetrics.SumByDomain over the shared
+//     GameDataSO RoundStats — teammates share their domain total), the rule assigns
+//     golf scores (winners = finish time, losers = 10000 + domain deficit) and builds
+//     the ranked Results, and the ported ElementalComebackSystem buffs trailing
+//     DOMAINS through the elementals fundamental.
 // No Silk type is touched — the windowing layer never loads here.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -415,8 +422,9 @@ public class ClientConvergenceTests : IDisposable
             loop.Tick(1f / 60f); // director mirrors tracker state into the HUD readouts
 
             float gained = human.Resources.Resources[0].CurrentAmount - before;
-            // Passive regen over 2 frames is ~0.0013; one real prism enter grants ≥0.045.
-            Assert.True(gained >= 0.04f,
+            // Passive regen over 2 frames is ~0.0013; one real prism enter grants ≥0.025
+            // (the rung-4 energy balance — see SkimRaceTrailSkimEnergyEffectSO.GainPerPrism).
+            Assert.True(gained >= 0.02f,
                 $"expected the real skimmer contact to charge the bar, gained {gained:F4}");
             Assert.True(human.SkimTracker.IsSkimming, "tracker should hold live prism contact");
             Assert.True(human.IsSkimming, "director should mirror the live skim state");
@@ -645,10 +653,165 @@ public class ClientConvergenceTests : IDisposable
         }
     }
 
-    // ── rung 2: the whole race still plays on the real systems ──────────────
+    // ── rung 4: real scoring — the rule's domain-aggregated objective ───────
 
     [Fact]
-    public void FullShortRace_ReachesFinished_WithGolfScoredWinner()
+    public void RaceEnd_FiresThroughTheDomainAggregatedScoringRule_NotADirectorCount()
+    {
+        var (loop, director) = SkimRaceFactory.Create(seed: 7, trackCrystals: 8, rivalCount: 3);
+        try
+        {
+            // 4 pilots balanced over the ACTIVE domains (the GetBalancedDomain shape):
+            // Jade (human), Ruby, Gold, and a Jade TEAMMATE for the human.
+            Assert.Equal(Domains.Jade, director.Pilots[0].Domain);
+            Assert.Equal(Domains.Ruby, director.Pilots[1].Domain);
+            Assert.Equal(Domains.Gold, director.Pilots[2].Domain);
+            Assert.Equal(Domains.Jade, director.Pilots[3].Domain);
+
+            director.SkipCountdown();
+            loop.Tick(1f / 60f); // BeginRacing → StartTurn → TurnMonitorController arms the monitor
+            Assert.Equal(RaceState.Racing, director.State);
+
+            // The REAL monitor published the crystal target into the shared GameDataSO.
+            Assert.Equal(director.WinTarget, director.GameData.CrystalTargetCount);
+
+            // A few racing frames so the finish time is non-zero.
+            for (int frame = 0; frame < 5; frame++) loop.Tick(1f / 60f);
+
+            // Split the target across the two Jade teammates — NO individual reaches it,
+            // so a per-pilot director count could never end this race. The end must come
+            // from HexRaceScoringRuleSO.IsObjectiveReached over ScoringMetrics.SumByDomain.
+            director.Pilots[0].Stats.CrystalsCollected = director.WinTarget - 3;
+            director.Pilots[3].Stats.CrystalsCollected = 3;
+
+            loop.Tick(1f / 60f); // TurnMonitorController.Update → rule objective → turn end
+            loop.Tick(1f / 60f);
+
+            Assert.Equal(RaceState.Finished, director.State);
+            Assert.Equal(0, director.TotalClaims); // proves no claim/director count was involved
+            Assert.False(director.GameData.IsTurnRunning);
+            Assert.Equal(Domains.Jade, director.GameData.WinnerDomain);
+
+            // Representative winner = best contributor on the winning domain (rank 1 of Results).
+            Assert.Equal(director.Pilots[0].Player.Name, director.GameData.WinnerName);
+            Assert.Equal(0, director.WinnerPilot);
+            Assert.NotEmpty(director.GameData.Results);
+
+            // Both Jade teammates carry the same finish time; finish times are real (non-sentinel).
+            float finishTime = director.Pilots[0].Stats.Score;
+            Assert.True(finishTime > 0f, "finish time accrues from the racing ticks");
+            Assert.True(GolfScoreSentinels.IsFinishTime(finishTime));
+            Assert.Equal(finishTime, director.Pilots[3].Stats.Score);
+        }
+        finally
+        {
+            Teardown(loop, director);
+        }
+    }
+
+    [Fact]
+    public void GolfStandings_WinnersCarryFinishTime_LosersTieOnDomainDeficit()
+    {
+        var (loop, director) = SkimRaceFactory.Create(seed: 9, trackCrystals: 10, rivalCount: 4);
+        try
+        {
+            // 5 pilots over 3 active domains: Jade (human), Ruby, Gold, Jade, Ruby.
+            var jadeA = director.Pilots[0];
+            var ruby1 = director.Pilots[1];
+            var gold = director.Pilots[2];
+            var jadeB = director.Pilots[3];
+            var ruby2 = director.Pilots[4];
+            Assert.Equal(Domains.Ruby, ruby2.Domain);
+            Assert.Equal(Domains.Jade, jadeB.Domain);
+
+            director.SkipCountdown();
+            loop.Tick(1f / 60f);
+            for (int frame = 0; frame < 5; frame++) loop.Tick(1f / 60f);
+
+            ruby1.Stats.CrystalsCollected = 2;                     // Ruby sum 3 → deficit 7
+            ruby2.Stats.CrystalsCollected = 1;
+            jadeA.Stats.CrystalsCollected = 1;                     // Jade sum 1 → deficit 9
+            gold.Stats.CrystalsCollected = director.WinTarget;     // Gold wins alone
+
+            loop.Tick(1f / 60f);
+            loop.Tick(1f / 60f);
+
+            Assert.Equal(RaceState.Finished, director.State);
+            Assert.Equal(Domains.Gold, director.GameData.WinnerDomain);
+
+            // Winning-domain players carry the finish time (a real time, not a sentinel).
+            float finishTime = gold.Stats.Score;
+            Assert.True(GolfScoreSentinels.IsFinishTime(finishTime));
+            Assert.True(finishTime > 0f);
+
+            // Losing-domain players carry 10000 + the TEAM deficit — and tie within a domain.
+            Assert.Equal(GolfScoreSentinels.EncodeHexRaceLoserScore(7), ruby1.Stats.Score);
+            Assert.Equal(ruby1.Stats.Score, ruby2.Stats.Score);
+            Assert.Equal(GolfScoreSentinels.EncodeHexRaceLoserScore(9), jadeA.Stats.Score);
+            Assert.Equal(jadeA.Stats.Score, jadeB.Stats.Score);
+
+            // The scoreboard order IS gameData.RoundStatsList — golf-sorted ascending
+            // by the real SortRoundStats(golfRules: true) after the rule's AssignScores.
+            var list = director.GameData.RoundStatsList;
+            for (int i = 1; i < list.Count; i++)
+                Assert.True(list[i - 1].Score <= list[i].Score, "RoundStatsList must be golf-sorted");
+            Assert.Equal(Domains.Gold, list[0].Domain);
+
+            // The ranked Results agree (rule.BuildResults → gameData.SetResults).
+            Assert.Equal(list.Count, director.GameData.Results.Count);
+            Assert.Equal(1, director.GameData.Results[0].Rank);
+            Assert.Equal(gold.Player.Name, director.GameData.Results[0].Name);
+            Assert.Equal(gold.Player.Name, director.GameData.WinnerName);
+        }
+        finally
+        {
+            Teardown(loop, director);
+        }
+    }
+
+    // ── rung 4: the real comeback system buffs trailing DOMAINS ─────────────
+
+    [Fact]
+    public void ComebackSystem_BuffsTrailingDomains_NeverTheLeader()
+    {
+        var (loop, director) = SkimRaceFactory.Create(seed: 13, trackCrystals: 30, rivalCount: 2);
+        try
+        {
+            director.SkipCountdown();
+            loop.Tick(1f / 60f); // BeginRacing → StartTurn → comeback captures baselines
+
+            var human = director.HumanPilot;      // Jade — solo on its domain here
+            var ruby = director.Pilots[1];        // Ruby — will trail
+            human.Stats.CrystalsCollected = 4;    // Jade leads; target 30 keeps the race running
+
+            // The REAL turn-monitor display channel reflects the local domain's deficit.
+            Assert.Equal(director.WinTarget - 4, director.RemainingToTarget);
+
+            // Cross the comeback system's 1s update interval.
+            for (int frame = 0; frame < 70; frame++) loop.Tick(1f / 60f);
+
+            // Trailing Ruby rises through the elementals fundamental: Space/Time levels
+            // grow with the TEAM deficit × the real HexRaceComebackProfile Squirrel
+            // weights (3 levels per crystal of deficit; Mass/Charge weights are 0).
+            Assert.True(ruby.Resources.GetLevel(Element.Space) >= 5,
+                $"trailing domain should be Space-buffed, got {ruby.Resources.GetLevel(Element.Space)}");
+            Assert.True(ruby.Resources.GetLevel(Element.Time) >= 5,
+                $"trailing domain should be Time-buffed, got {ruby.Resources.GetLevel(Element.Time)}");
+
+            // The LEADING domain gets nothing — the deficit is the team's, not personal.
+            Assert.Equal(0, human.Resources.GetLevel(Element.Space));
+            Assert.Equal(0, human.Resources.GetLevel(Element.Time));
+        }
+        finally
+        {
+            Teardown(loop, director);
+        }
+    }
+
+    // ── rung 4: the whole race still plays on the real systems ──────────────
+
+    [Fact]
+    public void FullShortRace_ReachesFinished_ThroughTheRealScoringPipeline()
     {
         var (loop, director) = SkimRaceFactory.Create(seed: 42, trackCrystals: 8, rivalCount: 1);
         try
@@ -666,12 +829,33 @@ public class ClientConvergenceTests : IDisposable
             }
 
             Assert.Equal(RaceState.Finished, director.State);
-            Assert.InRange(director.WinnerPilot, 0, director.Pilots.Count - 1);
 
-            var winner = director.Pilots[director.WinnerPilot];
-            Assert.True(winner.Stats.CrystalsCollected >= director.WinTarget);
-            Assert.True(winner.Stats.Score > 0f, "golf scoring: winner's Score is the race time");
-            Assert.InRange(winner.Stats.Score, 0f, frames / 60f + 1f);
+            var gameData = director.GameData;
+            // The objective is the rule's domain aggregate against the monitor's target.
+            Assert.Equal(director.WinTarget, gameData.CrystalTargetCount);
+            Assert.True(GameDataSO.IsActiveDomain(gameData.WinnerDomain, gameData.RequestedDomainCount));
+            Assert.True(gameData.SumCrystalsCollectedByDomain(gameData.WinnerDomain) >= director.WinTarget);
+
+            // Golf scores: winning-domain rows carry the finish time, losers the
+            // 10000+deficit sentinel; RoundStatsList is the sorted scoreboard.
+            float finishTime = gameData.RoundStatsList[0].Score;
+            Assert.True(GolfScoreSentinels.IsFinishTime(finishTime));
+            Assert.InRange(finishTime, 0f, frames / 60f + 1f);
+            foreach (var stats in gameData.RoundStatsList)
+            {
+                if (stats.Domain == gameData.WinnerDomain)
+                    Assert.Equal(finishTime, stats.Score);
+                else
+                    Assert.True(GolfScoreSentinels.IsHexRaceLoserScore(stats.Score));
+            }
+
+            // Results mirror the golf order with 1-based ranks; the representative
+            // winner is a real pilot of the winning domain.
+            Assert.Equal(gameData.RoundStatsList.Count, gameData.Results.Count);
+            Assert.Equal(1, gameData.Results[0].Rank);
+            Assert.Equal(gameData.WinnerName, gameData.Results[0].Name);
+            Assert.InRange(director.WinnerPilot, 0, director.Pilots.Count - 1);
+            Assert.Equal(gameData.WinnerDomain, director.Pilots[director.WinnerPilot].Domain);
 
             // The race was run on a REAL prismscape the whole way.
             int totalPrisms = 0;
