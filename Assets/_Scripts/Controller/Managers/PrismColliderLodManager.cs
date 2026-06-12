@@ -71,9 +71,41 @@ namespace CosmicShore.Gameplay
 
         float _nextTickAt;
         bool _culledAnything;
+        // One O(N) reconciliation is needed whenever LOD (re)gains an opinion:
+        // first sweep, foci returning after an idle restore-all, or re-enable.
+        // Steady state runs on transitions only (O(near + changes)), so the tick
+        // cost is bounded by the LOD bubbles, not the prism population.
+        bool _needsFullSweep = true;
         readonly List<Prism> _liveScratch = new(4096);
         readonly List<Prism> _queryScratch = new(1024);
-        readonly HashSet<Prism> _nearSet = new();
+        HashSet<Prism> _nearSet = new();
+        HashSet<Prism> _prevNearSet = new();
+
+        /// <summary>
+        /// Called when a prism's collider comes online outside the sweep cadence
+        /// (spawn-window end, trail restore). The transition-based sweep only
+        /// touches prisms whose near/far state CHANGES, so without this a prism
+        /// born far from every focus would keep its collider until it crossed a
+        /// bubble boundary. O(foci) — no population walk.
+        /// </summary>
+        public static void NotifyPrismActivated(Prism prism)
+        {
+            var inst = Instance;
+            if (inst == null || !inst.lodEnabled || prism == null) return;
+            if (s_foci.Count == 0) return;
+
+            float r2 = inst.lodRadiusMeters * inst.lodRadiusMeters;
+            Vector3 p = prism.transform.position;
+            for (int i = 0; i < s_foci.Count; i++)
+            {
+                var focus = s_foci[i];
+                if (focus && (focus.position - p).sqrMagnitude <= r2)
+                    return; // near a focus — collider stays as the lifecycle set it
+            }
+
+            prism.SetColliderCulledByLod(true);
+            inst._culledAnything = true;
+        }
 
         public static PrismColliderLodManager EnsureInstance()
         {
@@ -113,6 +145,8 @@ namespace CosmicShore.Gameplay
                         _liveScratch[i].SetColliderCulledByLod(false);
                     _culledAnything = false;
                 }
+                _prevNearSet.Clear();
+                _needsFullSweep = true; // re-reconcile when foci return
                 LastNearCount = LastLiveCount = 0;
                 return;
             }
@@ -126,21 +160,48 @@ namespace CosmicShore.Gameplay
                     _nearSet.Add(_queryScratch[i]);
             }
 
-            int live = index.CopyLivePrisms(_liveScratch);
-            for (int i = 0; i < live; i++)
+            if (_needsFullSweep)
             {
-                var prism = _liveScratch[i];
-                prism.SetColliderCulledByLod(!_nearSet.Contains(prism));
+                // Reconcile the whole population once — prisms registered before
+                // this manager existed (or while LOD was idle) have never been
+                // classified.
+                int live = index.CopyLivePrisms(_liveScratch);
+                for (int i = 0; i < live; i++)
+                {
+                    var prism = _liveScratch[i];
+                    prism.SetColliderCulledByLod(!_nearSet.Contains(prism));
+                }
+                _needsFullSweep = false;
+            }
+            else
+            {
+                // Steady state: only near/far TRANSITIONS change collider state.
+                // Newly spawned far prisms are handled by NotifyPrismActivated.
+                foreach (var prism in _nearSet)
+                {
+                    if (prism && !_prevNearSet.Contains(prism))
+                        prism.SetColliderCulledByLod(false);
+                }
+                foreach (var prism in _prevNearSet)
+                {
+                    if (prism && !_nearSet.Contains(prism))
+                        prism.SetColliderCulledByLod(true);
+                }
             }
 
+            // Double-buffer the near sets — no per-tick copy.
+            (_prevNearSet, _nearSet) = (_nearSet, _prevNearSet);
+
             _culledAnything = true;
-            LastNearCount = _nearSet.Count;
-            LastLiveCount = live;
+            LastNearCount = _prevNearSet.Count;
+            LastLiveCount = index.LiveCount;
         }
 
         void OnDisable()
         {
             // Component toggled off (or teardown): hand collider ownership back.
+            _prevNearSet.Clear();
+            _needsFullSweep = true;
             var index = PrismSpatialIndex.Instance;
             if (index == null || !index.IsAvailable || !_culledAnything) return;
             int n = index.CopyLivePrisms(_liveScratch);

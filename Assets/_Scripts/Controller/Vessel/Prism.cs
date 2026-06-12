@@ -391,6 +391,11 @@ namespace CosmicShore.Gameplay
             var spatialIndex = PrismSpatialIndex.EnsureInstance();
             if (spatialIndex != null && spatialIndex.IsAvailable)
                 SpatialIndexId = spatialIndex.Register(this);
+
+            // The LOD sweep is transition-based — it must be told about colliders
+            // that come online between ticks, or a prism born far from every focus
+            // keeps its collider until a bubble boundary happens to cross it.
+            PrismColliderLodManager.NotifyPrismActivated(this);
         }
 
         /// <summary>
@@ -643,6 +648,10 @@ namespace CosmicShore.Gameplay
                 blockCollider.enabled = true;
                 SetRenderVisible(true);
                 destroyed = false;
+
+                // Same contract as the spawn window: the transition-based LOD
+                // sweep must classify this just-restored collider.
+                PrismColliderLodManager.NotifyPrismActivated(this);
             }
         }
 

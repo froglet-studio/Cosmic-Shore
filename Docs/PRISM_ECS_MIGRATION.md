@@ -274,11 +274,68 @@ Verification additions:
    `prisms=` — ents≈prisms confirms the batched path is carrying the population;
    ents=0 means legacy fallback engaged.
 
-### Checkpoint C — lifecycle ISystems; Checkpoint D — GameObject-as-proximity-LOD
+### Post-review hardening (DONE)
 
-Per §4 Phases 2–3: port animation managers to `IJobEntity` systems, then make the
-GameObject a proximity-LOD of the entity (promote/demote on the collider-LOD
-bubble) so bulk mass needs no GameObject at all.
+A 7-angle adversarial review of Checkpoints A+B confirmed four issues, all
+fixed: orphaned visible entity on pooled release of a shielded prism
+(undefined OnDisable order — `ApplyRenderPath` now never shows an entity on an
+inactive GameObject); handoff color continuity in both directions
+(`FlushDisplayedColorsToRenderer` / `SyncRenderColorsFromAnimator`);
+late-material entity-creation retry in `SyncRenderMaterial`; effect
+`_hasPendingTeamColors` cleared on `OnDisable` (pool-reuse parity with the MPB
+clear). Refuted (no change): stale-epoch color suppression, runtime-override
+stranding, watchdog/manager desync.
+
+### Checkpoint C — population-independent collider-LOD sweep (DONE)
+
+The previous sweep was O(N): `CopyLivePrisms` over the whole population +
+per-prism `SetColliderCulledByLod` every 0.25 s — invisible at 4k prisms, a
+recurring multi-ms main-thread spike at 100k. Now transition-based:
+
+- `PrismSpatialIndex.LiveCount` — O(1) live counter maintained by the four
+  lifecycle methods (mirrors `CopyLivePrisms`' JobPassValue semantics).
+- `PrismColliderLodManager.Sweep` touches only near/far TRANSITIONS
+  (double-buffered near sets); one O(N) reconciliation runs when LOD (re)gains
+  an opinion (first sweep, foci returning after idle, re-enable).
+- `PrismColliderLodManager.NotifyPrismActivated` (called from the spawn-window
+  end and `Prism.Restore`) classifies colliders that come online between
+  ticks — O(foci), no population walk.
+
+Collider-budget impact: none — the same prisms end in the same collider states;
+only the cost of computing them changed (O(near + transitions) steady state).
+
+Verification addition:
+10. In a long Skim Race round, the `[ECOSIM] colliders=near/live` line must show
+    the same near counts as before this change, and the profiler must show no
+    0.25 s-cadence spike from `PrismColliderLodManager.Sweep` as live counts
+    grow.
+
+### Checkpoint D — pure-entity bulk mass (NEXT, design locked, do after A–C verify in-editor)
+
+The remaining ceiling at 100k+ is GameObject existence itself: ~2–4 KB and a
+pooled instantiation per prism. Design (Phase 3 of §4, sequenced):
+
+1. **Spawn-side split.** `PrismFactory` gains a bulk tier: trail/track prisms
+   spawn as pure entities (render entity + `PrismSpatialIndex` entry + a
+   compact state record) with NO GameObject. The spatial index already carries
+   position/flags/volume/domain — it becomes the single gameplay truth for
+   bulk prisms (it already is for AOE, occupancy, fauna senses, cell grids).
+2. **Contact via the index, not PhysX.** Skimmer/hull/projectile contact with
+   bulk prisms uses `QuerySphere` against the index (the canonical pattern per
+   Docs/SPATIAL_INDEX.md) instead of trigger colliders. The impactor pipeline
+   gets an index-hit adapter that synthesizes the same effect-SO dispatch.
+3. **Promote on touch.** Interactions that need the full MonoBehaviour
+   (TrailFollower attach, octahedron shield, steal/restore mechanics) promote
+   a bulk prism to a pooled GameObject on first contact — the existing pool
+   provides the body; the entity + index entry persist across the promotion,
+   so continuity-of-existence is never violated.
+4. **Trail holds handles, not MonoBehaviours.** `Trail`'s `List<Prism>` becomes
+   a list of stable prism handles (index slot + entity) with a thin accessor
+   that promotes on demand for the few blocks actually being ridden.
+
+Gate: only start after Checkpoints A–C hold 60 fps in a full 3-player Skim
+Race on PC and the stress harness ceiling is measured — if 100k-with-
+GameObjects already exceeds the design target, D is optional headroom.
 
 ---
 
