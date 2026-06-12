@@ -19,13 +19,13 @@ namespace CosmicShore.Gameplay
 
         public override void Subscribe()
         {
-            // PORT Deviation (SA1, restore when LifeForm ports): LifeForm.OnLifeFormDeath += HandleLifeFormDeath;
+            LifeForm.OnLifeFormDeath += HandleLifeFormDeath;
             totalLifeFormsKilled = 0;
         }
 
         public override void Unsubscribe()
         {
-            // PORT Deviation (SA1, restore when LifeForm ports): LifeForm.OnLifeFormDeath -= HandleLifeFormDeath;
+            LifeForm.OnLifeFormDeath -= HandleLifeFormDeath;
         }
 
         void HandleLifeFormDeath(string killerName, int cellId)

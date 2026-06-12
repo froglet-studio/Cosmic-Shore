@@ -91,6 +91,20 @@ namespace CosmicShore.Engine
             return clone;
         }
 
+        /// <summary>Clone, place at a world pose, and parent in one step (original engine's 4-arg shape).</summary>
+        public static T Instantiate<T>(T original, Vector3 position, Quaternion rotation, Transform parent) where T : Object
+        {
+            var clone = Instantiate(original, position, rotation);
+            var transform = clone switch
+            {
+                GameObject go => go.transform,
+                Component component => component.transform,
+                _ => null,
+            };
+            transform?.SetParent(parent, worldPositionStays: true);
+            return clone;
+        }
+
         /// <summary>Clone and parent in one step (pool managers and spawners use this shape).</summary>
         public static T Instantiate<T>(T original, Transform parent, bool instantiateInWorldSpace = false) where T : Object
         {

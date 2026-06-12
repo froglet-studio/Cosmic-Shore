@@ -183,6 +183,7 @@ namespace CosmicShore.Engine
 
         public void Dispose()
         {
+            Scene.isLoaded = false; // teardown probes (e.g. Spindle) skip unloading-scene work
             if (Current == this) Current = null;
         }
     }

@@ -13,6 +13,13 @@ namespace CosmicShore.Engine
 
         public string name { get; set; }
 
+        /// <summary>
+        /// Original engine contract: true once the scene's content is loaded. The single
+        /// loop-owned scene is loaded for as long as its GameLoop is alive; objects probe
+        /// this during teardown to skip work on an unloading scene.
+        /// </summary>
+        public bool isLoaded { get; internal set; } = true;
+
         internal Scene(string name) { this.name = name; }
 
         public IReadOnlyList<GameObject> GetRootGameObjects() => _roots;

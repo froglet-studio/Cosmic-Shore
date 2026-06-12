@@ -26,5 +26,32 @@ namespace CosmicShore.Engine
 
         /// <summary>Random float in [0, 1].</summary>
         public static float value => (float)_rng.NextDouble();
+
+        /// <summary>Random point on the surface of a unit sphere (uniform — Marsaglia rejection).</summary>
+        public static Vector3 onUnitSphere
+        {
+            get
+            {
+                while (true)
+                {
+                    var p = new Vector3(Range(-1f, 1f), Range(-1f, 1f), Range(-1f, 1f));
+                    float sqr = p.sqrMagnitude;
+                    if (sqr > 1e-6f && sqr <= 1f) return p / Mathf.Sqrt(sqr);
+                }
+            }
+        }
+
+        /// <summary>Random point inside (or on) a unit sphere.</summary>
+        public static Vector3 insideUnitSphere
+        {
+            get
+            {
+                while (true)
+                {
+                    var p = new Vector3(Range(-1f, 1f), Range(-1f, 1f), Range(-1f, 1f));
+                    if (p.sqrMagnitude <= 1f) return p;
+                }
+            }
+        }
     }
 }

@@ -516,6 +516,18 @@ Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — inf
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
 
+Ecosystem groundwork (landed alongside iteration 18): the LifeForm family ported —
+`LifeForm` + `HealthPrism` + `Spindle` + `HealthBlockTracker` + `SpindleTracker` +
+`ILifeFormEntity` + `ITeamAssignable` (verbatim modulo substitutions; one CT1
+deviation: the `crystal.ActivateCrystal()` call in `Die` restores with
+CrystalManager). SA1 deviation CLOSED: `LifeFormsKilledScoring` subscribes the real
+static `LifeForm.OnLifeFormDeath` again. Engine gains original-contract API:
+`Random.onUnitSphere`/`insideUnitSphere`, 4-arg `Object.Instantiate(original, pos,
+rot, parent)`, `Scene.isLoaded` (flips false on GameLoop.Dispose). 6 tests
+(maturity one-way, lethality at min blocks, dedup add, embedded-prism binding,
+death event + destroy, SetTeam propagation). Conserved mass: health prisms die
+only through the active Damage path — no decay anywhere in the family.
+
 Track-content groundwork (landed alongside iteration 18): `SpawnableBase` +
 `SpawnPoint` + `SpawnTrailData` ported verbatim (one dropped using:
 UnityEngine.Serialization — FormerlySerializedAs lives in CosmicShore.Engine).
