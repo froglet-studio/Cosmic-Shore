@@ -126,6 +126,10 @@ SAME domain-divergence root as B10 — the local player's crystals summed under 
 server-synced sums are now **redundant but harmless** robustness; optional retirement
 tracked in `TODOS.md` TD3.
 **✅ Verified in engine** (2-human test — client domain counts track the host).
+**Post-B12 correction:** the frozen OWN count is most plausibly B12's stale shadow —
+on a party-joined client the local player's entry in `RoundStatsList` was a destroyed
+pre-party component with frozen stats, so any client-side re-sum of its OWN stats read
+the corpse. With B12 fixed, retiring Approach B (TODOS.md TD3) is safer.
 
 ### B10 — 🟢 Client's OWN profile icon grouped into the wrong domain box
 With 2 humans on different domains (host Jade, client Ruby), the client's screen
@@ -154,11 +158,56 @@ Files: `_Scripts/UI/MultiplayerHUD.cs`, `_Scripts/Data/Enums/RoundStats.cs`,
 **✅ Verified in engine** (2-human test — the client's own profile icon now sits in its
 own domain box). Broader mode coverage (CrystalCapture / Joust) continuing.
 
+### B11 — 🟢 Client-local menu domain writes desynced the live mirrors (B10-relapse class)
+`MainMenuController.ApplyMenuDomain` ran on each client at `OnClientReady` and (a)
+attempted `NetDomain.Value = Jade` — illegal off-host (`NetDomain` is Server-write;
+the rejection can throw and abort the autopilot activation chain →
+`../PartySystem/BUGS.md` B9's drift), and (b) stamped `Player.Domain` /
+`RoundStats.Domain` locally — the exact B10 sin of writing mirrors from anywhere but
+`NetDomain`. A stamp landing after a modal pick (duplicate `OnClientReady` raises from
+the roster-pull retries) left that machine believing Jade until the next NetDomain
+delta. **Done** (commits `53294068`, `65d4da96`, `c073636e`): menu domain reset moved
+server-side (`MenuServerPlayerVesselInitializer.OnPlayerReadyToSpawnAsync`, before
+vessel spawn), `ApplyMenuDomain` deleted, and the replication repaint completed by
+folding `RefreshShipMaterial` into `ShipHelper.SetShipProperties` (init-aware: skipped
+until `VesselCustomization.Initialize` has collected `ShipGeometries`). **Rule:**
+client code must NEVER write `NetDomain`, `Player.Domain`, or `RoundStats.Domain` —
+mirrors sync only from `NetDomain` (`InitializeForMultiplayerMode` +
+`OnNetDomainChanged`).
+Files: `_Scripts/System/MainMenuController.cs`,
+`_Scripts/Controller/Multiplayer/MenuServerPlayerVesselInitializer.cs`,
+`_Scripts/Controller/Vessel/VesselHelper.cs`.
+
+### B12 — 🟢 Stale pre-party RoundStats shadowed the live entry (own ready-text frozen Jade)
+On a party-joined client, the pre-party SOLO session had already put its own
+`RoundStats` (Name = own name, Domain = Jade) into `gameData.RoundStatsList`. The
+invite-accept NetworkManager shutdown destroyed that Player, but
+`ResetRuntimeDataForPartyJoin` cleared only `Players`/`Vessels`/`LocalPlayer` — the
+destroyed component stayed in `RoundStatsList` with its managed `Name` intact, so
+`AddPlayer`'s name-keyed dedup REJECTED the new live `RoundStats`. Clients never run
+the full `ResetRuntimeData` at launch (scene load defers to the server), so the dead
+shadow rode into every game: the ready feed colored the client's OWN name Jade on its
+own screen (correct on the host, whose list is rebuilt at launch),
+`SyncFinalScores_ClientRpc` wrote results onto the dead object, and client-side
+domain sums counted the local player under Jade with frozen stats. `LocalRoundStats`
+got the live instance, so the centerline score worked — masking the bug. **Done**
+(commits `52923bf8`, `6400eca0`): `ResetRuntimeDataForPartyJoin` clears
+`RoundStatsList`/`DomainStatsList`/`LocalRoundStats` too; `AddPlayer` prunes destroyed
+roster entries and replaces same-name stale instances with the live component (logs
+"Replacing stale RoundStats entry"); the ready feed reads the live `Player.Domain`
+(B10 doctrine) with the list as fallback.
+**✅ Verified in engine** (2-human test — client's own ready-text now shows its picked
+domain on both peers).
+Files: `_Scripts/Utility/DataContainers/GameDataSO.cs`,
+`_Scripts/Controller/Arcade/MultiplayerDomainGamesController.cs`.
+
 ---
 
 B1–B4, B6, B7, B8 fixed (verify only — B6 also warrants a visual position check).
 B9 (count) + B10 (domain icon placement) fixed for the **domain** layout and **verified
 in a 2-human engine test** (broader mode coverage continuing; legacy-layout residual
-tracked in `TODOS.md` TD1). B5 remains
+tracked in `TODOS.md` TD1). B11 (client-local menu domain writes) + B12 (stale
+pre-party RoundStats shadow) fixed 2026-06-11 — B12 verified in engine; B11's
+host-return sweep pending (`../PartySystem/BUGS.md` B9). B5 remains
 scheduled into **R10** (the unified ranked `ScoreResult` list dissolves it). No open
 read-through findings remain.
