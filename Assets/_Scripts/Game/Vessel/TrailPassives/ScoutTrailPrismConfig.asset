@@ -41,9 +41,5 @@ MonoBehaviour:
   maxRadius: 100
   radiusGrowthRate: 6000
   radiusShrinkRate: 6000
-  detectionLayers:
-    serializedVersion: 2
-    m_Bits: 0
   scaleSmoothTime: 0.2
   updateInterval: 0.05
-  maxColliders: 1

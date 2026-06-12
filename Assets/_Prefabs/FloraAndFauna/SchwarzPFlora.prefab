@@ -58,12 +58,12 @@ MonoBehaviour:
   onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
     type: 2}
   leafSize: {x: 5, y: 5, z: 1}
-  growPeriod: 1.6
-  PlantPeriod: 30
+  growPeriod: 0.8
+  PlantPeriod: 120
   stunDuration: 2
   plantRadiusCellFraction: 0.2
   depth: 0
-  maxTotalSpawnedObjects: 400
+  maxTotalSpawnedObjects: 800
   maxDepth: 50
   itemsPerGrow: 5
   randomItems: 2
