@@ -64,6 +64,19 @@ namespace CosmicShore.Engine
 
         public static float Sign(float f) => f >= 0f ? 1f : -1f;
 
+        /// <summary>Smallest power of two ≥ <paramref name="value"/> (0 → 0; original engine contract).</summary>
+        public static int NextPowerOfTwo(int value)
+        {
+            if (value <= 0) return 0;
+            value--;
+            value |= value >> 1;
+            value |= value >> 2;
+            value |= value >> 4;
+            value |= value >> 8;
+            value |= value >> 16;
+            return value + 1;
+        }
+
         public static float Clamp(float value, float min, float max)
             => value < min ? min : value > max ? max : value;
 

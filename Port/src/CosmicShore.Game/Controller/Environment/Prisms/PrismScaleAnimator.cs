@@ -6,7 +6,7 @@ using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay
 {
-    // PORT Deviation (V13, restore when Prism ports): [RequireComponent(typeof(Prism))]
+    [RequireComponent(typeof(Prism))]
     public class PrismScaleAnimator : MonoBehaviour
     {
         [SerializeField] ScriptableEventPrismStats onPrismVolumeModified;
@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
         public Vector3 AuthoredTargetScale => authoredTargetScale;
         public float GrowthRate { get; set; } = 0.01f;
 
-        // PORT Deviation (V13, restore when Prism ports): private Prism prism;
+        private Prism prism;
         private MeshRenderer meshRenderer;
         private bool isRegistered;
 
@@ -46,7 +46,7 @@ namespace CosmicShore.Gameplay
         private void Awake()
         {
             meshRenderer = GetComponent<MeshRenderer>();
-            // PORT Deviation (V13, restore when Prism ports): prism = GetComponent<Prism>();
+            prism = GetComponent<Prism>();
 
             if (meshRenderer == null)
             {
@@ -107,11 +107,10 @@ namespace CosmicShore.Gameplay
 
         public void Grow(float amount = 1)
         {
-            // PORT Deviation (V13, restore when Prism ports): if (!enabled || !prism) return;
-            if (!enabled) return;
+            if (!enabled || !prism) return;
 
-            // PORT Deviation (V13, restore when Prism ports): var growthVector = amount * prism.GrowthVector;
-            // PORT Deviation (V13, restore when Prism ports): SetTargetScale(TargetScale + growthVector);
+            var growthVector = amount * prism.GrowthVector;
+            SetTargetScale(TargetScale + growthVector);
             BeginGrowthAnimation();
         }
 
@@ -128,20 +127,20 @@ namespace CosmicShore.Gameplay
             onPrismVolumeModified.Raise(new PrismStats
             {
                 Volume = deltaVolume,
-                // PORT Deviation (V13, restore when Prism ports): OwnName = prism.PlayerName,
+                OwnName = prism.PlayerName,
             });
 
-            // PORT Deviation (V13, restore when Prism ports): if (!prism) return;
+            if (!prism) return;
 
             if (CheckIfIsLargest())
             {
-                // PORT Deviation (V13, restore when Prism ports): prism.ActivateShield();
-                // PORT Deviation (V13, restore when Prism ports): prism.IsLargest = true;
+                prism.ActivateShield();
+                prism.IsLargest = true;
             }
 
             if (CheckIfIsSmallest())
             {
-                // PORT Deviation (V13, restore when Prism ports): prism.IsSmallest = true;
+                prism.IsSmallest = true;
             }
         }
 
@@ -153,19 +152,15 @@ namespace CosmicShore.Gameplay
 
         private float UpdateVolume()
         {
-            // PORT Deviation (V13, restore when Prism (V15) / PrismProperties (V14) port): if (!enabled || !prism || prism.prismProperties == null)
-            if (!enabled)
+            if (!enabled || !prism || prism.prismProperties == null)
             {
                 CSDebug.LogError($"Required components are null on {gameObject.name}");
                 return 0f;
             }
 
-            // The conserved-mass volume record lives on PrismProperties (V14); until it
-            // lands the delta reports 0 rather than fabricating a different bookkeeping.
-            // PORT Deviation (V13, restore when Prism (V15) / PrismProperties (V14) port): var oldVolume = prism.prismProperties.volume;
-            // PORT Deviation (V13, restore when Prism (V15) / PrismProperties (V14) port): prism.prismProperties.volume = TargetScale.x * TargetScale.y * TargetScale.z;
-            // PORT Deviation (V13, restore when Prism (V15) / PrismProperties (V14) port): return prism.prismProperties.volume - oldVolume;
-            return 0f;
+            var oldVolume = prism.prismProperties.volume;
+            prism.prismProperties.volume = TargetScale.x * TargetScale.y * TargetScale.z;
+            return prism.prismProperties.volume - oldVolume;
         }
 
         private void OnDestroy()

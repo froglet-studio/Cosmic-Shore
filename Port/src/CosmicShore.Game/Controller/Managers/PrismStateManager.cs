@@ -19,8 +19,8 @@ namespace CosmicShore.Gameplay
         [Header("Data Containers")] [SerializeField]
         ThemeManagerDataContainerSO _themeManagerData;
 
-        // PORT Deviation (V13, restore when Prism ports): private Prism prism;
-        // PORT Deviation (V13, restore when MaterialPropertyAnimator ports): private MaterialPropertyAnimator materialAnimator;
+        private Prism prism;
+        private MaterialPropertyAnimator materialAnimator;
         private PrismTeamManager teamManager;
         // PORT Deviation (V13, restore when PrismOctahedronShield ports): private PrismOctahedronShield octahedronShield; // auto-added in Awake so every prism gets the octahedron on shield
 
@@ -28,8 +28,8 @@ namespace CosmicShore.Gameplay
 
         private void Awake()
         {
-            // PORT Deviation (V13, restore when Prism ports): prism = GetComponent<Prism>();
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports): materialAnimator = GetComponent<MaterialPropertyAnimator>();
+            prism = GetComponent<Prism>();
+            materialAnimator = GetComponent<MaterialPropertyAnimator>();
             teamManager = GetComponent<PrismTeamManager>();
 
             // Every prism gets an octahedron shield. If the prefab already
@@ -44,14 +44,14 @@ namespace CosmicShore.Gameplay
 
         public void MakeDangerous()
         {
-            // PORT Deviation (V13, restore when Prism ports): prism.prismProperties.IsDangerous = true;
-            // PORT Deviation (V13, restore when Prism ports): prism.prismProperties.speedDebuffAmount = 0.1f;
-            // PORT Deviation (V13, restore when Prism ports): prism.prismProperties.IsShielded = false;
+            prism.prismProperties.IsDangerous = true;
+            prism.prismProperties.speedDebuffAmount = 0.1f;
+            prism.prismProperties.IsShielded = false;
 
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports): materialAnimator.UpdateMaterial(
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports):     _themeManagerData.GetTeamTransparentDangerousBlockMaterial(teamManager.Domain),
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports):     _themeManagerData.GetTeamDangerousBlockMaterial(teamManager.Domain)
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports): );
+            materialAnimator.UpdateMaterial(
+                _themeManagerData.GetTeamTransparentDangerousBlockMaterial(teamManager.Domain),
+                _themeManagerData.GetTeamDangerousBlockMaterial(teamManager.Domain)
+            );
             CurrentState = BlockState.Dangerous;
         }
 
@@ -72,13 +72,13 @@ namespace CosmicShore.Gameplay
         {
             PrismTimerManager.EnsureInstance().CancelTimers(this);
 
-            // PORT Deviation (V13, restore when Prism ports): prism.prismProperties.IsSuperShielded = true;
-            // PORT Deviation (V13, restore when Prism ports): prism.prismProperties.IsDangerous = false;
+            prism.prismProperties.IsSuperShielded = true;
+            prism.prismProperties.IsDangerous = false;
 
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports): materialAnimator.UpdateMaterial(
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports):     _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(teamManager.Domain),
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports):     _themeManagerData.GetTeamSuperShieldedBlockMaterial(teamManager.Domain)
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports): );
+            materialAnimator.UpdateMaterial(
+                _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(teamManager.Domain),
+                _themeManagerData.GetTeamSuperShieldedBlockMaterial(teamManager.Domain)
+            );
             CurrentState = BlockState.SuperShielded;
 
             // Opt-in octahedron shield visual/collider swap. Prisms without
@@ -112,13 +112,13 @@ namespace CosmicShore.Gameplay
 
         private void ApplyShieldState()
         {
-            // PORT Deviation (V13, restore when Prism ports): prism.prismProperties.IsShielded = true;
-            // PORT Deviation (V13, restore when Prism ports): prism.prismProperties.IsDangerous = false;
+            prism.prismProperties.IsShielded = true;
+            prism.prismProperties.IsDangerous = false;
 
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports): materialAnimator.UpdateMaterial(
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports):     _themeManagerData.GetTeamTransparentShieldedBlockMaterial(teamManager.Domain),
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports):     _themeManagerData.GetTeamShieldedBlockMaterial(teamManager.Domain)
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports): );
+            materialAnimator.UpdateMaterial(
+                _themeManagerData.GetTeamTransparentShieldedBlockMaterial(teamManager.Domain),
+                _themeManagerData.GetTeamShieldedBlockMaterial(teamManager.Domain)
+            );
             CurrentState = BlockState.Shielded;
 
             // Engage the octahedron visual/collider swap for the regular
@@ -131,18 +131,15 @@ namespace CosmicShore.Gameplay
 
         private void ApplyNormalState()
         {
-            // PORT Deviation (V13, restore when Prism ports): var wasShielded = prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded;
-            // CurrentState mirrors the prismProperties shield booleans (this class is their
-            // single writer), so the state enum stands in until Prism lands (V15).
-            var wasShielded = CurrentState == BlockState.Shielded || CurrentState == BlockState.SuperShielded;
+            var wasShielded = prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded;
 
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports): materialAnimator.UpdateMaterial(
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports):     _themeManagerData.GetTeamTransparentBlockMaterial(teamManager.Domain),
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports):     _themeManagerData.GetTeamBlockMaterial(teamManager.Domain)
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports): );
+            materialAnimator.UpdateMaterial(
+                _themeManagerData.GetTeamTransparentBlockMaterial(teamManager.Domain),
+                _themeManagerData.GetTeamBlockMaterial(teamManager.Domain)
+            );
 
-            // PORT Deviation (V13, restore when Prism ports): prism.prismProperties.IsShielded = false;
-            // PORT Deviation (V13, restore when Prism ports): prism.prismProperties.IsSuperShielded = false;
+            prism.prismProperties.IsShielded = false;
+            prism.prismProperties.IsSuperShielded = false;
             CurrentState = BlockState.Normal;
 
             // PORT Deviation (V13, restore when PrismOctahedronShield ports): if (octahedronShield != null) octahedronShield.Disengage();
@@ -155,11 +152,11 @@ namespace CosmicShore.Gameplay
 
         private void SyncAOERegistryShieldState()
         {
-            // PORT Deviation (V13, restore when Prism / PrismAOERegistry port (V15)): if (prism.AOERegistryIndex >= 0)
-            // PORT Deviation (V13, restore when Prism / PrismAOERegistry port (V15)):     PrismAOERegistry.Instance?.UpdateShieldState(
-            // PORT Deviation (V13, restore when Prism / PrismAOERegistry port (V15)):         prism.AOERegistryIndex,
-            // PORT Deviation (V13, restore when Prism / PrismAOERegistry port (V15)):         prism.prismProperties.IsShielded,
-            // PORT Deviation (V13, restore when Prism / PrismAOERegistry port (V15)):         prism.prismProperties.IsSuperShielded);
+            if (prism.AOERegistryIndex >= 0)
+                PrismAOERegistry.Instance?.UpdateShieldState(
+                    prism.AOERegistryIndex,
+                    prism.prismProperties.IsShielded,
+                    prism.prismProperties.IsSuperShielded);
         }
 
         private void OnDisable()

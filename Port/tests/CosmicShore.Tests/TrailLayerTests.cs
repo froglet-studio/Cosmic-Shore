@@ -9,14 +9,12 @@ namespace CosmicShore.Tests;
 
 // V14: trail layer — MaterialPropertyAnimator start/target capture + property-block
 // retargeting, Trail index math (Add/RemoveOldest/LookAhead/Project ping-pong + loop
-// wrap), TrailFollower walking logic, PrismProperties defaults. Prism-typed members
-// are staged as MonoBehaviour until V15 (see PORT Deviation (V14) comments); tests
-// cover what survives the deviations.
+// wrap), TrailFollower walking logic, PrismProperties defaults. V15 restored the
+// Prism-typed members, so trail blocks are full PrismTestRig prisms and the animator
+// resolves its domain materials through a wired theme.
 public class TrailLayerTests
 {
     // ── doubles ─────────────────────────────────────────────────────────────
-
-    class TrailBlockStub : MonoBehaviour { }
 
     // MonoBehaviour IVesselStatus implementor so TrailFollower.Start can discover it
     // via GetComponent<IVesselStatus>() on the same GameObject.
@@ -27,6 +25,7 @@ public class TrailLayerTests
         public Material AOEConicExplosionMaterial { get; set; }
         public Material AOEExplosionMaterial { get; set; }
         public bool IsAttached { get; set; }
+        public Prism AttachedPrism { get; set; }
         public Quaternion blockRotation { get; set; }
         public bool IsBoosting { get; set; }
         public float BoostMultiplier { get; set; }
@@ -74,16 +73,12 @@ public class TrailLayerTests
     static T Get<T>(object target, string field)
         => (T)target.GetType().GetField(field, Priv).GetValue(target);
 
-    /// <summary>Straight-line trail with one block per z position.</summary>
+    /// <summary>Straight-line trail with one full rig prism per z position.</summary>
     static Trail MakeTrail(bool isLoop, params float[] zPositions)
     {
         var trail = new Trail(isLoop);
         foreach (var z in zPositions)
-        {
-            var go = new GameObject($"block z={z}");
-            go.transform.position = new Vector3(0f, 0f, z);
-            trail.Add(go.AddComponent<TrailBlockStub>());
-        }
+            trail.Add(PrismTestRig.CreatePrismAt(new Vector3(0f, 0f, z), $"block z={z}"));
         return trail;
     }
 
@@ -412,13 +407,17 @@ public class TrailLayerTests
 
     static (MaterialPropertyAnimator animator, MeshRenderer renderer) MakeAnimator(Material current)
     {
-        var go = new GameObject("prism");
-        go.SetActive(false);
-        var renderer = go.AddComponent<MeshRenderer>();
-        renderer.sharedMaterial = current;
-        var animator = go.AddComponent<MaterialPropertyAnimator>();
-        go.SetActive(true);
-        return (animator, renderer);
+        // V15: ValidateMaterials resolves the prism's domain materials through the theme,
+        // so the rig's Blue (default-domain) block materials point at the renderer's
+        // current material — the start-state capture still reads the original material.
+        var rig = PrismTestRig.Create("prism", beforeActivate: r =>
+        {
+            r.GameObject.GetComponent<MeshRenderer>().sharedMaterial = current;
+            var blueSet = r.Theme.TeamMaterialSets[Domains.Blue];
+            blueSet.BlockMaterial = current;
+            blueSet.TransparentBlockMaterial = current;
+        });
+        return (rig.MaterialAnimator, rig.GameObject.GetComponent<MeshRenderer>());
     }
 
     [Fact]

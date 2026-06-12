@@ -118,17 +118,12 @@ public class CellTests : IDisposable
         return cell;
     }
 
-    /// <summary>
-    /// Prism stand-in (see the V12 deviations): a GameObject carrying the already-ported
-    /// PrismTeamManager, which is exactly where Prism.Domain reads from.
-    /// </summary>
-    static PrismTeamManager MakePrism(Domains domain, Vector3 position)
+    /// <summary>A full rig prism (V15 shared rig) placed and assigned its initial team.</summary>
+    static Prism MakePrism(Domains domain, Vector3 position)
     {
-        var go = new GameObject("prism");
-        go.transform.position = position;
-        var team = go.AddComponent<PrismTeamManager>();
-        team.SetInitialTeam(domain);
-        return team;
+        var prism = PrismTestRig.CreatePrismAt(position);
+        prism.GetComponent<PrismTeamManager>().SetInitialTeam(domain);
+        return prism;
     }
 
     static Crystal MakeCrystal(int id, Domains domain, Vector3 position)
@@ -334,7 +329,7 @@ public class CellTests : IDisposable
         var raised = new List<CellPhase>();
         runtime.OnPhaseChanged.OnRaised += phase => raised.Add(phase);
 
-        var prisms = new List<PrismTeamManager>();
+        var prisms = new List<Prism>();
         for (int i = 0; i < 5; i++)
         {
             var prism = MakePrism(Domains.Ruby, new Vector3(75f * i - 150f, 0f, 0f));
@@ -374,7 +369,7 @@ public class CellTests : IDisposable
     public void Update_RespectsPhaseTickInterval()
     {
         var cell = MakeInitializedCell(out _, out _);
-        var prisms = new List<PrismTeamManager>();
+        var prisms = new List<Prism>();
         for (int i = 0; i < 5; i++)
         {
             var prism = MakePrism(Domains.Ruby, new Vector3(75f * i - 150f, 0f, 0f));

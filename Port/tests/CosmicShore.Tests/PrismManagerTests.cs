@@ -11,9 +11,10 @@ namespace CosmicShore.Tests;
 
 // V13: PrismStateManager state transitions (incl. PrismTimerManager-driven timed
 // shield deactivation), PrismTeamManager team/domain bookkeeping, PrismScaleAnimator
-// scale math. Material swaps, prismProperties writes, octahedron engage/disengage and
-// PrismScaleManager registration are V13 deviations (Prism V15 / MaterialPropertyAnimator
-// V14 / PrismScaleManager + PrismOctahedronShield later) and are not asserted here.
+// scale math. V15 restored the Prism-keyed deviations, so prismProperties writes and
+// the conserved-mass volume record are now live (asserted below via PrismTestRig).
+// Octahedron engage/disengage and PrismScaleManager registration remain staged
+// (PrismOctahedronShield / PrismScaleManager not yet ported) and are not asserted here.
 public class PrismManagerTests
 {
     const BindingFlags Priv = BindingFlags.Instance | BindingFlags.NonPublic;
@@ -29,6 +30,9 @@ public class PrismManagerTests
         typeof(AudioSystem)
             .GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!
             .SetValue(null, null);
+        typeof(Singleton<PrismAOERegistry>)
+            .GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!
+            .SetValue(null, null);
     }
 
     // ── helpers ─────────────────────────────────────────────────────────────
@@ -38,14 +42,12 @@ public class PrismManagerTests
     static (PrismStateManager state, PrismTeamManager team, GameObject go) MakePrism(
         ScriptableEventPrismStats stolenEvent = null)
     {
-        var go = new GameObject("prism");
-        go.SetActive(false); // configure before Awake (runtime-AddComponent pattern)
-        var team = go.AddComponent<PrismTeamManager>();
+        // V15: the managers' restored paths dereference the sibling Prism and theme
+        // getters, so tests build the full rig (configure-before-Awake pattern inside).
+        var rig = PrismTestRig.Create();
         if (stolenEvent != null)
-            typeof(PrismTeamManager).GetField("onPrismStolen", Priv)!.SetValue(team, stolenEvent);
-        var state = go.AddComponent<PrismStateManager>();
-        go.SetActive(true);
-        return (state, team, go);
+            typeof(PrismTeamManager).GetField("onPrismStolen", Priv)!.SetValue(rig.TeamManager, stolenEvent);
+        return (rig.StateManager, rig.TeamManager, rig.GameObject);
     }
 
     static (PrismScaleAnimator anim, GameObject go) MakeAnimator(
@@ -402,19 +404,24 @@ public class PrismManagerTests
     }
 
     [Fact]
-    public void ExecuteOnScaleComplete_RaisesVolumeModified()
+    public void ExecuteOnScaleComplete_RaisesVolumeModified_WithConservedMassDelta()
     {
         using var loop = new GameLoop();
-        var volumeEvent = ScriptableObject.CreateInstance<ScriptableEventPrismStats>();
+        var rig = PrismTestRig.Create();
         var raised = new List<PrismStats>();
-        volumeEvent.OnRaised += raised.Add;
-        var (anim, _) = MakeAnimator(volumeEvent: volumeEvent);
+        rig.VolumeEvent.OnRaised += raised.Add;
 
-        anim.ExecuteOnScaleComplete();
+        // Prism.Awake seeds the conserved-mass record at volume 1 (InitializePrismProperties).
+        Assert.Equal(1f, rig.Prism.prismProperties.volume);
 
-        // Volume delta is 0 until the conserved-mass record on PrismProperties (V14) /
-        // Prism (V15) lands — see the V13 deviation in PrismScaleAnimator.UpdateVolume.
-        Assert.Equal(0f, Assert.Single(raised).Volume);
+        rig.ScaleAnimator.SetTargetScale(new Vector3(2f, 3f, 4f));
+        rig.ScaleAnimator.ExecuteOnScaleComplete();
+
+        // V15: the V13-staged 0-delta is gone — UpdateVolume writes the conserved-mass
+        // record on PrismProperties and reports the true delta (24 − 1). No decay path
+        // exists: the record only moves when an active force rescales the prism.
+        Assert.Equal(23f, Assert.Single(raised).Volume);
+        Assert.Equal(24f, rig.Prism.prismProperties.volume);
     }
 
     [Fact]

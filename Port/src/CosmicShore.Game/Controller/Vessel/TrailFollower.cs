@@ -32,8 +32,7 @@ namespace CosmicShore.Gameplay
         public float Throttle;
 
         public bool IsAttached { get { return attachedTrail != null; } }
-        // PORT Deviation (V14, restore when Prism ports): public Prism AttachedPrism { get { return attachedTrail.GetBlock(attachedBlockIndex); } }
-        public MonoBehaviour AttachedPrism { get { return attachedTrail.GetBlock(attachedBlockIndex); } }
+        public Prism AttachedPrism { get { return attachedTrail.GetBlock(attachedBlockIndex); } }
 
         IVesselStatus vesselData;
 
@@ -44,11 +43,10 @@ namespace CosmicShore.Gameplay
             domain = vesselData.Domain;
         }
 
-        // PORT Deviation (V14, restore when Prism ports): public void Attach(Prism prism)
-        public void Attach(MonoBehaviour prism)
+        public void Attach(Prism prism)
         {
-            // PORT Deviation (V14, restore when Prism ports): CSDebug.Log($"Attaching: trail:{prism.Trail}");
-            // PORT Deviation (V14, restore when Prism ports): attachedTrail = prism.Trail;
+            CSDebug.Log($"Attaching: trail:{prism.Trail}");
+            attachedTrail = prism.Trail;
             attachedBlockIndex = attachedTrail.GetBlockIndex(prism);
             percentTowardNextBlock = 0; // TODO: calculate initial percentTowardNextBlock
             direction = TrailFollowerDirection.Forward; // TODO: use dot product to capture initial direction
@@ -134,14 +132,13 @@ namespace CosmicShore.Gameplay
             else attachedBlockIndex++;
         }
 
-        // PORT Deviation (V14, restore when Prism ports): float GetTerrainAwareBlockSpeed(Prism prism)
-        float GetTerrainAwareBlockSpeed(MonoBehaviour prism)
+        float GetTerrainAwareBlockSpeed(Prism prism)
         {
-            // PORT Deviation (V14, restore when Prism ports): if (prism.destroyed)
-            // PORT Deviation (V14, restore when Prism ports):     return DestroyedTerrainSpeed;
+            if (prism.destroyed)
+                return DestroyedTerrainSpeed;
 
-            // PORT Deviation (V14, restore when Prism ports): if (prism.Domain == domain)
-            // PORT Deviation (V14, restore when Prism ports):     return FriendlyTerrainSpeed;
+            if (prism.Domain == domain)
+                return FriendlyTerrainSpeed;
 
             return HostileTerrainSpeed;
         }

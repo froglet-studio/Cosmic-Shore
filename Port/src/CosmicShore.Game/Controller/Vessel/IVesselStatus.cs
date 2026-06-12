@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
         Material AOEExplosionMaterial { get; set; }
 
         bool IsAttached { get; set; }
-        // PORT Deviation #10c (restore at V15): Prism AttachedPrism { get; set; }
+        Prism AttachedPrism { get; set; }
 
         Quaternion blockRotation { get; set; }
 

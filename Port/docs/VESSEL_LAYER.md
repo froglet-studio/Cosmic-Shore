@@ -179,10 +179,10 @@ a file is indivisible). Engine additions don't count against the budget.
 | **V9** ✅ | 14. Engine E9. 15. ShipHelper, ThemeManagerDataContainerSO, VesselCustomization (+restore), GenericPoolManager. | ~562 | — |
 | **V10** ✅ | 16. GameDataSO (single-file oversize) + engine `ISession` placeholder. | ~783 | — |
 | **V11** ✅ | 17. CellConfigDataSO, BlockDensityGrid, CellRuntimeDataSO. | ~710 | — |
-| **V12** | 18. Cell (single-file oversize; flora/fauna touchpoints stay event-shaped per ECOSYSTEM rules — conserved mass untouched). | ~825 | — |
+| **V12** ✅ | 18. Cell (single-file oversize; flora/fauna touchpoints stay event-shaped per ECOSYSTEM rules — conserved mass untouched). | ~825 | — |
 | **V13** ✅ | 19. PrismStateManager, PrismTeamManager, PrismScaleAnimator. | ~474 | — |
 | **V14** ✅ | 20. MaterialPropertyAnimator, Trail, PrismProperties, TrailFollower. | ~587 | — |
-| **V15** | 21. AudioSystem shell (Deviation #11), PrismAOERegistry (managed-array port). 22. Prism (+`AttachedPrism` restore). | ~925* | — |
+| **V15** ✅ | 21. AudioSystem shell (Deviation #11), PrismAOERegistry (managed-array port). 22. Prism (+`AttachedPrism` restore). | ~925* | — |
 | **V16** | 23. NudgeShardPoolManager, NudgeShard, Skimmer (+skimmer member restores). 24. DriftTrailActionExecutor. | ~347 | — |
 | **V17** | 25. VesselPrismController (+restore). 26. R_VesselActionHandler (+restore). | ~696 | — |
 | **V18** | 27. AIPilot, AICinematicBehavior (+restores). | ~684 | — |

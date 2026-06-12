@@ -3,9 +3,113 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Engine;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 
 namespace CosmicShore.Tests;
+
+// V15: a fully-assembled prism GameObject. Prism.Awake hard-requires its four sibling
+// managers plus MeshRenderer/BoxCollider, and the restored PrismTeamManager /
+// PrismStateManager paths evaluate _themeManagerData getters at the call site, so every
+// rig prism gets a theme whose per-domain material sets exist but hold null materials —
+// MaterialPropertyAnimator.UpdateMaterial rejects null materials and returns, leaving
+// state-machine behavior observable without a render stack. All four prism event
+// channels are wired (fail-loud SOAP policy: Raise() on a null channel should throw,
+// so tests wire real instances and may subscribe to observe).
+internal sealed class PrismRig
+{
+    public Prism Prism;
+    public GameObject GameObject;
+    public PrismStateManager StateManager;
+    public PrismTeamManager TeamManager;
+    public PrismScaleAnimator ScaleAnimator;
+    public MaterialPropertyAnimator MaterialAnimator;
+    public ScriptableEventPrismStats CreatedEvent;
+    public ScriptableEventPrismStats DestroyedEvent;
+    public ScriptableEventPrismStats RestoredEvent;
+    public ScriptableEventPrismStats StolenEvent;
+    public ScriptableEventPrismStats VolumeEvent;
+    public PrismEventChannelWithReturnSO ImpactChannel;
+    public ThemeManagerDataContainerSO Theme;
+}
+
+internal static class PrismTestRig
+{
+    static readonly System.Reflection.BindingFlags Priv =
+        System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic;
+
+    static void Set(object target, string field, object value)
+        => target.GetType().GetField(field, Priv)!.SetValue(target, value);
+
+    /// <summary>Theme with a material set per domain; materials stay null (UpdateMaterial no-ops).</summary>
+    public static ThemeManagerDataContainerSO CreateTheme()
+    {
+        var theme = ScriptableObject.CreateInstance<ThemeManagerDataContainerSO>();
+        theme.TeamMaterialSets = new Dictionary<Domains, SO_MaterialSet>();
+        foreach (var domain in new[] { Domains.Jade, Domains.Ruby, Domains.Blue, Domains.Gold })
+            theme.TeamMaterialSets[domain] = ScriptableObject.CreateInstance<SO_MaterialSet>();
+        return theme;
+    }
+
+    /// <summary>
+    /// Builds a complete prism GameObject (configure-before-activation pattern), wiring
+    /// the theme into every consumer and the SOAP channels into their serialized fields.
+    /// <paramref name="beforeActivate"/> runs after all components are attached but
+    /// before SetActive(true) drives the Awake chain.
+    /// </summary>
+    public static PrismRig Create(string name = "prism", Action<PrismRig> beforeActivate = null)
+    {
+        var rig = new PrismRig
+        {
+            Theme = CreateTheme(),
+            CreatedEvent = ScriptableObject.CreateInstance<ScriptableEventPrismStats>(),
+            DestroyedEvent = ScriptableObject.CreateInstance<ScriptableEventPrismStats>(),
+            RestoredEvent = ScriptableObject.CreateInstance<ScriptableEventPrismStats>(),
+            StolenEvent = ScriptableObject.CreateInstance<ScriptableEventPrismStats>(),
+            VolumeEvent = ScriptableObject.CreateInstance<ScriptableEventPrismStats>(),
+            ImpactChannel = ScriptableObject.CreateInstance<PrismEventChannelWithReturnSO>(),
+        };
+
+        var go = new GameObject(name);
+        rig.GameObject = go;
+        go.SetActive(false);
+
+        go.AddComponent<MeshRenderer>();
+        go.AddComponent<BoxCollider>();
+
+        rig.MaterialAnimator = go.AddComponent<MaterialPropertyAnimator>();
+        Set(rig.MaterialAnimator, "_themeManagerData", rig.Theme);
+
+        rig.ScaleAnimator = go.AddComponent<PrismScaleAnimator>();
+        Set(rig.ScaleAnimator, "onPrismVolumeModified", rig.VolumeEvent);
+
+        rig.TeamManager = go.AddComponent<PrismTeamManager>();
+        Set(rig.TeamManager, "_themeManagerData", rig.Theme);
+        Set(rig.TeamManager, "onPrismStolen", rig.StolenEvent);
+
+        rig.StateManager = go.AddComponent<PrismStateManager>();
+        Set(rig.StateManager, "_themeManagerData", rig.Theme);
+
+        rig.Prism = go.AddComponent<Prism>();
+        rig.Prism.prismProperties = new PrismProperties();
+        Set(rig.Prism, "_onTrailBlockCreatedEventChannel", rig.CreatedEvent);
+        Set(rig.Prism, "_onTrailBlockDestroyedEventChannel", rig.DestroyedEvent);
+        Set(rig.Prism, "_onTrailBlockRestoredEventChannel", rig.RestoredEvent);
+        Set(rig.Prism, "OnBlockImpactedEventChannel", rig.ImpactChannel); // internal field — reflection
+
+        beforeActivate?.Invoke(rig);
+        go.SetActive(true);
+        return rig;
+    }
+
+    /// <summary>Rig prism positioned at <paramref name="position"/> (Trail / density-grid tests).</summary>
+    public static Prism CreatePrismAt(Vector3 position, string name = "prism")
+    {
+        var rig = Create(name);
+        rig.GameObject.transform.position = position;
+        return rig.Prism;
+    }
+}
 
 // Shared vessel-layer test doubles: minimal IVessel / IVesselStatus implementations
 // for exercising ElementalFloat binding, VesselAnimation, and action plumbing.
@@ -16,6 +120,7 @@ namespace CosmicShore.Tests;
         public Material AOEConicExplosionMaterial { get; set; }
         public Material AOEExplosionMaterial { get; set; }
         public bool IsAttached { get; set; }
+        public Prism AttachedPrism { get; set; }
         public Quaternion blockRotation { get; set; }
         public bool IsBoosting { get; set; }
         public float BoostMultiplier { get; set; }

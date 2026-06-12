@@ -52,14 +52,14 @@ namespace CosmicShore.Gameplay
         private Material activeTransparentMaterial;
         private Material activeOpaqueMaterial;
         private bool isRegistered;
-        // PORT Deviation (V14, restore when Prism ports): private Prism cachedPrism;
+        private Prism cachedPrism;
         private bool materialsDirty;
 
         private void Awake()
         {
             // Cache components
             MeshRenderer = GetComponent<MeshRenderer>();
-            // PORT Deviation (V14, restore when Prism ports): cachedPrism = GetComponent<Prism>();
+            cachedPrism = GetComponent<Prism>();
 
             if (MeshRenderer == null)
             {
@@ -108,21 +108,21 @@ namespace CosmicShore.Gameplay
             if (!materialsDirty && activeTransparentMaterial != null && activeOpaqueMaterial != null)
                 return true;
 
-            // PORT Deviation (V14, restore when Prism ports): if (cachedPrism == null)
-            // PORT Deviation (V14, restore when Prism ports):     return false;
+            if (cachedPrism == null)
+                return false;
 
             try
             {
-                // PORT Deviation (V14, restore when Prism ports): var team = cachedPrism.Domain;
-                // PORT Deviation (V14, restore when Prism ports): activeOpaqueMaterial = _themeManagerData.GetTeamBlockMaterial(team);
-                // PORT Deviation (V14, restore when Prism ports): activeTransparentMaterial = _themeManagerData.GetTeamTransparentBlockMaterial(team);
+                var team = cachedPrism.Domain;
+                activeOpaqueMaterial = _themeManagerData.GetTeamBlockMaterial(team);
+                activeTransparentMaterial = _themeManagerData.GetTeamTransparentBlockMaterial(team);
 
                 if (activeOpaqueMaterial != null && activeTransparentMaterial != null && MeshRenderer != null)
                 {
-                    // PORT Deviation (V14, restore when Prism ports): if (cachedPrism.prismProperties != null && cachedPrism.prismProperties.IsTransparent)
-                    // PORT Deviation (V14, restore when Prism ports):     MeshRenderer.sharedMaterial = activeTransparentMaterial;
-                    // PORT Deviation (V14, restore when Prism ports): else
-                    MeshRenderer.sharedMaterial = activeOpaqueMaterial;
+                    if (cachedPrism.prismProperties != null && cachedPrism.prismProperties.IsTransparent)
+                        MeshRenderer.sharedMaterial = activeTransparentMaterial;
+                    else
+                        MeshRenderer.sharedMaterial = activeOpaqueMaterial;
                 }
 
                 materialsDirty = false;
@@ -176,12 +176,12 @@ namespace CosmicShore.Gameplay
                 activeTransparentMaterial = transparentMaterial;
                 activeOpaqueMaterial = opaqueMaterial;
 
-                // PORT Deviation (V14, restore when Prism ports): if (MeshRenderer != null && cachedPrism != null &&
-                // PORT Deviation (V14, restore when Prism ports):     cachedPrism.prismProperties != null)
-                // PORT Deviation (V14, restore when Prism ports): {
-                // PORT Deviation (V14, restore when Prism ports):     MeshRenderer.sharedMaterial = cachedPrism.prismProperties.IsTransparent ?
-                // PORT Deviation (V14, restore when Prism ports):         transparentMaterial : opaqueMaterial;
-                // PORT Deviation (V14, restore when Prism ports): }
+                if (MeshRenderer != null && cachedPrism != null &&
+                    cachedPrism.prismProperties != null)
+                {
+                    MeshRenderer.sharedMaterial = cachedPrism.prismProperties.IsTransparent ?
+                        transparentMaterial : opaqueMaterial;
+                }
 
                 onComplete?.Invoke();
             };
@@ -192,7 +192,7 @@ namespace CosmicShore.Gameplay
             if (MeshRenderer != null && ValidateMaterials())
             {
                 MeshRenderer.sharedMaterial = transparent ? activeTransparentMaterial : activeOpaqueMaterial;
-                // PORT Deviation (V14, restore when Prism ports): cachedPrism.prismProperties.IsTransparent = transparent;
+                cachedPrism.prismProperties.IsTransparent = transparent;
             }
         }
 

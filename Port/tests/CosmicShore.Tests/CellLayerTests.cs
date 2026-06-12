@@ -18,16 +18,11 @@ namespace CosmicShore.Tests;
 // original's replay-reset, not a culler.
 public class CellLayerTests
 {
-    class TestBlock : MonoBehaviour { }
-
     // ── helpers ─────────────────────────────────────────────────────────────
 
-    static TestBlock MakeBlockAt(Vector3 position)
-    {
-        var go = new GameObject("block");
-        go.transform.position = position;
-        return go.AddComponent<TestBlock>();
-    }
+    // V15: BlockDensityGrid's Add/RemoveBlock signatures are Prism again, so grid
+    // tests feed full rig prisms (the grid still only reads transform.position).
+    static Prism MakeBlockAt(Vector3 position) => PrismTestRig.CreatePrismAt(position, "block");
 
     static Crystal MakeCrystal(int id, Domains domain)
     {
@@ -253,9 +248,9 @@ public class CellLayerTests
         var position = new Vector3(150f, 150f, 150f);
         foreach (var domain in new[] { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue })
         {
-            var crystal = MakeCrystal(0, domain);
-            crystal.transform.position = position;
-            grid.AddBlock(crystal);
+            var prism = MakeBlockAt(position);
+            prism.Domain = domain;
+            grid.AddBlock(prism);
         }
 
         Assert.Equal(4, grid.GetDensityAtPosition(position));

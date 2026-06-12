@@ -82,10 +82,7 @@ namespace CosmicShore.Gameplay
         // grids/counts for the registration-time domain, not the prism's current
         // one — so steals / ChangeTeam between Add and Remove can't desync the
         // per-domain bookkeeping (the §2.3.1 phantom-count class of bug).
-        // PORT Deviation (V12, restore when Prism ports): readonly Dictionary<Prism, Domains> trackedBlocks = new();
-        // Prism : MonoBehaviour, so the base type stands in until the prism cluster lands
-        // (precedent: Trail / BlockDensityGrid V14/V11 stand-ins).
-        readonly Dictionary<MonoBehaviour, Domains> trackedBlocks = new();
+        readonly Dictionary<Prism, Domains> trackedBlocks = new();
         // PORT Deviation (V12, restore when SnowChanger ports): SnowChanger spawnedCytoplasm;
 
         // ---------------------------------------------------------------------
@@ -776,8 +773,7 @@ namespace CosmicShore.Gameplay
             return null;
         }
 
-        // PORT Deviation (V12, restore when Prism ports): public void AddBlock(Prism block)
-        public void AddBlock(MonoBehaviour block)
+        public void AddBlock(Prism block)
         {
             // `is null` (not `!block`) so destroyed-but-non-null Unity refs can still be
             // removed from trackedBlocks via the matching RemoveBlock path; otherwise
@@ -787,12 +783,7 @@ namespace CosmicShore.Gameplay
 
             // Snapshot the domain at registration time — RemoveBlock uses this snapshot
             // so a team change (steal) between Add and Remove can't desync the grids.
-            // PORT Deviation (V12, restore when Prism ports): Domains registeredDomain = block ? block.Domain : Domains.Blue;
-            // Prism.Domain reads its PrismTeamManager component (teamManager?.Domain ?? Blue),
-            // so the already-ported component is read directly until the prism cluster lands.
-            Domains registeredDomain = block && block.TryGetComponent<PrismTeamManager>(out var teamManager)
-                ? teamManager.Domain
-                : Domains.Blue;
+            Domains registeredDomain = block ? block.Domain : Domains.Blue;
             trackedBlocks[block] = registeredDomain;
 
             if (block)
@@ -809,8 +800,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // PORT Deviation (V12, restore when Prism ports): public void RemoveBlock(Prism block)
-        public void RemoveBlock(MonoBehaviour block)
+        public void RemoveBlock(Prism block)
         {
             if (block is null) return;
             if (!trackedBlocks.Remove(block, out Domains registeredDomain)) return; // not counted
@@ -834,8 +824,7 @@ namespace CosmicShore.Gameplay
         /// per-domain grids and counts move it from the old domain's buckets to the new
         /// one's. No-op for prisms this cell isn't tracking.
         /// </summary>
-        // PORT Deviation (V12, restore when Prism ports): public void NotifyBlockDomainChanged(Prism block)
-        public void NotifyBlockDomainChanged(MonoBehaviour block)
+        public void NotifyBlockDomainChanged(Prism block)
         {
             if (block is null || !trackedBlocks.ContainsKey(block)) return;
             RemoveBlock(block);

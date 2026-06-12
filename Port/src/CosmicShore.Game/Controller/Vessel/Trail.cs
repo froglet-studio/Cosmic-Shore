@@ -12,24 +12,17 @@ namespace CosmicShore.Gameplay
         public TrailRenderer TrailRenderer;
 
         bool isLoop;
-        // PORT Deviation (V14, restore when Prism ports): public List<Prism> TrailList { get; }
-        // Prism : MonoBehaviour and the trail math only reads transform.position / name /
-        // lifetime-bool, so the base type stands in until the prism cluster lands (V15).
-        public List<MonoBehaviour> TrailList { get; }
-        // PORT Deviation (V14, restore when Prism ports): Dictionary<Prism, ushort> trailBlockIndices;
-        Dictionary<MonoBehaviour, ushort> trailBlockIndices;
+        public List<Prism> TrailList { get; }
+        Dictionary<Prism, ushort> trailBlockIndices;
 
         public Trail(bool isLoop = false)
         {
             this.isLoop = isLoop;
-            // PORT Deviation (V14, restore when Prism ports): TrailList = new List<Prism>();
-            TrailList = new List<MonoBehaviour>();
-            // PORT Deviation (V14, restore when Prism ports): trailBlockIndices = new Dictionary<Prism, ushort>();
-            trailBlockIndices = new Dictionary<MonoBehaviour, ushort>();
+            TrailList = new List<Prism>();
+            trailBlockIndices = new Dictionary<Prism, ushort>();
         }
 
-        // PORT Deviation (V14, restore when Prism ports): public void Add(Prism block)
-        public void Add(MonoBehaviour block)
+        public void Add(Prism block)
         {
             if (trailBlockIndices.ContainsKey(block))
             {
@@ -62,8 +55,7 @@ namespace CosmicShore.Gameplay
         /// oldest prism back to the pool so trail geometry/colliders stay bounded.
         /// Allocation-free.
         /// </summary>
-        // PORT Deviation (V14, restore when Prism ports): public Prism RemoveOldest()
-        public MonoBehaviour RemoveOldest()
+        public Prism RemoveOldest()
         {
             if (TrailList.Count == 0) return null;
 
@@ -77,15 +69,14 @@ namespace CosmicShore.Gameplay
                 var block = TrailList[i];
                 if (!block) continue;
                 trailBlockIndices[block] = (ushort)i;
-                // PORT Deviation (V14, restore when Prism ports): if (block.prismProperties != null)
-                // PORT Deviation (V14, restore when Prism ports):     block.prismProperties.Index = (ushort)i;
+                if (block.prismProperties != null)
+                    block.prismProperties.Index = (ushort)i;
             }
 
             return oldest;
         }
 
-        // PORT Deviation (V14, restore when Prism ports): public int GetBlockIndex(Prism block)
-        public int GetBlockIndex(MonoBehaviour block)
+        public int GetBlockIndex(Prism block)
         {
             if (!block || !trailBlockIndices.TryGetValue(block, out var index)) return -1;
             return index;
@@ -95,8 +86,7 @@ namespace CosmicShore.Gameplay
         /// Look Ahead
         /// Looking ahead of the trail
         /// </summary>
-        // PORT Deviation (V14, restore when Prism ports): public List<Prism> LookAhead(int index, float lerp, TrailFollowerDirection direction, float distance)
-        public List<MonoBehaviour> LookAhead(int index, float lerp, TrailFollowerDirection direction, float distance)
+        public List<Prism> LookAhead(int index, float lerp, TrailFollowerDirection direction, float distance)
         {
             var incrementor = (int)direction;
             var distanceTravelled = 0f;
@@ -109,8 +99,7 @@ namespace CosmicShore.Gameplay
             (nextIndex, incrementor) = IndexSafetyCheck(nextIndex, incrementor, trailListCount);
             var nextBlock = TrailList[nextIndex];
 
-            // PORT Deviation (V14, restore when Prism ports): var lookAheadBlocks = new List<Prism> { currentBlock };
-            var lookAheadBlocks = new List<MonoBehaviour> { currentBlock };
+            var lookAheadBlocks = new List<Prism> { currentBlock };
             var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1 - lerp);
 
             while (distanceTravelled < distance)
@@ -210,8 +199,7 @@ namespace CosmicShore.Gameplay
             return (index, incrementor);
         }
 
-        // PORT Deviation (V14, restore when Prism ports): public Prism GetBlock(int blockIndex)
-        public MonoBehaviour GetBlock(int blockIndex)
+        public Prism GetBlock(int blockIndex)
         {
             if (blockIndex < 0) return TrailList[0];
             return TrailList[blockIndex];

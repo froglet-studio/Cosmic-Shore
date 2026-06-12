@@ -12,8 +12,8 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] private ScriptableEventPrismStats onPrismStolen;
 
-        // PORT Deviation (V13, restore when Prism ports): private Prism prism;
-        // PORT Deviation (V13, restore when MaterialPropertyAnimator ports): private MaterialPropertyAnimator materialAnimator;
+        private Prism prism;
+        private MaterialPropertyAnimator materialAnimator;
         private Domains currentDomain = Domains.Blue;
 
         public Domains Domain
@@ -35,8 +35,8 @@ namespace CosmicShore.Gameplay
 
         private void Awake()
         {
-            // PORT Deviation (V13, restore when Prism ports): prism = GetComponent<Prism>();
-            // PORT Deviation (V13, restore when MaterialPropertyAnimator ports): materialAnimator = GetComponent<MaterialPropertyAnimator>();
+            prism = GetComponent<Prism>();
+            materialAnimator = GetComponent<MaterialPropertyAnimator>();
         }
 
         public void SetInitialTeam(Domains domain)
@@ -44,10 +44,10 @@ namespace CosmicShore.Gameplay
             if (currentDomain == Domains.Blue)
             {
                 Domain = domain;
-                // PORT Deviation (V13, restore when MaterialPropertyAnimator ports): materialAnimator.UpdateMaterial(
-                // PORT Deviation (V13, restore when MaterialPropertyAnimator ports):     _themeManagerData.GetTeamTransparentBlockMaterial(domain),
-                // PORT Deviation (V13, restore when MaterialPropertyAnimator ports):     _themeManagerData.GetTeamBlockMaterial(domain)
-                // PORT Deviation (V13, restore when MaterialPropertyAnimator ports): );
+                materialAnimator.UpdateMaterial(
+                    _themeManagerData.GetTeamTransparentBlockMaterial(domain),
+                    _themeManagerData.GetTeamBlockMaterial(domain)
+                );
             }
         }
 
@@ -67,13 +67,13 @@ namespace CosmicShore.Gameplay
             // Super-shielded prisms are fully invulnerable: no team change,
             // no shield decay. Ways to break super-shields will be added
             // later as targeted opt-in mechanics.
-            // PORT Deviation (V13, restore when Prism ports): if (prism.prismProperties.IsSuperShielded) return;
+            if (prism.prismProperties.IsSuperShielded) return;
 
-            // PORT Deviation (V13, restore when Prism ports): if (!superSteal && prism.prismProperties.IsShielded)
-            // PORT Deviation (V13, restore when Prism ports): {
-            // PORT Deviation (V13, restore when Prism ports):     prism.DeactivateShields();
-            // PORT Deviation (V13, restore when Prism ports):     return;
-            // PORT Deviation (V13, restore when Prism ports): }
+            if (!superSteal && prism.prismProperties.IsShielded)
+            {
+                prism.DeactivateShields();
+                return;
+            }
 
             playerName ??= "No name";
 
@@ -83,8 +83,8 @@ namespace CosmicShore.Gameplay
                 new PrismStats
                 {
                     OwnName = playerName,
-                    // PORT Deviation (V13, restore when Prism ports): Volume = prism.Volume,
-                    // PORT Deviation (V13, restore when Prism ports): AttackerName = prism.PlayerName
+                    Volume = prism.Volume,
+                    AttackerName = prism.PlayerName
                 });
 
             /*if (CellControlManager.Instance)
@@ -97,34 +97,34 @@ namespace CosmicShore.Gameplay
 
         private void HandleTeamChange(Domains oldDomain, Domains newDomain)
         {
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port): if (prism.prismProperties.IsDangerous)
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port): {
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):     materialAnimator.UpdateMaterial(
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):         _themeManagerData.GetTeamTransparentDangerousBlockMaterial(newDomain),
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):         _themeManagerData.GetTeamDangerousBlockMaterial(newDomain)
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):     );
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port): }
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port): else if (prism.prismProperties.IsShielded)
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port): {
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):     materialAnimator.UpdateMaterial(
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):         _themeManagerData.GetTeamTransparentShieldedBlockMaterial(newDomain),
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):         _themeManagerData.GetTeamShieldedBlockMaterial(newDomain)
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):     );
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port): }
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port): else if (prism.prismProperties.IsSuperShielded)
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port): {
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):     materialAnimator.UpdateMaterial(
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):         _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(newDomain),
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):         _themeManagerData.GetTeamSuperShieldedBlockMaterial(newDomain)
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):     );
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port): }
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port): else
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port): {
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):     materialAnimator.UpdateMaterial(
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):         _themeManagerData.GetTeamTransparentBlockMaterial(newDomain),
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):         _themeManagerData.GetTeamBlockMaterial(newDomain)
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port):     );
-            // PORT Deviation (V13, restore when Prism + MaterialPropertyAnimator port): }
+            if (prism.prismProperties.IsDangerous)
+            {
+                materialAnimator.UpdateMaterial(
+                    _themeManagerData.GetTeamTransparentDangerousBlockMaterial(newDomain),
+                    _themeManagerData.GetTeamDangerousBlockMaterial(newDomain)
+                );
+            }
+            else if (prism.prismProperties.IsShielded)
+            {
+                materialAnimator.UpdateMaterial(
+                    _themeManagerData.GetTeamTransparentShieldedBlockMaterial(newDomain),
+                    _themeManagerData.GetTeamShieldedBlockMaterial(newDomain)
+                );
+            }
+            else if (prism.prismProperties.IsSuperShielded)
+            {
+                materialAnimator.UpdateMaterial(
+                    _themeManagerData.GetTeamTransparentSuperShieldedBlockMaterial(newDomain),
+                    _themeManagerData.GetTeamSuperShieldedBlockMaterial(newDomain)
+                );
+            }
+            else
+            {
+                materialAnimator.UpdateMaterial(
+                    _themeManagerData.GetTeamTransparentBlockMaterial(newDomain),
+                    _themeManagerData.GetTeamBlockMaterial(newDomain)
+                );
+            }
         }
     }
 }

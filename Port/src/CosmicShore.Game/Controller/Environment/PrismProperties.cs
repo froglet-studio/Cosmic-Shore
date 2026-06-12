@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay
         public Vector3 position;
         public float volume;
         public float speedDebuffAmount; // don't use more than two sig figs, see vessel.DebuffSpeed
-        // PORT Deviation (V14, restore when Prism ports): [FormerlySerializedAs("trailBlock")] public Prism prism;
+        [FormerlySerializedAs("trailBlock")] public Prism prism;
         public ushort Index;
         public Trail Trail;
         public bool IsShielded;

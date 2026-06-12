@@ -419,13 +419,9 @@ namespace CosmicShore.Gameplay
             return cachedResult;
         }
 
-        // PORT Deviation (V11, restore when Prism ports): public virtual void AddBlock(Prism block) {}
-        // Prism : MonoBehaviour and only block.transform.position is read, so the base type
-        // stands in to keep the add/remove surface live until the prism cluster lands (V15).
-        public virtual void AddBlock(MonoBehaviour block) {}
+        public virtual void AddBlock(Prism block) {}
 
-        // PORT Deviation (V11, restore when Prism ports): public virtual void RemoveBlock(Prism block) {}
-        public virtual void RemoveBlock(MonoBehaviour block) {}
+        public virtual void RemoveBlock(Prism block) {}
     }
 
     public class BlockCountDensityGrid : BlockDensityGrid
@@ -435,8 +431,7 @@ namespace CosmicShore.Gameplay
             Init(domain, cellCenter, worldDiameter);
         }
 
-        // PORT Deviation (V11, restore when Prism ports): public override void AddBlock(Prism block)
-        public override void AddBlock(MonoBehaviour block)
+        public override void AddBlock(Prism block)
         {
             if (!jobSystemInitialized) return;
             Vector3Int idx = MapCoordinatesToGridIndices(block.transform.position);
@@ -453,8 +448,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // PORT Deviation (V11, restore when Prism ports): public override void RemoveBlock(Prism block)
-        public override void RemoveBlock(MonoBehaviour block)
+        public override void RemoveBlock(Prism block)
         {
             if (!jobSystemInitialized) return;
             Vector3Int idx = MapCoordinatesToGridIndices(block.transform.position);
