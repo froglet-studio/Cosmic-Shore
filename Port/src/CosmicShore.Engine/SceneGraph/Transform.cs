@@ -130,6 +130,13 @@ namespace CosmicShore.Engine
         public void Rotate(float xAngle, float yAngle, float zAngle, Space relativeTo = Space.Self)
             => Rotate(new Vector3(xAngle, yAngle, zAngle), relativeTo);
 
+        public void Rotate(Vector3 axis, float angle, Space relativeTo = Space.Self)
+        {
+            var delta = Quaternion.AngleAxis(angle, axis);
+            if (relativeTo == Space.Self) localRotation *= delta;
+            else rotation = delta * rotation;
+        }
+
         public void LookAt(Transform target) => LookAt(target.position);
 
         public void LookAt(Vector3 worldPosition)

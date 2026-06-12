@@ -649,6 +649,16 @@ Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — inf
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
 
+Track infrastructure (landed alongside iteration 20): `SegmentSpawner` ported
+(the HexRace deterministic-track spawner — seeded segment placement, prism trails
+per segment, intensity-scaled spacing). One deviation: the diagnostic
+super-shield block restores when `PrismStellatedOctahedronShield` ports with the
+engine Mesh/MeshFilter arc (468L shield + 270L StellatedOctahedronMeshGenerator —
+flagged as the shield arc). Engine gains the `Transform.Rotate(axis, angle)`
+overload. This unblocks the real `HexRaceController` chain
+(MiniGameControllerBase → Multiplayer → DomainGames → HexRace, 1,112L) — the
+next dedicated agent arc for replacing SkimRaceDirector with the real controller.
+
 Quest/action systems (landed alongside iteration 19, part 2): `QuestSystem` +
 `UserActionSystem` + `CallToActionSystem` ported verbatim — the full
 quest/user-action/CTA orchestration chain is in (SingletonPersistent-based,
