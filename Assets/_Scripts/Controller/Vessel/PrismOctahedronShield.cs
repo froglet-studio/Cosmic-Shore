@@ -100,6 +100,11 @@ namespace CosmicShore.Gameplay
         private MeshRenderer _shatterRenderer;
         private Mesh _shatterMesh;
 
+        // Owning prism — the shield's morphing per-prism mesh can't be instanced,
+        // so engage/disengage hand rendering between the companion entity and
+        // this GameObject's MeshRenderer (Prism.SetExoticVisualActive).
+        private Prism _prism;
+
         // Precomputed fast-path containment inverses.
         private float _invA, _invB, _invC;
 
@@ -115,6 +120,7 @@ namespace CosmicShore.Gameplay
             if (meshFilter == null)  meshFilter  = GetComponent<MeshFilter>();
             if (rb == null)          rb          = GetComponent<Rigidbody>();
             _meshRenderer = GetComponent<MeshRenderer>();
+            _prism = GetComponent<Prism>();
 
             CacheGeometry();
 
@@ -146,6 +152,7 @@ namespace CosmicShore.Gameplay
                 if (_octahedronMesh != null)
                     ApplyUnshieldedPose();
                 StopShatter();
+                if (_prism != null) _prism.SetExoticVisualActive(false);
             }
         }
 
@@ -221,6 +228,10 @@ namespace CosmicShore.Gameplay
 
             _isShielded = true;
 
+            // The morph mesh is per-prism-unique geometry — render through the
+            // GameObject while the shield is up (no-op on the legacy path).
+            if (_prism != null) _prism.SetExoticVisualActive(true);
+
             if (instant || engageDuration <= 0f)
             {
                 _engageT = 1f;
@@ -250,6 +261,10 @@ namespace CosmicShore.Gameplay
 
             // Immediately restore box mesh + colliders so gameplay is unaffected.
             ApplyUnshieldedPose();
+
+            // Box mesh is back — return rendering to the instanced path. The
+            // shatter overlay plays on its own child renderer, independent of this.
+            if (_prism != null) _prism.SetExoticVisualActive(false);
 
             if (instant || shatterDuration <= 0f)
             {

@@ -192,7 +192,81 @@ targets (10k+ prisms) or spawn-churn costs demand it — not for the 60 fps goal
 
 ---
 
-## 5. Decision summary
+## 5. Implementation log (this branch)
+
+Direction per product owner: PC-first, full conversion on this branch, targeting
+10x–1000x prism counts. If it works it merges; if not, nothing ships from here.
+
+### Checkpoint A — instanced rendering cutover (DONE, needs in-editor verification)
+
+What landed:
+
+| Piece | File |
+|---|---|
+| Per-instance shader overrides (`_BrightColor` f4 / `_DarkColor` f4 / `_Spread` f3, matched to UnstablePrismGraph declarations) | `Controller/ECS/Rendering/PrismRenderProperties.cs` |
+| Bridge service: companion entity per prism, mesh/material registration, visibility, transform/color/material sync, epoch-validated handles, master toggle | `Controller/ECS/Rendering/PrismRenderService.cs` |
+| Config toggle asset (optional, Resources/PrismRenderConfig; defaults ON) | `ScriptableObjects/PrismRenderConfigSO.cs` |
+| Max-prism stress harness: N pure render entities, churn knobs, fps overlay | `Controller/ECS/Rendering/PrismRenderStressTest.cs` |
+| Visibility router (`SetRenderVisible`/`ApplyRenderPath`), entity lifecycle, mover sync | `Controller/Vessel/Prism.cs` |
+| Growth animation → entity matrix sync | `Controller/Managers/PrismScaleManager.cs` (+ `OwnerPrism` on `PrismScaleAnimator`) |
+| Animated colors → entity override sink + tracked current colors (replaces MPB read-back) | `Controller/Managers/MaterialStateManager.cs`, `Controller/Environment/Prisms/MaterialPropertyAnimator.cs` |
+| Octahedron shield ↔ instanced path handoff (morph mesh = GameObject renderer while engaged) | `Controller/Vessel/PrismOctahedronShield.cs` |
+| `Entity` name-clash fix: boid struct renamed `BoidEntity` | `Controller/Environment/FloraAndFauna/BoidSimulationController.cs` |
+
+Design rules encoded:
+- **One visibility truth.** All former `meshRenderer.enabled` writes route through
+  `Prism.SetRenderVisible`; entity and MeshRenderer can never both draw.
+- **GameObject fallback is always whole.** Toggle off (config asset or
+  `PrismRenderService.SetRuntimeOverride(false)`) or any missing ECS prerequisite
+  → identical legacy behavior, per prism.
+- **Exotic geometry falls back per prism.** Octahedron morph/shatter renders via
+  the GameObject; everything else batches.
+- **Movers stay honest** via the existing `NotifyPositionChanged` contract (fauna
+  bodies, gyroid steering) — same hook the spatial index already requires.
+
+In-editor verification protocol (Checkpoint A):
+1. Open any gameplay scene (MinigameHexRace), enter play, fly and lay trail.
+   Expected: prisms render identically (bloom-in growth, domain colors, theme
+   transitions, shield engage/shatter, danger tint, destruction hiding the block).
+2. Frame Debugger / Stats: SetPass + draw calls must NOT grow with trail length —
+   prism draws collapse to one instanced batch per (mesh × material). Compare by
+   flipping `PrismRenderService.SetRuntimeOverride(false)` (legacy) vs `(true)`.
+3. Entities Hierarchy (Window > Entities): live entity count ≈ live prism count.
+4. Watch for `[MaterialProperty]` size-mismatch errors on first prism spawn — if
+   `_Spread` errors, the SG declaration changed from Vector3 and
+   `PrismSpreadOverride` must match.
+5. Octahedron: super-shield a prism (collide crystal) — bloom morph plays on the
+   GameObject, returns to batched rendering after shatter.
+6. Stress harness: empty scene + camera + `PrismRenderStressTest` (assign prism
+   mesh/material from a prism prefab) — 100k static entities should hold 60+ fps
+   on a mid PC; raise until it breaks to find the ceiling.
+7. Known API to double-check on first compile: `RenderMeshUtility.AddComponents(
+   entity, em, in RenderMeshDescription, MaterialMeshInfo)` — if EG 1.4.15 only
+   ships the `RenderMeshArray` overload, swap to it with a single-element array
+   (one-line change in `PrismRenderService.Create` / stress test).
+
+Caveats (accepted for this checkpoint):
+- Transparent prisms: BRG sorts transparency at coarser granularity than
+  per-renderer — possible minor sort-order differences in dense overlap.
+- Entities Graphics requires Vulkan/Metal/DX — PC targets fine; the Android GLES3
+  decision from §3 still stands for mobile.
+
+### Checkpoint B — explosion/implosion VFX on entities (next)
+
+`PrismEffectsManager` already computes everything in Burst; replace its
+per-renderer `GetPropertyBlock`/`SetPropertyBlock` + transform writes with entity
+override components (`_ExplosionAmount`/`_Opacity`/`_Velocity`, `_State`/`_Location`)
+on pooled effect entities.
+
+### Checkpoint C — lifecycle ISystems; Checkpoint D — GameObject-as-proximity-LOD
+
+Per §4 Phases 2–3: port animation managers to `IJobEntity` systems, then make the
+GameObject a proximity-LOD of the entity (promote/demote on the collider-LOD
+bubble) so bulk mass needs no GameObject at all.
+
+---
+
+## 6. Decision summary
 
 | Question | Call |
 |---|---|

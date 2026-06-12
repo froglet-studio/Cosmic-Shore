@@ -90,6 +90,9 @@ namespace CosmicShore.Gameplay
                 else
                 {
                     block.transform.localScale = data.currentScale;
+                    // Keep the companion render entity's matrix in lockstep with
+                    // the growth animation (no-op on the legacy path).
+                    block.OwnerPrism?.SyncRenderTransform();
                 }
             }
 
@@ -101,6 +104,7 @@ namespace CosmicShore.Gameplay
 
                 // Hit target exactly
                 block.transform.localScale = targetScale;
+                block.OwnerPrism?.SyncRenderTransform();
 
                 // Stop scaling (may call back into manager depending on your base class)
                 block.IsScaling = false;
