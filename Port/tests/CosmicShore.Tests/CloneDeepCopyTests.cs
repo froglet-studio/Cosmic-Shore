@@ -26,6 +26,9 @@ namespace CosmicShore.Tests;
 //     plain graphs to null — doubling as the cycle guard;
 //   • delegate/event fields inside deep-cloned plain objects reset to null
 //     (runtime wiring is never serialized);
+//   • Dictionary<K,V> → fresh container per clone, keys/values rerun through the
+//     same rules (rung 3: a shared runtime dictionary leaked one clone's state
+//     into every sibling — ResourceSystem.ElementalLevels cross-pilot bleed);
 //   • non-[Serializable] plain classes keep the port's reference-copy behavior.
 // ─────────────────────────────────────────────────────────────────────────────
 public class CloneDeepCopyTests
@@ -166,6 +169,8 @@ public class CloneDeepCopyTests
     class DeepRig : MonoBehaviour
     {
         public PrismProperties prismProperties;
+        public Dictionary<string, float> runtimeLevels = new();   // rung-3 rule: fresh per clone
+        public Dictionary<string, RigPart> partsByName = new();   // dictionary values remap in-tree refs
         public PrismProperties sharedA;        // sharedA and sharedB alias ONE template instance
         public PrismProperties sharedB;
         public List<PrismProperties> propsList;
@@ -232,6 +237,12 @@ public class CloneDeepCopyTests
         f.Rig.cycle = new ChainNode { id = 100 };
         f.Rig.cycle.next = f.Rig.cycle;
         f.Rig.runtimeOnly = new RuntimeOnly { marker = 5 };
+        f.Rig.runtimeLevels = new Dictionary<string, float> { ["charge"] = 0.3f, ["mass"] = 0.1f };
+        f.Rig.partsByName = new Dictionary<string, RigPart>
+        {
+            ["inTree"] = f.InTreePart,
+            ["external"] = f.ExternalPart,
+        };
         f.Rig.floatList = new List<float> { 1f, 2f, 3f };
         f.Rig.intArray = new[] { 10, 20 };
         f.Rig.inTreePart = f.InTreePart;
@@ -418,6 +429,35 @@ public class CloneDeepCopyTests
 
         // Template cycle untouched.
         Assert.Same(f.Rig.cycle, f.Rig.cycle.next);
+    }
+
+    [Fact]
+    public void Clone_DictionaryFields_GetFreshContainers_WithRemappedValues()
+    {
+        using var loop = new GameLoop();
+        var f = BuildDeepRig();
+        var clone = Object.Instantiate(f.Root);
+        var cloneRig = clone.GetComponent<DeepRig>();
+
+        // Fresh container — a clone writing its runtime state never touches the
+        // template or a sibling (the rung-3 ElementalLevels cross-pilot bleed).
+        Assert.NotSame(f.Rig.runtimeLevels, cloneRig.runtimeLevels);
+        Assert.Equal(0.3f, cloneRig.runtimeLevels["charge"], 5);
+        Assert.Equal(0.1f, cloneRig.runtimeLevels["mass"], 5);
+        cloneRig.runtimeLevels["charge"] = 1.5f;
+        Assert.Equal(0.3f, f.Rig.runtimeLevels["charge"], 5);
+
+        var sibling = Object.Instantiate(f.Root).GetComponent<DeepRig>();
+        Assert.NotSame(cloneRig.runtimeLevels, sibling.runtimeLevels);
+        Assert.Equal(0.3f, sibling.runtimeLevels["charge"], 5);
+
+        // In-tree engine refs in dictionary VALUES remap to the clone's counterparts;
+        // external refs stay shared by design.
+        Assert.NotSame(f.Rig.partsByName, cloneRig.partsByName);
+        Assert.Same(clone.GetComponentInChildren<RigPart>(includeInactive: true),
+            cloneRig.partsByName["inTree"]);
+        Assert.NotSame(f.InTreePart, cloneRig.partsByName["inTree"]);
+        Assert.Same(f.ExternalPart, cloneRig.partsByName["external"]);
     }
 
     [Fact]

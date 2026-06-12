@@ -96,6 +96,27 @@ namespace CosmicShore.Cli
     }
 
     /// <summary>
+    /// The round's CrystalManager-family manager (rung 3): every Crystal routes its
+    /// lifecycle through the real Crystal → CrystalManager chain, so the harness wires
+    /// one in (Crystal.NotifyManagerToExplodeCrystal reaches it from inside
+    /// OmniCrystalImpactor.ExecuteEffect for every non-Manta claim). The waypoint course
+    /// never relocates a crystal in place — the harness stages the NEXT waypoint after a
+    /// claim — so crystals carry allowRespawnOnImpact = false (Respawn → DestroyCrystal)
+    /// and RespawnCrystal is unreachable.
+    /// </summary>
+    sealed class HexRaceCrystalManager : CrystalManager
+    {
+        public override void RespawnCrystal(int crystalId) { }
+
+        public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams)
+        {
+            if (!cellData.TryGetCrystalById(crystalId, out var crystal)) return;
+            if (crystal != null)
+                crystal.Explode(explodeParams);
+        }
+    }
+
+    /// <summary>
     /// Milestone port-m2 orchestration harness: the first full headless game-mode round.
     /// An AI field races to a crystal target through the verbatim ported systems —
     /// PlayerSpawner/VesselSpawner (C6) spawn the AI player+vessel pairs, AIPilot does the
@@ -193,6 +214,13 @@ namespace CosmicShore.Cli
                 courseData.OnCrystalSpawned = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
                 courseData.OnCellItemsUpdated = sharedCellItemsEvent;
                 courseData.OnPhaseChanged = ScriptableObject.CreateInstance<ScriptableEventCellPhase>();
+
+                // Crystal lifecycle manager — the real Crystal → CrystalManager chain (rung 3).
+                var crystalManagerGo = new GameObject("hexrace-crystal-manager");
+                crystalManagerGo.SetActive(false); // configure-before-activation
+                var crystalManager = crystalManagerGo.AddComponent<HexRaceCrystalManager>();
+                SetPrivateField(crystalManager, "cellData", courseData);
+                crystalManagerGo.SetActive(true);
 
                 var cellConfig = ScriptableObject.CreateInstance<CellConfigDataSO>();
                 cellConfig.CellName = "HexRaceCourse";
@@ -336,7 +364,7 @@ namespace CosmicShore.Cli
                     if (!rule.IsObjectiveReached(gameData, out _) && courseIndex + 1 < coursePositions.Length)
                     {
                         courseIndex++;
-                        activeCrystal = SpawnCrystal(courseData, coursePositions, courseIndex,
+                        activeCrystal = SpawnCrystal(courseData, crystalManager, coursePositions, courseIndex,
                             courseElements[courseIndex], crystalTriggerRadius, onCrystalCollected);
                     }
                     else
@@ -346,7 +374,7 @@ namespace CosmicShore.Cli
                 }
 
                 onCrystalCollected.OnRaised += HandleCrystalCollected;
-                activeCrystal = SpawnCrystal(courseData, coursePositions, courseIndex,
+                activeCrystal = SpawnCrystal(courseData, crystalManager, coursePositions, courseIndex,
                     courseElements[courseIndex], crystalTriggerRadius, onCrystalCollected);
 
                 while (frames < options.MaxFrames)
@@ -474,7 +502,8 @@ namespace CosmicShore.Cli
         /// on collection (Respawn → DestroyCrystal → TryRemoveItem), so the harness only
         /// observes the OnCrystalCollected SOAP event.
         /// </summary>
-        static Crystal SpawnCrystal(CellRuntimeDataSO courseData, Vector3[] course, int index,
+        static Crystal SpawnCrystal(CellRuntimeDataSO courseData, CrystalManager crystalManager,
+            Vector3[] course, int index,
             Element element, float triggerRadius, ScriptableEventCrystalStats onCrystalCollected)
         {
             var go = new GameObject($"crystal-{index + 1}");
@@ -495,6 +524,7 @@ namespace CosmicShore.Cli
                 crystalValue = 1f,
             };
             SetPrivateField(crystal, "cellData", courseData); // DestroyCrystal → TryRemoveItem
+            crystal.InjectDependencies(crystalManager);        // NotifyManagerToExplodeCrystal → manager
 
             var impactor = go.AddComponent<OmniCrystalImpactor>(); // Awake binds impactor.Crystal
             SetPrivateField(impactor, "OnCrystalCollected", onCrystalCollected);

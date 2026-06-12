@@ -178,13 +178,21 @@ namespace CosmicShore.Client
     /// The race brain. Flight is OWNED by the real ported systems — VesselTransformer flies
     /// every vessel from its real InputStatus (human: the ported GamepadInputStrategy fed by
     /// the window; rivals: the real AIPilot seeking crystals registered in CellRuntimeDataSO).
-    /// Crystal claims flow through the REAL contact pipeline (trigger SphereCollider →
-    /// OmniCrystalImpactor → OnCrystalCollected SOAP event); trails are REAL Prisms spawned
-    /// by each rig's VesselPrismController (factory: SkimRacePrismFactory), and trail-skim
-    /// energy flows through the REAL skimmer pipeline (trigger SphereCollider on the
-    /// near-field Skimmer → SkimmerImpactor → SkimRaceTrailSkimEnergyEffectSO). This
-    /// director only applies the StatsManager-shaped bookkeeping and the SkimRace rules:
-    ///   countdown/win/replay · crystal respawn · energy→top-speed
+    /// Crystal claims flow through the REAL CrystalImpactor family (rung 3): Omni stations
+    /// through OmniCrystalImpactor (vessel contact, any domain), Team stations through
+    /// TeamCrystalImpactor (vessel contact, domain-locked), elemental stations through
+    /// ElementalCrystalImpactor (skimmer claim — the crystal flies to the claimer and is
+    /// consumed). Element levels and claim energy are granted by the effect SOs wired into
+    /// those impactors (the real SkimmerAdjustElementLevelByCrystalEffectSO /
+    /// VesselIncrementLevelByCrystalEffectSO + the SkimRace* race-rule effects) — never by
+    /// this director. Crystal lifetime (spawn / dark window / relight / consumed-respawn)
+    /// is owned by SkimRaceCrystalManager via the real Crystal.Respawn() → CrystalManager
+    /// chain. Trails are REAL Prisms spawned by each rig's VesselPrismController (factory:
+    /// SkimRacePrismFactory), and trail-skim energy flows through the REAL skimmer pipeline
+    /// (trigger SphereCollider on the near-field Skimmer → SkimmerImpactor →
+    /// SkimRaceTrailSkimEnergyEffectSO). This director only applies the StatsManager-shaped
+    /// bookkeeping and the SkimRace rules:
+    ///   countdown/win/replay · energy→top-speed
     ///   (the real VesselTransformer.ThrottleScalerMultiplier ElementalFloat hook) ·
     ///   boost gating/drain (BoostActionSO shape: VesselStatus.IsBoosting × BoostMultiplier) ·
     ///   two-tier analog drift (DriftActionSO shape: VesselTransformer.BeginDrift/EndDrift).
@@ -217,6 +225,8 @@ namespace CosmicShore.Client
         public SkimTrack Track { get; private set; }
         public GameDataSO GameData { get; private set; }
         public CellRuntimeDataSO CourseData { get; private set; }
+        /// <summary>The race's CrystalManager-family manager — owns all station crystal lifetime.</summary>
+        public SkimRaceCrystalManager Crystals { get; private set; }
         public readonly List<SkimRacePilot> Pilots = new();
         public SkimRacePilot HumanPilot => Pilots[0];
 
@@ -232,25 +242,32 @@ namespace CosmicShore.Client
         /// <summary>(station, position, byHuman) — raised from inside the real impact pipeline.</summary>
         public event Action<int, Vector3, bool> OnCrystalClaimed;
 
-        Crystal[] _stationCrystals;
-        float[] _respawnAt;
-        int _generation;          // invalidates in-flight claim handlers across restarts
         bool _humanAutopilot;     // victory lap / screenshot mode hand the human to the real AIPilot
         SkimRacePrismFactory _prismFactory; // answers every rig's prism spawn channel
         readonly List<Crystal> _scratchCrystals = new(); // SyncPilotCourses sort buffer
 
         internal void InitializeRace(SkimTrack track, GameDataSO gameData, CellRuntimeDataSO courseData,
-            SkimRacePrismFactory prismFactory, List<SkimRacePilot> pilots, int winTarget,
+            SkimRacePrismFactory prismFactory, SkimRaceCrystalManager crystalManager,
+            List<SkimRacePilot> pilots, int winTarget,
             ScriptableEventInputEvents onButtonPressed, ScriptableEventInputEvents onButtonReleased)
         {
             Track = track;
             GameData = gameData;
             CourseData = courseData;
             _prismFactory = prismFactory;
+            Crystals = crystalManager;
             Pilots.AddRange(pilots);
             WinTarget = winTarget;
-            _stationCrystals = new Crystal[track.Crystals.Count];
-            _respawnAt = new float[track.Crystals.Count];
+
+            // Claims arrive from INSIDE the real impactor dispatch (per-crystal SOAP
+            // channels for vessel claims; the elemental claim effect for skimmer claims),
+            // re-raised by the manager with the station identity attached.
+            Crystals.OnStationClaimed += HandleStationClaimed;
+
+            // Course registry changes (spawn, dark window, relight, consumed) all raise
+            // the primary registry's OnCellItemsUpdated — keep every pilot's personal
+            // course sorted off that one channel instead of director-staged ticks.
+            CourseData.OnCellItemsUpdated.OnRaised += SyncPilotCourses;
 
             // The human's ported GamepadInputStrategy raises these SOAP channels (shared
             // across the rig clones exactly like the real prefab assets; AI never raises).
@@ -275,11 +292,10 @@ namespace CosmicShore.Client
                     ElapsedTime += Time.deltaTime;
                     for (int i = 0; i < Pilots.Count; i++)
                         TickPilot(Pilots[i]);
-                    TickRespawns();
                     return;
 
                 case RaceState.Finished:
-                    TickRespawns(); // crystals keep cycling under the victory lap
+                    // crystals keep cycling under the victory lap — the manager owns that
                     return;
             }
         }
@@ -339,27 +355,21 @@ namespace CosmicShore.Client
             pilot._lastLoopAngle = loopAngle;
         }
 
-        // ── crystals (real contact pipeline) ─────────────────────────
+        // ── crystals (real contact pipeline; lifetime owned by the manager) ──
 
-        public bool IsStationActive(int station) => _stationCrystals[station];
+        public bool IsStationActive(int station) => Crystals.IsStationAvailable(station);
 
-        void TickRespawns()
-        {
-            bool spawned = false;
-            for (int i = 0; i < _stationCrystals.Length; i++)
-            {
-                if (_stationCrystals[i]) continue;
-                if (Time.time < _respawnAt[i]) continue;
-                SpawnStationCrystal(i);
-                spawned = true;
-            }
-            if (spawned) SyncPilotCourses();
-        }
+        /// <summary>Renderer hook: live station crystals + elemental crystals mid-flight to their claimer.</summary>
+        public bool TryGetDrawableCrystal(int station, out Vector3 position)
+            => Crystals.TryGetDrawableCrystalPosition(station, out position);
 
         /// <summary>
-        /// Refreshes every pilot's personal course registry with the live crystals and
-        /// raises its OnCellItemsUpdated so that pilot's AIPilot retargets. Ordering is
-        /// the race-design lever: the verbatim AIPilot selection walks the list and (for
+        /// Refreshes every pilot's personal course registry with the live crystals that
+        /// pilot may actually claim and raises its OnCellItemsUpdated so that pilot's
+        /// AIPilot retargets. Claimability is the real Crystal.CanBeCollected semantic —
+        /// uncommitted (Blue) crystals for everyone, team crystals only for the matching
+        /// domain — so no pilot ever orbits a station it cannot take. Ordering is the
+        /// race-design lever: the verbatim AIPilot selection walks the list and (for
         /// any distance &gt; 1u) its `sqDistance &lt; MinDistance²` comparison accepts each
         /// subsequent entry, so the LAST list item is the chosen target. The director
         /// sorts each registry by forward loop distance DESCENDING — the last item is the
@@ -377,9 +387,13 @@ namespace CosmicShore.Client
                 float pilotAngle = SkimTrack.AngleOf(pilot.Transform.position);
 
                 _scratchCrystals.Clear();
-                for (int s = 0; s < _stationCrystals.Length; s++)
-                    if (_stationCrystals[s])
-                        _scratchCrystals.Add(_stationCrystals[s]);
+                for (int s = 0; s < Track.Crystals.Count; s++)
+                {
+                    if (!Crystals.IsStationAvailable(s)) continue;
+                    var crystal = Crystals.GetStationCrystal(s);
+                    if (!crystal || !crystal.CanBeCollected(pilot.Domain)) continue;
+                    _scratchCrystals.Add(crystal);
+                }
                 _scratchCrystals.Sort((a, b) =>
                     SkimTrack.ForwardDelta(pilotAngle, SkimTrack.AngleOf(b.transform.position))
                         .CompareTo(SkimTrack.ForwardDelta(pilotAngle, SkimTrack.AngleOf(a.transform.position))));
@@ -396,99 +410,32 @@ namespace CosmicShore.Client
         }
 
         /// <summary>
-        /// Station crystal with the real contact rig (the HexRaceRound pattern): trigger
-        /// SphereCollider (claim surface = CollectRadius − vessel bubble) + OmniCrystalImpactor
-        /// (any-domain collection) + ImpactCollider routing the engine trigger pass into the
-        /// impactor dispatch. The crystal removes itself on collection (Respawn → DestroyCrystal
-        /// → CellRuntimeDataSO.TryRemoveItem → AIPilots retarget); the director only observes
-        /// the OnCrystalCollected SOAP event.
+        /// Fires from INSIDE the real impactor dispatch — the manager re-raises the
+        /// per-crystal claim signals (OnCrystalCollected SOAP channel for vessel claims,
+        /// the elemental claim effect for skimmer claims) with the station attached.
+        /// Applies ONLY the StatsManager-shaped bookkeeping and checks the win target:
+        /// elemental levels and claim energy were already granted by the effect SOs
+        /// inside the impactor chain, and the respawn window is staged by the manager
+        /// through the real Crystal.Respawn() path.
         /// </summary>
-        void SpawnStationCrystal(int station)
+        void HandleStationClaimed(int station, Element element, string playerName)
         {
-            var go = new GameObject($"crystal-{station}");
-            go.transform.position = Track.Crystals[station];
-
-            var trigger = go.AddComponent<SphereCollider>();
-            trigger.isTrigger = true;
-            trigger.radius = CollectRadius - VesselContactRadius;
-
-            var crystal = go.AddComponent<Crystal>();
-            crystal.Initialize(station);
-            crystal.ownDomain = Domains.Blue;   // uncommitted — every domain's pilot may seek it
-            crystal.ItemType = ItemType.Buff;
-            crystal.crystalProperties = new CrystalProperties
-            {
-                crystal = crystal,
-                Element = Track.StationElements[station],
-                crystalValue = 1f,
-            };
-            SkimRaceFactory.SetPrivateField(crystal, "cellData", CourseData);
-
-            var impactor = go.AddComponent<OmniCrystalImpactor>(); // Awake binds impactor.Crystal
-            var claimEvent = ScriptableObject.CreateInstance<ScriptableEventCrystalStats>();
-            int generation = _generation;
-            claimEvent.OnRaised += stats => HandleClaim(generation, station, stats);
-            SkimRaceFactory.SetPrivateField(impactor, "OnCrystalCollected", claimEvent);
-
-            var impactCollider = go.AddComponent<ImpactCollider>();
-            SkimRaceFactory.SetPrivateField(impactCollider, "impactorObject", impactor);
-
-            CourseData.AddCrystalToList(crystal); // raises OnCellItemsUpdated → AIPilots retarget
-            _stationCrystals[station] = crystal;
-        }
-
-        /// <summary>
-        /// Fires from INSIDE the trigger pass, at the end of the genuine OnTriggerEnter →
-        /// ImpactorBase dispatch → OmniCrystalImpactor.AcceptImpactee chain. Applies the
-        /// StatsManager-shaped bookkeeping (RoundStats + elemental progression + the
-        /// SkimRace energy bonus), stages the respawn, and checks the win target.
-        /// </summary>
-        void HandleClaim(int generation, int station, CrystalStats stats)
-        {
-            if (generation != _generation) return; // stale crystal from a restarted race
-
-            // The crystal removes itself right after this handler — stage the respawn
-            // now and retarget the field off the vanished station.
-            _stationCrystals[station] = null;
-            _respawnAt[station] = Time.time + CrystalRespawnSeconds;
-            SyncPilotCourses();
-
             if (State != RaceState.Racing) return; // victory-lap claims keep the loop alive, not the score
 
-            var pilot = FindPilot(stats.PlayerName);
+            var pilot = FindPilot(playerName);
             if (pilot == null) return;
 
             TotalClaims++;
-            ApplyCrystalPickup(pilot, stats.Element);
-            OnCrystalClaimed?.Invoke(station, Track.Crystals[station], !pilot.IsAI);
-
-            if (pilot.Stats.CrystalsCollected >= WinTarget)
-                FinishRace(pilot);
-        }
-
-        /// <summary>RoundStats + ResourceSystem elemental progression (HexRaceRound shape)
-        /// plus the SkimRace energy kicker: Charge/Omni claims charge harder.</summary>
-        void ApplyCrystalPickup(SkimRacePilot pilot, Element element)
-        {
             var stats = pilot.Stats;
             stats.CrystalsCollected++;
-
-            var resources = pilot.Resources;
             if (element == Element.Omni)
-            {
                 stats.OmniCrystalsCollected++;
-                resources.IncrementLevel(Element.Charge);
-                resources.IncrementLevel(Element.Mass);
-                resources.IncrementLevel(Element.Space);
-                resources.IncrementLevel(Element.Time);
-                resources.ChangeResourceAmount(0, 0.3f);
-            }
             else
-            {
                 stats.ElementalCrystalsCollected++;
-                resources.IncrementLevel(element);
-                resources.ChangeResourceAmount(0, element == Element.Charge ? 0.3f : 0.15f);
-            }
+            OnCrystalClaimed?.Invoke(station, Track.Crystals[station], !pilot.IsAI);
+
+            if (stats.CrystalsCollected >= WinTarget)
+                FinishRace(pilot);
         }
 
         SkimRacePilot FindPilot(string playerName)
@@ -618,7 +565,6 @@ namespace CosmicShore.Client
 
         public void RestartRace()
         {
-            _generation++;
             TotalClaims = 0;
             WinnerPilot = -1;
             ElapsedTime = 0f;
@@ -637,11 +583,6 @@ namespace CosmicShore.Client
             // VesselStatus.ResetForPlay → VesselPrismController.StopSpawn + ClearTrails).
             CourseData.ResetRuntimeData();
             _prismFactory.DespawnAll();
-            for (int i = 0; i < _stationCrystals.Length; i++)
-            {
-                _stationCrystals[i] = null;
-                _respawnAt[i] = 0f;
-            }
             foreach (var pilot in Pilots)
             {
                 pilot.Course.CellItems.Clear();
@@ -651,8 +592,9 @@ namespace CosmicShore.Client
             for (int i = 0; i < Pilots.Count; i++)
                 ResetPilot(Pilots[i]);
 
-            for (int i = 0; i < _stationCrystals.Length; i++)
-                SpawnStationCrystal(i);
+            // Fresh course through the manager (its generation bump drops stale in-flight
+            // claim handlers); each spawn raises OnCellItemsUpdated → SyncPilotCourses.
+            Crystals.ResetStations();
             SyncPilotCourses();
         }
 
@@ -727,7 +669,7 @@ namespace CosmicShore.Client
         static readonly float[] GridOffsets = { -3.5f, 3.5f, -7.5f, 7.5f, -11.5f, 11.5f, 0f, -15f };
 
         // ── trail/skim rig authoring (prefab-level tuning, applied to the template) ──
-        const float SkimmerReachBase = 7f;       // near-field skimmer scale at Mass level 0
+        internal const float SkimmerReachBase = 7f; // near-field skimmer scale at Mass level 0
         const float SkimmerReachAtMass10 = 9.5f; // …and at Mass level 10 (ElementalFloat Min→Max)
         static readonly Vector3 TrailBaseScale = new(5f, 1f, 6f); // block ≈ 2.5×1×6 neon slab
         const float TrailWavelength = 6f;        // one block every ~6u of travel
@@ -803,6 +745,44 @@ namespace CosmicShore.Client
             // personal registry the director keeps sorted far→near (SyncPilotCourses) ──
             var courseData = CreateCourseRegistry(gameData);
 
+            // ── the crystal layer (rung 3): the REAL element-granting effects, the
+            // race-rule effects (per-game effect-asset pattern), and the race's
+            // CrystalManager-family manager that owns station crystal lifetime ──
+            // Element grants: the real effects, wired exactly where the original wires
+            // them (SkimmerAdjustElementLevelByCrystalEffect rides each elemental
+            // crystal's elementalCrystalShipEffects; VesselIncrementLevelByCrystalEffect
+            // rides the vessel-claim effect list).
+            var skimmerLevelEffect = ScriptableObject.CreateInstance<SkimmerAdjustElementLevelByCrystalEffectSO>();
+            var vesselLevelEffect = ScriptableObject.CreateInstance<VesselIncrementLevelByCrystalEffectSO>();
+            var omniSurgeEffect = ScriptableObject.CreateInstance<SkimRaceOmniCrystalSurgeEffectSO>();
+            var teamEnergyEffect = ScriptableObject.CreateInstance<SkimRaceCrystalEnergyEffectSO>();
+            var elementalClaimEffect = ScriptableObject.CreateInstance<SkimRaceElementalClaimEffectSO>();
+
+            // Team stations (every 7th, slot 3) are domain-locked to a domain actually
+            // racing — never Blue: TeamCrystalImpactor gates on strict equality while
+            // CanBeCollected treats Blue as "anyone", so a Blue lock would put a crystal
+            // in every course that only a Blue pilot could take.
+            rivalCount = Math.Clamp(rivalCount, 1, 7);
+            var teamLockDomains = new List<Domains> { Domains.Jade };
+            if (rivalCount >= 1) teamLockDomains.Add(Domains.Ruby);
+            if (rivalCount >= 2) teamLockDomains.Add(Domains.Gold);
+            var stationDomains = new Domains[stations];
+            for (int i = 0; i < stations; i++)
+                stationDomains[i] = SkimRaceCrystalManager.IsTeamSlot(i)
+                    ? teamLockDomains[(i / 7) % teamLockDomains.Count]
+                    : Domains.Blue;
+
+            var crystalManagerGo = new GameObject("SkimRaceCrystalManager");
+            crystalManagerGo.SetActive(false); // configure-before-activation
+            var crystalManager = crystalManagerGo.AddComponent<SkimRaceCrystalManager>();
+            SetPrivateField(crystalManager, "cellData", courseData);
+            crystalManagerGo.SetActive(true);
+            crystalManager.Configure(track, stationDomains,
+                omniEffects: new VesselCrystalEffectSO[] { omniSurgeEffect },
+                teamEffects: new VesselCrystalEffectSO[] { vesselLevelEffect, teamEnergyEffect },
+                elementalEffects: new SkimmerCrystalEffectSO[] { skimmerLevelEffect, elementalClaimEffect },
+                elementalClaimEffect: elementalClaimEffect);
+
             // ── shared input button channels: the rig's InputStatus raises through these
             // (one pair of SOAP assets shared across clones, exactly like the real prefabs;
             // only the human's strategy ever raises) ──────────────────
@@ -848,7 +828,6 @@ namespace CosmicShore.Client
             container.InjectGameObject(spawnerGo);
 
             // Spawn poses for GameDataSO.AddPlayer (the director re-grids afterwards).
-            rivalCount = Math.Clamp(rivalCount, 1, 7);
             var spawnTransforms = new Transform[rivalCount + 1];
             for (int i = 0; i < spawnTransforms.Length; i++)
             {
@@ -880,8 +859,8 @@ namespace CosmicShore.Client
 
             var directorGo = new GameObject("SkimRaceDirector");
             var director = directorGo.AddComponent<SkimRaceDirector>();
-            director.InitializeRace(track, gameData, courseData, prismFactory, pilots, winTarget,
-                onButtonPressed, onButtonReleased);
+            director.InitializeRace(track, gameData, courseData, prismFactory, crystalManager,
+                pilots, winTarget, onButtonPressed, onButtonReleased);
             return (loop, director);
         }
 

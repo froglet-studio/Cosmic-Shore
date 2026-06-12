@@ -451,6 +451,41 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
   headless 300/1200-frame runs exit 0 with rung-1-identical claim determinism and
   real-prism trail counts.
 
+- **Iteration 18** (2026-06-12): **Convergence rung 3 — the real CrystalImpactor
+  family + the real crystal respawn chain in the playable client.** Ported verbatim:
+  `CrystalManager` (abstract base: anchor placement, stable ids, batch spawn,
+  per-crystal anchor progression) + `LocalCrystalManager` +
+  `SkimmerAdjustElementLevelByCrystalEffectSO` + `VesselIncrementLevelByCrystalEffectSO`.
+  Crystal shell grew the manager surface verbatim (CrystalManager/InjectDependencies,
+  CanBeCollected, SphereRadius, MoveToNewPos, ChangeDomain + DecayingTheftCoroutine,
+  Explode + WaitForImpact — render-side bodies stripped with markers) and the staged
+  CT1 deviations CLOSED: `Crystal.Respawn()` → `CrystalManager.RespawnCrystal`,
+  `NotifyManagerToExplodeCrystal` → `ExplodeCrystal`, `OmniCrystalImpactor.IsNetworkClient`
+  verbatim. Client: new `SkimRaceCrystals.cs` — `SkimRaceCrystalManager` (game-mode
+  manager in the real family; per-kind station rigs: Omni / Team (domain-locked, slot
+  3 of every 7) / Elemental (skimmer-claimed, consumed via the real fly-to-vessel
+  collection); claimed vessel-claim crystals go dark IN PLACE and relight after 12s
+  through the real Respawn chain; consumed elemental stations respawn fresh) + the
+  race rules as effect assets (`SkimRaceOmniCrystalSurgeEffectSO`,
+  `SkimRaceCrystalEnergyEffectSO`, `SkimRaceElementalClaimEffectSO`). Director: all
+  level/energy grants deleted (effects own them); claim bookkeeping via the manager's
+  claim reports; courses re-sort event-driven off CourseData.OnCellItemsUpdated with
+  the real CanBeCollected filter. CLI HexRaceRound wires a manager (its crystals now
+  require one — the real chain). Engine: **clone rule extended — `Dictionary<K,V>`
+  fields get fresh containers per clone** (CopyFields was overwriting the clone's
+  field-initializer dict with the template's reference: every pilot shared ONE
+  ResourceSystem.ElementalLevels, so any rival's claim leaked levels onto the human —
+  caught by the rung-3 exact-grant test); `Random.insideUnitSphere`/`onUnitSphere`;
+  `Instantiate(original, pos, rot, parent)`. RaceWindow draws live crystal transforms
+  (claimed elemental crystals visibly fly to their claimer; dark stations hide).
+  New tests: CrystalManagerTests (7 — LocalCrystalManager batch/relocate/turn-end/
+  explode + shell chain + CanBeCollected), ClientConvergenceTests rung-3 trio
+  (exact-element grant through the pipeline; omni dark/relight respawn semantics +
+  re-claim; team domain locks in courses AND claims), clone dictionary freeze test.
+  **1119 tests green in BOTH configs (867 + 252)**; headless 300/1200-frame runs
+  exit 0 — frame 1200: `crystals [7,2,5,2], claims 16, levels C6/M0/S1/T0, trail 786`
+  (per-pilot level attribution now exact; prism determinism preserved vs rung 2).
+
 ## PRIME AXIS — CLIENT CONVERGENCE (prompter reorientation, 2026-06-12)
 
 > "our goal is to convert everything over so a player cannot tell the difference
@@ -491,25 +526,51 @@ the next rung.
    indices (identical pair visitation order), GameLoop.UnregisterBehaviour binary
    search. Verified headless at frame 1200: claims identical to rung 1
    ([8,3,8,3], 22 claims — determinism preserved), `trail 786` = real prism count.
-3. **Real crystals/impactors**: claims via OnTriggerEnter → CrystalImpactor family
-   (landed for the CLI round; bring to the client).
+3. **Real crystals/impactors** ✅ (iteration 18): the whole CrystalImpactor family
+   runs the client course — Omni stations claim through OmniCrystalImpactor
+   (vessel contact, any domain), every 7th-slot-3 station is a TEAM crystal
+   (TeamCrystalImpactor, domain-locked via the real Crystal.ChangeDomain +
+   CanBeCollected; AI courses filter on it so no pilot orbits a station it can't
+   take), and elemental stations claim through ElementalCrystalImpactor (skimmer
+   collection — the crystal flies to its claimer and is consumed). Element levels
+   move ONLY through impactor-side effect SOs: the real
+   SkimmerAdjustElementLevelByCrystalEffectSO (crystal-side, exactly where the
+   original's flora/fauna prefabs wire it) + VesselIncrementLevelByCrystalEffectSO
+   (team claims), with the race rules (omni all-four surge, claim energy kickers,
+   claim reporting) as SkimRace* effect assets in the same dispatch chains —
+   the director's level/energy pokes are deleted. Crystal lifetime runs the REAL
+   Crystal.Respawn()/NotifyManagerToExplodeCrystal → CrystalManager chain:
+   CrystalManager + LocalCrystalManager ported verbatim (closing the staged CT1
+   deviations in Crystal + OmniCrystalImpactor), and the race's
+   SkimRaceCrystalManager (a game-mode manager in the real family, like
+   Local/NetworkCrystalManager) owns station placement: vessel-claim crystals
+   survive their claim and relight in place after the 12s window; consumed
+   elemental crystals respawn fresh. Engine: clone rule extended — Dictionary
+   fields get fresh containers per clone (a template-shared runtime dict was
+   bleeding one pilot's ElementalLevels into the whole field); Random gained
+   insideUnitSphere/onUnitSphere; Instantiate gained the (pos, rot, parent)
+   overload. Renderer draws live crystal transforms (claimed elemental crystals
+   visibly fly to their claimer).
 4. **Real scoring + HUD semantics**: HexRaceScoringRuleSO domain-aggregated end,
    golf standings; domains share totals.
 5. **Real look**: SO_ColorSet domain palettes + SO_MaterialSet-driven visuals.
 6. Onward: cells/fauna ambience, more vessel classes, game modes — always through
    the real systems.
 
-## NEXT UP (iteration 18)
+## NEXT UP (iteration 19)
 
-1. **Rung 3**: real crystal claims via OnTriggerEnter → CrystalImpactor family in
-   the client (largely landed with rung 1 — station crystals already run
-   OmniCrystalImpactor through the trigger pass; remaining: elemental/team crystal
-   variants + the Crystal manager respawn path instead of director-staged respawn).
-2. Then rung 4 (real scoring + HUD semantics: HexRaceScoringRuleSO
-   domain-aggregated end, golf standings).
-3. Balance note from rung 2 verification: skim energy pegs at 1.00 for trail-riding
-   pilots (~10 prism enters/s × 0.045). Consider tuning GainPerPrism / boost drain
-   when rung 4's scoring makes the energy economy player-visible.
+1. **Rung 4**: real scoring + HUD semantics in the client — HexRaceScoringRuleSO
+   domain-aggregated end through the ported CrystalCollisionTurnMonitor +
+   ElementalComebackSystem (groundwork below), golf standings; domains share
+   totals. The SkimRace claim flow already lands on RoundStats through the
+   manager's claim reports, so the rule can read ScoringMetrics.SumByDomain as-is.
+2. Balance note from rung 2 verification (still open): skim energy pegs at 1.00
+   for trail-riding pilots (~10 prism enters/s × 0.045). Consider tuning
+   GainPerPrism / boost drain when rung 4's scoring makes the energy economy
+   player-visible.
+3. Team-crystal renderer polish (optional): team stations currently draw with
+   their element tint only — consider a domain-colored ring/tint so the lock is
+   readable before contact.
 4. Update this file, commit, push.
 
 Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — info

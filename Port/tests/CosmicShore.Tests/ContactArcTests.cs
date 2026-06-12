@@ -54,6 +54,26 @@ class RecordingSkimmerCrystalEffect : SkimmerCrystalEffectSO
         => Calls.Add((impactor, impactee));
 }
 
+/// <summary>
+/// Records the real Crystal → CrystalManager chain (restored with the rung-3
+/// CrystalManager port): NotifyManagerToExplodeCrystal → ExplodeCrystal and
+/// Respawn (allowRespawnOnImpact) → RespawnCrystal.
+/// </summary>
+class RecordingCrystalManager : CrystalManager
+{
+    public readonly List<int> RespawnCalls = new();
+    public readonly List<(int id, Crystal.ExplodeParams p)> ExplodeCalls = new();
+
+    public override void RespawnCrystal(int crystalId) => RespawnCalls.Add(crystalId);
+
+    public override void ExplodeCrystal(int crystalId, Crystal.ExplodeParams explodeParams)
+    {
+        ExplodeCalls.Add((crystalId, explodeParams));
+        if (cellData.TryGetCrystalById(crystalId, out var crystal) && crystal != null)
+            crystal.Explode(explodeParams); // LocalCrystalManager shape
+    }
+}
+
 /// <summary>Shared rig builders for the contact-arc tests.</summary>
 static class ContactRig
 {
@@ -72,8 +92,8 @@ static class ContactRig
 
     /// <summary>
     /// Crystal contact rig: trigger SphereCollider + Crystal shell (cellData wired,
-    /// registered in the course list) + the requested CrystalImpactor subtype +
-    /// ImpactCollider routing.
+    /// registered in the course list, manager injected — the rung-3 restored chain) +
+    /// the requested CrystalImpactor subtype + ImpactCollider routing.
     /// </summary>
     public static (GameObject go, SphereCollider trigger, T impactor, Crystal crystal, CellRuntimeDataSO cellData)
         MakeCrystal<T>(Vector3 position, float radius = 5f,
@@ -81,6 +101,12 @@ static class ContactRig
     {
         var cellData = ScriptableObject.CreateInstance<CellRuntimeDataSO>();
         cellData.OnCellItemsUpdated = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+
+        var managerGo = new GameObject("crystal-manager");
+        managerGo.SetActive(false); // configure-before-activation
+        var manager = managerGo.AddComponent<RecordingCrystalManager>();
+        V19Rig.Set(manager, "cellData", cellData);
+        managerGo.SetActive(true);
 
         var go = new GameObject("crystal-rig");
         go.transform.position = position;
@@ -100,6 +126,7 @@ static class ContactRig
             crystalValue = 7f,
         };
         V19Rig.Set(crystal, "cellData", cellData);
+        crystal.InjectDependencies(manager); // NotifyManagerToExplodeCrystal / Respawn route here
 
         var impactor = go.AddComponent<T>(); // Awake binds impactor.Crystal
         var impactCollider = go.AddComponent<ImpactCollider>();
@@ -426,6 +453,14 @@ public class ContactImpactDispatchTests
         Assert.Equal(Element.Space, call.data.Element);
         Assert.Equal(4.2f, call.data.SpeedBuffAmount, 3);
 
+        // The restored manager chain ran: ExecuteEffect → NotifyManagerToExplodeCrystal
+        // → CrystalManager.ExplodeCrystal (Sparrow ≠ Manta, so the explode fires).
+        var manager = (RecordingCrystalManager)crystal.CrystalManager;
+        var explode = Assert.Single(manager.ExplodeCalls);
+        Assert.Equal(crystal.Id, explode.id);
+        Assert.Equal("cam-pilot", explode.p.PlayerName.ToString());
+        Assert.Empty(manager.RespawnCalls); // allowRespawnOnImpact=false → DestroyCrystal path
+
         // The crystal removed itself: Respawn → DestroyCrystal → TryRemoveItem +
         // Destroy(gameObject), flushed at the end of the same frame.
         Assert.Empty(cellData.CellItems);
@@ -441,8 +476,9 @@ public class ContactImpactDispatchTests
         var (_, _, _) = ContactRig.MakeVessel(container, Vector3.zero);
 
         var (_, _, omniImpactor, _, _) = ContactRig.MakeCrystal<OmniCrystalImpactor>(Vector3.zero);
-        // allowRespawnOnImpact=true keeps the crystal alive (manager respawn is the
-        // staged CT1 path) so a second impactee can hit inside the 0.5s window.
+        // allowRespawnOnImpact=true keeps the crystal alive (Respawn → the manager's
+        // RespawnCrystal — the restored rung-3 chain) so a second impactee can hit
+        // inside the 0.5s window.
         var crystal2 = omniImpactor.Crystal;
         V19Rig.Set(crystal2, "allowRespawnOnImpact", true);
         var onCollected = ScriptableObject.CreateInstance<ScriptableEventCrystalStats>();
@@ -452,6 +488,9 @@ public class ContactImpactDispatchTests
 
         loop.Tick(Dt);
         Assert.Single(collected);
+        // Respawn routed into the manager (the crystal survived in place).
+        Assert.Equal(new[] { crystal2.Id }, ((RecordingCrystalManager)crystal2.CrystalManager).RespawnCalls);
+        Assert.False(crystal2.IsDestroyed);
 
         // A second vessel arriving inside the IsImpacting window is ignored.
         ContactRig.MakeVessel(container, Vector3.zero);

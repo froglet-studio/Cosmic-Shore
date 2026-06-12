@@ -24,7 +24,16 @@ namespace CosmicShore.Tests;
 //     (SkimRacePrismFactory answers the spawn channel) — conserved mass, no decay,
 //   • (rung 2) trail-skim energy flows through the real skimmer contact pipeline:
 //     trigger SphereCollider on the near-field Skimmer → engine TriggerPass →
-//     SkimmerImpactor.AcceptImpactee → SkimRaceTrailSkimEnergyEffectSO.
+//     SkimmerImpactor.AcceptImpactee → SkimRaceTrailSkimEnergyEffectSO,
+//   • (rung 3) the whole CrystalImpactor family runs the course: Omni stations
+//     claim through OmniCrystalImpactor (vessel contact), Team stations through
+//     TeamCrystalImpactor (domain-locked), elemental stations through
+//     ElementalCrystalImpactor (skimmer claim, consumed via the real fly-to-vessel
+//     collection). Element levels move ONLY through the impactor-side effect SOs
+//     (the real SkimmerAdjustElementLevelByCrystalEffectSO /
+//     VesselIncrementLevelByCrystalEffectSO + the SkimRace race-rule effects), and
+//     crystal lifetime runs the real Crystal.Respawn() → CrystalManager chain
+//     (SkimRaceCrystalManager).
 // No Silk type is touched — the windowing layer never loads here.
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -412,6 +421,223 @@ public class ClientConvergenceTests : IDisposable
             Assert.True(human.SkimTracker.IsSkimming, "tracker should hold live prism contact");
             Assert.True(human.IsSkimming, "director should mirror the live skim state");
             Assert.True(human.SkimStrength > 0f);
+        }
+        finally
+        {
+            Teardown(loop, director);
+        }
+    }
+
+    // ── rung 3: the real CrystalImpactor family runs the course ─────────────
+
+    static int FindStation(SkimRaceDirector director, StationKind kind)
+    {
+        for (int i = 0; i < director.Track.Crystals.Count; i++)
+            if (director.Crystals.KindOf(i) == kind)
+                return i;
+        throw new InvalidOperationException($"track has no {kind} station");
+    }
+
+    static int[] Levels(SkimRacePilot pilot) => new[]
+    {
+        pilot.Resources.GetLevel(Element.Charge),
+        pilot.Resources.GetLevel(Element.Mass),
+        pilot.Resources.GetLevel(Element.Space),
+        pilot.Resources.GetLevel(Element.Time),
+    };
+
+    static readonly Element[] FourElements =
+        { Element.Charge, Element.Mass, Element.Space, Element.Time };
+
+    /// <summary>Park the pilot's rig exactly on a world position (contact, not flight, under test).</summary>
+    static void Park(SkimRacePilot pilot, Vector3 position)
+    {
+        pilot.Status.IsStationary = true;
+        pilot.Player.Vessel.SetPose(new Pose
+        {
+            position = position,
+            rotation = Quaternion.identity,
+        });
+    }
+
+    [Fact]
+    public void ElementalCrystalClaim_RaisesExactlyItsElement_ThroughTheRealImpactorPipeline()
+    {
+        var (loop, director) = SkimRaceFactory.Create(seed: 7, trackCrystals: 16, rivalCount: 1);
+        try
+        {
+            director.SkipCountdown();
+            loop.Tick(1f / 60f);
+
+            // An elemental station: skimmer-claimed, uncommitted (Blue) domain.
+            int station = FindStation(director, StationKind.Elemental);
+            var element = director.Track.StationElements[station];
+            Assert.NotEqual(Element.Omni, element);
+            var crystal = director.Crystals.GetStationCrystal(station);
+
+            var human = director.HumanPilot;
+            Park(human, crystal.transform.position); // skimmer trigger overlaps the crystal trigger
+            var before = Levels(human);
+            human.Resources.SetResourceAmount(0, 0.2f); // headroom so the energy kicker is observable
+            float energyBefore = human.Resources.Resources[0].CurrentAmount;
+
+            loop.Tick(1f / 60f); // trigger pass → ElementalCrystalImpactor.AcceptImpactee
+            loop.Tick(1f / 60f);
+
+            // EXACTLY the crystal's element rose, by exactly one integer level — granted
+            // by the real SkimmerAdjustElementLevelByCrystalEffectSO inside the impactor
+            // dispatch (scale 1 × 0.1/unit = one level), nothing director-side.
+            var after = Levels(human);
+            for (int i = 0; i < FourElements.Length; i++)
+                Assert.Equal(before[i] + (FourElements[i] == element ? 1 : 0), after[i]);
+
+            // StatsManager-shaped bookkeeping followed the claim report.
+            Assert.Equal(1, human.Stats.CrystalsCollected);
+            Assert.Equal(1, human.Stats.ElementalCrystalsCollected);
+            Assert.Equal(0, human.Stats.OmniCrystalsCollected);
+            // The race-rule energy kicker ran inside the same chain (≥0.15 per elemental
+            // claim; passive regen over 2 frames is ~0.0013).
+            Assert.True(human.Resources.Resources[0].CurrentAmount >= energyBefore + 0.14f);
+
+            // The real collection: the station goes dark and the crystal flies to its
+            // claimer, destroying itself after the flight (consumed — never relocated).
+            Assert.False(director.IsStationActive(station));
+            Assert.False(crystal.IsDestroyed); // mid-flight to the vessel
+            for (int frame = 0; frame < 70; frame++) loop.Tick(1f / 60f); // 0.9s flight + slack
+            Assert.True(crystal.IsDestroyed);
+
+            // Respawn semantics for consumed crystals: a FRESH crystal takes the station
+            // after the respawn window, carrying the station's element.
+            Park(human, crystal.transform.position + new Vector3(0f, 500f, 0f)); // clear of the course
+            int frames2 = 0;
+            while (frames2 < 60 * 20 && !director.IsStationActive(station))
+            {
+                loop.Tick(1f / 60f);
+                frames2++;
+            }
+            Assert.True(director.IsStationActive(station), "consumed elemental station must respawn");
+            var fresh = director.Crystals.GetStationCrystal(station);
+            Assert.NotSame(crystal, fresh);
+            Assert.Equal(element, fresh.crystalProperties.Element);
+        }
+        finally
+        {
+            Teardown(loop, director);
+        }
+    }
+
+    [Fact]
+    public void OmniCrystalClaim_SurvivesAndRelights_ThroughTheRealRespawnChain()
+    {
+        var (loop, director) = SkimRaceFactory.Create(seed: 7, trackCrystals: 16, rivalCount: 1);
+        try
+        {
+            director.SkipCountdown();
+            loop.Tick(1f / 60f);
+
+            int station = FindStation(director, StationKind.Omni);
+            var crystal = director.Crystals.GetStationCrystal(station);
+
+            var human = director.HumanPilot;
+            Park(human, crystal.transform.position); // vessel contact bubble in the claim surface
+            var before = Levels(human);
+
+            loop.Tick(1f / 60f); // trigger pass → OmniCrystalImpactor.AcceptImpactee
+            loop.Tick(1f / 60f);
+
+            // The omni surge ran through the impactor pipeline: all four elements +1.
+            var after = Levels(human);
+            for (int i = 0; i < FourElements.Length; i++)
+                Assert.Equal(before[i] + 1, after[i]);
+            Assert.Equal(1, human.Stats.CrystalsCollected);
+            Assert.Equal(1, human.Stats.OmniCrystalsCollected);
+
+            // The REAL respawn semantics (Crystal.Respawn → CrystalManager): the SAME
+            // crystal survives the claim — dark (not claimable), never destroyed.
+            Assert.False(director.IsStationActive(station));
+            Assert.False(crystal.IsDestroyed);
+            Assert.False(crystal.GetComponent<SphereCollider>().enabled);
+
+            // …and relights in place after the respawn window, claimable again.
+            Park(human, crystal.transform.position + new Vector3(0f, 500f, 0f)); // clear of the course
+            int frames = 0;
+            while (frames < 60 * 20 && !director.IsStationActive(station))
+            {
+                loop.Tick(1f / 60f);
+                frames++;
+            }
+            Assert.True(director.IsStationActive(station), "claimed omni station must relight");
+            Assert.Same(crystal, director.Crystals.GetStationCrystal(station));
+            Assert.True(crystal.GetComponent<SphereCollider>().enabled);
+            Assert.True(frames >= (int)(SkimRaceDirector.CrystalRespawnSeconds * 60) - 240,
+                "the dark window must hold for roughly the respawn time");
+
+            // Claimable again: park back on it and take it a second time.
+            Park(human, crystal.transform.position);
+            loop.Tick(1f / 60f);
+            loop.Tick(1f / 60f);
+            Assert.Equal(2, human.Stats.CrystalsCollected);
+            Assert.False(director.IsStationActive(station));
+        }
+        finally
+        {
+            Teardown(loop, director);
+        }
+    }
+
+    [Fact]
+    public void TeamCrystals_AreDomainLocked_InCoursesAndClaims()
+    {
+        var (loop, director) = SkimRaceFactory.Create(seed: 7, trackCrystals: 24, rivalCount: 3);
+        try
+        {
+            // Team slots at stations 3/10/17, locked to the racing domains in order.
+            Assert.Equal(StationKind.Team, director.Crystals.KindOf(3));
+            Assert.Equal(StationKind.Team, director.Crystals.KindOf(10));
+            Assert.Equal(StationKind.Team, director.Crystals.KindOf(17));
+            Assert.Equal(Domains.Jade, director.Crystals.StationDomain(3));
+            Assert.Equal(Domains.Ruby, director.Crystals.StationDomain(10));
+            Assert.Equal(Domains.Gold, director.Crystals.StationDomain(17));
+
+            director.SkipCountdown();
+            loop.Tick(1f / 60f);
+
+            // The crystals carry the domain (the real Crystal.ChangeDomain entry), and
+            // every pilot's course includes exactly the crystals it may claim
+            // (Crystal.CanBeCollected — Blue for everyone, team locks for the match).
+            foreach (var pilot in director.Pilots)
+            {
+                foreach (int station in new[] { 3, 10, 17 })
+                {
+                    var crystal = director.Crystals.GetStationCrystal(station);
+                    Assert.Equal(director.Crystals.StationDomain(station), crystal.ownDomain);
+                    Assert.Equal(crystal.CanBeCollected(pilot.Domain),
+                        pilot.Course.Crystals.Contains(crystal));
+                }
+            }
+
+            // Mismatched domain cannot claim: the Jade human parks on the Ruby station —
+            // TeamCrystalImpactor.IsDomainMatching rejects it through the real dispatch.
+            var human = director.HumanPilot;
+            var rubyCrystal = director.Crystals.GetStationCrystal(10);
+            Park(human, rubyCrystal.transform.position);
+            for (int frame = 0; frame < 5; frame++) loop.Tick(1f / 60f);
+            Assert.True(director.IsStationActive(10));
+            Assert.Equal(0, human.Stats.CrystalsCollected);
+
+            // The matching domain claims it, and the REAL
+            // VesselIncrementLevelByCrystalEffectSO grants exactly the crystal's element.
+            var jadeCrystal = director.Crystals.GetStationCrystal(3);
+            var element = director.Track.StationElements[3];
+            var before = Levels(human);
+            Park(human, jadeCrystal.transform.position);
+            for (int frame = 0; frame < 5; frame++) loop.Tick(1f / 60f);
+
+            Assert.False(director.IsStationActive(3));
+            Assert.Equal(1, human.Stats.CrystalsCollected);
+            var after = Levels(human);
+            for (int i = 0; i < FourElements.Length; i++)
+                Assert.Equal(before[i] + (FourElements[i] == element ? 1 : 0), after[i]);
         }
         finally
         {

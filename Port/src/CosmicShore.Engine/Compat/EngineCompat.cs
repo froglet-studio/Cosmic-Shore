@@ -370,15 +370,19 @@ namespace CosmicShore.Engine
         ///   • engine Object outside the tree (other scene objects, ScriptableObject
         ///     assets) → kept, shared by design;
         ///   • string → kept (immutable);
-        ///   • rank-1 array / <see cref="List{T}"/> → NEW container, elements rerun through
-        ///     these same rules (the original engine never shares a collection instance
-        ///     between a template and its clone, whatever the element type);
+        ///   • rank-1 array / <see cref="List{T}"/> / <see cref="Dictionary{TKey,TValue}"/>
+        ///     → NEW container, elements rerun through these same rules (the original
+        ///     engine never shares a mutable container instance between a template and its
+        ///     clone, whatever the element type — for non-serialized runtime dictionaries
+        ///     the original keeps each instance's own field-initializer state, so a shared
+        ///     reference would leak one clone's runtime state into every sibling: the
+        ///     rung-3 ResourceSystem.ElementalLevels cross-pilot contamination);
         ///   • plain [Serializable] class → independent deep clone per field path. The
         ///     original engine inlines plain classes BY VALUE, so aliasing within the
         ///     template's plain-object graph intentionally does not survive cloning; graphs
         ///     truncate to null past <see cref="MaxPlainObjectDepth"/>;
-        ///   • everything else (delegate fields on components, dictionaries, framework
-        ///     types, multidimensional arrays) → reference copy — the port's existing
+        ///   • everything else (delegate fields on components, framework types,
+        ///     multidimensional arrays) → reference copy — the port's existing
         ///     semantics for shapes the original engine never serialized.
         /// <paramref name="depth"/> counts plain-object nesting levels already entered;
         /// collection containers are transparent to it.
@@ -407,6 +411,10 @@ namespace CosmicShore.Engine
                                      && listType.GetGenericTypeDefinition() == typeof(List<>):
                     return CloneListValue(list, listType, map, depth);
 
+                case IDictionary dictionary when value.GetType() is { IsGenericType: true } dictionaryType
+                                                 && dictionaryType.GetGenericTypeDefinition() == typeof(Dictionary<,>):
+                    return CloneDictionaryValue(dictionary, dictionaryType, map, depth);
+
                 default:
                     if (!IsInlinePlainClass(value.GetType()))
                         return value;
@@ -429,6 +437,23 @@ namespace CosmicShore.Engine
             {
                 object element = array.GetValue(i);
                 copy.SetValue(element is null ? null : RemapValue(element, map, depth), i);
+            }
+            return copy;
+        }
+
+        static IDictionary CloneDictionaryValue(IDictionary dictionary, Type dictionaryType,
+            Dictionary<object, object> map, int depth)
+        {
+            // Fresh container carrying the source's comparer; keys and values rerun
+            // through the same value rules as array/list elements.
+            object comparer = dictionaryType.GetProperty("Comparer")!.GetValue(dictionary);
+            var copy = (IDictionary)Activator.CreateInstance(
+                dictionaryType, new object[] { dictionary.Count, comparer });
+            foreach (DictionaryEntry entry in dictionary)
+            {
+                object key = RemapValue(entry.Key, map, depth);
+                object value = entry.Value is null ? null : RemapValue(entry.Value, map, depth);
+                copy.Add(key, value);
             }
             return copy;
         }

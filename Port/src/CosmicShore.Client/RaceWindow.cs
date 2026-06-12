@@ -688,16 +688,17 @@ void main()
             _gl.BindVertexArray(_ringVao);
             _gl.DrawArrays(PrimitiveType.Lines, 0, (uint)_ringCount);
 
-            // crystals: spin/pulse via model matrix, tinted by their element; claimed
-            // ones vanish until they respawn
+            // crystals: spin/pulse via model matrix, tinted by their element; drawn at
+            // the live Crystal transform so claimed elemental ones visibly fly to their
+            // claimer before vanishing; dark (claimed) stations hide until they relight
             var track = _race.Track;
             for (int i = 0; i < track.Crystals.Count; i++)
             {
-                if (!_race.IsStationActive(i)) continue;
+                if (!_race.TryGetDrawableCrystal(i, out var crystalPos)) continue;
                 float spin = Time.time * 1.6f + i * 0.7f;
                 float pulse = 1f + 0.12f * Mathf.Sin(Time.time * 3f + i);
                 var model = Matrix4x4.CreateScale(pulse) * Matrix4x4.CreateRotationY(spin) *
-                            Matrix4x4.CreateTranslation(track.Crystals[i]);
+                            Matrix4x4.CreateTranslation(crystalPos);
                 SetMvp(model * viewProjection);
                 var mesh = _crystalMeshes[track.StationElements[i]];
                 _gl.BindVertexArray(mesh.vao);

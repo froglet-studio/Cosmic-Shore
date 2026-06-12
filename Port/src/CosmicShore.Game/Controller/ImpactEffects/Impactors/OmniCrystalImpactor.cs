@@ -23,11 +23,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual bool IsDomainMatching(Domains domain) => true;
 
-        // PORT Deviation (CT1, restore when CrystalManager ports — the networked
-        // explode/respawn manager is unported; headless rounds run single-process,
-        // server-authoritative):
-        // bool IsNetworkClient() => Crystal.CrystalManager.IsSpawned && !Crystal.CrystalManager.IsServer;
-        bool IsNetworkClient() => false;
+        bool IsNetworkClient() => Crystal.CrystalManager.IsSpawned && !Crystal.CrystalManager.IsServer;
 
         protected override void AcceptImpactee(IImpactor impactee)
         {
