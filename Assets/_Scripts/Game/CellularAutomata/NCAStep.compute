@@ -1,0 +1,328 @@
+// NCAStep.compute — Growing Neural Cellular Automata
+// Implements the update rule from distill.pub/2020/growing-ca/
+// Three kernels: Perceive, Update, Apply
+//
+// State is stored as 16 float channels per cell, packed into 4 RGBA textures:
+//   _StateTex0 = channels 0-3  (R, G, B, Alpha — visible channels)
+//   _StateTex1 = channels 4-7  (hidden)
+//   _StateTex2 = channels 8-11 (hidden)
+//   _StateTex3 = channels 12-15 (hidden)
+
+#pragma kernel Perceive
+#pragma kernel Update
+#pragma kernel Apply
+
+#define CHANNEL_COUNT 16
+#define PERCEPTION_DIM 48  // 16 channels * 3 filters (identity + sobel_x + sobel_y)
+#define HIDDEN_SIZE 128
+#define ALIVE_THRESHOLD 0.1
+
+// Double-buffered state textures (read from A, write to B, then swap)
+Texture2D<float4> _StateTexRead0;
+Texture2D<float4> _StateTexRead1;
+Texture2D<float4> _StateTexRead2;
+Texture2D<float4> _StateTexRead3;
+
+RWTexture2D<float4> _StateTexWrite0;
+RWTexture2D<float4> _StateTexWrite1;
+RWTexture2D<float4> _StateTexWrite2;
+RWTexture2D<float4> _StateTexWrite3;
+
+// Perception output: 48 floats per cell, packed into 12 RGBA textures
+RWTexture2D<float4> _PerceptionTex0;
+RWTexture2D<float4> _PerceptionTex1;
+RWTexture2D<float4> _PerceptionTex2;
+RWTexture2D<float4> _PerceptionTex3;
+RWTexture2D<float4> _PerceptionTex4;
+RWTexture2D<float4> _PerceptionTex5;
+RWTexture2D<float4> _PerceptionTex6;
+RWTexture2D<float4> _PerceptionTex7;
+RWTexture2D<float4> _PerceptionTex8;
+RWTexture2D<float4> _PerceptionTex9;
+RWTexture2D<float4> _PerceptionTex10;
+RWTexture2D<float4> _PerceptionTex11;
+
+// Neural network weights stored in buffers
+// Layer 1: perception (48) -> hidden (128), weights + bias
+// Layer 2: hidden (128) -> channels (16), weights + bias
+StructuredBuffer<float> _Weights1;  // 48 * 128 = 6144 floats
+StructuredBuffer<float> _Biases1;   // 128 floats
+StructuredBuffer<float> _Weights2;  // 128 * 16 = 2048 floats
+StructuredBuffer<float> _Biases2;   // 16 floats
+
+// Update delta output
+RWTexture2D<float4> _DeltaTex0;
+RWTexture2D<float4> _DeltaTex1;
+RWTexture2D<float4> _DeltaTex2;
+RWTexture2D<float4> _DeltaTex3;
+
+// Random seed for stochastic update mask
+StructuredBuffer<float> _RandomValues;
+
+// Parameters
+int _GridWidth;
+int _GridHeight;
+float _FireRate;
+float _StepSize;
+float _AngleRadians; // For rotating perception kernels
+
+float4 SampleState(Texture2D<float4> tex0, Texture2D<float4> tex1,
+                   Texture2D<float4> tex2, Texture2D<float4> tex3,
+                   int2 coord, int group)
+{
+    coord = clamp(coord, int2(0, 0), int2(_GridWidth - 1, _GridHeight - 1));
+    if (group == 0) return tex0[coord];
+    if (group == 1) return tex1[coord];
+    if (group == 2) return tex2[coord];
+    return tex3[coord];
+}
+
+float GetChannel(Texture2D<float4> tex0, Texture2D<float4> tex1,
+                 Texture2D<float4> tex2, Texture2D<float4> tex3,
+                 int2 coord, int ch)
+{
+    coord = clamp(coord, int2(0, 0), int2(_GridWidth - 1, _GridHeight - 1));
+    int group = ch / 4;
+    int component = ch % 4;
+    float4 val = SampleState(tex0, tex1, tex2, tex3, coord, group);
+    if (component == 0) return val.x;
+    if (component == 1) return val.y;
+    if (component == 2) return val.z;
+    return val.w;
+}
+
+bool HasAliveNeighbor(int2 coord)
+{
+    for (int dy = -1; dy <= 1; dy++)
+    {
+        for (int dx = -1; dx <= 1; dx++)
+        {
+            int2 nc = coord + int2(dx, dy);
+            nc = clamp(nc, int2(0, 0), int2(_GridWidth - 1, _GridHeight - 1));
+            float alpha = _StateTexRead0[nc].w;
+            if (alpha > ALIVE_THRESHOLD)
+                return true;
+        }
+    }
+    return false;
+}
+
+void SetPerception(int2 id, int index, float value)
+{
+    int texIdx = index / 4;
+    int comp = index % 4;
+
+    float4 current;
+    if      (texIdx == 0)  current = _PerceptionTex0[id];
+    else if (texIdx == 1)  current = _PerceptionTex1[id];
+    else if (texIdx == 2)  current = _PerceptionTex2[id];
+    else if (texIdx == 3)  current = _PerceptionTex3[id];
+    else if (texIdx == 4)  current = _PerceptionTex4[id];
+    else if (texIdx == 5)  current = _PerceptionTex5[id];
+    else if (texIdx == 6)  current = _PerceptionTex6[id];
+    else if (texIdx == 7)  current = _PerceptionTex7[id];
+    else if (texIdx == 8)  current = _PerceptionTex8[id];
+    else if (texIdx == 9)  current = _PerceptionTex9[id];
+    else if (texIdx == 10) current = _PerceptionTex10[id];
+    else                   current = _PerceptionTex11[id];
+
+    if      (comp == 0) current.x = value;
+    else if (comp == 1) current.y = value;
+    else if (comp == 2) current.z = value;
+    else                current.w = value;
+
+    if      (texIdx == 0)  _PerceptionTex0[id] = current;
+    else if (texIdx == 1)  _PerceptionTex1[id] = current;
+    else if (texIdx == 2)  _PerceptionTex2[id] = current;
+    else if (texIdx == 3)  _PerceptionTex3[id] = current;
+    else if (texIdx == 4)  _PerceptionTex4[id] = current;
+    else if (texIdx == 5)  _PerceptionTex5[id] = current;
+    else if (texIdx == 6)  _PerceptionTex6[id] = current;
+    else if (texIdx == 7)  _PerceptionTex7[id] = current;
+    else if (texIdx == 8)  _PerceptionTex8[id] = current;
+    else if (texIdx == 9)  _PerceptionTex9[id] = current;
+    else if (texIdx == 10) _PerceptionTex10[id] = current;
+    else                   _PerceptionTex11[id] = current;
+}
+
+float GetPerception(int2 id, int index)
+{
+    int texIdx = index / 4;
+    int comp = index % 4;
+
+    float4 val;
+    if      (texIdx == 0)  val = _PerceptionTex0[id];
+    else if (texIdx == 1)  val = _PerceptionTex1[id];
+    else if (texIdx == 2)  val = _PerceptionTex2[id];
+    else if (texIdx == 3)  val = _PerceptionTex3[id];
+    else if (texIdx == 4)  val = _PerceptionTex4[id];
+    else if (texIdx == 5)  val = _PerceptionTex5[id];
+    else if (texIdx == 6)  val = _PerceptionTex6[id];
+    else if (texIdx == 7)  val = _PerceptionTex7[id];
+    else if (texIdx == 8)  val = _PerceptionTex8[id];
+    else if (texIdx == 9)  val = _PerceptionTex9[id];
+    else if (texIdx == 10) val = _PerceptionTex10[id];
+    else                   val = _PerceptionTex11[id];
+
+    if      (comp == 0) return val.x;
+    else if (comp == 1) return val.y;
+    else if (comp == 2) return val.z;
+    return val.w;
+}
+
+// ─────────────────────────────────────────────────────────
+// Kernel 0: Perceive
+// Apply 3x3 Sobel + identity filters per channel.
+// For each of 16 channels, produces 3 values: identity, sobel_x, sobel_y
+// Total: 48 perception values per cell
+// ─────────────────────────────────────────────────────────
+[numthreads(8, 8, 1)]
+void Perceive(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)_GridWidth || id.y >= (uint)_GridHeight) return;
+
+    int2 coord = int2(id.xy);
+
+    // Initialize perception textures to zero
+    _PerceptionTex0[coord] = 0;
+    _PerceptionTex1[coord] = 0;
+    _PerceptionTex2[coord] = 0;
+    _PerceptionTex3[coord] = 0;
+    _PerceptionTex4[coord] = 0;
+    _PerceptionTex5[coord] = 0;
+    _PerceptionTex6[coord] = 0;
+    _PerceptionTex7[coord] = 0;
+    _PerceptionTex8[coord] = 0;
+    _PerceptionTex9[coord] = 0;
+    _PerceptionTex10[coord] = 0;
+    _PerceptionTex11[coord] = 0;
+
+    // Sobel kernels (with optional rotation for angle invariance)
+    float ca = cos(_AngleRadians);
+    float sa = sin(_AngleRadians);
+
+    for (int ch = 0; ch < CHANNEL_COUNT; ch++)
+    {
+        // Sample 3x3 neighborhood for this channel
+        float s00 = GetChannel(_StateTexRead0, _StateTexRead1, _StateTexRead2, _StateTexRead3, coord + int2(-1, -1), ch);
+        float s10 = GetChannel(_StateTexRead0, _StateTexRead1, _StateTexRead2, _StateTexRead3, coord + int2( 0, -1), ch);
+        float s20 = GetChannel(_StateTexRead0, _StateTexRead1, _StateTexRead2, _StateTexRead3, coord + int2( 1, -1), ch);
+        float s01 = GetChannel(_StateTexRead0, _StateTexRead1, _StateTexRead2, _StateTexRead3, coord + int2(-1,  0), ch);
+        float s11 = GetChannel(_StateTexRead0, _StateTexRead1, _StateTexRead2, _StateTexRead3, coord + int2( 0,  0), ch);
+        float s21 = GetChannel(_StateTexRead0, _StateTexRead1, _StateTexRead2, _StateTexRead3, coord + int2( 1,  0), ch);
+        float s02 = GetChannel(_StateTexRead0, _StateTexRead1, _StateTexRead2, _StateTexRead3, coord + int2(-1,  1), ch);
+        float s12 = GetChannel(_StateTexRead0, _StateTexRead1, _StateTexRead2, _StateTexRead3, coord + int2( 0,  1), ch);
+        float s22 = GetChannel(_StateTexRead0, _StateTexRead1, _StateTexRead2, _StateTexRead3, coord + int2( 1,  1), ch);
+
+        // Identity filter: just the center value
+        float identity = s11;
+
+        // Sobel X gradient: [[-1,0,1],[-2,0,2],[-1,0,1]] / 8
+        float sx = (-s00 + s20 - 2.0 * s01 + 2.0 * s21 - s02 + s22) / 8.0;
+
+        // Sobel Y gradient: [[-1,-2,-1],[0,0,0],[1,2,1]] / 8
+        float sy = (-s00 - 2.0 * s10 - s20 + s02 + 2.0 * s12 + s22) / 8.0;
+
+        // Apply rotation to gradients for angle invariance
+        float rsx = ca * sx - sa * sy;
+        float rsy = sa * sx + ca * sy;
+
+        // Store: 3 values per channel, interleaved as [identity, sobel_x, sobel_y]
+        int baseIdx = ch * 3;
+        SetPerception(coord, baseIdx + 0, identity);
+        SetPerception(coord, baseIdx + 1, rsx);
+        SetPerception(coord, baseIdx + 2, rsy);
+    }
+}
+
+// ─────────────────────────────────────────────────────────
+// Kernel 1: Update
+// perception (48) -> dense(128, ReLU) -> dense(16, linear) -> dx
+// ─────────────────────────────────────────────────────────
+[numthreads(8, 8, 1)]
+void Update(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)_GridWidth || id.y >= (uint)_GridHeight) return;
+
+    int2 coord = int2(id.xy);
+
+    // Layer 1: perception(48) -> hidden(128) with ReLU
+    float hidden[HIDDEN_SIZE];
+    for (int h = 0; h < HIDDEN_SIZE; h++)
+    {
+        float sum = _Biases1[h];
+        for (int p = 0; p < PERCEPTION_DIM; p++)
+        {
+            sum += GetPerception(coord, p) * _Weights1[p * HIDDEN_SIZE + h];
+        }
+        hidden[h] = max(0.0, sum); // ReLU
+    }
+
+    // Layer 2: hidden(128) -> output(16) linear (no activation)
+    float dx[CHANNEL_COUNT];
+    for (int c = 0; c < CHANNEL_COUNT; c++)
+    {
+        float sum = _Biases2[c];
+        for (int h = 0; h < HIDDEN_SIZE; h++)
+        {
+            sum += hidden[h] * _Weights2[h * CHANNEL_COUNT + c];
+        }
+        dx[c] = sum;
+    }
+
+    // Store delta
+    _DeltaTex0[coord] = float4(dx[0],  dx[1],  dx[2],  dx[3]);
+    _DeltaTex1[coord] = float4(dx[4],  dx[5],  dx[6],  dx[7]);
+    _DeltaTex2[coord] = float4(dx[8],  dx[9],  dx[10], dx[11]);
+    _DeltaTex3[coord] = float4(dx[12], dx[13], dx[14], dx[15]);
+}
+
+// ─────────────────────────────────────────────────────────
+// Kernel 2: Apply
+// Stochastic masking + alive check + state += dx * stepSize
+// ─────────────────────────────────────────────────────────
+[numthreads(8, 8, 1)]
+void Apply(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= (uint)_GridWidth || id.y >= (uint)_GridHeight) return;
+
+    int2 coord = int2(id.xy);
+    int flatIdx = coord.y * _GridWidth + coord.x;
+
+    // Read current state
+    float4 s0 = _StateTexRead0[coord];
+    float4 s1 = _StateTexRead1[coord];
+    float4 s2 = _StateTexRead2[coord];
+    float4 s3 = _StateTexRead3[coord];
+
+    // Stochastic update mask
+    float rnd = _RandomValues[flatIdx];
+    bool doUpdate = rnd <= _FireRate;
+
+    if (doUpdate)
+    {
+        float4 d0 = _DeltaTex0[coord];
+        float4 d1 = _DeltaTex1[coord];
+        float4 d2 = _DeltaTex2[coord];
+        float4 d3 = _DeltaTex3[coord];
+
+        s0 += d0 * _StepSize;
+        s1 += d1 * _StepSize;
+        s2 += d2 * _StepSize;
+        s3 += d3 * _StepSize;
+    }
+
+    // Alive masking: cells with no alive neighbors (alpha > threshold) are zeroed
+    if (!HasAliveNeighbor(coord))
+    {
+        s0 = 0;
+        s1 = 0;
+        s2 = 0;
+        s3 = 0;
+    }
+
+    _StateTexWrite0[coord] = s0;
+    _StateTexWrite1[coord] = s1;
+    _StateTexWrite2[coord] = s2;
+    _StateTexWrite3[coord] = s3;
+}

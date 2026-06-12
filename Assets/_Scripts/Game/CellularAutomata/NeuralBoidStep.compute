@@ -1,0 +1,152 @@
+// NeuralBoidStep.compute — Learned continuous automata for boid flocking
+// Replaces hardcoded separation/cohesion/alignment with a neural network
+// that computes velocity deltas from aggregated neighbor perception.
+//
+// The NN architecture mirrors Growing NCA: perception -> dense(hidden, ReLU) -> dense(3, linear)
+// But operates on 3D continuous agent positions instead of a 2D pixel grid.
+
+#pragma kernel NeuralBoidUpdate
+
+#define MAX_NEIGHBORS 16
+#define INPUT_DIM 13
+#define MAX_HIDDEN 128
+#define MAX_OUTPUT 3
+
+struct BoidEntity
+{
+    float3 position;
+    float3 velocity;
+    float3 goalDirection;
+    int team;
+};
+
+StructuredBuffer<BoidEntity> _BoidBufferRead;
+RWStructuredBuffer<BoidEntity> _BoidBufferWrite;
+
+// Neural network weights
+StructuredBuffer<float> _Weights1;  // INPUT_DIM * HIDDEN_SIZE
+StructuredBuffer<float> _Biases1;   // HIDDEN_SIZE
+StructuredBuffer<float> _Weights2;  // HIDDEN_SIZE * OUTPUT_DIM
+StructuredBuffer<float> _Biases2;   // OUTPUT_DIM
+
+int _BoidCount;
+float _PerceptionRadius;
+int _MaxNeighbors;
+int _InputDim;
+int _HiddenSize;
+int _OutputDim;
+float _OutputScale;
+float _MaxSpeed;
+float _DeltaTime;
+
+[numthreads(64, 1, 1)]
+void NeuralBoidUpdate(uint3 id : SV_DispatchThreadID)
+{
+    if ((int)id.x >= _BoidCount) return;
+
+    BoidEntity self = _BoidBufferRead[id.x];
+
+    // ── Perception: aggregate neighbor statistics ──
+    // Mirrors how NCA cells perceive their 3x3 neighborhood,
+    // but for continuous space we aggregate over neighbors within radius.
+
+    float3 avgRelPos = float3(0, 0, 0);
+    float3 avgRelVel = float3(0, 0, 0);
+    float3 closestRelPos = float3(0, 0, 0);
+    float closestDist = _PerceptionRadius * 2.0;
+    float avgDist = 0;
+    int neighborCount = 0;
+    float density = 0;
+
+    for (int i = 0; i < _BoidCount && neighborCount < _MaxNeighbors; i++)
+    {
+        if (i == (int)id.x) continue;
+
+        BoidEntity other = _BoidBufferRead[i];
+        float3 diff = other.position - self.position;
+        float dist = length(diff);
+
+        if (dist < _PerceptionRadius && dist > 0.001)
+        {
+            avgRelPos += diff;
+            avgRelVel += other.velocity - self.velocity;
+            avgDist += dist;
+
+            if (dist < closestDist)
+            {
+                closestDist = dist;
+                closestRelPos = diff;
+            }
+
+            density += 1.0 / (dist + 0.1);
+            neighborCount++;
+        }
+    }
+
+    if (neighborCount > 0)
+    {
+        avgRelPos /= (float)neighborCount;
+        avgRelVel /= (float)neighborCount;
+        avgDist /= (float)neighborCount;
+    }
+
+    // Build input vector (13 dims):
+    // [avgRelPos(3), avgRelVel(3), closestRelPos(3), avgDist(1), density(1), speed(1), neighborFrac(1)]
+    float inputVec[INPUT_DIM];
+    inputVec[0]  = avgRelPos.x;
+    inputVec[1]  = avgRelPos.y;
+    inputVec[2]  = avgRelPos.z;
+    inputVec[3]  = avgRelVel.x;
+    inputVec[4]  = avgRelVel.y;
+    inputVec[5]  = avgRelVel.z;
+    inputVec[6]  = closestRelPos.x;
+    inputVec[7]  = closestRelPos.y;
+    inputVec[8]  = closestRelPos.z;
+    inputVec[9]  = avgDist / _PerceptionRadius;
+    inputVec[10] = density;
+    inputVec[11] = length(self.velocity) / _MaxSpeed;
+    inputVec[12] = (float)neighborCount / (float)_MaxNeighbors;
+
+    // ── Neural network forward pass ──
+    // Layer 1: input(INPUT_DIM) -> hidden(HIDDEN_SIZE) with ReLU
+    float hidden[MAX_HIDDEN];
+    for (int h = 0; h < _HiddenSize; h++)
+    {
+        float sum = _Biases1[h];
+        for (int p = 0; p < _InputDim; p++)
+        {
+            sum += inputVec[p] * _Weights1[p * _HiddenSize + h];
+        }
+        hidden[h] = max(0.0, sum); // ReLU
+    }
+
+    // Layer 2: hidden(HIDDEN_SIZE) -> output(OUTPUT_DIM) linear
+    float output[MAX_OUTPUT];
+    for (int o = 0; o < _OutputDim; o++)
+    {
+        float sum = _Biases2[o];
+        for (int h = 0; h < _HiddenSize; h++)
+        {
+            sum += hidden[h] * _Weights2[h * _OutputDim + o];
+        }
+        output[o] = sum;
+    }
+
+    // ── Apply velocity delta ──
+    float3 velocityDelta = float3(output[0], output[1], output[2]) * _OutputScale;
+
+    // Add goal direction influence (preserves existing goal-seeking behavior)
+    float3 goalInfluence = normalize(self.goalDirection) * 0.1;
+
+    float3 newVelocity = self.velocity + (velocityDelta + goalInfluence) * _DeltaTime;
+
+    // Clamp speed
+    float speed = length(newVelocity);
+    if (speed > _MaxSpeed)
+        newVelocity = normalize(newVelocity) * _MaxSpeed;
+
+    BoidEntity result = self;
+    result.velocity = newVelocity;
+    result.position = self.position + newVelocity * _DeltaTime;
+    _BoidBufferWrite[id.x] = result;
+}
