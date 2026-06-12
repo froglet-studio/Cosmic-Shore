@@ -577,6 +577,12 @@ Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — inf
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
 
+Quest-data groundwork (landed alongside iteration 19): `Quest` + `SO_QuestChain`
++ `CallToAction` + `UserAction` + `VirtualItem` + `ItemPrice` ported verbatim.
+SA1 quest deviation CLOSED — `SO_TrainingGame.SO_QuestChain` is a real field
+again (file now fully verbatim). `QuestSystem` (105L, MonoBehaviour orchestrator)
+remains for the systems phase.
+
 Ecosystem + content completion (landed alongside iteration 19): the spawnable
 family is COMPLETE — SpawnableCrystal, SpawnableFlora, SpawnableGyroid,
 SpawnableWall, SpawnableLSystem, SpawnableWaypointTrack ported verbatim (all

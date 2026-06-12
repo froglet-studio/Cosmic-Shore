@@ -23,6 +23,6 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] public GameplayReward IntensityThreeReward;
         [SerializeField] public GameplayReward IntensityFourReward;
 
-        // PORT Deviation (SA1, restore when SO_QuestChain / Quest system ports): public SO_QuestChain SO_QuestChain;
+        public SO_QuestChain SO_QuestChain;
     }
 }
