@@ -1,0 +1,268 @@
+// ParticleAutomataStep.compute — Learned CONTINUOUS automaton (Particle NCA).
+//
+// The continuous-space generalization of Growing Neural Cellular Automata:
+// a population of particles in 3D, each carrying hidden state channels and
+// updating through a shared, local, LEARNED rule. The rule is trained in
+// Python (Tools/NCA_Training/train_particle_nca.py) to make the population
+// grow from a seed into a specified ANIMATED 3D shape, loop that animation,
+// and self-heal after damage.
+//
+// This shader replicates the training math exactly:
+//   perception (kNN stats + animation phase, 5C+6 values)
+//     -> dense(hidden, ReLU) -> dense(3 + C, linear)
+//     -> dp = tanh(out.xyz) * stepScale, dh = out[3..]
+//   stochastic per-particle fire mask, state clamp.
+//
+// Simulation happens in the unit-scale LOCAL space the model was trained in;
+// the renderer transforms into world space. Brute-force kNN is fine on GPU
+// for particle counts up to ~4096.
+
+#pragma kernel StepParticles
+#pragma kernel ScatterDamage
+#pragma kernel ResetToSeed
+
+#define CHANNEL_COUNT 8           // hidden state channels C (channel 0 = vitality)
+#define PERCEPTION_DIM 46         // 5 * C + 6
+#define OUTPUT_DIM 11             // 3 + C
+#define MAX_HIDDEN 128            // upper bound for the MLP hidden register array
+#define MAX_NEIGHBORS 16          // upper bound for the kNN scratch arrays
+
+struct AutomataParticle
+{
+    float3 position;              // local/unit space
+    float4 state0;                // channels 0-3
+    float4 state1;                // channels 4-7
+};
+
+StructuredBuffer<AutomataParticle> _ParticlesRead;
+RWStructuredBuffer<AutomataParticle> _ParticlesWrite;
+
+// Trained weights (layout produced by train_particle_nca.py export)
+StructuredBuffer<float> _Weights1;   // PERCEPTION_DIM * hidden, [input * hidden + output]
+StructuredBuffer<float> _Biases1;    // hidden
+StructuredBuffer<float> _Weights2;   // hidden * OUTPUT_DIM, [hidden * OUTPUT_DIM + output]
+StructuredBuffer<float> _Biases2;    // OUTPUT_DIM
+
+uint _ParticleCount;
+uint _KNeighbors;                    // <= MAX_NEIGHBORS, from the weight header
+uint _HiddenSize;                    // <= MAX_HIDDEN, from the weight header
+float _PerceptionRadius;
+float _StepScale;
+float _FireRate;
+float _StateClamp;
+float _Phase;                        // animation phase in [0,1)
+uint _StepSeed;                      // changes every step for the stochastic mask
+
+// ScatterDamage params (local space)
+float3 _DamageCenter;
+float _DamageRadius;
+float _ScatterRadius;
+
+// ResetToSeed params
+float _SeedRadius;
+
+// ── RNG (Wang hash) ─────────────────────────────────────────────────────
+
+uint WangHash(uint s)
+{
+    s = (s ^ 61u) ^ (s >> 16);
+    s *= 9u;
+    s ^= s >> 4;
+    s *= 0x27d4eb2du;
+    s ^= s >> 15;
+    return s;
+}
+
+float Rand01(uint a, uint b)
+{
+    return WangHash(a * 1973u + b * 9277u + 1u) / 4294967295.0;
+}
+
+// Standard normal via Box-Muller, for seed/scatter placement.
+float3 RandGaussian3(uint id, uint salt)
+{
+    float u1 = max(Rand01(id, salt), 1e-6);
+    float u2 = Rand01(id, salt + 101u);
+    float u3 = max(Rand01(id, salt + 211u), 1e-6);
+    float u4 = Rand01(id, salt + 307u);
+    float r1 = sqrt(-2.0 * log(u1));
+    float r2 = sqrt(-2.0 * log(u3));
+    return float3(
+        r1 * cos(6.2831853 * u2),
+        r1 * sin(6.2831853 * u2),
+        r2 * cos(6.2831853 * u4));
+}
+
+float GetChannel(AutomataParticle p, int ch)
+{
+    float4 s = ch < 4 ? p.state0 : p.state1;
+    int c = ch & 3;
+    if (c == 0) return s.x;
+    if (c == 1) return s.y;
+    if (c == 2) return s.z;
+    return s.w;
+}
+
+// ── Kernel: StepParticles ───────────────────────────────────────────────
+
+[numthreads(64, 1, 1)]
+void StepParticles(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _ParticleCount) return;
+
+    AutomataParticle self = _ParticlesRead[id.x];
+
+    // kNN by brute force: keep the K nearest in insertion-sorted scratch.
+    float bestDist[MAX_NEIGHBORS];
+    uint bestIdx[MAX_NEIGHBORS];
+    uint k = min(_KNeighbors, (uint)MAX_NEIGHBORS);
+
+    uint i;
+    for (i = 0; i < k; i++)
+    {
+        bestDist[i] = 1e9;
+        bestIdx[i] = id.x;
+    }
+
+    for (uint j = 0; j < _ParticleCount; j++)
+    {
+        if (j == id.x) continue;
+        float d = distance(_ParticlesRead[j].position, self.position);
+        if (d >= bestDist[k - 1]) continue;
+
+        uint slot = k - 1;
+        while (slot > 0 && bestDist[slot - 1] > d)
+        {
+            bestDist[slot] = bestDist[slot - 1];
+            bestIdx[slot] = bestIdx[slot - 1];
+            slot--;
+        }
+        bestDist[slot] = d;
+        bestIdx[slot] = j;
+    }
+
+    // ── Perception: continuous analog of identity + Sobel filters ──
+    // Layout MUST match training: [h(C), lap(C), grad(C*3), mu(3), density(1), sin, cos]
+    float perception[PERCEPTION_DIM];
+
+    int ch;
+    for (ch = 0; ch < CHANNEL_COUNT; ch++)
+        perception[ch] = GetChannel(self, ch);
+
+    float lap[CHANNEL_COUNT];
+    float3 grad[CHANNEL_COUNT];
+    for (ch = 0; ch < CHANNEL_COUNT; ch++)
+    {
+        lap[ch] = 0;
+        grad[ch] = float3(0, 0, 0);
+    }
+    float3 mu = float3(0, 0, 0);
+    float wsum = 0;
+
+    for (i = 0; i < k; i++)
+    {
+        AutomataParticle other = _ParticlesRead[bestIdx[i]];
+        float3 d = other.position - self.position;
+        float r = max(bestDist[i], 1e-6);
+        float3 dir = d / r;
+        float w = saturate(1.0 - bestDist[i] / _PerceptionRadius);
+
+        for (ch = 0; ch < CHANNEL_COUNT; ch++)
+        {
+            float hd = GetChannel(other, ch) - GetChannel(self, ch);
+            lap[ch] += hd * w;
+            grad[ch] += hd * dir * w;
+        }
+        mu += d * w;
+        wsum += w;
+    }
+
+    float wnorm = max(wsum, 1e-6);
+    for (ch = 0; ch < CHANNEL_COUNT; ch++)
+    {
+        perception[CHANNEL_COUNT + ch] = lap[ch] / wnorm;
+        perception[2 * CHANNEL_COUNT + ch * 3 + 0] = grad[ch].x / wnorm;
+        perception[2 * CHANNEL_COUNT + ch * 3 + 1] = grad[ch].y / wnorm;
+        perception[2 * CHANNEL_COUNT + ch * 3 + 2] = grad[ch].z / wnorm;
+    }
+
+    int baseIdx = 5 * CHANNEL_COUNT;
+    perception[baseIdx + 0] = mu.x / wnorm;
+    perception[baseIdx + 1] = mu.y / wnorm;
+    perception[baseIdx + 2] = mu.z / wnorm;
+    perception[baseIdx + 3] = wsum / (float)k;
+
+    float s, c;
+    sincos(6.2831853 * _Phase, s, c);
+    perception[baseIdx + 4] = s;
+    perception[baseIdx + 5] = c;
+
+    // ── Learned update rule: dense(hidden, ReLU) -> dense(3 + C) ──
+    float hidden[MAX_HIDDEN];
+    uint hCount = min(_HiddenSize, (uint)MAX_HIDDEN);
+    for (uint h = 0; h < hCount; h++)
+    {
+        float sum = _Biases1[h];
+        for (int p = 0; p < PERCEPTION_DIM; p++)
+            sum += perception[p] * _Weights1[p * hCount + h];
+        hidden[h] = max(0.0, sum);
+    }
+
+    float outVal[OUTPUT_DIM];
+    for (int o = 0; o < OUTPUT_DIM; o++)
+    {
+        float sum = _Biases2[o];
+        for (uint h2 = 0; h2 < hCount; h2++)
+            sum += hidden[h2] * _Weights2[h2 * OUTPUT_DIM + o];
+        outVal[o] = sum;
+    }
+
+    // ── Apply: stochastic fire mask + bounded position step ──
+    float fire = Rand01(id.x, _StepSeed) <= _FireRate ? 1.0 : 0.0;
+
+    float3 dp = tanh(float3(outVal[0], outVal[1], outVal[2])) * _StepScale;
+    self.position += dp * fire;
+
+    self.state0 += float4(outVal[3], outVal[4], outVal[5], outVal[6]) * fire;
+    self.state1 += float4(outVal[7], outVal[8], outVal[9], outVal[10]) * fire;
+    self.state0 = clamp(self.state0, -_StateClamp, _StateClamp);
+    self.state1 = clamp(self.state1, -_StateClamp, _StateClamp);
+
+    _ParticlesWrite[id.x] = self;
+}
+
+// ── Kernel: ScatterDamage ───────────────────────────────────────────────
+// The continuous-automata analog of zeroing pixels: particles inside the
+// damage sphere are blasted to random positions with their state wiped.
+// Particle count is conserved; the learned rule pulls them back in.
+
+[numthreads(64, 1, 1)]
+void ScatterDamage(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _ParticleCount) return;
+
+    AutomataParticle p = _ParticlesRead[id.x];
+    if (distance(p.position, _DamageCenter) < _DamageRadius)
+    {
+        p.position = RandGaussian3(id.x, _StepSeed ^ 0x5eedu) * _ScatterRadius;
+        p.state0 = float4(0, 0, 0, 0);
+        p.state1 = float4(0, 0, 0, 0);
+    }
+    _ParticlesWrite[id.x] = p;
+}
+
+// ── Kernel: ResetToSeed ─────────────────────────────────────────────────
+// Tight gaussian ball at the origin with the vitality channel lit —
+// identical to the training seed, so growth replays from scratch.
+
+[numthreads(64, 1, 1)]
+void ResetToSeed(uint3 id : SV_DispatchThreadID)
+{
+    if (id.x >= _ParticleCount) return;
+
+    AutomataParticle p;
+    p.position = RandGaussian3(id.x, _StepSeed ^ 0xc0ffeeu) * _SeedRadius;
+    p.state0 = float4(1, 0, 0, 0);   // channel 0 = vitality
+    p.state1 = float4(0, 0, 0, 0);
+    _ParticlesWrite[id.x] = p;
+}
