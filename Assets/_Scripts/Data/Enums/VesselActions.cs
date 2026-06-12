@@ -23,6 +23,7 @@ namespace CosmicShore.Data
         SpeedTubes = 17,
         Bouncy = 18,
         MachCone = 19,
-        ExplosiveAcorn = 20
+        ExplosiveAcorn = 20,
+        Swing = 21
     }
 }

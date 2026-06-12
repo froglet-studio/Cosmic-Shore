@@ -17,7 +17,8 @@ namespace CosmicShore.Gameplay
         Interactive,
         Explosion,
         Implosion,
-        Grow
+        Grow,
+        Spider
     }
     
     public class PrismFactory : MonoBehaviour
@@ -41,6 +42,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private InteractivePrismPoolManager squirrelPrismPool;
         [SerializeField] private InteractivePrismPoolManager rhinoPrismPool;
         [SerializeField] private InteractivePrismPoolManager interactivePrismPool;
+        [SerializeField] private InteractivePrismPoolManager spiderPrismPool;
         
         [SerializeField] private PrismExplosionPoolManager explosionPool;
         [SerializeField] private PrismImplosionPoolManager implosionPool;
@@ -117,6 +119,10 @@ namespace CosmicShore.Gameplay
                     spawned = SpawnGrow(data);
                     break;
 
+                case PrismType.Spider:
+                    spawned = SpawnSpiderPrism(data);
+                    break;
+
                 // Add more cases here later
                 // case "Shockwave":
                 //     spawned = SpawnShockwave(data.OwnTeam, data.Position, data.Rotation);
@@ -137,6 +143,16 @@ namespace CosmicShore.Gameplay
             return prism ? prism.gameObject : null;
         }
             
+        GameObject SpawnSpiderPrism(PrismEventData data)
+        {
+            // Spider anchor prisms fall back to the interactive pool when no
+            // dedicated spider pool is assigned.
+            var pool = spiderPrismPool != null ? spiderPrismPool : interactivePrismPool;
+            if (pool == null) { CSDebug.LogWarning("[PrismFactory] No pool available for Spider prism."); return null; }
+            var prism = pool.Get(data.SpawnPosition, data.Rotation, pool.transform);
+            return prism ? prism.gameObject : null;
+        }
+
         GameObject SpawnDolphinPrism(PrismEventData data)
         {
             if (dolphinPrismPool == null) { CSDebug.LogWarning("[PrismFactory] dolphinPrismPool not set."); return null; }
