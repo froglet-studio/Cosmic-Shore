@@ -4,9 +4,10 @@ using System.Collections.Generic;
 namespace CosmicShore.Engine
 {
     /// <summary>
-    /// 32-layer mask with a name registry. Built-in layers mirror the original project's
-    /// defaults; game-specific layers register via <see cref="SetLayerName"/> (eventually
-    /// driven by ported project settings).
+    /// 32-layer mask with a name registry. Defaults mirror the original project's
+    /// layer table (ProjectSettings/TagManager.asset) — built-in engine layers 0-5
+    /// plus the game's project layers 6-18 — so NameToLayer resolves the same indices
+    /// the original engine did. Additional layers register via <see cref="SetLayerName"/>.
     /// </summary>
     [Serializable]
     public struct LayerMask
@@ -20,6 +21,20 @@ namespace CosmicShore.Engine
             ["Ignore Raycast"] = 2,
             ["Water"] = 4,
             ["UI"] = 5,
+            // Project layers ported from TagManager.asset:
+            ["3D UI"] = 6,
+            ["Skimmers"] = 7,
+            ["Ships"] = 8,
+            ["Crystals"] = 9,
+            ["Explosions"] = 10,
+            ["TrailBlocks"] = 11,
+            ["Projectiles"] = 12,
+            ["Skybox"] = 13,
+            ["Shards"] = 14,
+            ["Cage"] = 15,
+            ["Automata"] = 16,
+            ["Mound"] = 17,
+            ["TrailBlockOcclusion"] = 18,
         };
 
         static readonly string[] IndexToName = CreateIndexToName();

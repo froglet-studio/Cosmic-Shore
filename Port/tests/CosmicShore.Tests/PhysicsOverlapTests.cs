@@ -100,4 +100,57 @@ public class PhysicsOverlapTests : IDisposable
         Assert.Equal(1, Physics.OverlapSphereNonAlloc(Vector3.zero, 4f, results));
         Assert.Equal(0, Physics.OverlapSphereNonAlloc(Vector3.zero, 3.9f, results));
     }
+
+    // ── Allocating OverlapSphere + layer mask (Boid mound scan: 1 << "Mound") ──
+
+    [Fact]
+    public void LayerMask_ResolvesProjectLayers_FromTagManagerTable()
+    {
+        Assert.Equal(17, LayerMask.NameToLayer("Mound"));
+        Assert.Equal(11, LayerMask.NameToLayer("TrailBlocks"));
+        Assert.Equal(-1, LayerMask.NameToLayer("NotARealLayer"));
+    }
+
+    [Fact]
+    public void OverlapSphere_FiltersByLayerMask()
+    {
+        var mound = MakeSphere(new Vector3(2f, 0f, 0f));
+        mound.layer = LayerMask.NameToLayer("Mound");
+        var other = MakeSphere(new Vector3(0f, 2f, 0f)); // stays on Default (0)
+
+        var moundHits = Physics.OverlapSphere(Vector3.zero, 5f, 1 << LayerMask.NameToLayer("Mound"));
+        Assert.Single(moundHits);
+        Assert.Same(mound, moundHits[0].gameObject);
+
+        var allHits = Physics.OverlapSphere(Vector3.zero, 5f);
+        Assert.Equal(2, allHits.Length);
+        Assert.Same(mound, allHits[0].gameObject);   // registration order
+        Assert.Same(other, allHits[1].gameObject);
+    }
+
+    // ── CheckBox (assembler growth probes) ─────────────────────────────────
+
+    [Fact]
+    public void CheckBox_DetectsBoxAndSphereOverlap_AndClearSpace()
+    {
+        MakeBox(new Vector3(5f, 0f, 0f), new Vector3(2f, 2f, 2f));   // spans x ∈ [4, 6]
+        MakeSphere(new Vector3(0f, 5f, 0f));                          // radius 1 → y ∈ [4, 6]
+
+        Assert.True(Physics.CheckBox(new Vector3(3.5f, 0f, 0f), new Vector3(0.6f, 0.6f, 0.6f)));  // reaches x=4.1
+        Assert.True(Physics.CheckBox(new Vector3(0f, 3.5f, 0f), new Vector3(0.6f, 0.6f, 0.6f)));  // reaches y=4.1
+        Assert.False(Physics.CheckBox(new Vector3(3.3f, 0f, 0f), new Vector3(0.6f, 0.6f, 0.6f))); // stops at x=3.9
+        Assert.False(Physics.CheckBox(new Vector3(0f, 0f, 10f), new Vector3(1f, 1f, 1f)));        // empty space
+        // Oriented overload accepted (AABB semantics until the full physics phase).
+        Assert.True(Physics.CheckBox(new Vector3(3.5f, 0f, 0f), new Vector3(0.6f, 0.6f, 0.6f), Quaternion.identity));
+    }
+
+    [Fact]
+    public void CheckBox_IgnoresDisabledColliders()
+    {
+        var box = MakeBox(new Vector3(2f, 0f, 0f), new Vector3(2f, 2f, 2f));
+        Assert.True(Physics.CheckBox(new Vector3(2f, 0f, 0f), Vector3.one));
+
+        box.SetActive(false);
+        Assert.False(Physics.CheckBox(new Vector3(2f, 0f, 0f), Vector3.one));
+    }
 }

@@ -20,7 +20,7 @@ namespace CosmicShore.Engine
         public bool TryGetComponent<T>(out T component) where T : class => gameObject.TryGetComponent(out component);
         public T[] GetComponents<T>() where T : class => gameObject.GetComponents<T>();
         public T GetComponentInChildren<T>(bool includeInactive = false) where T : class => gameObject.GetComponentInChildren<T>(includeInactive);
-        public List<T> GetComponentsInChildren<T>(bool includeInactive = false) where T : class => gameObject.GetComponentsInChildren<T>(includeInactive);
+        public T[] GetComponentsInChildren<T>(bool includeInactive = false) where T : class => gameObject.GetComponentsInChildren<T>(includeInactive);
         public T GetComponentInParent<T>(bool includeInactive = false) where T : class => gameObject.GetComponentInParent<T>(includeInactive);
         public T AddComponent<T>() where T : Component => gameObject.AddComponent<T>();
 

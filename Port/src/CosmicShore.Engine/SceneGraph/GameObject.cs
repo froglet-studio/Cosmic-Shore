@@ -145,11 +145,11 @@ namespace CosmicShore.Engine
             return null;
         }
 
-        public List<T> GetComponentsInChildren<T>(bool includeInactive = false) where T : class
+        public T[] GetComponentsInChildren<T>(bool includeInactive = false) where T : class
         {
             var results = new List<T>();
             CollectComponentsInChildren(results, includeInactive);
-            return results;
+            return results.ToArray(); // original-engine contract: array result (callers index by .Length)
         }
 
         void CollectComponentsInChildren<T>(List<T> results, bool includeInactive) where T : class

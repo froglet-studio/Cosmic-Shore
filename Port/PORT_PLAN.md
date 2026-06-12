@@ -577,6 +577,27 @@ Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — inf
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
 
+Ecosystem groundwork part 4 (landed alongside iteration 18): the Assemblers
+family + Boid fauna chain ported verbatim — `Assembler` (base) + `GyroidAssembler`
++ `GyroidBondMate`/`GyroidBondMateData`/`GyroidBondMateDataContainer` (48-entry
+baked bond table) + `CornerSiteType` + `WallAssembler` + `SchwarzPAssembler`, plus
+`AssembledFlora` (carries `GrowthInfo`; one CT2 deviation: `crystal.GrowCrystal`
+restores with the crystal-growth arc), `Boid`, `BoidManager`, and `BoidController`.
+Engine gains original-contract API: `Physics.OverlapSphere` (allocating, optional
+layer mask), `Physics.CheckBox` (AABB semantics, oriented overload accepted),
+`LayerMask` defaults extended with the project's TagManager layer table (3D UI=6 …
+TrailBlockOcclusion=18, incl. Mound=17 for the boid mound scan), and
+`GetComponentsInChildren<T>` now returns `T[]` (original array contract — Boid
+indexes by `.Length`). Two serializer deviations: `Boid.collisionEffects` and
+`BoidManager.Boids` init inline (the original engine's deserializer auto-creates
+serialized lists; the port engine has none). 23 tests across
+AssemblerFamilyTests (bond table coverage, growth-site resolution through the real
+CheckBox probe, wall alternation, Schwarz P surface stepping + reservation),
+BoidChainTests (goal steering, Attach grazing + Explode combat through the real
+spatial query — opposing mass only, conserved-mass clean), and PhysicsOverlapTests
+(CheckBox, layer-mask filtering). Still open in this lane: LightFauna and
+BranchingFlora for rung-6 ambience.
+
 Shape-content groundwork part 2 (landed alongside iteration 18): 25 more
 spawnables ported verbatim (BaseballCurve, Batman, CardioidSmear, CliffordTorus,
 Comet, DartBoard, DriftCourse, Helicoid, HopfFibration, Infinity, Lightning,
@@ -600,10 +621,7 @@ freestyle) and general track decoration for the client.
 Ecosystem groundwork part 3 (landed alongside iteration 18):
 `Physics.OverlapSphereNonAlloc` implemented against the TriggerPass collider
 registry (trigger + non-trigger, deterministic registration order, capacity
-truncation) — the spatial query Boid behavior scans with. 4 tests. Concrete fauna
-finding: `Boid` is blocked on `BoidController` (extends BoidManager) and the
-Assemblers family (`GyroidAssembler` + bond-mate data, ~2,087L) — that's the next
-self-contained arc for rung-6 ambience, not an idle-window port.
+truncation) — the spatial query Boid behavior scans with. 4 tests.
 
 Ecosystem groundwork part 2 (landed alongside iteration 18): `Flora` + `Fauna` +
 `FaunaConfigurationSO` + `FaunaReproductionRules` ported verbatim. V12 fauna

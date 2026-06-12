@@ -175,6 +175,33 @@ namespace CosmicShore.Engine
         /// </summary>
         public static int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results)
             => GameLoop.Current?.Triggers.OverlapSphereNonAlloc(position, radius, results) ?? 0;
+
+        /// <summary>All layers — the original engine's default mask for overlap queries.</summary>
+        public const int AllLayers = ~0;
+
+        /// <summary>
+        /// Allocating sphere query (original-engine contract): every registered, active
+        /// collider overlapping the sphere whose GameObject layer is in
+        /// <paramref name="layerMask"/>, in deterministic registration order.
+        /// </summary>
+        public static Collider[] OverlapSphere(Vector3 position, float radius, int layerMask = AllLayers)
+            => GameLoop.Current?.Triggers.OverlapSphere(position, radius, layerMask) ?? Array.Empty<Collider>();
+
+        /// <summary>
+        /// Box occupancy query (original-engine contract): true when any registered,
+        /// active collider overlaps the box.
+        /// </summary>
+        public static bool CheckBox(Vector3 center, Vector3 halfExtents)
+            => GameLoop.Current?.Triggers.CheckBox(center, halfExtents) ?? false;
+
+        /// <summary>
+        /// Oriented overload. The trigger pass treats boxes as world-space AABBs
+        /// (rotation ignored — same phase-2 deviation as <see cref="TriggerPass"/> box
+        /// overlap); the orientation parameter is accepted for source compatibility and
+        /// gains effect with the full physics phase.
+        /// </summary>
+        public static bool CheckBox(Vector3 center, Vector3 halfExtents, Quaternion orientation)
+            => CheckBox(center, halfExtents);
     }
 
     /// <summary>

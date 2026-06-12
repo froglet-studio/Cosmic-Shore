@@ -194,6 +194,68 @@ namespace CosmicShore.Engine
             return count;
         }
 
+        /// <summary>
+        /// Allocating sphere query with layer filtering — backs
+        /// <see cref="Physics.OverlapSphere(Vector3, float, int)"/>. Same contract as
+        /// the non-alloc variant (registration order, trigger AND non-trigger,
+        /// inactive skipped) plus the original engine's layer-mask filter: a collider
+        /// qualifies when the bit for its GameObject's layer is set in the mask.
+        /// </summary>
+        internal Collider[] OverlapSphere(Vector3 position, float radius, int layerMask)
+        {
+            var results = new List<Collider>();
+            foreach (var collider in _colliders)
+            {
+                if (!collider.isActiveAndEnabled) continue;
+                if ((layerMask & (1 << collider.gameObject.layer)) == 0) continue;
+                if (!SphereOverlapsCollider(position, radius, collider)) continue;
+                results.Add(collider);
+            }
+            return results.ToArray();
+        }
+
+        /// <summary>
+        /// Box occupancy query — backs <see cref="Physics.CheckBox"/>. True when any
+        /// registered, active collider overlaps the box. Like the trigger pass's box
+        /// handling, the probe is a world-space AABB (orientation ignored — phase-2
+        /// deviation, see class doc); OBB support arrives with the full physics phase.
+        /// </summary>
+        internal bool CheckBox(Vector3 center, Vector3 halfExtents)
+        {
+            foreach (var collider in _colliders)
+            {
+                if (!collider.isActiveAndEnabled) continue;
+                if (BoxOverlapsCollider(center, halfExtents, collider)) return true;
+            }
+            return false;
+        }
+
+        static bool BoxOverlapsCollider(Vector3 center, Vector3 extents, Collider collider)
+        {
+            switch (collider)
+            {
+                case SphereCollider s:
+                {
+                    Vector3 sphereCenter = s.transform.TransformPoint(s.center);
+                    float radius = WorldRadius(s);
+                    var closest = new Vector3(
+                        Mathf.Clamp(sphereCenter.x, center.x - extents.x, center.x + extents.x),
+                        Mathf.Clamp(sphereCenter.y, center.y - extents.y, center.y + extents.y),
+                        Mathf.Clamp(sphereCenter.z, center.z - extents.z, center.z + extents.z));
+                    return (sphereCenter - closest).sqrMagnitude <= radius * radius;
+                }
+                case BoxCollider box:
+                {
+                    var (boxCenter, ext) = BoxBounds(box);
+                    return Mathf.Abs(center.x - boxCenter.x) <= extents.x + ext.x
+                        && Mathf.Abs(center.y - boxCenter.y) <= extents.y + ext.y
+                        && Mathf.Abs(center.z - boxCenter.z) <= extents.z + ext.z;
+                }
+                default:
+                    return false;
+            }
+        }
+
         static bool SphereOverlapsCollider(Vector3 center, float radius, Collider collider)
         {
             switch (collider)
