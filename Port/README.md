@@ -28,11 +28,18 @@ dotnet test
 Port/
 ├── PORT_PLAN.md                 # master inventory, phase roadmap, live status — START HERE
 ├── CosmicShore.slnx
+├── docs/                        # ENGINE_CORE.md, VESSEL_LAYER.md (arc survey + sequence)
 ├── src/
 │   ├── CosmicShore.Engine/      # first-party engine layer (Unity replacement)
-│   └── CosmicShore.Data/        # ported Data layer (verbatim from Assets/_Scripts/Data)
+│   ├── CosmicShore.Data/        # ported Data layer (verbatim from Assets/_Scripts/Data)
+│   ├── CosmicShore.Game/        # ported game code (mirrors Assets/_Scripts structure)
+│   ├── CosmicShore.Cli/         # headless smoke/sim harness (engine boot, SOAP, sims)
+│   └── CosmicShore.Client/      # playable SkimRace window (Silk.NET, sprint builds)
+├── dist/                        # playable progress-build zips (see play-latest.bat)
+├── artifacts/                   # curated headless render verifications
 └── tests/
-    └── CosmicShore.Tests/       # xunit suite (enum freezes, math, SOAP, networking, stats)
+    ├── CosmicShore.Tests/        # xunit suite (engine, vessel layer, enum freezes)
+    └── CosmicShore.Tests.Ported/ # NUnit 3 suite (Unity EditMode tests, verbatim)
 ```
 
 ## Porting conventions
