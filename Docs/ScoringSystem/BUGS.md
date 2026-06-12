@@ -201,7 +201,7 @@ domain on both peers).
 Files: `_Scripts/Utility/DataContainers/GameDataSO.cs`,
 `_Scripts/Controller/Arcade/MultiplayerDomainGamesController.cs`.
 
-### B13 — 🟡 Game end dead on the SECOND game after a menu return (stale RoundStats subscribers)
+### B13 — 🟢 Game end dead on the SECOND game after a menu return (stale RoundStats subscribers)
 **Reported (2026-06-12).** Party returns to Menu_Main together, host relaunches
 HexRace, the race plays normally — but when a domain reaches the crystal target,
 the Game End flow never fires (no turn end, no cinematic, no scoreboard, on any
@@ -241,7 +241,7 @@ the game end is permanently lost while gameplay continues normally, matching
 the report. Self-perpetuating: the only way out of an endless race is another
 mid-turn Main-Menu exit, which re-poisons the next game.
 
-**Fix (this commit).**
+**Fix (commit `d3cbbabb`).**
 - **Chokepoint reset:** new `RoundStats.ClearEventSubscriptions()` severs every
   external stat-event delegate. Called from `Player.PrepareForNewScene()`
   (server, BEFORE `Cleanup()` so the zeroing writes can't raise into dead
@@ -266,10 +266,13 @@ mid-turn Main-Menu exit, which re-poisons the next game.
   `GameDataSO.ResetAllData()` now resets `RequestedDomainCount` as
   `ResetRuntimeData`'s comment already claimed.
 
-**Verify (MPPM, host + ≥1 client):** (a) menu → HexRace → finish → scoreboard →
-Main Menu → HexRace again → finish: end flow fires on every machine; (b) same
-but exit the FIRST race mid-turn via pause-menu Main Menu — the second race
-must still end cleanly; (c) repeat 2–3× per S9.
+**✅ Verified in engine (2026-06-12)** — the reported repro (party menu-return →
+HexRace relaunch → objective reached) now runs the full end flow. The regression
+steps are codified as `TESTS.md` **T13**: (a) menu → HexRace → finish →
+scoreboard → Main Menu → HexRace again → finish: end flow fires on every
+machine; (b) same but exit the FIRST race mid-turn via pause-menu Main Menu —
+the second race must still end cleanly (the poison path); (c) repeat 2–3× per
+`../PartySystem/TESTS.md` S9.
 
 Files: `_Scripts/Data/Enums/RoundStats.cs`, `_Scripts/Controller/Player/Player.cs`,
 `_Scripts/Controller/Arcade/TurnMonitorController.cs`,
@@ -289,7 +292,7 @@ in a 2-human engine test** (broader mode coverage continuing; legacy-layout resi
 tracked in `TODOS.md` TD1). B11 (client-local menu domain writes) + B12 (stale
 pre-party RoundStats shadow) fixed 2026-06-11 — B12 verified in engine; B11's
 host-return sweep pending (`../PartySystem/BUGS.md` B9). B13 (stale RoundStats
-subscribers killing the second game's end flow) fixed 2026-06-12 — pending the
-in-engine repeat-cycle verification. B5 remains
+subscribers killing the second game's end flow) fixed & verified in engine
+2026-06-12 — regression steps in `TESTS.md` T13. B5 remains
 scheduled into **R10** (the unified ranked `ScoreResult` list dissolves it). No open
 read-through findings remain.
