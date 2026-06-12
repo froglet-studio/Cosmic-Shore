@@ -516,6 +516,15 @@ Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — inf
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
 
+Track-content groundwork (landed alongside iteration 18): `SpawnableBase` +
+`SpawnPoint` + `SpawnTrailData` ported verbatim (one dropped using:
+UnityEngine.Serialization — FormerlySerializedAs lives in CosmicShore.Engine).
+6 tests (caching by parameter hash, invalidation, leaf spawning, child-tree
+nesting). Next in this lane: `SpawnableWaypointTrack` (539L) — needs
+`CrystalPositionSet` from CrystalManager.cs (352L, unported; deferred until
+rung-3 integration to avoid colliding with the crystal-respawn work) — which
+then restores the CrystalCollisionTurnMonitor waypoint deviation.
+
 Rung-4 groundwork (landed alongside iteration 17, part 2): `TurnMonitor` (base) +
 `CrystalCollisionTurnMonitor` ported (UniTask→GameTask mechanical mappings; one
 deviation: `optionalEnvironment` waypoint-derived target restores when
