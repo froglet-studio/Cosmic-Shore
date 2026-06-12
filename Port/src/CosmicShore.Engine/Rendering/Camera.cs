@@ -11,6 +11,7 @@ namespace CosmicShore.Engine
         public static Camera main { get; internal set; }
 
         public bool enabled = true;
+        public Color backgroundColor = new(0.192f, 0.302f, 0.475f, 0f);
         public float fieldOfView = 60f;
         public float nearClipPlane = 0.3f;
         public float farClipPlane = 1000f;

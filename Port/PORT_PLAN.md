@@ -357,6 +357,24 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
   vessel layer as a dedicated multi-iteration arc (survey → engine Material/Pose →
   leaf classes → interfaces → restore deviations).
 
+- **Iteration 8** (2026-06-12, double): **V8 + V9 in one pass.** V8: `VesselTransformer`
+  ported verbatim (518L — the flight model: accumulated-rotation pitch/yaw/roll,
+  Slerp-smoothed orientation, throttle/boost/charged-boost speed composition, analog
+  drift with single/sharp tiers + non-gamepad MoveTowards easing + course decoupling,
+  throttle/velocity modifier stacks with engine-flare hooks, pose controls, reset);
+  10 flight-model tests freeze throttle convergence, boost composition, slow/velocity
+  modifiers, drift scaling + course lag, pose, reset, and gating. V9: engine E9
+  `ObjectPool<T>` + `MonoBehaviour.destroyCancellationToken` + `ColorUsage` +
+  `Camera.backgroundColor` + `Instantiate(original, parent, worldSpace)`; ported
+  verbatim: `ShipHelper` (VesselHelper.cs), `ThemeManagerDataContainerSO`,
+  `SO_MaterialSet`, `SO_ColorSet` (+DomainColorSet/EnvironmentColorSet),
+  `VesselCustomization`, `GenericPoolManager` (documented GameTask substitutions);
+  mapping structs extracted from R_VesselActionHandler per Deviation #8 pattern.
+  **#10c partial restores: VesselTransformer (V8) + Customization (V9) members live.**
+  12 new tests (pool semantics, pool-manager lifecycle, ShipHelper action wiring +
+  material application + theme push, customization paint). **632 tests green
+  (380 + 252)**; client smoke unaffected.
+
 - **Infra rescue** (2026-06-11, fresh session): prompter's first from-source run
   (`dotnet run --project Port\src\CosmicShore.Client`) failed — "Couldn't find a
   project to run". Root cause: the Unity root `.gitignore` ignores `*.csproj`/`*.sln`,
@@ -405,16 +423,15 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
   matrix, InputController Awake wiring, shape-key theory, flare, Update routing).
   **610 tests green (358 + 252)**; client smoke unaffected.
 
-## NEXT UP (iteration 8)
+## NEXT UP (iteration 9)
 
-Goal: V8 of the vessel-layer arc + sprint feedback.
+Goal: V10 of the vessel-layer arc + sprint feedback.
 
-1. **V8**: port `VesselTransformer` (518L, single-file oversize accepted) +
-   uncomment its IVesselStatus member (#10c partial restore). Behavior tests for the
-   flight model (AngleAxis rotation, throttle/boost composition, modifier structs).
-2. Sprint: rival balance from prompter feedback (S4 KNOWN ISSUE — rival can't beat a
-   perfect autopilot; vs humans it contests missed crystals). Tune overtake/rubber-band
-   so AI-vs-AI demos stay competitive.
+1. **V10**: port `GameDataSO` (~783L, single-file oversize accepted) + engine
+   `ISession` placeholder. Then V11 (CellConfigDataSO, BlockDensityGrid,
+   CellRuntimeDataSO) if the iteration has room.
+2. Sprint: react to prompter feedback on the S6 field race (drift feel, element
+   balance, rival pressure); fauna ambience / more hulls / shape modes on request.
 3. Grow the CLI toward an M2 vertical slice: one cell + crystals + 2 scripted vessels
    exchanging resource/elemental state on a seeded run.
 4. Update this file (status tables, iteration log, NEXT UP), commit, push.

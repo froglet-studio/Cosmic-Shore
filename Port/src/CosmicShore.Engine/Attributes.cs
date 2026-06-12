@@ -73,6 +73,16 @@ namespace CosmicShore.Engine
         public AddComponentMenuAttribute(string menuName) { this.menuName = menuName; }
     }
 
+    /// <summary>HDR/alpha color picker hint for serialized Color fields (inert at runtime).</summary>
+    [AttributeUsage(AttributeTargets.Field, AllowMultiple = false)]
+    public sealed class ColorUsageAttribute : Attribute
+    {
+        public readonly bool showAlpha;
+        public readonly bool hdr;
+        public ColorUsageAttribute(bool showAlpha) { this.showAlpha = showAlpha; }
+        public ColorUsageAttribute(bool showAlpha, bool hdr) { this.showAlpha = showAlpha; this.hdr = hdr; }
+    }
+
     /// <summary>
     /// Previous serialized name of a field — read by the asset pipeline (content phase)
     /// to migrate data written under the old name.

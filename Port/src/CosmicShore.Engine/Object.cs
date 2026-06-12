@@ -73,6 +73,20 @@ namespace CosmicShore.Engine
         public static T Instantiate<T>(T original) where T : Object
             => ObjectUtilities.InstantiateObject(original);
 
+        /// <summary>Clone and parent in one step (pool managers and spawners use this shape).</summary>
+        public static T Instantiate<T>(T original, Transform parent, bool instantiateInWorldSpace = false) where T : Object
+        {
+            var clone = ObjectUtilities.InstantiateObject(original);
+            var transform = clone switch
+            {
+                GameObject go => go.transform,
+                Component component => component.transform,
+                _ => null,
+            };
+            transform?.SetParent(parent, instantiateInWorldSpace);
+            return clone;
+        }
+
         /// <summary>Destroy synchronously, right now. Prefer <see cref="Destroy"/> in gameplay code.</summary>
         public static void DestroyImmediate(Object obj)
         {

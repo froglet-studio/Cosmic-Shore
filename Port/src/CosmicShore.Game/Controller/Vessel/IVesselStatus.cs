@@ -90,7 +90,7 @@ namespace CosmicShore.Gameplay
         List<GameObject> ShipGeometries { get; set; }
         Transform ShipTransform { get; }
 
-        // PORT Deviation #10c (restore at V8): VesselTransformer VesselTransformer { get; }
+        VesselTransformer VesselTransformer { get; }
 
         string Name { get; }
         VesselClassType VesselType { get; }
@@ -117,7 +117,7 @@ namespace CosmicShore.Gameplay
         // Renamed: IShipHUDController -> IVesselHUDController
         IVesselHUDController VesselHUDController { get; }
 
-        // PORT Deviation #10c (restore at V9): VesselCustomization Customization { get; }
+        VesselCustomization Customization { get; }
         // PORT Deviation #10c (restore at V17): R_VesselActionHandler ActionHandler { get; }
 
         R_ShipElementStatsHandler ElementalStatsHandler { get; }

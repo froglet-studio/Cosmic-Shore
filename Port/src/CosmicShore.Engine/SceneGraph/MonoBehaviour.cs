@@ -109,11 +109,25 @@ namespace CosmicShore.Engine
         public void StopAllCoroutines()
             => GameLoop.Current?.Coroutines.StopAll(this);
 
+        System.Threading.CancellationTokenSource _destroyCts;
+
+        /// <summary>
+        /// Cancelled when this behaviour is destroyed (same contract as the original
+        /// engine's MonoBehaviour.destroyCancellationToken, added in its 2022.3 line).
+        /// </summary>
+        public System.Threading.CancellationToken destroyCancellationToken
+            => (_destroyCts ??= new System.Threading.CancellationTokenSource()).Token;
+
         internal override void DestroyComponentNow()
         {
             if (destroyedFlag) return;
             if (enabledRun) DisableNow();
             if (awoken) InvokeGuarded(hooks.OnDestroy);
+            if (_destroyCts is { IsCancellationRequested: false })
+            {
+                try { _destroyCts.Cancel(); }
+                catch (Exception e) { Debug.LogException(e, this); }
+            }
             base.DestroyComponentNow();
         }
 

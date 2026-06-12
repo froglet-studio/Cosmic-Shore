@@ -37,6 +37,7 @@ namespace CosmicShore.Tests;
         public IInputStatus InputStatus { get; set; }
         public List<GameObject> ShipGeometries { get; set; }
         public Transform ShipTransform => null;
+        public VesselTransformer VesselTransformer { get; set; }
         public string Name => "stub";
         public VesselClassType VesselType => VesselClassType.Manta;
         public GameObject OrientationHandle => null;
@@ -48,6 +49,7 @@ namespace CosmicShore.Tests;
         public bool IsStationary { get; set; }
         public bool IsTranslationRestricted { get; set; }
         public IVesselHUDController VesselHUDController => null;
+        public VesselCustomization Customization => null;
         public R_ShipElementStatsHandler ElementalStatsHandler => null;
         public bool IsNetworkOwner => false;
         public bool IsNetworkClient => false;
@@ -69,6 +71,11 @@ namespace CosmicShore.Tests;
         public readonly List<(string name, Element element)> Bound = new();
         public void BindElementalFloat(string name, Element element) => Bound.Add((name, element));
 
+        public int SlowedAdds, SlowedRemoves;
+        public Material LastShipMaterial, LastSkimmerMaterial, LastAOEMaterial, LastConicMaterial;
+        public GameObject LastSilhouettePrefab;
+        public (Color highlight, Color core)? LastTrailColors;
+
         public void Initialize(IPlayer player) { }
         public void PerformShipControllerActions(InputEvents @event) { }
         public void StopShipControllerActions(InputEvents @event) { }
@@ -77,12 +84,12 @@ namespace CosmicShore.Tests;
         public void SetShipUp(float angle) { }
         public void DisableSkimmer() { }
         public void SetBoostMultiplier(float boostMultiplier) { }
-        public void SetShipMaterial(Material material) { }
-        public void SetBlockSilhouettePrefab(GameObject prefab) { }
-        public void SetAOEExplosionMaterial(Material material) { }
-        public void SetAOEConicExplosionMaterial(Material material) { }
-        public void SetSkimmerMaterial(Material material) { }
-        public void SetTrailColors(Color highlightColor, Color coreColor) { }
+        public void SetShipMaterial(Material material) => LastShipMaterial = material;
+        public void SetBlockSilhouettePrefab(GameObject prefab) => LastSilhouettePrefab = prefab;
+        public void SetAOEExplosionMaterial(Material material) => LastAOEMaterial = material;
+        public void SetAOEConicExplosionMaterial(Material material) => LastConicMaterial = material;
+        public void SetSkimmerMaterial(Material material) => LastSkimmerMaterial = material;
+        public void SetTrailColors(Color highlightColor, Color coreColor) => LastTrailColors = (highlightColor, coreColor);
         public void ToggleAIPilot(bool toggle) { }
         public void StartVessel() { }
         public bool AllowClearPrismInitialization() => false;
@@ -91,7 +98,7 @@ namespace CosmicShore.Tests;
         public void SetPose(Pose pose) { }
         public void ChangePlayer(IPlayer player) { }
         public void ModifyThrottle(float amount, float duration) { }
-        public void AddSlowedShipTransformToGameData() { }
-        public void RemoveSlowedShipTransformFromGameData() { }
+        public void AddSlowedShipTransformToGameData() => SlowedAdds++;
+        public void RemoveSlowedShipTransformFromGameData() => SlowedRemoves++;
     }
 
