@@ -1,10 +1,13 @@
 using System.Collections.Generic;
 using Unity.Burst;
 using Unity.Collections;
+using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Profiling;
 using UnityEngine;
 using CosmicShore.Core;
+using CosmicShore.ECS;
 using CosmicShore.Utilities;
 
 namespace CosmicShore.Game
@@ -140,7 +143,23 @@ namespace CosmicShore.Game
         private readonly Stack<int> _freeList = new(256);
         private NativeList<int> _hitIndices;
 
+        // Bridge references (parallel to _prisms) for syncing state to ECS companion entities.
+        // Populated during Register(), null for prisms without PrismEntityBridge.
+        private PrismEntityBridge[] _bridges;
+
+        // Cached ECS query for the hybrid path — avoids per-frame EntityQuery allocation.
+        private EntityQuery _ecsQuery;
+        private World _ecsQueryWorld;
+
+        // --- ProfilerMarkers ---
+        private static readonly ProfilerMarker s_processExplosion = new("AOE.ProcessExplosion");
+        private static readonly ProfilerMarker s_burstJobSchedule = new("AOE.BurstJob.Schedule");
+        private static readonly ProfilerMarker s_burstJobScheduleECS = new("AOE.BurstJob.ScheduleECS");
+        private static readonly ProfilerMarker s_resolveDamageLegacy = new("AOE.ResolveDamage.Legacy");
+        private static readonly ProfilerMarker s_resolveDamageECS = new("AOE.ResolveDamage.ECS");
+
         public bool IsAvailable => _spatial.IsCreated;
+        public int HighWaterMark => _highWaterMark;
 
         public static PrismAOERegistry EnsureInstance()
         {
@@ -156,6 +175,7 @@ namespace CosmicShore.Game
             _spatial = new NativeArray<PrismSpatialData>(INITIAL_CAPACITY, Allocator.Persistent);
             _damage = new NativeArray<PrismDamageData>(INITIAL_CAPACITY, Allocator.Persistent);
             _prisms = new Prism[INITIAL_CAPACITY];
+            _bridges = new PrismEntityBridge[INITIAL_CAPACITY];
             _hitIndices = new NativeList<int>(512, Allocator.Persistent);
         }
 
@@ -180,6 +200,7 @@ namespace CosmicShore.Game
             }
 
             _prisms[index] = prism;
+            _bridges[index] = prism.TryGetComponent(out PrismEntityBridge bridge) ? bridge : null;
 
             // Build flags byte
             byte flags = PrismFlags.IsActive;
@@ -198,6 +219,17 @@ namespace CosmicShore.Game
                 Domain = (int)prism.Domain
             };
 
+            // Create companion entity if bridge is present and ECS is enabled
+            if (_bridges[index] != null)
+            {
+                _bridges[index].CreateCompanionEntity(
+                    _spatial[index].Position,
+                    _spatial[index].Flags,
+                    _damage[index].Volume,
+                    _damage[index].Domain,
+                    index);
+            }
+
             return index;
         }
 
@@ -205,10 +237,12 @@ namespace CosmicShore.Game
         {
             if (!_spatial.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
+            _bridges[index]?.DestroyCompanionEntity();
             var s = _spatial[index];
             s.Flags = 0; // clear all flags including IsActive
             _spatial[index] = s;
             _prisms[index] = null;
+            _bridges[index] = null;
             _freeList.Push(index);
         }
 
@@ -219,6 +253,7 @@ namespace CosmicShore.Game
             var s = _spatial[index];
             s.Flags |= PrismFlags.Destroyed;
             _spatial[index] = s;
+            _bridges[index]?.MarkDestroyed();
         }
 
         public void UpdateShieldState(int index, bool shielded, bool superShielded)
@@ -231,6 +266,7 @@ namespace CosmicShore.Game
             if (shielded) s.Flags |= PrismFlags.IsShielded;
             if (superShielded) s.Flags |= PrismFlags.IsSuperShielded;
             _spatial[index] = s;
+            _bridges[index]?.UpdateFlags(s.Flags);
         }
 
         public void UpdateDomain(int index, int domain)
@@ -240,6 +276,7 @@ namespace CosmicShore.Game
             var d = _damage[index];
             d.Domain = domain;
             _damage[index] = d;
+            _bridges[index]?.UpdateDamageData(d.Volume, d.Domain);
         }
 
         /// <summary>
@@ -252,6 +289,53 @@ namespace CosmicShore.Game
             var d = _damage[index];
             d.Volume = volume;
             _damage[index] = d;
+            _bridges[index]?.UpdateDamageData(d.Volume, d.Domain);
+        }
+
+        #endregion
+
+        #region Benchmark Support
+
+        /// <summary>
+        /// Registers synthetic prism data for benchmarking without requiring a Prism MonoBehaviour.
+        /// The managed _prisms[index] slot is null — ResolveDamage will skip it after the
+        /// spatial query, so this isolates Burst job cost from damage application cost.
+        /// </summary>
+        internal int RegisterSynthetic(float3 position, byte flags, float volume, int domain)
+        {
+            if (!_spatial.IsCreated) return -1;
+            int index;
+            if (_freeList.Count > 0)
+                index = _freeList.Pop();
+            else
+            {
+                index = _highWaterMark++;
+                EnsureCapacity(index);
+            }
+
+            _prisms[index] = null;
+            _bridges[index] = null;
+            _spatial[index] = new PrismSpatialData { Position = position, Flags = flags };
+            _damage[index] = new PrismDamageData { Volume = volume, Domain = domain };
+            return index;
+        }
+
+        /// <summary>
+        /// Clears all registered prisms. Used by benchmark to reset between runs.
+        /// </summary>
+        internal void ClearAll()
+        {
+            if (!_spatial.IsCreated) return;
+            for (int i = 0; i < _highWaterMark; i++)
+            {
+                _prisms[i] = null;
+                _bridges[i] = null;
+                var s = _spatial[i];
+                s.Flags = 0;
+                _spatial[i] = s;
+            }
+            _freeList.Clear();
+            _highWaterMark = 0;
         }
 
         #endregion
@@ -260,20 +344,46 @@ namespace CosmicShore.Game
 
         /// <summary>
         /// Processes one frame of AOE explosion damage.
-        ///
-        /// Phase 1 (Burst job): Scans _spatial array (16B/prism, 4 per cache line).
-        ///   - Checks Flags byte + distance² against all registered prisms.
-        ///   - Outputs indices of prisms within radius to _hitIndices.
-        ///
-        /// Phase 2 (main thread): For each hit index (typically dozens, not thousands):
-        ///   - Reads _damage[idx] for domain/shield info (cold data, not in Burst working set).
-        ///   - Applies domain logic, shield activation/deactivation, or damage.
-        ///   - Syncs results back to registry.
+        /// Delegates to ECS or legacy path based on PrismEntityBridge.UseECS toggle.
         ///
         /// Returns true if the explosion should continue, false if it should be destroyed
-        /// (e.g. hit a super-shielded enemy prism — mirrors original Destroy(gameObject) behavior).
+        /// (e.g. hit a super-shielded enemy prism).
         /// </summary>
         public bool ProcessExplosionFrame(
+            Vector3 center,
+            float radius,
+            float speed,
+            float inertia,
+            Domains explosionDomain,
+            bool affectSelf,
+            bool destructive,
+            bool devastating,
+            bool shielding,
+            bool anonymous,
+            IVessel vessel,
+            HashSet<int> alreadyHit)
+        {
+            using (s_processExplosion.Auto())
+            {
+                if (PrismEntityBridge.UseECS)
+                {
+                    return ProcessExplosionFrameECS(
+                        center, radius, speed, inertia,
+                        explosionDomain, affectSelf, destructive, devastating, shielding,
+                        anonymous, vessel, alreadyHit);
+                }
+
+                return ProcessExplosionFrameLegacy(
+                    center, radius, speed, inertia,
+                    explosionDomain, affectSelf, destructive, devastating, shielding,
+                    anonymous, vessel, alreadyHit);
+            }
+        }
+
+        /// <summary>
+        /// Legacy path: Burst job over manually-managed NativeArrays.
+        /// </summary>
+        private bool ProcessExplosionFrameLegacy(
             Vector3 center,
             float radius,
             float speed,
@@ -292,28 +402,133 @@ namespace CosmicShore.Game
             // --- Phase 1: Burst job over hot spatial data ---
             _hitIndices.Clear();
 
-            // Ensure NativeList capacity can hold all prisms — AddNoResize in
-            // ParallelWriter will throw if capacity < count, killing the async loop
-            // and leaving the explosion stuck at max scale.
             if (_hitIndices.Capacity < _highWaterMark)
                 _hitIndices.Capacity = _highWaterMark;
 
-            var job = new AOESpatialQueryJob
+            using (s_burstJobSchedule.Auto())
             {
-                Prisms = _spatial,
-                Center = (float3)center,
-                RadiusSq = radius * radius,
-                HitIndices = _hitIndices.AsParallelWriter()
-            };
+                var job = new AOESpatialQueryJob
+                {
+                    Prisms = _spatial,
+                    Center = (float3)center,
+                    RadiusSq = radius * radius,
+                    HitIndices = _hitIndices.AsParallelWriter()
+                };
 
-            var handle = job.Schedule(_highWaterMark, JOB_BATCH_SIZE);
-            handle.Complete();
+                job.Schedule(_highWaterMark, JOB_BATCH_SIZE).Complete();
+            }
 
             // --- Phase 2: Main thread damage logic over cold data + managed refs ---
+            return ResolveDamageLegacy(
+                center, speed, inertia, explosionDomain, affectSelf,
+                destructive, devastating, shielding, anonymous, vessel, alreadyHit);
+        }
+
+        /// <summary>
+        /// ECS path: Burst job reads from EntityQuery-sourced NativeArrays.
+        /// Same AOESpatialQueryJob, different data source. Falls back to legacy on ECS failure.
+        ///
+        /// AOESpatial has identical 16B layout to PrismSpatialData — the NativeArray is
+        /// reinterpreted zero-cost via NativeArray.Reinterpret() for the Burst job.
+        /// Hit indices map to managed Prism[] via AOEManagedRef.ManagedIndex.
+        /// </summary>
+        private bool ProcessExplosionFrameECS(
+            Vector3 center,
+            float radius,
+            float speed,
+            float inertia,
+            Domains explosionDomain,
+            bool affectSelf,
+            bool destructive,
+            bool devastating,
+            bool shielding,
+            bool anonymous,
+            IVessel vessel,
+            HashSet<int> alreadyHit)
+        {
+            if (!_spatial.IsCreated) return true;
+
+            var world = World.DefaultGameObjectInjectionWorld;
+            if (world == null || !world.IsCreated)
+            {
+                return ProcessExplosionFrameLegacy(
+                    center, radius, speed, inertia,
+                    explosionDomain, affectSelf, destructive, devastating, shielding,
+                    anonymous, vessel, alreadyHit);
+            }
+
+            if (_ecsQueryWorld != world)
+            {
+                _ecsQuery = new EntityQueryBuilder(Allocator.Temp)
+                    .WithAll<AOESpatial, AOEDamage, AOEManagedRef>()
+                    .Build(world.EntityManager);
+                _ecsQueryWorld = world;
+            }
+
+            int entityCount = _ecsQuery.CalculateEntityCount();
+            if (entityCount == 0) return true;
+
+            // Get parallel arrays from ECS — TempJob is a fast bump allocator, ~0 cost
+            var ecsSpatial = _ecsQuery.ToComponentDataArray<AOESpatial>(Allocator.TempJob);
+            var ecsDamage = _ecsQuery.ToComponentDataArray<AOEDamage>(Allocator.TempJob);
+            var ecsManagedRefs = _ecsQuery.ToComponentDataArray<AOEManagedRef>(Allocator.TempJob);
+
+            // Reinterpret AOESpatial (IComponentData, 16B) as PrismSpatialData (plain struct, 16B)
+            // Same memory layout — position (float3, 12B) + flags (byte, 1B) + padding (3B)
+            var spatialForJob = ecsSpatial.Reinterpret<PrismSpatialData>();
+
+            // --- Phase 1: Same Burst job, ECS-sourced data ---
+            _hitIndices.Clear();
+            if (_hitIndices.Capacity < entityCount)
+                _hitIndices.Capacity = entityCount;
+
+            using (s_burstJobScheduleECS.Auto())
+            {
+                var job = new AOESpatialQueryJob
+                {
+                    Prisms = spatialForJob,
+                    Center = (float3)center,
+                    RadiusSq = radius * radius,
+                    HitIndices = _hitIndices.AsParallelWriter()
+                };
+
+                job.Schedule(entityCount, JOB_BATCH_SIZE).Complete();
+            }
+
+            // --- Phase 2: Damage resolution using managed refs to map back to Prism[] ---
+            bool shouldContinue = ResolveDamageECS(
+                center, speed, inertia, explosionDomain, affectSelf,
+                destructive, devastating, shielding, anonymous, vessel, alreadyHit,
+                ecsSpatial, ecsDamage, ecsManagedRefs);
+
+            ecsSpatial.Dispose();
+            ecsDamage.Dispose();
+            ecsManagedRefs.Dispose();
+
+            return shouldContinue;
+        }
+
+        /// <summary>
+        /// Phase 2 damage resolution for the legacy path.
+        /// Hit indices from the Burst job index directly into the registry's parallel arrays.
+        /// </summary>
+        private bool ResolveDamageLegacy(
+            Vector3 center,
+            float speed,
+            float inertia,
+            Domains explosionDomain,
+            bool affectSelf,
+            bool destructive,
+            bool devastating,
+            bool shielding,
+            bool anonymous,
+            IVessel vessel,
+            HashSet<int> alreadyHit)
+        {
+            using var _ = s_resolveDamageLegacy.Auto();
             bool shouldContinue = true;
             int expDomain = (int)explosionDomain;
 
-            // Cache vessel info to avoid repeated interface property access
             Domains vesselDomain = Domains.None;
             string vesselPlayerName = null;
             if (!anonymous && vessel != null)
@@ -343,23 +558,17 @@ namespace CosmicShore.Game
                 var prism = _prisms[idx];
                 if (prism == null || prism.destroyed) continue;
 
-                // Read cold data — only for hit prisms, never pollutes the Burst job's cache
                 var flags = _spatial[idx].Flags;
                 var dmg = _damage[idx];
                 int prismDomain = dmg.Domain;
 
-                // Super-shielded + different team: deactivate super shield and destroy explosion.
-                // Mirrors original ExecuteCommonPrismCommands which calls Destroy(gameObject)
-                // and intentionally falls through to the damage/shield logic below.
                 if ((prismDomain != expDomain || affectSelf) && (flags & PrismFlags.IsSuperShielded) != 0)
                 {
                     prism.DeactivateShields();
                     UpdateShieldState(idx, false, false);
                     shouldContinue = false;
-                    // Fall through — original code does NOT return/continue here
                 }
 
-                // Same team (and not affectSelf) or non-destructive: shield the prism
                 if ((prismDomain == expDomain && !affectSelf) || !destructive)
                 {
                     if (shielding && prismDomain == expDomain)
@@ -370,22 +579,116 @@ namespace CosmicShore.Game
                     continue;
                 }
 
-                // Compute impact vector (same formula as AOEExplosion.CalculateImpactVector)
                 Vector3 prismPos = (Vector3)_spatial[idx].Position;
                 Vector3 direction = (prismPos - center).normalized;
                 Vector3 impactVector = direction * speed * inertia;
 
-                // Deal damage
                 if (anonymous)
-                    prism.Damage(impactVector, Domains.None, "🔥GuyFawkes🔥", devastating);
+                    prism.Damage(impactVector, Domains.None, "\U0001f525GuyFawkes\U0001f525", devastating);
                 else
                     prism.Damage(impactVector, vesselDomain, vesselPlayerName, devastating);
 
-                // Sync registry with the result of Damage()
                 if (prism.destroyed)
                     MarkDestroyed(idx);
                 else
                     UpdateShieldState(idx,
+                        prism.prismProperties.IsShielded,
+                        prism.prismProperties.IsSuperShielded);
+            }
+
+            return shouldContinue;
+        }
+
+        /// <summary>
+        /// Phase 2 damage resolution for the ECS path.
+        /// Hit indices are into the EntityQuery snapshot arrays; AOEManagedRef maps back to _prisms[].
+        /// </summary>
+        private bool ResolveDamageECS(
+            Vector3 center,
+            float speed,
+            float inertia,
+            Domains explosionDomain,
+            bool affectSelf,
+            bool destructive,
+            bool devastating,
+            bool shielding,
+            bool anonymous,
+            IVessel vessel,
+            HashSet<int> alreadyHit,
+            NativeArray<AOESpatial> ecsSpatial,
+            NativeArray<AOEDamage> ecsDamage,
+            NativeArray<AOEManagedRef> ecsManagedRefs)
+        {
+            using var _ = s_resolveDamageECS.Auto();
+            bool shouldContinue = true;
+            int expDomain = (int)explosionDomain;
+
+            Domains vesselDomain = Domains.None;
+            string vesselPlayerName = null;
+            if (!anonymous && vessel != null)
+            {
+                var status = vessel.VesselStatus;
+                vesselDomain = status.Domain;
+                vesselPlayerName = status.Player.Name;
+            }
+
+            int newHitCount = 0;
+            for (int i = 0; i < _hitIndices.Length; i++)
+            {
+                int ecsIdx = _hitIndices[i];
+                int managedIdx = ecsManagedRefs[ecsIdx].ManagedIndex;
+
+                // Skip if already hit by this explosion (mirrors OnTriggerEnter once-per-pair behavior)
+                if (alreadyHit.Contains(managedIdx)) continue;
+
+                // Cap new damage per frame to spread load across frames.
+                // Don't add to alreadyHit — the Burst job will re-find these
+                // prisms next frame and we'll process them then.
+                if (newHitCount >= MAX_NEW_HITS_PER_FRAME)
+                    continue;
+
+                alreadyHit.Add(managedIdx);
+                newHitCount++;
+
+                var prism = _prisms[managedIdx];
+                if (prism == null || prism.destroyed) continue;
+
+                var flags = ecsSpatial[ecsIdx].Flags;
+                int prismDomain = ecsDamage[ecsIdx].Domain;
+
+                if ((prismDomain != expDomain || affectSelf) && (flags & PrismFlags.IsSuperShielded) != 0)
+                {
+                    prism.DeactivateShields();
+                    UpdateShieldState(managedIdx, false, false);
+                    shouldContinue = false;
+                }
+
+                if ((prismDomain == expDomain && !affectSelf) || !destructive)
+                {
+                    if (shielding && prismDomain == expDomain)
+                        prism.ActivateShield();
+                    else
+                        prism.ActivateShield(2f);
+                    UpdateShieldState(managedIdx, true, false);
+                    continue;
+                }
+
+                Vector3 prismPos = new Vector3(
+                    ecsSpatial[ecsIdx].Position.x,
+                    ecsSpatial[ecsIdx].Position.y,
+                    ecsSpatial[ecsIdx].Position.z);
+                Vector3 direction = (prismPos - center).normalized;
+                Vector3 impactVector = direction * speed * inertia;
+
+                if (anonymous)
+                    prism.Damage(impactVector, Domains.None, "\U0001f525GuyFawkes\U0001f525", devastating);
+                else
+                    prism.Damage(impactVector, vesselDomain, vesselPlayerName, devastating);
+
+                if (prism.destroyed)
+                    MarkDestroyed(managedIdx);
+                else
+                    UpdateShieldState(managedIdx,
                         prism.prismProperties.IsShielded,
                         prism.prismProperties.IsSuperShielded);
             }
@@ -415,10 +718,14 @@ namespace CosmicShore.Game
             _damage.Dispose();
             _damage = newDamage;
 
-            // Grow managed array
+            // Grow managed arrays
             var newPrisms = new Prism[newSize];
             System.Array.Copy(_prisms, newPrisms, _prisms.Length);
             _prisms = newPrisms;
+
+            var newBridges = new PrismEntityBridge[newSize];
+            System.Array.Copy(_bridges, newBridges, _bridges.Length);
+            _bridges = newBridges;
         }
 
         #endregion

@@ -66,9 +66,7 @@ public class VesselTransformer : MonoBehaviour
     private float _sharpDriftRotMult = 1f;
     private float _sharpDriftDamp;
     private float _frameTriggerSum;
-    private bool _driftEaseOutPending;
-    private const float DRIFT_EASE_SPEED = 12f; // ~83ms for 0→1 ramp
-    public bool IsDriftActive => _singleDriftActive || _sharpDriftActive || _driftEaseOutPending;
+    public bool IsDriftActive => _singleDriftActive || _sharpDriftActive;
 
     // ----------------------------- Update Loop -----------------------------
     protected virtual void Update()
@@ -79,25 +77,7 @@ public class VesselTransformer : MonoBehaviour
         VesselStatus.blockRotation = transform.rotation;
 
         if (decayBoost) DecayBoost();
-
-        // Smooth trigger sum for non-analog input to simulate a quick trigger pull
-        float rawTriggerSum = GetTriggerSum();
-        bool needsEasing = InputStatus != null
-                        && InputStatus.ActiveInputDevice != InputDeviceType.Gamepad;
-        _frameTriggerSum = needsEasing
-            ? Mathf.MoveTowards(_frameTriggerSum, rawTriggerSum, DRIFT_EASE_SPEED * Time.deltaTime)
-            : rawTriggerSum;
-
-        // Finish deferred ease-out once the smoothed value decays to zero
-        if (_driftEaseOutPending && _frameTriggerSum < 0.01f)
-        {
-            _frameTriggerSum = 0f;
-            _driftEaseOutPending = false;
-            RestoreDriftBase();
-            if (VesselStatus != null)
-                VesselStatus.IsDrifting = false;
-        }
-
+        _frameTriggerSum = GetTriggerSum();
         ApplyAnalogDrift();
         RotateShip();
 
@@ -157,7 +137,6 @@ public class VesselTransformer : MonoBehaviour
         _sharpDriftActive = false;
         _singleDriftParamsSet = false;
         _sharpDriftParamsSet = false;
-        _driftEaseOutPending = false;
         RestoreDriftBase();
         _singleDriftRotMult = 1f;
         _singleDriftDamp = 0f;
@@ -229,8 +208,6 @@ public class VesselTransformer : MonoBehaviour
     /// </summary>
     public void BeginDrift(float rotMult, float dampTarget, bool isSharp)
     {
-        _driftEaseOutPending = false;
-
         if (!_hasDriftBase)
         {
             _driftBaseRotations = new Vector3(PitchScaler, YawScaler, RollScaler);
@@ -266,14 +243,7 @@ public class VesselTransformer : MonoBehaviour
             _singleDriftActive = false;
 
         if (!_singleDriftActive && !_sharpDriftActive)
-        {
-            bool needsEasing = InputStatus != null
-                            && InputStatus.ActiveInputDevice != InputDeviceType.Gamepad;
-            if (needsEasing)
-                _driftEaseOutPending = true;
-            else
-                RestoreDriftBase();
-        }
+            RestoreDriftBase();
     }
 
     private void RestoreDriftBase()
@@ -306,12 +276,12 @@ public class VesselTransformer : MonoBehaviour
 
     /// <summary>
     /// Applies drift rotation scaling and damping each frame proportional to
-    /// the trigger intensity. Non-analog inputs are smoothed via MoveTowards
-    /// in Update() to simulate a quick human trigger pull.
+    /// the analog trigger intensity. For button/touch triggers this is binary
+    /// (0 or 1 or 2), giving identical behavior to the old system.
     /// </summary>
     private void ApplyAnalogDrift()
     {
-        if (!_hasDriftBase || VesselStatus == null || (!VesselStatus.IsDrifting && !_driftEaseOutPending))
+        if (!_hasDriftBase || VesselStatus == null || !VesselStatus.IsDrifting)
             return;
 
         float triggerSum = _frameTriggerSum;
@@ -400,7 +370,7 @@ public class VesselTransformer : MonoBehaviour
         VesselStatus.Speed = speed;
 
         // Drift course: blend between "go forward" and "drift course" based on analog intensity
-        if ((VesselStatus.IsDrifting || _driftEaseOutPending) && _hasDriftBase)
+        if (VesselStatus.IsDrifting && _hasDriftBase)
         {
             float driftAmount = Mathf.Clamp01(_frameTriggerSum);
 
