@@ -167,6 +167,14 @@ namespace CosmicShore.Engine
         public static bool Raycast(Vector3 origin, Vector3 direction, out RaycastHit hitInfo, float maxDistance = float.PositiveInfinity)
         { hitInfo = default; return false; }
         public static bool Raycast(Vector3 origin, Vector3 direction, float maxDistance = float.PositiveInfinity) => false;
+
+        /// <summary>
+        /// Original-contract sphere query against every registered collider (trigger and
+        /// non-trigger), backed by the loop's collider registry. Deterministic
+        /// registration-order results, truncated at the buffer length.
+        /// </summary>
+        public static int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results)
+            => GameLoop.Current?.Triggers.OverlapSphereNonAlloc(position, radius, results) ?? 0;
     }
 
     public class Collider : Behaviour

@@ -516,6 +516,14 @@ Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — inf
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
 
+Ecosystem groundwork part 3 (landed alongside iteration 18):
+`Physics.OverlapSphereNonAlloc` implemented against the TriggerPass collider
+registry (trigger + non-trigger, deterministic registration order, capacity
+truncation) — the spatial query Boid behavior scans with. 4 tests. Concrete fauna
+finding: `Boid` is blocked on `BoidController` (extends BoidManager) and the
+Assemblers family (`GyroidAssembler` + bond-mate data, ~2,087L) — that's the next
+self-contained arc for rung-6 ambience, not an idle-window port.
+
 Ecosystem groundwork part 2 (landed alongside iteration 18): `Flora` + `Fauna` +
 `FaunaConfigurationSO` + `FaunaReproductionRules` ported verbatim. V12 fauna
 deviations in Cell CLOSED: liveFauna registry, per-species lineage counts

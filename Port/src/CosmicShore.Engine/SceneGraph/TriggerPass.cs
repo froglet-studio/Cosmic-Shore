@@ -172,6 +172,52 @@ namespace CosmicShore.Engine
             }
         }
 
+        // ── Spatial queries ──────────────────────────────────────────
+
+        /// <summary>
+        /// Sphere query over the registered colliders — backs
+        /// <see cref="Physics.OverlapSphereNonAlloc"/>. Results fill in registration
+        /// order (deterministic), truncated at the buffer's capacity, exactly like the
+        /// original engine's non-alloc contract. Includes trigger AND non-trigger
+        /// colliders; inactive/disabled colliders are skipped.
+        /// </summary>
+        internal int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results)
+        {
+            int count = 0;
+            foreach (var collider in _colliders)
+            {
+                if (count >= results.Length) break;
+                if (!collider.isActiveAndEnabled) continue;
+                if (!SphereOverlapsCollider(position, radius, collider)) continue;
+                results[count++] = collider;
+            }
+            return count;
+        }
+
+        static bool SphereOverlapsCollider(Vector3 center, float radius, Collider collider)
+        {
+            switch (collider)
+            {
+                case SphereCollider s:
+                {
+                    Vector3 otherCenter = s.transform.TransformPoint(s.center);
+                    float radii = radius + WorldRadius(s);
+                    return (center - otherCenter).sqrMagnitude <= radii * radii;
+                }
+                case BoxCollider box:
+                {
+                    var (boxCenter, ext) = BoxBounds(box);
+                    var closest = new Vector3(
+                        Mathf.Clamp(center.x, boxCenter.x - ext.x, boxCenter.x + ext.x),
+                        Mathf.Clamp(center.y, boxCenter.y - ext.y, boxCenter.y + ext.y),
+                        Mathf.Clamp(center.z, boxCenter.z - ext.z, boxCenter.z + ext.z));
+                    return (center - closest).sqrMagnitude <= radius * radius;
+                }
+                default:
+                    return false;
+            }
+        }
+
         // ── Overlap math ─────────────────────────────────────────────
 
         static bool Overlaps(Collider a, Collider b) => (a, b) switch
