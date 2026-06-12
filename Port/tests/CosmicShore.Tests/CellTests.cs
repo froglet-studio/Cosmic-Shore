@@ -558,31 +558,37 @@ public class CellTests : IDisposable
         Assert.False(fauna.activeSelf); // no longer managed by the cell
     }
 
-    // ── Live fauna registry (MonoBehaviour stand-ins until Fauna ports) ─────
+    // ── Live fauna registry (real Fauna types — V12 deviation closed) ───────
+
+    class RegistryFauna : Fauna { }
 
     [Fact]
-    public void LiveFaunaRegistry_TracksInstances_AndDestroyedFaunaStayRemovable()
+    public void LiveFaunaRegistry_TracksLineage_AndDestroyedFaunaStayRemovable()
     {
         var cell = MakeInitializedCell(out _, out _);
         var faunaHost = new GameObject("fauna");
-        var fauna = faunaHost.AddComponent<PrismTeamManager>(); // any MonoBehaviour stands in
+        var fauna = faunaHost.AddComponent<RegistryFauna>();
+        var species = ScriptableObject.CreateInstance<FaunaConfigurationSO>();
 
-        cell.RegisterLiveFauna(fauna);
+        // AssignLineage binds host + species and registers in one step.
+        fauna.AssignLineage(cell, species);
         cell.RegisterLiveFauna(null); // guard
         Assert.Single(cell.LiveFauna);
-        Assert.Equal(1, cell.GetLiveHerbivoreCount());
-
-        // Per-species counts are keyed by the unported FaunaConfigurationSO —
-        // under the V12 deviation they stay empty.
-        Assert.Equal(0, cell.GetLiveFaunaCount(ScriptableObject.CreateInstance<CellConfigDataSO>()));
+        Assert.Equal(1, cell.GetLiveFaunaCount(species));
+        Assert.Equal(1, cell.GetLiveHerbivoreCount()); // default diet is Herbivore + alive prey
         Assert.Equal(0, cell.GetLiveFaunaCount(null));
 
-        // Destroyed-but-non-null fauna: invisible to the herbivore count, but
-        // still removable during teardown (`is null` guard, not `!fauna`).
+        // Lineage-less fauna are invisible to the registry (no SourceConfig).
+        var stray = new GameObject("stray").AddComponent<RegistryFauna>();
+        cell.RegisterLiveFauna(stray);
+        Assert.Single(cell.LiveFauna);
+
+        // Destroyed fauna: OnDestroy unregisters the lineage; the species count
+        // decrements and the herbivore count drops.
         Object.Destroy(faunaHost);
         loop.Tick(0.02f);
+        Assert.Equal(0, cell.GetLiveFaunaCount(species));
         Assert.Equal(0, cell.GetLiveHerbivoreCount());
-        cell.UnregisterLiveFauna(fauna);
         Assert.Empty(cell.LiveFauna);
 
         cell.UnregisterLiveFauna(null); // guard

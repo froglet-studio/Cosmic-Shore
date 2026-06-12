@@ -553,22 +553,15 @@ namespace CosmicShore.Gameplay
         //  See Docs/ECOSYSTEM.md §6/§7.
         // ---------------------------------------------------------------------
 
-        // PORT Deviation (V12, restore when FaunaConfigurationSO ports): readonly Dictionary<FaunaConfigurationSO, int> liveFaunaCounts = new();
-        // FaunaConfigurationSO : ScriptableObject and it is only a registry key here, so the
-        // base type stands in until the flora/fauna cluster ports.
-        readonly Dictionary<ScriptableObject, int> liveFaunaCounts = new();
-        // PORT Deviation (V12, restore when Fauna ports): readonly List<Fauna> liveFauna = new();
-        // Fauna : MonoBehaviour, so the base type stands in until the flora/fauna cluster ports.
-        readonly List<MonoBehaviour> liveFauna = new();
+        readonly Dictionary<FaunaConfigurationSO, int> liveFaunaCounts = new();
+        readonly List<Fauna> liveFauna = new();
 
         /// <summary>Live population of the species defined by <paramref name="config"/> in this cell.</summary>
-        // PORT Deviation (V12, restore when FaunaConfigurationSO ports): public int GetLiveFaunaCount(FaunaConfigurationSO config) =>
-        public int GetLiveFaunaCount(ScriptableObject config) =>
+        public int GetLiveFaunaCount(FaunaConfigurationSO config) =>
             config && liveFaunaCounts.TryGetValue(config, out int c) ? c : 0;
 
         /// <summary>All lineage-registered live fauna in this cell (any species, any diet).</summary>
-        // PORT Deviation (V12, restore when Fauna ports): public IReadOnlyList<Fauna> LiveFauna => liveFauna;
-        public IReadOnlyList<MonoBehaviour> LiveFauna => liveFauna;
+        public IReadOnlyList<Fauna> LiveFauna => liveFauna;
 
         /// <summary>
         /// Live herbivores still eligible as prey — the prey signal for predator
@@ -580,33 +573,26 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < liveFauna.Count; i++)
             {
                 var f = liveFauna[i];
-                // PORT Deviation (V12, restore when Fauna ports): if (f && f.Diet == FaunaDiet.Herbivore && f.IsAlivePrey) n++;
-                // (Diet/IsAlivePrey live on the unported Fauna type — every live entry counts
-                // until it lands.)
-                if (f) n++;
+                if (f && f.Diet == FaunaDiet.Herbivore && f.IsAlivePrey) n++;
             }
             return n;
         }
 
-        // PORT Deviation (V12, restore when Fauna ports): public void RegisterLiveFauna(Fauna fauna)
-        public void RegisterLiveFauna(MonoBehaviour fauna)
+        public void RegisterLiveFauna(Fauna fauna)
         {
-            // PORT Deviation (V12, restore when Fauna + FaunaConfigurationSO port): if (!fauna || !fauna.SourceConfig) return;
-            // PORT Deviation (V12, restore when Fauna + FaunaConfigurationSO port): liveFaunaCounts.TryGetValue(fauna.SourceConfig, out int c);
-            // PORT Deviation (V12, restore when Fauna + FaunaConfigurationSO port): liveFaunaCounts[fauna.SourceConfig] = c + 1;
-            if (!fauna) return;
+            if (!fauna || !fauna.SourceConfig) return;
+            liveFaunaCounts.TryGetValue(fauna.SourceConfig, out int c);
+            liveFaunaCounts[fauna.SourceConfig] = c + 1;
             liveFauna.Add(fauna);
         }
 
-        // PORT Deviation (V12, restore when Fauna ports): public void UnregisterLiveFauna(Fauna fauna)
-        public void UnregisterLiveFauna(MonoBehaviour fauna)
+        public void UnregisterLiveFauna(Fauna fauna)
         {
             // `is null` guard only — a destroyed-but-non-null fauna must still be
             // removable from the registry during teardown.
-            // PORT Deviation (V12, restore when Fauna + FaunaConfigurationSO port): if (fauna is null || !fauna.SourceConfig) return;
-            // PORT Deviation (V12, restore when Fauna + FaunaConfigurationSO port): if (liveFaunaCounts.TryGetValue(fauna.SourceConfig, out int c) && c > 0)
-            // PORT Deviation (V12, restore when Fauna + FaunaConfigurationSO port):     liveFaunaCounts[fauna.SourceConfig] = c - 1;
-            if (fauna is null) return;
+            if (fauna is null || !fauna.SourceConfig) return;
+            if (liveFaunaCounts.TryGetValue(fauna.SourceConfig, out int c) && c > 0)
+                liveFaunaCounts[fauna.SourceConfig] = c - 1;
             liveFauna.Remove(fauna);
         }
 

@@ -516,6 +516,16 @@ Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — inf
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
 
+Ecosystem groundwork part 2 (landed alongside iteration 18): `Flora` + `Fauna` +
+`FaunaConfigurationSO` + `FaunaReproductionRules` ported verbatim. V12 fauna
+deviations in Cell CLOSED: liveFauna registry, per-species lineage counts
+(`GetLiveFaunaCount(FaunaConfigurationSO)`), and `GetLiveHerbivoreCount` now use
+the real types (diet + alive-prey filtering live again). CellTests registry test
+rewritten against real lineage semantics (AssignLineage → register; OnDestroy →
+unregister + species decrement). Still open in this lane: concrete fauna
+(Boid/BoidManager, LightFauna) and concrete flora (BranchingFlora, AssembledFlora)
+for rung 6 ambience.
+
 Ecosystem groundwork (landed alongside iteration 18): the LifeForm family ported —
 `LifeForm` + `HealthPrism` + `Spindle` + `HealthBlockTracker` + `SpindleTracker` +
 `ILifeFormEntity` + `ITeamAssignable` (verbatim modulo substitutions; one CT1
