@@ -1,0 +1,213 @@
+using System.Collections.Generic;
+using System.Linq;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Engine.Soap;
+using CosmicShore.Engine;
+using CosmicShore.Utility;
+using CosmicShore.Data;
+namespace CosmicShore.Utility
+{
+    [CreateAssetMenu(
+        fileName = "DataContainer_" + nameof(CellRuntimeDataSO),
+        menuName = "ScriptableObjects/Data Containers/" + nameof(CellRuntimeDataSO))]
+    public class CellRuntimeDataSO : ScriptableObject
+    {
+        // ---------------------------------------------------------------------
+        // References (runtime)
+        // ---------------------------------------------------------------------
+
+        [Header("Design Time References")]
+        // PORT Deviation (V11, restore when GameDataSO ports): [SerializeField] GameDataSO gameData;
+        [SerializeField] public ScriptableEventNoParam OnResetForReplay;
+        [SerializeField] public ScriptableEventNoParam OnCrystalSpawned;
+        [SerializeField] public ScriptableEventNoParam OnCellItemsUpdated;
+        [SerializeField] public ScriptableEventCellPhase OnPhaseChanged;
+
+        [Header("Run Time References")]
+        public CellConfigDataSO Config; // <- your "CellConfigData"
+
+        // ---------------------------------------------------------------------
+        // Runtime State
+        // ---------------------------------------------------------------------
+
+        public Dictionary<int, CellStats> CellStatsList = new();
+
+        // PORT Deviation (V11, restore when Cell ports): public Cell Cell;
+        // PORT Deviation (V11, restore when Cell ports): public Transform CellTransform => Cell ? Cell.transform : null;
+
+        public List<CellItem> CellItems = new();
+        public List<Crystal> Crystals = new();
+
+        // ---------------------------------------------------------------------
+        // Public API
+        // ---------------------------------------------------------------------
+
+        public void AddCrystalToList(Crystal crystal)
+        {
+            if (!crystal) return;
+
+            CellItems.Add(crystal);
+            Crystals.Add(crystal);
+
+            OnCellItemsUpdated.Raise();
+        }
+
+        public bool TryRemoveItem(CellItem item)
+        {
+            if (!CellItems.Contains(item))
+                return false;
+
+            CellItems.Remove(item);
+            if (item is Crystal crystal)
+                Crystals.Remove(crystal);
+            OnCellItemsUpdated.Raise();
+            return true;
+        }
+
+        /// <summary>
+        /// Get crystal transform for local player (falls back to neutral, then first crystal).
+        /// Returns null if no crystal exists.
+        /// </summary>
+        public Transform CrystalTransform
+        {
+            get
+            {
+                if (!TryGetLocalCrystal(out Crystal crystal))
+                {
+                    CSDebug.LogWarning("[CellRuntimeDataSO] No local crystal found!");
+                    return null;
+                }
+                return crystal.transform;
+            }
+        }
+
+        /// <summary>
+        /// Get crystal for local player.
+        /// Tries local domain, then Blue (the "no team" sentinel — uncommitted crystals),
+        /// then first crystal.
+        /// </summary>
+        public bool TryGetLocalCrystal(out Crystal crystal)
+        {
+            crystal = null;
+
+            // PORT Deviation (V11, restore when GameDataSO ports): var ownDomain = gameData?.LocalPlayer?.Domain ?? Domains.Blue;
+            var ownDomain = Domains.Blue;
+
+            if (TryGetCrystalByDomain(ownDomain, out crystal))
+                return true;
+
+            if (TryGetCrystalByDomain(Domains.Blue, out crystal))
+                return true;
+
+            if (Crystals != null && Crystals.Count > 0 && Crystals[0])
+            {
+                crystal = Crystals[0];
+                return true;
+            }
+
+            return false;
+        }
+
+        bool TryGetCrystalByDomain(Domains domain, out Crystal crystal)
+        {
+            crystal = null;
+            if (Crystals == null || Crystals.Count == 0) return false;
+
+            foreach (var c in Crystals.Where(c => c && c.ownDomain == domain))
+            {
+                crystal = c;
+                return true;
+            }
+
+            return false;
+        }
+
+        public bool TryGetCrystalById(int crystalId, out Crystal crystal)
+        {
+            crystal = null;
+            if (Crystals == null || Crystals.Count == 0) return false;
+
+            foreach (var c in Crystals.Where(c => c && c.Id == crystalId))
+            {
+                crystal = c;
+                return true;
+            }
+
+            return false;
+        }
+
+        public void EnsureCellStats(int cellId)
+        {
+            if (CellStatsList == null)
+                CellStatsList = new Dictionary<int, CellStats>();
+
+            if (!CellStatsList.ContainsKey(cellId))
+                CellStatsList[cellId] = new CellStats
+                {
+                    LifeFormsInCell = 0,
+                    LiveBlockCount = 0,
+                    Phase = CellPhase.Calm,
+                    DominantDomain = Domains.Blue,
+                };
+        }
+
+        public int GetLifeFormsInCellSafe(int cellId)
+        {
+            EnsureCellStats(cellId);
+            return CellStatsList[cellId].LifeFormsInCell;
+        }
+
+        /// <summary>
+        /// Server-side write of phase + dominant domain + live block count for the
+        /// addressed cell. Raises <see cref="OnPhaseChanged"/> when the phase actually
+        /// transitions so consumers can react. The server calls this directly via
+        /// <see cref="Cell"/>; clients route through <c>CellNetworkSync.OnValueChanged</c>
+        /// so the same final state is observed everywhere.
+        /// </summary>
+        public void WriteCellRuntimeStats(int cellId, int liveBlockCount, CellPhase phase, Domains dominantDomain)
+        {
+            EnsureCellStats(cellId);
+
+            var stats = CellStatsList[cellId];
+            var previousPhase = stats.Phase;
+
+            stats.LiveBlockCount = liveBlockCount;
+            stats.Phase = phase;
+            stats.DominantDomain = dominantDomain;
+            CellStatsList[cellId] = stats;
+
+            if (phase != previousPhase)
+                OnPhaseChanged.Raise(phase);
+        }
+
+        /// <summary>
+        /// Runtime-only reset. Destroys crystals, clears lists, clears runtime refs.
+        /// Config is NOT cleared.
+        /// </summary>
+        public void ResetRuntimeData()
+        {
+            CSDebug.Log("<color=yellow>[CellRuntimeDataSO] Resetting runtime data</color>");
+
+            // PORT Deviation (V11, restore when Cell ports): Cell = null;
+
+            if (Crystals != null)
+            {
+                for (int i = Crystals.Count - 1; i >= 0; i--)
+                {
+                    if (Crystals[i] && Crystals[i].gameObject)
+                    {
+                        CSDebug.Log($"<color=yellow>[CellRuntimeDataSO] Destroying crystal {Crystals[i].Id}</color>");
+                        Object.Destroy(Crystals[i].gameObject);
+                    }
+                }
+                Crystals.Clear();
+            }
+
+            CellItems?.Clear();
+            CellStatsList?.Clear();
+
+            CSDebug.Log("<color=green>[CellRuntimeDataSO] Runtime data reset complete</color>");
+        }
+    }
+}
