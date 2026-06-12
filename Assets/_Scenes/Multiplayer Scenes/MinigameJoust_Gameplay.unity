@@ -491,7 +491,12 @@ PrefabInstance:
     - target: {fileID: 3397275166430212773, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
+      value:
+      objectReference: {fileID: 1059017678}
+    - target: {fileID: 3397275166430212773, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: CosmicShore.UI.Scoreboard, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 3509273578276065945, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
@@ -1000,6 +1005,12 @@ RectTransform:
 --- !u!1 &377908218 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2279452371261775173, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+    type: 3}
+  m_PrefabInstance: {fileID: 377908207}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &377908300 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7469907960593864752, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
     type: 3}
   m_PrefabInstance: {fileID: 377908207}
   m_PrefabAsset: {fileID: 0}
@@ -1700,8 +1711,9 @@ MonoBehaviour:
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
   winnerCrystalReward: 5
   playAgainButton: {fileID: 377908218}
-  mainMenuButton: {fileID: 0}
+  mainMenuButton: {fileID: 377908300}
   leaveLobbyButton: {fileID: 0}
+  onClickToMainMenu: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
   joustTurnMonitor: {fileID: 1628508345}
 --- !u!1 &1074736316
