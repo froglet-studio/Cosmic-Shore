@@ -34,6 +34,15 @@ namespace CosmicShore.Engine.Networking
         public virtual void OnNetworkSpawn() { }
         public virtual void OnNetworkDespawn() { }
 
+        /// <summary>
+        /// E17 (C4): virtual destroy hook matching the original Netcode NetworkBehaviour
+        /// surface — ported subclasses write <c>public override void OnDestroy()</c>
+        /// (VesselController, Player). The MonoBehaviour lifecycle discovers the
+        /// most-derived declaration reflectively and invokes it on destruction; this
+        /// base declaration only provides the override target and is a no-op.
+        /// </summary>
+        public virtual void OnDestroy() { }
+
         /// <summary>Bring this behaviour into the networked world. Defaults model single-process host-mode.</summary>
         public void Spawn(bool isServer = true, bool isClient = true, bool isOwner = true, ulong ownerClientId = 0)
         {
