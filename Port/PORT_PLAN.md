@@ -444,9 +444,13 @@ the next rung.
 
 ### Convergence ladder (each rung feelable on `git pull` + dotnet run)
 
-1. **Real flight + real AI** (NOW): vessels are real VesselController/VesselStatus/
-   VesselTransformer rigs; player input flows InputController→InputStatus verbatim;
-   drift is the real two-tier analog system; rivals are flown by the real AIPilot.
+1. **Real flight + real AI** ✅ (iteration 16): vessels are real VesselController/
+   VesselStatus/VesselTransformer rigs (`SkimRacePilot` in SkimRaceSim.cs); player
+   input writes the rig's real `InputStatus` (`RaceWindow._playerStatus = _pilot.Input`,
+   SkimInputStatus deleted); rivals are flown by the real AIPilot with per-pilot
+   `CellRuntimeDataSO` course registries for crystal retargeting. Verified headless:
+   4 pilots claiming (frame 1200: crystals [8,3,8,3], 22 claims), exit 0, HUD/minimap
+   intact, yaw+roll gamepad inversions preserved.
 2. **Real trails = prisms**: VesselPrismController spawns real Prisms (visible
    blocks, conserved mass); real Skimmer contact grants energy through the trigger
    pipeline (contact arc landed).
@@ -458,21 +462,21 @@ the next rung.
 6. Onward: cells/fauna ambience, more vessel classes, game modes — always through
    the real systems.
 
-## NEXT UP (iteration 16)
+## NEXT UP (iteration 17)
 
-1. **Rung 1**: client-convergence agent — rebuild SkimRace's sim on the real rig
-   (real VesselTransformer flight, real analog drift, real AIPilot rivals).
-2. Then rung 2 (real prism trails + Skimmer contact in the client).
+1. **Rung 2**: real prism trails + Skimmer contact in the client. Replace
+   SkimRaceSim's visual `TrailPoint` ribbons with real `VesselPrismController`
+   spawning (StopSpawn before any test return — async-void trap) and grant
+   trail-skim energy through the real Skimmer trigger pipeline (contact arc
+   landed). Trails must render as prism blocks; skim detection must come from
+   `OnTriggerEnter/Exit`, not distance checks.
+2. Then rung 3 (real crystal claims via OnTriggerEnter → CrystalImpactor family
+   in the client; landed for the CLI round already).
 3. Update this file, commit, push.
 
-1. **V10**: port `GameDataSO` (~783L, single-file oversize accepted) + engine
-   `ISession` placeholder. Then V11 (CellConfigDataSO, BlockDensityGrid,
-   CellRuntimeDataSO) if the iteration has room.
-2. Sprint: react to prompter feedback on the S6 field race (drift feel, element
-   balance, rival pressure); fauna ambience / more hulls / shape modes on request.
-3. Grow the CLI toward an M2 vertical slice: one cell + crystals + 2 scripted vessels
-   exchanging resource/elemental state on a seeded run.
-4. Update this file (status tables, iteration log, NEXT UP), commit, push.
+Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — info
+logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
+Gate BOTH configs when touching logging paths.
 
 ## Loop protocol (every iteration)
 

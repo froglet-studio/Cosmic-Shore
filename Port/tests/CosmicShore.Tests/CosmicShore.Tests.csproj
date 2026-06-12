@@ -21,6 +21,11 @@
     <ProjectReference Include="../../src/CosmicShore.Game/CosmicShore.Game.csproj" />
     <!-- port-m2: HeadlessRoundTests drives the CLI's HexRaceRound orchestration in-process. -->
     <ProjectReference Include="../../src/CosmicShore.Cli/CosmicShore.Cli.csproj" />
+    <!-- Convergence rung 1: ClientConvergenceTests drives the SkimRace director in-process.
+         The sim classes (SkimRaceSim.cs) are pure engine code — no Silk type is touched by
+         the tests, so the Silk assemblies/natives that flow into the test output
+         transitively are never loaded. -->
+    <ProjectReference Include="../../src/CosmicShore.Client/CosmicShore.Client.csproj" />
   </ItemGroup>
 
 </Project>

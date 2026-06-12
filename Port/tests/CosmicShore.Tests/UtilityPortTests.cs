@@ -50,6 +50,12 @@ public class CSDebugTests
 
 public class DebugExtensionsTests
 {
+    // CSDebug.Log/LogFormat carry [Conditional("DEBUG")], so the calls inside
+    // DebugExtensions (CosmicShore.Game) are compiled out entirely in Release —
+    // the same strip the original game relies on for release builds. The expected
+    // sink contents therefore depend on the build configuration of the Game assembly,
+    // which matches this test assembly's configuration within one solution build.
+
     [Fact]
     public void LogColored_WrapsMessageInColorTag()
     {
@@ -60,7 +66,11 @@ public class DebugExtensionsTests
         {
             CSDebug.LogLevel = CSLogLevel.All;
             DebugExtensions.LogColored("hello", Color.red);
+#if DEBUG
             Assert.Contains(sink.Entries, e => e.Message == "<color=#FF0000>hello</color>");
+#else
+            Assert.Empty(sink.Entries); // info logs strip out of Release builds
+#endif
         }
         finally { Debug.Sink = previousSink; }
     }
@@ -75,7 +85,11 @@ public class DebugExtensionsTests
         {
             CSDebug.LogLevel = CSLogLevel.All;
             "subject".LogWithClassMethod("TestMethod", "the message");
+#if DEBUG
             Assert.Contains(sink.Entries, e => e.Message == "System.String - TestMethod: the message");
+#else
+            Assert.Empty(sink.Entries); // info logs strip out of Release builds
+#endif
         }
         finally { Debug.Sink = previousSink; }
     }

@@ -35,12 +35,14 @@ namespace CosmicShore.Client
         IInputContext _inputContext;
 
         GameLoop _loop;
-        SkimRaceController _race;
-        List<SkimRaceController> _rivals;
-        readonly SkimInputStatus _playerStatus = new();
+        SkimRaceDirector _race;          // race rules — flight itself is the real ported rig
+        SkimRacePilot _pilot;            // the human's rig (vessel transform, stats, resources)
+        IInputStatus _playerStatus;      // the rig's REAL InputStatus (V7) — strategy writes here
         readonly GamepadInputStrategy _gamepadStrategy = new(); // the ported, authentic dual-stick scheme
         EngineInput.Gamepad _shimPad;
         bool _prevA, _prevStart;
+        bool _prevKbSpace, _prevKbShift; // keyboard fallback edges → real SOAP button events
+        bool _screenshotAutopilot;
 
         uint _program;
         int _uMvp;
@@ -129,23 +131,23 @@ namespace CosmicShore.Client
                 {
                     if (key == Key.Escape) _window.Close();
                     if (key == Key.R || (key == Key.Enter && _race.State == RaceState.Finished))
-                        SkimRaceFactory.ResetRace(_race.Shared);
+                        _race.RestartRace();
                 };
             // replay button: any click on the finish screen starts the rematch
             foreach (var mouse in _inputContext.Mice)
                 mouse.MouseDown += (_, _) =>
                 {
                     if (_race.State == RaceState.Finished)
-                        SkimRaceFactory.ResetRace(_race.Shared);
+                        _race.RestartRace();
                 };
 
-            (_loop, _race, _rivals) = SkimRaceFactory.Create(_seed, _crystalTarget, _playerStatus, _rivalCount);
+            (_loop, _race) = SkimRaceFactory.Create(_seed, _crystalTarget, _rivalCount);
+            _pilot = _race.HumanPilot;
+            _playerStatus = _pilot.Input; // the rig's real InputStatus — single input sink
             _gamepadStrategy.Initialize(_playerStatus);
-            _gamepadStrategy.OnStrategyActivated();
+            _gamepadStrategy.OnStrategyActivated(); // ActiveInputDevice = Gamepad → pure analog triggers
             _audio = new AudioEngine(disabled: _screenshotPath != null);
-            _race.OnCrystalCollected += (_, pos) => { _bursts.Add((pos, 0f)); _audio.CrystalChime(player: true); };
-            foreach (var rival in _rivals)
-                rival.OnCrystalCollected += (_, pos) => { _bursts.Add((pos, 0f)); _audio.CrystalChime(player: false); };
+            _race.OnCrystalClaimed += (_, pos, byHuman) => { _bursts.Add((pos, 0f)); _audio.CrystalChime(player: byHuman); };
 
             _program = CompileProgram();
             _uMvp = _gl.GetUniformLocation(_program, "uMvp");
@@ -154,7 +156,7 @@ namespace CosmicShore.Client
             BuildTrack();
             BuildCrystalMeshes();
             BuildVesselMeshes();
-            var pilots = _race.Shared.Pilots;
+            var pilots = _race.Pilots;
             _pilotTrailVaos = new uint[pilots.Count];
             _pilotTrailVbos = new uint[pilots.Count];
             _pilotTrailVerts = new List<float>[pilots.Count];
@@ -180,7 +182,7 @@ namespace CosmicShore.Client
             _gl.Enable(EnableCap.DepthTest);
             _gl.Enable(EnableCap.ProgramPointSize);
 
-            _camPos = _race.transform.position - new Vector3(0f, -2.5f, 9f);
+            _camPos = _pilot.Transform.position - new Vector3(0f, -2.5f, 9f);
             Console.WriteLine("[4/4] ready — racing. (If the game window isn't visible now, check the taskbar.)");
         }
 
@@ -420,9 +422,9 @@ void main()
         {
             // The Squirrel's real hull, extracted from the game's FBX and baked with
             // flat per-face lighting in each pilot's domain palette. Dart fallback.
-            foreach (var pilot in _race.Shared.Pilots)
+            foreach (var pilot in _race.Pilots)
             {
-                var domain = pilot.Stats.Domain;
+                var domain = pilot.Domain;
                 if (_vesselMeshes.ContainsKey(domain)) continue;
                 try
                 {
@@ -509,20 +511,24 @@ void main()
             ApplyHumanInput();
 
             if (_screenshotPath == null)
-                _loop.Tick((float)dt); // the ported engine drives the sim (real time)
+                _loop.Tick((float)dt); // the ported engine drives the rigs (real time)
 
-            EmitTrailAndCamera((float)dt);
+            UpdateFxCameraAudio((float)dt);
 
         }
 
         /// <summary>
         /// Feed Silk.NET devices into the engine input shim, then run the PORTED
-        /// GamepadInputStrategy — the authentic Cosmic Shore dual-stick scheme:
-        /// XSum=yaw, YSum=pitch, YDiff=roll, XDiff=stick-spread throttle. Keyboard
-        /// fallback writes the same fields (WASD=left stick, arrows=right stick).
+        /// GamepadInputStrategy against the rig's REAL InputStatus — the authentic
+        /// Cosmic Shore dual-stick scheme: XSum=yaw, YSum=pitch, YDiff=roll,
+        /// XDiff=stick-spread throttle, analog triggers=two-tier drift, A=boost.
+        /// The real VesselTransformer consumes these in the engine tick. Keyboard
+        /// fallback writes the same fields (WASD=left stick, arrows=right stick)
+        /// and raises the same SOAP button events on Space/Shift edges.
         /// </summary>
         void ApplyHumanInput()
         {
+            bool finished = _race.State == RaceState.Finished;
             var silkPad = _inputContext.Gamepads.Count > 0 ? _inputContext.Gamepads[0] : null;
             if (silkPad != null && silkPad.Thumbsticks.Count >= 2)
             {
@@ -546,13 +552,16 @@ void main()
                 bool aPressed = a && !_prevA;
                 _prevA = a;
                 if (start && !_prevStart)
-                    SkimRaceFactory.ResetRace(_race.Shared);
+                    _race.RestartRace();
                 _prevStart = start;
                 // replay button: A on the finish screen starts the rematch
-                if (aPressed && _race.State == RaceState.Finished)
-                    SkimRaceFactory.ResetRace(_race.Shared);
+                if (aPressed && finished)
+                    _race.RestartRace();
 
-                _gamepadStrategy.ProcessInput(); // the real scheme computes sums/diffs
+                // victory lap: the real AIPilot owns the rig — don't fight it for the sticks
+                if (finished) return;
+
+                _gamepadStrategy.ProcessInput(); // the real scheme computes sums/diffs + button events
 
                 // Prompter preference (2026-06-11): inverted yaw on gamepad. Applied
                 // after the ported strategy so XDiff throttle and YDiff roll semantics
@@ -565,6 +574,8 @@ void main()
                 _playerStatus.YDiff = -_playerStatus.YDiff;
                 return;
             }
+
+            if (finished) return; // keyboard restart handled by the KeyDown hook
 
             // Keyboard fallback in the same idiom: WASD = left stick, arrows = right.
             float lx = 0f, ly = 0f, rx = 0f, ry = 0f;
@@ -589,16 +600,29 @@ void main()
             _playerStatus.YDiff = Mathf.Clamp(ry - ly, -1f, 1f);
             _playerStatus.XDiff = (Mathf.Clamp(rx - lx, -2f, 2f) + 2f) / 4f + (space ? 0.5f : 0.12f);
             _playerStatus.XDiff = Mathf.Clamp01(_playerStatus.XDiff);
-            // keyboard has no analog triggers — Shift is full drift
+            // keyboard has no analog triggers — Shift is full single-tier drift, fed
+            // through the same analog field + SOAP button event the gamepad path uses
             _playerStatus.LeftTriggerAnalog = shift ? 1f : 0f;
             _playerStatus.RightTriggerAnalog = 0f;
-            _race.BoostHeld = space;
+            if (shift != _prevKbShift)
+            {
+                if (shift) _playerStatus.OnButtonPressed.Raise(InputEvents.OnlyLeftStickAction);
+                else _playerStatus.OnButtonReleased.Raise(InputEvents.OnlyLeftStickAction);
+                _prevKbShift = shift;
+            }
+            // Space = boost through the authentic event channel (Button1Action)
+            if (space != _prevKbSpace)
+            {
+                if (space) _playerStatus.OnButtonPressed.Raise(InputEvents.Button1Action);
+                else _playerStatus.OnButtonReleased.Raise(InputEvents.Button1Action);
+                _prevKbSpace = space;
+            }
         }
 
-        void EmitTrailAndCamera(float dt)
+        void UpdateFxCameraAudio(float dt)
         {
-            var t3 = _race.transform;
-            // trail emission lives in the sim (persistent, skimmable race state)
+            var t3 = _pilot.Transform;
+            // trail emission lives in the director (persistent, skimmable race state)
 
             for (int i = _bursts.Count - 1; i >= 0; i--)
             {
@@ -615,10 +639,11 @@ void main()
             _camLook = t3.position + t3.forward * 12f;
 
             // audio: engine bed + skim shimmer + drift rush + countdown/finish stingers
-            _audio.SetEngineState(Mathf.Clamp01(_race.Speed / 115f), _race.BoostHeld && _race.State == RaceState.Racing);
+            _audio.SetEngineState(Mathf.Clamp01(_pilot.Status.Speed / 115f),
+                _pilot.Status.IsBoosting && _race.State == RaceState.Racing);
             _audio.SetSkimDriftState(
-                _race.State == RaceState.Racing ? _race.SkimStrength : 0f,
-                _race.State == RaceState.Racing ? _race.DriftAmount : 0f);
+                _race.State == RaceState.Racing ? _pilot.SkimStrength : 0f,
+                _race.State == RaceState.Racing ? _pilot.DriftAmount : 0f);
             if (_race.State == RaceState.Countdown)
             {
                 int second = (int)MathF.Ceiling(_race.Countdown);
@@ -628,7 +653,7 @@ void main()
             {
                 if (_race.State == RaceState.Racing) _audio.GoBeep();
                 else if (_race.State == RaceState.Finished)
-                    _audio.FinishJingle(won: _race.Shared.WinnerPilot == _race.PilotId);
+                    _audio.FinishJingle(won: _race.WinnerPilot == 0);
                 _lastRaceState = _race.State;
             }
         }
@@ -640,7 +665,7 @@ void main()
             {
                 ApplyScreenshotAutopilot();
                 _loop.Tick(1f / 60f); // deterministic sim frames
-                EmitTrailAndCamera(1f / 60f);
+                UpdateFxCameraAudio(1f / 60f);
             }
             EnsureRenderTargets();
             _gl.BindFramebuffer(FramebufferTarget.Framebuffer, _sceneFbo);
@@ -650,7 +675,7 @@ void main()
             _gl.UseProgram(_program);
 
             float aspect = _window.FramebufferSize.X / (float)Math.Max(1, _window.FramebufferSize.Y);
-            var view = Matrix4x4.CreateLookAt(_camPos, _camLook, _race.transform.up);
+            var view = Matrix4x4.CreateLookAt(_camPos, _camLook, _pilot.Transform.up);
             var projection = Matrix4x4.CreatePerspectiveFieldOfView(70f * MathF.PI / 180f, aspect, 0.1f, 2200f);
             var viewProjection = view * projection;
 
@@ -667,7 +692,7 @@ void main()
             var track = _race.Track;
             for (int i = 0; i < track.Crystals.Count; i++)
             {
-                if (_race.Shared.IsTaken(i)) continue;
+                if (!_race.IsStationActive(i)) continue;
                 float spin = Time.time * 1.6f + i * 0.7f;
                 float pulse = 1f + 0.12f * Mathf.Sin(Time.time * 3f + i);
                 var model = Matrix4x4.CreateScale(pulse) * Matrix4x4.CreateRotationY(spin) *
@@ -692,15 +717,15 @@ void main()
                 _gl.DrawArrays(PrimitiveType.Triangles, 0, (uint)burstMesh.count);
             }
 
-            // the field: every vessel oriented + banked, in its domain palette
-            foreach (var pilot in _race.Shared.Pilots)
+            // the field: every vessel oriented by its real VesselTransformer rotation
+            // (the real rig rolls the hull itself — no synthetic bank), domain palette
+            foreach (var pilot in _race.Pilots)
             {
-                var t3 = pilot.transform;
+                var t3 = pilot.Transform;
                 var rotation = Matrix4x4.CreateFromQuaternion(t3.rotation);
-                var bank = Matrix4x4.CreateFromAxisAngle(t3.forward, pilot.BankAngle * MathF.PI / 180f);
-                var model = rotation * bank * Matrix4x4.CreateTranslation(t3.position);
+                var model = rotation * Matrix4x4.CreateTranslation(t3.position);
                 SetMvp(model * viewProjection);
-                var mesh = _vesselMeshes[pilot.Stats.Domain];
+                var mesh = _vesselMeshes[pilot.Domain];
                 _gl.BindVertexArray(mesh.vao);
                 _gl.DrawArrays(PrimitiveType.Triangles, 0, (uint)mesh.count);
             }
@@ -811,38 +836,25 @@ void main()
 
         void ApplyScreenshotAutopilot()
         {
-            if (_race.State == RaceState.Countdown)
-                foreach (var pilot in _race.Shared.Pilots) pilot.Countdown = 0.01f;
-            var t0 = _race.transform;
-            // next unclaimed station by forward loop distance (mirrors the AI)
-            float myAngle = SkimTrack.AngleOf(t0.position);
-            Vector3? target = null;
-            float best = float.MaxValue;
-            for (int i = 0; i < _race.Track.Crystals.Count; i++)
+            // Skip the grid hold, then hand the player's rig to the REAL AIPilot —
+            // it drives the rig's InputStatus exactly like a rival, so headless runs
+            // exercise the genuine AI → InputStatus → VesselTransformer path.
+            _race.SkipCountdown();
+            if (!_screenshotAutopilot && _race.State == RaceState.Racing)
             {
-                if (_race.Shared.IsTaken(i)) continue;
-                float delta = SkimTrack.ForwardDelta(myAngle, _race.Track.CrystalAngles[i]);
-                if (delta < 0.02f) continue;
-                if (delta < best) { best = delta; target = _race.Track.Crystals[i]; }
+                _race.EngageHumanAutopilot();
+                _screenshotAutopilot = true;
             }
-            if (target.HasValue)
-            {
-                var local = Quaternion.Inverse(t0.rotation) * (target.Value - t0.position);
-                _playerStatus.XSum = Mathf.Clamp(local.x * 0.25f, -1f, 1f);
-                _playerStatus.YSum = Mathf.Clamp(-local.y * 0.25f, -1f, 1f);
-            }
-            _playerStatus.XDiff = _frameIndex > 60 ? 1f : 0.62f;
-            _race.BoostHeld = _frameIndex > 60 && _race.Resources.Resources[0].CurrentAmount > 0.2f;
         }
 
         unsafe void SetMvp(Matrix4x4 mvp) => _gl.UniformMatrix4(_uMvp, 1, false, (float*)&mvp);
 
         unsafe void DrawTrails(Matrix4x4 viewProjection)
         {
-            var pilots = _race.Shared.Pilots;
+            var pilots = _race.Pilots;
             for (int i = 0; i < pilots.Count; i++)
                 DrawRibbon(viewProjection, pilots[i].Trail, _pilotTrailVerts[i],
-                    _pilotTrailVaos[i], _pilotTrailVbos[i], DomainColor(pilots[i].Stats.Domain));
+                    _pilotTrailVaos[i], _pilotTrailVbos[i], DomainColor(pilots[i].Domain));
         }
 
         unsafe void DrawRibbon(Matrix4x4 viewProjection, List<TrailPoint> trail, List<float> data,
@@ -938,15 +950,15 @@ void main()
             Segment(46f, h - 30f, 58f, h - 44f, 1f, 0.82f, 0.25f, 0.95f);
             Segment(58f, h - 44f, 46f, h - 58f, 1f, 0.82f, 0.25f, 0.95f);
             Segment(46f, h - 58f, 34f, h - 44f, 1f, 0.82f, 0.25f, 0.95f);
-            Number(_race.Stats.CrystalsCollected, 2, 72f, h - 58f, 26f, 0.3f, 1f, 0.7f, 0.95f);
+            Number(_pilot.Stats.CrystalsCollected, 2, 72f, h - 58f, 26f, 0.3f, 1f, 0.7f, 0.95f);
             Segment(122f, h - 36f, 134f, h - 54f, 1f, 0.85f, 0.3f, 0.6f); // slash
             Number(_race.WinTarget, 2, 142f, h - 58f, 26f, 1f, 0.85f, 0.3f, 0.6f);
             // best rival count, top-right, ruby
-            Number(_race.Shared.BestOtherCrystals(_race), 2, w - 120f, h - 58f, 26f, 1f, 0.25f, 0.35f, 0.95f);
+            Number(_race.BestOtherCrystals(_pilot), 2, w - 120f, h - 58f, 26f, 1f, 0.25f, 0.35f, 0.95f);
 
             // race position (P/total) and lap, under the rival count
-            int position = _race.Shared.PositionOf(_race);
-            int fieldSize = _race.Shared.Pilots.Count;
+            int position = _race.PositionOf(_pilot);
+            int fieldSize = _race.Pilots.Count;
             Number(position, 1, w - 120f, h - 104f, 24f, 1f, 1f, 1f, 0.95f);
             Segment(w - 100f, h - 84f, w - 88f, h - 102f, 0.7f, 0.7f, 0.7f, 0.6f); // slash
             Number(fieldSize, 1, w - 84f, h - 104f, 24f, 0.7f, 0.7f, 0.7f, 0.7f);
@@ -955,7 +967,7 @@ void main()
             Segment(w - 154f, h - 84f, w - 146f, h - 92f, 0.5f, 0.95f, 1f, 0.8f);
             Segment(w - 146f, h - 92f, w - 154f, h - 100f, 0.5f, 0.95f, 1f, 0.8f);
             Segment(w - 154f, h - 100f, w - 162f, h - 92f, 0.5f, 0.95f, 1f, 0.8f);
-            Number(_race.Lap, 1, w - 196f, h - 104f, 24f, 0.5f, 0.95f, 1f, 0.9f);
+            Number(_pilot.Lap, 1, w - 196f, h - 104f, 24f, 0.5f, 0.95f, 1f, 0.9f);
 
             // minimap, bottom-right: the circuit outline + a dot per pilot in domain color
             {
@@ -969,30 +981,30 @@ void main()
                     Segment(mapCx + a.x * mapScale, mapCy + a.z * mapScale,
                             mapCx + b.x * mapScale, mapCy + b.z * mapScale, 0.25f, 0.5f, 0.65f, 0.5f);
                 }
-                foreach (var pilot in _race.Shared.Pilots)
+                foreach (var pilot in _race.Pilots)
                 {
-                    var dc = DomainColor(pilot.Stats.Domain);
-                    bool me = ReferenceEquals(pilot, _race);
+                    var dc = DomainColor(pilot.Domain);
+                    bool me = ReferenceEquals(pilot, _pilot);
                     float size = me ? 5f : 3.5f;
-                    float px = mapCx + pilot.transform.position.x * mapScale;
-                    float py = mapCy + pilot.transform.position.z * mapScale;
+                    float px = mapCx + pilot.Transform.position.x * mapScale;
+                    float py = mapCy + pilot.Transform.position.z * mapScale;
                     Segment(px - size, py - size, px + size, py + size, dc.r, dc.g, dc.b, me ? 1f : 0.85f);
                     Segment(px - size, py + size, px + size, py - size, dc.r, dc.g, dc.b, me ? 1f : 0.85f);
                 }
             }
 
-            // energy bar bottom center (reads the ported ResourceSystem) — energy IS
+            // energy bar bottom center (reads the rig's real ResourceSystem) — energy IS
             // top speed now; the fill flares white-hot while skimming a trail
-            float boost = _race.Resources.Resources[0].CurrentAmount;
+            float boost = _pilot.Resources.Resources[0].CurrentAmount;
             float barWidth = w * 0.3f, bx = (w - barWidth) * 0.5f;
             Segment(bx, 36f, bx + barWidth, 36f, 0.2f, 0.4f, 0.6f, 0.35f);
-            (float er, float eg, float eb) = _race.IsSkimming ? (0.75f, 1f, 1f) : (0.2f, 0.9f, 1f);
+            (float er, float eg, float eb) = _pilot.IsSkimming ? (0.75f, 1f, 1f) : (0.2f, 0.9f, 1f);
             for (int i = 0; i < 3; i++) // thick neon fill
-                Segment(bx, 33f + i * 3f, bx + barWidth * boost, 33f + i * 3f, er, eg, eb, _race.IsSkimming ? 1f : 0.85f);
+                Segment(bx, 33f + i * 3f, bx + barWidth * boost, 33f + i * 3f, er, eg, eb, _pilot.IsSkimming ? 1f : 0.85f);
 
             // analog drift gauge: thin magenta strip riding above the energy bar
-            if (_race.DriftAmount > 0.02f)
-                Segment(bx, 44f, bx + barWidth * _race.DriftAmount, 44f, 1f, 0.3f, 0.9f, 0.9f);
+            if (_pilot.DriftAmount > 0.02f)
+                Segment(bx, 44f, bx + barWidth * _pilot.DriftAmount, 44f, 1f, 0.3f, 0.9f, 0.9f);
 
             // countdown / finish banner: oversized center digits
             if (_race.State == RaceState.Countdown)
@@ -1000,11 +1012,9 @@ void main()
             else if (_race.State == RaceState.Finished)
             {
                 // gold digits = you took the race; ruby = somebody else did
-                bool won = _race.Shared.WinnerPilot == _race.PilotId;
+                bool won = _race.WinnerPilot == 0;
                 (float fr, float fg, float fb) = won ? (1f, 0.85f, 0.3f) : (1f, 0.2f, 0.3f);
-                SkimRaceController winner = null;
-                foreach (var pilot in _race.Shared.Pilots)
-                    if (pilot.PilotId == _race.Shared.WinnerPilot) winner = pilot;
+                var winner = _race.WinnerPilot >= 0 ? _race.Pilots[_race.WinnerPilot] : null;
                 float finalTime = winner?.Stats.Score ?? 0f;
                 int centiseconds = (int)(finalTime * 100f) % 100;
                 float fs = 44f, fx = w * 0.5f - fs * 2.6f, fy = h * 0.62f;
@@ -1013,7 +1023,7 @@ void main()
                 Number(centiseconds, 2, fx + fs * 4.0f, fy, fs, fr, fg, fb, 0.7f);
 
                 // scoreboard: the whole field ranked — domain marker, position, crystals
-                var standings = new List<SkimRaceController>(_race.Shared.Pilots);
+                var standings = new List<SkimRacePilot>(_race.Pilots);
                 standings.Sort((x, y) =>
                 {
                     int byCrystals = y.Stats.CrystalsCollected.CompareTo(x.Stats.CrystalsCollected);
@@ -1023,8 +1033,8 @@ void main()
                 for (int rank = 0; rank < standings.Count; rank++, rowY -= 42f)
                 {
                     var pilot = standings[rank];
-                    var dc = DomainColor(pilot.Stats.Domain);
-                    bool me = ReferenceEquals(pilot, _race);
+                    var dc = DomainColor(pilot.Domain);
+                    bool me = ReferenceEquals(pilot, _pilot);
                     float rx0 = w * 0.5f - 120f;
                     // domain marker: filled diamond (player's pulses brighter)
                     float ma = me ? 1f : 0.7f;
@@ -1083,17 +1093,17 @@ void main()
             MiniPng.Write(_screenshotPath, pixels, w, h);
             int totalTrail = 0;
             var counts = new List<string>();
-            foreach (var pilot in _race.Shared.Pilots)
+            foreach (var pilot in _race.Pilots)
             {
                 totalTrail += pilot.Trail.Count;
                 counts.Add($"{pilot.Stats.CrystalsCollected}");
             }
             Console.WriteLine($"screenshot → {_screenshotPath} ({w}x{h}) frame {_frameIndex}, " +
-                $"crystals [{string.Join(",", counts)}] (target {_race.WinTarget}), state {_race.State}, " +
-                $"P{_race.Shared.PositionOf(_race)} lap {_race.Lap}, " +
-                $"energy {_race.Resources.Resources[0].CurrentAmount:F2}, skim {_race.IsSkimming}, " +
-                $"levels C{_race.Resources.GetLevel(Element.Charge)}/M{_race.Resources.GetLevel(Element.Mass)}" +
-                $"/S{_race.Resources.GetLevel(Element.Space)}/T{_race.Resources.GetLevel(Element.Time)}, " +
+                $"crystals [{string.Join(",", counts)}] (target {_race.WinTarget}, claims {_race.TotalClaims}), state {_race.State}, " +
+                $"P{_race.PositionOf(_pilot)} lap {_pilot.Lap}, speed {_pilot.Status.Speed:F1}, " +
+                $"energy {_pilot.Resources.Resources[0].CurrentAmount:F2}, skim {_pilot.IsSkimming}, " +
+                $"levels C{_pilot.Resources.GetLevel(Element.Charge)}/M{_pilot.Resources.GetLevel(Element.Mass)}" +
+                $"/S{_pilot.Resources.GetLevel(Element.Space)}/T{_pilot.Resources.GetLevel(Element.Time)}, " +
                 $"trail {totalTrail}");
         }
     }

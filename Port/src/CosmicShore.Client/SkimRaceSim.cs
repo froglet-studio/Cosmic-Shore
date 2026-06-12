@@ -1,24 +1,24 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Engine;
+using CosmicShore.Engine.Injection;
+using CosmicShore.Engine.Networking;
+using CosmicShore.Engine.Soap;
 using CosmicShore.Gameplay;
-using Random = System.Random; // disambiguate from CosmicShore.Engine.Random (V10 engine addition)
+using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
+using CosmicShore.Utility;
+using Random = System.Random; // disambiguate from CosmicShore.Engine.Random
 
 namespace CosmicShore.Client
 {
-    /// <summary>Frame input handed from the windowing layer to the sim (engine-agnostic).</summary>
-    public sealed class PilotInput
-    {
-        public float Pitch;   // -1..1 (up/down)
-        public float Yaw;     // -1..1 (left/right)
-        public bool Boost;
-        public bool Restart;
-    }
-
     /// <summary>
     /// One emitted trail segment. Mass-element levels bake into the point at emit time:
     /// a high-Mass pilot lays physically wider, more skimmable trail — more mass.
+    /// (Rung 2 replaces these visual ribbons with real Prisms via VesselPrismController.)
     /// </summary>
     public struct TrailPoint
     {
@@ -35,7 +35,7 @@ namespace CosmicShore.Client
     /// on integer harmonics, so the loop closes seamlessly and laps never end.
     /// Crystals sit at evenly spaced stations around the loop, each carrying an
     /// ELEMENT (the buff/debuff fundamental): claiming one raises that elemental level
-    /// permanently for the race, and levels scale the flight model.
+    /// permanently for the race.
     /// </summary>
     public sealed class SkimTrack
     {
@@ -125,293 +125,248 @@ namespace CosmicShore.Client
 
     public enum RaceState { Countdown = 0, Racing = 1, Finished = 2 }
 
-    /// <summary>
-    /// Contested-crystal ledger + winner flag + pilot roster shared by the whole field.
-    /// On the closed circuit crystals RESPAWN a few seconds after a claim so later laps
-    /// stay alive; the claim itself is permanent score.
-    /// </summary>
-    public sealed class SharedRaceState
+    /// <summary>No-op HUD controller for the prefab fixture's serialized slot (the GL window is the HUD).</summary>
+    sealed class SkimVesselHud : MonoBehaviour, IVesselHUDController
     {
-        public const float CrystalRespawnSeconds = 12f;
-
-        public readonly List<SkimRaceController> Pilots = new();
-        readonly Dictionary<int, (int owner, float time)> _claims = new();
-        public int WinnerPilot = -1;
-
-        public bool IsTaken(int crystal)
-            => _claims.TryGetValue(crystal, out var claim)
-               && Time.time - claim.time < CrystalRespawnSeconds;
-
-        public bool TryClaim(int crystal, int pilot)
-        {
-            if (IsTaken(crystal)) return false;
-            _claims[crystal] = (pilot, Time.time);
-            return true;
-        }
-
-        /// <summary>1-based race position: crystals first, distance travelled breaks ties.</summary>
-        public int PositionOf(SkimRaceController pilot)
-        {
-            int position = 1;
-            for (int i = 0; i < Pilots.Count; i++)
-            {
-                var other = Pilots[i];
-                if (ReferenceEquals(other, pilot)) continue;
-                if (other.Stats.CrystalsCollected > pilot.Stats.CrystalsCollected
-                    || (other.Stats.CrystalsCollected == pilot.Stats.CrystalsCollected
-                        && other.TotalProgress > pilot.TotalProgress))
-                    position++;
-            }
-            return position;
-        }
-
-        /// <summary>Best crystal count among everyone except this pilot (HUD + rubber-band).</summary>
-        public int BestOtherCrystals(SkimRaceController pilot)
-        {
-            int best = 0;
-            for (int i = 0; i < Pilots.Count; i++)
-                if (!ReferenceEquals(Pilots[i], pilot) && Pilots[i].Stats.CrystalsCollected > best)
-                    best = Pilots[i].Stats.CrystalsCollected;
-            return best;
-        }
-
-        public void Reset()
-        {
-            _claims.Clear();
-            WinnerPilot = -1;
-        }
+        public void Initialize(IVesselStatus vesselStatus) { }
+        public void SubscribeToEvents() { }
+        public void UnsubscribeFromEvents() { }
+        public void ShowHUD() { }
+        public void HideHUD() { }
+        public void SetBlockPrefab(GameObject prefab) { }
     }
 
-    /// <summary>Seeded AI temperament — every rival flies the same model, differently.</summary>
-    public struct PilotPersonality
+    /// <summary>Concrete VesselAnimation (base is abstract) — no-op puppetry.</summary>
+    sealed class SkimVesselAnimation : VesselAnimation
     {
-        public float TurnSkill;   // 0.86..1.0 — line precision
-        public float DriftIQ;     // 0..1 — how deliberately it uses the triggers
-        public float Aggression;  // 0..1 — how freely it spends energy on boost
+        protected override void AssignTransforms() { }
+        protected override void PerformShipPuppetry(float Pitch, float Yaw, float Roll, float Throttle) { }
     }
 
     /// <summary>
-    /// The race brain — a genuine engine MonoBehaviour shared by the player and every
-    /// AI rival (identical flight model = fair race; the AI just synthesizes input).
-    /// Boost runs on the ported ResourceSystem, scoring on the ported RoundStats.
-    /// The Squirrel loop: pilots leave PERSISTENT trails around the closed circuit;
-    /// skimming any trail (a rival's, or your own once aged) charges energy; energy
-    /// raises TOP SPEED; analog triggers drift — the nose steers while the velocity
-    /// holds its line. ELEMENTS deepen it: every crystal carries one, claims raise
-    /// that level for the race, and levels scale the flight model —
-    ///   Charge → skim charging rate      Mass  → wider, more skimmable trail
-    ///   Space  → sharper turning         Time  → boost burns slower
-    ///   Omni   → +1 to all four
+    /// One pilot of the field — a REAL ported rig (Player + InputStatus + VesselController +
+    /// VesselStatus + VesselTransformer + AIPilot + the RequireComponent family) plus the
+    /// race-side bookkeeping the rig doesn't own yet: the visual trail ribbon (rung 2 =
+    /// real prisms), loop progress, and the skim/drift HUD readouts.
     /// </summary>
-    public sealed class SkimRaceController : MonoBehaviour
+    public sealed class SkimRacePilot
     {
-        public SkimInputStatus Status;
-        public bool BoostHeld;
-        public SkimTrack Track;
-        public ResourceSystem Resources;
-        public RoundStats Stats;
-        public SharedRaceState Shared;
-        public int PilotId;
-        public bool IsAI;
-        public PilotPersonality Personality = new() { TurnSkill = 1f, DriftIQ = 0f, Aggression = 0.5f };
+        public IPlayer Player;
+        public IVesselStatus Status;
+        public Transform Transform;        // the vessel's transform — flown by VesselTransformer
+        public ResourceSystem Resources;   // the rig's real ResourceSystem
+        /// <summary>This pilot's own course registry — its AIPilot retargets on this
+        /// registry's OnCellItemsUpdated (see SkimRaceDirector.SyncPilotCourses).</summary>
+        public CellRuntimeDataSO Course;
+        public float GridOffset;
 
-        public RaceState State = RaceState.Countdown;
-        public float Countdown = 3f;
-        public float ElapsedTime;
-        public int WinTarget;
-        public float Speed;
-        public float BankAngle;
-        public event Action<int, Vector3> OnCrystalCollected;
+        public IRoundStats Stats => Player.RoundStats;
+        public Domains Domain => Player.RoundStats.Domain;
+        public IInputStatus Input => Player.InputStatus;
+        public bool IsAI => Player.IsInitializedAsAI;
 
         /// <summary>Persistent trail mass — only an active force (race reset) removes it.</summary>
         public readonly List<TrailPoint> Trail = new();
-        /// <summary>Velocity direction; equals the nose except while drifting.</summary>
-        public Vector3 Course = Vector3.forward;
-        /// <summary>Analog drift amount this frame (max of the two triggers).</summary>
-        public float DriftAmount;
-        /// <summary>True while gaining trail-skim energy this frame (HUD glow + audio).</summary>
-        public bool IsSkimming;
-        /// <summary>Skim contact strength 0..1 this frame (audio shimmer gain).</summary>
-        public float SkimStrength;
+
+        /// <summary>Boost intent (Button1Action edge state); the director gates it on energy.</summary>
+        public bool BoostHeld;
+
         /// <summary>Total loop radians travelled — laps and position tie-breaks.</summary>
         public float TotalProgress;
         public int Lap => 1 + (int)(TotalProgress / MathF.Tau);
 
-        float _lastLoopAngle;
+        /// <summary>True while gaining trail-skim energy this frame (HUD glow + audio).</summary>
+        public bool IsSkimming;
+        /// <summary>Skim contact strength 0..1 this frame (audio shimmer gain).</summary>
+        public float SkimStrength;
+        /// <summary>Analog drift amount this frame — VesselTransformer's clamped trigger sum.</summary>
+        public float DriftAmount;
 
-        // VesselTransformer parity (the original's serialized defaults):
-        // free rotation about the vessel's own axes, throttle from stick spread.
-        const float PitchScaler = 130f;
-        const float YawScaler = 130f;
-        const float RollScaler = 130f;
-        const float ThrottleScaler = 50f;
-        const float MinimumSpeed = 10f;
-        const float LERP_AMOUNT = 1.5f;
-        const float BoostMultiplier = 2.1f;
-        const float CollectRadius = 4.2f; // generous skim radius
+        internal float _lastLoopAngle;
+    }
+
+    /// <summary>
+    /// The race brain. Flight is OWNED by the real ported systems — VesselTransformer flies
+    /// every vessel from its real InputStatus (human: the ported GamepadInputStrategy fed by
+    /// the window; rivals: the real AIPilot seeking crystals registered in CellRuntimeDataSO).
+    /// Crystal claims flow through the REAL contact pipeline (trigger SphereCollider →
+    /// OmniCrystalImpactor → OnCrystalCollected SOAP event); this director only applies the
+    /// StatsManager-shaped bookkeeping and the SkimRace race rules:
+    ///   countdown/win/replay · crystal respawn · trail-skim energy · energy→top-speed
+    ///   (the real VesselTransformer.ThrottleScalerMultiplier ElementalFloat hook) ·
+    ///   boost gating/drain (BoostActionSO shape: VesselStatus.IsBoosting × BoostMultiplier) ·
+    ///   two-tier analog drift (DriftActionSO shape: VesselTransformer.BeginDrift/EndDrift).
+    /// </summary>
+    public sealed class SkimRaceDirector : MonoBehaviour
+    {
+        // ── race design (the SkimRace rules — carried over from the sprint sim) ──
+        public const float CrystalRespawnSeconds = 12f;
+        // Claim at this center distance. The sprint sim used 4.2u against its slower
+        // hand-rolled flight; the real VesselTransformer turns ~31u-radius at race speed
+        // (the proven HexRaceRound contact rig claims at 25u), so a sub-5u sphere strands
+        // the field in orbits. 10u keeps claims skill-flavored on the 46u-spaced stations
+        // while the forward-ordered AI courses keep the whole field scoring (measured:
+        // ~80 claims/min field-wide at 15u, ~½ that at 10u — a 30-target race lands in
+        // the 1-3 minute arcade window).
+        public const float CollectRadius = 10f;
+        public const float VesselContactRadius = 2f;    // vessel contact-bubble SphereCollider
+        const float TopSpeedEnergyGain = 0.6f;          // full energy bar = +60% top speed
+        const float SkimRadiusBase = 7f;                // base trail skim reach
+        const float SkimGainPerSecond = 0.4f;           // energy/s at zero distance, before bonuses
+        const float DriftSkimBonus = 1f;                // full-drift skimming charges up to 2x
+        const float OwnTrailMinAge = 3f;                // own trail counts once you lap back onto it
+        const float TrailSpacingSqr = 0.8f;             // ~0.9u between emitted trail points
         const float BoostDrainPerSecond = 0.45f;
+        const float ChargePerLevel = 0.06f;             // skim charge rate per Charge level
+        const float MassWidthPerLevel = 0.03f;          // trail render half-width per Mass level
+        const float MassReachPerLevel = 0.25f;          // trail skim reach per Mass level
+        const float TimePerLevel = 0.06f;               // boost drain reduction per Time level (floor 40%)
 
-        // The Squirrel loop tunables:
-        const float TopSpeedEnergyGain = 0.6f;   // full energy bar = +60% top speed
-        const float SkimRadiusBase = 7f;         // base trail skim reach
-        const float SkimGainPerSecond = 0.4f;    // energy/s at zero distance, before bonuses
-        const float DriftSkimBonus = 1f;         // full-drift skimming charges up to 2x
-        const float OwnTrailMinAge = 3f;         // own trail counts once you lap back onto it
-        const float TrailSpacingSqr = 0.8f;      // ~0.9u between emitted trail points
-        const float DriftCourseAlignFast = 7f;   // course→nose align rate, triggers released
-        const float DriftCourseAlignSlow = 0.55f;// align rate at full drift — the slide
+        // ── real drift parameters — DriftActionSO CLASS defaults (the tuned per-vessel
+        // assets live in Assets/_SO_Assets, which is off-limits): Mult=1.5, damping=0.
+        // Both tiers use the class defaults; the two-tier analog interpolation
+        // (trigger sum ≤1 single, >1 sharp) is the real VesselTransformer's.
+        const float DriftRotationMultiplier = 1.5f;     // DriftActionSO.Mult default
+        const float DriftDampingTarget = 0f;            // DriftActionSO.driftDamping default
 
-        // Element scaling (per integer level, ResourceSystem floor math, levels 0..15):
-        const float ChargePerLevel = 0.06f;      // skim charge rate
-        const float MassWidthPerLevel = 0.03f;   // trail render half-width
-        const float MassReachPerLevel = 0.25f;   // trail skim reach
-        const float SpacePerLevel = 0.04f;       // turn rate
-        const float TimePerLevel = 0.06f;        // boost drain reduction (floor 40%)
+        public SkimTrack Track { get; private set; }
+        public GameDataSO GameData { get; private set; }
+        public CellRuntimeDataSO CourseData { get; private set; }
+        public readonly List<SkimRacePilot> Pilots = new();
+        public SkimRacePilot HumanPilot => Pilots[0];
+
+        public int WinTarget { get; private set; }
+        public RaceState State { get; private set; } = RaceState.Countdown;
+        public float Countdown { get; private set; } = 3f;
+        public float ElapsedTime { get; private set; }
+        /// <summary>Index into <see cref="Pilots"/>; -1 while the race runs. Human is 0.</summary>
+        public int WinnerPilot { get; private set; } = -1;
+        /// <summary>Scored crystal claims this race (diagnostics + tests).</summary>
+        public int TotalClaims { get; private set; }
+
+        /// <summary>(station, position, byHuman) — raised from inside the real impact pipeline.</summary>
+        public event Action<int, Vector3, bool> OnCrystalClaimed;
+
+        Crystal[] _stationCrystals;
+        float[] _respawnAt;
+        int _generation;          // invalidates in-flight claim handlers across restarts
+        bool _humanAutopilot;     // victory lap / screenshot mode hand the human to the real AIPilot
+        readonly List<Crystal> _scratchCrystals = new(); // SyncPilotCourses sort buffer
+
+        internal void InitializeRace(SkimTrack track, GameDataSO gameData, CellRuntimeDataSO courseData,
+            List<SkimRacePilot> pilots, int winTarget,
+            ScriptableEventInputEvents onButtonPressed, ScriptableEventInputEvents onButtonReleased)
+        {
+            Track = track;
+            GameData = gameData;
+            CourseData = courseData;
+            Pilots.AddRange(pilots);
+            WinTarget = winTarget;
+            _stationCrystals = new Crystal[track.Crystals.Count];
+            _respawnAt = new float[track.Crystals.Count];
+
+            // The human's ported GamepadInputStrategy raises these SOAP channels (shared
+            // across the rig clones exactly like the real prefab assets; AI never raises).
+            onButtonPressed.OnRaised += HandleButtonPressed;
+            onButtonReleased.OnRaised += HandleButtonReleased;
+
+            RestartRace();
+        }
+
+        // ── frame ────────────────────────────────────────────────────
 
         void Update()
         {
-            if (Track is null || Shared is null || Status is null) return;
-
             switch (State)
             {
                 case RaceState.Countdown:
                     Countdown -= Time.deltaTime;
-                    if (Countdown <= 0f) State = RaceState.Racing;
+                    if (Countdown <= 0f) BeginRacing();
                     return;
+
+                case RaceState.Racing:
+                    ElapsedTime += Time.deltaTime;
+                    for (int i = 0; i < Pilots.Count; i++)
+                        TickPilot(Pilots[i]);
+                    TickRespawns();
+                    return;
+
                 case RaceState.Finished:
-                    // victory lap: ease onto the circuit and keep cruising it, so the
-                    // scoreboard sits over the glowing prismscape instead of empty space
-                    {
-                        float lapAngle = SkimTrack.AngleOf(transform.position);
-                        var to = (Track.PointAt(lapAngle + 0.25f) - transform.position).normalized;
-                        if (to.sqrMagnitude > 0.001f)
-                            transform.rotation = Quaternion.Slerp(transform.rotation,
-                                Quaternion.LookRotation(to, Vector3.up),
-                                1f - MathF.Exp(-2f * Time.deltaTime));
-                        Course = Vector3.Slerp(Course, transform.forward,
-                            1f - MathF.Exp(-DriftCourseAlignFast * Time.deltaTime)).normalized;
-                        transform.position += Course * (Speed * Time.deltaTime);
-                        Speed = Mathf.Lerp(Speed, 32f, Time.deltaTime);
-                    }
+                    TickRespawns(); // crystals keep cycling under the victory lap
                     return;
-            }
-
-            if (Shared.WinnerPilot >= 0) { State = RaceState.Finished; return; }
-
-            ElapsedTime += Time.deltaTime;
-
-            if (IsAI) SynthesizeAIInput();
-
-            int chargeLevel = Resources.GetLevel(Element.Charge);
-            int spaceLevel = Resources.GetLevel(Element.Space);
-            int timeLevel = Resources.GetLevel(Element.Time);
-
-            // ── analog drift: triggers decouple velocity from the nose — steering
-            // keeps turning the vessel, the course holds its line and only slowly
-            // re-aligns while a trigger is held.
-            DriftAmount = Mathf.Clamp01(Mathf.Max(Status.LeftTriggerAnalog, Status.RightTriggerAnalog));
-
-            // ── trail skim → energy: riding near any persistent trail charges the bar.
-            // Rivals' trails always count; your own only after it ages (otherwise the
-            // ribbon you just emitted feeds you forever). Drifting along a trail
-            // charges faster, and Charge levels raise the rate further.
-            float skimProximity = SkimProximity();
-            SkimStrength = skimProximity;
-            IsSkimming = skimProximity > 0f;
-            if (IsSkimming)
-                Resources.ChangeResourceAmount(0,
-                    SkimGainPerSecond * skimProximity
-                    * (1f + DriftSkimBonus * DriftAmount)
-                    * (1f + ChargePerLevel * chargeLevel) * Time.deltaTime);
-
-            // Boost gates on the ported boost resource, then multiplies the throttle
-            // term exactly like VesselTransformer's boostAmount. Time levels burn cooler.
-            bool boosting = BoostHeld && Resources.Resources[0].CurrentAmount > 0.02f;
-            if (boosting)
-                Resources.ChangeResourceAmount(0,
-                    -BoostDrainPerSecond * MathF.Max(0.4f, 1f - TimePerLevel * timeLevel) * Time.deltaTime);
-            float boostAmount = boosting ? BoostMultiplier : 1f;
-
-            // ── Cosmic Shore flight model (VesselTransformer parity); Space levels
-            // sharpen every axis ──
-            float turnScale = Personality.TurnSkill * (1f + SpacePerLevel * spaceLevel) * Time.deltaTime;
-            var rotation = transform.rotation;
-            rotation = Quaternion.AngleAxis(Status.YSum * PitchScaler * turnScale, transform.right) * rotation;
-            rotation = Quaternion.AngleAxis(Status.XSum * YawScaler * turnScale, transform.up) * rotation;
-            rotation = Quaternion.AngleAxis(Status.YDiff * RollScaler * turnScale, transform.forward) * rotation;
-            transform.rotation = rotation.normalized;
-
-            // course chases the nose: instantly when gripped, barely when drifting
-            float alignRate = Mathf.Lerp(DriftCourseAlignFast, DriftCourseAlignSlow, DriftAmount);
-            Course = Vector3.Slerp(Course, transform.forward, 1f - MathF.Exp(-alignRate * Time.deltaTime)).normalized;
-
-            // energy raises top speed: the throttle term scales with the bar, so a
-            // charged pilot is simply faster.
-            float energy = Resources.Resources[0].CurrentAmount;
-            Speed = Mathf.Lerp(
-                Speed,
-                Status.XDiff * ThrottleScaler * (1f + TopSpeedEnergyGain * energy) * boostAmount + MinimumSpeed,
-                LERP_AMOUNT * Time.deltaTime);
-            transform.position += Course * (Speed * Time.deltaTime);
-
-            // lap / position progress (guard against the spawn-in jump)
-            float loopAngle = SkimTrack.AngleOf(transform.position);
-            float progressDelta = SkimTrack.ForwardDelta(_lastLoopAngle, loopAngle);
-            if (progressDelta < MathF.PI * 0.5f) TotalProgress += progressDelta;
-            _lastLoopAngle = loopAngle;
-
-            EmitTrail();
-
-            // Contested skim collection (crystals respawn — see SharedRaceState).
-            for (int i = 0; i < Track.Crystals.Count; i++)
-            {
-                if (Shared.IsTaken(i)) continue;
-                if ((Track.Crystals[i] - transform.position).sqrMagnitude > CollectRadius * CollectRadius) continue;
-                if (!Shared.TryClaim(i, PilotId)) continue;
-
-                Stats.CrystalsCollected++;
-                Stats.OmniCrystalsCollected++;
-
-                // ELEMENTS: the claim permanently raises the station's element for the
-                // race; the level scaling above turns that into the build you're driving.
-                var element = Track.StationElements[i];
-                if (element == Element.Omni)
-                {
-                    Resources.IncrementLevel(Element.Charge);
-                    Resources.IncrementLevel(Element.Mass);
-                    Resources.IncrementLevel(Element.Space);
-                    Resources.IncrementLevel(Element.Time);
-                    Resources.ChangeResourceAmount(0, 0.3f);
-                }
-                else
-                {
-                    Resources.IncrementLevel(element);
-                    Resources.ChangeResourceAmount(0, element == Element.Charge ? 0.3f : 0.15f);
-                }
-                OnCrystalCollected?.Invoke(i, Track.Crystals[i]);
-
-                if (Stats.CrystalsCollected >= WinTarget)
-                {
-                    Shared.WinnerPilot = PilotId;
-                    Stats.Score = ElapsedTime;                     // HexRace golf scoring
-                    State = RaceState.Finished;
-                }
             }
         }
 
-        void EmitTrail()
+        void BeginRacing()
         {
-            if (Speed <= 4f) return;
-            // the ribbon traces the actual path (course), so a drift leaves the
-            // swept line you actually travelled, not where the nose pointed
-            var emit = transform.position - Course * 1.6f - transform.up * 0.6f;
-            if (Trail.Count > 0 && (emit - Trail[^1].Pos).sqrMagnitude <= TrailSpacingSqr) return;
-            var span = Vector3.Cross(transform.up, Course);
-            span = span.sqrMagnitude > 0.001f ? span.normalized : transform.right;
+            State = RaceState.Racing;
+            foreach (var pilot in Pilots)
+                pilot.Status.IsStationary = false; // release the grid — the real rigs fly
+            GameData.StartTurn();
+        }
+
+        void TickPilot(SkimRacePilot pilot)
+        {
+            var status = pilot.Status;
+            var resources = pilot.Resources;
+
+            // Analog drift readout — mirrors VesselTransformer's clamped trigger sum
+            // (HUD gauge + the drift skim bonus below; the transformer itself reads the
+            // same triggers for the real two-tier rotation/course blend).
+            var input = pilot.Input;
+            pilot.DriftAmount = Mathf.Clamp01(input.LeftTriggerAnalog + input.RightTriggerAnalog);
+
+            // Trail skim → energy: riding near any persistent trail charges the bar.
+            // Rivals' trails always count; your own only after it ages. Drifting along a
+            // trail charges faster, and Charge levels raise the rate further.
+            float proximity = SkimProximity(pilot);
+            pilot.SkimStrength = proximity;
+            pilot.IsSkimming = proximity > 0f;
+            if (pilot.IsSkimming)
+                resources.ChangeResourceAmount(0,
+                    SkimGainPerSecond * proximity
+                    * (1f + DriftSkimBonus * pilot.DriftAmount)
+                    * (1f + ChargePerLevel * resources.GetLevel(Element.Charge)) * Time.deltaTime);
+
+            // Boost — BoostActionSO shape: IsBoosting gates VesselTransformer.MoveShip's
+            // boostAmount = VesselStatus.BoostMultiplier (real serialized default, 4x).
+            // The race rule drains the energy bar; Time levels burn cooler.
+            bool boosting = pilot.BoostHeld && resources.Resources[0].CurrentAmount > 0.02f;
+            status.IsBoosting = boosting;
+            if (boosting)
+                resources.ChangeResourceAmount(0,
+                    -BoostDrainPerSecond
+                    * MathF.Max(0.4f, 1f - TimePerLevel * resources.GetLevel(Element.Time)) * Time.deltaTime);
+
+            // Energy raises top speed through the REAL hook: ThrottleScalerMultiplier is
+            // the ElementalFloat the transformer multiplies into its throttle term.
+            float energy = resources.Resources[0].CurrentAmount;
+            status.VesselTransformer.ThrottleScalerMultiplier.Value = 1f + TopSpeedEnergyGain * energy;
+
+            // Lap / position progress (guard against the spawn-in jump).
+            float loopAngle = SkimTrack.AngleOf(pilot.Transform.position);
+            float delta = SkimTrack.ForwardDelta(pilot._lastLoopAngle, loopAngle);
+            if (delta < MathF.PI * 0.5f) pilot.TotalProgress += delta;
+            pilot._lastLoopAngle = loopAngle;
+
+            EmitTrail(pilot);
+        }
+
+        void EmitTrail(SkimRacePilot pilot)
+        {
+            if (pilot.Status.Speed <= 4f) return;
+            // the ribbon traces the actual path (VesselStatus.Course), so a drift leaves
+            // the swept line you actually travelled, not where the nose pointed
+            var t = pilot.Transform;
+            var course = pilot.Status.Course;
+            var emit = t.position - course * 1.6f - t.up * 0.6f;
+            if (pilot.Trail.Count > 0 && (emit - pilot.Trail[^1].Pos).sqrMagnitude <= TrailSpacingSqr) return;
+            var span = Vector3.Cross(t.up, course);
+            span = span.sqrMagnitude > 0.001f ? span.normalized : t.right;
             // Mass levels bake into the emitted point: more mass = wider, longer-reach trail
-            int massLevel = Resources.GetLevel(Element.Mass);
+            int massLevel = pilot.Resources.GetLevel(Element.Mass);
             float reach = SkimRadiusBase + MassReachPerLevel * massLevel;
-            Trail.Add(new TrailPoint
+            pilot.Trail.Add(new TrailPoint
             {
                 Pos = emit,
                 Right = span,
@@ -427,17 +382,17 @@ namespace CosmicShore.Client
         /// 1 at zero distance falling linearly to 0 at that point's reach. Scans every
         /// rival's whole trail and own aged trail.
         /// </summary>
-        float SkimProximity()
+        float SkimProximity(SkimRacePilot pilot)
         {
             float best = 0f;
-            var p = transform.position;
+            var p = pilot.Transform.position;
 
-            for (int other = 0; other < Shared.Pilots.Count; other++)
+            for (int other = 0; other < Pilots.Count; other++)
             {
-                var pilot = Shared.Pilots[other];
-                bool own = ReferenceEquals(pilot, this);
+                var owner = Pilots[other];
+                bool own = ReferenceEquals(owner, pilot);
                 float ownCutoff = Time.time - OwnTrailMinAge;
-                var trail = pilot.Trail;
+                var trail = owner.Trail;
                 for (int i = 0; i < trail.Count; i++)
                 {
                     if (own && trail[i].Time > ownCutoff) break; // list is time-ordered
@@ -451,177 +406,648 @@ namespace CosmicShore.Client
             return best;
         }
 
-        /// <summary>Seek the next unclaimed crystal around the loop; drift to charge; boost when lined up.</summary>
-        void SynthesizeAIInput()
-        {
-            Status.XSum = 0f; Status.YSum = 0f; Status.YDiff = 0f;
-            Status.XDiff = 0.55f;
-            Status.LeftTriggerAnalog = 0f;
-            BoostHeld = false;
+        // ── crystals (real contact pipeline) ─────────────────────────
 
-            // next two unclaimed stations by forward loop distance (the circuit has
-            // no "+z ahead" — direction of travel is increasing loop angle)
-            float myAngle = SkimTrack.AngleOf(transform.position);
-            Vector3? first = null, second = null;
-            float bestDelta = float.MaxValue, secondDelta = float.MaxValue;
-            for (int i = 0; i < Track.Crystals.Count; i++)
+        public bool IsStationActive(int station) => _stationCrystals[station];
+
+        void TickRespawns()
+        {
+            bool spawned = false;
+            for (int i = 0; i < _stationCrystals.Length; i++)
             {
-                if (Shared.IsTaken(i)) continue;
-                float delta = SkimTrack.ForwardDelta(myAngle, Track.CrystalAngles[i]);
-                if (delta < 0.02f) continue; // station effectively underfoot — line up the next one
-                if (delta < bestDelta) { secondDelta = bestDelta; second = first; bestDelta = delta; first = Track.Crystals[i]; }
-                else if (delta < secondDelta) { secondDelta = delta; second = Track.Crystals[i]; }
+                if (_stationCrystals[i]) continue;
+                if (Time.time < _respawnAt[i]) continue;
+                SpawnStationCrystal(i);
+                spawned = true;
             }
-            // Overtake line: if someone else will beat me to the nearest crystal, concede
-            // it and set up on the following one instead of trailing forever.
-            Vector3? target = first;
-            if (first.HasValue && second.HasValue)
+            if (spawned) SyncPilotCourses();
+        }
+
+        /// <summary>
+        /// Refreshes every pilot's personal course registry with the live crystals and
+        /// raises its OnCellItemsUpdated so that pilot's AIPilot retargets. Ordering is
+        /// the race-design lever: the verbatim AIPilot selection walks the list and (for
+        /// any distance &gt; 1u) its `sqDistance &lt; MinDistance²` comparison accepts each
+        /// subsequent entry, so the LAST list item is the chosen target. The director
+        /// sorts each registry by forward loop distance DESCENDING — the last item is the
+        /// next station AHEAD of that pilot, so the field races the circuit forward
+        /// (tangentially aligned approaches, no greedy-nearest U-turn orbits). One shared
+        /// registry would pack the whole field onto a single station; per-pilot
+        /// registries are the race-design layer's station assignment.
+        /// </summary>
+        void SyncPilotCourses()
+        {
+            for (int p = 0; p < Pilots.Count; p++)
             {
-                float mine = (first.Value - transform.position).magnitude;
-                float bestRival = float.MaxValue;
-                for (int i = 0; i < Shared.Pilots.Count; i++)
+                var pilot = Pilots[p];
+                var registry = pilot.Course;
+                float pilotAngle = SkimTrack.AngleOf(pilot.Transform.position);
+
+                _scratchCrystals.Clear();
+                for (int s = 0; s < _stationCrystals.Length; s++)
+                    if (_stationCrystals[s])
+                        _scratchCrystals.Add(_stationCrystals[s]);
+                _scratchCrystals.Sort((a, b) =>
+                    SkimTrack.ForwardDelta(pilotAngle, SkimTrack.AngleOf(b.transform.position))
+                        .CompareTo(SkimTrack.ForwardDelta(pilotAngle, SkimTrack.AngleOf(a.transform.position))));
+
+                registry.CellItems.Clear();
+                registry.Crystals.Clear();
+                for (int i = 0; i < _scratchCrystals.Count; i++)
                 {
-                    if (ReferenceEquals(Shared.Pilots[i], this)) continue;
-                    float d = (first.Value - Shared.Pilots[i].transform.position).magnitude;
-                    if (d < bestRival) bestRival = d;
+                    registry.CellItems.Add(_scratchCrystals[i]);
+                    registry.Crystals.Add(_scratchCrystals[i]);
                 }
-                if (bestRival < mine * 0.8f) target = second;
+                registry.OnCellItemsUpdated.Raise(); // → that pilot's AIPilot retargets
             }
-            if (!target.HasValue) return;
-            ApplySeek(target.Value);
+        }
 
-            // Drift play (DriftIQ): low on energy and touching a ribbon → lean into the
-            // trigger and charge at the drift bonus; otherwise drift through hard turns.
-            float energy = Resources.Resources[0].CurrentAmount;
-            if (Personality.DriftIQ > 0f)
+        /// <summary>
+        /// Station crystal with the real contact rig (the HexRaceRound pattern): trigger
+        /// SphereCollider (claim surface = CollectRadius − vessel bubble) + OmniCrystalImpactor
+        /// (any-domain collection) + ImpactCollider routing the engine trigger pass into the
+        /// impactor dispatch. The crystal removes itself on collection (Respawn → DestroyCrystal
+        /// → CellRuntimeDataSO.TryRemoveItem → AIPilots retarget); the director only observes
+        /// the OnCrystalCollected SOAP event.
+        /// </summary>
+        void SpawnStationCrystal(int station)
+        {
+            var go = new GameObject($"crystal-{station}");
+            go.transform.position = Track.Crystals[station];
+
+            var trigger = go.AddComponent<SphereCollider>();
+            trigger.isTrigger = true;
+            trigger.radius = CollectRadius - VesselContactRadius;
+
+            var crystal = go.AddComponent<Crystal>();
+            crystal.Initialize(station);
+            crystal.ownDomain = Domains.Blue;   // uncommitted — every domain's pilot may seek it
+            crystal.ItemType = ItemType.Buff;
+            crystal.crystalProperties = new CrystalProperties
             {
-                if (energy < 0.45f && IsSkimming)
-                    Status.LeftTriggerAnalog = 0.65f * Personality.DriftIQ;
-                else if (Mathf.Abs(Status.XSum) > 0.6f && Speed > 45f)
-                    Status.LeftTriggerAnalog = 0.5f * Personality.DriftIQ;
+                crystal = crystal,
+                Element = Track.StationElements[station],
+                crystalValue = 1f,
+            };
+            SkimRaceFactory.SetPrivateField(crystal, "cellData", CourseData);
+
+            var impactor = go.AddComponent<OmniCrystalImpactor>(); // Awake binds impactor.Crystal
+            var claimEvent = ScriptableObject.CreateInstance<ScriptableEventCrystalStats>();
+            int generation = _generation;
+            claimEvent.OnRaised += stats => HandleClaim(generation, station, stats);
+            SkimRaceFactory.SetPrivateField(impactor, "OnCrystalCollected", claimEvent);
+
+            var impactCollider = go.AddComponent<ImpactCollider>();
+            SkimRaceFactory.SetPrivateField(impactCollider, "impactorObject", impactor);
+
+            CourseData.AddCrystalToList(crystal); // raises OnCellItemsUpdated → AIPilots retarget
+            _stationCrystals[station] = crystal;
+        }
+
+        /// <summary>
+        /// Fires from INSIDE the trigger pass, at the end of the genuine OnTriggerEnter →
+        /// ImpactorBase dispatch → OmniCrystalImpactor.AcceptImpactee chain. Applies the
+        /// StatsManager-shaped bookkeeping (RoundStats + elemental progression + the
+        /// SkimRace energy bonus), stages the respawn, and checks the win target.
+        /// </summary>
+        void HandleClaim(int generation, int station, CrystalStats stats)
+        {
+            if (generation != _generation) return; // stale crystal from a restarted race
+
+            // The crystal removes itself right after this handler — stage the respawn
+            // now and retarget the field off the vanished station.
+            _stationCrystals[station] = null;
+            _respawnAt[station] = Time.time + CrystalRespawnSeconds;
+            SyncPilotCourses();
+
+            if (State != RaceState.Racing) return; // victory-lap claims keep the loop alive, not the score
+
+            var pilot = FindPilot(stats.PlayerName);
+            if (pilot == null) return;
+
+            TotalClaims++;
+            ApplyCrystalPickup(pilot, stats.Element);
+            OnCrystalClaimed?.Invoke(station, Track.Crystals[station], !pilot.IsAI);
+
+            if (pilot.Stats.CrystalsCollected >= WinTarget)
+                FinishRace(pilot);
+        }
+
+        /// <summary>RoundStats + ResourceSystem elemental progression (HexRaceRound shape)
+        /// plus the SkimRace energy kicker: Charge/Omni claims charge harder.</summary>
+        void ApplyCrystalPickup(SkimRacePilot pilot, Element element)
+        {
+            var stats = pilot.Stats;
+            stats.CrystalsCollected++;
+
+            var resources = pilot.Resources;
+            if (element == Element.Omni)
+            {
+                stats.OmniCrystalsCollected++;
+                resources.IncrementLevel(Element.Charge);
+                resources.IncrementLevel(Element.Mass);
+                resources.IncrementLevel(Element.Space);
+                resources.IncrementLevel(Element.Time);
+                resources.ChangeResourceAmount(0, 0.3f);
+            }
+            else
+            {
+                stats.ElementalCrystalsCollected++;
+                resources.IncrementLevel(element);
+                resources.ChangeResourceAmount(0, element == Element.Charge ? 0.3f : 0.15f);
             }
         }
 
-        void ApplySeek(Vector3 target)
+        SkimRacePilot FindPilot(string playerName)
         {
-
-            var local = Quaternion.Inverse(transform.rotation) * (target - transform.position);
-            // Sign parity with the strategies: stick right ⇒ XSum positive ⇒ yaw right;
-            // stick up ⇒ YSum negative ⇒ nose up (+X axis rotation is nose-down).
-            Status.XSum = Mathf.Clamp(local.x * 0.25f, -1f, 1f);
-            Status.YSum = Mathf.Clamp(-local.y * 0.25f, -1f, 1f);
-            bool linedUp = Mathf.Abs(Status.XSum) < 0.35f && Mathf.Abs(Status.YSum) < 0.35f;
-
-            // Rubber-band both directions: hold boost for the opening seconds (give the
-            // player the early line), spend freely when trailing, coast when leading —
-            // otherwise the leader sweeps every contested crystal on the shared line.
-            int lead = Stats.CrystalsCollected - Shared.BestOtherCrystals(this);
-            Status.XDiff = lead >= 3 ? 0.4f : lead <= -2 ? 1f : 0.62f;
-            float reserve = lead >= 3 ? 0.95f : lead <= -2 ? 0.12f : 0.4f;
-            reserve *= 1.2f - 0.6f * Personality.Aggression; // hotheads spend sooner
-            BoostHeld = linedUp && ElapsedTime > 5f && Resources.Resources[0].CurrentAmount > reserve;
+            for (int i = 0; i < Pilots.Count; i++)
+                if (Pilots[i].Player.Name == playerName)
+                    return Pilots[i];
+            return null;
         }
 
-        public void ResetPilot(float lateralOffset)
+        void FinishRace(SkimRacePilot winner)
         {
-            ((IRoundStats)Stats).Cleanup();
-            Resources.ResetResource(0);
-            Resources.InitializeElementLevels(new ResourceCollection(0f, 0f, 0f, 0f));
-            Status?.ResetForReplay();
-            BoostHeld = false;
-            Trail.Clear();          // active force: a fresh race wipes the prismscape
-            DriftAmount = 0f;
-            IsSkimming = false;
-            TotalProgress = 0f;
-            // grid up a little way before the first station, facing along the loop
-            float startAngle = -30f / SkimTrack.BaseRadius;
-            var tangent = Track.TangentAt(startAngle);
-            transform.position = Track.PointAt(startAngle) + Track.SideAt(startAngle) * lateralOffset;
-            transform.rotation = Quaternion.LookRotation(tangent, Vector3.up);
-            Course = tangent;
-            _lastLoopAngle = SkimTrack.AngleOf(transform.position);
-            BankAngle = 0f;
-            Speed = 0f;
+            WinnerPilot = Pilots.IndexOf(winner);
+            winner.Stats.Score = ElapsedTime;   // HexRace golf scoring: time, lower is better
+            State = RaceState.Finished;
+
+            foreach (var pilot in Pilots)
+            {
+                pilot.BoostHeld = false;
+                pilot.Status.IsBoosting = false;
+            }
+
+            // Victory lap: hand the human's rig to the REAL AIPilot (rivals already fly it),
+            // so the scoreboard sits over a field still cruising the glowing prismscape.
+            EndHumanDrift(isSharp: false);
+            EndHumanDrift(isSharp: true);
+            EngageHumanAutopilot();
+        }
+
+        // ── human input wiring (the real SOAP button channels) ───────
+
+        void HandleButtonPressed(InputEvents inputEvent)
+        {
+            switch (inputEvent)
+            {
+                case InputEvents.Button1Action:
+                    HumanPilot.BoostHeld = true; // BoostActionSO path — gated on energy in TickPilot
+                    break;
+                case InputEvents.OnlyLeftStickAction:
+                case InputEvents.OnlyRightStickAction:
+                    BeginHumanDrift(isSharp: false); // single trigger → tier 1
+                    break;
+                case InputEvents.BothSticksAction:
+                    BeginHumanDrift(isSharp: true);  // both triggers → sharp tier
+                    break;
+            }
+        }
+
+        void HandleButtonReleased(InputEvents inputEvent)
+        {
+            switch (inputEvent)
+            {
+                case InputEvents.Button1Action:
+                    HumanPilot.BoostHeld = false;
+                    break;
+                case InputEvents.OnlyLeftStickAction:
+                case InputEvents.OnlyRightStickAction:
+                    EndHumanDrift(isSharp: false);
+                    break;
+                case InputEvents.BothSticksAction:
+                    EndHumanDrift(isSharp: true);
+                    break;
+            }
+        }
+
+        /// <summary>DriftActionSO.StartAction shape: register the tier with the real
+        /// transformer and flag the status — the transformer's analog interpolation
+        /// (trigger sum ≤1 single, >1 sharp) does the rest each frame.</summary>
+        void BeginHumanDrift(bool isSharp)
+        {
+            var transformer = HumanPilot.Status.VesselTransformer;
+            transformer.BeginDrift(DriftRotationMultiplier, DriftDampingTarget, isSharp);
+            HumanPilot.Status.IsDrifting = true;
+        }
+
+        /// <summary>DriftActionSO.StopAction shape.</summary>
+        void EndHumanDrift(bool isSharp)
+        {
+            var transformer = HumanPilot.Status.VesselTransformer;
+            transformer.EndDrift(isSharp);
+            HumanPilot.Status.IsDrifting = transformer.IsDriftActive;
+        }
+
+        // ── standings ────────────────────────────────────────────────
+
+        /// <summary>1-based race position: crystals first, distance travelled breaks ties.</summary>
+        public int PositionOf(SkimRacePilot pilot)
+        {
+            int position = 1;
+            for (int i = 0; i < Pilots.Count; i++)
+            {
+                var other = Pilots[i];
+                if (ReferenceEquals(other, pilot)) continue;
+                if (other.Stats.CrystalsCollected > pilot.Stats.CrystalsCollected
+                    || (other.Stats.CrystalsCollected == pilot.Stats.CrystalsCollected
+                        && other.TotalProgress > pilot.TotalProgress))
+                    position++;
+            }
+            return position;
+        }
+
+        /// <summary>Best crystal count among everyone except this pilot (HUD).</summary>
+        public int BestOtherCrystals(SkimRacePilot pilot)
+        {
+            int best = 0;
+            for (int i = 0; i < Pilots.Count; i++)
+                if (!ReferenceEquals(Pilots[i], pilot) && Pilots[i].Stats.CrystalsCollected > best)
+                    best = Pilots[i].Stats.CrystalsCollected;
+            return best;
+        }
+
+        // ── lifecycle ────────────────────────────────────────────────
+
+        /// <summary>Headless screenshot runs skip the grid hold.</summary>
+        public void SkipCountdown()
+        {
+            if (State == RaceState.Countdown) Countdown = 0f;
+        }
+
+        /// <summary>Hands the human's rig to the real AIPilot (screenshot autopilot / victory lap).</summary>
+        public void EngageHumanAutopilot()
+        {
+            if (_humanAutopilot) return;
+            HumanPilot.Player.Vessel.ToggleAIPilot(true);
+            _humanAutopilot = true;
+        }
+
+        public void RestartRace()
+        {
+            _generation++;
+            TotalClaims = 0;
+            WinnerPilot = -1;
             ElapsedTime = 0f;
             Countdown = 3f;
             State = RaceState.Countdown;
+
+            if (_humanAutopilot)
+            {
+                HumanPilot.Player.Vessel.ToggleAIPilot(false);
+                _humanAutopilot = false;
+            }
+
+            // Active force: a fresh race wipes the course and the prismscape.
+            CourseData.ResetRuntimeData();
+            for (int i = 0; i < _stationCrystals.Length; i++)
+            {
+                _stationCrystals[i] = null;
+                _respawnAt[i] = 0f;
+            }
+            foreach (var pilot in Pilots)
+            {
+                pilot.Course.CellItems.Clear();
+                pilot.Course.Crystals.Clear();
+            }
+
+            for (int i = 0; i < Pilots.Count; i++)
+                ResetPilot(Pilots[i]);
+
+            for (int i = 0; i < _stationCrystals.Length; i++)
+                SpawnStationCrystal(i);
+            SyncPilotCourses();
+        }
+
+        void ResetPilot(SkimRacePilot pilot)
+        {
+            var player = pilot.Player;
+            player.ResetForPlay();   // the REAL reset: transformer, resources, prism controller, AI off
+            pilot.Stats.Cleanup();   // zero the round stats (Name/Domain persist)
+
+            pilot.Trail.Clear();     // active force: a fresh race wipes the prismscape
+            pilot.TotalProgress = 0f;
+            pilot.BoostHeld = false;
+            pilot.DriftAmount = 0f;
+            pilot.IsSkimming = false;
+            pilot.SkimStrength = 0f;
+            pilot.Resources.InitializeElementLevels(new ResourceCollection(0f, 0f, 0f, 0f));
+            pilot.Status.VesselTransformer.ThrottleScalerMultiplier.Value = 1f;
+
+            player.StartPlayer();    // the REAL start: vessel un-stations, AI pilots re-engage
+            // Rung 1 renders trails as ribbons, not prisms — keep the async prism spawn
+            // loop (StartVessel started it) OFF until rung 2 renders real prisms.
+            pilot.Status.VesselPrismController.StopSpawn();
+            if (!pilot.IsAI)
+            {
+                // The window drives the ported GamepadInputStrategy itself (with the
+                // prompter's post-strategy yaw/roll inversions); pausing the rig's
+                // InputController keeps it from double-processing the same strategy.
+                player.InputController.SetPause(true);
+            }
+
+            // Grid up a little way before the first station, facing along the loop.
+            float startAngle = -30f / SkimTrack.BaseRadius;
+            var tangent = Track.TangentAt(startAngle);
+            var pose = new Pose
+            {
+                position = Track.PointAt(startAngle) + Track.SideAt(startAngle) * pilot.GridOffset,
+                rotation = Quaternion.LookRotation(tangent, Vector3.up),
+            };
+            player.Vessel.SetPose(pose);
+            pilot.Status.Course = tangent;
+            pilot.Status.IsStationary = true; // countdown holds the grid; BeginRacing releases it
+            pilot._lastLoopAngle = SkimTrack.AngleOf(pose.position);
         }
     }
 
-    /// <summary>Builds the engine-side race: shared state, player vessel, a field of AI rivals.</summary>
+    /// <summary>
+    /// Builds the race on the REAL ported pipeline: a prefab-shaped Squirrel vessel template
+    /// (the C6/HexRaceRound fixture layout + the CT1 contact rig), a Player template carrying
+    /// the real InputStatus, the verbatim PlayerSpawner/VesselSpawner clone+DI path, and the
+    /// SkimRaceDirector that runs the race rules on top.
+    /// </summary>
     public static class SkimRaceFactory
     {
         // grid slots fan outward from the racing line
         static readonly float[] GridOffsets = { -3.5f, 3.5f, -7.5f, 7.5f, -11.5f, 11.5f, 0f, -15f };
 
-        public static (GameLoop loop, SkimRaceController player, List<SkimRaceController> rivals) Create(
-            int seed, int trackCrystals, SkimInputStatus playerStatus, int rivalCount)
+        /// <summary>Reflection stand-in for inspector wiring of serialized fields (HexRaceRound pattern).</summary>
+        internal static void SetPrivateField(object target, string field, object value)
+        {
+            for (var t = target.GetType(); t != null; t = t.BaseType)
+            {
+                var f = t.GetField(field, BindingFlags.Instance | BindingFlags.NonPublic);
+                if (f == null) continue;
+                f.SetValue(target, value);
+                return;
+            }
+            throw new MissingFieldException(target.GetType().Name, field);
+        }
+
+        public static (GameLoop loop, SkimRaceDirector director) Create(int seed, int trackCrystals, int rivalCount)
         {
             var loop = new GameLoop("SkimRace");
+            NetworkManager.Singleton = null;
+
             int stations = Math.Clamp(trackCrystals, 8, 60);
             var track = new SkimTrack(seed, stations);
-            var shared = new SharedRaceState();
             // a full station count ≈ 2+ laps of the circuit (crystals respawn), so the
             // closed-track loop — leave trails, lap back, skim them — actually engages
             int winTarget = stations;
 
-            SkimRaceController Build(string name, Domains domain, int pilotId, bool isAI)
+            // ── shared data: theme + GameDataSO (vessel paint is headless-stubbed; the
+            // GL layer colors by domain itself) ───────────────────────
+            var theme = ScriptableObject.CreateInstance<ThemeManagerDataContainerSO>();
+            theme.TeamMaterialSets = new Dictionary<Domains, SO_MaterialSet>();
+            foreach (var domain in new[] { Domains.Jade, Domains.Ruby, Domains.Blue, Domains.Gold })
             {
-                var vessel = new GameObject(name);
-                vessel.SetActive(false); // configure before Awake
-
-                var resources = vessel.AddComponent<ResourceSystem>();
-                // skimming trails is the energy source — passive regen is a trickle
-                resources.Resources = new List<Resource> { new() { Name = "boost", resourceGainRate = 0.04f } };
-                resources.InitializeElementLevels(new ResourceCollection(0f, 0f, 0f, 0f));
-
-                var pilot = vessel.AddComponent<SkimRaceController>();
-                pilot.Track = track;
-                pilot.Shared = shared;
-                pilot.Resources = resources;
-                pilot.Stats = new RoundStats { Name = name, Domain = domain };
-                pilot.PilotId = pilotId;
-                pilot.IsAI = isAI;
-                pilot.WinTarget = winTarget;
-                vessel.SetActive(true);
-                shared.Pilots.Add(pilot);
-                return pilot;
+                var set = ScriptableObject.CreateInstance<SO_MaterialSet>();
+                set.ShipMaterial = new Material((Shader)null) { name = $"{domain}-ship" };
+                set.BlockSilhouettePrefab = new GameObject($"{domain}-silhouette");
+                theme.TeamMaterialSets[domain] = set;
             }
 
-            var player = Build("Pilot", Domains.Jade, 0, isAI: false);
-            player.Status = playerStatus;
-            // Boost rides the authentic event channel: Button1 (gamepad A / keyboard).
-            playerStatus.OnButtonPressed.OnRaised += e => { if (e == InputEvents.Button1Action) player.BoostHeld = true; };
-            playerStatus.OnButtonReleased.OnRaised += e => { if (e == InputEvents.Button1Action) player.BoostHeld = false; };
+            var gameData = ScriptableObject.CreateInstance<GameDataSO>();
+            gameData.ThemeManagerData = theme;
+            gameData.OnInitializeGame = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+            gameData.OnPlayerNetworkSpawnedUlong = ScriptableObject.CreateInstance<ScriptableEventUlong>();
+            gameData.OnVesselNetworkSpawned = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+            gameData.selectedVesselClass = ScriptableObject.CreateInstance<VesselClassTypeVariable>();
+            gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
 
-            // The field: Ruby/Gold/Blue rivals with seeded temperaments — same flight
-            // model, different lines. Blue is the neutral domain; it joins last.
-            var rivalDomains = new[] { Domains.Ruby, Domains.Gold, Domains.Blue };
-            var rivals = new List<SkimRaceController>();
-            var personalityRng = new Random(seed * 31 + 7);
+            // ── the course registries (V11): one primary registry owns the crystals
+            // (Crystal.DestroyCrystal removes itself there), and each pilot gets a
+            // personal registry the director keeps sorted far→near (SyncPilotCourses) ──
+            var courseData = CreateCourseRegistry(gameData);
+
+            // ── shared input button channels: the rig's InputStatus raises through these
+            // (one pair of SOAP assets shared across clones, exactly like the real prefabs;
+            // only the human's strategy ever raises) ──────────────────
+            var onButtonPressed = ScriptableObject.CreateInstance<ScriptableEventInputEvents>();
+            var onButtonReleased = ScriptableObject.CreateInstance<ScriptableEventInputEvents>();
+
+            // ── prefabs + spawners (verbatim C6 pipeline) ─────────────
+            var vesselTemplate = BuildVesselPrefab("SquirrelPrefab", VesselClassType.Squirrel, gameData,
+                courseData, onButtonPressed, onButtonReleased);
+            var prefabContainer = ScriptableObject.CreateInstance<VesselPrefabContainer>();
+            SetPrivateField(prefabContainer, "_shipPrefabs", new[] { vesselTemplate.transform });
+
+            var playerTemplateGo = new GameObject("PlayerPrefab");
+            var playerTemplate = playerTemplateGo.AddComponent<Player>();
+            SetPrivateField(playerTemplate, "gameData", gameData);
+            // The REAL InputStatus (V7) rides the player prefab; InputController.Awake's
+            // GetOrAdd finds it. The strategy raises button events through its channels.
+            var inputStatusTemplate = playerTemplateGo.AddComponent<InputStatus>();
+            SetPrivateField(inputStatusTemplate, "_onButtonPressed", onButtonPressed);
+            SetPrivateField(inputStatusTemplate, "_onButtonReleased", onButtonReleased);
+
+            var container = new Container();
+            container.RegisterValue(gameData);
+            container.RegisterValue(new GameObject("PlayerDataService").AddComponent<PlayerDataService>());
+            // VesselImpactor's [Inject] AudioSystem (shell) must resolve at clone injection.
+            container.RegisterValue(new GameObject("AudioSystem").AddComponent<AudioSystem>());
+
+            var spawnerGo = new GameObject("Spawners");
+            var vesselSpawner = spawnerGo.AddComponent<VesselSpawner>();
+            SetPrivateField(vesselSpawner, "vesselPrefabContainer", prefabContainer);
+            var playerSpawner = spawnerGo.AddComponent<PlayerSpawner>();
+            SetPrivateField(playerSpawner, "_playerPrefab", playerTemplate);
+            SetPrivateField(playerSpawner, "vesselSpawner", vesselSpawner);
+            container.InjectGameObject(spawnerGo);
+
+            // Spawn poses for GameDataSO.AddPlayer (the director re-grids afterwards).
             rivalCount = Math.Clamp(rivalCount, 1, 7);
+            var spawnTransforms = new Transform[rivalCount + 1];
+            for (int i = 0; i < spawnTransforms.Length; i++)
+            {
+                var point = new GameObject($"spawnPoint{i}");
+                point.transform.position = new Vector3((i - rivalCount * 0.5f) * 8f, 0f, -SkimTrack.BaseRadius);
+                spawnTransforms[i] = point.transform;
+            }
+            gameData.SetSpawnPositions(spawnTransforms);
+
+            // ── the field: the human plus seeded-skill AI rivals, all the same real rig ──
+            var pilots = new List<SkimRacePilot>
+            {
+                SpawnPilot(playerSpawner, gameData, vesselTemplate, "Pilot", Domains.Jade,
+                    isAI: false, skill: 1f, GridOffsets[0]),
+            };
+
+            // Ruby/Gold/Blue rivals with seeded skill — same flight model, different lines.
+            // Blue is the neutral domain; it joins last.
+            var rivalDomains = new[] { Domains.Ruby, Domains.Gold, Domains.Blue };
+            var personalityRng = new Random(seed * 31 + 7);
             for (int i = 0; i < rivalCount; i++)
             {
-                var rival = Build($"Rival {i + 1}", rivalDomains[i % rivalDomains.Length], i + 1, isAI: true);
-                rival.Status = new SkimInputStatus();
-                rival.Personality = new PilotPersonality
-                {
-                    TurnSkill = 0.88f + (float)personalityRng.NextDouble() * 0.12f,
-                    DriftIQ = 0.3f + (float)personalityRng.NextDouble() * 0.7f,
-                    Aggression = (float)personalityRng.NextDouble(),
-                };
-                rivals.Add(rival);
+                // skill skews high so back-of-field rivals stay in the race
+                float skill = 0.3f + (float)personalityRng.NextDouble() * 0.7f; // AIPilot.skillLevel
+                pilots.Add(SpawnPilot(playerSpawner, gameData, vesselTemplate, $"Rival {i + 1}",
+                    rivalDomains[i % rivalDomains.Length], isAI: true, skill,
+                    GridOffsets[(i + 1) % GridOffsets.Length]));
             }
 
-            ResetRace(shared);
-            return (loop, player, rivals);
+            var directorGo = new GameObject("SkimRaceDirector");
+            var director = directorGo.AddComponent<SkimRaceDirector>();
+            director.InitializeRace(track, gameData, courseData, pilots, winTarget,
+                onButtonPressed, onButtonReleased);
+            return (loop, director);
         }
 
-        public static void ResetRace(SharedRaceState shared)
+        static CellRuntimeDataSO CreateCourseRegistry(GameDataSO gameData)
         {
-            shared.Reset();
-            for (int i = 0; i < shared.Pilots.Count; i++)
-                shared.Pilots[i].ResetPilot(GridOffsets[i % GridOffsets.Length]);
+            var registry = ScriptableObject.CreateInstance<CellRuntimeDataSO>();
+            SetPrivateField(registry, "gameData", gameData);
+            registry.OnResetForReplay = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+            registry.OnCrystalSpawned = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+            registry.OnCellItemsUpdated = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+            registry.OnPhaseChanged = ScriptableObject.CreateInstance<ScriptableEventCellPhase>();
+            return registry;
+        }
+
+        static SkimRacePilot SpawnPilot(PlayerSpawner playerSpawner, GameDataSO gameData,
+            GameObject vesselTemplate, string name, Domains domain, bool isAI, float skill, float gridOffset)
+        {
+            // Prefab-variant skill: bake the seeded skill level into the template before the
+            // clone — the real pipeline also configures AIPilot skill before initialization
+            // (ServerPlayerVesselInitializerWithAI.ConfigureAIPilot).
+            SetPrivateField(vesselTemplate.GetComponent<AIPilot>(), "skillLevel", skill);
+
+            var player = playerSpawner.SpawnPlayerAndShip(new IPlayer.InitializeData
+            {
+                vesselClass = VesselClassType.Squirrel,
+                PlayerName = name,
+                AvatarId = 0,
+                AllowSpawning = true,
+                IsAI = isAI,
+            }) ?? throw new InvalidOperationException($"PlayerSpawner failed to spawn '{name}'.");
+
+            // Same domain assignment shape as HexRaceRound (single-player init defaults Jade).
+            ((Player)player).SetDomain(domain);
+            player.RoundStats.Domain = domain;
+
+            gameData.AddPlayer(player); // registers RoundStats + assigns a spawn pose
+
+            var vesselGo = ((VesselController)player.Vessel).gameObject;
+
+            // Personal course registry — wired into the CLONE's AIPilot before activation
+            // (OnEnable subscribes to the registry's OnCellItemsUpdated channel), so the
+            // director can hand each pilot its own station ordering (SyncPilotCourses).
+            var course = CreateCourseRegistry(gameData);
+            var aiPilot = vesselGo.GetComponent<AIPilot>();
+            SetPrivateField(aiPilot, "cellData", course);
+            SetPrivateField(aiPilot, "OnCellItemsUpdated", course.OnCellItemsUpdated);
+
+            vesselGo.SetActive(true);   // clones mirror the inactive prefab root — activate into the scene
+
+            var status = vesselGo.GetComponent<VesselStatus>();
+            return new SkimRacePilot
+            {
+                Player = player,
+                Status = status,
+                Transform = player.Vessel.Transform,
+                Resources = status.ResourceSystem,
+                Course = course,
+                GridOffset = gridOffset,
+            };
+        }
+
+        /// <summary>
+        /// The prefab-shaped Squirrel rig (HexRaceRound/C6 fixture layout): the REAL
+        /// VesselController + VesselStatus + the RequireComponent family + child skimmers +
+        /// the CT1 contact rig (contact-bubble SphereCollider + VesselImpactor/
+        /// NetworkVesselImpactor + ImpactCollider). Every AIPilot shares the race's course
+        /// registry and its OnCellItemsUpdated channel; every R_VesselActionHandler and the
+        /// player rig's InputStatus share the race's button channels. The E16 clone remap
+        /// makes Instantiate prefab-faithful.
+        /// </summary>
+        static GameObject BuildVesselPrefab(string name, VesselClassType vesselType, GameDataSO gameData,
+            CellRuntimeDataSO courseData,
+            ScriptableEventInputEvents onButtonPressed, ScriptableEventInputEvents onButtonReleased)
+        {
+            var go = new GameObject(name);
+            go.SetActive(false); // prefab: never live in the scene
+
+            go.AddComponent<VesselPrismController>();
+
+            var resources = go.AddComponent<ResourceSystem>();
+            // skimming trails is the energy source — passive regen is a trickle
+            resources.Resources = new List<Resource> { new() { Name = "boost", resourceGainRate = 0.04f } };
+
+            go.AddComponent<VesselTransformer>();
+
+            var pilot = go.AddComponent<AIPilot>();
+            // template default — SpawnPilot overrides each clone with its personal registry
+            SetPrivateField(pilot, "cellData", courseData);
+            SetPrivateField(pilot, "OnCellItemsUpdated", courseData.OnCellItemsUpdated);
+            SetPrivateField(pilot, "abilities", new List<AIAbility>());
+            // Prefab-authored skill spread so AIPilot.skillLevel is a real lever (the class
+            // defaults are flat .6/.6, which would make seeded skill inert).
+            SetPrivateField(pilot, "defaultThrottleLow", 0.55f);
+            SetPrivateField(pilot, "defaultThrottleHigh", 0.8f);
+
+            go.AddComponent<SilhouetteController>();
+
+            var cameraCustomizer = go.AddComponent<VesselCameraCustomizer>();
+            SetPrivateField(cameraCustomizer, "OnInitializePlayerCamera",
+                ScriptableObject.CreateInstance<ScriptableEventTransform>());
+
+            go.AddComponent<SkimVesselAnimation>();
+
+            var actionHandler = go.AddComponent<R_VesselActionHandler>();
+            SetPrivateField(actionHandler, "_onButtonPressed", onButtonPressed);
+            SetPrivateField(actionHandler, "_onButtonReleased", onButtonReleased);
+            SetPrivateField(actionHandler, "_resourceEventClassActions", new List<ResourceEventShipActionMapping>());
+
+            var geometry = new GameObject("geometry");
+            geometry.transform.SetParent(go.transform);
+            var customization = go.AddComponent<VesselCustomization>();
+            SetPrivateField(customization, "_shipGeometries", new List<GameObject> { geometry });
+
+            go.AddComponent<R_ShipElementStatsHandler>();
+
+            var hud = go.AddComponent<SkimVesselHud>();
+            var controller = go.AddComponent<VesselController>();
+            SetPrivateField(controller, "gameData", gameData);
+            var status = go.AddComponent<VesselStatus>();
+
+            Skimmer NewChildSkimmer(string skimmerName)
+            {
+                var child = new GameObject(skimmerName);
+                child.transform.SetParent(go.transform);
+                var skimmer = child.AddComponent<Skimmer>();
+                SetPrivateField(skimmer, "onSkimmerShipImpact", ScriptableObject.CreateInstance<ScriptableEventString>());
+                return skimmer;
+            }
+
+            var orientationHandle = new GameObject("orientationHandle");
+            orientationHandle.transform.SetParent(go.transform);
+
+            SetPrivateField(status, "_shipInstance", controller);
+            SetPrivateField(status, "vesselHUDController", hud);
+            SetPrivateField(status, "orientationHandle", orientationHandle);
+            SetPrivateField(status, "_name", name);
+            SetPrivateField(status, "vesselType", vesselType);
+            SetPrivateField(status, "_nearFieldSkimmer", NewChildSkimmer("nearFieldSkimmer"));
+            SetPrivateField(status, "_farFieldSkimmer", NewChildSkimmer("farFieldSkimmer"));
+
+            // Contact rig (CT1): non-trigger contact bubble + impactor routing. Crystal
+            // triggers pair with this collider in the engine trigger pass; the crystal's
+            // OmniCrystalImpactor resolves the vessel through this ImpactCollider.
+            var contactBubble = go.AddComponent<SphereCollider>();
+            contactBubble.radius = SkimRaceDirector.VesselContactRadius;
+
+            var networkVesselImpactor = go.AddComponent<NetworkVesselImpactor>();
+            var vesselImpactor = go.AddComponent<VesselImpactor>();
+            SetPrivateField(vesselImpactor, "vesselImpactorDataContainerSO",
+                ScriptableObject.CreateInstance<VesselImpactorDataContainerSO>());
+            SetPrivateField(vesselImpactor, "networkVesselImpactor", networkVesselImpactor);
+            SetPrivateField(networkVesselImpactor, "vesselImpactor", vesselImpactor);
+
+            var impactCollider = go.AddComponent<ImpactCollider>();
+            SetPrivateField(impactCollider, "impactorObject", vesselImpactor);
+
+            return go;
         }
     }
 }
