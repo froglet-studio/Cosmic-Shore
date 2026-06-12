@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cfe83d0ee7f84f9d9844f1e9824e8565, type: 3}
+  m_Name: UrchinVolleyAction
+  m_EditorClassIdentifier: 
+  fireRate: 6
+  blockSpeed: 100
+  minStopDistance: 60
+  maxStopDistance: 90
+  blockScale: {x: 2.5, y: 2.5, z: 2.5}
+  rotationOffsetEuler: {x: 0, y: 0, z: 0}
+  prismType: 6
+  disableCollidersOnLaunch: 1

@@ -356,6 +356,7 @@ GameObject:
   - component: {fileID: 480776854233637271}
   - component: {fileID: 7818734245933827439}
   - component: {fileID: 9166392423966681246}
+  - component: {fileID: 9100000000000001025}
   m_Layer: 8
   m_Name: Ship_Wedge_Body
   m_TagString: Untagged
@@ -778,7 +779,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   firePeriod: 0.2
   sideLength: 2
-  projectileFactory: {fileID: 0}
+  projectileFactory: {fileID: 9100000000000001016}
 --- !u!1 &4251409320503842611
 GameObject:
   m_ObjectHideFlags: 0
@@ -1142,6 +1143,16 @@ GameObject:
   m_Component:
   - component: {fileID: 5928382658856804067}
   - component: {fileID: 6441696348568773771}
+  - component: {fileID: 9100000000000001021}
+  - component: {fileID: 9100000000000001022}
+  - component: {fileID: 9100000000000001023}
+  - component: {fileID: 9100000000000001024}
+  - component: {fileID: 9100000000000001020}
+  - component: {fileID: 9100000000000001015}
+  - component: {fileID: 9100000000000001016}
+  - component: {fileID: 9100000000000001017}
+  - component: {fileID: 9100000000000001018}
+  - component: {fileID: 9100000000000001019}
   - component: {fileID: -3607265076877978738}
   - component: {fileID: 874579555101021522}
   - component: {fileID: 1435252848482629424}
@@ -1191,14 +1202,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 61d08a99952fdc44d96f926228873c0c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _shipInstance: {fileID: 0}
-  vesselHUDController: {fileID: 0}
+  _shipInstance: {fileID: 9100000000000001021}
+  vesselHUDController: {fileID: 9100000000000001022}
   boostMultiplier: 4
-  _name: 
-  vesselType: 0
-  _nearFieldSkimmer: {fileID: 0}
+  _name: Grizzly
+  vesselType: 5
+  _nearFieldSkimmer: {fileID: 874579554510349383}
   _farFieldSkimmer: {fileID: 0}
-  orientationHandle: {fileID: 0}
+  orientationHandle: {fileID: 1878660672777590133}
 --- !u!114 &-3607265076877978738
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1275,7 +1286,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 737294a573670f74389a7af68df314d5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Resources: []
+  Resources:
+  - Name: Energy
+    initialResourceGainRate: 0.05
+    resourceGainRate: 0.05
+    maxAmount: 1
+    initialAmount: 0
+  - Name: Ammo
+    initialResourceGainRate: 0.03
+    resourceGainRate: 0.03
+    maxAmount: 1
+    initialAmount: 1
   ChargeTestHarness: 0
   MassTestHarness: 0
   SpaceTestHarness: 0
@@ -1424,13 +1445,27 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
-  _executors: {fileID: 0}
-  _inputEventShipActions: []
+  _executors: {fileID: 9100000000000001020}
+  _inputEventShipActions:
+  - InputEvent: 1
+    ShipActions:
+    - {fileID: 11400000, guid: 690cf856c1394165a57d3bed1b3c7bd3, type: 2}
+  - InputEvent: 2
+    ShipActions:
+    - {fileID: 11400000, guid: ca3363bab68f4f5faae6b53a0b127319, type: 2}
+  - InputEvent: 6
+    ShipActions:
+    - {fileID: 11400000, guid: 21f3281c33664daba5644a3b20835e44, type: 2}
+  - InputEvent: 7
+    ShipActions:
+    - {fileID: 11400000, guid: 48560bcdf01642b9b9198b51fdf8883f, type: 2}
   _resourceEventClassActions: []
-  _onButtonPressed: {fileID: 0}
-  _onButtonReleased: {fileID: 0}
-  onAbilityExecuted: {fileID: 0}
-  _onInputEventBlocked: {fileID: 0}
+  _touchActionOverrides: []
+  _gamepadActionOverrides: []
+  _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
+  _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
+  onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
+  _onInputEventBlocked: {fileID: 11400000, guid: 11683e8c1b111854d94fa6bcf821abfe, type: 2}
 --- !u!114 &7779107667008759293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1443,7 +1478,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 54b4f9e9438fc6c49adc4ff81dc84db8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _shipGeometries: []
+  _shipGeometries:
+  - {fileID: 1652545777288694586}
+  - {fileID: 3193920657457234309}
+  - {fileID: 3280377671054936772}
+  - {fileID: 3907232763667441001}
+  - {fileID: 5121483745170456138}
+  - {fileID: 5469308656037274025}
+  - {fileID: 7699084221746907587}
+  - {fileID: 7868440465732788152}
 --- !u!114 &4248184753307651523
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1983,3 +2026,164 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 9114628833701524809}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &9100000000000001015
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5daed71d21246db9fdb15a9d495e1ec, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  prefab: {fileID: 7632677803272750685, guid: 1bdcea9e9329dd141af7ab874a4d31a2, type: 3}
+  defaultCapacity: 5
+  maxSize: 20
+  enableBufferMaintenance: 1
+  bufferSizeTarget: 5
+  maxInstantiateRate: 5
+  baseInstantiateRate: 2
+  maxAddsPerFrame: 2
+--- !u!114 &9100000000000001016
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9b3080b23e64bba93ece7a3dece3463, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  poolEntries:
+  - type: 0
+    poolManager: {fileID: 9100000000000001015}
+--- !u!114 &9100000000000001017
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5863871d71494150b9b8c5d95029504e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gun: {fileID: 2353136872146328024}
+  projectileContainer: {fileID: 7248850907257131658}
+--- !u!114 &9100000000000001018
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 05df63489ed743778f092c5aa8ea78cb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gun: {fileID: 2353136872146328024}
+--- !u!114 &9100000000000001019
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d94ffbfddf78440495c09b168f42dce6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  vesselPrismController: {fileID: 874579555101021522}
+  stationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f, type: 2}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
+--- !u!114 &9100000000000001020
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db6dbfb1f4d3438184815697c23aefce, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _executors:
+  - {fileID: 9100000000000001017}
+  - {fileID: 9100000000000001018}
+  - {fileID: 9100000000000001019}
+--- !u!114 &9100000000000001021
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b7eeb73278527f4a97859b2ed871a36, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  ShowTopMostFoldoutHeaderGroup: 1
+  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+--- !u!114 &9100000000000001022
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2699f4b9309b4d6b8c599bc4a9f94fbe, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baseView: {fileID: 0}
+  silhouette: {fileID: 0}
+  view: {fileID: 0}
+--- !u!114 &9100000000000001023
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d2768c501e334340b521378573d77c78, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  vesselImpactorDataContainerSO: {fileID: 11400000, guid: 2d137df65d514b3da4838d880355dfa4, type: 2}
+  networkVesselImpactor: {fileID: 9100000000000001024}
+--- !u!114 &9100000000000001024
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b6b52a5b8bf44b9bf86a0d51d59554d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &9100000000000001025
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3193920657457234309}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fafcc767febd41ccbad67c5457dc432d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  impactorObject: {fileID: 9100000000000001023}

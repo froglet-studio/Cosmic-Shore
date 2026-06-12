@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e69e441921845c0809b6c506eee66e0, type: 3}
+  m_Name: UrchinBarrageAction
+  m_EditorClassIdentifier: 
+  ammoIndex: 0
+  ammoCost: 0.005
+  inherit: 1
+  projectileScale: 1
+  firingRate: 8
+  projectileTime: 0.8
+  firingPattern: 0
+  energy: 1
+  speedValue:
+    Enabled: 0
+    Value: 900
+    Min: 900
+    Max: 900
+    element: 0
