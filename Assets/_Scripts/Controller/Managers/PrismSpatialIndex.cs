@@ -759,7 +759,9 @@ namespace CosmicShore.Gameplay
         /// MonoBehaviour. The managed _prisms[index] slot is null — ProcessExplosionFrame
         /// skips it after the spatial query, so this isolates Burst job cost from damage
         /// application cost. Maintains the live-entry-implies-bucket invariant so the
-        /// occupancy view stays consistent with Unregister/MarkDestroyed.
+        /// occupancy view stays consistent with Unregister/MarkDestroyed. Deliberately
+        /// NOT filed into the cell density view — synthetic mass must not perturb
+        /// Cell.LiveVolume / phase / fauna-targeting accounting.
         /// </summary>
         internal int RegisterSynthetic(float3 position, byte flags, float volume, int domain)
         {
@@ -774,6 +776,7 @@ namespace CosmicShore.Gameplay
             }
 
             _prisms[index] = null;
+            _cells[index] = null;
             _spatial[index] = new PrismSpatialData { Position = position, Flags = flags };
             _damage[index] = new PrismDamageData { Volume = volume, Domain = domain };
             if ((flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue)
@@ -782,14 +785,19 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Clears all registered prisms, buckets, and reservations. Used by the
-        /// AOE benchmark to reset between runs — never call during gameplay.
+        /// Clears all registered prisms, buckets, reservations, and cell bindings.
+        /// Used by the AOE benchmark to reset between runs — never call during
+        /// gameplay.
         /// </summary>
         internal void ClearAll()
         {
             if (!_spatial.IsCreated) return;
             for (int i = 0; i < _highWaterMark; i++)
             {
+                // Real prisms registered before the benchmark ran are filed in
+                // their cell's density grids — release them so the coarse view
+                // doesn't keep counting mass the index dropped.
+                UnbindCell(i, _prisms[i]);
                 _prisms[i] = null;
                 var s = _spatial[i];
                 s.Flags = 0;
