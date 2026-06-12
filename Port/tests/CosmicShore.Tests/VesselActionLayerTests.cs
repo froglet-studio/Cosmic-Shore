@@ -352,6 +352,9 @@ public class VesselActionLayerTests
         rig.Controller = go.AddComponent<VesselPrismController>();
         Set(rig.Controller, "_onPrismSpawnedEventChannel", channel);
         Set(rig.Controller, "startDelay", 0f);
+        // V16's Skimmer restore made the wait-time ternary live; this rig wires no
+        // skimmer, so take the explicit-waitTime branch (the behavior under test).
+        Set(rig.Controller, "waitTillOutsideSkimmer", false);
 
         rig.Controller.OnBlockSpawned += p =>
         {

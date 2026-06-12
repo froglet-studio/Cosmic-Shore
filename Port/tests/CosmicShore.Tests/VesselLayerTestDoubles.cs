@@ -145,6 +145,9 @@ internal static class PrismTestRig
         public VesselTransformer VesselTransformer { get; set; }
         public string Name => "stub";
         public VesselClassType VesselType => VesselClassType.Manta;
+        // V16: Skimmer members restored on IVesselStatus.
+        public Skimmer NearFieldSkimmer { get; set; }
+        public Skimmer FarFieldSkimmer { get; set; }
         public GameObject OrientationHandle => null;
         public Material ShipMaterial { get; set; }
         public Material SkimmerMaterial { get; set; }
@@ -155,6 +158,8 @@ internal static class PrismTestRig
         public bool IsTranslationRestricted { get; set; }
         public IVesselHUDController VesselHUDController => null;
         public VesselCustomization Customization => null;
+        public VesselPrismController VesselPrismController { get; set; }
+        public R_VesselActionHandler ActionHandler => null;
         public R_ShipElementStatsHandler ElementalStatsHandler => null;
         public bool IsNetworkOwner => false;
         public bool IsNetworkClient => false;
@@ -171,7 +176,9 @@ internal static class PrismTestRig
         public ulong PlayerNetId => 0;
         public ulong VesselNetId => 0;
         public ulong OwnerClientNetId => 0;
-        public Transform Transform => null;
+        // V16: settable so DriftTrailActionExecutor tests can give the vessel a real
+        // transform (the dot-product loop reads Transform.forward); defaults to null.
+        public Transform Transform { get; set; }
 
         public readonly List<(string name, Element element)> Bound = new();
         public void BindElementalFloat(string name, Element element) => Bound.Add((name, element));

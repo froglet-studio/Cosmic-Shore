@@ -20,8 +20,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private PrismEventChannelWithReturnSO _onPrismSpawnedEventChannel;
 
         [Header("References")]
-        // PORT Deviation (V17, restore when Skimmer lands — ported in the V16 arc):
-        // [SerializeField] Skimmer skimmer;
+        [SerializeField] Skimmer skimmer;
 
         [Header("Base Scale (used instead of prefab)")]
         [SerializeField] private Vector3 BaseScale = new Vector3(10f, 5f, 5f);
@@ -39,11 +38,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] float maxBlockScale = 1f;
 
         [Header("Runtime Toggles")]
-        // PORT Deviation (V17): pragma only — waitTillOutsideSkimmer's sole read site is the
-        // staged skimmer wait-time branch in CreateBlock; remove with the restore.
-#pragma warning disable 0414
         [SerializeField] bool waitTillOutsideSkimmer = true;
-#pragma warning restore 0414
         [SerializeField] bool shielded = false;
 
         [Header("Gap Settings")]
@@ -246,11 +241,9 @@ namespace CosmicShore.Gameplay
             prism.ChangeTeam(vesselStatus.Domain);
 
             // Wait time (uses TrailZScale from BaseScale)
-            // PORT Deviation (V17, restore when Skimmer lands — ported in the V16 arc):
-            // prism.waitTime = waitTillOutsideSkimmer
-            //     ? (skimmer.transform.localScale.z + TrailZScale) / vesselStatus.Speed
-            //     : waitTime;
-            prism.waitTime = waitTime;
+            prism.waitTime = waitTillOutsideSkimmer
+                ? (skimmer.transform.localScale.z + TrailZScale) / vesselStatus.Speed
+                : waitTime;
 
             if (_dangerMode)
             {

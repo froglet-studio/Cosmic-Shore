@@ -95,8 +95,8 @@ namespace CosmicShore.Gameplay
         string Name { get; }
         VesselClassType VesselType { get; }
 
-        // PORT Deviation #10c (restore at V16): Skimmer NearFieldSkimmer { get; }
-        // PORT Deviation #10c (restore at V16): Skimmer FarFieldSkimmer { get; }
+        Skimmer NearFieldSkimmer { get; }
+        Skimmer FarFieldSkimmer { get; }
 
         GameObject OrientationHandle { get; }
 
@@ -112,13 +112,13 @@ namespace CosmicShore.Gameplay
         bool IsStationary { get; set; }
         bool IsTranslationRestricted { get; set; }
 
-        // PORT Deviation #10c (restore at V17): VesselPrismController VesselPrismController { get; }
+        VesselPrismController VesselPrismController { get; }
 
         // Renamed: IShipHUDController -> IVesselHUDController
         IVesselHUDController VesselHUDController { get; }
 
         VesselCustomization Customization { get; }
-        // PORT Deviation #10c (restore at V17): R_VesselActionHandler ActionHandler { get; }
+        R_VesselActionHandler ActionHandler { get; }
 
         R_ShipElementStatsHandler ElementalStatsHandler { get; }
 

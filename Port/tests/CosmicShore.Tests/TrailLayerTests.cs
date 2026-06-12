@@ -47,6 +47,9 @@ public class TrailLayerTests
         public VesselTransformer VesselTransformer { get; set; }
         public string Name => "trail-stub";
         public VesselClassType VesselType => VesselClassType.Manta;
+        // V16: Skimmer members restored on IVesselStatus.
+        public Skimmer NearFieldSkimmer => null;
+        public Skimmer FarFieldSkimmer => null;
         public GameObject OrientationHandle => null;
         public Material ShipMaterial { get; set; }
         public Material SkimmerMaterial { get; set; }
@@ -57,6 +60,8 @@ public class TrailLayerTests
         public bool IsTranslationRestricted { get; set; }
         public IVesselHUDController VesselHUDController => null;
         public VesselCustomization Customization => null;
+        public VesselPrismController VesselPrismController => null;
+        public R_VesselActionHandler ActionHandler => null;
         public R_ShipElementStatsHandler ElementalStatsHandler => null;
         public bool IsNetworkOwner => false;
         public bool IsNetworkClient => false;

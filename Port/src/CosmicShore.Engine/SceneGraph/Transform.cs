@@ -22,7 +22,14 @@ namespace CosmicShore.Engine
         public Quaternion localRotation = Quaternion.identity;
         public Vector3 localScale = Vector3.one;
 
-        public Transform parent { get; private set; }
+        Transform _parent;
+
+        /// <summary>Assignment reparents keeping the world pose (original engine contract); use SetParent for control.</summary>
+        public Transform parent
+        {
+            get => _parent;
+            set => SetParent(value);
+        }
 
         public int childCount => _children.Count;
         public Transform GetChild(int index) => _children[index];
@@ -147,7 +154,7 @@ namespace CosmicShore.Engine
             parent?._children.Remove(this);
             if (parent is null) gameObject.scene?.RemoveRoot(gameObject);
 
-            parent = newParent;
+            _parent = newParent;
 
             if (newParent is not null) newParent._children.Add(this);
             else gameObject.scene?.AddRoot(gameObject);
@@ -175,7 +182,7 @@ namespace CosmicShore.Engine
         internal void SetParentForDestroy()
         {
             parent?._children.Remove(this);
-            parent = null;
+            _parent = null;
         }
 
         internal override void DestroyComponentNow()

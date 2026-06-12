@@ -183,8 +183,8 @@ a file is indivisible). Engine additions don't count against the budget.
 | **V13** ✅ | 19. PrismStateManager, PrismTeamManager, PrismScaleAnimator. | ~474 | — |
 | **V14** ✅ | 20. MaterialPropertyAnimator, Trail, PrismProperties, TrailFollower. | ~587 | — |
 | **V15** ✅ | 21. AudioSystem shell (Deviation #11), PrismAOERegistry (managed-array port). 22. Prism (+`AttachedPrism` restore). | ~925* | — |
-| **V16** | 23. NudgeShardPoolManager, NudgeShard, Skimmer (+skimmer member restores). 24. DriftTrailActionExecutor. | ~347 | — |
-| **V17** | 25. VesselPrismController (+restore). 26. R_VesselActionHandler (+restore). | ~696 | — |
+| **V16** ✅ | 23. NudgeShardPoolManager, NudgeShard, Skimmer (+skimmer member restores). 24. DriftTrailActionExecutor. | ~347 | — |
+| **V17** ✅ | 25. VesselPrismController (+restore). 26. R_VesselActionHandler (+restore). | ~696 | — |
 | **V18** | 27. AIPilot, AICinematicBehavior (+restores). | ~684 | — |
 | **V19** | 28. ICameraController, ICameraConfigurator, CustomCameraController, CameraManager shell (Deviation #12), VesselCameraCustomizer (+restore). 29. VesselImpactor + VesselExplosionByCrystalEffectSO (first impact-matrix slice), SilhouetteConfigSO, view shells (Deviation #13), SilhouetteController (+final restores). 30. **Close #10c — IVesselStatus verbatim.** Interface-surface freeze test; CLI vertical-slice growth (NEXT-UP item 4). | ~770* | **#10c** |
 
