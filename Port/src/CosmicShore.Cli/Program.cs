@@ -19,11 +19,14 @@ using Object = CosmicShore.Engine.Object;
 namespace CosmicShore.Cli
 {
     /// <summary>
-    /// Progress-build harness (milestone M1): proves the first-party engine — game loop,
-    /// component lifecycle, transforms, SOAP, DI, async scheduler, networking primitives,
-    /// and the ported Data layer — working together, deterministically, with no Unity.
+    /// Progress-build harness. Default (milestone M1): proves the first-party engine — game
+    /// loop, component lifecycle, transforms, SOAP, DI, async scheduler, networking
+    /// primitives, and the ported Data layer — working together, deterministically, with no
+    /// Unity. With <c>--mode hexrace</c> (milestone port-m2) it instead runs a full headless
+    /// AI-vs-AI game-mode round through the verbatim ported systems.
     ///
     ///   dotnet run --project src/CosmicShore.Cli [-- --frames N] [--quiet]
+    ///   dotnet run --project src/CosmicShore.Cli -- --mode hexrace [--players N] [--seed S]
     /// </summary>
     static class Program
     {
@@ -33,37 +36,58 @@ namespace CosmicShore.Cli
         static int Main(string[] args)
         {
             int frames = 240;
+            string mode = null;
+            int players = 4;
+            int seed = 42;
             for (int i = 0; i < args.Length; i++)
             {
                 if (args[i] == "--frames" && i + 1 < args.Length && int.TryParse(args[i + 1], out int parsed))
                     frames = parsed;
+                if (args[i] == "--mode" && i + 1 < args.Length)
+                    mode = args[i + 1].ToLowerInvariant();
+                if (args[i] == "--players" && i + 1 < args.Length && int.TryParse(args[i + 1], out int parsedPlayers))
+                    players = parsedPlayers;
+                if (args[i] == "--seed" && i + 1 < args.Length && int.TryParse(args[i + 1], out int parsedSeed))
+                    seed = parsedSeed;
                 if (args[i] == "--quiet") _quiet = true;
             }
 
-            Console.WriteLine("┌──────────────────────────────────────────────────────────┐");
-            Console.WriteLine("│  COSMIC SHORE — standalone port  ·  progress build M1    │");
-            Console.WriteLine("│  first-party engine smoke ·  v0.1.0-m1 ·  no Unity       │");
-            Console.WriteLine("└──────────────────────────────────────────────────────────┘");
-
-            RunStateMachineDemo();
-            RunSimulationDemo(frames);
-            RunRoundStatsDemo();
-            RunPortedLogicDemo();
-            RunElementalDemo();
-            RunSpawnPipelineDemo();
-
-            Console.WriteLine();
             int exitCode;
-            if (Failures.Count == 0)
+            if (mode != null)
             {
-                Console.WriteLine("RESULT: PASS — all engine smoke checks green.");
-                exitCode = 0;
+                // A game mode runs INSTEAD of the engine smoke sections.
+                exitCode = mode switch
+                {
+                    "hexrace" => RunHexRaceMode(players, seed),
+                    _ => UnknownMode(mode),
+                };
             }
             else
             {
-                Console.WriteLine($"RESULT: FAIL — {Failures.Count} check(s) failed:");
-                foreach (var failure in Failures) Console.WriteLine($"  ✗ {failure}");
-                exitCode = 1;
+                Console.WriteLine("┌──────────────────────────────────────────────────────────┐");
+                Console.WriteLine("│  COSMIC SHORE — standalone port  ·  progress build M1    │");
+                Console.WriteLine("│  first-party engine smoke ·  v0.1.0-m1 ·  no Unity       │");
+                Console.WriteLine("└──────────────────────────────────────────────────────────┘");
+
+                RunStateMachineDemo();
+                RunSimulationDemo(frames);
+                RunRoundStatsDemo();
+                RunPortedLogicDemo();
+                RunElementalDemo();
+                RunSpawnPipelineDemo();
+
+                Console.WriteLine();
+                if (Failures.Count == 0)
+                {
+                    Console.WriteLine("RESULT: PASS — all engine smoke checks green.");
+                    exitCode = 0;
+                }
+                else
+                {
+                    Console.WriteLine($"RESULT: FAIL — {Failures.Count} check(s) failed:");
+                    foreach (var failure in Failures) Console.WriteLine($"  ✗ {failure}");
+                    exitCode = 1;
+                }
             }
 
             // Double-clicked .exe on Windows: hold the window open so the transcript is
@@ -76,6 +100,49 @@ namespace CosmicShore.Cli
             }
 
             return exitCode;
+        }
+
+        // ── [hexrace] Milestone port-m2 — full headless AI-vs-AI round ──────
+
+        static int UnknownMode(string mode)
+        {
+            Console.WriteLine($"RESULT: FAIL — unknown --mode '{mode}' (supported: hexrace).");
+            return 1;
+        }
+
+        static int RunHexRaceMode(int players, int seed)
+        {
+            var options = new HexRaceRoundOptions { PlayerCount = players, Seed = seed };
+
+            Console.WriteLine("┌──────────────────────────────────────────────────────────┐");
+            Console.WriteLine("│  COSMIC SHORE — standalone port  ·  progress build M2    │");
+            Console.WriteLine("│  headless game-mode round (AI vs AI) ·  no Unity         │");
+            Console.WriteLine("└──────────────────────────────────────────────────────────┘");
+            Console.WriteLine();
+            Console.WriteLine($"[hexrace] players={Mathf.Clamp(options.PlayerCount, 1, 12)}, seed={options.Seed}, " +
+                              $"target={options.CrystalTarget} crystals (domain-aggregated, golf rules)");
+            Console.WriteLine();
+
+            var result = HexRaceRound.Run(options, line => Console.WriteLine("  " + line));
+
+            Console.WriteLine();
+            foreach (var error in result.EngineErrors)
+                Console.WriteLine($"  ✗ engine error during round: {error}");
+
+            if (!result.Finished)
+            {
+                Console.WriteLine($"RESULT: FAIL — race did not finish within {result.FramesSimulated} frames.");
+                return 1;
+            }
+            if (result.EngineErrors.Count > 0)
+            {
+                Console.WriteLine($"RESULT: FAIL — round finished but {result.EngineErrors.Count} engine error(s) were logged.");
+                return 1;
+            }
+
+            Console.WriteLine($"RESULT: PASS — winner '{result.WinnerName}' ({result.WinnerDomain}) in " +
+                              $"{result.FinishTime:F2}s · {result.FramesSimulated} frames · {result.TotalClaims} crystals claimed.");
+            return 0;
         }
 
         static void Print(string message)
