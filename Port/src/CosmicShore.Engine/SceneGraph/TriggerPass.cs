@@ -49,6 +49,7 @@ namespace CosmicShore.Engine
 
         // Per-frame scratch (reused to avoid steady-state allocation).
         readonly List<Collider> _live = new();
+        readonly List<int> _liveTriggerIndices = new(); // ascending indices into _live
         readonly List<(Collider a, Collider b)> _discovered = new();
         readonly HashSet<(Collider a, Collider b)> _current = new();
 
@@ -71,21 +72,39 @@ namespace CosmicShore.Engine
                     _live.Add(collider);
 
             // 2. Current overlap set — (i, j), i < j, at least one trigger.
+            //
+            //    Perf (behavior-preserving): only pairs containing at least one trigger can
+            //    produce events, so instead of the naive O(n²) cross product the scan walks
+            //    trigger indices — for a trigger at i, every j > i; for a non-trigger at i,
+            //    only triggers at j > i (via the ascending _liveTriggerIndices cursor). The
+            //    sequence of qualifying pairs visited is IDENTICAL to the naive i<j scan
+            //    (lexicographic over registration order), so discovery order — and therefore
+            //    enter-event order — is unchanged. This keeps the pass linear-ish in scenes
+            //    dominated by non-trigger colliders (e.g. thousands of conserved trail
+            //    prisms vs. a handful of crystal/skimmer triggers).
             _discovered.Clear();
             _current.Clear();
+            _liveTriggerIndices.Clear();
+            for (int i = 0; i < _live.Count; i++)
+                if (_live[i].isTrigger)
+                    _liveTriggerIndices.Add(i);
+
+            int triggerCursor = 0; // first entry in _liveTriggerIndices whose index is > i
             for (int i = 0; i < _live.Count; i++)
             {
                 var a = _live[i];
-                for (int j = i + 1; j < _live.Count; j++)
-                {
-                    var b = _live[j];
-                    if (!a.isTrigger && !b.isTrigger) continue;
-                    if (ReferenceEquals(a.gameObject, b.gameObject)) continue;
-                    if (!Overlaps(a, b)) continue;
+                while (triggerCursor < _liveTriggerIndices.Count && _liveTriggerIndices[triggerCursor] <= i)
+                    triggerCursor++;
 
-                    var pair = (a, b);
-                    _current.Add(pair);
-                    _discovered.Add(pair);
+                if (a.isTrigger)
+                {
+                    for (int j = i + 1; j < _live.Count; j++)
+                        TestPair(a, _live[j]);
+                }
+                else
+                {
+                    for (int t = triggerCursor; t < _liveTriggerIndices.Count; t++)
+                        TestPair(a, _live[_liveTriggerIndices[t]]);
                 }
             }
 
@@ -113,6 +132,17 @@ namespace CosmicShore.Engine
                 _activePairs.Add(pair);
                 Dispatch(pair.a, pair.b, enter: true);
             }
+        }
+
+        /// <summary>Overlap-test one (earlier, later) registration-order pair (≥1 side is a trigger).</summary>
+        void TestPair(Collider a, Collider b)
+        {
+            if (ReferenceEquals(a.gameObject, b.gameObject)) return;
+            if (!Overlaps(a, b)) return;
+
+            var pair = (a, b);
+            _current.Add(pair);
+            _discovered.Add(pair);
         }
 
         // ── Dispatch ─────────────────────────────────────────────────

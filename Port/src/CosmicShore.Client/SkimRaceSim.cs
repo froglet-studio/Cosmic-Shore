@@ -16,21 +16,6 @@ using Random = System.Random; // disambiguate from CosmicShore.Engine.Random
 namespace CosmicShore.Client
 {
     /// <summary>
-    /// One emitted trail segment. Mass-element levels bake into the point at emit time:
-    /// a high-Mass pilot lays physically wider, more skimmable trail — more mass.
-    /// (Rung 2 replaces these visual ribbons with real Prisms via VesselPrismController.)
-    /// </summary>
-    public struct TrailPoint
-    {
-        public Vector3 Pos;
-        public Vector3 Right;
-        public float Time;
-        public float Width;          // render half-width
-        public float SkimRadius;     // how far this point's skim field reaches
-        public float SkimRadiusSqr;  // precomputed for the hot scan
-    }
-
-    /// <summary>
     /// Deterministic CLOSED circuit: a seeded ring whose radius and altitude undulate
     /// on integer harmonics, so the loop closes seamlessly and laps never end.
     /// Crystals sit at evenly spaced stations around the loop, each carrying an
@@ -146,8 +131,9 @@ namespace CosmicShore.Client
     /// <summary>
     /// One pilot of the field — a REAL ported rig (Player + InputStatus + VesselController +
     /// VesselStatus + VesselTransformer + AIPilot + the RequireComponent family) plus the
-    /// race-side bookkeeping the rig doesn't own yet: the visual trail ribbon (rung 2 =
-    /// real prisms), loop progress, and the skim/drift HUD readouts.
+    /// race-side bookkeeping the rig doesn't own: loop progress and the skim/drift HUD
+    /// readouts. The trail itself is the rig's: real Prisms spawned by the real
+    /// VesselPrismController into its <see cref="Trail"/> (see <see cref="TrailPrisms"/>).
     /// </summary>
     public sealed class SkimRacePilot
     {
@@ -158,6 +144,8 @@ namespace CosmicShore.Client
         /// <summary>This pilot's own course registry — its AIPilot retargets on this
         /// registry's OnCellItemsUpdated (see SkimRaceDirector.SyncPilotCourses).</summary>
         public CellRuntimeDataSO Course;
+        /// <summary>Live skim-contact state on the near-field skimmer (trigger-pass fed).</summary>
+        public SkimContactTracker SkimTracker;
         public float GridOffset;
 
         public IRoundStats Stats => Player.RoundStats;
@@ -165,8 +153,9 @@ namespace CosmicShore.Client
         public IInputStatus Input => Player.InputStatus;
         public bool IsAI => Player.IsInitializedAsAI;
 
-        /// <summary>Persistent trail mass — only an active force (race reset) removes it.</summary>
-        public readonly List<TrailPoint> Trail = new();
+        /// <summary>The REAL prism trail — conserved mass; only an active force (race reset)
+        /// removes it. Spawned by the rig's VesselPrismController async loop.</summary>
+        public List<Prism> TrailPrisms => Status.VesselPrismController.Trail.TrailList;
 
         /// <summary>Boost intent (Button1Action edge state); the director gates it on energy.</summary>
         public bool BoostHeld;
@@ -190,9 +179,12 @@ namespace CosmicShore.Client
     /// every vessel from its real InputStatus (human: the ported GamepadInputStrategy fed by
     /// the window; rivals: the real AIPilot seeking crystals registered in CellRuntimeDataSO).
     /// Crystal claims flow through the REAL contact pipeline (trigger SphereCollider →
-    /// OmniCrystalImpactor → OnCrystalCollected SOAP event); this director only applies the
-    /// StatsManager-shaped bookkeeping and the SkimRace race rules:
-    ///   countdown/win/replay · crystal respawn · trail-skim energy · energy→top-speed
+    /// OmniCrystalImpactor → OnCrystalCollected SOAP event); trails are REAL Prisms spawned
+    /// by each rig's VesselPrismController (factory: SkimRacePrismFactory), and trail-skim
+    /// energy flows through the REAL skimmer pipeline (trigger SphereCollider on the
+    /// near-field Skimmer → SkimmerImpactor → SkimRaceTrailSkimEnergyEffectSO). This
+    /// director only applies the StatsManager-shaped bookkeeping and the SkimRace rules:
+    ///   countdown/win/replay · crystal respawn · energy→top-speed
     ///   (the real VesselTransformer.ThrottleScalerMultiplier ElementalFloat hook) ·
     ///   boost gating/drain (BoostActionSO shape: VesselStatus.IsBoosting × BoostMultiplier) ·
     ///   two-tier analog drift (DriftActionSO shape: VesselTransformer.BeginDrift/EndDrift).
@@ -211,15 +203,8 @@ namespace CosmicShore.Client
         public const float CollectRadius = 10f;
         public const float VesselContactRadius = 2f;    // vessel contact-bubble SphereCollider
         const float TopSpeedEnergyGain = 0.6f;          // full energy bar = +60% top speed
-        const float SkimRadiusBase = 7f;                // base trail skim reach
-        const float SkimGainPerSecond = 0.4f;           // energy/s at zero distance, before bonuses
-        const float DriftSkimBonus = 1f;                // full-drift skimming charges up to 2x
-        const float OwnTrailMinAge = 3f;                // own trail counts once you lap back onto it
-        const float TrailSpacingSqr = 0.8f;             // ~0.9u between emitted trail points
         const float BoostDrainPerSecond = 0.45f;
-        const float ChargePerLevel = 0.06f;             // skim charge rate per Charge level
-        const float MassWidthPerLevel = 0.03f;          // trail render half-width per Mass level
-        const float MassReachPerLevel = 0.25f;          // trail skim reach per Mass level
+        const float MassWidthPerLevel = 0.03f;          // VesselPrismController.XScaler per Mass level
         const float TimePerLevel = 0.06f;               // boost drain reduction per Time level (floor 40%)
 
         // ── real drift parameters — DriftActionSO CLASS defaults (the tuned per-vessel
@@ -251,15 +236,17 @@ namespace CosmicShore.Client
         float[] _respawnAt;
         int _generation;          // invalidates in-flight claim handlers across restarts
         bool _humanAutopilot;     // victory lap / screenshot mode hand the human to the real AIPilot
+        SkimRacePrismFactory _prismFactory; // answers every rig's prism spawn channel
         readonly List<Crystal> _scratchCrystals = new(); // SyncPilotCourses sort buffer
 
         internal void InitializeRace(SkimTrack track, GameDataSO gameData, CellRuntimeDataSO courseData,
-            List<SkimRacePilot> pilots, int winTarget,
+            SkimRacePrismFactory prismFactory, List<SkimRacePilot> pilots, int winTarget,
             ScriptableEventInputEvents onButtonPressed, ScriptableEventInputEvents onButtonReleased)
         {
             Track = track;
             GameData = gameData;
             CourseData = courseData;
+            _prismFactory = prismFactory;
             Pilots.AddRange(pilots);
             WinTarget = winTarget;
             _stationCrystals = new Crystal[track.Crystals.Count];
@@ -316,17 +303,19 @@ namespace CosmicShore.Client
             var input = pilot.Input;
             pilot.DriftAmount = Mathf.Clamp01(input.LeftTriggerAnalog + input.RightTriggerAnalog);
 
-            // Trail skim → energy: riding near any persistent trail charges the bar.
-            // Rivals' trails always count; your own only after it ages. Drifting along a
-            // trail charges faster, and Charge levels raise the rate further.
-            float proximity = SkimProximity(pilot);
-            pilot.SkimStrength = proximity;
-            pilot.IsSkimming = proximity > 0f;
-            if (pilot.IsSkimming)
-                resources.ChangeResourceAmount(0,
-                    SkimGainPerSecond * proximity
-                    * (1f + DriftSkimBonus * pilot.DriftAmount)
-                    * (1f + ChargePerLevel * resources.GetLevel(Element.Charge)) * Time.deltaTime);
+            // Trail skim → energy now flows entirely through the REAL pipeline: the
+            // near-field Skimmer's trigger sphere sweeps prisms, the engine TriggerPass
+            // dispatches into SkimmerImpactor.AcceptImpactee, and the race's
+            // SkimRaceTrailSkimEnergyEffectSO charges the bar per prism (drift + Charge
+            // bonuses inside the effect). The director only mirrors the live contact
+            // state into the HUD readouts.
+            pilot.IsSkimming = pilot.SkimTracker.IsSkimming;
+            pilot.SkimStrength = pilot.SkimTracker.Strength;
+
+            // Mass lays heavier ribbon — the REAL controller knob: XScaler widens every
+            // block the VesselPrismController spawns from here on (skim reach itself
+            // scales through the skimmer's Mass-bound Scale ElementalFloat).
+            status.VesselPrismController.XScaler = 1f + MassWidthPerLevel * resources.GetLevel(Element.Mass);
 
             // Boost — BoostActionSO shape: IsBoosting gates VesselTransformer.MoveShip's
             // boostAmount = VesselStatus.BoostMultiplier (real serialized default, 4x).
@@ -348,62 +337,6 @@ namespace CosmicShore.Client
             float delta = SkimTrack.ForwardDelta(pilot._lastLoopAngle, loopAngle);
             if (delta < MathF.PI * 0.5f) pilot.TotalProgress += delta;
             pilot._lastLoopAngle = loopAngle;
-
-            EmitTrail(pilot);
-        }
-
-        void EmitTrail(SkimRacePilot pilot)
-        {
-            if (pilot.Status.Speed <= 4f) return;
-            // the ribbon traces the actual path (VesselStatus.Course), so a drift leaves
-            // the swept line you actually travelled, not where the nose pointed
-            var t = pilot.Transform;
-            var course = pilot.Status.Course;
-            var emit = t.position - course * 1.6f - t.up * 0.6f;
-            if (pilot.Trail.Count > 0 && (emit - pilot.Trail[^1].Pos).sqrMagnitude <= TrailSpacingSqr) return;
-            var span = Vector3.Cross(t.up, course);
-            span = span.sqrMagnitude > 0.001f ? span.normalized : t.right;
-            // Mass levels bake into the emitted point: more mass = wider, longer-reach trail
-            int massLevel = pilot.Resources.GetLevel(Element.Mass);
-            float reach = SkimRadiusBase + MassReachPerLevel * massLevel;
-            pilot.Trail.Add(new TrailPoint
-            {
-                Pos = emit,
-                Right = span,
-                Time = Time.time,
-                Width = 0.26f + MassWidthPerLevel * massLevel,
-                SkimRadius = reach,
-                SkimRadiusSqr = reach * reach,
-            });
-        }
-
-        /// <summary>
-        /// Strongest skim contact this frame: 0 when no trail is in reach, otherwise
-        /// 1 at zero distance falling linearly to 0 at that point's reach. Scans every
-        /// rival's whole trail and own aged trail.
-        /// </summary>
-        float SkimProximity(SkimRacePilot pilot)
-        {
-            float best = 0f;
-            var p = pilot.Transform.position;
-
-            for (int other = 0; other < Pilots.Count; other++)
-            {
-                var owner = Pilots[other];
-                bool own = ReferenceEquals(owner, pilot);
-                float ownCutoff = Time.time - OwnTrailMinAge;
-                var trail = owner.Trail;
-                for (int i = 0; i < trail.Count; i++)
-                {
-                    if (own && trail[i].Time > ownCutoff) break; // list is time-ordered
-                    float dSqr = (trail[i].Pos - p).sqrMagnitude;
-                    if (dSqr >= trail[i].SkimRadiusSqr) continue;
-                    float strength = 1f - MathF.Sqrt(dSqr) / trail[i].SkimRadius;
-                    if (strength > best) best = strength;
-                }
-            }
-
-            return best;
         }
 
         // ── crystals (real contact pipeline) ─────────────────────────
@@ -698,8 +631,12 @@ namespace CosmicShore.Client
                 _humanAutopilot = false;
             }
 
-            // Active force: a fresh race wipes the course and the prismscape.
+            // Active force: a fresh race wipes the course and the prismscape. The factory
+            // destroys every real Prism GameObject (the ONLY mass sink); the trail lists
+            // themselves are cleared by the real reset path below (Player.ResetForPlay →
+            // VesselStatus.ResetForPlay → VesselPrismController.StopSpawn + ClearTrails).
             CourseData.ResetRuntimeData();
+            _prismFactory.DespawnAll();
             for (int i = 0; i < _stationCrystals.Length; i++)
             {
                 _stationCrystals[i] = null;
@@ -725,19 +662,21 @@ namespace CosmicShore.Client
             player.ResetForPlay();   // the REAL reset: transformer, resources, prism controller, AI off
             pilot.Stats.Cleanup();   // zero the round stats (Name/Domain persist)
 
-            pilot.Trail.Clear();     // active force: a fresh race wipes the prismscape
             pilot.TotalProgress = 0f;
             pilot.BoostHeld = false;
             pilot.DriftAmount = 0f;
             pilot.IsSkimming = false;
             pilot.SkimStrength = 0f;
+            pilot.SkimTracker.ResetContacts(); // the old prismscape is gone — drop stale overlaps
             pilot.Resources.InitializeElementLevels(new ResourceCollection(0f, 0f, 0f, 0f));
             pilot.Status.VesselTransformer.ThrottleScalerMultiplier.Value = 1f;
+            // ResetTransformer zeroes its internal speed but not the replicated mirror;
+            // the spawn loop gates on VesselStatus.Speed > 3, so a stale top-speed value
+            // from the previous race would pile prisms on the grid during the countdown.
+            pilot.Status.Speed = 0f;
 
-            player.StartPlayer();    // the REAL start: vessel un-stations, AI pilots re-engage
-            // Rung 1 renders trails as ribbons, not prisms — keep the async prism spawn
-            // loop (StartVessel started it) OFF until rung 2 renders real prisms.
-            pilot.Status.VesselPrismController.StopSpawn();
+            player.StartPlayer();    // the REAL start: vessel un-stations, prism spawn loop ON,
+                                     // AI pilots re-engage. Trails are REAL prisms from here.
             if (!pilot.IsAI)
             {
                 // The window drives the ported GamepadInputStrategy itself (with the
@@ -759,6 +698,21 @@ namespace CosmicShore.Client
             pilot.Status.IsStationary = true; // countdown holds the grid; BeginRacing releases it
             pilot._lastLoopAngle = SkimTrack.AngleOf(pose.position);
         }
+
+        /// <summary>
+        /// Deterministic wind-down: stops every rig's async prism spawn loop
+        /// (VesselPrismController.StartSpawn runs async-void — left running it outlives
+        /// the race and hangs test hosts) and the AI/drift loops via the real reset path.
+        /// Idempotent; the window calls it on close and tests call it in teardown.
+        /// </summary>
+        public void Shutdown()
+        {
+            foreach (var pilot in Pilots)
+            {
+                pilot.Status.VesselPrismController.StopSpawn();
+                pilot.Player.ResetForPlay(); // AI path toggles the AIPilot OFF
+            }
+        }
     }
 
     /// <summary>
@@ -771,6 +725,12 @@ namespace CosmicShore.Client
     {
         // grid slots fan outward from the racing line
         static readonly float[] GridOffsets = { -3.5f, 3.5f, -7.5f, 7.5f, -11.5f, 11.5f, 0f, -15f };
+
+        // ── trail/skim rig authoring (prefab-level tuning, applied to the template) ──
+        const float SkimmerReachBase = 7f;       // near-field skimmer scale at Mass level 0
+        const float SkimmerReachAtMass10 = 9.5f; // …and at Mass level 10 (ElementalFloat Min→Max)
+        static readonly Vector3 TrailBaseScale = new(5f, 1f, 6f); // block ≈ 2.5×1×6 neon slab
+        const float TrailWavelength = 6f;        // one block every ~6u of travel
 
         /// <summary>Reflection stand-in for inspector wiring of serialized fields (HexRaceRound pattern).</summary>
         internal static void SetPrivateField(object target, string field, object value)
@@ -790,6 +750,15 @@ namespace CosmicShore.Client
             var loop = new GameLoop("SkimRace");
             NetworkManager.Singleton = null;
 
+            // Project layers (ProjectSettings/TagManager.asset) the prism/crystal/skimmer
+            // rigs reference at runtime (Prism.InitializePrismProperties assigns
+            // "TrailBlocks"; Prism.OnTriggerExit checks "Crystals"). Idempotent.
+            LayerMask.SetLayerName(7, "Skimmers");
+            LayerMask.SetLayerName(8, "Ships");
+            LayerMask.SetLayerName(9, "Crystals");
+            LayerMask.SetLayerName(10, "Explosions");
+            LayerMask.SetLayerName(11, "TrailBlocks");
+
             int stations = Math.Clamp(trackCrystals, 8, 60);
             var track = new SkimTrack(seed, stations);
             // a full station count ≈ 2+ laps of the circuit (crystals respawn), so the
@@ -803,7 +772,20 @@ namespace CosmicShore.Client
             foreach (var domain in new[] { Domains.Jade, Domains.Ruby, Domains.Blue, Domains.Gold })
             {
                 var set = ScriptableObject.CreateInstance<SO_MaterialSet>();
-                set.ShipMaterial = new Material((Shader)null) { name = $"{domain}-ship" };
+                Material Mat(string role) => new((Shader)null) { name = $"{domain}-{role}" };
+                set.ShipMaterial = Mat("ship");
+                // Prism material states (engine materials are data-only property stores;
+                // the GL layer colors by domain itself). Real instances keep the prism
+                // team/state managers' verbatim material pipeline on its happy path.
+                set.BlockMaterial = Mat("block");
+                set.TransparentBlockMaterial = Mat("block-transparent");
+                set.ShieldedBlockMaterial = Mat("block-shielded");
+                set.TransparentShieldedBlockMaterial = Mat("block-shielded-transparent");
+                set.SuperShieldedBlockMaterial = Mat("block-supershielded");
+                set.TransparentSuperShieldedBlockMaterial = Mat("block-supershielded-transparent");
+                set.DangerousBlockMaterial = Mat("block-dangerous");
+                set.TransparentDangerousBlockMaterial = Mat("block-dangerous-transparent");
+                set.ExplodingBlockMaterial = Mat("block-exploding");
                 set.BlockSilhouettePrefab = new GameObject($"{domain}-silhouette");
                 theme.TeamMaterialSets[domain] = set;
             }
@@ -827,9 +809,18 @@ namespace CosmicShore.Client
             var onButtonPressed = ScriptableObject.CreateInstance<ScriptableEventInputEvents>();
             var onButtonReleased = ScriptableObject.CreateInstance<ScriptableEventInputEvents>();
 
+            // ── the prism pipeline: one factory answers every rig's spawn channel, and
+            // one shared skimmer-prism effect container carries the race's skim-energy
+            // rule (the per-vessel effect-asset pattern) ───────────────
+            var prismFactory = new SkimRacePrismFactory(theme);
+            var skimEnergyEffect = ScriptableObject.CreateInstance<SkimRaceTrailSkimEnergyEffectSO>();
+            var skimmerImpactorContainer = ScriptableObject.CreateInstance<SkimmerImpactorDataContainerSO>();
+            SetPrivateField(skimmerImpactorContainer, "skimmerPrismEffectsSO",
+                new SkimmerPrismEffectSO[] { skimEnergyEffect });
+
             // ── prefabs + spawners (verbatim C6 pipeline) ─────────────
             var vesselTemplate = BuildVesselPrefab("SquirrelPrefab", VesselClassType.Squirrel, gameData,
-                courseData, onButtonPressed, onButtonReleased);
+                courseData, prismFactory, skimmerImpactorContainer, onButtonPressed, onButtonReleased);
             var prefabContainer = ScriptableObject.CreateInstance<VesselPrefabContainer>();
             SetPrivateField(prefabContainer, "_shipPrefabs", new[] { vesselTemplate.transform });
 
@@ -889,7 +880,7 @@ namespace CosmicShore.Client
 
             var directorGo = new GameObject("SkimRaceDirector");
             var director = directorGo.AddComponent<SkimRaceDirector>();
-            director.InitializeRace(track, gameData, courseData, pilots, winTarget,
+            director.InitializeRace(track, gameData, courseData, prismFactory, pilots, winTarget,
                 onButtonPressed, onButtonReleased);
             return (loop, director);
         }
@@ -948,6 +939,7 @@ namespace CosmicShore.Client
                 Transform = player.Vessel.Transform,
                 Resources = status.ResourceSystem,
                 Course = course,
+                SkimTracker = vesselGo.GetComponentInChildren<SkimContactTracker>(includeInactive: true),
                 GridOffset = gridOffset,
             };
         }
@@ -956,19 +948,26 @@ namespace CosmicShore.Client
         /// The prefab-shaped Squirrel rig (HexRaceRound/C6 fixture layout): the REAL
         /// VesselController + VesselStatus + the RequireComponent family + child skimmers +
         /// the CT1 contact rig (contact-bubble SphereCollider + VesselImpactor/
-        /// NetworkVesselImpactor + ImpactCollider). Every AIPilot shares the race's course
+        /// NetworkVesselImpactor + ImpactCollider). The VesselPrismController is wired to
+        /// the race's prism factory channel (real Prism trails) and the near-field skimmer
+        /// carries the skim contact rig (trigger sphere + SkimmerImpactor + skim-energy
+        /// effect container + SkimContactTracker). Every AIPilot shares the race's course
         /// registry and its OnCellItemsUpdated channel; every R_VesselActionHandler and the
         /// player rig's InputStatus share the race's button channels. The E16 clone remap
         /// makes Instantiate prefab-faithful.
         /// </summary>
         static GameObject BuildVesselPrefab(string name, VesselClassType vesselType, GameDataSO gameData,
-            CellRuntimeDataSO courseData,
+            CellRuntimeDataSO courseData, SkimRacePrismFactory prismFactory,
+            SkimmerImpactorDataContainerSO skimmerImpactorContainer,
             ScriptableEventInputEvents onButtonPressed, ScriptableEventInputEvents onButtonReleased)
         {
             var go = new GameObject(name);
             go.SetActive(false); // prefab: never live in the scene
 
-            go.AddComponent<VesselPrismController>();
+            var prismController = go.AddComponent<VesselPrismController>();
+            SetPrivateField(prismController, "_onPrismSpawnedEventChannel", prismFactory.SpawnChannel);
+            SetPrivateField(prismController, "BaseScale", TrailBaseScale);
+            SetPrivateField(prismController, "initialWavelength", TrailWavelength);
 
             var resources = go.AddComponent<ResourceSystem>();
             // skimming trails is the energy source — passive regen is a trickle
@@ -1023,12 +1022,44 @@ namespace CosmicShore.Client
             var orientationHandle = new GameObject("orientationHandle");
             orientationHandle.transform.SetParent(go.transform);
 
+            // Near-field skimmer = the trail-skim surface. Its Scale ElementalFloat drives
+            // the child's localScale (Skimmer.ApplyScaleIfChanged) and is BOUND TO MASS —
+            // the real elemental hook: Mass crystal claims grow your skim reach. The
+            // trigger sphere (radius 1 × localScale) sweeps prisms; the engine TriggerPass
+            // dispatches into SkimmerImpactor → the race's skim-energy effect, and the
+            // SkimContactTracker mirrors live overlap state for HUD/audio.
+            var nearFieldSkimmer = NewChildSkimmer("nearFieldSkimmer");
+            var skimmerScale = new ElementalFloat(SkimmerReachBase) { Enabled = true };
+            SetPrivateField(skimmerScale, "Min", SkimmerReachBase);
+            SetPrivateField(skimmerScale, "Max", SkimmerReachAtMass10);
+            SetPrivateField(skimmerScale, "element", Element.Mass);
+            SetPrivateField(nearFieldSkimmer, "Scale", skimmerScale);
+
+            var skimmerGo = nearFieldSkimmer.gameObject;
+            var skimmerTrigger = skimmerGo.AddComponent<SphereCollider>();
+            skimmerTrigger.isTrigger = true;
+            skimmerTrigger.radius = 1f; // world reach = radius × localScale (= Scale.Value)
+
+            var skimmerImpactor = skimmerGo.AddComponent<SkimmerImpactor>();
+            SetPrivateField(skimmerImpactor, "skimmer", nearFieldSkimmer);
+            SetPrivateField(skimmerImpactor, "skimmerImpactorDataContainer", skimmerImpactorContainer);
+
+            var skimmerImpactCollider = skimmerGo.AddComponent<ImpactCollider>();
+            SetPrivateField(skimmerImpactCollider, "impactorObject", skimmerImpactor);
+
+            skimmerGo.AddComponent<SkimContactTracker>();
+
+            // The prism controller's waitTillOutsideSkimmer math reads this reference:
+            // a fresh block's collider stays off until the spawning skimmer has cleared it
+            // (the real own-fresh-trail protection — lap back to skim your own ribbon).
+            SetPrivateField(prismController, "skimmer", nearFieldSkimmer);
+
             SetPrivateField(status, "_shipInstance", controller);
             SetPrivateField(status, "vesselHUDController", hud);
             SetPrivateField(status, "orientationHandle", orientationHandle);
             SetPrivateField(status, "_name", name);
             SetPrivateField(status, "vesselType", vesselType);
-            SetPrivateField(status, "_nearFieldSkimmer", NewChildSkimmer("nearFieldSkimmer"));
+            SetPrivateField(status, "_nearFieldSkimmer", nearFieldSkimmer);
             SetPrivateField(status, "_farFieldSkimmer", NewChildSkimmer("farFieldSkimmer"));
 
             // Contact rig (CT1): non-trigger contact bubble + impactor routing. Crystal

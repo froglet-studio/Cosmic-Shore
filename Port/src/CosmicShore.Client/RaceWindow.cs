@@ -117,6 +117,7 @@ namespace CosmicShore.Client
             _window.Render += OnRender;
             Console.WriteLine("[2/4] entering run loop...");
             _window.Run();
+            _race?.Shutdown(); // stop the rigs' async spawn/AI loops deterministically
         }
 
         // ── setup ────────────────────────────────────────────────────
@@ -707,10 +708,12 @@ void main()
             var burstMesh = _crystalMeshes[Element.Omni];
             foreach (var (pos, age) in _bursts)
             {
-                // bursts spawn on the camera's own path — cull when too close or they
-                // bloom into screen-filling wedges
-                if ((pos - _camPos).magnitude < 7f) continue;
+                // bursts spawn on the camera's own path — cull when the expanding shell
+                // gets near the camera or it blooms into a screen-filling white wedge
+                // (the cull radius grows with the shell so close claims flash briefly
+                // instead of whiting out the frame)
                 float scale = 1f + age * 7f;
+                if ((pos - _camPos).magnitude < 7f + scale * 2.2f) continue;
                 var model = Matrix4x4.CreateScale(scale) * Matrix4x4.CreateTranslation(pos);
                 SetMvp(model * viewProjection);
                 _gl.BindVertexArray(burstMesh.vao);
@@ -853,41 +856,66 @@ void main()
         {
             var pilots = _race.Pilots;
             for (int i = 0; i < pilots.Count; i++)
-                DrawRibbon(viewProjection, pilots[i].Trail, _pilotTrailVerts[i],
+                DrawPrismTrail(viewProjection, pilots[i].TrailPrisms, _pilotTrailVerts[i],
                     _pilotTrailVaos[i], _pilotTrailVbos[i], DomainColor(pilots[i].Domain));
         }
 
-        unsafe void DrawRibbon(Matrix4x4 viewProjection, List<TrailPoint> trail, List<float> data,
+        /// <summary>
+        /// Draws the REAL prismscape: every quad is a live <see cref="Prism"/> from the
+        /// rig's VesselPrismController trail — position/rotation from its Transform, size
+        /// from its animated localScale (zero at spawn, growing to TargetScale), tint by
+        /// domain. Mass is conserved: nothing here fades a prism out of existence — aged
+        /// prisms settle to a steady neon body; the fresh end flares white-hot.
+        /// </summary>
+        unsafe void DrawPrismTrail(Matrix4x4 viewProjection, List<Prism> trail, List<float> data,
             uint vao, uint vbo, (float r, float g, float b) domain)
         {
-            if (trail.Count < 2) return;
+            if (trail.Count == 0) return;
             data.Clear(); // reusable scratch — capacity persists across frames
             float now = Time.time;
             for (int i = 0; i < trail.Count; i++)
             {
-                var point = trail[i];
-                // persistent prismscape: aged trail settles to a steady neon body
-                // (mass is conserved — it dims into "set" prisms, never disappears);
-                // the fresh end flares wide and bright like exhaust. Width carries the
-                // pilot's Mass level at emit time — heavier builds lay heavier ribbon.
-                float freshness = Mathf.Clamp01(1f - (now - point.Time) / 4f);
-                float width = point.Width + freshness * 0.34f;
+                var prism = trail[i];
+                if (!prism || prism.destroyed) continue;
+                var t = prism.transform;
+                var scale = t.localScale;
+                if (scale.x < 0.05f) continue; // still growing in from zero — invisible
+
+                float freshness = Mathf.Clamp01(1f - (now - prism.prismProperties.TimeCreated) / 4f);
                 float alpha = 0.34f + freshness * freshness * 0.4f;
-                // newest points ramp in so the chase cam never sits inside the ribbon
+                // newest blocks ramp in so the chase cam never sits inside its own slab
                 int fromNewest = trail.Count - 1 - i;
-                if (fromNewest < 16) alpha *= fromNewest / 16f;
-                // and ANY ribbon fades near the camera (trails crossing the frustum
-                // otherwise bloom into giant wedges)
-                float camDistance = (point.Pos - _camPos).magnitude;
-                alpha *= Mathf.Clamp01((camDistance - 3f) / 7f);
-                // domain hue, lifted toward white at the fresh end
+                if (fromNewest < 4) alpha *= fromNewest / 4f;
+                if (alpha <= 0.01f) continue;
+                // domain hue, lifted toward white while fresh
                 float lift = 0.45f * freshness;
                 float r = domain.r + (1f - domain.r) * lift;
                 float g = domain.g + (1f - domain.g) * lift;
                 float b = domain.b + (1f - domain.b) * lift;
-                Push(data, point.Pos - point.Right * width, r, g, b, alpha);
-                Push(data, point.Pos + point.Right * width, r, g, b, alpha);
+
+                // flat slab spanning the prism's oriented X (width) and Z (length) axes
+                var pos = t.position;
+                var right = t.rotation * Vector3.right * (scale.x * 0.5f + 0.18f * freshness);
+                var forward = t.rotation * Vector3.forward * (scale.z * 0.5f);
+                var c0 = pos - right - forward;
+                var c1 = pos + right - forward;
+                var c2 = pos + right + forward;
+                var c3 = pos - right + forward;
+                // per-corner camera fade (a slab crossing the frustum otherwise blooms
+                // into a giant white wedge — same guard the old per-point ribbon had)
+                float a0 = alpha * Mathf.Clamp01(((c0 - _camPos).magnitude - 3f) / 9f);
+                float a1 = alpha * Mathf.Clamp01(((c1 - _camPos).magnitude - 3f) / 9f);
+                float a2 = alpha * Mathf.Clamp01(((c2 - _camPos).magnitude - 3f) / 9f);
+                float a3 = alpha * Mathf.Clamp01(((c3 - _camPos).magnitude - 3f) / 9f);
+                if (a0 + a1 + a2 + a3 <= 0.02f) continue;
+                Push(data, c0, r, g, b, a0);
+                Push(data, c1, r, g, b, a1);
+                Push(data, c2, r, g, b, a2);
+                Push(data, c0, r, g, b, a0);
+                Push(data, c2, r, g, b, a2);
+                Push(data, c3, r, g, b, a3);
             }
+            if (data.Count == 0) return;
             _gl.DepthMask(false);
             _gl.BindVertexArray(vao);
             _gl.BindBuffer(BufferTargetARB.ArrayBuffer, vbo);
@@ -895,7 +923,7 @@ void main()
             fixed (float* p = array)
                 _gl.BufferData(BufferTargetARB.ArrayBuffer, (nuint)(array.Length * sizeof(float)), p, BufferUsageARB.DynamicDraw);
             SetMvp(viewProjection);
-            _gl.DrawArrays(PrimitiveType.TriangleStrip, 0, (uint)(array.Length / 7));
+            _gl.DrawArrays(PrimitiveType.Triangles, 0, (uint)(array.Length / 7));
             _gl.DepthMask(true);
         }
 
@@ -1091,11 +1119,11 @@ void main()
             fixed (byte* p = pixels)
                 _gl.ReadPixels(0, 0, (uint)w, (uint)h, PixelFormat.Rgba, PixelType.UnsignedByte, p);
             MiniPng.Write(_screenshotPath, pixels, w, h);
-            int totalTrail = 0;
+            int totalTrail = 0; // REAL prisms — the VesselPrismController trail lists
             var counts = new List<string>();
             foreach (var pilot in _race.Pilots)
             {
-                totalTrail += pilot.Trail.Count;
+                totalTrail += pilot.TrailPrisms.Count;
                 counts.Add($"{pilot.Stats.CrystalsCollected}");
             }
             Console.WriteLine($"screenshot → {_screenshotPath} ({w}x{h}) frame {_frameIndex}, " +

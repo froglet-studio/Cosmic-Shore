@@ -429,6 +429,28 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
   matrix, InputController Awake wiring, shape-key theory, flare, Update routing).
   **610 tests green (358 + 252)**; client smoke unaffected.
 
+- **Iteration 17** (2026-06-12): **Convergence rung 2 — real prism trails + real
+  Skimmer contact in the playable client.** New `SkimRacePrisms.cs`
+  (SkimRacePrismFactory answering the real VesselPrismController spawn channel with
+  the full V15 prism GameObject family; PrismGrowthDriver replicating
+  PrismScaleManager's growth math per prism; SkimContactTracker mirroring trigger
+  enter/exit overlap state; SkimRaceTrailSkimEnergyEffectSO — the skim-energy race
+  rule as a concrete SkimmerPrismEffectSO inside the real impactor dispatch).
+  SkimRaceSim: TrailPoint ribbons + distance-skim deleted; near-field skimmer rigged
+  (trigger sphere + SkimmerImpactor + Mass-bound Scale ElementalFloat);
+  prism-controller wiring (channel, skimmer ref, BaseScale 5×1×6, wavelength 6);
+  director Shutdown(); theme grew real (data-only) block-state materials.
+  RaceWindow renders the REAL prisms (oriented slabs from each Prism's transform,
+  per-corner camera fade) and reports real prism counts; burst cull made
+  expansion-aware. Engine perf, behavior-preserving: TriggerPass trigger-indexed
+  pair scan (identical visitation order; O(n·T) instead of O(n²) over conserved
+  prism fields), GameLoop.UnregisterBehaviour binary search (mass teardown was
+  quadratic). 4 new ClientConvergenceTests (spawn-through-real-controller,
+  conserved-mass soak, skimmer-trigger-enter energy grant, full race → Finished
+  with golf-scored winner). **1088 tests green (836 + 252) in BOTH configs**;
+  headless 300/1200-frame runs exit 0 with rung-1-identical claim determinism and
+  real-prism trail counts.
+
 ## PRIME AXIS — CLIENT CONVERGENCE (prompter reorientation, 2026-06-12)
 
 > "our goal is to convert everything over so a player cannot tell the difference
@@ -451,9 +473,24 @@ the next rung.
    `CellRuntimeDataSO` course registries for crystal retargeting. Verified headless:
    4 pilots claiming (frame 1200: crystals [8,3,8,3], 22 claims), exit 0, HUD/minimap
    intact, yaw+roll gamepad inversions preserved.
-2. **Real trails = prisms**: VesselPrismController spawns real Prisms (visible
-   blocks, conserved mass); real Skimmer contact grants energy through the trigger
-   pipeline (contact arc landed).
+2. **Real trails = prisms** ✅ (iteration 17): every trail block is a REAL `Prism`
+   spawned by the rig's real `VesselPrismController` async loop — the client's
+   `SkimRacePrismFactory` (SkimRacePrisms.cs) answers the spawn channel with the
+   full V15 prism family (MeshRenderer/BoxCollider/4 managers/Prism/PrismImpactor/
+   ImpactCollider + a `PrismGrowthDriver` per-prism stand-in replicating the
+   unported PrismScaleManager's exact growth math). Conserved mass: nothing decays
+   prisms; the only sink is race-restart `DespawnAll`. Trail-skim energy flows
+   through the REAL skimmer pipeline: near-field `Skimmer` (Scale ElementalFloat
+   bound to **Mass** — claims grow your skim reach) + trigger SphereCollider +
+   `SkimmerImpactor` → engine TriggerPass → `SkimRaceTrailSkimEnergyEffectSO`
+   (the per-vessel effect-asset pattern; drift + Charge bonuses inside). Own fresh
+   trail can't self-charge — the verbatim `waitTillOutsideSkimmer` arming delay is
+   the protection; lapping back re-arms it. Distance-check skim code deleted.
+   `SkimRaceDirector.Shutdown()` winds down all async spawn/AI loops. Engine perf
+   (behavior-preserving, prism-scale scenes): TriggerPass pair scan walks trigger
+   indices (identical pair visitation order), GameLoop.UnregisterBehaviour binary
+   search. Verified headless at frame 1200: claims identical to rung 1
+   ([8,3,8,3], 22 claims — determinism preserved), `trail 786` = real prism count.
 3. **Real crystals/impactors**: claims via OnTriggerEnter → CrystalImpactor family
    (landed for the CLI round; bring to the client).
 4. **Real scoring + HUD semantics**: HexRaceScoringRuleSO domain-aggregated end,
@@ -462,17 +499,18 @@ the next rung.
 6. Onward: cells/fauna ambience, more vessel classes, game modes — always through
    the real systems.
 
-## NEXT UP (iteration 17)
+## NEXT UP (iteration 18)
 
-1. **Rung 2**: real prism trails + Skimmer contact in the client. Replace
-   SkimRaceSim's visual `TrailPoint` ribbons with real `VesselPrismController`
-   spawning (StopSpawn before any test return — async-void trap) and grant
-   trail-skim energy through the real Skimmer trigger pipeline (contact arc
-   landed). Trails must render as prism blocks; skim detection must come from
-   `OnTriggerEnter/Exit`, not distance checks.
-2. Then rung 3 (real crystal claims via OnTriggerEnter → CrystalImpactor family
-   in the client; landed for the CLI round already).
-3. Update this file, commit, push.
+1. **Rung 3**: real crystal claims via OnTriggerEnter → CrystalImpactor family in
+   the client (largely landed with rung 1 — station crystals already run
+   OmniCrystalImpactor through the trigger pass; remaining: elemental/team crystal
+   variants + the Crystal manager respawn path instead of director-staged respawn).
+2. Then rung 4 (real scoring + HUD semantics: HexRaceScoringRuleSO
+   domain-aggregated end, golf standings).
+3. Balance note from rung 2 verification: skim energy pegs at 1.00 for trail-riding
+   pilots (~10 prism enters/s × 0.045). Consider tuning GainPerPrism / boost drain
+   when rung 4's scoring makes the energy economy player-visible.
+4. Update this file, commit, push.
 
 Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — info
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).

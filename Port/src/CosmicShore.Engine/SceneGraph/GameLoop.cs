@@ -66,7 +66,19 @@ namespace CosmicShore.Engine
             _behaviours.Insert(index, mb);
         }
 
-        internal void UnregisterBehaviour(MonoBehaviour mb) => _behaviours.Remove(mb);
+        internal void UnregisterBehaviour(MonoBehaviour mb)
+        {
+            // Binary search over the (ExecutionOrder, sequence) total order — `sequence` is
+            // unique per behaviour, so an exact comparer hit can only be this behaviour.
+            // Replaces the former List.Remove linear scan, which made mass teardown
+            // (e.g. wiping a race's accumulated prism field on restart) quadratic in
+            // scene size. Behavior-preserving: same element removed, same list order kept.
+            int index = _behaviours.BinarySearch(mb, BehaviourOrderComparer.Instance);
+            if (index >= 0 && ReferenceEquals(_behaviours[index], mb))
+                _behaviours.RemoveAt(index);
+            else
+                _behaviours.Remove(mb); // defensive fallback (should not happen)
+        }
 
         internal void QueueStart(MonoBehaviour mb) => _startQueue.Enqueue(mb);
 
