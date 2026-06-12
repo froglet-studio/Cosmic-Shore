@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Engine;
 using CosmicShore.Gameplay;
+using Random = System.Random; // disambiguate from CosmicShore.Engine.Random (V10 engine addition)
 
 namespace CosmicShore.Client
 {
