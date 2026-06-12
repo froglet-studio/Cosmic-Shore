@@ -478,6 +478,17 @@ Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — inf
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
 
+Rung-5 groundwork (landed alongside iteration 17): `ThemeManager` ported verbatim
+(the single writer of `ThemeManagerDataContainerSO.TeamMaterialSets` — generates the
+4 per-domain SO_MaterialSet copies from SO_ColorSet, and hands the ColorSet to
+`GameFeedAPI`). GameFeedAPI + GameFeedPayload + ScriptableEventGameFeedPayload
+ported (GameEventFeed/GameFeedEntry TMP views + GameFeedSettingsSO (DOTween Ease)
+deferred with the UI-shell deviations). Engine `Resources` gained the path-keyed
+`Register(path, asset)` / `Load<T>(path)` the original Resources.Load contract
+needs. When rung 5 lands in the client: instantiate a ThemeManager with a wired
+container at startup and read `GetTeam*Material` per domain for prism/vessel draw
+colors.
+
 ## Loop protocol (every iteration)
 
 1. `export PATH=/opt/dotnet:$PATH` (reinstall SDK via dotnet-install.sh if container is fresh).

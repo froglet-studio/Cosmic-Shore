@@ -119,9 +119,21 @@ namespace CosmicShore.Engine
     public static class Resources
     {
         static readonly List<ScriptableObject> Registry = new();
+        static readonly Dictionary<string, Object> PathRegistry = new();
 
         public static void Register(ScriptableObject asset) { if (!Registry.Contains(asset)) Registry.Add(asset); }
-        public static void Clear() => Registry.Clear();
+
+        /// <summary>Registers an asset at a Resources-relative path for <see cref="Load{T}"/>.</summary>
+        public static void Register(string path, Object asset) => PathRegistry[path] = asset;
+
+        public static void Clear() { Registry.Clear(); PathRegistry.Clear(); }
+
+        /// <summary>
+        /// Original engine contract: returns the asset registered at the Resources-relative
+        /// path, or null when nothing (or a different type) is registered there.
+        /// </summary>
+        public static T Load<T>(string path) where T : Object
+            => PathRegistry.TryGetValue(path, out var asset) ? asset as T : null;
 
         public static T[] FindObjectsOfTypeAll<T>() where T : ScriptableObject
         {
