@@ -366,7 +366,11 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                         outerShell++;
                 }
                 int total = jade + ruby + gold;
-                phase = CellPhaseRules.Compute(total, phase, in thresholds);
+                // The sim tracks nominal prisms (no per-prism scale), so its volume is
+                // count × NominalPrismVolume — with derived thresholds this reproduces
+                // the same ladder the old count-driven Compute walked.
+                phase = CellPhaseRules.Compute(
+                    total * CellPhaseThresholds.NominalPrismVolume, total, phase, in thresholds);
                 CellAggressionLevel aggression = phase switch
                 {
                     CellPhase.Restless => CellAggressionLevel.Level1,
@@ -632,7 +636,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             {
                 RestlessEnter = Sc(d.RestlessEnter), RestlessExit = Sc(d.RestlessExit),
                 FrenzyEnter = Sc(d.FrenzyEnter), FrenzyExit = Sc(d.FrenzyExit),
-            };
+            }.WithDerivedVolumeScale();
         }
 
         static Vector3 RandomInBall(System.Random rng, float radius)

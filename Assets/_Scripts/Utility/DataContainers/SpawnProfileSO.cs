@@ -9,8 +9,11 @@ namespace CosmicShore.Utility
     public class SpawnProfileSO : ScriptableObject
     {
         [Header("Flora Configs")]
-        [Tooltip("If ON, spawned FaunaPrefab populations will never use the local player's domain.")]
-        public bool FloraExcludeLocalDomain = true;
+        [Tooltip("DEPRECATED — inert. The locked no-domain-asymmetry invariant says all three " +
+                 "domains seed flora, so the spawners no longer roll an excluded domain " +
+                 "(CLAUDE.md ▸ Ecosystem Design Principles). Kept only so legacy assets " +
+                 "deserialize; remove with the next SpawnProfile asset migration.")]
+        public bool FloraExcludeLocalDomain = false;
         [Min(0f)] public float FloraSpawnVolumeCeiling = 12000f;
         [Tooltip("Wait this many seconds after the crystal spawns before flora begins spawning.")]
         [Min(0f)] public float FloraInitialDelaySeconds;
@@ -23,14 +26,19 @@ namespace CosmicShore.Utility
         public List<FloraConfigurationSO> SupportedFloras = new();
         
         [Header("FaunaPrefab Configs")]
-        [Tooltip("If ON, spawned FaunaPrefab populations will never use the local player's domain.")]
-        public bool FaunaExcludeLocalDomain = true;
+        [Tooltip("DEPRECATED — inert. Fauna spawn in the cell's controlling color only (locked " +
+                 "no-domain-asymmetry invariant); no spawner reads this. Kept only so legacy " +
+                 "assets deserialize; remove with the next SpawnProfile asset migration.")]
+        public bool FaunaExcludeLocalDomain = false;
         [Min(0f)] public float InitialFaunaSpawnWaitTime = 10f;
         [Min(0f)] public float FaunaSpawnVolumeThreshold = 1f;
         [Min(0f)] public float BaseFaunaSpawnTime = 60f;
-        [Tooltip("Population control (prey-linked): a population only spawns while the cell holds at least " +
-                 "this many prisms NOT of the controlling color (prey). Below it, production pauses until " +
-                 "prey returns; existing fauna then starve. 0 = always produce. See Docs/ECOSYSTEM.md.")]
+        [Tooltip("Population control (prey-linked), authored in NOMINAL PRISMS: a herbivore population " +
+                 "only spawns while the cell holds at least this many prisms' worth of opposing " +
+                 "ENVIRONMENT VOLUME (value × 16, the nominal leaf volume — volume is the spine; fauna " +
+                 "bodies don't count, they aren't edible). Predator species read it directly as N live " +
+                 "herbivores. Below the floor, production pauses until prey returns; existing fauna then " +
+                 "starve. 0 = always produce. See Docs/ECOSYSTEM.md.")]
         [Min(0)] public int FaunaFoodFloor = 5;
         [Tooltip("Wait this many seconds after the crystal spawns before FaunaPrefab begins spawning.")]
         [Min(0f)] public float FaunaInitialDelaySeconds;

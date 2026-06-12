@@ -81,6 +81,23 @@ namespace CosmicShore.Gameplay
         // one — so steals / ChangeTeam between Add and Remove can't desync the
         // per-domain bookkeeping (the §2.3.1 phantom-count class of bug).
         readonly Dictionary<Prism, Domains> trackedBlocks = new();
+
+        // EVERY prism bound to this cell — trail, flora, AND fauna bodies — for the
+        // per-domain VOLUME accounting ("volume is the spine": all prisms add to the
+        // cell's mass regardless of source). Superset of trackedBlocks: fauna bodies
+        // live here but stay out of the targeting grids/counts above (a forager swarm
+        // must not read as its own mass concentration, and fauna bodies are not
+        // edible prey). Volume sums are recomputed from live prism state
+        // (Prism.CurrentVolume + live Domain) on a short cadence, so growth, steals,
+        // and consumption are all reflected without incremental-drift bookkeeping.
+        readonly HashSet<Prism> massTracked = new();
+        readonly Dictionary<Domains, float> liveVolumeByDomain = new();
+        readonly Dictionary<Domains, float> liveEnvVolumeByDomain = new();
+        float liveVolumeTotal;
+        float liveEnvVolumeTotal;
+        float _nextVolumeRecomputeAt = float.NegativeInfinity;
+        const float VolumeRecomputeIntervalSeconds = 0.25f;
+        static readonly List<Prism> s_deadMassScratch = new(32);
         SnowChanger spawnedCytoplasm;
 
         // ---------------------------------------------------------------------
@@ -147,29 +164,103 @@ namespace CosmicShore.Gameplay
         public int LiveBlockCount => trackedBlocks.Count;
 
         /// <summary>
-        /// Live leader by per-domain prism count. Recomputed on demand so the answer
-        /// always reflects the current Add/RemoveBlock-driven counts. Returns
-        /// <see cref="Domains.Blue"/> (the "no team" sentinel) when the cell has no
-        /// prisms tracked yet. Ties resolve in fixed order (Jade > Ruby > Gold > Blue).
+        /// Live leader by per-domain prism VOLUME — "volume is the spine" (locked
+        /// invariant): every prism's mass counts, whether trail, flora, or fauna
+        /// body. Reads the cadenced live-volume sums so the answer tracks growth
+        /// and steals, not just add/remove events. Returns <see cref="Domains.Blue"/>
+        /// (the "no team" sentinel) when the cell holds no mass yet. Ties resolve in
+        /// fixed order (Jade > Ruby > Gold > Blue).
         /// </summary>
         public Domains DominantDomain
         {
             get
             {
+                EnsureVolumeFresh();
                 Domains leader = Domains.Blue;
-                int leaderCount = 0;
+                float leaderVolume = 0f;
                 Domains[] order = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
                 foreach (var d in order)
                 {
-                    if (!domainBlockCounts.TryGetValue(d, out int c)) continue;
-                    if (c > leaderCount)
+                    if (!liveVolumeByDomain.TryGetValue(d, out float v)) continue;
+                    if (v > leaderVolume)
                     {
                         leader = d;
-                        leaderCount = c;
+                        leaderVolume = v;
                     }
                 }
                 return leader;
             }
+        }
+
+        // ------------------------------------------------------------------
+        //  Live volume — the spine. Recomputed from live prism state on a short
+        //  cadence (growth animates continuously, so event-driven deltas would
+        //  drift); O(massTracked) per recompute, a few times a second at most.
+        // ------------------------------------------------------------------
+
+        void EnsureVolumeFresh()
+        {
+            if (Time.time < _nextVolumeRecomputeAt) return;
+            _nextVolumeRecomputeAt = Time.time + VolumeRecomputeIntervalSeconds;
+
+            liveVolumeByDomain.Clear();
+            liveEnvVolumeByDomain.Clear();
+            liveVolumeTotal = 0f;
+            liveEnvVolumeTotal = 0f;
+            s_deadMassScratch.Clear();
+
+            foreach (var prism in massTracked)
+            {
+                // Destroyed-but-untracked refs (scene teardown paths that skipped
+                // RemoveBlock) are collected here instead of leaking forever.
+                if (!prism) { s_deadMassScratch.Add(prism); continue; }
+
+                float v = prism.CurrentVolume;
+                if (v <= 0f) continue; // destroyed / not yet grown
+
+                var domain = prism.Domain; // LIVE domain — steals re-attribute next tick
+                liveVolumeByDomain.TryGetValue(domain, out float dv);
+                liveVolumeByDomain[domain] = dv + v;
+                liveVolumeTotal += v;
+
+                if (trackedBlocks.ContainsKey(prism))
+                {
+                    liveEnvVolumeByDomain.TryGetValue(domain, out float ev);
+                    liveEnvVolumeByDomain[domain] = ev + v;
+                    liveEnvVolumeTotal += v;
+                }
+            }
+
+            foreach (var dead in s_deadMassScratch)
+                massTracked.Remove(dead);
+        }
+
+        /// <summary>
+        /// Total live prism volume in this cell — ALL prisms (trail, flora, fauna
+        /// bodies). THE phase-ladder measure ("volume is the spine").
+        /// </summary>
+        public float LiveVolume
+        {
+            get { EnsureVolumeFresh(); return liveVolumeTotal; }
+        }
+
+        /// <summary>Live volume tracked under <paramref name="domain"/> — all prism sources.</summary>
+        public float GetDomainVolume(Domains domain)
+        {
+            EnsureVolumeFresh();
+            return liveVolumeByDomain.GetValueOrDefault(domain, 0f);
+        }
+
+        /// <summary>
+        /// Live ENVIRONMENT volume (trail + flora — fauna bodies excluded) NOT of
+        /// <paramref name="domain"/>: the prey signal in volume units. Fauna bodies
+        /// are excluded because they are not edible prey for herbivores — counting
+        /// them would seed fauna against phantom food and starve them.
+        /// </summary>
+        public float OpposingVolume(Domains domain)
+        {
+            EnsureVolumeFresh();
+            return Mathf.Max(0f, liveEnvVolumeTotal - liveEnvVolumeByDomain.GetValueOrDefault(domain, 0f));
         }
 
         /// <summary>
@@ -182,11 +273,17 @@ namespace CosmicShore.Gameplay
             domainBlockCounts.TryGetValue(domain, out int c) ? c : 0;
 
         /// <summary>
-        /// LiveBlockCount at which the cell crosses into Frenzy. HUD widgets use this as
+        /// Prism COUNT at which the perf backstop forces Frenzy. The phase ladder
+        /// itself runs on volume — see <see cref="FrenzyEnterVolume"/>.
+        /// </summary>
+        public int FrenzyEnterThreshold => ResolveThresholds().FrenzyEnter;
+
+        /// <summary>
+        /// LiveVolume at which the cell crosses into Frenzy. HUD widgets use this as
         /// the "max" — when summed mass approaches it, the cell is about to enter Level2
         /// aggression (and flora freeze) and the UI should communicate that.
         /// </summary>
-        public int FrenzyEnterThreshold => ResolveThresholds().FrenzyEnter;
+        public float FrenzyEnterVolume => ResolveThresholds().FrenzyEnterVolume;
 
         /// <summary>
         /// The full resolved phase-threshold table for this cell (config table, or
@@ -293,22 +390,17 @@ namespace CosmicShore.Gameplay
         public bool FloraPlantingEnabled => FloraGrowingEnabled;
 
         /// <summary>
-        /// True once the cell holds any mass — the spawn floor for the timer-driven
-        /// IntensityWise fauna loop. Decoupled from the phase ladder (the old Quiet rung
-        /// that gated this no longer exists); the prey-linked RandomLifeSpawner gates on
-        /// <see cref="OpposingBlockCount"/> + FaunaFoodFloor instead, which is the real
+        /// True once the cell holds any ENVIRONMENT mass — the spawn floor for the
+        /// timer-driven IntensityWise fauna loop. Volume-keyed ("volume is the
+        /// spine") and environment-only: fauna bodies must not satisfy their own
+        /// spawn floor. The prey-linked RandomLifeSpawner gates on
+        /// <see cref="OpposingVolume"/> + FaunaFoodFloor instead, which is the real
         /// population bound (Docs/ECOSYSTEM.md §6).
         /// </summary>
-        public bool FaunaSpawningEnabled => LiveBlockCount > 0;
-
-        /// <summary>
-        /// Prey signal for a fauna of <paramref name="domain"/>: live prisms NOT of that
-        /// domain (fauna consume any prism whose domain differs from their own). Drives
-        /// prey-linked population control — production pauses and fauna starve when this
-        /// hits zero. See Docs/ECOSYSTEM.md §6.
-        /// </summary>
-        public int OpposingBlockCount(Domains domain) =>
-            Mathf.Max(0, LiveBlockCount - GetDomainBlockCount(domain));
+        public bool FaunaSpawningEnabled
+        {
+            get { EnsureVolumeFresh(); return liveEnvVolumeTotal > 0f; }
+        }
 
         /// <summary>
         /// Fauna aggression level derived from <see cref="Phase"/> — a 1:1 mapping now
@@ -381,7 +473,9 @@ namespace CosmicShore.Gameplay
             _nextPhaseTickAt = Time.time + PhaseTickIntervalSeconds;
 
             var thresholds = ResolveThresholds();
-            var newPhase = CellPhaseRules.Compute(LiveBlockCount, phase, in thresholds);
+            // Volume is the spine: the ladder climbs on live volume; prism count is
+            // only the Frenzy perf backstop inside Compute.
+            var newPhase = CellPhaseRules.Compute(LiveVolume, LiveBlockCount, phase, in thresholds);
             ApplyAuthoritativePhaseAndDomain(newPhase, DominantDomain);
         }
 
@@ -393,9 +487,10 @@ namespace CosmicShore.Gameplay
             // Existing CellConfig assets serialized before PhaseThresholds existed
             // deserialize as struct zero — Unity does not apply the C# initializer.
             // Substitute the Default table so legacy biomes don't snap to Frenzy the
-            // moment the first prism is added.
+            // moment the first prism is added. Assets authored before volume became
+            // the spine derive their volume ladder from the count fields (×16).
             var t = cfg.PhaseThresholds;
-            return t.IsAllZero ? CellPhaseThresholds.Default : t;
+            return t.IsAllZero ? CellPhaseThresholds.Default : t.WithDerivedVolumeScale();
         }
 
         readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
@@ -482,6 +577,8 @@ namespace CosmicShore.Gameplay
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
+            massTracked.Clear();
+            _nextVolumeRecomputeAt = float.NegativeInfinity; // resum on next read
             liveFaunaCounts.Clear();
             liveFauna.Clear();
             phase = CellPhase.Calm;
@@ -596,6 +693,8 @@ namespace CosmicShore.Gameplay
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
+            massTracked.Clear();
+            _nextVolumeRecomputeAt = float.NegativeInfinity; // resum on next read
             liveFaunaCounts.Clear();
             liveFauna.Clear();
             phase = CellPhase.Calm;
@@ -755,12 +854,25 @@ namespace CosmicShore.Gameplay
             return null;
         }
 
-        public void AddBlock(Prism block)
+        /// <summary>
+        /// Files a prism into this cell's bookkeeping. ALL prisms enter the volume
+        /// accounting ("volume is the spine" — trail, flora, and fauna bodies alike
+        /// feed <see cref="LiveVolume"/>). Only ENVIRONMENT mass
+        /// (<paramref name="environmentMass"/> true, the default) also enters the
+        /// targeting grids and per-domain counts: fauna bodies are volume, but they
+        /// are neither fauna-seekable mass concentrations nor edible prey.
+        /// </summary>
+        public void AddBlock(Prism block, bool environmentMass = true)
         {
             // `is null` (not `!block`) so destroyed-but-non-null Unity refs can still be
             // removed from trackedBlocks via the matching RemoveBlock path; otherwise
             // LiveBlockCount drifts upward when prisms die outside the normal flow.
             if (block is null) return;
+
+            // Volume membership (all sources). Sums refresh on their own cadence.
+            massTracked.Add(block);
+
+            if (!environmentMass) return;
             if (trackedBlocks.ContainsKey(block)) return; // already counted
 
             // Snapshot the domain at registration time — RemoveBlock uses this snapshot
@@ -785,6 +897,11 @@ namespace CosmicShore.Gameplay
         public void RemoveBlock(Prism block)
         {
             if (block is null) return;
+
+            // Volume membership goes first — fauna bodies are in massTracked but not
+            // trackedBlocks, and must not survive the early-return below.
+            massTracked.Remove(block);
+
             if (!trackedBlocks.Remove(block, out Domains registeredDomain)) return; // not counted
 
             if (block)
