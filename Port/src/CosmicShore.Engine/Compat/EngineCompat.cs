@@ -222,7 +222,10 @@ namespace CosmicShore.Engine
         /// rewrites cloned serialized fields — and array/<see cref="List{T}"/> elements —
         /// that point INSIDE the source tree to their clone counterparts, matching the
         /// original engine's Instantiate. References outside the tree (other scene
-        /// objects, ScriptableObject assets) are left untouched. Only the root gains the
+        /// objects, ScriptableObject assets) are left untouched. Plain [Serializable]
+        /// class graphs (e.g. ResourceSystem.Resources' <c>List&lt;Resource&gt;</c>) are
+        /// deep-cloned the way the original engine's serializer inlines them — see
+        /// <see cref="RemapValue"/> for the full value rules. Only the root gains the
         /// "(Clone)" suffix; children keep their authored names.
         /// </summary>
         static GameObject CloneGameObject(GameObject source)
@@ -295,60 +298,162 @@ namespace CosmicShore.Engine
             }
         }
 
+        /// <summary>
+        /// The original engine's serialization depth limit for nested plain
+        /// ([Serializable]) classes. A plain-object reference nested deeper than this is
+        /// dropped to null, exactly like the engine truncating "Serialization depth limit
+        /// 10 exceeded" graphs. This doubles as the cycle guard: per-field independent
+        /// copies of a cyclic plain graph terminate here instead of recursing forever.
+        /// </summary>
+        const int MaxPlainObjectDepth = 10;
+
         static void RemapField(object target, FieldInfo field, Dictionary<object, object> map)
         {
-            // Value types (and therefore primitives/enums/structs) can't hold scene references.
+            // Value types (and therefore primitives/enums/structs) can't hold scene
+            // references and were already value-copied by CopyFields.
             if (field.FieldType.IsValueType) return;
 
             object value = field.GetValue(target);
             if (value is null) return;
 
+            object replacement = RemapValue(value, map, depth: 0);
+            if (!ReferenceEquals(replacement, value))
+                field.SetValue(target, replacement);
+        }
+
+        /// <summary>
+        /// E16 value rules, applied uniformly to component fields, collection elements, and
+        /// the fields of deep-cloned plain objects:
+        ///   • engine Object inside the source tree → its clone counterpart;
+        ///   • engine Object outside the tree (other scene objects, ScriptableObject
+        ///     assets) → kept, shared by design;
+        ///   • string → kept (immutable);
+        ///   • rank-1 array / <see cref="List{T}"/> → NEW container, elements rerun through
+        ///     these same rules (the original engine never shares a collection instance
+        ///     between a template and its clone, whatever the element type);
+        ///   • plain [Serializable] class → independent deep clone per field path. The
+        ///     original engine inlines plain classes BY VALUE, so aliasing within the
+        ///     template's plain-object graph intentionally does not survive cloning; graphs
+        ///     truncate to null past <see cref="MaxPlainObjectDepth"/>;
+        ///   • everything else (delegate fields on components, dictionaries, framework
+        ///     types, multidimensional arrays) → reference copy — the port's existing
+        ///     semantics for shapes the original engine never serialized.
+        /// <paramref name="depth"/> counts plain-object nesting levels already entered;
+        /// collection containers are transparent to it.
+        /// </summary>
+        static object RemapValue(object value, Dictionary<object, object> map, int depth)
+        {
             // Direct reference into the source tree (declared type may be an interface —
             // the runtime value is what's checked).
             if (map.TryGetValue(value, out var mapped))
-            {
-                field.SetValue(target, mapped);
-                return;
-            }
+                return mapped;
 
             switch (value)
             {
-                // Arrays: field copy aliased the SOURCE's array instance; if any element
-                // points into the tree, give the clone its own remapped array (never
-                // mutate in place — that would corrupt the template).
-                case Array array when array.Rank == 1:
-                {
-                    if (!AnyElementMapped(array, map)) return;
-                    var remapped = Array.CreateInstance(array.GetType().GetElementType(), array.Length);
-                    for (int i = 0; i < array.Length; i++)
-                    {
-                        object element = array.GetValue(i);
-                        remapped.SetValue(element is not null && map.TryGetValue(element, out var m) ? m : element, i);
-                    }
-                    field.SetValue(target, remapped);
-                    return;
-                }
+                // Engine reference outside the cloned tree: scene objects and
+                // ScriptableObject assets are shared by design — keep.
+                case Object:
+                    return value;
 
-                // List<T>: same contract as arrays.
+                case string:
+                    return value;
+
+                case Array array when array.Rank == 1:
+                    return CloneArrayValue(array, map, depth);
+
                 case IList list when value.GetType() is { IsGenericType: true } listType
                                      && listType.GetGenericTypeDefinition() == typeof(List<>):
-                {
-                    if (!AnyElementMapped(list, map)) return;
-                    var remapped = (IList)Activator.CreateInstance(listType, list.Count);
-                    foreach (var element in list)
-                        remapped.Add(element is not null && map.TryGetValue(element, out var m) ? m : element);
-                    field.SetValue(target, remapped);
-                    return;
-                }
+                    return CloneListValue(list, listType, map, depth);
+
+                default:
+                    if (!IsInlinePlainClass(value.GetType()))
+                        return value;
+                    if (depth >= MaxPlainObjectDepth)
+                        return null; // depth-10 truncation — also the cycle guard
+                    return ClonePlainObject(value, map, depth + 1);
             }
         }
 
-        static bool AnyElementMapped(IEnumerable elements, Dictionary<object, object> map)
+        static Array CloneArrayValue(Array array, Dictionary<object, object> map, int depth)
         {
-            foreach (var element in elements)
-                if (element is not null && map.ContainsKey(element))
-                    return true;
-            return false;
+            Type elementType = array.GetType().GetElementType();
+
+            // Value-type/string elements can't reference the tree — a shallow clone IS the value copy.
+            if (elementType.IsValueType || elementType == typeof(string))
+                return (Array)array.Clone();
+
+            var copy = Array.CreateInstance(elementType, array.Length);
+            for (int i = 0; i < array.Length; i++)
+            {
+                object element = array.GetValue(i);
+                copy.SetValue(element is null ? null : RemapValue(element, map, depth), i);
+            }
+            return copy;
+        }
+
+        static IList CloneListValue(IList list, Type listType, Dictionary<object, object> map, int depth)
+        {
+            Type elementType = listType.GetGenericArguments()[0];
+
+            // Value-type/string elements can't reference the tree — List<T>(IEnumerable<T>) IS the value copy.
+            if (elementType.IsValueType || elementType == typeof(string))
+                return (IList)Activator.CreateInstance(listType, list);
+
+            var copy = (IList)Activator.CreateInstance(listType, list.Count);
+            foreach (var element in list)
+                copy.Add(element is null ? null : RemapValue(element, map, depth));
+            return copy;
+        }
+
+        /// <summary>
+        /// A class the original engine would serialize INLINE (by value) inside a
+        /// component: marked [Serializable], not an engine Object (those serialize as
+        /// references), not a delegate (never serialized), and not a framework type (the
+        /// engine doesn't inline System.* shapes like Dictionary — the port keeps its
+        /// existing reference-copy behavior for them). Strings, arrays, and
+        /// <see cref="List{T}"/> are handled before this check.
+        /// </summary>
+        static bool IsInlinePlainClass(Type type) =>
+            type.IsClass
+            && type.IsDefined(typeof(SerializableAttribute), inherit: false) // [Serializable], sans the obsolete IsSerializable/flag APIs
+            && !typeof(Object).IsAssignableFrom(type)
+            && !typeof(Delegate).IsAssignableFrom(type)
+            && (type.Namespace is not { } ns
+                || (ns != "System" && !ns.StartsWith("System.", StringComparison.Ordinal)));
+
+        /// <summary>
+        /// Deep clone of a plain [Serializable] object, engine-inline style: memberwise
+        /// copy first (value fields — including non-serialized ones — keep the port's
+        /// copy-everything pragmatics, same deal as <see cref="SerializedFieldCandidates"/>),
+        /// then every reference field is rerun through <see cref="RemapValue"/>.
+        /// Delegate/event fields reset to null: the original engine never serializes
+        /// runtime wiring, and carrying it over would aim the TEMPLATE's subscribers at
+        /// the clone's state.
+        /// </summary>
+        static object ClonePlainObject(object source, Dictionary<object, object> map, int depth)
+        {
+            object clone = CloneViaMemberwise(source);
+            for (Type t = source.GetType(); t != null && t != typeof(object); t = t.BaseType)
+            {
+                foreach (var field in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
+                {
+                    if (field.FieldType.IsValueType) continue; // memberwise copy already value-copied it
+
+                    if (typeof(Delegate).IsAssignableFrom(field.FieldType))
+                    {
+                        field.SetValue(clone, null);
+                        continue;
+                    }
+
+                    object value = field.GetValue(clone);
+                    if (value is null) continue;
+
+                    object replacement = RemapValue(value, map, depth);
+                    if (!ReferenceEquals(replacement, value))
+                        field.SetValue(clone, replacement);
+                }
+            }
+            return clone;
         }
     }
 }
