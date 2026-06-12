@@ -222,6 +222,28 @@ namespace CosmicShore.Gameplay
             materialsDirty = true;
         }
 
+        /// <summary>
+        /// Writes the currently displayed colors into the renderer's
+        /// MaterialPropertyBlock. Used when rendering hands off from the
+        /// companion entity to the GameObject (octahedron engage): the MPB may
+        /// hold colors from long before the entity path took over, and a stale
+        /// block would flash for a frame. Mid-animation we pin the tracked
+        /// current values; at rest we clear so the base sharedMaterial (which
+        /// the completed animation already matched) shows through.
+        /// </summary>
+        internal void FlushDisplayedColorsToRenderer()
+        {
+            if (MeshRenderer == null || PropertyBlock == null) return;
+            PropertyBlock.Clear();
+            if (IsAnimating)
+            {
+                PropertyBlock.SetColor(BrightColorId, CurrentBrightColor);
+                PropertyBlock.SetColor(DarkColorId, CurrentDarkColor);
+                PropertyBlock.SetVector(SpreadId, new Vector4(CurrentSpread.x, CurrentSpread.y, CurrentSpread.z, 0));
+            }
+            MeshRenderer.SetPropertyBlock(PropertyBlock);
+        }
+
         private void OnDestroy()
         {
             if (MaterialStateManager.Instance != null && isRegistered)

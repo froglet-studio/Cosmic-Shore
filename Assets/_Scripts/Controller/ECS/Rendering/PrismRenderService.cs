@@ -324,6 +324,13 @@ namespace CosmicShore.ECS
         // Helpers
         // ------------------------------------------------------------------
 
+        /// <summary>Color → shader float4. Shared by every color sink so the
+        /// conversion lives in exactly one place.</summary>
+        public static float4 ToFloat4(Color c) => new float4(c.r, c.g, c.b, c.a);
+
+        /// <summary>Vector3 → shader float3 (spread / location overrides).</summary>
+        public static float3 ToFloat3(Vector3 v) => new float3(v.x, v.y, v.z);
+
         static float4x4 ToFloat4x4(in Matrix4x4 m) =>
             new float4x4(m.GetColumn(0), m.GetColumn(1), m.GetColumn(2), m.GetColumn(3));
 

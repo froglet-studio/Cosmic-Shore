@@ -36,9 +36,6 @@ namespace CosmicShore.Utility
         private static readonly int BrightColorID = Shader.PropertyToID("_BrightColor");
         private static readonly int DarkColorID = Shader.PropertyToID("_DarkColor");
 
-        private static Unity.Mathematics.float4 ToFloat4(Color c) =>
-            new Unity.Mathematics.float4(c.r, c.g, c.b, c.a);
-
         // State exposed to PrismEffectsManager for batched updates
         internal Vector3 InitialPosition { get; private set; }
         internal Vector3 Velocity { get; private set; }
@@ -53,6 +50,7 @@ namespace CosmicShore.Utility
         // entity carrying _Velocity/_ExplosionAmount/_Opacity overrides draws in
         // its place, so 64 simultaneous explosions cost one instanced batch.
         internal PrismRenderHandle RenderHandle;
+        MeshFilter _meshFilter;
         Color _pendingBrightColor = Color.white;
         Color _pendingDarkColor = Color.black;
         bool _hasPendingTeamColors;
@@ -63,10 +61,9 @@ namespace CosmicShore.Utility
         {
             if (PrismRenderService.IsHandleUsable(in RenderHandle)) return;
             if (_renderer == null) return;
-            var meshFilter = GetComponent<MeshFilter>();
-            if (meshFilter == null || meshFilter.sharedMesh == null || _renderer.sharedMaterial == null) return;
+            if (_meshFilter == null || _meshFilter.sharedMesh == null || _renderer.sharedMaterial == null) return;
             RenderHandle = PrismRenderService.Create(
-                meshFilter.sharedMesh, _renderer.sharedMaterial,
+                _meshFilter.sharedMesh, _renderer.sharedMaterial,
                 transform.localToWorldMatrix, gameObject.layer,
                 PrismRenderOverrideSet.Explosion);
         }
@@ -110,6 +107,7 @@ namespace CosmicShore.Utility
         {
             if (_renderer == null)
                 _renderer = GetComponent<MeshRenderer>();
+            _meshFilter = GetComponent<MeshFilter>();
 
             _mpb = new MaterialPropertyBlock();
 
@@ -129,6 +127,11 @@ namespace CosmicShore.Utility
 
             if (PrismRenderService.IsHandleUsable(in RenderHandle))
                 PrismRenderService.SetVisible(in RenderHandle, false);
+
+            // Parity with the MPB clear below: a pool reuse that skips
+            // ConfigureForTeam must show material defaults, not the previous
+            // team's palette.
+            _hasPendingTeamColors = false;
 
             if (_renderer != null)
             {
@@ -185,7 +188,8 @@ namespace CosmicShore.Utility
                 if (_hasPendingTeamColors)
                 {
                     PrismRenderService.SetTeamColors(in RenderHandle,
-                        ToFloat4(_pendingBrightColor), ToFloat4(_pendingDarkColor));
+                        PrismRenderService.ToFloat4(_pendingBrightColor),
+                        PrismRenderService.ToFloat4(_pendingDarkColor));
                 }
                 PrismRenderService.SetVisible(in RenderHandle, false);
                 _renderer.enabled = false;

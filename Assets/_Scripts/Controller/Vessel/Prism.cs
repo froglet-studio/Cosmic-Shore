@@ -173,19 +173,26 @@ namespace CosmicShore.Gameplay
 
         void ApplyRenderPath()
         {
-            if (_renderVisible && !_exoticVisualActive && PrismRenderService.Enabled)
+            // An inactive GameObject must never show its entity: during pooled
+            // release, component OnDisable order is undefined — the octahedron
+            // shield's Disengage can route through here AFTER Prism.OnDisable
+            // already hid the entity, and re-showing it would orphan a visible
+            // entity until pool reuse.
+            bool show = _renderVisible && gameObject.activeInHierarchy;
+
+            if (show && !_exoticVisualActive && PrismRenderService.Enabled)
                 EnsureRenderEntity();
 
             bool entityPath = !_exoticVisualActive && PrismRenderService.IsHandleUsable(in RenderHandle);
             if (entityPath)
             {
                 if (meshRenderer && meshRenderer.enabled) meshRenderer.enabled = false;
-                if (_renderVisible)
+                if (show)
                 {
                     SyncRenderMaterial();
                     SyncRenderTransform();
                 }
-                PrismRenderService.SetVisible(in RenderHandle, _renderVisible);
+                PrismRenderService.SetVisible(in RenderHandle, show);
             }
             else
             {
@@ -220,7 +227,21 @@ namespace CosmicShore.Gameplay
         internal void SyncRenderMaterial()
         {
             if (meshRenderer == null) return;
-            if (!PrismRenderService.IsHandleUsable(in RenderHandle)) return;
+            if (!PrismRenderService.IsHandleUsable(in RenderHandle))
+            {
+                // The material may only now have arrived (a prism shown before its
+                // domain material was assigned skipped entity creation) — give the
+                // instanced path another chance to claim rendering. EnsureRenderEntity
+                // is a no-op on failure, so this cannot recurse.
+                if (_renderVisible && !_exoticVisualActive && PrismRenderService.Enabled
+                    && gameObject.activeInHierarchy)
+                {
+                    EnsureRenderEntity();
+                    if (PrismRenderService.IsHandleUsable(in RenderHandle))
+                        ApplyRenderPath();
+                }
+                return;
+            }
             bool refreshColors = materialAnimator == null || !materialAnimator.IsAnimating;
             PrismRenderService.SetMaterial(in RenderHandle, meshRenderer.sharedMaterial, refreshColors);
         }
@@ -235,6 +256,27 @@ namespace CosmicShore.Gameplay
             if (_exoticVisualActive == active) return;
             _exoticVisualActive = active;
             ApplyRenderPath();
+
+            // Color continuity: the displayed colors live on the outgoing path —
+            // push them onto the incoming one so the handoff frame can't flash a
+            // stale MaterialPropertyBlock (engage) or pre-engage entity colors
+            // (disengage).
+            if (active)
+                materialAnimator?.FlushDisplayedColorsToRenderer();
+            else
+                SyncRenderColorsFromAnimator();
+        }
+
+        /// <summary>Pushes the animator's in-flight colors onto the companion
+        /// entity (used when the entity path resumes mid-animation).</summary>
+        internal void SyncRenderColorsFromAnimator()
+        {
+            if (materialAnimator == null || !materialAnimator.IsAnimating) return;
+            if (!PrismRenderService.IsHandleUsable(in RenderHandle)) return;
+            PrismRenderService.SetColors(in RenderHandle,
+                PrismRenderService.ToFloat4(materialAnimator.CurrentBrightColor),
+                PrismRenderService.ToFloat4(materialAnimator.CurrentDarkColor),
+                PrismRenderService.ToFloat3(materialAnimator.CurrentSpread));
         }
 
         /// <summary>
