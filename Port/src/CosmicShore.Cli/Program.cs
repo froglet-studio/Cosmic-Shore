@@ -1,11 +1,19 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using CosmicShore.Data;
 using CosmicShore.Engine;
 using CosmicShore.Engine.Injection;
+using CosmicShore.Engine.Networking;
+using CosmicShore.Engine.Services;
 using CosmicShore.Engine.Soap;
 using CosmicShore.Engine.Tasks;
+using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
+using CosmicShore.Utility;
 using Object = CosmicShore.Engine.Object;
 
 namespace CosmicShore.Cli
@@ -42,6 +50,7 @@ namespace CosmicShore.Cli
             RunRoundStatsDemo();
             RunPortedLogicDemo();
             RunElementalDemo();
+            RunSpawnPipelineDemo();
 
             Console.WriteLine();
             int exitCode;
@@ -300,6 +309,293 @@ namespace CosmicShore.Cli
             Check(system.GetLevel(Element.Charge) == 3, "crystal pickups raise the element level permanently");
             Check(debuffed <= -3, "temporary debuff lowers the effective level");
             Check(system.GetLevel(Element.Space) == 0, "debuff decays back without touching base progress");
+        }
+
+        // ── [6] Concrete-arc exit state: verbatim spawning pipeline (C1–C6) ──
+
+        /// <summary>Recording HUD controller for the prefab fixture's serialized slot.</summary>
+        sealed class CliVesselHud : MonoBehaviour, IVesselHUDController
+        {
+            public int InitializeCalls, HideCalls;
+            public void Initialize(IVesselStatus vesselStatus) => InitializeCalls++;
+            public void SubscribeToEvents() { }
+            public void UnsubscribeFromEvents() { }
+            public void ShowHUD() { }
+            public void HideHUD() => HideCalls++;
+            public void SetBlockPrefab(GameObject prefab) { }
+        }
+
+        /// <summary>Concrete VesselAnimation (base is abstract) — no-op puppetry.</summary>
+        sealed class CliVesselAnimation : Gameplay.VesselAnimation
+        {
+            protected override void AssignTransforms() { }
+            protected override void PerformShipPuppetry(float Pitch, float Yaw, float Roll, float Throttle) { }
+        }
+
+        /// <summary>Harness-side stand-in for inspector wiring of serialized fields.</summary>
+        static void SetPrivateField(object target, string field, object value)
+        {
+            for (var t = target.GetType(); t != null; t = t.BaseType)
+            {
+                var f = t.GetField(field, BindingFlags.Instance | BindingFlags.NonPublic);
+                if (f == null) continue;
+                f.SetValue(target, value);
+                return;
+            }
+            throw new MissingFieldException(target.GetType().Name, field);
+        }
+
+        /// <summary>
+        /// Builds the programmatic vessel "prefab": the real VesselController +
+        /// VesselStatus + the ten RequireComponent siblings + child near/far skimmers,
+        /// serialized refs wired. The root stays INACTIVE — prefab semantics; the
+        /// E16 clone remap makes Instantiate prefab-faithful, and the harness
+        /// activates clones into the scene.
+        /// </summary>
+        static GameObject BuildVesselPrefab(string name, VesselClassType vesselType, GameDataSO gameData)
+        {
+            var go = new GameObject(name);
+            go.SetActive(false);
+
+            go.AddComponent<VesselPrismController>();
+
+            var resources = go.AddComponent<Gameplay.ResourceSystem>();
+            resources.Resources = new List<Gameplay.Resource> { new() { Name = "Energy" } };
+
+            go.AddComponent<VesselTransformer>();
+
+            var pilot = go.AddComponent<AIPilot>();
+            SetPrivateField(pilot, "cellData", ScriptableObject.CreateInstance<CellRuntimeDataSO>());
+            SetPrivateField(pilot, "OnCellItemsUpdated", ScriptableObject.CreateInstance<ScriptableEventNoParam>());
+            SetPrivateField(pilot, "abilities", new List<AIAbility>());
+
+            go.AddComponent<SilhouetteController>();
+
+            var cameraCustomizer = go.AddComponent<VesselCameraCustomizer>();
+            SetPrivateField(cameraCustomizer, "OnInitializePlayerCamera",
+                ScriptableObject.CreateInstance<ScriptableEventTransform>());
+
+            go.AddComponent<CliVesselAnimation>();
+
+            var actionHandler = go.AddComponent<R_VesselActionHandler>();
+            SetPrivateField(actionHandler, "_onButtonPressed", ScriptableObject.CreateInstance<ScriptableEventInputEvents>());
+            SetPrivateField(actionHandler, "_onButtonReleased", ScriptableObject.CreateInstance<ScriptableEventInputEvents>());
+            SetPrivateField(actionHandler, "_resourceEventClassActions", new List<ResourceEventShipActionMapping>());
+
+            var geometry = new GameObject("geometry");
+            geometry.transform.SetParent(go.transform);
+            var customization = go.AddComponent<VesselCustomization>();
+            SetPrivateField(customization, "_shipGeometries", new List<GameObject> { geometry });
+
+            go.AddComponent<R_ShipElementStatsHandler>();
+
+            var hud = go.AddComponent<CliVesselHud>();
+            var controller = go.AddComponent<VesselController>();
+            SetPrivateField(controller, "gameData", gameData);
+            var status = go.AddComponent<VesselStatus>();
+
+            Skimmer NewChildSkimmer(string skimmerName)
+            {
+                var child = new GameObject(skimmerName);
+                child.transform.SetParent(go.transform);
+                var skimmer = child.AddComponent<Skimmer>();
+                SetPrivateField(skimmer, "onSkimmerShipImpact", ScriptableObject.CreateInstance<ScriptableEventString>());
+                return skimmer;
+            }
+
+            var orientationHandle = new GameObject("orientationHandle");
+            orientationHandle.transform.SetParent(go.transform);
+
+            SetPrivateField(status, "_shipInstance", controller);
+            SetPrivateField(status, "vesselHUDController", hud);
+            SetPrivateField(status, "orientationHandle", orientationHandle);
+            SetPrivateField(status, "_name", name);
+            SetPrivateField(status, "vesselType", vesselType);
+            SetPrivateField(status, "_nearFieldSkimmer", NewChildSkimmer("nearFieldSkimmer"));
+            SetPrivateField(status, "_farFieldSkimmer", NewChildSkimmer("farFieldSkimmer"));
+
+            return go;
+        }
+
+        static void RunSpawnPipelineDemo()
+        {
+            Console.WriteLine();
+            Console.WriteLine("[6] Concrete-arc exit state — verbatim spawning pipeline (C1–C6)");
+
+            using var loop = new GameLoop("SpawnPipeline");
+            NetworkManager.Singleton = null;
+            AuthenticationService.Reset();
+
+            // Shared data: theme (Jade set populated so ShipHelper's paint is observable)
+            // + GameDataSO with the SOAP events the pipeline raises.
+            var theme = ScriptableObject.CreateInstance<ThemeManagerDataContainerSO>();
+            theme.TeamMaterialSets = new Dictionary<Domains, SO_MaterialSet>();
+            foreach (var domain in new[] { Domains.Jade, Domains.Ruby, Domains.Blue, Domains.Gold })
+                theme.TeamMaterialSets[domain] = ScriptableObject.CreateInstance<SO_MaterialSet>();
+            var jadeSet = theme.TeamMaterialSets[Domains.Jade];
+            jadeSet.ShipMaterial = new Material((Shader)null) { name = "jade-ship" };
+            jadeSet.BlockSilhouettePrefab = new GameObject("jade-silhouette");
+
+            var gameData = ScriptableObject.CreateInstance<GameDataSO>();
+            gameData.ThemeManagerData = theme;
+            gameData.OnInitializeGame = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+            gameData.OnPlayerNetworkSpawnedUlong = ScriptableObject.CreateInstance<ScriptableEventUlong>();
+            gameData.OnVesselNetworkSpawned = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+            gameData.selectedVesselClass = ScriptableObject.CreateInstance<VesselClassTypeVariable>();
+            gameData.selectedVesselClass.Value = VesselClassType.Sparrow;
+
+            var spawnPositions = new[] { new Vector3(40f, 0f, 0f), new Vector3(-40f, 0f, 0f), new Vector3(0f, 0f, 40f) };
+            var spawnTransforms = new Transform[spawnPositions.Length];
+            for (int i = 0; i < spawnPositions.Length; i++)
+            {
+                var point = new GameObject($"spawnPoint{i}");
+                point.transform.position = spawnPositions[i];
+                spawnTransforms[i] = point.transform;
+            }
+            gameData.SetSpawnPositions(spawnTransforms);
+
+            // Prefab fixtures: the inactive vessel template registered in a
+            // VesselPrefabContainer, and a player template carrying the real Player.
+            var vesselTemplate = BuildVesselPrefab("SparrowPrefab", VesselClassType.Sparrow, gameData);
+            var templateStatus = vesselTemplate.GetComponent<VesselStatus>();
+            var templateController = vesselTemplate.GetComponent<VesselController>();
+            var prefabContainer = ScriptableObject.CreateInstance<VesselPrefabContainer>();
+            SetPrivateField(prefabContainer, "_shipPrefabs", new[] { vesselTemplate.transform });
+
+            var playerPrefabGo = new GameObject("PlayerPrefab");
+            var playerPrefab = playerPrefabGo.AddComponent<Player>();
+            SetPrivateField(playerPrefab, "gameData", gameData);
+
+            Print($"  prefab fixture: '{vesselTemplate.name}' — VesselController + VesselStatus + 10 components + 2 child skimmers (root inactive: prefab semantics)");
+
+            // DI + spawners — the same Reflex-shaped wiring the scenes use.
+            var container = new Container();
+            container.RegisterValue(gameData);
+            var playerDataService = new GameObject("PlayerDataService").AddComponent<PlayerDataService>();
+            container.RegisterValue(playerDataService);
+
+            var spawnerGo = new GameObject("Spawners");
+            var vesselSpawner = spawnerGo.AddComponent<VesselSpawner>();
+            SetPrivateField(vesselSpawner, "vesselPrefabContainer", prefabContainer);
+            var playerSpawner = spawnerGo.AddComponent<PlayerSpawner>();
+            SetPrivateField(playerSpawner, "_playerPrefab", playerPrefab);
+            SetPrivateField(playerSpawner, "vesselSpawner", vesselSpawner);
+            container.InjectGameObject(spawnerGo);
+
+            // ── Human spawn through the verbatim pipeline ────────────────
+            var player = playerSpawner.SpawnPlayerAndShip(new IPlayer.InitializeData
+            {
+                vesselClass = VesselClassType.Sparrow,
+                PlayerName = "CliPilot",
+                AvatarId = 1,
+                AllowSpawning = true,
+                IsAI = false,
+            });
+            Check(player != null, "PlayerSpawner.SpawnPlayerAndShip returned a live IPlayer");
+
+            var vessel = (VesselController)player.Vessel;
+            var vesselGo = vessel.gameObject;
+            var cloneStatus = vesselGo.GetComponent<VesselStatus>();
+            Print($"  SpawnPlayerAndShip(\"CliPilot\") → player '{player.Name}' + vessel '{vesselGo.name}'");
+
+            // The survey's corruption sentinel — E16 clone remap proof.
+            Check(ReferenceEquals(cloneStatus.Vessel, vessel),
+                "corruption sentinel: clone VesselStatus.Vessel is the clone's OWN VesselController");
+            Check(!ReferenceEquals(cloneStatus.Vessel, templateController) &&
+                  ReferenceEquals(templateStatus.Vessel, templateController),
+                "no template aliasing: template VesselStatus still points at the template controller");
+            Check(ReferenceEquals(cloneStatus.Player, player) && ReferenceEquals(player.Vessel, vessel),
+                "pair wired both ways: InitializeForSinglePlayerMode + vessel.Initialize(player)");
+            Check(ReferenceEquals(cloneStatus.ShipMaterial, jadeSet.ShipMaterial),
+                "vessel.Initialize ran the full chain: Jade theme painted via ShipHelper");
+            Check(player.Domain == Domains.Jade && (string)player.RoundStats.Name == "CliPilot" && player.InputStatus.Paused,
+                "single-player defaults: Jade domain, RoundStats named, input starts paused");
+
+            // Scene placement: clones mirror the template's inactive root — the
+            // harness activates them (Awake/OnEnable now run with remapped fields).
+            vesselGo.SetActive(true);
+
+            // ── GameDataSO.AddPlayer ─────────────────────────────────────
+            gameData.AddPlayer(player);
+            var assignedPose = vesselGo.transform.position;
+            Check(gameData.Players.Contains(player) && gameData.RoundStatsList.Contains(player.RoundStats),
+                "AddPlayer registered the player + its RoundStats");
+            Check(spawnPositions.Any(p => (p - assignedPose).sqrMagnitude < 1e-6f),
+                $"AddPlayer assigned a spawn pose: vessel at {assignedPose}");
+            Check(gameData.LocalPlayer == null,
+                "LocalPlayer stays unset for the unspawned single-player path (IsLocalUser == spawned owner)");
+
+            // ── StartPlayer → ticked frames → ResetForPlay ───────────────
+            player.StartPlayer();
+            bool spawnerEnabled = (bool)typeof(VesselPrismController)
+                .GetField("spawnerEnabled", BindingFlags.Instance | BindingFlags.NonPublic)!
+                .GetValue(cloneStatus.VesselPrismController)!;
+            Check(player.IsActive && !cloneStatus.IsStationary && !player.InputStatus.Paused && spawnerEnabled,
+                "StartPlayer: vessel un-stationed, input unpaused, prism spawner enabled");
+            cloneStatus.VesselPrismController.StopSpawn(); // end the async spawn loop before the section exits
+
+            var before = vesselGo.transform.position;
+            loop.Run(60, 1f / 60f);
+            float movedDistance = (vesselGo.transform.position - before).magnitude;
+            Print($"  60 frames @ 60 Hz → vessel moved {movedDistance:F1}u (now at {vesselGo.transform.position})");
+            Check(movedDistance > 1f, "VesselTransformer drives the clone while un-stationed");
+
+            player.ResetForPlay();
+            var frozen = vesselGo.transform.position;
+            loop.Run(10, 1f / 60f);
+            Check(cloneStatus.IsStationary && !player.IsActive && vesselGo.transform.position == frozen,
+                "ResetForPlay restored the documented reset state (stationary, inactive, holds position)");
+
+            // ── AI variant ───────────────────────────────────────────────
+            var bot = playerSpawner.SpawnPlayerAndShip(new IPlayer.InitializeData
+            {
+                vesselClass = VesselClassType.Sparrow,
+                PlayerName = "CliBot",
+                AllowSpawning = true,
+                IsAI = true,
+            });
+            gameData.AddPlayer(bot);
+            bot.StartPlayer();
+            var botStatus = ((VesselController)bot.Vessel).gameObject.GetComponent<VesselStatus>();
+            Check(bot.IsInitializedAsAI && botStatus.AIPilot.AutoPilotEnabled && bot.InputStatus.Paused,
+                "AI variant: StartPlayer toggled the autopilot ON and kept input paused");
+            botStatus.VesselPrismController.StopSpawn();
+            bot.ResetForPlay();
+            Check(!botStatus.AIPilot.AutoPilotEnabled && !bot.IsActive,
+                "AI variant: ResetForPlay toggled the autopilot OFF");
+
+            // ── Networked variant (host-mode Player.Spawn) ───────────────
+            AuthenticationService.Instance.PlayerName = "CliHost#1234";
+            var spawnEvents = new List<ulong>();
+            gameData.OnPlayerNetworkSpawnedUlong.OnRaised += id => spawnEvents.Add(id);
+
+            var netGo = new GameObject("NetPlayer");
+            var netPlayer = netGo.AddComponent<Player>();
+            SetPrivateField(netPlayer, "gameData", gameData);
+            netPlayer.Spawn(); // host-mode: server + client + owner
+
+            Print($"  Player.Spawn() (host-mode) → OnPlayerNetworkSpawnedUlong({string.Join(",", spawnEvents)}), Name='{netPlayer.Name}'");
+            Check(spawnEvents.Count == 1 && spawnEvents[0] == 0,
+                "networked variant: spawn event raised exactly once for host clientId 0");
+            Check(netPlayer.Name == "CliHost",
+                "display name resolved through the fallback chain (auth shim, '#1234' suffix stripped)");
+            Check(netPlayer.IsLocalUser && gameData.Players.Contains(netPlayer),
+                "spawned owner is the local user and registered in GameDataSO.Players");
+
+            netPlayer.ChangeVessel(player.Vessel); // pair with the live vessel so AddPlayer can pose it
+            gameData.AddPlayer(netPlayer);
+            Check(ReferenceEquals(gameData.LocalPlayer, netPlayer),
+                "AddPlayer set LocalPlayer (and a spawn pose) for the spawned local user");
+
+            netPlayer.DestroyPlayer(); // NetworkObject.Despawn(true)
+            loop.Tick(1f / 60f);
+            Check(!netPlayer.IsSpawned && !gameData.Players.Contains(netPlayer) && netGo.IsDestroyed,
+                "DestroyPlayer despawned via NetworkObject.Despawn(true), deregistered, destroyed the GameObject");
+
+            // Static singletons back to neutral for any later sections.
+            typeof(PlayerDataService).GetProperty("Instance")!.SetValue(null, null);
+            AuthenticationService.Reset();
+            NetworkManager.Singleton = null;
         }
     }
 }

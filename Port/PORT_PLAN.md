@@ -429,24 +429,24 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
   matrix, InputController Awake wiring, shape-key theory, flare, Update routing).
   **610 tests green (358 + 252)**; client smoke unaffected.
 
-## NEXT UP (iteration 12)
+## NEXT UP (iteration 13)
 
-**VESSEL ARC COMPLETE (2026-06-12):** all 19 rows done. V16 skimmer layer, V17
-action layer, V18 AI layer, V19 camera/silhouette/impact slice integrated;
-**Deviation #10c CLOSED** — IVesselStatus is diff-verified verbatim. 819 tests
-green. V18/V19 were salvaged complete from session-limit-cut agent worktrees.
+**CONCRETE ARC COMPLETE (2026-06-12):** C1-C6 all landed. Player, VesselController,
+VesselStatus, PlayerDataService, spawners — all verbatim (C4/C5/C6 with ZERO
+deviations); engine gained E11-E17 incl. the clone reference remap. CLI section [6]
+proves the exit state headlessly (spawn → wire → move → reset → AI → host-mode spawn
+event → despawn). 1014 tests green. The async-void spawn-loop xunit trap is now
+documented in C4 tests + CLI.
 
-Goal: post-arc consolidation + next arc.
+Goal: the scoring/arcade arc (largest open marker family), then multiplayer-spawn.
 
-1. **V19 test backfill**: the V19 agent was cut before writing
-   CameraSilhouetteLayerTests — add coverage for CustomCameraController data
-   logic, VesselCameraCustomizer wiring, SilhouetteController init,
-   VesselImpactor dispatch.
-2. **VesselStatus concrete arc**: the NetworkBehaviour itself (unblocked by the
-   completed closure) + IVessel concrete (Vessel.cs) — survey first.
-3. CLI M2 vertical slice (cell + prisms + crystals + scripted vessels, seeded).
-4. Sprint feedback as it arrives.
-5. Update this file, commit, push.
+1. **Scoring/arcade survey + arc**: ScoringRuleSO + ScoringMetric chain +
+   SO_ArcadeGame/SO_Game/SO_Vessel — closes GameDataSO's 26 staged markers and
+   unblocks headless game-mode rounds (milestone port-m2: first AI-vs-AI round).
+2. **Multiplayer-spawn arc prerequisite**: deep-clone plain-object collections in
+   the E16 remap (List<Resource> currently copied by reference — flagged by C6).
+3. Sprint feedback as it arrives.
+4. Update this file, commit, push.
 
 1. **V10**: port `GameDataSO` (~783L, single-file oversize accepted) + engine
    `ISession` placeholder. Then V11 (CellConfigDataSO, BlockDensityGrid,

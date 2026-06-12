@@ -1,3 +1,11 @@
+> **ARC COMPLETE 2026-06-12.** All six rows (C1-C6) landed; the exit state is proven
+> by CLI section [6]: a real Player+VesselController pair spawns through the verbatim
+> PlayerSpawner pipeline, the clone-corruption sentinel passes, motion/reset/AI/host-mode
+> spawn-event/despawn all verified headlessly. KNOWN LIMITATION flagged to the
+> multiplayer-spawn arc: the E16 clone remaps in-tree Component/GameObject/Transform refs
+> but copies plain-object collections (e.g. List<Resource>) by REFERENCE — deep-clone
+> needed before many-vessels-from-one-template spawning.
+
 # Vessel Concrete — Type-Closure Survey & Porting Sequence
 
 Follow-up to `VESSEL_LAYER.md` (V1–V19, complete — IVesselStatus diff-verified
