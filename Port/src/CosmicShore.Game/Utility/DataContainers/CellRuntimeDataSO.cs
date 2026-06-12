@@ -18,7 +18,7 @@ namespace CosmicShore.Utility
         // ---------------------------------------------------------------------
 
         [Header("Design Time References")]
-        // PORT Deviation (V11, restore when GameDataSO ports): [SerializeField] GameDataSO gameData;
+        [SerializeField] GameDataSO gameData;
         [SerializeField] public ScriptableEventNoParam OnResetForReplay;
         [SerializeField] public ScriptableEventNoParam OnCrystalSpawned;
         [SerializeField] public ScriptableEventNoParam OnCellItemsUpdated;
@@ -91,8 +91,7 @@ namespace CosmicShore.Utility
         {
             crystal = null;
 
-            // PORT Deviation (V11, restore when GameDataSO ports): var ownDomain = gameData?.LocalPlayer?.Domain ?? Domains.Blue;
-            var ownDomain = Domains.Blue;
+            var ownDomain = gameData?.LocalPlayer?.Domain ?? Domains.Blue;
 
             if (TryGetCrystalByDomain(ownDomain, out crystal))
                 return true;

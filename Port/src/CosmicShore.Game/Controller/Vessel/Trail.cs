@@ -1,0 +1,220 @@
+using System.Collections.Generic;
+using CosmicShore.Engine;
+using CosmicShore.Utility;
+using System;
+
+namespace CosmicShore.Gameplay
+{
+    [System.Serializable]
+    public class Trail
+    {
+        // [Fix] Added this field so Prism.cs can access/clear the visual line
+        public TrailRenderer TrailRenderer;
+
+        bool isLoop;
+        // PORT Deviation (V14, restore when Prism ports): public List<Prism> TrailList { get; }
+        // Prism : MonoBehaviour and the trail math only reads transform.position / name /
+        // lifetime-bool, so the base type stands in until the prism cluster lands (V15).
+        public List<MonoBehaviour> TrailList { get; }
+        // PORT Deviation (V14, restore when Prism ports): Dictionary<Prism, ushort> trailBlockIndices;
+        Dictionary<MonoBehaviour, ushort> trailBlockIndices;
+
+        public Trail(bool isLoop = false)
+        {
+            this.isLoop = isLoop;
+            // PORT Deviation (V14, restore when Prism ports): TrailList = new List<Prism>();
+            TrailList = new List<MonoBehaviour>();
+            // PORT Deviation (V14, restore when Prism ports): trailBlockIndices = new Dictionary<Prism, ushort>();
+            trailBlockIndices = new Dictionary<MonoBehaviour, ushort>();
+        }
+
+        // PORT Deviation (V14, restore when Prism ports): public void Add(Prism block)
+        public void Add(MonoBehaviour block)
+        {
+            if (trailBlockIndices.ContainsKey(block))
+            {
+                CSDebug.LogWarning($"[Trail] Attempted to add duplicate block {block.name}. Ignoring.");
+                return;
+            }
+            trailBlockIndices.Add(block, (ushort)TrailList.Count);
+            TrailList.Add(block);
+
+            // Note: If you need to access prismProperties, ensure it's initialized on the block
+            // block.prismProperties.Index = (ushort) trailBlockIndices.Count;
+        }
+
+        public void Clear()
+        {
+            TrailList.Clear();
+            trailBlockIndices.Clear();
+
+            // [Fix] Clear visual trail when logical trail clears
+            if (TrailRenderer) TrailRenderer.Clear();
+        }
+
+        /// <summary>
+        /// Removes and returns the oldest block (front of the trail), keeping every
+        /// remaining block's index consistent in both <see cref="trailBlockIndices"/>
+        /// and <c>prismProperties.Index</c> so index consumers (skimmer align,
+        /// trail followers, viewers) stay correct. Returns null if empty.
+        ///
+        /// Used by capped trails (the Menu_Main lava-lamp autopilot) to recycle the
+        /// oldest prism back to the pool so trail geometry/colliders stay bounded.
+        /// Allocation-free.
+        /// </summary>
+        // PORT Deviation (V14, restore when Prism ports): public Prism RemoveOldest()
+        public MonoBehaviour RemoveOldest()
+        {
+            if (TrailList.Count == 0) return null;
+
+            var oldest = TrailList[0];
+            TrailList.RemoveAt(0);
+            if (oldest) trailBlockIndices.Remove(oldest);
+
+            // Reindex remaining blocks (they all shifted down by one).
+            for (int i = 0; i < TrailList.Count; i++)
+            {
+                var block = TrailList[i];
+                if (!block) continue;
+                trailBlockIndices[block] = (ushort)i;
+                // PORT Deviation (V14, restore when Prism ports): if (block.prismProperties != null)
+                // PORT Deviation (V14, restore when Prism ports):     block.prismProperties.Index = (ushort)i;
+            }
+
+            return oldest;
+        }
+
+        // PORT Deviation (V14, restore when Prism ports): public int GetBlockIndex(Prism block)
+        public int GetBlockIndex(MonoBehaviour block)
+        {
+            if (!block || !trailBlockIndices.TryGetValue(block, out var index)) return -1;
+            return index;
+        }
+
+        /// <summary>
+        /// Look Ahead
+        /// Looking ahead of the trail
+        /// </summary>
+        // PORT Deviation (V14, restore when Prism ports): public List<Prism> LookAhead(int index, float lerp, TrailFollowerDirection direction, float distance)
+        public List<MonoBehaviour> LookAhead(int index, float lerp, TrailFollowerDirection direction, float distance)
+        {
+            var incrementor = (int)direction;
+            var distanceTravelled = 0f;
+            var trailListCount = TrailList.Count;
+
+            (index, incrementor) = IndexSafetyCheck(index, incrementor, trailListCount);
+            var currentBlock = TrailList[index];
+
+            var nextIndex = index + incrementor;
+            (nextIndex, incrementor) = IndexSafetyCheck(nextIndex, incrementor, trailListCount);
+            var nextBlock = TrailList[nextIndex];
+
+            // PORT Deviation (V14, restore when Prism ports): var lookAheadBlocks = new List<Prism> { currentBlock };
+            var lookAheadBlocks = new List<MonoBehaviour> { currentBlock };
+            var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1 - lerp);
+
+            while (distanceTravelled < distance)
+            {
+                distanceTravelled += distanceToNextBlock;
+                lookAheadBlocks.Add(nextBlock);
+
+                index += incrementor;
+                (index, incrementor) = IndexSafetyCheck(index, incrementor, trailListCount);
+                currentBlock = TrailList[index];
+
+                nextIndex = index + incrementor;
+                (nextIndex, incrementor) = IndexSafetyCheck(nextIndex, incrementor, trailListCount);
+                nextBlock = TrailList[nextIndex];
+
+                distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
+            }
+
+            return lookAheadBlocks;
+        }
+
+        /// <summary>
+        /// Project on Trail
+        /// </summary>
+        /// <param name="startIndex"></param>
+        /// <param name="initialLerp">Percent progress between current block and next block along direction</param>
+        /// <param name="direction"></param>
+        /// <param name="distance"></param>
+        /// <param name="endIndex"></param>
+        /// <param name="finalLerp"></param>
+        /// <param name="outDirection"></param>
+        /// <returns>The resultant position in space from the projection down the trail</returns>
+        public Vector3 Project(int startIndex, float initialLerp, TrailFollowerDirection direction, float distance,
+                               out int endIndex, out float finalLerp, out TrailFollowerDirection outDirection, out Vector3 heading)
+        {
+            int incrementor = (int)direction;
+            var distanceTravelled = 0f;
+            var trailListCount = TrailList.Count;
+
+            (startIndex, incrementor) = IndexSafetyCheck(startIndex, incrementor, trailListCount);
+            var currentBlock = TrailList[startIndex];
+
+            var nextIndex = startIndex + incrementor;
+            (nextIndex, incrementor) = IndexSafetyCheck(nextIndex, incrementor, trailListCount);
+            var nextBlock = TrailList[nextIndex];
+
+            var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1 - initialLerp);
+            distanceTravelled += distanceToNextBlock;
+
+            while (distanceTravelled < distance)
+            {
+                startIndex += incrementor;
+                (startIndex, incrementor) = IndexSafetyCheck(startIndex, incrementor, trailListCount);
+
+                nextIndex += incrementor;
+                (nextIndex, incrementor) = IndexSafetyCheck(nextIndex, incrementor, trailListCount);
+                nextBlock = TrailList[nextIndex];
+
+                distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
+                distanceTravelled += distanceToNextBlock;
+            }
+
+            var overflow = distanceTravelled - distance;
+            var nextPosition = nextBlock.transform.position;
+            var currentPosition = currentBlock.transform.position;
+            Vector3 blockGap = nextPosition - currentPosition;
+
+            heading = blockGap.normalized;
+            endIndex = startIndex;
+            finalLerp = 1 - overflow / blockGap.magnitude;
+
+            outDirection = (TrailFollowerDirection)incrementor;
+
+            return Vector3.Lerp(currentPosition, nextPosition, finalLerp);
+        }
+
+        private (int, int) IndexSafetyCheck(int index, int incrementor, int maxRange)
+        {
+            if (index >= maxRange)
+            {
+                index %= maxRange;
+                if (!isLoop) incrementor *= -1;
+            }
+
+            if (index < 0)
+            {
+                // If the trail is looping, connect the tail block's index to current index
+                if (isLoop) index += maxRange;
+                // If the trail is not looping, change vessel direction and reset index to start
+                else
+                {
+                    incrementor *= -1;
+                    index = 0;
+                }
+            }
+
+            return (index, incrementor);
+        }
+
+        // PORT Deviation (V14, restore when Prism ports): public Prism GetBlock(int blockIndex)
+        public MonoBehaviour GetBlock(int blockIndex)
+        {
+            if (blockIndex < 0) return TrailList[0];
+            return TrailList[blockIndex];
+        }
+    }
+}

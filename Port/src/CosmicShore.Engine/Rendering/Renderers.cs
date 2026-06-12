@@ -43,6 +43,23 @@ namespace CosmicShore.Engine
             get => material;
             set => material = value;
         }
+
+        MaterialPropertyBlock _propertyBlock;
+
+        /// <summary>Snapshot <paramref name="properties"/> onto this renderer (copy-on-set; null/empty clears).</summary>
+        public void SetPropertyBlock(MaterialPropertyBlock properties)
+        {
+            if (properties == null || properties.isEmpty)
+            {
+                _propertyBlock = null;
+                return;
+            }
+            _propertyBlock ??= new MaterialPropertyBlock();
+            _propertyBlock.CopyFrom(properties);
+        }
+
+        /// <summary>Overwrite <paramref name="dest"/> with this renderer's current block (cleared if none set).</summary>
+        public void GetPropertyBlock(MaterialPropertyBlock dest) => dest.CopyFrom(_propertyBlock);
     }
 
     public class MeshRenderer : Renderer

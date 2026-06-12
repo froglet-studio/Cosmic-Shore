@@ -79,6 +79,8 @@ namespace CosmicShore.Engine
 
         public static float Distance(Vector3 a, Vector3 b) => (a - b).magnitude;
 
+        public static float Magnitude(Vector3 vector) => vector.magnitude;
+
         public static Vector3 Lerp(Vector3 a, Vector3 b, float t)
         {
             t = Mathf.Clamp01(t);
