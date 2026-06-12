@@ -253,6 +253,28 @@ namespace CosmicShore.Gameplay
                 SpatialIndexId = spatialIndex.Register(this);
         }
 
+        /// <summary>
+        /// This prism's LIVE volume (world-scale product), the unit of mass the
+        /// ecosystem runs on — "volume is the spine" (CLAUDE.md ▸ Ecosystem Design
+        /// Principles). Tracks growth/shrink in real time via the scale animator;
+        /// destroyed mass contributes nothing. Read by Cell's per-domain volume sums
+        /// (phase ladder, dominant domain, HUD).
+        /// </summary>
+        public float CurrentVolume
+        {
+            get
+            {
+                if (destroyed) return 0f;
+                // GetCurrentVolume reads the live transform but returns 0 while the
+                // animator component is disabled — which Restore() leaves it as. Fall
+                // back to the bookkept volume (stamped at create/destroy) so restored
+                // mass still weighs what it did, rather than vanishing from the sums.
+                float v = scaleAnimator ? scaleAnimator.GetCurrentVolume() : 0f;
+                if (v > 0f) return v;
+                return Mathf.Max(prismProperties?.volume ?? 0f, 0f);
+            }
+        }
+
         // Growth Methods
         public void Grow(float amount = 1) => scaleAnimator.Grow(amount);
 

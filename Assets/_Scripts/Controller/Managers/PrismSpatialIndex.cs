@@ -489,14 +489,17 @@ namespace CosmicShore.Gameplay
         /// (occupancy/AOE) and coarse (density) views are fed by one stream and
         /// cannot diverge.
         ///
-        /// Fauna bodies (LightFauna / Boid HealthPrisms) are creatures, not
-        /// environment mass: they must NOT inflate the cell's phase count or
-        /// pollute the density grid — otherwise a forager swarm reads as its own
-        /// "mass concentration" and seeks itself instead of the trail/flora
-        /// buildup. Only HealthPrisms can be fauna bodies, so the
-        /// GetComponentInParent walk is gated to that subtype to keep ordinary
-        /// trail-prism registrations cheap. (They stay in the AOE and occupancy
-        /// views — they are damageable, space-occupying mass.)
+        /// Fauna bodies (LightFauna / Boid HealthPrisms) bind as VOLUME-ONLY mass:
+        /// "volume is the spine" says ALL prisms feed the cell's volume accounting
+        /// (Cell.LiveVolume — phase, dominant domain, HUD), so they enter the
+        /// volume membership — but they must NOT enter the targeting grids or
+        /// prism counts, otherwise a forager swarm reads as its own "mass
+        /// concentration" and seeks itself instead of the trail/flora buildup
+        /// (and herbivores would be seeded against inedible "prey"). Only
+        /// HealthPrisms can be fauna bodies, so the GetComponentInParent walk is
+        /// gated to that subtype to keep ordinary trail-prism registrations cheap.
+        /// (They stay in the AOE and occupancy views — they are damageable,
+        /// space-occupying mass.)
         ///
         /// Coexists with the flora ownership stream: HealthBlockTracker also
         /// AddBlocks flora health prisms into the LifeForm's host cell.
@@ -505,14 +508,14 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void BindCell(int index, Prism prism, Vector3 position)
         {
-            if (prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null)
-            {
-                _cells[index] = null;
-                return;
-            }
+            // Fauna bodies are VOLUME, not environment: they feed the cell's
+            // per-domain volume sums ("volume is the spine" — all prisms count,
+            // whatever their source) but stay out of the targeting grids and
+            // prism counts (see the remarks above).
+            bool environmentMass = !(prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null);
             var cell = Cell.FindCellContaining(position);
             _cells[index] = cell;
-            if (cell) cell.AddBlock(prism);
+            if (cell) cell.AddBlock(prism, environmentMass);
         }
 
         /// <summary>

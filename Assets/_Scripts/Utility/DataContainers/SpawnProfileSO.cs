@@ -33,9 +33,12 @@ namespace CosmicShore.Utility
         [Min(0f)] public float InitialFaunaSpawnWaitTime = 10f;
         [Min(0f)] public float FaunaSpawnVolumeThreshold = 1f;
         [Min(0f)] public float BaseFaunaSpawnTime = 60f;
-        [Tooltip("Population control (prey-linked): a population only spawns while the cell holds at least " +
-                 "this many prisms NOT of the controlling color (prey). Below it, production pauses until " +
-                 "prey returns; existing fauna then starve. 0 = always produce. See Docs/ECOSYSTEM.md.")]
+        [Tooltip("Population control (prey-linked), authored in NOMINAL PRISMS: a herbivore population " +
+                 "only spawns while the cell holds at least this many prisms' worth of opposing " +
+                 "ENVIRONMENT VOLUME (value × 16, the nominal leaf volume — volume is the spine; fauna " +
+                 "bodies don't count, they aren't edible). Predator species read it directly as N live " +
+                 "herbivores. Below the floor, production pauses until prey returns; existing fauna then " +
+                 "starve. 0 = always produce. See Docs/ECOSYSTEM.md.")]
         [Min(0)] public int FaunaFoodFloor = 5;
         [Tooltip("Wait this many seconds after the crystal spawns before FaunaPrefab begins spawning.")]
         [Min(0f)] public float FaunaInitialDelaySeconds;

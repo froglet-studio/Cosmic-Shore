@@ -41,14 +41,14 @@ sealed **mass-conserving crystal drop** on the fauna death path, **crystals → 
 powerups**, and the **lifeform-crystal invariant** (`LifeFormCrystal` + validator: every
 lifeform carries/drops one elemental crystal).
 
-Open: one LOCKED invariant still to re-assert on the adopted foundation — **volume as the
-spine** (foundation phase is count-driven; §10 item 3, retuning-heavy, do behind the telemetry
-overlay). No-domain-asymmetry spawn is re-asserted and fauna queries already ride the index on
-the merge line (§10). Remaining before the genome: in-editor verification of the wither/crystal
-path + authoring crystals on fauna prefabs (§10 item 1 follow-up), collider budget (telemetry +
-collider-LOD), the **genome/heredity** (the evolution substrate), and wiring ecology into the
-~9 bare modes. **The food web is now real; the remaining work is the volume spine, the budget,
-the genome, and the wiring.**
+Open: all three LOCKED invariant re-assertions are now code-complete on the merge line —
+wither-to-crystal (§10 item 1), no-domain-asymmetry spawn (item 2), and volume-as-the-spine
+(item 3; volume thresholds auto-derive from legacy counts and still want a per-biome in-editor
+retune). Remaining before the genome: in-editor verification of the wither/crystal path +
+authoring crystals on fauna prefabs (item 1 follow-up) + the volume retune, collider budget
+(telemetry + collider-LOD), the **genome/heredity** (the evolution substrate), and wiring
+ecology into the ~9 bare modes. **The food web is now real; the remaining work is the
+verification/retune pass, the budget, the genome, and the wiring.**
 
 ---
 
@@ -281,14 +281,20 @@ deltas on top of the adopted foundation** — not to rebuild anything:
    serialized flag, so legacy SpawnProfile assets with the old `true` value are inert), and the
    flags default `false` and are marked deprecated. Fauna were already controlling-color only.
 
-3. **Volume as the spine.** `bleeding-edge` phase is **count-driven**
-   (`Cell.cs:384 CellPhaseRules.Compute(LiveBlockCount, …)`); there is no `LiveVolume`. The
-   invariant says phase/dominant/prey/HUD key off per-domain **VOLUME**, count is a perf backstop.
-   Re-assert: add `Cell.LiveVolume` (sum of per-domain volumes), key `CellPhaseRules`/thresholds
-   off it, retune `CellPhaseThresholds` to volume scale, point `DomainVolumeIndicator` at volume.
-   **Keep `bleeding-edge`'s cleaner 3-phase enum (Calm/Restless/Frenzy)** — the *phase count* was
-   never locked, only "volume is the spine." This is the serialization-sensitive, retuning-heavy
-   one; do it last, behind the telemetry overlay, and retune every cell config in-editor.
+3. **Volume as the spine.** ✅ *(re-asserted on the merge line — retune still owed in-editor)*
+   `Cell.LiveVolume` / `GetDomainVolume` now exist: per-domain live volume recomputed from
+   live prism state (`Prism.CurrentVolume` × live `Domain`) on a 0.25s cadence, fed by EVERY
+   prism — trail, flora, AND fauna bodies (volume-only cell binding via
+   `PrismSpatialIndex.BindCell`; per the prompter, all prisms add to volume regardless of
+   source). Phase (`CellPhaseRules.Compute(volume, count, …)`), `DominantDomain`, the prey
+   signal (`OpposingVolume` — ENVIRONMENT volume only: fauna bodies aren't edible), and
+   `DomainVolumeIndicator` all key off volume; the serialized COUNT thresholds remain as the
+   Frenzy perf backstop exactly as the invariant allows. The 3-phase enum is kept. Legacy
+   CellConfig assets auto-derive their volume ladder (count × `NominalPrismVolume` = 16, the
+   4×4×1 leaf) via `CellPhaseThresholds.WithDerivedVolumeScale`, so no asset breaks — but the
+   derivation assumes nominal prism volume; **retune each biome's volume thresholds in-editor**
+   (watch the cell breathe Calm→Restless→Frenzy with real average prism volumes; the
+   `RestlessEnterVolume`/`FrenzyEnterVolume` fields override the derivation once authored).
 
 **Collider budget (PrismSpatialIndex backbone now present; remaining):**
 - ✅ **Fauna queries ride the index** *(done on the merge line — SPATIAL_INDEX Phase 2)*:

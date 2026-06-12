@@ -61,7 +61,9 @@ understood as a **view** of the same lifecycle, not an independent system.
    Register/MarkRestored bind the containing cell, MarkDestroyed/Unregister
    release it, ForwardDomainChangeToCell re-files steals. One stream feeds
    both the fine and coarse views, so they cannot diverge. Fauna bodies are
-   excluded from this view only (BindCell skips them). The flora ownership
+   bound VOLUME-ONLY in this view (BindCell files them into the cell's
+   volume accounting — volume is the spine, every prism counts — but keeps
+   them out of the targeting grids and counts). The flora ownership
    stream (HealthBlockTracker → Cell.AddBlock for the LifeForm's host cell)
    remains a second, idempotent contributor.
 ```
@@ -187,9 +189,10 @@ Nothing in this system decays, culls, or auto-corrects prism populations.
   isn't a prism (a synthetic "boid marker" entry, a vessel, a crystal) just to
   get neighbor queries — that would corrupt the AOE and occupancy views, which
   assume every entry is damageable, consumable mass. (The cell *density* view
-  still excludes fauna bodies — `PrismSpatialIndex.BindCell` skips them —
-  because a forager swarm must not read as its own mass concentration; that
-  exclusion is about the coarse density view only.)
+  still excludes fauna bodies from its TARGETING grids/counts —
+  `PrismSpatialIndex.BindCell` binds them volume-only — because a forager
+  swarm must not read as its own mass concentration; their volume still feeds
+  `Cell.LiveVolume`, the phase spine.)
 - **Unregistered mound blocks** — `Boid.NewBlock` builds mound blocks without
   `Prism.Initialize`, so they never register. The two queries that must find
   them stay physics-based on the dedicated `Mound` layer:

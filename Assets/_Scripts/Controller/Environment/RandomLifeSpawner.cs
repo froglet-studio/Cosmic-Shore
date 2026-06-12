@@ -127,12 +127,16 @@ namespace CosmicShore.Gameplay
             // (Docs/ECOSYSTEM.md §6: prey-linked production + starvation + reproduction.)
             float period = Mathf.Max(0.05f, spawnProfile.BaseFaunaSpawnTime);
 
-            // Prey signal by diet: herbivore species seed on prism prey (opposing
-            // mass), predator species on the LIVE HERBIVORE count — the real food,
-            // not the old prism-mass proxy (Docs/ECOSYSTEM.md §7 "spawn gating"
-            // refinement). FaunaFoodFloor doubles as both floors: N prisms for a
-            // herbivore, N herbivores for a predator.
+            // Prey signal by diet: herbivore species seed on prism prey — opposing
+            // ENVIRONMENT volume, per "volume is the spine" (fauna bodies excluded:
+            // not edible, so they must not read as food) — predator species on the
+            // LIVE HERBIVORE count (creatures are eaten per-individual, so count is
+            // the honest unit there). FaunaFoodFloor doubles as both floors: it is
+            // authored in nominal prisms, converted ×NominalPrismVolume for the
+            // herbivore volume check, and read directly as N herbivores for a
+            // predator. (Docs/ECOSYSTEM.md §6-§7.)
             bool isPredator = faunaCfg.FaunaPrefab && faunaCfg.FaunaPrefab.Diet == FaunaDiet.Predator;
+            float herbivoreVolumeFloor = spawnProfile.FaunaFoodFloor * CellPhaseThresholds.NominalPrismVolume;
 
             while (true)
             {
@@ -144,11 +148,11 @@ namespace CosmicShore.Gameplay
                     Mathf.Max(1, faunaCfg.PopulationSize),
                     faunaCfg.MaxLivePopulation);
 
-                int preySignal = isPredator
-                    ? host.GetLiveHerbivoreCount()
-                    : host.OpposingBlockCount(color);
+                bool preyAvailable = isPredator
+                    ? host.GetLiveHerbivoreCount() >= spawnProfile.FaunaFoodFloor
+                    : host.OpposingVolume(color) >= herbivoreVolumeFloor;
 
-                if (deficit > 0 && preySignal >= spawnProfile.FaunaFoodFloor)
+                if (deficit > 0 && preyAvailable)
                     SpawnFaunaPopulation(host, runtime, faunaCfg, color, deficit);
 
                 // Reset the spawn-cycle ring each period whether or not seeding happened —
