@@ -169,10 +169,25 @@ span 2+ laps and the lap-back-onto-your-trail loop actually engages. Verified
 headlessly: lap-1 diagnostic shows skim False (no ribbon to ride yet), lap-2 shows
 skim True for both pilots with the trailing rival charging off the leader's ribbon —
 an emergent slipstream catch-up. Artifact: `artifacts/skimrace_s5_circuit_trails.png`.
-KNOWN (next round): superhuman screenshot-autopilot beats the rival 30-9 — rival
-tuning should now exploit skim energy + drift deliberately. NEXT: prompter verifies
-drift feel/trail feel on the circuit, rival tuning, Squirrel nose orientation in
-motion (flip is one sign in the extractor). Fidelity arc: **V1 DONE** (engine E3-E8/E10: RPC attrs, profiling shim, Screen/
+**S6 SHIPPED** ("go hard, I want everything" directive): **a field of rivals**
+(`--rivals N`, default 3, max 7 — Ruby/Gold/Blue domain palettes for hulls AND
+ribbons, seeded temperaments: TurnSkill/DriftIQ/Aggression), **elemental crystals**
+(every station carries an element, claims permanently raise that level via the
+ported ResourceSystem; levels tune the vessel — Charge→skim rate, Mass→wider
+longer-reach trail baked per TrailPoint, Space→turn rate, Time→cooler boost burn;
+every 7th station is Omni = +1 all; crystal octahedra tinted per element),
+**AI v2** (loop-aware multi-rival overtake, drift-to-charge when low on energy +
+drift through hard corners per DriftIQ, aggression-scaled boost reserve),
+**minimap** (circuit outline + domain-colored pilot markers, bottom-right),
+**lap + position HUD**, **finish scoreboard** (whole field ranked: domain diamond,
+position, crystals), **skim shimmer + drift rush audio layers** (gain/pitch follow
+contact strength and trigger pull). Verified headlessly: 4-pilot race, frame-1300
+diag `crystals [24,19,4,1], P1 lap 2, levels C13/M6/S8/T6, skim True, trail 5004`
+— the field is COMPETITIVE now (drift-charging rivals; was 30-9 in S5). Artifact:
+`artifacts/skimrace_s6_field_elements.png`. NEXT: prompter verifies the field race
+feel (drift, elements, rival pressure), Squirrel nose orientation in motion (flip
+is one sign in the extractor); deeper Cosmic Shore content (more vessel classes,
+cells/fauna ambience, shape modes) on request. Fidelity arc: **V1 DONE** (engine E3-E8/E10: RPC attrs, profiling shim, Screen/
 Application/PlayerPrefs/Resources statics, Object.DontDestroyOnLoad/Instantiate/
 FindFirstObjectByType, Physics+collider stubs; NetworkBehaviour now : MonoBehaviour
 (parity); ported PauseSystem, SafeLookRotation, Singleton family, NetMarkers,

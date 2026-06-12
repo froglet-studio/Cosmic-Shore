@@ -25,6 +25,7 @@ namespace CosmicShore.Client
     {
         readonly int _seed;
         readonly int _crystalTarget;
+        readonly int _rivalCount;
         readonly string _screenshotPath;
         readonly int _screenshotFrame;
 
@@ -34,7 +35,7 @@ namespace CosmicShore.Client
 
         GameLoop _loop;
         SkimRaceController _race;
-        SkimRaceController _rival;
+        List<SkimRaceController> _rivals;
         readonly SkimInputStatus _playerStatus = new();
         readonly GamepadInputStrategy _gamepadStrategy = new(); // the ported, authentic dual-stick scheme
         EngineInput.Gamepad _shimPad;
@@ -54,17 +55,14 @@ namespace CosmicShore.Client
         uint _starVao, _starVbo; int _starCount;
         uint _railVao, _railVbo; int _railCount;
         uint _ringVao, _ringVbo; int _ringCount;
-        uint _crystalVao, _crystalVbo; int _crystalVertexCount;
-        uint _vesselVao, _vesselVbo; int _vesselVertexCount;
-        uint _rivalVao, _rivalVbo; int _rivalVertexCount;
-        uint _trailVao, _trailVbo;
-        uint _rivalTrailVao, _rivalTrailVbo;
+        readonly Dictionary<Element, (uint vao, int count)> _crystalMeshes = new();
+        readonly Dictionary<Domains, (uint vao, int count)> _vesselMeshes = new();
         uint _hudVao, _hudVbo;
 
-        // trails live in the sim now (persistent race state, skimmable); these are
-        // reusable vertex scratch buffers so the per-frame ribbon rebuild doesn't churn GC
-        readonly List<float> _trailVerts = new();
-        readonly List<float> _rivalTrailVerts = new();
+        // per-pilot trail render slots (trails live in the sim — persistent, skimmable);
+        // scratch buffers are reused so the per-frame ribbon rebuild doesn't churn GC
+        uint[] _pilotTrailVaos, _pilotTrailVbos;
+        List<float>[] _pilotTrailVerts;
 
         Vector3 _camPos, _camLook;
         AudioEngine _audio;
@@ -73,13 +71,33 @@ namespace CosmicShore.Client
         readonly List<(Vector3 pos, float age)> _bursts = new();
         int _frameIndex;
 
-        public RaceWindow(int seed, int crystalTarget, string screenshotPath, int screenshotFrame)
+        public RaceWindow(int seed, int crystalTarget, int rivalCount, string screenshotPath, int screenshotFrame)
         {
             _seed = seed;
             _crystalTarget = crystalTarget;
+            _rivalCount = rivalCount;
             _screenshotPath = screenshotPath;
             _screenshotFrame = screenshotFrame;
         }
+
+        /// <summary>Domain palette — jade player, ruby/gold/blue rivals.</summary>
+        static (float r, float g, float b) DomainColor(Domains domain) => domain switch
+        {
+            Domains.Jade => (0.07f, 1f, 0.62f),
+            Domains.Ruby => (1f, 0.17f, 0.32f),
+            Domains.Gold => (1f, 0.8f, 0.25f),
+            _ => (0.35f, 0.6f, 1f), // Blue — the neutral domain
+        };
+
+        /// <summary>Element palette for crystals (the buff each station carries).</summary>
+        static (float r, float g, float b) ElementColor(Element element) => element switch
+        {
+            Element.Charge => (0.5f, 0.95f, 1f),
+            Element.Mass => (1f, 0.78f, 0.18f),
+            Element.Space => (1f, 0.3f, 0.9f),
+            Element.Time => (0.4f, 0.6f, 1f),
+            _ => (1f, 1f, 1f), // Omni
+        };
 
         public void Run()
         {
@@ -110,29 +128,35 @@ namespace CosmicShore.Client
                 {
                     if (key == Key.Escape) _window.Close();
                     if (key == Key.R)
-                        SkimRaceFactory.ResetRace(_race.Shared, _race, _rival);
+                        SkimRaceFactory.ResetRace(_race.Shared);
                 };
 
-            (_loop, _race, _rival) = SkimRaceFactory.Create(_seed, _crystalTarget, _playerStatus);
+            (_loop, _race, _rivals) = SkimRaceFactory.Create(_seed, _crystalTarget, _playerStatus, _rivalCount);
             _gamepadStrategy.Initialize(_playerStatus);
             _gamepadStrategy.OnStrategyActivated();
             _audio = new AudioEngine(disabled: _screenshotPath != null);
             _race.OnCrystalCollected += (_, pos) => { _bursts.Add((pos, 0f)); _audio.CrystalChime(player: true); };
-            _rival.OnCrystalCollected += (_, pos) => { _bursts.Add((pos, 0f)); _audio.CrystalChime(player: false); };
+            foreach (var rival in _rivals)
+                rival.OnCrystalCollected += (_, pos) => { _bursts.Add((pos, 0f)); _audio.CrystalChime(player: false); };
 
             _program = CompileProgram();
             _uMvp = _gl.GetUniformLocation(_program, "uMvp");
 
             BuildStars();
             BuildTrack();
-            BuildCrystalMesh();
-            BuildVesselMesh();
-            _trailVao = _gl.GenVertexArray();
-            _trailVbo = _gl.GenBuffer();
-            ConfigureDynamicVao(_trailVao, _trailVbo);
-            _rivalTrailVao = _gl.GenVertexArray();
-            _rivalTrailVbo = _gl.GenBuffer();
-            ConfigureDynamicVao(_rivalTrailVao, _rivalTrailVbo);
+            BuildCrystalMeshes();
+            BuildVesselMeshes();
+            var pilots = _race.Shared.Pilots;
+            _pilotTrailVaos = new uint[pilots.Count];
+            _pilotTrailVbos = new uint[pilots.Count];
+            _pilotTrailVerts = new List<float>[pilots.Count];
+            for (int i = 0; i < pilots.Count; i++)
+            {
+                _pilotTrailVaos[i] = _gl.GenVertexArray();
+                _pilotTrailVbos[i] = _gl.GenBuffer();
+                ConfigureDynamicVao(_pilotTrailVaos[i], _pilotTrailVbos[i]);
+                _pilotTrailVerts[i] = new List<float>();
+            }
             _hudVao = _gl.GenVertexArray();
             _hudVbo = _gl.GenBuffer();
             ConfigureDynamicVao(_hudVao, _hudVbo);
@@ -349,9 +373,16 @@ void main()
             (_ringVao, _ringVbo) = UploadStatic(rings.ToArray());
         }
 
-        void BuildCrystalMesh()
+        void BuildCrystalMeshes()
         {
-            // unit octahedron, golden with a white-hot core face mix
+            // one octahedron per element — stations broadcast their buff by color
+            foreach (var element in new[] { Element.Charge, Element.Mass, Element.Space, Element.Time, Element.Omni })
+                _crystalMeshes[element] = BuildCrystalMesh(ElementColor(element));
+        }
+
+        (uint vao, int count) BuildCrystalMesh((float r, float g, float b) tint)
+        {
+            // unit octahedron in the element tint, white-lifted equator for the hot core
             var top = new Vector3(0f, 1.2f, 0f);
             var bottom = new Vector3(0f, -1.2f, 0f);
             var equator = new[]
@@ -359,41 +390,45 @@ void main()
                 new Vector3(0.9f, 0f, 0f), new Vector3(0f, 0f, 0.9f),
                 new Vector3(-0.9f, 0f, 0f), new Vector3(0f, 0f, -0.9f),
             };
+            float Lift(float c) => c + (1f - c) * 0.45f; // toward white
             var data = new List<float>();
             for (int i = 0; i < 4; i++)
             {
                 var a = equator[i];
                 var b = equator[(i + 1) % 4];
                 float warm = i % 2 == 0 ? 1f : 0.86f;
-                Push(data, top, 1f * warm, 0.78f * warm, 0.18f, 0.95f);
-                Push(data, a, 1f, 0.9f, 0.45f, 0.8f);
-                Push(data, b, 0.95f, 0.7f, 0.12f, 0.8f);
-                Push(data, bottom, 0.9f * warm, 0.6f * warm, 0.1f, 0.95f);
-                Push(data, b, 0.95f, 0.7f, 0.12f, 0.8f);
-                Push(data, a, 1f, 0.9f, 0.45f, 0.8f);
+                Push(data, top, tint.r * warm, tint.g * warm, tint.b * warm, 0.95f);
+                Push(data, a, Lift(tint.r), Lift(tint.g), Lift(tint.b), 0.8f);
+                Push(data, b, tint.r * 0.85f, tint.g * 0.85f, tint.b * 0.85f, 0.8f);
+                Push(data, bottom, tint.r * 0.8f * warm, tint.g * 0.8f * warm, tint.b * 0.8f * warm, 0.95f);
+                Push(data, b, tint.r * 0.85f, tint.g * 0.85f, tint.b * 0.85f, 0.8f);
+                Push(data, a, Lift(tint.r), Lift(tint.g), Lift(tint.b), 0.8f);
             }
-            _crystalVertexCount = data.Count / 7;
-            (_crystalVao, _crystalVbo) = UploadStatic(data.ToArray());
+            var (vao, _) = UploadStatic(data.ToArray());
+            return (vao, data.Count / 7);
         }
 
-        void BuildVesselMesh()
+        void BuildVesselMeshes()
         {
             // The Squirrel's real hull, extracted from the game's FBX and baked with
-            // flat per-face lighting in the pilot palette. Dart stays as fallback.
-            try
+            // flat per-face lighting in each pilot's domain palette. Dart fallback.
+            foreach (var pilot in _race.Shared.Pilots)
             {
-                (_vesselVao, _vesselVbo, _vesselVertexCount) = BuildSquirrel(jade: true);
-                (_rivalVao, _rivalVbo, _rivalVertexCount) = BuildSquirrel(jade: false);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"squirrel mesh unavailable ({e.Message}) — dart fallback");
-                (_vesselVao, _vesselVbo, _vesselVertexCount) = BuildDart(jade: true);
-                (_rivalVao, _rivalVbo, _rivalVertexCount) = BuildDart(jade: false);
+                var domain = pilot.Stats.Domain;
+                if (_vesselMeshes.ContainsKey(domain)) continue;
+                try
+                {
+                    _vesselMeshes[domain] = BuildSquirrel(DomainColor(domain));
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"squirrel mesh unavailable ({e.Message}) — dart fallback");
+                    _vesselMeshes[domain] = BuildDart(DomainColor(domain));
+                }
             }
         }
 
-        (uint vao, uint vbo, int count) BuildSquirrel(bool jade)
+        (uint vao, int count) BuildSquirrel((float r, float g, float b) baseColor)
         {
             using var stream = typeof(RaceWindow).Assembly
                 .GetManifestResourceStream("CosmicShore.Client.Assets.squirrel.mesh")
@@ -404,7 +439,6 @@ void main()
             // two-light flat shade in the pilot palette, emissive floor for the neon look
             var keyLight = new Vector3(0.42f, 0.78f, -0.46f).normalized;
             var rimLight = new Vector3(-0.3f, -0.2f, 0.93f).normalized;
-            (float r, float g, float b) baseColor = jade ? (0.07f, 1f, 0.62f) : (1f, 0.17f, 0.32f);
 
             var dataList = new List<float>(triCount * 3 * 7);
             for (int t = 0; t < triCount; t++)
@@ -421,13 +455,13 @@ void main()
                         baseColor.r * shade, baseColor.g * shade, baseColor.b * shade, 0.95f);
                 }
             }
-            var (vao, vbo) = UploadStatic(dataList.ToArray());
-            return (vao, vbo, triCount * 3);
+            var (vao, _) = UploadStatic(dataList.ToArray());
+            return (vao, triCount * 3);
         }
 
-        (uint vao, uint vbo, int count) BuildDart(bool jade)
+        (uint vao, int count) BuildDart((float r, float g, float b) baseColor)
         {
-            // jade dart: nose, twin swept wings, tail fin — flat-shaded neon
+            // dart fallback: nose, twin swept wings, tail fin — flat-shaded neon
             var nose = new Vector3(0f, 0f, 2.6f);
             var tail = new Vector3(0f, 0.25f, -1.4f);
             var left = new Vector3(-1.7f, -0.15f, -1.2f);
@@ -442,21 +476,17 @@ void main()
                 Push(data, b, r, g, bl, al);
                 Push(data, c, r, g, bl, al);
             }
-            // hue swap: jade player vs ruby rival
             void Hull(Vector3 a, Vector3 b, Vector3 c, float bright, float alpha)
-            {
-                if (jade) Tri(a, b, c, 0.06f * bright, 1f * bright, 0.6f * bright, alpha);
-                else Tri(a, b, c, 1f * bright, 0.16f * bright, 0.3f * bright, alpha);
-            }
+                => Tri(a, b, c, baseColor.r * bright, baseColor.g * bright, baseColor.b * bright, alpha);
             Hull(nose, left, tail, 1f, 0.95f);
             Hull(nose, tail, right, 0.88f, 0.95f);
             Hull(nose, belly, left, 0.55f, 0.9f);
             Hull(nose, right, belly, 0.5f, 0.9f);
             Hull(tail, left, belly, 0.4f, 0.9f);
             Hull(tail, belly, right, 0.38f, 0.9f);
-            Tri(tail, fin, nose, jade ? 0.65f : 1f, jade ? 1f : 0.7f, jade ? 0.9f : 0.75f, 0.75f);
-            var (vao, vbo) = UploadStatic(data.ToArray());
-            return (vao, vbo, data.Count / 7);
+            Tri(tail, fin, nose, baseColor.r * 0.8f + 0.2f, baseColor.g * 0.8f + 0.2f, baseColor.b * 0.8f + 0.2f, 0.75f);
+            var (vao, _) = UploadStatic(data.ToArray());
+            return (vao, data.Count / 7);
         }
 
         // ── per-frame ────────────────────────────────────────────────
@@ -504,7 +534,7 @@ void main()
                 _shimPad.buttonSouth.wasReleasedThisFrame = !a && _prevA;
                 _prevA = a;
                 if (start && !_prevStart)
-                    SkimRaceFactory.ResetRace(_race.Shared, _race, _rival);
+                    SkimRaceFactory.ResetRace(_race.Shared);
                 _prevStart = start;
 
                 _gamepadStrategy.ProcessInput(); // the real scheme computes sums/diffs
@@ -569,8 +599,11 @@ void main()
             _camPos = Vector3.Lerp(_camPos, desired, lag);
             _camLook = t3.position + t3.forward * 12f;
 
-            // audio: engine bed + countdown/finish stingers
+            // audio: engine bed + skim shimmer + drift rush + countdown/finish stingers
             _audio.SetEngineState(Mathf.Clamp01(_race.Speed / 115f), _race.BoostHeld && _race.State == RaceState.Racing);
+            _audio.SetSkimDriftState(
+                _race.State == RaceState.Racing ? _race.SkimStrength : 0f,
+                _race.State == RaceState.Racing ? _race.DriftAmount : 0f);
             if (_race.State == RaceState.Countdown)
             {
                 int second = (int)MathF.Ceiling(_race.Countdown);
@@ -614,7 +647,8 @@ void main()
             _gl.BindVertexArray(_ringVao);
             _gl.DrawArrays(PrimitiveType.Lines, 0, (uint)_ringCount);
 
-            // crystals: spin/pulse via model matrix; collected ones skipped
+            // crystals: spin/pulse via model matrix, tinted by their element; claimed
+            // ones vanish until they respawn
             var track = _race.Track;
             for (int i = 0; i < track.Crystals.Count; i++)
             {
@@ -624,11 +658,13 @@ void main()
                 var model = Matrix4x4.CreateScale(pulse) * Matrix4x4.CreateRotationY(spin) *
                             Matrix4x4.CreateTranslation(track.Crystals[i]);
                 SetMvp(model * viewProjection);
-                _gl.BindVertexArray(_crystalVao);
-                _gl.DrawArrays(PrimitiveType.Triangles, 0, (uint)_crystalVertexCount);
+                var mesh = _crystalMeshes[track.StationElements[i]];
+                _gl.BindVertexArray(mesh.vao);
+                _gl.DrawArrays(PrimitiveType.Triangles, 0, (uint)mesh.count);
             }
 
-            // collection bursts: expanding fading octahedra
+            // collection bursts: expanding fading octahedra (white-hot omni flash)
+            var burstMesh = _crystalMeshes[Element.Omni];
             foreach (var (pos, age) in _bursts)
             {
                 // bursts spawn on the camera's own path — cull when too close or they
@@ -637,32 +673,24 @@ void main()
                 float scale = 1f + age * 7f;
                 var model = Matrix4x4.CreateScale(scale) * Matrix4x4.CreateTranslation(pos);
                 SetMvp(model * viewProjection);
-                _gl.BindVertexArray(_crystalVao);
-                _gl.DrawArrays(PrimitiveType.Triangles, 0, (uint)_crystalVertexCount);
+                _gl.BindVertexArray(burstMesh.vao);
+                _gl.DrawArrays(PrimitiveType.Triangles, 0, (uint)burstMesh.count);
             }
 
-            // vessel: oriented + banked
+            // the field: every vessel oriented + banked, in its domain palette
+            foreach (var pilot in _race.Shared.Pilots)
             {
-                var t3 = _race.transform;
-                var rotation = Matrix4x4.CreateFromQuaternion(t3.rotation) ;
-                var bank = Matrix4x4.CreateFromAxisAngle(t3.forward, _race.BankAngle * MathF.PI / 180f);
+                var t3 = pilot.transform;
+                var rotation = Matrix4x4.CreateFromQuaternion(t3.rotation);
+                var bank = Matrix4x4.CreateFromAxisAngle(t3.forward, pilot.BankAngle * MathF.PI / 180f);
                 var model = rotation * bank * Matrix4x4.CreateTranslation(t3.position);
                 SetMvp(model * viewProjection);
-                _gl.BindVertexArray(_vesselVao);
-                _gl.DrawArrays(PrimitiveType.Triangles, 0, (uint)_vesselVertexCount);
+                var mesh = _vesselMeshes[pilot.Stats.Domain];
+                _gl.BindVertexArray(mesh.vao);
+                _gl.DrawArrays(PrimitiveType.Triangles, 0, (uint)mesh.count);
             }
 
-            {
-                var tr = _rival.transform;
-                var rotation = Matrix4x4.CreateFromQuaternion(tr.rotation);
-                var bank = Matrix4x4.CreateFromAxisAngle(tr.forward, _rival.BankAngle * MathF.PI / 180f);
-                var model = rotation * bank * Matrix4x4.CreateTranslation(tr.position);
-                SetMvp(model * viewProjection);
-                _gl.BindVertexArray(_rivalVao);
-                _gl.DrawArrays(PrimitiveType.Triangles, 0, (uint)_rivalVertexCount);
-            }
-
-            DrawTrail(viewProjection);
+            DrawTrails(viewProjection);
             DrawHud();
 
             // post: bright extract → 2× separable blur (half res) → tonemapped composite
@@ -768,7 +796,8 @@ void main()
 
         void ApplyScreenshotAutopilot()
         {
-            if (_race.State == RaceState.Countdown) { _race.Countdown = 0.01f; _rival.Countdown = 0.01f; }
+            if (_race.State == RaceState.Countdown)
+                foreach (var pilot in _race.Shared.Pilots) pilot.Countdown = 0.01f;
             var t0 = _race.transform;
             // next unclaimed station by forward loop distance (mirrors the AI)
             float myAngle = SkimTrack.AngleOf(t0.position);
@@ -793,37 +822,42 @@ void main()
 
         unsafe void SetMvp(Matrix4x4 mvp) => _gl.UniformMatrix4(_uMvp, 1, false, (float*)&mvp);
 
-        unsafe void DrawTrail(Matrix4x4 viewProjection)
+        unsafe void DrawTrails(Matrix4x4 viewProjection)
         {
-            DrawRibbon(viewProjection, _race.Trail, _trailVerts, _trailVao, _trailVbo, jade: true);
-            DrawRibbon(viewProjection, _rival.Trail, _rivalTrailVerts, _rivalTrailVao, _rivalTrailVbo, jade: false);
+            var pilots = _race.Shared.Pilots;
+            for (int i = 0; i < pilots.Count; i++)
+                DrawRibbon(viewProjection, pilots[i].Trail, _pilotTrailVerts[i],
+                    _pilotTrailVaos[i], _pilotTrailVbos[i], DomainColor(pilots[i].Stats.Domain));
         }
 
         unsafe void DrawRibbon(Matrix4x4 viewProjection, List<TrailPoint> trail, List<float> data,
-            uint vao, uint vbo, bool jade)
+            uint vao, uint vbo, (float r, float g, float b) domain)
         {
             if (trail.Count < 2) return;
             data.Clear(); // reusable scratch — capacity persists across frames
             float now = Time.time;
             for (int i = 0; i < trail.Count; i++)
             {
+                var point = trail[i];
                 // persistent prismscape: aged trail settles to a steady neon body
                 // (mass is conserved — it dims into "set" prisms, never disappears);
-                // the fresh end flares wide and bright like exhaust
-                float freshness = Mathf.Clamp01(1f - (now - trail[i].Time) / 4f);
-                float width = 0.26f + freshness * 0.34f;
+                // the fresh end flares wide and bright like exhaust. Width carries the
+                // pilot's Mass level at emit time — heavier builds lay heavier ribbon.
+                float freshness = Mathf.Clamp01(1f - (now - point.Time) / 4f);
+                float width = point.Width + freshness * 0.34f;
                 float alpha = 0.34f + freshness * freshness * 0.4f;
                 // newest points ramp in so the chase cam never sits inside the ribbon
                 int fromNewest = trail.Count - 1 - i;
                 if (fromNewest < 16) alpha *= fromNewest / 16f;
                 // and ANY ribbon fades near the camera (trails crossing the frustum
                 // otherwise bloom into giant wedges)
-                float camDistance = (trail[i].Pos - _camPos).magnitude;
+                float camDistance = (point.Pos - _camPos).magnitude;
                 alpha *= Mathf.Clamp01((camDistance - 3f) / 7f);
-                float r, g, b;
-                if (jade) { r = 0.15f + freshness * 0.55f; g = 0.55f + freshness * 0.4f; b = 1f; }
-                else { r = 1f; g = 0.2f + freshness * 0.4f; b = 0.35f + freshness * 0.3f; }
-                var point = trail[i];
+                // domain hue, lifted toward white at the fresh end
+                float lift = 0.45f * freshness;
+                float r = domain.r + (1f - domain.r) * lift;
+                float g = domain.g + (1f - domain.g) * lift;
+                float b = domain.b + (1f - domain.b) * lift;
                 Push(data, point.Pos - point.Right * width, r, g, b, alpha);
                 Push(data, point.Pos + point.Right * width, r, g, b, alpha);
             }
@@ -892,8 +926,45 @@ void main()
             Number(_race.Stats.CrystalsCollected, 2, 72f, h - 58f, 26f, 0.3f, 1f, 0.7f, 0.95f);
             Segment(122f, h - 36f, 134f, h - 54f, 1f, 0.85f, 0.3f, 0.6f); // slash
             Number(_race.WinTarget, 2, 142f, h - 58f, 26f, 1f, 0.85f, 0.3f, 0.6f);
-            // rival count, top-right, ruby
-            Number(_rival.Stats.CrystalsCollected, 2, w - 120f, h - 58f, 26f, 1f, 0.25f, 0.35f, 0.95f);
+            // best rival count, top-right, ruby
+            Number(_race.Shared.BestOtherCrystals(_race), 2, w - 120f, h - 58f, 26f, 1f, 0.25f, 0.35f, 0.95f);
+
+            // race position (P/total) and lap, under the rival count
+            int position = _race.Shared.PositionOf(_race);
+            int fieldSize = _race.Shared.Pilots.Count;
+            Number(position, 1, w - 120f, h - 104f, 24f, 1f, 1f, 1f, 0.95f);
+            Segment(w - 100f, h - 84f, w - 88f, h - 102f, 0.7f, 0.7f, 0.7f, 0.6f); // slash
+            Number(fieldSize, 1, w - 84f, h - 104f, 24f, 0.7f, 0.7f, 0.7f, 0.7f);
+            // lap counter: small diamond + lap number
+            Segment(w - 162f, h - 92f, w - 154f, h - 84f, 0.5f, 0.95f, 1f, 0.8f);
+            Segment(w - 154f, h - 84f, w - 146f, h - 92f, 0.5f, 0.95f, 1f, 0.8f);
+            Segment(w - 146f, h - 92f, w - 154f, h - 100f, 0.5f, 0.95f, 1f, 0.8f);
+            Segment(w - 154f, h - 100f, w - 162f, h - 92f, 0.5f, 0.95f, 1f, 0.8f);
+            Number(_race.Lap, 1, w - 196f, h - 104f, 24f, 0.5f, 0.95f, 1f, 0.9f);
+
+            // minimap, bottom-right: the circuit outline + a dot per pilot in domain color
+            {
+                float mapCx = w - 110f, mapCy = 120f, mapScale = 78f / (SkimTrack.BaseRadius + 60f);
+                var line = _race.Track.Centerline;
+                int step = 8;
+                for (int i = 0; i < line.Count - step; i += step)
+                {
+                    var a = line[i];
+                    var b = line[Math.Min(i + step, line.Count - 1)];
+                    Segment(mapCx + a.x * mapScale, mapCy + a.z * mapScale,
+                            mapCx + b.x * mapScale, mapCy + b.z * mapScale, 0.25f, 0.5f, 0.65f, 0.5f);
+                }
+                foreach (var pilot in _race.Shared.Pilots)
+                {
+                    var dc = DomainColor(pilot.Stats.Domain);
+                    bool me = ReferenceEquals(pilot, _race);
+                    float size = me ? 5f : 3.5f;
+                    float px = mapCx + pilot.transform.position.x * mapScale;
+                    float py = mapCy + pilot.transform.position.z * mapScale;
+                    Segment(px - size, py - size, px + size, py + size, dc.r, dc.g, dc.b, me ? 1f : 0.85f);
+                    Segment(px - size, py + size, px + size, py - size, dc.r, dc.g, dc.b, me ? 1f : 0.85f);
+                }
+            }
 
             // energy bar bottom center (reads the ported ResourceSystem) — energy IS
             // top speed now; the fill flares white-hot while skimming a trail
@@ -913,15 +984,42 @@ void main()
                 Digit(Math.Max(1, (int)MathF.Ceiling(_race.Countdown)), w * 0.5f - 30f, h * 0.5f - 40f, 80f, 1f, 0.3f, 0.9f, 0.95f);
             else if (_race.State == RaceState.Finished)
             {
-                // gold digits = you won the crystal majority; ruby = the rival did
+                // gold digits = you took the race; ruby = somebody else did
                 bool won = _race.Shared.WinnerPilot == _race.PilotId;
                 (float fr, float fg, float fb) = won ? (1f, 0.85f, 0.3f) : (1f, 0.2f, 0.3f);
-                float finalTime = won ? _race.Stats.Score : _rival.Stats.Score;
+                SkimRaceController winner = null;
+                foreach (var pilot in _race.Shared.Pilots)
+                    if (pilot.PilotId == _race.Shared.WinnerPilot) winner = pilot;
+                float finalTime = winner?.Stats.Score ?? 0f;
                 int centiseconds = (int)(finalTime * 100f) % 100;
-                float fs = 44f, fx = w * 0.5f - fs * 2.6f, fy = h * 0.5f;
+                float fs = 44f, fx = w * 0.5f - fs * 2.6f, fy = h * 0.62f;
                 Number((int)finalTime / 60, 2, fx, fy, fs, fr, fg, fb, 1f);
                 Number((int)finalTime % 60, 2, fx + fs * 2.0f, fy, fs, fr, fg, fb, 0.85f);
                 Number(centiseconds, 2, fx + fs * 4.0f, fy, fs, fr, fg, fb, 0.7f);
+
+                // scoreboard: the whole field ranked — domain marker, position, crystals
+                var standings = new List<SkimRaceController>(_race.Shared.Pilots);
+                standings.Sort((x, y) =>
+                {
+                    int byCrystals = y.Stats.CrystalsCollected.CompareTo(x.Stats.CrystalsCollected);
+                    return byCrystals != 0 ? byCrystals : y.TotalProgress.CompareTo(x.TotalProgress);
+                });
+                float rowY = h * 0.62f - 64f;
+                for (int rank = 0; rank < standings.Count; rank++, rowY -= 42f)
+                {
+                    var pilot = standings[rank];
+                    var dc = DomainColor(pilot.Stats.Domain);
+                    bool me = ReferenceEquals(pilot, _race);
+                    float rx0 = w * 0.5f - 120f;
+                    // domain marker: filled diamond (player's pulses brighter)
+                    float ma = me ? 1f : 0.7f;
+                    Segment(rx0, rowY + 12f, rx0 + 12f, rowY + 24f, dc.r, dc.g, dc.b, ma);
+                    Segment(rx0 + 12f, rowY + 24f, rx0 + 24f, rowY + 12f, dc.r, dc.g, dc.b, ma);
+                    Segment(rx0 + 24f, rowY + 12f, rx0 + 12f, rowY, dc.r, dc.g, dc.b, ma);
+                    Segment(rx0 + 12f, rowY, rx0, rowY + 12f, dc.r, dc.g, dc.b, ma);
+                    Number(rank + 1, 1, rx0 + 44f, rowY, 24f, 1f, 1f, 1f, me ? 1f : 0.7f);
+                    Number(pilot.Stats.CrystalsCollected, 2, rx0 + 100f, rowY, 24f, dc.r, dc.g, dc.b, 0.95f);
+                }
             }
 
             if (data.Count == 0) return;
@@ -947,10 +1045,20 @@ void main()
             fixed (byte* p = pixels)
                 _gl.ReadPixels(0, 0, (uint)w, (uint)h, PixelFormat.Rgba, PixelType.UnsignedByte, p);
             MiniPng.Write(_screenshotPath, pixels, w, h);
+            int totalTrail = 0;
+            var counts = new List<string>();
+            foreach (var pilot in _race.Shared.Pilots)
+            {
+                totalTrail += pilot.Trail.Count;
+                counts.Add($"{pilot.Stats.CrystalsCollected}");
+            }
             Console.WriteLine($"screenshot → {_screenshotPath} ({w}x{h}) frame {_frameIndex}, " +
-                $"crystals {_race.Stats.CrystalsCollected} vs rival {_rival.Stats.CrystalsCollected} (target {_race.WinTarget}), state {_race.State}, " +
-                $"energy {_race.Resources.Resources[0].CurrentAmount:F2}/{_rival.Resources.Resources[0].CurrentAmount:F2}, " +
-                $"skim {_race.IsSkimming}/{_rival.IsSkimming}, trail {_race.Trail.Count}/{_rival.Trail.Count}");
+                $"crystals [{string.Join(",", counts)}] (target {_race.WinTarget}), state {_race.State}, " +
+                $"P{_race.Shared.PositionOf(_race)} lap {_race.Lap}, " +
+                $"energy {_race.Resources.Resources[0].CurrentAmount:F2}, skim {_race.IsSkimming}, " +
+                $"levels C{_race.Resources.GetLevel(Element.Charge)}/M{_race.Resources.GetLevel(Element.Mass)}" +
+                $"/S{_race.Resources.GetLevel(Element.Space)}/T{_race.Resources.GetLevel(Element.Time)}, " +
+                $"trail {totalTrail}");
         }
     }
 }

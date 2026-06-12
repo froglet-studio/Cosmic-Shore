@@ -18,7 +18,7 @@ namespace CosmicShore.Client
         Context* _context;
         public bool Enabled { get; private set; }
 
-        uint _humSource, _boostSource;
+        uint _humSource, _boostSource, _skimSource, _driftSource;
         uint _chime, _rivalChime, _beep, _goBeep, _winJingle, _loseTone;
         readonly uint[] _oneShotSources = new uint[6];
         int _nextOneShot;
@@ -44,8 +44,12 @@ namespace CosmicShore.Client
 
                 _humSource = MakeLoopingSource(MakeBuffer(HumLoop()), 0.0f);
                 _boostSource = MakeLoopingSource(MakeBuffer(BoostLoop()), 0.0f);
+                _skimSource = MakeLoopingSource(MakeBuffer(SkimLoop()), 0.0f);
+                _driftSource = MakeLoopingSource(MakeBuffer(DriftLoop()), 0.0f);
                 _al.SourcePlay(_humSource);
                 _al.SourcePlay(_boostSource);
+                _al.SourcePlay(_skimSource);
+                _al.SourcePlay(_driftSource);
 
                 for (int i = 0; i < _oneShotSources.Length; i++)
                     _oneShotSources[i] = _al.GenSource();
@@ -156,6 +160,38 @@ namespace CosmicShore.Client
             return data;
         }
 
+        /// <summary>1s skim shimmer: glassy detuned fifths tremolo — the trail-charging glow.</summary>
+        static short[] SkimLoop()
+        {
+            var data = Alloc(1f);
+            for (int i = 0; i < data.Length; i++)
+            {
+                float t = i / (float)SampleRate;
+                float tremolo = 0.6f + 0.4f * MathF.Sin(MathF.Tau * 6f * t);
+                float v = MathF.Sin(MathF.Tau * 1318.5f * t) * 0.4f      // E6
+                        + MathF.Sin(MathF.Tau * 1975.5f * t) * 0.25f     // B6
+                        + MathF.Sin(MathF.Tau * 1320.8f * t) * 0.2f;     // detune beat
+                data[i] = Clip(v * tremolo * 0.35f);
+            }
+            return data;
+        }
+
+        /// <summary>0.5s drift rush: band-passed noise wash, seamless — tyres-on-starlight.</summary>
+        static short[] DriftLoop()
+        {
+            var data = Alloc(0.5f);
+            var rng = new Random(13);
+            float lp = 0f, bp = 0f;
+            for (int i = 0; i < data.Length; i++)
+            {
+                float white = (float)rng.NextDouble() * 2f - 1f;
+                lp += 0.12f * (white - lp);       // low-pass
+                bp += 0.3f * (lp - bp);           // soften further
+                data[i] = Clip((lp - bp) * 5.5f * 0.5f);
+            }
+            return data;
+        }
+
         // ── OpenAL plumbing ─────────────────────────────────────────
 
         uint MakeBuffer(short[] pcm)
@@ -201,6 +237,15 @@ namespace CosmicShore.Client
         public void CountdownBeep() => PlayOneShot(_beep, 0.7f);
         public void GoBeep() => PlayOneShot(_goBeep, 0.8f);
         public void FinishJingle(bool won) => PlayOneShot(won ? _winJingle : _loseTone, 0.9f);
+
+        /// <summary>Trail-skim shimmer scales with contact strength; drift rush with trigger pull.</summary>
+        public void SetSkimDriftState(float skim01, float drift01)
+        {
+            if (!Enabled) return;
+            _al.SetSourceProperty(_skimSource, SourceFloat.Gain, skim01 * 0.35f);
+            _al.SetSourceProperty(_driftSource, SourceFloat.Gain, drift01 * 0.4f);
+            _al.SetSourceProperty(_driftSource, SourceFloat.Pitch, 0.8f + drift01 * 0.5f);
+        }
 
         public void Dispose()
         {

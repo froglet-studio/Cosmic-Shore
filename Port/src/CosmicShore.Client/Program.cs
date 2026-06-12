@@ -5,10 +5,11 @@ namespace CosmicShore.Client
     /// <summary>
     /// SkimRace — Cosmic Shore port, playable slice.
     ///
-    ///   SkimRace [--seed N] [--crystals N] [--screenshot out.png [--frames N]]
+    ///   SkimRace [--seed N] [--crystals N] [--rivals N] [--screenshot out.png [--frames N]]
     ///
-    /// Controls: WASD / arrows steer · Space boost · R restart · Esc quit.
-    /// Rules (HexRace): collect the crystal target; your time is your score.
+    /// Controls: WASD / arrows steer · Space boost · Shift drift · R restart · Esc quit.
+    /// Rules: closed circuit, persistent skimmable trails, energy raises top speed;
+    /// elemental crystals respawn — first to the target wins, time is the score.
     /// </summary>
     static class Program
     {
@@ -16,6 +17,7 @@ namespace CosmicShore.Client
         {
             int seed = 42;
             int crystals = 30;
+            int rivals = 3;
             string screenshot = null;
             int screenshotFrame = 240;
 
@@ -25,17 +27,18 @@ namespace CosmicShore.Client
                 {
                     case "--seed" when i + 1 < args.Length: int.TryParse(args[++i], out seed); break;
                     case "--crystals" when i + 1 < args.Length: int.TryParse(args[++i], out crystals); break;
+                    case "--rivals" when i + 1 < args.Length: int.TryParse(args[++i], out rivals); break;
                     case "--screenshot" when i + 1 < args.Length: screenshot = args[++i]; break;
                     case "--frames" when i + 1 < args.Length: int.TryParse(args[++i], out screenshotFrame); break;
                 }
             }
 
-            Console.WriteLine($"SkimRace — seed {seed}, crystal target {crystals}");
-            Console.WriteLine("WASD/arrows steer · Space boost · R restart · Esc quit");
+            Console.WriteLine($"SkimRace — seed {seed}, crystal target {crystals}, rivals {rivals}");
+            Console.WriteLine("WASD/arrows steer · Space boost · Shift drift · R restart · Esc quit");
 
             try
             {
-                new RaceWindow(seed, crystals, screenshot, screenshotFrame).Run();
+                new RaceWindow(seed, crystals, rivals, screenshot, screenshotFrame).Run();
                 return 0;
             }
             catch (Exception e)

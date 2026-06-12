@@ -15,24 +15,32 @@ namespace CosmicShore.Client
         public bool Restart;
     }
 
-    /// <summary>One emitted trail segment — position, ribbon-span direction, emit time.</summary>
+    /// <summary>
+    /// One emitted trail segment. Mass-element levels bake into the point at emit time:
+    /// a high-Mass pilot lays physically wider, more skimmable trail — more mass.
+    /// </summary>
     public struct TrailPoint
     {
         public Vector3 Pos;
         public Vector3 Right;
         public float Time;
+        public float Width;          // render half-width
+        public float SkimRadius;     // how far this point's skim field reaches
+        public float SkimRadiusSqr;  // precomputed for the hot scan
     }
 
     /// <summary>
-    /// Deterministic CLOSED circuit (prompter directive, 2026-06-11): a seeded ring whose
-    /// radius and altitude undulate on integer harmonics, so the loop closes seamlessly
-    /// and laps never end. Crystals sit at evenly spaced stations around the loop
-    /// (HexRace-style: same seed → identical track on every machine).
+    /// Deterministic CLOSED circuit: a seeded ring whose radius and altitude undulate
+    /// on integer harmonics, so the loop closes seamlessly and laps never end.
+    /// Crystals sit at evenly spaced stations around the loop, each carrying an
+    /// ELEMENT (the buff/debuff fundamental): claiming one raises that elemental level
+    /// permanently for the race, and levels scale the flight model.
     /// </summary>
     public sealed class SkimTrack
     {
         public readonly List<Vector3> Crystals = new();
         public readonly List<float> CrystalAngles = new();
+        public readonly List<Element> StationElements = new();
         public readonly List<Vector3> Centerline = new(); // closed: last point == first
         public const float BaseRadius = 220f;
 
@@ -70,7 +78,19 @@ namespace CosmicShore.Client
                              + side * ((float)rng.NextDouble() * 6f - 3f)
                              + lift * ((float)rng.NextDouble() * 6f - 3f));
                 CrystalAngles.Add(angle);
+                StationElements.Add(RollElement(rng, i));
             }
+        }
+
+        /// <summary>Every 7th station is Omni; the rest weight toward Charge (energy game).</summary>
+        static Element RollElement(Random rng, int station)
+        {
+            if (station % 7 == 6) return Element.Omni;
+            double roll = rng.NextDouble();
+            if (roll < 0.40) return Element.Charge;
+            if (roll < 0.65) return Element.Mass;
+            if (roll < 0.85) return Element.Space;
+            return Element.Time;
         }
 
         public Vector3 PointAt(float t)
@@ -105,14 +125,15 @@ namespace CosmicShore.Client
     public enum RaceState { Countdown = 0, Racing = 1, Finished = 2 }
 
     /// <summary>
-    /// Contested-crystal ledger + winner flag shared between pilots. On the closed
-    /// circuit crystals RESPAWN a few seconds after a claim so later laps stay alive;
-    /// the claim itself is permanent score.
+    /// Contested-crystal ledger + winner flag + pilot roster shared by the whole field.
+    /// On the closed circuit crystals RESPAWN a few seconds after a claim so later laps
+    /// stay alive; the claim itself is permanent score.
     /// </summary>
     public sealed class SharedRaceState
     {
         public const float CrystalRespawnSeconds = 12f;
 
+        public readonly List<SkimRaceController> Pilots = new();
         readonly Dictionary<int, (int owner, float time)> _claims = new();
         public int WinnerPilot = -1;
 
@@ -127,6 +148,32 @@ namespace CosmicShore.Client
             return true;
         }
 
+        /// <summary>1-based race position: crystals first, distance travelled breaks ties.</summary>
+        public int PositionOf(SkimRaceController pilot)
+        {
+            int position = 1;
+            for (int i = 0; i < Pilots.Count; i++)
+            {
+                var other = Pilots[i];
+                if (ReferenceEquals(other, pilot)) continue;
+                if (other.Stats.CrystalsCollected > pilot.Stats.CrystalsCollected
+                    || (other.Stats.CrystalsCollected == pilot.Stats.CrystalsCollected
+                        && other.TotalProgress > pilot.TotalProgress))
+                    position++;
+            }
+            return position;
+        }
+
+        /// <summary>Best crystal count among everyone except this pilot (HUD + rubber-band).</summary>
+        public int BestOtherCrystals(SkimRaceController pilot)
+        {
+            int best = 0;
+            for (int i = 0; i < Pilots.Count; i++)
+                if (!ReferenceEquals(Pilots[i], pilot) && Pilots[i].Stats.CrystalsCollected > best)
+                    best = Pilots[i].Stats.CrystalsCollected;
+            return best;
+        }
+
         public void Reset()
         {
             _claims.Clear();
@@ -134,14 +181,26 @@ namespace CosmicShore.Client
         }
     }
 
+    /// <summary>Seeded AI temperament — every rival flies the same model, differently.</summary>
+    public struct PilotPersonality
+    {
+        public float TurnSkill;   // 0.86..1.0 — line precision
+        public float DriftIQ;     // 0..1 — how deliberately it uses the triggers
+        public float Aggression;  // 0..1 — how freely it spends energy on boost
+    }
+
     /// <summary>
-    /// The race brain — a genuine engine MonoBehaviour shared by the player and the AI
-    /// rival (identical flight model = fair race; the AI just synthesizes its input).
+    /// The race brain — a genuine engine MonoBehaviour shared by the player and every
+    /// AI rival (identical flight model = fair race; the AI just synthesizes input).
     /// Boost runs on the ported ResourceSystem, scoring on the ported RoundStats.
-    /// The Squirrel loop (prompter directive, 2026-06-11): pilots leave PERSISTENT
-    /// trails around the closed circuit; skimming any trail (the rival's, or your own
-    /// once it has aged) charges energy; energy raises TOP SPEED; the analog triggers
-    /// drift the vessel — the nose steers while the velocity holds its line.
+    /// The Squirrel loop: pilots leave PERSISTENT trails around the closed circuit;
+    /// skimming any trail (a rival's, or your own once aged) charges energy; energy
+    /// raises TOP SPEED; analog triggers drift — the nose steers while the velocity
+    /// holds its line. ELEMENTS deepen it: every crystal carries one, claims raise
+    /// that level for the race, and levels scale the flight model —
+    ///   Charge → skim charging rate      Mass  → wider, more skimmable trail
+    ///   Space  → sharper turning         Time  → boost burns slower
+    ///   Omni   → +1 to all four
     /// </summary>
     public sealed class SkimRaceController : MonoBehaviour
     {
@@ -153,8 +212,7 @@ namespace CosmicShore.Client
         public SharedRaceState Shared;
         public int PilotId;
         public bool IsAI;
-        public SkimRaceController Opponent;
-        public float SkillTurnScale = 1f; // AI flies slightly sloppier lines
+        public PilotPersonality Personality = new() { TurnSkill = 1f, DriftIQ = 0f, Aggression = 0.5f };
 
         public RaceState State = RaceState.Countdown;
         public float Countdown = 3f;
@@ -170,8 +228,15 @@ namespace CosmicShore.Client
         public Vector3 Course = Vector3.forward;
         /// <summary>Analog drift amount this frame (max of the two triggers).</summary>
         public float DriftAmount;
-        /// <summary>True while gaining trail-skim energy this frame (HUD glow).</summary>
+        /// <summary>True while gaining trail-skim energy this frame (HUD glow + audio).</summary>
         public bool IsSkimming;
+        /// <summary>Skim contact strength 0..1 this frame (audio shimmer gain).</summary>
+        public float SkimStrength;
+        /// <summary>Total loop radians travelled — laps and position tie-breaks.</summary>
+        public float TotalProgress;
+        public int Lap => 1 + (int)(TotalProgress / MathF.Tau);
+
+        float _lastLoopAngle;
 
         // VesselTransformer parity (the original's serialized defaults):
         // free rotation about the vessel's own axes, throttle from stick spread.
@@ -187,13 +252,20 @@ namespace CosmicShore.Client
 
         // The Squirrel loop tunables:
         const float TopSpeedEnergyGain = 0.6f;   // full energy bar = +60% top speed
-        const float SkimRadius = 7f;             // how close to a trail counts as skimming
-        const float SkimGainPerSecond = 0.4f;    // energy/s at zero distance, before drift bonus
+        const float SkimRadiusBase = 7f;         // base trail skim reach
+        const float SkimGainPerSecond = 0.4f;    // energy/s at zero distance, before bonuses
         const float DriftSkimBonus = 1f;         // full-drift skimming charges up to 2x
         const float OwnTrailMinAge = 3f;         // own trail counts once you lap back onto it
         const float TrailSpacingSqr = 0.8f;      // ~0.9u between emitted trail points
         const float DriftCourseAlignFast = 7f;   // course→nose align rate, triggers released
         const float DriftCourseAlignSlow = 0.55f;// align rate at full drift — the slide
+
+        // Element scaling (per integer level, ResourceSystem floor math, levels 0..15):
+        const float ChargePerLevel = 0.06f;      // skim charge rate
+        const float MassWidthPerLevel = 0.03f;   // trail render half-width
+        const float MassReachPerLevel = 0.25f;   // trail skim reach
+        const float SpacePerLevel = 0.04f;       // turn rate
+        const float TimePerLevel = 0.06f;        // boost drain reduction (floor 40%)
 
         void Update()
         {
@@ -217,30 +289,39 @@ namespace CosmicShore.Client
 
             if (IsAI) SynthesizeAIInput();
 
-            // ── analog drift (prompter directive): triggers decouple velocity from
-            // the nose — steering keeps turning the vessel, the course holds its line
-            // and only slowly re-aligns while a trigger is held.
+            int chargeLevel = Resources.GetLevel(Element.Charge);
+            int spaceLevel = Resources.GetLevel(Element.Space);
+            int timeLevel = Resources.GetLevel(Element.Time);
+
+            // ── analog drift: triggers decouple velocity from the nose — steering
+            // keeps turning the vessel, the course holds its line and only slowly
+            // re-aligns while a trigger is held.
             DriftAmount = Mathf.Clamp01(Mathf.Max(Status.LeftTriggerAnalog, Status.RightTriggerAnalog));
 
-            // ── trail skim → energy (prompter directive): riding near any persistent
-            // trail charges the bar. The rival's trail always counts; your own only
-            // after it ages (otherwise the ribbon you just emitted feeds you forever).
-            // Drifting along a trail charges faster — the Squirrel fantasy.
+            // ── trail skim → energy: riding near any persistent trail charges the bar.
+            // Rivals' trails always count; your own only after it ages (otherwise the
+            // ribbon you just emitted feeds you forever). Drifting along a trail
+            // charges faster, and Charge levels raise the rate further.
             float skimProximity = SkimProximity();
+            SkimStrength = skimProximity;
             IsSkimming = skimProximity > 0f;
             if (IsSkimming)
                 Resources.ChangeResourceAmount(0,
-                    SkimGainPerSecond * skimProximity * (1f + DriftSkimBonus * DriftAmount) * Time.deltaTime);
+                    SkimGainPerSecond * skimProximity
+                    * (1f + DriftSkimBonus * DriftAmount)
+                    * (1f + ChargePerLevel * chargeLevel) * Time.deltaTime);
 
             // Boost gates on the ported boost resource, then multiplies the throttle
-            // term exactly like VesselTransformer's boostAmount.
+            // term exactly like VesselTransformer's boostAmount. Time levels burn cooler.
             bool boosting = BoostHeld && Resources.Resources[0].CurrentAmount > 0.02f;
             if (boosting)
-                Resources.ChangeResourceAmount(0, -BoostDrainPerSecond * Time.deltaTime);
+                Resources.ChangeResourceAmount(0,
+                    -BoostDrainPerSecond * MathF.Max(0.4f, 1f - TimePerLevel * timeLevel) * Time.deltaTime);
             float boostAmount = boosting ? BoostMultiplier : 1f;
 
-            // ── Cosmic Shore flight model (VesselTransformer parity) ──
-            float turnScale = SkillTurnScale * Time.deltaTime;
+            // ── Cosmic Shore flight model (VesselTransformer parity); Space levels
+            // sharpen every axis ──
+            float turnScale = Personality.TurnSkill * (1f + SpacePerLevel * spaceLevel) * Time.deltaTime;
             var rotation = transform.rotation;
             rotation = Quaternion.AngleAxis(Status.YSum * PitchScaler * turnScale, transform.right) * rotation;
             rotation = Quaternion.AngleAxis(Status.XSum * YawScaler * turnScale, transform.up) * rotation;
@@ -251,14 +332,20 @@ namespace CosmicShore.Client
             float alignRate = Mathf.Lerp(DriftCourseAlignFast, DriftCourseAlignSlow, DriftAmount);
             Course = Vector3.Slerp(Course, transform.forward, 1f - MathF.Exp(-alignRate * Time.deltaTime)).normalized;
 
-            // energy raises top speed (prompter directive): the throttle term scales
-            // with the bar, so a charged pilot is simply faster.
+            // energy raises top speed: the throttle term scales with the bar, so a
+            // charged pilot is simply faster.
             float energy = Resources.Resources[0].CurrentAmount;
             Speed = Mathf.Lerp(
                 Speed,
                 Status.XDiff * ThrottleScaler * (1f + TopSpeedEnergyGain * energy) * boostAmount + MinimumSpeed,
                 LERP_AMOUNT * Time.deltaTime);
             transform.position += Course * (Speed * Time.deltaTime);
+
+            // lap / position progress (guard against the spawn-in jump)
+            float loopAngle = SkimTrack.AngleOf(transform.position);
+            float progressDelta = SkimTrack.ForwardDelta(_lastLoopAngle, loopAngle);
+            if (progressDelta < MathF.PI * 0.5f) TotalProgress += progressDelta;
+            _lastLoopAngle = loopAngle;
 
             EmitTrail();
 
@@ -271,8 +358,23 @@ namespace CosmicShore.Client
 
                 Stats.CrystalsCollected++;
                 Stats.OmniCrystalsCollected++;
-                Resources.ChangeResourceAmount(0, 0.15f);          // skim refund
-                Resources.IncrementLevel(Element.Charge);          // elemental progression
+
+                // ELEMENTS: the claim permanently raises the station's element for the
+                // race; the level scaling above turns that into the build you're driving.
+                var element = Track.StationElements[i];
+                if (element == Element.Omni)
+                {
+                    Resources.IncrementLevel(Element.Charge);
+                    Resources.IncrementLevel(Element.Mass);
+                    Resources.IncrementLevel(Element.Space);
+                    Resources.IncrementLevel(Element.Time);
+                    Resources.ChangeResourceAmount(0, 0.3f);
+                }
+                else
+                {
+                    Resources.IncrementLevel(element);
+                    Resources.ChangeResourceAmount(0, element == Element.Charge ? 0.3f : 0.15f);
+                }
                 OnCrystalCollected?.Invoke(i, Track.Crystals[i]);
 
                 if (Stats.CrystalsCollected >= WinTarget)
@@ -293,45 +395,55 @@ namespace CosmicShore.Client
             if (Trail.Count > 0 && (emit - Trail[^1].Pos).sqrMagnitude <= TrailSpacingSqr) return;
             var span = Vector3.Cross(transform.up, Course);
             span = span.sqrMagnitude > 0.001f ? span.normalized : transform.right;
-            Trail.Add(new TrailPoint { Pos = emit, Right = span, Time = Time.time });
+            // Mass levels bake into the emitted point: more mass = wider, longer-reach trail
+            int massLevel = Resources.GetLevel(Element.Mass);
+            float reach = SkimRadiusBase + MassReachPerLevel * massLevel;
+            Trail.Add(new TrailPoint
+            {
+                Pos = emit,
+                Right = span,
+                Time = Time.time,
+                Width = 0.26f + MassWidthPerLevel * massLevel,
+                SkimRadius = reach,
+                SkimRadiusSqr = reach * reach,
+            });
         }
 
         /// <summary>
-        /// 0 when no trail is within SkimRadius; otherwise 1 at zero distance falling
-        /// linearly to 0 at the radius. Scans the rival's whole trail and own aged trail.
+        /// Strongest skim contact this frame: 0 when no trail is in reach, otherwise
+        /// 1 at zero distance falling linearly to 0 at that point's reach. Scans every
+        /// rival's whole trail and own aged trail.
         /// </summary>
         float SkimProximity()
         {
-            float bestSqr = SkimRadius * SkimRadius;
-            bool found = false;
+            float best = 0f;
             var p = transform.position;
 
-            if (Opponent != null)
+            for (int other = 0; other < Shared.Pilots.Count; other++)
             {
-                var theirs = Opponent.Trail;
-                for (int i = 0; i < theirs.Count; i++)
+                var pilot = Shared.Pilots[other];
+                bool own = ReferenceEquals(pilot, this);
+                float ownCutoff = Time.time - OwnTrailMinAge;
+                var trail = pilot.Trail;
+                for (int i = 0; i < trail.Count; i++)
                 {
-                    float d = (theirs[i].Pos - p).sqrMagnitude;
-                    if (d < bestSqr) { bestSqr = d; found = true; }
+                    if (own && trail[i].Time > ownCutoff) break; // list is time-ordered
+                    float dSqr = (trail[i].Pos - p).sqrMagnitude;
+                    if (dSqr >= trail[i].SkimRadiusSqr) continue;
+                    float strength = 1f - MathF.Sqrt(dSqr) / trail[i].SkimRadius;
+                    if (strength > best) best = strength;
                 }
             }
 
-            float ownCutoff = Time.time - OwnTrailMinAge;
-            for (int i = 0; i < Trail.Count; i++)
-            {
-                if (Trail[i].Time > ownCutoff) break; // list is time-ordered
-                float d = (Trail[i].Pos - p).sqrMagnitude;
-                if (d < bestSqr) { bestSqr = d; found = true; }
-            }
-
-            return found ? 1f - MathF.Sqrt(bestSqr) / SkimRadius : 0f;
+            return best;
         }
 
-        /// <summary>Seek the next unclaimed crystal around the loop; boost when lined up.</summary>
+        /// <summary>Seek the next unclaimed crystal around the loop; drift to charge; boost when lined up.</summary>
         void SynthesizeAIInput()
         {
             Status.XSum = 0f; Status.YSum = 0f; Status.YDiff = 0f;
             Status.XDiff = 0.55f;
+            Status.LeftTriggerAnalog = 0f;
             BoostHeld = false;
 
             // next two unclaimed stations by forward loop distance (the circuit has
@@ -347,17 +459,34 @@ namespace CosmicShore.Client
                 if (delta < bestDelta) { secondDelta = bestDelta; second = first; bestDelta = delta; first = Track.Crystals[i]; }
                 else if (delta < secondDelta) { secondDelta = delta; second = Track.Crystals[i]; }
             }
-            // Overtake line: if the opponent will beat me to the nearest crystal, concede
+            // Overtake line: if someone else will beat me to the nearest crystal, concede
             // it and set up on the following one instead of trailing forever.
             Vector3? target = first;
-            if (first.HasValue && second.HasValue && Opponent != null)
+            if (first.HasValue && second.HasValue)
             {
                 float mine = (first.Value - transform.position).magnitude;
-                float theirs = (first.Value - Opponent.transform.position).magnitude;
-                if (theirs < mine * 0.8f) target = second;
+                float bestRival = float.MaxValue;
+                for (int i = 0; i < Shared.Pilots.Count; i++)
+                {
+                    if (ReferenceEquals(Shared.Pilots[i], this)) continue;
+                    float d = (first.Value - Shared.Pilots[i].transform.position).magnitude;
+                    if (d < bestRival) bestRival = d;
+                }
+                if (bestRival < mine * 0.8f) target = second;
             }
             if (!target.HasValue) return;
             ApplySeek(target.Value);
+
+            // Drift play (DriftIQ): low on energy and touching a ribbon → lean into the
+            // trigger and charge at the drift bonus; otherwise drift through hard turns.
+            float energy = Resources.Resources[0].CurrentAmount;
+            if (Personality.DriftIQ > 0f)
+            {
+                if (energy < 0.45f && IsSkimming)
+                    Status.LeftTriggerAnalog = 0.65f * Personality.DriftIQ;
+                else if (Mathf.Abs(Status.XSum) > 0.6f && Speed > 45f)
+                    Status.LeftTriggerAnalog = 0.5f * Personality.DriftIQ;
+            }
         }
 
         void ApplySeek(Vector3 target)
@@ -373,9 +502,10 @@ namespace CosmicShore.Client
             // Rubber-band both directions: hold boost for the opening seconds (give the
             // player the early line), spend freely when trailing, coast when leading —
             // otherwise the leader sweeps every contested crystal on the shared line.
-            int lead = Opponent != null ? Stats.CrystalsCollected - Opponent.Stats.CrystalsCollected : 0;
+            int lead = Stats.CrystalsCollected - Shared.BestOtherCrystals(this);
             Status.XDiff = lead >= 3 ? 0.4f : lead <= -2 ? 1f : 0.62f;
             float reserve = lead >= 3 ? 0.95f : lead <= -2 ? 0.12f : 0.4f;
+            reserve *= 1.2f - 0.6f * Personality.Aggression; // hotheads spend sooner
             BoostHeld = linedUp && ElapsedTime > 5f && Resources.Resources[0].CurrentAmount > reserve;
         }
 
@@ -383,17 +513,20 @@ namespace CosmicShore.Client
         {
             ((IRoundStats)Stats).Cleanup();
             Resources.ResetResource(0);
+            Resources.InitializeElementLevels(new ResourceCollection(0f, 0f, 0f, 0f));
             Status?.ResetForReplay();
             BoostHeld = false;
             Trail.Clear();          // active force: a fresh race wipes the prismscape
             DriftAmount = 0f;
             IsSkimming = false;
+            TotalProgress = 0f;
             // grid up a little way before the first station, facing along the loop
             float startAngle = -30f / SkimTrack.BaseRadius;
             var tangent = Track.TangentAt(startAngle);
             transform.position = Track.PointAt(startAngle) + Track.SideAt(startAngle) * lateralOffset;
             transform.rotation = Quaternion.LookRotation(tangent, Vector3.up);
             Course = tangent;
+            _lastLoopAngle = SkimTrack.AngleOf(transform.position);
             BankAngle = 0f;
             Speed = 0f;
             ElapsedTime = 0f;
@@ -402,11 +535,14 @@ namespace CosmicShore.Client
         }
     }
 
-    /// <summary>Builds the engine-side race: shared state, player vessel, AI rival.</summary>
+    /// <summary>Builds the engine-side race: shared state, player vessel, a field of AI rivals.</summary>
     public static class SkimRaceFactory
     {
-        public static (GameLoop loop, SkimRaceController player, SkimRaceController rival) Create(
-            int seed, int trackCrystals, SkimInputStatus playerStatus)
+        // grid slots fan outward from the racing line
+        static readonly float[] GridOffsets = { -3.5f, 3.5f, -7.5f, 7.5f, -11.5f, 11.5f, 0f, -15f };
+
+        public static (GameLoop loop, SkimRaceController player, List<SkimRaceController> rivals) Create(
+            int seed, int trackCrystals, SkimInputStatus playerStatus, int rivalCount)
         {
             var loop = new GameLoop("SkimRace");
             int stations = Math.Clamp(trackCrystals, 8, 60);
@@ -435,6 +571,7 @@ namespace CosmicShore.Client
                 pilot.IsAI = isAI;
                 pilot.WinTarget = winTarget;
                 vessel.SetActive(true);
+                shared.Pilots.Add(pilot);
                 return pilot;
             }
 
@@ -443,21 +580,35 @@ namespace CosmicShore.Client
             // Boost rides the authentic event channel: Button1 (gamepad A / keyboard).
             playerStatus.OnButtonPressed.OnRaised += e => { if (e == InputEvents.Button1Action) player.BoostHeld = true; };
             playerStatus.OnButtonReleased.OnRaised += e => { if (e == InputEvents.Button1Action) player.BoostHeld = false; };
-            var rival = Build("Rival", Domains.Ruby, 1, isAI: true);
-            rival.Status = new SkimInputStatus();
-            rival.SkillTurnScale = 0.92f; // beatable, but honest lines
-            rival.Opponent = player;
-            player.Opponent = rival;
 
-            ResetRace(shared, player, rival);
-            return (loop, player, rival);
+            // The field: Ruby/Gold/Blue rivals with seeded temperaments — same flight
+            // model, different lines. Blue is the neutral domain; it joins last.
+            var rivalDomains = new[] { Domains.Ruby, Domains.Gold, Domains.Blue };
+            var rivals = new List<SkimRaceController>();
+            var personalityRng = new Random(seed * 31 + 7);
+            rivalCount = Math.Clamp(rivalCount, 1, 7);
+            for (int i = 0; i < rivalCount; i++)
+            {
+                var rival = Build($"Rival {i + 1}", rivalDomains[i % rivalDomains.Length], i + 1, isAI: true);
+                rival.Status = new SkimInputStatus();
+                rival.Personality = new PilotPersonality
+                {
+                    TurnSkill = 0.88f + (float)personalityRng.NextDouble() * 0.12f,
+                    DriftIQ = 0.3f + (float)personalityRng.NextDouble() * 0.7f,
+                    Aggression = (float)personalityRng.NextDouble(),
+                };
+                rivals.Add(rival);
+            }
+
+            ResetRace(shared);
+            return (loop, player, rivals);
         }
 
-        public static void ResetRace(SharedRaceState shared, SkimRaceController player, SkimRaceController rival)
+        public static void ResetRace(SharedRaceState shared)
         {
             shared.Reset();
-            player.ResetPilot(-3.5f);
-            rival.ResetPilot(3.5f);
+            for (int i = 0; i < shared.Pilots.Count; i++)
+                shared.Pilots[i].ResetPilot(GridOffsets[i % GridOffsets.Length]);
         }
     }
 }
