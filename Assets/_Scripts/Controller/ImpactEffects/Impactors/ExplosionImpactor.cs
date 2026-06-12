@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
+using Unity.Profiling;
 using UnityEngine;
 using CosmicShore.Data;
 namespace CosmicShore.Gameplay
@@ -23,13 +24,26 @@ namespace CosmicShore.Gameplay
         private static int _trailBlockLayer = -1;
         private HashSet<int> _batchHitTracker;
 
+        public bool IsBatchProcessing => _useBatchProcessing;
+
+        /// <summary>
+        /// When true, BeginBatchProcessing() is a no-op — forces Physics OnTriggerEnter
+        /// for all collisions. Used by AOEBenchmarkOverlay for A/B comparison.
+        /// </summary>
+        public static bool ForceLegacyPhysics { get; set; }
+
+        // --- ProfilerMarkers ---
+        private static readonly ProfilerMarker s_onTriggerEnter = new("AOE.OnTriggerEnter");
+        private static readonly ProfilerMarker s_onTriggerSkipped = new("AOE.OnTriggerEnter.Skipped");
+        private static readonly ProfilerMarker s_processBatch = new("AOE.ProcessBatchFrame");
+
         void Awake()
         {
             explosion ??= GetComponent<AOEExplosion>();
             if (_trailBlockLayer < 0)
                 _trailBlockLayer = LayerMask.NameToLayer("TrailBlocks");
         }
-        
+
         /// <summary>
         /// Begins batch AOE processing for this explosion's lifetime.
         /// Call once when the explosion starts. While active, prism collisions
@@ -37,8 +51,16 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void BeginBatchProcessing()
         {
+            if (ForceLegacyPhysics) return;
+
             var registry = PrismSpatialIndex.Instance;
-            if (registry == null || !registry.IsAvailable) return;
+            if (registry == null || !registry.IsAvailable)
+            {
+#if DEVELOPMENT_BUILD || UNITY_EDITOR
+                Debug.LogWarning("[ExplosionImpactor] PrismSpatialIndex unavailable — falling back to Physics triggers");
+#endif
+                return;
+            }
             _useBatchProcessing = true;
             // Reuse cached HashSet to avoid GC allocation per explosion
             if (_batchHitTracker == null)
@@ -55,17 +77,20 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool ProcessBatchFrame(Vector3 center, float radius, float speed, float inertia)
         {
-            if (!_useBatchProcessing) return true;
-            var registry = PrismSpatialIndex.Instance;
-            if (registry == null) return true;
+            using (s_processBatch.Auto())
+            {
+                if (!_useBatchProcessing) return true;
+                var registry = PrismSpatialIndex.Instance;
+                if (registry == null) return true;
 
-            return registry.ProcessExplosionFrame(
-                center, radius, speed, inertia,
-                explosion.Domain,
-                affectSelf, destructive, devastating, shielding,
-                explosion.AnonymousExplosion,
-                explosion.Vessel,
-                _batchHitTracker);
+                return registry.ProcessExplosionFrame(
+                    center, radius, speed, inertia,
+                    explosion.Domain,
+                    affectSelf, destructive, devastating, shielding,
+                    explosion.AnonymousExplosion,
+                    explosion.Vessel,
+                    _batchHitTracker);
+            }
         }
 
         /// <summary>
@@ -79,11 +104,18 @@ namespace CosmicShore.Gameplay
 
         protected override void OnTriggerEnter(Collider other)
         {
-            // Skip prisms entirely — they're handled by batch AOE processing
-            if (_useBatchProcessing && other.gameObject.layer == _trailBlockLayer)
-                return;
+            using (s_onTriggerEnter.Auto())
+            {
+                // Skip prisms entirely — they're handled by batch AOE processing
+                if (_useBatchProcessing && other.gameObject.layer == _trailBlockLayer)
+                {
+                    s_onTriggerSkipped.Begin();
+                    s_onTriggerSkipped.End();
+                    return;
+                }
 
-            base.OnTriggerEnter(other);
+                base.OnTriggerEnter(other);
+            }
         }
 
         protected override void AcceptImpactee(IImpactor impactee)
