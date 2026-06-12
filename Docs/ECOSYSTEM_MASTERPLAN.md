@@ -345,13 +345,19 @@ code was deliberately **not** adopted.
    the brittlestar school then starve back (Lotka–Volterra oscillation visible).
 
 **Phase B — collider budget completion (perf).**
-4. **`ColliderBudget` per cell** (CellConfigDataSO, target ≤ ~1,500 — §4): the probe warns when
-   `colliders=near/live` approaches it; LOD radius auto-tightens or flags for retune. This turns
-   the budget from a convention into an observable contract.
+4. ✅ **`ColliderBudget` per cell** *(shipped — in-editor verification owed)*:
+   `CellConfigDataSO.ColliderBudget` (default 1500, 0 = unbudgeted); `PrismColliderLodManager`
+   tightens its radius (AIMD: ×0.85 over budget, +8m/sweep when < 80%) between
+   `minRadiusMeters` (60) and the configured maximum, and warns (throttled) when pinned at the
+   floor and still over — retune the biome, never cull mass. Probe line shows
+   `budget= lodR=`. Verify: park in the densest canopy and watch `colliders=` converge under
+   budget while near-vessel collision stays correct.
 5. **Bucket-accelerated AOE** only if profiling demands it (SPATIAL_INDEX Phase 4 — profiling
    first, never assume).
-6. **`UpdateDomain` known gap**, its own tested change: wire steals into the AOE cold data so a
-   stolen prism's friend/foe in batch explosions matches its live domain.
+6. ✅ **`UpdateDomain` wired** *(shipped — gameplay verification owed)*:
+   `Prism.HandleTeamChangedForCell` pushes steals into the AOE cold data, so a stolen prism's
+   friend/foe in batch explosions matches its live domain. Verify in-editor: steal a prism, then
+   AOE it with the old team — it must take damage (it used to shield).
 
 **Phase C — genome & heredity (P3 — the artificial-life centerpiece, §3).**
 7. **Trait genome:** a small heritable struct on creature fauna (multipliers over the species

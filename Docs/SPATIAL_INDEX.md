@@ -145,7 +145,8 @@ blocked for up to 5s). `AssembledFlora` orders its random-skip *before*
 | `Unregister(index)` | `Prism` OnDisable/OnDestroy/ResetState **only** | Leave the index; releases the cell binding |
 | `MarkDestroyed(index)` | `Prism.SetupDestruction` **only** | AOE skips; occupancy frees; leaves the cell grids |
 | `MarkRestored(index)` | `Prism.Restore` **only** | Re-enter AOE + occupancy + cell grids |
-| `ForwardDomainChangeToCell(index)` | `Prism.HandleTeamChangedForCell` **only** | Re-file a stolen prism in its cell's per-domain grids (does NOT touch AOE cold data) |
+| `ForwardDomainChangeToCell(index)` | `Prism.HandleTeamChangedForCell` **only** | Re-file a stolen prism in its cell's per-domain grids |
+| `UpdateDomain(index, domain)` | `Prism.HandleTeamChangedForCell` **only** | Keep the AOE cold data's friend/foe in step with steals |
 | `UpdatePosition(index, pos)` | `Prism.NotifyPositionChanged` (movers) | Keep stored position honest |
 | `UpdateShieldState(index, ...)` | `PrismStateManager` **only** | Shield flags for AOE |
 | `ProcessExplosionFrame(...)` | `ExplosionImpactor` **only** | Batch AOE damage (Burst) |
@@ -213,11 +214,14 @@ registry for its own lattice, `TryReserve` for the world.
 
 ## Known gaps (intentional, tracked)
 
-- `UpdateDomain` / `UpdateVolume` have **no callers**: a stolen prism keeps its
-  registration-time domain in the AOE cold data, and a grown prism keeps its
-  spawn-time volume. Pre-existing behavior, preserved through the rename.
-  Wiring `PrismTeamManager` → `UpdateDomain` changes AOE friend/foe results and
-  must be its own tested change.
+- `UpdateVolume` has **no callers**: a grown prism keeps its spawn-time volume
+  in the AOE cold data. Harmless today — `ProcessExplosionFrame` reads only the
+  Domain from the cold data; live volume reads go through `Prism.CurrentVolume`
+  (the cell volume sums). Wire it only if a future AOE consumer needs volume.
+  (`UpdateDomain` is wired since the Phase B pass: `Prism.HandleTeamChangedForCell`
+  pushes steals into the cold data, so batch AOE friend/foe matches the live
+  domain — verify in-editor that stealing a prism flips whether an explosion of
+  the old team shields or damages it.)
 - Occupancy treats prisms as points with a clearance radius, not oriented
   boxes. A fat trail block whose *center* is outside `clearRadius` can still
   visually intersect a grown gyroid block — same tolerance the game already

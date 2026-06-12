@@ -43,9 +43,16 @@ namespace CosmicShore.Gameplay
         [Tooltip("Master switch. OFF restores every culled collider and goes idle — the in-editor kill switch if any collider consumer was missed.")]
         [SerializeField] bool lodEnabled = true;
 
-        [Tooltip("Prism colliders stay enabled within this distance of any focus (vessel / projectile). " +
-                 "Must comfortably exceed focus speed × tick so fast vessels never outrun their collider bubble.")]
+        [Tooltip("MAXIMUM radius: prism colliders stay enabled within this distance of any focus " +
+                 "(vessel / projectile) when the collider budget allows. Must comfortably exceed " +
+                 "focus speed × tick so fast vessels never outrun their collider bubble.")]
         [Min(50f)] [SerializeField] float lodRadiusMeters = 200f;
+
+        [Tooltip("MINIMUM radius the budget adaptation may tighten to. Below this, near-vessel " +
+                 "collisions (hull/skimmer/triggers) would start to misbehave — if the budget is " +
+                 "still exceeded here, the manager warns instead of tightening further: the biome " +
+                 "is too dense and needs a retune. Never enforced by culling prisms.")]
+        [Min(30f)] [SerializeField] float minRadiusMeters = 60f;
 
         [Tooltip("Seconds between LOD sweeps. At 0.25s a 100 u/s vessel moves 25m per sweep — well inside the radius margin.")]
         [Min(0.05f)] [SerializeField] float tickIntervalSeconds = 0.25f;
@@ -59,6 +66,12 @@ namespace CosmicShore.Gameplay
         /// <summary>Live prisms seen in the last sweep (telemetry — EcosystemPerfProbe).</summary>
         public static int LastLiveCount { get; private set; }
 
+        /// <summary>The collider budget in force last sweep, 0 = unbudgeted (telemetry).</summary>
+        public static int LastBudget { get; private set; }
+
+        /// <summary>The (possibly budget-tightened) radius used last sweep (telemetry).</summary>
+        public static float LastRadius { get; private set; }
+
         public static void RegisterFocus(Transform focus)
         {
             if (focus && !s_foci.Contains(focus)) s_foci.Add(focus);
@@ -71,6 +84,8 @@ namespace CosmicShore.Gameplay
 
         float _nextTickAt;
         bool _culledAnything;
+        float _currentRadius = -1f; // initialized to lodRadiusMeters on first sweep
+        float _nextBudgetWarnAt;
         readonly List<Prism> _liveScratch = new(4096);
         readonly List<Prism> _queryScratch = new(1024);
         readonly HashSet<Prism> _nearSet = new();
@@ -117,11 +132,13 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            if (_currentRadius < 0f) _currentRadius = lodRadiusMeters;
+
             // Union of per-focus neighborhoods → the prisms that keep colliders.
             _nearSet.Clear();
             for (int f = 0; f < s_foci.Count; f++)
             {
-                int hits = index.QuerySphere(s_foci[f].position, lodRadiusMeters, _queryScratch);
+                int hits = index.QuerySphere(s_foci[f].position, _currentRadius, _queryScratch);
                 for (int i = 0; i < hits; i++)
                     _nearSet.Add(_queryScratch[i]);
             }
@@ -136,6 +153,61 @@ namespace CosmicShore.Gameplay
             _culledAnything = true;
             LastNearCount = _nearSet.Count;
             LastLiveCount = live;
+
+            AdaptRadiusToBudget(_nearSet.Count);
+        }
+
+        /// <summary>
+        /// The §4 performance contract, mechanized: keep ACTIVE colliders under the
+        /// strictest <see cref="CellConfigDataSO.ColliderBudget"/> among the active
+        /// cells by tightening the LOD radius (multiplicative decrease), and relax
+        /// back toward the configured maximum when comfortably under (additive
+        /// increase — classic AIMD, no oscillation). Enforcement is collider-only —
+        /// the budget never destroys mass. When pinned at the minimum radius and
+        /// still over budget, warn (throttled): the biome is too dense and needs a
+        /// flora/threshold retune, which is a design decision, not ours to force.
+        /// </summary>
+        void AdaptRadiusToBudget(int activeColliders)
+        {
+            int budget = 0;
+            var cells = Cell.ActiveCellsSnapshot;
+            for (int i = 0; i < cells.Count; i++)
+            {
+                var cell = cells[i];
+                if (!cell || !cell.Config) continue;
+                int b = cell.Config.ColliderBudget;
+                if (b > 0 && (budget == 0 || b < budget)) budget = b;
+            }
+
+            LastBudget = budget;
+            LastRadius = _currentRadius;
+
+            if (budget <= 0)
+            {
+                _currentRadius = lodRadiusMeters; // unbudgeted: full configured radius
+                return;
+            }
+
+            if (activeColliders > budget)
+            {
+                if (_currentRadius > minRadiusMeters)
+                {
+                    _currentRadius = Mathf.Max(minRadiusMeters, _currentRadius * 0.85f);
+                }
+                else if (Time.time >= _nextBudgetWarnAt)
+                {
+                    _nextBudgetWarnAt = Time.time + 10f;
+                    CSDebug.LogWarning(
+                        $"[PrismColliderLod] {activeColliders} active colliders exceed the budget " +
+                        $"({budget}) at the minimum radius ({minRadiusMeters}m) — the canopy around " +
+                        "the foci is too dense. Retune the biome (flora caps / phase thresholds), " +
+                        "do NOT raise the budget blindly. Mass is never culled for this.");
+                }
+            }
+            else if (activeColliders < budget * 0.8f && _currentRadius < lodRadiusMeters)
+            {
+                _currentRadius = Mathf.Min(lodRadiusMeters, _currentRadius + 8f);
+            }
         }
 
         void OnDisable()

@@ -33,8 +33,18 @@ namespace CosmicShore.Utility
         [Min(0f)] public float SenseRadiusOverride = 0f;
 
         [Header("Phase Thresholds")]
-        [Tooltip("Per-biome up/down prism-count thresholds that drive phase transitions. "
+        [Tooltip("Per-biome up/down thresholds that drive phase transitions — the VOLUME fields are "
+               + "the spine, the count fields the Frenzy perf backstop. "
                + "The gap between Up and Down for each phase is the hysteresis band.")]
         public CellPhaseThresholds PhaseThresholds = CellPhaseThresholds.Default;
+
+        [Header("Performance Contract")]
+        [Tooltip("Ceiling on ACTIVE prism colliders while a focus (vessel/projectile) flies this "
+               + "cell (Docs/ECOSYSTEM_MASTERPLAN.md §4, target ≤ ~1500). PrismColliderLodManager "
+               + "tightens its LOD radius (AIMD) to stay under it, and warns when pinned at the "
+               + "minimum radius and still over — that means the canopy is too dense and the biome "
+               + "needs a retune. Enforcement is collider-only, never a prism cull (colliders are "
+               + "perf bookkeeping; mass is conserved). 0 = unbudgeted (radius stays at maximum).")]
+        [Min(0)] public int ColliderBudget = 1500;
     }
 }

@@ -81,9 +81,12 @@ namespace CosmicShore.Gameplay
             // live prisms — the §4 budget made observable. 0/0 = LOD idle (no foci).
             int near = PrismColliderLodManager.LastNearCount;
             int live = PrismColliderLodManager.LastLiveCount;
+            int budget = PrismColliderLodManager.LastBudget;
+            float lodR = PrismColliderLodManager.LastRadius;
 
-            _lastLine = $"[ECOSIM] prisms={prisms} volume={volume:F0} colliders={near}/{live} " +
-                        $"fauna={fauna} phase={phases} fps={fps:F1}" +
+            _lastLine = $"[ECOSIM] prisms={prisms} volume={volume:F0} colliders={near}/{live}" +
+                        (budget > 0 ? $" budget={budget} lodR={lodR:F0}" : "") +
+                        $" fauna={fauna} phase={phases} fps={fps:F1}" +
                         (cells > 1 ? $"  (cells={cells})" : "");
             Debug.Log(_lastLine);
         }

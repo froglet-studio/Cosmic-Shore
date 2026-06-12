@@ -134,10 +134,17 @@ namespace CosmicShore.Gameplay
         {
             // The spatial index owns the cell density-grid binding (Phase 3 — see
             // Docs/SPATIAL_INDEX.md): forward the steal / ChangeTeam so the bound
-            // cell re-files this prism under the new domain. No-op while
-            // unregistered (spawn window) or unbound (fauna body, open space).
-            if (SpatialIndexId >= 0)
-                PrismSpatialIndex.Instance?.ForwardDomainChangeToCell(SpatialIndexId);
+            // cell re-files this prism under the new domain, AND update the AOE cold
+            // data so batch explosions read the prism's LIVE friend/foe — a stolen
+            // prism now shields with (and takes damage as) its new team instead of
+            // its registration-time one (closes the UpdateDomain known gap). No-op
+            // while unregistered (spawn window); the cell forward additionally
+            // no-ops when unbound (fauna body, open space).
+            if (SpatialIndexId < 0) return;
+            var index = PrismSpatialIndex.Instance;
+            if (index == null) return;
+            index.UpdateDomain(SpatialIndexId, (int)newDomain);
+            index.ForwardDomainChangeToCell(SpatialIndexId);
         }
 
         /// <summary>

@@ -239,6 +239,29 @@ namespace CosmicShore.Tests
                 "A site beyond clearRadius must remain claimable.");
         }
 
+        // ---- AOE cold data (UpdateDomain — steals must flip friend/foe) ------
+
+        [Test]
+        public void UpdateDomain_RewritesAOEColdData()
+        {
+            var prism = SpawnRegisteredPrism(Vector3.zero);
+
+            _index.UpdateDomain(prism.SpatialIndexId, (int)CosmicShore.Data.Domains.Gold);
+
+            // _damage is the index's private cold array — reflect the slot to assert
+            // the steal landed where ProcessExplosionFrame reads friend/foe from.
+            var fi = typeof(PrismSpatialIndex).GetField("_damage", BindingFlags.NonPublic | BindingFlags.Instance);
+            var damage = (Unity.Collections.NativeArray<PrismDamageData>)fi.GetValue(_index);
+            Assert.AreEqual((int)CosmicShore.Data.Domains.Gold, damage[prism.SpatialIndexId].Domain);
+        }
+
+        [Test]
+        public void UpdateDomain_InvalidIndex_DoesNotThrow()
+        {
+            Assert.DoesNotThrow(() => _index.UpdateDomain(-1, 2));
+            Assert.DoesNotThrow(() => _index.UpdateDomain(9999, 2));
+        }
+
         // ---- Cell density view (Phase 3) ------------------------------------
         // Binding against a REAL cell needs Cell's runtime grid builder + config
         // and is play-mode territory; what edit mode can lock down is that the
