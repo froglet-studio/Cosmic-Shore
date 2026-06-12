@@ -321,20 +321,48 @@ deltas on top of the adopted foundation** — not to rebuild anything:
   set" and `Docs/ECOSYSTEM.md` ▸ "Rejected cheat"). Idle accumulation is managed by the
   universal systems only: fauna cleanup (foragers) or pausing/throttling the spawner.
 
-**To resume:** invoke the `/ecology` skill, read this §10, then: (a) in-editor verification of
-the wither + crystal-drop path (below) and authoring crystals on the fauna prefabs (item 1
-follow-up); (b) the collider-budget telemetry overlay; (c) item **3** (volume spine) as the
-staged, retuning-heavy finish. This plan and the invariant re-assertions now live on the merge
-line (`claude/dreamy-keller-lenwio`, June 2026 — adopted from `claude/epic-darwin-g0Ehi`, which
-remains the drift-sanity reference). Note for adopters: epic-darwin predates `bleeding-edge`'s
-trail-cap revert (`44a1f264`) and universality lock (`be4afb00`) — its residual
-`Trail.RemoveOldest` / `maxTrailBlocks` / menu-cap code was deliberately **not** adopted.
+**Merged to `bleeding-edge` (June 12, 2026)** after the prompter's in-editor review. All three
+locked invariant re-assertions, the spatial-index Phases 2–3, proximity collider-LOD, and the
+budget telemetry now ride the mainline. Historical note for adopters: `claude/epic-darwin-g0Ehi`
+remains the drift-sanity reference but predates the trail-cap revert (`44a1f264`) and the
+universality lock (`be4afb00`) — its residual `Trail.RemoveOldest` / `maxTrailBlocks` / menu-cap
+code was deliberately **not** adopted.
 
-**In-editor verification still owed (the wither/crystal code has not run in Unity):** compile,
-then play a cell with brittlestar/shark fauna and confirm, for BOTH starvation and predation:
-the creature withers from its extremities inward (arms/fins evaporate before the core), never
-blinks out; a collectible elemental crystal is left behind and buffs the collector's element on
-pickup. Also verify the authored-crystal path: each fauna prefab carries one **active** elemental
-crystal child with its `cellData` wired (`Crystal.ActivateCrystal` reads `cellData.Cell` to
-reparent — a missing wire is an NRE on first death), then run **Tools ▸ Cosmic Shore ▸ Validate
-Lifeform Crystals** until clean. Do not merge to `bleeding-edge` before this passes.
+### What's next (the post-merge plan — work top to bottom)
+
+**Phase A — land & tune (in-editor, near-term).**
+1. **Crystal authoring sweep:** one **active** elemental crystal child on every fauna prefab,
+   `cellData` wired (`ActivateCrystal` reads `cellData.Cell`; a missing wire is an NRE on first
+   death), check the carried crystal's collider/component start state, then
+   **Tools ▸ Cosmic Shore ▸ Validate Lifeform Crystals** until clean — makes
+   `EnsureElementalCrystal` the no-op fast path (budget-neutral).
+2. **Per-biome retune with the probe** (`[ECOSIM] prisms= volume= colliders=near/live fauna=
+   phase= fps=`): volume thresholds per CellConfig (author `*Volume` fields to override the ×16
+   derivation), LOD radius/tick if any collider consumer pops, flora growth/planting knobs if
+   structures still read small, shark/brittlestar starvation balance (45s/30s first guess).
+3. **Confirm the food-web loop end-to-end:** starvation AND predation wither extremities-first,
+   never blink out, drop a collectible crystal that buffs the collector's element; sharks thin
+   the brittlestar school then starve back (Lotka–Volterra oscillation visible).
+
+**Phase B — collider budget completion (perf).**
+4. **`ColliderBudget` per cell** (CellConfigDataSO, target ≤ ~1,500 — §4): the probe warns when
+   `colliders=near/live` approaches it; LOD radius auto-tightens or flags for retune. This turns
+   the budget from a convention into an observable contract.
+5. **Bucket-accelerated AOE** only if profiling demands it (SPATIAL_INDEX Phase 4 — profiling
+   first, never assume).
+6. **`UpdateDomain` known gap**, its own tested change: wire steals into the AOE cold data so a
+   stolen prism's friend/foe in batch explosions matches its live domain.
+
+**Phase C — genome & heredity (P3 — the artificial-life centerpiece, §3).**
+7. **Trait genome:** a small heritable struct on creature fauna (multipliers over the species
+   SO base values — e.g. speed, starvation clock, consume radius, reproduction cost), applied at
+   Initialize so traits CAUSALLY drive phenotype. Inherited in `Fauna.SpawnOffspring` with
+   bounded mutation (small genome change → small phenotype change). **Endogenous selection
+   only** — survival/reproduction is the only fitness; no designer scoring (locked).
+8. **Evidence pipeline:** lineage + trait-distribution telemetry (extend the ECOSIM line or a
+   sibling log) and the **mutation-off control run** — the abiotic baseline that turns "looks
+   alive" into "demonstrably adapts" (§3 item 4).
+
+**Phase D — wire ecology into the ~9 bare modes (§5):** cells + spawn profiles per mode,
+intensity → biome/population mapping, powerup crystals feeding each mode's loop. Variety =
+biome × intensity × (Phase C) heritable traits — never bespoke per-mode code.
