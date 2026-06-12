@@ -9,7 +9,9 @@
     <!-- CS0649 ("field never assigned") fires on every [Inject]/[SerializeField] member;
          the Unity compiler suppressed it for serialized fields, so the port does too.
          CS0169 ("field never used") fires on verbatim Unity-era private fields whose
-         only usages are commented (e.g. InputController.vessel) or inspector-driven. -->
-    <NoWarn>$(NoWarn);CS0649;CS0169</NoWarn>
+         only usages are commented (e.g. InputController.vessel) or inspector-driven.
+         CS0414 ("field assigned but never used") fires on verbatim serialized fields whose
+         only consumer is a PORT-deviated code path (e.g. CrystalCollisionTurnMonitor.optionalLaps). -->
+    <NoWarn>$(NoWarn);CS0649;CS0169;CS0414</NoWarn>
   </PropertyGroup>
 </Project>

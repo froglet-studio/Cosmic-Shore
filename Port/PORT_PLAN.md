@@ -478,6 +478,14 @@ Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — inf
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
 
+Rung-4 groundwork (landed alongside iteration 17, part 2): `TurnMonitor` (base) +
+`CrystalCollisionTurnMonitor` ported (UniTask→GameTask mechanical mappings; one
+deviation: `optionalEnvironment` waypoint-derived target restores when
+`SpawnableWaypointTrack` ports — explicit target + 39 fallback work now). 5 tests.
+CS0414 added to NoWarn (verbatim serialized fields whose only consumer is a
+deviated path). When rung 4 lands in the client: the race's crystal-target end
+condition runs through this monitor against the shared RoundStats.
+
 Rung-4 groundwork (landed alongside iteration 17): `ElementalComebackSystem` +
 `SO_ElementalComebackProfile` ported verbatim — comeback buffs sized to the DOMAIN
 deficit through the elementals fundamental (leading-domain players get nothing even
