@@ -3,6 +3,7 @@ using Unity.Burst;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Profiling;
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.Utility;
@@ -201,7 +202,16 @@ namespace CosmicShore.Gameplay
         private readonly List<Vector3Int> _scratchKeys = new(16);
         private float _nextReservationPrune;
 
+        // --- ProfilerMarkers ---
+        // Note: the source branch (PrismAOERegistry on development) had two more
+        // markers, AOE.BurstJob.ScheduleECS and AOE.ResolveDamage.ECS — bleeding-edge
+        // has no ECS companion-entity path, so they have no code to attach to.
+        private static readonly ProfilerMarker s_processExplosion = new("AOE.ProcessExplosion");
+        private static readonly ProfilerMarker s_burstJobSchedule = new("AOE.BurstJob.Schedule");
+        private static readonly ProfilerMarker s_resolveDamage = new("AOE.ResolveDamage");
+
         public bool IsAvailable => _spatial.IsCreated;
+        public int HighWaterMark => _highWaterMark;
 
         public static PrismSpatialIndex EnsureInstance()
         {
@@ -533,6 +543,58 @@ namespace CosmicShore.Gameplay
 
         #endregion
 
+        #region Benchmark Support
+
+        /// <summary>
+        /// Registers synthetic prism data for benchmarking without requiring a Prism
+        /// MonoBehaviour. The managed _prisms[index] slot is null — ProcessExplosionFrame
+        /// skips it after the spatial query, so this isolates Burst job cost from damage
+        /// application cost. Maintains the live-entry-implies-bucket invariant so the
+        /// occupancy view stays consistent with Unregister/MarkDestroyed.
+        /// </summary>
+        internal int RegisterSynthetic(float3 position, byte flags, float volume, int domain)
+        {
+            if (!_spatial.IsCreated) return -1;
+            int index;
+            if (_freeList.Count > 0)
+                index = _freeList.Pop();
+            else
+            {
+                index = _highWaterMark++;
+                EnsureCapacity(index);
+            }
+
+            _prisms[index] = null;
+            _spatial[index] = new PrismSpatialData { Position = position, Flags = flags };
+            _damage[index] = new PrismDamageData { Volume = volume, Domain = domain };
+            if ((flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue)
+                AddToBucket(index, position);
+            return index;
+        }
+
+        /// <summary>
+        /// Clears all registered prisms, buckets, and reservations. Used by the
+        /// AOE benchmark to reset between runs — never call during gameplay.
+        /// </summary>
+        internal void ClearAll()
+        {
+            if (!_spatial.IsCreated) return;
+            for (int i = 0; i < _highWaterMark; i++)
+            {
+                _prisms[i] = null;
+                var s = _spatial[i];
+                s.Flags = 0;
+                _spatial[i] = s;
+            }
+            _freeList.Clear();
+            _highWaterMark = 0;
+            if (_buckets.IsCreated) _buckets.Clear();
+            _bucketEntryCount = 0;
+            _reservations.Clear();
+        }
+
+        #endregion
+
         #region AOE Processing
 
         /// <summary>
@@ -564,6 +626,8 @@ namespace CosmicShore.Gameplay
             IVessel vessel,
             HashSet<int> alreadyHit)
         {
+            using var processScope = s_processExplosion.Auto();
+
             if (_highWaterMark == 0 || !_spatial.IsCreated) return true;
 
             // --- Phase 1: Burst job over hot spatial data ---
@@ -575,18 +639,21 @@ namespace CosmicShore.Gameplay
             if (_hitIndices.Capacity < _highWaterMark)
                 _hitIndices.Capacity = _highWaterMark;
 
-            var job = new AOESpatialQueryJob
+            using (s_burstJobSchedule.Auto())
             {
-                Prisms = _spatial,
-                Center = (float3)center,
-                RadiusSq = radius * radius,
-                HitIndices = _hitIndices.AsParallelWriter()
-            };
+                var job = new AOESpatialQueryJob
+                {
+                    Prisms = _spatial,
+                    Center = (float3)center,
+                    RadiusSq = radius * radius,
+                    HitIndices = _hitIndices.AsParallelWriter()
+                };
 
-            var handle = job.Schedule(_highWaterMark, JOB_BATCH_SIZE);
-            handle.Complete();
+                job.Schedule(_highWaterMark, JOB_BATCH_SIZE).Complete();
+            }
 
             // --- Phase 2: Main thread damage logic over cold data + managed refs ---
+            using var resolveScope = s_resolveDamage.Auto();
             bool shouldContinue = true;
             int expDomain = (int)explosionDomain;
 
