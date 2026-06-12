@@ -577,6 +577,11 @@ Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — inf
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
 
+Quest/action systems (landed alongside iteration 19, part 2): `QuestSystem` +
+`UserActionSystem` + `CallToActionSystem` ported verbatim — the full
+quest/user-action/CTA orchestration chain is in (SingletonPersistent-based,
+event-driven quest progress on UserActionSystem.OnUserActionCompleted).
+
 Quest-data groundwork (landed alongside iteration 19): `Quest` + `SO_QuestChain`
 + `CallToAction` + `UserAction` + `VirtualItem` + `ItemPrice` ported verbatim.
 SA1 quest deviation CLOSED — `SO_TrainingGame.SO_QuestChain` is a real field
