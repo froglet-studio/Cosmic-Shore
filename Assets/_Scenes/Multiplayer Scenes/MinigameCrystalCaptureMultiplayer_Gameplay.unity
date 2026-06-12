@@ -1857,6 +1857,16 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3397275166430212773, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value:
+      objectReference: {fileID: 2113049460}
+    - target: {fileID: 3397275166430212773, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: CosmicShore.UI.Scoreboard, Assembly-CSharp
+      objectReference: {fileID: 0}
     - target: {fileID: 3509273578276065945, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: m_AnchoredPosition.x
