@@ -97,6 +97,15 @@ namespace CosmicShore.Engine.Injection
 
         public bool TryResolve(Type contract, out object value)
         {
+            // E15: implicit self-binding — `[Inject] Container _container` resolves to the
+            // nearest scope (the container doing the injecting), the Reflex contract the
+            // ported spawners rely on. Explicit registrations of Container are shadowed.
+            if (contract == typeof(Container))
+            {
+                value = this;
+                return true;
+            }
+
             for (Container c = this; c is not null; c = c._parent)
             {
                 if (!c._bindings.TryGetValue(contract, out var binding)) continue;

@@ -9,12 +9,27 @@ namespace CosmicShore.Engine.Networking
     /// </summary>
     public abstract class NetworkBehaviour : MonoBehaviour
     {
+        // E12: process-wide monotonic id source; 0 is the "never spawned" sentinel.
+        static ulong _nextNetworkObjectId;
+
+        NetworkObject _networkObject;
+
         public bool IsSpawned { get; private set; }
         public bool IsServer { get; private set; }
         public bool IsClient { get; private set; }
         public bool IsHost => IsServer && IsClient;
         public bool IsOwner { get; private set; }
         public ulong OwnerClientId { get; private set; }
+
+        /// <summary>
+        /// Replication id, allocated monotonically at <see cref="Spawn"/> (E12).
+        /// 0 until first spawn; retains the last allocated id after despawn so
+        /// late log lines / lookups stay meaningful, matching the original engine.
+        /// </summary>
+        public ulong NetworkObjectId { get; private set; }
+
+        /// <summary>Handle exposing <c>Despawn(bool destroy)</c> + the id (E12).</summary>
+        public NetworkObject NetworkObject => _networkObject ??= new NetworkObject(this);
 
         public virtual void OnNetworkSpawn() { }
         public virtual void OnNetworkDespawn() { }
@@ -26,6 +41,7 @@ namespace CosmicShore.Engine.Networking
             IsClient = isClient;
             IsOwner = isOwner;
             OwnerClientId = ownerClientId;
+            NetworkObjectId = ++_nextNetworkObjectId;
             IsSpawned = true;
             OnNetworkSpawn();
         }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
@@ -215,9 +216,29 @@ namespace CosmicShore.Engine
 
         static object CloneViaMemberwise(object source) => MemberwiseCloneMethod.Invoke(source, null);
 
+        /// <summary>
+        /// E16: prefab-faithful clone. Structural copy first (building old→new maps for
+        /// every GameObject/Transform/Component in the source tree), then a remap pass
+        /// rewrites cloned serialized fields — and array/<see cref="List{T}"/> elements —
+        /// that point INSIDE the source tree to their clone counterparts, matching the
+        /// original engine's Instantiate. References outside the tree (other scene
+        /// objects, ScriptableObject assets) are left untouched. Only the root gains the
+        /// "(Clone)" suffix; children keep their authored names.
+        /// </summary>
         static GameObject CloneGameObject(GameObject source)
         {
-            var clone = new GameObject(source.name + "(Clone)");
+            var map = new Dictionary<object, object>(ReferenceEqualityComparer.Instance);
+            var clone = CloneHierarchy(source, map, isRoot: true);
+            RemapClonedReferences(map);
+            return clone;
+        }
+
+        static GameObject CloneHierarchy(GameObject source, Dictionary<object, object> map, bool isRoot)
+        {
+            var clone = new GameObject(isRoot ? source.name + "(Clone)" : source.name);
+            map[source] = clone;
+            map[source.transform] = clone.transform;
+
             clone.layer = source.layer;
             clone.tag = source.tag;
             clone.transform.localPosition = source.transform.localPosition;
@@ -230,11 +251,12 @@ namespace CosmicShore.Engine
                 if (component is Transform) continue;
                 var copy = clone.AddComponent(component.GetType());
                 CopyFields(component, copy);
+                map[component] = copy;
             }
 
             foreach (var child in source.transform.Children)
             {
-                var childClone = CloneGameObject(child.gameObject);
+                var childClone = CloneHierarchy(child.gameObject, map, isRoot: false);
                 childClone.transform.SetParent(clone.transform, worldPositionStays: false);
             }
             return clone;
@@ -242,9 +264,91 @@ namespace CosmicShore.Engine
 
         static void CopyFields(object source, object target)
         {
-            for (Type t = source.GetType(); t != null && t != typeof(Component) && t != typeof(Behaviour) && t != typeof(MonoBehaviour); t = t.BaseType)
+            foreach (var field in SerializedFieldCandidates(source.GetType()))
+                field.SetValue(target, field.GetValue(source));
+        }
+
+        /// <summary>
+        /// The field set Instantiate copies/remaps: every declared instance field up to —
+        /// but excluding — the engine base classes. NetworkBehaviour state (spawn flags,
+        /// NetworkObjectId, the NetworkObject handle) is engine infrastructure, never
+        /// cloned: a fresh instance starts unspawned, exactly like the original engine.
+        /// </summary>
+        static IEnumerable<FieldInfo> SerializedFieldCandidates(Type type)
+        {
+            for (Type t = type;
+                 t != null && t != typeof(Component) && t != typeof(Behaviour) && t != typeof(MonoBehaviour)
+                 && t != typeof(Networking.NetworkBehaviour);
+                 t = t.BaseType)
                 foreach (var field in t.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly))
-                    field.SetValue(target, field.GetValue(source));
+                    yield return field;
+        }
+
+        /// <summary>E16 remap pass: rewrite intra-tree references on every cloned component.</summary>
+        static void RemapClonedReferences(Dictionary<object, object> map)
+        {
+            foreach (var cloned in map.Values)
+            {
+                if (cloned is not Component component || component is Transform) continue;
+                foreach (var field in SerializedFieldCandidates(component.GetType()))
+                    RemapField(component, field, map);
+            }
+        }
+
+        static void RemapField(object target, FieldInfo field, Dictionary<object, object> map)
+        {
+            // Value types (and therefore primitives/enums/structs) can't hold scene references.
+            if (field.FieldType.IsValueType) return;
+
+            object value = field.GetValue(target);
+            if (value is null) return;
+
+            // Direct reference into the source tree (declared type may be an interface —
+            // the runtime value is what's checked).
+            if (map.TryGetValue(value, out var mapped))
+            {
+                field.SetValue(target, mapped);
+                return;
+            }
+
+            switch (value)
+            {
+                // Arrays: field copy aliased the SOURCE's array instance; if any element
+                // points into the tree, give the clone its own remapped array (never
+                // mutate in place — that would corrupt the template).
+                case Array array when array.Rank == 1:
+                {
+                    if (!AnyElementMapped(array, map)) return;
+                    var remapped = Array.CreateInstance(array.GetType().GetElementType(), array.Length);
+                    for (int i = 0; i < array.Length; i++)
+                    {
+                        object element = array.GetValue(i);
+                        remapped.SetValue(element is not null && map.TryGetValue(element, out var m) ? m : element, i);
+                    }
+                    field.SetValue(target, remapped);
+                    return;
+                }
+
+                // List<T>: same contract as arrays.
+                case IList list when value.GetType() is { IsGenericType: true } listType
+                                     && listType.GetGenericTypeDefinition() == typeof(List<>):
+                {
+                    if (!AnyElementMapped(list, map)) return;
+                    var remapped = (IList)Activator.CreateInstance(listType, list.Count);
+                    foreach (var element in list)
+                        remapped.Add(element is not null && map.TryGetValue(element, out var m) ? m : element);
+                    field.SetValue(target, remapped);
+                    return;
+                }
+            }
+        }
+
+        static bool AnyElementMapped(IEnumerable elements, Dictionary<object, object> map)
+        {
+            foreach (var element in elements)
+                if (element is not null && map.ContainsKey(element))
+                    return true;
+            return false;
         }
     }
 }

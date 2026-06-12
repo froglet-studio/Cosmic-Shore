@@ -83,6 +83,19 @@ namespace CosmicShore.Engine
         public float startWidth;
         public float endWidth;
 
+        Gradient _colorGradient = new();
+
+        /// <summary>
+        /// Color ramp over the trail's length (E14). Data-only: held by reference
+        /// (callers that re-tint assign a fresh <see cref="Gradient"/>, the
+        /// VesselTrailCustomization pattern); null assignment restores a default ramp.
+        /// </summary>
+        public Gradient colorGradient
+        {
+            get => _colorGradient;
+            set => _colorGradient = value ?? new Gradient();
+        }
+
         public void Clear() { }
     }
 }
