@@ -161,6 +161,14 @@ namespace CosmicShore.Engine
     {
         public bool isTrigger;
         public virtual Vector3 ClosestPoint(Vector3 position) => transform.position;
+
+        internal override void DestroyComponentNow()
+        {
+            // Leave the trigger-pass registry; pairs still tracking this collider fire
+            // OnTriggerExit on the surviving side next pass.
+            GameLoop.Current?.Triggers.Unregister(this);
+            base.DestroyComponentNow();
+        }
     }
 
     public class BoxCollider : Collider

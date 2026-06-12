@@ -10,8 +10,12 @@ namespace CosmicShore.Engine
     /// loop). Tick order per frame:
     ///
     ///   Time.Advance → pump external sync-context posts → Start queue →
-    ///   FixedUpdate (accumulator) → Update → task scheduler (Yield/Delay/WaitUntil) →
+    ///   FixedUpdate (accumulator) → Update → trigger pass (OnTriggerEnter/Exit) →
+    ///   coroutines → task scheduler (Yield/Delay/WaitUntil) →
     ///   LateUpdate → end-of-frame continuations → destroy queue.
+    ///
+    /// The trigger pass runs once per frame after Update (see <see cref="TriggerPass"/>
+    /// for the timing rationale and semantics).
     ///
     /// Headless by design: tests call <see cref="Tick"/> directly; the CLI/realtime
     /// hosts call <see cref="Run"/> with wall-clock deltas.
@@ -24,6 +28,9 @@ namespace CosmicShore.Engine
         public GameTaskScheduler Scheduler { get; }
         internal CoroutineRunner Coroutines { get; } = new();
         public GameSynchronizationContext SyncContext { get; }
+
+        /// <summary>Phase-2 trigger physics: collider registry + per-frame enter/exit dispatch.</summary>
+        public TriggerPass Triggers { get; } = new();
 
         int _loopThreadId = -1;
         public bool IsOnLoopThread => Environment.CurrentManagedThreadId == _loopThreadId;
@@ -92,6 +99,7 @@ namespace CosmicShore.Engine
                 DrainStartQueue();
                 RunFixedSteps();
                 RunPhase(static mb => mb.HasUpdate, static mb => mb.RunUpdate());
+                Triggers.RunFrame();
                 Coroutines.RunFrame();
                 Scheduler.RunFrame();
                 RunPhase(static mb => mb.HasLateUpdate, static mb => mb.RunLateUpdate());

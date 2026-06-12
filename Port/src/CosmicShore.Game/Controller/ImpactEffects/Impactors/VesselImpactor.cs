@@ -35,31 +35,27 @@ namespace CosmicShore.Gameplay
                         effect.Execute(this, prismImpactee);
                     break;
 
-                // PORT Deviation (V19, restore when OmniCrystalImpactor ports — its body needs the full
-                // Crystal (CrystalManager/Respawn/explode pipeline), still a V11 type shell):
-                // case OmniCrystalImpactor omniCrystalImpactee:
-                // {
-                //     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
-                //     var data = CrystalImpactData.FromCrystal(omniCrystalImpactee.Crystal);
-                //     if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
-                //         networkVesselImpactor.ExecuteOnHitOmniCrystal(data);
-                //     else
-                //         ExecuteOmniCrystalImpact(data);
-                //     break;
-                // }
+                case OmniCrystalImpactor omniCrystalImpactee:
+                {
+                    audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
+                    var data = CrystalImpactData.FromCrystal(omniCrystalImpactee.Crystal);
+                    if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
+                        networkVesselImpactor.ExecuteOnHitOmniCrystal(data);
+                    else
+                        ExecuteOmniCrystalImpact(data);
+                    break;
+                }
 
-                // PORT Deviation (V19, restore when ElementalCrystalImpactor ports — its body needs the full
-                // Crystal (CrystalModels/DestroyCrystal/space-collect animation), still a V11 type shell):
-                // case ElementalCrystalImpactor elementalCrystalImpactee:
-                // {
-                //     audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
-                //     var data = CrystalImpactData.FromCrystal(elementalCrystalImpactee.Crystal);
-                //     if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
-                //         networkVesselImpactor.ExecuteOnHitElementalCrystal(data);
-                //     else
-                //         ExecuteElementalCrystalImpact(data);
-                //     break;
-                // }
+                case ElementalCrystalImpactor elementalCrystalImpactee:
+                {
+                    audioSystem?.PlayGameplaySFX(GameplaySFXCategory.CrystalCollect, transform.position);
+                    var data = CrystalImpactData.FromCrystal(elementalCrystalImpactee.Crystal);
+                    if (networkVesselImpactor.IsSpawned && networkVesselImpactor.IsOwner)
+                        networkVesselImpactor.ExecuteOnHitElementalCrystal(data);
+                    else
+                        ExecuteElementalCrystalImpact(data);
+                    break;
+                }
 
                 case SkimmerImpactor skimmerImpactee:
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselSkimmerEffects)) return;

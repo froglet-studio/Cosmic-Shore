@@ -154,17 +154,15 @@ namespace CosmicShore.Gameplay
 
                     break;
 
-                // PORT Deviation (V19, restore when ElementalCrystalImpactor ports — its body needs the full
-                // Crystal (CrystalModels/DestroyCrystal/space-collect animation), still a V11 type shell):
-                // case ElementalCrystalImpactor elementalCrystalImpactor:
-                //     var esc = skimmerImpactorDataContainer.SkimmerCrystalEffects;
-                //     if (!DoesEffectExist(esc)) return;
-                //     foreach (var effect in esc)
-                //     {
-                //         effect.Execute(this, elementalCrystalImpactor);
-                //     }
-                //
-                //     break;
+                case ElementalCrystalImpactor elementalCrystalImpactor:
+                    var esc = skimmerImpactorDataContainer.SkimmerCrystalEffects;
+                    if (!DoesEffectExist(esc)) return;
+                    foreach (var effect in esc)
+                    {
+                        effect.Execute(this, elementalCrystalImpactor);
+                    }
+
+                    break;
             }
         }
 

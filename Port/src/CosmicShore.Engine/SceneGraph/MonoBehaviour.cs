@@ -96,6 +96,23 @@ namespace CosmicShore.Engine
         internal void RunFixedUpdate() => InvokeGuarded(hooks.FixedUpdate);
         internal void RunLateUpdate() => InvokeGuarded(hooks.LateUpdate);
 
+        // Trigger messages (TriggerPass): delivered regardless of the per-behaviour
+        // `enabled` flag — the original engine's physics messages bypass it — with the
+        // same exception isolation as the frame phases.
+        internal void RunTriggerEnter(Collider other)
+        {
+            if (hooks?.TriggerEnter is not { } hook) return;
+            try { hook(this, other); }
+            catch (Exception e) { Debug.LogException(e, this); }
+        }
+
+        internal void RunTriggerExit(Collider other)
+        {
+            if (hooks?.TriggerExit is not { } hook) return;
+            try { hook(this, other); }
+            catch (Exception e) { Debug.LogException(e, this); }
+        }
+
         internal bool HasUpdate => hooks.Update != null;
         internal bool HasFixedUpdate => hooks.FixedUpdate != null;
         internal bool HasLateUpdate => hooks.LateUpdate != null;

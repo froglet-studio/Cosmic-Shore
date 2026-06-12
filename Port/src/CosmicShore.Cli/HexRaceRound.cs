@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Engine;
 using CosmicShore.Engine.Injection;
@@ -31,8 +32,19 @@ namespace CosmicShore.Cli
 
         public float DeltaTime = 1f / 60f;
 
-        /// <summary>Proximity radius (world units) at which a vessel claims the active crystal.</summary>
+        /// <summary>
+        /// Center-to-center distance (world units) at which a vessel claims the active
+        /// crystal. Since the contact arc (CT1) this is realized through real trigger
+        /// physics, not a proximity referee: the crystal carries a trigger SphereCollider
+        /// of radius <c>ClaimRadius - VesselContactRadius</c> and each vessel a
+        /// non-trigger SphereCollider of radius <see cref="VesselContactRadius"/>, so the
+        /// engine's trigger pass fires OnTriggerEnter when the centers close to exactly
+        /// this distance.
+        /// </summary>
         public float ClaimRadius = 25f;
+
+        /// <summary>Radius of the vessel's contact-bubble SphereCollider (world units).</summary>
+        public float VesselContactRadius = 4f;
     }
 
     /// <summary>One row of the final standings (derived from GameDataSO.Results + RoundStats).</summary>
@@ -91,9 +103,17 @@ namespace CosmicShore.Cli
     /// IInputStatus writes → VesselTransformer flight), a Cell (V12) + CellRuntimeDataSO (V11)
     /// host the seeded crystal course, RoundStats/ResourceSystem record progression, and
     /// HexRaceScoringRuleSO ends the race (domain-aggregated), assigns golf scores and builds
-    /// the ranked ScoreResults published via GameDataSO.SetResults. No game logic lives here —
-    /// only construction, wiring, and the per-frame proximity-claim referee that stands in
-    /// for the un-ported collider/impactor pipeline.
+    /// the ranked ScoreResults published via GameDataSO.SetResults.
+    ///
+    /// Since the contact arc (CT1), claims flow through the REAL impact pipeline: each
+    /// crystal carries a trigger SphereCollider + OmniCrystalImpactor + ImpactCollider,
+    /// each vessel a contact-bubble SphereCollider + VesselImpactor (+
+    /// NetworkVesselImpactor) + ImpactCollider, and the engine's per-frame trigger pass
+    /// drives OnTriggerEnter → ImpactorBase dispatch → OmniCrystalImpactor.AcceptImpactee,
+    /// which raises the crystal-stats SOAP event and destroys/removes the crystal itself
+    /// (Respawn → DestroyCrystal → CellRuntimeDataSO.TryRemoveItem). No game logic lives
+    /// here — only construction, wiring, and a claim observer that applies RoundStats /
+    /// elemental progression (the StatsManager role) and writes the transcript.
     /// </summary>
     public static class HexRaceRound
     {
@@ -199,7 +219,7 @@ namespace CosmicShore.Cli
 
                 // ── prefabs + spawners (verbatim C6 pipeline) ─────────────────
                 var vesselTemplate = BuildVesselPrefab("SparrowPrefab", VesselClassType.Sparrow, gameData,
-                    courseData, sharedCellItemsEvent);
+                    courseData, sharedCellItemsEvent, options.VesselContactRadius);
                 var prefabContainer = ScriptableObject.CreateInstance<VesselPrefabContainer>();
                 SetPrivateField(prefabContainer, "_shipPrefabs", new[] { vesselTemplate.transform });
 
@@ -211,6 +231,9 @@ namespace CosmicShore.Cli
                 container.RegisterValue(gameData);
                 var playerDataService = new GameObject("PlayerDataService").AddComponent<PlayerDataService>();
                 container.RegisterValue(playerDataService);
+                // VesselImpactor's [Inject] AudioSystem (shell — Deviation #11) must resolve
+                // when VesselSpawner DI-injects the cloned vessel.
+                container.RegisterValue(new GameObject("AudioSystem").AddComponent<AudioSystem>());
 
                 var spawnerGo = new GameObject("Spawners");
                 var vesselSpawner = spawnerGo.AddComponent<VesselSpawner>();
@@ -264,70 +287,72 @@ namespace CosmicShore.Cli
                 }
 
                 // ── race ──────────────────────────────────────────────────────
-                int courseIndex = 0;
-                var activeCrystal = SpawnCrystal(courseData, coursePositions, courseIndex);
-
                 gameData.StartTurn();
                 float raceStart = gameData.TurnStartTime;
-                float claimRadiusSqr = options.ClaimRadius * options.ClaimRadius;
                 var rule = gameData.ScoringRule;
                 int frames = 0;
                 bool objectiveReached = false;
                 Domains objectiveDomain = Domains.Blue;
 
+                // Contact rig sizing: claim happens at center distance == ClaimRadius
+                // (crystal trigger radius + vessel contact-bubble radius).
+                float crystalTriggerRadius =
+                    Mathf.Max(0.5f, options.ClaimRadius - options.VesselContactRadius);
+
+                int courseIndex = 0;
+                var onCrystalCollected = ScriptableObject.CreateInstance<ScriptableEventCrystalStats>();
+                Crystal activeCrystal = null;
+
+                // Claim observer — fires from INSIDE the trigger pass, at the end of the
+                // genuine OnTriggerEnter → ImpactorBase.AcceptImpactee → ExecuteEffect
+                // chain on the crystal's OmniCrystalImpactor. The harness applies the
+                // StatsManager-shaped bookkeeping (RoundStats + elemental progression),
+                // logs the claim at the contact instant (authentic photo-finish gap), and
+                // stages the next waypoint. The crystal then removes itself: AcceptImpactee
+                // continues into Crystal.Respawn() → DestroyCrystal() →
+                // courseData.TryRemoveItem (pilots retarget) → Destroy(gameObject).
+                void HandleCrystalCollected(CrystalStats stats)
+                {
+                    result.TotalClaims++;
+                    var claimant = players.First(p => p.Name == stats.PlayerName);
+                    ApplyCrystalPickup(claimant, stats.Element);
+
+                    // Closest rival's distance to the crystal at claim time — the "photo finish" gap.
+                    float rivalSqr = float.PositiveInfinity;
+                    foreach (var other in players)
+                    {
+                        if (ReferenceEquals(other, claimant)) continue;
+                        var d2 = (other.Vessel.Transform.position - activeCrystal.transform.position).sqrMagnitude;
+                        if (d2 < rivalSqr) rivalSqr = d2;
+                    }
+                    string gap = players.Count > 1 ? $" (rival {F(Mathf.Sqrt(rivalSqr))}u behind)" : "";
+
+                    Log($"[t={F(Time.time - raceStart),7}s] {claimant.Name} ({claimant.Domain}) claims crystal #{courseIndex + 1} [{stats.Element}]{gap} — " +
+                        $"Jade {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Jade)} · " +
+                        $"Ruby {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Ruby)} · " +
+                        $"Gold {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Gold)}");
+
+                    // Stage the next waypoint crystal unless the race just ended.
+                    if (!rule.IsObjectiveReached(gameData, out _) && courseIndex + 1 < coursePositions.Length)
+                    {
+                        courseIndex++;
+                        activeCrystal = SpawnCrystal(courseData, coursePositions, courseIndex,
+                            courseElements[courseIndex], crystalTriggerRadius, onCrystalCollected);
+                    }
+                    else
+                    {
+                        activeCrystal = null;
+                    }
+                }
+
+                onCrystalCollected.OnRaised += HandleCrystalCollected;
+                activeCrystal = SpawnCrystal(courseData, coursePositions, courseIndex,
+                    courseElements[courseIndex], crystalTriggerRadius, onCrystalCollected);
+
                 while (frames < options.MaxFrames)
                 {
-                    loop.Tick(options.DeltaTime);
+                    loop.Tick(options.DeltaTime); // claims happen inside: trigger pass → impactor dispatch
                     frames++;
-
-                    // Proximity referee: nearest vessel inside the claim radius collects.
-                    if (activeCrystal != null)
-                    {
-                        IPlayer claimant = null;
-                        float bestSqr = claimRadiusSqr;
-                        foreach (var player in players)
-                        {
-                            var d2 = (player.Vessel.Transform.position - activeCrystal.transform.position).sqrMagnitude;
-                            if (d2 < bestSqr)
-                            {
-                                bestSqr = d2;
-                                claimant = player;
-                            }
-                        }
-
-                        if (claimant != null)
-                        {
-                            result.TotalClaims++;
-                            var element = courseElements[courseIndex];
-                            ApplyCrystalPickup(claimant, element);
-
-                            // Closest rival's distance to the crystal at claim time — the "photo finish" gap.
-                            float rivalSqr = float.PositiveInfinity;
-                            foreach (var other in players)
-                            {
-                                if (ReferenceEquals(other, claimant)) continue;
-                                var d2 = (other.Vessel.Transform.position - activeCrystal.transform.position).sqrMagnitude;
-                                if (d2 < rivalSqr) rivalSqr = d2;
-                            }
-                            string gap = players.Count > 1 ? $" (rival {F(Mathf.Sqrt(rivalSqr))}u behind)" : "";
-
-                            Log($"[t={F(Time.time - raceStart),7}s] {claimant.Name} ({claimant.Domain}) claims crystal #{courseIndex + 1} [{element}]{gap} — " +
-                                $"Jade {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Jade)} · " +
-                                $"Ruby {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Ruby)} · " +
-                                $"Gold {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Gold)}");
-
-                            courseData.TryRemoveItem(activeCrystal); // raises OnCellItemsUpdated → pilots retarget
-                            Object.Destroy(activeCrystal.gameObject);
-                            activeCrystal = null;
-
-                            // Respawn the next waypoint crystal unless the race just ended.
-                            if (!rule.IsObjectiveReached(gameData, out _) && courseIndex + 1 < coursePositions.Length)
-                            {
-                                courseIndex++;
-                                activeCrystal = SpawnCrystal(courseData, coursePositions, courseIndex);
-                            }
-                        }
-                    }
 
                     // Turn-monitor shape: the server checks the scoring rule every frame.
                     if (rule.IsObjectiveReached(gameData, out objectiveDomain))
@@ -336,6 +361,8 @@ namespace CosmicShore.Cli
                         break;
                     }
                 }
+
+                onCrystalCollected.OnRaised -= HandleCrystalCollected;
 
                 result.FramesSimulated = frames;
 
@@ -401,6 +428,7 @@ namespace CosmicShore.Cli
                 loop.Tick(options.DeltaTime);  // end-of-frame destroy flush
 
                 typeof(PlayerDataService).GetProperty("Instance")!.SetValue(null, null);
+                typeof(AudioSystem).GetProperty("Instance")!.SetValue(null, null); // shell singleton (Awake-set)
                 NetworkManager.Singleton = null;
                 Debug.Sink = previousSink;
 
@@ -439,14 +467,41 @@ namespace CosmicShore.Cli
             return Element.Time;
         }
 
-        static Crystal SpawnCrystal(CellRuntimeDataSO courseData, Vector3[] course, int index)
+        /// <summary>
+        /// Waypoint crystal with the real contact rig: trigger SphereCollider (the claim
+        /// surface) + OmniCrystalImpactor (any-domain collection) + ImpactCollider routing
+        /// the engine trigger pass into the impactor dispatch. The crystal removes itself
+        /// on collection (Respawn → DestroyCrystal → TryRemoveItem), so the harness only
+        /// observes the OnCrystalCollected SOAP event.
+        /// </summary>
+        static Crystal SpawnCrystal(CellRuntimeDataSO courseData, Vector3[] course, int index,
+            Element element, float triggerRadius, ScriptableEventCrystalStats onCrystalCollected)
         {
             var go = new GameObject($"crystal-{index + 1}");
             go.transform.position = course[index];
+
+            var trigger = go.AddComponent<SphereCollider>();
+            trigger.isTrigger = true;
+            trigger.radius = triggerRadius;
+
             var crystal = go.AddComponent<Crystal>();
             crystal.Initialize(index + 1);
             crystal.ownDomain = Domains.Blue;   // uncommitted — every domain's AI may seek it
             crystal.ItemType = ItemType.Buff;
+            crystal.crystalProperties = new CrystalProperties
+            {
+                crystal = crystal,
+                Element = element,
+                crystalValue = 1f,
+            };
+            SetPrivateField(crystal, "cellData", courseData); // DestroyCrystal → TryRemoveItem
+
+            var impactor = go.AddComponent<OmniCrystalImpactor>(); // Awake binds impactor.Crystal
+            SetPrivateField(impactor, "OnCrystalCollected", onCrystalCollected);
+
+            var impactCollider = go.AddComponent<ImpactCollider>();
+            SetPrivateField(impactCollider, "impactorObject", impactor);
+
             courseData.AddCrystalToList(crystal); // raises OnCellItemsUpdated → AIPilots retarget
             return crystal;
         }
@@ -477,13 +532,17 @@ namespace CosmicShore.Cli
         // ── vessel prefab fixture (CLI section [6] builder + shared course wiring) ──
 
         /// <summary>
-        /// Same programmatic vessel "prefab" as the CLI smoke section [6], with one
-        /// round-specific difference: every AIPilot shares the round's
+        /// Same programmatic vessel "prefab" as the CLI smoke section [6], with two
+        /// round-specific differences: every AIPilot shares the round's
         /// <see cref="CellRuntimeDataSO"/> and its OnCellItemsUpdated channel, so a crystal
-        /// registered in the course registry retargets the whole AI field.
+        /// registered in the course registry retargets the whole AI field; and the vessel
+        /// carries the contact rig (CT1) — a non-trigger contact-bubble SphereCollider,
+        /// VesselImpactor (+ empty effect container) with its NetworkVesselImpactor pair,
+        /// and an ImpactCollider — so crystal trigger contacts dispatch through the real
+        /// impact pipeline on both sides.
         /// </summary>
         static GameObject BuildVesselPrefab(string name, VesselClassType vesselType, GameDataSO gameData,
-            CellRuntimeDataSO cellData, ScriptableEventNoParam onCellItemsUpdated)
+            CellRuntimeDataSO cellData, ScriptableEventNoParam onCellItemsUpdated, float contactRadius)
         {
             var go = new GameObject(name);
             go.SetActive(false);
@@ -544,6 +603,24 @@ namespace CosmicShore.Cli
             SetPrivateField(status, "vesselType", vesselType);
             SetPrivateField(status, "_nearFieldSkimmer", NewChildSkimmer("nearFieldSkimmer"));
             SetPrivateField(status, "_farFieldSkimmer", NewChildSkimmer("farFieldSkimmer"));
+
+            // Contact rig (CT1): non-trigger contact bubble + impactor routing. Crystal
+            // triggers pair with this collider in the engine trigger pass; the crystal's
+            // OmniCrystalImpactor resolves the vessel through this ImpactCollider, while
+            // the vessel's own VesselImpactor runs the (empty here) vessel-side crystal
+            // effects. The E16 clone remap rewrites the intra-prefab references per clone.
+            var contactBubble = go.AddComponent<SphereCollider>();
+            contactBubble.radius = contactRadius;
+
+            var networkVesselImpactor = go.AddComponent<NetworkVesselImpactor>();
+            var vesselImpactor = go.AddComponent<VesselImpactor>();
+            SetPrivateField(vesselImpactor, "vesselImpactorDataContainerSO",
+                ScriptableObject.CreateInstance<VesselImpactorDataContainerSO>());
+            SetPrivateField(vesselImpactor, "networkVesselImpactor", networkVesselImpactor);
+            SetPrivateField(networkVesselImpactor, "vesselImpactor", vesselImpactor);
+
+            var impactCollider = go.AddComponent<ImpactCollider>();
+            SetPrivateField(impactCollider, "impactorObject", vesselImpactor);
 
             return go;
         }

@@ -89,6 +89,8 @@ namespace CosmicShore.Engine
             var component = (Component)Activator.CreateInstance(componentType, nonPublic: true);
             component.gameObject = this;
             _components.Add(component);
+            if (component is Collider collider)
+                GameLoop.Current.Triggers.Register(collider); // trigger-pass registry (creation order)
             if (component is MonoBehaviour mb)
             {
                 mb.sequence = GameLoop.Current.NextSequence();

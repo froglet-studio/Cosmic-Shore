@@ -429,28 +429,41 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
   matrix, InputController Awake wiring, shape-key theory, flare, Update routing).
   **610 tests green (358 + 252)**; client smoke unaffected.
 
-## NEXT UP (iteration 14)
+## PRIME AXIS — CLIENT CONVERGENCE (prompter reorientation, 2026-06-12)
 
-**Scoring/arcade arc + E16 deep-clone COMPLETE (2026-06-12):** the full scoring
-family (ScoringRuleSO/Metrics/HexRace golf rules/composite/trackers) +
-SO_Game/SO_ArcadeGame/SO_Vessel chain ported; **all 26 GameDataSO markers
-restored — GameDataSO is verbatim**. E16 deep-clones plain-object graphs
-(cloned vessels own their resource state). 1058 tests green. Open staged keys:
-LifeForm death events (flora/fauna arc), SO_QuestChain (quest arc), Dictionary
-clone residual, MaterialStateManager, impactor crystal cases.
+> "our goal is to convert everything over so a player cannot tell the difference
+> between the original and port. I feel like i should be seeing bigger steps toward
+> closing the gaps with each play."
 
-Goal: **port-m2 — first full headless game-mode round (AI vs AI)**.
+The headless engine reached verbatim fidelity (V1-V19, C1-C6, scoring, port-m2,
+contact arc) but the PLAYABLE CLIENT still runs the sprint sim — pulls felt
+unchanging because the convergence was invisible from the cockpit. From now on
+**every iteration ships a player-feelable convergence step**: replace a client
+stand-in with the real ported system. Fidelity arcs continue only in service of
+the next rung.
 
-1. Build the headless round harness in the CLI (`--mode hexrace --players N
-   --seed S`): spawn an AI field via the verbatim pipeline (C6), give them a
-   crystal course (cell layer), drive AIPilot + scoring (HexRaceScoringRuleSO)
-   to a winner, print the transcript + ScoreResults. Mark `port-m2` in the
-   milestone log with the commit hash.
-2. Then: multiplayer-spawn arc survey (ServerPlayerVesselInitializer family —
-   E16 prerequisite now met) or flora/fauna ecosystem arc (closes LifeForm keys
-   + brings the conserved-mass food web). Pick by what port-m2 reveals.
-3. Sprint feedback as it arrives.
-4. Update this file, commit, push.
+### Convergence ladder (each rung feelable on `git pull` + dotnet run)
+
+1. **Real flight + real AI** (NOW): vessels are real VesselController/VesselStatus/
+   VesselTransformer rigs; player input flows InputController→InputStatus verbatim;
+   drift is the real two-tier analog system; rivals are flown by the real AIPilot.
+2. **Real trails = prisms**: VesselPrismController spawns real Prisms (visible
+   blocks, conserved mass); real Skimmer contact grants energy through the trigger
+   pipeline (contact arc landed).
+3. **Real crystals/impactors**: claims via OnTriggerEnter → CrystalImpactor family
+   (landed for the CLI round; bring to the client).
+4. **Real scoring + HUD semantics**: HexRaceScoringRuleSO domain-aggregated end,
+   golf standings; domains share totals.
+5. **Real look**: SO_ColorSet domain palettes + SO_MaterialSet-driven visuals.
+6. Onward: cells/fauna ambience, more vessel classes, game modes — always through
+   the real systems.
+
+## NEXT UP (iteration 16)
+
+1. **Rung 1**: client-convergence agent — rebuild SkimRace's sim on the real rig
+   (real VesselTransformer flight, real analog drift, real AIPilot rivals).
+2. Then rung 2 (real prism trails + Skimmer contact in the client).
+3. Update this file, commit, push.
 
 1. **V10**: port `GameDataSO` (~783L, single-file oversize accepted) + engine
    `ISession` placeholder. Then V11 (CellConfigDataSO, BlockDensityGrid,
