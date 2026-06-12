@@ -41,6 +41,10 @@ namespace CosmicShore.Engine
             }
         }
 
+        /// <summary>Uniformly random rotation (axis from the unit sphere, angle in [0, 360)).</summary>
+        public static Quaternion rotation
+            => Quaternion.AngleAxis(Range(0f, 360f), onUnitSphere);
+
         /// <summary>Random point inside (or on) a unit sphere.</summary>
         public static Vector3 insideUnitSphere
         {

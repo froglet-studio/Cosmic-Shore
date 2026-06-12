@@ -577,6 +577,16 @@ Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — inf
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
 
+Ecosystem + content completion (landed alongside iteration 19): the spawnable
+family is COMPLETE — SpawnableCrystal, SpawnableFlora, SpawnableGyroid,
+SpawnableWall, SpawnableLSystem, SpawnableWaypointTrack ported verbatim (all
+blockers cleared by the rung-3 CrystalManager and the Assemblers arc). Rung-6
+concretes complete too: BranchingFlora, LightFauna(+Manager/DataSO/ManagerDataSO),
+BodySegmentFauna, Bone, Worm, WormManager, LerpUtilities — all verbatim. Engine
+gains `Random.rotation`. NOTE: the CrystalCollisionTurnMonitor `optionalEnvironment`
+waypoint deviation can now be restored — deferred until rung-4 integration (the
+rung-4 agent owns TurnMonitors/).
+
 Ecosystem groundwork part 4 (landed alongside iteration 18): the Assemblers
 family + Boid fauna chain ported verbatim — `Assembler` (base) + `GyroidAssembler`
 + `GyroidBondMate`/`GyroidBondMateData`/`GyroidBondMateDataContainer` (48-entry
