@@ -106,6 +106,18 @@ namespace CosmicShore.Engine
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class HideInInspectorAttribute : Attribute { }
 
+    /// <summary>
+    /// Constrains an Object-typed serialized field to implementations of an interface
+    /// (port of the SerializeInterface package attribute; inert at runtime — editor
+    /// tooling enforces it later).
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class RequireInterfaceAttribute : Attribute
+    {
+        public readonly Type requiredType;
+        public RequireInterfaceAttribute(Type requiredType) { this.requiredType = requiredType; }
+    }
+
     /// <summary>Keeps the annotated member through code stripping (inert marker for now).</summary>
     [AttributeUsage(AttributeTargets.All, Inherited = false)]
     public sealed class PreserveAttribute : Attribute { }

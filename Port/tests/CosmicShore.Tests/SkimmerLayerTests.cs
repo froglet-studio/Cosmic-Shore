@@ -126,6 +126,8 @@ public class SkimmerLayerTests
         public bool IsTranslationRestricted { get; set; }
         public IVesselHUDController VesselHUDController => null;
         public VesselCustomization Customization => null;
+        public VesselCameraCustomizer VesselCameraCustomizer => null;
+        public SilhouetteController Silhouette => null;
         public VesselPrismController VesselPrismController => null;
         public R_VesselActionHandler ActionHandler => null;
         public R_ShipElementStatsHandler ElementalStatsHandler => null;

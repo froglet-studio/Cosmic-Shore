@@ -314,7 +314,7 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
 | 7 | 10 SOAP files deferred pending gameplay types: ScriptableEventVesselImpactor / ExplosionDebuffApplied / SkimmerDebuffApplied (IVessel/IVesselStatus/VesselImpactor), ScriptableSilhouetteData/* (SilhouetteController), ScriptableVesselHUDData/* (MiniGameHUD), VesselPrefabContainer (IVesselStatus). MainMenuStateTests (MainMenuController) and GameObjectExtensionTests (physics types) likewise port with their subjects. | Tracked in NEXT UP. |
 | 8 | Stat structs (CellStats/CrystalStats/PrismStats/AbilityStats), PrismType, and audio category enums are extracted into their own port files (source noted in headers) because their host classes (StatsManager, PrismFactory, AudioSystem) port in later phases. | File-split only; content verbatim. |
 | 9 | ResourceSystem temporary deviations: (a) base class `ElementalShipComponent` → `MonoBehaviour` until IVessel/ElementalFloat port; (b) `[RequireComponent(typeof(IVesselStatus))]` commented until IVesselStatus ports. Class body verbatim. **CLOSED at V6 (2026-06-11)** — both restored verbatim. | Unblocks the elemental core. |
-| 10c | `IVesselStatus` landed (V6) with 13 members commented pending their types: `AIPilot`, `AICinematicBehavior`, `AutoPilotEnabled` (→V18), `AttachedPrism` (→V15), `VesselAnimation` (→V7), `VesselTransformer` (→V8), `Customization` (→V9), `NearFieldSkimmer`/`FarFieldSkimmer` (→V16), `VesselPrismController`/`ActionHandler` (→V17), `VesselCameraCustomizer`/`Silhouette` (→V19). Each restore iteration uncomments its members; V19 closes. | Stages the vessel SCC per VESSEL_LAYER.md. |
+| 10c | `IVesselStatus` landed (V6) with 13 members commented pending their types: `AIPilot`, `AICinematicBehavior`, `AutoPilotEnabled` (→V18), `AttachedPrism` (→V15), `VesselAnimation` (→V7), `VesselTransformer` (→V8), `Customization` (→V9), `NearFieldSkimmer`/`FarFieldSkimmer` (→V16), `VesselPrismController`/`ActionHandler` (→V17), `VesselCameraCustomizer`/`Silhouette` (→V19). Each restore iteration uncomments its members; V19 closes. **CLOSED 2026-06-12 — IVesselStatus diff-verified verbatim.** | Stages the vessel SCC per VESSEL_LAYER.md. |
 | 11 | `AudioSystem` type-preserving shell (`Instance`, two `PlayGameplaySFX` overloads; bodies no-op) — pulled forward from V15 to V6 because `ActionExecutorRegistry` needs the type. Real port with the phase-5 audio backend. | Keeps ActionExecutorRegistry verbatim. |
 | 16 | `Directory.Build.props` adds CS0169 to NoWarn (alongside CS0649): verbatim Unity-era private fields whose only usages are commented (e.g. `InputController.vessel` until its orientation block revives) or inspector-driven fire it; the Unity compiler tolerated them. | Verbatim fields without warning noise. |
 
@@ -428,23 +428,24 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
   matrix, InputController Awake wiring, shape-key theory, flare, Update routing).
   **610 tests green (358 + 252)**; client smoke unaffected.
 
-## NEXT UP (iteration 11)
+## NEXT UP (iteration 12)
 
-**V12 + V15 integrated (2026-06-12):** Cell (904L) and Prism (484L) + PrismAOERegistry
-(managed-array) agent-ported; cross-restores applied both directions — Cell's block
-surface is Prism-typed verbatim, Prism's cell registration is live (FindCellContaining
-→ AddBlock → density grids → phase machine). Trail, PrismProperties, PrismTeamManager
-fully verbatim, zero markers. 767 tests green.
+**VESSEL ARC COMPLETE (2026-06-12):** all 19 rows done. V16 skimmer layer, V17
+action layer, V18 AI layer, V19 camera/silhouette/impact slice integrated;
+**Deviation #10c CLOSED** — IVesselStatus is diff-verified verbatim. 819 tests
+green. V18/V19 were salvaged complete from session-limit-cut agent worktrees.
 
-Goal: V16-V19 finish the vessel arc.
+Goal: post-arc consolidation + next arc.
 
-1. **V16**: NudgeShardPoolManager, NudgeShard, Skimmer (+skimmer #10c restores),
-   DriftTrailActionExecutor.
-2. **V17**: VesselPrismController, R_VesselActionHandler (+restores).
-3. **V18**: AIPilot, AICinematicBehavior (+restores).
-4. **V19**: camera layer + VesselImpactor slice + SilhouetteController; close #10c.
-5. CLI M2 vertical slice (cell + prisms + crystals + scripted vessels, seeded).
-6. Update this file, commit, push.
+1. **V19 test backfill**: the V19 agent was cut before writing
+   CameraSilhouetteLayerTests — add coverage for CustomCameraController data
+   logic, VesselCameraCustomizer wiring, SilhouetteController init,
+   VesselImpactor dispatch.
+2. **VesselStatus concrete arc**: the NetworkBehaviour itself (unblocked by the
+   completed closure) + IVessel concrete (Vessel.cs) — survey first.
+3. CLI M2 vertical slice (cell + prisms + crystals + scripted vessels, seeded).
+4. Sprint feedback as it arrives.
+5. Update this file, commit, push.
 
 1. **V10**: port `GameDataSO` (~783L, single-file oversize accepted) + engine
    `ISession` placeholder. Then V11 (CellConfigDataSO, BlockDensityGrid,

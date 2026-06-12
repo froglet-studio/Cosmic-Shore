@@ -85,7 +85,7 @@ namespace CosmicShore.Gameplay
 
         ResourceSystem ResourceSystem { get; }
         VesselAnimation VesselAnimation { get; }
-        // PORT Deviation #10c (restore at V19): VesselCameraCustomizer VesselCameraCustomizer { get; }
+        VesselCameraCustomizer VesselCameraCustomizer { get; }
 
         List<GameObject> ShipGeometries { get; set; }
         Transform ShipTransform { get; }
@@ -100,7 +100,7 @@ namespace CosmicShore.Gameplay
 
         GameObject OrientationHandle { get; }
 
-        // PORT Deviation #10c (restore at V19): SilhouetteController Silhouette { get; }
+        SilhouetteController Silhouette { get; }
 
         Material ShipMaterial { get; set; }
         Material SkimmerMaterial { get; set; }

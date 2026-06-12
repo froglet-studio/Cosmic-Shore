@@ -145,6 +145,8 @@ internal static class PrismTestRig
         public bool IsPortrait { get; set; }
         public ResourceSystem ResourceSystem { get; set; }
         public VesselAnimation VesselAnimation => null;
+        public VesselCameraCustomizer VesselCameraCustomizer => null;
+        public SilhouetteController Silhouette => null;
         // Overrides the interface default (Player.InputStatus) so animation tests can
         // drive input without a full IPlayer chain.
         public IInputStatus InputStatus { get; set; }

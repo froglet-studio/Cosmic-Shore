@@ -185,13 +185,13 @@ a file is indivisible). Engine additions don't count against the budget.
 | **V15** ✅ | 21. AudioSystem shell (Deviation #11), PrismAOERegistry (managed-array port). 22. Prism (+`AttachedPrism` restore). | ~925* | — |
 | **V16** ✅ | 23. NudgeShardPoolManager, NudgeShard, Skimmer (+skimmer member restores). 24. DriftTrailActionExecutor. | ~347 | — |
 | **V17** ✅ | 25. VesselPrismController (+restore). 26. R_VesselActionHandler (+restore). | ~696 | — |
-| **V18** | 27. AIPilot, AICinematicBehavior (+restores). | ~684 | — |
-| **V19** | 28. ICameraController, ICameraConfigurator, CustomCameraController, CameraManager shell (Deviation #12), VesselCameraCustomizer (+restore). 29. VesselImpactor + VesselExplosionByCrystalEffectSO (first impact-matrix slice), SilhouetteConfigSO, view shells (Deviation #13), SilhouetteController (+final restores). 30. **Close #10c — IVesselStatus verbatim.** Interface-surface freeze test; CLI vertical-slice growth (NEXT-UP item 4). | ~770* | **#10c** |
+| **V18** ✅ | 27. AIPilot, AICinematicBehavior (+restores). | ~684 | — |
+| **V19** ✅ | 28. ICameraController, ICameraConfigurator, CustomCameraController, CameraManager shell (Deviation #12), VesselCameraCustomizer (+restore). 29. VesselImpactor + VesselExplosionByCrystalEffectSO (first impact-matrix slice), SilhouetteConfigSO, view shells (Deviation #13), SilhouetteController (+final restores). 30. **Close #10c — IVesselStatus verbatim.** Interface-surface freeze test; CLI vertical-slice growth (NEXT-UP item 4). | ~770* | **#10c** |
 
 \* V15/V19 run hot; split at commit granularity if the green-build invariant gets
 uncomfortable — each numbered step is independently green.
 
-**Exit state after V19**: IVessel + IVesselStatus + IPlayer compile **verbatim**;
+**EXIT STATE ACHIEVED 2026-06-12 — IVesselStatus diff-verified verbatim, zero #10c markers.** **Exit state after V19**: IVessel + IVesselStatus + IPlayer compile **verbatim**;
 ElementalFloat + ElementalShipComponent ported (V6); Deviation #9 closed (V6);
 deviations #11/#12/#13 open and owned by phase 5; VesselStatus itself (the concrete
 NetworkBehaviour, not in this closure's targets) unblocks for the next arc.
