@@ -168,20 +168,20 @@ a file is indivisible). Engine additions don't count against the budget.
 
 | It | Steps | Game lines | Closes |
 |---|---|---|---|
-| **V1** | 1. Engine E3, E4, E5, E6, E7, E8(SO-clone), E10. 2. Port PauseSystem, SafeLookRotation, Singleton.cs, NetMarkers, BoostChangedPayload(+event), InputEventBlockPayload(+event), CellItem. | ~315 | — |
-| **V2** | 3. Engine E1 (input shim). 4. Port IInputStatus (Deviation #10a), IInputStrategy, BaseInputStrategy, KeyboardInputStrategy. | ~430 | — |
-| **V3** | 5. TouchInputStrategy, GamepadInputStrategy. | ~607 | — |
-| **V4** | 6. DualMouseInputStrategy, MultiMouseService, DeviceOrientationHandler. | ~543 | — |
-| **V5** | 7. GameSetting. 8. InputController (Deviation #10b), restore #10a. | ~557 | #10a |
-| **V6** | 9. **Keystone**: ITransform, IVessel, IPlayer, IVesselStatus (Deviation #10c), ElementalFloat, ElementalShipComponent, IVesselHUDController, R_ShipElementStatsHandler, ShipActionSO, ShipActionExecutorBase, ActionExecutorRegistry, ShipAction (legacy); restore #10b. 10. **Restore Deviation #9** (ResourceSystem : ElementalShipComponent + RequireComponent). Tests: ElementalFloat LerpUnclamped scaling, reflective binding, ResourceSystem regression. | ~520 | #10b, **#9** |
-| **V7** | 11. Engine E2 (renderer stubs). 12. InputStatus, VesselAnimation (+member restore). | ~444 | — |
-| **V8** | 13. VesselTransformer (+member restore). | ~518 | — |
-| **V9** | 14. Engine E9. 15. ShipHelper, ThemeManagerDataContainerSO, VesselCustomization (+restore), GenericPoolManager. | ~562 | — |
-| **V10** | 16. GameDataSO (single-file oversize) + engine `ISession` placeholder. | ~783 | — |
-| **V11** | 17. CellConfigDataSO, BlockDensityGrid, CellRuntimeDataSO. | ~710 | — |
+| **V1** ✅ | 1. Engine E3, E4, E5, E6, E7, E8(SO-clone), E10. 2. Port PauseSystem, SafeLookRotation, Singleton.cs, NetMarkers, BoostChangedPayload(+event), InputEventBlockPayload(+event), CellItem. | ~315 | — |
+| **V2** ✅ | 3. Engine E1 (input shim). 4. Port IInputStatus (Deviation #10a), IInputStrategy, BaseInputStrategy, KeyboardInputStrategy. | ~430 | — |
+| **V3** ✅ | 5. TouchInputStrategy, GamepadInputStrategy. | ~607 | — |
+| **V4** ✅ | 6. DualMouseInputStrategy, MultiMouseService, DeviceOrientationHandler. | ~543 | — |
+| **V5** ✅ | 7. GameSetting. 8. InputController (Deviation #10b), restore #10a. | ~557 | #10a |
+| **V6** ✅ | 9. **Keystone**: ITransform, IVessel, IPlayer, IVesselStatus (Deviation #10c), ElementalFloat, ElementalShipComponent, IVesselHUDController, R_ShipElementStatsHandler, ShipActionSO, ShipActionExecutorBase, ActionExecutorRegistry, ShipAction (legacy); restore #10b. 10. **Restore Deviation #9** (ResourceSystem : ElementalShipComponent + RequireComponent). Tests: ElementalFloat LerpUnclamped scaling, reflective binding, ResourceSystem regression. | ~520 | #10b, **#9** |
+| **V7** ✅ | 11. Engine E2 (renderer stubs). 12. InputStatus, VesselAnimation (+member restore). | ~444 | — |
+| **V8** ✅ | 13. VesselTransformer (+member restore). | ~518 | — |
+| **V9** ✅ | 14. Engine E9. 15. ShipHelper, ThemeManagerDataContainerSO, VesselCustomization (+restore), GenericPoolManager. | ~562 | — |
+| **V10** 🔄 | 16. GameDataSO (single-file oversize) + engine `ISession` placeholder. | ~783 | — |
+| **V11** 🔄 | 17. CellConfigDataSO, BlockDensityGrid, CellRuntimeDataSO. | ~710 | — |
 | **V12** | 18. Cell (single-file oversize; flora/fauna touchpoints stay event-shaped per ECOSYSTEM rules — conserved mass untouched). | ~825 | — |
-| **V13** | 19. PrismStateManager, PrismTeamManager, PrismScaleAnimator. | ~474 | — |
-| **V14** | 20. MaterialPropertyAnimator, Trail, PrismProperties, TrailFollower. | ~587 | — |
+| **V13** 🔄 | 19. PrismStateManager, PrismTeamManager, PrismScaleAnimator. | ~474 | — |
+| **V14** 🔄 | 20. MaterialPropertyAnimator, Trail, PrismProperties, TrailFollower. | ~587 | — |
 | **V15** | 21. AudioSystem shell (Deviation #11), PrismAOERegistry (managed-array port). 22. Prism (+`AttachedPrism` restore). | ~925* | — |
 | **V16** | 23. NudgeShardPoolManager, NudgeShard, Skimmer (+skimmer member restores). 24. DriftTrailActionExecutor. | ~347 | — |
 | **V17** | 25. VesselPrismController (+restore). 26. R_VesselActionHandler (+restore). | ~696 | — |
