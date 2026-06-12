@@ -41,6 +41,7 @@ namespace CosmicShore.Data
 
         public event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
         public event Action<IRoundStats> OnJoustCollisionChanged;
+        public event Action<IRoundStats> OnGoalsScoredChanged;
 
         public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
         public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
@@ -66,7 +67,7 @@ namespace CosmicShore.Data
 
         int _crystalsCollectedLocal, _omniCrystalsCollectedLocal, _elementalCrystalsCollectedLocal;
         float _chargeCrystalValueLocal, _massCrystalValueLocal, _spaceCrystalValueLocal, _timeCrystalValueLocal;
-        int _skimmerShipCollisionsLocal, _joustCollisionsLocal;
+        int _skimmerShipCollisionsLocal, _joustCollisionsLocal, _goalsScoredLocal;
 
         float _fullSpeedStraightAbilityActiveTimeLocal,
             _rightStickAbilityActiveTimeLocal,
@@ -159,6 +160,9 @@ namespace CosmicShore.Data
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
         readonly NetworkVariable<int> n_JoustCollisions =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        readonly NetworkVariable<int> n_GoalsScored =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
         readonly NetworkVariable<float> n_FullSpeedStraightAbilityActiveTime =
@@ -545,6 +549,18 @@ namespace CosmicShore.Data
             }
         }
 
+        public int GoalsScored
+        {
+            get => _goalsScoredLocal;
+            set
+            {
+                _goalsScoredLocal = value;
+                if (IsSpawned && IsServer) n_GoalsScored.Value = value;
+
+                RaiseSpecific(OnGoalsScoredChanged);
+            }
+        }
+
         public float FullSpeedStraightAbilityActiveTime
         {
             get => _fullSpeedStraightAbilityActiveTimeLocal;
@@ -676,6 +692,7 @@ namespace CosmicShore.Data
 
             _skimmerShipCollisionsLocal = n_SkimmerShipCollisions.Value;
             _joustCollisionsLocal       = n_JoustCollisions.Value;
+            _goalsScoredLocal           = n_GoalsScored.Value;
 
             _fullSpeedStraightAbilityActiveTimeLocal = n_FullSpeedStraightAbilityActiveTime.Value;
             _rightStickAbilityActiveTimeLocal        = n_RightStickAbilityActiveTime.Value;
@@ -840,6 +857,15 @@ namespace CosmicShore.Data
                 // only clients need the replication-driven event.
                 if (!IsServer)
                     RaiseSpecific(OnJoustCollisionChanged);
+            };
+
+            n_GoalsScored.OnValueChanged += (_, v) =>
+            {
+                _goalsScoredLocal = v;
+                // Server already raised OnGoalsScoredChanged from the setter;
+                // only clients need the replication-driven event.
+                if (!IsServer)
+                    RaiseSpecific(OnGoalsScoredChanged);
             };
 
             n_FullSpeedStraightAbilityActiveTime.OnValueChanged += (_, v) =>

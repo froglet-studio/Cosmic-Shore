@@ -189,6 +189,7 @@ All in `Assets/_Scenes/Singleplayer Scenes/`.
 | `MinigameDuelForCellMultiplayer_Gameplay` | `MultiplayerCellularDuel (29)` | `MultiplayerCellularDuelController` |
 | `MinigameJoust_Gameplay` | `MultiplayerJoust (34)` | `MultiplayerJoustController` |
 | `MinigameWildlifeBlitzMultuplayerCoOp` | `MultiplayerWildlifeBlitzGame (32)` | `MultiplayerWildlifeBlitzMiniGame` |
+| `MinigameAstroLeague` | `AstroLeague (36)` | `AstroLeagueController` |
 | `ArcadeGameMultiplayer2v2CoOpVsAI` | `Multiplayer2v2CoOpVsAI (30)` | Domain games variant |
 
 All in `Assets/_Scenes/Multiplayer Scenes/`.
@@ -201,7 +202,7 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 
 #### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
 
-35 game modes with explicit numeric IDs. Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`. Meta: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
+36 game modes with explicit numeric IDs. Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(36)`. Meta: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
 
 Many single-player modes (1-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail.
 
@@ -227,7 +228,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── HexRaceController              — crystal race, deterministic track, golf scoring
         ├── MultiplayerJoustController      — collision tracking, golf scoring
         ├── MultiplayerCellularDuelController — vessel ownership swap between rounds
-        └── MultiplayerCrystalCaptureController — minimal (1 round, 1 turn)
+        ├── MultiplayerCrystalCaptureController — minimal (1 round, 1 turn)
+        └── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
 ```
 
 #### Game Launch Pipeline
@@ -255,6 +257,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `HEXRACE.md` | `_Scripts/Controller/Arcade/` | HexRace game mode technical reference |
 | `CRYSTAL_CAPTURE.md` | `_Scripts/Controller/Arcade/` | Crystal Capture game mode technical reference |
 | `JOUST.md` | `_Scripts/Controller/Arcade/` | Joust game mode technical reference |
+| `ASTROLEAGUE.md` | `_Scripts/Controller/Arcade/` | Astro League game mode technical reference |
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
 | `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, customization) |

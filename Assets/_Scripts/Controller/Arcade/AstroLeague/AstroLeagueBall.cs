@@ -1,0 +1,648 @@
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using CosmicShore.Utility;
+using Cysharp.Threading.Tasks;
+using Unity.Netcode;
+using UnityEngine;
+
+namespace CosmicShore.Gameplay
+{
+    /// <summary>
+    /// Server-authoritative billiard-physics match ball for Astro League.
+    ///
+    /// The server owns the rigidbody simulation, resolves vessel strikes, and replicates
+    /// position + velocity through NetworkVariables; non-server peers run a kinematic body
+    /// and dead-reckon toward the replicated state (netPos + netVel * age), which stays
+    /// smooth at billiard speeds where plain interpolation lags.
+    ///
+    /// Vessels move via transform (not rigidbody), so momentum transfer cannot read physics
+    /// velocity. The server samples every vessel root's position each FixedUpdate and uses
+    /// the resulting velocity estimate for strikes — this works identically for the host's
+    /// own vessel, replicated client vessels, and AI (VesselStatus.Speed/Course is only
+    /// trustworthy on the owning peer, see ResolveStrikerVelocity).
+    ///
+    /// Impact juice (emission flash, burst particles, distance-scaled camera shake, haptics)
+    /// plays on every peer via ClientRpc. Hitstop is solo-session-only — local timescale
+    /// changes desync connected peers.
+    /// </summary>
+    [RequireComponent(typeof(Rigidbody))]
+    [RequireComponent(typeof(SphereCollider))]
+    public class AstroLeagueBall : NetworkBehaviour
+    {
+        [Header("Config")]
+        [SerializeField] AstroLeagueSettingsSO settings;
+        [SerializeField] GameDataSO gameData;
+
+        [Header("Payload Colors")]
+        [SerializeField] Color primaryColor = new(1f, 0.6f, 0.1f, 1f);
+        [SerializeField] Color secondaryColor = new(0.2f, 0.5f, 1f, 1f);
+        [SerializeField] Color tertiaryColor = new(1f, 0.15f, 0.6f, 1f);
+        [SerializeField] float colorCycleSpeed = 1.2f;
+        [SerializeField] float baseLightIntensity = 3f;
+
+        static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
+        static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+
+        Rigidbody rb;
+        Vector3 spawnPosition;
+        bool hitstopActive;
+        CancellationToken destroyToken;
+
+        // ── Replicated state (server write) ─────────────────────────────────
+        readonly NetworkVariable<Vector3> n_Position =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        readonly NetworkVariable<Vector3> n_Velocity =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        readonly NetworkVariable<bool> n_Frozen =
+            new(true, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        readonly NetworkVariable<bool> n_Hidden =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
+        float _lastSnapshotTime;
+
+        // Server-side velocity estimates for transform-driven vessels (root → last pos + velocity)
+        readonly Dictionary<Transform, Vector3> _vesselLastPos = new();
+        readonly Dictionary<Transform, Vector3> _vesselVelocity = new();
+
+        // Per-vessel strike cooldown so one fly-through doesn't register as several hits
+        readonly Dictionary<Transform, float> _lastStrikeTime = new();
+        const float StrikeCooldownSeconds = 0.2f;
+
+        // Visuals
+        Light ballLight;
+        TrailRenderer trail;
+        Renderer ballRenderer;
+        MaterialPropertyBlock mpb;
+        ParticleSystem auraParticles;
+        ParticleSystem impactParticles;
+        float flashTimer;
+        float currentEmissionBoost = 1f;
+
+        CustomCameraController cameraController;
+
+        /// <summary>Server-only: raised when a vessel strikes the ball. Payload: striking vessel, hit intensity 0..1.</summary>
+        public event Action<IVessel, float> OnStruckServer;
+
+        public Vector3 Velocity => IsServer ? rb.linearVelocity : n_Velocity.Value;
+        public bool IsFrozen => n_Frozen.Value;
+        public bool IsHidden => n_Hidden.Value;
+
+        void Awake()
+        {
+            destroyToken = this.GetCancellationTokenOnDestroy();
+
+            rb = GetComponent<Rigidbody>();
+            rb.useGravity = false;
+            rb.mass = settings != null ? settings.ballMass : 3f;
+            rb.linearDamping = 0f; // Speed-dependent drag applied in FixedUpdate
+            rb.angularDamping = 0.05f;
+            rb.interpolation = RigidbodyInterpolation.Interpolate;
+            rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+
+            var sphereCol = GetComponent<SphereCollider>();
+            sphereCol.material = new PhysicsMaterial("AstroLeagueBall")
+            {
+                bounciness = settings != null ? settings.ballBounciness : 0.98f,
+                bounceCombine = PhysicsMaterialCombine.Maximum,
+                frictionCombine = PhysicsMaterialCombine.Minimum,
+                dynamicFriction = 0f,
+                staticFriction = 0f
+            };
+
+            spawnPosition = transform.position;
+            SetupVisuals();
+        }
+
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+
+            if (IsServer)
+            {
+                n_Position.Value = transform.position;
+                ApplyFrozenPhysics(n_Frozen.Value);
+            }
+            else
+            {
+                // Non-server peers never simulate the ball — kinematic, replication-driven.
+                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                rb.isKinematic = true;
+                transform.position = n_Position.Value;
+                n_Position.OnValueChanged += (_, _) => _lastSnapshotTime = Time.time;
+                _lastSnapshotTime = Time.time;
+            }
+
+            n_Hidden.OnValueChanged += (_, hidden) => ApplyHiddenVisuals(hidden);
+            ApplyHiddenVisuals(n_Hidden.Value);
+        }
+
+        void Start()
+        {
+            if (CameraManager.Instance != null)
+                cameraController = CameraManager.Instance.GetActiveController() as CustomCameraController;
+        }
+
+        #region Visual construction
+
+        void SetupVisuals()
+        {
+            mpb = new MaterialPropertyBlock();
+
+            ballRenderer = GetComponent<Renderer>();
+            if (ballRenderer != null)
+            {
+                // One material instance created for the ball at startup; per-frame
+                // animation goes through the MaterialPropertyBlock, never .material.
+                var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                mat.SetFloat("_Metallic", 0.9f);
+                mat.SetFloat("_Smoothness", 0.95f);
+                mat.SetColor(BaseColorId, primaryColor);
+                mat.EnableKeyword("_EMISSION");
+                ballRenderer.sharedMaterial = mat;
+            }
+
+            ballLight = gameObject.AddComponent<Light>();
+            ballLight.type = LightType.Point;
+            ballLight.color = primaryColor;
+            ballLight.range = settings != null ? settings.minLightRange : 25f;
+            ballLight.intensity = baseLightIntensity;
+            ballLight.shadows = LightShadows.None;
+
+            trail = gameObject.AddComponent<TrailRenderer>();
+            trail.time = 0.3f;
+            trail.startWidth = settings != null ? settings.minTrailWidth : 0.6f;
+            trail.endWidth = 0.1f;
+            trail.numCapVertices = 4;
+            var trailMat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
+            trailMat.color = primaryColor;
+            MakeTransparent(trailMat);
+            trail.sharedMaterial = trailMat;
+            trail.startColor = primaryColor;
+            trail.endColor = new Color(secondaryColor.r, secondaryColor.g, secondaryColor.b, 0f);
+            trail.minVertexDistance = 0.5f;
+            trail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            trail.receiveShadows = false;
+            trail.generateLightingData = false;
+
+            auraParticles = CreateParticles("PayloadAura", burstOnly: false);
+            impactParticles = CreateParticles("ImpactBurst", burstOnly: true);
+        }
+
+        static void MakeTransparent(Material mat)
+        {
+            mat.SetFloat("_Surface", 1);
+            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            mat.SetInt("_ZWrite", 0);
+            mat.EnableKeyword("_ALPHABLEND_ON");
+            mat.renderQueue = 3000;
+        }
+
+        ParticleSystem CreateParticles(string childName, bool burstOnly)
+        {
+            var go = new GameObject(childName);
+            go.transform.SetParent(transform, false);
+
+            var ps = go.AddComponent<ParticleSystem>();
+            var main = ps.main;
+            main.playOnAwake = !burstOnly;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.gravityModifier = 0f;
+            main.startColor = new ParticleSystem.MinMaxGradient(primaryColor, secondaryColor);
+
+            var emission = ps.emission;
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+
+            if (burstOnly)
+            {
+                main.startLifetime = new ParticleSystem.MinMaxCurve(0.15f, 0.4f);
+                main.startSpeed = new ParticleSystem.MinMaxCurve(15f, 45f);
+                main.startSize = new ParticleSystem.MinMaxCurve(0.3f, 0.9f);
+                main.maxParticles = 200;
+                main.startColor = new ParticleSystem.MinMaxGradient(Color.white, primaryColor);
+                emission.rateOverTime = 0f;
+                shape.radius = 0.5f;
+            }
+            else
+            {
+                main.startLifetime = 0.8f;
+                main.startSpeed = 2f;
+                main.startSize = 0.6f;
+                main.maxParticles = 60;
+                emission.rateOverTime = 20f;
+                shape.radius = 1.5f;
+
+                var vel = ps.velocityOverLifetime;
+                vel.enabled = true;
+                vel.orbitalX = 3f;
+                vel.orbitalY = 2f;
+                vel.orbitalZ = 1.5f;
+                vel.radial = -1f;
+            }
+
+            var sizeOverLifetime = ps.sizeOverLifetime;
+            sizeOverLifetime.enabled = true;
+            sizeOverLifetime.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 1f, 1f, 0f));
+
+            var colorOverLifetime = ps.colorOverLifetime;
+            colorOverLifetime.enabled = true;
+            var gradient = new Gradient();
+            gradient.SetKeys(
+                new[] { new GradientColorKey(Color.white, 0f), new GradientColorKey(secondaryColor, 1f) },
+                new[] { new GradientAlphaKey(0.9f, 0f), new GradientAlphaKey(0f, 1f) });
+            colorOverLifetime.color = gradient;
+
+            var psRenderer = go.GetComponent<ParticleSystemRenderer>();
+            var psMat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+            psMat.SetFloat("_Surface", 1);
+            psMat.SetInt("_Blend", 1); // Additive
+            psMat.SetColor(BaseColorId, Color.white);
+            psMat.renderQueue = 3100;
+            psRenderer.sharedMaterial = psMat;
+            psRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+            return ps;
+        }
+
+        #endregion
+
+        #region Physics (server) + replication (clients)
+
+        void FixedUpdate()
+        {
+            if (settings == null) return;
+
+            if (!IsSpawned || IsServer)
+                ServerFixedUpdate();
+            else
+                ClientFixedUpdate();
+        }
+
+        void ServerFixedUpdate()
+        {
+            SampleVesselVelocities();
+
+            if (!n_Frozen.Value)
+            {
+                float speed = rb.linearVelocity.magnitude;
+
+                // Speed-dependent drag: coast at speed, settle near rest.
+                float speedRatio = Mathf.Clamp01(speed / settings.maxSpeed);
+                float drag = Mathf.Lerp(settings.lowSpeedDrag, settings.highSpeedDrag, speedRatio);
+                rb.linearVelocity *= Mathf.Max(0f, 1f - drag * Time.fixedDeltaTime);
+
+                if (rb.linearVelocity.sqrMagnitude < settings.stopThreshold * settings.stopThreshold)
+                    rb.linearVelocity = Vector3.zero;
+
+                if (rb.linearVelocity.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
+                    rb.linearVelocity = rb.linearVelocity.normalized * settings.maxSpeed;
+            }
+
+            if (IsSpawned)
+            {
+                n_Position.Value = transform.position;
+                n_Velocity.Value = n_Frozen.Value ? Vector3.zero : rb.linearVelocity;
+            }
+        }
+
+        void ClientFixedUpdate()
+        {
+            // Dead reckoning: project the last snapshot forward by its age, then blend.
+            float age = Mathf.Clamp(Time.time - _lastSnapshotTime, 0f, 0.25f);
+            Vector3 predicted = n_Position.Value + n_Velocity.Value * age;
+
+            if ((predicted - transform.position).sqrMagnitude > settings.clientSnapDistance * settings.clientSnapDistance)
+            {
+                transform.position = predicted;
+                if (trail != null) trail.Clear();
+            }
+            else
+            {
+                float t = 1f - Mathf.Exp(-settings.clientSmoothingRate * Time.fixedDeltaTime);
+                transform.position = Vector3.Lerp(transform.position, predicted, t);
+            }
+        }
+
+        /// <summary>
+        /// Server-side velocity estimation for transform-driven vessels. One pass over the
+        /// roster per physics tick (≤ a handful of vessels) — no per-collision allocation.
+        /// </summary>
+        void SampleVesselVelocities()
+        {
+            if (gameData == null) return;
+
+            float dt = Time.fixedDeltaTime;
+            for (int i = 0, n = gameData.Vessels.Count; i < n; i++)
+            {
+                var vessel = gameData.Vessels[i];
+                if (vessel == null) continue;
+                var root = vessel.Transform;
+                if (root == null) continue;
+
+                if (_vesselLastPos.TryGetValue(root, out var lastPos))
+                    _vesselVelocity[root] = (root.position - lastPos) / dt;
+                _vesselLastPos[root] = root.position;
+            }
+        }
+
+        void OnCollisionEnter(Collision collision)
+        {
+            if (settings == null || n_Frozen.Value || n_Hidden.Value) return;
+            if (IsSpawned && !IsServer) return; // Server-authoritative contact resolution
+            if (collision.contactCount == 0) return;
+
+            Vector3 contactPoint = collision.contacts[0].point;
+            Vector3 contactNormal = collision.contacts[0].normal;
+
+            var vessel = collision.collider != null
+                ? collision.collider.GetComponentInParent<IVessel>()
+                : null;
+
+            if (vessel == null)
+            {
+                // Static geometry (arena walls, prisms): Unity resolved the bounce, we add feedback.
+                float bounceSpeed = rb.linearVelocity.magnitude;
+                float bounceIntensity = Mathf.Clamp01(bounceSpeed / settings.maxSpeed);
+                if (bounceSpeed > settings.hitstopSpeedThreshold * 0.3f)
+                    PlayImpactJuice_ClientRpc(contactPoint, contactNormal, bounceIntensity * 0.35f, false);
+                return;
+            }
+
+            VesselStrike(vessel, contactPoint);
+        }
+
+        void VesselStrike(IVessel vessel, Vector3 contactPoint)
+        {
+            var root = vessel.Transform;
+            float now = Time.time;
+            if (_lastStrikeTime.TryGetValue(root, out var last) && now - last < StrikeCooldownSeconds)
+                return;
+
+            Vector3 strikerVelocity = ResolveStrikerVelocity(vessel);
+            float strikerSpeed = strikerVelocity.magnitude;
+            if (strikerSpeed < settings.minimumHitSpeed) return;
+
+            _lastStrikeTime[root] = now;
+
+            // Billiard deflection blended toward the striker's heading.
+            Vector3 deflectionDir = (transform.position - contactPoint).normalized;
+            Vector3 pushDir = strikerVelocity.normalized;
+            Vector3 resultDir = Vector3.Slerp(deflectionDir, pushDir, settings.directionalBias).normalized;
+
+            Vector3 retained = rb.linearVelocity * settings.velocityRetention;
+            rb.linearVelocity = retained + resultDir * (strikerSpeed * settings.hitBoostMultiplier);
+
+            float finalSpeed = rb.linearVelocity.magnitude;
+            if (finalSpeed > settings.maxSpeed)
+            {
+                rb.linearVelocity = rb.linearVelocity.normalized * settings.maxSpeed;
+                finalSpeed = settings.maxSpeed;
+            }
+
+            float intensity = Mathf.Clamp01(finalSpeed / settings.maxSpeed);
+            PlayImpactJuice_ClientRpc(contactPoint, deflectionDir, intensity, true);
+
+            if (finalSpeed > settings.hitstopSpeedThreshold && IsSoloSession())
+                RunHitstopAsync().Forget();
+
+            OnStruckServer?.Invoke(vessel, intensity);
+        }
+
+        /// <summary>
+        /// Vessels move via transform.position (VesselTransformer), so rigidbody velocity is ~0
+        /// and VesselStatus.Speed/Course only updates on the owning peer. The server's sampled
+        /// transform delta is the one source that is correct for every vessel; Speed/Course is
+        /// the fallback for the first tick before a sample exists (host's own vessel and AI).
+        /// </summary>
+        Vector3 ResolveStrikerVelocity(IVessel vessel)
+        {
+            if (vessel.Transform != null
+                && _vesselVelocity.TryGetValue(vessel.Transform, out var sampled)
+                && sampled.sqrMagnitude > 1f)
+                return sampled;
+
+            var vesselStatus = vessel.VesselStatus;
+            if (vesselStatus != null && vesselStatus.Speed > 0.1f)
+                return vesselStatus.Course * vesselStatus.Speed;
+
+            return Vector3.zero;
+        }
+
+        bool IsSoloSession()
+        {
+            var nm = NetworkManager.Singleton;
+            return nm == null || !nm.IsListening || nm.ConnectedClientsIds.Count <= 1;
+        }
+
+        #endregion
+
+        #region Per-frame visuals (every peer)
+
+        void Update()
+        {
+            if (settings == null || ballRenderer == null) return;
+
+            float speedRatio = Mathf.Clamp01(Velocity.magnitude / settings.speedForMaxVisuals);
+
+            // Impact flash decay
+            if (flashTimer > 0f)
+            {
+                flashTimer -= Time.deltaTime;
+                float flashRatio = Mathf.Clamp01(flashTimer / settings.impactFlashDuration);
+                currentEmissionBoost = Mathf.Lerp(1f, settings.impactFlashIntensity, flashRatio);
+            }
+            else
+            {
+                currentEmissionBoost = 1f;
+            }
+
+            // Three-way color cycle with breathing pulse
+            float phase = (Time.time * colorCycleSpeed) % 3f;
+            Color emissionColor = phase < 1f
+                ? Color.Lerp(primaryColor, secondaryColor, phase)
+                : phase < 2f
+                    ? Color.Lerp(secondaryColor, tertiaryColor, phase - 1f)
+                    : Color.Lerp(tertiaryColor, primaryColor, phase - 2f);
+
+            float breath = 0.8f + 0.2f * Mathf.Sin(Time.time * 4f);
+            float emissionIntensity = Mathf.Lerp(settings.minEmissionIntensity, settings.maxEmissionIntensity, speedRatio);
+
+            mpb.SetColor(EmissionColorId, emissionColor * (emissionIntensity * breath * currentEmissionBoost));
+            ballRenderer.SetPropertyBlock(mpb);
+
+            if (ballLight != null)
+            {
+                ballLight.color = emissionColor;
+                float boost = currentEmissionBoost > 1f ? Mathf.Sqrt(currentEmissionBoost) : 1f;
+                ballLight.intensity = baseLightIntensity * (1f + speedRatio * 2f) * breath * boost;
+                ballLight.range = Mathf.Lerp(settings.minLightRange, settings.maxLightRange, speedRatio);
+            }
+
+            if (trail != null)
+            {
+                trail.startWidth = Mathf.Lerp(settings.minTrailWidth, settings.maxTrailWidth, speedRatio);
+                trail.time = Mathf.Lerp(0.15f, 0.8f, speedRatio);
+            }
+
+            if (auraParticles != null)
+            {
+                var emission = auraParticles.emission;
+                emission.rateOverTime = n_Hidden.Value ? 0f : Mathf.Lerp(8f, 45f, speedRatio);
+            }
+        }
+
+        #endregion
+
+        #region Juice (replicated to every peer)
+
+        [ClientRpc]
+        void PlayImpactJuice_ClientRpc(Vector3 position, Vector3 normal, float intensity, bool vesselStrike)
+        {
+            TriggerFlash(intensity);
+            EmitBurst(position, normal, (int)(settings.impactParticleBurst * Mathf.Max(0.3f, intensity)));
+            ShakeCamera(settings.strikeShakeIntensity * intensity, settings.strikeShakeDuration, position);
+
+            if (vesselStrike)
+                HapticController.PlayHaptic(HapticType.ShipCollision);
+        }
+
+        [ClientRpc]
+        void Detonate_ClientRpc(Vector3 position)
+        {
+            EmitBurst(position, Vector3.up, settings.goalParticleBurst);
+            ShakeCamera(settings.goalShakeIntensity, settings.goalShakeDuration, position);
+            HapticController.PlayHaptic(HapticType.MineCollision);
+        }
+
+        void TriggerFlash(float intensity) =>
+            flashTimer = settings.impactFlashDuration * Mathf.Max(0.3f, intensity);
+
+        void EmitBurst(Vector3 position, Vector3 normal, int count)
+        {
+            if (impactParticles == null || count <= 0) return;
+            impactParticles.transform.position = position;
+            impactParticles.transform.forward = normal;
+            impactParticles.Emit(count);
+        }
+
+        /// <summary>Shake the local camera, scaled down with distance from the impact.</summary>
+        void ShakeCamera(float intensity, float duration, Vector3 impactPosition)
+        {
+            if (cameraController == null && CameraManager.Instance != null)
+                cameraController = CameraManager.Instance.GetActiveController() as CustomCameraController;
+            if (cameraController == null) return;
+
+            float falloff = 1f;
+            if (settings.shakeFalloffRadius > 0f)
+            {
+                float distance = Vector3.Distance(cameraController.transform.position, impactPosition);
+                falloff = Mathf.Clamp01(1f - distance / settings.shakeFalloffRadius);
+            }
+            if (falloff <= 0f) return;
+
+            cameraController.Shake(intensity * falloff, duration);
+        }
+
+        async UniTaskVoid RunHitstopAsync()
+        {
+            if (hitstopActive) return;
+            hitstopActive = true;
+
+            float baseFixedDelta = Time.fixedDeltaTime / Mathf.Max(Time.timeScale, 0.0001f);
+            Time.timeScale = settings.hitstopTimeScale;
+            Time.fixedDeltaTime = baseFixedDelta * settings.hitstopTimeScale;
+
+            try
+            {
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(settings.hitstopDuration),
+                    ignoreTimeScale: true,
+                    cancellationToken: destroyToken);
+            }
+            finally
+            {
+                // Restore to known constants, not captured values — a concurrent
+                // celebration slow-mo must not be clobbered by a stale capture.
+                Time.timeScale = 1f;
+                Time.fixedDeltaTime = baseFixedDelta;
+                hitstopActive = false;
+            }
+        }
+
+        #endregion
+
+        #region Match control API (server-only, driven by AstroLeagueController)
+
+        /// <summary>Server: detonate at the goal mouth — burst + shake on every peer, then hide until kickoff.</summary>
+        public void DetonateServer()
+        {
+            if (!IsServer) return;
+            Detonate_ClientRpc(transform.position);
+            SetHiddenServer(true);
+        }
+
+        /// <summary>Server: freeze the ball in place at center (kickoff count-in). Velocity is cleared.</summary>
+        public void SetFrozenServer(bool frozen)
+        {
+            if (!IsServer) return;
+            n_Frozen.Value = frozen;
+            ApplyFrozenPhysics(frozen);
+        }
+
+        void ApplyFrozenPhysics(bool frozen)
+        {
+            if (frozen)
+            {
+                // Kinematic bodies only support speculative continuous detection.
+                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+                rb.isKinematic = true;
+                transform.position = spawnPosition;
+            }
+            else
+            {
+                rb.isKinematic = false;
+                rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+            }
+        }
+
+        /// <summary>Server: hide/show the ball (between goal detonation and kickoff respawn).</summary>
+        public void SetHiddenServer(bool hidden)
+        {
+            if (!IsServer) return;
+            n_Hidden.Value = hidden;
+            if (hidden)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+            ApplyHiddenVisuals(hidden); // NetworkVariable callback covers remote peers; host applies inline
+        }
+
+        void ApplyHiddenVisuals(bool hidden)
+        {
+            if (ballRenderer != null) ballRenderer.enabled = !hidden;
+            if (ballLight != null) ballLight.enabled = !hidden;
+            if (trail != null)
+            {
+                trail.emitting = !hidden;
+                if (hidden) trail.Clear();
+            }
+        }
+
+        /// <summary>Server: respawn at center — visible, frozen, zero velocity.</summary>
+        public void ResetToCenterServer()
+        {
+            if (!IsServer) return;
+            SetFrozenServer(true);
+            SetHiddenServer(false);
+            transform.position = spawnPosition;
+            n_Position.Value = spawnPosition;
+            n_Velocity.Value = Vector3.zero;
+            if (trail != null) trail.Clear();
+        }
+
+        #endregion
+    }
+}

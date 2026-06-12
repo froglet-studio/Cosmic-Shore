@@ -14,6 +14,13 @@ namespace CosmicShore.ScriptableObjects
 
         public int MinPlayersAllowed = 1;
         public int MaxPlayersAllowed = 2;
+
+        [Tooltip("Per-game bounds for the domain-count stepper in the configure modal. " +
+                 "Games that require a fixed team shape (e.g. Astro League needs exactly two " +
+                 "domains for its two goals) constrain the range here.")]
+        [Range(1, 3)] public int MinDomainsAllowed = 1;
+        [Range(1, 3)] public int MaxDomainsAllowed = 3;
+
         [Min(1)] public int MinIntensity = 1;
         [Range(1, 4)] public int MaxIntensity = 4;
         public CallToActionTargetType CallToActionTargetType;

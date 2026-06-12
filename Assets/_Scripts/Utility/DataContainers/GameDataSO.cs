@@ -188,6 +188,17 @@ namespace CosmicShore.Utility
         [NonSerialized] public int JoustTargetCount;
 
         /// <summary>
+        /// The resolved goal target for the current Astro League session — the per-domain
+        /// goal sum that triggers the mercy-rule finish. Published by
+        /// <see cref="AstroLeagueController"/> in OnNetworkSpawn on the server and synced to
+        /// clients via its match-config ClientRpc (a settings constant, identical across
+        /// clients). Read by <see cref="AstroLeagueScoringRuleSO"/> for the end condition and
+        /// the "remaining" readout. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public int GoalTargetCount;
+
+        /// <summary>
         /// The active scoring strategy for the current mode, published by the mode's controller
         /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
         /// asset onto the controller). Read by the network turn monitors for the end condition
@@ -335,6 +346,7 @@ namespace CosmicShore.Utility
             Results.Clear();
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
+            GoalTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -378,6 +390,7 @@ namespace CosmicShore.Utility
             Results.Clear();
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
+            GoalTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 

@@ -104,6 +104,20 @@ namespace CosmicShore.Gameplay
         Vector3 _distance;
         bool LookingAtCrystal;
 
+        // Optional external steering hook. When set, the provider is sampled every
+        // frame and overrides crystal/player seeking entirely. Used by game modes
+        // that need bespoke AI objectives (e.g. Astro League ball striking).
+        Func<Vector3> _externalTargetProvider;
+
+        /// <summary>
+        /// Routes all steering toward positions supplied by <paramref name="provider"/>.
+        /// Pass the freshest position each call — it is sampled once per frame.
+        /// </summary>
+        public void SetExternalTargetProvider(Func<Vector3> provider) => _externalTargetProvider = provider;
+
+        /// <summary>Restores default crystal/player target seeking.</summary>
+        public void ClearExternalTargetProvider() => _externalTargetProvider = null;
+
         Dictionary<Corner, AvoidanceBehavior> CornerBehaviors;
 
         #region Avoidance Stuff
@@ -278,6 +292,9 @@ namespace CosmicShore.Gameplay
 
             if (VesselStatus.IsStationary)
                 return;
+
+            if (_externalTargetProvider != null)
+                _targetPosition = _externalTargetProvider();
 
             _distance = _targetPosition - transform.position;
             Vector3 desiredDirection = _distance.normalized;
