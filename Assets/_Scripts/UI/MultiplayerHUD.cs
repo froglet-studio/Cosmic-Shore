@@ -31,7 +31,7 @@ namespace CosmicShore.UI
         // never gameData.RoundStatsList: on a mid-turn scene exit ResetRuntimeData clears
         // the roster before the old scene's objects are destroyed, so a list-based
         // unsubscribe detaches nothing and HandlePlayerStatChanged leaks onto the
-        // persistent human RoundStats (Docs/ScoringSystem/BUGS.md B13).
+        // persistent human RoundStats (Docs/ScoringSystem/BUGS.md B15).
         readonly HashSet<IRoundStats> _subscribedStats = new();
 
         // Domain-panel build signature — a hash of every player's (name → Player.Domain) + the local

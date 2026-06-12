@@ -21,7 +21,7 @@ namespace CosmicShore.Gameplay
         // list, never gameData.RoundStatsList: on a mid-turn scene exit, SceneLoader's
         // ResetRuntimeData clears the roster BEFORE the old scene's objects are
         // destroyed, so a list-based unsubscribe loop detaches nothing and the handler
-        // leaks onto the persistent human RoundStats (Docs/ScoringSystem/BUGS.md B13).
+        // leaks onto the persistent human RoundStats (Docs/ScoringSystem/BUGS.md B15).
         readonly List<IRoundStats> _subscribedStats = new();
 
         void OnEnable()

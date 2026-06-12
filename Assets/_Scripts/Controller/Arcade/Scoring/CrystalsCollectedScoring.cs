@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
         // list, never GameData.RoundStatsList: on a mid-turn scene exit the roster is
         // cleared before the tracker tears down, so a list-based unsubscribe detaches
         // nothing and the dead UpdateScore keeps writing Score into the NEXT game's
-        // persistent RoundStats (Docs/ScoringSystem/BUGS.md B13).
+        // persistent RoundStats (Docs/ScoringSystem/BUGS.md B15).
         readonly List<IRoundStats> _subscribedStats = new();
 
         public enum CrystalType

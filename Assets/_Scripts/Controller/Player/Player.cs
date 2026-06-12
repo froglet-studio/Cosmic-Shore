@@ -330,7 +330,7 @@ namespace CosmicShore.Gameplay
             // BEFORE Cleanup() writes zeros — otherwise the zeroing setters raise
             // into destroyed subscribers (a mid-turn exit skips their turn-end
             // cleanup, and their teardown unsubscribes via RoundStatsList, which
-            // ResetRuntimeData already cleared). See Docs/ScoringSystem/BUGS.md B13.
+            // ResetRuntimeData already cleared). See Docs/ScoringSystem/BUGS.md B15.
             if (RoundStats is RoundStats statsComponent)
                 statsComponent.ClearEventSubscriptions();
 

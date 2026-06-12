@@ -224,29 +224,26 @@ bool didWin = !string.IsNullOrEmpty(gameData.WinnerName)
 
 The crystal difference is calculated against the opponent's maximum score (supports 2+ players).
 
-### 9. Replay & Rematch
+### 9. Replay (Play Again)
 
-Crystal Capture uses **full network scene reload** for replay (`UseSceneReloadForReplay = true`):
+Crystal Capture uses **full network scene reload** for replay (`UseSceneReloadForReplay = true`). Play Again is **host-only** (the old rematch-request flow was removed with the per-mode scoreboard subclasses): `Scoreboard.ConfigureLobbyButtons` hides Play Again + Main Menu for non-host clients, and the call path is guarded in both `Scoreboard.OnPlayAgainButtonPressed` and `RequestReplay`. The host's replay carries every client along via the Netcode scene load.
 
 ```
-Scoreboard.OnPlayAgainButtonPressed()
-│
-├─ [Multiplayer: 2+ humans]
-│   ├─ RequestRematch(playerName) → opponent sees rematch request panel
-│   └─ Accept → RequestReplay()
-│
-└─ [Solo with AI / accepted rematch]
-    └─ RequestReplay() → ExecuteReplaySequence()
-        └─ ExecuteSceneReloadReplay()
-            ├─ gameData.IsReplayReload = true
-            ├─ PrepareForSceneReload_ClientRpc()  — fade to black on all clients
-            ├─ await 500ms
-            ├─ Clear vessel references, despawn vessels
-            ├─ gameData.ResetRuntimeData()
-            └─ nm.SceneManager.LoadScene(sceneName)  — full scene reload
+Scoreboard.OnPlayAgainButtonPressed()  [host only]
+├─ HideHostNavButtons()  — hide Play Again + Main Menu (anti-spam)
+└─ gameController.RequestReplay() → ExecuteReplaySequence()
+    └─ ExecuteSceneReloadReplay()
+        ├─ gameData.IsReplayReload = true
+        ├─ PrepareForSceneReload_ClientRpc()  — fade to black on all clients
+        ├─ await 500ms
+        ├─ Clear vessel references, despawn AI players + vessels
+        ├─ gameData.ResetRuntimeData()
+        └─ nm.SceneManager.LoadScene(sceneName)  — full scene reload
 ```
 
 An `OnResetForReplayCustom()` method exists as an in-place reset fallback (resets `_finalResultsSent`, clears crystal counts and scores). This runs only via the `ResetForReplay_ClientRpc` path, which is not the default for Crystal Capture.
+
+**Scene wiring requirement (this broke Play Again once — `BUGS.md` B13):** the Crystal Capture scene removes the GameCanvas-HexRace prefab's internal `Scoreboard` component and adds its own scene-level `Scoreboard` (with `gameController` → `MultiplayerCrystalCaptureController`). The prefab's `PlayAgainButton.onClick` persistent call targets the *internal* prefab Scoreboard, so the scene **must override** the Button's onClick target to point at the scene-added Scoreboard — without the override the call's target resolves null (removed component) and the click silently no-ops. The scene also wires `mainMenuButton` (HomeButton GO) and `onClickToMainMenu` (`EventOnClickToMainMenuButton.asset`) so client-hiding and the anti-spam hide work (`BUGS.md` B14).
 
 ## End Conditions
 
@@ -263,8 +260,8 @@ To swap the end condition mode (e.g., timer-based), replace the turn monitor in 
 | Component | Class | Purpose |
 |---|---|---|
 | In-game HUD | `MultiplayerCrystalCaptureHUD` (extends `MultiplayerHUD`) | Per-player crystal count cards; subscribes to `OnCrystalsCollectedChanged`; refreshes all cards on turn start |
-| Scoreboard | `MultiplayerCrystalCaptureScoreboard` (extends `Scoreboard`) | End-game player ranking; displays "N Crystals" per player; sorts descending (highest first) |
-| End Game | `MultiplayerCrystalCaptureEndGameController` (extends `EndGameCinematicController`) | Victory/defeat screen with crystal difference display |
+| Scoreboard | `Scoreboard` (base — per-mode subclass deleted in the scoring refactor; scene-added component, `gameController` wired in inspector) | End-game player ranking; "N Crystals" per card from `CrystalCaptureScoringRuleSO.BuildResults`; sorts descending (highest first) |
+| End Game | `EndGameCinematicController` (base — per-mode subclass deleted; reveal from `CrystalCaptureScoringRuleSO.BuildReveal`) | Victory/defeat screen with crystal difference display |
 | Stats Reporter | `CrystalCaptureStatsReporter` | Reports winner's crystal count + vessel telemetry to UGS (winner only) |
 
 ## Shared State & NetworkVariables

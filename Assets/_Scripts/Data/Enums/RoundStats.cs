@@ -210,7 +210,7 @@ namespace CosmicShore.Data
         /// Player.PrepareForNewScene / InitializeForMultiplayerMode so every scene entry
         /// starts with a clean subscriber list. The NetworkVariable OnValueChanged lambdas
         /// wired in OnNetworkSpawn are untouched — they re-raise INTO these events.
-        /// See Docs/ScoringSystem/BUGS.md B13.
+        /// See Docs/ScoringSystem/BUGS.md B15.
         /// </summary>
         public void ClearEventSubscriptions()
         {
