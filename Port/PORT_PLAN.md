@@ -85,7 +85,7 @@ The prompter tests progress without prompting the loop. Contract:
 | Tag | What became testable | Command | Status |
 |---|---|---|---|
 | `port-m1` | CLI engine smoke + deterministic sim (loop, lifecycle, tasks, DI, SOAP, RoundStats) | `cd Port && dotnet run --project src/CosmicShore.Cli` | ✅ 2026-06-11 (commit `25b5582d`) |
-| `port-m2` | First full headless game-mode round (AI vs AI) | `… -- --mode <mode> --seed <n>` | ⬜ |
+| `port-m2` | First full headless game-mode round (AI vs AI) | `cd Port && dotnet run --project src/CosmicShore.Cli -- --mode hexrace --players 4 --seed 42` | ✅ 2026-06-12 (commit `dc2eb876`) |
 | `port-m3` | First rendered frame (PNG artifact in chat + repo) | pull + open artifact | ⬜ |
 | `port-m4` | First interactive desktop build | `… -- --render` | ⬜ |
 
