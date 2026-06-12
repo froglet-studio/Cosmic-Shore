@@ -346,6 +346,17 @@ def scatter_damage(p, h, center, radius, scatter_radius=0.6):
     return p, h
 
 
+def evaluate_from_seed(model, target, args, device):
+    """Grow from a fresh seed for 1.5 loops (no grad) and return the
+    Chamfer against the target — the ground-truth convergence metric."""
+    with torch.no_grad():
+        ep, eh = make_seed(1, args.particles, args.channels, device)
+        ephase = torch.zeros(1, device=device)
+        ep, eh, ephase = model.rollout(ep, eh, ephase,
+                                       int(args.steps_per_loop * 1.5))
+        return chamfer(ep, target.at_phase(ephase)).item()
+
+
 # ── Export ──────────────────────────────────────────────────────────────
 
 def export_weights(model, output_path):
@@ -482,6 +493,8 @@ def train(args):
 
     os.makedirs(os.path.dirname(args.output) or '.', exist_ok=True)
     ckpt_path = args.output + '.ckpt.pt'
+    best_path = args.output + '.best.pt'
+    best_eval = float('inf')
     t0 = time.time()
     model.train()
 
@@ -571,18 +584,31 @@ def train(args):
         if it % 500 == 0 and it > 0:
             # Ground-truth convergence signal: grow from a fresh seed for
             # 1.5 loops with no grad and measure chamfer against the target.
-            with torch.no_grad():
-                ep, eh = make_seed(1, args.particles, args.channels, device)
-                ephase = torch.zeros(1, device=device)
-                ep, eh, ephase = model.rollout(ep, eh, ephase,
-                                               int(args.steps_per_loop * 1.5))
-                eval_chamfer = chamfer(ep, target.at_phase(ephase)).item()
+            eval_chamfer = evaluate_from_seed(model, target, args, device)
             print(f"  [eval] from-seed chamfer after 1.5 loops: {eval_chamfer:.5f}",
                   flush=True)
+            if eval_chamfer < best_eval:
+                best_eval = eval_chamfer
+                torch.save({'model': model.state_dict(), 'iter': it,
+                            'args': vars(args), 'eval': eval_chamfer}, best_path)
+                print(f"  [eval] new best — checkpoint saved", flush=True)
 
         if it % 250 == 0 or it == args.steps - 1:
             torch.save({'model': model.state_dict(), 'iter': it,
                         'args': vars(args)}, ckpt_path)
+
+    # Export the model with the best from-seed eval, not necessarily the
+    # final state — CPU-scale runs oscillate between basins, and the last
+    # iteration is regularly worse than the best one seen (observed: a run
+    # ending at 1.17 that held a 0.12 model mid-training).
+    final_eval = evaluate_from_seed(model, target, args, device)
+    print(f"final from-seed eval: {final_eval:.5f}  (best seen: {best_eval:.5f})")
+    if best_eval < final_eval and os.path.exists(best_path):
+        best = torch.load(best_path, map_location=device, weights_only=False)
+        model.load_state_dict(best['model'])
+        print(f"Exporting BEST checkpoint (iter {best['iter']}, eval {best['eval']:.5f})")
+    else:
+        print("Exporting final state")
 
     export_weights(model, args.output)
     torch.save({'model': model.state_dict(), 'iter': args.steps,
