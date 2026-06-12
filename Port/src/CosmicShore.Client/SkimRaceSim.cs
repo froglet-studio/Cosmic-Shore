@@ -278,8 +278,20 @@ namespace CosmicShore.Client
                     if (Countdown <= 0f) State = RaceState.Racing;
                     return;
                 case RaceState.Finished:
-                    transform.position += Course * (Speed * Time.deltaTime);
-                    Speed = Mathf.Lerp(Speed, MinimumSpeed, Time.deltaTime);
+                    // victory lap: ease onto the circuit and keep cruising it, so the
+                    // scoreboard sits over the glowing prismscape instead of empty space
+                    {
+                        float lapAngle = SkimTrack.AngleOf(transform.position);
+                        var to = (Track.PointAt(lapAngle + 0.25f) - transform.position).normalized;
+                        if (to.sqrMagnitude > 0.001f)
+                            transform.rotation = Quaternion.Slerp(transform.rotation,
+                                Quaternion.LookRotation(to, Vector3.up),
+                                1f - MathF.Exp(-2f * Time.deltaTime));
+                        Course = Vector3.Slerp(Course, transform.forward,
+                            1f - MathF.Exp(-DriftCourseAlignFast * Time.deltaTime)).normalized;
+                        transform.position += Course * (Speed * Time.deltaTime);
+                        Speed = Mathf.Lerp(Speed, 32f, Time.deltaTime);
+                    }
                     return;
             }
 

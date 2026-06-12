@@ -425,6 +425,15 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
 
 ## NEXT UP (iteration 9)
 
+**Session-limit handoff (2026-06-12 ~00:30 UTC):** four parallel port agents
+(V10 GameDataSO, V11 cells, V13 prism managers, V14 trail layer) were cut off by
+the session usage limit (resets 01:30 UTC). Salvaged into the branch (compiles
+green, NOT complete): engine `ISession`+`NetworkManager` stubs (V10 prep), engine
+`Vector3Int`+`Sprite`, `BlockDensityGrid`, `CellConfigDataSO` (V11, missing
+CellRuntimeDataSO + tests). V13/V14 produced no files before cutoff. Client gained
+a finish-state victory lap (vessels cruise the circuit under the scoreboard).
+Resume by FINISHING V10 + V11 against the salvage, then V13/V14.
+
 Goal: V10 of the vessel-layer arc + sprint feedback.
 
 1. **V10**: port `GameDataSO` (~783L, single-file oversize accepted) + engine
