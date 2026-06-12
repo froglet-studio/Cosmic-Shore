@@ -533,6 +533,26 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Copies every LIVE prism (active, not destroyed) into
+        /// <paramref name="results"/> (cleared first); returns the count. One linear
+        /// pass over the managed refs — the iteration view for whole-population
+        /// passes (proximity collider-LOD, telemetry). Allocation-free with a
+        /// pre-sized caller list; main-thread only.
+        /// </summary>
+        public int CopyLivePrisms(List<Prism> results)
+        {
+            results.Clear();
+            if (!_spatial.IsCreated) return 0;
+            for (int i = 0; i < _highWaterMark; i++)
+            {
+                if ((_spatial[i].Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                var prism = _prisms[i];
+                if (prism) results.Add(prism);
+            }
+            return results.Count;
+        }
+
+        /// <summary>
         /// Re-files a tracked prism whose domain changed (steal / ChangeTeam) in
         /// its bound cell's per-domain grids. Caller:
         /// Prism.HandleTeamChangedForCell only. Deliberately does NOT touch the

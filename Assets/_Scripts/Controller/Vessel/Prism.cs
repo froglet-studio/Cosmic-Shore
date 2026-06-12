@@ -179,6 +179,7 @@ namespace CosmicShore.Gameplay
 
             destroyed = false;
             devastated = false;
+            _lodCulled = false; // pool reuse: Initialize owns the collider again
             IsSmallest = false;
             IsLargest = false;
             
@@ -260,6 +261,41 @@ namespace CosmicShore.Gameplay
         /// destroyed mass contributes nothing. Read by Cell's per-domain volume sums
         /// (phase ladder, dominant domain, HUD).
         /// </summary>
+        // --- Proximity collider-LOD (PrismColliderLodManager) ------------------
+        // Prism colliders only matter near the things that physically touch prisms
+        // (vessels, projectiles); fauna senses, AOE damage, and growth occupancy all
+        // ride PrismSpatialIndex and need no collider. The LOD manager culls far
+        // colliders; these fields remember the pre-cull state so unculling restores
+        // exactly what the lifecycle/shield systems had set, never fighting them.
+        bool _lodCulled;
+        bool _colliderBeforeLodCull;
+
+        /// <summary>
+        /// Called by <c>PrismColliderLodManager</c> ONLY. Culls/restores this prism's
+        /// collider by vessel/projectile proximity. Idempotent; destruction and the
+        /// spawn window own the collider outright (a culled prism that gets destroyed
+        /// stays collider-off; Restore re-enables directly and the next LOD tick
+        /// re-evaluates).
+        /// </summary>
+        public void SetColliderCulledByLod(bool culled)
+        {
+            if (_lodCulled == culled) return;
+            if (!blockCollider) return;
+            if (culled)
+            {
+                _colliderBeforeLodCull = blockCollider.enabled;
+                blockCollider.enabled = false;
+            }
+            else if (!destroyed && _colliderBeforeLodCull)
+            {
+                blockCollider.enabled = true;
+            }
+            _lodCulled = culled;
+        }
+
+        /// <summary>True while this prism's collider is enabled (LOD telemetry).</summary>
+        public bool ColliderEnabled => blockCollider && blockCollider.enabled;
+
         public float CurrentVolume
         {
             get

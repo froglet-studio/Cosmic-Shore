@@ -303,10 +303,18 @@ deltas on top of the adopted foundation** — not to rebuild anything:
   physics overlap for **vessels only**. Fauna body prisms uphold the movers contract
   (`Fauna.NotifyBodyPrismsMoved` per frame) so index data stays honest. Prerequisite for
   collider-LOD is met. See `Docs/SPATIAL_INDEX.md`.
-- **Proximity collider-LOD** (disable colliders on prisms far from any vessel; never blanket-
-  disable — player + any remaining collider consumers need near-vessel colliders).
-- **Telemetry overlay** (per-cell active colliders / count / `LiveVolume` / phase vs budget) —
-  makes the budget observable; ship first as the perf-regression guard.
+- ✅ **Proximity collider-LOD** *(shipped on the merge line — in-editor verification owed)*:
+  `PrismColliderLodManager` culls prism colliders beyond `lodRadiusMeters` (200m default) of
+  any focus and restores them as foci move; vessels and in-flight projectiles self-register as
+  foci. Never blanket-disables (focus-less scenes idle), never fights the lifecycle
+  (`Prism.SetColliderCulledByLod` snapshots/restores pre-cull state), never touches the
+  unregistered Mound-layer blocks. Verify: fly toward a distant structure (collision works on
+  arrival), shoot a distant structure (projectile connects — projectiles are foci), and watch
+  `colliders=near/live` in the probe line stay bounded as a cell fills. Kill switch:
+  `lodEnabled` on a scene-placed manager.
+- ✅ **Telemetry** *(shipped)*: `EcosystemPerfProbe` line is now
+  `[ECOSIM] prisms= volume= colliders=near/live fauna= phase= fps=` — the §4 budget and the
+  volume spine observable in one line; use it for the per-biome threshold retune.
 - ~~**Per-cell active-prism budget** — recycle oldest **trail** prisms~~ **Rejected upstream:**
   age-based trail recycling is the same passive-removal cheat as the reverted menu trail cap
   (`bleeding-edge` commit `44a1f264`; see CLAUDE.md ▸ "Universality — one HyperSea, one rule
