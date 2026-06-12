@@ -33,8 +33,8 @@ namespace CosmicShore.Utility
 
         public Dictionary<int, CellStats> CellStatsList = new();
 
-        // PORT Deviation (V11, restore when Cell ports): public Cell Cell;
-        // PORT Deviation (V11, restore when Cell ports): public Transform CellTransform => Cell ? Cell.transform : null;
+        public Cell Cell;
+        public Transform CellTransform => Cell ? Cell.transform : null;
 
         public List<CellItem> CellItems = new();
         public List<Crystal> Crystals = new();
@@ -188,7 +188,7 @@ namespace CosmicShore.Utility
         {
             CSDebug.Log("<color=yellow>[CellRuntimeDataSO] Resetting runtime data</color>");
 
-            // PORT Deviation (V11, restore when Cell ports): Cell = null;
+            Cell = null;
 
             if (Crystals != null)
             {

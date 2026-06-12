@@ -73,6 +73,24 @@ namespace CosmicShore.Engine
         public static T Instantiate<T>(T original) where T : Object
             => ObjectUtilities.InstantiateObject(original);
 
+        /// <summary>Clone and place at a world pose in one step (cell visuals and spawners use this shape).</summary>
+        public static T Instantiate<T>(T original, Vector3 position, Quaternion rotation) where T : Object
+        {
+            var clone = ObjectUtilities.InstantiateObject(original);
+            var transform = clone switch
+            {
+                GameObject go => go.transform,
+                Component component => component.transform,
+                _ => null,
+            };
+            if (transform is not null)
+            {
+                transform.position = position;
+                transform.rotation = rotation;
+            }
+            return clone;
+        }
+
         /// <summary>Clone and parent in one step (pool managers and spawners use this shape).</summary>
         public static T Instantiate<T>(T original, Transform parent, bool instantiateInWorldSpace = false) where T : Object
         {
