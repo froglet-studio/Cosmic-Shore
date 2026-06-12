@@ -24,8 +24,8 @@ MonoBehaviour:
   SceneName: MinigameCellularBrawl2v2
   Captains:
   - {fileID: 11400000, guid: 42800aad95708bc488da7eed56ecc146, type: 2}
-  MinPlayers: 1
-  MaxPlayers: 1
+  MinPlayersAllowed: 1
+  MaxPlayersAllowed: 1
   MinIntensity: 1
   MaxIntensity: 4
   CallToActionTargetType: 411

@@ -4885,7 +4885,9 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d4954cc91a9f2d64f9738ee263dae759, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier:
+  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
+    type: 2}
   ExplosionDuration: 2.7
   ExplosionDelay: 0
   height: 800

@@ -401,6 +401,7 @@ GameObject:
   - component: {fileID: 4503039764592346390}
   - component: {fileID: 5246419679807688196}
   - component: {fileID: 1452114705}
+  - component: {fileID: 8156419679807688197}
   m_Layer: 0
   m_Name: AudioSystem
   m_TagString: Untagged
@@ -460,29 +461,33 @@ MonoBehaviour:
     type: 3}
   RedeemTicketAudioClip: {fileID: 8300000, guid: 7e98ac29753d3394fb5cca39b8289e48,
     type: 3}
-  BlockDestroyAudioClip: {fileID: 8300000, guid: a87a5f48f39cf8244a7e4445036aa7e7, type: 3}
-  ShieldActivateAudioClip: {fileID: 8300000, guid: 0f1b51a3bb8fcf441a489114d4778a5b,
+  BlockDestroyAudioClip: {fileID: 8300000, guid: 1196fa0c8bbea49bc9c149562a6c694c,
+    type: 3}
+  ShieldActivateAudioClip: {fileID: 8300000, guid: 2375f97df7d2d4549bb62274c7e31446,
     type: 3}
   ShieldDeactivateAudioClip: {fileID: 8300000, guid: 0ed8ea2827db2c147958145687d78c28,
     type: 3}
-  MineExplodeAudioClip: {fileID: 8300000, guid: 5130e0de4d7d94f47b1305b7194a2fc9, type: 3}
-  ProjectileLaunchAudioClip: {fileID: 8300000, guid: fa765e4ec173f0548a67dec9f46d8dc2,
+  MineExplodeAudioClip: {fileID: 8300000, guid: 5130e0de4d7d94f47b1305b7194a2fc9,
     type: 3}
-  CrystalCollectAudioClip: {fileID: 8300000, guid: 559d19c795760584493b585dcd5880b4,
+  ProjectileLaunchAudioClip: {fileID: 8300000, guid: 59472cab646ed484e9a26644041b38b7,
     type: 3}
-  VesselImpactAudioClip: {fileID: 8300000, guid: a87a5f48f39cf8244a7e4445036aa7e7, type: 3}
+  CrystalCollectAudioClip: {fileID: 8300000, guid: 9f3fbc6355c644018816a9525c54505a,
+    type: 3}
+  VesselImpactAudioClip: {fileID: 8300000, guid: 08bc72bcda27445728e232220c1f6d98,
+    type: 3}
   GameEndAudioClip: {fileID: 8300000, guid: ffa29bc36b571f641b4abc0f6bfb75f1, type: 3}
-  ScoreRevealAudioClip: {fileID: 8300000, guid: bd7b64db48580b94fbf2cfbab2b5516c, type: 3}
+  ScoreRevealAudioClip: {fileID: 8300000, guid: bd7b64db48580b94fbf2cfbab2b5516c,
+    type: 3}
   PauseOpenAudioClip: {fileID: 8300000, guid: 629a744a7657f384b9a9eb18eb4fe198, type: 3}
   PauseCloseAudioClip: {fileID: 8300000, guid: 0ed8ea2827db2c147958145687d78c28, type: 3}
-  GunFireAudioClip: {fileID: 8300000, guid: 9239bdb2f342858488ce4bae07abfb3c, type: 3}
+  GunFireAudioClip: {fileID: 8300000, guid: 59472cab646ed484e9a26644041b38b7, type: 3}
   BoostActivateAudioClip: {fileID: 8300000, guid: 1d6b12c877a5a1c469edf3685692f949,
     type: 3}
   ExplosionAudioClip: {fileID: 8300000, guid: 5130e0de4d7d94f47b1305b7194a2fc9, type: 3}
   CreatureDeathAudioClip: {fileID: 8300000, guid: fbbbb0bc233abea418b54eeb88794332,
     type: 3}
-  DriftStartAudioClip: {fileID: 8300000, guid: 00ff73cc49b9488895880775625c55cf, type: 3}
-  DriftEndAudioClip: {fileID: 8300000, guid: 39ea8a8c7e534e83a76cd25ff8ceda7d, type: 3}
+  DriftStartAudioClip: {fileID: 8300000, guid: 58ec3a4ca13194a03bc8b52d48e99e38, type: 3}
+  DriftEndAudioClip: {fileID: 8300000, guid: 3bff4f173ca4a4ff69bc9367e92f0247, type: 3}
   EnergyGainAudioClip: {fileID: 8300000, guid: 989a0e48e804482bbf3a677ada7d4ae8, type: 3}
   SpeedBurstAudioClip: {fileID: 8300000, guid: 653de36067c848a78ac947c561ec5143, type: 3}
 --- !u!114 &1452114705
@@ -506,3 +511,35 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 1f7ebca9281b9244ba31143be2de7799, type: 2}
   onDeathSong: {fileID: 0}
   RandomizePlay: 1
+--- !u!114 &8156419679807688197
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4302996649166915022}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 815eff92d81847d189f3d8f0ecd917cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _binding: 0
+  _disableAfterSubscribing: 0
+  _eventResponses:
+  - Delay: 0
+    _scriptableEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071, type: 2}
+    _response:
+      m_PersistentCalls:
+        m_Calls:
+        - m_Target: {fileID: 5246419679807688196}
+          m_TargetAssemblyTypeName: CosmicShore.Core.AudioSystem, Assembly-CSharp
+          m_MethodName: PlayGameplaySFX
+          m_Mode: 0
+          m_Arguments:
+            m_ObjectArgument: {fileID: 0}
+            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+            m_IntArgument: 0
+            m_FloatArgument: 0
+            m_StringArgument: 
+            m_BoolArgument: 0
+          m_CallState: 2

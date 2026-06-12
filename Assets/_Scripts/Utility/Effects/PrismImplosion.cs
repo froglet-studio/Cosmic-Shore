@@ -1,9 +1,8 @@
 using System;
 using UnityEngine;
-using CosmicShore.Utility.ClassExtensions; // if you still need it elsewhere
-using CosmicShore.Utility;
+using CosmicShore.Gameplay;
 
-namespace CosmicShore.Game
+namespace CosmicShore.Utility
 {
     /// <summary>
     /// Handles prism implosion/grow VFX. Managed by PrismImplosionPoolManager.
@@ -37,6 +36,12 @@ namespace CosmicShore.Game
         internal bool IsGrowing { get; private set; }
         internal Renderer Renderer => prismRenderer;
 
+        // Wall-clock start time, used by the watchdog. Tracking via Time.time (not the
+        // manager-driven Elapsed counter) is robust against state-reset bugs that
+        // would otherwise keep Elapsed pinned at 0 and starve the natural completion path.
+        float _activatedAtTime;
+        const float WatchdogDurationMultiplier = 2f;
+
 #if UNITY_EDITOR
         private void OnValidate()
         {
@@ -51,6 +56,16 @@ namespace CosmicShore.Game
                 prismRenderer = GetComponent<Renderer>();
 
             mpb = new MaterialPropertyBlock();
+        }
+
+        private void OnEnable()
+        {
+            // Backstop the watchdog timer for the case where the pool re-activates
+            // a GameObject but the consumer never gets to call StartImplosion (e.g.,
+            // an exception in PrismFactory between pool.Get and StartImplosion).
+            // StartImplosion / StartGrow overwrite this with their own timestamps so
+            // the legitimate path still uses the activation moment of the effect itself.
+            _activatedAtTime = Time.time;
         }
 
         private void OnDisable()
@@ -79,6 +94,11 @@ namespace CosmicShore.Game
                 return;
             }
 
+            // Re-entry on an already-active instance: this should not happen during
+            // normal pool flow (Get always returns an inactive instance), but it does
+            // happen if the prefab's OnMiniGameTurnEnd EventListener interleaves with
+            // a fresh Implode call. Unregister cleanly so RegisterImplosion below
+            // doesn't dedup-skip and the instance gets a fresh tick cadence.
             if (IsActive)
                 PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
 
@@ -91,6 +111,7 @@ namespace CosmicShore.Game
             IsGrowing = false;
             GrowDelayRemaining = 0f;
             IsActive = true;
+            _activatedAtTime = Time.time;
 
             // Set initial shader state
             prismRenderer.GetPropertyBlock(mpb);
@@ -123,6 +144,7 @@ namespace CosmicShore.Game
             IsGrowing = true;
             GrowDelayRemaining = growDelay;
             IsActive = true;
+            _activatedAtTime = Time.time;
 
             // Set initial collapsed state
             prismRenderer.GetPropertyBlock(mpb);
@@ -170,12 +192,49 @@ namespace CosmicShore.Game
 
         /// <summary>
         /// Called by PrismEffectsManager when the animation finishes naturally.
-        /// Cleans up and notifies pool.
+        /// Cleans up, notifies pool, and force-deactivates the GameObject as a
+        /// safety net so the implosion VFX can never visually loop even if the
+        /// pool callback chain is broken (e.g., OnReturnToPool was nulled by an
+        /// external owner like ShapeDrawingManager, or a duplicate Get/Release
+        /// cycle left subscriptions in an inconsistent state).
         /// </summary>
         internal void OnEffectComplete()
         {
             CompleteEffect();
-            OnReturnToPool?.Invoke(this);
+
+            // Snapshot + clear before invoke. Prevents a re-entrant Invoke (e.g., a
+            // listener that triggers another Implode on the same instance) from
+            // re-firing the same callbacks on a partially-completed implosion.
+            var callback = OnReturnToPool;
+            OnReturnToPool = null;
+            callback?.Invoke(this);
+
+            // Force-deactivate as a safety net. The pool callback above normally
+            // does this via OnReleaseToPool → SetActive(false). If that path failed
+            // for any reason, the GameObject would remain active and the shader
+            // animation would visibly continue / loop on the next StartImplosion
+            // call against the same instance. This is a no-op when the pool ran cleanly.
+            if (gameObject.activeSelf)
+                gameObject.SetActive(false);
+        }
+
+        void Update()
+        {
+            // Wall-clock watchdog: fires for ANY active GameObject that's been alive
+            // longer than 2x the configured duration. We deliberately do NOT gate on
+            // IsActive because the dominant failure mode is an instance whose IsActive
+            // was cleared by OnDisable but whose GameObject was reactivated through
+            // the pool without StartImplosion ever running again — those leak past
+            // an IsActive-only check. Tracking via Time.time (set in OnEnable as a
+            // backstop, refreshed in StartImplosion / StartGrow) is the only signal
+            // that survives all the state-reset failure modes.
+            if (Time.time - _activatedAtTime <= implosionDuration * WatchdogDurationMultiplier) return;
+
+            CSDebug.LogWarning($"[PrismImplosion] Watchdog force-completed '{name}' " +
+                               $"at world {transform.position} after {Time.time - _activatedAtTime:F2}s " +
+                               $"(duration={implosionDuration}, IsActive={IsActive}, target={TargetPosition}). " +
+                               "Likely cause: OnReturnToPool subscription was lost or duplicated.");
+            OnEffectComplete();
         }
     }
 }

@@ -1,7 +1,7 @@
 ﻿using Unity.Collections;
 using Unity.Netcode;
 
-namespace CosmicShore.Utilities.Network
+namespace CosmicShore.Utility
 {
     public class CustomNetworkVariable<T> : NetworkVariable<T>
     {

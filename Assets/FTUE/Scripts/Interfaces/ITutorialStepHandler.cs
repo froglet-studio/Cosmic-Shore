@@ -1,8 +1,11 @@
-using CosmicShore.FTUE;
+using CosmicShore.Core;
 using System.Collections;
 
-public interface ITutorialStepHandler
+namespace CosmicShore.Core
 {
-    TutorialStepType HandlesType { get; }
-    IEnumerator ExecuteStep(TutorialStep step, IFlowController controller);
+    public interface ITutorialStepHandler
+    {
+        TutorialStepType HandlesType { get; }
+        IEnumerator ExecuteStep(TutorialStep step, IFlowController controller);
+    }
 }

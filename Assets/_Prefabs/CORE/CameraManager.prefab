@@ -260,9 +260,10 @@ GameObject:
   - component: {fileID: 8554704982892035080}
   - component: {fileID: 6404784924102139360}
   - component: {fileID: 7077911994176950342}
+  - component: {fileID: 1234567890123456789}
   m_Layer: 0
   m_Name: CM PlayerCam
-  m_TagString: Untagged
+  m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -390,6 +391,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   adaptiveZoomEnabled: 0
+--- !u!81 &1234567890123456789
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4853709195325629910}
+  m_Enabled: 1
 --- !u!1 &4853709195735906028
 GameObject:
   m_ObjectHideFlags: 0
@@ -405,7 +414,7 @@ GameObject:
   - component: {fileID: 3273930913064528445}
   m_Layer: 0
   m_Name: CM EndCam
-  m_TagString: Untagged
+  m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -703,7 +712,7 @@ GameObject:
   - component: {fileID: 343818128705401807}
   m_Layer: 0
   m_Name: CM DeathCam
-  m_TagString: Untagged
+  m_TagString: MainCamera
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

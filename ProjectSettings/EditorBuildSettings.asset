@@ -6,6 +6,12 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
+    path: Assets/_Scenes/Bootstrap.unity
+    guid: 4c5a38c6a266cd3458412e00bc514b8b
+  - enabled: 1
+    path: Assets/_Scenes/Authentication.unity
+    guid: e55a168e79a17c64398aea2ea409923c
+  - enabled: 1
     path: Assets/_Scenes/Menu_Main.unity
     guid: 102d08d71236a7342a94518fff75949c
   - enabled: 0
@@ -14,9 +20,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Singleplayer Scenes/MinigameWildlifeBlitz.unity
     guid: d5418cffe1da8b840bcc2e1a92a7b1db
-  - enabled: 1
-    path: Assets/_Scenes/Singleplayer Scenes/MinigameFreestyle.unity
-    guid: 6f71535b00043c345b3216d994f22499
   - enabled: 1
     path: Assets/_Scenes/Singleplayer Scenes/MinigameCellularDuel.unity
     guid: a0793cb7cf4069b44ba82acfddb04f11

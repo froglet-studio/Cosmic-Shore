@@ -1,7 +1,8 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
+using CosmicShore.Data;
 
-namespace CosmicShore.Game.IO
+namespace CosmicShore.Gameplay
 {
     public class KeyboardInputStrategy : BaseInputStrategy
     {
