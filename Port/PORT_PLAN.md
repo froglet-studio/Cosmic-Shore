@@ -57,7 +57,10 @@ The prompter tests progress without prompting the loop. Contract:
    notification with the exact command (or file) to try. (Annotated `port-mN` tags are
    created locally, but this environment's git proxy only accepts branch pushes — the
    log + commit message are the durable record.)
-5. **Standalone binaries on request / at milestones.** No-install executables build with:
+5. **Standalone binaries ON REQUEST ONLY** (prompter, 2026-06-12: "i don't need the
+   zip anymore my powershell workflow is working great" — from-source is the primary
+   channel; stop refreshing `dist/` zips on build changes; the committed zips remain
+   as a fallback for SDK-less machines). When requested, build with:
    `dotnet publish <proj> -c Release -r win-x64 --self-contained -p:PublishSingleFile=true -p:EnableCompressionInSingleFile=true`
    (swap `-r` for `linux-x64` / `osx-arm64`; ~39 MB exe; no trimming — the engine's
    reflective lifecycle discovery forbids it). **Do NOT add
@@ -68,12 +71,11 @@ The prompter tests progress without prompting the loop. Contract:
    **zip them together with the exe** (the one historical bad ship was a bare-exe zip
    missing those loose natives). The exe holds its console window open when
    double-clicked (`--no-wait` skips). Delivered into the chat at milestones.
-6. **Fast test loop for the prompter** (replaces manual zip downloads):
-   one-time `git clone` + checkout `claude/quirky-cannon-sk8a02`, then double-click
-   `Port/play-latest.bat` after each push — it pulls, extracts dist, and launches
-   (~10 s). Developer alternative: install the .NET 10 SDK + VC++ redist once, then
-   `git pull && dotnet run --project Port/src/CosmicShore.Client` builds and runs
-   from source incrementally.
+6. **Fast test loop for the prompter — PRIMARY (confirmed working 2026-06-12)**:
+   .NET 10 SDK + VC++ redist installed once, then in PowerShell:
+   `git pull` + `dotnet run -c Release --project Port\src\CosmicShore.Client`
+   builds and runs from source incrementally (seconds per iteration).
+   `Port/play-latest.bat` (zip channel) remains as fallback only.
 7. **Local prerequisites for the prompter** (only for running from source):
    `winget install Microsoft.DotNet.SDK.10` (Windows) / `brew install dotnet-sdk` (macOS),
    then `git fetch origin claude/quirky-cannon-sk8a02 && git checkout claude/quirky-cannon-sk8a02`.
