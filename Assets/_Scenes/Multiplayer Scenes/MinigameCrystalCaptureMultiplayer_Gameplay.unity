@@ -2317,8 +2317,9 @@ MonoBehaviour:
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
   winnerCrystalReward: 5
   playAgainButton: {fileID: 2113049467}
-  mainMenuButton: {fileID: 0}
+  mainMenuButton: {fileID: 2113049600}
   leaveLobbyButton: {fileID: 0}
+  onClickToMainMenu: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
 --- !u!1 &2113049461 stripped
 GameObject:
@@ -2335,6 +2336,12 @@ RectTransform:
 --- !u!1 &2113049467 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2279452371261775173, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+    type: 3}
+  m_PrefabInstance: {fileID: 2113049457}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2113049600 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7469907960593864752, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
     type: 3}
   m_PrefabInstance: {fileID: 2113049457}
   m_PrefabAsset: {fileID: 0}

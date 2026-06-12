@@ -251,6 +251,8 @@ The pause menu's Restart button routes through the same `RequestReplay()` path (
 
 **Scene wiring requirement (this broke Play Again once):** the Joust scene removes the GameCanvas-HexRace prefab's internal `Scoreboard` component and adds its own scene-level `Scoreboard` (with `gameController` → `MultiplayerJoustController`). The prefab's `PlayAgainButton.onClick` persistent call targets the *internal* prefab Scoreboard, so the scene **must override** `m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target` on that Button to point at the scene-added Scoreboard. With the override left null (or pointing at the removed component), clicking Play Again silently does nothing. HexRace avoids this by keeping the prefab's internal Scoreboard and overriding only its `gameController`.
 
+**Button gating (host-only + anti-spam):** the Scoreboard's `playAgainButton` (PlayAgainButton GO) and `mainMenuButton` (HomeButton GO) fields are wired in all three domain-game scenes so `ConfigureLobbyButtons` can hide both from non-host clients — only the host navigates; clients follow via the Netcode scene load. Once the host commits a navigation (Play Again clicked, or the main-menu SOAP event `Event_OnClickToMainMenuButton` fires from `PauseMenu.OnClickMainMenu`), `Scoreboard.HideHostNavButtons()` hides both buttons so the transition can't be spam-clicked. The `onClickToMainMenu` field must reference the same event asset PauseMenu raises.
+
 ## Collision Mechanics
 
 The jousting collision system is triggered by `VesselExplosionBySkimmerEffectSO` (`_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Skimmer Effects/`):
