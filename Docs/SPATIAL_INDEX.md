@@ -139,6 +139,7 @@ blocked for up to 5s). `AssembledFlora` orders its random-skip *before*
 | `IsPositionOccupied(pos, clearRadius)` | Anyone (read-only) | Live prism or active claim in range? |
 | `IsAnyPrismWithin(pos, radius)` | Anyone (read-only) | Live prism in range (claims excluded) |
 | `QuerySphere(pos, radius, results)` | Anyone (read-only) | Gather live prisms in range into a caller scratch list — the replacement for `Physics.OverlapSphere` against prisms |
+| `CopyLivePrisms(results)` | `PrismColliderLodManager`, telemetry | Whole-population sweep: one linear pass copying every live prism into a caller scratch list |
 | `ReleaseReservation(pos)` | A claimant that changed its mind | Explicit cancel |
 | `Register(prism)` | `Prism.CreateBlockCoroutine` (+ `Prism.Restore` for spawn-window-killed prisms) | Enter the index; consumes matching claim; binds the containing cell's density grids |
 | `Unregister(index)` | `Prism` OnDisable/OnDestroy/ResetState **only** | Leave the index; releases the cell binding |
