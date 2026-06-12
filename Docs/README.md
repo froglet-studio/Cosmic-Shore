@@ -4,7 +4,7 @@ Canonical engineering reference for the Cosmic Shore party / presence /
 network subsystems, plus cross-cutting infrastructure docs. This README
 is the navigation index; each linked doc is self-contained.
 
-## Layout
+## Layout 
 
 ```
 Docs/
@@ -28,9 +28,16 @@ Docs/
 │   └── TODOS.md
 │
 ├── NetworkDiagnostics/          ← the NetDiag overlay (cross-cutting)
-│   ├── README.md                what the overlay does, where it's wired
+│   ├── ARCHITECTURE.md          what the overlay does, where it's wired
 │   ├── TESTS.md                 Tests A-E
 │   └── TODOS.md                 deferred adoption + extensions
+│
+├── ScoringSystem/               ← in-game score HUD + final scoreboard
+│   ├── ARCHITECTURE.md          both surfaces, data flow, per-mode table,
+│   │                            target architecture (unified networked scoring)
+│   ├── REFACTOR.md              sequenced backlog + ground rules
+│   ├── BUGS.md                  open correctness issues (B1-B5)
+│   └── TESTS.md                 manual procedures (T1-T10)
 │
 ├── THREADING.md                 main-thread affinity rules
 │                                (.AsMainThread() contract, MainThreadDispatcher)
@@ -39,10 +46,11 @@ Docs/
 └── CameraMigrationReview.md     camera system migration tracking
 ```
 
-The `PartySystem/`, `PresenceSystem/`, and `NetworkDiagnostics/`
-folders share a consistent shape: ARCHITECTURE for current state,
-REFACTOR for active backlog, BUGS for open issues, TESTS for manual
-procedures, TODOS for parking-lot items. The PartySystem also keeps a
+The `PartySystem/`, `PresenceSystem/`, `NetworkDiagnostics/`, and
+`ScoringSystem/` folders share a consistent shape: ARCHITECTURE for current
+state, REFACTOR for active backlog, BUGS for open issues, TESTS for manual
+procedures, TODOS for parking-lot items (the Scoring System folds its
+parking-lot into REFACTOR). The PartySystem also keeps a
 chronological session journal because MPPM testing produces
 session-scoped findings that benefit from a timeline view.
 
@@ -54,11 +62,51 @@ session-scoped findings that benefit from a timeline view.
 | Understand presence vs party | `PresenceSystem/ARCHITECTURE.md` § "Why it's separate from the party session" |
 | See known issues + their status | `PartySystem/BUGS.md` + `PresenceSystem/BUGS.md` |
 | See what we're refactoring next | `PartySystem/REFACTOR.md` § "Sequencing" |
+| See the next multiplayer TODOs / big-picture roadmap | `MultiplayerArchitecture/ROADMAP.md` |
 | Run the manual smoke / stress tests | `PartySystem/TESTS.md` § "Smoke gate" |
 | See the latest MPPM session findings | `PartySystem/MPPM_SESSION_LOG.md` |
-| Understand the diagnostic overlay | `NetworkDiagnostics/README.md` |
+| Understand the diagnostic overlay | `NetworkDiagnostics/ARCHITECTURE.md` |
+| Understand the scoring system (HUD + end-game) | `ScoringSystem/ARCHITECTURE.md` |
+| See scoring-system cleanup work / open issues | `ScoringSystem/REFACTOR.md` + `ScoringSystem/BUGS.md` |
 | Understand the threading rules | `THREADING.md` |
 | Find a scene | `SCENES.md` |
+
+## Shared conventions
+
+These apply across all three folders. They live here once; the
+per-folder docs point back to this section instead of restating them.
+
+### MPPM test convention
+
+- All manual tests run in the Unity Editor under **Multiplayer Play
+  Mode (MPPM)**. Each **VP** ("virtual player") is a separate Editor
+  instance. "VP1" is the first / host VP; "VP2"–"VP4" are the other /
+  joining VPs.
+- Tests reference NetDiag log classes (`class=Offline`,
+  `class=SessionGone`, etc.) — see `NetworkDiagnostics/ARCHITECTURE.md`
+  for the classifier and `NetworkDiagnostics/TESTS.md` for the
+  diagnostic procedures (Tests A–E).
+
+### How we work bugs
+
+- One bug at a time, in the priority order each `BUGS.md` lists.
+- For each: confirm the root cause (capture a NetDiag log line where
+  possible) → agree the approach → ship as its own commit with an
+  inline risk table → update the bug's status (see "Status legend"
+  below).
+- Before touching the locked-design area (`HostConnectionService`,
+  `PresenceLobbyService`, `PartySessionService`, `PartyInviteController`,
+  invite services), read the relevant `ARCHITECTURE.md` first. **Do not
+  reintroduce LAZY / on-first-invite session creation** (see "Locked
+  design" below).
+
+### Per-commit refactor protocol
+
+The per-commit risk gate, commit cadence, and the 6-step "read the
+source fresh" revision protocol that governs every party/presence
+refactor commit live canonically in `PartySystem/REFACTOR.md`
+(§ "Per-refactor commit cadence" + § "Per-commit revision protocol").
+Presence-side refactors follow the same protocol.
 
 ## Status legend (used in BUGS.md files)
 

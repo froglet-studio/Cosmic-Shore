@@ -25,8 +25,6 @@ namespace CosmicShore.Gameplay
         [Inject] AuthenticationDataVariable authenticationDataVariable;
         AuthenticationData authenticationData => authenticationDataVariable.Value;
 
-        private bool _leaving;
-
         private NetworkManager networkManager;
         private bool _hostStartInProgress;
 
@@ -346,7 +344,6 @@ namespace CosmicShore.Gameplay
         private void OnClientDisconnect(ulong clientId)
         {
             if (networkManager == null) return;
-            if (_leaving)               return;
 
             if (networkManager.IsHost)
             {
@@ -391,42 +388,6 @@ namespace CosmicShore.Gameplay
                 { GAME_MODE_PROPERTY_KEY,   new SessionProperty(gameMode,   VisibilityPropertyOptions.Public, PropertyIndex.String1) },
                 { MAX_PLAYERS_PROPERTY_KEY, new SessionProperty(maxPlayers, VisibilityPropertyOptions.Public, PropertyIndex.String2) }
             };
-        }
-
-        // --------------------------
-        // Public Leave Entry Point
-        // --------------------------
-        public async UniTask LeaveSession()
-        {
-            if (_leaving) return;
-            _leaving = true;
-
-            try
-            {
-                // Eager per-user Relay: gameData.ActiveSession IS the party Relay
-                // session (single backing field; see Docs/PartySystem/ARCHITECTURE.md Q4).
-                // Do NOT null the reference — that would orphan the live UGS Relay
-                // and force HCS to recreate, violating the locked invariant
-                // "ActiveSession is never nulled outside an intentional leave."
-                // Just raise the game-ended SOAP event; the Relay stays alive so
-                // all party members reload Menu_Main on the same NM session.
-                //
-                // NM is intentionally NOT shut down here.  ReturnToMainMenu() sets
-                // IsReturnToMenuTransition=true so ServerPlayerVesselInitializer skips
-                // its own Shutdown(), and nm.SceneManager.LoadScene carries all connected
-                // clients back to Menu_Main on the live Relay.
-                gameData.InvokeOnSessionEnded();
-            }
-            catch (Exception e)
-            {
-                CSDebug.LogWarning($"[MultiplayerSetup] LeaveSession error: {e.Message}");
-            }
-            finally
-            {
-                _leaving = false;
-            }
-
-            await UniTask.CompletedTask;
         }
 
         // --------------------------

@@ -491,7 +491,12 @@ PrefabInstance:
     - target: {fileID: 3397275166430212773, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
-      value: 
+      value:
+      objectReference: {fileID: 1059017678}
+    - target: {fileID: 3397275166430212773, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: CosmicShore.UI.Scoreboard, Assembly-CSharp
       objectReference: {fileID: 0}
     - target: {fileID: 3509273578276065945, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
@@ -969,9 +974,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 377908210}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 670b03f25915442489323d24fc99160e, type: 3}
+  m_Script: {fileID: 11500000, guid: 86e7b4ae1c1b4eca9e999b64aff764c9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  autoCreateObjectiveIndicator: 1
   view: {fileID: 377908211}
   scoreboard: {fileID: 1059017678}
   onMoundDroneSpawned: {fileID: 11400000, guid: 14f15b4cda639404cae764ee683d8c3e,
@@ -999,6 +1005,12 @@ RectTransform:
 --- !u!1 &377908218 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 2279452371261775173, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+    type: 3}
+  m_PrefabInstance: {fileID: 377908207}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &377908300 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7469907960593864752, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
     type: 3}
   m_PrefabInstance: {fileID: 377908207}
   m_PrefabAsset: {fileID: 0}
@@ -1044,18 +1056,6 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 377908207}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &377908224 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 1795283907943804098, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 377908207}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &377908225 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 649124003064993173, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
@@ -1113,7 +1113,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 377908226}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e315539ec049484c8f222457b1cc475a, type: 3}
+  m_Script: {fileID: 11500000, guid: 585e900e2ee74668919ca01a846434df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
@@ -1121,11 +1121,7 @@ MonoBehaviour:
     type: 2}
   cinematicCameraController: {fileID: 377908227}
   view: {fileID: 377908228}
-  crystalsPerGame: 5
   crystalRewardRoot: {fileID: 377908225}
-  crystalRewardText: {fileID: 377908224}
-  crystalFadeDuration: 0.5
-  delegateCrystalRewardToScoreboard: 1
   joustTurnMonitor: {fileID: 1628508345}
 --- !u!114 &377908245 stripped
 MonoBehaviour:
@@ -1329,6 +1325,8 @@ MonoBehaviour:
   StraightLineLength: 0
   RotationAmount: 10
   DifficultyAngle: 0
+  superShieldTrackPrisms: 0
+  superShieldEngageInstant: 1
   ExternalResetControl: 0
 --- !u!1 &834756157
 GameObject:
@@ -1693,7 +1691,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 377908222}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 2cdde73f4ffc47a7b21fd84d0ebda4e7, type: 3}
+  m_Script: {fileID: 11500000, guid: ad1572ebe0d06f143bbc8789e520819f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
@@ -1706,21 +1704,16 @@ MonoBehaviour:
     type: 3}
   BannerImage: {fileID: 377908221}
   BannerText: {fileID: 377908220}
-  SinglePlayerBannerColor: {r: 0.45490196, g: 0.48235294, b: 0.6784314, a: 1}
-  JadeTeamBannerColor: {r: 0.105882354, g: 0.73333335, b: 0.73333335, a: 1}
-  RubyTeamBannerColor: {r: 0.83137256, g: 0.18039216, b: 0.57254905, a: 1}
-  GoldTeamBannerColor: {r: 0.9882353, g: 0.64705884, b: 0.24705882, a: 1}
-  BlueTeamBannerColor: {r: 0.2, g: 0.4, b: 0.9, a: 1}
   playerCardContainer: {fileID: 1756632695}
   playerCardPrefab: {fileID: 8998330683301042486, guid: ba84a682b21a0a742974715e5d7432b5,
     type: 3}
-  domainColorPalette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   profileIconList: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
   winnerCrystalReward: 5
   playAgainButton: {fileID: 377908218}
-  mainMenuButton: {fileID: 0}
+  mainMenuButton: {fileID: 377908300}
   leaveLobbyButton: {fileID: 0}
+  onClickToMainMenu: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
   joustTurnMonitor: {fileID: 1628508345}
 --- !u!1 &1074736316
@@ -2206,6 +2199,7 @@ MonoBehaviour:
   countdownTimer: {fileID: 377908245}
   _onToggleReadyButton: {fileID: 11400000, guid: 49189b231ecf3ab4ea602699f3401cf2,
     type: 2}
+  rule: {fileID: 11400000, guid: 139ce3f550934c27b90727b6be8c63f6, type: 2}
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0

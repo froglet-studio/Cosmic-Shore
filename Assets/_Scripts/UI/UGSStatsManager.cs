@@ -85,7 +85,7 @@ namespace CosmicShore.Core
                     _cachedProfile.JoustStats.BestRaceTimes.TryGetValue(key, out cloudBest);
                 
                 if (cloudBest <= 0.001f) return currentSessionScore;
-                return currentSessionScore >= 10000f ? cloudBest : Mathf.Min(cloudBest, currentSessionScore);
+                return currentSessionScore >= GolfScoreSentinels.DnfThreshold ? cloudBest : Mathf.Min(cloudBest, currentSessionScore);
             }
             else if (mode == GameModes.WildlifeBlitz)
             {
@@ -121,7 +121,7 @@ namespace CosmicShore.Core
             if (!_isReady) return;
 
             string key = $"{mode}_{intensity}";
-            if (score < 10000f)
+            if (GolfScoreSentinels.IsFinishTime(score))
             {
                 _cachedProfile.MultiHexStats.TryUpdateBestTime(key, score);
                 SubmitScoreInternal(mode, intensity, score);
@@ -135,7 +135,7 @@ namespace CosmicShore.Core
             if (!_isReady) return;
 
             string key = $"{mode}_{intensity}";
-            if (raceTime < 10000f)
+            if (GolfScoreSentinels.IsFinishTime(raceTime))
             {
                 _cachedProfile.JoustStats.TryUpdateBestTime(key, raceTime);
                 SubmitScoreInternal(mode, intensity, raceTime);

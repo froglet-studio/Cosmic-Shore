@@ -42,6 +42,15 @@ namespace CosmicShore.Utility
         public ScriptableEventUlong OnPlayerPairInitialized;
         public event Action<string, Domains> OnPlayerAdded;
 
+        /// <summary>
+        /// Raised on every peer when the server-synced per-domain metric sums change (see
+        /// <see cref="SetDomainMetricSum"/>). The in-game multiplayer HUD listens so its domain boxes
+        /// display the SERVER's authoritative sums verbatim instead of each client re-summing
+        /// per-player stats (which can freeze for a client's own player when its own RoundStats
+        /// replication lags).
+        /// </summary>
+        public event Action OnDomainMetricSumsChanged;
+
         [Header("UI Flow")]
         public ScriptableEventNoParam OnShowGameEndScreen;
         
@@ -86,6 +95,32 @@ namespace CosmicShore.Utility
         /// </summary>
         public bool IsGolfRules { get; private set; }
 
+        // ── Server-synced per-domain metric sums (in-game HUD) ───────────────────
+        // MultiplayerDomainGamesController computes ScoringMetrics.SumByDomain for each active domain
+        // on the server and replicates it; SetDomainMetricSum runs on every peer from the
+        // NetworkVariable callback. Indexed by ActiveDomains order (Jade, Ruby, Gold).
+        readonly int[] _domainMetricSums = new int[3];
+
+        /// <summary>Server-synced summed metric (crystals / jousts) for an active domain; 0 if not active.</summary>
+        public int GetDomainMetricSum(Domains domain)
+        {
+            int i = System.Array.IndexOf(ActiveDomains, domain);
+            return (i >= 0 && i < _domainMetricSums.Length) ? _domainMetricSums[i] : 0;
+        }
+
+        /// <summary>
+        /// Writes one synced domain sum (called on every peer from the controller's NetworkVariable
+        /// callback) and raises <see cref="OnDomainMetricSumsChanged"/> when it actually changes.
+        /// </summary>
+        public void SetDomainMetricSum(Domains domain, int value)
+        {
+            int i = System.Array.IndexOf(ActiveDomains, domain);
+            if (i < 0 || i >= _domainMetricSums.Length) return;
+            if (_domainMetricSums[i] == value) return;
+            _domainMetricSums[i] = value;
+            OnDomainMetricSumsChanged?.Invoke();
+        }
+
         /// <summary>
         /// Server-authoritative winner name, written by game controllers in their
         /// SyncFinalScores_ClientRpc. Read by EndGameControllers after OnWinnerCalculated fires.
@@ -102,6 +137,38 @@ namespace CosmicShore.Utility
         [NonSerialized] public Domains WinnerDomain = Domains.Blue;
 
         /// <summary>
+        /// Single source of truth for the final ranked results (per-player, sorted, with
+        /// 1-based <see cref="ScoreResult.Rank"/>). Produced once per game end by the mode:
+        /// server-side in networked modes (and assembled identically on each client from the
+        /// already-synced score arrays), or locally in single-player. Every end-game surface
+        /// — scoreboard banner + cards, end-game cinematic, crystal reward — reads this.
+        /// <see cref="WinnerName"/>/<see cref="WinnerDomain"/> are a thin derived view over
+        /// <c>Results[0]</c> (see <see cref="SetResults"/>). Empty until the mode computes
+        /// results. Reset in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
+        /// See Docs/ScoringSystem/REFACTOR.md R10.
+        /// </summary>
+        [NonSerialized] public List<ScoreResult> Results = new();
+
+        /// <summary>
+        /// Sets <see cref="Results"/> (reusing the same list instance so existing references
+        /// stay valid) and derives <see cref="WinnerName"/>/<see cref="WinnerDomain"/> from
+        /// the top row, keeping them a convenience view over the single source. Call once per
+        /// game end on the server and on each client.
+        /// </summary>
+        public void SetResults(IEnumerable<ScoreResult> results)
+        {
+            Results.Clear();
+            if (results != null)
+                Results.AddRange(results);
+
+            if (Results.Count > 0)
+            {
+                WinnerName = Results[0].Name;
+                WinnerDomain = Results[0].Domain;
+            }
+        }
+
+        /// <summary>
         /// The resolved crystal collection target for the current session.
         /// Written by <see cref="NetworkCrystalCollisionTurnMonitor"/> in StartMonitor (server),
         /// synced to clients via NetworkVariable.OnValueChanged.
@@ -109,6 +176,26 @@ namespace CosmicShore.Utility
         /// Reset automatically in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
         /// </summary>
         [NonSerialized] public int CrystalTargetCount;
+
+        /// <summary>
+        /// The resolved joust-collision target for the current session — the per-domain
+        /// joust sum that ends a Joust turn. Published by <see cref="JoustCollisionTurnMonitor"/>
+        /// in StartMonitor on every peer (a scene constant, identical across clients). Read by
+        /// the Joust controller to format the "N Jousts Left" loser line into
+        /// <see cref="ScoreResult.ScoreText"/>. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public int JoustTargetCount;
+
+        /// <summary>
+        /// The active scoring strategy for the current mode, published by the mode's controller
+        /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
+        /// asset onto the controller). Read by the network turn monitors for the end condition
+        /// and the "remaining" readout (and, in later commits, the scoreboard + end-game
+        /// cinematic). Transient — re-published on every (re)spawn, so it is intentionally NOT
+        /// cleared by the reset methods.
+        /// </summary>
+        [NonSerialized] public ScoringRuleSO ScoringRule;
 
         /// <summary>
         /// Syncs essential game identity fields from an <see cref="SO_ArcadeGame"/> asset.
@@ -166,15 +253,6 @@ namespace CosmicShore.Utility
         /// Used to control fade-in timing after the reload completes.
         /// </summary>
         [NonSerialized] public bool IsReplayReload;
-
-        /// <summary>
-        /// Set by SceneLoader before loading Menu_Main from a game scene.
-        /// Prevents the game scene's ServerPlayerVesselInitializer from calling
-        /// NetworkManager.Shutdown() on despawn — the network must stay alive
-        /// for Menu_Main's vessel spawning pipeline.
-        /// Cleared by MainMenuController.Start().
-        /// </summary>
-        [NonSerialized] public bool IsReturnToMenuTransition;
         
         // -----------------------------------------------------------------------------------------
         // Initialization / Lifecycle
@@ -254,7 +332,10 @@ namespace CosmicShore.Utility
             LocalRoundStats = null;
             WinnerName = "";
             WinnerDomain = Domains.Blue;
+            Results.Clear();
             CrystalTargetCount = 0;
+            JoustTargetCount = 0;
+            System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
             // ArcadeGameConfigureModal and must survive the ResetRuntimeData() call
@@ -263,21 +344,26 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Narrower reset used by PartyInviteController.AcceptInviteAsync after the
-        /// client's NetworkManager shuts down. The client's own Player/Vessel
-        /// NetworkObjects have already been despawned by the shutdown, but
-        /// Player.OnNetworkDespawn only removes from Players — it leaves LocalPlayer
-        /// and Vessels pointing at destroyed objects. Clearing these SOAP references
-        /// prevents ClientPlayerVesselInitializer.ReRegisterPersistentPlayers() and
-        /// AddPlayer() from racing against ghosts after the host-driven Menu_Main
-        /// reload. Does NOT touch round/turn/stats state (unlike ResetRuntimeData)
-        /// because the menu accept flow never entered a game round.
+        /// Narrower reset used by the party-join transition (NetworkTransitionService.
+        /// ClearStaleReferences) after the client's local NetworkManager shuts down.
+        /// The shutdown despawned the client's own Player/Vessel NetworkObjects, but
+        /// the lists keep managed references to the destroyed components — including
+        /// the menu session's RoundStats entries (the menu populates RoundStatsList
+        /// via AddPlayer exactly like a game does). A destroyed RoundStats keeps its
+        /// managed Name, so it wins AddPlayer's name-keyed dedup and SHADOWS the live
+        /// component for every name-keyed consumer on this client (ready-feed color,
+        /// final-score sync, per-domain sums) — frozen at the pre-party state (Jade).
+        /// Clear the roster lists; the party session's pair-init re-adds live entries.
+        /// Round/turn counters are NOT touched (no game round was entered).
         /// </summary>
         public void ResetRuntimeDataForPartyJoin()
         {
             Players.Clear();
             Vessels.Clear();
+            RoundStatsList.Clear();
+            DomainStatsList.Clear();
             LocalPlayer = null;
+            LocalRoundStats = null;
         }
 
         void ResetRuntimeDataForReplay()
@@ -289,7 +375,10 @@ namespace CosmicShore.Utility
             _playerSpawnPoseList.Clear();
             WinnerName = "";
             WinnerDomain = Domains.Blue;
+            Results.Clear();
             CrystalTargetCount = 0;
+            JoustTargetCount = 0;
+            System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 
         public void ResetStatsDataForReplay()
@@ -324,9 +413,6 @@ namespace CosmicShore.Utility
             RequestedAIBackfillCount = 0;
 
             IsReplayReload = false;
-            // Note: IsReturnToMenuTransition is NOT cleared here because ResetAllData()
-            // may run before the game scene's OnNetworkDespawn fires. The flag is cleared
-            // by MainMenuController.Start() after the menu scene finishes loading.
 
             ResetRuntimeData();
             DestroyPlayerAndVessel();
@@ -337,9 +423,28 @@ namespace CosmicShore.Utility
             if (p == null)
                 return;
 
+            PruneDestroyedRosterEntries();
+
             // Avoid duplicates by Name
             if (Players.All(player => player.Name != p.Name))
                 Players.Add(p);
+
+            // A same-name RoundStats that is NOT this player's live component is a
+            // stale shadow from a previous session (e.g. the pre-party solo Player,
+            // despawned by the invite-accept NetworkManager shutdown). Name-keyed
+            // consumers — ready-feed color, final-score sync, per-domain sums — must
+            // resolve the LIVE component, so the shadow is replaced. Unity defers
+            // Destroy to end of frame, so this also covers shadows the destroyed-
+            // object prune above cannot see yet.
+            for (int i = RoundStatsList.Count - 1; i >= 0; i--)
+            {
+                var rs = RoundStatsList[i];
+                if (rs != null && rs.Name == p.Name && !ReferenceEquals(rs, p.RoundStats))
+                {
+                    CSDebug.LogWarning($"[GameDataSO] Replacing stale RoundStats entry for '{p.Name}' with the live component.");
+                    RoundStatsList.RemoveAt(i);
+                }
+            }
 
             if (RoundStatsList.All(rs => rs.Name != p.Name))
                 RoundStatsList.Add(p.RoundStats);
@@ -436,58 +541,6 @@ namespace CosmicShore.Utility
             }
             return sum;
         }
-
-        public int SumJoustCollisionsByDomain(Domains domain)
-        {
-            int sum = 0;
-            for (int i = 0, count = RoundStatsList.Count; i < count; i++)
-            {
-                var s = RoundStatsList[i];
-                if (s != null && s.Domain == domain) sum += s.JoustCollisions;
-            }
-            return sum;
-        }
-
-        /// <summary>
-        /// Returns the first active domain whose summed CrystalsCollected meets
-        /// or exceeds <paramref name="target"/>. Scans in <see cref="ActiveDomains"/>
-        /// order (Jade → Ruby → Gold), so identical inputs are deterministic.
-        /// </summary>
-        public bool TryGetDomainReachingCrystalTarget(int target, out Domains winner)
-        {
-            int dc = Mathf.Clamp(RequestedDomainCount, 1, ActiveDomains.Length);
-            for (int i = 0; i < dc; i++)
-            {
-                var d = ActiveDomains[i];
-                if (SumCrystalsCollectedByDomain(d) >= target)
-                {
-                    winner = d;
-                    return true;
-                }
-            }
-            winner = Domains.Blue;
-            return false;
-        }
-
-        /// <summary>
-        /// Returns the first active domain whose summed JoustCollisions meets
-        /// or exceeds <paramref name="target"/>. See <see cref="TryGetDomainReachingCrystalTarget"/>.
-        /// </summary>
-        public bool TryGetDomainReachingJoustTarget(int target, out Domains winner)
-        {
-            int dc = Mathf.Clamp(RequestedDomainCount, 1, ActiveDomains.Length);
-            for (int i = 0; i < dc; i++)
-            {
-                var d = ActiveDomains[i];
-                if (SumJoustCollisionsByDomain(d) >= target)
-                {
-                    winner = d;
-                    return true;
-                }
-            }
-            winner = Domains.Blue;
-            return false;
-        }
         
         public void SetPlayersActive()
         {
@@ -518,6 +571,25 @@ namespace CosmicShore.Utility
             }
         }
         
+        /// <summary>
+        /// Drops roster entries whose underlying UnityEngine.Object has been destroyed
+        /// (e.g. the client's pre-party Player after the invite-accept NetworkManager
+        /// shutdown). Destroyed components keep their managed state — Name still
+        /// matches — so without pruning they shadow live entries in the name-keyed
+        /// dedup and lookups. Plain C# stats (edit-mode test fakes) are not
+        /// UnityEngine.Objects and pass through untouched.
+        /// </summary>
+        void PruneDestroyedRosterEntries()
+        {
+            for (int i = Players.Count - 1; i >= 0; i--)
+                if (Players[i] is UnityEngine.Object obj && !obj)
+                    Players.RemoveAt(i);
+
+            for (int i = RoundStatsList.Count - 1; i >= 0; i--)
+                if (RoundStatsList[i] is UnityEngine.Object obj && !obj)
+                    RoundStatsList.RemoveAt(i);
+        }
+
         /// <summary>
         /// Remove a player (by display name) from Players & RoundStatsList and fix LocalPlayer if needed.
         /// </summary>

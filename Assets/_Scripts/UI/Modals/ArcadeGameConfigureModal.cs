@@ -558,8 +558,51 @@ namespace CosmicShore.UI
             RefreshTileVisibility();
         }
 
+        /// <summary>
+        /// Resolves the local human's own Player for owner-writes (domain pick RPC,
+        /// vessel type). Primary source is gameData.LocalPlayer; falls back to
+        /// NetworkManager.LocalClient.PlayerObject because LocalPlayer can be null or
+        /// stale on a client whose menu pair-init hasn't completed (game→menu return),
+        /// or after RemovePlayerData's Players[0] repair pointed it at another player
+        /// (on the host that can even be an AI, which shares the host's client id —
+        /// hence the IsInitializedAsAI guard).
+        /// Returns null only when no owned Player exists — callers must treat that as
+        /// an error, not skip silently: a swallowed pick leaves the player on a stale
+        /// domain for the whole next game while the tile UI claims otherwise.
+        /// </summary>
+        Player ResolveLocalOwnedPlayer()
+        {
+            if (gameData != null
+                && gameData.LocalPlayer is Player cached
+                && cached.IsOwner && !cached.IsInitializedAsAI)
+                return cached;
+
+            var nm = NetworkManager.Singleton;
+            var playerObj = nm != null ? nm.LocalClient?.PlayerObject : null;
+            if (playerObj != null && playerObj.TryGetComponent<Player>(out var resolved) && resolved.IsOwner)
+            {
+                Debug.LogWarning("[ArcadeConfigModal] gameData.LocalPlayer was null/stale — " +
+                                 "resolved local Player via NetworkManager.LocalClient instead.");
+                return resolved;
+            }
+
+            return null;
+        }
+
         void HandleDomainSelected(Domains domain)
         {
+            // Resolve BEFORE touching any UI state: if the pick cannot reach the server,
+            // the tile must not highlight — the UI shown to the player always matches the
+            // server's truth (chip movement is already NetDomain-event-driven).
+            var player = ResolveLocalOwnedPlayer();
+            if (player == null)
+            {
+                Debug.LogError($"[ArcadeConfigModal] Domain pick '{domain}' DROPPED — no owned local " +
+                               "Player resolved (pair-init incomplete after scene return?). " +
+                               "Pick not sent to server; tile selection unchanged.");
+                return;
+            }
+
             if (config != null)
                 config.SelectedDomain = domain;
 
@@ -567,8 +610,7 @@ namespace CosmicShore.UI
             // The chip movement is purely event-driven — Player.NetDomain.OnValueChanged
             // fires on every client (including the host) and triggers the surgical
             // reparent in HandlePlayerDomainChanged. No refresh-everything-each-event.
-            if (gameData != null && gameData.LocalPlayer is Player player && player.IsOwner)
-                player.RequestSetDomain_ServerRpc(domain);
+            player.RequestSetDomain_ServerRpc(domain);
 
             SyncGameDataDomain();
             RefreshTileVisibility();
@@ -1032,16 +1074,19 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// True if the local player should fire gameData.InvokeGameLaunch() — i.e.
-        /// they are the launch authority. Three cases launch locally:
+        /// True if the local player is the launch authority — i.e. they sync the
+        /// authoritative launch config into GameDataSO and their SceneLoader
+        /// performs the actual scene load. Three cases hold launch authority:
         /// (a) no sync manager at all (legacy solo path),
         /// (b) sync manager exists but the local player is not in a multi-human
         ///     party session (PartyMembers <= 1, i.e. just self — presence-lobby
         ///     membership is irrelevant),
         /// (c) the local player is the host of an active multi-human party session.
         ///
-        /// Non-host party clients return false: their modal closes silently and
-        /// they ride Netcode scene replication into the game scene.
+        /// Non-host party clients return false: they skip the data sync but still
+        /// raise InvokeGameLaunch locally so SceneLoader shows the loading splash
+        /// and enters LoadingGame — its connected-client guard defers the actual
+        /// scene load to the server's Netcode scene replication.
         /// </summary>
         internal static bool ShouldLocalPlayerLaunch(HostConnectionDataSO data, bool hasSyncManager)
         {
@@ -1056,8 +1101,9 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Called on ALL instances (host + clients) when every human player
-        /// has pressed Start/Confirm. The host launches the game; clients
-        /// close their modal (they'll be pulled into the game scene via Netcode).
+        /// has pressed Start/Confirm. The host syncs launch config and loads the
+        /// scene; clients show the loading splash and close their modal (they'll
+        /// be pulled into the game scene via Netcode scene replication).
         /// </summary>
         void HandleAllPlayersReady()
         {
@@ -1069,9 +1115,17 @@ namespace CosmicShore.UI
             {
                 audioSystem.PlayMenuAudio(MenuAudioCategory.LetsGo);
                 SyncAllGameDataForLaunch();
-                Debug.Log("<color=#FFD700>[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch()</color>");
-                gameData.InvokeGameLaunch();
             }
+
+            // Every instance raises the launch event. On the launch authority,
+            // SceneLoader.LaunchGame loads the scene; on non-host party clients
+            // it shows the loading splash, enters LoadingGame, and arms the
+            // splash fade, while its connected-client guard defers the actual
+            // scene load to the server's Netcode scene replication. Without
+            // this, clients sit on the menu/modal with no transition visual
+            // until the network scene load arrives.
+            Debug.Log($"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] Calling gameData.InvokeGameLaunch() (launchAuthority={shouldLaunch})</color>");
+            gameData.InvokeGameLaunch();
 
             // Clear runtime state so it can't resurface after returning to menu
             _selectedGame = null;
@@ -1158,17 +1212,22 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Writes the selected vessel class directly to the local Player's
-        /// NetDefaultVesselType NetworkVariable (owner-writable). This ensures
-        /// each client's vessel choice is propagated to the server independently
-        /// of gameData.selectedVesselClass (which carries the host's choice).
+        /// NetDefaultVesselType NetworkVariable (owner-writable — legal from the
+        /// owning client, unlike NetDomain). This ensures each client's vessel
+        /// choice is propagated to the server independently of
+        /// gameData.selectedVesselClass (which carries the host's choice).
         /// </summary>
         void SyncLocalPlayerVesselType(SO_Vessel ship)
         {
-            if (gameData.LocalPlayer is not Player localPlayer) return;
-            if (!localPlayer.IsOwner) return;
+            var localPlayer = ResolveLocalOwnedPlayer();
+            if (localPlayer == null)
+            {
+                Debug.LogError("[ArcadeConfigModal] Vessel selection DROPPED — no owned local Player " +
+                               "resolved. NetDefaultVesselType not updated; spawn would use a stale class.");
+                return;
+            }
 
-            var vesselType = ship ? ship.Class : VesselClassType.Dolphin;
-            localPlayer.NetDefaultVesselType.Value = vesselType;
+            localPlayer.NetDefaultVesselType.Value = ship ? ship.Class : VesselClassType.Dolphin;
         }
 
         #endregion

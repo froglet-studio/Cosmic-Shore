@@ -41,15 +41,20 @@ namespace CosmicShore.Gameplay
         /// The max recursion depth of the assembler
         /// </summary>
         [SerializeField] int depth = 50;
+        [Tooltip("Maximum LIVE prisms this flora can hold. Consumption frees budget — a grazed " +
+                 "flora regrows toward this cap instead of staying a permanent un-growing fragment.")]
         [SerializeField] int maxTotalSpawnedObjects = 1000;
         [SerializeField] int maxDepth = 30;
         [SerializeField] int itemsPerGrow = 5;
         [SerializeField] int randomItems = 2;
         [SerializeField] float crystalGrowth = 1.01f;
+        [Tooltip("How many surviving prisms to re-sprout growth branches from when every active " +
+                 "branch has been consumed or exhausted (a mature gyroid has none). This is what " +
+                 "lets a grazed flora 'reawaken' instead of sitting as a dead fragment.")]
+        [SerializeField] int reseedBranchCount = 3;
 
         HashSet<Branch> activeBranches = new HashSet<Branch>();
 
-        int spawnedItemCount = 0;
         Assembler assembler;
 
         public static class AssemblerFactory
@@ -63,6 +68,12 @@ namespace CosmicShore.Gameplay
                     newAssembler.BlockType = ((GyroidGrowthInfo)growthInfo).BlockType;
                     newAssembler.Depth = growthInfo.Depth;
                     // Copy other properties as needed
+                    return newAssembler;
+                }
+                else if (growthInfo is SchwarzPGrowthInfo schwarzPGrowthInfo)
+                {
+                    var newAssembler = gameObject.GetComponent<SchwarzPAssembler>();
+                    newAssembler.Program(schwarzPGrowthInfo);
                     return newAssembler;
                 }
                 // Add other assembler types here as needed
@@ -79,14 +90,32 @@ namespace CosmicShore.Gameplay
 
         public override void Grow()
         {
-            if (spawnedItemCount >= maxTotalSpawnedObjects) return;
+            // Live-prism budget: the flora can hold at most maxTotalSpawnedObjects LIVE
+            // prisms. Consumption frees budget, so a grazed flora regrows. (Was: a
+            // lifetime spawn counter that never decremented — a fully-grown flora could
+            // never grow again even after fauna ate most of it, which is exactly the
+            // "ungrowing gyroid fragments" failure observed in-game.)
+            if (healthTracker != null && healthTracker.Count >= maxTotalSpawnedObjects) return;
 
-            // Phase gate: existing flora freeze growth once the cell crosses Frozen
-            // (default 10000 prisms). Flora that already exist stay rendered — they just
-            // stop adding new prisms. The Settled gate in IntensityWiseLifeSpawner stopped
-            // *new* flora from being planted at 4000; this stops *existing* flora from
-            // continuing to grow at 10000.
-            if (cell && cell.Phase >= CellPhase.Frozen) return;
+            // Frenzy gate: flora grow at a steady rate until the cell crosses into Frenzy,
+            // then freeze, resuming automatically when an active force (fauna grazing /
+            // vessel abilities) brings the count back below the Frenzy exit threshold.
+            // Cell.FloraGrowingEnabled is the single source of truth — no early growth cap
+            // (that staggered self-limit was a cheat; the food web is the only down-force).
+            if (cell && !cell.FloraGrowingEnabled) return;
+
+            // Reawakening: a flora whose active branches were all consumed or exhausted
+            // (a fully-grown gyroid has none) re-sprouts from surviving prisms instead
+            // of staying a permanent un-growing fragment. Growth continues next cycle
+            // from the re-seeded branches. Guarded on having surviving prisms so a
+            // not-yet-seeded flora doesn't spuriously seed here before Plant()/Initialize
+            // finish their own setup.
+            if (activeBranches.Count == 0)
+            {
+                if (healthTracker != null && healthTracker.Count > 0)
+                    ReseedBranches();
+                return;
+            }
 
             List<Branch> newBranches = new List<Branch>();
             List<Branch> branchesToRemove = new List<Branch>();
@@ -102,17 +131,20 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
+                // Randomly skip grow sites BEFORE GetGrowthInfo: a successful
+                // GetGrowthInfo claims the site in the PrismSpatialIndex, and a
+                // skipped-after-claim site would hold its reservation until TTL,
+                // blocking siblings from growing there in the meantime.
+                if (skippedItems < randomItems && Random.value < 0.5f)
+                {
+                    skippedItems++;
+                    continue;
+                }
+
                 var growthInfo = branch.assembler.GetGrowthInfo();
                 if (!growthInfo.CanGrow)
                 {
                     branchesToRemove.Add(branch);
-                    continue;
-                }
-
-                // Randomly skip viable grow sites
-                if (skippedItems < randomItems && Random.value < 0.5f)
-                {
-                    skippedItems++;
                     continue;
                 }
 
@@ -144,7 +176,6 @@ namespace CosmicShore.Gameplay
 
                 newBranches.Add(newBranch);
                 itemsSpawned++;
-                spawnedItemCount++;
 
                 if (branch.depth >= maxDepth - 1 || branch.assembler.IsFullyBonded())
                 {
@@ -154,11 +185,51 @@ namespace CosmicShore.Gameplay
 
             foreach (Branch branch in branchesToRemove)
             {
-                activeBranches.Remove(branch);               
+                activeBranches.Remove(branch);
             }
 
             activeBranches.UnionWith(newBranches);
             GrowCrystal();
+        }
+
+        /// <summary>
+        /// Re-sprout growth branches from surviving prisms — each surviving prism still
+        /// carries its Assembler, so wrapping it in a Branch puts it back in the grow
+        /// rotation. Survivors are sampled RANDOMLY (not first-N) so repeated reseeds
+        /// don't keep picking the same fully-bonded prisms; ones next to consumed gaps
+        /// have room to grow and heal the wound. Branches that turn out to be fully
+        /// bonded are culled by the normal Grow() loop. Falls back to a fresh root
+        /// assembler when nothing usable survives.
+        /// </summary>
+        void ReseedBranches()
+        {
+            var survivors = new List<HealthPrism>();
+            foreach (var hp in healthTracker.All)
+                if (hp) survivors.Add(hp);
+
+            if (survivors.Count == 0)
+            {
+                CreateNewAssembler();
+                return;
+            }
+
+            // Partial Fisher-Yates: try a bounded number of random survivors, keep the
+            // ones that still carry an Assembler. Bounded so the cold reseed path never
+            // does an unbounded GetComponent sweep over a 1000-prism flora.
+            int target = Mathf.Max(1, reseedBranchCount);
+            int attempts = Mathf.Min(survivors.Count, target * 3);
+            int seeded = 0;
+            for (int i = 0; i < attempts && seeded < target; i++)
+            {
+                int pick = Random.Range(i, survivors.Count);
+                (survivors[i], survivors[pick]) = (survivors[pick], survivors[i]);
+                if (!survivors[i].TryGetComponent<Assembler>(out _)) continue;
+                activeBranches.Add(new Branch(survivors[i]));
+                seeded++;
+            }
+
+            if (seeded == 0)
+                CreateNewAssembler();
         }
 
         void GrowCrystal()
@@ -179,7 +250,12 @@ namespace CosmicShore.Gameplay
         public override void Plant()
         {
             assembler = CreateNewAssembler();
-            transform.position = cellData.CrystalTransform.position + 200 * Random.onUnitSphere; // TODO: replace magic number with nucleus radius 
+            // Disperse across the cell (fraction of membrane radius — see Flora base)
+            // instead of the old hard-coded 200m huddle around the crystal. Dispersed,
+            // domain-coherent flora clusters are what give fauna schools of different
+            // domains genuinely different anti-domain density targets.
+            float radius = ResolvePlantRadius(legacyRadius: 200f);
+            transform.position = cellData.CrystalTransform.position + radius * Random.onUnitSphere;
         }
 
         public Assembler CreateNewAssembler()

@@ -11,7 +11,7 @@ Joust is a collision-based competitive mode for 2-12 players. Players score jous
 - **Always Netcode**: `MultiplayerJoustController` extends the multiplayer controller hierarchy. Even solo play runs through Netcode
 - **Server-authoritative**: Collision sync, winner determination, and final score sync are all server-owned
 - **Golf scoring**: Lower score = better rank. Winner's score = race time (seconds); losers' score = 99999f
-- **In-place reset for replay**: `UseSceneReloadForReplay` is not overridden (inherits `false`)
+- **Scene reload for replay**: `UseSceneReloadForReplay = true` (matches HexRace / Crystal Capture)
 
 ## Class Hierarchy
 
@@ -146,7 +146,7 @@ gameData.OnMiniGameTurnStarted.Raise()
 │
 └─ TurnMonitor.Update() — every frame
     └─ NetworkJoustCollisionTurnMonitor.CheckForEndOfTurn()  [server only]
-        └─ return gameData.TryGetDomainReachingJoustTarget(CollisionsNeeded, out _)
+        └─ return gameData.ScoringRule.IsObjectiveReached(gameData, out _)   // SumByDomain(Jousts) ≥ target
             └─ If true → OnTurnEnded() → gameData.InvokeGameTurnConditionsMet()
 ```
 The end condition is **domain-aggregated**: the turn ends as soon as any active domain's summed JoustCollisions reaches the target. Teammates (humans + AI on the same Domain) hit the joust target together.
@@ -154,6 +154,12 @@ The end condition is **domain-aggregated**: the turn ends as soon as any active 
 ### 7. Winner Determination & Score Sync
 
 Winner detection is **server-authoritative** via `OnTurnEndedCustom()`:
+
+> **Source of truth:** the end condition, winning domain, per-player score, and ranked
+> results are produced by `JoustScoringRuleSO` (`IsObjectiveReached` / `AssignScores` /
+> `BuildResults`) via `gameData.ScoringRule`; the turn monitor + controller delegate to it.
+> (The old `gameData.TryGetDomainReachingJoustTarget` / `SumJoustCollisionsByDomain` helpers
+> were retired — use `ScoringMetrics.SumByDomain(gameData, Jousts, domain)`.)
 
 ```
 TurnMonitor detects collision target reached → gameData.InvokeGameTurnConditionsMet()
@@ -165,7 +171,7 @@ TurnMonitor detects collision target reached → gameData.InvokeGameTurnConditio
 │   │           ├─ Guard: if (_finalResultsSent) return
 │   │           ├─ CalculateJoustScores_Server():
 │   │           │   ├─ currentTime = Time.time - gameData.TurnStartTime
-│   │           │   ├─ Winning DOMAIN = active domain with the highest SumJoustCollisionsByDomain
+│   │           │   ├─ Winning DOMAIN = active domain with the highest ScoringMetrics.SumByDomain(gameData, Jousts, …)
 │   │           │   ├─ Representative WinnerName = best individual contributor on winning domain
 │   │           │   ├─ Every player on the winning domain: stats.Score = currentTime
 │   │           │   └─ All other players: stats.Score = 99999f
@@ -214,31 +220,38 @@ The end game controller holds a `[SerializeField] JoustCollisionTurnMonitor jous
 | Winner | `"VICTORY"` | `"WON BY N JOUST(S)"` | Finish time (formatted as time) |
 | Loser | `"DEFEAT"` | `"LOST BY N JOUST(S)"` | Jousts remaining (integer) |
 
-### 9. Replay & Rematch
+### 9. Replay (Play Again)
 
-Joust uses **in-place reset** for replay (`UseSceneReloadForReplay` inherits base `false`):
+Joust uses **full network scene reload** for replay (`UseSceneReloadForReplay = true`), matching HexRace and Crystal Capture. Play Again is **host-only**: the Scoreboard hides the button for non-host clients (`ConfigureLobbyButtons`), and both `Scoreboard.OnPlayAgainButtonPressed` and `MultiplayerMiniGameControllerBase.RequestReplay` guard the call path. The host's replay forces every client to follow via the Netcode scene load.
 
 ```
-Scoreboard.OnPlayAgainButtonPressed()
-│
-├─ [Multiplayer: 2+ humans]
-│   ├─ RequestRematch(playerName) → opponent sees rematch request panel
-│   └─ Accept → RequestReplay()
-│
-└─ [Solo with AI / accepted rematch]
-    └─ RequestReplay() → ExecuteReplaySequence()
-        └─ ResetForReplay_ClientRpc()  [All clients]
-            ├─ gameData.ResetStatsDataForReplay()
-            ├─ gameData.ResetPlayers()
-            ├─ CameraManager.SnapPlayerCameraToTarget()
-            ├─ gameData.OnResetForReplay.Raise()
-            ├─ OnResetForReplayCustom():
-            │   ├─ _finalResultsSent = false
-            │   ├─ Clear JoustCollisions = 0 for all players
-            │   ├─ Clear Score = 0f for all players
-            │   └─ gameData.InvokeTurnStarted()
-            └─ RaiseToggleReadyButtonEvent(true)  — show Ready button
+Scoreboard.OnPlayAgainButtonPressed()  [host only]
+└─ gameController.RequestReplay()  → MultiplayerJoustController (wired in scene)
+    └─ ExecuteReplaySequence() → ExecuteSceneReloadReplay()
+        ├─ gameData.IsReplayReload = true
+        ├─ PrepareForSceneReload_ClientRpc()  — fade to black on all clients
+        ├─ Clear NetVesselId on all spawned players
+        ├─ Despawn AI players + all vessels (AI spawn with destroyWithScene=false,
+        │   so they must be explicitly despawned or SpawnAIs() would duplicate them)
+        ├─ gameData.ResetRuntimeData()  — clears rosters, winner, targets, counters
+        └─ nm.SceneManager.LoadScene(gameData.SceneName)  — server-authoritative reload
+            │
+            ▼ fresh scene
+            ├─ MultiplayerJoustController.OnNetworkSpawn()  — _finalResultsSent=false
+            ├─ ServerPlayerVesselInitializerWithAI — re-spawns AI (RequestedAIBackfillCount
+            │   survives ResetRuntimeData), rediscovers persistent human Players
+            ├─ Player.PrepareForNewScene()  — RoundStats.Cleanup() zeroes
+            │   JoustCollisions / Score for persistent human players
+            ├─ InitializeAfterDelay() consumes IsReplayReload → fade from black on
+            │   OnClientReady
+            └─ Ready button → countdown → fresh game
 ```
+
+The pause menu's Restart button routes through the same `RequestReplay()` path (`PauseMenu.OnClickReplayButton`, `gameController` wired in scene).
+
+**Scene wiring requirement (this broke Play Again once):** the Joust scene removes the GameCanvas-HexRace prefab's internal `Scoreboard` component and adds its own scene-level `Scoreboard` (with `gameController` → `MultiplayerJoustController`). The prefab's `PlayAgainButton.onClick` persistent call targets the *internal* prefab Scoreboard, so the scene **must override** `m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target` on that Button to point at the scene-added Scoreboard. With the override left null (or pointing at the removed component), clicking Play Again silently does nothing. HexRace avoids this by keeping the prefab's internal Scoreboard and overriding only its `gameController`.
+
+**Button gating (host-only + anti-spam):** the Scoreboard's `playAgainButton` (PlayAgainButton GO) and `mainMenuButton` (HomeButton GO) fields are wired in all three domain-game scenes so `ConfigureLobbyButtons` can hide both from non-host clients — only the host navigates; clients follow via the Netcode scene load. Once the host commits a navigation (Play Again clicked, or the main-menu SOAP event `Event_OnClickToMainMenuButton` fires from `PauseMenu.OnClickMainMenu`), `Scoreboard.HideHostNavButtons()` hides both buttons so the transition can't be spam-clicked. The `onClickToMainMenu` field must reference the same event asset PauseMenu raises.
 
 ## Collision Mechanics
 
@@ -349,7 +362,7 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 
 2. **HasEndGame=false + SetupNewRound suppression**: Joust handles end-game through `OnTurnEndedCustom()` → `SyncJoustResults_ClientRpc()`, which calls `InvokeWinnerCalculated()` + `InvokeMiniGameEnd()`. Setting `HasEndGame=false` prevents the base controller's `SyncGameEnd_ClientRpc` from duplicating these calls. `SetupNewRound()` is overridden to return when `_finalResultsSent=true`.
 
-3. **In-place reset for replay**: Unlike HexRace and Crystal Capture (which use `UseSceneReloadForReplay=true`), Joust uses the default in-place reset path. `OnResetForReplayCustom()` clears `_finalResultsSent`, zeros all `JoustCollisions` and `Score`, then invokes `InvokeTurnStarted()` to restart the HUD.
+3. **Scene reload for replay (commit 21d538d3)**: Joust matches HexRace and Crystal Capture with `UseSceneReloadForReplay=true` — Play Again performs a full network scene reload so all per-round state, environment, and AI re-initialize fresh via `OnNetworkSpawn`. The old in-place `OnResetForReplayCustom()` was removed; `_finalResultsSent` / `_winningDomain` reset in `OnNetworkSpawn`, and persistent human players' `JoustCollisions`/`Score` are zeroed by `Player.PrepareForNewScene()` → `RoundStats.Cleanup()`. See §9 for the scene-wiring requirement on the Play Again button.
 
 4. **Infinite recursion fix (commit 3fb2e05)**: The `OnCollisionChanged` handler in `NetworkJoustCollisionTurnMonitor` originally re-assigned `JoustCollisions` on the server side, which triggered the setter → fired `OnCollisionChanged` → infinite recursion. The fix: (1) server path in `OnCollisionChanged` only broadcasts via `SyncCollision_ClientRpc` without re-assigning, (2) `SyncCollision_ClientRpc` includes `if (IsServer) return` to prevent the host from self-updating.
 
@@ -363,6 +376,6 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 
 9. **No comeback system**: Unlike HexRace (which uses `ElementalComebackSystem`), Joust has no handicap or catch-up mechanics. All players compete on equal footing throughout.
 
-10. **Scoreboard requires inspector wiring**: Both `MultiplayerJoustScoreboard` and `MultiplayerJoustEndGameController` have `[SerializeField] JoustCollisionTurnMonitor joustTurnMonitor` fields that must be wired in the scene inspector to the `NetworkJoustCollisionTurnMonitor` component on the Game object.
+10. **Scoreboard requires inspector wiring**: The scene-added `Scoreboard` (the per-mode `MultiplayerJoustScoreboard` / `MultiplayerJoustEndGameController` subclasses were deleted in the scoring refactor — see `Docs/ScoringSystem/BUGS.md` B2) must have `gameController` wired to the scene's `MultiplayerJoustController`, and the prefab `PlayAgainButton.onClick` must be re-targeted at that scene-added Scoreboard (see §9). `PauseMenu`'s `gameController` / `replayButton` overrides must also point at the Joust controller for the pause-menu Restart path.
 
 11. **Opponent-only scoring**: `VesselExplosionBySkimmerEffectSO` checks `impacteeVessel.Domain != impactorVessel.Domain` before scoring. Without this check, two teammates bumping skimmers each scored joust points, inflating the domain sum to the (low) `collisionsNeeded` target almost instantly — the game ended within a few collisions, before the in-game HUD was visibly in play. Overtake buffs/debuffs are unaffected: `VesselOvertakeBySkimmerEffectSO` still buffs teammates and debuffs opponents regardless. AI pilots already chase opponents only (`AIPilot.UpdatePlayerTarget` skips `player.Domain == myDomain`), which complements this rule.

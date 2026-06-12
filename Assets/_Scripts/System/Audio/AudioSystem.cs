@@ -77,6 +77,16 @@ namespace CosmicShore.Core
         EnergyGain = 18,
         SpeedBurst = 19,
         CrystalSkim = 20,
+        JoustScored = 21,
+        JoustReceived = 22,
+        ElementChargeReceived = 23,
+        ElementMassReceived = 24,
+        ElementSpaceReceived = 25,
+        ElementTimeReceived = 26,
+        ComebackCharge = 27,
+        ComebackMass = 28,
+        ComebackSpace = 29,
+        ComebackTime = 30,
     }
 
     [DefaultExecutionOrder(-1)]
@@ -203,6 +213,65 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Played for GameplaySFXCategory.CrystalSkim.")]
         EventReference crystalSkimEvent;
 
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustScored — local player's skimmer overtook an opponent.")]
+        EventReference joustScoredEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustReceived — local player was overtaken by an opponent's skimmer.")]
+        EventReference joustReceivedEvent;
+
+        [Header("Elemental Crystal Receive Events (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementChargeReceived — local player collected a Charge crystal.")]
+        EventReference elementChargeReceivedEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementMassReceived — local player collected a Mass crystal.")]
+        EventReference elementMassReceivedEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementSpaceReceived — local player collected a Space crystal.")]
+        EventReference elementSpaceReceivedEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementTimeReceived — local player collected a Time crystal.")]
+        EventReference elementTimeReceivedEvent;
+
+        [Header("Comeback Boost Events (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackCharge — local player receives a Charge comeback buff.")]
+        EventReference comebackChargeEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackMass — local player receives a Mass comeback buff.")]
+        EventReference comebackMassEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackSpace — local player receives a Space comeback buff.")]
+        EventReference comebackSpaceEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackTime — local player receives a Time comeback buff.")]
+        EventReference comebackTimeEvent;
+
+        [Header("Gameplay SFX Tuning")]
+        [SerializeField, Range(0f, 1f), Tooltip(
+            "Extra volume multiplier applied to BlockDestroy one-shots on top " +
+            "of the SFX slider. Dozens of prisms can break in a single frame " +
+            "(mode entry, trail collapse, fauna swarms); attenuating the " +
+            "per-block volume keeps the stacked result from phasing into a " +
+            "harsh wall of noise.")]
+        float blockDestroyVolumeScale = 0.35f;
+
+        [SerializeField, Range(0f, 1f), Tooltip(
+            "Extra volume multiplier applied to Explosion one-shots on top of " +
+            "the SFX slider.")]
+        float explosionVolumeScale = 0.6f;
+
+        [SerializeField, Min(1), Tooltip(
+            "Max BlockDestroy one-shots allowed to start within " +
+            "blockDestroyThrottleWindow seconds. Breaks beyond this cap in the " +
+            "same window are dropped — the sound is already saturated, so the " +
+            "extra voices are inaudible individually but would otherwise stack " +
+            "into harsh noise and waste FMOD voices.")]
+        int blockDestroyMaxPerWindow = 4;
+
+        [SerializeField, Min(0.01f), Tooltip(
+            "Sliding window (seconds) over which blockDestroyMaxPerWindow is " +
+            "counted.")]
+        float blockDestroyThrottleWindow = 0.1f;
+
         [Header("Logging")]
         [SerializeField, Tooltip(
             "When true, log a warning the first time a category is played " +
@@ -227,6 +296,12 @@ namespace CosmicShore.Core
         // when a category is fired with no event wired.
         readonly HashSet<MenuAudioCategory> _warnedMenuCategories = new();
         readonly HashSet<GameplaySFXCategory> _warnedGameplayCategories = new();
+
+        // Sliding-window throttle for BlockDestroy. When many prisms break in
+        // the same instant, only the first blockDestroyMaxPerWindow voices per
+        // blockDestroyThrottleWindow are allowed to start; the rest are dropped.
+        float _blockDestroyWindowStart;
+        int _blockDestroyWindowCount;
 
         public bool MusicEnabled { get { return musicEnabled; } }
         public bool SFXEnabled { get { return sfxEnabled; } }
@@ -430,22 +505,7 @@ namespace CosmicShore.Core
         /// SFXEnabled via <see cref="FMODOneShotVolumeHelper"/>.
         /// </summary>
         public void PlayGameplaySFX(GameplaySFXCategory category)
-        {
-            if (GameplaySFXEvents == null) InitializeGameplaySFXEvents();
-
-            if (GameplaySFXEvents.TryGetValue(category, out var reference) && !reference.IsNull)
-            {
-                PlaySFXEvent(reference);
-                return;
-            }
-
-            if (warnOnUnwiredCategory && _warnedGameplayCategories.Add(category))
-            {
-                Debug.LogWarning(
-                    $"[AudioSystem] No FMOD EventReference wired for GameplaySFXCategory.{category}. " +
-                    $"Wire it on the AudioSystem GameObject. (This warning fires once per category.)");
-            }
-        }
+            => PlayGameplaySFXInternal(category, spatial: false, Vector3.zero);
 
         /// <summary>
         /// Plays the FMOD event wired for <paramref name="category"/> as a
@@ -454,12 +514,25 @@ namespace CosmicShore.Core
         /// emanate from the collision site rather than the listener origin.
         /// </summary>
         public void PlayGameplaySFX(GameplaySFXCategory category, Vector3 worldPosition)
+            => PlayGameplaySFXInternal(category, spatial: true, worldPosition);
+
+        /// <summary>
+        /// Shared implementation for the gameplay SFX overloads. Applies the
+        /// per-category volume scale (see <see cref="GetCategoryVolumeScale"/>)
+        /// on top of the SFX slider and gates throttled categories
+        /// (see <see cref="PassesGameplaySFXThrottle"/>) so a burst of
+        /// simultaneous prism breaks can't stack into harsh noise.
+        /// </summary>
+        void PlayGameplaySFXInternal(GameplaySFXCategory category, bool spatial, Vector3 worldPosition)
         {
             if (GameplaySFXEvents == null) InitializeGameplaySFXEvents();
 
             if (GameplaySFXEvents.TryGetValue(category, out var reference) && !reference.IsNull)
             {
-                PlaySFXEvent(reference, worldPosition);
+                if (!PassesGameplaySFXThrottle(category)) return;
+
+                float volume = ResolveFMODSFXVolume() * GetCategoryVolumeScale(category);
+                FMODOneShotVolumeHelper.PlaySFXOneShot(reference, spatial ? worldPosition : Vector3.zero, volume);
                 return;
             }
 
@@ -548,6 +621,43 @@ namespace CosmicShore.Core
             return Mathf.Clamp01(gs.SFXLevel);
         }
 
+        /// <summary>
+        /// Per-category volume multiplier applied on top of the SFX slider.
+        /// Categories that tend to fire en masse in a single frame (block
+        /// destruction, explosions) are attenuated so the stacked result
+        /// doesn't clip into harsh noise. Everything else passes through at 1.
+        /// </summary>
+        float GetCategoryVolumeScale(GameplaySFXCategory category) => category switch
+        {
+            GameplaySFXCategory.BlockDestroy => blockDestroyVolumeScale,
+            GameplaySFXCategory.Explosion => explosionVolumeScale,
+            _ => 1f,
+        };
+
+        /// <summary>
+        /// Sliding-window concurrency gate for categories that can fire in
+        /// large bursts. Currently only BlockDestroy is throttled: at most
+        /// <see cref="blockDestroyMaxPerWindow"/> voices may start per
+        /// <see cref="blockDestroyThrottleWindow"/> seconds. Returns false to
+        /// drop the one-shot. Non-throttled categories always pass.
+        /// </summary>
+        bool PassesGameplaySFXThrottle(GameplaySFXCategory category)
+        {
+            if (category != GameplaySFXCategory.BlockDestroy) return true;
+
+            float now = Time.unscaledTime;
+            if (now - _blockDestroyWindowStart > blockDestroyThrottleWindow)
+            {
+                _blockDestroyWindowStart = now;
+                _blockDestroyWindowCount = 0;
+            }
+
+            if (_blockDestroyWindowCount >= blockDestroyMaxPerWindow) return false;
+
+            _blockDestroyWindowCount++;
+            return true;
+        }
+
         void InitializeMenuAudioEvents()
         {
             MenuAudioEvents = new Dictionary<MenuAudioCategory, EventReference>()
@@ -591,6 +701,16 @@ namespace CosmicShore.Core
                 {GameplaySFXCategory.EnergyGain, energyGainEvent},
                 {GameplaySFXCategory.SpeedBurst, speedBurstEvent},
                 {GameplaySFXCategory.CrystalSkim, crystalSkimEvent},
+                {GameplaySFXCategory.JoustScored, joustScoredEvent},
+                {GameplaySFXCategory.JoustReceived, joustReceivedEvent},
+                {GameplaySFXCategory.ElementChargeReceived, elementChargeReceivedEvent},
+                {GameplaySFXCategory.ElementMassReceived, elementMassReceivedEvent},
+                {GameplaySFXCategory.ElementSpaceReceived, elementSpaceReceivedEvent},
+                {GameplaySFXCategory.ElementTimeReceived, elementTimeReceivedEvent},
+                {GameplaySFXCategory.ComebackCharge, comebackChargeEvent},
+                {GameplaySFXCategory.ComebackMass, comebackMassEvent},
+                {GameplaySFXCategory.ComebackSpace, comebackSpaceEvent},
+                {GameplaySFXCategory.ComebackTime, comebackTimeEvent},
             };
         }
     }

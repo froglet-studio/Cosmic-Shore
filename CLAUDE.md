@@ -37,10 +37,12 @@ Team ownership is tracked via the `Domains` enum: `Jade (1)`, `Ruby (2)`, `Blue 
 Cross-client domain sync is driven entirely by `Player.NetDomain` (server-write `NetworkVariable<Domains>`). Its replication callback `Player.OnNetDomainChanged` propagates every change to:
 
 1. The local `Player.Domain` mirror (read by `IVesselStatus.Domain` and many UI consumers).
-2. `RoundStats.Domain` on the server (which itself replicates via `n_Domain` to all clients) — keeps scoreboards, end-game controllers, and `GameFeedAPI` colorers live across modal re-picks, `NormalizeUnassignedHumans` rerolls, and shape-mode `SetDomain`.
+2. `RoundStats.Domain` — a local mirror kept in sync on EVERY peer (its `n_Domain` NetworkVariable was retired, see `Docs/ScoringSystem/BUGS.md` B10) — keeps scoreboards, end-game controllers, and `GameFeedAPI` colorers live across modal re-picks, `NormalizeUnassignedHumans` rerolls, and shape-mode `SetDomain`.
 3. The vessel materials via `ShipHelper.SetShipProperties(_vesselThemeManagerData, Vessel)` — the theme reference is stashed onto `Player` by `ClientPlayerVesselInitializer.InitializePair`/`ReInitializePair` at vessel spawn/swap.
 
 Do not snapshot domain at component-creation time. Either subscribe to `Player.NetDomain.OnValueChanged` directly or read the live `Player.Domain` mirror each time you need it. `RoundStats.Domain` is also live (after Phase 5) so end-game UIs can keep using it.
+
+**Never write domain state from client code.** `NetDomain` is Server-write (clients request picks via `Player.RequestSetDomain_ServerRpc`), and the `Player.Domain` / `RoundStats.Domain` mirrors sync ONLY from `NetDomain` (`InitializeForMultiplayerMode` + `OnNetDomainChanged`) — a local overwrite desyncs that machine until the next NetDomain delta (`Docs/ScoringSystem/BUGS.md` B10/B11). The menu's Jade reset is server-side in `MenuServerPlayerVesselInitializer.OnPlayerReadyToSpawnAsync` (the deleted client-local `ApplyMenuDomain` was the root of `Docs/PartySystem/BUGS.md` B9). `ShipHelper.SetShipProperties` is init-aware: it swaps the material references and, once `VesselCustomization.Initialize` has painted the hull, also re-applies the mesh material — so a replicated domain change fully re-themes the vessel with no extra calls.
 
 `ServerPlayerVesselInitializerWithAI.GetBalancedDomain` ties break by `ActiveDomains` enum order (Jade → Ruby → Gold), not RNG, so identical inputs produce identical AI distributions across machines without needing a shared seed.
 
@@ -172,7 +174,6 @@ See `Docs/SCENES.md` for the full scene and game mode reference. Summary below.
 
 | Scene | Game Mode | Controller |
 |---|---|---|
-| `MinigameFreestyle` | `Freestyle (7)` | `SinglePlayerFreestyleController` |
 | `MinigameCellularDuel` | `CellularDuel (8)` | `SinglePlayerCellularDuelController` |
 | `MinigameWildlifeBlitz` | `WildlifeBlitz (26)` | `SinglePlayerWildlifeBlitzController` |
 
@@ -200,7 +201,7 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 
 #### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
 
-36 game modes with explicit numeric IDs. Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`. Meta: `Random(0)`. Note: ID 31 is skipped.
+35 game modes with explicit numeric IDs. Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`. Meta: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
 
 Many single-player modes (1-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail.
 
@@ -211,7 +212,6 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 │   Template Method: rounds → turns → countdown → gameplay → end
 │
 ├── SinglePlayerMiniGameControllerBase (abstract)
-│   ├── SinglePlayerFreestyleController    — shape drawing + open-ended freestyle
 │   ├── SinglePlayerCellularDuelController — vessel swap on turn end
 │   ├── SinglePlayerSlipnStrideController  — procedural course with intensity scaling
 │   ├── SinglePlayerWildlifeBlitzController — blitz scoring
@@ -245,9 +245,11 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `CLAUDE.md` | Project root | Architecture, patterns, systems reference |
 | `SCENES.md` | `Docs/` | Complete scene inventory, game modes, launch pipeline |
 | `THREADING.md` | `Docs/` | UniTask / SyncContext threading rules, `.AsMainThread()` contract, `MainThreadDispatcher`, canary, history |
+| `SPATIAL_INDEX.md` | `Docs/` | `PrismSpatialIndex` — THE canonical spatial index of prism mass (Burst AOE queries, growth occupancy reservations, bucket grid). **Read before adding any spatial query against prisms.** |
 | `PartySystem/` | `Docs/` | Party (Relay) layer: `ARCHITECTURE.md` (locked design, investigation Q&A, error-handling matrix, exit criteria), `REFACTOR.md` (active backlog + deferred items + per-commit protocol), `BUGS.md`, `TESTS.md`, `TODOS.md`. EAGER per-user Relay session is the locked design. |
 | `PresenceSystem/` | `Docs/` | Presence-lobby (discovery) layer: `ARCHITECTURE.md`, `REFACTOR.md`, `BUGS.md`, `TESTS.md`, `TODOS.md`. Lobby-only UGS session, coexists with NetworkManager. |
-| `NetworkDiagnostics/` | `Docs/` | NetDiag overlay: `README.md` (NetworkMonitor + `NetworkDiagnostics` helper, classification rules), `TESTS.md` (Tests A-E), `TODOS.md`. |
+| `NetworkDiagnostics/` | `Docs/` | NetDiag overlay: `ARCHITECTURE.md` (NetworkMonitor + `NetworkDiagnostics` helper, classification rules), `TESTS.md` (Tests A-E), `TODOS.md`. |
+| `ScoringSystem/` | `Docs/` | Scoring system (in-game score HUD + final scoreboard): `ARCHITECTURE.md` (shared data layer, event dispatch, per-mode override table, target = one unified networked scoring path), `REFACTOR.md` (sequenced backlog + ground rules: SOAP/observer/SOLID/DRY/KISS, retire `IsMultiplayerMode`), `BUGS.md`, `TESTS.md`. |
 | `CameraMigrationReview.md` | `Docs/` | Camera system migration tracking |
 | `BOOTSTRAP_AUDIT.md` | `_Scripts/System/Bootstrap/` | Bootstrap scene audit, execution order, DI registration |
 | `HEXRACE.md` | `_Scripts/Controller/Arcade/` | HexRace game mode technical reference |
@@ -394,7 +396,7 @@ The application uses a unified bootstrap pattern centered on `AppManager`, with 
 Key classes:
 - `AppManager` (`_Scripts/System/AppManager.cs`) — top-level orchestrator and Reflex DI root (`[DefaultExecutionOrder(-100)]`, implements `IInstaller`). Handles platform configuration, DI registration of all persistent managers and SO assets, auth/network startup, splash fade, and scene transition. Lives on a `DontDestroyOnLoad` root.
 - `ApplicationStateMachine` (`_Scripts/System/ApplicationStateMachine.cs`) — pure C# class (DI lazy singleton). Single-writer to `ApplicationStateDataVariable` (SOAP). Validates transitions via a table-driven state graph. Auto-subscribes to gameplay SOAP events (`OnSessionStarted`, `OnMiniGameEnd`) and lifecycle events (pause, quit, network loss) for automatic phase transitions. States: `None(0)`, `Bootstrapping(1)`, `Authenticating(2)`, `MainMenu(3)`, `LoadingGame(4)`, `InGame(5)`, `GameOver(6)`, `Paused(7)`, `Disconnected(8)`, `ShuttingDown(9)`.
-- `SceneLoader` (`_Scripts/System/SceneLoader.cs`) — persistent scene-loading service. Extends `MonoBehaviour` (DontDestroyOnLoad). Lives in the Bootstrap scene and persists across all scene transitions. Subscribes to SOAP events in code (`OnLaunchGame`, `OnClickToMainMenuButton`, `OnActiveSessionEnd`, `OnClickToRestartButton`) — no per-scene EventListenerNoParam wiring needed. Handles launching gameplay scenes (auto-selects local vs network loading), returning to main menu, and local restart. Registered as a DI singleton via AppManager. Game config sync to clients is handled by `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()` in the game scene.
+- `SceneLoader` (`_Scripts/System/SceneLoader.cs`) — persistent scene-loading service. Extends `MonoBehaviour` (DontDestroyOnLoad). Lives in the Bootstrap scene and persists across all scene transitions. Subscribes to SOAP events in code (`OnLaunchGame`, `OnClickToMainMenuButton`, `OnActiveSessionEnd`, `OnClickToRestartButton`) — no per-scene EventListenerNoParam wiring needed. Handles launching gameplay scenes (host-driven Netcode scene load, with a defensive local fallback only when no NetworkManager is active), returning to main menu, and local restart. Registered as a DI singleton via AppManager. Game config sync to clients is handled by `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()` in the game scene.
 - `SceneNameListSO` (`_Scripts/Utility/DataContainers/SceneNameListSO.cs`) — centralized scene name registry (Bootstrap, Authentication, Menu_Main, Multiplayer). Registered in DI and injected where scene names are needed, replacing hardcoded strings.
 - `SceneTransitionManager` — unified scene loading with fade transitions (`[DefaultExecutionOrder(-50)]`), creates its own full-screen fade overlay programmatically. Registered as a DI singleton.
 - `ApplicationLifecycleManager` — application lifecycle events, bridges both static C# events (legacy) and SOAP events via `ApplicationLifecycleEventsContainerSO`
@@ -526,6 +528,8 @@ Menu_Main Scene (loaded as networked scene when host is running)
 │ │   └─ NotifyClients() — RPCs to non-host clients (N/A for menu)
 │ │
 │ └─ MenuServerPlayerVesselInitializer.OnPlayerReadyToSpawnAsync() [override]:
+│     ├─ player.NetDomain.Value = menuVesselDomain (Jade) — server-authoritative
+│     │   menu domain reset, BEFORE base so the vessel paints Jade at init
 │     ├─ await base.OnPlayerReadyToSpawnAsync() — full chain above
 │     └─ ActivateAutopilot(player):
 │         ├─ player.StartPlayer() — activates vessel, enables input
@@ -674,22 +678,24 @@ The collision/impact system (`Assets/_Scripts/Controller/ImpactEffects/`) uses a
 
 Key interfaces: `IImpactor` / `IImpactCollider`
 
+**Danger prisms are not safe to their own domain (locked design).** `IsDangerous` effects apply to every vessel that touches the prism, regardless of domain — friendly fire included (the fire-trail action literally sets `IsDangerous` from a `FriendlyFire` flag). Danger-prism effect SOs must not gate on domain. This is what makes danger trails a risk/reward surface: the Squirrel's own overheat trail grants 10x skim energy (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`) but slams its owner on contact — volume-independent full-stop slow at the danger max (`VesselChangeSpeedByPrismEffectSO`: `maxSlowStrength * dangerSlowMultiplier`), all-element decaying debuff for 4s (`VesselElementalDebuffByDangerPrismEffectSO`), and boost reset.
+
 **Forcefield Crackle (Skimmer)**: `SkimmerForcefieldCracklePrismEffectSO` (at `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`) is a shader-driven alternative to `SkimmerFXPrismEffectSO` that visualizes the Skimmer's invisible sphere collider on prism impacts. It computes the impact point via `Collider.ClosestPoint` between the prism box and skimmer sphere, projects it onto the sphere surface, and forwards the event (position + duration + intensity + radius) to a `ForcefieldCrackleController` MonoBehaviour on the vessel (`_Scripts/Controller/Vessel/ForcefieldCrackleController.cs`). The controller owns all visual parameters (colors, arc density/sharpness, ring thickness, ripple speed, fresnel) as serialized fields and feeds a ring buffer of up to 16 simultaneous impacts to the shader via MaterialPropertyBlock arrays each frame. `[ExecuteAlways]` allows edit-mode preview via `ForcefieldCrackleControllerEditor` (at `_Scripts/Editor/`). The shader's custom-function HLSL file `ForcefieldCrackle.hlsl` (at `Assets/Materials/Graphs/`) uses FBM-based electrical arcs with expanding wavefronts on a geodesic distance metric so arcs follow the sphere's curvature. All three code files use the `CosmicShore.Gameplay` namespace.
 
 ### Multiplayer / Netcode
 
 The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5.0) for multiplayer. Key files in `Assets/_Scripts/Controller/Multiplayer/`:
 
-- `ServerPlayerVesselInitializer` — core server-side vessel spawner. Listens for `OnPlayerNetworkSpawnedUlong` SOAP events, waits for NetworkVariables to sync (`preSpawnDelayMs`), spawns the vessel prefab via `VesselPrefabContainer`, injects DI with `GameObjectInjector.InjectRecursive()`, then delegates initialization to `ClientPlayerVesselInitializer`. Tracks processed players by `NetworkObjectId` (not `OwnerClientId`, since AI shares the host's). Uses `NetcodeHooks` (not direct `NetworkBehaviour` inheritance) for spawn/despawn hooks. `ProcessPreExistingPlayers()` catches host Player objects spawned before the initializer loaded. `shutdownNetworkOnDespawn` toggle: `true` for game scenes, `false` for Menu_Main.
+- `ServerPlayerVesselInitializer` — core server-side vessel spawner. Listens for `OnPlayerNetworkSpawnedUlong` SOAP events, waits for NetworkVariables to sync (`preSpawnDelayMs`), spawns the vessel prefab via `VesselPrefabContainer`, injects DI with `GameObjectInjector.InjectRecursive()`, then delegates initialization to `ClientPlayerVesselInitializer`. Tracks processed players by `NetworkObjectId` (not `OwnerClientId`, since AI shares the host's). Uses `NetcodeHooks` (not direct `NetworkBehaviour` inheritance) for spawn/despawn hooks. `ProcessPreExistingPlayers()` catches host Player objects spawned before the initializer loaded. The spawner never shuts down the NetworkManager on despawn — under the eager-Relay design the network/Relay persists across all scene transitions and is torn down only by explicit party-leave (`PartyInviteController`) or transport failure (`MultiplayerSetup.OnTransportFailure`).
 - `ClientPlayerVesselInitializer` — common player-vessel pair initialization (extends `NetworkBehaviour`). Server path: called directly by `ServerPlayerVesselInitializer`. Client path: receives RPCs (`InitializeAllPlayersAndVessels_ClientRpc` for new clients, `InitializeNewPlayerAndVessel_ClientRpc` for existing clients). Queues pending `(playerNetId, vesselNetId)` pairs when RPCs arrive before objects replicate — resolved reactively via `OnPlayerNetworkSpawnedUlong` + `OnVesselNetworkSpawned` SOAP events (zero `WaitUntil` polling). `InitializePair()` calls `player.InitializeForMultiplayerMode(vessel)`, `vessel.Initialize(player)`, `ShipHelper.SetShipProperties()`, `gameData.AddPlayer()`, and fires `gameData.InvokeClientReady()` for the local user.
 - `ServerPlayerVesselInitializerWithAI` — extends `ServerPlayerVesselInitializer`. Spawns server-owned AI players **before** `base.OnNetworkSpawn()` subscribes to events, so AI spawn events are harmlessly missed. Marks all AI players in `_processedPlayers` so the base class skips them. Picks AI vessel type from `SO_GameList` captains (falls back to Sparrow). Configures `AIPilot` with game-mode-aware seeking and skill level. **AI players and vessels are spawned with `destroyWithScene: false`** so they survive the client's end-of-frame scene-transition cleanup — without this the client's scene-load message batches with the AI spawn messages on the same network tick and the client destroys the just-spawned AI NetworkObjects (surfacing as `[Invalid Destroy]` errors on the host and invisible AI on clients). Human vessels are unaffected because `ServerPlayerVesselInitializer` delays spawn by `preSpawnDelayMs` (200 ms), pushing them into a later tick. Because AI no longer gets scene-unload cleanup for free, `MultiplayerMiniGameControllerBase.ExecuteSceneReloadReplay()` explicitly despawns all AI players and vessels before the scene reload; the existing cleanup paths (`SceneLoader.ClearPlayerVesselReferences` for Game→Menu, `NetworkManager.Shutdown` on disconnect) already explicit-despawn AI, so AI does not leak into Menu_Main.
-- `MenuServerPlayerVesselInitializer` — extends `ServerPlayerVesselInitializer`. Overrides `OnPlayerReadyToSpawnAsync()` to call `base` then `ActivateAutopilot()`: `player.StartPlayer()`, `Vessel.ToggleAIPilot(true)`, `InputController.SetPause(true)`, `CameraManager.SetupEndCameraFollow(vessel.CameraFollowTarget)`. Game data configuration (vessel class, player count, intensity) is handled by `MainMenuController` — this class only handles the network spawn chain and autopilot activation.
+- `MenuServerPlayerVesselInitializer` — extends `ServerPlayerVesselInitializer`. Overrides `OnPlayerReadyToSpawnAsync()` to first reset the player's domain server-side (`NetDomain.Value = menuVesselDomain`, Jade — the ONLY menu domain reset, before vessel spawn so the hull paints Jade at init; replicates to all peers, covering fresh entry, party join, and host-return), then call `base`, then `ActivateAutopilot()`: `player.StartPlayer()`, `Vessel.ToggleAIPilot(true)`, `InputController.SetPause(true)`, `CameraManager.SetupEndCameraFollow(vessel.CameraFollowTarget)`. Game data configuration (vessel class, player count, intensity) is handled by `MainMenuController` — this class only handles the network spawn chain, the menu domain reset, and autopilot activation.
 - `MenuCrystalClickHandler` — toggles between menu mode (Cinemachine crystal camera + autopilot) and gameplay mode (Cinemachine follows vessel + player control) on Menu_Main. Tap crystal → fade out menu UI, disable autopilot, enable player input, retarget Cinemachine vCam to vessel follow target. Center tap → restore autopilot and menu UI.
 - `MultiplayerSetup` — bridges authentication → Netcode host lifecycle. `EnsureHostStarted()` registers Netcode callbacks and calls `nm.StartHost()` exactly once (guarded by `_hostStartInProgress` flag). For multiplayer games: shuts down local host, queries/creates/joins UGS Multiplayer sessions with Relay transport, handles race conditions on session joins. Session properties: `gameMode` (String1), `maxPlayers` (String2). Connection approval auto-creates player objects.
 - `NetworkStatsManager` — network health monitoring via `NetworkMonitorData` SOAP type
 - `DomainAssigner` — static team pool manager. `Initialize()` fills pool with `[Jade, Ruby, Gold]` (excludes Blue, the "no team" sentinel). `GetDomainsByGameModes()` picks a random unique domain per player (returns `Domains.Jade` for co-op modes; returns `Domains.Blue` if the pool is exhausted). **Must** be called per session start to prevent duplicate/swapped domains.
 
-Scene loading for multiplayer is handled by `SceneLoader` (`_Scripts/System/SceneLoader.cs`), which extends `MonoBehaviour` and auto-selects local vs network scene loading based on whether a host/server is running. `SceneLoader` lives in Bootstrap (DontDestroyOnLoad) and subscribes to SOAP events in code. Game config sync to clients is handled by `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()` in `OnNetworkSpawn()`.
+Scene loading for multiplayer is handled by `SceneLoader` (`_Scripts/System/SceneLoader.cs`), which extends `MonoBehaviour` and drives a host/server Netcode scene load (with a defensive local fallback only when no NetworkManager is active). `SceneLoader` lives in Bootstrap (DontDestroyOnLoad) and subscribes to SOAP events in code. Game config sync to clients is handled by `MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()` in `OnNetworkSpawn()`.
 
 **MPPM / connected-client guard**: `LaunchGame`, `ReturnToMainMenu`, and `HandleActiveSessionEnd` all check `if (nm.IsListening && !nm.IsServer) return` after visual setup (fade-to-black, state transition, `OnClientReady` subscription) but before `LoadSceneAsync()`. In Multiplayer Play Mode, SOAP events on the shared `GameDataSO` fire on every virtual player, so without this guard a client's `SceneLoader` would call `SceneManager.LoadScene()` locally and race the server's Netcode scene load — destroying AI NetworkObjects before they replicate. The guard lets connected clients keep the smooth visual transitions while deferring the actual scene load to the server's Netcode scene management.
 
@@ -840,12 +846,7 @@ The invite lobby system enables multiplayer freestyle roaming in Menu_Main. Play
 
 #### Two-Level Session Architecture
 
-| Layer | Purpose | Relay? | Max Players |
-|---|---|---|---|
-| **Presence Lobby** | Player discovery, invite property exchange | No (lobby-only) | 100 |
-| **Party Session** | Actual gameplay networking via Relay | Yes (`WithRelayNetwork()`) | 4 |
-
-The presence lobby is a lobby-only UGS session (no Relay transport) that coexists safely with an active NetworkManager. Players set their own player properties to send invites — no host privilege required.
+Two UGS sessions layer here: a **Presence Lobby** (lobby-only, no Relay, ≤100 players — discovery + invite property exchange) and a **Party Session** (Relay-backed, ≤4 — actual gameplay networking). Both coexist with an active NetworkManager; invites are per-player lobby properties, so no host privilege is needed. Full tables + rationale: `Docs/PresenceSystem/ARCHITECTURE.md` and `Docs/PartySystem/ARCHITECTURE.md`.
 
 #### Core Services
 
@@ -1035,27 +1036,29 @@ Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate mi
 - **Local-only freestyle toggle**: `MenuCrystalClickHandler` toggles autopilot ↔ freestyle per-client with `IsLocalUser` guard. No network RPC needed — vessel behavior replicates automatically via Netcode.
 - **TimeScale safety**: `MenuCrystalClickHandler.IsMultiplayerSession()` (`ConnectedClientsIds.Count > 1`) prevents `Time.timeScale` changes in multiplayer, which would freeze all local rendering including other players' vessels.
 
-#### Party system — see `Docs/PartySystem/` and `Docs/PresenceSystem/`
+#### Party / Presence / NetDiag docs — start at `Docs/README.md`
 
-The party / invite / lobby system is hardened toward an unbreakable state. The
-canonical references are split by layer: `Docs/PartySystem/` (the Relay-backed
-party session) and `Docs/PresenceSystem/` (the lobby-only discovery layer). Read
-`Docs/PartySystem/ARCHITECTURE.md` before touching `HostConnectionService.cs`,
-`PartySessionService.cs`, `NetworkTransitionService.cs`, or
-`PartyInviteController.cs`; read `Docs/PresenceSystem/ARCHITECTURE.md` before
-touching `PresenceLobbyService.cs`. The active refactor backlog (the three
-remaining service refactors + deferred items D1-D5 + per-commit protocol) lives
-in `Docs/PartySystem/REFACTOR.md`. Open bugs are split into
-`Docs/PartySystem/BUGS.md` and `Docs/PresenceSystem/BUGS.md`. Catch-block failure
-diagnostics are documented in `Docs/NetworkDiagnostics/README.md`.
+Full engineering docs for these subsystems live under `Docs/` (the index +
+shared conventions are in `Docs/README.md`). Route by task:
 
-**Locked design — do not relitigate.** Every authenticated player hosts their own
-Relay-backed party session from the moment they enter `Menu_Main` (the "Always
-InParty" model). EAGER per-user Relay creation is the canonical model. **Do not
-reintroduce LAZY / on-first-invite creation** — the shutdown-and-recreate cascade
-it caused is the root of every recurring party-invite bug. If a future bug appears
-to argue for lazy creation, re-examine the root cause through the lens of
-`Docs/PartySystem/ARCHITECTURE.md` "Unbreakable exit criteria" first.
+| If your task… | Read first |
+|---|---|
+| Touches `HostConnectionService` / `PartySessionService` / `NetworkTransitionService` / `PartyInviteController` | `Docs/PartySystem/ARCHITECTURE.md` (+ `BUGS.md`) |
+| Touches `PresenceLobbyService` / `LobbyPropertyWriter` / `LobbyRefreshScheduler` / `InviteService` / `AcceptanceSignalService` | `Docs/PresenceSystem/ARCHITECTURE.md` |
+| Classifies / logs a party·lobby·session·transition catch failure | `Docs/NetworkDiagnostics/ARCHITECTURE.md` |
+| Run the MPPM regression before a commit | `Docs/PartySystem/TESTS.md` (S-series) + `Docs/PresenceSystem/TESTS.md` (P-series) |
+| Validate the NetDiag overlay itself | `Docs/NetworkDiagnostics/TESTS.md` (Tests A–E) |
+| Log / triage a bug | `Docs/PartySystem/BUGS.md` (B2/B3/B5/B7) · `Docs/PresenceSystem/BUGS.md` (B1/B4/B6) |
+| Pick up refactor work | `Docs/PartySystem/REFACTOR.md` · `Docs/PresenceSystem/REFACTOR.md` |
+| Read what was already tried (session history) | `Docs/PartySystem/MPPM_SESSION_LOG.md` |
+
+**Locked design (do not relitigate):** EAGER per-user Relay — every player
+hosts their own Relay-backed party session on entering `Menu_Main`. **Do not
+reintroduce LAZY / on-first-invite creation** (the shutdown-and-recreate
+cascade it caused is the root of every recurring party-invite bug). Full rule
++ rationale: `Docs/README.md` § "Locked design" and
+`Docs/PartySystem/ARCHITECTURE.md` § "Locked design" / "Unbreakable exit
+criteria".
 
 **Threading prerequisite (shipped):** the UGS / Netcode `Task` continuation → SOAP
 off-thread → `EnsureRunningOnMainThread` cascade is resolved by `MainThreadDispatcher`
@@ -1394,7 +1397,7 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 #### Race Rules
 
 - **Crystal target**: Resolved by `CrystalCollisionTurnMonitor.GetCrystalCollisionCount()`: inspector `CrystalCollisions` field (if non-zero) > `SpawnableWaypointTrack` waypoints > default 39. Synced to all clients via `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable → `gameData.CrystalTargetCount`
-- **Turn monitor (domain-aggregated)**: `NetworkCrystalCollisionTurnMonitor` calls `gameData.TryGetDomainReachingCrystalTarget(target, out _)` every frame (server only) — the turn ends when any active domain's summed CrystalsCollected reaches the target, so AI and human teammates finish the race together
+- **Turn monitor (domain-aggregated)**: `NetworkCrystalCollisionTurnMonitor` calls `gameData.ScoringRule.IsObjectiveReached(gameData, out _)` every frame (server only) — the turn ends when any active domain's summed CrystalsCollected (`ScoringMetrics.SumByDomain`) reaches the target, so AI and human teammates finish the race together
 - **Winner detection (domain-aggregated)**: Server-authoritative via `HexRaceController.OnTurnEndedCustom()` — finds the first active domain whose summed crystals reach the target (Jade → Ruby → Gold tie-break), sets `_raceEnded=true`, picks the best individual contributor on that domain as the representative `WinnerName`, calculates all scores, broadcasts via `SyncFinalScores_ClientRpc`
 - **Scoring**: Every player on the winning domain gets `Score = finishTime` (seconds). Losing-domain players get `Score = 10000 + domainCrystalsRemaining` — the penalty reflects the team's deficit, so teammates on the same losing domain tie on Score. Golf rules (`UseGolfRules=true`): lower = better
 - **Score sync**: `SyncFinalScores_ClientRpc()` broadcasts all player scores + winner name to all clients, then calls `InvokeWinnerCalculated()` + `InvokeMiniGameEnd()`
@@ -1443,7 +1446,7 @@ Server generates a random seed (after 1500ms delay for intensity sync) → write
 - **Comeback system**: Use `ElementalComebackSystem` with `ScoreDifferenceSource.CrystalsCollected` for HexRace (not Score, since Score tracks elapsed time equally for all). Leader and player values are read as domain aggregates via `GameDataSO.SumCrystalsCollectedByDomain`, so comeback buffs scale with the **team** deficit.
 - **Single scene**: Do not create separate singleplayer/multiplayer scenes. AI backfill handles solo play within the same Netcode pipeline.
 - **Crystal target sync**: Server writes target to `NetworkCrystalCollisionTurnMonitor._netCrystalCollisions` NetworkVariable, which syncs to `gameData.CrystalTargetCount` on all clients.
-- **Domain-aggregated scoring**: HexRace, Joust, and Crystal Capture all end on a **per-domain** sum (`GameDataSO.TryGetDomainReachingCrystalTarget` / `TryGetDomainReachingJoustTarget`). At most three scores ever exist (Jade / Ruby / Gold); teammates contribute to the same domain total. The in-game `MultiplayerHUD` shows the local player's domain panel to the left of the centered player score and 1-2 opposing-domain panels to the right when its `MultiplayerHUDView` has the `allyDomainContainer` / `opposingDomainsContainer` / `domainPanelPrefab` wiring; otherwise it falls back to the legacy per-player layout.
+- **Domain-aggregated scoring**: HexRace, Joust, and Crystal Capture all end on a **per-domain** sum via the mode's `ScoringRuleSO.IsObjectiveReached` (over `ScoringMetrics.SumByDomain`). At most three scores ever exist (Jade / Ruby / Gold); teammates contribute to the same domain total. The in-game `MultiplayerHUD` shows the local player's domain panel to the left of the centered player score and 1-2 opposing-domain panels to the right when its `MultiplayerHUDView` has the `allyDomainContainer` / `opposingDomainsContainer` / `domainPanelPrefab` wiring; otherwise it falls back to the legacy per-player layout.
 
 ### FTUE (First-Time User Experience)
 
@@ -1536,7 +1539,9 @@ public interface IScreen
 
 ### Lava-Lamp Mode (Menu Freestyle Merge)
 
-Lava-lamp mode merges freestyle gameplay directly into Menu_Main. Instead of launching a separate freestyle scene, the autopilot vessel becomes playable when the player enters freestyle mode. Game UI panels from the freestyle scenes (MiniGameHUD, Scoreboard, Vessel Selection, Vessel HUDs, PlayerScoreCards, EndShapeDetailHUD) live under Menu_Main's "Game UI" container and fade in/out with the freestyle toggle.
+**Naming: "lava lamp" and "freestyle" are the same thing.** When viewed from the menu (autopilot vessels drifting behind the UI) it is called the *lava lamp*; when the player takes control and flies it is called *freestyle*. One system, two names. The old standalone arcade game named "Freestyle" (`GameModes.Freestyle = 7`, `MinigameFreestyle.unity`, `SinglePlayerFreestyleController`) was a vestige of the pre-lava-lamp era and has been removed — do not reintroduce it. `MultiplayerFreestyle (28)` is a separate multiplayer sandbox game and still exists.
+
+Lava-lamp mode hosts freestyle gameplay directly in Menu_Main: the autopilot vessel becomes playable when the player enters freestyle mode. Game UI panels (MiniGameHUD, Scoreboard, Vessel Selection, Vessel HUDs, PlayerScoreCards, EndShapeDetailHUD) live under Menu_Main's "Game UI" container and fade in/out with the freestyle toggle.
 
 #### Design Principles
 
@@ -1560,7 +1565,7 @@ Game UI [RectTransform, CanvasGroup]                    ← already in freestyle
     └── Menu [GridLayout, 6× ShipCardView]
 ```
 
-`MenuMiniGameHUD` (`_Scripts/UI/MenuMiniGameHUD.cs`) is a slim alternative to the full `MiniGameHUD` for menu freestyle mode. It provides the Volume/Pause icon button (matching the MinigameFreestyle scene pattern) that opens the `MenuVesselSelectionPanelController` panel, vessel HUD reparenting via the `onShipHUDInitialized` SOAP event, and runtime PauseMenu prefab instantiation. The button is visible when Game UI fades in during freestyle, hidden when returning to menu. The full `MiniGameHUD` can replace this when Phase 2/3 features (shape drawing, scoring) are needed.
+`MenuMiniGameHUD` (`_Scripts/UI/MenuMiniGameHUD.cs`) is a slim alternative to the full `MiniGameHUD` for menu freestyle mode. It provides the Volume/Pause icon button that opens the `MenuVesselSelectionPanelController` panel, vessel HUD reparenting via the `onShipHUDInitialized` SOAP event, and runtime PauseMenu prefab instantiation. The button is visible when Game UI fades in during freestyle, hidden when returning to menu. The full `MiniGameHUD` can replace this when Phase 2/3 features (shape drawing, scoring) are needed.
 
 #### Phase 1: Core Freestyle HUD (target hierarchy)
 
@@ -1681,17 +1686,17 @@ When scoring is enabled (Phase 3), a game controller can raise `OnShowGameEndScr
 
 #### Phase 2: Shape Drawing (Deferred)
 
-Shape drawing requires additional scene infrastructure beyond UI panels:
+Shape drawing requires additional scene infrastructure beyond UI panels. The scripts all still exist; their scene wiring lived in the removed `MinigameFreestyle.unity` (recover the reference setup from git history when porting):
 
-| Dependency | Purpose | Current Location |
+| Dependency | Purpose | Script Location |
 |---|---|---|
-| `ShapeDrawingManager` | Orchestrates shape preview → draw → score flow | Freestyle scene (Game GO) |
-| `SegmentSpawner` | Spawns trail segments with shape triggers | Freestyle scene (Game GO) |
-| `ShapeDrawingCrystalManager` | Manages crystals during shape mode | Freestyle scene (Game GO) |
-| `Spawnable*` objects | Shape definitions (Arrow, Circle, Diamond, etc.) | Freestyle scene (12 prefab instances) |
-| `EndShapeDetailHUD` | Shows shape results (name, time, accuracy, stars) | Freestyle scene (scene-level UI) |
+| `ShapeDrawingManager` | Orchestrates shape preview → draw → score flow | `_Scripts/Controller/Environment/MiniGameObjects/` |
+| `SegmentSpawner` | Spawns trail segments with shape triggers | `_Scripts/Controller/Environment/MiniGameObjects/` |
+| `ShapeDrawingCrystalManager` | Manages crystals during shape mode | `_Scripts/Controller/Environment/MiniGameObjects/` |
+| `Spawnable*` objects | Shape definitions (Arrow, Circle, Diamond, etc.) | `_Prefabs/Spawnables/` |
+| `EndShapeDetailHUD` | Shows shape results (name, time, accuracy, stars) | `_Scripts/UI/` |
 
-The `SinglePlayerFreestyleController` manages the freestyle↔shape-drawing transitions (collision detection, environment teardown/restore, camera swaps). For lava-lamp, a `MenuFreestyleController` would adapt this flow for the menu context.
+The removed `SinglePlayerFreestyleController` (git history) managed the freestyle↔shape-drawing transitions (collision detection, environment teardown/restore, camera swaps). For lava-lamp, a `MenuFreestyleController` would adapt this flow for the menu context.
 
 **Shape Drawing State Flow:**
 ```
@@ -1727,8 +1732,8 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 | Shape results panel | `EndShapeDetailHUD.cs` | `_Scripts/UI/` |
 | Vessel HUD reparenting bridge | `VesselHUD.cs` (class: `ShipHUD`) | `_Scripts/Controller/Vessel/` |
 | Freestyle SOAP events container | `MenuFreestyleEventsContainerSO.cs` | `_Scripts/ScriptableObjects/` |
+| Shape drawing manager (Phase 2) | `ShapeDrawingManager.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
 | Vessel selection (singleplayer, legacy) | `VesselSelectionPanelController.cs` | `_Scripts/UI/` |
-| Freestyle controller (singleplayer ref) | `SinglePlayerFreestyleController.cs` | `_Scripts/Controller/Arcade/` |
 | VesselHUD prefab variants | `*HUDVariant.prefab` | `_Prefabs/UI Elements/VesselHUD/` |
 | PlayerScoreCard prefab | `PlayerScoreCard.prefab` | `_Prefabs/UI Elements/In Game/` |
 
@@ -1738,6 +1743,7 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 - **"Game UI" CanvasGroup controls all game panel visibility** — individual panels should not manage their own top-level visibility during freestyle toggles; the parent CanvasGroup handles fade in/out
 - **Vessel HUD reparenting is automatic** — do not manually instantiate or position vessel HUDs; the `onShipHUDInitialized` → `MiniGameHUD.OnShipHUDInitialized()` pipeline handles it
 - **Network-aware vessel selection only** — always use `MenuVesselSelectionPanelController` in Menu_Main, never the singleplayer `VesselSelectionPanelController`
+- **Mass is conserved in the menu too** — the lava-lamp vessel is the freestyle gameplay vessel, so its trail follows the universal conserved-mass rules: no trail caps, prism TTLs, or idle cullers (a `maxTrailBlocks` ring-buffer cap was added for menu perf and reverted — see "Don't cheat emergence"). Manage menu-idle prism growth with fauna cleanup or by pausing the spawner
 - **Scoreboard hidden until needed** — do not show the scoreboard in basic freestyle; let the SOAP event system activate it when a game controller raises `OnShowGameEndScreen`
 - **Phase 2/3 panels start inactive** — `EndShapeDetailHUD` GO starts with `SetActive(false)`, activated only by `ShapeDrawingManager` (Phase 2). PlayerScoreCards are dynamically instantiated only when turns are active (Phase 3)
 
@@ -1786,6 +1792,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Vessel actions | `VesselActionSO` (base config), `VesselActionExecutorBase`, `ActionExecutorRegistry` + 40+ action SOs | `_Scripts/Controller/Vessel/R_VesselActions/`, `VesselActions/` |
 | Prism lifecycle | `Prism`, `PrismFactory`, `Trail`, `TrailFollower` | `_Scripts/Controller/Vessel/`, `_Scripts/Controller/Prisms/` |
 | Prism performance | `PrismScaleManager`, `MaterialStateManager`, `AdaptiveAnimationManager`, `PrismStateManager`, `PrismTimerManager`, `BlockDensityGrid` | `_Scripts/Controller/Managers/` |
+| Prism spatial index | `PrismSpatialIndex` (formerly `PrismAOERegistry`) — THE canonical spatial index of all live prism mass: Burst AOE damage queries + growth occupancy (`TryReserve` claim-before-spawn closes the disabled-collider spawn race) + bucket hash grid. One registration lifecycle (`Register`/`MarkDestroyed`/`MarkRestored`/`Unregister`/`UpdatePosition`), multiple query views. Do not build parallel spatial stores or query prisms via physics — see `Docs/SPATIAL_INDEX.md` | `_Scripts/Controller/Managers/` |
 | Octahedron shield | `PrismOctahedronShield` (per-face bloom engage + shatter-overlay disengage, swaps BoxCollider ↔ convex MeshCollider, mass scales with volume), `PrismOctahedronShieldTester` (Input System-driven manual tester), `OctahedronMeshGenerator` (`PopulateMesh`, `PopulateMeshFaceScale`, `PopulateMeshFaceShatter`) | `_Scripts/Controller/Vessel/`, `_Scripts/Utility/` |
 | Impact effects | `ImpactorBase` + 11 impactor types, 20+ Effect SO types | `_Scripts/Controller/ImpactEffects/` |
 | Forcefield crackle | `SkimmerForcefieldCracklePrismEffectSO` (computes impact points via `Collider.ClosestPoint`), `ForcefieldCrackleController` (`[ExecuteAlways]`, 16-impact ring buffer + MaterialPropertyBlock arrays, owns all visual params), `ForcefieldCrackle.hlsl` (FBM electrical arcs on geodesic sphere), `ForcefieldCrackleControllerEditor` (edit-mode preview) | `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`, `_Scripts/Controller/Vessel/`, `Assets/Materials/Graphs/`, `_Scripts/Editor/` |
@@ -1837,6 +1844,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - C# `event Action` / delegates on MonoBehaviours for broadcast patterns — use SOAP `ScriptableEvent` channels
 - `renderer.material` (clones material) — use `renderer.sharedMaterial` + MaterialPropertyBlock instead
 - Per-object coroutines at scale — use centralized timer/manager systems (see Prism Performance Audit)
+- New spatial queries against prisms via `Physics.OverlapSphere` / `Physics.CheckBox`, or building a new grid/registry/octree over prisms — `PrismSpatialIndex` is THE canonical spatial index of prism mass (occupancy, AOE, proximity). Physics queries are also structurally blind to fresh prisms (colliders disabled for the first 0.6s after spawn). Add new query shapes to `PrismSpatialIndex` instead — see `Docs/SPATIAL_INDEX.md`
 - `await UniTask.SwitchToMainThread()` or `await UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling fix — they don't reliably switch threads on this UniTask version. Use `.AsMainThread()` (see `Docs/THREADING.md`)
 - Raising a SOAP `ScriptableEvent` from a UGS / Netcode `Task` continuation without ensuring the continuation has resumed on the main thread first — SOAP `Raise()` invokes listeners inline, so off-thread raises crash any listener that touches Unity state
 - Touching a `UnityEngine.Object` (incl. `== null` checks routing through `op_Equality`) in a `Task` continuation without `.AsMainThread()` upstream — throws `EnsureRunningOnMainThread`
@@ -1861,8 +1869,9 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - GPU instancing enabled on all prism and VFX materials
 - Jobs + Burst used for prism scale/material animation batching (`PrismScaleManager`, `MaterialStateManager`)
 - `AdaptiveAnimationManager` provides dynamic frame-skipping (1x-12x) based on performance pressure
-- Burst-compiled spatial queries replace Physics-based AOE prism damage
-- Cache-line-aware data layouts with hot/cold splitting and bit-packed flags (`PrismAOEData`)
+- Burst-compiled spatial queries replace Physics-based AOE prism damage (`PrismSpatialIndex` — see `Docs/SPATIAL_INDEX.md`)
+- Cache-line-aware data layouts with hot/cold splitting and bit-packed flags (`PrismSpatialData` / `PrismDamageData` in `PrismSpatialIndex`)
+- Growth occupancy checks use `PrismSpatialIndex.TryReserve` (claim-before-spawn), never `Physics.CheckBox` — prism colliders are disabled for the first 0.6s after spawn, so physics queries are structurally blind to fresh prisms
 
 ### Prism System Performance
 
@@ -1953,7 +1962,20 @@ ones.
   structures. Sometimes referred to casually as "color"; the canonical term
   is *domain*.
 - **Mass** — the produced/consumed quantity that drives scoring, fueling,
-  and cell control.
+  and cell control. **Mass is conserved: it has no passive decay.** A prism
+  (the concrete unit of mass), once created, is only ever removed by an
+  *active* force — a vessel using an ability, or fauna eating it. There is no
+  aging, lifespan, timed culler, or growth/decay oscillator anywhere in the
+  mass pipeline. Population homeostasis is the job of the **food web** (fauna
+  consume mass; fauna starve when prey is scarce), never of artificial decay.
+  A large accumulation of prisms is therefore a *valid* state, not a bug to
+  auto-correct: it persists until an active force consumes it, and when the
+  fauna that would eat it can't reach prey, the correction surfaces as fauna
+  starving — not as prisms vanishing. This holds in **every scene the
+  simulation runs in** — including Menu_Main's lava-lamp/freestyle, where the
+  autopilot vessel *is* the gameplay vessel. There is no "cosmetic" or
+  "menu-only" exemption. See "Universality" and "Don't cheat emergence" below
+  and `Docs/ECOSYSTEM.md`.
 - **Cells** (with `CellType`) — the regions of play that are the unit of
   territorial control. Casual language sometimes calls these "biomes"; the
   canonical term is *cell*.
@@ -1963,7 +1985,10 @@ ones.
 - **Prisms / Prismscapes** — the geometric primitive of player-generated
   structure. Trails are the 1-dimensional case of a prismscape; higher-
   dimensional prism constructions are planned and should reuse this
-  primitive rather than introducing parallel structure types.
+  primitive rather than introducing parallel structure types. Prisms *are*
+  conserved mass (see **Mass**): only active forces — vessel abilities and
+  fauna consumption — remove a prism. Whether a prism is a lifeform's health-
+  prism or vessel-spawned makes no difference to this rule.
 - **Flora & Fauna** — populations that live on and respond to the
   fundamentals above (e.g. fauna attraction to prisms, flora growth on
   cells).
@@ -2042,6 +2067,60 @@ things so the balance is achieved by construction. Before taking that
 shortcut — for instance, before reading fauna placement data and acting on
 it to short-circuit the attraction behavior — ask the prompter whether they
 want the cheat or the emergent solution.
+
+**Example (resolved): prism decay is a cheat — mass is conserved.** Cells fill
+with the dominant domain's flora and "freeze solid": fauna only eat *opposing*
+mass, so the leader's flora have no predator and the prism count never falls.
+The tempting fix is **passive prism decay** — prisms age and die on a timer (or
+a cell-level reaper culls N per tick) so the count drops on its own and flora
+resume growing through the phase hysteresis. **That is a cheat** — a timed
+culler is just the flora regrowth-pulse inverted, a hard-coded oscillator
+reaching past the fundamentals to manufacture the breathing we want to *emerge*.
+The decided answer (do not relitigate): **prisms are conserved; the only sinks
+are active — vessel abilities and fauna consumption.** The down-force on a
+dominant accumulation is the **food web**: opposing-domain fauna graze it down,
+or, when no fauna can reach edible prey, the population crashes via starvation.
+A large accumulation that nothing is eating is a *valid* equilibrium, not a
+defect to auto-correct. If a future cell "freezes," fix it by giving an active
+force a reason/ability to consume that mass (or by tuning fauna diet, reach, and
+spawning) — never by adding decay. The flora regrowth pulse that currently
+exists is the growth-side counterpart of this same cheat and is flagged for
+retirement, not extension. See `Docs/ECOSYSTEM.md`.
+
+**Example (resolved & reverted): the menu trail cap is a cheat — no "cosmetic"
+exemptions.** The Menu_Main autopilot vessel lays prisms indefinitely, so a
+perf-motivated commit added a per-trail ring-buffer cap (`maxTrailBlocks` /
+`Trail.RemoveOldest`, commit `64d8f0c8`) that silently recycled the oldest
+trail prism on every new spawn, rationalized as "cosmetic, menu-only —
+gameplay unaffected." That rationale was false by construction: the lava lamp
+*is* freestyle (one system, two names — see "Lava-Lamp Mode"), so the same
+capped vessel is the one the player flies, and the cap followed them into
+freestyle flight as an age-based trail limit — exactly the passive-removal
+cheat §0 of `Docs/ECOSYSTEM.md` rejects. The commit was reverted. The decided
+answer (do not relitigate): **there is no context in which trail caps, prism
+TTLs, or idle cullers are acceptable.** If prism accumulation in the menu (or
+anywhere) is a perf problem, solve it with the universal systems: **fauna
+cleanup** (cleanup is one of the fauna's jobs — foragers consume trail mass
+through the food web) or **pause/throttle the spawner** (not creating mass is
+allowed; aging it out is not).
+
+### Universality — one HyperSea, one rule set
+
+The fundamentals are universal. The HyperSea has rules and **everything in it
+follows them** — game scenes, Menu_Main's lava-lamp/freestyle, tools and test
+scenes alike. Do not create context-specific exemptions ("it's only the menu,"
+"it's just cosmetic," "it's a perf special case"). Every carve-out creeps
+confusion into best practices about when the rules apply, and carve-outs are
+precisely how rejected cheats re-enter the codebase — both resolved examples
+above came back wearing a special-circumstance costume.
+
+When a context creates pressure (performance, pacing, visuals), solve it with
+the universal systems that already exist — fauna have many jobs and cleanup is
+one of them; spawners can pause; abilities can consume — never with a bespoke
+mechanism that exists only in that context. Build systems once, use them
+everywhere. If a universal system genuinely can't serve the context, that is a
+fundamentals discussion (see the curation process above), not a license for a
+local workaround.
 
 ### When in doubt
 

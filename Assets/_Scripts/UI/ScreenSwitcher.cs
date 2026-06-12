@@ -686,7 +686,27 @@ namespace CosmicShore.UI
 
         private void UpdateNavBar(int index)
         {
-            if (NavBar)
+            // Two supported ways to highlight the active nav tab:
+            //
+            //  1. Explicit per-button icon lists (NavActiveImages / NavInactiveImages).
+            //     Each entry is one button's Active/Inactive icon child, in screen
+            //     visual order. This is the authoritative mechanism when populated
+            //     because it only ever toggles the icon GameObjects — never the
+            //     button GameObjects themselves.
+            //
+            //  2. Legacy fallback: NavBar points directly at the buttons container and
+            //     each button's first two children are [inactiveIcon, activeIcon].
+            //
+            // The two must not run together. NavBar is also used by SetNavBarVisible to
+            // hide the *entire* nav bar (gradient + line + buttons + arrows) during
+            // freestyle, so it intentionally points at the outer container — which is
+            // NOT the buttons container. Running the child-toggle loop against that
+            // outer container would SetActive() the buttons container's children (the
+            // individual button GameObjects), making a whole button disappear. So the
+            // legacy loop only runs when the explicit icon lists are not configured.
+            bool useExplicitImages = NavActiveImages != null && NavActiveImages.Count > 0;
+
+            if (!useExplicitImages && NavBar)
             {
                 for (var i = 0; i < NavBar.childCount; i++)
                 {
@@ -715,7 +735,7 @@ namespace CosmicShore.UI
                 NavBarLine.sprite = NavBarLineSprites[index];
             }
 
-            if (NavActiveImages != null)
+            if (useExplicitImages)
             {
                 for (int i = 0; i < NavActiveImages.Count; i++)
                 {

@@ -118,4 +118,4 @@ block (companion to the existing entry guard at the top of
 - `TESTS.md` — presence-specific manual test procedures
 - `TODOS.md` — minor parking-lot items
 - `../PartySystem/ARCHITECTURE.md` — party (Relay) layer
-- `../NetworkDiagnostics/README.md` — NetDiag overlay used by presence catches
+- `../NetworkDiagnostics/ARCHITECTURE.md` — NetDiag overlay used by presence catches

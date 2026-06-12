@@ -26,11 +26,6 @@ namespace CosmicShore.Gameplay
         /// </summary>
         bool IsInitializedAsAI { get; }
         /// <summary>
-        /// In singleplayer mode, true when not initialized as AI,
-        /// In multiplayer mode -> always false.
-        /// </summary>
-        public bool IsSinglePlayerOwner { get; }
-        /// <summary>
         /// In multiplayer mode, true -> owner client, false -> other clients and AIs
         /// In singleplayer mode, always false.
         /// </summary>
@@ -45,8 +40,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsNetworkClient { get; }
         /// <summary>
-        /// Local User in singleplayer is the player providing input, not AI.
-        /// In Multiplayer, it is the Owner Client providing input.
+        /// The locally-owned, non-AI player — the owner client providing input. Equivalent to
+        /// <see cref="IsMultiplayerOwner"/>; there is no offline single-player (every session is a
+        /// Relay host, solo or party) and AI shares the host's owner id, so it is excluded.
         /// </summary>
         bool IsLocalUser { get; }
         /// <summary>

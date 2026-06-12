@@ -47,11 +47,21 @@ namespace CosmicShore.Gameplay
         private Vector3 _lastDestructionScale = Vector3.one;
 
         /// <summary>
-        /// Index into PrismAOERegistry's contiguous NativeArray.
-        /// Used for O(1) updates to cache-line-packed AOE data.
+        /// Index into PrismSpatialIndex's contiguous NativeArray — the canonical
+        /// spatial index of all live prism mass (AOE damage queries + growth
+        /// occupancy; see Docs/SPATIAL_INDEX.md).
+        /// Used for O(1) updates to cache-line-packed spatial data.
         /// -1 means not registered.
         /// </summary>
-        internal int AOERegistryIndex = -1;
+        internal int SpatialIndexId = -1;
+
+        /// <summary>
+        /// The cell whose per-domain density grids this prism is registered in, or null.
+        /// Trail prisms feed the cell's density partition (Cell.AddBlock/RemoveBlock) so
+        /// fauna anti-domain targeting sees trail mass — not just flora. Replaces the
+        /// deprecated CellControlManager registration path.
+        /// </summary>
+        Cell _registeredCell;
         
         public Domains Domain
         {
@@ -115,6 +125,45 @@ namespace CosmicShore.Gameplay
 
             scaleAnimator.GrowthRate = growthRate;
             InitializePrismProperties();
+
+            // Keep the cell's per-domain grids consistent when this prism changes
+            // hands (steal / ChangeTeam): the cell re-files it under the new domain.
+            if (teamManager)
+                teamManager.OnTeamChanged += HandleTeamChangedForCell;
+        }
+
+        // --- Cell density-grid registration -----------------------------------
+
+        void HandleTeamChangedForCell(Domains oldDomain, Domains newDomain)
+        {
+            _registeredCell?.NotifyBlockDomainChanged(this);
+        }
+
+        /// <summary>
+        /// Registers this prism with the cell that spatially contains it, feeding the
+        /// cell's per-domain density grids (anti-domain fauna targeting) and
+        /// LiveBlockCount (phase transitions). Idempotent.
+        /// </summary>
+        void RegisterWithCell()
+        {
+            if (_registeredCell) return;
+            // Fauna bodies (LightFauna / Boid HealthPrisms) are creatures, not environment
+            // mass: they must NOT inflate the cell's phase count or pollute the density grid.
+            // Otherwise a forager swarm reads as its own "mass concentration" and seeks
+            // itself instead of the trail/flora buildup. Only HealthPrisms can be fauna
+            // bodies, so the GetComponentInParent walk is gated to that subtype to keep
+            // ordinary trail-prism spawns cheap.
+            if (this is HealthPrism && GetComponentInParent<Fauna>() != null) return;
+            _registeredCell = Cell.FindCellContaining(transform.position);
+            _registeredCell?.AddBlock(this);
+        }
+
+        /// <summary>Removes this prism from its registered cell's grids. Idempotent.</summary>
+        void UnregisterFromCell()
+        {
+            if (!_registeredCell) return;
+            _registeredCell.RemoveBlock(this);
+            _registeredCell = null;
         }
 
         /// <summary>
@@ -143,12 +192,17 @@ namespace CosmicShore.Gameplay
 
         private void ResetState()
         {
-            // Unregister from AOE batch processing
-            if (AOERegistryIndex >= 0)
+            // Unregister from the spatial index (AOE batch processing + occupancy)
+            if (SpatialIndexId >= 0)
             {
-                PrismAOERegistry.Instance?.Unregister(AOERegistryIndex);
-                AOERegistryIndex = -1;
+                PrismSpatialIndex.Instance?.Unregister(SpatialIndexId);
+                SpatialIndexId = -1;
             }
+
+            // Pool-reuse safety: a prism returned to the pool without going through
+            // SetupDestruction (e.g. trail clear) must not leave a stale registration
+            // in the previous cell's grids.
+            UnregisterFromCell();
 
             destroyed = false;
             devastated = false;
@@ -193,6 +247,11 @@ namespace CosmicShore.Gameplay
         {
             yield return new WaitForSeconds(waitTime);
 
+            // Destroyed before creation completed (e.g. AOE within waitTime of spawn) —
+            // don't resurrect the renderer/collider or register a dead prism with the
+            // AOE registry and cell grids.
+            if (destroyed) yield break;
+
             meshRenderer.enabled = true;
             blockCollider.enabled = true;
 
@@ -209,22 +268,20 @@ namespace CosmicShore.Gameplay
                 Volume = prismProperties.volume,
             });
 
-            // Register with AOE registry for cache-friendly batch explosion processing
-            var registry = PrismAOERegistry.EnsureInstance();
-            if (registry != null && registry.IsAvailable)
-                AOERegistryIndex = registry.Register(this);
+            // Register with the spatial index: cache-friendly batch AOE processing
+            // AND growth occupancy (Register consumes the TryReserve claim that
+            // protected this prism's site through the disabled-collider window).
+            var spatialIndex = PrismSpatialIndex.EnsureInstance();
+            if (spatialIndex != null && spatialIndex.IsAvailable)
+                SpatialIndexId = spatialIndex.Register(this);
 
-            // CellControlManager is deprecated, transfer the logics below to somewhere else
-            /*if (CellControlManager.Instance)
-            {
-                CellControlManager.Instance.AddBlock(Domain, prismProperties);
-                Cell targetCell = CellControlManager.Instance.GetNearestCell(prismProperties.position);
-                Array.ForEach(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, t =>
-                {
-                    if (t != Domain && targetCell)
-                        targetCell.countGrids[t].AddBlock(this);
-                });
-            }*/
+            // Register with the containing cell's density grids — this is what makes
+            // trail mass visible to fauna anti-domain targeting and to the cell's
+            // phase system. (Replaces the deprecated CellControlManager path that was
+            // commented out here; without it the grids only ever contained flora, so
+            // fauna appeared to have "explicit knowledge of flora locations" and
+            // ignored even massive player trails.)
+            RegisterWithCell();
         }
 
         // Growth Methods
@@ -264,9 +321,10 @@ namespace CosmicShore.Gameplay
             destroyed = true;
             devastated = devastate;
 
-            // Mark destroyed in AOE registry so Burst job skips this prism
-            if (AOERegistryIndex >= 0)
-                PrismAOERegistry.Instance?.MarkDestroyed(AOERegistryIndex);
+            // Mark destroyed in the spatial index: the AOE Burst job skips this
+            // prism and its occupancy bucket frees, so growth can fill the site.
+            if (SpatialIndexId >= 0)
+                PrismSpatialIndex.Instance?.MarkDestroyed(SpatialIndexId);
 
             _onTrailBlockDestroyedEventChannel.Raise(new PrismStats
             {
@@ -275,8 +333,10 @@ namespace CosmicShore.Gameplay
                 AttackerName = attackerPlayerName,
             });
 
-            /*if (CellControlManager.Instance)
-                CellControlManager.Instance.RemoveBlock(domain, prismProperties);*/
+            // Remove from the containing cell's density grids — destroyed mass must
+            // stop attracting fauna, and the cell's LiveBlockCount must fall so the
+            // phase system can descend (the consumption half of the oscillation).
+            UnregisterFromCell();
 
             _lastDestructionScale = destructionScale;
             return null;
@@ -398,8 +458,14 @@ namespace CosmicShore.Gameplay
                     AttackerName = prismProperties.prism.PlayerName,
                 });
 
-                /*if (CellControlManager.Instance != null)
-                    CellControlManager.Instance.RestoreBlock(Domain, prismProperties);*/
+                // Restored mass re-enters the cell's density grids.
+                RegisterWithCell();
+
+                // ...and the spatial index, so it takes batch AOE damage and blocks
+                // growth again. (Pre-unification bug: Restore never told the AOE
+                // registry, leaving restored prisms permanently invisible to it.)
+                if (SpatialIndexId >= 0)
+                    PrismSpatialIndex.Instance?.MarkRestored(SpatialIndexId);
 
                 blockCollider.enabled = true;
                 meshRenderer.enabled = true;
@@ -407,10 +473,52 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Movers (gyroid bonding steering a block into a bond site) must call this
+        /// so the spatial index's stored position — read by AOE damage queries and
+        /// growth occupancy probes — tracks the transform. Cheap when the occupancy
+        /// bucket is unchanged.
+        /// </summary>
+        public void NotifyPositionChanged()
+        {
+            if (SpatialIndexId >= 0)
+                PrismSpatialIndex.Instance?.UpdatePosition(SpatialIndexId, transform.position);
+        }
+
+        private void OnDisable()
+        {
+            // Pool return / deactivation: a disabled prism must not keep attracting
+            // fauna or holding up the cell's LiveBlockCount until its next reuse.
+            UnregisterFromCell();
+
+            // Same for the spatial index: a pooled-but-not-yet-reused prism must not
+            // keep taking AOE damage or blocking growth at its stale position.
+            // (Pre-unification, cleanup waited for the next Initialize → ResetState,
+            // leaving a live-looking entry behind for the whole pool dwell time.)
+            if (SpatialIndexId >= 0)
+            {
+                PrismSpatialIndex.Instance?.Unregister(SpatialIndexId);
+                SpatialIndexId = -1;
+            }
+        }
+
         private void OnDestroy()
         {
             // No material cleanup needed — we use sharedMaterial exclusively,
             // so no per-instance material clones are created.
+
+            if (teamManager)
+                teamManager.OnTeamChanged -= HandleTeamChangedForCell;
+
+            // Scene teardown / explicit Destroy: don't leave a stale entry in the
+            // cell's grids and LiveBlockCount.
+            UnregisterFromCell();
+
+            if (SpatialIndexId >= 0)
+            {
+                PrismSpatialIndex.Instance?.Unregister(SpatialIndexId);
+                SpatialIndexId = -1;
+            }
         }
     }
 }

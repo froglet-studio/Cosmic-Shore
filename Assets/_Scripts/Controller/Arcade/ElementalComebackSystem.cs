@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Reflex.Attributes;
@@ -43,6 +44,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("How often (in seconds) to recalculate comeback buffs")]
         [SerializeField] float updateInterval = 1f;
 
+        [Header("Audio")]
+        [Tooltip("Minimum seconds between comeback audio events for the same element. " +
+                 "Prevents the sound firing every update tick while the buff is held.")]
+        [SerializeField, Min(0f)] float comebackAudioCooldown = 3f;
+
         [Header("Debug")]
         [SerializeField] bool debugLogging;
 
@@ -52,6 +58,10 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<string, float[]> _baselines = new();
         float _lastUpdateTime;
         bool _isActive;
+
+        // Per-element last-played timestamp for the local player's comeback audio.
+        // Index matches AllElements order: Mass=0, Charge=1, Space=2, Time=3.
+        readonly float[] _lastComebackAudioTime = { -999f, -999f, -999f, -999f };
 
         void OnEnable()
         {
@@ -91,6 +101,7 @@ namespace CosmicShore.Gameplay
 
             _isActive = true;
             _baselines.Clear();
+            ResetComebackAudioTimestamps();
 
             foreach (var player in gameData.Players)
             {
@@ -162,6 +173,7 @@ namespace CosmicShore.Gameplay
                 var vesselType = player.Vessel.VesselStatus.VesselType;
                 var config = comebackProfile.GetConfig(vesselType);
 
+                bool isLocalPlayer = player.IsLocalUser;
                 for (int i = 0; i < AllElements.Length; i++)
                 {
                     var element = AllElements[i];
@@ -173,6 +185,18 @@ namespace CosmicShore.Gameplay
                     targetNormalized = Mathf.Clamp(targetNormalized, 0f, 1.5f);
 
                     rs.SetElementLevel(element, targetNormalized);
+
+                    // Fire comeback audio for the local player when a buff activates,
+                    // gated by per-element cooldown so it doesn't fire every tick.
+                    if (isLocalPlayer && bonusLevels > 0f)
+                    {
+                        float now = Time.unscaledTime;
+                        if (now - _lastComebackAudioTime[i] >= comebackAudioCooldown)
+                        {
+                            _lastComebackAudioTime[i] = now;
+                            AudioSystem.Instance?.PlayGameplaySFX(ComebackCategoryForElement(element));
+                        }
+                    }
                 }
 
                 if (debugLogging)
@@ -270,5 +294,21 @@ namespace CosmicShore.Gameplay
         {
             return player?.Vessel?.VesselStatus?.ResourceSystem;
         }
+
+        // Reset audio timestamps so the sound can fire immediately at the start of each turn.
+        void ResetComebackAudioTimestamps()
+        {
+            for (int i = 0; i < _lastComebackAudioTime.Length; i++)
+                _lastComebackAudioTime[i] = -999f;
+        }
+
+        static GameplaySFXCategory ComebackCategoryForElement(Element element) => element switch
+        {
+            Element.Charge => GameplaySFXCategory.ComebackCharge,
+            Element.Mass   => GameplaySFXCategory.ComebackMass,
+            Element.Space  => GameplaySFXCategory.ComebackSpace,
+            Element.Time   => GameplaySFXCategory.ComebackTime,
+            _              => GameplaySFXCategory.ComebackCharge,
+        };
     }
 }

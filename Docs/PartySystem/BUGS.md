@@ -2,7 +2,7 @@
 
 Living tracker for party-side issues found in MPPM testing. Companion
 to `ARCHITECTURE.md` (locked design), `REFACTOR.md` (active refactor
-queue), and `../NetworkDiagnostics/README.md` (catch-block diagnostics).
+queue), and `../NetworkDiagnostics/ARCHITECTURE.md` (catch-block diagnostics).
 
 Presence-lobby-specific bugs (B1, B4, B6 from the old tracker) moved
 to `../PresenceSystem/BUGS.md`.
@@ -15,6 +15,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B3 | TC4 bounce leaves 2 vessels + dead controls | ~85% | 🔴 |
 | B5 | TC2/TC4 second joiner fails to join | Uncertain (diagnose first) | 🔴 |
 | B7 | Client pair-init runs before remote identity replicates (`InitializePair Player=` empty, vessel-type `Random`) | Verified mostly benign | ⚪ |
+| B9 | Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) | Root-caused & fixed | 🟢 |
 
 ---
 
@@ -619,14 +620,71 @@ write flaky) is tracked separately in `../PresenceSystem/BUGS.md` B1.
 
 ---
 
+## B9 — Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) 🟢
+
+**Observed (MPPM, 1 host + 3 clients, 2026-06-09 — Session 2).** The S9
+host-return fix works: the host taps **Main Menu** on the scoreboard and
+all three clients return to `Menu_Main` together on the same live Relay.
+But two defects surface on arrival:
+
+1. **One client's vessel roams in a single direction and is
+   uncontrollable.** It drifts straight — autopilot doesn't fly it
+   normally and the player can't take control. Reproduced on "client 3"
+   (one of the three); the other two roamed normally.
+2. **Party domains are not reset to the menu domain (Jade).** Returning
+   vessels keep their in-game domains (Jade/Ruby/Gold) instead of all
+   re-syncing to Jade the way a fresh `Menu_Main` entry does.
+
+**Root cause (confirmed 2026-06-11).** The old `MainMenuController.
+ApplyMenuDomain` (since deleted) was the only menu domain "reset", and it
+ran **client-locally** on each machine's own vessel:
+
+1. **Domains not reset (symptom 2):** `Player.NetDomain` is
+   `WritePermission.Server`; a client cannot write it, so the reset never
+   reached the server — the server (and every other peer) kept each
+   client's in-game domain. The method's comment claiming "NetDomain is
+   owner-writable" was wrong. No server-side menu reset existed anywhere.
+2. **Drift-stuck vessel (symptom 1):** for a returning client whose
+   in-game domain ≠ Jade, the illegal `NetDomain.Value = Jade` write is
+   rejected by Netcode; when the rejection throws, the exception aborts
+   the rest of `ActivateLocalPlayerAutopilot` — `StartPlayer()`,
+   `ToggleAIPilot(true)`, `SetPause(true)` never ran. That selects
+   exactly the clients on non-Jade domains, matching "one of three stuck".
+   The method's local `Player.Domain` / `RoundStats.Domain` stamps also
+   desynced that machine's mirrors from the replicated truth
+   (`../ScoringSystem/BUGS.md` B11).
+
+**Fix (commits `53294068`, `65d4da96`, `c073636e`).** The menu domain
+reset is now **server-authoritative**: `MenuServerPlayerVesselInitializer.
+OnPlayerReadyToSpawnAsync` writes `NetDomain = menuVesselDomain` (Jade)
+for every human BEFORE the vessel spawns, on every menu entry path
+(fresh start, party join, host-return); the delta replicates and every
+peer's mirrors + vessel paint follow via `Player.OnNetDomainChanged`
+(whose repaint was completed via the init-aware
+`ShipHelper.SetShipProperties`). `ApplyMenuDomain` and its field were
+deleted — client code never writes domain state. Activation is now
+exception-free and idempotent.
+
+**Related.** The same session also fixed the party-join stale
+`RoundStats` shadow (`../ScoringSystem/BUGS.md` B12, commits `52923bf8`,
+`6400eca0`) — a returning/joined client's name-keyed stat lookups
+resolved a destroyed pre-party component (frozen Jade).
+
+**Repro (for verification).** 1 host + 3 MPPM clients → party up in
+`Menu_Main` → host launches a domain game (e.g. Skim Race) → play to the
+scoreboard → host taps **Main Menu** → every vessel on every peer
+renders Jade, all clients roam on autopilot and can toggle freestyle; no
+"not allowed to write" / `InvalidOperationException` in any console.
+
+**Status.** 🟢 Fixed — domain-pick + ready-feed flow verified in a
+2-human MPPM test (2026-06-11); full 4-player host-return sweep still to
+be re-run.
+
+---
+
 ## How we work bugs
 
-- One bug at a time, in priority order (B2 → B5 → B3 → B7).
-- For each: confirm root cause via NetDiag log capture if possible →
-  agree the approach → implement on `claude/blissful-tesla-9nefa` as
-  its own commit with risk table → update status.
-- The presence-lobby cluster (B1, B4, B6) is the locked-design area
-  and lives in `../PresenceSystem/BUGS.md` — read
-  `ARCHITECTURE.md` and `../PresenceSystem/ARCHITECTURE.md` before
-  touching `HostConnectionService` / `PresenceLobbyService` / invite
-  services. Do not reintroduce LAZY session creation.
+Method: see `../README.md` § "How we work bugs". Party-side priority
+order: **B2 → B5 → B3 → B7** (B8 fixed). The presence-lobby cluster
+(B1, B4, B6) is the locked-design area and lives in
+`../PresenceSystem/BUGS.md`.

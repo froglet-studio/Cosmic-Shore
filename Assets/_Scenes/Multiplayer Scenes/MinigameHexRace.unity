@@ -551,8 +551,24 @@ PrefabInstance:
     - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: multiplayerController
-      value: 
+      value:
       objectReference: {fileID: 1078953729}
+    - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: playAgainButton
+      value:
+      objectReference: {fileID: 1078953800}
+    - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: mainMenuButton
+      value:
+      objectReference: {fileID: 1078953801}
+    - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: onClickToMainMenu
+      value:
+      objectReference: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e,
+        type: 2}
     - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: SinglePlayerScoreTextField
@@ -740,6 +756,18 @@ GameObject:
     type: 3}
   m_PrefabInstance: {fileID: 330573866}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1078953800 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2279452371261775173, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+    type: 3}
+  m_PrefabInstance: {fileID: 330573866}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1078953801 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7469907960593864752, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+    type: 3}
+  m_PrefabInstance: {fileID: 330573866}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &330573869 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6776421237982909725, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
@@ -865,7 +893,7 @@ PrefabInstance:
     - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
       propertyPath: cellTypeChoiceOptions
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 3995624959153467944, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
@@ -876,7 +904,7 @@ PrefabInstance:
         type: 3}
       propertyPath: 'CellConfigs.Array.data[0]'
       value: 
-      objectReference: {fileID: 11400000, guid: 8f83a19d70465a747861017897c08403,
+      objectReference: {fileID: 11400000, guid: 52de45c2fab54ea0a35bc37a311d80e6,
         type: 2}
     - target: {fileID: 7701641087306297103, guid: d262ca9df284a7940985455518ad5442,
         type: 3}
@@ -1008,6 +1036,7 @@ MonoBehaviour:
   differenceSource: 1
   useGolfRules: 0
   updateInterval: 1
+  comebackAudioCooldown: 3
   debugLogging: 0
 --- !u!4 &702613675
 Transform:
@@ -1214,23 +1243,6 @@ MonoBehaviour:
   _disableAfterSubscribing: 0
   _eventResponses:
   - Delay: 0
-    ScriptableEvent: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
-    Response:
-      m_PersistentCalls:
-        m_Calls:
-        - m_Target: {fileID: 1078953729}
-          m_TargetAssemblyTypeName: CosmicShore.Gameplay.HexRaceController, Assembly-CSharp
-          m_MethodName: OnClickReturnToMainMenu
-          m_Mode: 1
-          m_Arguments:
-            m_ObjectArgument: {fileID: 0}
-            m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-            m_IntArgument: 0
-            m_FloatArgument: 0
-            m_StringArgument: 
-            m_BoolArgument: 0
-          m_CallState: 2
-  - Delay: 0
     ScriptableEvent: {fileID: 11400000, guid: e7886dabf1acf704786153773a2d241a, type: 2}
     Response:
       m_PersistentCalls:
@@ -1305,7 +1317,6 @@ MonoBehaviour:
   clientPlayerVesselInitializer: {fileID: 1078953724}
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
-  shutdownNetworkOnDespawn: 1
   playerSpawnPoints:
   - {fileID: 1194123993}
   - {fileID: 696378175}
@@ -1384,6 +1395,7 @@ MonoBehaviour:
   helix: {fileID: 0}
   helixIntensityScaling: 4
   seed: 0
+  rule: {fileID: 11400000, guid: 63bafccfd69743c086ad1bdc7623cc4c, type: 2}
 --- !u!114 &1078953731
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1491,7 +1503,6 @@ MonoBehaviour:
   - Mode: 2
     Multiplier: 1
   turnMonitor: {fileID: 1078953728}
-  penaltyScoreBase: 10000
   showDebugLogs: 1
 --- !u!1 &1194123992
 GameObject:

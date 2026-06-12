@@ -8,9 +8,12 @@ namespace CosmicShore.Gameplay
 {
     public class ElementalCrystalImpactor : CrystalImpactor
     {
-        SkimmerCrystalEffectSO[] elementalCrystalShipEffects;
+        [Header("Collection Effects")]
+        [Tooltip("Effects granted to the skimming vessel when this crystal is collected " +
+                 "(e.g. element level powerup scaled by crystal size).")]
+        [SerializeField] SkimmerCrystalEffectSO[] elementalCrystalShipEffects;
 
-        [Header("Space Collect: move-to-vessel")] 
+        [Header("Space Collect: move-to-vessel")]
         [SerializeField] float moveToVesselDuration = 3f;
         [SerializeField] bool easeMoveToVessel = true;
 
@@ -40,7 +43,6 @@ namespace CosmicShore.Gameplay
 
             if (DoesEffectExist(elementalCrystalShipEffects))
             {
-                var data = CrystalImpactData.FromCrystal(Crystal);
                 foreach (var effect in elementalCrystalShipEffects)
                     effect.Execute(skimmerImpactor, this);
             }
@@ -91,9 +93,13 @@ namespace CosmicShore.Gameplay
         {
             if (Crystal == null) return;
 
-            float delay = 0.6f;
+            // Let collect animators (e.g. the Space crystal's blendshape shrink) play out
+            // before destroying. Crystals without an animator (Charge / Mass / Time) have
+            // no hide animation, so they are destroyed as soon as they reach the vessel —
+            // otherwise they linger as full-scale artifacts at the end of the flight.
+            float delay = 0f;
             var crystalModels = Crystal.CrystalModels;
-            
+
             if (crystalModels != null)
             {
                 foreach (var crystalModelData in crystalModels)
@@ -106,9 +112,10 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // Wait for animation then destroy
-            await UniTask.WaitForSeconds(delay);
-            //if (Crystal) Crystal.DestroyCrystal();
+            if (delay > 0f)
+                await UniTask.WaitForSeconds(delay);
+
+            if (Crystal) Crystal.DestroyCrystal();
         }
 
         async UniTask WaitForImpact()

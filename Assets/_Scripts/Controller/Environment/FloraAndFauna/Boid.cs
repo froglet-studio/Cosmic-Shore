@@ -30,6 +30,10 @@ namespace CosmicShore.Gameplay
         [Header("Speed Settings")]
         [SerializeField] float minSpeed = 2.0f;
         [SerializeField] float maxSpeed = 5.0f;
+        [Tooltip("Speed multiplier applied to a FORAGER while it is hunting mass (the cell has " +
+                 "registered prisms to clear). Lets the swarm dash between concentrations and " +
+                 "clear them quickly. Drops back to 1x when there's no mass (idling at the crystal).")]
+        [SerializeField] float huntSpeedMultiplier = 10f;
 
         [Header("Goal Settings")]
         public Transform DefaultGoal;
@@ -53,6 +57,13 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] List<BoidCollisionEffects> collisionEffects;
 
+        [Header("Forager")]
+        [Tooltip("ON = this boid is a food-web FORAGER (tadpole): it feeds when it grazes " +
+                 "opposing mass (Explode effect) and starves (despawns) after starvationSeconds " +
+                 "without feeding, so the swarm self-limits to available trail/flora prey. " +
+                 "OFF (default) = drone/mound boid (BoidController) — never feeds or starves.")]
+        [SerializeField] bool forager = false;
+
         BoxCollider blockCollider;
 
         List<Collider> separatedBoids = new List<Collider>();
@@ -63,6 +74,8 @@ namespace CosmicShore.Gameplay
 
         public override void Initialize(Cell cell)
         {
+            base.Initialize(cell); // record the explicit host cell (multi-cell correctness)
+
             embeddedHealthPrism = GetComponentInChildren<HealthPrism>(true);
             if (!embeddedHealthPrism)
             {
@@ -74,20 +87,64 @@ namespace CosmicShore.Gameplay
             if (!blockCollider)
                 CSDebug.LogWarning($"{nameof(Boid)} on {name}: embedded HealthPrism has no BoxCollider.");
 
-            embeddedHealthPrism.ChangeTeam(domain);
+            // Initialize the body health prism(s) so they actually render and become a real
+            // (consumable) health prism. Like LightFauna's body prisms, they start at local
+            // scale 0 and only grow once Prism.Initialize fires the scale animator — without
+            // this the tadpole has no visible/active health prism. (LightFauna does the same
+            // for the brittlestar/shark body.)
+            var bodyPrisms = GetComponentsInChildren<HealthPrism>(true);
+            for (int i = 0; i < bodyPrisms.Length; i++)
+            {
+                var hp = bodyPrisms[i];
+                if (!hp) continue;
+                hp.ChangeTeam(domain);
+                hp.Initialize("tadpole");
+            }
 
             currentVelocity = transform.forward * Random.Range(minSpeed, Mathf.Max(minSpeed, maxSpeed));
             float initialDelay = normalizedIndex * behaviorUpdateRate;
             StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
         }
 
+        /// <summary>
+        /// Foragers (tadpoles) actively HUNT the biggest mass concentration the cell senses
+        /// — the densest region of environment prisms across the whole density grid —
+        /// regardless of aggression level, so they roam to the trail/flora buildup and clean
+        /// it instead of sitting at the crystal/spawn. Emergent (reads the density grid),
+        /// NOT track-following. `GetDensestRegionAnyDomain` falls back to the cell anchor
+        /// (crystal) when the grid is empty, so an idle swarm gathers at the centre.
+        /// Non-foragers (drones) keep the aggression-tiered base goal.
+        /// </summary>
+        protected override Vector3 ResolveGoal()
+        {
+            if (forager && cell != null)
+                return cell.GetDensestRegionAnyDomain();
+            return base.ResolveGoal();
+        }
+
         IEnumerator CalculateBehaviorCoroutine(float initialDelay)
         {
             if (initialDelay > 0f)
                 yield return new WaitForSeconds(initialDelay);
+            else
+                // Never run the first behavior tick synchronously inside StartCoroutine:
+                // reproduction spawns offspring from a parent that is mid-iteration over
+                // the shared Fauna.OverlapScratch, and an immediate OverlapSphereNonAlloc
+                // here would clobber the parent's snapshot.
+                yield return null;
 
             while (true)
             {
+                // Forager swarms (tadpoles) self-limit to available prey: a boid that hasn't
+                // grazed in starvationSeconds despawns, so the swarm thins out when there's no
+                // opposing mass left to eat (and its per-boid CPU cost drops with it). Gated
+                // on `forager` so drone/mound boids (BoidController) never starve.
+                if (forager && IsStarving)
+                {
+                    Die("starvation");
+                    yield break;
+                }
+
                 if (!isAttached)
                 {
                     target = Goal;      // Check it later
@@ -122,12 +179,13 @@ namespace CosmicShore.Gameplay
             float averageSpeed = 0.0f;
             separatedBoids.Clear();
 
-            var boidsInVicinity = Physics.OverlapSphere(transform.position, cohesionRadius);
-            int colliderCount = boidsInVicinity.Length;
+            // Shared non-alloc scratch (Fauna.OverlapScratch) — at swarm scale the old
+            // per-tick Collider[] allocation was pure GC churn.
+            int colliderCount = Physics.OverlapSphereNonAlloc(transform.position, cohesionRadius, OverlapScratch);
 
             for (int i = 0; i < colliderCount; i++)
             {
-                Collider collider = boidsInVicinity[i];
+                Collider collider = OverlapScratch[i];
                 if (!collider) continue;
 
                 // Ignore our own collider (if present)
@@ -156,7 +214,22 @@ namespace CosmicShore.Gameplay
                 {
                     blockAttraction += -diff.normalized / distance;
 
-                    if (distance < trailBlockInteractionRadius && embeddedHealthPrism && otherPrism.Domain != embeddedHealthPrism.Domain)
+                    // Drones eat OPPOSING-domain mass (combat). Foragers (tadpoles) are cleanup
+                    // grazers: they eat prisms of ANY domain — so the dominant trail gets grazed
+                    // too, not just the minority — but they must NOT eat:
+                    //   - shielded prisms (protected structure like the Skim Race track), or
+                    //   - other fauna's BODY prisms (brittlestar/shark bodies are HealthPrisms but
+                    //     not Boids, so they reach this branch; herbivores eating fauna is the
+                    //     predator's job, not a forager's). GetComponentInParent<Fauna> catches
+                    //     any fauna body; this prism's own boid was already excluded above.
+                    var pp = otherPrism.prismProperties;
+                    bool shielded = pp != null && (pp.IsShielded || pp.IsSuperShielded);
+                    bool isFaunaBody = collider.GetComponentInParent<Fauna>() != null;
+                    bool edible = forager
+                        ? (!shielded && !isFaunaBody)
+                        : embeddedHealthPrism && otherPrism.Domain != embeddedHealthPrism.Domain;
+
+                    if (distance < trailBlockInteractionRadius && embeddedHealthPrism && edible)
                     {
                         foreach (var effect in collisionEffects)
                         {
@@ -179,8 +252,23 @@ namespace CosmicShore.Gameplay
 
                                 case BoidCollisionEffects.Explode:
                                     if (embeddedHealthPrism)
-                                        otherPrism.Damage(currentVelocity * embeddedHealthPrism.Volume, embeddedHealthPrism.Domain,
-                                            embeddedHealthPrism.PlayerName + " boid", true);
+                                    {
+                                        if (forager)
+                                        {
+                                            // Foragers CONSUME (implode toward the tadpole → the
+                                            // suction shader), matching how LightFauna grazes.
+                                            // devastate:false so a shielded prism that somehow
+                                            // reaches here only loses its shield, never gets eaten.
+                                            otherPrism.Consume(transform, embeddedHealthPrism.Domain,
+                                                embeddedHealthPrism.PlayerName + " tadpole", false);
+                                            NotifyFed();
+                                        }
+                                        else
+                                        {
+                                            otherPrism.Damage(currentVelocity * embeddedHealthPrism.Volume, embeddedHealthPrism.Domain,
+                                                embeddedHealthPrism.PlayerName + " boid", true);
+                                        }
+                                    }
                                     break;
                             }
                         }
@@ -188,7 +276,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            int totalBoids = boidsInVicinity.Length - 1;
+            int totalBoids = colliderCount - 1;
 
             if (totalBoids > 0)
             {
@@ -204,7 +292,17 @@ namespace CosmicShore.Gameplay
                                + (goalDirection * goalWeight)
                                + blockAttraction).normalized;
 
-            currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed, maxSpeed);
+            // Foragers DASH (huntSpeedMultiplier, e.g. 10x) toward a mass concentration so
+            // the swarm covers the arena quickly, then ease back to base speed once within
+            // consume range so they graze it reliably instead of overshooting. 1x when the
+            // cell is empty (idling at the crystal) or when not a forager.
+            float speedMult = 1f;
+            if (forager && cell != null && cell.LiveBlockCount > 0)
+            {
+                float distToGoal = (target - transform.position).magnitude;
+                speedMult = distToGoal > trailBlockInteractionRadius ? Mathf.Max(1f, huntSpeedMultiplier) : 1f;
+            }
+            currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed * speedMult, maxSpeed * speedMult);
 
             desiredRotation = SafeLookRotation.TryGet(currentVelocity, out var desiredRot, this) ? desiredRot : transform.rotation;
         }

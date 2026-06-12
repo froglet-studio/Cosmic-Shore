@@ -882,6 +882,8 @@ MonoBehaviour:
   endX: 0
   slideDuration: 1
   slideEase: 2
+  playAgainButton: {fileID: 750320515659381800}
+  mainMenuButton: {fileID: 750320517316370163}
 --- !u!1 &750320515659381800
 GameObject:
   m_ObjectHideFlags: 0

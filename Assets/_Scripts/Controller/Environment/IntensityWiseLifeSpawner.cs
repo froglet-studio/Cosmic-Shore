@@ -139,7 +139,7 @@ namespace CosmicShore.Gameplay
             int initialCount = Mathf.Max(0, faunaCfg.InitialSpawnCount);
             float initialInterval = Mathf.Max(0f, spawnProfile.FaunaSpawnIntervalSeconds);
 
-            // Initial batch — gated on FaunaSpawningEnabled (cell has crossed Quiet) +
+            // Initial batch — gated on FaunaSpawningEnabled (cell holds mass) +
             // per-attempt probability.
             for (int i = 0; i < initialCount; i++)
             {
@@ -158,7 +158,10 @@ namespace CosmicShore.Gameplay
             }
 
             // Continuous spawn — interval scales with aggression so reinforcements
-            // arrive faster when the cell is under stress.
+            // arrive faster when the cell is under stress. Seed the spawn-cycle
+            // telemetry before the first wait so the indicator ring starts at 0%
+            // instead of stuck-at-100% (the "never spawned" sentinel value).
+            host.RecordFaunaSpawn();
             while (true)
             {
                 float wait = Mathf.Max(0.05f, spawnProfile.BaseFaunaSpawnTime);
@@ -170,6 +173,7 @@ namespace CosmicShore.Gameplay
                 if (!AllowSpawn(faunaCfg.SpawnProbability)) continue;
 
                 TrySpawnFauna(host, runtime, faunaCfg);
+                host.RecordFaunaSpawn();
             }
         }
 
@@ -186,7 +190,11 @@ namespace CosmicShore.Gameplay
             // Per user spec: fauna spawn in the cell's controlling color, not random.
             Domains color = host.ControllingDomain;
 
-            SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color);
+            var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color);
+            // Lineage-bind so the species counts toward the cell's live population and
+            // can reproduce if its config authors FeedsPerOffspring > 0 (off by default
+            // on the WildlifeBlitz/Tournament configs — purely config-opt-in).
+            if (fauna) fauna.AssignLineage(host, faunaCfg);
         }
     }
 }

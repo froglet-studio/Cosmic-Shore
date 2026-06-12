@@ -43,6 +43,7 @@ namespace CosmicShore.Utility
             new() { Label = "Scenes",     Color = new Color(0.68f, 0.62f, 0.85f, 1f), Draw = w => w.DrawScenesTab() },
             new() { Label = "Tools",      Color = new Color(0.60f, 0.85f, 0.75f, 1f), Draw = w => w.DrawToolsTab() },
             new() { Label = "Logging",    Color = new Color(0.85f, 0.72f, 0.60f, 1f), Draw = w => w.DrawLoggingTab() },
+            new() { Label = "Density",    Color = new Color(0.85f, 0.78f, 0.55f, 1f), Draw = w => w.DrawDensityTab() },
             new() { Label = "Quest",      Color = new Color(0.72f, 0.60f, 0.85f, 1f), Draw = w => w.DrawQuestTab() },
             new() { Label = "Vessels",    Color = new Color(0.60f, 0.78f, 0.85f, 1f), Draw = w => w.DrawVesselsTab() },
             new() { Label = "Crystals",   Color = new Color(0.85f, 0.60f, 0.72f, 1f), Draw = w => w.DrawCrystalsTab() },
@@ -406,11 +407,400 @@ namespace CosmicShore.Utility
         }
 
         // ═════════════════════════════════════════════════════════════════════
+        //  TAB: DENSITY (Density Partition Benchmark Runner)
+        //
+        //  Decoupled from the runner type at compile time via reflection so this
+        //  toolbox stays compilable even if the DensityPartitionBenchmark folder
+        //  is missing, deleted, or hasn't been re-imported yet. The reflection
+        //  surface is tiny (one Type lookup + one method invoke + one field read)
+        //  and the runner's API is part of the audit's locked-in contract.
+        // ═════════════════════════════════════════════════════════════════════
+        const string DensityBenchmarkScenePath = "Assets/_Scenes/Game_TestDesign/DensityPartitionBenchmark.unity";
+        const string DensityRunnerTypeName = "CosmicShore.Utility.Tools.DensityPartitionBenchmark.DensityPartitionBenchmarkRunner";
+        const string DensityTemporalSimTypeName = "CosmicShore.Utility.Tools.DensityPartitionBenchmark.DensityPartitionTemporalSimRunner";
+
+        void DrawDensityTab()
+        {
+            DrawTabTitle("Density Partition Benchmark", Tabs[3].Color);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField(
+                "Edit-Mode harness that grades density-search algorithms against a deterministic " +
+                "ground truth. See Docs/DENSITY_PARTITIONING_AUDIT.md for the design audit.",
+                EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(6);
+
+            DrawSubSectionLabel("Scene");
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            string sceneButtonLabel = System.IO.File.Exists(DensityBenchmarkScenePath)
+                ? "Open Benchmark Scene"
+                : "Create && Open Benchmark Scene";
+            if (GUILayout.Button(sceneButtonLabel))
+            {
+                EnsureAndOpenBenchmarkScene();
+            }
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(6);
+
+            DrawSubSectionLabel("Runner");
+
+            var runnerType = ResolveRunnerType();
+            if (runnerType == null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                EditorGUILayout.LabelField(
+                    "DensityPartitionBenchmarkRunner type not found. The Density benchmark folder may not " +
+                    "have been re-imported. Try Assets > Refresh, or right-click the folder and Reimport.",
+                    _mutedLabel);
+                EditorGUILayout.EndHorizontal();
+                return;
+            }
+
+            var runner = FindRunnerInOpenScenes(runnerType);
+            if (runner == null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                EditorGUILayout.LabelField(
+                    "No DensityPartitionBenchmarkRunner found in the open scenes. Open the benchmark " +
+                    "scene above, or add the component to any GameObject in the active scene.",
+                    _mutedLabel);
+                EditorGUILayout.EndHorizontal();
+                return;
+            }
+
+            var go = runner is Component c ? c.gameObject : null;
+            int scenarioCount = ReadScenarioCount(runner);
+            string lastReport = ReadLastReport(runner);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField($"Runner: {(go ? go.name : "(unknown)")}   Scenarios: {scenarioCount}");
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(4);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            var prev = GUI.backgroundColor;
+            GUI.backgroundColor = new Color(0.65f, 0.85f, 0.7f);
+            if (GUILayout.Button("Run All && Dump Report", GUILayout.Height(28)))
+            {
+                Undo.RecordObject(runner, "Run Density Benchmark");
+                InvokeRunAllAndDump(runner);
+                EditorUtility.SetDirty(runner);
+                if (go) Selection.activeGameObject = go;
+            }
+            GUI.backgroundColor = prev;
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(2);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(lastReport)))
+            {
+                if (GUILayout.Button("Copy Last Report"))
+                {
+                    EditorGUIUtility.systemCopyBuffer = lastReport ?? "";
+                    CSDebug.Log("[FrogletToolbox] Last density-partition report copied to clipboard.");
+                }
+                if (GUILayout.Button("Select Runner GameObject") && go)
+                {
+                    Selection.activeGameObject = go;
+                    EditorGUIUtility.PingObject(go);
+                }
+            }
+            EditorGUILayout.EndHorizontal();
+
+            GUILayout.Space(8);
+
+            // ── Temporal ecology sim ──────────────────────────────────────
+            DrawSubSectionLabel("Temporal Ecology Sim");
+            var simType = ResolveTemporalSimType();
+            var sim = simType != null ? FindRunnerInOpenScenes(simType) : null;
+            if (sim == null)
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                EditorGUILayout.LabelField(
+                    "No DensityPartitionTemporalSimRunner in the open scenes. Scenes created " +
+                    "before this component existed only have the benchmark runner. Click " +
+                    "'Add Temporal Sim to Scene' below to attach it to the existing GameObject.",
+                    _mutedLabel);
+                EditorGUILayout.EndHorizontal();
+
+                // Offer a one-click heal: find the benchmark runner's GameObject in the
+                // open scenes and add the temporal sim component to it. Avoids the
+                // delete-and-recreate-the-scene path for users who already have a scene.
+                if (simType != null && runnerType != null)
+                {
+                    var benchmarkRunnerForHeal = FindRunnerInOpenScenes(runnerType);
+                    GameObject hostGo = benchmarkRunnerForHeal is Component bc ? bc.gameObject : null;
+                    using (new EditorGUI.DisabledScope(hostGo == null))
+                    {
+                        EditorGUILayout.BeginHorizontal();
+                        GUILayout.Space(Pad);
+                        if (GUILayout.Button(hostGo != null
+                            ? $"Add Temporal Sim to '{hostGo.name}'"
+                            : "Add Temporal Sim to Scene (no benchmark runner found)"))
+                        {
+                            Undo.AddComponent(hostGo, simType);
+                            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(hostGo.scene);
+                            CSDebug.Log($"[FrogletToolbox] Added DensityPartitionTemporalSimRunner to '{hostGo.name}'. Save the scene to persist.");
+                        }
+                        EditorGUILayout.EndHorizontal();
+                    }
+                }
+            }
+            else
+            {
+                var simGo = sim is Component sc ? sc.gameObject : null;
+                string simReport = ReadLastReport(sim);
+
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                var prevSim = GUI.backgroundColor;
+                GUI.backgroundColor = new Color(0.65f, 0.80f, 0.90f);
+                if (GUILayout.Button("Run Temporal Sim (old grid vs new grid)", GUILayout.Height(28)))
+                {
+                    Undo.RecordObject(sim, "Run Temporal Sim");
+                    InvokeMethod(sim, "RunComparison");
+                    EditorUtility.SetDirty(sim);
+                    if (simGo) Selection.activeGameObject = simGo;
+                }
+                GUI.backgroundColor = prevSim;
+                EditorGUILayout.EndHorizontal();
+
+                GUILayout.Space(2);
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(Pad);
+                using (new EditorGUI.DisabledScope(string.IsNullOrEmpty(simReport)))
+                {
+                    if (GUILayout.Button("Copy Sim Report"))
+                    {
+                        EditorGUIUtility.systemCopyBuffer = simReport ?? "";
+                        CSDebug.Log("[FrogletToolbox] Last temporal-sim report copied to clipboard.");
+                    }
+                }
+                EditorGUILayout.EndHorizontal();
+            }
+
+            GUILayout.Space(8);
+
+            DrawSubSectionLabel("Notes");
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(Pad);
+            EditorGUILayout.LabelField(
+                "1. Paste the report back to the prompter — it's the falsifiable correctness contract.\n" +
+                "2. The geometric benchmark grades single-query accuracy. The temporal sim runs the " +
+                "flora/fauna/phase loop over time and checks whether outer-shell mass stays bounded " +
+                "(fauna reach it) or accumulates forever (the shipped ±500m grid is blind to it).\n" +
+                "3. Runs are deterministic per seed — a textual diff surfaces real changes.",
+                EditorStyles.wordWrappedMiniLabel);
+            EditorGUILayout.EndHorizontal();
+        }
+
+        static void InvokeMethod(UnityEngine.Object target, string methodName)
+        {
+            if (target == null) return;
+            var method = target.GetType().GetMethod(methodName);
+            method?.Invoke(target, null);
+        }
+
+        // ── Scene creation (Unity generates a valid .unity file) ──
+
+        static void EnsureAndOpenBenchmarkScene()
+        {
+            // If the scene exists on disk, just open it. Wrap in try/catch so a
+            // corrupt scene file doesn't leave the IMGUI layout state mid-call
+            // (the parent OnGUI's Begin/End pairs would otherwise mismatch).
+            if (System.IO.File.Exists(DensityBenchmarkScenePath))
+            {
+                try
+                {
+                    EditorSceneManager.OpenScene(DensityBenchmarkScenePath, OpenSceneMode.Single);
+                    CSDebug.Log($"[FrogletToolbox] Opened {DensityBenchmarkScenePath}.");
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogError($"[FrogletToolbox] Failed to open {DensityBenchmarkScenePath}: {ex.Message}. " +
+                                   $"Delete the file and click again to regenerate.");
+                }
+                return;
+            }
+
+            // Otherwise, generate it. Unity's NewScene + SaveScene produces a valid
+            // .unity asset; hand-crafted YAML can omit required SceneRoots metadata
+            // in Unity 6 and throw ArgumentException on OpenScene.
+            var runnerType = ResolveRunnerType();
+            if (runnerType == null)
+            {
+                DumpDensityPartitionDiagnostic();
+                return;
+            }
+
+            // Ensure the target folder exists.
+            string folder = System.IO.Path.GetDirectoryName(DensityBenchmarkScenePath)
+                ?.Replace('\\', '/');
+            if (!string.IsNullOrEmpty(folder) && !AssetDatabase.IsValidFolder(folder))
+            {
+                System.IO.Directory.CreateDirectory(folder);
+                AssetDatabase.Refresh();
+            }
+
+            // Save the current scene state so we don't lose unsaved edits.
+            if (EditorSceneManager.GetActiveScene().isDirty)
+            {
+                if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
+                {
+                    CSDebug.Log("[FrogletToolbox] Scene creation cancelled by user.");
+                    return;
+                }
+            }
+
+            var newScene = EditorSceneManager.NewScene(
+                NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            var go = new GameObject("DensityPartitionBenchmarkRunner");
+            go.AddComponent(runnerType);
+            // Also add the temporal ecology sim runner if it compiled — same
+            // GameObject, so the Density tab finds both in one scene.
+            var simType = ResolveTemporalSimType();
+            if (simType != null) go.AddComponent(simType);
+
+            bool saved = EditorSceneManager.SaveScene(newScene, DensityBenchmarkScenePath);
+            if (!saved)
+            {
+                Debug.LogError($"[FrogletToolbox] Failed to save benchmark scene to {DensityBenchmarkScenePath}.");
+                return;
+            }
+
+            AssetDatabase.Refresh();
+            CSDebug.Log($"[FrogletToolbox] Created {DensityBenchmarkScenePath}.");
+        }
+
+        // ── Reflection helpers (decouple from runner type at compile time) ──
+
+        /// <summary>
+        /// Called when ResolveRunnerType() returns null. Prints a diagnostic showing
+        /// which assemblies are loaded and which (if any) DensityPartition-named
+        /// types are present. Lets us distinguish "files didn't compile" from "files
+        /// compiled but namespace lookup is wrong".
+        /// </summary>
+        static void DumpDensityPartitionDiagnostic()
+        {
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"[FrogletToolbox] Cannot find '{DensityRunnerTypeName}'.");
+            sb.AppendLine("Diagnostic — searching every loaded assembly for *DensityPartition* types:");
+
+            int hits = 0;
+            foreach (var asm in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                System.Type[] types;
+                try { types = asm.GetTypes(); }
+                catch (System.Reflection.ReflectionTypeLoadException ex)
+                {
+                    sb.AppendLine($"  {asm.GetName().Name}: ReflectionTypeLoadException ({ex.LoaderExceptions?.Length ?? 0} loader errors)");
+                    types = ex.Types;
+                }
+                if (types == null) continue;
+                foreach (var t in types)
+                {
+                    if (t == null) continue;
+                    if (t.FullName == null) continue;
+                    if (!t.FullName.Contains("DensityPartition")) continue;
+                    sb.AppendLine($"  {asm.GetName().Name} :: {t.FullName}");
+                    hits++;
+                }
+            }
+            if (hits == 0)
+            {
+                sb.AppendLine("  (no DensityPartition* types in any loaded assembly)");
+                sb.AppendLine();
+                sb.AppendLine("Most likely cause: the .cs files in Assets/_Scripts/Utility/Tools/DensityPartitionBenchmark/");
+                sb.AppendLine("failed to compile. Check the Console for any other compile errors (red ⊘ icon, not yellow ⚠).");
+                sb.AppendLine("If the Console is clean, try:");
+                sb.AppendLine("  1. Right-click Assets/_Scripts/Utility/Tools/DensityPartitionBenchmark → Reimport.");
+                sb.AppendLine("  2. Assets > Refresh (Ctrl-R / Cmd-R).");
+                sb.AppendLine("  3. Close Unity and delete the Library/ScriptAssemblies folder, then reopen.");
+            }
+            else
+            {
+                sb.AppendLine();
+                sb.AppendLine($"Found {hits} DensityPartition* type(s) but expected name '{DensityRunnerTypeName}' wasn't among them.");
+                sb.AppendLine("This means the runner is loaded under a different namespace — paste the diagnostic above and I'll fix it.");
+            }
+
+            Debug.LogError(sb.ToString());
+        }
+
+        static System.Type _cachedRunnerType;
+        static System.Type _cachedTemporalSimType;
+
+        static System.Type ResolveRunnerType()
+        {
+            if (_cachedRunnerType != null) return _cachedRunnerType;
+            _cachedRunnerType = ResolveTypeByName(DensityRunnerTypeName);
+            return _cachedRunnerType;
+        }
+
+        static System.Type ResolveTemporalSimType()
+        {
+            if (_cachedTemporalSimType != null) return _cachedTemporalSimType;
+            _cachedTemporalSimType = ResolveTypeByName(DensityTemporalSimTypeName);
+            return _cachedTemporalSimType;
+        }
+
+        static System.Type ResolveTypeByName(string fullName)
+        {
+            foreach (var asm in System.AppDomain.CurrentDomain.GetAssemblies())
+            {
+                var t = asm.GetType(fullName, throwOnError: false);
+                if (t != null) return t;
+            }
+            return null;
+        }
+
+        static UnityEngine.Object FindRunnerInOpenScenes(System.Type runnerType)
+        {
+            return UnityEngine.Object.FindFirstObjectByType(runnerType, FindObjectsInactive.Include) as UnityEngine.Object;
+        }
+
+        static int ReadScenarioCount(UnityEngine.Object runner)
+        {
+            if (runner == null) return 0;
+            var field = runner.GetType().GetField("scenarios");
+            if (field?.GetValue(runner) is System.Collections.ICollection list) return list.Count;
+            return 0;
+        }
+
+        static string ReadLastReport(UnityEngine.Object runner)
+        {
+            if (runner == null) return "";
+            var field = runner.GetType().GetField("lastReport");
+            return field?.GetValue(runner) as string ?? "";
+        }
+
+        static void InvokeRunAllAndDump(UnityEngine.Object runner)
+        {
+            if (runner == null) return;
+            var method = runner.GetType().GetMethod("RunAllAndDump");
+            method?.Invoke(runner, null);
+        }
+
+        // ═════════════════════════════════════════════════════════════════════
         //  TAB: QUEST (Quest Debug, Non-Quest Game Modes, Intensity)
         // ═════════════════════════════════════════════════════════════════════
         void DrawQuestTab()
         {
-            DrawTabTitle("Quest Debug", Tabs[3].Color);
+            DrawTabTitle("Quest Debug", Tabs[4].Color);
 
             bool available = Application.isPlaying && GameModeProgressionService.Instance != null;
 
@@ -512,7 +902,7 @@ namespace CosmicShore.Utility
         // ═════════════════════════════════════════════════════════════════════
         void DrawVesselsTab()
         {
-            DrawTabTitle("Vessel Unlock", Tabs[4].Color);
+            DrawTabTitle("Vessel Unlock", Tabs[5].Color);
 
             if (!_vesselList)
             {
@@ -570,7 +960,7 @@ namespace CosmicShore.Utility
         // ═════════════════════════════════════════════════════════════════════
         void DrawCrystalsTab()
         {
-            DrawTabTitle("Crystal Currency", Tabs[5].Color);
+            DrawTabTitle("Crystal Currency", Tabs[6].Color);
 
             bool isPlayMode = Application.isPlaying;
             var service = isPlayMode ? PlayerDataService.Instance : null;
@@ -638,7 +1028,7 @@ namespace CosmicShore.Utility
         // ═════════════════════════════════════════════════════════════════════
         void DrawUGSDataTab()
         {
-            DrawTabTitle("UGS Data View", Tabs[6].Color);
+            DrawTabTitle("UGS Data View", Tabs[7].Color);
 
             bool available = Application.isPlaying && UGSDataService.Instance != null && UGSDataService.Instance.IsInitialized;
 

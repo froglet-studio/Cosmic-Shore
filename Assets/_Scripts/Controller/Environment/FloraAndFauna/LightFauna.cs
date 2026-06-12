@@ -27,15 +27,17 @@ namespace CosmicShore.Gameplay
         public LightFaunaManager LightFaunaManager { get; set; }
 
         /// <summary>
-        /// True when the host cell's phase is <see cref="CellPhase.Rabid"/>: aggression-2
+        /// True when the host cell's phase is <see cref="CellPhase.Frenzy"/>: aggression-2
         /// fauna ignore danger-prism damage. Read by impactor pipelines that would
         /// otherwise debuff/damage the fauna on dangerous-prism contact. Centralizing
         /// the rule here keeps the impact code path from re-deriving phase semantics.
         /// </summary>
-        public bool IsDangerImmune => cell && cell.Phase >= CellPhase.Rabid;
+        public bool IsDangerImmune => cell && cell.Phase >= CellPhase.Frenzy;
 
         public override void Initialize(Cell cell)
         {
+            base.Initialize(cell); // record the explicit host cell (multi-cell correctness)
+
             if (!data)
             {
                 CSDebug.LogError($"{nameof(LightFauna)} on {name} is missing {nameof(LightFaunaDataSO)}.");
@@ -118,29 +120,74 @@ namespace CosmicShore.Gameplay
 
         bool IsBerserk => cell != null && cell.AggressionLevel == CellAggressionLevel.Level2;
 
+        /// <summary>
+        /// Nearest live, non-immune herbivore in the host cell's fauna registry.
+        /// O(live fauna) per behavior tick — the registry is small (bounded by the
+        /// per-species MaxLivePopulation caps).
+        /// </summary>
+        bool TryFindNearestPreyFauna(out Vector3 position)
+        {
+            position = default;
+            var host = cell;
+            if (host == null) return false;
+
+            var fauna = host.LiveFauna;
+            Fauna best = null;
+            float bestSqr = float.PositiveInfinity;
+            for (int i = 0; i < fauna.Count; i++)
+            {
+                var f = fauna[i];
+                if (!f || f == this) continue;
+                if (f.Diet != FaunaDiet.Herbivore || !f.IsAlivePrey || f.IsPredationImmune) continue;
+
+                float d = (f.transform.position - transform.position).sqrMagnitude;
+                if (d < bestSqr) { bestSqr = d; best = f; }
+            }
+
+            if (!best) return false;
+            position = best.transform.position;
+            return true;
+        }
+
         void UpdateBehavior()
         {
             if (!data)
                 return;
+
+            // Prey-linked population control: a fauna that hasn't fed in starvationSeconds
+            // despawns, so the live population self-bounds to available prey (Docs/ECOSYSTEM.md §6).
+            if (IsStarving)
+            {
+                Die("starvation");
+                return;
+            }
 
             Vector3 separation = Vector3.zero;
 
             // Phase-driven goal. Each phase swaps the goal source rather than killing/spawning
             // systems, so the same fauna instance can transition through aggression levels
             // as the cell's phase changes around it.
-            //   Quiet/Settled: aggression 0 — head toward crystal
-            //   Restless/Frozen: aggression 1 — head toward nearest opposing-color centroid
-            //   Rabid: aggression 2 — head toward nearest centroid (any domain)
-            var phase = cell ? cell.Phase : CellPhase.Sprout;
+            //   Calm:     aggression 0 — head toward crystal
+            //   Restless: aggression 1 — head toward nearest opposing-color centroid
+            //   Frenzy:   aggression 2 — head toward nearest centroid (any domain)
+            var phase = cell ? cell.Phase : CellPhase.Calm;
             Goal = phase switch
             {
                 CellPhase.Restless => cell.GetExplosionTarget(domain),
-                CellPhase.Frozen => cell.GetExplosionTarget(domain),
-                CellPhase.Rabid => cell.GetDensestRegionAnyDomain(),
+                CellPhase.Frenzy => cell.GetDensestRegionAnyDomain(),
                 _ => (cellData && cellData.CrystalTransform)
                        ? cellData.CrystalTransform.position
                        : (cell ? cell.transform.position : transform.position),
             };
+
+            // Predators hunt PREY, not mass: seek the nearest live herbivore the cell
+            // senses (Cell.LiveFauna — the fauna analogue of the prism density grid).
+            // Replaces the v1 approximation where predators converged on prism-density
+            // centroids and only met herbivores incidentally. Skips predation-immune
+            // newborns so a shark doesn't camp a fresh birth; with no herbivores alive
+            // the phase-based goal above stands (roam plausibly, then starve).
+            if (diet == FaunaDiet.Predator && TryFindNearestPreyFauna(out var preyPos))
+                Goal = preyPos;
 
             if (!IsFinite(Goal) || Goal.sqrMagnitude < 0.001f)
             {
@@ -159,12 +206,15 @@ namespace CosmicShore.Gameplay
             // Aggression 2 drops friendly avoidance (same-domain ships, fauna, and
             // health prisms stop contributing to separation). Cross-domain entities
             // still push us away so we don't clip through enemy mass.
-            bool dropFriendlyAvoidance = phase >= CellPhase.Rabid;
+            bool dropFriendlyAvoidance = phase >= CellPhase.Frenzy;
 
-            var nearbyColliders = Physics.OverlapSphere(transform.position, detectionRadius);
+            // Shared non-alloc scratch (Fauna.OverlapScratch) — at swarm scale the old
+            // per-tick Collider[] allocation was pure GC churn.
+            int hitCount = Physics.OverlapSphereNonAlloc(transform.position, detectionRadius, OverlapScratch);
 
-            foreach (var collider in nearbyColliders)
+            for (int ci = 0; ci < hitCount; ci++)
             {
+                var collider = OverlapScratch[ci];
                 if (!collider || collider.gameObject == gameObject) continue;
 
                 Vector3 diff = transform.position - collider.transform.position;
@@ -181,6 +231,36 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
+                // Predator diet: hunt herbivore fauna. Another creature's body shows up
+                // here as its child HealthPrisms, so walk up to the owning Fauna. We match
+                // the Fauna BASE (not LightFauna) so a predator eats ANY herbivore species
+                // — LightFauna (brittlestar) and Boid (tadpole) alike. The creature is the
+                // nearest Fauna ancestor of its body colliders, so managers (also Fauna,
+                // but with no body in the scene) are never returned. A predator's own body
+                // resolves to `this` and is skipped; other predators (Diet != Herbivore)
+                // are neighbors, not prey, so predators don't cannibalize. Predation
+                // ignores domain — it is a diet relationship, not a team fight — so
+                // predators always have prey even in a single-domain cell.
+                if (diet == FaunaDiet.Predator)
+                {
+                    var prey = collider.GetComponentInParent<Fauna>();
+                    if (prey && prey != this && prey.Diet == FaunaDiet.Herbivore)
+                    {
+                        neighborCount++;
+                        if (distance < separationRadius)
+                            separation += diff.normalized / distance;
+
+                        // Predated() respects the prey's post-spawn immunity window and
+                        // returns false if the prey couldn't be eaten — only feed on a real kill.
+                        if (prey.IsAlivePrey && distance < consumeRadius && prey.Predated(PLAYER_NAME))
+                            NotifyFed();
+                        continue;
+                    }
+                    // Not prey (flora / trail / ship / another predator): predators don't
+                    // eat prism mass, so fall through for separation only — the consume
+                    // calls below are gated to Herbivore.
+                }
+
                 // Handle other fauna/health prisms
                 var otherHealthBlock = collider.GetComponent<HealthPrism>();
                 if (otherHealthBlock)
@@ -194,16 +274,23 @@ namespace CosmicShore.Gameplay
                     if (distance < separationRadius && !(dropFriendlyAvoidance && sameDomain))
                         separation += diff.normalized / distance;
 
-                    if (distance < consumeRadius && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
+                    // Herbivores eat opposing-domain plant/trail mass; predators never eat prisms.
+                    if (diet == FaunaDiet.Herbivore && distance < consumeRadius && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
+                    {
                         otherHealthBlock.Consume(transform, domain, PLAYER_NAME, true);
+                        NotifyFed();
+                    }
 
                     continue;
                 }
 
                 // Handle blocks
                 Prism block = collider.GetComponent<Prism>();
-                if (block && block.Domain != domain && distance < consumeRadius)
+                if (block && diet == FaunaDiet.Herbivore && block.Domain != domain && distance < consumeRadius)
+                {
                     block.Consume(transform, domain, PLAYER_NAME, true);
+                    NotifyFed();
+                }
             }
 
             averageSpeed = neighborCount > 0
