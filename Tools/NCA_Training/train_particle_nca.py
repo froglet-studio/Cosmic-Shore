@@ -443,7 +443,7 @@ def render_gif(model, target, args, gif_path):
             ax.set_xlim(-lim, lim); ax.set_ylim(-lim, lim); ax.set_zlim(-lim, lim)
             ax.set_axis_off()
             ax.set_title(title, color='#d0d0e8', fontsize=10)
-            ax.view_init(elev=18, azim=35 + i * 0.6)
+            ax.view_init(elev=26, azim=35 + i * 0.6)
         fig.tight_layout(pad=0.2)
         fig.canvas.draw()
         buf = np.asarray(fig.canvas.buffer_rgba())
@@ -486,9 +486,12 @@ def train(args):
     model.train()
 
     for it in range(args.steps):
-        if it == int(args.steps * 0.6):
+        if it == int(args.steps * 0.5):
             for pg in optimizer.param_groups:
                 pg['lr'] = args.lr * 0.3
+        if it == int(args.steps * 0.8):
+            for pg in optimizer.param_groups:
+                pg['lr'] = args.lr * 0.1
 
         idx = np.random.choice(args.pool, args.batch, replace=False)
         p = pool_p[idx].clone()
@@ -502,6 +505,14 @@ def train(args):
         # state would compound and poison the pool).
         with torch.no_grad():
             pre_loss = chamfer(p, target.at_phase(phase))
+            # Safety valve: a pool entry that has catastrophically diverged
+            # (rule hit an explosive regime) would dominate every gradient it
+            # appears in — reset it to a seed instead of trying to repair it.
+            for b in (pre_loss > 5.0).nonzero().flatten().tolist():
+                bp, bh = make_seed(1, args.particles, args.channels, device)
+                p[b], h[b] = bp[0], bh[0]
+                phase[b] = float(np.random.rand())
+                pre_loss[b] = chamfer(p[b:b + 1], target.at_phase(phase[b:b + 1]))[0]
             order = pre_loss.argsort(descending=True)
         worst = order[0].item()
         sp, sh = make_seed(1, args.particles, args.channels, device)
