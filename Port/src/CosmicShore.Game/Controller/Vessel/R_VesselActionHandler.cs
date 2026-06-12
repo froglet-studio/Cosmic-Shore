@@ -174,10 +174,8 @@ namespace CosmicShore.Gameplay
 
         void OnButtonPressed(InputEvents ie)
         {
-            // PORT Deviation (V17, restore at V18 when AIPilot lands and IVesselStatus.AutoPilotEnabled
-            // is uncommented — Deviation #10c):
-            // if (vesselStatus.AutoPilotEnabled)
-            //     return;
+            if (vesselStatus.AutoPilotEnabled)
+                return;
             if (IsInputMuted(ie)) return;
             if (IsSpawned && IsOwner)
             {
@@ -213,10 +211,8 @@ namespace CosmicShore.Gameplay
 
         void OnButtonReleased(InputEvents ie)
         {
-            // PORT Deviation (V17, restore at V18 when AIPilot lands and IVesselStatus.AutoPilotEnabled
-            // is uncommented — Deviation #10c):
-            // if (vesselStatus.AutoPilotEnabled)
-            //     return;
+            if (vesselStatus.AutoPilotEnabled)
+                return;
 
             if (IsSpawned && IsOwner)
             {

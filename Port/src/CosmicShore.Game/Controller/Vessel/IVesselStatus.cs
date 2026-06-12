@@ -12,10 +12,10 @@ namespace CosmicShore.Gameplay
         IVessel Vessel { get; } // FOR TEMP USE, TRY TO REMOVE SHIP REFERENCE FROM OTHER SYSTEMS
         Transform Transform => Vessel.Transform;
 
-        // PORT Deviation #10c (restore at V18): AIPilot AIPilot { get; }
-        // PORT Deviation #10c (restore at V18): AICinematicBehavior AICinematicBehavior { get; }
+        AIPilot AIPilot { get; }
+        AICinematicBehavior AICinematicBehavior { get; }
         bool IsInitializedAsAI => Player.IsInitializedAsAI;
-        // PORT Deviation #10c (restore at V18): bool AutoPilotEnabled => AIPilot.AutoPilotEnabled;
+        bool AutoPilotEnabled => AIPilot.AutoPilotEnabled;
 
         bool AlignmentEnabled { get; set; }
 

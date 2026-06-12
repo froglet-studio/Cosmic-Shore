@@ -4,6 +4,7 @@ using CosmicShore.Data;
 using CosmicShore.Engine;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Tests;
 
@@ -21,6 +22,10 @@ public class TrailLayerTests
     class TrailVesselStatusStub : MonoBehaviour, IVesselStatus
     {
         public IVessel Vessel => null;
+        // V18: AIPilot/AICinematicBehavior restored on IVesselStatus.
+        public AIPilot AIPilot => null;
+        public AICinematicBehavior AICinematicBehavior => null;
+        public bool AutoPilotEnabled => false;
         public bool AlignmentEnabled { get; set; }
         public Material AOEConicExplosionMaterial { get; set; }
         public Material AOEExplosionMaterial { get; set; }

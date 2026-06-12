@@ -5,6 +5,7 @@ using CosmicShore.Engine;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
+using CosmicShore.Utility;
 
 namespace CosmicShore.Tests;
 
@@ -116,6 +117,13 @@ internal static class PrismTestRig
     class StubVesselStatus : IVesselStatus
     {
         public IVessel Vessel { get; set; }
+        // V18: AIPilot/AICinematicBehavior restored on IVesselStatus. Settable so
+        // autopilot-guard tests can wire a live AIPilot. The explicit AutoPilotEnabled
+        // implementation treats a null AIPilot as autopilot-off (the interface default
+        // dereferences AIPilot unconditionally).
+        public AIPilot AIPilot { get; set; }
+        public AICinematicBehavior AICinematicBehavior { get; set; }
+        public bool AutoPilotEnabled => AIPilot != null && AIPilot.AutoPilotEnabled;
         public bool AlignmentEnabled { get; set; }
         public Material AOEConicExplosionMaterial { get; set; }
         public Material AOEExplosionMaterial { get; set; }

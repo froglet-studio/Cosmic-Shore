@@ -9,9 +9,9 @@ namespace CosmicShore.Tests;
 
 // V17: R_VesselActionHandler (input-event → ShipAction dispatch, device-specific override
 // resolution, resource-event wiring, input muting) and VesselPrismController (spawn-loop
-// gating, prism configuration, gap trails, trail cap, danger mode). Skimmer wait-time and
-// the AutoPilotEnabled guard are staged deviations (V16/V18); assertions here only cover
-// behavior that survives those deviations.
+// gating, prism configuration, gap trails, trail cap, danger mode). The AutoPilotEnabled
+// guard was restored at V18 — the rigs here leave StubVesselStatus.AIPilot null (autopilot
+// off) so button events still dispatch; the autopilot mute path is covered in AIPilotTests.
 
 // ShipHelper-style recording action: counts dispatches and captures the call context.
 class RecordingAction : ShipActionSO

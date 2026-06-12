@@ -106,6 +106,9 @@ namespace CosmicShore.Engine
         public void StopCoroutine(Coroutine routine)
             => GameLoop.Current?.Coroutines.Stop(this, routine);
 
+        public void StopCoroutine(System.Collections.IEnumerator routine)
+            => GameLoop.Current?.Coroutines.Stop(this, routine);
+
         public void StopAllCoroutines()
             => GameLoop.Current?.Coroutines.StopAll(this);
 

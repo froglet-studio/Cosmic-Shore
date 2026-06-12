@@ -32,6 +32,7 @@ namespace CosmicShore.Engine
         {
             public MonoBehaviour Owner;
             public readonly Stack<IEnumerator> Frames = new();
+            public IEnumerator Root;
             public Coroutine Handle;
             public float WaitUntilTime = -1f;
             public Coroutine WaitingOn;
@@ -42,7 +43,7 @@ namespace CosmicShore.Engine
         public Coroutine Start(MonoBehaviour owner, IEnumerator routine)
         {
             if (routine is null) throw new ArgumentNullException(nameof(routine));
-            var entry = new Entry { Owner = owner, Handle = new Coroutine() };
+            var entry = new Entry { Owner = owner, Root = routine, Handle = new Coroutine() };
             entry.Frames.Push(routine);
             _entries.Add(entry);
             Step(entry); // synchronous run to first yield (original contract)
@@ -53,6 +54,22 @@ namespace CosmicShore.Engine
         {
             for (int i = _entries.Count - 1; i >= 0; i--)
                 if (_entries[i].Handle == handle && _entries[i].Owner == owner)
+                {
+                    _entries[i].Handle.Done = true;
+                    _entries.RemoveAt(i);
+                    return;
+                }
+        }
+
+        /// <summary>
+        /// Original-engine StopCoroutine(IEnumerator) contract: stops the coroutine that
+        /// was started with this exact enumerator instance. A freshly-created enumerator
+        /// matches nothing and the call is a no-op (the documented original behavior).
+        /// </summary>
+        public void Stop(MonoBehaviour owner, IEnumerator routine)
+        {
+            for (int i = _entries.Count - 1; i >= 0; i--)
+                if (ReferenceEquals(_entries[i].Root, routine) && ReferenceEquals(_entries[i].Owner, owner))
                 {
                     _entries[i].Handle.Done = true;
                     _entries.RemoveAt(i);

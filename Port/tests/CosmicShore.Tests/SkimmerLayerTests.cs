@@ -14,9 +14,9 @@ namespace CosmicShore.Tests;
 // V16: skimmer layer — NudgeShardPoolManager pool semantics (GenericPoolManager
 // subclass), NudgeShard trigger math (invoked reflectively; engine trigger dispatch is
 // phase-2 physics), Skimmer booster-ring/Gaussian math, and DriftTrailActionExecutor
-// start/stop against the ActionExecutorRegistry. Deviations under test:
-// - DriftTrailActionExecutor's VesselPrismController + AutoPilotEnabled lines are
-//   PORT-deviation-commented (restore at V17/V18), so the altitude event always fires.
+// start/stop against the ActionExecutorRegistry. The V16-era staged deviations have
+// since been restored (VesselPrismController at V17, AutoPilotEnabled at V18); the rigs
+// here use a null-AIPilot stub status (autopilot off), so the altitude event still fires.
 public class SkimmerLayerTests
 {
     const BindingFlags Priv = BindingFlags.Instance | BindingFlags.NonPublic;
@@ -84,6 +84,10 @@ public class SkimmerLayerTests
         public VesselClassType vesselType = VesselClassType.Manta;
 
         public IVessel Vessel => null;
+        // V18: AIPilot/AICinematicBehavior restored on IVesselStatus.
+        public AIPilot AIPilot => null;
+        public AICinematicBehavior AICinematicBehavior => null;
+        public bool AutoPilotEnabled => false;
         public bool AlignmentEnabled { get; set; }
         public Material AOEConicExplosionMaterial { get; set; }
         public Material AOEExplosionMaterial { get; set; }

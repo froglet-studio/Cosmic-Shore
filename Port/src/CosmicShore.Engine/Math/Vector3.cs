@@ -81,6 +81,8 @@ namespace CosmicShore.Engine
 
         public static float Magnitude(Vector3 vector) => vector.magnitude;
 
+        public static float SqrMagnitude(Vector3 vector) => vector.sqrMagnitude;
+
         public static Vector3 Lerp(Vector3 a, Vector3 b, float t)
         {
             t = Mathf.Clamp01(t);

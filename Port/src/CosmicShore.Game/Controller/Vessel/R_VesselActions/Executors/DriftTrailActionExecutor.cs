@@ -64,9 +64,7 @@ namespace CosmicShore.Gameplay
             }
 
             vesselPrismController?.SetDotProduct(1f);
-            // PORT Deviation (V16, restore when AIPilot ports — IVesselStatus.AutoPilotEnabled is a #10c-commented member; until then treat autopilot as disabled):
-            // if (_status != null && !_status.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(1f);
-            if (_status != null) OnChangeDriftAltitude?.Invoke(1f);
+            if (_status != null && !_status.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(1f);
         }
 
         void OnTurnEndOfMiniGame() => EndInternal();
@@ -78,9 +76,7 @@ namespace CosmicShore.Gameplay
                 while (!token.IsCancellationRequested)
                 {
                     var driftAltitude = Vector3.Dot(_status.Course, _ship.Transform.forward);
-                    // PORT Deviation (V16, restore when AIPilot ports — IVesselStatus.AutoPilotEnabled is a #10c-commented member; until then treat autopilot as disabled):
-                    // if (!_status.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(driftAltitude);
-                    OnChangeDriftAltitude?.Invoke(driftAltitude);
+                    if (!_status.AutoPilotEnabled) OnChangeDriftAltitude?.Invoke(driftAltitude);
                     vesselPrismController?.SetDotProduct(driftAltitude);
 
                     await GameTask.Delay(0.05f, token);
