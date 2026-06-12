@@ -184,7 +184,10 @@ position, crystals), **skim shimmer + drift rush audio layers** (gain/pitch foll
 contact strength and trigger pull). Verified headlessly: 4-pilot race, frame-1300
 diag `crystals [24,19,4,1], P1 lap 2, levels C13/M6/S8/T6, skim True, trail 5004`
 — the field is COMPETITIVE now (drift-charging rivals; was 30-9 in S5). Artifact:
-`artifacts/skimrace_s6_field_elements.png`. NEXT: prompter verifies the field race
+`artifacts/skimrace_s6_field_elements.png`. Post-S6: finished pilots now fly a
+victory lap (scoreboard renders over the prismscape, not the void); long-run verify
+produced a **30-29 photo finish with the rival winning** — the drift-charging field
+is competitive with a perfect autopilot (`artifacts/skimrace_s6_photo_finish.png`). NEXT: prompter verifies the field race
 feel (drift, elements, rival pressure), Squirrel nose orientation in motion (flip
 is one sign in the extractor); deeper Cosmic Shore content (more vessel classes,
 cells/fauna ambience, shape modes) on request. Fidelity arc: **V1 DONE** (engine E3-E8/E10: RPC attrs, profiling shim, Screen/
