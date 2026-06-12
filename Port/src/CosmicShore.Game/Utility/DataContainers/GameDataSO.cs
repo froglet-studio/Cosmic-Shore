@@ -774,27 +774,27 @@ namespace CosmicShore.Utility
             return false;
         }
 
-        // PORT Deviation (V10, restore when Player ports): /// <summary>
-        // PORT Deviation (V10, restore when Player ports): /// Counts non-AI players per active domain. Returns a fresh dictionary
-        // PORT Deviation (V10, restore when Player ports): /// keyed by every entry in <paramref name="activeDomains"/>, with zero
-        // PORT Deviation (V10, restore when Player ports): /// entries for domains no human has picked. Humans whose
-        // PORT Deviation (V10, restore when Player ports): /// <see cref="Player.NetDomain"/> is outside the active set are not
-        // PORT Deviation (V10, restore when Player ports): /// counted (caller handles them via NormalizeUnassignedHumans).
-        // PORT Deviation (V10, restore when Player ports): /// </summary>
-        // PORT Deviation (V10, restore when Player ports): public static Dictionary<Domains, int> BuildHumanCounts(
-        // PORT Deviation (V10, restore when Player ports):     IEnumerable<Player> humans,
-        // PORT Deviation (V10, restore when Player ports):     IList<Domains> activeDomains)
-        // PORT Deviation (V10, restore when Player ports): {
-        // PORT Deviation (V10, restore when Player ports):     var counts = new Dictionary<Domains, int>(activeDomains.Count);
-        // PORT Deviation (V10, restore when Player ports):     foreach (var d in activeDomains) counts[d] = 0;
-        // PORT Deviation (V10, restore when Player ports):     foreach (var h in humans)
-        // PORT Deviation (V10, restore when Player ports):     {
-        // PORT Deviation (V10, restore when Player ports):         if (h == null || h.NetIsAI.Value) continue;
-        // PORT Deviation (V10, restore when Player ports):         var d = h.NetDomain.Value;
-        // PORT Deviation (V10, restore when Player ports):         if (counts.ContainsKey(d)) counts[d]++;
-        // PORT Deviation (V10, restore when Player ports):     }
-        // PORT Deviation (V10, restore when Player ports):     return counts;
-        // PORT Deviation (V10, restore when Player ports): }
+        /// <summary>
+        /// Counts non-AI players per active domain. Returns a fresh dictionary
+        /// keyed by every entry in <paramref name="activeDomains"/>, with zero
+        /// entries for domains no human has picked. Humans whose
+        /// <see cref="Player.NetDomain"/> is outside the active set are not
+        /// counted (caller handles them via NormalizeUnassignedHumans).
+        /// </summary>
+        public static Dictionary<Domains, int> BuildHumanCounts(
+            IEnumerable<Player> humans,
+            IList<Domains> activeDomains)
+        {
+            var counts = new Dictionary<Domains, int>(activeDomains.Count);
+            foreach (var d in activeDomains) counts[d] = 0;
+            foreach (var h in humans)
+            {
+                if (h == null || h.NetIsAI.Value) continue;
+                var d = h.NetDomain.Value;
+                if (counts.ContainsKey(d)) counts[d]++;
+            }
+            return counts;
+        }
 
         // -----------------------------------------------------------------------------------------
         // Helpers (private)
