@@ -1,0 +1,56 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ef9856a2f404bbe914e4607a643a6fc, type: 3}
+  m_Name: AstroLeagueSettings
+  m_EditorClassIdentifier: 
+  matchDurationSeconds: 180
+  goalLimit: 5
+  goldenGoalOvertime: 1
+  celebrationSeconds: 2.2
+  celebrationTimeScale: 0.35
+  kickoffFreezeSeconds: 2.4
+  hitBoostMultiplier: 2.5
+  directionalBias: 0.35
+  velocityRetention: 0.15
+  minimumHitSpeed: 5
+  maxSpeed: 220
+  ballMass: 3
+  ballBounciness: 0.98
+  highSpeedDrag: 0.25
+  lowSpeedDrag: 3
+  stopThreshold: 2
+  hitstopDuration: 0.045
+  hitstopTimeScale: 0.1
+  hitstopSpeedThreshold: 70
+  strikeShakeIntensity: 1
+  strikeShakeDuration: 0.18
+  goalShakeIntensity: 2.5
+  goalShakeDuration: 0.5
+  impactFlashDuration: 0.12
+  impactFlashIntensity: 14
+  impactParticleBurst: 28
+  goalParticleBurst: 120
+  minTrailWidth: 0.6
+  maxTrailWidth: 5
+  minEmissionIntensity: 2.5
+  maxEmissionIntensity: 11
+  minLightRange: 25
+  maxLightRange: 90
+  speedForMaxVisuals: 160
+  strikerApproachLead: 18
+  strikerRecoverDistance: 60
+  strikerDefendRadius: 130
+  edgeColor: {r: 0.25, g: 0.85, b: 1, a: 0.55}
+  jadeGoalColor: {r: 0.15, g: 1, b: 0.55, a: 0.5}
+  rubyGoalColor: {r: 1, g: 0.22, b: 0.35, a: 0.5}
+  planktonColor: {r: 0.55, g: 0.8, b: 1, a: 0.35}
+  planktonCount: 400

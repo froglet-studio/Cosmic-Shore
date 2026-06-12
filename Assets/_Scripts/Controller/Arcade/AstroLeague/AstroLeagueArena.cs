@@ -1,113 +1,79 @@
 using UnityEngine;
 
-namespace CosmicShore.Game.Arcade.AstroLeague
+namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Defines the Astro League arena boundaries and spawns walls at runtime.
-    /// Creates visible, semi-transparent boundary walls with edge wireframes
-    /// so players can see the arena extents in space.
+    /// HyperSea stadium for Astro League, constructed at runtime:
+    /// - Invisible high-restitution boundary walls (pure physics)
+    /// - Pulsing wireframe edge cage so pilots always read the playfield bounds
+    /// - Portal-style goal rings at each end (visible from inside and outside),
+    ///   with anticipation glow as the ball approaches
+    /// - Center ring marking midfield
+    /// - Drifting plankton motes for hypersea atmosphere and speed perception
     /// </summary>
     public class AstroLeagueArena : MonoBehaviour
     {
-        [Header("Arena Dimensions")]
+        [Header("Config")]
+        [SerializeField] AstroLeagueSettingsSO settings;
+
+        [Header("Dimensions")]
         [SerializeField] float arenaLength = 300f;
         [SerializeField] float arenaWidth = 200f;
         [SerializeField] float arenaHeight = 100f;
-        [SerializeField] float wallThickness = 2f;
+        [SerializeField] float wallThickness = 4f;
+        [SerializeField] float goalRingRadius = 26f;
 
-        [Header("Visuals")]
-        [SerializeField] Material wallMaterial;
-        [SerializeField] Color wallColor = new(0.15f, 0.4f, 0.8f, 0.08f);
-        [SerializeField] Color edgeColor = new(0.3f, 0.6f, 1f, 0.5f);
-        [SerializeField] Color jadeGoalColor = new(0.1f, 1f, 0.5f, 0.25f);
-        [SerializeField] Color rubyGoalColor = new(1f, 0.2f, 0.3f, 0.25f);
+        [Header("References")]
+        [SerializeField] AstroLeagueBall ball;
 
-        [Header("Center Line")]
-        [SerializeField] Color centerLineColor = new(1f, 1f, 1f, 0.15f);
-
-        public float ArenaLength => arenaLength;
-        public float ArenaWidth => arenaWidth;
-        public float ArenaHeight => arenaHeight;
         public Vector3 Center => transform.position;
-        public Vector3 JadeSpawnPosition => Center + Vector3.back * (arenaLength * 0.3f);
-        public Vector3 RubySpawnPosition => Center + Vector3.forward * (arenaLength * 0.3f);
+        public float GoalRingRadius => goalRingRadius;
 
-        Material _generatedWallMat;
-        Material _jadeGoalMat;
-        Material _rubyGoalMat;
-        Material _centerLineMat;
+        LineRenderer[] edgeLines;
+        LineRenderer[] jadeRing;
+        LineRenderer[] rubyRing;
+        Material edgeMaterial;
+        Material jadeRingMaterial;
+        Material rubyRingMaterial;
+
+        Color EdgeColor => settings != null ? settings.edgeColor : new Color(0.25f, 0.85f, 1f, 0.55f);
+        Color JadeColor => settings != null ? settings.jadeGoalColor : new Color(0.15f, 1f, 0.55f, 0.5f);
+        Color RubyColor => settings != null ? settings.rubyGoalColor : new Color(1f, 0.22f, 0.35f, 0.5f);
 
         void Awake()
         {
-            CreateMaterials();
-            CreateWalls();
-            CreateGoalMarkers();
-            CreateCenterLine();
-            CreateEdgeFrame();
+            BuildWalls();
+            BuildEdgeCage();
+            jadeRing = BuildGoalPortal("GoalPortal_Jade", Center + Vector3.back * (arenaLength / 2f), Vector3.forward, JadeColor, out jadeRingMaterial);
+            rubyRing = BuildGoalPortal("GoalPortal_Ruby", Center + Vector3.forward * (arenaLength / 2f), Vector3.back, RubyColor, out rubyRingMaterial);
+            BuildCenterRing();
+            BuildPlankton();
         }
 
-        void CreateMaterials()
+        // ── Physics shell ────────────────────────────────────────────────────
+
+        void BuildWalls()
         {
-            var shader = Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader == null) shader = Shader.Find("Unlit/Color");
+            float hw = arenaWidth / 2f, hh = arenaHeight / 2f, hl = arenaLength / 2f;
 
-            _generatedWallMat = CreateTransparentMat(shader, wallColor);
-            _jadeGoalMat = CreateTransparentMat(shader, jadeGoalColor);
-            _rubyGoalMat = CreateTransparentMat(shader, rubyGoalColor);
-            _centerLineMat = CreateTransparentMat(shader, centerLineColor);
-
-            // Goal markers must be visible from both sides of the quad
-            _jadeGoalMat.SetFloat("_Cull", 0);
-            _rubyGoalMat.SetFloat("_Cull", 0);
+            CreateWall("Wall_Top",    Center + Vector3.up * (hh + wallThickness / 2f),      new Vector3(arenaWidth, wallThickness, arenaLength));
+            CreateWall("Wall_Bottom", Center + Vector3.down * (hh + wallThickness / 2f),    new Vector3(arenaWidth, wallThickness, arenaLength));
+            CreateWall("Wall_Left",   Center + Vector3.left * (hw + wallThickness / 2f),    new Vector3(wallThickness, arenaHeight, arenaLength));
+            CreateWall("Wall_Right",  Center + Vector3.right * (hw + wallThickness / 2f),   new Vector3(wallThickness, arenaHeight, arenaLength));
+            CreateWall("Wall_Back",   Center + Vector3.back * (hl + wallThickness / 2f),    new Vector3(arenaWidth, arenaHeight, wallThickness));
+            CreateWall("Wall_Front",  Center + Vector3.forward * (hl + wallThickness / 2f), new Vector3(arenaWidth, arenaHeight, wallThickness));
         }
 
-        static Material CreateTransparentMat(Shader shader, Color color)
+        void CreateWall(string wallName, Vector3 position, Vector3 size)
         {
-            var mat = new Material(shader) { color = color };
-            mat.SetFloat("_Surface", 1); // Transparent
-            mat.SetFloat("_Blend", 0);   // Alpha
-            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            mat.SetInt("_ZWrite", 0);
-            mat.DisableKeyword("_ALPHATEST_ON");
-            mat.EnableKeyword("_ALPHABLEND_ON");
-            mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-            mat.renderQueue = 3000;
-            return mat;
-        }
-
-        void CreateWalls()
-        {
-            var mat = wallMaterial != null ? wallMaterial : _generatedWallMat;
-            float hw = arenaWidth / 2f;
-            float hh = arenaHeight / 2f;
-            float hl = arenaLength / 2f;
-
-            CreateWall("Wall_Top",    Center + Vector3.up * hh,    new Vector3(arenaWidth, wallThickness, arenaLength), mat);
-            CreateWall("Wall_Bottom", Center + Vector3.down * hh,  new Vector3(arenaWidth, wallThickness, arenaLength), mat);
-            CreateWall("Wall_Left",   Center + Vector3.left * hw,  new Vector3(wallThickness, arenaHeight, arenaLength), mat);
-            CreateWall("Wall_Right",  Center + Vector3.right * hw, new Vector3(wallThickness, arenaHeight, arenaLength), mat);
-            CreateWall("Wall_Back",   Center + Vector3.back * (hl + wallThickness),    new Vector3(arenaWidth, arenaHeight, wallThickness), mat);
-            CreateWall("Wall_Front",  Center + Vector3.forward * (hl + wallThickness), new Vector3(arenaWidth, arenaHeight, wallThickness), mat);
-        }
-
-        void CreateWall(string wallName, Vector3 position, Vector3 scale, Material mat)
-        {
-            var wall = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            wall.name = wallName;
+            var wall = new GameObject(wallName);
             wall.transform.SetParent(transform);
             wall.transform.position = position;
-            wall.transform.localScale = scale;
             wall.layer = gameObject.layer;
 
-            var renderer = wall.GetComponent<Renderer>();
-            renderer.material = mat;
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
-
-            var col = wall.GetComponent<BoxCollider>();
-            col.isTrigger = false;
-            col.material = new PhysicsMaterial("ArenaBounce")
+            var col = wall.AddComponent<BoxCollider>();
+            col.size = size;
+            col.material = new PhysicsMaterial("ArenaWall")
             {
                 bounciness = 1f,
                 bounceCombine = PhysicsMaterialCombine.Maximum,
@@ -117,107 +83,191 @@ namespace CosmicShore.Game.Arcade.AstroLeague
             };
         }
 
-        void CreateGoalMarkers()
+        // ── Visual cage ──────────────────────────────────────────────────────
+
+        void BuildEdgeCage()
         {
-            float hl = arenaLength / 2f;
-            CreateGoalPlane("GoalMarker_Jade", Center + Vector3.back * hl, _jadeGoalMat);
-            CreateGoalPlane("GoalMarker_Ruby", Center + Vector3.forward * hl, _rubyGoalMat);
-        }
+            float hw = arenaWidth / 2f, hh = arenaHeight / 2f, hl = arenaLength / 2f;
 
-        void CreateGoalPlane(string name, Vector3 position, Material mat)
-        {
-            var marker = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            marker.name = name;
-            marker.transform.SetParent(transform);
-            marker.transform.position = position;
-            // Quad faces +Z by default; back goal needs to face +Z, front goal faces -Z
-            if (position.z < Center.z)
-                marker.transform.rotation = Quaternion.identity;
-            else
-                marker.transform.rotation = Quaternion.Euler(0, 180, 0);
-            marker.transform.localScale = new Vector3(arenaWidth * 0.4f, arenaHeight * 0.4f, 1f);
-
-            var renderer = marker.GetComponent<Renderer>();
-            renderer.material = mat;
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-
-            // Remove collider — goals have their own trigger colliders
-            var col = marker.GetComponent<MeshCollider>();
-            if (col) Destroy(col);
-        }
-
-        void CreateCenterLine()
-        {
-            var line = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            line.name = "CenterLine";
-            line.transform.SetParent(transform);
-            line.transform.position = Center;
-            line.transform.rotation = Quaternion.Euler(90, 0, 0);
-            line.transform.localScale = new Vector3(arenaWidth, arenaLength * 0.005f, 1f);
-
-            var renderer = line.GetComponent<Renderer>();
-            renderer.material = _centerLineMat;
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-
-            var col = line.GetComponent<MeshCollider>();
-            if (col) Destroy(col);
-        }
-
-        void CreateEdgeFrame()
-        {
-            float hw = arenaWidth / 2f;
-            float hh = arenaHeight / 2f;
-            float hl = arenaLength / 2f;
-
-            // 12 edges of the arena box
-            Vector3[] starts =
+            Vector3[][] edges =
             {
-                new(-hw, -hh, -hl), new( hw, -hh, -hl), new( hw, -hh,  hl), new(-hw, -hh,  hl),
-                new(-hw,  hh, -hl), new( hw,  hh, -hl), new( hw,  hh,  hl), new(-hw,  hh,  hl),
-                new(-hw, -hh, -hl), new( hw, -hh, -hl), new( hw, -hh,  hl), new(-hw, -hh,  hl),
-            };
-            Vector3[] ends =
-            {
-                new( hw, -hh, -hl), new( hw, -hh,  hl), new(-hw, -hh,  hl), new(-hw, -hh, -hl),
-                new( hw,  hh, -hl), new( hw,  hh,  hl), new(-hw,  hh,  hl), new(-hw,  hh, -hl),
-                new(-hw,  hh, -hl), new( hw,  hh, -hl), new( hw,  hh,  hl), new(-hw,  hh,  hl),
+                // Bottom rectangle
+                new[] { V(-hw, -hh, -hl), V(hw, -hh, -hl) }, new[] { V(hw, -hh, -hl), V(hw, -hh, hl) },
+                new[] { V(hw, -hh, hl), V(-hw, -hh, hl) },   new[] { V(-hw, -hh, hl), V(-hw, -hh, -hl) },
+                // Top rectangle
+                new[] { V(-hw, hh, -hl), V(hw, hh, -hl) },   new[] { V(hw, hh, -hl), V(hw, hh, hl) },
+                new[] { V(hw, hh, hl), V(-hw, hh, hl) },     new[] { V(-hw, hh, hl), V(-hw, hh, -hl) },
+                // Verticals
+                new[] { V(-hw, -hh, -hl), V(-hw, hh, -hl) }, new[] { V(hw, -hh, -hl), V(hw, hh, -hl) },
+                new[] { V(hw, -hh, hl), V(hw, hh, hl) },     new[] { V(-hw, -hh, hl), V(-hw, hh, hl) },
             };
 
-            for (int i = 0; i < starts.Length; i++)
+            edgeMaterial = CreateLineMaterial(EdgeColor);
+            edgeLines = new LineRenderer[edges.Length];
+            for (int i = 0; i < edges.Length; i++)
+                edgeLines[i] = CreateLine($"Edge_{i}", edges[i], edgeMaterial, 0.8f);
+
+            Vector3 V(float x, float y, float z) => Center + new Vector3(x, y, z);
+        }
+
+        /// <summary>
+        /// Three concentric rings receding into the goal mouth — reads as a glowing
+        /// portal from anywhere in the arena (LineRenderers are inherently double-sided).
+        /// </summary>
+        LineRenderer[] BuildGoalPortal(string name, Vector3 mouthCenter, Vector3 inward, Color color, out Material ringMaterial)
+        {
+            ringMaterial = CreateLineMaterial(color);
+            var rings = new LineRenderer[3];
+            for (int i = 0; i < rings.Length; i++)
             {
-                CreateEdge($"Edge_{i}", Center + starts[i], Center + ends[i]);
+                float depth = i * 6f;
+                float radius = goalRingRadius * (1f - i * 0.18f);
+                rings[i] = CreateCircle($"{name}_Ring{i}",
+                    mouthCenter - inward * depth, inward, radius, ringMaterial,
+                    width: 1.6f - i * 0.4f);
             }
+            return rings;
         }
 
-        void CreateEdge(string name, Vector3 from, Vector3 to)
+        void BuildCenterRing()
+        {
+            var mat = CreateLineMaterial(new Color(1f, 1f, 1f, 0.18f));
+            CreateCircle("CenterRing", Center, Vector3.forward, arenaWidth * 0.35f, mat, 0.6f);
+        }
+
+        LineRenderer CreateCircle(string name, Vector3 center, Vector3 normal, float radius, Material mat, float width)
+        {
+            const int segments = 48;
+            var points = new Vector3[segments + 1];
+            Quaternion orient = Quaternion.LookRotation(normal);
+            for (int i = 0; i <= segments; i++)
+            {
+                float angle = i / (float)segments * Mathf.PI * 2f;
+                points[i] = center + orient * new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius, 0f);
+            }
+            return CreateLine(name, points, mat, width);
+        }
+
+        LineRenderer CreateLine(string name, Vector3[] points, Material mat, float width)
         {
             var go = new GameObject(name);
             go.transform.SetParent(transform);
 
             var lr = go.AddComponent<LineRenderer>();
             lr.useWorldSpace = true;
-            lr.positionCount = 2;
-            lr.SetPositions(new[] { from, to });
-            lr.startWidth = 0.8f;
-            lr.endWidth = 0.8f;
-            lr.material = new Material(Shader.Find("Sprites/Default")) { color = edgeColor };
-            lr.startColor = edgeColor;
-            lr.endColor = edgeColor;
+            lr.positionCount = points.Length;
+            lr.SetPositions(points);
+            lr.startWidth = width;
+            lr.endWidth = width;
+            lr.sharedMaterial = mat;
             lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            lr.receiveShadows = false;
+            return lr;
+        }
+
+        static Material CreateLineMaterial(Color color)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null) shader = Shader.Find("Sprites/Default");
+            var mat = new Material(shader) { color = color };
+            mat.SetFloat("_Surface", 1);
+            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            mat.SetInt("_ZWrite", 0);
+            mat.SetFloat("_Cull", 0); // Double-sided
+            mat.EnableKeyword("_ALPHABLEND_ON");
+            mat.renderQueue = 3000;
+            return mat;
+        }
+
+        // ── HyperSea atmosphere ──────────────────────────────────────────────
+
+        void BuildPlankton()
+        {
+            var go = new GameObject("HyperSeaPlankton");
+            go.transform.SetParent(transform, false);
+            go.transform.position = Center;
+
+            var ps = go.AddComponent<ParticleSystem>();
+            var main = ps.main;
+            main.startLifetime = 30f;
+            main.startSpeed = 0.6f;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.15f, 0.6f);
+            int count = settings != null ? settings.planktonCount : 400;
+            main.maxParticles = count;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.prewarm = true;
+            main.loop = true;
+            Color motes = settings != null ? settings.planktonColor : new Color(0.55f, 0.8f, 1f, 0.35f);
+            main.startColor = new ParticleSystem.MinMaxGradient(motes, motes * 0.5f);
+            main.gravityModifier = 0f;
+
+            var emission = ps.emission;
+            emission.rateOverTime = count / 30f;
+
+            var shape = ps.shape;
+            shape.shapeType = ParticleSystemShapeType.Box;
+            shape.scale = new Vector3(arenaWidth, arenaHeight, arenaLength);
+
+            var noise = ps.noise;
+            noise.enabled = true;
+            noise.strength = 0.4f;
+            noise.frequency = 0.08f;
+            noise.scrollSpeed = 0.05f;
+
+            var psRenderer = go.GetComponent<ParticleSystemRenderer>();
+            var psMat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
+            psMat.SetFloat("_Surface", 1);
+            psMat.SetInt("_Blend", 1); // Additive — motes glow softly against the sea
+            psMat.SetColor(Shader.PropertyToID("_BaseColor"), Color.white);
+            psMat.renderQueue = 3050;
+            psRenderer.sharedMaterial = psMat;
+            psRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+
+        // ── Living arena ─────────────────────────────────────────────────────
+
+        void Update()
+        {
+            // Breathing edge cage
+            if (edgeMaterial != null)
+            {
+                float pulse = 0.45f + 0.2f * Mathf.Sin(Time.time * 1.4f);
+                var c = EdgeColor;
+                edgeMaterial.color = new Color(c.r, c.g, c.b, c.a * pulse / 0.55f);
+            }
+
+            // Goal anticipation: portals flare as the ball closes in
+            if (ball != null)
+            {
+                FlareRing(jadeRingMaterial, JadeColor, Center + Vector3.back * (arenaLength / 2f));
+                FlareRing(rubyRingMaterial, RubyColor, Center + Vector3.forward * (arenaLength / 2f));
+            }
+        }
+
+        void FlareRing(Material ringMat, Color baseColor, Vector3 mouthCenter)
+        {
+            if (ringMat == null) return;
+
+            float distance = Vector3.Distance(ball.transform.position, mouthCenter);
+            float anticipation = Mathf.Clamp01(1f - distance / (arenaLength * 0.45f));
+            float flicker = 1f + anticipation * 0.6f * Mathf.Sin(Time.time * (6f + anticipation * 10f));
+            float alpha = Mathf.Lerp(baseColor.a * 0.8f, 1f, anticipation) * flicker;
+            ringMat.color = new Color(
+                Mathf.Min(1f, baseColor.r * (1f + anticipation)),
+                Mathf.Min(1f, baseColor.g * (1f + anticipation)),
+                Mathf.Min(1f, baseColor.b * (1f + anticipation)),
+                Mathf.Clamp01(alpha));
         }
 
         void OnDrawGizmos()
         {
-            Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.15f);
+            Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.2f);
             Gizmos.DrawWireCube(Center, new Vector3(arenaWidth, arenaHeight, arenaLength));
-
-            Gizmos.color = new Color(0f, 1f, 0.5f, 0.3f);
-            Gizmos.DrawWireCube(Center + Vector3.back * arenaLength / 2f,
-                new Vector3(arenaWidth * 0.4f, arenaHeight * 0.4f, wallThickness));
-
-            Gizmos.color = new Color(1f, 0.2f, 0.2f, 0.3f);
-            Gizmos.DrawWireCube(Center + Vector3.forward * arenaLength / 2f,
-                new Vector3(arenaWidth * 0.4f, arenaHeight * 0.4f, wallThickness));
+            Gizmos.color = new Color(0.15f, 1f, 0.55f, 0.4f);
+            Gizmos.DrawWireSphere(Center + Vector3.back * (arenaLength / 2f), goalRingRadius);
+            Gizmos.color = new Color(1f, 0.22f, 0.35f, 0.4f);
+            Gizmos.DrawWireSphere(Center + Vector3.forward * (arenaLength / 2f), goalRingRadius);
         }
     }
 }

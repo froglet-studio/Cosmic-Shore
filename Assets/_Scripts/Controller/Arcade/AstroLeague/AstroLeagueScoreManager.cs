@@ -1,65 +1,66 @@
 using System;
 using System.Collections.Generic;
-using CosmicShore.Soap;
+using CosmicShore.Data;
+using CosmicShore.Utility;
 using Obvious.Soap;
+using Reflex.Attributes;
 using UnityEngine;
 
-namespace CosmicShore.Game.Arcade.AstroLeague
+namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Tracks goal counts per team and updates round stats accordingly.
-    /// Listens to the ball's OnGoalScored event and maps goals to player scores.
+    /// Tracks goals per domain for Astro League, mirrors them into each player's
+    /// RoundStats.Score (so the shared scoreboard/end-game flow works untouched),
+    /// and raises a formatted "jade - ruby" score string for UI listeners.
     /// </summary>
     public class AstroLeagueScoreManager : MonoBehaviour
     {
         [SerializeField] AstroLeagueBall ball;
-        [SerializeField] GameDataSO gameData;
         [SerializeField] ScriptableEventString onScoreUpdated;
 
-        readonly Dictionary<Domains, int> teamGoals = new();
+        [Inject] GameDataSO gameData;
 
-        public event Action<Domains, int, int> OnGoalScoredWithTotals;
+        readonly Dictionary<Domains, int> goals = new();
 
-        public int GetGoals(Domains team) =>
-            teamGoals.TryGetValue(team, out int goals) ? goals : 0;
+        public int GetGoals(Domains domain) => goals.GetValueOrDefault(domain, 0);
+        public int JadeGoals => GetGoals(Domains.Jade);
+        public int RubyGoals => GetGoals(Domains.Ruby);
+
+        /// <summary>Raised after a goal is recorded. Payload: scoring domain, jade total, ruby total.</summary>
+        public event Action<Domains, int, int> OnGoalRecorded;
 
         void OnEnable()
         {
             if (ball != null)
-                ball.OnGoalScored += HandleGoalScored;
+                ball.OnGoalScored += RecordGoal;
         }
 
         void OnDisable()
         {
             if (ball != null)
-                ball.OnGoalScored -= HandleGoalScored;
+                ball.OnGoalScored -= RecordGoal;
         }
 
-        void HandleGoalScored(Domains scoringTeam)
+        void RecordGoal(Domains scoringDomain)
         {
-            if (!teamGoals.ContainsKey(scoringTeam))
-                teamGoals[scoringTeam] = 0;
+            goals[scoringDomain] = GetGoals(scoringDomain) + 1;
 
-            teamGoals[scoringTeam]++;
-
-            // Update round stats for all players on the scoring team
             foreach (var roundStats in gameData.RoundStatsList)
             {
-                if (roundStats.Domain == scoringTeam)
-                    roundStats.Score = teamGoals[scoringTeam];
+                if (roundStats.Domain == scoringDomain)
+                    roundStats.Score = goals[scoringDomain];
             }
 
-            int jadeGoals = GetGoals(Domains.Jade);
-            int rubyGoals = GetGoals(Domains.Ruby);
-
-            onScoreUpdated?.Raise($"{jadeGoals} - {rubyGoals}");
-            OnGoalScoredWithTotals?.Invoke(scoringTeam, jadeGoals, rubyGoals);
+            RaiseScore();
+            OnGoalRecorded?.Invoke(scoringDomain, JadeGoals, RubyGoals);
         }
 
         public void ResetScores()
         {
-            teamGoals.Clear();
-            onScoreUpdated?.Raise("0 - 0");
+            goals.Clear();
+            RaiseScore();
         }
+
+        void RaiseScore() => onScoreUpdated?.Raise($"{JadeGoals} - {RubyGoals}");
     }
 }
