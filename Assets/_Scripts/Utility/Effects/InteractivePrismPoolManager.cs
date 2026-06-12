@@ -58,6 +58,7 @@ namespace CosmicShore.Utility
             var instance = Get_(position, rotation, parent, worldPositionStays);
             if (instance != null)
             {
+                instance.OnReturnToPool -= Release; // de-dup any stale subscription
                 instance.OnReturnToPool += Release;
             }
             return instance;

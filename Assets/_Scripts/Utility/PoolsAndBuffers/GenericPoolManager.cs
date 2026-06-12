@@ -72,9 +72,22 @@ namespace CosmicShore.Utility
 
         protected T Get_(Vector3 position, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {
-            var instance = pool.Get();
+            // ObjectPool has no liveness check: if a pooled instance was destroyed while
+            // sitting in the inactive stack (e.g., an overflow-destroy of one stack entry
+            // while a duplicate entry for the same instance remained), Get() hands back a
+            // dead object. Discard dead entries until a live one comes out — once the
+            // stack empties, ObjectPool falls through to CreateFunc and returns a fresh
+            // instance, so the bound of CountInactive + 1 always terminates.
+            var attempts = CountInactive + 1;
+            T instance = null;
+            for (int i = 0; i < attempts; i++)
+            {
+                instance = pool.Get();
+                if (instance) break;
+                CSDebug.LogWarning($"[PoolManager] {name}: discarded a destroyed instance found in the pool.");
+            }
             if (!instance) return default;
-            
+
             // [Optimization] Add to tracking set
             _activeObjects.Add(instance);
 
@@ -87,13 +100,18 @@ namespace CosmicShore.Utility
         protected void Release_(T instance)
         {
             if (!instance) return;
-            
-            // [Optimization] Remove from tracking set
-            if (_activeObjects.Contains(instance))
-                _activeObjects.Remove(instance);
+
+            // Idempotency guard: only instances currently tracked as active may re-enter
+            // the pool. A leaked or duplicated OnReturnToPool subscription can invoke
+            // Release twice for a single Get; with collectionCheck off, a second push
+            // would put the same instance into the inactive stack twice, and a later
+            // overflow-destroy of one entry would leave its twin pointing at a destroyed
+            // object — which then pops out of Get_ as null.
+            if (!_activeObjects.Remove(instance))
+                return;
 
             // Clean hierarchy before disabling
-            instance.transform.SetParent(transform); 
+            instance.transform.SetParent(transform);
             pool.Release(instance);
         }
 
@@ -102,29 +120,29 @@ namespace CosmicShore.Utility
         /// </summary>
         public async UniTask ReleaseAllActiveAsync(int batchSize = 50)
         {
-            // Copy list to avoid "Collection Modified" errors while iterating
+            // Copy list to avoid "Collection Modified" errors while iterating.
+            // Route every item through the subclass Release(T) so per-instance state
+            // (e.g., OnReturnToPool subscriptions) is detached — pushing an instance
+            // back with a stale subscription is what minted duplicate stack entries.
+            // Release_ removes each item from _activeObjects itself and no-ops on
+            // anything already released, so double release stays impossible.
             var itemsToRelease = new List<T>(_activeObjects);
-            _activeObjects.Clear(); // Clear tracking immediately so we don't double release
 
             int processed = 0;
             foreach (var item in itemsToRelease)
             {
                 if (item)
-                {
-                    // Direct release to pool (bypass _activeObjects check since we already cleared it)
-                    item.transform.SetParent(transform);
-                    pool.Release(item);
-                }
+                    Release(item);
 
                 processed++;
-                
+
                 // Yield every 'batchSize' items to let the Network Heartbeat pass through
                 if (processed % batchSize == 0)
                 {
                     await UniTask.Yield(PlayerLoopTiming.Update);
                 }
             }
-            
+
             CSDebug.Log($"[PoolManager] Cleaned up {processed} items gracefully.");
         }
 
@@ -136,15 +154,13 @@ namespace CosmicShore.Utility
         public void ReleaseAllActive()
         {
             var itemsToRelease = new List<T>(_activeObjects);
-            _activeObjects.Clear();
 
             int count = 0;
             foreach (var item in itemsToRelease)
             {
                 if (item && item.gameObject.activeSelf)
                 {
-                    item.transform.SetParent(transform);
-                    pool.Release(item);
+                    Release(item);
                     count++;
                 }
             }

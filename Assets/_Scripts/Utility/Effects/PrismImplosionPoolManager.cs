@@ -37,6 +37,9 @@ namespace CosmicShore.Utility
         public override PrismImplosion Get(Vector3 spawnPosition, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {
             var implosion = Get_(spawnPosition, rotation, parent, worldPositionStays);
+            if (implosion == null) return null;
+
+            implosion.OnReturnToPool -= Release; // de-dup any stale subscription
             implosion.OnReturnToPool += Release; // auto return when done
             return implosion;
         }

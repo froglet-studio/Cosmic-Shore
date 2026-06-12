@@ -223,6 +223,7 @@ namespace CosmicShore.Gameplay
         GameObject SpawnGrow(PrismEventData data)
         {
             var obj = implosionPool?.Get(data.SpawnPosition, data.Rotation, implosionPool.transform);
+            if (obj == null) return null;
             obj.transform.localScale = data.Scale;
             ConfigureForTeam(obj.gameObject, data.ownDomain);
 

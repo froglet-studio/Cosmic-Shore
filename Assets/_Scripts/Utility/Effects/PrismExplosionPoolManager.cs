@@ -38,6 +38,9 @@ namespace CosmicShore.Utility
         public override PrismExplosion Get(Vector3 position, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {
             var explosion = Get_(position, rotation, parent, worldPositionStays);
+            if (explosion == null) return null;
+
+            explosion.OnReturnToPool -= Release; // de-dup any stale subscription
             explosion.OnReturnToPool += Release;
             return explosion;
         }

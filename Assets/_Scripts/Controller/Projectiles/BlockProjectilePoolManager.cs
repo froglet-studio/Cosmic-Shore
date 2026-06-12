@@ -8,8 +8,9 @@ namespace CosmicShore.Gameplay
     {
         public override Prism Get(Vector3 position, Quaternion rotation, Transform parent, bool worldPositionStays)
         {
-            var p = Get_(position, rotation, null);     
-            p.transform.SetParent(null, true);       
+            var p = Get_(position, rotation, null);
+            if (p == null) return null;
+            p.transform.SetParent(null, true);
             return p;
         }
 
