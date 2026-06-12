@@ -92,5 +92,31 @@ namespace CosmicShore.Engine
         public bool HasProperty(int nameID)
             => _colors.ContainsKey(nameID) || _floats.ContainsKey(nameID)
             || _vectors.ContainsKey(nameID) || _ints.ContainsKey(nameID);
+
+        /// <summary>
+        /// Interpolate this material's properties between <paramref name="start"/> and
+        /// <paramref name="end"/> (the original engine's Material.Lerp): every color, float,
+        /// and vector property named by either endpoint is set to the blend of the two.
+        /// </summary>
+        public void Lerp(Material start, Material end, float t)
+        {
+            if (start is null || end is null) return;
+            t = Mathf.Clamp01(t);
+
+            var colorKeys = new HashSet<int>(start._colors.Keys);
+            colorKeys.UnionWith(end._colors.Keys);
+            foreach (var key in colorKeys)
+                _colors[key] = Color.Lerp(start.GetColor(key), end.GetColor(key), t);
+
+            var floatKeys = new HashSet<int>(start._floats.Keys);
+            floatKeys.UnionWith(end._floats.Keys);
+            foreach (var key in floatKeys)
+                _floats[key] = Mathf.Lerp(start.GetFloat(key), end.GetFloat(key), t);
+
+            var vectorKeys = new HashSet<int>(start._vectors.Keys);
+            vectorKeys.UnionWith(end._vectors.Keys);
+            foreach (var key in vectorKeys)
+                _vectors[key] = Vector4.Lerp(start.GetVector(key), end.GetVector(key), t);
+        }
     }
 }

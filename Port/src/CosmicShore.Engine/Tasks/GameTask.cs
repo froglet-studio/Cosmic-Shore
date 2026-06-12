@@ -40,6 +40,10 @@ namespace CosmicShore.Engine.Tasks
         public static DelayAwaitable Delay(int milliseconds, CancellationToken cancellationToken = default)
             => new(milliseconds / 1000f, unscaled: false, cancellationToken);
 
+        /// <summary>Resume after <paramref name="delayTimeSpan"/> of scaled game time (UniTask.Delay(TimeSpan) call sites).</summary>
+        public static DelayAwaitable Delay(TimeSpan delayTimeSpan, CancellationToken cancellationToken = default)
+            => new((float)delayTimeSpan.TotalSeconds, unscaled: false, cancellationToken);
+
         /// <summary>Resume on the frame the predicate first returns true (checked once per frame; completes synchronously if already true).</summary>
         public static WaitUntilAwaitable WaitUntil(Func<bool> predicate, CancellationToken cancellationToken = default)
             => new(predicate, cancellationToken);

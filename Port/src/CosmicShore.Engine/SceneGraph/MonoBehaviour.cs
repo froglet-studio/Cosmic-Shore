@@ -118,6 +118,13 @@ namespace CosmicShore.Engine
         public System.Threading.CancellationToken destroyCancellationToken
             => (_destroyCts ??= new System.Threading.CancellationTokenSource()).Token;
 
+        /// <summary>
+        /// UniTask-era spelling of <see cref="destroyCancellationToken"/> (originally a
+        /// `Cysharp.Threading.Tasks` extension method) so ported call sites stay verbatim.
+        /// </summary>
+        public System.Threading.CancellationToken GetCancellationTokenOnDestroy()
+            => destroyCancellationToken;
+
         internal override void DestroyComponentNow()
         {
             if (destroyedFlag) return;
