@@ -177,6 +177,20 @@ namespace CosmicShore.Engine
             => GameLoop.Current?.Triggers.OverlapSphereNonAlloc(position, radius, results) ?? 0;
     }
 
+    /// <summary>
+    /// Kinematic placeholder. The port's trigger physics needs no rigidbodies (see
+    /// TriggerPass); fields hold authored values so [RequireComponent(typeof(Rigidbody))]
+    /// components and their setup code port verbatim. Dynamics arrive with the full
+    /// physics phase.
+    /// </summary>
+    public class Rigidbody : Component
+    {
+        public bool isKinematic = true;
+        public bool useGravity;
+        public float mass = 1f;
+        public Vector3 velocity;
+    }
+
     public class Collider : Behaviour
     {
         public bool isTrigger;

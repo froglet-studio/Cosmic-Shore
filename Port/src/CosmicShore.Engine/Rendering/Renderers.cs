@@ -14,6 +14,22 @@ namespace CosmicShore.Engine
     {
         public bool enabled = true;
 
+        /// <summary>
+        /// World-space AABB. The headless engine carries no mesh data, so this assumes a
+        /// unit-cube mesh: center at the transform position, size = |lossyScale| — the same
+        /// convention the prism slabs and trigger-pass box bounds use. Renderers with real
+        /// mesh extents refine this in the content phase.
+        /// </summary>
+        public Bounds bounds
+        {
+            get
+            {
+                Vector3 s = transform.lossyScale;
+                return new Bounds(transform.position,
+                    new Vector3(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z)));
+            }
+        }
+
         Material[] _materials = System.Array.Empty<Material>();
 
         public Material[] materials

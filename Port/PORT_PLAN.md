@@ -516,6 +516,17 @@ Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — inf
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
 
+Shape-content groundwork (landed alongside iteration 18): `SpawnableShapeBase` +
+8 shape spawnables (Circle, Ellipsoid, Helix, Cylinder, Diamond, Arrow, Heart,
+FiveRings) + `ShapeDefinition` + `ShapeCollisionTrigger` + `ShapeSign`(+Events)
+ported (verbatim; ShapeSign's two TMP_Text labels are UI-shell deviations until a
+TMPro shim lands — the trigger flow + static event bus are verbatim). Engine gains
+`Bounds` (full original contract), `Renderer.bounds` (unit-cube convention,
+documented), and a kinematic `Rigidbody` placeholder (trigger physics needs no
+rigidbodies; satisfies [RequireComponent] so authored setup ports verbatim).
+5 tests. These shapes are the Phase-2 shape-drawing content (lava-lamp
+freestyle) and general track decoration for the client.
+
 Ecosystem groundwork part 3 (landed alongside iteration 18):
 `Physics.OverlapSphereNonAlloc` implemented against the TriggerPass collider
 registry (trigger + non-trigger, deterministic registration order, capacity
