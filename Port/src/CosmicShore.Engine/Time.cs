@@ -13,6 +13,13 @@ namespace CosmicShore.Engine
         public static float deltaTime => _inFixedPhase ? fixedDeltaTime : _frameDeltaTime;
         public static float unscaledDeltaTime { get; private set; }
         public static float time { get; private set; }
+
+        /// <summary>
+        /// Double-precision view of <see cref="time"/> (engine addition for SA1:
+        /// TimePlayedScoring's offline clock path). Backed by the same float
+        /// accumulator until a long-session use case demands a true double track.
+        /// </summary>
+        public static double timeAsDouble => time;
         public static float unscaledTime { get; private set; }
         public static float fixedDeltaTime { get; set; } = 0.02f;
         public static float timeScale { get; set; } = 1f;

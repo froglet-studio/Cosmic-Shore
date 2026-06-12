@@ -298,4 +298,12 @@ public class EnumFreezeTests
     [InlineData(ResourceEvents.AboveHalfAmmo, 1)]
     public void ResourceEvents_Values_Frozen(ResourceEvents evt, int expected)
         => Assert.Equal(expected, (int)evt);
+
+    [Theory]
+    [InlineData(ScoringMetric.Crystals, 0)]
+    [InlineData(ScoringMetric.OmniCrystals, 1)]
+    [InlineData(ScoringMetric.ElementalCrystals, 2)]
+    [InlineData(ScoringMetric.Jousts, 3)]
+    public void ScoringMetric_Values_Frozen(ScoringMetric metric, int expected)
+        => Assert.Equal(expected, (int)metric);
 }

@@ -429,22 +429,26 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
   matrix, InputController Awake wiring, shape-key theory, flare, Update routing).
   **610 tests green (358 + 252)**; client smoke unaffected.
 
-## NEXT UP (iteration 13)
+## NEXT UP (iteration 14)
 
-**CONCRETE ARC COMPLETE (2026-06-12):** C1-C6 all landed. Player, VesselController,
-VesselStatus, PlayerDataService, spawners — all verbatim (C4/C5/C6 with ZERO
-deviations); engine gained E11-E17 incl. the clone reference remap. CLI section [6]
-proves the exit state headlessly (spawn → wire → move → reset → AI → host-mode spawn
-event → despawn). 1014 tests green. The async-void spawn-loop xunit trap is now
-documented in C4 tests + CLI.
+**Scoring/arcade arc + E16 deep-clone COMPLETE (2026-06-12):** the full scoring
+family (ScoringRuleSO/Metrics/HexRace golf rules/composite/trackers) +
+SO_Game/SO_ArcadeGame/SO_Vessel chain ported; **all 26 GameDataSO markers
+restored — GameDataSO is verbatim**. E16 deep-clones plain-object graphs
+(cloned vessels own their resource state). 1058 tests green. Open staged keys:
+LifeForm death events (flora/fauna arc), SO_QuestChain (quest arc), Dictionary
+clone residual, MaterialStateManager, impactor crystal cases.
 
-Goal: the scoring/arcade arc (largest open marker family), then multiplayer-spawn.
+Goal: **port-m2 — first full headless game-mode round (AI vs AI)**.
 
-1. **Scoring/arcade survey + arc**: ScoringRuleSO + ScoringMetric chain +
-   SO_ArcadeGame/SO_Game/SO_Vessel — closes GameDataSO's 26 staged markers and
-   unblocks headless game-mode rounds (milestone port-m2: first AI-vs-AI round).
-2. **Multiplayer-spawn arc prerequisite**: deep-clone plain-object collections in
-   the E16 remap (List<Resource> currently copied by reference — flagged by C6).
+1. Build the headless round harness in the CLI (`--mode hexrace --players N
+   --seed S`): spawn an AI field via the verbatim pipeline (C6), give them a
+   crystal course (cell layer), drive AIPilot + scoring (HexRaceScoringRuleSO)
+   to a winner, print the transcript + ScoreResults. Mark `port-m2` in the
+   milestone log with the commit hash.
+2. Then: multiplayer-spawn arc survey (ServerPlayerVesselInitializer family —
+   E16 prerequisite now met) or flora/fauna ecosystem arc (closes LifeForm keys
+   + brings the conserved-mass food web). Pick by what port-m2 reveals.
 3. Sprint feedback as it arrives.
 4. Update this file, commit, push.
 

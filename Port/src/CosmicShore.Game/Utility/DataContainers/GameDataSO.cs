@@ -185,33 +185,33 @@ namespace CosmicShore.Utility
         /// </summary>
         [NonSerialized] public int JoustTargetCount;
 
-        // PORT Deviation (V10, restore when ScoringRuleSO ports): /// <summary>
-        // PORT Deviation (V10, restore when ScoringRuleSO ports): /// The active scoring strategy for the current mode, published by the mode's controller
-        // PORT Deviation (V10, restore when ScoringRuleSO ports): /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
-        // PORT Deviation (V10, restore when ScoringRuleSO ports): /// asset onto the controller). Read by the network turn monitors for the end condition
-        // PORT Deviation (V10, restore when ScoringRuleSO ports): /// and the "remaining" readout (and, in later commits, the scoreboard + end-game
-        // PORT Deviation (V10, restore when ScoringRuleSO ports): /// cinematic). Transient — re-published on every (re)spawn, so it is intentionally NOT
-        // PORT Deviation (V10, restore when ScoringRuleSO ports): /// cleared by the reset methods.
-        // PORT Deviation (V10, restore when ScoringRuleSO ports): /// </summary>
-        // PORT Deviation (V10, restore when ScoringRuleSO ports): [NonSerialized] public ScoringRuleSO ScoringRule;
+        /// <summary>
+        /// The active scoring strategy for the current mode, published by the mode's controller
+        /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
+        /// asset onto the controller). Read by the network turn monitors for the end condition
+        /// and the "remaining" readout (and, in later commits, the scoreboard + end-game
+        /// cinematic). Transient — re-published on every (re)spawn, so it is intentionally NOT
+        /// cleared by the reset methods.
+        /// </summary>
+        [NonSerialized] public ScoringRuleSO ScoringRule;
 
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports): /// <summary>
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports): /// Syncs essential game identity fields from an <see cref="SO_ArcadeGame"/> asset.
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports): /// Must be called before <see cref="InvokeGameLaunch"/> so that SceneLoader
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports): /// and ServerPlayerVesselInitializerWithAI see correct values.
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports): /// </summary>
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports): public void SyncFromArcadeGame(SO_ArcadeGame game)
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports): {
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports):     if (game == null)
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports):     {
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports):         Debug.LogError("<color=#FF0000>[GameDataSO] SyncFromArcadeGame — game is NULL!</color>");
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports):         return;
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports):     }
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports):
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports):     SceneName = game.SceneName;
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports):     GameMode = game.Mode;
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports):     IsMultiplayerMode = game.IsMultiplayer;
-        // PORT Deviation (V10, restore when SO_ArcadeGame ports): }
+        /// <summary>
+        /// Syncs essential game identity fields from an <see cref="SO_ArcadeGame"/> asset.
+        /// Must be called before <see cref="InvokeGameLaunch"/> so that SceneLoader
+        /// and ServerPlayerVesselInitializerWithAI see correct values.
+        /// </summary>
+        public void SyncFromArcadeGame(SO_ArcadeGame game)
+        {
+            if (game == null)
+            {
+                Debug.LogError("<color=#FF0000>[GameDataSO] SyncFromArcadeGame — game is NULL!</color>");
+                return;
+            }
+
+            SceneName = game.SceneName;
+            GameMode = game.Mode;
+            IsMultiplayerMode = game.IsMultiplayer;
+        }
 
         /// <summary>
         /// Single source of truth for player count configuration at game launch.

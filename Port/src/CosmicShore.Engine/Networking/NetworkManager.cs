@@ -17,5 +17,12 @@ namespace CosmicShore.Engine.Networking
         public bool IsClient { get; set; } = true;
         public bool IsHost => IsServer && IsClient;
         public bool IsListening { get; set; } = true;
+
+        /// <summary>
+        /// Server-synchronized clock (engine addition for SA1: TimePlayedScoring reads
+        /// <c>ServerTime.Time</c> when a NetworkManager is listening). Assigned by the
+        /// harness / future network driver; defaults to an unstarted clock (0).
+        /// </summary>
+        public NetworkTime ServerTime { get; set; }
     }
 }
