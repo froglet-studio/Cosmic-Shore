@@ -68,7 +68,7 @@ subscriber leak: `RoundStats` persists on the Player NetworkObject across scene
 transitions, so any handler left attached by the previous game kills or corrupts
 the next game's end flow.
 1. Launch HexRace, play to the objective. **Expect:** the end flow fires on
-   every machine (turn end → cinematic → scoreboard). Host taps **Main Menu**;
+   every machine (turn end → scoreboard). Host taps **Main Menu**;
    everyone returns together (S9).
 2. Relaunch HexRace, play to the objective again. **Expect:** the end flow fires
    again on every machine — no silent never-ending race.
@@ -123,8 +123,8 @@ guard) and the whole party returns to Menu_Main.
 
 ### T9 — Crystal award once
 Win as the local player. **Expect:** crystal balance increases by exactly the
-configured reward **once** (no double-award between scoreboard and cinematic —
-**BUGS.md B4**).
+configured reward **once** — the scoreboard is the single crystal-award path
+(**BUGS.md B4**).
 
 ## Cross-surface / target
 
