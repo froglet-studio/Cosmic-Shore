@@ -24,6 +24,9 @@ namespace CosmicShore.Gameplay
 
             if (ownStats != null)
             {
+                // Idempotent: StartMonitor can be invoked more than once per turn
+                // (e.g. duplicated SOAP subscriptions) — never double-attach.
+                ownStats.OnJoustCollisionChanged -= OnJoustCollisionChanged;
                 ownStats.OnJoustCollisionChanged += OnJoustCollisionChanged;
                 UpdateUI();
             }

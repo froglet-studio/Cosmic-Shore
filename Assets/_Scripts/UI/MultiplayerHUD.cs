@@ -27,6 +27,13 @@ namespace CosmicShore.UI
         protected Dictionary<Domains, DomainScorePanel> _domainPanels = new();
         bool _useDomainView;
 
+        // Stats this HUD actually subscribed to. Unsubscription must run off THIS set,
+        // never gameData.RoundStatsList: on a mid-turn scene exit ResetRuntimeData clears
+        // the roster before the old scene's objects are destroyed, so a list-based
+        // unsubscribe detaches nothing and HandlePlayerStatChanged leaks onto the
+        // persistent human RoundStats (Docs/ScoringSystem/BUGS.md B15).
+        readonly HashSet<IRoundStats> _subscribedStats = new();
+
         // Domain-panel build signature — a hash of every player's (name → Player.Domain) + the local
         // ally domain + domain count at the last build. The reconcile rebuilds whenever this changes
         // (a player moved domains, or the roster grew), so the boxes can't freeze on a stale layout.
@@ -311,8 +318,25 @@ namespace CosmicShore.UI
 
         private void UnsubscribeFromAllStats()
         {
-            foreach (var stats in gameData.RoundStatsList)
-                UnsubscribeFromPlayerStats(stats);
+            foreach (var stats in _subscribedStats)
+            {
+                if (stats != null)
+                    stats.OnAnyStatChanged -= HandlePlayerStatChanged;
+            }
+            _subscribedStats.Clear();
+        }
+
+        /// <summary>
+        /// Mid-turn scene exits destroy the HUD without OnMiniGameTurnEnd ever firing.
+        /// Mirror that cleanup here so the per-stats handlers and the OnPlayerAdded
+        /// subscription always detach from the persistent objects.
+        /// </summary>
+        protected override void OnDestroy()
+        {
+            base.OnDestroy();
+            if (gameData != null)
+                gameData.OnPlayerAdded -= HandlePlayerAdded;
+            UnsubscribeFromAllStats();
         }
 
         /// <summary>
@@ -337,11 +361,14 @@ namespace CosmicShore.UI
             // path may re-touch subscriptions — never double-invoke HandlePlayerStatChanged.
             stats.OnAnyStatChanged -= HandlePlayerStatChanged;
             stats.OnAnyStatChanged += HandlePlayerStatChanged;
+            _subscribedStats.Add(stats);
         }
 
         protected virtual void UnsubscribeFromPlayerStats(IRoundStats stats)
         {
-            if (stats != null) stats.OnAnyStatChanged -= HandlePlayerStatChanged;
+            if (stats == null) return;
+            stats.OnAnyStatChanged -= HandlePlayerStatChanged;
+            _subscribedStats.Remove(stats);
         }
         protected virtual void SubscribeToGameSpecificEvents() { }
         protected virtual void UnsubscribeFromGameSpecificEvents() { }

@@ -201,6 +201,142 @@ domain on both peers).
 Files: `_Scripts/Utility/DataContainers/GameDataSO.cs`,
 `_Scripts/Controller/Arcade/MultiplayerDomainGamesController.cs`.
 
+### B13 — 🟢 Scoreboard Play Again dead in Joust + Crystal Capture (null onClick target)
+Clicking Play Again on the Joust scoreboard did nothing (Crystal Capture had the
+identical defect). The controller side was already correct
+(`UseSceneReloadForReplay=true` since `21d538d3`) — the click never reached it.
+Root cause is a scene-wiring class: all three domain scenes share the
+`GameCanvas-HexRace` prefab, whose `PlayAgainButton.onClick` persistent call
+targets the prefab's INTERNAL `Scoreboard` component. Joust and Crystal Capture
+remove that internal Scoreboard from the instance and add their own scene-level
+`Scoreboard` (correctly wired to the mode's controller) — but the button was
+never retargeted: Joust's scene override pointed the call at `{fileID: 0}`, and
+Crystal Capture left the prefab default pointing at the now-removed component.
+A persistent call with a null target is silently skipped, so the button played
+its click audio and nothing else. HexRace never hit this because it KEEPS the
+prefab's internal Scoreboard and overrides only its `gameController`
+(`multiplayerController` legacy path), which also proves the call's stale
+`m_TargetAssemblyTypeName` (the deleted `HexRaceScoreboard` type) is harmless at
+runtime when the target is set — Unity resolves the method from the live
+target's type. **Done** (commit `e21c778a`): both scenes override
+`m_OnClick…m_Calls[0].m_Target` on the PlayAgainButton to the scene-added
+Scoreboard (+ refresh the type name to `CosmicShore.UI.Scoreboard`).
+**✅ Verified in engine** (Joust: Play Again reloads the scene and a fresh match
+plays; owner-tested). Wiring requirement recorded in `JOUST.md` §9 /
+`CRYSTAL_CAPTURE.md` §9 so the next scene edit doesn't reintroduce it.
+Files: `_Scenes/Multiplayer Scenes/MinigameJoust_Gameplay.unity`,
+`_Scenes/Multiplayer Scenes/MinigameCrystalCaptureMultiplayer_Gameplay.unity`.
+
+### B14 — 🟢 Host-only scoreboard nav gating no-oped (fields unwired) + no anti-spam hide
+Same defect class as B6 (field unwired ⇒ silent no-op): `ConfigureLobbyButtons`
+hides Play Again / Main Menu for non-host clients, but the GameCanvas-HexRace
+prefab's serialized Scoreboard data predates the `playAgainButton` /
+`mainMenuButton` fields, so they deserialized null and the gating silently
+no-oped — clients saw both buttons in ALL three domain modes (clicks were only
+blocked code-side by the host guards). Additionally nothing hid the buttons
+after a host click, so the host could spam Play Again / Main Menu during the
+transition (the controller's `_isResetting` gate is even released early on the
+host by `PrepareForSceneReload_ClientRpc` running locally, so UI-level gating
+matters). **Done** (commit `3a021e50`):
+- `Scoreboard.HideHostNavButtons()` hides both buttons once a navigation
+  commits — Play Again directly in `OnPlayAgainButtonPressed`; Main Menu via a
+  new `onClickToMainMenu` field subscribed to `EventOnClickToMainMenuButton`
+  (the same asset `PauseMenu.OnClickMainMenu` raises AFTER its host guard, so a
+  rejected client click never falsely hides). `ConfigureLobbyButtons`
+  re-activates on the next game end.
+- Wired `playAgainButton` (PlayAgainButton GO), `mainMenuButton` (HomeButton
+  GO), and the event asset in all three scenes — stripped-GO references on the
+  scene-added Scoreboards (Joust/CC), property overrides on the prefab's
+  internal Scoreboard (HexRace).
+**✅ Verified in engine** (owner-tested). Clients see neither nav button and
+follow the host via the Netcode scene load; `PauseMenu` already gated its own
+Restart/Main Menu the same way.
+Files: `_Scripts/UI/Scoreboard.cs` + the three scene files above +
+`_Scenes/Multiplayer Scenes/MinigameHexRace.unity`.
+
+### B15 — 🟢 Game end dead on the SECOND game after a menu return (stale RoundStats subscribers)
+**Reported (2026-06-12).** Party returns to Menu_Main together, host relaunches
+HexRace, the race plays normally — but when a domain reaches the crystal target,
+the Game End flow never fires (no turn end, no cinematic, no scoreboard, on any
+machine). S9's "repeat the menu → game → menu cycle with no leftover state" is
+the failing case.
+
+**Root cause (audit).** `RoundStats` lives on the persistent Player
+NetworkObject and survives every scene transition; its C# stat events
+(`OnScoreChanged`, `OnAnyStatChanged`, `OnCrystalsCollectedChanged`,
+`OnJoustCollisionChanged`, …) are subscribed each turn by SCENE objects — HUDs
+(`MiniGameHUD`/`MultiplayerHUD`), network turn monitors, and `BaseScoring`
+strategies. Two compounding defects let those subscriptions outlive their
+owners and ride into the next game:
+
+1. **Turn-end-gated cleanup.** The HUDs detach their per-stats handlers only in
+   `OnMiniGameTurnEnd`. A mid-turn exit (pause-menu **Main Menu**) destroys
+   them without that event ever firing — nothing detached.
+2. **List-based unsubscription vs. reset ordering.** The monitors, the HUD's
+   `UnsubscribeFromAllStats`, and `BaseScoring.Unsubscribe` all iterated
+   `gameData.RoundStatsList` to detach. `SceneLoader.LoadSceneAsync` calls
+   `ResetRuntimeData()` (clearing that list) ~0.5 s BEFORE the old scene's
+   objects are destroyed, so every list-based unsubscribe loop ran over an
+   EMPTY list and detached nothing — even cleanups that DID run at teardown
+   (e.g. `TurnMonitorController.OnDisable → StopMonitors`, and
+   `BaseScoreTracker`'s `OnClickToMainMenu → OnTurnEnded` abort hook).
+
+The leaked delegates then fire inside the next game's stat-setter chains
+(`RoundStats` setters raise events synchronously from the NetworkVariable
+`OnValueChanged`). Consequences range from silent corruption (a dead
+`CrystalsCollectedScoring.UpdateScore` is pure C# — it overwrites the new
+game's `Score` from a destroyed tracker) to chain-aborting exceptions when a
+dead handler touches a destroyed view: the turn-start raise
+(`StartMonitors` never runs → `CheckForEndOfTurn` never polled) or the
+turn-end chain (`AssignScores`' Score writes throw mid-raise after
+`TurnMonitorController` has already latched `_isRunning=false`) — either way
+the game end is permanently lost while gameplay continues normally, matching
+the report. Self-perpetuating: the only way out of an endless race is another
+mid-turn Main-Menu exit, which re-poisons the next game.
+
+**Fix (commit `d3cbbabb`).**
+- **Chokepoint reset:** new `RoundStats.ClearEventSubscriptions()` severs every
+  external stat-event delegate. Called from `Player.PrepareForNewScene()`
+  (server, BEFORE `Cleanup()` so the zeroing writes can't raise into dead
+  handlers) and `Player.InitializeForMultiplayerMode()` (every peer, once per
+  pair-init per scene, before any of the new scene's subscribers attach) — so
+  every scene entry starts with a clean subscriber list regardless of how the
+  previous scene exited.
+- **Own-records unsubscription:** `NetworkCrystalCollisionTurnMonitor`,
+  `NetworkJoustCollisionTurnMonitor`, `MultiplayerHUD`, and
+  `CrystalsCollectedScoring` now track the stats they subscribed to and detach
+  from that record (plus `OnDestroy` safety nets on the monitors and HUDs) —
+  no more dependence on `RoundStatsList` still being populated at teardown.
+- **Deterministic monitor lifecycle:** `TurnMonitorController.SubscribeToEvents`
+  is idempotent (OnEnable + OnNetworkSpawn both ran it in networked scenes,
+  double-subscribing `StartMonitors`/`StopMonitors`);
+  `CrystalCollisionTurnMonitor` made its `ownStats` subscribe idempotent.
+- **Diagnostics:** `[FLOW-10]` logs at the two end-detection chokepoints
+  (`TurnMonitorController` raise, `HexRaceController.OnTurnEndedCustom`
+  objective-reached) so any future break pinpoints the failing link.
+- Also fixed: `CrystalsCollectedScoring.Subscribe`'s early-`return` (one
+  unresolved name skipped all remaining players);
+  `GameDataSO.ResetAllData()` now resets `RequestedDomainCount` as
+  `ResetRuntimeData`'s comment already claimed.
+
+**✅ Verified in engine (2026-06-12)** — the reported repro (party menu-return →
+HexRace relaunch → objective reached) now runs the full end flow. The regression
+steps are codified as `TESTS.md` **T15**: (a) menu → HexRace → finish →
+scoreboard → Main Menu → HexRace again → finish: end flow fires on every
+machine; (b) same but exit the FIRST race mid-turn via pause-menu Main Menu —
+the second race must still end cleanly (the poison path); (c) repeat 2–3× per
+`../PartySystem/TESTS.md` S9.
+
+Files: `_Scripts/Data/Enums/RoundStats.cs`, `_Scripts/Controller/Player/Player.cs`,
+`_Scripts/Controller/Arcade/TurnMonitorController.cs`,
+`_Scripts/Controller/Arcade/TurnMonitors/NetworkCrystalCollisionTurnMonitor.cs`,
+`_Scripts/Controller/Arcade/TurnMonitors/CrystalCollisionTurnMonitor.cs`,
+`_Scripts/Controller/Arcade/TurnMonitors/NetworkJoustCollisionTurnMonitor.cs`,
+`_Scripts/UI/MiniGameHUD.cs`, `_Scripts/UI/MultiplayerHUD.cs`,
+`_Scripts/Controller/Arcade/Scoring/CrystalsCollectedScoring.cs`,
+`_Scripts/Utility/DataContainers/GameDataSO.cs`,
+`_Scripts/Controller/Arcade/HexRaceController.cs`.
+
 ---
 
 B1–B4, B6, B7, B8 fixed (verify only — B6 also warrants a visual position check).
@@ -208,6 +344,10 @@ B9 (count) + B10 (domain icon placement) fixed for the **domain** layout and **v
 in a 2-human engine test** (broader mode coverage continuing; legacy-layout residual
 tracked in `TODOS.md` TD1). B11 (client-local menu domain writes) + B12 (stale
 pre-party RoundStats shadow) fixed 2026-06-11 — B12 verified in engine; B11's
-host-return sweep pending (`../PartySystem/BUGS.md` B9). B5 remains
-scheduled into **R10** (the unified ranked `ScoreResult` list dissolves it). No open
-read-through findings remain.
+host-return sweep pending (`../PartySystem/BUGS.md` B9). B13 (dead Play Again,
+Joust + CC) + B14 (unwired host-nav gating + anti-spam hide) fixed 2026-06-12 and
+owner-verified in engine (Joust; HexRace/CC share the same fix shape — sweep with
+`TESTS.md` T13/T14). B15 (stale RoundStats subscribers killing the second game's
+end flow) fixed & verified in engine 2026-06-12 — regression steps in `TESTS.md`
+T15. B5 remains scheduled into **R10** (the unified ranked `ScoreResult` list
+dissolves it). No open read-through findings remain.
