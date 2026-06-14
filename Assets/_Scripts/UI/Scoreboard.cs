@@ -76,6 +76,12 @@ namespace CosmicShore.UI
         [Tooltip("Main-menu SOAP event — the same asset the Main Menu button raises (via PauseMenu.OnClickMainMenu) and SceneLoader listens to. When it fires, the host nav buttons hide so the transition can't be spam-clicked.")]
         [SerializeField] private ScriptableEventNoParam onClickToMainMenu;
 
+        [Header("Tournament")]
+        [Tooltip("Continue button — HOST ONLY, shown after each tournament game EXCEPT the last. " +
+                 "Advances the whole party to the next game. Wire its onClick to OnContinueButtonPressed(). " +
+                 "Leave unassigned in non-tournament scenes.")]
+        [SerializeField] private GameObject continueButton;
+
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
@@ -155,6 +161,24 @@ namespace CosmicShore.UI
             var nm = NetworkManager.Singleton;
             bool isClient = nm == null || !nm.IsServer;
 
+            // Tournament mode: every button is host-only — clients always follow the host and
+            // see no buttons. Mid-tournament the host gets Continue (advance the party to the
+            // next game); on the final game it gets the normal Play Again (restart the whole
+            // tournament) + Main Menu, and Continue is hidden.
+            if (gameData != null && gameData.IsTournamentMode)
+            {
+                bool isHost = !isClient;
+                bool lastGame = TournamentController.Instance != null && TournamentController.Instance.IsLastGame;
+
+                if (continueButton)   continueButton.SetActive(isHost && !lastGame);
+                if (playAgainButton)  playAgainButton.SetActive(isHost && lastGame);
+                if (mainMenuButton)   mainMenuButton.SetActive(isHost && lastGame);
+                if (leaveLobbyButton) leaveLobbyButton.SetActive(false);
+                return;
+            }
+
+            // Normal (non-tournament) game: host gets Main Menu + Play Again, clients get Leave.
+            if (continueButton)   continueButton.SetActive(false);
             if (mainMenuButton)   mainMenuButton.SetActive(!isClient);
             if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);
             if (playAgainButton)  playAgainButton.SetActive(!isClient);
@@ -502,12 +526,6 @@ namespace CosmicShore.UI
             if (UGSStatsManager.Instance != null)
                 UGSStatsManager.Instance.TrackPlayAgain();
 
-            if (gameController == null)
-            {
-                CSDebug.LogError("[Scoreboard] gameController not assigned — wire the scene's MiniGameControllerBase in the inspector.");
-                return;
-            }
-
             // Defense in depth: non-host clients don't see the button
             // (ConfigureLobbyButtons gates it), but guard the call path too.
             var nm = NetworkManager.Singleton;
@@ -517,20 +535,60 @@ namespace CosmicShore.UI
                 return;
             }
 
+            // In a tournament, Play Again is only shown on the FINAL game and restarts the
+            // WHOLE tournament (reset standings → game 1) rather than replaying one game.
+            if (gameData != null && gameData.IsTournamentMode)
+            {
+                HideHostNavButtons();
+                if (TournamentController.Instance != null)
+                    TournamentController.Instance.RestartTournament();
+                else
+                    CSDebug.LogError("[Scoreboard] TournamentController.Instance is null — cannot restart tournament.");
+                return;
+            }
+
+            if (gameController == null)
+            {
+                CSDebug.LogError("[Scoreboard] gameController not assigned — wire the scene's MiniGameControllerBase in the inspector.");
+                return;
+            }
+
             HideHostNavButtons();
             gameController.RequestReplay();
         }
 
         /// <summary>
-        /// Hides the host-only navigation buttons (Play Again + Main Menu) once a
-        /// navigation action is committed — Play Again clicked or the main-menu SOAP
-        /// event raised — so the host can't spam-click during the scene transition.
-        /// The next game end re-activates them via <see cref="ConfigureLobbyButtons"/>.
+        /// Host-only "Continue" handler (tournament mode). Advances the whole party to the next
+        /// game in the lineup. Shown after every tournament game except the last (see
+        /// <see cref="ConfigureLobbyButtons"/>); wire the Continue button's onClick here.
+        /// </summary>
+        public void OnContinueButtonPressed()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm != null && !nm.IsServer)
+            {
+                CSDebug.LogWarning("[Scoreboard] Continue ignored — only the host advances the tournament.");
+                return;
+            }
+
+            HideHostNavButtons();
+            if (TournamentController.Instance != null)
+                TournamentController.Instance.AdvanceToNextGame();
+            else
+                CSDebug.LogError("[Scoreboard] TournamentController.Instance is null — cannot advance the tournament.");
+        }
+
+        /// <summary>
+        /// Hides the host-only navigation buttons (Play Again + Main Menu + Continue) once a
+        /// navigation action is committed — a button clicked or the main-menu SOAP event raised —
+        /// so the host can't spam-click during the scene transition. The next game end
+        /// re-activates the right ones via <see cref="ConfigureLobbyButtons"/>.
         /// </summary>
         void HideHostNavButtons()
         {
             if (playAgainButton) playAgainButton.SetActive(false);
             if (mainMenuButton)  mainMenuButton.SetActive(false);
+            if (continueButton)  continueButton.SetActive(false);
         }
 
         /// <summary>
