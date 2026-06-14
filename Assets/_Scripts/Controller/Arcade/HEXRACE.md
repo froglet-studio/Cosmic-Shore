@@ -296,20 +296,11 @@ TurnMonitorController.CheckEndOfTurn()  [server, every frame]
 
 Golf rules (`UseGolfRules = true`): Lower score = higher rank. Winner always ranks first.
 
-### 9. End Game Cinematic
+### 9. End Game (Scoreboard)
 
-`EndGameCinematicController` (base — the `HexRaceEndGameController` subclass was deleted in the scoring refactor; the reveal is produced by `HexRaceScoringRuleSO.BuildReveal`) displays the result screen:
+There is no end-game cinematic. When the race ends, `EndGameSequencer` halts the vessels, plays the GameEnd SFX, and raises `OnShowGameEndScreen` — the signal the **`Scoreboard`** (and `LifeForm` ecology cleanup) already listen for. The `Scoreboard` is the sole end-game UI: a `"{DOMAIN} VICTORY"` banner plus one ranked `PlayerScoreCard` per player. Card order and text come from `HexRaceScoringRuleSO` (`Results`) — winners show race time (mm:ss), losers show crystals remaining. Server authority is unchanged: `WinnerName`/`WinnerDomain` are set by `SyncFinalScores_ClientRpc`.
 
-```csharp
-// Single source of truth from server — set by SyncFinalScores_ClientRpc
-bool didWin = !string.IsNullOrEmpty(gameData.WinnerName)
-           && gameData.WinnerName == localName;
-```
-
-| Result | Header | Label | Value |
-|---|---|---|---|
-| Winner | `"VICTORY"` | `"RACE TIME"` | Race time (formatted as mm:ss) |
-| Loser | `"DEFEAT"` | `"CRYSTALS LEFT"` | Crystals remaining (integer) |
+The old animated per-player `VICTORY`/`DEFEAT` reveal belonged to the removed cinematic. `HexRaceScoringRuleSO.BuildReveal` is retained but currently unconsumed.
 
 ### 10. Replay (Play Again)
 
@@ -378,7 +369,7 @@ Post-Reload (via InitializeAfterDelay):
 | HUD View | `HexRaceHUDView` (extends `MiniGameHUDView`) | Visual layout for HexRace HUD |
 | Scoreboard | `Scoreboard` (base — `HexRaceScoreboard` was deleted in the scoring refactor; lives inside the GameCanvas-HexRace prefab, `gameController` + nav buttons wired via scene overrides) | End-game player ranking display |
 | Stats Provider | `HexRaceStatsProvider` (extends `ScoreboardStatsProvider`) | Provides clean streak, drift, joust stats for scoreboard (WIP) |
-| End Game | `EndGameCinematicController` (base — subclass deleted; reveal from `HexRaceScoringRuleSO.BuildReveal`) | Victory/defeat screen with score reveal animation |
+| End Game | `EndGameSequencer` (shared) | Halts vessels, plays GameEnd SFX, raises `OnShowGameEndScreen` → the `Scoreboard` shows results. No cinematic. |
 | Player Stats | `HexRacePlayerStatsProfile` | Cloud-saved best race times by mode+intensity key |
 
 ## Shared State & NetworkVariables
@@ -422,7 +413,7 @@ ugsStatsManager.ReportHexRaceStats(
 | Crystal turn monitor | `NetworkCrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Base crystal monitor | `CrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Track spawner | `SegmentSpawner.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
-| End game controller | `EndGameCinematicController.cs` (base — per-mode subclass deleted) | `_Scripts/Utility/DataContainers/` |
+| End-game sequencer | `EndGameSequencer.cs` (shared) | `_Scripts/Utility/DataContainers/` |
 | In-game HUD | `HexRaceHUD.cs` | `_Scripts/UI/` |
 | HUD view | `HexRaceHUDView.cs` | `_Scripts/UI/` |
 | Scoreboard | `Scoreboard.cs` (base — per-mode subclass deleted) | `_Scripts/UI/` |

@@ -5,10 +5,9 @@ using UnityEngine;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Awards flat participation XP to the LOCAL player once per game (win or lose),
-    /// decoupled from the end-game cinematic. Listens to the existing GameDataSO.OnMiniGameEnd
-    /// SOAP channel so it covers every mode without touching EndGameCinematicController
-    /// (keeps the scoring refactor intact). Mirrors GameModeProgressionService.
+    /// Awards flat participation XP to the LOCAL player once per game (win or lose).
+    /// Listens to the existing GameDataSO.OnMiniGameEnd SOAP channel so it covers every
+    /// mode through one decoupled path. Mirrors GameModeProgressionService.
     /// </summary>
     public class ParticipationXpAwarder : MonoBehaviour
     {
