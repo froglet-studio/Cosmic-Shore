@@ -74,6 +74,20 @@ namespace CosmicShore.Utility
         public bool IsMultiplayerMode;
 
         /// <summary>
+        /// True while a Tournament session is in progress (set by
+        /// <see cref="CosmicShore.Gameplay.TournamentController"/> at tournament start,
+        /// cleared on tournament end / exit). A peer of the other game-context flags
+        /// above. Read by the <see cref="CosmicShore.UI.Scoreboard"/> to swap the
+        /// per-game lobby buttons for the tournament Continue flow, and synced to
+        /// clients via <see cref="CosmicShore.Gameplay.MultiplayerMiniGameControllerBase"/>'s
+        /// config RPC so every peer in a minigame scene knows it is inside a tournament.
+        /// Like the other context flags it is NOT reset by <see cref="ResetRuntimeData"/>
+        /// (it must survive the per-game scene loads); it is cleared in
+        /// <see cref="ResetAllData"/> as a quit/session-end safety net.
+        /// </summary>
+        public bool IsTournamentMode;
+
+        /// <summary>
         /// Number of AI players to backfill in multiplayer when not enough
         /// human players are present.
         /// A value of 0 means no AI backfill (all human or solo-mode AI logic applies).
@@ -412,6 +426,7 @@ namespace CosmicShore.Utility
             SelectedIntensity.Value = 1;
             RequestedAIBackfillCount = 0;
             RequestedDomainCount = 3;
+            IsTournamentMode = false;
 
             IsReplayReload = false;
 
