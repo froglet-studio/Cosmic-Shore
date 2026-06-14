@@ -517,9 +517,24 @@ PrefabInstance:
         type: 2}
     - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
+      propertyPath: gameController
+      value: 
+      objectReference: {fileID: 1078953729}
+    - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: mainMenuButton
+      value: 
+      objectReference: {fileID: 1078953801}
+    - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
       propertyPath: MultiplayerView
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: playAgainButton
+      value: 
+      objectReference: {fileID: 1078953800}
     - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: profileIconList
@@ -539,6 +554,12 @@ PrefabInstance:
         type: 3}
     - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
+      propertyPath: onClickToMainMenu
+      value: 
+      objectReference: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e,
+        type: 2}
+    - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
       propertyPath: domainColorPalette
       value: 
       objectReference: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3,
@@ -551,24 +572,8 @@ PrefabInstance:
     - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: multiplayerController
-      value:
+      value: 
       objectReference: {fileID: 1078953729}
-    - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-        type: 3}
-      propertyPath: playAgainButton
-      value:
-      objectReference: {fileID: 1078953800}
-    - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-        type: 3}
-      propertyPath: mainMenuButton
-      value:
-      objectReference: {fileID: 1078953801}
-    - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-        type: 3}
-      propertyPath: onClickToMainMenu
-      value:
-      objectReference: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e,
-        type: 2}
     - target: {fileID: 4886571690113359810, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: SinglePlayerScoreTextField
@@ -753,18 +758,6 @@ RectTransform:
 --- !u!1 &330573868 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4014406041637916944, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 330573866}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1078953800 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 2279452371261775173, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 330573866}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &1078953801 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 7469907960593864752, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
     type: 3}
   m_PrefabInstance: {fileID: 330573866}
   m_PrefabAsset: {fileID: 0}
@@ -1504,6 +1497,18 @@ MonoBehaviour:
     Multiplier: 1
   turnMonitor: {fileID: 1078953728}
   showDebugLogs: 1
+--- !u!1 &1078953800 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2279452371261775173, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+    type: 3}
+  m_PrefabInstance: {fileID: 330573866}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &1078953801 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7469907960593864752, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+    type: 3}
+  m_PrefabInstance: {fileID: 330573866}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1194123992
 GameObject:
   m_ObjectHideFlags: 0
