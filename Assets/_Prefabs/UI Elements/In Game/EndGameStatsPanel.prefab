@@ -751,9 +751,7 @@ GameObject:
   - component: {fileID: 4751098007652135560}
   - component: {fileID: 2453249389954754073}
   - component: {fileID: 4194320934166471382}
-  - component: {fileID: 8222314573243939344}
-  - component: {fileID: 3772610714665741658}
-  - component: {fileID: 6769476939183037116}
+  - component: {fileID: 8928388148105690216}
   m_Layer: 5
   m_Name: EndGameStatsPanel
   m_TagString: Untagged
@@ -820,7 +818,7 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
---- !u!114 &8222314573243939344
+--- !u!114 &8928388148105690216
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -833,63 +831,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  sceneCinematicLibrary: {fileID: 11400000, guid: f4f9f13d3b8dc74458a910f0ab4a0883,
-    type: 2}
-  scoreRevealPanel: {fileID: 9120201307492414032}
-  animatedRoot: {fileID: 3780540842356262167}
-  cinematicTextDisplay: {fileID: 5877693371040578817}
-  bestScoreText: {fileID: 8558645809195901343}
-  highScoreText: {fileID: 7730533760449926475}
-  continueButton: {fileID: 6608981936583641206}
-  backgroundImage: {fileID: 0}
-  scoreRevealToastText: {fileID: 8549829074479965766}
-  scoreRevealToastCanvasGroup: {fileID: 8436388073985014462}
-  vesselDisplayManager: {fileID: 3772610714665741658}
-  connectingPanel: {fileID: 0}
-  connectingPanelDuration: 0.5
-  startX: 1200
-  endX: 0
-  slideDuration: 1
-  slideEase: 29
-  casinoCounterDuration: 3
-  toastYOffset: 1
-  toastDelay: 0.5
-  toastDuration: 3
-  cinematicCameraController: {fileID: 6769476939183037116}
---- !u!114 &3772610714665741658
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3708656379894223299}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 090ff787cd764bfa92988519350e5431, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  vesselIconLibrary: {fileID: 11400000, guid: 4c7c01b1b050dd046afcd2930e806645, type: 2}
-  vesselDisplayPrefab: {fileID: 3769987510758572701, guid: e6a20a73c884a6a4db213f545e1b0b73,
-    type: 3}
-  vesselDisplayContainer: {fileID: 7386198939974948650}
-  animateFadeIn: 1
-  delayBetweenVessels: 0.15
-  initialDelay: 0.2
-  singlePlayerLayout: {fileID: 0}
-  multiPlayerLayout: {fileID: 0}
---- !u!114 &6769476939183037116
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3708656379894223299}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3dd2e3577e49480190c830ba1e136f9a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  preScoreboardDelay: 0
 --- !u!1 &3768692066821719114
 GameObject:
   m_ObjectHideFlags: 0
@@ -1252,7 +1194,6 @@ GameObject:
   - component: {fileID: 3825783324644503601}
   - component: {fileID: 5716816330393461402}
   - component: {fileID: 5877693371040578817}
-  - component: {fileID: 4148726373639560445}
   m_Layer: 5
   m_Name: GameOverCounter
   m_TagString: Untagged
@@ -1379,27 +1320,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &4148726373639560445
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4566843541463344839}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3cf2fcbdafaa4800b4238c6c36188c22, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  tmpText: {fileID: 5877693371040578817}
-  fullText: 
-  charLockDelay: 0.03
-  scrambleFramesPerChar: 4
-  scrambleFrameDelay: 0.015
-  charRedactDelay: 0.02
-  scrambleFramesPerRedactChar: 3
-  redactScrambleFrameDelay: 0.012
-  glyphs: 
 --- !u!1 &5208517214847794277
 GameObject:
   m_ObjectHideFlags: 0
@@ -1502,7 +1422,6 @@ GameObject:
   - component: {fileID: 2795126439267128504}
   - component: {fileID: 8921264947835217914}
   - component: {fileID: 8549829074479965766}
-  - component: {fileID: 321500725650827063}
   m_Layer: 5
   m_Name: GameOverCounter
   m_TagString: Untagged
@@ -1629,27 +1548,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!114 &321500725650827063
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6065125739201124439}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3cf2fcbdafaa4800b4238c6c36188c22, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  tmpText: {fileID: 8549829074479965766}
-  fullText: 
-  charLockDelay: 0.03
-  scrambleFramesPerChar: 4
-  scrambleFrameDelay: 0.015
-  charRedactDelay: 0.02
-  scrambleFramesPerRedactChar: 3
-  redactScrambleFrameDelay: 0.012
-  glyphs: 
 --- !u!1 &7770027095359106473
 GameObject:
   m_ObjectHideFlags: 0
