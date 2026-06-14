@@ -347,8 +347,8 @@ namespace CosmicShore.UI
                 _spawnedCards.Add(card);
             }
 
-            // Award crystals once to the local player if they won (same side-effect that
-            // EndGameCinematicController used to do — centralized here now)
+            // Award crystals once to the local player if they won — the scoreboard is
+            // the single crystal-award path.
             AwardCrystalsIfLocalWinner(winnerName);
         }
 

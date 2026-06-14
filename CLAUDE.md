@@ -6,6 +6,50 @@ You are expected to work autonomously and persistently. Complete the entire task
 
 When a task spans multiple files or systems, complete ALL of them in a single pass. Do not stop after the first file and ask if you should proceed to the next.
 
+## Ecosystem Design Principles (LOCKED — read before any ecology change)
+
+The cell ecosystem (flora/fauna/cells/crystals) is a **platform fundamental** on the path to
+credible **artificial life**. North star + roadmap: `Docs/ECOSYSTEM_MASTERPLAN.md`. Mechanics
+log: `Docs/ECOSYSTEM.md`. These invariants are **locked** — do not relitigate or re-derive them.
+They are a direct application of "Favor Emergent Systems / Don't cheat emergence" (below) and —
+not by accident — they are also what makes the system credible as artificial life (a scripted
+outcome is optimization, not life). Use the `/ecology` skill for any change here.
+
+- **Continuity of existence — nothing pops in or out (PLATFORM-WIDE LAW, all of Cosmic Shore).**
+  Nothing may *instantly* appear or disappear. Every entity — prisms, crystals, flora, fauna,
+  vessels, projectiles, even UI — must **grow / bloom / fade / suction / wither / evaporate** into
+  and out of existence over a visible transition. A bare `Instantiate`-then-show or `Destroy` of
+  anything the player can see is a bug. Spawns animate in (scale-from-zero / bloom); deaths animate
+  out (wither from the extremities inward, suction toward a point, or fade). This is *why*
+  starvation withers and mass is conserved — it is the same law applied to the ecosystem. It is not
+  ecology-specific: respect it everywhere.
+- **No imposed death.** No decay, lifespan, or fixed-period despawn timers. Populations are
+  bounded by **consumption + starvation**, never an imposed clock. (Repeatedly rejected.)
+- **No domain asymmetry.** Fauna spawn in **one color — the cell's controlling color** — and
+  hunt opposing mass. Never cross-domain / prey-weighted / per-domain-biased spawning.
+- **Starvation = wither-to-crystal.** A starving (or predated) creature withers from its extremity
+  spindles inward — a shark's fins / a brittlestar's arms evaporate *before* the core body
+  (farthest-from-centre first, emergent from geometry) — and leaves a collectible elemental crystal.
+  It **does not vanish** (the continuity law above). **Mass is conserved** (the "self-sustaining
+  economy" that makes the system NASA-credible). Sealed into `Fauna.Die` so no fauna can bypass it.
+- **Volume is the spine.** Phase, dominant domain, prey, HUD all key off per-domain **VOLUME**
+  (`Cell.LiveVolume`), not prism count. Count is a rare frenzy/perf backstop only.
+- **Every lifeform drops one elemental crystal** (Charge/Mass/Space/Time) as a powerup on death,
+  enforced by `LifeFormCrystal`. It must not be possible to make a lifeform that violates this.
+- **Territorial permanence.** The dominant color's canopy is *not* culled (fauna eat only
+  opposing mass) — take a cell, leave, it stays yours. Oscillation lives in the minority + fauna
+  churn *under* that constraint.
+- **Endogenous selection only.** When evolution lands, fitness is **survival itself**
+  (starvation/predation/reproduction cost), never a designer-scored fitness function — the line
+  between artificial life and a mere optimizer, identical to "don't cheat emergence."
+- **Collider budget is a hard gate.** No ecology feature ships without stating its active-collider
+  impact; respect the per-cell budget (collider-LOD by phase + Burst density-grid fauna queries,
+  not `Physics.OverlapSphere`). See `Docs/ECOSYSTEM_MASTERPLAN.md §4`.
+
+**Protocol:** (1) restate which invariants the change touches + confirm none are violated;
+(2) confirm at genuine forks (AskUserQuestion); (3) implement surgically, config-driven; (4) state
+the collider-budget impact + exact in-editor verification. The `/ecology` skill encodes this.
+
 ## About This Project
 
 Cosmic Shore is a multigenre space game ("the party game for pilots") developed by Froglet Inc., a Delaware C-corp based in Grand Rapids, MI. Different vessel classes embody gameplay from different genres to connect players across demographics.

@@ -28,6 +28,21 @@ namespace CosmicShore.Gameplay
 
     public class VesselStatus : MonoBehaviour, IVesselStatus
     {
+        void OnEnable()
+        {
+            // Proximity collider-LOD: every vessel (human, AI, menu autopilot) is a
+            // focus that keeps nearby prism colliders alive — hull, skimmer, and
+            // trigger interactions all happen here. Registration lazily creates the
+            // LOD manager, so it exists exactly in the scenes that have vessels.
+            PrismColliderLodManager.EnsureInstance();
+            PrismColliderLodManager.RegisterFocus(transform);
+        }
+
+        void OnDisable()
+        {
+            PrismColliderLodManager.UnregisterFocus(transform);
+        }
+
         [SerializeField, RequireInterface(typeof(IVessel))]
         UnityEngine.Object _shipInstance;
         public IVessel Vessel

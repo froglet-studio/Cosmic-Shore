@@ -208,19 +208,11 @@ TurnMonitor detects end condition → gameData.InvokeGameTurnConditionsMet()
 
 Non-golf rules (`UseGolfRules = false`): Higher score = higher rank. Scores sorted descending.
 
-### 8. End Game Cinematic
+### 8. End Game (Scoreboard)
 
-`MultiplayerCrystalCaptureEndGameController` (extends `EndGameCinematicController`) displays the result screen:
+There is no end-game cinematic. When the game ends, `EndGameSequencer` halts the vessels, plays the GameEnd SFX, and raises `OnShowGameEndScreen` — the signal the **`Scoreboard`** (and `LifeForm` ecology cleanup) already listen for. The `Scoreboard` is the sole end-game UI: a `"{DOMAIN} VICTORY"` banner plus one ranked `PlayerScoreCard` per player. Card order, score and the secondary line all come from `CrystalCaptureScoringRuleSO` (`Results`) — the single scoring source (crystal totals / difference vs the opposing domain).
 
-```csharp
-bool didWin = !string.IsNullOrEmpty(gameData.WinnerName)
-           && gameData.WinnerName == localName;
-```
-
-| Result | Header | Detail |
-|---|---|---|
-| Winner | `"VICTORY"` | `"WON BY N CRYSTAL(S)"` — difference vs opponent's best score |
-| Loser | `"DEFEAT"` | `"LOST BY N CRYSTAL(S)"` — difference vs winner's score |
+The old animated per-player `VICTORY`/`DEFEAT` reveal belonged to the removed cinematic. `CrystalCaptureScoringRuleSO.BuildReveal` is retained but currently unconsumed.
 
 The crystal difference is calculated against the opponent's maximum score (supports 2+ players).
 
@@ -261,7 +253,7 @@ To swap the end condition mode (e.g., timer-based), replace the turn monitor in 
 |---|---|---|
 | In-game HUD | `MultiplayerCrystalCaptureHUD` (extends `MultiplayerHUD`) | Per-player crystal count cards; subscribes to `OnCrystalsCollectedChanged`; refreshes all cards on turn start |
 | Scoreboard | `Scoreboard` (base — per-mode subclass deleted in the scoring refactor; scene-added component, `gameController` wired in inspector) | End-game player ranking; "N Crystals" per card from `CrystalCaptureScoringRuleSO.BuildResults`; sorts descending (highest first) |
-| End Game | `EndGameCinematicController` (base — per-mode subclass deleted; reveal from `CrystalCaptureScoringRuleSO.BuildReveal`) | Victory/defeat screen with crystal difference display |
+| End Game | `EndGameSequencer` (shared) | Halts vessels, plays GameEnd SFX, raises `OnShowGameEndScreen` → the `Scoreboard` shows results. No cinematic. |
 | Stats Reporter | `CrystalCaptureStatsReporter` | Reports winner's crystal count + vessel telemetry to UGS (winner only) |
 
 ## Shared State & NetworkVariables
@@ -300,7 +292,7 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 | Crystal turn monitor (base) | `CrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Time turn monitor (network) | `NetworkTimeBasedTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Time turn monitor (base) | `TimeBasedTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
-| End game controller | `MultiplayerCrystalCaptureEndGameController.cs` | `_Scripts/Utility/DataContainers/` |
+| End-game sequencer | `EndGameSequencer.cs` (shared) | `_Scripts/Utility/DataContainers/` |
 | In-game HUD | `MultiplayerCrystalCaptureHUD.cs` | `_Scripts/UI/` |
 | Scoreboard | `MultiplayerCrystalCaptureScoreboard.cs` | `_Scripts/UI/` |
 | Stats reporter | `CrystalCaptureStatsReporter.cs` | `_Scripts/Controller/Arcade/` |

@@ -59,12 +59,12 @@ MonoBehaviour:
     type: 2}
   autoInitialize: 1
   leafSize: {x: 20, y: 1, z: 1}
-  growPeriod: 1.6
-  PlantPeriod: 30
+  growPeriod: 0.8
+  PlantPeriod: 120
   stunDuration: 2
   plantRadiusCellFraction: 0.2
   depth: 0
-  maxTotalSpawnedObjects: 400
+  maxTotalSpawnedObjects: 800
   maxDepth: 50
   itemsPerGrow: 5
   randomItems: 2

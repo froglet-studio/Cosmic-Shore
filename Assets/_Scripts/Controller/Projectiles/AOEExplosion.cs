@@ -7,6 +7,7 @@ using Reflex.Attributes;
 using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.Utility;
+using Unity.Profiling;
 
 namespace CosmicShore.Gameplay
 {
@@ -38,15 +39,44 @@ namespace CosmicShore.Gameplay
         private ExplosionImpactor _explosionImpactor;
         private float _colliderRadius = 0.5f; // Default sphere collider radius
         private MaterialPropertyBlock _mpb;
+        private SphereCollider _sphereCollider;
+        private LayerMask _originalExcludeLayers;
+        private bool _prismExclusionApplied;
+        private static int s_trailBlocksMask = -1;
         private static readonly int OpacityID = Shader.PropertyToID("_Opacity");
+        private static readonly ProfilerMarker s_explodeFrame = new("AOE.ExplodeAsync.Frame");
 
         protected virtual void Awake()
         {
             if (!meshRenderer) meshRenderer = GetComponent<MeshRenderer>();
             _explosionImpactor = GetComponent<ExplosionImpactor>();
-            var sphereCol = GetComponent<SphereCollider>();
-            if (sphereCol) _colliderRadius = sphereCol.radius;
+            _sphereCollider = GetComponent<SphereCollider>();
+            if (_sphereCollider) _colliderRadius = _sphereCollider.radius;
+            if (s_trailBlocksMask < 0) s_trailBlocksMask = LayerMask.GetMask("TrailBlocks");
             _mpb = new MaterialPropertyBlock();
+        }
+
+        /// <summary>
+        /// While batch processing is active, exclude the prism layer from the
+        /// SphereCollider so PhysX never generates the thousands of trigger pairs
+        /// that OnTriggerEnter would discard (they're handled by ProcessBatchFrame).
+        /// Only TrailBlocks is excluded — vessel pairs must stay live because
+        /// explosion→vessel effects (e.g. VesselChangeSpeedByExplosionEffect) are
+        /// resolved through this collider's OnTriggerEnter, not the batch path.
+        /// </summary>
+        private void ApplyPrismExclusion()
+        {
+            if (_prismExclusionApplied || !_sphereCollider) return;
+            _originalExcludeLayers = _sphereCollider.excludeLayers;
+            _sphereCollider.excludeLayers = _originalExcludeLayers | s_trailBlocksMask;
+            _prismExclusionApplied = true;
+        }
+
+        private void RestorePrismExclusion()
+        {
+            if (!_prismExclusionApplied || !_sphereCollider) return;
+            _sphereCollider.excludeLayers = _originalExcludeLayers;
+            _prismExclusionApplied = false;
         }
 
         protected virtual void OnEnable()
@@ -145,10 +175,27 @@ namespace CosmicShore.Gameplay
         {
             // Cache impactor ref — _explosionImpactor may be null after Destroy
             var impactor = _explosionImpactor;
+            // Track collider state outside try/catch so catch blocks can restore it
+            bool colliderDisabledForBatch = false;
             try
             {
                 // Start batch AOE processing — skips Physics OnTriggerEnter for prisms
                 impactor?.BeginBatchProcessing();
+
+                if (impactor != null && impactor.IsBatchProcessing && _sphereCollider != null)
+                {
+                    // Batch processing is active: stop PhysX from generating
+                    // prism trigger pairs — the Burst job handles spatial queries.
+                    ApplyPrismExclusion();
+                    colliderDisabledForBatch = true;
+                }
+                else
+                {
+                    // Falling back to Physics triggers (index unavailable or
+                    // ForceLegacyPhysics). A previous cancelled run may have left
+                    // the prism exclusion applied — prisms must be visible again.
+                    RestorePrismExclusion();
+                }
 
                 await UniTask.Delay(TimeSpan.FromSeconds(ExplosionDelay), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
 
@@ -173,49 +220,62 @@ namespace CosmicShore.Gameplay
                     if (!this || cachedTransform == null)
                     {
                         impactor?.EndBatchProcessing();
+                        if (colliderDisabledForBatch) RestorePrismExclusion();
                         return;
                     }
 
-                    time += Time.deltaTime;
-                    float t = time / ExplosionDuration;
-                    float ease = Mathf.Sin(t * PI_OVER_TWO);
-
-                    cachedTransform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, ease);
-
-                    // Batch AOE damage via Burst job over cache-packed prism data
-                    // Effective radius = collider radius (local) * localScale
-                    float currentRadius = _colliderRadius * MaxScale * ease;
-                    bool shouldContinue = impactor?.ProcessBatchFrame(
-                        cachedTransform.position, currentRadius, speed, Inertia) ?? true;
-
-                    if (!shouldContinue)
+                    using (s_explodeFrame.Auto())
                     {
-                        // Super-shielded enemy hit — mirrors original Destroy(gameObject) in
-                        // ExecuteCommonPrismCommands. Stop explosion immediately.
-                        impactor?.EndBatchProcessing();
-                        if (this) Destroy(gameObject);
-                        return;
-                    }
+                        time += Time.deltaTime;
+                        float t = time / ExplosionDuration;
+                        float ease = Mathf.Sin(t * PI_OVER_TWO);
 
-                    // Use MaterialPropertyBlock for per-instance opacity so multiple
-                    // concurrent explosions sharing the same Material don't fight over
-                    // the shared material's _Opacity value (which caused flickering).
-                    if (meshRenderer)
-                    {
-                        meshRenderer.GetPropertyBlock(_mpb);
-                        _mpb.SetFloat(OpacityID, 1 - ease);
-                        meshRenderer.SetPropertyBlock(_mpb);
+                        cachedTransform.localScale = Vector3.Lerp(Vector3.zero, MaxScaleVector, ease);
+
+                        // Batch AOE damage via Burst job over cache-packed prism data
+                        // Effective radius = collider radius (local) * localScale
+                        float currentRadius = _colliderRadius * MaxScale * ease;
+                        bool shouldContinue = impactor?.ProcessBatchFrame(
+                            cachedTransform.position, currentRadius, speed, Inertia) ?? true;
+
+                        if (!shouldContinue)
+                        {
+                            // Super-shielded enemy hit — mirrors original Destroy(gameObject) in
+                            // ExecuteCommonPrismCommands. Stop explosion immediately.
+                            impactor?.EndBatchProcessing();
+                            if (colliderDisabledForBatch) RestorePrismExclusion();
+                            if (this) Destroy(gameObject);
+                            return;
+                        }
+
+                        // Use MaterialPropertyBlock for per-instance opacity so multiple
+                        // concurrent explosions sharing the same Material don't fight over
+                        // the shared material's _Opacity value (which caused flickering).
+                        if (meshRenderer)
+                        {
+                            meshRenderer.GetPropertyBlock(_mpb);
+                            _mpb.SetFloat(OpacityID, 1 - ease);
+                            meshRenderer.SetPropertyBlock(_mpb);
+                        }
                     }
 
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
 
                 impactor?.EndBatchProcessing();
+                if (colliderDisabledForBatch) RestorePrismExclusion();
                 if (this) Destroy(gameObject);
             }
             catch (OperationCanceledException)
             {
                 impactor?.EndBatchProcessing();
+                // Deliberately NOT restoring the prism exclusion here: a cancelled
+                // explosion (e.g. OnMiniGameTurnEnd) stays alive frozen at its
+                // current scale. Re-including TrailBlocks would make PhysX refilter
+                // and fire OnTriggerEnter for every overlapping prism — a damage
+                // burst through the Physics fallback path after the turn ended.
+                // The exclusion is restored lazily at the start of the next
+                // ExplodeAsync run, or discarded with the GameObject on reset.
             }
             catch (System.Exception e)
             {
@@ -224,6 +284,7 @@ namespace CosmicShore.Gameplay
                 // stuck at max scale with _useBatchProcessing permanently true.
                 Debug.LogException(e);
                 impactor?.EndBatchProcessing();
+                if (colliderDisabledForBatch) RestorePrismExclusion();
                 if (this) Destroy(gameObject);
             }
         }

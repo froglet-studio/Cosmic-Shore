@@ -204,21 +204,11 @@ TurnMonitor detects collision target reached → gameData.InvokeGameTurnConditio
 
 Golf rules (`UseGolfRules = true`): Lower score = higher rank. Every teammate on the winning domain shares the same elapsed-time score (the joust scoreboard's tie-break — `JoustCollisions` descending — orders the finisher above the assist). All losers are tied at 99999.
 
-### 8. End Game Cinematic
+### 8. End Game (Scoreboard)
 
-`MultiplayerJoustEndGameController` (extends `EndGameCinematicController`) displays the result screen:
+There is no end-game cinematic. When the game ends, `EndGameSequencer` halts the vessels, plays the GameEnd SFX, and raises `OnShowGameEndScreen` — the signal the **`Scoreboard`** (and `LifeForm` ecology cleanup) already listen for. The `Scoreboard` is the sole end-game UI: a `"{DOMAIN} VICTORY"` banner plus one ranked `PlayerScoreCard` per player. Card order, primary score and the secondary line all come from `JoustScoringRuleSO` (`Results`) — the single scoring source. Winning-domain teammates share the finish time; losers show jousts remaining.
 
-```csharp
-bool didWin = !string.IsNullOrEmpty(gameData.WinnerName)
-           && gameData.WinnerName == localName;
-```
-
-The end game controller holds a `[SerializeField] JoustCollisionTurnMonitor joustTurnMonitor` reference to read `CollisionsNeeded` for the display.
-
-| Result | Header | Detail | Value |
-|---|---|---|---|
-| Winner | `"VICTORY"` | `"WON BY N JOUST(S)"` | Finish time (formatted as time) |
-| Loser | `"DEFEAT"` | `"LOST BY N JOUST(S)"` | Jousts remaining (integer) |
+The old animated per-player `VICTORY`/`DEFEAT` reveal belonged to the removed cinematic. `JoustScoringRuleSO.BuildReveal` is retained but currently unconsumed.
 
 ### 9. Replay (Play Again)
 
@@ -299,7 +289,7 @@ The two effects compose: overtaking an **opponent** scores a joust point *and* d
 |---|---|---|
 | In-game HUD | `MultiplayerJoustHUD` (extends `MultiplayerHUD`) | Per-player joust collision count cards; subscribes to `OnJoustCollisionChanged` |
 | Scoreboard | `MultiplayerJoustScoreboard` (extends `Scoreboard`) | End-game ranking; winner shows time `MM:SS:ms`, losers show `"N Joust(s) Left"`; sorts ascending (golf rules) |
-| End Game | `MultiplayerJoustEndGameController` (extends `EndGameCinematicController`) | Victory/defeat with joust difference and time display |
+| End Game | `EndGameSequencer` (shared) | Halts vessels, plays GameEnd SFX, raises `OnShowGameEndScreen` → the `Scoreboard` shows results. No cinematic. |
 | Stats Reporter | `JoustStatsReporter` | Reports winner's time + joust count + vessel telemetry to UGS (winner only) |
 
 ## Shared State & NetworkVariables
@@ -337,7 +327,7 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 | Joust turn monitor (network) | `NetworkJoustCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Joust turn monitor (base) | `JoustCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Collision effect SO | `VesselExplosionBySkimmerEffectSO.cs` | `_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Skimmer Effects/` |
-| End game controller | `MultiplayerJoustEndGameController.cs` | `_Scripts/Utility/DataContainers/` |
+| End-game sequencer | `EndGameSequencer.cs` (shared) | `_Scripts/Utility/DataContainers/` |
 | In-game HUD | `MultiplayerJoustHUD.cs` | `_Scripts/UI/` |
 | Scoreboard | `MultiplayerJoustScoreboard.cs` | `_Scripts/UI/` |
 | Stats reporter | `JoustStatsReporter.cs` | `_Scripts/Controller/Arcade/` |
@@ -376,6 +366,6 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 
 9. **No comeback system**: Unlike HexRace (which uses `ElementalComebackSystem`), Joust has no handicap or catch-up mechanics. All players compete on equal footing throughout.
 
-10. **Scoreboard requires inspector wiring**: The scene-added `Scoreboard` (the per-mode `MultiplayerJoustScoreboard` / `MultiplayerJoustEndGameController` subclasses were deleted in the scoring refactor — see `Docs/ScoringSystem/BUGS.md` B2) must have `gameController` wired to the scene's `MultiplayerJoustController`, and the prefab `PlayAgainButton.onClick` must be re-targeted at that scene-added Scoreboard (see §9). `PauseMenu`'s `gameController` / `replayButton` overrides must also point at the Joust controller for the pause-menu Restart path.
+10. **Scoreboard requires inspector wiring**: The scene-added `Scoreboard` (per-mode scoreboard/cinematic subclasses were deleted in the scoring refactor, and the end-game cinematic itself was removed in favour of `EndGameSequencer` + the base `Scoreboard` — see `Docs/ScoringSystem/CHANGELOG.md`) must have `gameController` wired to the scene's `MultiplayerJoustController`, and the prefab `PlayAgainButton.onClick` must be re-targeted at that scene-added Scoreboard (see §9). `PauseMenu`'s `gameController` / `replayButton` overrides must also point at the Joust controller for the pause-menu Restart path.
 
 11. **Opponent-only scoring**: `VesselExplosionBySkimmerEffectSO` checks `impacteeVessel.Domain != impactorVessel.Domain` before scoring. Without this check, two teammates bumping skimmers each scored joust points, inflating the domain sum to the (low) `collisionsNeeded` target almost instantly — the game ended within a few collisions, before the in-game HUD was visibly in play. Overtake buffs/debuffs are unaffected: `VesselOvertakeBySkimmerEffectSO` still buffs teammates and debuffs opponents regardless. AI pilots already chase opponents only (`AIPilot.UpdatePlayerTarget` skips `player.Domain == myDomain`), which complements this rule.

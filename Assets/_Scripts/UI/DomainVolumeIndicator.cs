@@ -30,9 +30,10 @@ namespace CosmicShore.UI
     /// MiniGameHUD self-attach this to their pause button and hand over the injected
     /// GameDataSO.
     ///
-    /// Reads <see cref="Cell.GetDomainBlockCount"/>, <see cref="Cell.FrenzyEnterThreshold"/>
-    /// and <see cref="Cell.ResolvedThresholds"/>; resolves the cell via the local
-    /// player's vessel position, falling back to the nearest active cell.
+    /// Reads <see cref="Cell.GetDomainVolume"/>, <see cref="Cell.FrenzyEnterVolume"/>
+    /// and <see cref="Cell.ResolvedThresholds"/> — volume is the spine, so the gauge
+    /// shows exactly the measure that drives the phase ladder; resolves the cell via
+    /// the local player's vessel position, falling back to the nearest active cell.
     /// </summary>
     [DisallowMultipleComponent]
     public class DomainVolumeIndicator : MonoBehaviour
@@ -175,19 +176,22 @@ namespace CosmicShore.UI
                 return;
             }
 
-            int frenzy = cell.FrenzyEnterThreshold;
-            int jade = cell.GetDomainBlockCount(Domains.Jade);
-            int ruby = cell.GetDomainBlockCount(Domains.Ruby);
-            int gold = cell.GetDomainBlockCount(Domains.Gold);
+            // Volume is the spine (locked invariant): the gauge reads per-domain live
+            // VOLUME — every prism contributes (trail, flora, fauna bodies) — against
+            // the volume phase ladder, mirroring exactly what drives the cell's phase.
+            float frenzy = cell.FrenzyEnterVolume;
+            float jade = cell.GetDomainVolume(Domains.Jade);
+            float ruby = cell.GetDomainVolume(Domains.Ruby);
+            float gold = cell.GetDomainVolume(Domains.Gold);
 
-            if (frenzy > 0)
+            if (frenzy > 0f)
             {
                 // Per-domain radial fill = that domain's mass as a fraction of the
                 // frenzy threshold. A single domain reaching the full threshold (which
                 // alone trips frenzy) fills its sector all the way to the centre.
-                _jadeTarget = Mathf.Clamp01((float)jade / frenzy);
-                _rubyTarget = Mathf.Clamp01((float)ruby / frenzy);
-                _goldTarget = Mathf.Clamp01((float)gold / frenzy);
+                _jadeTarget = Mathf.Clamp01(jade / frenzy);
+                _rubyTarget = Mathf.Clamp01(ruby / frenzy);
+                _goldTarget = Mathf.Clamp01(gold / frenzy);
 
                 // Concentric ring position: the Restless enter threshold as a fraction of
                 // FrenzyEnter. A wedge reaching the ring has, by construction, Restless's
@@ -195,8 +199,8 @@ namespace CosmicShore.UI
                 // the cell into the hunting band. Frenzy sits at fraction 1 (centre /
                 // boundary hexagon), so it needs no separate ring.
                 var t = cell.ResolvedThresholds;
-                float denom = Mathf.Max(1, t.FrenzyEnter);
-                _thresholdFracs[0] = t.RestlessEnter / denom;
+                float denom = Mathf.Max(1f, t.FrenzyEnterVolume);
+                _thresholdFracs[0] = t.RestlessEnterVolume / denom;
                 _hasThresholds = true;
             }
             else
@@ -214,9 +218,9 @@ namespace CosmicShore.UI
             _spawnCycle = cell.FaunaSpawnCycleFraction;
         }
 
-        static int ResolveDominant(int jade, int ruby, int gold)
+        static int ResolveDominant(float jade, float ruby, float gold)
         {
-            if (jade <= 0 && ruby <= 0 && gold <= 0) return -1;
+            if (jade <= 0f && ruby <= 0f && gold <= 0f) return -1;
             if (jade >= ruby && jade >= gold) return 0;
             if (ruby >= gold) return 1;
             return 2;

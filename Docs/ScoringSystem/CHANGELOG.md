@@ -93,3 +93,26 @@ Docs: `JOUST.md` §9 rewritten for the scene-reload replay (+ wiring requirement
 `CRYSTAL_CAPTURE.md` §9 / `HEXRACE.md` §10 updated (rematch flow + deleted per-mode
 scoreboard/end-game subclasses scrubbed); `TESTS.md` T8 updated, T13 (replay loop)
 + T14 (nav gating) added.
+
+---
+
+## End-game cinematic removed — `Scoreboard` is the sole end-game UI
+The end-game cinematic was deleted; the **`Scoreboard`** is now the only end-game
+surface. A slim `EndGameSequencer` (`_Scripts/Utility/DataContainers/`) replaces the
+~430-line `EndGameCinematicController`: on `OnWinnerCalculated` it halts every vessel
+(`VesselStatus.IsStationary = true` + input pause — nothing flies behind the scoreboard),
+plays the GameEnd SFX, then raises `OnShowGameEndScreen` (the existing signal the
+`Scoreboard` and `LifeForm` ecology cleanup already consume). The two end-of-game
+progression toasts (quest complete / intensity unlocked) are re-homed off
+`GameModeProgressionService` events.
+
+Deleted: `EndGameCinematicController`, `EndGameCinematicView`,
+`WildlifeBlitzEndGameCinematicController`, `EndGameVesselDisplay`(+`Manager`),
+`CinematicCameraController`, `CinematicDefinitionSO`, `SceneCinematicLibrarySO`,
+`VesselIconLibrarySO` + the `_SO_Assets/Cinematics/` assets. The controller component
+was GUID-swapped to `EndGameSequencer` in the Joust/CrystalCapture/WildlifeBlitz scenes,
+`GameCanvas-HexRace.prefab` and `EndGameStatsPanel.prefab` (preserving the `gameData`
+wiring). `ScoringRuleSO.BuildReveal` is retained (abstract) but now unconsumed.
+
+**Editor follow-up:** delete the now-dead cinematic UI GameObjects (score-reveal panel,
+vessel podium, cinematic camera) left as missing-scripts in those scenes/prefabs.

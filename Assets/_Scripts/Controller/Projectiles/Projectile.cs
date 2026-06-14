@@ -53,6 +53,16 @@ namespace CosmicShore.Gameplay
                 _pooledParent = transform.parent;
                 _poolParentCaptured = true;
             }
+
+            // Proximity collider-LOD: a projectile in flight is a focus, so the prism
+            // colliders along its path (including distant structures it was fired at)
+            // are awake by the time it arrives. Unregistered on pool return.
+            PrismColliderLodManager.RegisterFocus(transform);
+        }
+
+        private void OnDisable()
+        {
+            PrismColliderLodManager.UnregisterFocus(transform);
         }
 
         private void Awake()
