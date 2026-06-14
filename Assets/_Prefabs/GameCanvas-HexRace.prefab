@@ -9079,15 +9079,15 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 4886571690113359810}
-        m_TargetAssemblyTypeName: CosmicShore.Game.UI.HexRaceScoreboard, Assembly-CSharp
-        m_MethodName: OnPlayAgainButtonPressed
+        m_TargetAssemblyTypeName: CosmicShore.UI.Scoreboard, Assembly-CSharp
+        m_MethodName: OnContinueButtonPressed
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
           m_IntArgument: 0
           m_FloatArgument: 0
-          m_StringArgument: 
+          m_StringArgument:
           m_BoolArgument: 0
         m_CallState: 2
       - m_Target: {fileID: 4537784198107689130}
@@ -10981,7 +10981,7 @@ MonoBehaviour:
   mainMenuButton: {fileID: 7469907960593864752}
   leaveLobbyButton: {fileID: 0}
   onClickToMainMenu: {fileID: 0}
-  continueButton: {fileID: 0}
+  continueButton: {fileID: 5536626419705274720}
   animSettings: {fileID: 0}
 --- !u!114 &4484042448459437976
 MonoBehaviour:
