@@ -376,12 +376,12 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
-            // Tournament brain — persistent across the per-game Single loads.
+            // Tournament brain — persistent across the per-game Single loads. Capture the
+            // serialized fields directly (like ApplicationStateMachine above) rather than
+            // c.Resolve, so an un-wired tournamentData degrades to an inert controller instead
+            // of throwing at bootstrap.
             builder.RegisterFactory(
-                c => new TournamentController(
-                    c.Resolve<GameDataSO>(),
-                    c.Resolve<TournamentDataSO>(),
-                    c.Resolve<SceneNameListSO>()),
+                _ => new TournamentController(gameData, tournamentData, _sceneNames),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
