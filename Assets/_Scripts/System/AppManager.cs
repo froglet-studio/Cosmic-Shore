@@ -62,6 +62,10 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Master list of all arcade games. Registered in DI for all consumers.")]
         SO_GameList gameList;
 
+        [Header("Tournament")]
+        [SerializeField, Tooltip("SOAP data container for the Tournament session (lineup, standings, points table).")]
+        TournamentDataSO tournamentData;
+
         [Header("Menu Freestyle Events")]
         [SerializeField, Tooltip("SOAP event container for menu/freestyle state transition bracket events.")]
         MenuFreestyleEventsContainerSO menuFreestyleEvents;
@@ -95,6 +99,9 @@ namespace CosmicShore.Core
         [Inject] FriendsServiceFacade friendsServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
         [Inject] ApplicationStateMachine applicationStateMachine;
+        // Eagerly resolved so the tournament brain is alive from bootstrap (subscribed to
+        // OnMiniGameEnd + sceneLoaded) and survives every Single scene load.
+        [Inject] TournamentController tournamentController;
 
         static bool _hasBootstrapped;
         bool _resolved;
@@ -312,6 +319,7 @@ namespace CosmicShore.Core
             RegisterAsset(builder, friendsData, nameof(friendsData));
             RegisterAsset(builder, hostConnectionData, nameof(hostConnectionData));
             RegisterAsset(builder, gameList, nameof(gameList));
+            RegisterAsset(builder, tournamentData, nameof(tournamentData));
             RegisterAsset(builder, menuFreestyleEvents, nameof(menuFreestyleEvents));
             RegisterAsset(builder, lifecycleEvents, nameof(lifecycleEvents));
             RegisterAsset(builder, applicationStateDataVariable, nameof(applicationStateDataVariable));
@@ -364,6 +372,16 @@ namespace CosmicShore.Core
                     gameData,
                     networkMonitorDataVariable,
                     _bootstrapConfig == null || _bootstrapConfig.VerboseLogging),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            // Tournament brain — persistent across the per-game Single loads.
+            builder.RegisterFactory(
+                c => new TournamentController(
+                    c.Resolve<GameDataSO>(),
+                    c.Resolve<TournamentDataSO>(),
+                    c.Resolve<SceneNameListSO>()),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );
