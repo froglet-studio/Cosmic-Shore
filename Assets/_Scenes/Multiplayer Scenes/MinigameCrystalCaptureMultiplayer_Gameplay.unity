@@ -2320,11 +2320,17 @@ MonoBehaviour:
   mainMenuButton: {fileID: 2113049600}
   leaveLobbyButton: {fileID: 0}
   onClickToMainMenu: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
-  continueButton: {fileID: 0}
+  continueButton: {fileID: 2113049462}
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
 --- !u!1 &2113049461 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4014406041637916944, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+    type: 3}
+  m_PrefabInstance: {fileID: 2113049457}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2113049462 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5536626419705274720, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
     type: 3}
   m_PrefabInstance: {fileID: 2113049457}
   m_PrefabAsset: {fileID: 0}
