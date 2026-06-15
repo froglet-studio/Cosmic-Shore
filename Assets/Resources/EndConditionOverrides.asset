@@ -15,3 +15,6 @@ MonoBehaviour:
   hexRaceCrystalCount: 0
   crystalCaptureCrystalCount: 20
   joustCount: 3
+  hexRaceCrystalCountBuild: 0
+  crystalCaptureCrystalCountBuild: 20
+  joustCountBuild: 3
