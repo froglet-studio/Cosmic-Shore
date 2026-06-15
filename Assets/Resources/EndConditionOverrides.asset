@@ -18,3 +18,4 @@ MonoBehaviour:
   hexRaceCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
   joustCountBuild: 3
+  autoRestoreBuildValuesBeforeBuild: 1

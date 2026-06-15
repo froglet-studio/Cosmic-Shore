@@ -60,31 +60,33 @@ The asset stores **two** sets of counts:
 
 - **Live values** (`hexRaceCrystalCount` / `crystalCaptureCrystalCount` / `joustCount`) — what the
   turn monitors actually read at runtime. Lower these to end a mode quickly while testing.
-- **Build values** (`*Build` fields) — the values a shipping build must use. They are *not* read at
-  runtime; they're the documented baseline + restore target so a tester knows exactly what to undo.
+- **Build baseline** (`*Build` fields) — the values a shipping build must use. They are *not* read at
+  runtime; they're the restore target. You don't type them in — click **"Set Build Values"** in the
+  window to snapshot the current Live values as the baseline (shown read-only above the button). Do
+  this once, when the Live values are the real production counts.
 
-The window warns (yellow banner) whenever any Live value drifts from its Build value, listing each
-diff, with a **"Restore build values → live"** button (disabled when already in sync). **"Save live
-values as build"** (with a confirm dialog) re-baselines the Build values when production counts
-genuinely change.
+The safety net is the toggle **"Auto-restore build values before build"** (`autoRestoreBuildValuesBeforeBuild`,
+**on by default**). When on, `EndConditionBuildRestore` (`IPreprocessBuildWithReport`) copies the
+Build baseline onto the Live counts and saves the asset at build start — no warning, no block, it
+just restores — so test values can't ship. Turn it off to build with the current Live values.
 
-A build-time check (`EndConditionBuildCheck`, `IPreprocessBuildWithReport`) logs a **non-blocking
-warning** if a build starts while Live ≠ Build, so a test configuration isn't shipped by accident.
-`EndConditionOverridesSO.LiveMatchesBuild` / `DescribeDrift()` back both the window banner and the
-build check (one phrasing for both). Keep the committed asset's `*Build` fields equal to its Live
-fields so a clean checkout reports no drift.
+`EndConditionOverridesSO.ApplyBuildValues()` (build → live, used by the build restore),
+`CaptureBuildValues()` (live → build, used by "Set Build Values"), and `LiveMatchesBuild` (skip if
+already in sync) are the shared helpers. Keep the committed asset's `*Build` fields equal to its Live
+fields so a clean checkout is already in sync.
 
-Testing workflow: drop a Live count → test → **Restore build values → live** → commit with Live ==
-Build. If you forget, the build warning reminds you.
+Testing workflow: (one time) set production counts → **Set Build Values** → commit. Then: drop a Live
+count → test → build (auto-restore puts the baseline back) — or click nothing and just rely on the
+build restore.
 
 ## Files
 
 | Role | File |
 |---|---|
-| Config SO (single source of truth) | `Assets/_Scripts/ScriptableObjects/EndConditionOverridesSO.cs` (Live + Build fields, `LiveMatchesBuild`, `DescribeDrift`) |
+| Config SO (single source of truth) | `Assets/_Scripts/ScriptableObjects/EndConditionOverridesSO.cs` (Live + Build fields, `autoRestoreBuildValuesBeforeBuild`, `ApplyBuildValues`/`CaptureBuildValues`, `LiveMatchesBuild`) |
 | Config asset (committed) | `Assets/Resources/EndConditionOverrides.asset` |
 | Editor window (the menu) | `Assets/_Scripts/Editor/EndConditionOverridesWindow.cs` |
-| Build-time drift warning | `Assets/_Scripts/Editor/EndConditionBuildCheck.cs` |
+| Build-time auto-restore | `Assets/_Scripts/Editor/EndConditionBuildRestore.cs` |
 | Crystal modes read it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/CrystalCollisionTurnMonitor.cs` (`GetCrystalCollisionCount`) |
 | Joust reads it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/JoustCollisionTurnMonitor.cs` (`StartMonitor`) |
 | Network sync (unchanged) | `NetworkCrystalCollisionTurnMonitor.cs` (`CrystalTargetCount`), `NetworkJoustCollisionTurnMonitor.cs` (`JoustTargetCount`) |
@@ -92,6 +94,6 @@ Build. If you forget, the build warning reminds you.
 ## When adding a new count-based mode
 
 Add a Live field **and** its `*Build` counterpart + a `case` in `EndConditionOverridesSO`, include
-both in `LiveMatchesBuild` / `DescribeDrift`, add the Live + Build rows in the editor window, then
-have that mode's turn monitor resolve its count through the SO — **never** with a new per-scene
-`[SerializeField]`.
+both in `LiveMatchesBuild` / `ApplyBuildValues` / `CaptureBuildValues`, add the Live input row + the
+Build-baseline display line in the editor window, then have that mode's turn monitor resolve its
+count through the SO — **never** with a new per-scene `[SerializeField]`.

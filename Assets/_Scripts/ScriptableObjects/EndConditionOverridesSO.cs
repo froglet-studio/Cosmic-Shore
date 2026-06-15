@@ -1,4 +1,3 @@
-using System.Text;
 using CosmicShore.Data;
 using UnityEngine;
 
@@ -17,11 +16,11 @@ namespace CosmicShore.ScriptableObjects
     ///   • HexRace / Crystal Capture — 0 falls back to the track-waypoint auto-calc (then 39).
     ///   • Joust — 0 falls back to <see cref="DefaultJoustCount"/>.
     ///
-    /// Two value sets are stored: the <b>LIVE</b> counts (what the game actually uses at runtime)
-    /// and the <b>BUILD</b> counts (the values a shipping build must use). Lower a LIVE count to end
-    /// a mode quickly while testing, then restore the BUILD values before building. The editor
-    /// window and a build-time check warn whenever LIVE drifts from BUILD
-    /// (see <see cref="LiveMatchesBuild"/> / <see cref="DescribeDrift"/>).
+    /// Two value sets are stored: the <b>Live</b> counts (what the game actually uses at runtime)
+    /// and the <b>Build baseline</b> (the values a shipping build must use, captured via the tool's
+    /// "Set Build Values" button). Lower a Live count to end a mode quickly while testing; when
+    /// <see cref="autoRestoreBuildValuesBeforeBuild"/> is on, a build first copies the Build baseline
+    /// onto the Live counts (<see cref="ApplyBuildValues"/>), so test values are never shipped.
     ///
     /// See the <c>/EndGameConditions</c> skill (<c>.claude/skills/EndGameConditions/</c>).
     /// </summary>
@@ -46,15 +45,13 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Joust collisions to end the turn. 0 = default (3).")]
         [Min(0)] public int joustCount = 3;
 
-        [Header("Build values — what the LIVE counts above must be restored to before shipping a build")]
-        [Tooltip("HexRace crystals a shipping build must use. Restore the live count to this before building.")]
+        [Header("Build baseline — what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
-
-        [Tooltip("Crystal Capture crystals a shipping build must use. Restore the live count to this before building.")]
         [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
-
-        [Tooltip("Joust collisions a shipping build must use. Restore the live count to this before building.")]
         [Min(0)] public int joustCountBuild = 3;
+
+        [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
+        public bool autoRestoreBuildValuesBeforeBuild = true;
 
         static EndConditionOverridesSO _instance;
 
@@ -90,34 +87,26 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Joust target: the configured count when &gt; 0, otherwise <see cref="DefaultJoustCount"/>.</summary>
         public int GetJoustCount() => joustCount > 0 ? joustCount : DefaultJoustCount;
 
-        /// <summary>
-        /// True when every LIVE count (used at runtime) equals its recorded BUILD value. False means
-        /// the project is in a test/override configuration that should be restored before shipping —
-        /// it drives the warning in the editor window and the build-time check.
-        /// </summary>
+        /// <summary>True when every Live count (used at runtime) already equals its Build baseline.</summary>
         public bool LiveMatchesBuild =>
             hexRaceCrystalCount == hexRaceCrystalCountBuild &&
             crystalCaptureCrystalCount == crystalCaptureCrystalCountBuild &&
             joustCount == joustCountBuild;
 
-        /// <summary>
-        /// Multi-line summary (one bullet per mode) of every count where the LIVE value differs from
-        /// the BUILD value. Empty string when <see cref="LiveMatchesBuild"/> is true. Shared by the
-        /// editor window's drift warning and the build-time check so both phrase drift identically.
-        /// </summary>
-        public string DescribeDrift()
+        /// <summary>Copy the Build baseline onto the Live counts (build → live) — used by the build auto-restore.</summary>
+        public void ApplyBuildValues()
         {
-            var sb = new StringBuilder();
-            AppendDrift(sb, "HexRace", hexRaceCrystalCount, hexRaceCrystalCountBuild);
-            AppendDrift(sb, "Crystal Capture", crystalCaptureCrystalCount, crystalCaptureCrystalCountBuild);
-            AppendDrift(sb, "Joust", joustCount, joustCountBuild);
-            return sb.ToString();
+            hexRaceCrystalCount = hexRaceCrystalCountBuild;
+            crystalCaptureCrystalCount = crystalCaptureCrystalCountBuild;
+            joustCount = joustCountBuild;
+        }
 
-            static void AppendDrift(StringBuilder sb, string label, int live, int build)
-            {
-                if (live != build)
-                    sb.Append($"  • {label}: live {live} → build {build}\n");
-            }
+        /// <summary>Snapshot the current Live counts as the Build baseline (live → build) — used by "Set Build Values".</summary>
+        public void CaptureBuildValues()
+        {
+            hexRaceCrystalCountBuild = hexRaceCrystalCount;
+            crystalCaptureCrystalCountBuild = crystalCaptureCrystalCount;
+            joustCountBuild = joustCount;
         }
     }
 }

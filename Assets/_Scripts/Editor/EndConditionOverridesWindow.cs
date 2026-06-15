@@ -11,11 +11,11 @@ namespace CosmicShore.Editor
     /// (auto-created on first open); the turn monitors read it at runtime. There are no per-scene
     /// inspector fields for these anymore. See the <c>/EndGameConditions</c> skill.
     ///
-    /// The window tracks two value sets: the LIVE counts (what the game uses at runtime) and the
-    /// BUILD counts (the values a shipping build must use). Lower a LIVE count to end a mode quickly
-    /// while testing, then click "Restore build values" to put them back before building. A warning
-    /// banner (and a build-time check) fire whenever LIVE drifts from BUILD, so a test configuration
-    /// is never shipped by accident.
+    /// The Live fields are what the game uses at runtime — lower one to end a mode quickly while
+    /// testing. "Set Build Values" snapshots the current Live counts as the Build baseline (shown
+    /// above the button). With "Auto-restore build values before build" on, a build first restores
+    /// the Live counts to that baseline (<see cref="EndConditionBuildRestore"/>), so a test config is
+    /// never shipped.
     /// </summary>
     public class EndConditionOverridesWindow : EditorWindow
     {
@@ -27,7 +27,7 @@ namespace CosmicShore.Editor
         static void Open()
         {
             var w = GetWindow<EndConditionOverridesWindow>("End Game Conditions");
-            w.minSize = new Vector2(380, 400);
+            w.minSize = new Vector2(380, 360);
             w.Show();
         }
 
@@ -68,9 +68,7 @@ namespace CosmicShore.Editor
                 "  • Joust: default " + EndConditionOverridesSO.DefaultJoustCount + ".",
                 MessageType.Info);
 
-            DrawDriftWarning();
-
-            // ---- LIVE counts (used at runtime) ----
+            // ---- Live input fields (used at runtime) ----
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Live values (used at runtime)", EditorStyles.boldLabel);
             EditorGUI.BeginChangeCheck();
@@ -93,81 +91,38 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("Joust", jo > 0 ? jo.ToString() : EndConditionOverridesSO.DefaultJoustCount + " (default)");
             EditorGUI.indentLevel--;
 
-            // ---- BUILD values (the production baseline to restore before shipping) ----
+            // ---- Build baseline (read-only display + capture button) ----
             EditorGUILayout.Space();
             DrawSeparator();
-            EditorGUILayout.LabelField("Build values (restore the Live values to these before building)", EditorStyles.boldLabel);
-            EditorGUILayout.HelpBox(
-                "What a shipping build must use. Lower a Live count above to end a mode quickly while " +
-                "testing, then click \"Restore build values → live\" to undo it before building. " +
-                "Update these only when the production baseline genuinely changes.",
-                MessageType.None);
+            EditorGUILayout.LabelField("Build baseline (what a shipping build uses)", EditorStyles.boldLabel);
+            EditorGUILayout.HelpBox(DescribeBuildValues(), MessageType.None);
+            if (GUILayout.Button("Set Build Values  (snapshot the Live values above)"))
+                Persist("Set End Game build values", _config.CaptureBuildValues);
 
-            EditorGUI.BeginChangeCheck();
-            int hexB = Mathf.Max(0, EditorGUILayout.IntField("HexRace — Build Crystal Count", _config.hexRaceCrystalCountBuild));
-            int ccB  = Mathf.Max(0, EditorGUILayout.IntField("Crystal Capture — Build Crystal Count", _config.crystalCaptureCrystalCountBuild));
-            int joB  = Mathf.Max(0, EditorGUILayout.IntField("Joust — Build Joust Count", _config.joustCountBuild));
-            if (EditorGUI.EndChangeCheck())
-                Persist("Edit End Game build values", () =>
-                {
-                    _config.hexRaceCrystalCountBuild = hexB;
-                    _config.crystalCaptureCrystalCountBuild = ccB;
-                    _config.joustCountBuild = joB;
-                });
-
+            // ---- Auto-restore toggle ----
             EditorGUILayout.Space();
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                using (new EditorGUI.DisabledScope(_config.LiveMatchesBuild))
-                {
-                    if (GUILayout.Button("Restore build values → live"))
-                        Persist("Restore End Game build values", () =>
-                        {
-                            _config.hexRaceCrystalCount = _config.hexRaceCrystalCountBuild;
-                            _config.crystalCaptureCrystalCount = _config.crystalCaptureCrystalCountBuild;
-                            _config.joustCount = _config.joustCountBuild;
-                        });
-                }
+            EditorGUI.BeginChangeCheck();
+            bool auto = EditorGUILayout.ToggleLeft(
+                new GUIContent(
+                    "Auto-restore build values before build",
+                    "On: a build first copies the Build baseline onto the Live values, so test values are never shipped."),
+                _config.autoRestoreBuildValuesBeforeBuild);
+            if (EditorGUI.EndChangeCheck())
+                Persist("Toggle End Game auto-restore", () => _config.autoRestoreBuildValuesBeforeBuild = auto);
 
-                if (GUILayout.Button("Save live values as build"))
-                    SaveLiveAsBuild();
-            }
-
+            // ---- Asset ----
             EditorGUILayout.Space();
             if (GUILayout.Button("Ping config asset"))
                 EditorGUIUtility.PingObject(_config);
         }
 
-        void DrawDriftWarning()
+        string DescribeBuildValues()
         {
-            if (_config.LiveMatchesBuild) return;
+            return "HexRace: " + Fmt(_config.hexRaceCrystalCountBuild, "auto") + "\n" +
+                   "Crystal Capture: " + Fmt(_config.crystalCaptureCrystalCountBuild, "auto") + "\n" +
+                   "Joust: " + Fmt(_config.joustCountBuild, "default " + EndConditionOverridesSO.DefaultJoustCount);
 
-            EditorGUILayout.Space();
-            EditorGUILayout.HelpBox(
-                "Live counts differ from the Build values — this looks like a TEST configuration.\n" +
-                _config.DescribeDrift() +
-                "Click \"Restore build values → live\" below before shipping a build.",
-                MessageType.Warning);
-        }
-
-        void SaveLiveAsBuild()
-        {
-            if (!EditorUtility.DisplayDialog(
-                    "Overwrite build values?",
-                    "This makes the current Live values the new build baseline:\n\n" +
-                    $"  HexRace: {_config.hexRaceCrystalCount}\n" +
-                    $"  Crystal Capture: {_config.crystalCaptureCrystalCount}\n" +
-                    $"  Joust: {_config.joustCount}\n\n" +
-                    "Only do this when the production values have genuinely changed.",
-                    "Overwrite", "Cancel"))
-                return;
-
-            Persist("Save live as End Game build values", () =>
-            {
-                _config.hexRaceCrystalCountBuild = _config.hexRaceCrystalCount;
-                _config.crystalCaptureCrystalCountBuild = _config.crystalCaptureCrystalCount;
-                _config.joustCountBuild = _config.joustCount;
-            });
+            static string Fmt(int value, string zeroMeaning) => value > 0 ? value.ToString() : "0 (" + zeroMeaning + ")";
         }
 
         void Persist(string undoLabel, System.Action mutate)
