@@ -26,11 +26,21 @@ namespace CosmicShore.Core
     public class AnalyticsServiceFacade
     {
         /// <summary>
-        /// PlayerPrefs key for analytics consent. Defaults to granted (current
-        /// shipping behavior) until the consent dialog ships; the dialog and the
-        /// settings opt-out toggle both write through <see cref="SetConsent"/>.
+        /// PlayerPrefs key for analytics consent. Tri-state: key ABSENT = undecided
+        /// (opt-in: do not collect), 1 = granted, 0 = denied. Written by the consent
+        /// dialog and the Settings opt-out toggle via <see cref="SetConsent"/>.
         /// </summary>
         const string ConsentPrefKey = "AnalyticsConsent";
+
+        /// <summary>
+        /// PlayerPrefs key for the COPPA age gate. Tri-state: ABSENT = not asked,
+        /// 1 = age-eligible (13+), 0 = under-13 (never collect). Written by the age
+        /// gate via <see cref="SetAgeEligible"/> / <see cref="SubmitBirthYear"/>.
+        /// </summary>
+        const string AgeGatePrefKey = "AnalyticsAgeEligible";
+
+        /// <summary>Minimum age (years) to be eligible for analytics collection (COPPA).</summary>
+        const int MinimumAge = 13;
 
         /// <summary>PlayerPrefs key (device-local) guarding the once-ever first-launch event.</summary>
         const string FirstLaunchPrefKey = "AnalyticsFirstLaunchRecorded";
@@ -63,7 +73,21 @@ namespace CosmicShore.Core
         AuthenticationData AuthData => _authVariable.Value;
         NetworkMonitorData NetworkData => _networkVariable.Value;
 
-        public bool ConsentGranted => PlayerPrefs.GetInt(ConsentPrefKey, 1) == 1;
+        // ── Consent / age gate (opt-in) ──
+        /// <summary>True once the player has answered the consent dialog (accept or decline).</summary>
+        public bool ConsentDecided => PlayerPrefs.HasKey(ConsentPrefKey);
+        /// <summary>True only when the player has explicitly granted consent. Undecided reads as false (opt-in).</summary>
+        public bool ConsentGranted => PlayerPrefs.GetInt(ConsentPrefKey, 0) == 1;
+        /// <summary>True once the age gate has been answered.</summary>
+        public bool AgeChecked => PlayerPrefs.HasKey(AgeGatePrefKey);
+        /// <summary>True only when the player is confirmed 13+.</summary>
+        public bool AgeEligible => PlayerPrefs.GetInt(AgeGatePrefKey, 0) == 1;
+        /// <summary>
+        /// True while the first-run privacy flow still needs to run: the age gate
+        /// hasn't been answered, or the player is age-eligible but hasn't decided consent.
+        /// The consent UI shows itself while this is true.
+        /// </summary>
+        public bool NeedsPrivacyFlow => !AgeChecked || (AgeEligible && !ConsentDecided);
         public bool IsCollecting => _collecting;
 
         public AnalyticsServiceFacade(
@@ -124,8 +148,8 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Persists the player's analytics consent and starts/stops collection
-        /// accordingly. The future consent dialog and the settings opt-out
-        /// toggle are the intended callers.
+        /// accordingly. Called by the consent dialog and the Settings opt-out toggle.
+        /// Consent only takes effect for age-eligible players (under-13 never collects).
         /// </summary>
         public void SetConsent(bool granted)
         {
@@ -136,6 +160,56 @@ namespace CosmicShore.Core
                 StartCollectionIfReady();
             else
                 StopCollection();
+        }
+
+        /// <summary>
+        /// Records the COPPA age gate result. Under-13 forces consent denied and
+        /// stops collection — there is no path to collect from an ineligible player.
+        /// </summary>
+        public void SetAgeEligible(bool eligible)
+        {
+            PlayerPrefs.SetInt(AgeGatePrefKey, eligible ? 1 : 0);
+
+            if (!eligible)
+            {
+                // Under-13: never collect, regardless of any later consent answer.
+                PlayerPrefs.SetInt(ConsentPrefKey, 0);
+                PlayerPrefs.Save();
+                StopCollection();
+                return;
+            }
+
+            PlayerPrefs.Save();
+        }
+
+        /// <summary>
+        /// COPPA-friendly neutral age gate: pass the player's birth year; eligibility
+        /// is derived (>= <see cref="MinimumAge"/>). Prefer this over a yes/no age
+        /// question so the screen does not nudge the player toward a "13+" answer.
+        /// </summary>
+        public void SubmitBirthYear(int birthYear)
+        {
+            int age = DateTime.UtcNow.Year - birthYear;
+            SetAgeEligible(age >= MinimumAge);
+        }
+
+        /// <summary>
+        /// Honors a right-to-erasure request: stops collection, records a denial so
+        /// we don't immediately re-collect, and asks UGS to delete the player's data.
+        /// Wire to a "Delete my data" button in Settings/Privacy.
+        /// </summary>
+        public void RequestDataDeletion()
+        {
+            SetConsent(false);
+            try
+            {
+                AnalyticsService.Instance.RequestDataDeletion();
+                Log("Data deletion requested.");
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[Analytics] RequestDataDeletion failed: {e.Message}");
+            }
         }
 
         void HandleSignedIn()
@@ -158,7 +232,11 @@ namespace CosmicShore.Core
 
         void StartCollectionIfReady()
         {
-            if (_collecting || !_signedIn || !_isConnected || !ConsentGranted)
+            if (_collecting || !_signedIn || !_isConnected)
+                return;
+            // Opt-in: collect only for an age-eligible player who explicitly granted.
+            // Undecided / under-13 / declined all read false here.
+            if (!AgeEligible || !ConsentGranted)
                 return;
             if (UnityServices.State != ServicesInitializationState.Initialized)
                 return;

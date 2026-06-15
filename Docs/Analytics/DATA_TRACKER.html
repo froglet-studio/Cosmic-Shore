@@ -207,7 +207,7 @@
     <tr><td class="k">cloud_save_failed</td><td>A Cloud Save write exhausts all retries while online (once per failure episode)</td><td class="w">UGSCloudSaveProvider.OnSaveFailed → facade</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">pilot_recruited · vessel_upgraded · episode_* · style telemetry</td><td>VDemo systems</td><td class="w">CaptainManager (re-enabled), EpisodeProgress, VesselTelemetry</td><td><span class="st st-planned">PLANNED · P4</span></td></tr>
   </table>
-  <div class="note amber"><strong>Consent (P1 remaining):</strong> the facade gates collection on a persisted consent flag (<code>AnalyticsServiceFacade.SetConsent</code>), defaulting to granted — same shipping behavior as before. The first-run consent dialog + settings opt-out toggle still need to ship before store release (GDPR/COPPA); both just call <code>SetConsent</code>.</div>
+  <div class="note"><strong>Consent — opt-in shipped (code):</strong> facade is opt-in + COPPA age-gated; collection only for 13+ with explicit grant. Controllers in <code>_Scripts/UI/Privacy/</code>. Remaining (human): wire the panels + Settings, host the privacy policy, declare events in the UGS dashboard. Guides: <code>Docs/Legal/CONSENT_SETUP.md</code>, <code>PRIVACY_POLICY_TEMPLATE.md</code>. Fail-safe: nothing collects until wired + accepted.</div>
 </div>
 
 <!-- ════════════════════════ ROADMAP -->
