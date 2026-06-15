@@ -3,9 +3,11 @@
 Canonical reference for **Tournament Mode** — the session-level meta (P3 / R2) that strings the
 three feature-complete domain minigames into one tournament with a per-player leaderboard.
 
-> **Status:** core engine implemented (code + data assets). The Unity-editor wiring (scene
-> content, prefab buttons, inspector references) is listed under **§7 Editor follow-up** and is
-> required before the mode runs end-to-end.
+> **Status:** implemented end-to-end. Code, data assets, **and** the Unity-editor wiring (scene
+> content, prefab buttons, inspector references) are all in place: the Tournament scene drives both
+> its lobby and summary layouts, and every domain game's Scoreboard carries a host-only Continue
+> button (see **§7**, now complete). Remaining work is the **§9 Deferred** backlog (rewards, share
+> screen, instrumentation) only.
 
 ---
 
@@ -55,7 +57,9 @@ A static `Instance` lets scene MonoBehaviours reach it (mirrors `PartyInviteCont
 - **Phase is scene-load-driven** (deterministic on every peer): the **lobby scene** load runs
   `StartTournament` (reset standings, `IsActive=true`, `IsTournamentMode=true`); each **queued
   game scene** load sets `CurrentGameIndex`; **Menu_Main** load runs `EndTournament` (clears the
-  flags). `TournamentStateMachine` tracks `Idle → Lobby → InGame → Complete`.
+  flags). `TournamentStateMachine` tracks `Idle → Lobby → InGame → Complete → Summary` — `Complete`
+  is the transient phase while the last game's scoreboard is up, `Summary` is the results scene
+  itself (Play Again from `Summary` re-enters `InGame`; Main Menu returns to `Idle`).
 
 Per-game stat reset is automatic (`SceneLoader` → `ResetRuntimeData` + each persistent
 `Player.PrepareForNewScene` → `RoundStats.Cleanup`). Cumulative points live in `TournamentDataSO`,
@@ -113,26 +117,29 @@ name), `IsLastGame`, `ResetRuntime()`.
 | Arcade card | `_SO_Assets/Games/ArcadeGameTournament.asset` (in `GameLists/ArcadeGames.asset`) |
 | Lobby scene | `_Scenes/Multiplayer Scenes/Tournament.unity` |
 
-## 7. Editor follow-up
+## 7. Editor wiring — complete
 
-**Done** (committed): AppManager `tournamentData` wired; `Tournament.unity` rebuilt as a UI-only
-scene with `TournamentSceneView` (lobby title/lineup + host Start wired); Scoreboard **Continue**
-button added + wired to `OnContinueButtonPressed`; arcade card + grid cell present.
+All editor wiring is committed; the mode runs end-to-end.
 
-**Remaining — the Summary screen** (`Tournament.unity`, add a results layout the
-`TournamentSceneView` toggles in phase `Summary`):
+- **AppManager** — `tournamentData` assigned; `TournamentController` registered and injected, so it
+  is created eagerly at bootstrap and survives every Single load.
+- **`Tournament.unity`** — a UI-only scene whose `TournamentSceneView` drives two mutually-exclusive
+  layouts, chosen per load from `TournamentController.IsShowingSummary`:
+  - *Lobby* (`lobbyRoot`): `titleText` + `lineupText` (ordered game lineup) + a host-only **Start**
+    button (`hostStartButton`) wired to `OnHostStartPressed()` — or, if no button, the host
+    auto-advances after `autoStartDelaySeconds`.
+  - *Summary* (`summaryRoot`): `resultsText` (final standings + per-game placements) + host-only
+    **Play Again** → `OnPlayAgainPressed()` and **Main Menu** → `OnMainMenuPressed()`. The view's
+    `onClickToMainMenu` is wired to `EventOnClickToMainMenuButton.asset` — the **same** main-menu
+    `ScriptableEventNoParam` the Scoreboard's Main Menu raises and `SceneLoader` listens to.
+- **Scoreboard Continue button** — present on the shared end-game canvas
+  (`GameCanvas-HexRace.prefab`, used by all three domain-game scenes — HexRace, Joust, Crystal
+  Capture — plus `EndGameStatsPanel.prefab`) and wired to `OnContinueButtonPressed()`. Host-only,
+  shown on every game (see §4).
+- **Arcade card + grid cell** — `ArcadeGameTournament.asset` present in `GameLists/ArcadeGames.asset`.
 
-1. Build a **Summary panel** (sibling of the lobby panel) with a **results `TMP_Text`** and two
-   host buttons, **Play Again** and **Main Menu**.
-2. On `TournamentSceneView`, wire: `summaryRoot` → the summary panel, `lobbyRoot` → the existing
-   lobby panel (so the view shows exactly one), `resultsText` → the results text, `playAgainButton`
-   / `mainMenuButton` → the two buttons, and `onClickToMainMenu` → the **same** main-menu
-   `ScriptableEventNoParam` asset the Scoreboard's Main Menu uses (the one `SceneLoader` listens to).
-3. Wire button `onClick`s: Play Again → `TournamentSceneView.OnPlayAgainPressed()`,
-   Main Menu → `TournamentSceneView.OnMainMenuPressed()`.
-
-The view fills `resultsText` with the final standings + per-game placements, and shows the two
-buttons host-only. No per-button visibility code is needed in the scene — the view drives it.
+No per-button visibility code lives in the scene — `TournamentSceneView` and `Scoreboard`
+drive it (host-only, phase-selected).
 
 ## 8. Verification
 
