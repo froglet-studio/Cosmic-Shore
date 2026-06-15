@@ -43,46 +43,54 @@ namespace CosmicShore.Gameplay
 
         private void ProcessStickInput()
         {
+            var gamepad = Gamepad.current;
+            var mapping = ControllerMappingStore.Current;
+
             // Read throttle (this is just the boost button - don't invert it)
-            inputStatus.Throttle = Gamepad.current.rightShoulder.ReadValue();
-            
-            // Read raw stick values without any inversion yet
-            leftStickRaw = Gamepad.current.leftStick.ReadValue();
-            rightStickRaw = Gamepad.current.rightStick.ReadValue();
+            inputStatus.Throttle = ControllerMappingRuntime.ReadButtonValue(gamepad, mapping.throttle, mapping.buttonPressPoint);
+
+            // Read raw stick values without any gameplay inversion yet. Per-controller source
+            // inversions are part of the saved mapping; global invert settings still apply
+            // after Cosmic Shore's twin-stick reparameterization below.
+            leftStickRaw = ControllerMappingRuntime.ReadVector(gamepad, mapping.leftStick, mapping, true);
+            rightStickRaw = ControllerMappingRuntime.ReadVector(gamepad, mapping.rightStick, mapping, false);
         }
 
         private void ProcessButtonInput()
         {
+            var gamepad = Gamepad.current;
+            var mapping = ControllerMappingStore.Current;
+
             // Primary action buttons
-            if (Gamepad.current.buttonSouth.wasPressedThisFrame)
+            if (ControllerMappingRuntime.WasPressedThisFrame(gamepad, mapping.button1))
                 inputStatus.OnButtonPressed.Raise(InputEvents.Button1Action);
                 //vessel.PerformShipControllerActions(InputEvents.Button1Action);
-            if (Gamepad.current.buttonSouth.wasReleasedThisFrame)
+            if (ControllerMappingRuntime.WasReleasedThisFrame(gamepad, mapping.button1))
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button1Action);
                 // vessel.StopShipControllerActions(InputEvents.Button1Action);
 
-            if (Gamepad.current.buttonEast.wasPressedThisFrame)
+            if (ControllerMappingRuntime.WasPressedThisFrame(gamepad, mapping.button2))
                 inputStatus.OnButtonPressed.Raise(InputEvents.Button2Action);
                 // vessel.PerformShipControllerActions(InputEvents.Button2Action);
-            if (Gamepad.current.buttonEast.wasReleasedThisFrame)
+            if (ControllerMappingRuntime.WasReleasedThisFrame(gamepad, mapping.button2))
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button2Action);
                 // vessel.StopShipControllerActions(InputEvents.Button2Action);
 
-            if (Gamepad.current.buttonWest.wasPressedThisFrame)
+            if (ControllerMappingRuntime.WasPressedThisFrame(gamepad, mapping.button3))
                 inputStatus.OnButtonPressed.Raise(InputEvents.Button3Action);
                 // vessel.PerformShipControllerActions(InputEvents.Button3Action);
-            if (Gamepad.current.buttonWest.wasReleasedThisFrame)
+            if (ControllerMappingRuntime.WasReleasedThisFrame(gamepad, mapping.button3))
                 inputStatus.OnButtonReleased.Raise(InputEvents.Button3Action);
                 // vessel.StopShipControllerActions(InputEvents.Button3Action);
 
             // Shoulder buttons and triggers
-            if (Gamepad.current.leftShoulder.wasPressedThisFrame)
+            if (gamepad != null && gamepad.leftShoulder.wasPressedThisFrame)
             {
                 //inputStatus.Idle = true;
                 //inputStatus.OnButtonPressed.Raise(InputEvents.IdleAction);;
                 // vessel.PerformShipControllerActions(InputEvents.IdleAction);
             }
-            if (Gamepad.current.leftShoulder.wasReleasedThisFrame)
+            if (gamepad != null && gamepad.leftShoulder.wasReleasedThisFrame)
             {
                 //inputStatus.Idle = false;
                 //inputStatus.OnButtonReleased.Raise(InputEvents.IdleAction);;
@@ -90,18 +98,18 @@ namespace CosmicShore.Gameplay
             }
 
             // Right shoulder for flip action
-            if (Gamepad.current.rightShoulder.wasPressedThisFrame)
+            if (ControllerMappingRuntime.WasPressedThisFrame(gamepad, mapping.flip))
                 inputStatus.OnButtonPressed.Raise(InputEvents.FlipAction);
                 // vessel.PerformShipControllerActions(InputEvents.FlipAction);
-            if (Gamepad.current.rightShoulder.wasReleasedThisFrame)
+            if (ControllerMappingRuntime.WasReleasedThisFrame(gamepad, mapping.flip))
                 inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
             // vessel.StopShipControllerActions(InputEvents.FlipAction);
 
             // Triggers — read analog values and use custom deadzone for edge detection.
             // This gives full analog range (0-1) for drift scaling while keeping
             // binary event compatibility for button-style triggers (which snap 0/1).
-            float leftTriggerValue = Gamepad.current.leftTrigger.ReadValue();
-            float rightTriggerValue = Gamepad.current.rightTrigger.ReadValue();
+            float leftTriggerValue = ControllerMappingRuntime.ReadButtonValue(gamepad, mapping.leftTrigger, mapping.buttonPressPoint);
+            float rightTriggerValue = ControllerMappingRuntime.ReadButtonValue(gamepad, mapping.rightTrigger, mapping.buttonPressPoint);
 
             inputStatus.LeftTriggerAnalog = leftTriggerValue;
             inputStatus.RightTriggerAnalog = rightTriggerValue;

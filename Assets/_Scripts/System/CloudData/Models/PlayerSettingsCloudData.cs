@@ -16,7 +16,8 @@ namespace CosmicShore.Core
     ///   "JoystickVisualsEnabled": true,
     ///   "MusicLevel": 0.8,
     ///   "SFXLevel": 1.0,
-    ///   "HapticsLevel": 1.0
+    ///   "HapticsLevel": 1.0,
+    ///   "ControllerMappingJson": "{...}"
     /// }
     /// </summary>
     [Serializable]
@@ -31,5 +32,6 @@ namespace CosmicShore.Core
         public float MusicLevel = 1.0f;
         public float SFXLevel = 1.0f;
         public float HapticsLevel = 1.0f;
+        public string ControllerMappingJson;
     }
 }

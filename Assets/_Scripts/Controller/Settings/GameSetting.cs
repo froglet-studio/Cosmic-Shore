@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Gameplay;
 using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
@@ -27,6 +28,9 @@ namespace CosmicShore.Core
 
         public delegate void OnChangeJoystickVisualsStatusEvent(bool status);
         public static event OnChangeJoystickVisualsStatusEvent OnChangeJoystickVisualsStatus;
+
+        public delegate void OnChangeControllerMappingEvent(ControllerMappingProfile mapping);
+        public static event OnChangeControllerMappingEvent OnChangeControllerMapping;
 
         public delegate void OnChangeMusicLevelEvent(float level);
         public static event OnChangeMusicLevelEvent OnChangeMusicLevel;
@@ -103,6 +107,7 @@ namespace CosmicShore.Core
             musicLevel = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.MusicLevel));
             sfxLevel = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.SFXLevel));
             hapticsLevel = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.HapticsLevel));
+            ControllerMappingStore.EnsureLoaded();
 
             // Subscribe to cloud data ready event to apply cloud settings on top of local
             if (_ugsDataService.IsInitialized)
@@ -153,6 +158,9 @@ namespace CosmicShore.Core
             PlayerPrefs.SetFloat(nameof(PlayerPrefKeys.HapticsLevel), hapticsLevel);
             PlayerPrefs.Save();
 
+            if (!string.IsNullOrWhiteSpace(cloud.ControllerMappingJson))
+                ControllerMappingStore.ImportJson(cloud.ControllerMappingJson, true);
+
             // Fire all events so listeners pick up the new values
             OnChangeMusicEnabledStatus?.Invoke(musicEnabled);
             OnChangeSFXEnabledStatus?.Invoke(sfxEnabled);
@@ -163,6 +171,7 @@ namespace CosmicShore.Core
             OnChangeMusicLevel?.Invoke(musicLevel);
             OnChangeSFXLevel?.Invoke(sfxLevel);
             OnChangeHapticsLevel?.Invoke(hapticsLevel);
+            OnChangeControllerMapping?.Invoke(ControllerMappingStore.Current.Clone());
 
             CSDebug.Log("[GameSetting] Applied cloud settings.");
         }
@@ -251,6 +260,25 @@ namespace CosmicShore.Core
             OnChangeHapticsLevel?.Invoke(hapticsLevel);
         }
 
+        public void ApplyControllerPreset(ControllerMappingPresetId presetId)
+        {
+            var profile = ControllerMappingStore.ApplyPreset(presetId, true);
+            SyncToCloud();
+            OnChangeControllerMapping?.Invoke(profile.Clone());
+        }
+
+        public void SaveControllerMapping(ControllerMappingProfile profile)
+        {
+            ControllerMappingStore.SaveCustom(profile, true);
+            SyncToCloud();
+            OnChangeControllerMapping?.Invoke(ControllerMappingStore.Current.Clone());
+        }
+
+        public ControllerMappingProfile GetControllerMapping()
+        {
+            return ControllerMappingStore.Current.Clone();
+        }
+
         /// <summary>
         /// Pushes current settings to UGS Cloud Save via PlayerSettingsRepository.
         /// Debounced by the repository's built-in save coalescing.
@@ -270,6 +298,7 @@ namespace CosmicShore.Core
             cloud.MusicLevel = musicLevel;
             cloud.SFXLevel = sfxLevel;
             cloud.HapticsLevel = hapticsLevel;
+            cloud.ControllerMappingJson = ControllerMappingStore.ExportJson();
 
             ds.SettingsRepo.MarkDirty();
         }
