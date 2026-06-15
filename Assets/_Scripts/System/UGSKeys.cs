@@ -19,6 +19,8 @@ namespace CosmicShore.Core
         public const string DailyChallenge        = "DAILY_CHALLENGE";
         public const string EpisodeProgress       = "EPISODE_PROGRESS";
         public const string PlayerSettings        = "PLAYER_SETTINGS";
+        public const string Squad                 = "SQUAD_DATA";
+        public const string Loadout               = "LOADOUT_DATA";
 
         // ── Analytics Events ──
         // Every event (and its parameters) must also be declared in the UGS

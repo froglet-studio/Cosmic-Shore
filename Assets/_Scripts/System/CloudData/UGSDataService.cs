@@ -45,6 +45,10 @@ namespace CosmicShore.Core
         HangarRepository _hangar;
         EpisodeProgressRepository _episodes;
         PlayerSettingsRepository _settings;
+        DailyChallengeRepository _dailyChallenge;
+        TrainingProgressRepository _training;
+        SquadRepository _squad;
+        LoadoutRepository _loadout;
 
         ICloudSaveProvider _provider;
         List<ICloudDataWriter> _allRepos;
@@ -62,6 +66,10 @@ namespace CosmicShore.Core
         public ICloudDataReader<HangarCloudData> Hangar => _hangar;
         public ICloudDataReader<EpisodeProgressCloudData> Episodes => _episodes;
         public ICloudDataReader<PlayerSettingsCloudData> Settings => _settings;
+        public ICloudDataReader<DailyChallengeCloudData> DailyChallenge => _dailyChallenge;
+        public ICloudDataReader<TrainingProgressCloudData> TrainingProgress => _training;
+        public ICloudDataReader<SquadCloudData> Squad => _squad;
+        public ICloudDataReader<LoadoutCloudData> Loadout => _loadout;
 
         // Typed write access (for game systems that mutate + mark dirty)
         public PlayerProfileRepository ProfileRepo => _profile;
@@ -71,6 +79,10 @@ namespace CosmicShore.Core
         public HangarRepository HangarRepo => _hangar;
         public EpisodeProgressRepository EpisodesRepo => _episodes;
         public PlayerSettingsRepository SettingsRepo => _settings;
+        public DailyChallengeRepository DailyChallengeRepo => _dailyChallenge;
+        public TrainingProgressRepository TrainingProgressRepo => _training;
+        public SquadRepository SquadRepo => _squad;
+        public LoadoutRepository LoadoutRepo => _loadout;
 
         void Awake()
         {
@@ -126,11 +138,16 @@ namespace CosmicShore.Core
             _hangar = new HangarRepository(_provider);
             _episodes = new EpisodeProgressRepository(_provider);
             _settings = new PlayerSettingsRepository(_provider);
+            _dailyChallenge = new DailyChallengeRepository(_provider);
+            _training = new TrainingProgressRepository(_provider);
+            _squad = new SquadRepository(_provider);
+            _loadout = new LoadoutRepository(_provider);
 
             _allRepos = new List<ICloudDataWriter>
             {
                 _profile, _stats, _vesselStats, _progression,
-                _hangar, _episodes, _settings
+                _hangar, _episodes, _settings,
+                _dailyChallenge, _training, _squad, _loadout
             };
         }
 
@@ -147,7 +164,11 @@ namespace CosmicShore.Core
                 _progression.LoadAsync(ct),
                 _hangar.LoadAsync(ct),
                 _episodes.LoadAsync(ct),
-                _settings.LoadAsync(ct)
+                _settings.LoadAsync(ct),
+                _dailyChallenge.LoadAsync(ct),
+                _training.LoadAsync(ct),
+                _squad.LoadAsync(ct),
+                _loadout.LoadAsync(ct)
             );
 
             // Restore vessel unlock state from cloud → SO_Vessel assets
@@ -185,7 +206,11 @@ namespace CosmicShore.Core
                     _progression.ResetAsync(ct),
                     _hangar.ResetAsync(ct),
                     _episodes.ResetAsync(ct),
-                    _settings.ResetAsync(ct)
+                    _settings.ResetAsync(ct),
+                    _dailyChallenge.ResetAsync(ct),
+                    _training.ResetAsync(ct),
+                    _squad.ResetAsync(ct),
+                    _loadout.ResetAsync(ct)
                 );
 
                 CSDebug.Log("[UGSDataService] All player data reset successfully.");
