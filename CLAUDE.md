@@ -104,7 +104,7 @@ Do not snapshot domain at component-creation time. Either subscribe to `Player.N
 - **Animation**: Timeline 1.8.9, DOTween for procedural animation
 - **DI**: Reflex (`com.gustavopsantos.reflex` 14.1.0) for dependency injection
 - **Performance**: Unity Jobs + Burst Compiler, Adaptive Performance 5.1.6, DOTS Entities 1.4.2 (installed, incremental adoption)
-- **Backend**: PlayFab SDK, Firebase, Unity Gaming Services (Analytics, CloudSave, Leaderboards, Multiplayer, Purchasing 4.12.2, Ads 4.12.0)
+- **Backend**: PlayFab SDK (legacy, inert), Unity Gaming Services (Analytics, CloudSave, Leaderboards, Multiplayer, Purchasing 4.12.2, Ads 4.12.0)
 - **Testing**: Unity Test Framework 1.6.0 (NUnit-based)
 - **Target**: Mobile-first with PC/console expansion
 
@@ -136,7 +136,7 @@ Assets/
 │   ├── System/                # Application-level systems (~126 files)
 │   │   ├── Bootstrap/         # BootstrapConfigSO, SceneTransitionManager, ApplicationLifecycleManager
 │   │   ├── Playfab/           # PlayFab integration (Auth, Economy, Groups, PlayerData, PlayStream)
-│   │   ├── Instrumentation/   # CSAnalyticsManager, Firebase analytics, data collectors
+│   │   ├── Instrumentation/   # AnalyticsServiceFacade (UGS Analytics, single writer)
 │   │   ├── Runtime/           # Dialogue runtime (DialogueManager, models, views, helpers)
 │   │   ├── RewindSystem/      # Rewind/replay functionality
 │   │   ├── Audio/             # Wwise audio management
@@ -182,7 +182,7 @@ Assets/
 ├── FTUE/                      # First-Time User Experience / Tutorial system
 ├── Plugins/                   # Obvious.Soap, Demigiant (DOTween), NativeShare, etc.
 ├── Wwise/                     # Audio middleware
-├── Firebase/, PlayFabSDK/     # Backend SDKs
+├── PlayFabSDK/                # Backend SDK (legacy)
 ├── NiceVibrations/            # Haptic feedback
 └── SerializeInterface/        # Custom [RequireInterface] attribute support
 ```
@@ -1852,7 +1852,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Menu screens | `HomeScreen`, `ArcadeScreen`, `StoreScreen`, `HangarScreen`, `LeaderboardsMenu`, `EpisodeScreen` | `_Scripts/UI/Screens/` |
 | UI | Elements, FX, Modals, Screens, Views + `ToastService` / `ToastChannel` | `_Scripts/UI/` |
 | Telemetry | `VesselTelemetryBootstrapper`, `VesselTelemetry` (abstract) + per-vessel subclasses, `VesselStatsCloudData` | `_Scripts/Controller/Vessel/` |
-| Analytics | `CSAnalyticsManager`, Firebase + Unity Analytics, 7 data collectors | `_Scripts/System/Instrumentation/` |
+| Analytics | `AnalyticsServiceFacade` (UGS Analytics, single writer; consent/age-gated), `UGSStatsManager` (leaderboards) | `_Scripts/System/Instrumentation/`, `_Scripts/UI/` |
 | Bootstrap / DI | `AppManager` (orchestrator + IInstaller), `BootstrapConfigSO`, `SceneTransitionManager`, `ApplicationLifecycleManager`, `ApplicationLifecycleEventsContainerSO` | `_Scripts/System/`, `_Scripts/System/Bootstrap/`, `_Scripts/ScriptableObjects/` |
 | Threading / Main-thread affinity | `MainThreadDispatcher` (captures Unity's `SynchronizationContext` at `BeforeSceneLoad`, exposes `IsOnMainThread` + `SwitchToMainThreadAsync()`), `UniTaskExtensions.AsMainThread<T>()` (boundary helper for UGS / Netcode `Task` awaits), `SceneTransitionManager.SetFadeImmediate` (canary that fires if a UGS continuation reaches it off-thread) | `_Scripts/Utility/`, `_Scripts/Utility/ClassExtensions/`, `_Scripts/System/Bootstrap/`. See `Docs/THREADING.md`. |
 | App state machine | `ApplicationStateMachine` (single-writer phase tracker), `ApplicationStateData` / `ApplicationStateDataVariable` (SOAP state), `ApplicationState` enum | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableApplicationState/`, `_Scripts/Data/Enums/` |

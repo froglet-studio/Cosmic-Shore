@@ -314,6 +314,16 @@ PrefabInstance:
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
       value: CosmicShore.UI.MultiplayerJoustHUD, Assembly-CSharp
       objectReference: {fileID: 0}
+    - target: {fileID: 1084235039307655061, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 1059017678}
+    - target: {fileID: 1084235039307655061, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnContinueButtonPressed
+      objectReference: {fileID: 0}
     - target: {fileID: 1360031977348504572, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: m_IsActive

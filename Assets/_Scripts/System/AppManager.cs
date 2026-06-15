@@ -99,6 +99,10 @@ namespace CosmicShore.Core
         [Inject] FriendsServiceFacade friendsServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
         [Inject] ApplicationStateMachine applicationStateMachine;
+        // Injected so the facade is constructed at bootstrap — it has no other
+        // injection point until consumers appear, and its event subscriptions
+        // (sign-in, game lifecycle, pause/quit) must exist from app start.
+        [Inject] AnalyticsServiceFacade analyticsServiceFacade;
         // Eagerly resolved so the tournament brain is alive from bootstrap (subscribed to
         // OnMiniGameEnd + sceneLoaded) and survives every Single scene load.
         [Inject] TournamentController tournamentController;
@@ -371,6 +375,21 @@ namespace CosmicShore.Core
                     applicationStateDataVariable,
                     gameData,
                     networkMonitorDataVariable,
+                    _bootstrapConfig == null || _bootstrapConfig.VerboseLogging),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory(
+                _ => new AnalyticsServiceFacade(
+                    authenticationDataVariable,
+                    networkMonitorDataVariable,
+                    gameData,
+                    lifecycleEvents,
+                    applicationStateDataVariable,
+                    menuFreestyleEvents,
+                    friendsData,
+                    hostConnectionData,
                     _bootstrapConfig == null || _bootstrapConfig.VerboseLogging),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
