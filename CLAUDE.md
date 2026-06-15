@@ -243,6 +243,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `CLAUDE.md` | Project root | Architecture, patterns, systems reference |
 | `SCENES.md` | `Docs/` | Complete scene inventory, game modes, launch pipeline |
 | `THREADING.md` | `Docs/` | UniTask / SyncContext threading rules, `.AsMainThread()` contract, `MainThreadDispatcher`, canary, history |
+| `SPATIAL_INDEX.md` | `Docs/` | `PrismSpatialIndex` — THE canonical spatial index of prism mass (Burst AOE queries, growth occupancy reservations, bucket grid). **Read before adding any spatial query against prisms.** |
 | `PartySystem/` | `Docs/` | Party (Relay) layer: `ARCHITECTURE.md` (locked design, investigation Q&A, error-handling matrix, exit criteria), `REFACTOR.md` (active backlog + deferred items + per-commit protocol), `BUGS.md`, `TESTS.md`, `TODOS.md`. EAGER per-user Relay session is the locked design. |
 | `PresenceSystem/` | `Docs/` | Presence-lobby (discovery) layer: `ARCHITECTURE.md`, `REFACTOR.md`, `BUGS.md`, `TESTS.md`, `TODOS.md`. Lobby-only UGS session, coexists with NetworkManager. |
 | `NetworkDiagnostics/` | `Docs/` | NetDiag overlay: `ARCHITECTURE.md` (NetworkMonitor + `NetworkDiagnostics` helper, classification rules), `TESTS.md` (Tests A-E), `TODOS.md`. |
@@ -672,6 +673,8 @@ The collision/impact system (`Assets/_Scripts/Controller/ImpactEffects/`) uses a
 **Effect SO pattern**: `[Impactor][Target]EffectSO` — e.g., `VesselExplosionByCrystalEffectSO`, `SkimmerAlignPrismEffectSO`, `SparrowDebuffByRhinoDangerPrismEffectSO`. Per-vessel effect asset instances exist for each vessel class. Organized into subdirectories: `Vessel Crystal Effects/`, `Vessel Prism Effects/`, `Vessel Explosion Effects/`, `Vessel Projectile Effects/`, `Vessel Skimmer Effects/`, `Skimmer Prism Effects/`, `Projectile Crystal Effects/`, `Projectile Prism Effects/`, `Projectile Mine Effects/`, `Projectile End Effects/`.
 
 Key interfaces: `IImpactor` / `IImpactCollider`
+
+**Danger prisms are not safe to their own domain (locked design).** `IsDangerous` effects apply to every vessel that touches the prism, regardless of domain — friendly fire included (the fire-trail action literally sets `IsDangerous` from a `FriendlyFire` flag). Danger-prism effect SOs must not gate on domain. This is what makes danger trails a risk/reward surface: the Squirrel's own overheat trail grants 10x skim energy (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`) but slams its owner on contact — volume-independent full-stop slow at the danger max (`VesselChangeSpeedByPrismEffectSO`: `maxSlowStrength * dangerSlowMultiplier`), all-element decaying debuff for 4s (`VesselElementalDebuffByDangerPrismEffectSO`), and boost reset.
 
 **Forcefield Crackle (Skimmer)**: `SkimmerForcefieldCracklePrismEffectSO` (at `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`) is a shader-driven alternative to `SkimmerFXPrismEffectSO` that visualizes the Skimmer's invisible sphere collider on prism impacts. It computes the impact point via `Collider.ClosestPoint` between the prism box and skimmer sphere, projects it onto the sphere surface, and forwards the event (position + duration + intensity + radius) to a `ForcefieldCrackleController` MonoBehaviour on the vessel (`_Scripts/Controller/Vessel/ForcefieldCrackleController.cs`). The controller owns all visual parameters (colors, arc density/sharpness, ring thickness, ripple speed, fresnel) as serialized fields and feeds a ring buffer of up to 16 simultaneous impacts to the shader via MaterialPropertyBlock arrays each frame. `[ExecuteAlways]` allows edit-mode preview via `ForcefieldCrackleControllerEditor` (at `_Scripts/Editor/`). The shader's custom-function HLSL file `ForcefieldCrackle.hlsl` (at `Assets/Materials/Graphs/`) uses FBM-based electrical arcs with expanding wavefronts on a geodesic distance metric so arcs follow the sphere's curvature. All three code files use the `CosmicShore.Gameplay` namespace.
 
@@ -1736,6 +1739,7 @@ For lava-lamp scoring, set `isAIAvailable=true` on MiniGameHUD and ensure `gameD
 - **"Game UI" CanvasGroup controls all game panel visibility** — individual panels should not manage their own top-level visibility during freestyle toggles; the parent CanvasGroup handles fade in/out
 - **Vessel HUD reparenting is automatic** — do not manually instantiate or position vessel HUDs; the `onShipHUDInitialized` → `MiniGameHUD.OnShipHUDInitialized()` pipeline handles it
 - **Network-aware vessel selection only** — always use `MenuVesselSelectionPanelController` in Menu_Main, never the singleplayer `VesselSelectionPanelController`
+- **Mass is conserved in the menu too** — the lava-lamp vessel is the freestyle gameplay vessel, so its trail follows the universal conserved-mass rules: no trail caps, prism TTLs, or idle cullers (a `maxTrailBlocks` ring-buffer cap was added for menu perf and reverted — see "Don't cheat emergence"). Manage menu-idle prism growth with fauna cleanup or by pausing the spawner
 - **Scoreboard hidden until needed** — do not show the scoreboard in basic freestyle; let the SOAP event system activate it when a game controller raises `OnShowGameEndScreen`
 - **Phase 2/3 panels start inactive** — `EndShapeDetailHUD` GO starts with `SetActive(false)`, activated only by `ShapeDrawingManager` (Phase 2). PlayerScoreCards are dynamically instantiated only when turns are active (Phase 3)
 
@@ -1784,6 +1788,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Vessel actions | `VesselActionSO` (base config), `VesselActionExecutorBase`, `ActionExecutorRegistry` + 40+ action SOs | `_Scripts/Controller/Vessel/R_VesselActions/`, `VesselActions/` |
 | Prism lifecycle | `Prism`, `PrismFactory`, `Trail`, `TrailFollower` | `_Scripts/Controller/Vessel/`, `_Scripts/Controller/Prisms/` |
 | Prism performance | `PrismScaleManager`, `MaterialStateManager`, `AdaptiveAnimationManager`, `PrismStateManager`, `PrismTimerManager`, `BlockDensityGrid` | `_Scripts/Controller/Managers/` |
+| Prism spatial index | `PrismSpatialIndex` (formerly `PrismAOERegistry`) — THE canonical spatial index of all live prism mass: Burst AOE damage queries + growth occupancy (`TryReserve` claim-before-spawn closes the disabled-collider spawn race) + bucket hash grid. One registration lifecycle (`Register`/`MarkDestroyed`/`MarkRestored`/`Unregister`/`UpdatePosition`), multiple query views. Do not build parallel spatial stores or query prisms via physics — see `Docs/SPATIAL_INDEX.md` | `_Scripts/Controller/Managers/` |
 | Octahedron shield | `PrismOctahedronShield` (per-face bloom engage + shatter-overlay disengage, swaps BoxCollider ↔ convex MeshCollider, mass scales with volume), `PrismOctahedronShieldTester` (Input System-driven manual tester), `OctahedronMeshGenerator` (`PopulateMesh`, `PopulateMeshFaceScale`, `PopulateMeshFaceShatter`) | `_Scripts/Controller/Vessel/`, `_Scripts/Utility/` |
 | Impact effects | `ImpactorBase` + 11 impactor types, 20+ Effect SO types | `_Scripts/Controller/ImpactEffects/` |
 | Forcefield crackle | `SkimmerForcefieldCracklePrismEffectSO` (computes impact points via `Collider.ClosestPoint`), `ForcefieldCrackleController` (`[ExecuteAlways]`, 16-impact ring buffer + MaterialPropertyBlock arrays, owns all visual params), `ForcefieldCrackle.hlsl` (FBM electrical arcs on geodesic sphere), `ForcefieldCrackleControllerEditor` (edit-mode preview) | `_Scripts/Controller/ImpactEffects/EffectsSO/Skimmer Prism Effects/`, `_Scripts/Controller/Vessel/`, `Assets/Materials/Graphs/`, `_Scripts/Editor/` |
@@ -1835,6 +1840,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - C# `event Action` / delegates on MonoBehaviours for broadcast patterns — use SOAP `ScriptableEvent` channels
 - `renderer.material` (clones material) — use `renderer.sharedMaterial` + MaterialPropertyBlock instead
 - Per-object coroutines at scale — use centralized timer/manager systems (see Prism Performance Audit)
+- New spatial queries against prisms via `Physics.OverlapSphere` / `Physics.CheckBox`, or building a new grid/registry/octree over prisms — `PrismSpatialIndex` is THE canonical spatial index of prism mass (occupancy, AOE, proximity). Physics queries are also structurally blind to fresh prisms (colliders disabled for the first 0.6s after spawn). Add new query shapes to `PrismSpatialIndex` instead — see `Docs/SPATIAL_INDEX.md`
 - `await UniTask.SwitchToMainThread()` or `await UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling fix — they don't reliably switch threads on this UniTask version. Use `.AsMainThread()` (see `Docs/THREADING.md`)
 - Raising a SOAP `ScriptableEvent` from a UGS / Netcode `Task` continuation without ensuring the continuation has resumed on the main thread first — SOAP `Raise()` invokes listeners inline, so off-thread raises crash any listener that touches Unity state
 - Touching a `UnityEngine.Object` (incl. `== null` checks routing through `op_Equality`) in a `Task` continuation without `.AsMainThread()` upstream — throws `EnsureRunningOnMainThread`
@@ -1859,8 +1865,9 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 - GPU instancing enabled on all prism and VFX materials
 - Jobs + Burst used for prism scale/material animation batching (`PrismScaleManager`, `MaterialStateManager`)
 - `AdaptiveAnimationManager` provides dynamic frame-skipping (1x-12x) based on performance pressure
-- Burst-compiled spatial queries replace Physics-based AOE prism damage
-- Cache-line-aware data layouts with hot/cold splitting and bit-packed flags (`PrismAOEData`)
+- Burst-compiled spatial queries replace Physics-based AOE prism damage (`PrismSpatialIndex` — see `Docs/SPATIAL_INDEX.md`)
+- Cache-line-aware data layouts with hot/cold splitting and bit-packed flags (`PrismSpatialData` / `PrismDamageData` in `PrismSpatialIndex`)
+- Growth occupancy checks use `PrismSpatialIndex.TryReserve` (claim-before-spawn), never `Physics.CheckBox` — prism colliders are disabled for the first 0.6s after spawn, so physics queries are structurally blind to fresh prisms
 
 ### Prism System Performance
 
@@ -1960,8 +1967,11 @@ ones.
   A large accumulation of prisms is therefore a *valid* state, not a bug to
   auto-correct: it persists until an active force consumes it, and when the
   fauna that would eat it can't reach prey, the correction surfaces as fauna
-  starving — not as prisms vanishing. See "Don't cheat emergence" below and
-  `Docs/ECOSYSTEM.md`.
+  starving — not as prisms vanishing. This holds in **every scene the
+  simulation runs in** — including Menu_Main's lava-lamp/freestyle, where the
+  autopilot vessel *is* the gameplay vessel. There is no "cosmetic" or
+  "menu-only" exemption. See "Universality" and "Don't cheat emergence" below
+  and `Docs/ECOSYSTEM.md`.
 - **Cells** (with `CellType`) — the regions of play that are the unit of
   territorial control. Casual language sometimes calls these "biomes"; the
   canonical term is *cell*.
@@ -2072,6 +2082,41 @@ force a reason/ability to consume that mass (or by tuning fauna diet, reach, and
 spawning) — never by adding decay. The flora regrowth pulse that currently
 exists is the growth-side counterpart of this same cheat and is flagged for
 retirement, not extension. See `Docs/ECOSYSTEM.md`.
+
+**Example (resolved & reverted): the menu trail cap is a cheat — no "cosmetic"
+exemptions.** The Menu_Main autopilot vessel lays prisms indefinitely, so a
+perf-motivated commit added a per-trail ring-buffer cap (`maxTrailBlocks` /
+`Trail.RemoveOldest`, commit `64d8f0c8`) that silently recycled the oldest
+trail prism on every new spawn, rationalized as "cosmetic, menu-only —
+gameplay unaffected." That rationale was false by construction: the lava lamp
+*is* freestyle (one system, two names — see "Lava-Lamp Mode"), so the same
+capped vessel is the one the player flies, and the cap followed them into
+freestyle flight as an age-based trail limit — exactly the passive-removal
+cheat §0 of `Docs/ECOSYSTEM.md` rejects. The commit was reverted. The decided
+answer (do not relitigate): **there is no context in which trail caps, prism
+TTLs, or idle cullers are acceptable.** If prism accumulation in the menu (or
+anywhere) is a perf problem, solve it with the universal systems: **fauna
+cleanup** (cleanup is one of the fauna's jobs — foragers consume trail mass
+through the food web) or **pause/throttle the spawner** (not creating mass is
+allowed; aging it out is not).
+
+### Universality — one HyperSea, one rule set
+
+The fundamentals are universal. The HyperSea has rules and **everything in it
+follows them** — game scenes, Menu_Main's lava-lamp/freestyle, tools and test
+scenes alike. Do not create context-specific exemptions ("it's only the menu,"
+"it's just cosmetic," "it's a perf special case"). Every carve-out creeps
+confusion into best practices about when the rules apply, and carve-outs are
+precisely how rejected cheats re-enter the codebase — both resolved examples
+above came back wearing a special-circumstance costume.
+
+When a context creates pressure (performance, pacing, visuals), solve it with
+the universal systems that already exist — fauna have many jobs and cleanup is
+one of them; spawners can pause; abilities can consume — never with a bespoke
+mechanism that exists only in that context. Build systems once, use them
+everywhere. If a universal system genuinely can't serve the context, that is a
+fundamentals discussion (see the curation process above), not a license for a
+local workaround.
 
 ### When in doubt
 

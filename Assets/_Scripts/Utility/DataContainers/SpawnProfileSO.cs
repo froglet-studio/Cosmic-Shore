@@ -19,7 +19,7 @@ namespace CosmicShore.Utility
         // The flora regrowth pulse (FloraRegrowthPulsePeriod / FloraRegrowthPulseDuration)
         // was removed: it was a hard-coded growth oscillator faking the "breathing" the
         // food web is meant to produce. Mass is conserved — growth resumes only when an
-        // active force lowers the prism count below Frozen. See Docs/ECOSYSTEM.md §0.
+        // active force lowers the prism count below Frenzy. See Docs/ECOSYSTEM.md §0.
         public List<FloraConfigurationSO> SupportedFloras = new();
         
         [Header("FaunaPrefab Configs")]
