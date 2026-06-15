@@ -1781,7 +1781,7 @@ MonoBehaviour:
   resultsText: {fileID: 0}
   playAgainButton: {fileID: 0}
   mainMenuButton: {fileID: 0}
-  onClickToMainMenu: {fileID: 0}
+  onClickToMainMenu: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
 --- !u!1 &1694828555
 GameObject:
   m_ObjectHideFlags: 0
