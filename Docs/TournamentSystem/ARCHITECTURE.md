@@ -28,9 +28,16 @@ with per-scene systems (duplicate `ServerPlayerVesselInitializer`, ambiguous
 ```
 Menu_Main → [Arcade card → ArcadeGameConfigureModal ready-up]
   → Tournament (lobby)  → HexRace → Joust → Crystal Capture (each a Single load)
-                              └─ Scoreboard.Continue (host) advances; party follows
-  → final Scoreboard: Play Again (restart tournament) | Main Menu → Menu_Main
+                              └─ Scoreboard.Continue (host) advances on EVERY game; party follows
+  → Continue after the last game → Tournament (SUMMARY: all results)
+       └─ Play Again (restart whole tournament) | Main Menu → Menu_Main (lava lamp)
 ```
+
+The Tournament scene is **both** the intro lobby and the end-of-tournament **summary**;
+`TournamentSceneView` picks the layout from `TournamentController.IsShowingSummary`
+(phase `Summary`). Continue is shown on every game's scoreboard (host); the final Continue
+loads the Tournament scene in Summary phase, and **Play Again / Main Menu live there**, not on
+the per-game scoreboard.
 
 ## 3. The brain — `TournamentController` (persistent, network-free)
 
@@ -60,16 +67,23 @@ attribute across games (AI `Player` objects are destroyed/recreated each scene).
 
 The cinematic was removed (`Ys-bleeding-edge` `dbc7c703`); `EndGameSequencer` halts vessels,
 plays the SFX, and raises `OnShowGameEndScreen` → `Scoreboard` (sole end-game UI). In tournament
-mode `Scoreboard.ConfigureLobbyButtons` swaps the buttons — **all host-only; clients see none**:
+mode `Scoreboard.ConfigureLobbyButtons` shows **only Continue, host-only**:
 
-| Situation | Host sees | Hidden |
+| Surface | Host sees | Hidden |
 |---|---|---|
-| A game ends, more remain | **Continue** → `TournamentController.AdvanceToNextGame()` | Play Again, Main Menu, Leave |
-| Final game ends (tournament over) | **Play Again** (→ `RestartTournament()`) + **Main Menu** | Continue, Leave |
-| Any game, on a client | — | all |
+| Per-game scoreboard (EVERY game, incl. last) | **Continue** → `TournamentController.AdvanceToNextGame()` | Play Again, Main Menu, Leave |
+| Per-game scoreboard, on a client | — | all |
+| **Tournament Summary screen** (after last game) | **Play Again** (→ `RestartTournament()`) + **Main Menu** (→ `onClickToMainMenu` → Menu_Main) | — |
+| Tournament Summary screen, on a client | — (results only) | all |
 
-`IsLastGame` comes from `TournamentController.Instance.IsLastGame` (derived from
-`TournamentDataSO.CurrentGameIndex`).
+`AdvanceToNextGame` loads the next game, or — on the last game (`TournamentDataSO.IsLastGame`) —
+loads the Tournament scene in Summary phase. Play Again / Main Menu are handled by
+`TournamentSceneView` (`OnPlayAgainPressed` / `OnMainMenuPressed`), not the Scoreboard.
+
+**Restart determinism:** Play Again calls `RestartTournament()` → host loads game 1 directly;
+every peer resets its standings when game 1 loads while still in phase `Summary` (see
+`TournamentController.HandleSceneLoaded`), so the wipe is consistent across the party without any
+extra networking.
 
 ## 5. Data — `TournamentDataSO`
 
@@ -99,26 +113,26 @@ name), `IsLastGame`, `ResetRuntime()`.
 | Arcade card | `_SO_Assets/Games/ArcadeGameTournament.asset` (in `GameLists/ArcadeGames.asset`) |
 | Lobby scene | `_Scenes/Multiplayer Scenes/Tournament.unity` |
 
-## 7. Editor follow-up (REQUIRED before the mode runs)
+## 7. Editor follow-up
 
-The code + data assets are committed; these Unity-editor steps cannot be done headlessly and are
-needed to make the feature work end-to-end:
+**Done** (committed): AppManager `tournamentData` wired; `Tournament.unity` rebuilt as a UI-only
+scene with `TournamentSceneView` (lobby title/lineup + host Start wired); Scoreboard **Continue**
+button added + wired to `OnContinueButtonPressed`; arcade card + grid cell present.
 
-1. **AppManager (Bootstrap scene):** assign `TournamentData.asset` to the new `tournamentData`
-   field on `AppManager`.
-2. **Tournament scene** (`Tournament.unity`): it is still the leftover CellularDuel hierarchy —
-   rebuild it into a UI-only lobby: strip the gameplay objects (Game/controller/Environment/
-   Cell/Spawners), add a `ContainerScope` (`_Prefabs/CORE/ContainerScope.prefab`), add a
-   `TournamentSceneView` with its `gameData`/`tournamentData` references + a title/lineup TMP
-   (and optional host Start button), and lobby visuals.
-3. **Scoreboard Continue button:** in the shared `GameCanvas`/`EndGameStatsPanel` prefab, add a
-   **Continue** button GameObject, assign it to `Scoreboard.continueButton`, and wire its
-   `onClick` → `Scoreboard.OnContinueButtonPressed()`.
-4. **Arcade grid cell:** `ArcadeExploreView` pairs games to grid cells positionally, so add one
-   more `GameCard` cell to the Menu_Main arcade grid for the 10th game (the Tournament card),
-   else it is silently dropped.
-5. **(Optional) cumulative-standings UI:** the standings live in `TournamentDataSO`; surface a
-   compact panel on the Scoreboard or the Tournament summary when desired.
+**Remaining — the Summary screen** (`Tournament.unity`, add a results layout the
+`TournamentSceneView` toggles in phase `Summary`):
+
+1. Build a **Summary panel** (sibling of the lobby panel) with a **results `TMP_Text`** and two
+   host buttons, **Play Again** and **Main Menu**.
+2. On `TournamentSceneView`, wire: `summaryRoot` → the summary panel, `lobbyRoot` → the existing
+   lobby panel (so the view shows exactly one), `resultsText` → the results text, `playAgainButton`
+   / `mainMenuButton` → the two buttons, and `onClickToMainMenu` → the **same** main-menu
+   `ScriptableEventNoParam` asset the Scoreboard's Main Menu uses (the one `SceneLoader` listens to).
+3. Wire button `onClick`s: Play Again → `TournamentSceneView.OnPlayAgainPressed()`,
+   Main Menu → `TournamentSceneView.OnMainMenuPressed()`.
+
+The view fills `resultsText` with the final standings + per-game placements, and shows the two
+buttons host-only. No per-button visibility code is needed in the scene — the view drives it.
 
 ## 8. Verification
 
