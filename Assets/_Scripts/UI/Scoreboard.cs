@@ -407,7 +407,7 @@ namespace CosmicShore.UI
             var service = PlayerDataService.Instance;
             if (service == null) return;
 
-            int newBalance = service.AddCrystals(winnerCrystalReward);
+            int newBalance = service.AddCrystals(winnerCrystalReward, "game_reward");
             CSDebug.Log($"[Scoreboard] Awarded {winnerCrystalReward} crystals to '{localName}'. New balance: {newBalance}");
         }
 

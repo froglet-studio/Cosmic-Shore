@@ -26,6 +26,7 @@ namespace CosmicShore.Core
         [SerializeField] private GameDataSO gameData;
 
         [Inject] UGSDataService _ugsDataService;
+        [Inject] AnalyticsServiceFacade _analytics;
 
         public GameModeProgressionData ProgressionData { get; private set; } = new();
         public SO_GameModeQuestList QuestList => questList;
@@ -204,6 +205,7 @@ namespace CosmicShore.Core
                 string nextModeName = nextQuest.GameMode.ToString();
                 ProgressionData.MarkUnlocked(nextModeName);
                 ProgressionData.EnsureIntensityInitialized(nextModeName);
+                _analytics?.RecordModeUnlocked(nextQuest.GameMode);
                 CSDebug.Log($"[GameModeProgressionService] Unlocked next mode: {nextQuest.GameMode}");
             }
 
@@ -512,6 +514,7 @@ namespace CosmicShore.Core
                     ProgressionData.SetMaxUnlockedIntensity(modeName, 3);
                     CSDebug.Log($"[GameModeProgressionService] Intensity 3 unlocked for {mode}!");
                     OnIntensityUnlocked?.Invoke(mode, 3);
+                    _analytics?.RecordIntensityUnlocked(mode, 3);
                     OnProgressionChanged?.Invoke(ProgressionData);
                     SaveImmediateAsync();
                     return;
@@ -530,6 +533,7 @@ namespace CosmicShore.Core
                     ProgressionData.SetMaxUnlockedIntensity(modeName, 4);
                     CSDebug.Log($"[GameModeProgressionService] Intensity 4 unlocked for {mode}! Quest complete.");
                     OnIntensityUnlocked?.Invoke(mode, 4);
+                    _analytics?.RecordIntensityUnlocked(mode, 4);
 
                     // Intensity 4 unlocked = quest completed
                     ProgressionData.MarkQuestCompleted(modeName);

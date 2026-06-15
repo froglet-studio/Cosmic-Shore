@@ -125,7 +125,7 @@
     <tr><td class="k">crystalBalance</td><td>On earn (reward claim, grants) and on spend (vessel unlock) — <code>AddCrystals</code> / <code>TrySpendCrystals</code></td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">xp</td><td>Every game end (+25 participation XP via <code>ParticipationXpAwarder</code>) + manual awards</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">unlockedRewardIds</td><td>On XP-track reward claim (<code>UnlockReward</code>); union-merged with cloud on load</td><td><span class="st st-live">LIVE</span></td></tr>
-    <tr><td class="k">firstSeenUtc</td><td>Once at first launch — needed for time-to-X activation metrics</td><td><span class="st st-planned">PLANNED · P2</span></td></tr>
+    <tr><td class="k">firstSeenUtc</td><td>Stamped once when the account profile is first created (cohorting / retention)</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">styleTag</td><td>Recomputed at game end from telemetry aggregates; also set as UGS Analytics user property</td><td><span class="st st-planned">PLANNED · P4</span></td></tr>
   </table>
 </div>
@@ -190,7 +190,7 @@
 <!-- ════════════════════════ F. ANALYTICS EVENTS -->
 <div class="cat">
   <div class="cat-header"><span class="cat-pill c-evt">F · UGS Analytics Events</span><span class="cat-title">The event stream (UGS-only)</span></div>
-  <p class="cat-sub">Everything routes through <code>AnalyticsServiceFacade</code> (shipped 2026-06-11 — single writer, DI singleton, owns StartDataCollection). SDK batches automatically — <code>Flush()</code> only on app pause/quit. <strong>Each event + its parameters must be declared in the UGS dashboard Event Manager.</strong> Full event-by-event detail: <code>INSTRUMENTATION_DATA.html</code>.</p>
+  <p class="cat-sub">Everything routes through <code>AnalyticsServiceFacade</code> (P1 shipped 2026-06-11, P2 shipped 2026-06-15 — single writer, DI singleton, owns StartDataCollection). SDK batches automatically — <code>Flush()</code> only on app pause/quit. <strong>Each event + its parameters must be declared in the UGS dashboard Event Manager</strong> — full list of constants in <code>UGSKeys.cs</code>. Full event-by-event detail: <code>INSTRUMENTATION_DATA.html</code>.</p>
   <table class="t">
     <tr><th>Event(s)</th><th>Fires when</th><th>Hook</th><th>Status</th></tr>
     <tr><td class="k">session auto-events</td><td>Session start/device/newPlayer — SDK built-ins</td><td class="w">AnalyticsServiceFacade.StartCollectionIfReady() at sign-in (old UnityAnalytics.cs owner was orphaned — collection never actually started before)</td><td><span class="st st-live">LIVE</span></td></tr>
@@ -199,10 +199,11 @@
     <tr><td class="k">session_ended</td><td>App pause/quit — reason, last_ui_action, app_state</td><td class="w">Facade ← ApplicationLifecycleManager (ScreenSwitcher-precise last_screen = P2 refinement)</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">ui_action</td><td>Menu navigation (ported from Firebase user_ui_action)</td><td class="w">Facade ← UserActionSystem.OnUserActionCompleted</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">ad_impression</td><td>Rewarded ad loaded (ported from Firebase)</td><td class="w">Facade ← AdsSystem.AdLoaded (AdManager prefab not placed in any scene)</td><td><span class="st st-live">LIVE</span></td></tr>
-    <tr><td class="k">crystals_earned · crystals_spent · crystal_spend_blocked · vessel_unlocked · crystal_balance_snapshot</td><td>Economy mutations / session end</td><td class="w">PlayerDataService, VesselUnlockSystem</td><td><span class="st st-planned">PLANNED · P2</span></td></tr>
-    <tr><td class="k">game_first_launched · freestyle_entered · menu_ready · mode_unlocked · intensity_unlocked · setting_changed</td><td>Activation funnel + control scheme</td><td class="w">AppManager, MenuCrystalClickHandler, MainMenuController, GameModeProgressionService, GameSetting</td><td><span class="st st-planned">PLANNED · P2</span></td></tr>
-    <tr><td class="k">friend_request_* · party_invite_* · minigame_favorited · share_triggered</td><td>Social loop</td><td class="w">FriendsServiceFacade, HostConnectionService, PartyInviteController, FavoriteSystem, SnsShare</td><td><span class="st st-planned">PLANNED · P2</span></td></tr>
-    <tr><td class="k">daily_challenge_started / completed / skipped · quest_completed · training_tier_claimed</td><td>Retention loops</td><td class="w">DailyChallengeSystem, QuestSystem, TrainingGameProgressSystem</td><td><span class="st st-planned">PLANNED · P2–P3</span></td></tr>
+    <tr><td class="k">crystals_earned · crystals_spent · crystal_spend_blocked · vessel_unlocked · crystal_balance_snapshot</td><td>Economy mutations / session end (amount, source, balance)</td><td class="w">PlayerDataService (facade), HangarVesselDetailView, facade session-end</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">game_first_launched · menu_ready · freestyle_entered · mode_unlocked · intensity_unlocked · setting_changed</td><td>Activation funnel + control scheme</td><td class="w">facade (first-launch, freestyle SOAP, 9 GameSetting events), MainMenuController, GameModeProgressionService</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">friend_request_sent/received · friend_added · party_invite_sent/received · party_joined · minigame_favorited · share_triggered</td><td>Social loop</td><td class="w">facade ← FriendsDataSO + HostConnectionDataSO SOAP events + FavoriteSystem.OnFavoriteChanged; SnsShare (facade)</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">quest_completed · repeated_game_fail · player_won (param)</td><td>Retention loops + win/loss</td><td class="w">QuestSystem (facade); facade derives fail-streak + win from GameDataSO at game_completed</td><td><span class="st st-live">LIVE</span></td></tr>
+    <tr><td class="k">daily_challenge_started / completed / skipped · training_tier_claimed</td><td>Retention loops (need cloud migration first)</td><td class="w">DailyChallengeSystem, TrainingGameProgressSystem</td><td><span class="st st-planned">PLANNED · P3</span></td></tr>
     <tr><td class="k">cloud_save_failed</td><td>Any Cloud Save write fails after retries — observability</td><td class="w">UGSCloudSaveProvider</td><td><span class="st st-planned">PLANNED · P3</span></td></tr>
     <tr><td class="k">pilot_recruited · vessel_upgraded · episode_* · style telemetry</td><td>VDemo systems</td><td class="w">CaptainManager (re-enabled), EpisodeProgress, VesselTelemetry</td><td><span class="st st-planned">PLANNED · P4</span></td></tr>
   </table>

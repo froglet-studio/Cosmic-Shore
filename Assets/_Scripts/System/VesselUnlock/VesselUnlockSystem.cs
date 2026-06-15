@@ -50,7 +50,7 @@ namespace CosmicShore.Core
             if (vessel.UnlockCost > 0)
             {
                 var service = PlayerDataService.Instance;
-                if (service == null || !service.TrySpendCrystals(vessel.UnlockCost))
+                if (service == null || !service.TrySpendCrystals(vessel.UnlockCost, "vessel_unlock"))
                     return false;
             }
 

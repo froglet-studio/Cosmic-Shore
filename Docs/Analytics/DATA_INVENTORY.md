@@ -37,9 +37,13 @@ string fallback on load.
   "avatarId": 3,
   "crystalBalance": 250,
   "xp": 1275,
-  "unlockedRewardIds": ["reward_id", "..."]
+  "unlockedRewardIds": ["reward_id", "..."],
+  "firstSeenUtc": 1718900000000
 }
 ```
+
+`firstSeenUtc` (Unix epoch ms, UTC) is stamped once when the account's profile is first created
+(Phase 2) — used for install-relative cohorting / retention analysis.
 
 Writer: `PlayerDataService` (sole writer; `AddXP`, `AddCrystals`, `TrySpendCrystals`, `UnlockReward`,
 profile edits → `MarkDirty`). `ParticipationXpAwarder` adds 25 XP per game end.
@@ -260,6 +264,15 @@ disabled or Firebase-only) · **BUILD** (system exists, add the event hook) · *
 itself doesn't exist).
 
 ### 3.1 VSlice — instrument now (hook points already exist)
+
+> **Shipped 2026-06-15 (Phase 2).** All hooks below are now LIVE through `AnalyticsServiceFacade`
+> typed methods + SO-asset SOAP subscriptions: economy (`crystals_earned/spent/spend_blocked`,
+> `vessel_unlocked`, `crystal_balance_snapshot`), activation (`game_first_launched`, `menu_ready`,
+> `freestyle_entered`, `mode_unlocked`, `intensity_unlocked`), `setting_changed`, social
+> (`friend_request_sent/received`, `friend_added`, `party_invite_sent/received`, `party_joined`,
+> `minigame_favorited`, `share_triggered`), retention (`quest_completed`, `repeated_game_fail`),
+> plus `player_won` on `game_completed` and `firstSeenUtc` on the profile. Remaining VSlice work:
+> the consent dialog/opt-out, and declaring all events in the UGS dashboard Event Manager.
 
 0. **Retire the Firebase analytics path** (UGS-only decision) — port `ui_action` + `ad_impression`
    to UGS, delete dead collectors and `FirebaseAnalyticsController` wiring.

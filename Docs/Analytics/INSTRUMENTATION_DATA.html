@@ -203,6 +203,10 @@
   </div>
 
   <div class="note-box amber"><strong>Consent (P1 remaining):</strong> the facade now gates collection on a persisted consent flag (<code>AnalyticsServiceFacade.SetConsent</code>), defaulting to granted — same shipping behavior as before. The first-run consent dialog + settings opt-out toggle still need to ship before store release for GDPR/COPPA compliance; both just call <code>SetConsent</code>.</div>
+
+  <div class="note-box green"><strong>Phase 2 shipped 2026-06-15 — these are now LIVE</strong> (the <span class="st st-build">BUILD</span>/<span class="st st-dormant">DORMANT</span> badges on individual rows below predate this where they overlap):<br>
+  <em>Activation:</em> <code>game_first_launched</code>, <code>menu_ready</code>, <code>freestyle_entered</code>, <code>mode_unlocked</code>, <code>intensity_unlocked</code>, <code>setting_changed</code> (covers invert-Y/throttle/joystick + volumes) · <em>Economy:</em> <code>crystals_earned</code>, <code>crystals_spent</code>, <code>crystal_spend_blocked</code>, <code>vessel_unlocked</code>, <code>crystal_balance_snapshot</code> · <em>Social:</em> <code>friend_request_sent</code>/<code>received</code>, <code>friend_added</code>, <code>party_invite_sent</code>/<code>received</code>, <code>party_joined</code>, <code>minigame_favorited</code>, <code>share_triggered</code> · <em>Retention:</em> <code>quest_completed</code>, <code>repeated_game_fail</code>, plus <code>player_won</code> on <code>game_completed</code> and <code>firstSeenUtc</code> on the profile.<br>
+  All route through <code>AnalyticsServiceFacade</code> typed methods + SO-asset SOAP subscriptions. Constants in <code>UGSKeys.cs</code>; per-row status in <code>DATA_TRACKER.html</code>. <strong>Still required: declare every event + params in the UGS dashboard Event Manager.</strong></div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ CLOUD SAVE INVENTORY -->

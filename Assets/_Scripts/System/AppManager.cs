@@ -379,6 +379,9 @@ namespace CosmicShore.Core
                     gameData,
                     lifecycleEvents,
                     applicationStateDataVariable,
+                    menuFreestyleEvents,
+                    friendsData,
+                    hostConnectionData,
                     _bootstrapConfig == null || _bootstrapConfig.VerboseLogging),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy

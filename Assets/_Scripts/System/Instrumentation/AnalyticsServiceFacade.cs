@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using Unity.Services.Analytics;
 using Unity.Services.Core;
@@ -29,11 +32,20 @@ namespace CosmicShore.Core
         /// </summary>
         const string ConsentPrefKey = "AnalyticsConsent";
 
+        /// <summary>PlayerPrefs key (device-local) guarding the once-ever first-launch event.</summary>
+        const string FirstLaunchPrefKey = "AnalyticsFirstLaunchRecorded";
+
+        /// <summary>Consecutive losses before <c>repeated_game_fail</c> fires.</summary>
+        const int RepeatedFailThreshold = 3;
+
         readonly AuthenticationDataVariable _authVariable;
         readonly NetworkMonitorDataVariable _networkVariable;
         readonly GameDataSO _gameData;
         readonly ApplicationLifecycleEventsContainerSO _lifecycleEvents;
         readonly ApplicationStateDataVariable _appStateVariable;
+        readonly MenuFreestyleEventsContainerSO _menuFreestyleEvents;
+        readonly FriendsDataSO _friendsData;
+        readonly HostConnectionDataSO _hostConnectionData;
         readonly bool _allowLog;
 
         bool _collecting;
@@ -44,6 +56,9 @@ namespace CosmicShore.Core
         float _gameStartTime;
         bool _sessionEndRecorded;
         string _lastUiAction = string.Empty;
+        bool _menuReadyThisSession;
+        bool _freestyleEnteredThisSession;
+        int _consecutiveLosses;
 
         AuthenticationData AuthData => _authVariable.Value;
         NetworkMonitorData NetworkData => _networkVariable.Value;
@@ -57,6 +72,9 @@ namespace CosmicShore.Core
             GameDataSO gameData,
             ApplicationLifecycleEventsContainerSO lifecycleEvents,
             ApplicationStateDataVariable appStateVariable,
+            MenuFreestyleEventsContainerSO menuFreestyleEvents,
+            FriendsDataSO friendsData,
+            HostConnectionDataSO hostConnectionData,
             bool allowLog)
         {
             _authVariable = authVariable;
@@ -64,6 +82,9 @@ namespace CosmicShore.Core
             _gameData = gameData;
             _lifecycleEvents = lifecycleEvents;
             _appStateVariable = appStateVariable;
+            _menuFreestyleEvents = menuFreestyleEvents;
+            _friendsData = friendsData;
+            _hostConnectionData = hostConnectionData;
             _allowLog = allowLog;
 
             AuthData.OnSignedIn.OnRaised += HandleSignedIn;
@@ -75,6 +96,27 @@ namespace CosmicShore.Core
             _lifecycleEvents.OnAppQuitting.OnRaised += HandleAppQuitting;
             AdsSystem.AdLoaded += HandleAdLoaded;
             TryWireUiActions();
+
+            // ── Phase 2: subscribe to SO-asset SOAP events (safe at construction) ──
+            _menuFreestyleEvents.OnGameStateTransitionStart.OnRaised += HandleFreestyleEntered;
+            _friendsData.OnFriendRequestSent.OnRaised += HandleFriendRequestSent;
+            _friendsData.OnFriendRequestReceived.OnRaised += HandleFriendRequestReceived;
+            _friendsData.OnFriendAdded.OnRaised += HandleFriendAdded;
+            _hostConnectionData.OnInviteSent.OnRaised += HandlePartyInviteSent;
+            _hostConnectionData.OnInviteReceived.OnRaised += HandlePartyInviteReceived;
+            _hostConnectionData.OnPartyJoinCompleted.OnRaised += HandlePartyJoined;
+
+            // ── Phase 2: static C# events (exist regardless of scene) ──
+            GameSetting.OnChangeMusicEnabledStatus      += v => HandleSettingChanged("music_enabled", v);
+            GameSetting.OnChangeSFXEnabledStatus        += v => HandleSettingChanged("sfx_enabled", v);
+            GameSetting.OnChangeHapticsEnabledStatus    += v => HandleSettingChanged("haptics_enabled", v);
+            GameSetting.OnChangeInvertYEnabledStatus    += v => HandleSettingChanged("invert_y", v);
+            GameSetting.OnChangeInvertThrottleEnabledStatus += v => HandleSettingChanged("invert_throttle", v);
+            GameSetting.OnChangeJoystickVisualsStatus   += v => HandleSettingChanged("joystick_visuals", v);
+            GameSetting.OnChangeMusicLevel              += v => HandleSettingChanged("music_level", v);
+            GameSetting.OnChangeSFXLevel                += v => HandleSettingChanged("sfx_level", v);
+            GameSetting.OnChangeHapticsLevel            += v => HandleSettingChanged("haptics_level", v);
+            FavoriteSystem.OnFavoriteChanged            += HandleFavoriteChanged;
         }
 
         #region Consent & collection lifecycle
@@ -127,6 +169,7 @@ namespace CosmicShore.Core
                 AnalyticsService.Instance.StartDataCollection();
                 _collecting = true;
                 Log("Data collection started.");
+                MaybeRecordFirstLaunch();
             }
             catch (Exception e)
             {
@@ -231,7 +274,62 @@ namespace CosmicShore.Core
             _gameInProgress = false;
             var parameters = BuildGameParameters();
             parameters["duration_seconds"] = Mathf.RoundToInt(Time.realtimeSinceStartup - _gameStartTime);
+
+            if (TryResolveLocalWin(out bool won))
+            {
+                parameters["player_won"] = won;
+                if (won)
+                {
+                    _consecutiveLosses = 0;
+                }
+                else
+                {
+                    _consecutiveLosses++;
+                    if (_consecutiveLosses >= RepeatedFailThreshold)
+                        RecordEvent(UGSKeys.EventRepeatedGameFail, new Dictionary<string, object>
+                        {
+                            { "game_mode", _gameData.GameMode.ToString() },
+                            { "fail_count", _consecutiveLosses }
+                        });
+                }
+            }
+
             RecordEvent(UGSKeys.EventGameCompleted, parameters);
+        }
+
+        /// <summary>
+        /// Best-effort local win/loss at game end. Team modes resolve by domain;
+        /// otherwise by winner name vs the local player. Defensive — never throws
+        /// or logs, returns false when the result can't be determined.
+        /// </summary>
+        bool TryResolveLocalWin(out bool won)
+        {
+            won = false;
+            try
+            {
+                IPlayer local = _gameData.LocalPlayer;
+                if (local == null)
+                    return false;
+
+                // Domain (team) modes set WinnerDomain to a playable domain; Blue is the neutral sentinel.
+                if (_gameData.WinnerDomain != Domains.Blue)
+                {
+                    won = local.Domain == _gameData.WinnerDomain;
+                    return true;
+                }
+
+                if (!string.IsNullOrEmpty(_gameData.WinnerName))
+                {
+                    won = _gameData.WinnerName == local.Name;
+                    return true;
+                }
+            }
+            catch
+            {
+                // Result not populated for this mode — omit player_won.
+            }
+
+            return false;
         }
 
         Dictionary<string, object> BuildGameParameters() => new()
@@ -280,6 +378,15 @@ namespace CosmicShore.Core
                 { "last_ui_action", _lastUiAction },
                 { "app_state", _appStateVariable.Value.State.ToString() }
             });
+
+            // Crystal balance at session end (hoarding vs. spending). PlayerDataService
+            // is the sole holder of the balance; read it defensively.
+            var profile = PlayerDataService.Instance;
+            if (profile != null)
+                RecordEvent(UGSKeys.EventCrystalBalanceSnapshot, new Dictionary<string, object>
+                {
+                    { "balance", profile.GetCrystalBalance() }
+                });
         }
 
         #endregion
@@ -310,6 +417,152 @@ namespace CosmicShore.Core
         }
 
         void HandleAdLoaded() => RecordEvent(UGSKeys.EventAdImpression);
+
+        #endregion
+
+        #region Phase 2 — typed events (called by injected systems)
+
+        /// <summary>Menu became fully interactive. Call from MainMenuController on ready.</summary>
+        public void RecordMenuReady()
+        {
+            bool isFirst = !_menuReadyThisSession;
+            _menuReadyThisSession = true;
+            RecordEvent(UGSKeys.EventMenuReady, new Dictionary<string, object>
+            {
+                { "is_first", isFirst },
+                { "seconds_since_launch", SecondsSinceLaunch }
+            });
+        }
+
+        public void RecordModeUnlocked(GameModes mode) =>
+            RecordEvent(UGSKeys.EventModeUnlocked, new Dictionary<string, object>
+            {
+                { "game_mode", mode.ToString() }
+            });
+
+        public void RecordIntensityUnlocked(GameModes mode, int intensity) =>
+            RecordEvent(UGSKeys.EventIntensityUnlocked, new Dictionary<string, object>
+            {
+                { "game_mode", mode.ToString() },
+                { "intensity", intensity }
+            });
+
+        public void RecordCrystalsEarned(int amount, string source, int balance) =>
+            RecordEvent(UGSKeys.EventCrystalsEarned, new Dictionary<string, object>
+            {
+                { "amount", amount },
+                { "source", string.IsNullOrEmpty(source) ? "unknown" : source },
+                { "balance", balance }
+            });
+
+        public void RecordCrystalsSpent(int amount, string source, int balance) =>
+            RecordEvent(UGSKeys.EventCrystalsSpent, new Dictionary<string, object>
+            {
+                { "amount", amount },
+                { "source", string.IsNullOrEmpty(source) ? "unknown" : source },
+                { "balance", balance }
+            });
+
+        public void RecordCrystalSpendBlocked(int amount, string item, int balance) =>
+            RecordEvent(UGSKeys.EventCrystalSpendBlocked, new Dictionary<string, object>
+            {
+                { "amount", amount },
+                { "item", string.IsNullOrEmpty(item) ? "unknown" : item },
+                { "balance", balance }
+            });
+
+        public void RecordVesselUnlocked(string vessel, int cost, int balance) =>
+            RecordEvent(UGSKeys.EventVesselUnlocked, new Dictionary<string, object>
+            {
+                { "vessel", string.IsNullOrEmpty(vessel) ? "unknown" : vessel },
+                { "cost", cost },
+                { "balance", balance }
+            });
+
+        public void RecordQuestCompleted(string questTitle, int shardValue) =>
+            RecordEvent(UGSKeys.EventQuestCompleted, new Dictionary<string, object>
+            {
+                { "quest", string.IsNullOrEmpty(questTitle) ? "unknown" : questTitle },
+                { "shard_value", shardValue }
+            });
+
+        public void RecordShareTriggered(string gameMode) =>
+            RecordEvent(UGSKeys.EventShareTriggered, new Dictionary<string, object>
+            {
+                { "game_mode", string.IsNullOrEmpty(gameMode) ? "unknown" : gameMode }
+            });
+
+        // ── Handlers for subscribed events ──
+
+        void HandleFreestyleEntered()
+        {
+            bool isFirst = !_freestyleEnteredThisSession;
+            _freestyleEnteredThisSession = true;
+            RecordEvent(UGSKeys.EventFreestyleEntered, new Dictionary<string, object>
+            {
+                { "is_first", isFirst },
+                { "seconds_since_launch", SecondsSinceLaunch }
+            });
+        }
+
+        void HandleSettingChanged(string setting, object value) =>
+            RecordEvent(UGSKeys.EventSettingChanged, new Dictionary<string, object>
+            {
+                { "setting", setting },
+                { "value", value?.ToString() ?? string.Empty },
+                { "seconds_since_launch", SecondsSinceLaunch }
+            });
+
+        void HandleFriendRequestSent(FriendData f) =>
+            RecordEvent(UGSKeys.EventFriendRequestSent, new Dictionary<string, object>
+            {
+                { "target_id", f.PlayerId ?? string.Empty }
+            });
+
+        void HandleFriendRequestReceived(FriendData f) =>
+            RecordEvent(UGSKeys.EventFriendRequestReceived, new Dictionary<string, object>
+            {
+                { "from_id", f.PlayerId ?? string.Empty }
+            });
+
+        void HandleFriendAdded(FriendData f) =>
+            RecordEvent(UGSKeys.EventFriendAdded, new Dictionary<string, object>
+            {
+                { "friend_id", f.PlayerId ?? string.Empty }
+            });
+
+        void HandlePartyInviteSent(PartyPlayerData p) =>
+            RecordEvent(UGSKeys.EventPartyInviteSent, new Dictionary<string, object>
+            {
+                { "target_id", p.PlayerId ?? string.Empty }
+            });
+
+        void HandlePartyInviteReceived(PartyInviteData p) =>
+            RecordEvent(UGSKeys.EventPartyInviteReceived, new Dictionary<string, object>
+            {
+                { "host_id", p.HostPlayerId ?? string.Empty }
+            });
+
+        void HandlePartyJoined() => RecordEvent(UGSKeys.EventPartyJoined);
+
+        void HandleFavoriteChanged(GameModes mode, bool favorited) =>
+            RecordEvent(UGSKeys.EventMinigameFavorited, new Dictionary<string, object>
+            {
+                { "game_mode", mode.ToString() },
+                { "favorited", favorited }
+            });
+
+        void MaybeRecordFirstLaunch()
+        {
+            if (PlayerPrefs.GetInt(FirstLaunchPrefKey, 0) == 1)
+                return;
+
+            PlayerPrefs.SetInt(FirstLaunchPrefKey, 1);
+            PlayerPrefs.Save();
+            RecordEvent(UGSKeys.EventGameFirstLaunched);
+        }
+
+        static int SecondsSinceLaunch => Mathf.RoundToInt(Time.realtimeSinceStartup);
 
         #endregion
 
