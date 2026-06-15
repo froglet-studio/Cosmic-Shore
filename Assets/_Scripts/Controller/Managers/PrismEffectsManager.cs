@@ -2,6 +2,7 @@ using UnityEngine;
 using Unity.Collections;
 using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Profiling;
 using System.Collections.Generic;
 using CosmicShore.Utility;
 using System.Linq;
@@ -15,6 +16,9 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class PrismEffectsManager : Singleton<PrismEffectsManager>
     {
+        private static readonly ProfilerMarker s_processExplosions = new("Prism.ProcessExplosions");
+        private static readonly ProfilerMarker s_processImplosions = new("Prism.ProcessImplosions");
+
         private static bool _isQuitting;
 
         private void OnApplicationQuit() => _isQuitting = true;
@@ -133,8 +137,16 @@ namespace CosmicShore.Gameplay
         private void Update()
         {
             float dt = Time.deltaTime;
-            if (activeExplosions.Count > 0) ProcessExplosions(dt);
-            if (activeImplosions.Count > 0) ProcessImplosions(dt);
+            if (activeExplosions.Count > 0)
+            {
+                using (s_processExplosions.Auto())
+                    ProcessExplosions(dt);
+            }
+            if (activeImplosions.Count > 0)
+            {
+                using (s_processImplosions.Auto())
+                    ProcessImplosions(dt);
+            }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
             // Safety audit: detect explosion / implosion VFX with enabled renderers

@@ -6,6 +6,8 @@ using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
+using Reflex.Core;
+using Reflex.Injectors;
 using Unity.Netcode;
 using UnityEngine;
 
@@ -31,6 +33,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] ThemeManagerDataContainerSO themeManagerData;
 
         [Inject] protected GameDataSO gameData;
+        [Inject] Container _container;
 
         readonly List<(ulong playerNetId, ulong vesselNetId)> _pendingPairs = new();
         readonly List<(ulong playerNetId, ulong vesselNetId)> _pendingSwaps = new();
@@ -341,9 +344,27 @@ namespace CosmicShore.Gameplay
         // INIT LOGIC
         // ---------------------------------------------------------
 
+        /// <summary>
+        /// Netcode-replicated vessels bypass Reflex: NetworkManager instantiates the
+        /// prefab directly, so every [Inject] field on the vessel's components
+        /// (ActionExecutorRegistry.AudioSystem, executor AudioSystems, GameDataSO
+        /// mirrors, …) is null on non-server peers. The server/host injects at
+        /// instantiation time (ServerPlayerVesselInitializer.SpawnVesselForPlayer),
+        /// so only client-side instances need it here — before vessel.Initialize()
+        /// so executors see their dependencies during their own Initialize.
+        /// </summary>
+        void InjectVesselDependencies(IVessel vessel)
+        {
+            if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
+                return;
+
+            GameObjectInjector.InjectRecursive(vessel.Transform.gameObject, _container);
+        }
+
         void InitializePair(IPlayer player, IVessel vessel)
         {
             Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] InitializePair — Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}</color>");
+            InjectVesselDependencies(vessel);
             player.InitializeForMultiplayerMode(vessel);
             vessel.Initialize(player);
             ShipHelper.SetShipProperties(themeManagerData, vessel);
@@ -382,6 +403,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void ReInitializePair(IPlayer player, IVessel newVessel)
         {
+            InjectVesselDependencies(newVessel);
             player.ChangeVessel(newVessel);
             newVessel.Initialize(player);
             ShipHelper.SetShipProperties(themeManagerData, newVessel);

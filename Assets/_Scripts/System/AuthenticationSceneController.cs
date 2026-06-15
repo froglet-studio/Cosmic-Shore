@@ -486,6 +486,13 @@ namespace CosmicShore.Core
                     await WaitForRelayReadyAsync(ct).AsMainThread();
                     networkReady = true;
                     CSDebug.Log("[AuthScene] Relay session confirmed live after manual retry.");
+
+                    // Clear the latched Retry surface. Without this the panel
+                    // stays in Retry mode after the session recovers (whether
+                    // via a manual tap or the session coming up on its own),
+                    // and the orphaned retry button resurfaces on the next
+                    // opaque splash — invite-accept or game launch.
+                    ShowLoading("Connected…");
                 }
                 catch (OperationCanceledException)
                 {

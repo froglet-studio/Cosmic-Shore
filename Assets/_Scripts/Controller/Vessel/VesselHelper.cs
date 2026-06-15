@@ -131,6 +131,17 @@ namespace CosmicShore.Gameplay
                 }
             }
         }
+        /// <summary>
+        /// Makes a vessel's visuals match its CURRENT domain (read live from
+        /// VesselStatus.Domain → Player.Domain). Always swaps the material / silhouette /
+        /// AOE / skimmer references and trail colors. If the hull mesh has already been
+        /// painted (VesselCustomization.Initialize collects ShipGeometries and applies the
+        /// one-shot paint), it also re-applies the ship material to the mesh renderers —
+        /// the one-shot paint does not follow reference swaps on its own.
+        /// During first-time init the repaint is skipped: VesselController.Initialize calls
+        /// this BEFORE Customization.Initialize, which performs the initial paint itself
+        /// using the references set here.
+        /// </summary>
         public static void SetShipProperties(ThemeManagerDataContainerSO themeManagerData, IVessel vessel)
         {
             if (themeManagerData == null)
@@ -145,7 +156,8 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            var domain = vessel.VesselStatus.Domain;
+            var status = vessel.VesselStatus;
+            var domain = status.Domain;
             if (!themeManagerData.TeamMaterialSets.TryGetValue(domain, out var materialSet))
             {
                 Debug.LogError($"[ShipHelper] No material set found for domain {domain}.");
@@ -163,6 +175,12 @@ namespace CosmicShore.Gameplay
             {
                 vessel.SetTrailColors(colorSet.TrailHighlightColor, colorSet.TrailCoreColor);
             }
+
+            // Geometries exist only after VesselCustomization.Initialize has run — i.e.
+            // exactly when the one-shot paint has happened and a re-apply is both safe
+            // and required for the new references to reach the mesh renderers.
+            if (status.ShipGeometries is { Count: > 0 })
+                status.Customization?.RefreshShipMaterial();
         }
     }
 }

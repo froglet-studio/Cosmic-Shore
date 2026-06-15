@@ -506,12 +506,6 @@ Transform:
   - {fileID: 263098544}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &778382902 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 649124003064993173, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 2113049457}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &778382903 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 6776421237982909725, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
@@ -522,30 +516,6 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6dc248f311f840449b1976241e718871, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &778382904 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 548709080369453492, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 2113049457}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2113049472}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3dd2e3577e49480190c830ba1e136f9a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!114 &778382905 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7677326525594861453, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
-    type: 3}
-  m_PrefabInstance: {fileID: 2113049457}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2113049472}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1b511b9bcb0249f6b4ab9a9103a0ec66, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &778382906 stripped
@@ -581,6 +551,8 @@ MonoBehaviour:
   autoCreateObjectiveIndicator: 1
   view: {fileID: 778382907}
   scoreboard: {fileID: 2113049460}
+  volumePauseButton: {fileID: 0}
+  volumeIndicator: {fileID: 0}
   onMoundDroneSpawned: {fileID: 11400000, guid: 14f15b4cda639404cae764ee683d8c3e,
     type: 2}
   onQueenDroneSpawned: {fileID: 11400000, guid: 6aaabf7a28722bd4e926935472d614ba,
@@ -1340,7 +1312,6 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
-  CrystalCollisions: 20
   optionalEnvironment: {fileID: 0}
   optionalLaps: 4
 --- !u!114 &1628508338
@@ -1476,7 +1447,6 @@ MonoBehaviour:
   clientPlayerVesselInitializer: {fileID: 1628508333}
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
-  shutdownNetworkOnDespawn: 1
   playerSpawnPoints:
   - {fileID: 1468661147}
   - {fileID: 1074736317}
@@ -1672,6 +1642,16 @@ PrefabInstance:
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
       value: CosmicShore.UI.MultiplayerCrystalCaptureHUD, Assembly-CSharp
       objectReference: {fileID: 0}
+    - target: {fileID: 1084235039307655061, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 2113049460}
+    - target: {fileID: 1084235039307655061, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_MethodName
+      value: OnContinueButtonPressed
+      objectReference: {fileID: 0}
     - target: {fileID: 1247295150298305556, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: m_IsActive
@@ -1705,7 +1685,7 @@ PrefabInstance:
     - target: {fileID: 2281884070549701652, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 68
       objectReference: {fileID: 0}
     - target: {fileID: 2281884070549701652, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
@@ -1857,6 +1837,16 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3397275166430212773, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
+      value: 
+      objectReference: {fileID: 2113049460}
+    - target: {fileID: 3397275166430212773, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
+      value: CosmicShore.UI.Scoreboard, Assembly-CSharp
+      objectReference: {fileID: 0}
     - target: {fileID: 3509273578276065945, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: m_AnchoredPosition.x
@@ -1910,7 +1900,7 @@ PrefabInstance:
     - target: {fileID: 3968036306810933939, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 0
+      value: 380
       objectReference: {fileID: 0}
     - target: {fileID: 3968036306810933939, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
@@ -1931,6 +1921,26 @@ PrefabInstance:
         type: 3}
       propertyPath: _eventResponses.Array.data[0]._response.m_PersistentCalls.m_Calls.Array.data[0].m_TargetAssemblyTypeName
       value: CosmicShore.UI.MultiplayerCrystalCaptureHUD, Assembly-CSharp
+      objectReference: {fileID: 0}
+    - target: {fileID: 4342397459628225486, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4342397459628225486, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4342397459628225486, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 224
+      objectReference: {fileID: 0}
+    - target: {fileID: 4342397459628225486, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+        type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4484042448459437976, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
         type: 3}
@@ -2307,12 +2317,20 @@ MonoBehaviour:
   aiProfileList: {fileID: 11400000, guid: 32e9d97079547024991d0d39d1417f69, type: 2}
   winnerCrystalReward: 5
   playAgainButton: {fileID: 2113049467}
-  mainMenuButton: {fileID: 0}
+  mainMenuButton: {fileID: 2113049600}
   leaveLobbyButton: {fileID: 0}
+  onClickToMainMenu: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
+  continueButton: {fileID: 2113049462}
   animSettings: {fileID: 11400000, guid: e1e99ce577ae9be408463160f475ed8d, type: 2}
 --- !u!1 &2113049461 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4014406041637916944, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+    type: 3}
+  m_PrefabInstance: {fileID: 2113049457}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2113049462 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5536626419705274720, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
     type: 3}
   m_PrefabInstance: {fileID: 2113049457}
   m_PrefabAsset: {fileID: 0}
@@ -2379,15 +2397,17 @@ MonoBehaviour:
   m_GameObject: {fileID: 2113049472}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 585e900e2ee74668919ca01a846434df, type: 3}
+  m_Script: {fileID: 11500000, guid: 86cfe17c56c343bf83a92cca9b1618f5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  sceneCinematicLibrary: {fileID: 11400000, guid: f4f9f13d3b8dc74458a910f0ab4a0883,
-    type: 2}
-  cinematicCameraController: {fileID: 778382904}
-  view: {fileID: 778382905}
-  crystalRewardRoot: {fileID: 778382902}
+  preScoreboardDelay: 0
+--- !u!1 &2113049600 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7469907960593864752, guid: abd30ad4cfca9ae4a8aecfde9f650cf3,
+    type: 3}
+  m_PrefabInstance: {fileID: 2113049457}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -104,6 +104,11 @@ namespace CosmicShore.Core
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
+            // Tournament is a session-level meta, not part of the quest progression chain —
+            // always available so its arcade card is interactable.
+            if (mode == GameModes.Tournament)
+                return true;
+
             // First quest mode is always unlocked
             if (questList != null && questList.Quests.Count > 0 &&
                 questList.Quests[0].GameMode == mode)
@@ -331,6 +336,10 @@ namespace CosmicShore.Core
         /// </summary>
         public int GetMaxUnlockedIntensity(GameModes mode)
         {
+            // Tournament intensity isn't gated behind progression — the full range is available
+            // (one intensity is chosen in the lobby and applied to every game in the lineup).
+            if (mode == GameModes.Tournament) return 4;
+
             if (!IsGameModeUnlocked(mode)) return 0;
             return ProgressionData.GetMaxUnlockedIntensity(mode.ToString());
         }

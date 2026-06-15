@@ -34,7 +34,10 @@ namespace CosmicShore.Gameplay
             if (spawnProfile.SupportedFloras is not { Count: > 0 })
                 yield break;
 
-            var excluded = GetExcludedDomain(spawnProfile.FloraExcludeLocalDomain, gameData, fallbackLocal: Domains.Jade);
+            // No excluded-domain roll — the locked no-domain-asymmetry invariant: all three
+            // domains seed flora uniformly. Passing null keeps legacy SpawnProfile assets with
+            // the old serialized FloraExcludeLocalDomain=true inert (same as RandomLifeSpawner).
+            Domains? excluded = null;
 
             // Per user spec: flora begin spawning with random domains at count=0. The
             // SpawnProbability is applied as a per-attempt roll inside SpawnFloraTypeLoop
