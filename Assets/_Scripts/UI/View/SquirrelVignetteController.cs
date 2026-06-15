@@ -19,7 +19,7 @@ namespace CosmicShore.UI
         [SerializeField] float _dangerRange  = 20f;
 
         [Header("Detection — Direction")]
-        [Tooltip("Dot-product cutoff: enemy forward must point this close to you. 0.7 ≈ within 45°.")]
+        [Tooltip("Enemy forward must point this close to you. 0.5 ≈ within 60°.")]
         [SerializeField, Range(0f, 1f)] float _facingDotThreshold = 0.5f;
 
         [Header("Detection — Speed")]
@@ -27,17 +27,18 @@ namespace CosmicShore.UI
         [SerializeField] float _minClosingSpeed = 2f;
 
         [Header("Intensity")]
-        [SerializeField, Range(0f, 1f)] float _warningIntensity = 0.8f;
+        [SerializeField, Range(0f, 1f)] float _warningIntensity = 0.7f;
         [SerializeField, Range(0f, 1f)] float _dangerIntensity  = 1f;
-        [SerializeField] float _fadeInSpeed  = 4f;
+        [Tooltip("How fast the vignette rises to the target level (exponential, higher = snappier).")]
+        [SerializeField] float _fadeInSpeed  = 6f;
+        [Tooltip("How fast the vignette drains to 0 once the threat clears (units/sec).")]
         [SerializeField] float _fadeOutSpeed = 1.5f;
-        [SerializeField] float _pulseSpeed   = 3f;
 
         [Header("Debug")]
         [Tooltip("Preview intensity without needing enemies nearby. 0 = off.")]
         [SerializeField, Range(0f, 1f)] float _previewIntensity = 0f;
         [Tooltip("Log threat evaluation every N seconds. 0 = off.")]
-        [SerializeField] float _debugLogInterval = 2f;
+        [SerializeField] float _debugLogInterval = 0f;
 
         [Inject] GameDataSO _gameData;
 
@@ -79,13 +80,13 @@ namespace CosmicShore.UI
 
             if (_previewIntensity > 0f)
             {
-                _vignette.intensity.value = Mathf.Lerp(_vignette.intensity.value, _previewIntensity, _fadeInSpeed * dt);
+                _vignette.intensity.value = _previewIntensity;
                 return;
             }
 
             if (_localVesselTransform == null)
             {
-                _vignette.intensity.value = Mathf.Lerp(_vignette.intensity.value, 0f, _fadeOutSpeed * dt);
+                _vignette.intensity.value = Mathf.MoveTowards(_vignette.intensity.value, 0f, _fadeOutSpeed * dt);
                 return;
             }
 
@@ -93,26 +94,20 @@ namespace CosmicShore.UI
 
             ThreatLevel threat = GetThreatLevel(dt);
 
-            float targetIntensity;
-            float lerpSpeed;
-            switch (threat)
+            float target = threat switch
             {
-                case ThreatLevel.Danger:
-                    float pulse = (Mathf.Sin(Time.time * _pulseSpeed) + 1f) * 0.5f;
-                    targetIntensity = Mathf.Lerp(_warningIntensity, _dangerIntensity, pulse);
-                    lerpSpeed = _fadeInSpeed;
-                    break;
-                case ThreatLevel.Warning:
-                    targetIntensity = _warningIntensity;
-                    lerpSpeed = _fadeInSpeed;
-                    break;
-                default:
-                    targetIntensity = 0f;
-                    lerpSpeed = _fadeOutSpeed;
-                    break;
-            }
+                ThreatLevel.Danger  => _dangerIntensity,
+                ThreatLevel.Warning => _warningIntensity,
+                _                   => 0f
+            };
 
-            _vignette.intensity.value = Mathf.Lerp(_vignette.intensity.value, targetIntensity, lerpSpeed * dt);
+            float current = _vignette.intensity.value;
+            if (target > current)
+                // smooth exponential rise — feels responsive without snapping
+                _vignette.intensity.value = Mathf.Lerp(current, target, 1f - Mathf.Exp(-_fadeInSpeed * dt));
+            else
+                // MoveTowards so it actually reaches 0 instead of asymptoting
+                _vignette.intensity.value = Mathf.MoveTowards(current, 0f, _fadeOutSpeed * dt);
 
             CacheEnemyPositions();
         }
@@ -178,8 +173,7 @@ namespace CosmicShore.UI
                 {
                     Vector3 enemyVelocity = (enemyT.position - prevEnemyPos) / dt;
                     Vector3 relVelocity = enemyVelocity - _localVelocity;
-                    // positive = enemy closing toward player
-                    float closingSpeed = Vector3.Dot(relVelocity, toLocal / dist);
+                    float closingSpeed = Vector3.Dot(relVelocity, toLocal / dist); // positive = approaching
                     if (closingSpeed < _minClosingSpeed)
                     {
                         if (doLog) Debug.Log($"[Vignette] enemy dist={dist:F1} closingSpeed={closingSpeed:F1} below min {_minClosingSpeed}");
