@@ -117,6 +117,7 @@ namespace CosmicShore.Core
             GameSetting.OnChangeSFXLevel                += v => HandleSettingChanged("sfx_level", v);
             GameSetting.OnChangeHapticsLevel            += v => HandleSettingChanged("haptics_level", v);
             FavoriteSystem.OnFavoriteChanged            += HandleFavoriteChanged;
+            UGSCloudSaveProvider.OnSaveFailed           += HandleCloudSaveFailed;
         }
 
         #region Consent & collection lifecycle
@@ -550,6 +551,12 @@ namespace CosmicShore.Core
             {
                 { "game_mode", mode.ToString() },
                 { "favorited", favorited }
+            });
+
+        void HandleCloudSaveFailed(string key) =>
+            RecordEvent(UGSKeys.EventCloudSaveFailed, new Dictionary<string, object>
+            {
+                { "key", key }
             });
 
         void MaybeRecordFirstLaunch()

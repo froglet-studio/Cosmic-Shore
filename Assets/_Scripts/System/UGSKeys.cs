@@ -60,5 +60,8 @@ namespace CosmicShore.Core
         // Phase 2 — retention
         public const string EventQuestCompleted   = "quest_completed";
         public const string EventRepeatedGameFail = "repeated_game_fail";
+
+        // Phase 3 — observability
+        public const string EventCloudSaveFailed = "cloud_save_failed";
     }
 }

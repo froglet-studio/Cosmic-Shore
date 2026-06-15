@@ -161,11 +161,15 @@ namespace CosmicShore.Core
 
         public async Task FlushAllAsync(CancellationToken ct = default)
         {
+            // Only flush repositories with pending changes — clean repos would
+            // otherwise re-upload an unchanged payload on every flush.
             var tasks = new List<Task>();
             foreach (var repo in _allRepos)
-                tasks.Add(repo.SaveAsync(ct));
+                if (repo.IsDirty)
+                    tasks.Add(repo.SaveAsync(ct));
 
-            await Task.WhenAll(tasks);
+            if (tasks.Count > 0)
+                await Task.WhenAll(tasks);
         }
 
         public async Task<bool> ResetAllDataAsync(CancellationToken ct = default)
