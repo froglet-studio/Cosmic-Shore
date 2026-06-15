@@ -71,7 +71,6 @@ namespace CosmicShore.Gameplay
 
         public IPlayer ActivePlayer { get; protected set; }
 
-        // Firebase analytics events
         public delegate void MiniGameStart(GameModes mode, VesselClassType vessel, int playerCount, int intensity);
         public static event MiniGameStart OnMiniGameStart;
         public delegate void MiniGameEnd(GameModes mode, VesselClassType vessel, int playerCount, int intensity, int highScore);
