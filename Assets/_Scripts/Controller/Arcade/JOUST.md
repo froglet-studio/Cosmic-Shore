@@ -2,7 +2,7 @@
 
 ## Overview
 
-Joust is a collision-based competitive mode for 2-12 players. Players score joust points by overtaking **opponents** — sweeping their faster vessel's skimmer past a slower enemy. Overtaking a same-domain teammate scores nothing (it buffs the teammate instead). The first domain to reach the collision target wins; losers are ranked by jousts remaining. The mode supports multiplayer with friends, mixed human+AI lobbies, or solo play with AI backfill (minimum 2 total players required).
+Joust is a collision-based competitive mode for 2-12 players. Players score joust points by overtaking **opponents** — sweeping their faster vessel's skimmer past a slower enemy. Overtaking a same-domain teammate scores nothing (it buffs the teammate instead). The first domain to reach the collision target wins; losers are ranked by jousts remaining. The mode supports multiplayer with friends, mixed human+AI lobbies, or solo play with AI backfill (minimum **2 players and 2 domains** required, so there is always an opposing team to joust).
 
 **Key architectural facts:**
 
@@ -29,6 +29,7 @@ MiniGameControllerBase (MonoBehaviour + NetworkBehaviour)
 User selects Joust from the Arcade screen. `ArcadeGameConfigureModal` opens with configuration controls:
 
 - **Player Count** (2-12): Constrained by `SO_ArcadeGame.MinPlayers` (2) and `MaxPlayers` (12)
+- **Domain (Team) Count** (2-4): Floored at `SO_ArcadeGame.MinDomainsAllowed` (**2** for Joust). The modal computes the default domain count **after** player count is set (commit `22900f8b`), so the stepper defaults to 2 — never 1, which would put every player on one team and leave the AI with no opponent to joust. See Design Note 8.
 - **Intensity** (1-4): Constrained by `SO_ArcadeGame.MinIntensity` (1) and `MaxIntensity` (4)
 - **Vessel Selection**: From `SO_ArcadeGame.Vessels` list
 
@@ -336,6 +337,8 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 | Scene loader | `SceneLoader.cs` | `_Scripts/System/` |
 | GameMode enum | `GameModes.cs` | `_Scripts/Data/Enums/` |
 | AI vessel spawner | `ServerPlayerVesselInitializerWithAI.cs` | `_Scripts/Controller/Multiplayer/` |
+| AI pilot (opponent seek) | `AIPilot.cs` | `_Scripts/Controller/AI/` |
+| End-game scoreboard (shared) | `Scoreboard.cs` | `_Scripts/UI/` |
 | Game feed API | `GameFeedAPI.cs` | `_Scripts/UI/GameEventFeed/` |
 | Game scene | `MinigameJoust_Gameplay.unity` | `_Scenes/Multiplayer Scenes/` |
 
@@ -343,7 +346,7 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 
 | Asset | Type | Key Values |
 |---|---|---|
-| Joust game config | `SO_ArcadeGame` | `Mode=MultiplayerJoust(34)`, `IsMultiplayer=true`, `MinPlayers=2`, `MaxPlayers=12`, `MinIntensity=1`, `MaxIntensity=4` |
+| Joust game config | `SO_ArcadeGame` | `Mode=MultiplayerJoust(34)`, `IsMultiplayer=true`, `MinPlayers=2`, `MaxPlayers=12`, `MinDomainsAllowed=2`, `MinIntensity=1`, `MaxIntensity=4` |
 | Arcade config runtime | `ArcadeGameConfigSO` | `Intensity`, `PlayerCount`, `SelectedShip` (runtime state) |
 
 ## Design Notes
@@ -362,10 +365,21 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 
 7. **Losers all tied**: All non-winners receive a score of `99999f`, so they are all ranked equally. There is no distinction between 2nd and 3rd place in Joust — only the winner matters.
 
-8. **Minimum 2 players**: `MinPlayersAllowed=2` in the SO asset means Joust cannot be played solo without at least one AI opponent. The effective minimum player count in the UI stepper is `max(game.MinPlayersAllowed, currentPartyHumanCount)`.
+8. **Minimum 2 players AND 2 domains** (commit `22900f8b`): Joust is opponent-based, so a single team makes it unplayable. Two SO fields enforce this on the configure modal:
+   - `MinPlayersAllowed=2` — Joust cannot be played solo without at least one AI opponent. The effective minimum player count in the UI stepper is `max(game.MinPlayersAllowed, currentPartyHumanCount)`.
+   - `MinDomainsAllowed=2` — added to `SO_ArcadeGame` (default 1, `[Range(1,3)]`) and set to 2 on the Joust asset. `ArcadeGameConfigureModal.MinDomainsForGame` reads it and floors the domain count everywhere it previously floored at the global `MinDomains` const (stepper init, the PC-change re-clamp, the DC-change clamp, and the client-sync `CommitConfiguration` path).
+
+   The bug this fixed: `DefaultDomainCount` was 1 *and* the default was computed in `Configure()` before `PlayerCount` was set (`ResetState()` leaves PC at 0), so Joust opened with one domain — every player on the same team — and the AI had no opponent to chase, so it idled/flew off. The fix also computes the default domain count **after** player count is initialized, and makes `ComputeMaxDomainCount()` fall back to the hard max when PC is unset and never drop below `MinDomainsForGame`.
 
 9. **No comeback system**: Unlike HexRace (which uses `ElementalComebackSystem`), Joust has no handicap or catch-up mechanics. All players compete on equal footing throughout.
 
 10. **Scoreboard requires inspector wiring**: The scene-added `Scoreboard` (per-mode scoreboard/cinematic subclasses were deleted in the scoring refactor, and the end-game cinematic itself was removed in favour of `EndGameSequencer` + the base `Scoreboard` — see `Docs/ScoringSystem/CHANGELOG.md`) must have `gameController` wired to the scene's `MultiplayerJoustController`, and the prefab `PlayAgainButton.onClick` must be re-targeted at that scene-added Scoreboard (see §9). `PauseMenu`'s `gameController` / `replayButton` overrides must also point at the Joust controller for the pause-menu Restart path.
 
-11. **Opponent-only scoring**: `VesselExplosionBySkimmerEffectSO` checks `impacteeVessel.Domain != impactorVessel.Domain` before scoring. Without this check, two teammates bumping skimmers each scored joust points, inflating the domain sum to the (low) `collisionsNeeded` target almost instantly — the game ended within a few collisions, before the in-game HUD was visibly in play. Overtake buffs/debuffs are unaffected: `VesselOvertakeBySkimmerEffectSO` still buffs teammates and debuffs opponents regardless. AI pilots already chase opponents only (`AIPilot.UpdatePlayerTarget` skips `player.Domain == myDomain`), which complements this rule.
+11. **Opponent-only scoring**: `VesselExplosionBySkimmerEffectSO` checks `impacteeVessel.Domain != impactorVessel.Domain` before scoring. Without this check, two teammates bumping skimmers each scored joust points, inflating the domain sum to the (low) `collisionsNeeded` target almost instantly — the game ended within a few collisions, before the in-game HUD was visibly in play. Overtake buffs/debuffs are unaffected: `VesselOvertakeBySkimmerEffectSO` still buffs teammates and debuffs opponents regardless. AI pilots already chase opponents only (`AIPilot.SelectClosestOpponent` skips `player.Domain == myDomain`), which complements this rule.
+
+12. **AI keeps jousting when it loses its target** (commit `975271aa`): the player-seek AI (`AIPilot` with `seekPlayers=true`, used for Joust) used to fly off in a straight line whenever its opponent set went empty (e.g. a 1v1 opponent mid-respawn). `UpdatePlayerTarget` only wrote `_targetPosition` when it found a live different-domain opponent; with no fallback the target held its stale/zero value and the vessel coasted along its forward axis. Three changes fix it:
+    - The targeting coroutine was split — `UpdatePlayerTarget` now only RE-SELECTS *which* opponent to chase (via `SelectClosestOpponent`), storing the chosen `Transform` in `_targetVesselTransform`; `Update()` reads that opponent's **live** position every frame, so the AI never chases a 0.5s-stale point.
+    - `SelectClosestOpponent` falls back to the **cell centre** when no opponent qualifies (mirroring the crystal-seek fallback in `UpdateCellContent`), instead of holding a stale/zero target. While no opponent is locked it re-scans on the faster `playerReacquireInterval` (0.1s) rather than the locked-on `playerSeekUpdateInterval` (0.5s), so a respawning 1v1 target is re-acquired promptly.
+    - The div-by-zero early-return (target coincident with the vessel) now zeroes the turn inputs before returning, so the AI flies a clean straight pass-through instead of latching the previous frame's turn input and veering.
+
+13. **Scoreboard stays on-base across re-shows** (commit `660e4d91`): the shared `Scoreboard.PlayEntranceAnimation` slid the panel in by mutating its own `anchoredPosition` (reading the current pos as the rest target, shoving it down by `offset`, tweening back via `DOAnchorPos`) and never restored it on `HideScoreboard()`. On Joust's stretch-anchored panel a re-entrant/interrupted show captured the already-displaced position as the new rest target, so the board drifted off-base in modes that re-show it (Joust / Crystal Capture). HexRace was immune (`HasEndGame=false` → shown once then a full scene reload). The slide is now disabled: `ShowScoreboard` calls `ShowScoreboardImmediate()` (authored position, forces full CanvasGroup alpha + unit banner scale). Re-enable the slide once the rest position is captured at `Awake` and restored on hide.

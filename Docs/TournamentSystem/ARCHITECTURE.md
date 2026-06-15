@@ -18,6 +18,14 @@ Capture (35)** — back-to-back. After each game, players earn **placement point
 2nd = 6, 3rd = 3, 4th = 1; configurable). The cumulative per-player total is the tournament
 leaderboard. It appears as a normal card in the Arcade panel (`GameModes.Tournament = 36`).
 
+**Lobby minimum — 2 players, 2 domains.** Placement points are meaningless without opposing
+teams (and the Joust leg is unplayable on a single domain — see JOUST.md Design Note 8). The Tournament
+arcade card therefore sets `MinPlayersAllowed=2` and `MinDomainsAllowed=2` (`87658960`); the
+configure modal floors both via `ArcadeGameConfigureModal.MinDomainsForGame`, so a solo host
+always launches with at least one AI opponent on a second domain. No tournament-specific code is
+needed — `TournamentController` preserves the lobby's player/domain config across all three
+`Single` loads (`SyncFromArcadeGame` only sets scene/mode/multiplayer, never the counts).
+
 ## 2. The load model — sequential `Single`, no additive
 
 Every transition is a **host-driven `LoadSceneMode.Single` load** via the existing
@@ -89,6 +97,21 @@ every peer resets its standings when game 1 loads while still in phase `Summary`
 `TournamentController.HandleSceneLoaded`), so the wipe is consistent across the party without any
 extra networking.
 
+**Scoreboard position stability (`660e4d91`):** a tournament shows the Scoreboard once per leg, so
+it re-shows the board up to three times in one session — exactly the case that exposed a drift
+bug. `Scoreboard.PlayEntranceAnimation` slid the panel in by mutating its own `anchoredPosition`
+and never restored it on hide; on a stretch-anchored panel each re-show captured the displaced
+position as the new rest target, so the board crept off-base across the Joust / Crystal Capture
+legs (HexRace was immune — it shows the board once then full-scene-reloads). The entrance slide is
+now disabled in favour of `Scoreboard.ShowScoreboardImmediate` (authored position, full alpha,
+unit banner scale). See JOUST.md / CRYSTAL_CAPTURE.md for the per-mode notes.
+
+**Joust-leg AI hardening (`975271aa`):** because every tournament includes the Joust leg, the
+player-seek AI was fixed so bots keep jousting instead of flying off when they lose their target
+(empty opponent set / opponent mid-respawn): `AIPilot` now tracks the chosen opponent's live
+transform every frame, falls back to the cell centre when no opponent qualifies, and re-acquires
+on a faster cadence while unlocked. Full detail in JOUST.md Design Note 12.
+
 ## 5. Data — `TournamentDataSO`
 
 `_Scripts/Utility/DataContainers/Tournament/TournamentDataSO.cs` (asset:
@@ -108,7 +131,10 @@ name), `IsLastGame`, `ResetRuntime()`.
 | State machine | `_Scripts/Controller/Arcade/Tournament/TournamentStateMachine.cs` |
 | Controller (brain) | `_Scripts/Controller/Arcade/Tournament/TournamentController.cs` |
 | Lobby scene view | `_Scripts/Controller/Arcade/Tournament/TournamentSceneView.cs` |
-| End-game buttons | `_Scripts/UI/Scoreboard.cs` |
+| End-game buttons + entrance (`ShowScoreboardImmediate`) | `_Scripts/UI/Scoreboard.cs` |
+| Lobby player/domain floor | `_Scripts/UI/Modals/ArcadeGameConfigureModal.cs` (`MinDomainsForGame`) |
+| Per-game min domains field | `_Scripts/ScriptableObjects/SO_ArcadeGame.cs` (`MinDomainsAllowed`) |
+| Joust-leg opponent-seek AI | `_Scripts/Controller/AI/AIPilot.cs` |
 | Client flag sync | `_Scripts/Controller/Arcade/MultiplayerMiniGameControllerBase.cs` |
 | Stable AI roster | `_Scripts/Controller/Multiplayer/ServerPlayerVesselInitializerWithAI.cs` |
 | DI registration | `_Scripts/System/AppManager.cs` |
@@ -136,7 +162,10 @@ All editor wiring is committed; the mode runs end-to-end.
   (`GameCanvas-HexRace.prefab`, used by all three domain-game scenes — HexRace, Joust, Crystal
   Capture — plus `EndGameStatsPanel.prefab`) and wired to `OnContinueButtonPressed()`. Host-only,
   shown on every game (see §4).
-- **Arcade card + grid cell** — `ArcadeGameTournament.asset` present in `GameLists/ArcadeGames.asset`.
+- **Arcade card + grid cell** — `ArcadeGameTournament.asset` present in `GameLists/ArcadeGames.asset`,
+  with `MinPlayersAllowed=2`, `MaxPlayersAllowed=4`, `MinDomainsAllowed=2`, `MinIntensity=1`,
+  `MaxIntensity=4` (`87658960`) — so the configure modal floors both player and domain count to 2
+  (see §1, *Lobby minimum*).
 
 No per-button visibility code lives in the scene — `TournamentSceneView` and `Scoreboard`
 drive it (host-only, phase-selected).
