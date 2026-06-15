@@ -1773,14 +1773,14 @@ MonoBehaviour:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   tournamentData: {fileID: 11400000, guid: f1738a31735a43a196f1b3a711c91947, type: 2}
   titleText: {fileID: 1335365946}
-  lobbyRoot: {fileID: 0}
+  lobbyRoot: {fileID: 1011190438}
   lineupText: {fileID: 437283283}
   hostStartButton: {fileID: 1067315743}
   autoStartDelaySeconds: 3
-  summaryRoot: {fileID: 0}
-  resultsText: {fileID: 0}
-  playAgainButton: {fileID: 0}
-  mainMenuButton: {fileID: 0}
+  summaryRoot: {fileID: 1780435132}
+  resultsText: {fileID: 1053919365}
+  playAgainButton: {fileID: 456178553}
+  mainMenuButton: {fileID: 1694828555}
   onClickToMainMenu: {fileID: 11400000, guid: 7a1182f4329e5d645ad474c11a633a3e, type: 2}
 --- !u!1 &1694828555
 GameObject:
