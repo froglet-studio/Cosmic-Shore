@@ -16,6 +16,12 @@ namespace CosmicShore.ScriptableObjects
     ///   • HexRace / Crystal Capture — 0 falls back to the track-waypoint auto-calc (then 39).
     ///   • Joust — 0 falls back to <see cref="DefaultJoustCount"/>.
     ///
+    /// Two value sets are stored: the <b>Live</b> counts (what the game actually uses at runtime)
+    /// and the <b>Build baseline</b> (the values a shipping build must use, captured via the tool's
+    /// "Set Build Values" button). Lower a Live count to end a mode quickly while testing; when
+    /// <see cref="autoRestoreBuildValuesBeforeBuild"/> is on, a build first copies the Build baseline
+    /// onto the Live counts (<see cref="ApplyBuildValues"/>), so test values are never shipped.
+    ///
     /// See the <c>/EndGameConditions</c> skill (<c>.claude/skills/EndGameConditions/</c>).
     /// </summary>
     [CreateAssetMenu(
@@ -29,7 +35,7 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Joust target used when <see cref="joustCount"/> is 0 (auto/default).</summary>
         public const int DefaultJoustCount = 3;
 
-        [Header("End-game counts — 0 = auto/default (edit via Tools > Cosmic Shore > End Game Conditions)")]
+        [Header("Live counts — used at runtime. 0 = auto/default (edit via Tools > Cosmic Shore > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
 
@@ -38,6 +44,14 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Joust collisions to end the turn. 0 = default (3).")]
         [Min(0)] public int joustCount = 3;
+
+        [Header("Build baseline — what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
+        [Min(0)] public int hexRaceCrystalCountBuild = 0;
+        [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
+        [Min(0)] public int joustCountBuild = 3;
+
+        [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
+        public bool autoRestoreBuildValuesBeforeBuild = true;
 
         static EndConditionOverridesSO _instance;
 
@@ -72,5 +86,27 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>Joust target: the configured count when &gt; 0, otherwise <see cref="DefaultJoustCount"/>.</summary>
         public int GetJoustCount() => joustCount > 0 ? joustCount : DefaultJoustCount;
+
+        /// <summary>True when every Live count (used at runtime) already equals its Build baseline.</summary>
+        public bool LiveMatchesBuild =>
+            hexRaceCrystalCount == hexRaceCrystalCountBuild &&
+            crystalCaptureCrystalCount == crystalCaptureCrystalCountBuild &&
+            joustCount == joustCountBuild;
+
+        /// <summary>Copy the Build baseline onto the Live counts (build → live) — used by the build auto-restore.</summary>
+        public void ApplyBuildValues()
+        {
+            hexRaceCrystalCount = hexRaceCrystalCountBuild;
+            crystalCaptureCrystalCount = crystalCaptureCrystalCountBuild;
+            joustCount = joustCountBuild;
+        }
+
+        /// <summary>Snapshot the current Live counts as the Build baseline (live → build) — used by "Set Build Values".</summary>
+        public void CaptureBuildValues()
+        {
+            hexRaceCrystalCountBuild = hexRaceCrystalCount;
+            crystalCaptureCrystalCountBuild = crystalCaptureCrystalCount;
+            joustCountBuild = joustCount;
+        }
     }
 }

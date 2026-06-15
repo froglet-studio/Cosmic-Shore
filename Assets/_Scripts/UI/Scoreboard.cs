@@ -147,7 +147,16 @@ namespace CosmicShore.UI
             if (scoreboardPanel)
             {
                 scoreboardPanel.gameObject.SetActive(true);
-                PlayEntranceAnimation();
+
+                // Entrance animation disabled for now: PlayEntranceAnimation() slid the panel
+                // by mutating its own anchoredPosition (read current pos as the rest target,
+                // shoved it down by `offset`, tweened back via DOAnchorPos) and never restored
+                // it on HideScoreboard(). On a stretch-anchored panel a re-entrant/interrupted
+                // show captured the already-displaced position as the new rest target, so the
+                // panel drifted off-base in modes that re-show the board (Joust / Crystal Capture).
+                // Show at the authored position with no slide. (Re-enable once the rest pos is
+                // captured at Awake and restored on hide.)
+                ShowScoreboardImmediate();
             }
         }
 
@@ -232,6 +241,24 @@ namespace CosmicShore.UI
             }
 
             _entranceSeq.SetUpdate(unscaled);
+        }
+
+        /// <summary>
+        /// Shows the scoreboard at its authored position with no slide/fade. Replaces
+        /// <see cref="PlayEntranceAnimation"/> while the entrance slide is disabled — see the
+        /// note in <see cref="ShowScoreboard"/>. Forces full alpha and unit banner scale in case
+        /// a previously-killed entrance tween left either mid-animation.
+        /// </summary>
+        void ShowScoreboardImmediate()
+        {
+            if (!scoreboardPanel) return;
+
+            _entranceSeq?.Kill();
+
+            var cg = scoreboardPanel.GetComponent<CanvasGroup>();
+            if (cg) cg.alpha = 1f;
+
+            if (BannerText) BannerText.transform.localScale = Vector3.one;
         }
 
         void OnDestroy()
@@ -439,7 +466,7 @@ namespace CosmicShore.UI
             var service = PlayerDataService.Instance;
             if (service == null) return;
 
-            int newBalance = service.AddCrystals(winnerCrystalReward);
+            int newBalance = service.AddCrystals(winnerCrystalReward, "game_reward");
             CSDebug.Log($"[Scoreboard] Awarded {winnerCrystalReward} crystals to '{localName}'. New balance: {newBalance}");
         }
 

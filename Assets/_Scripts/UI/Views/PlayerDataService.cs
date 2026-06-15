@@ -27,6 +27,7 @@ namespace CosmicShore.UI
         [SerializeField] private GameDataSO gameData;
 
         [Inject] UGSDataService _ugsDataService;
+        [Inject] AnalyticsServiceFacade _analytics;
 
         public PlayerProfileData CurrentProfile { get; private set; }
         public bool              IsInitialized  { get; private set; }
@@ -83,6 +84,13 @@ namespace CosmicShore.UI
             _ugsDataService.OnInitialized -= HandleDataServiceReady;
 
             MergeCloudProfile();
+
+            // Stamp account-creation time once for cohorting (cross-session, cloud-persisted).
+            if (CurrentProfile != null && CurrentProfile.firstSeenUtc == 0)
+            {
+                CurrentProfile.firstSeenUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                SyncCurrentProfileToRepo();
+            }
 
             ApplyPendingDebugCrystals();
 
@@ -188,6 +196,7 @@ namespace CosmicShore.UI
             repoData.crystalBalance = CurrentProfile.crystalBalance;
             repoData.xp = CurrentProfile.xp;
             repoData.unlockedRewardIds = CurrentProfile.unlockedRewardIds;
+            repoData.firstSeenUtc = CurrentProfile.firstSeenUtc;
 
             ds.ProfileRepo.MarkDirty();
         }
@@ -276,7 +285,7 @@ namespace CosmicShore.UI
             return CurrentProfile.xp;
         }
 
-        public int AddCrystals(int amount)
+        public int AddCrystals(int amount, string source = null)
         {
             if (CurrentProfile == null || amount <= 0) return GetCrystalBalance();
 
@@ -284,19 +293,25 @@ namespace CosmicShore.UI
             ScheduleSave();
             OnCrystalBalanceChanged?.Invoke(CurrentProfile.crystalBalance);
             OnProfileChanged?.Invoke(CurrentProfile);
+            _analytics?.RecordCrystalsEarned(amount, source, CurrentProfile.crystalBalance);
             CSDebug.Log($"[PlayerDataService] Added {amount} crystals. Balance: {CurrentProfile.crystalBalance}");
             return CurrentProfile.crystalBalance;
         }
 
-        public bool TrySpendCrystals(int amount)
+        public bool TrySpendCrystals(int amount, string source = null)
         {
             if (CurrentProfile == null || amount <= 0) return false;
-            if (CurrentProfile.crystalBalance < amount) return false;
+            if (CurrentProfile.crystalBalance < amount)
+            {
+                _analytics?.RecordCrystalSpendBlocked(amount, source, CurrentProfile.crystalBalance);
+                return false;
+            }
 
             CurrentProfile.crystalBalance -= amount;
             ScheduleSave();
             OnCrystalBalanceChanged?.Invoke(CurrentProfile.crystalBalance);
             OnProfileChanged?.Invoke(CurrentProfile);
+            _analytics?.RecordCrystalsSpent(amount, source, CurrentProfile.crystalBalance);
             CSDebug.Log($"[PlayerDataService] Spent {amount} crystals. Balance: {CurrentProfile.crystalBalance}");
             return true;
         }
