@@ -77,8 +77,9 @@ namespace CosmicShore.UI
         [SerializeField] private ScriptableEventNoParam onClickToMainMenu;
 
         [Header("Tournament")]
-        [Tooltip("Continue button — HOST ONLY, shown after each tournament game EXCEPT the last. " +
-                 "Advances the whole party to the next game. Wire its onClick to OnContinueButtonPressed(). " +
+        [Tooltip("Continue button — HOST ONLY, shown after EVERY tournament game (incl. the last). " +
+                 "Mid-lineup it advances the party to the next game; on the last game it loads the " +
+                 "Tournament results screen. Wire its onClick to OnContinueButtonPressed(). " +
                  "Leave unassigned in non-tournament scenes.")]
         [SerializeField] private GameObject continueButton;
 
@@ -548,9 +549,10 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Host-only "Continue" handler (tournament mode). Advances the whole party to the next
-        /// game in the lineup. Shown after every tournament game except the last (see
-        /// <see cref="ConfigureLobbyButtons"/>); wire the Continue button's onClick here.
+        /// Host-only "Continue" handler (tournament mode). Shown after every tournament game incl.
+        /// the last (see <see cref="ConfigureLobbyButtons"/>): mid-lineup it advances the party to
+        /// the next game; on the last game <see cref="TournamentController.AdvanceToNextGame"/> loads
+        /// the Tournament results screen instead. Wire the Continue button's onClick here.
         /// </summary>
         public void OnContinueButtonPressed()
         {
