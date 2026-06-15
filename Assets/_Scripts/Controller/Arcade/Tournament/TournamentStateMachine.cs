@@ -17,8 +17,11 @@ namespace CosmicShore.Gameplay
         /// <summary>A minigame in the lineup is loaded / being played.</summary>
         InGame = 2,
 
-        /// <summary>The final game has finished; final standings are shown.</summary>
+        /// <summary>The final game has finished; its scoreboard is up (Continue → Summary).</summary>
         Complete = 3,
+
+        /// <summary>The Tournament results scene is up after the last game (Play Again / Main Menu).</summary>
+        Summary = 4,
     }
 
     /// <summary>
@@ -35,7 +38,8 @@ namespace CosmicShore.Gameplay
             [TournamentPhase.Idle]     = new HashSet<TournamentPhase> { TournamentPhase.Lobby },
             [TournamentPhase.Lobby]    = new HashSet<TournamentPhase> { TournamentPhase.InGame, TournamentPhase.Idle },
             [TournamentPhase.InGame]   = new HashSet<TournamentPhase> { TournamentPhase.InGame, TournamentPhase.Complete, TournamentPhase.Idle },
-            [TournamentPhase.Complete] = new HashSet<TournamentPhase> { TournamentPhase.Lobby, TournamentPhase.Idle },
+            [TournamentPhase.Complete] = new HashSet<TournamentPhase> { TournamentPhase.Summary, TournamentPhase.Idle },
+            [TournamentPhase.Summary]  = new HashSet<TournamentPhase> { TournamentPhase.InGame, TournamentPhase.Idle },
         };
 
         public TournamentPhase Current { get; private set; } = TournamentPhase.Idle;

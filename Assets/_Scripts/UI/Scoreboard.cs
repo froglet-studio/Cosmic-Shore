@@ -161,18 +161,16 @@ namespace CosmicShore.UI
             var nm = NetworkManager.Singleton;
             bool isClient = nm == null || !nm.IsServer;
 
-            // Tournament mode: every button is host-only — clients always follow the host and
-            // see no buttons. Mid-tournament the host gets Continue (advance the party to the
-            // next game); on the final game it gets the normal Play Again (restart the whole
-            // tournament) + Main Menu, and Continue is hidden.
+            // Tournament mode: the host gets Continue on EVERY game (including the last) and
+            // clients see no buttons. Continue on the last game takes the party to the Tournament
+            // results screen, which is where Play Again / Main Menu live now — so they are never
+            // shown on the per-game scoreboard here.
             if (gameData != null && gameData.IsTournamentMode)
             {
                 bool isHost = !isClient;
-                bool lastGame = TournamentController.Instance != null && TournamentController.Instance.IsLastGame;
-
-                if (continueButton)   continueButton.SetActive(isHost && !lastGame);
-                if (playAgainButton)  playAgainButton.SetActive(isHost && lastGame);
-                if (mainMenuButton)   mainMenuButton.SetActive(isHost && lastGame);
+                if (continueButton)   continueButton.SetActive(isHost);
+                if (playAgainButton)  playAgainButton.SetActive(false);
+                if (mainMenuButton)   mainMenuButton.SetActive(false);
                 if (leaveLobbyButton) leaveLobbyButton.SetActive(false);
                 return;
             }
@@ -535,17 +533,9 @@ namespace CosmicShore.UI
                 return;
             }
 
-            // In a tournament, Play Again is only shown on the FINAL game and restarts the
-            // WHOLE tournament (reset standings → game 1) rather than replaying one game.
-            if (gameData != null && gameData.IsTournamentMode)
-            {
-                HideHostNavButtons();
-                if (TournamentController.Instance != null)
-                    TournamentController.Instance.RestartTournament();
-                else
-                    CSDebug.LogError("[Scoreboard] TournamentController.Instance is null — cannot restart tournament.");
-                return;
-            }
+            // In tournament mode Play Again is not shown on the per-game scoreboard (it lives on
+            // the Tournament results screen via TournamentSceneView). So this path is only ever
+            // reached by non-tournament games.
 
             if (gameController == null)
             {

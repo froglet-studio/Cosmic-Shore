@@ -34,6 +34,9 @@ namespace CosmicShore.Gameplay
         public bool IsActive => _tournament != null && _tournament.IsActive;
         public bool IsLastGame => _tournament != null && _tournament.IsLastGame;
 
+        /// <summary>True while the Tournament results screen is up (after the last game). Read by the scene view.</summary>
+        public bool IsShowingSummary => _stateMachine.Current == TournamentPhase.Summary;
+
         static bool IsHost => NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
 
         public TournamentController(GameDataSO gameData, TournamentDataSO tournament, SceneNameListSO sceneNames)
@@ -64,11 +67,16 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // The lobby scene load is the per-peer "tournament started" signal (covers both
-            // first start and Play-Again restart, which reloads the lobby).
+            // The Tournament scene is BOTH the intro and the end-of-tournament results screen.
+            // Distinguish them by phase (deterministic on every peer): if the last game just
+            // finished (Complete), this load is the SUMMARY — show results, keep standings.
+            // Otherwise it's a fresh start — reset + lobby.
             if (scene.name == _tournament.LobbySceneName)
             {
-                StartTournament();
+                if (_stateMachine.Current == TournamentPhase.Complete)
+                    _stateMachine.TransitionTo(TournamentPhase.Summary);
+                else
+                    StartTournament();
                 return;
             }
 
@@ -77,6 +85,15 @@ namespace CosmicShore.Gameplay
             int idx = _tournament.IndexOfSceneName(scene.name);
             if (idx >= 0 && _tournament.IsActive)
             {
+                // Play Again from the summary: game 1 loading while still in Summary phase means
+                // a fresh tournament — reset standings on every peer (phase is Summary on all
+                // peers after the summary scene loaded, so the reset is deterministic).
+                if (idx == 0 && _stateMachine.Current == TournamentPhase.Summary)
+                {
+                    _tournament.ResetRuntime();
+                    _tournament.IsActive = true;
+                    _gameData.IsTournamentMode = true;
+                }
                 _tournament.CurrentGameIndex = idx;
                 _stateMachine.TransitionTo(TournamentPhase.InGame);
             }
@@ -121,25 +138,30 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Host advances to the next game (the Scoreboard's host-only Continue button). The
-        /// party follows the Single load via Netcode.
+        /// Host advances on the Scoreboard's host-only Continue button. For a mid-lineup game it
+        /// loads the next game; after the LAST game it loads the Tournament scene, which shows the
+        /// results summary (phase Complete → Summary on load). The party follows the Single load.
         /// </summary>
         public void AdvanceToNextGame()
         {
             if (!IsHost) return;
             if (_tournament == null || !_tournament.IsActive) return;
-            LoadGameAtIndex(_tournament.CurrentGameIndex + 1);
+
+            if (_tournament.IsLastGame)
+                LoadTournamentScene();   // → Summary results screen
+            else
+                LoadGameAtIndex(_tournament.CurrentGameIndex + 1);
         }
 
         /// <summary>
-        /// Host restarts the whole tournament (the final Scoreboard's Play Again). Reloads the
-        /// lobby so every peer resets its standings via <see cref="StartTournament"/>, then the
-        /// lobby view advances to game 1.
+        /// Host restarts the whole tournament (the summary screen's Play Again). Loads game 1
+        /// directly; the reset runs on every peer when game 1 loads while still in Summary phase
+        /// (see <see cref="HandleSceneLoaded"/>), so standings clear consistently across the party.
         /// </summary>
         public void RestartTournament()
         {
             if (!IsHost) return;
-            LoadLobby();
+            LoadGameAtIndex(0);
         }
 
         /// <summary>Clears tournament state on every peer (Menu_Main return / exit).</summary>
@@ -169,7 +191,9 @@ namespace CosmicShore.Gameplay
             _gameData.InvokeGameLaunch();            // → SceneLoader.LaunchGame (host loads; clients follow)
         }
 
-        void LoadLobby()
+        // Loads the Tournament scene (the intro lobby on a fresh start, the results summary after
+        // the last game — the scene view picks the layout from the phase).
+        void LoadTournamentScene()
         {
             _gameData.SceneName = _tournament.LobbySceneName;
             _gameData.GameMode = CosmicShore.Data.GameModes.Tournament;
