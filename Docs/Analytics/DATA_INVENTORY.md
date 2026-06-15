@@ -23,10 +23,12 @@ string fallback on load.
 | 4 | `GAME_MODE_PROGRESSION` | `GameModeProgressionData` | **ACTIVE** | 1.5s + immediate | Quest claims, intensity unlocks, stat reports |
 | 5 | `HANGAR_DATA` | `HangarCloudData` | **ACTIVE** | 1.5s | Vessel lock/unlock |
 | 6 | `PLAYER_SETTINGS` | `PlayerSettingsCloudData` | **ACTIVE** | 1.5s | Per settings change |
-| 7 | `DAILY_CHALLENGE` | `DailyChallengeCloudData` | **PENDING** — system still writes PlayerPrefs | 1.5s | none yet |
-| 8 | `TRAINING_PROGRESS` | `TrainingProgressCloudData` | **PENDING** — system still writes `training_progress.data` file | 1.5s | none yet |
-| 9 | `CAPTAIN_PROGRESS` | `CaptainProgressCloudData` | **DISABLED** — `CaptainManager` stubbed since PlayFab retirement | 1.5s | none |
+| 7 | `DAILY_CHALLENGE` | `DailyChallengeCloudData` | **WIRED, DEFERRED** — repo loads/flushes; system still on PlayerPrefs+PlayFab. Migration deferred (PlayFab economy coupling). | 1.5s | none yet |
+| 8 | `TRAINING_PROGRESS` | `TrainingProgressCloudData` | **WIRED** — repo loads/flushes; system still writes local file. Migration held for Unity review. | 1.5s | none yet |
+| 9 | `CAPTAIN_PROGRESS` | `CaptainProgressCloudData` | **DISABLED** — `CaptainManager` stubbed since PlayFab retirement (repo not wired) | 1.5s | none |
 | 10 | `EPISODE_PROGRESS` | `EpisodeProgressCloudData` | **SCAFFOLD** — `ReportMissionCompleted` has no callers | 1.5s | none |
+| 11 | `SQUAD_DATA` | `SquadCloudData` | **WIRED** (new) — repo loads/flushes; system still writes `squad.data`. Migration held for Unity review. | 1.5s | none yet |
+| 12 | `LOADOUT_DATA` | `LoadoutCloudData` | **WIRED** (new) — repo loads/flushes; system still writes local files. Migration held for Unity review. | 1.5s | none yet |
 
 ### 1.1 `player_profile` — `PlayerProfileData` (`_Scripts/UI/Views/PlayerProfileData.cs`)
 
@@ -332,6 +334,11 @@ bunk space, prism→omni conversion, store-page/UTM attribution (storefront-side
 
 ## 4. Push/pull optimization review
 
+> **Phase 3 status (2026-06-15):** infrastructure fixes #2, #4, #6, #9 shipped; deprecated field
+> (#7's cousin) dropped; all 12 repos wired (incl. new Squad/Loadout). Issues #5 (per-event Flush)
+> shipped in Phase 1. The local→cloud system migrations (#1) are **held for Unity review**; Daily
+> Challenge is **deferred** (PlayFab economy coupling).
+
 ### What's already good
 
 - Single `UGSDataService` facade; one repo per key; dependency-inverted provider (`ICloudSaveProvider`).
@@ -344,31 +351,26 @@ bunk space, prism→omni conversion, store-page/UTM attribution (storefront-side
 1. **Two systems bypass the cloud entirely** — Daily Challenge (PlayerPrefs) and Training Progress
    (local file, unbounded immediate writes). Models + repos already exist; finish the migration.
    A device wipe currently loses both.
-2. **No retry/backoff anywhere.** `UGSCloudSaveProvider.SaveAsync` catches, logs, toasts — and drops
-   the write. `SaveImmediateAsync` (`GameModeProgressionService`) falls back to a debounced retry only
-   in its catch. A quest unlock that fails to save is silently lost until the next unrelated save.
-   → Add bounded exponential backoff (2s/4s/8s) in the provider, keep `_dirty` set on failure so the
-   debounce loop naturally retries.
+2. **[SHIPPED]** ~~No retry/backoff anywhere.~~ `UGSCloudSaveProvider.SaveAsync` now retries with
+   2s/4s/8s backoff and returns `bool`; the repo keeps `_dirty` on failure and the debounce loop
+   retries. Offline returns false silently; genuine online failures toast + emit `cloud_save_failed`
+   once per episode (HashSet guard), on the main thread.
 3. **Full-object rewrites per save.** Every `MarkDirty` re-uploads the whole model. Mostly fine
    (objects are small), but `VESSEL_STATS` and `GAME_MODE_PROGRESSION` grow with content. UGS Cloud
    Save has no partial update, so the fix is **key splitting** (e.g. per-vessel keys) only if/when
    payloads grow past ~10KB — not worth it today, worth watching.
-4. **`FlushAllAsync` saves clean repos.** Add an `IsDirty` check per repo before flushing
-   (`UGSDataService.FlushAllAsync`). One-line fix, halves shutdown traffic.
-5. **`AnalyticsService.Flush()` called per event** (`TrackPlayAgain`). The SDK batches for a reason —
-   flushing per event defeats batching and costs battery/bandwidth. Reserve `Flush()` for
-   app-pause/quit (`ApplicationLifecycleManager.OnAppPaused/OnAppQuitting`).
-6. **Legacy load fallback silently loses dictionaries.** The `JsonUtility.FromJson<T>` fallback in
-   `UGSCloudSaveProvider.LoadAsync` can't deserialize `Dictionary<,>` fields — a legacy
-   string-format save would come back with empty dicts and then be re-saved, wiping stats. Either
-   use Newtonsoft in the fallback or log loudly when it's hit.
+4. **[SHIPPED]** ~~`FlushAllAsync` saves clean repos.~~ Now skips repos where `!IsDirty`.
+5. **[SHIPPED in P1]** ~~`AnalyticsService.Flush()` per event.~~ Routed through `AnalyticsServiceFacade`;
+   flush only on app pause/quit.
+6. **[SHIPPED]** ~~Legacy load fallback silently loses dictionaries.~~ `UGSCloudSaveProvider.LoadAsync`
+   fallback now uses `JsonConvert.DeserializeObject<T>` (Newtonsoft), not `JsonUtility`.
 7. **Fire-and-forget `MarkDirty` with null-conditional chains** (`UGSStatsManager.SaveProfile/
    SaveVesselStats`: `_ugsDataService?.StatsRepo?.MarkDirty()`) — a null silently no-ops a save.
    Fail loud per project policy.
 8. **Settings full-sync on every toggle** (`GameSetting.SyncToCloud` copies all 9 fields per change).
    Harmless at this size; the debounce absorbs it. No action.
-9. **No save-latency/failure observability.** Once events exist, count `cloud_save_failed`
-   occurrences — it's the metric that tells us whether 1–7 matter in the field.
+9. **[SHIPPED]** ~~No save-latency/failure observability.~~ `cloud_save_failed` (key) now emits once
+   per online failure episode via `UGSCloudSaveProvider.OnSaveFailed` → `AnalyticsServiceFacade`.
 
 ### Pull-side
 

@@ -166,7 +166,7 @@
   <div class="sumcard"><div class="num" id="cnt-dormant">0</div><div class="lbl">Dormant (re-wire)</div></div>
   <div class="sumcard"><div class="num" id="cnt-build">0</div><div class="lbl">To build (hook exists)</div></div>
   <div class="sumcard"><div class="num" id="cnt-none">0</div><div class="lbl">No system yet</div></div>
-  <div class="sumcard"><div class="num">10</div><div class="lbl">Cloud Save keys (6 active)</div></div>
+  <div class="sumcard"><div class="num">12</div><div class="lbl">Cloud Save keys (6 active, 4 wired)</div></div>
 </div>
 
 <!-- ═══════════════════════════════════════════════════ STAGE 0: WHAT'S LIVE -->
@@ -211,7 +211,7 @@
 
 <!-- ═══════════════════════════════════════════════════ CLOUD SAVE INVENTORY -->
 <div class="stage" data-tier="vslice">
-  <div class="stage-header"><span class="stage-pill live-pill">Cloud Save</span><span class="stage-title">Player data inventory (10 keys)</span></div>
+  <div class="stage-header"><span class="stage-pill live-pill">Cloud Save</span><span class="stage-title">Player data inventory (12 keys)</span></div>
   <p class="stage-question">Everything persisted per-player via UGS Cloud Save. Full JSON schemas: expand each row, or see <code>Docs/Analytics/DATA_INVENTORY.md</code>. All keys defined in <code>UGSKeys.cs</code>, owned by one repository each under <code>_Scripts/System/CloudData/</code>.</p>
 
   <table class="inv">
@@ -222,10 +222,12 @@
     <tr><td>GAME_MODE_PROGRESSION</td><td>UnlockedModes, CompletedQuests, BestStats, MaxUnlockedIntensity, IntensityPlayCounts</td><td><span class="st st-live">LIVE</span></td><td>quest/intensity = immediate; stats = debounced</td></tr>
     <tr><td>HANGAR_DATA</td><td>UnlockedVessels, per-vessel {LastUsedTicks, Favorited}, SelectedVessel</td><td><span class="st st-live">LIVE</span></td><td>per unlock/lock</td></tr>
     <tr><td>PLAYER_SETTINGS</td><td>Music/SFX/Haptics enabled+level, InvertY, InvertThrottle, JoystickVisuals</td><td><span class="st st-live">LIVE</span></td><td>per setting change</td></tr>
-    <tr><td>DAILY_CHALLENGE</td><td>ChallengeDate, TicketBalance, GameMode, Intensity, HighScore, 3× RewardTiers {Satisfied, Claimed}</td><td><span class="st st-dormant">DORMANT</span></td><td>system still writes PlayerPrefs — finish migration</td></tr>
-    <tr><td>TRAINING_PROGRESS</td><td>Per-mode {CurrentIntensity, 4× Tiers {Satisfied, Claimed}}</td><td><span class="st st-dormant">DORMANT</span></td><td>system still writes local file — finish migration</td></tr>
-    <tr><td>CAPTAIN_PROGRESS</td><td>Per-captain {XP, Level, Unlocked, Encountered, UpgradeCount}</td><td><span class="st st-dormant">DORMANT</span></td><td>CaptainManager disabled since PlayFab retirement</td></tr>
+    <tr><td>DAILY_CHALLENGE</td><td>ChallengeDate, TicketBalance, GameMode, Intensity, HighScore, 3× RewardTiers {Satisfied, Claimed}</td><td><span class="st st-dormant">WIRED · DEFERRED</span></td><td>repo loads/flushes; system still on PlayerPrefs+PlayFab. Migration deferred (PlayFab economy coupling)</td></tr>
+    <tr><td>TRAINING_PROGRESS</td><td>Per-mode {CurrentIntensity, 4× Tiers {Satisfied, Claimed}}</td><td><span class="st st-dormant">WIRED · held</span></td><td>repo loads/flushes; system still writes local file. Migration held for Unity review</td></tr>
+    <tr><td>CAPTAIN_PROGRESS</td><td>Per-captain {XP, Level, Unlocked, Encountered, UpgradeCount}</td><td><span class="st st-dormant">DORMANT</span></td><td>CaptainManager disabled since PlayFab retirement (repo not wired)</td></tr>
     <tr><td>EPISODE_PROGRESS</td><td>UnlockedEpisodes, CompletedEpisodes, per-episode {MissionsCompleted, TotalMissions, BestScore, StarsEarned}</td><td><span class="st st-none">NO SYSTEM</span></td><td>scaffold — ReportMissionCompleted has no callers</td></tr>
+    <tr><td>SQUAD_DATA</td><td>Leader + 2 rogues (VesselClass + Element each), Initialized</td><td><span class="st st-dormant">WIRED · held</span></td><td>new repo loads/flushes; system still writes squad.data. Migration held for Unity review</td></tr>
+    <tr><td>LOADOUT_DATA</td><td>PlayerLoadouts[], GameLoadouts[], ActiveLoadoutIndex</td><td><span class="st st-dormant">WIRED · held</span></td><td>new repo loads/flushes; system still writes local files. Migration held for Unity review</td></tr>
   </table>
 
   <details class="schema"><summary>Example payloads (the JSON we actually store)</summary>

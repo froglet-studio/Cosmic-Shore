@@ -141,7 +141,7 @@
     <tr><td class="k">BestStats</td><td class="w">〃</td><td>Game end, when a mode's quest stat improves (debounced)</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">MaxUnlockedIntensity</td><td class="w">〃</td><td>Intensity 3/4 unlocked by play counts (saves <strong>immediately</strong>)</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">IntensityPlayCounts</td><td class="w">〃</td><td>Every game played at an intensity (debounced)</td><td><span class="st st-live">LIVE</span></td></tr>
-    <tr><td class="k">Training tiers (Satisfied / Claimed, CurrentIntensity)</td><td class="w">TRAINING_PROGRESS · TrainingGameProgressSystem</td><td>Training game end (satisfy) / reward claim — currently a local file with immediate unbatched writes</td><td><span class="st st-pending">PENDING · P3</span></td></tr>
+    <tr><td class="k">Training tiers (Satisfied / Claimed, CurrentIntensity)</td><td class="w">TRAINING_PROGRESS · TrainingGameProgressSystem</td><td>Repo WIRED (loads/flushes); system still writes the local file. Migration HELD for Unity review.</td><td><span class="st st-pending">REPO WIRED · migration held</span></td></tr>
     <tr><td class="k">Captains (XP, Level, Unlocked, Encountered, UpgradeCount)</td><td class="w">CAPTAIN_PROGRESS · CaptainManager</td><td>Would update on game end (XP/encounter) + purchase/upgrade — disabled since PlayFab retirement</td><td><span class="st st-pending">PENDING · P4</span></td></tr>
     <tr><td class="k">Episodes (Unlocked, Completed, per-episode missions/stars)</td><td class="w">EPISODE_PROGRESS · (none)</td><td>Would update on mission completion — <code>ReportMissionCompleted</code> has no callers</td><td><span class="st st-none">SCAFFOLD · P4</span></td></tr>
   </table>
@@ -168,8 +168,8 @@
   <div class="cat-header"><span class="cat-pill c-eng">D · Engagement &amp; Retention</span><span class="cat-title">Why the player comes back</span></div>
   <table class="t">
     <tr><th>Data</th><th>Store · writer</th><th>Updated when</th><th>Status</th></tr>
-    <tr><td class="k">Daily challenge (TicketBalance, GameMode, Intensity, HighScore, 3× reward tiers)</td><td class="w">today: PlayerPrefs → target: DAILY_CHALLENGE · DailyChallengeSystem</td><td>Ticket refresh once per day · HighScore per challenge attempt · tiers on satisfy/claim</td><td><span class="st st-pending">PENDING · P3</span></td></tr>
-    <tr><td class="k">Favorited minigames</td><td class="w">today: game_favorites.data (local file) → target: new cloud key · FavoriteSystem</td><td>On favorite toggle</td><td><span class="st st-pending">PENDING · P3</span></td></tr>
+    <tr><td class="k">Daily challenge (TicketBalance, GameMode, Intensity, HighScore, 3× reward tiers)</td><td class="w">PlayerPrefs + PlayFab (CatalogManager tickets, DailyRewardHandler) · DailyChallengeSystem</td><td>DEFERRED — coupled to the disabled PlayFab economy; revisit when PlayFab is reworked. Repo (DAILY_CHALLENGE) is wired and ready.</td><td><span class="st st-pending">DEFERRED</span></td></tr>
+    <tr><td class="k">Favorited minigames</td><td class="w">today: game_favorites.data (local file) → target: cloud · FavoriteSystem</td><td>Migration HELD for Unity review (no cloud key/model yet — folded into the held migration pass).</td><td><span class="st st-pending">migration held</span></td></tr>
     <tr><td class="k">Quest / UserJourney stage</td><td class="w">QuestSystem + UserJourneySystem (in-memory chain; emits no analytics)</td><td>On matching UserAction (view screen, play game…)</td><td><span class="st st-planned">PLANNED · P2 (event only)</span></td></tr>
   </table>
 </div>
@@ -182,8 +182,8 @@
     <tr><td class="k">Settings (Music/SFX/Haptics on+level, InvertY, InvertThrottle, JoystickVisuals)</td><td class="w">PLAYER_SETTINGS · GameSetting</td><td>On each individual setting change (full-object sync, 1.5s debounce); PlayerPrefs kept as offline mirror</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">UnlockedVessels</td><td class="w">HANGAR_DATA · VesselUnlockSystem</td><td>On vessel unlock/lock (typically progression rewards or crystal purchase)</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">VesselPreferences (LastUsedTicks, Favorited), SelectedVessel</td><td class="w">HANGAR_DATA</td><td>On vessel select / favorite toggle</td><td><span class="st st-live">LIVE</span></td></tr>
-    <tr><td class="k">Squad (leader + 2 rogues: class + element each)</td><td class="w">today: squad.data (local file) → target: new cloud key · SquadSystem</td><td>On squad edit</td><td><span class="st st-pending">PENDING · P3</span></td></tr>
-    <tr><td class="k">Loadout (intensity, player count, vessel, mode, isMultiplayer)</td><td class="w">today: local file · LoadoutSystem</td><td>On game-config change in the arcade modal</td><td><span class="st st-pending">PENDING · P3</span></td></tr>
+    <tr><td class="k">Squad (leader + 2 rogues: class + element each)</td><td class="w">squad.data (local file) → SQUAD_DATA · SquadSystem</td><td>Repo + SquadCloudData WIRED (loads/flushes); system still writes the local file. Migration HELD for Unity review.</td><td><span class="st st-pending">REPO WIRED · migration held</span></td></tr>
+    <tr><td class="k">Loadout (intensity, player count, vessel, mode, isMultiplayer)</td><td class="w">loadouts.data + game_loadouts.data (local) → LOADOUT_DATA · LoadoutSystem</td><td>Repo + LoadoutCloudData WIRED (loads/flushes); system still writes the local files. Migration HELD for Unity review.</td><td><span class="st st-pending">REPO WIRED · migration held</span></td></tr>
   </table>
 </div>
 
@@ -204,7 +204,7 @@
     <tr><td class="k">friend_request_sent/received · friend_added · party_invite_sent/received · party_joined · minigame_favorited · share_triggered</td><td>Social loop</td><td class="w">facade ← FriendsDataSO + HostConnectionDataSO SOAP events + FavoriteSystem.OnFavoriteChanged; SnsShare (facade)</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">quest_completed · repeated_game_fail · player_won (param)</td><td>Retention loops + win/loss</td><td class="w">QuestSystem (facade); facade derives fail-streak + win from GameDataSO at game_completed</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">daily_challenge_started / completed / skipped · training_tier_claimed</td><td>Retention loops (need cloud migration first)</td><td class="w">DailyChallengeSystem, TrainingGameProgressSystem</td><td><span class="st st-planned">PLANNED · P3</span></td></tr>
-    <tr><td class="k">cloud_save_failed</td><td>Any Cloud Save write fails after retries — observability</td><td class="w">UGSCloudSaveProvider</td><td><span class="st st-planned">PLANNED · P3</span></td></tr>
+    <tr><td class="k">cloud_save_failed</td><td>A Cloud Save write exhausts all retries while online (once per failure episode)</td><td class="w">UGSCloudSaveProvider.OnSaveFailed → facade</td><td><span class="st st-live">LIVE</span></td></tr>
     <tr><td class="k">pilot_recruited · vessel_upgraded · episode_* · style telemetry</td><td>VDemo systems</td><td class="w">CaptainManager (re-enabled), EpisodeProgress, VesselTelemetry</td><td><span class="st st-planned">PLANNED · P4</span></td></tr>
   </table>
   <div class="note amber"><strong>Consent (P1 remaining):</strong> the facade gates collection on a persisted consent flag (<code>AnalyticsServiceFacade.SetConsent</code>), defaulting to granted — same shipping behavior as before. The first-run consent dialog + settings opt-out toggle still need to ship before store release (GDPR/COPPA); both just call <code>SetConsent</code>.</div>
