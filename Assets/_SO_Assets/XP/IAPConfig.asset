@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2e12f002fbc48da914f4ecf82e81213, type: 3}
   m_Name: IAPConfig
   m_EditorClassIdentifier:
-  checkoutBaseUrl: "https://froglet.studio/support?product={productId}&amount={price}"
-  supportUrl: "https://froglet.studio/support"
+  checkoutBaseUrl: https://www.froglet.games
+  supportUrl: https://www.froglet.games
   currencySymbol: $
   defaultBuyLabel: Support
   openInExternalBrowser: 1

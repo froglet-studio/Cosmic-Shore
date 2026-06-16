@@ -152,7 +152,12 @@ There is **no in-app store SDK** and (deliberately) no new dependency. Purchases
 ### Wiring
 
 1. Assign `IAPConfig.asset` to the `IAPManager` GameObject's `config` field (the IAPManager is the DI-registered singleton referenced by `AppManager.iapManager`).
-2. Set `checkoutBaseUrl` / `supportUrl` to the real payment page when ready (default points at `froglet.studio/support`).
+2. Set `checkoutBaseUrl` / `supportUrl` to the real payment page when ready (default points at `https://www.froglet.games`).
+
+   > ⚠️ A plain site URL (like the marketing homepage) opens the **website**, not a payment
+   > form. To show an actual card-entry **payment screen**, this must be a **hosted checkout**
+   > URL — e.g. a Stripe Payment Link, a Ko-fi/PayPal page, or a `froglet.games/checkout` page
+   > that embeds a payment processor. `Application.OpenURL` cannot render a payment UI itself.
 3. On each purchasable `SO_EpisodeData`, set `priceUsd` (the "X dollars") and optionally a per-episode `checkoutUrl`.
 
 ### ⚠️ Verification gap (read before shipping money)

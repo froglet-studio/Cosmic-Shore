@@ -21,12 +21,14 @@ namespace CosmicShore.ScriptableObjects
     {
         [Header("Checkout URLs")]
         [Tooltip("Base checkout URL used when an episode has no per-episode override URL. " +
-                 "Supports {productId} and {price} tokens. " +
-                 "e.g. https://froglet.studio/support?product={productId}&amount={price}")]
-        public string checkoutBaseUrl = "https://froglet.studio/support?product={productId}&amount={price}";
+                 "Supports {productId} and {price} tokens, e.g. " +
+                 "https://www.froglet.games/checkout?product={productId}&amount={price} " +
+                 "Point this at a HOSTED CHECKOUT page (Stripe Payment Link, etc.) to show a " +
+                 "real payment form — a plain site URL just opens the site, not a payment screen.")]
+        public string checkoutBaseUrl = "https://www.froglet.games";
 
         [Tooltip("Generic 'Support Us' page opened by the non-episode support button.")]
-        public string supportUrl = "https://froglet.studio/support";
+        public string supportUrl = "https://www.froglet.games";
 
         [Header("Display")]
         [Tooltip("Currency symbol prefixed to prices in the UI (e.g. $).")]
