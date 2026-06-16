@@ -35,15 +35,5 @@ namespace CosmicShore.UI
             if (detailsText != null)
                 detailsText.text = details;
         }
-
-        /// <summary>
-        /// Wires the panel's content references when the panel is created at runtime
-        /// (no authored prefab). See <see cref="MiniGameHUDView.EnsureConnectingPanel"/>.
-        /// </summary>
-        public void InitializeRuntime(Image background, TMP_Text details)
-        {
-            backgroundImage = background;
-            detailsText = details;
-        }
     }
 }

@@ -45,109 +45,22 @@ namespace CosmicShore.UI
 
         private void Awake()
         {
-            // Auto-discover connecting panel components when assigned in Inspector
+            // Auto-discover the connecting-panel child components from the authored panel
+            // so only the connectingPanelCanvasGroup needs wiring in the inspector.
             if (connectingPanelCanvasGroup != null)
             {
                 var panelGO = connectingPanelCanvasGroup.gameObject;
                 if (connectingPanel == null)
                     connectingPanel = panelGO.GetComponent<ConnectingPanel>();
                 if (hackerTextAnimator == null)
-                    hackerTextAnimator = panelGO.GetComponentInChildren<DoTweenTypewriterAnimator>();
+                    hackerTextAnimator = panelGO.GetComponentInChildren<DoTweenTypewriterAnimator>(true);
                 if (dotsAnimator == null)
-                    dotsAnimator = panelGO.GetComponentInChildren<ConnectingDotsAnimator>();
-            }
-            else
-            {
-                // No authored connecting panel in this scene/prefab — build one at runtime
-                // so the mandatory pre-game connecting screen always shows.
-                EnsureConnectingPanel();
+                    dotsAnimator = panelGO.GetComponentInChildren<ConnectingDotsAnimator>(true);
             }
         }
 
-        /// <summary>
-        /// Builds a full-screen connecting panel at runtime when none is wired in the
-        /// prefab/scene: a dark overlay with the game-details text and an animated
-        /// "CONNECTING TO SHORE..." line. Mirrors the runtime-built skip button pattern in
-        /// <see cref="MiniGameHUD"/>. No-op if a panel is already authored.
-        /// </summary>
-        public void EnsureConnectingPanel()
-        {
-            if (connectingPanelCanvasGroup != null) return;
-
-            var canvas = GetComponentInParent<Canvas>();
-            Transform parent = canvas ? canvas.transform : transform;
-
-            // Root overlay
-            var rootGO = new GameObject("ConnectingPanel (Runtime)", typeof(RectTransform));
-            var rootRect = rootGO.GetComponent<RectTransform>();
-            rootRect.SetParent(parent, false);
-            StretchFull(rootRect);
-            rootRect.SetAsLastSibling();
-
-            var bg = rootGO.AddComponent<Image>();
-            bg.color = new Color(0.02f, 0.02f, 0.06f, 0.96f);
-            bg.raycastTarget = true;
-
-            var cg = rootGO.AddComponent<CanvasGroup>();
-            cg.alpha = 0f;
-            cg.interactable = false;
-            cg.blocksRaycasts = false;
-
-            var panel = rootGO.AddComponent<ConnectingPanel>();
-            panel.enabled = false;
-
-            // Game details (mode name, intensity, players)
-            var detailsText = CreateText("Details", rootRect,
-                new Vector2(0.08f, 0.46f), new Vector2(0.92f, 0.72f),
-                TextAlignmentOptions.Center, 20f, 80f, Color.white);
-
-            // Animated "connecting" line
-            var connText = CreateText("ConnectingText", rootRect,
-                new Vector2(0.08f, 0.30f), new Vector2(0.92f, 0.42f),
-                TextAlignmentOptions.Center, 14f, 44f, new Color(1f, 1f, 1f, 0.85f));
-            connText.text = "CONNECTING TO SHORE";
-
-            var dots = connText.gameObject.AddComponent<ConnectingDotsAnimator>();
-            dots.InitializeRuntime(connText);
-
-            panel.InitializeRuntime(bg, detailsText);
-
-            connectingPanelCanvasGroup = cg;
-            connectingPanel = panel;
-            dotsAnimator = dots;
-        }
-
-        static void StretchFull(RectTransform rt)
-        {
-            rt.anchorMin = Vector2.zero;
-            rt.anchorMax = Vector2.one;
-            rt.offsetMin = Vector2.zero;
-            rt.offsetMax = Vector2.zero;
-            rt.localScale = Vector3.one;
-        }
-
-        static TMP_Text CreateText(string name, Transform parent, Vector2 anchorMin, Vector2 anchorMax,
-            TextAlignmentOptions alignment, float minSize, float maxSize, Color color)
-        {
-            var go = new GameObject(name, typeof(RectTransform));
-            var rect = go.GetComponent<RectTransform>();
-            rect.SetParent(parent, false);
-            rect.anchorMin = anchorMin;
-            rect.anchorMax = anchorMax;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            rect.localScale = Vector3.one;
-
-            var text = go.AddComponent<TextMeshProUGUI>();
-            text.alignment = alignment;
-            text.enableAutoSizing = true;
-            text.fontSizeMin = minSize;
-            text.fontSizeMax = maxSize;
-            text.color = color;
-            text.raycastTarget = false;
-            text.text = string.Empty;
-            return text;
-        }
+        /// <summary>True when a connecting panel is authored/wired in this scene or prefab.</summary>
+        public bool HasConnectingPanel => connectingPanelCanvasGroup != null;
 
         /// <summary>
         /// Sets the game-details line(s) shown on the connecting panel (mode name,

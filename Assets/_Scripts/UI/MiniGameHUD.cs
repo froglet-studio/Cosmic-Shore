@@ -337,8 +337,9 @@ namespace CosmicShore.UI
 
                 // Mandatory connecting screen: game details (mode, intensity, players)
                 // + animated connecting text. Held for connectingPanelSeconds before the
-                // pre-game flow (camera flythrough + Ready button) begins.
-                if (enableConnectingPanel)
+                // pre-game flow (camera flythrough + Ready button) begins. Only runs when
+                // a connecting panel is authored/wired in the scene (view.HasConnectingPanel).
+                if (enableConnectingPanel && view.HasConnectingPanel)
                 {
                     view.SetConnectingDetails(BuildConnectingDetails());
                     view.ToggleConnectingPanel(true);

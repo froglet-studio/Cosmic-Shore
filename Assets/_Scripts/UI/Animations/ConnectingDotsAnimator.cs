@@ -22,15 +22,6 @@ namespace CosmicShore.UI
             set => _baseText = value;
         }
 
-        /// <summary>
-        /// Wires the text target when the animator is created at runtime
-        /// (no authored prefab). See <see cref="MiniGameHUDView.EnsureConnectingPanel"/>.
-        /// </summary>
-        public void InitializeRuntime(TMP_Text display)
-        {
-            textDisplay = display;
-        }
-
         public void StartAnimation()
         {
             StopAnimation();
