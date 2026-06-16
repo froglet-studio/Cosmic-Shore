@@ -128,11 +128,15 @@ namespace CosmicShore.UI
 
         void RefreshGridCards()
         {
-            foreach (var card in _gridCards)
-            {
-                if (card)
-                    card.UpdateLockState();
-            }
+            // Match the development behavior: re-populate so cards re-sort (unlocked first)
+            // and lock overlays update immediately after a purchase, rather than only flipping
+            // the overlay in place.
+            if (gridPanel && gridContainer && gridCardPrefab)
+                PopulateGrid();
+            else
+                foreach (var card in _gridCards)
+                    if (card)
+                        card.UpdateLockState();
         }
 
         void ToggleVesselNames()
