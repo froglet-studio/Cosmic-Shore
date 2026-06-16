@@ -49,6 +49,13 @@ namespace CosmicShore.UI
         [SerializeField] private ScriptableEventShipHUDData onShipHUDInitialized;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
+        [Header("Connecting Panel")]
+        [Tooltip("Mandatory connecting screen shown at the start of each game (game details + " +
+                 "animated connecting text) before the camera flythrough and Ready button.")]
+        [SerializeField] private bool enableConnectingPanel = true;
+        [Tooltip("Seconds the connecting screen stays up before the pre-game flow begins.")]
+        [SerializeField, Min(0f)] private float connectingPanelSeconds = 3f;
+
         [Header("Pre-Game Cinematic")]
         [SerializeField] private PreGameCinematicController preGameCinematic;
         [SerializeField] private Vector3 cinematicLookAtCenter = Vector3.zero;
@@ -328,6 +335,18 @@ namespace CosmicShore.UI
                 view.UpdateScoreUI("0");
                 ToggleReadyButton(false);
 
+                // Mandatory connecting screen: game details (mode, intensity, players)
+                // + animated connecting text. Held for connectingPanelSeconds before the
+                // pre-game flow (camera flythrough + Ready button) begins.
+                if (enableConnectingPanel)
+                {
+                    view.SetConnectingDetails(BuildConnectingDetails());
+                    view.ToggleConnectingPanel(true);
+                    await UniTask.Delay(TimeSpan.FromSeconds(connectingPanelSeconds),
+                        ignoreTimeScale: true, cancellationToken: ct);
+                    view.ToggleConnectingPanel(false);
+                }
+
                 // Play pre-game cinematic if available
                 if (enablePreGameCinematic && preGameCinematic != null)
                 {
@@ -349,6 +368,53 @@ namespace CosmicShore.UI
             catch (OperationCanceledException)
             {
                 // cancelled — nothing to do
+            }
+        }
+
+        /// <summary>
+        /// Builds the connecting-screen detail line: game mode name on top, then intensity
+        /// and the number of players in the room. Reads the live, synced game config.
+        /// </summary>
+        private string BuildConnectingDetails()
+        {
+            if (gameData == null) return "CONNECTING";
+
+            string mode = PrettifyGameMode(gameData.GameMode);
+            int intensity = gameData.SelectedIntensity != null ? gameData.SelectedIntensity.Value : 0;
+            int players = gameData.SelectedPlayerCount != null && gameData.SelectedPlayerCount.Value > 0
+                ? gameData.SelectedPlayerCount.Value
+                : (gameData.Players?.Count ?? 0);
+            string playerLabel = players == 1 ? "Player" : "Players";
+
+            string subtitle = intensity > 0
+                ? $"Intensity {intensity}   •   {players} {playerLabel}"
+                : $"{players} {playerLabel}";
+
+            return $"{mode}\n<size=55%>{subtitle}</size>";
+        }
+
+        /// <summary>
+        /// Friendly, upper-case display name for a game mode. Unmapped modes fall back to
+        /// the camelCase-split enum name.
+        /// </summary>
+        private static string PrettifyGameMode(GameModes mode)
+        {
+            switch (mode)
+            {
+                case GameModes.HexRace: return "HEX RACE";
+                case GameModes.MultiplayerJoust: return "JOUST";
+                case GameModes.MultiplayerCrystalCapture: return "CRYSTAL CAPTURE";
+                case GameModes.MultiplayerCellularDuel:
+                case GameModes.CellularDuel: return "CELLULAR DUEL";
+                case GameModes.MultiplayerFreestyle: return "FREESTYLE";
+                case GameModes.Multiplayer2v2CoOpVsAI: return "2V2 CO-OP";
+                case GameModes.MultiplayerWildlifeBlitzGame:
+                case GameModes.WildlifeBlitz: return "WILDLIFE BLITZ";
+                case GameModes.Tournament: return "TOURNAMENT";
+                default:
+                    return System.Text.RegularExpressions.Regex
+                        .Replace(mode.ToString(), "(\\B[A-Z])", " $1")
+                        .ToUpperInvariant();
             }
         }
 
