@@ -27,8 +27,14 @@ namespace CosmicShore.UI
 
         public void OnClick()
         {
-            audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
-            IconView.SelectIcon(this, ProfileIcon);
+            // audioSystem is DI-injected; null only if this prefab instance wasn't injected.
+            // Guard so a missed injection degrades to "no click sound" instead of an NRE that
+            // blocks the avatar selection (the SelectIcon call below).
+            if (audioSystem != null)
+                audioSystem.PlayMenuAudio(MenuAudioCategory.OptionClick);
+
+            if (IconView != null)
+                IconView.SelectIcon(this, ProfileIcon);
         }
 
         public void SetSelected(bool selected)
