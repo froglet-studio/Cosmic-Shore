@@ -58,10 +58,6 @@ namespace CosmicShore.UI
         [Tooltip("AI profile list used to resolve AI avatars by name.")]
         [SerializeField] protected SO_AIProfileList aiProfileList;
 
-        [Header("Winner Crystal Reward")]
-        [Tooltip("Crystals awarded to the winning player's card (+N indicator). Set 0 to disable.")]
-        [SerializeField] protected int winnerCrystalReward = 5;
-
         [Header("Play Again")]
         [Tooltip("Play Again button — host only in multiplayer. Hidden for non-host clients; the host's Play Again forces everyone to replay.")]
         [SerializeField] private GameObject playAgainButton;
@@ -374,8 +370,6 @@ namespace CosmicShore.UI
                 return;
             }
 
-            string winnerName = orderedStats[0].Name;
-
             for (int i = 0; i < orderedStats.Count; i++)
             {
                 var stats = orderedStats[i];
@@ -390,16 +384,8 @@ namespace CosmicShore.UI
                 if (!string.IsNullOrEmpty(secondary))
                     card.ShowSecondaryStat(secondary);
 
-                // Winner gets the "+N crystals" reward indicator
-                if (winnerCrystalReward > 0 && stats.Name == winnerName)
-                    card.ShowCrystalReward(winnerCrystalReward);
-
                 _spawnedCards.Add(card);
             }
-
-            // Award crystals once to the local player if they won — the scoreboard is
-            // the single crystal-award path.
-            AwardCrystalsIfLocalWinner(winnerName);
         }
 
         /// <summary>
@@ -420,8 +406,6 @@ namespace CosmicShore.UI
                 return;
             }
 
-            string winnerName = results[0].Name;
-
             for (int i = 0; i < results.Count; i++)
             {
                 var r = results[i];
@@ -433,13 +417,8 @@ namespace CosmicShore.UI
                 if (!string.IsNullOrEmpty(r.Secondary))
                     card.ShowSecondaryStat(r.Secondary);
 
-                if (winnerCrystalReward > 0 && r.Name == winnerName)
-                    card.ShowCrystalReward(winnerCrystalReward);
-
                 _spawnedCards.Add(card);
             }
-
-            AwardCrystalsIfLocalWinner(winnerName);
         }
 
         void ClearPlayerCards()
@@ -456,19 +435,6 @@ namespace CosmicShore.UI
                 foreach (Transform child in playerCardContainer)
                     Destroy(child.gameObject);
             }
-        }
-
-        void AwardCrystalsIfLocalWinner(string winnerName)
-        {
-            if (winnerCrystalReward <= 0) return;
-            var localName = gameData.LocalPlayer?.Name;
-            if (string.IsNullOrEmpty(localName) || localName != winnerName) return;
-
-            var service = PlayerDataService.Instance;
-            if (service == null) return;
-
-            int newBalance = service.AddCrystals(winnerCrystalReward, "game_reward");
-            CSDebug.Log($"[Scoreboard] Awarded {winnerCrystalReward} crystals to '{localName}'. New balance: {newBalance}");
         }
 
         // Single source of truth for domain color: the same ColorSet the vessels and
