@@ -43,6 +43,11 @@ Docs/
 │   └── ARCHITECTURE.md          load model, controller brain, standings,
 │                                end-game flow, data + file index
 │
+├── ShuffleSystem/               ← sibling meta: randomized "race to 6" (PLANNED)
+│   └── ARCHITECTURE.md          per-domain {2,1,0} crystal scoring, random
+│                                (mode,intensity) draw, loading-splash summary;
+│                                §10 = delta vs Tournament
+│
 ├── THREADING.md                 main-thread affinity rules
 │                                (.AsMainThread() contract, MainThreadDispatcher)
 ├── SCENES.md                    scene inventory, game-mode reference,
@@ -73,6 +78,7 @@ session-scoped findings that benefit from a timeline view.
 | Understand the scoring system (HUD + end-game) | `ScoringSystem/ARCHITECTURE.md` |
 | See scoring-system cleanup work / open issues | `ScoringSystem/REFACTOR.md` + `ScoringSystem/BUGS.md` |
 | Understand the tournament meta-mode (chains the 3 domain games) | `TournamentSystem/ARCHITECTURE.md` |
+| Understand the shuffle meta-mode (randomized "race to 6", planned) | `ShuffleSystem/ARCHITECTURE.md` |
 | Understand the threading rules | `THREADING.md` |
 | Find a scene | `SCENES.md` |
 
