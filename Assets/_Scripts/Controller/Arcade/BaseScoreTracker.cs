@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
     public abstract class BaseScoreTracker : NetworkBehaviour, IScoreTracker
     {
         [SerializeField] protected ScriptableEventNoParam OnClickToMainMenu;
-        [Inject] protected GameDataSO gameData;
+        [SerializeField, Inject] protected GameDataSO gameData;
         [SerializeField] protected bool golfRules;
         [SerializeField] protected ScoringConfig[] scoringConfigs;
 

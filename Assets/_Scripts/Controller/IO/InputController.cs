@@ -5,7 +5,6 @@ using CosmicShore.Gameplay.MultiMouse;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.EnhancedTouch;
 using CosmicShore.Utility;
-using Reflex.Attributes;
 
 namespace CosmicShore.Gameplay
 {
@@ -18,7 +17,7 @@ namespace CosmicShore.Gameplay
         public IInputStatus InputStatus { get; private set; }
 
         [SerializeField] public bool Portrait;
-        [Inject] GameSetting gameSetting;
+        GameSetting gameSetting;
         IVessel vessel;
 
         private IInputStrategy currentStrategy;
@@ -150,7 +149,9 @@ namespace CosmicShore.Gameplay
             // Fallback: InputController is often added dynamically via GetOrAdd,
             // which means Reflex DI never runs on it. Resolve manually if needed.
             if (gameSetting == null)
-                gameSetting = FindFirstObjectByType<GameSetting>();
+                gameSetting = GameSetting.Instance != null
+                    ? GameSetting.Instance
+                    : FindFirstObjectByType<GameSetting>();
 
             if (gameSetting != null)
             {

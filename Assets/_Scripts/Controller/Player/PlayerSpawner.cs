@@ -27,7 +27,12 @@ namespace CosmicShore.Gameplay
 
             IPlayer player = (IPlayer)Instantiate(_playerPrefab);
             if (player is Component comp)
-                GameObjectInjector.InjectRecursive(comp.gameObject, _container);
+            {
+                if (_container != null)
+                    GameObjectInjector.InjectRecursive(comp.gameObject, _container);
+                else
+                    CSDebug.LogWarning("[PlayerSpawner] Reflex container is null; spawned player will use serialized references and runtime fallbacks.");
+            }
 
             if (!vesselSpawner.SpawnShip(data.vesselClass, out IVessel ship) || ship == null)
             {

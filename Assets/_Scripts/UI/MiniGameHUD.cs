@@ -22,7 +22,7 @@ namespace CosmicShore.UI
     public class MiniGameHUD : MonoBehaviour
     {
         [Header("Data")]
-        [Inject] protected GameDataSO gameData;
+        [SerializeField, Inject] protected GameDataSO gameData;
         [Inject] protected Container _diContainer;
 
         [Header("Objective Indicator")]
@@ -366,6 +366,7 @@ namespace CosmicShore.UI
 
         protected virtual void OnMiniGameTurnStarted()
         {
+            ToggleReadyButton(false);
             localRoundStats = gameData.LocalRoundStats;
             if (localRoundStats != null)
                 localRoundStats.OnScoreChanged += UpdateScoreUI;

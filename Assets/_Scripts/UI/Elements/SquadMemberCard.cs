@@ -39,18 +39,27 @@ namespace CosmicShore.UI
         /// <param name="captain"></param>
         public void SetCaptain(SO_Captain captain)
         {
-            CSDebug.Log($"SetCaptain:{captain.Name}");
+            CSDebug.Log($"SetCaptain:{(captain ? captain.Name : "None")}");
             Captain = captain;
         }
 
         void UpdateView()
         {
+            if (!captain)
+            {
+                if (CaptainName != null) CaptainName.text = string.Empty;
+                if (ShipName != null) ShipName.text = string.Empty;
+                if (CaptainImage != null) CaptainImage.sprite = null;
+                if (ShipImage != null) ShipImage.sprite = null;
+                return;
+            }
+
             CSDebug.Log($"UpdateView:{captain.Name}");
             if (CaptainName != null) CaptainName.text = captain.Name;
-            CaptainImage.sprite = captain.Image;
-            ShipImage.sprite = captain.Vessel.SquadImage;
+            if (CaptainImage != null) CaptainImage.sprite = captain.Image;
+            if (ShipImage != null) ShipImage.sprite = captain.Vessel.SquadImage;
 
-            if (ShowShipName) ShipName.text = captain.Vessel.Name;
+            if (ShowShipName && ShipName != null) ShipName.text = captain.Vessel.Name;
         }
     }
 }

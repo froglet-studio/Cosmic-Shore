@@ -6,7 +6,6 @@ using CosmicShore.Utility;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using CosmicShore.Data;
-using Reflex.Attributes;
 using System.Linq;
 
 namespace CosmicShore.Gameplay
@@ -60,7 +59,7 @@ namespace CosmicShore.Gameplay
         [Header("Targeting")]
         [Tooltip("When true, AI targets enemy players instead of crystals/items (used for Joust)")]
         [SerializeField] bool seekPlayers;
-        [Inject] GameDataSO gameData;
+        GameDataSO gameData;
         [Tooltip("Cadence (seconds) for re-selecting which opponent to chase while one is locked.")]
         [SerializeField] float playerSeekUpdateInterval = 0.5f;
         [Tooltip("Faster re-scan cadence (seconds) used while the AI has NO opponent locked, so it re-acquires promptly (e.g. a 1v1 opponent mid-respawn).")]

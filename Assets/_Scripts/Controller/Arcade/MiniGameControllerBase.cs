@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
         
         [Header("Scene References")]
         [SerializeField] protected CountdownTimer countdownTimer;
-        [Inject] protected GameDataSO gameData;
+        [SerializeField, Inject] protected GameDataSO gameData;
         [SerializeField] protected ScriptableEventBool _onToggleReadyButton;
 
         protected virtual bool HasEndGame => true;

@@ -25,6 +25,9 @@ namespace CosmicShore.Gameplay
         {
             Vessel ??= GetComponent<IVessel>();
             networkVesselImpactor ??= GetComponent<NetworkVesselImpactor>();
+            audioSystem ??= AudioSystem.Instance != null
+                ? AudioSystem.Instance
+                : FindFirstObjectByType<AudioSystem>();
         }
 
         protected override void AcceptImpactee(IImpactor impactee)

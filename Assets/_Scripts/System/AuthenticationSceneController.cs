@@ -439,6 +439,14 @@ namespace CosmicShore.Core
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
             float timeout = Mathf.Max(networkHostTimeout, 15f);
 
+            if (Application.isEditor)
+            {
+                CSDebug.LogWarning("[AuthScene] Editor play mode: loading main menu locally without waiting for Relay.");
+                HideLoading();
+                SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
+                return;
+            }
+
             for (int attempt = 1; attempt <= maxAttempts && !networkReady; attempt++)
             {
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
@@ -473,6 +481,14 @@ namespace CosmicShore.Core
 
             if (!networkReady)
             {
+                if (Debug.isDebugBuild)
+                {
+                    CSDebug.LogWarning("[AuthScene] Relay session unavailable in debug build. Loading main menu locally.");
+                    HideLoading();
+                    SceneManager.LoadScene(menuScene, LoadSceneMode.Single);
+                    return;
+                }
+
                 // Auto-retry exhausted. Raise the retry surface via SOAP; the
                 // BootStatusPanel renders it, and HostConnectionService listens
                 // for the retry-requested event and calls EnsurePartySessionAsync.

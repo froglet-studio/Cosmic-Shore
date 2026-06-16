@@ -21,7 +21,7 @@ namespace CosmicShore.Core
         {
             Squad = DataAccessor.Load<Squad>(SquadSaveFileName);
 
-            if (Squad.Equals(default(Squad)))
+            if (Squad.Equals(default(Squad)) && HasDefaultCaptains())
             {
                 Squad = new Squad(DefaultLeader, DefaultRogueOne, DefaultRogueTwo);
                 DataAccessor.Save(SquadSaveFileName, Squad);
@@ -47,10 +47,10 @@ namespace CosmicShore.Core
         {
             get 
             {
-                if (Squad.Equals(default(Squad)))
-                    Init();
+                if (!HasLoadedSquad())
+                    return null;
 
-                return CaptainList.Where(x => x.PrimaryElement == Squad.SquadLeaderElement && x.Vessel.Class == Squad.SquadLeaderClass).FirstOrDefault(); 
+                return CaptainList.Where(x => x.PrimaryElement == Squad.SquadLeaderElement && x.Vessel.Class == Squad.SquadLeaderClass).FirstOrDefault();
             }
         }
 
@@ -58,10 +58,10 @@ namespace CosmicShore.Core
         {
             get
             {
-                if (Squad.Equals(default(Squad)))
-                    Init();
+                if (!HasLoadedSquad())
+                    return null;
 
-                return CaptainList.Where(x => x.PrimaryElement == Squad.RogueOneElement && x.Vessel.Class == Squad.RogueOneClass).FirstOrDefault(); 
+                return CaptainList.Where(x => x.PrimaryElement == Squad.RogueOneElement && x.Vessel.Class == Squad.RogueOneClass).FirstOrDefault();
             }
         }
 
@@ -69,10 +69,10 @@ namespace CosmicShore.Core
         {
             get
             {
-                if (Squad.Equals(default(Squad)))
-                    Init();
+                if (!HasLoadedSquad())
+                    return null;
 
-                return CaptainList.Where(x => x.PrimaryElement == Squad.RogueTwoElement && x.Vessel.Class == Squad.RogueTwoClass).FirstOrDefault(); 
+                return CaptainList.Where(x => x.PrimaryElement == Squad.RogueTwoElement && x.Vessel.Class == Squad.RogueTwoClass).FirstOrDefault();
             }
         }
 
@@ -110,6 +110,19 @@ namespace CosmicShore.Core
         {
             Squad.RogueTwoElement = captain.PrimaryElement;
             Squad.RogueTwoClass = captain.Vessel.Class;
+        }
+
+        static bool HasLoadedSquad()
+        {
+            if (Squad.Equals(default(Squad)))
+                Init();
+
+            return !Squad.Equals(default(Squad)) && CaptainList != null;
+        }
+
+        static bool HasDefaultCaptains()
+        {
+            return DefaultLeader != null && DefaultRogueOne != null && DefaultRogueTwo != null;
         }
     }
 }

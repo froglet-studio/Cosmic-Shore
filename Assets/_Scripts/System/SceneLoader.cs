@@ -95,7 +95,12 @@ namespace CosmicShore.Core
             if (scene.name == menuScene)
             {
                 _sceneTransitionManager?.SetFadeImmediate(1f);
-                ArmSplashFadeOnNextClientReady();
+
+                var nm = NetworkManager.Singleton;
+                if (nm != null && nm.IsListening)
+                    ArmSplashFadeOnNextClientReady();
+                else
+                    _sceneTransitionManager?.FadeFromBlack().Forget();
             }
         }
 

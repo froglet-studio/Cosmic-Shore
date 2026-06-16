@@ -1,4 +1,5 @@
 using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Gameplay;
@@ -32,6 +33,13 @@ namespace CosmicShore.UI
         
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        static readonly GameModes[] DevelopmentExploreModes =
+        {
+            GameModes.TheBulkFilaments,
+        };
+#endif
 
         void OnEnable()
         {
@@ -77,7 +85,10 @@ namespace CosmicShore.UI
             }
 
             // Sort favorited first, then alphabetically
-            var filteredGames = RespectInventoryForGameSelection ? GameList.Games.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList() : GameList.Games;
+            var filteredGames = RespectInventoryForGameSelection ? GameList.Games.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList() : GameList.Games.ToList();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            AddDevelopmentExploreGames(filteredGames);
+#endif
             var sortedGames = filteredGames;
             sortedGames.Sort((x, y) =>
             {
@@ -90,7 +101,7 @@ namespace CosmicShore.UI
 
             var progressionService = GameModeProgressionService.Instance;
 
-            for (var i = 0; i < GameCards.Count && i < GameList.Games.Count && i < sortedGames.Count; i++)
+            for (var i = 0; i < GameCards.Count && i < sortedGames.Count; i++)
             {
                 var game = sortedGames[i];
 
@@ -104,6 +115,10 @@ namespace CosmicShore.UI
 
                 // Check if this game mode is unlocked via the quest progression system
                 bool isLocked = progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                if (IsDevelopmentExploreMode(game.Mode))
+                    isLocked = false;
+#endif
                 gameCard.SetLocked(isLocked);
 
                 if (!isLocked)
@@ -129,6 +144,26 @@ namespace CosmicShore.UI
         {
             PopulateGameSelectionList();
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        void AddDevelopmentExploreGames(List<SO_ArcadeGame> games)
+        {
+            if (Arcade.Instance?.ArcadeGames?.Games == null)
+                return;
+
+            foreach (var mode in DevelopmentExploreModes)
+            {
+                if (games.Any(game => game.Mode == mode))
+                    continue;
+
+                var developmentGame = Arcade.Instance.ArcadeGames.Games.FirstOrDefault(game => game.Mode == mode);
+                if (developmentGame != null)
+                    games.Add(developmentGame);
+            }
+        }
+
+        static bool IsDevelopmentExploreMode(GameModes mode) => DevelopmentExploreModes.Contains(mode);
+#endif
 
         public void SelectGame(SO_ArcadeGame selectedGame)
         {

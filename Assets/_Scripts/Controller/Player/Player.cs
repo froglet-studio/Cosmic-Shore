@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using CosmicShore.UI;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
-using Reflex.Attributes;
 using Unity.Collections;
 using Unity.Netcode;
 using Unity.Services.Authentication;
@@ -17,7 +16,7 @@ namespace CosmicShore.Gameplay
         [FormerlySerializedAs("miniGameData")] [SerializeField]
         GameDataSO gameData;
 
-        [Inject] private PlayerDataService _injectedPlayerDataService;
+        private PlayerDataService _injectedPlayerDataService;
 
         // Fallback to static singleton — Netcode-spawned Players (host's own player)
         // bypass Reflex's auto-injection since they're instantiated by NetworkManager,

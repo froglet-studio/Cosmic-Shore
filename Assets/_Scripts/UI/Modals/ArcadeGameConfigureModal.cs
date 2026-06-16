@@ -1078,8 +1078,10 @@ namespace CosmicShore.UI
             if (waitingForOthersLabel)
                 waitingForOthersLabel.SetActive(true);
 
-            // Tell the server this player is ready
-            if (arcadeConfigSyncManager)
+            bool useNetworkReadyUp = arcadeConfigSyncManager && IsInActiveMultiHumanParty(hostConnectionData);
+
+            // Tell the server this player is ready only for actual multi-human parties.
+            if (useNetworkReadyUp)
             {
                 arcadeConfigSyncManager.ConfirmLocalPlayerReady();
             }
@@ -1115,6 +1117,11 @@ namespace CosmicShore.UI
             if (!inActiveParty) return true;
 
             return data.IsPartyHost;
+        }
+
+        static bool IsInActiveMultiHumanParty(HostConnectionDataSO data)
+        {
+            return data?.PartyMembers != null && data.PartyMembers.Count > 1;
         }
 
         /// <summary>

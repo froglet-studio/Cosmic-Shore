@@ -36,7 +36,11 @@ namespace CosmicShore.Gameplay
             if (!other.TryGetComponent(out ImpactCollider impacteeCollider))
                 return;
 
-            AcceptImpactee(impacteeCollider.Impactor);
+            var impactee = impacteeCollider.Impactor;
+            if (impactee == null)
+                return;
+
+            AcceptImpactee(impactee);
         }
     }
 }

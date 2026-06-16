@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
         private const float MIN_SQR_SPACE_BTWN_CURRENT_AND_LAST_SPAWN_POS = 25f;
 
         [Header("Dependencies")]
-        [Inject] protected GameDataSO gameData;
+        [SerializeField, Inject] protected GameDataSO gameData;
         [SerializeField] protected CellRuntimeDataSO cellData;
 
         [Header("Crystal Prefab")]

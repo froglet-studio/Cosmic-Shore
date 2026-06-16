@@ -49,7 +49,10 @@ namespace CosmicShore.Gameplay
             }
 
             var spawned = Instantiate(shipPrefab);
-            GameObjectInjector.InjectRecursive(spawned.gameObject, _container);
+            if (_container != null)
+                GameObjectInjector.InjectRecursive(spawned.gameObject, _container);
+            else
+                CSDebug.LogWarning("[VesselSpawner] Reflex container is null; spawned vessel will use serialized references and runtime fallbacks.");
             spawned.TryGetComponent(out vessel);
             return true;
         }

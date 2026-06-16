@@ -45,5 +45,6 @@ namespace CosmicShore.Data
         // (HexRace, Joust, CrystalCapture) into one tournament. See
         // Docs/TournamentSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
         Tournament = 36,
+        TheBulkFilaments = 37,
     }
 }

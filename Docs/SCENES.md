@@ -39,6 +39,7 @@ game scene and still exists.
 |---|---|---|---|
 | **MinigameCellularDuel** | `_Scenes/Singleplayer Scenes/` | `CellularDuel (8)` | `SinglePlayerCellularDuelController` |
 | **MinigameWildlifeBlitz** | `_Scenes/Singleplayer Scenes/` | `WildlifeBlitz (26)` | `SinglePlayerWildlifeBlitzController` |
+| **MinigameBulkFilaments** | `_Scenes/Singleplayer Scenes/` | `TheBulkFilaments (36)` | `BulkFilamentsController` |
 
 ### Multiplayer Game Scenes
 
@@ -258,6 +259,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 33 | `HexRace` | MP Racing | MinigameHexRace | `HexRaceController` |
 | 34 | `MultiplayerJoust` | MP | MinigameJoust_Gameplay | `MultiplayerJoustController` |
 | 35 | `MultiplayerCrystalCapture` | MP | MinigameCrystalCaptureMultiplayer_Gameplay | `MultiplayerCrystalCaptureController` |
+| 36 | `TheBulkFilaments` | SP Arcade | MinigameBulkFilaments | `BulkFilamentsController` |
 
 Note: IDs 7 and 31 are skipped in the enum. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document). Many single-player arcade modes (1-6, 9-25, 27) share scenes configured by `SO_ArcadeGame` assets rather than having dedicated scene files; they use the same underlying scene infrastructure with different turn monitors, scoring, and environment configurations.
 
@@ -320,6 +322,21 @@ Procedurally generated trail-based course with intensity-driven difficulty scali
 - Optional `SpawnableHelix` for spiral geometry: `radius = Intensity / 1.3`
 - `resetEnvironmentOnEachTurn` — configurable course regeneration per turn
 - Deterministic replay via fixed seed field
+
+### The Bulk Filaments (Single-Player)
+
+**Scene**: `MinigameBulkFilaments.unity`
+**Controller**: `BulkFilamentsController`
+**Base**: `SinglePlayerMiniGameControllerBase`
+**See also**: `Assets/_Scripts/Controller/Arcade/BULK_FILAMENTS.md`
+
+Squirrel-only prototype for riding energy filaments through a reflective Bulk wormhole. The player orbits around the current filament, biases speed, and times auto-aimed latch-ring transfers to the next filament while nanites chase from below.
+
+**Key features**:
+- Runtime-generated wormhole rings, filaments, latch rings, crystals, ambient hazards, nanites, and HUD telemetry
+- `Resources/Audio/Music/Dopamine.mp3` background track with beat-pulsed lighting
+- Intensity scaling: 12 / 18 / 24 / 30 transfers
+- Golf scoring: elapsed time plus respawn penalties minus crystal credits
 
 ### HexRace (Multiplayer)
 
@@ -611,6 +628,7 @@ Game scene names are stored in `SO_ArcadeGame.SceneName` assets, not in `SceneNa
 | Cellular Duel (SP) | `SinglePlayerCellularDuelController.cs` | `_Scripts/Controller/Arcade/` |
 | Wildlife Blitz (SP) | `SinglePlayerWildlifeBlitzController.cs` | `_Scripts/Controller/Arcade/` |
 | SlipNStride | `SinglePlayerSlipnStrideController.cs` | `_Scripts/Controller/Arcade/` |
+| The Bulk Filaments | `BulkFilamentsController.cs` | `_Scripts/Controller/Arcade/` |
 | Countdown timer | `CountdownTimer.cs` | `_Scripts/Controller/Arcade/` |
 
 ### Game Data & Configuration
