@@ -15,6 +15,7 @@ namespace CosmicShore.UI
         [SerializeField] SO_ProfileIconList ProfileIcons;
 
         Image _image;
+        bool _subscribed;
 
         void Awake()
         {
@@ -23,11 +24,25 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
-            // PlayerDataService is a DontDestroyOnLoad singleton created during bootstrap,
-            // so its Instance is reliably available by the time menu UI enables.
+            TryBind();
+        }
+
+        void Start()
+        {
+            // OnEnable can run before the PlayerDataService singleton exists during bootstrap;
+            // retry here so the avatar always ends up bound to live profile changes.
+            TryBind();
+        }
+
+        void TryBind()
+        {
+            // PlayerDataService is a DontDestroyOnLoad singleton created during bootstrap.
             var service = PlayerDataService.Instance;
-            if (service != null)
+            if (service != null && !_subscribed)
+            {
                 service.OnProfileChanged += OnProfileChanged;
+                _subscribed = true;
+            }
 
             Refresh();
         }
@@ -35,8 +50,9 @@ namespace CosmicShore.UI
         void OnDisable()
         {
             var service = PlayerDataService.Instance;
-            if (service != null)
+            if (service != null && _subscribed)
                 service.OnProfileChanged -= OnProfileChanged;
+            _subscribed = false;
         }
 
         void OnProfileChanged(PlayerProfileData profile)
