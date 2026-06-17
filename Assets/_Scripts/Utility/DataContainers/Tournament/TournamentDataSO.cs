@@ -118,6 +118,15 @@ namespace CosmicShore.Utility
         /// <summary>Cumulative standings, keyed by domain (team).</summary>
         [System.NonSerialized] public List<TournamentDomainStanding> Standings = new();
 
+        /// <summary>
+        /// The upcoming pool game's display name and the intensity rolled for it, stamped by the host's
+        /// random draw (<c>TournamentController.LoadRandomGame</c>) just before launch so the between-game
+        /// loading splash can name what's loading. Host-side only (clients never draw); left empty on
+        /// peers/games where no draw has run, so the splash simply omits the "up next" line.
+        /// </summary>
+        [System.NonSerialized] public string NextGameName;
+        [System.NonSerialized] public int NextGameIntensity;
+
         public int GameCount => GameQueue?.Count ?? 0;
 
         /// <summary>

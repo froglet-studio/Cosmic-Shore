@@ -23,6 +23,11 @@ namespace CosmicShore.Utility
             var standings = data.BuildSortedStandings();
             var sb = new StringBuilder();
             sb.AppendLine($"{data.ModeName.ToUpperInvariant()} — first to {data.WinTarget}");
+
+            // What's loading next (the host's random draw stamps these): mode name + its rolled intensity.
+            if (!string.IsNullOrEmpty(data.NextGameName))
+                sb.AppendLine($"Up next: {data.NextGameName} · Intensity {data.NextGameIntensity}");
+
             for (int i = 0; i < standings.Count; i++)
                 sb.AppendLine($"{standings[i].Domain}  {standings[i].TotalPoints}");
             return sb.ToString().TrimEnd();

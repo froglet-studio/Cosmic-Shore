@@ -214,6 +214,12 @@ namespace CosmicShore.Gameplay
             // before launch, so the game scene's config sync replicates it to clients.
             if (_gameData.SelectedIntensity != null)
                 _gameData.SelectedIntensity.Value = intensity;
+
+            // Stamp what's loading so the between-game splash can show "up next: <mode> · Intensity N"
+            // (see TournamentStandingsFormatter.FormatRunning). Set before InvokeGameLaunch fires OnLaunchGame.
+            _tournament.NextGameName = game.DisplayName;
+            _tournament.NextGameIntensity = intensity;
+
             _gameData.SyncFromArcadeGame(game);        // scene / mode / multiplayer
             _gameData.IsTournamentMode = true;         // SyncFromArcadeGame doesn't set it; keep it on.
             _gameData.InvokeGameLaunch();              // → SceneLoader.LaunchGame (host loads; clients follow)
