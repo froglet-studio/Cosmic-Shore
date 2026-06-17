@@ -9,6 +9,13 @@ three feature-complete domain minigames into one tournament with a per-player le
 > button (see **§7**, now complete). Remaining work is the **§9 Deferred** backlog (rewards, share
 > screen, instrumentation) only.
 
+> **Player-facing name — "Shuffle":** the Arcade card for this mode is shown to players as **Shuffle**
+> (`ArcadeGameTournament.asset` `DisplayName = "Shuffle"`, rendered by `GameCard`). The code, scene
+> (`Tournament.unity`), data (`TournamentDataSO`), enum (`GameModes.Tournament = 36`), and this doc keep
+> the **Tournament** name — *Shuffle and Tournament are the same meta-mode*. Planned Shuffle-specific
+> behavior changes (randomized lineup, per-domain `{2,1,0}` scoring + crystal-wallet credit, race-to-6)
+> are tracked in `Docs/ShuffleSystem/ARCHITECTURE.md` as future extensions of this meta — not a new mode.
+
 ---
 
 ## 1. What it is
