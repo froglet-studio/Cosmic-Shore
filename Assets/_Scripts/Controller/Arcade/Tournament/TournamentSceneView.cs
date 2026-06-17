@@ -155,16 +155,16 @@ namespace CosmicShore.Gameplay
 
             sb.AppendLine("<b>FINAL STANDINGS</b>");
             for (int i = 0; i < standings.Count; i++)
-                sb.AppendLine($"{i + 1}. {standings[i].Name} — {standings[i].TotalPoints} pts");
+                sb.AppendLine($"{i + 1}. {standings[i].Domain} — {standings[i].TotalPoints} pts");
 
-            // Per-game results: order players by their finishing place in each game.
+            // Per-game results: order domains by their finishing place in each game.
             for (int g = 0; g < tournamentData.GameQueue.Count; g++)
             {
                 var game = tournamentData.GameQueue[g];
                 sb.AppendLine();
                 sb.AppendLine($"<b>{(game != null ? game.DisplayName : $"Game {g + 1}")}</b>");
                 foreach (var s in standings.Where(s => g < s.Placements.Count).OrderBy(s => s.Placements[g]))
-                    sb.AppendLine($"  {Ordinal(s.Placements[g])}: {s.Name}");
+                    sb.AppendLine($"  {Ordinal(s.Placements[g])}: {s.Domain}");
             }
 
             resultsText.text = sb.ToString().TrimEnd();

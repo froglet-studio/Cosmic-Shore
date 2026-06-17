@@ -26,9 +26,12 @@ three feature-complete domain minigames into one tournament with a per-player le
 ## 1. What it is
 
 One tournament plays a **fixed lineup** — **Skim Race (HexRace 33) → Joust (34) → Crystal
-Capture (35)** — back-to-back. After each game, players earn **placement points** (1st = 10,
-2nd = 6, 3rd = 3, 4th = 1; configurable). The cumulative per-player total is the tournament
-leaderboard. It appears as a normal card in the Arcade panel (`GameModes.Tournament = 36`).
+Capture (35)** — back-to-back. After each game the active **domains** are ranked and earn
+**placement crystals** by domain place (1st = 2, 2nd = 1, 3rd = 0; `PointsByPlace`, configurable).
+The cumulative **per-domain** total is the leaderboard. It appears as a normal card in the Arcade
+panel (`GameModes.Tournament = 36`). *(Per-domain `{2,1,0}` scoring is shipped; the randomized
+lineup + race-to-6 termination + wallet credit are the next deltas — see
+`Docs/ShuffleSystem/ARCHITECTURE.md`.)*
 
 **Lobby minimum — 2 players, 2 domains.** Placement points are meaningless without opposing
 teams (and the Joust leg is unplayable on a single domain — see JOUST.md Design Note 8). The Tournament
@@ -70,7 +73,9 @@ A static `Instance` lets scene MonoBehaviours reach it (mirrors `PartyInviteCont
 - **Standings are network-free.** On `gameData.OnMiniGameEnd`, **every peer** folds the
   already-synced `gameData.Results` (the ranked per-player `List<ScoreResult>`) into
   `TournamentDataSO` via `RecordResults` — identical inputs → identical standings, no extra RPC.
-  Recording happens *before* the next load's `ResetRuntimeData` clears `Results`.
+  `RecordResults` reduces the per-player ranks to **per-domain** placement: each domain's place =
+  its best (lowest) player `Rank`, domains ordered by that (ties → enum order Jade→Ruby→Gold), then
+  awarded `{2,1,0}`. Recording happens *before* the next load's `ResetRuntimeData` clears `Results`.
 - **Only the host drives progression** (`BeginFirstGame` / `AdvanceToNextGame` /
   `RestartTournament`) through `gameData.SyncFromArcadeGame(queue[i]) + InvokeGameLaunch()`; the
   existing `SceneLoader` host-guard makes clients follow.
@@ -128,10 +133,12 @@ on a faster cadence while unlocked. Full detail in JOUST.md Design Note 12.
 
 `_Scripts/Utility/DataContainers/Tournament/TournamentDataSO.cs` (asset:
 `_SO_Assets/Tournament/TournamentData.asset`). Authored: `GameQueue` (the 3 `SO_ArcadeGame`s),
-`PointsByPlace`, `LobbySceneName`, four `ScriptableEventNoParam`s. Runtime (non-serialized):
-`IsActive`, `CurrentGameIndex`, `TournamentAINames`, `Standings`. Key methods:
-`RecordResults(results)`, `BuildSortedStandings()` (points desc, tiebreak best placement then
-name), `IsLastGame`, `ResetRuntime()`.
+`ModeCard` (the mode's own card — player-facing name), `PointsByPlace` (`{2,1,0}`), `LobbySceneName`,
+four `ScriptableEventNoParam`s. Runtime (non-serialized): `IsActive`, `CurrentGameIndex`,
+`TournamentAINames`, `Standings` (a `List<TournamentDomainStanding>` — **keyed by `Domains`**, not
+player). Key methods: `RecordResults(results)` (per-domain fold — see §3), `BuildSortedStandings()`
+(points desc, tiebreak best placement, then domain enum order Jade→Ruby→Gold), `IsLastGame`,
+`ResetRuntime()`. Edit-mode coverage: `Assets/_Scripts/Tests/EditMode/TournamentDataSOTests.cs`.
 
 ## 6. File index
 

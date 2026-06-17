@@ -49,17 +49,17 @@ If you came here looking for "Shuffle," that is the document you want.
 
 ## Planned Shuffle-specific behavior (deferred — not yet built)
 
-These are the behavior changes that will eventually distinguish the **Shuffle** card from today's
-Tournament. They are **extensions of the existing Tournament infrastructure** — they modify the
-`Tournament*` classes; **no new mode, enum, or classes** — and are **not implemented yet**:
+These are the behavior changes that distinguish the **Shuffle** card from the original Tournament.
+They are **extensions of the existing Tournament infrastructure** — they modify the `Tournament*`
+classes; **no new mode, enum, or classes**. Status is per-row:
 
-| # | Delta | Where it lands |
-|---|---|---|
-| 1 | **Randomized lineup** — a random mode + a random intensity ∈ [1..X] per game (X = chosen intensity; pool = 3 modes × X "experiences", L1=3 … L4=12), with repeat-avoidance, instead of the fixed `GameQueue` | `TournamentDataSO`, `TournamentController` |
-| 2 | **Per-domain scoring `{2,1,0}`** (1st/2nd/3rd domain) instead of per-player `{10,6,3,1}`; standings keyed by `Domain`, placement derived from the synced `GameDataSO.Results` | `TournamentDataSO` |
-| 3 | **Race to 6 / cap 7 games** instead of "played all N" | `TournamentController`, `TournamentDataSO` |
-| 4 | **Real crystal-wallet credit** of the `{2,1,0}` to each local player (generalize the winner-only flat reward) | `Scoreboard.AwardCrystalsIfLocalWinner` |
-| 5 | **Loading-splash summary (~3s)** between games — a reusable text surface fed the running domain standings | `SceneTransitionManager` (net-new surface) |
+| # | Delta | Where it lands | Status |
+|---|---|---|---|
+| 1 | **Randomized lineup** — a random mode + a random intensity ∈ [1..X] per game (X = chosen intensity; pool = 3 modes × X "experiences", L1=3 … L4=12), with repeat-avoidance, instead of the fixed `GameQueue` | `TournamentDataSO`, `TournamentController` | planned |
+| 2 | **Per-domain scoring `{2,1,0}`** (1st/2nd/3rd domain) instead of per-player `{10,6,3,1}`; standings keyed by `Domain`, placement derived from the synced `GameDataSO.Results` (each domain's place = its best player `Rank`) | `TournamentDataSO` | ✅ **shipped** |
+| 3 | **Race to 6 / cap 7 games** instead of "played all N" | `TournamentController`, `TournamentDataSO` | planned (needs #1 — a lineup that can exceed 3 games) |
+| 4 | **Real crystal-wallet credit** of the `{2,1,0}` to each local player (generalize the winner-only flat reward) | `Scoreboard.AwardCrystalsIfLocalWinner` | planned |
+| 5 | **Loading-splash summary (~3s)** between games — a reusable text surface fed the running domain standings | `SceneTransitionManager` (net-new surface) | planned |
 
-When these land, fold the detail into the canonical `Docs/TournamentSystem/ARCHITECTURE.md` rather than
-growing this pointer.
+Shipped deltas are documented in the canonical `Docs/TournamentSystem/ARCHITECTURE.md` (§1/§3/§5);
+this table tracks what remains.

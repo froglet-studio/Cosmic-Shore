@@ -7,18 +7,17 @@ using UnityEngine;
 namespace CosmicShore.Utility
 {
     /// <summary>
-    /// One cumulative tournament standing, keyed by player display name. Carries the
-    /// running placement-point total plus the per-game finishing places so the
-    /// scoreboard/summary can show history and break ties.
+    /// One cumulative tournament standing, keyed by <see cref="Domains"/> (team). Carries the
+    /// running placement-crystal total plus the per-game finishing places so the scoreboard/summary
+    /// can show history and break ties. Scoring is per-DOMAIN: each game ranks the active domains
+    /// and awards <see cref="TournamentDataSO.PointsByPlace"/> by place.
     /// </summary>
     [System.Serializable]
-    public class TournamentStanding
+    public class TournamentDomainStanding
     {
-        public string Name;
         public Domains Domain;
-        public bool IsAI;
 
-        /// <summary>Running sum of placement points across the games played so far.</summary>
+        /// <summary>Running sum of placement crystals across the games played so far.</summary>
         public int TotalPoints;
 
         /// <summary>1-based finishing place for each completed game, in play order.</summary>
@@ -39,7 +38,7 @@ namespace CosmicShore.Utility
 
     /// <summary>
     /// SOAP data container for a Tournament session — the single source of truth for
-    /// the game lineup, the cumulative per-player standings, and the placement-points
+    /// the game lineup, the cumulative per-domain standings, and the placement-points
     /// table. Authored once as an asset (lineup + points table); the runtime fields
     /// (<see cref="IsActive"/>, <see cref="CurrentGameIndex"/>, <see cref="Standings"/>,
     /// <see cref="TournamentAINames"/>) are reduced locally on every peer by
@@ -70,9 +69,9 @@ namespace CosmicShore.Utility
         public SO_ArcadeGame ModeCard;
 
         [Header("Scoring")]
-        [Tooltip("Placement points by finishing place: element 0 = 1st place, 1 = 2nd, … " +
-                 "Places beyond the table score 0.")]
-        public List<int> PointsByPlace = new() { 10, 6, 3, 1 };
+        [Tooltip("Placement crystals by DOMAIN finishing place: element 0 = 1st-place domain, 1 = 2nd, " +
+                 "2 = 3rd. Places beyond the table score 0. Shuffle awards {2,1,0}.")]
+        public List<int> PointsByPlace = new() { 2, 1, 0 };
 
         [Header("SOAP Events")]
         public ScriptableEventNoParam OnTournamentStarted;
@@ -89,14 +88,13 @@ namespace CosmicShore.Utility
         [System.NonSerialized] public int CurrentGameIndex;
 
         /// <summary>
-        /// AI display names seeded once at tournament start and reused for every game, so
-        /// name-keyed bot standings attribute correctly across the lineup (see
-        /// <c>ServerPlayerVesselInitializerWithAI</c>).
+        /// AI display names seeded once at tournament start and reused for every game, so AI
+        /// identities stay stable across the lineup (see <c>ServerPlayerVesselInitializerWithAI</c>).
         /// </summary>
         [System.NonSerialized] public List<string> TournamentAINames = new();
 
-        /// <summary>Cumulative standings, keyed by player name.</summary>
-        [System.NonSerialized] public List<TournamentStanding> Standings = new();
+        /// <summary>Cumulative standings, keyed by domain (team).</summary>
+        [System.NonSerialized] public List<TournamentDomainStanding> Standings = new();
 
         public int GameCount => GameQueue?.Count ?? 0;
 
@@ -147,24 +145,42 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Folds one finished game's ranked, per-player results into the cumulative
-        /// standings — awarding placement points by finishing place and appending each
-        /// player's place to their history. Called on EVERY peer from the controller's
-        /// <c>OnMiniGameEnd</c> handler; <paramref name="results"/> is the already-synced
-        /// <see cref="GameDataSO.Results"/>, so all peers converge on the same standings.
+        /// Folds one finished game's ranked, per-player results into the cumulative PER-DOMAIN
+        /// standings. Each active domain's finishing place this game is its best (lowest) player
+        /// <see cref="ScoreResult.Rank"/>; the domains are then ordered by that best rank (ties broken
+        /// by enum order for cross-peer determinism) and awarded <see cref="PointsByPlace"/> by place.
+        /// Called on EVERY peer from the controller's <c>OnMiniGameEnd</c> handler;
+        /// <paramref name="results"/> is the already-synced <see cref="GameDataSO.Results"/>, so all
+        /// peers converge on identical standings with no extra networking.
         /// </summary>
         public void RecordResults(IReadOnlyList<ScoreResult> results)
         {
             if (results == null || results.Count == 0) return;
 
+            // Each domain's place this game = the best (lowest) Rank among its players.
+            var bestRankByDomain = new Dictionary<Domains, int>();
             for (int i = 0; i < results.Count; i++)
             {
                 var r = results[i];
-                var standing = FindOrCreate(r.Name);
-                standing.Domain = r.Domain;
-                standing.IsAI = TournamentAINames != null && TournamentAINames.Contains(r.Name);
-                standing.TotalPoints += PointsForPlace(r.Rank);
-                standing.Placements.Add(r.Rank);
+                if (!bestRankByDomain.TryGetValue(r.Domain, out var best) || r.Rank < best)
+                    bestRankByDomain[r.Domain] = r.Rank;
+            }
+
+            // Order domains by best rank ascending, ties broken by enum order (Jade<Ruby<Gold) so
+            // every peer assigns the same 1st / 2nd / 3rd.
+            var ordered = new List<Domains>(bestRankByDomain.Keys);
+            ordered.Sort((a, b) =>
+            {
+                int byRank = bestRankByDomain[a].CompareTo(bestRankByDomain[b]);
+                return byRank != 0 ? byRank : ((int)a).CompareTo((int)b);
+            });
+
+            // Award placement crystals by domain place (1st = PointsByPlace[0], …) + append history.
+            for (int place = 0; place < ordered.Count; place++)
+            {
+                var standing = FindOrCreate(ordered[place]);
+                standing.TotalPoints += PointsForPlace(place + 1);
+                standing.Placements.Add(place + 1);
             }
 
             OnGameResultRecorded.Raise();
@@ -173,11 +189,12 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Standings sorted best-first: highest total points, tie-broken by best single
-        /// placement (lower place number wins), then by name for cross-peer determinism.
+        /// placement (lower place number wins), then by domain enum order (Jade→Ruby→Gold)
+        /// for cross-peer determinism.
         /// </summary>
-        public List<TournamentStanding> BuildSortedStandings()
+        public List<TournamentDomainStanding> BuildSortedStandings()
         {
-            var sorted = new List<TournamentStanding>(Standings);
+            var sorted = new List<TournamentDomainStanding>(Standings);
             sorted.Sort((a, b) =>
             {
                 int byPoints = b.TotalPoints.CompareTo(a.TotalPoints);
@@ -186,18 +203,18 @@ namespace CosmicShore.Utility
                 int byBest = a.BestPlacement.CompareTo(b.BestPlacement);
                 if (byBest != 0) return byBest;
 
-                return string.CompareOrdinal(a.Name ?? "", b.Name ?? "");
+                return ((int)a.Domain).CompareTo((int)b.Domain);
             });
             return sorted;
         }
 
-        TournamentStanding FindOrCreate(string name)
+        TournamentDomainStanding FindOrCreate(Domains domain)
         {
             for (int i = 0; i < Standings.Count; i++)
-                if (Standings[i].Name == name)
+                if (Standings[i].Domain == domain)
                     return Standings[i];
 
-            var created = new TournamentStanding { Name = name };
+            var created = new TournamentDomainStanding { Domain = domain };
             Standings.Add(created);
             return created;
         }
