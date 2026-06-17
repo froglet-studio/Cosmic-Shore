@@ -62,6 +62,13 @@ namespace CosmicShore.Utility
                  "the tournament points here). Its load is the per-peer 'tournament started' signal.")]
         public string LobbySceneName = "Tournament";
 
+        [Tooltip("This meta-mode's OWN Arcade card (ArcadeGameTournament.asset). Its DisplayName is the " +
+                 "player-facing name of the mode (currently \"Shuffle\") and is the SINGLE SOURCE of that " +
+                 "name: the Arcade grid card AND the in-scene title (TournamentSceneView) both read it. To " +
+                 "rename the mode for players, change ONLY that card's DisplayName. See " +
+                 "Docs/ShuffleSystem/ARCHITECTURE.md (\"Renaming the mode\").")]
+        public SO_ArcadeGame ModeCard;
+
         [Header("Scoring")]
         [Tooltip("Placement points by finishing place: element 0 = 1st place, 1 = 2nd, … " +
                  "Places beyond the table score 0.")]

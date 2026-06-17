@@ -58,6 +58,16 @@ namespace CosmicShore.Gameplay
         bool IsHost => NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
         bool HasStartButtonFlow => hostStartButton != null;
 
+        // Player-facing mode name. SINGLE SOURCE: the Arcade card's DisplayName (currently "Shuffle"),
+        // wired via TournamentDataSO.ModeCard — so the in-scene title tracks the same string the Arcade
+        // grid card shows. Falls back to "Tournament" if ModeCard is unwired. To rename the mode for
+        // players, change ONLY that card's DisplayName — see Docs/ShuffleSystem/ARCHITECTURE.md.
+        string ModeName =>
+            tournamentData != null && tournamentData.ModeCard != null
+            && !string.IsNullOrEmpty(tournamentData.ModeCard.DisplayName)
+                ? tournamentData.ModeCard.DisplayName
+                : "Tournament";
+
         void Start()
         {
             // Lift the loading splash that the Single load left opaque (no vessel here to raise
@@ -96,7 +106,7 @@ namespace CosmicShore.Gameplay
 
         void RenderLineup()
         {
-            if (titleText) titleText.text = "TOURNAMENT";
+            if (titleText) titleText.text = ModeName.ToUpperInvariant();
             if (lineupText == null || tournamentData == null) return;
 
             var sb = new StringBuilder();
@@ -137,7 +147,7 @@ namespace CosmicShore.Gameplay
 
         void RenderSummary()
         {
-            if (titleText) titleText.text = "TOURNAMENT RESULTS";
+            if (titleText) titleText.text = $"{ModeName.ToUpperInvariant()} RESULTS";
             if (resultsText == null || tournamentData == null) return;
 
             var standings = tournamentData.BuildSortedStandings();

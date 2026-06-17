@@ -6,6 +6,37 @@ separate game mode. The Arcade card asset `ArcadeGameTournament.asset` simply ca
 data (`TournamentDataSO`), enum (`GameModes.Tournament = 36`), controller (`TournamentController`),
 SO assets, and all wiring keep the **Tournament** name. *Shuffle and Tournament are the same thing.*
 
+## Renaming the mode (player-facing name) — single source of truth
+
+The player-facing name lives in **exactly one place**: the Arcade card asset
+`Assets/_SO_Assets/Games/ArcadeGameTournament.asset` → **`DisplayName`** (currently `Shuffle`).
+
+**To rename the mode for players, change only that one field.** It drives both surfaces automatically:
+
+| Surface | How it reads the name |
+|---|---|
+| Arcade grid card | `GameCard` sets `GameTitle.text = game.DisplayName` (`_Scripts/UI/Elements/GameCard.cs`) |
+| In-scene lobby + summary title | `TournamentSceneView.ModeName` reads `TournamentDataSO.ModeCard.DisplayName`, upper-cased for the banner (`"SHUFFLE"` / `"SHUFFLE RESULTS"`). The `ModeCard` field of `TournamentData.asset` is wired to `ArcadeGameTournament.asset`; if it is ever unwired the title falls back to `"Tournament"`. |
+
+So the card's `DisplayName` is the **single source** — the in-scene title is no longer a separate
+hardcoded string (it was `"TOURNAMENT"` before; now it tracks the card).
+
+**Do NOT change these to rename** — they are *internal identifiers*, not player-facing, and renaming
+them is risky GUID / scene / build-settings surgery (out of scope unless explicitly requested):
+
+- `GameModes.Tournament = 36` (enum symbol + int)
+- `TournamentController` · `TournamentStateMachine` · `TournamentDataSO` · `TournamentSceneView` (classes/files)
+- `Tournament.unity` (scene) · `TournamentData.asset` + `_SO_Assets/Tournament/` (data assets) ·
+  the `ArcadeGameTournament.asset` *file* name (only its `DisplayName` **field** changes)
+- `IsTournamentMode` (the GameDataSO flag) · the `CosmicShore.*` namespaces
+
+**Separate field — the card `Description`:** its own blurb (`ArcadeGameTournament.asset` → `Description`),
+not derived from `DisplayName`. Edit it directly if the copy needs updating. It is intentionally
+**mode-count-agnostic** ("a lineup of games", not "three games") because more modes will be added.
+
+> **TL;DR for "rename the mode to X":** set `ArcadeGameTournament.asset` `DisplayName = X`
+> (and optionally `Description`). Nothing else.
+
 ## Canonical architecture → Tournament docs
 
 For everything about how this meta-mode works — the sequential `Single`-load model, the persistent

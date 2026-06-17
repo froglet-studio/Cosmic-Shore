@@ -10,11 +10,16 @@ three feature-complete domain minigames into one tournament with a per-player le
 > screen, instrumentation) only.
 
 > **Player-facing name — "Shuffle":** the Arcade card for this mode is shown to players as **Shuffle**
-> (`ArcadeGameTournament.asset` `DisplayName = "Shuffle"`, rendered by `GameCard`). The code, scene
+> (`ArcadeGameTournament.asset` `DisplayName = "Shuffle"`, rendered by `GameCard`). The in-scene
+> lobby/summary banner is **data-driven from that same field** — `TournamentSceneView.ModeName` reads
+> `TournamentDataSO.ModeCard.DisplayName` (the `ModeCard` reference is wired to the card asset), so the
+> card's `DisplayName` is the **single source** of the player-facing name. The code, scene
 > (`Tournament.unity`), data (`TournamentDataSO`), enum (`GameModes.Tournament = 36`), and this doc keep
-> the **Tournament** name — *Shuffle and Tournament are the same meta-mode*. Planned Shuffle-specific
-> behavior changes (randomized lineup, per-domain `{2,1,0}` scoring + crystal-wallet credit, race-to-6)
-> are tracked in `Docs/ShuffleSystem/ARCHITECTURE.md` as future extensions of this meta — not a new mode.
+> the **Tournament** name — *Shuffle and Tournament are the same meta-mode*. **To rename the mode, change
+> only the card's `DisplayName`** — full guide + what NOT to touch is in `Docs/ShuffleSystem/ARCHITECTURE.md`
+> ("Renaming the mode"). Planned Shuffle-specific *behavior* changes (randomized lineup, per-domain
+> `{2,1,0}` scoring + crystal-wallet credit, race-to-6) are tracked in that same doc as future extensions
+> of this meta — not a new mode.
 
 ---
 
