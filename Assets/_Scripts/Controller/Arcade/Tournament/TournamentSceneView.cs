@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Text;
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using Obvious.Soap;
 using TMPro;
@@ -149,7 +150,12 @@ namespace CosmicShore.Gameplay
         {
             if (tournamentData == null) return;
             if (titleText) titleText.text = $"{tournamentData.ModeName.ToUpperInvariant()} RESULTS";
-            if (resultsText) resultsText.text = TournamentStandingsFormatter.FormatFinal(tournamentData);
+
+            // Tag this client's own team row "(You)" so the owner can read which domain is theirs.
+            // LocalPlayer is the network player owned by this client; Blue (no-team sentinel) tags nothing.
+            Domains localDomain = gameData != null && gameData.LocalPlayer != null
+                ? gameData.LocalPlayer.Domain : Domains.Blue;
+            if (resultsText) resultsText.text = TournamentStandingsFormatter.FormatFinal(tournamentData, localDomain);
         }
 
         /// <summary>Host-only. Wire the summary Play Again button's onClick here. Restarts the tournament.</summary>
