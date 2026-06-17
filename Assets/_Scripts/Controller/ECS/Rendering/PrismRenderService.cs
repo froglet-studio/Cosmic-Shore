@@ -67,25 +67,47 @@ namespace CosmicShore.ECS
 
         static bool? _runtimeOverride;
         static bool _configLoaded;
-        static bool _configEnabled = true;
+        // OPT-IN: defaults OFF. The instanced path only renders correctly once the
+        // prism ShaderGraphs expose their animated properties as Hybrid Per Instance
+        // (see Docs/PRISM_ECS_MIGRATION.md §7); until that is verified in-editor the
+        // legacy MeshRenderer path stays the baseline so a build is never broken by
+        // default. Enable via the PrismRenderConfig asset or SetRuntimeOverride(true).
+        static bool _configEnabled;
+        static bool _loggedActive;
 
         /// <summary>
         /// Master switch for instanced prism rendering. Resolution order:
         /// runtime override (benchmark A/B) → PrismRenderConfig asset in
-        /// Resources → default ON (this branch exists to prove the path).
+        /// Resources → default OFF (opt-in; legacy path is the baseline).
         /// </summary>
         public static bool Enabled
         {
             get
             {
-                if (_runtimeOverride.HasValue) return _runtimeOverride.Value;
-                if (!_configLoaded)
+                bool enabled;
+                if (_runtimeOverride.HasValue)
                 {
-                    _configLoaded = true;
-                    var config = Resources.Load<CosmicShore.ScriptableObjects.PrismRenderConfigSO>("PrismRenderConfig");
-                    if (config != null) _configEnabled = config.UseInstancedRendering;
+                    enabled = _runtimeOverride.Value;
                 }
-                return _configEnabled;
+                else
+                {
+                    if (!_configLoaded)
+                    {
+                        _configLoaded = true;
+                        var config = Resources.Load<CosmicShore.ScriptableObjects.PrismRenderConfigSO>("PrismRenderConfig");
+                        if (config != null) _configEnabled = config.UseInstancedRendering;
+                    }
+                    enabled = _configEnabled;
+                }
+
+                if (enabled && !_loggedActive)
+                {
+                    _loggedActive = true;
+                    Debug.Log("[PrismRenderService] Instanced prism rendering is ACTIVE (Entities Graphics). " +
+                              "If colors look uniform/mixed or explosions are frozen, the prism ShaderGraphs need " +
+                              "'Hybrid Per Instance' on their animated properties — see Docs/PRISM_ECS_MIGRATION.md §7.");
+                }
+                return enabled;
             }
         }
 

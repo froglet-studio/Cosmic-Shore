@@ -339,6 +339,62 @@ GameObjects already exceeds the design target, D is optional headroom.
 
 ---
 
+## 7. Root cause of the in-editor breakage (colors mixed up / explosions frozen) — FIXED
+
+**Symptom:** with the instanced path on, prism colors looked uniform/mixed and
+explosions rendered as a static fully-exploded blob instead of animating.
+
+**Root cause:** the per-instance `[MaterialProperty]` overrides were not reaching
+the shaders. Entities Graphics only drives a ShaderGraph property per-instance when
+that property is declared **Hybrid Per Instance** (`hlslDeclarationOverride: 3`).
+An audit found that across the four prism shaders, ONLY `ExplodingBlockGraph._Velocity`
+was marked Hybrid Per Instance — every animated property
+(`_BrightColor`/`_DarkColor`/`_Spread`/`_ExplosionAmount`/`_Opacity`/`_State`/`_Location`)
+was `Default`. So each entity read the *shared material constant*: explosions showed
+`ExplodingBlockMaterial`'s baked `_ExplosionAmount: 20.7` (frozen), and prisms lost
+per-instance color variation (mixed up). This was the day-one risk flagged in §3.
+
+It also corrected a wrong shader map from the initial scaffold: the main prism block
+materials use **`BlockGraph`** (`bf8c159f…`), not `UnstablePrismGraph`. Explosions use
+`ExplodingBlockGraph`, implosions `SuctionGraph`.
+
+**Fix applied (this commit):** set Hybrid Per Instance on the driven properties in all
+three shaders, pattern-matched to the already-working `_Velocity` and to the repo's
+existing `CrystalGraph`/`SkimmerGraph` precedent:
+- `BlockGraph`: `_BrightColor`, `_DarkColor`, `_Spread`
+- `ExplodingBlockGraph`: `_BrightColor`, `_DarkColor`, `_ExplosionAmount`, `_Opacity`, `_Spread`
+- `SuctionGraph`: `_BrightColor`, `_DarkColor`, `_State`, `_Location`, `_Spread`
+
+Hybrid Per Instance is **additive** — it adds a `DOTS_INSTANCING_ON` variant used only
+under BatchRendererGroup; the normal MeshRenderer + MaterialPropertyBlock path is
+unchanged. So these shader edits are safe for the legacy path too.
+
+**Path is now opt-in (default OFF).** `PrismRenderConfigSO.useInstancedRendering`
+defaults false and `PrismRenderService` defaults off, so the proven legacy path is the
+baseline and a build is never broken by default. The fixed ECS path is one flag away.
+
+### In-editor verification loop (do these in order)
+
+1. **Reimport shaders.** Focus the editor (or right-click the three `.shadergraph`
+   files → Reimport) so the `DOTS_INSTANCING_ON` variants compile.
+2. **Isolated shader check FIRST.** Empty scene + camera + `PrismRenderStressTest`
+   (assign a prism mesh + a `BlockGraph`-based material). Play. If instances show
+   *varied* colors → per-instance overrides reach the shader (shader fix worked). If
+   all identical → the shader still isn't honoring per-instance; recheck the reimport
+   and the `hlslDeclarationOverride: 3` flags. This isolates shader-vs-integration.
+3. **Enable the path.** Create a `PrismRenderConfig` asset in a `Resources/` folder
+   (Create ▸ ScriptableObjects ▸ Rendering ▸ Prism Render Config), tick
+   *Use Instanced Rendering*. Or call `PrismRenderService.SetRuntimeOverride(true)`.
+   On first active frame the console logs `[PrismRenderService] … ACTIVE`.
+4. **Gameplay check.** MinigameHexRace: fly, lay trail, destroy prisms. Colors,
+   bloom-in, theme transitions, shield engage/shatter, explosions (animating now),
+   implosions must match the legacy path. A/B with the toggle.
+5. **Residual risk to watch — Vector3 override size.** `_Spread`/`_Location`/`_Velocity`
+   are float3 components against Hybrid-Per-Instance Vector3 props (matches the working
+   `_Velocity`). If the console logs a `MaterialProperty` size mismatch for one of them,
+   change that override struct in `PrismRenderProperties.cs` from `float3` to `float4`
+   (set `.w = 0`). Colors (float4) and scalars (float) are unaffected.
+
 ## 6. Decision summary
 
 | Question | Call |
