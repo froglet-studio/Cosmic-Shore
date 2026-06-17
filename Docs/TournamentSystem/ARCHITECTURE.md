@@ -3,6 +3,10 @@
 Canonical reference for **Tournament Mode** — the session-level meta (P3 / R2) that strings the
 three feature-complete domain minigames into one tournament with a per-player leaderboard.
 
+> **See also:** `MAELSTROM_UX_HANDOFF.md` (same folder) — session handoff for the between-game splash,
+> readable dwell, the Shuffle→Maelstrom display rename, and the summary `(You)` owner tag, with sequence
+> diagrams, the inspector wiring those features depend on, and recommended next tasks.
+
 > **Status:** implemented end-to-end. Code, data assets, **and** the Unity-editor wiring (scene
 > content, prefab buttons, inspector references) are all in place: the Tournament scene drives both
 > its lobby and summary layouts, and every domain game's Scoreboard carries a host-only Continue
