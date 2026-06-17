@@ -62,7 +62,7 @@ namespace CosmicShore.Utility
         public string LobbySceneName = "Tournament";
 
         [Tooltip("This meta-mode's OWN Arcade card (ArcadeGameTournament.asset). Its DisplayName is the " +
-                 "player-facing name of the mode (currently \"Shuffle\") and is the SINGLE SOURCE of that " +
+                 "player-facing name of the mode (currently \"Maelstrom\") and is the SINGLE SOURCE of that " +
                  "name: the Arcade grid card AND the in-scene title (TournamentSceneView) both read it. To " +
                  "rename the mode for players, change ONLY that card's DisplayName. See " +
                  "Docs/ShuffleSystem/ARCHITECTURE.md (\"Renaming the mode\").")]
@@ -130,7 +130,7 @@ namespace CosmicShore.Utility
         public int GameCount => GameQueue?.Count ?? 0;
 
         /// <summary>
-        /// Player-facing mode name — the mode card's DisplayName (e.g. "Shuffle"); falls back to
+        /// Player-facing mode name — the mode card's DisplayName (e.g. "Maelstrom"); falls back to
         /// "Tournament" if <see cref="ModeCard"/> is unwired. Single source for titles/headers, used by
         /// the scene view and <see cref="TournamentStandingsFormatter"/>.
         /// </summary>

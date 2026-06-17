@@ -9,8 +9,8 @@ three feature-complete domain minigames into one tournament with a per-player le
 > button (see **§7**, now complete). Remaining work is the **§9 Deferred** backlog (rewards, share
 > screen, instrumentation) only.
 
-> **Player-facing name — "Shuffle":** the Arcade card for this mode is shown to players as **Shuffle**
-> (`ArcadeGameTournament.asset` `DisplayName = "Shuffle"`, rendered by `GameCard`). The in-scene
+> **Player-facing name — "Maelstrom":** the Arcade card for this mode is shown to players as **Maelstrom**
+> (`ArcadeGameTournament.asset` `DisplayName = "Maelstrom"`, rendered by `GameCard`). The in-scene
 > lobby/summary banner is **data-driven from that same field** — `TournamentSceneView.ModeName` reads
 > `TournamentDataSO.ModeCard.DisplayName` (the `ModeCard` reference is wired to the card asset), so the
 > card's `DisplayName` is the **single source** of the player-facing name. The code, scene

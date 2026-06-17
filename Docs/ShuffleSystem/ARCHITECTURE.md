@@ -1,10 +1,11 @@
 # Shuffle — Pointer
 
-**"Shuffle" is the player-facing display name of the existing Tournament meta-mode.** It is **not** a
-separate game mode. The Arcade card asset `ArcadeGameTournament.asset` simply carries
-`DisplayName = "Shuffle"` (rendered by `GameCard.GameTitle`). The code, scene (`Tournament.unity`),
-data (`TournamentDataSO`), enum (`GameModes.Tournament = 36`), controller (`TournamentController`),
-SO assets, and all wiring keep the **Tournament** name. *Shuffle and Tournament are the same thing.*
+**"Maelstrom" is the player-facing display name of the existing Tournament meta-mode** (this doc folder
+keeps the legacy "Shuffle" name — the mode was renamed for players). It is **not** a separate game mode.
+The Arcade card asset `ArcadeGameTournament.asset` simply carries `DisplayName = "Maelstrom"` (rendered
+by `GameCard.GameTitle`). The code, scene (`Tournament.unity`), data (`TournamentDataSO`), enum
+(`GameModes.Tournament = 36`), controller (`TournamentController`), SO assets, and all wiring keep the
+**Tournament** name. *Maelstrom and Tournament are the same thing.*
 
 ## Renaming the mode (player-facing name) — single source of truth
 
