@@ -57,6 +57,7 @@ namespace CosmicShore.Core
 
         [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
         [Inject] GameDataSO _gameData;
+        [Inject] AnalyticsServiceFacade _analytics;
 
         MainMenuState _state = MainMenuState.None;
 
@@ -188,6 +189,7 @@ namespace CosmicShore.Core
         {
             TransitionTo(MainMenuState.Ready);
             ActivateLocalPlayerAutopilot();
+            _analytics?.RecordMenuReady();
         }
 
         /// <summary>

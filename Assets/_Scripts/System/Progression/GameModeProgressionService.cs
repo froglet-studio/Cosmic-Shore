@@ -26,6 +26,7 @@ namespace CosmicShore.Core
         [SerializeField] private GameDataSO gameData;
 
         [Inject] UGSDataService _ugsDataService;
+        [Inject] AnalyticsServiceFacade _analytics;
 
         public GameModeProgressionData ProgressionData { get; private set; } = new();
         public SO_GameModeQuestList QuestList => questList;
@@ -103,6 +104,11 @@ namespace CosmicShore.Core
         /// </summary>
         public bool IsGameModeUnlocked(GameModes mode)
         {
+            // Tournament is a session-level meta, not part of the quest progression chain —
+            // always available so its arcade card is interactable.
+            if (mode == GameModes.Tournament)
+                return true;
+
             // First quest mode is always unlocked
             if (questList != null && questList.Quests.Count > 0 &&
                 questList.Quests[0].GameMode == mode)
@@ -204,6 +210,7 @@ namespace CosmicShore.Core
                 string nextModeName = nextQuest.GameMode.ToString();
                 ProgressionData.MarkUnlocked(nextModeName);
                 ProgressionData.EnsureIntensityInitialized(nextModeName);
+                _analytics?.RecordModeUnlocked(nextQuest.GameMode);
                 CSDebug.Log($"[GameModeProgressionService] Unlocked next mode: {nextQuest.GameMode}");
             }
 
@@ -329,6 +336,10 @@ namespace CosmicShore.Core
         /// </summary>
         public int GetMaxUnlockedIntensity(GameModes mode)
         {
+            // Tournament intensity isn't gated behind progression — the full range is available
+            // (one intensity is chosen in the lobby and applied to every game in the lineup).
+            if (mode == GameModes.Tournament) return 4;
+
             if (!IsGameModeUnlocked(mode)) return 0;
             return ProgressionData.GetMaxUnlockedIntensity(mode.ToString());
         }
@@ -512,6 +523,7 @@ namespace CosmicShore.Core
                     ProgressionData.SetMaxUnlockedIntensity(modeName, 3);
                     CSDebug.Log($"[GameModeProgressionService] Intensity 3 unlocked for {mode}!");
                     OnIntensityUnlocked?.Invoke(mode, 3);
+                    _analytics?.RecordIntensityUnlocked(mode, 3);
                     OnProgressionChanged?.Invoke(ProgressionData);
                     SaveImmediateAsync();
                     return;
@@ -530,6 +542,7 @@ namespace CosmicShore.Core
                     ProgressionData.SetMaxUnlockedIntensity(modeName, 4);
                     CSDebug.Log($"[GameModeProgressionService] Intensity 4 unlocked for {mode}! Quest complete.");
                     OnIntensityUnlocked?.Invoke(mode, 4);
+                    _analytics?.RecordIntensityUnlocked(mode, 4);
 
                     // Intensity 4 unlocked = quest completed
                     ProgressionData.MarkQuestCompleted(modeName);

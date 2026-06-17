@@ -87,6 +87,10 @@ namespace CosmicShore.Core
         ComebackMass = 28,
         ComebackSpace = 29,
         ComebackTime = 30,
+        JoustBuffCharge = 31,
+        JoustBuffMass = 32,
+        JoustBuffSpace = 33,
+        JoustBuffTime = 34,
     }
 
     [DefaultExecutionOrder(-1)]
@@ -244,6 +248,19 @@ namespace CosmicShore.Core
 
         [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackTime — local player receives a Time comeback buff.")]
         EventReference comebackTimeEvent;
+
+        [Header("Joust Buff Events (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffCharge — local ally was overtaken (jousted) by a teammate's skimmer and buffed; Charge representative.")]
+        EventReference joustBuffChargeEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffMass — local ally was overtaken (jousted) by a teammate's skimmer and buffed; Mass representative.")]
+        EventReference joustBuffMassEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffSpace — local ally was overtaken (jousted) by a teammate's skimmer and buffed; Space representative.")]
+        EventReference joustBuffSpaceEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffTime — local ally was overtaken (jousted) by a teammate's skimmer and buffed; Time representative.")]
+        EventReference joustBuffTimeEvent;
 
         [Header("Gameplay SFX Tuning")]
         [SerializeField, Range(0f, 1f), Tooltip(
@@ -711,6 +728,10 @@ namespace CosmicShore.Core
                 {GameplaySFXCategory.ComebackMass, comebackMassEvent},
                 {GameplaySFXCategory.ComebackSpace, comebackSpaceEvent},
                 {GameplaySFXCategory.ComebackTime, comebackTimeEvent},
+                {GameplaySFXCategory.JoustBuffCharge, joustBuffChargeEvent},
+                {GameplaySFXCategory.JoustBuffMass, joustBuffMassEvent},
+                {GameplaySFXCategory.JoustBuffSpace, joustBuffSpaceEvent},
+                {GameplaySFXCategory.JoustBuffTime, joustBuffTimeEvent},
             };
         }
     }

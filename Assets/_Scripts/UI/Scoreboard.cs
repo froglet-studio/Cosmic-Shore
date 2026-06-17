@@ -76,6 +76,13 @@ namespace CosmicShore.UI
         [Tooltip("Main-menu SOAP event — the same asset the Main Menu button raises (via PauseMenu.OnClickMainMenu) and SceneLoader listens to. When it fires, the host nav buttons hide so the transition can't be spam-clicked.")]
         [SerializeField] private ScriptableEventNoParam onClickToMainMenu;
 
+        [Header("Tournament")]
+        [Tooltip("Continue button — HOST ONLY, shown after EVERY tournament game (incl. the last). " +
+                 "Mid-lineup it advances the party to the next game; on the last game it loads the " +
+                 "Tournament results screen. Wire its onClick to OnContinueButtonPressed(). " +
+                 "Leave unassigned in non-tournament scenes.")]
+        [SerializeField] private GameObject continueButton;
+
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 
@@ -141,7 +148,16 @@ namespace CosmicShore.UI
             if (scoreboardPanel)
             {
                 scoreboardPanel.gameObject.SetActive(true);
-                PlayEntranceAnimation();
+
+                // Entrance animation disabled for now: PlayEntranceAnimation() slid the panel
+                // by mutating its own anchoredPosition (read current pos as the rest target,
+                // shoved it down by `offset`, tweened back via DOAnchorPos) and never restored
+                // it on HideScoreboard(). On a stretch-anchored panel a re-entrant/interrupted
+                // show captured the already-displaced position as the new rest target, so the
+                // panel drifted off-base in modes that re-show the board (Joust / Crystal Capture).
+                // Show at the authored position with no slide. (Re-enable once the rest pos is
+                // captured at Awake and restored on hide.)
+                ShowScoreboardImmediate();
             }
         }
 
@@ -155,6 +171,22 @@ namespace CosmicShore.UI
             var nm = NetworkManager.Singleton;
             bool isClient = nm == null || !nm.IsServer;
 
+            // Tournament mode: the host gets Continue on EVERY game (including the last) and
+            // clients see no buttons. Continue on the last game takes the party to the Tournament
+            // results screen, which is where Play Again / Main Menu live now — so they are never
+            // shown on the per-game scoreboard here.
+            if (gameData != null && gameData.IsTournamentMode)
+            {
+                bool isHost = !isClient;
+                if (continueButton)   continueButton.SetActive(isHost);
+                if (playAgainButton)  playAgainButton.SetActive(false);
+                if (mainMenuButton)   mainMenuButton.SetActive(false);
+                if (leaveLobbyButton) leaveLobbyButton.SetActive(false);
+                return;
+            }
+
+            // Normal (non-tournament) game: host gets Main Menu + Play Again, clients get Leave.
+            if (continueButton)   continueButton.SetActive(false);
             if (mainMenuButton)   mainMenuButton.SetActive(!isClient);
             if (leaveLobbyButton) leaveLobbyButton.SetActive(isClient);
             if (playAgainButton)  playAgainButton.SetActive(!isClient);
@@ -210,6 +242,24 @@ namespace CosmicShore.UI
             }
 
             _entranceSeq.SetUpdate(unscaled);
+        }
+
+        /// <summary>
+        /// Shows the scoreboard at its authored position with no slide/fade. Replaces
+        /// <see cref="PlayEntranceAnimation"/> while the entrance slide is disabled — see the
+        /// note in <see cref="ShowScoreboard"/>. Forces full alpha and unit banner scale in case
+        /// a previously-killed entrance tween left either mid-animation.
+        /// </summary>
+        void ShowScoreboardImmediate()
+        {
+            if (!scoreboardPanel) return;
+
+            _entranceSeq?.Kill();
+
+            var cg = scoreboardPanel.GetComponent<CanvasGroup>();
+            if (cg) cg.alpha = 1f;
+
+            if (BannerText) BannerText.transform.localScale = Vector3.one;
         }
 
         void OnDestroy()
@@ -347,8 +397,8 @@ namespace CosmicShore.UI
                 _spawnedCards.Add(card);
             }
 
-            // Award crystals once to the local player if they won (same side-effect that
-            // EndGameCinematicController used to do — centralized here now)
+            // Award crystals once to the local player if they won — the scoreboard is
+            // the single crystal-award path.
             AwardCrystalsIfLocalWinner(winnerName);
         }
 
@@ -417,7 +467,7 @@ namespace CosmicShore.UI
             var service = PlayerDataService.Instance;
             if (service == null) return;
 
-            int newBalance = service.AddCrystals(winnerCrystalReward);
+            int newBalance = service.AddCrystals(winnerCrystalReward, "game_reward");
             CSDebug.Log($"[Scoreboard] Awarded {winnerCrystalReward} crystals to '{localName}'. New balance: {newBalance}");
         }
 
@@ -502,12 +552,6 @@ namespace CosmicShore.UI
             if (UGSStatsManager.Instance != null)
                 UGSStatsManager.Instance.TrackPlayAgain();
 
-            if (gameController == null)
-            {
-                CSDebug.LogError("[Scoreboard] gameController not assigned — wire the scene's MiniGameControllerBase in the inspector.");
-                return;
-            }
-
             // Defense in depth: non-host clients don't see the button
             // (ConfigureLobbyButtons gates it), but guard the call path too.
             var nm = NetworkManager.Singleton;
@@ -517,20 +561,53 @@ namespace CosmicShore.UI
                 return;
             }
 
+            // In tournament mode Play Again is not shown on the per-game scoreboard (it lives on
+            // the Tournament results screen via TournamentSceneView). So this path is only ever
+            // reached by non-tournament games.
+
+            if (gameController == null)
+            {
+                CSDebug.LogError("[Scoreboard] gameController not assigned — wire the scene's MiniGameControllerBase in the inspector.");
+                return;
+            }
+
             HideHostNavButtons();
             gameController.RequestReplay();
         }
 
         /// <summary>
-        /// Hides the host-only navigation buttons (Play Again + Main Menu) once a
-        /// navigation action is committed — Play Again clicked or the main-menu SOAP
-        /// event raised — so the host can't spam-click during the scene transition.
-        /// The next game end re-activates them via <see cref="ConfigureLobbyButtons"/>.
+        /// Host-only "Continue" handler (tournament mode). Shown after every tournament game incl.
+        /// the last (see <see cref="ConfigureLobbyButtons"/>): mid-lineup it advances the party to
+        /// the next game; on the last game <see cref="TournamentController.AdvanceToNextGame"/> loads
+        /// the Tournament results screen instead. Wire the Continue button's onClick here.
+        /// </summary>
+        public void OnContinueButtonPressed()
+        {
+            var nm = NetworkManager.Singleton;
+            if (nm != null && !nm.IsServer)
+            {
+                CSDebug.LogWarning("[Scoreboard] Continue ignored — only the host advances the tournament.");
+                return;
+            }
+
+            HideHostNavButtons();
+            if (TournamentController.Instance != null)
+                TournamentController.Instance.AdvanceToNextGame();
+            else
+                CSDebug.LogError("[Scoreboard] TournamentController.Instance is null — cannot advance the tournament.");
+        }
+
+        /// <summary>
+        /// Hides the host-only navigation buttons (Play Again + Main Menu + Continue) once a
+        /// navigation action is committed — a button clicked or the main-menu SOAP event raised —
+        /// so the host can't spam-click during the scene transition. The next game end
+        /// re-activates the right ones via <see cref="ConfigureLobbyButtons"/>.
         /// </summary>
         void HideHostNavButtons()
         {
             if (playAgainButton) playAgainButton.SetActive(false);
             if (mainMenuButton)  mainMenuButton.SetActive(false);
+            if (continueButton)  continueButton.SetActive(false);
         }
 
         /// <summary>

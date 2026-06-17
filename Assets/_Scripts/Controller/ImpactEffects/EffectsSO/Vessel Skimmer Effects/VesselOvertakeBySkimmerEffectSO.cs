@@ -77,6 +77,25 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < AllElements.Length; i++)
                 rs.ApplyElementalEffect(AllElements[i], magnitude, effectDuration);
+
+            // Friendly buff audio: all four elements are buffed at once, so play a
+            // single representative element's buff SFX (chosen at random for variety)
+            // rather than stacking a four-sound chord. Only the local ally being
+            // buffed hears it.
+            if (isAlly && overtakenStatus.IsLocalUser)
+            {
+                var element = AllElements[Random.Range(0, AllElements.Length)];
+                AudioSystem.Instance?.PlayGameplaySFX(JoustBuffCategoryForElement(element));
+            }
         }
+
+        static GameplaySFXCategory JoustBuffCategoryForElement(Element element) => element switch
+        {
+            Element.Charge => GameplaySFXCategory.JoustBuffCharge,
+            Element.Mass   => GameplaySFXCategory.JoustBuffMass,
+            Element.Space  => GameplaySFXCategory.JoustBuffSpace,
+            Element.Time   => GameplaySFXCategory.JoustBuffTime,
+            _              => GameplaySFXCategory.JoustBuffCharge,
+        };
     }
 }

@@ -308,8 +308,10 @@ from breathing. Three ways to add the negative feedback, smallest→most emergen
 the emergent north star and the seam the predator/herbivore split plugs into.
 
 **Implemented:**
-- `Cell.OpposingBlockCount(domain)` = live prisms not of `domain` — the prey signal.
-- **Production pauses** when `OpposingBlockCount(controllingColor) < FaunaFoodFloor`
+- `Cell.OpposingVolume(domain)` = live ENVIRONMENT volume not of `domain` — the prey
+  signal (volume is the spine; fauna bodies are excluded — they aren't edible prey).
+- **Production pauses** when `OpposingVolume(controllingColor) < FaunaFoodFloor × 16`
+  (the floor is authored in nominal prisms, converted by `NominalPrismVolume`)
   (`SpawnProfileSO`, default 5): the timer keeps ticking but no population spawns.
 - **Starvation cull** on `Fauna`/`LightFauna`: a creature that hasn't consumed a
   prism in `starvationSeconds` (default 30, `Fauna` field) despawns; `NotifyFed()`
@@ -447,7 +449,7 @@ foragers, which is counterproductive to that scene's trail-cleanup perf goal.
   phase-based density goal (roams plausibly, then starves). Herbivores still swarm
   opposing-mass density.
 - **Spawn gating (by diet):** `RandomLifeSpawner` seeds a herbivore species when
-  `OpposingBlockCount >= FaunaFoodFloor` (prism prey) and a predator species when
+  `OpposingVolume >= FaunaFoodFloor × 16` (prism prey, in volume) and a predator species when
   `GetLiveHerbivoreCount() >= FaunaFoodFloor` (real food, not the old prism-mass
   proxy) — so sharks never churn-spawn-and-starve in a cell with mass but no
   herbivores. `FaunaFoodFloor` doubles as both floors (N prisms / N herbivores);
@@ -547,7 +549,7 @@ cleared.
    population N, `ControllingDomain`; `CurrentFaunaSpawnPeriod` simplified to base
    period. (`IntensityWiseLifeSpawner` left as-is — it is STILL USED by the
    WildlifeBlitz + Tournament scenes via `cellTypeChoiceOptions: 1`; do NOT delete.)
-3. ✅ §6 bound = option C: `OpposingBlockCount` prey signal + `FaunaFoodFloor`
+3. ✅ §6 bound = option C: opposing-mass prey signal (now `OpposingVolume`) + `FaunaFoodFloor`
    production gate + `starvationSeconds` despawn. Config on `SpawnProfileSO` /
    `FaunaConfigurationSO` / `Fauna`.
 4. ⏳ Validate in Menu_Main: Jade fauna appear when Jade controls; populations

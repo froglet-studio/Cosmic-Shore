@@ -64,15 +64,26 @@ namespace CosmicShore.Gameplay
             // several in WildlifeBlitz). LiveFauna only counts lineage-registered
             // creatures — exactly what drives the OverlapSphere cost.
             int prisms = 0, fauna = 0, cells = 0;
+            float volume = 0f;
+            var phases = new System.Text.StringBuilder();
             foreach (var cell in Cell.ActiveCellsSnapshot)
             {
                 if (!cell) continue;
                 cells++;
                 prisms += cell.LiveBlockCount;
                 fauna += cell.LiveFauna.Count;
+                volume += cell.LiveVolume;
+                if (phases.Length > 0) phases.Append('/');
+                phases.Append(cell.Phase);
             }
 
-            _lastLine = $"[ECOSIM] prisms={prisms} fauna={fauna} fps={fps:F1}" +
+            // Collider telemetry from the LOD sweep: active (near-focus) colliders vs
+            // live prisms — the §4 budget made observable. 0/0 = LOD idle (no foci).
+            int near = PrismColliderLodManager.LastNearCount;
+            int live = PrismColliderLodManager.LastLiveCount;
+
+            _lastLine = $"[ECOSIM] prisms={prisms} volume={volume:F0} colliders={near}/{live} " +
+                        $"fauna={fauna} phase={phases} fps={fps:F1}" +
                         (cells > 1 ? $"  (cells={cells})" : "");
             Debug.Log(_lastLine);
         }
