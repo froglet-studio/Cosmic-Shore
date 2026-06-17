@@ -49,15 +49,20 @@ namespace CosmicShore.Core
 
         [Header("Overlay Message (Optional)")]
         [SerializeField, Tooltip("Optional TMP_Text on the overlay, shown while the screen is faded to " +
-            "black (e.g. the Shuffle running standings between games). Wire a TMP_Text child of the " +
-            "overlay canvas. Leave null to disable — SetOverlayMessage then no-ops. The text auto-clears " +
-            "when the overlay fades back from black.")]
+            "black (e.g. the Shuffle running standings between games). Reuse the existing loading-panel " +
+            "TMP_Text (or any TMP_Text on the overlay). Leave null to disable — SetOverlayMessage then " +
+            "no-ops. When the overlay fades back from black the text is restored to its authored content " +
+            "(captured at Awake), so reusing a label like \"LOADING\" is safe.")]
         TMP_Text _overlayMessageText;
 
         CanvasGroup _fadeCanvasGroup;
         Canvas _fadeCanvas;
         bool _isTransitioning;
         CancellationTokenSource _cts;
+
+        // The wired message text's authored content, captured at Awake. ClearOverlayMessage restores
+        // this (not empty) so reusing an existing loading-panel TMP_Text doesn't lose its default label.
+        string _overlayMessageDefault = string.Empty;
 
         /// <summary>
         /// True while a scene transition is in progress.
@@ -79,6 +84,11 @@ namespace CosmicShore.Core
                 AdoptSplashOverlay();
             else
                 CreateFadeOverlay();
+
+            // Remember the message text's authored content so ClearOverlayMessage can restore it
+            // (we may be reusing an existing loading-panel TMP_Text rather than a dedicated one).
+            if (_overlayMessageText != null)
+                _overlayMessageDefault = _overlayMessageText.text;
         }
 
         void OnDestroy()
@@ -316,12 +326,15 @@ namespace CosmicShore.Core
             _overlayMessageText.text = message ?? string.Empty;
         }
 
-        /// <summary>Clears the overlay message. Called automatically when the overlay fades from black.</summary>
+        /// <summary>
+        /// Restores the overlay message text to its authored content (captured at Awake). Called
+        /// automatically when the overlay fades from black, so a reused loading-panel label is preserved.
+        /// </summary>
         public void ClearOverlayMessage()
         {
             if (!MainThreadDispatcher.IsOnMainThread) return;
             if (_overlayMessageText == null) return;
-            _overlayMessageText.text = string.Empty;
+            _overlayMessageText.text = _overlayMessageDefault;
         }
 
         #endregion

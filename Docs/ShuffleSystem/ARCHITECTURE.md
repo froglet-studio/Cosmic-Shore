@@ -63,7 +63,8 @@ classes; **no new mode, enum, or classes**. Status is per-row:
 
 All five deltas are now **shipped**; the canonical `Docs/TournamentSystem/ARCHITECTURE.md` documents them.
 
-**Editor step for #5 (one-time):** add a `TMP_Text` child to the loading-splash overlay canvas (the
-Canvas wired into `SceneTransitionManager._splashOverlay`, made `DontDestroyOnLoad`), position it where
-the between-game standings should read, and assign it to `SceneTransitionManager._overlayMessageText`.
-Until it is wired, `SetOverlayMessage` no-ops — the feature is inert and nothing else breaks.
+**Editor step for #5 (one-time):** assign the **existing loading-panel `TMP_Text`** (under the splash
+canvas wired into `SceneTransitionManager._splashOverlay`) to `SceneTransitionManager._overlayMessageText`
+— no new object needed. Position/size it for the standings as desired. Its authored text is captured at
+Awake and **restored** when the overlay fades from black, so reusing a label is safe. Until assigned,
+`SetOverlayMessage` no-ops — the feature is inert and nothing else breaks.

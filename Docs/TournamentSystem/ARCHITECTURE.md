@@ -131,9 +131,10 @@ Scoreboard keeps its original winner-only flat `winnerCrystalReward`.
 stages the running domain standings on the loading overlay (`SceneTransitionManager.SetOverlayMessage`,
 on every peer from local standings — network-free, no RPC). The overlay is already opaque during the
 next `Single` load (`SceneLoader` calls `SetFadeImmediate(1f)` on host *and* clients), so the standings
-read on the loading splash for the whole transition, then **auto-clear** when the new scene fades from
-black. The surface is a `TMP_Text` wired to `SceneTransitionManager._overlayMessageText` (see §7);
-unwired, `SetOverlayMessage` no-ops.
+read on the loading splash for the whole transition; when the new scene fades from black the text is
+**restored to its authored content**. The surface is a `TMP_Text` wired to
+`SceneTransitionManager._overlayMessageText` (reuse the existing loading-panel label; see §7) — unwired,
+`SetOverlayMessage` no-ops.
 
 **Restart determinism:** Play Again calls `RestartTournament()` → host draws + loads a fresh random
 game directly; every peer resets its standings when that game loads while still in phase `Summary`
@@ -217,10 +218,11 @@ The mode runs end-to-end; one **optional** wire remains for the §4 between-game
   with `MinPlayersAllowed=2`, `MaxPlayersAllowed=4`, `MinDomainsAllowed=2`, `MinIntensity=1`,
   `MaxIntensity=4` (`87658960`) — so the configure modal floors both player and domain count to 2
   (see §1, *Lobby minimum*).
-- **Loading-splash summary `TMP_Text` (optional, outstanding).** Add a `TMP_Text` child to the
-  loading-splash overlay canvas (the one wired to `SceneTransitionManager._splashOverlay`) and assign it
-  to `SceneTransitionManager._overlayMessageText`. It renders the §4 between-game standings during the
-  inter-game load. Until wired, `SetOverlayMessage` no-ops — inert, nothing else breaks.
+- **Loading-splash summary `TMP_Text` (optional, outstanding).** Assign the **existing loading-panel
+  `TMP_Text`** (under the canvas wired to `SceneTransitionManager._splashOverlay`) to
+  `SceneTransitionManager._overlayMessageText` — no new object needed. It renders the §4 between-game
+  standings during the inter-game load; its authored content is restored on fade-from-black. Until
+  assigned, `SetOverlayMessage` no-ops — inert, nothing else breaks.
 
 No per-button visibility code lives in the scene — `TournamentSceneView` and `Scoreboard`
 drive it (host-only, phase-selected).
