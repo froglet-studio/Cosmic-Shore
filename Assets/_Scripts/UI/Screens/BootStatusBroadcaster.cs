@@ -182,8 +182,12 @@ namespace CosmicShore.UI
             if (tournamentData != null && tournamentData.IsActive
                 && !tournamentData.IsShuffleComplete && tournamentData.GamesPlayed > 0)
             {
+                // Tag this client's own team row "(You)" — LocalPlayer is the network player owned by this
+                // client; Blue (no-team sentinel) tags nothing if it isn't resolved yet on this peer.
+                Domains localDomain = gameData != null && gameData.LocalPlayer != null
+                    ? gameData.LocalPlayer.Domain : Domains.Blue;
                 requestEvent?.Raise(new BootStatusRequest(
-                    BootStatusMode.Status, TournamentStandingsFormatter.FormatRunning(tournamentData)));
+                    BootStatusMode.Status, TournamentStandingsFormatter.FormatRunning(tournamentData, localDomain)));
                 return;
             }
 

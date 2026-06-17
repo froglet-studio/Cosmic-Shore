@@ -140,6 +140,11 @@ splash for the whole load, then the broadcaster's existing `HandleClientReady`�
 the new scene is ready. No new channel, view, or `TMP_Text` — and the controller no longer touches the
 splash at all.
 
+**Owner tag.** Scoring is per-DOMAIN (one row per team), so each peer passes its local player's domain
+(`gameData.LocalPlayer.Domain`) into the formatter and the matching row is tagged ` <b>(You)</b>` — on
+both the between-game splash (`FormatRunning`) and the final summary (`FormatFinal`) — so the owner can
+read which team line is theirs. `Domains.Blue` (the no-team sentinel, never a standings row) tags nothing.
+
 **Readable dwell.** A fast scene load would flash the standings by, so the load is held briefly behind
 the opaque splash. `SceneLoader.LaunchGame` reads `TournamentController.MinLoadSplashDwellSeconds`
 (non-zero only under the *same* `IsActive && !IsShuffleComplete && GamesPlayed > 0` condition that shows
