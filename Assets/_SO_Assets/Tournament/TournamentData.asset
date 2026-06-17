@@ -24,6 +24,7 @@ MonoBehaviour:
   - 0
   WinTarget: 6
   MaxGames: 7
+  BetweenGameSummaryDwellSeconds: 2
   OnTournamentStarted: {fileID: 11400000, guid: 0f8833447f81435caf540d2efbade10e, type: 2}
   OnGameResultRecorded: {fileID: 11400000, guid: 4e6290faf6bc4a29a0f00cc212c7ba86, type: 2}
   OnStandingsChanged: {fileID: 11400000, guid: 9557ba9b87f24175952f2d176fb1d1f9, type: 2}

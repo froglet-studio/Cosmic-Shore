@@ -81,6 +81,14 @@ namespace CosmicShore.Utility
                  "ends when a domain hits WinTarget OR this many games have been played, whichever first.")]
         public int MaxGames = 7;
 
+        [Header("Pacing")]
+        [Tooltip("Minimum seconds the between-game loading splash holds the running standings before the " +
+                 "next game begins loading, so players can actually read the summary. The host drives the " +
+                 "dwell; clients follow the held scene load. Applies ONLY mid-run (a game has finished and " +
+                 "the shuffle isn't decided) — the first launch and the load into the final results summary " +
+                 "are never delayed. See TournamentController.MinLoadSplashDwellSeconds.")]
+        public float BetweenGameSummaryDwellSeconds = 2f;
+
         [Header("SOAP Events")]
         public ScriptableEventNoParam OnTournamentStarted;
         public ScriptableEventNoParam OnGameResultRecorded;

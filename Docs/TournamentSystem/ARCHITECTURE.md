@@ -140,6 +140,14 @@ splash for the whole load, then the broadcaster's existing `HandleClientReady`�
 the new scene is ready. No new channel, view, or `TMP_Text` — and the controller no longer touches the
 splash at all.
 
+**Readable dwell.** A fast scene load would flash the standings by, so the load is held briefly behind
+the opaque splash. `SceneLoader.LaunchGame` reads `TournamentController.MinLoadSplashDwellSeconds`
+(non-zero only under the *same* `IsActive && !IsShuffleComplete && GamesPlayed > 0` condition that shows
+the standings — value `TournamentDataSO.BetweenGameSummaryDwellSeconds`, default 2s) and `Max`es it with
+the usual pre-load wait before `LoadScene`. Host-only: clients defer the load to the host at the
+`LaunchGame` defer guard, so holding the host's `LoadScene` holds the whole party's splash. Zero outside
+the window, so the first game, the load into the final summary, and Main-Menu returns are never delayed.
+
 **Restart determinism:** Play Again calls `RestartTournament()` → host draws + loads a fresh random
 game directly; every peer resets its standings when that game loads while still in phase `Summary`
 (see `TournamentController.HandleSceneLoaded` — any pool game load in `Summary` is a restart), so the

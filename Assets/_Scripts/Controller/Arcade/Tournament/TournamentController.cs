@@ -42,6 +42,25 @@ namespace CosmicShore.Gameplay
         /// <summary>True while the Tournament results screen is up (after the last game). Read by the scene view.</summary>
         public bool IsShowingSummary => _stateMachine.Current == TournamentPhase.Summary;
 
+        /// <summary>
+        /// True for the between-game transition whose loading splash shows the running standings — a
+        /// tournament is active, a game has been played, and the shuffle isn't decided yet. Mirrors the
+        /// exact condition <c>BootStatusBroadcaster.HandleLaunchGame</c> uses to render those standings,
+        /// so the dwell below applies precisely when — and because — that summary is on screen.
+        /// </summary>
+        public bool IsBetweenGamesStandingsShown =>
+            _tournament != null && _tournament.IsActive
+            && !_tournament.IsShuffleComplete && _tournament.GamesPlayed > 0;
+
+        /// <summary>
+        /// Minimum seconds the loading splash should hold before the next scene load begins, so the
+        /// between-game running standings are readable. Zero outside that window, so normal game launches,
+        /// the first game, and the load into the final summary are never slowed. Read by
+        /// <c>SceneLoader.LaunchGame</c> (host path) — holding the host's load holds the whole party's splash.
+        /// </summary>
+        public float MinLoadSplashDwellSeconds =>
+            IsBetweenGamesStandingsShown ? Mathf.Max(0f, _tournament.BetweenGameSummaryDwellSeconds) : 0f;
+
         static bool IsHost => NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
 
         public TournamentController(GameDataSO gameData, TournamentDataSO tournament, SceneNameListSO sceneNames)

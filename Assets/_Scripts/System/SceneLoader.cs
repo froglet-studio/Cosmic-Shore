@@ -165,7 +165,15 @@ namespace CosmicShore.Core
             // MultiplayerMiniGameControllerBase.SyncGameConfigToClients_ClientRpc()
             // in the game scene's OnNetworkSpawn, rather than here before scene load.
 
-            LoadSceneAsync(gameData.SceneName).Forget();
+            // Tournament (Maelstrom): hold the loading splash long enough to read the between-game running
+            // standings before the next game loads. Zero outside that window — normal launches, the first
+            // game, and the load into the final results summary are not delayed. Host-only: clients returned
+            // at the defer guard above and follow the host's held scene load, so their splash holds too.
+            float minSplashDwell = TournamentController.Instance != null
+                ? TournamentController.Instance.MinLoadSplashDwellSeconds
+                : 0f;
+
+            LoadSceneAsync(gameData.SceneName, minSplashDwell).Forget();
         }
 
         void FadeFromSplashOnReady()
@@ -213,7 +221,7 @@ namespace CosmicShore.Core
             LoadSceneAsync(menuScene).Forget();
         }
 
-        async UniTaskVoid LoadSceneAsync(string sceneName)
+        async UniTaskVoid LoadSceneAsync(string sceneName, float minSplashDwell = 0f)
         {
             Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}</color>");
             gameData.InvokeSceneTransition(false);
@@ -226,8 +234,12 @@ namespace CosmicShore.Core
 
             gameData.ResetRuntimeData();
 
+            // Normally a short cover for the fade; a between-game tournament transition extends it
+            // (minSplashDwell) so the running standings on the splash are readable before the next scene
+            // loads. Unscaled so a paused / zero timescale can't stall the hold.
+            float wait = Mathf.Max(waitBeforeLoading, minSplashDwell);
             await UniTask.Delay(
-                TimeSpan.FromSeconds(waitBeforeLoading),
+                TimeSpan.FromSeconds(wait),
                 DelayType.UnscaledDeltaTime
             );
 
