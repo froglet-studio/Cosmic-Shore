@@ -59,7 +59,11 @@ classes; **no new mode, enum, or classes**. Status is per-row:
 | 2 | **Per-domain scoring `{2,1,0}`** (1st/2nd/3rd domain) instead of per-player `{10,6,3,1}`; standings keyed by `Domain`, placement derived from the synced `GameDataSO.Results` (each domain's place = its best player `Rank`) | `TournamentDataSO` | ✅ **shipped** |
 | 3 | **Race to 6 / cap 7 games** (`WinTarget`/`MaxGames`, `IsShuffleComplete`) instead of "played all N" | `TournamentController`, `TournamentDataSO` | ✅ **shipped** |
 | 4 | **Real crystal-wallet credit** of the `{2,1,0}` to each local player by their domain's per-game placement (generalized from the winner-only flat reward; cards also show the per-domain badge) | `Scoreboard.AwardCrystalsToLocalPlayer` / `CardCrystalReward`, `TournamentController.PlacementCrystalsFor`, `TournamentDataSO.CrystalsForDomain` | ✅ **shipped** |
-| 5 | **Loading-splash summary (~3s)** between games — a reusable text surface fed the running domain standings | `SceneTransitionManager` (net-new surface) | planned |
+| 5 | **Loading-splash summary** between games — a reusable `SceneTransitionManager.SetOverlayMessage` text surface fed the running domain standings; shows during the inter-game load (the overlay is already opaque then) and auto-clears on fade-from-black | `SceneTransitionManager`, `TournamentController.BuildStandingsSummary` | ✅ **shipped** (needs the `TMP_Text` wired — below) |
 
-Shipped deltas are documented in the canonical `Docs/TournamentSystem/ARCHITECTURE.md` (§1/§3/§5);
-this table tracks what remains.
+All five deltas are now **shipped**; the canonical `Docs/TournamentSystem/ARCHITECTURE.md` documents them.
+
+**Editor step for #5 (one-time):** add a `TMP_Text` child to the loading-splash overlay canvas (the
+Canvas wired into `SceneTransitionManager._splashOverlay`, made `DontDestroyOnLoad`), position it where
+the between-game standings should read, and assign it to `SceneTransitionManager._overlayMessageText`.
+Until it is wired, `SetOverlayMessage` no-ops — the feature is inert and nothing else breaks.

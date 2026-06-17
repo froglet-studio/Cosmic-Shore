@@ -34,8 +34,8 @@ game the active **domains** are ranked and earn **placement crystals** by domain
 the leaderboard, and the session is a **race to `WinTarget` (6)** crystals — the first domain to
 reach it wins, with a hard **`MaxGames` (7)** cap so a stalemate still ends. It appears as a normal
 card in the Arcade panel (`GameModes.Tournament = 36`; the card's `DisplayName` is "Shuffle").
-*(Shipped: per-domain `{2,1,0}` scoring, randomized lineup, race-to-6 / cap-7, crystal-wallet credit.
-Next delta: the loading-splash summary — see `Docs/ShuffleSystem/ARCHITECTURE.md`.)*
+*(All Shuffle deltas shipped: per-domain `{2,1,0}` scoring, randomized lineup, race-to-6 / cap-7,
+crystal-wallet credit, and the between-game loading-splash summary — see `Docs/ShuffleSystem/ARCHITECTURE.md`.)*
 
 **Lobby minimum — 2 players, 2 domains.** Placement points are meaningless without opposing
 teams (and the Joust leg is unplayable on a single domain — see JOUST.md Design Note 8). The Tournament
@@ -127,6 +127,14 @@ player, once per game (AI have no wallet); a 3rd-place domain earns 0. The per-p
 the same per-domain badge via `CardCrystalReward`. Gated on `IsTournamentMode` — outside a shuffle the
 Scoreboard keeps its original winner-only flat `winnerCrystalReward`.
 
+**Between-game summary overlay.** After each non-final game, `TournamentController.HandleMiniGameEnd`
+stages the running domain standings on the loading overlay (`SceneTransitionManager.SetOverlayMessage`,
+on every peer from local standings — network-free, no RPC). The overlay is already opaque during the
+next `Single` load (`SceneLoader` calls `SetFadeImmediate(1f)` on host *and* clients), so the standings
+read on the loading splash for the whole transition, then **auto-clear** when the new scene fades from
+black. The surface is a `TMP_Text` wired to `SceneTransitionManager._overlayMessageText` (see §7);
+unwired, `SetOverlayMessage` no-ops.
+
 **Restart determinism:** Play Again calls `RestartTournament()` → host draws + loads a fresh random
 game directly; every peer resets its standings when that game loads while still in phase `Summary`
 (see `TournamentController.HandleSceneLoaded` — any pool game load in `Summary` is a restart), so the
@@ -171,7 +179,8 @@ see §3), `IsShuffleComplete` (race target reached or game cap hit — drives su
 | State machine | `_Scripts/Controller/Arcade/Tournament/TournamentStateMachine.cs` |
 | Controller (brain) | `_Scripts/Controller/Arcade/Tournament/TournamentController.cs` |
 | Lobby scene view | `_Scripts/Controller/Arcade/Tournament/TournamentSceneView.cs` |
-| End-game buttons + entrance (`ShowScoreboardImmediate`) | `_Scripts/UI/Scoreboard.cs` |
+| End-game buttons + entrance (`ShowScoreboardImmediate`) + placement wallet credit | `_Scripts/UI/Scoreboard.cs` |
+| Between-game loading-splash summary surface | `_Scripts/System/Bootstrap/SceneTransitionManager.cs` (`SetOverlayMessage` / `_overlayMessageText`) |
 | Lobby player/domain floor | `_Scripts/UI/Modals/ArcadeGameConfigureModal.cs` (`MinDomainsForGame`) |
 | Per-game min domains field | `_Scripts/ScriptableObjects/SO_ArcadeGame.cs` (`MinDomainsAllowed`) |
 | Joust-leg opponent-seek AI | `_Scripts/Controller/AI/AIPilot.cs` |
@@ -183,15 +192,17 @@ see §3), `IsShuffleComplete` (race target reached or game cap hit — drives su
 | Arcade card | `_SO_Assets/Games/ArcadeGameTournament.asset` (in `GameLists/ArcadeGames.asset`) |
 | Lobby scene | `_Scenes/Multiplayer Scenes/Tournament.unity` |
 
-## 7. Editor wiring — complete
+## 7. Editor wiring
 
-All editor wiring is committed; the mode runs end-to-end.
+The mode runs end-to-end; one **optional** wire remains for the §4 between-game summary overlay
+(last bullet).
 
-- **AppManager** — `tournamentData` assigned; `TournamentController` registered and injected, so it
-  is created eagerly at bootstrap and survives every Single load.
+- **AppManager** — `tournamentData` assigned; `TournamentController` registered and constructed with
+  `gameData` + `tournamentData` + `sceneNames` + `sceneTransitionManager`, created eagerly at bootstrap
+  so it survives every Single load.
 - **`Tournament.unity`** — a UI-only scene whose `TournamentSceneView` drives two mutually-exclusive
   layouts, chosen per load from `TournamentController.IsShowingSummary`:
-  - *Lobby* (`lobbyRoot`): `titleText` + `lineupText` (ordered game lineup) + a host-only **Start**
+  - *Lobby* (`lobbyRoot`): `titleText` + `lineupText` (random rotation + "first to N") + a host-only **Start**
     button (`hostStartButton`) wired to `OnHostStartPressed()` — or, if no button, the host
     auto-advances after `autoStartDelaySeconds`.
   - *Summary* (`summaryRoot`): `resultsText` (final standings + per-game placements) + host-only
@@ -206,6 +217,10 @@ All editor wiring is committed; the mode runs end-to-end.
   with `MinPlayersAllowed=2`, `MaxPlayersAllowed=4`, `MinDomainsAllowed=2`, `MinIntensity=1`,
   `MaxIntensity=4` (`87658960`) — so the configure modal floors both player and domain count to 2
   (see §1, *Lobby minimum*).
+- **Loading-splash summary `TMP_Text` (optional, outstanding).** Add a `TMP_Text` child to the
+  loading-splash overlay canvas (the one wired to `SceneTransitionManager._splashOverlay`) and assign it
+  to `SceneTransitionManager._overlayMessageText`. It renders the §4 between-game standings during the
+  inter-game load. Until wired, `SetOverlayMessage` no-ops — inert, nothing else breaks.
 
 No per-button visibility code lives in the scene — `TournamentSceneView` and `Scoreboard`
 drive it (host-only, phase-selected).

@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
+using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -45,6 +46,13 @@ namespace CosmicShore.Core
         [Header("Timing")]
         [SerializeField, Tooltip("Brief pause after scene load before fading in, letting the new scene's Awake/Start run.")]
         float _postLoadSettleDelay = 0.1f;
+
+        [Header("Overlay Message (Optional)")]
+        [SerializeField, Tooltip("Optional TMP_Text on the overlay, shown while the screen is faded to " +
+            "black (e.g. the Shuffle running standings between games). Wire a TMP_Text child of the " +
+            "overlay canvas. Leave null to disable — SetOverlayMessage then no-ops. The text auto-clears " +
+            "when the overlay fades back from black.")]
+        TMP_Text _overlayMessageText;
 
         CanvasGroup _fadeCanvasGroup;
         Canvas _fadeCanvas;
@@ -285,6 +293,39 @@ namespace CosmicShore.Core
 
         #endregion
 
+        #region Public API — Overlay Message
+
+        /// <summary>
+        /// Sets a message on the overlay (e.g. the Shuffle running standings) that is visible while the
+        /// overlay is faded to black. No-ops if no <see cref="_overlayMessageText"/> is wired. The text
+        /// auto-clears when the overlay next fades back from black (see <see cref="FadeAsync"/>), so the
+        /// caller only ever needs to set it. Empty/null text shows nothing.
+        /// </summary>
+        public void SetOverlayMessage(string message)
+        {
+            // Mirror SetFadeImmediate: touching a UnityEngine.Object off the main thread (e.g. from a
+            // UGS/Netcode continuation that forgot .AsMainThread()) throws EnsureRunningOnMainThread.
+            if (!MainThreadDispatcher.IsOnMainThread)
+            {
+                Debug.LogError("[SceneTransitionManager] SetOverlayMessage called off main thread — " +
+                               "ignoring to avoid EnsureRunningOnMainThread (caller forgot `.AsMainThread()`).");
+                return;
+            }
+
+            if (_overlayMessageText == null) return;
+            _overlayMessageText.text = message ?? string.Empty;
+        }
+
+        /// <summary>Clears the overlay message. Called automatically when the overlay fades from black.</summary>
+        public void ClearOverlayMessage()
+        {
+            if (!MainThreadDispatcher.IsOnMainThread) return;
+            if (_overlayMessageText == null) return;
+            _overlayMessageText.text = string.Empty;
+        }
+
+        #endregion
+
         #region Internal — Fade Animation
 
         async UniTask FadeAsync(float from, float to, CancellationToken ct)
@@ -300,6 +341,7 @@ namespace CosmicShore.Core
                 _fadeCanvasGroup.alpha = to;
                 _fadeCanvasGroup.blocksRaycasts = to > 0.01f;
                 _fadeCanvasGroup.interactable = to > 0.01f;
+                if (to <= 0.01f) ClearOverlayMessage();   // overlay revealed → drop any message
                 return;
             }
 
@@ -315,6 +357,7 @@ namespace CosmicShore.Core
             _fadeCanvasGroup.alpha = to;
             _fadeCanvasGroup.blocksRaycasts = to > 0.01f;
             _fadeCanvasGroup.interactable = to > 0.01f;
+            if (to <= 0.01f) ClearOverlayMessage();   // overlay revealed → drop any message
         }
 
         #endregion
