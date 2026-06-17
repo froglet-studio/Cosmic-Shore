@@ -33,6 +33,10 @@ namespace CosmicShore.UI
         [SerializeField] private HostConnectionDataSO       connectionData;
         [SerializeField] private GameDataSO                 gameData;
 
+        [Tooltip("Optional: when a Shuffle (Tournament meta) is mid-run, the between-game loading splash " +
+                 "shows the running domain standings instead of clean branding. Leave null outside that mode.")]
+        [SerializeField] private TournamentDataSO           tournamentData;
+
         [Header("Outbound SOAP (request channel → BootStatusPanel)")]
         [SerializeField] private ScriptableEventBootStatusRequest requestEvent;
 
@@ -168,11 +172,27 @@ namespace CosmicShore.UI
         private void HandleLaunchGame()
         {
             // A game-launch splash just went opaque (SceneLoader.LaunchGame on
-            // every instance — host and clients). Clear whatever status was
-            // last shown — in particular a stale Retry left over from a
-            // connection blip the auto-recovery already handled — so the
-            // loading splash presents clean branding.
+            // every instance — host and clients).
             _inLaunchTransition = true;
+
+            // Shuffle (Tournament meta): between games, show the running domain standings on the loading
+            // splash instead of clean branding. Only mid-run — a game has been played and the shuffle
+            // isn't decided yet; the first launch and the launch into the results summary keep the clean
+            // Hide. Reduced from local standings on every peer (network-free), so host + clients match.
+            if (tournamentData != null && tournamentData.IsActive
+                && !tournamentData.IsShuffleComplete && tournamentData.GamesPlayed > 0)
+            {
+                // Tag this client's own team row "(You)" — LocalPlayer is the network player owned by this
+                // client; Blue (no-team sentinel) tags nothing if it isn't resolved yet on this peer.
+                Domains localDomain = gameData != null && gameData.LocalPlayer != null
+                    ? gameData.LocalPlayer.Domain : Domains.Blue;
+                requestEvent?.Raise(new BootStatusRequest(
+                    BootStatusMode.Status, TournamentStandingsFormatter.FormatRunning(tournamentData, localDomain)));
+                return;
+            }
+
+            // Otherwise clear whatever status was last shown — in particular a stale Retry left over from
+            // a connection blip the auto-recovery already handled — so the loading splash is clean.
             requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Hide));
         }
 
