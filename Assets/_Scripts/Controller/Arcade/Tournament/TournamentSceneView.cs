@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Linq;
 using System.Text;
 using CosmicShore.Utility;
 using Obvious.Soap;
@@ -58,6 +57,11 @@ namespace CosmicShore.Gameplay
         bool IsHost => NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
         bool HasStartButtonFlow => hostStartButton != null;
 
+        // Guards the summary's host-only buttons against double/spam clicks in the window between the
+        // press and the scene unload (interim until a confirm panel exists). Once a choice is made both
+        // buttons are disabled and the loading splash covers the screen.
+        bool _summaryActionTaken;
+
         void Start()
         {
             // Lift the loading splash that the Single load left opaque (no vessel here to raise
@@ -96,14 +100,20 @@ namespace CosmicShore.Gameplay
 
         void RenderLineup()
         {
-            if (titleText) titleText.text = "TOURNAMENT";
-            if (lineupText == null || tournamentData == null) return;
+            if (tournamentData == null) return;
+            if (titleText) titleText.text = tournamentData.ModeName.ToUpperInvariant();
+            if (lineupText == null) return;
 
+            // The lineup is RANDOM (a random pool game + random intensity each round), so show the
+            // pool + the race rule, not a fixed "Game 1/2/3" order.
             var sb = new StringBuilder();
+            sb.AppendLine($"First domain to {tournamentData.WinTarget} wins!");
+            sb.AppendLine();
+            sb.AppendLine("<b>Random rotation</b>");
             for (int i = 0; i < tournamentData.GameQueue.Count; i++)
             {
                 var game = tournamentData.GameQueue[i];
-                sb.AppendLine($"Game {i + 1}: {(game != null ? game.DisplayName : "—")}");
+                if (game != null) sb.AppendLine($"• {game.DisplayName}");
             }
             lineupText.text = sb.ToString().TrimEnd();
         }
@@ -137,55 +147,45 @@ namespace CosmicShore.Gameplay
 
         void RenderSummary()
         {
-            if (titleText) titleText.text = "TOURNAMENT RESULTS";
-            if (resultsText == null || tournamentData == null) return;
-
-            var standings = tournamentData.BuildSortedStandings();
-            var sb = new StringBuilder();
-
-            sb.AppendLine("<b>FINAL STANDINGS</b>");
-            for (int i = 0; i < standings.Count; i++)
-                sb.AppendLine($"{i + 1}. {standings[i].Name} — {standings[i].TotalPoints} pts");
-
-            // Per-game results: order players by their finishing place in each game.
-            for (int g = 0; g < tournamentData.GameQueue.Count; g++)
-            {
-                var game = tournamentData.GameQueue[g];
-                sb.AppendLine();
-                sb.AppendLine($"<b>{(game != null ? game.DisplayName : $"Game {g + 1}")}</b>");
-                foreach (var s in standings.Where(s => g < s.Placements.Count).OrderBy(s => s.Placements[g]))
-                    sb.AppendLine($"  {Ordinal(s.Placements[g])}: {s.Name}");
-            }
-
-            resultsText.text = sb.ToString().TrimEnd();
+            if (tournamentData == null) return;
+            if (titleText) titleText.text = $"{tournamentData.ModeName.ToUpperInvariant()} RESULTS";
+            if (resultsText) resultsText.text = TournamentStandingsFormatter.FormatFinal(tournamentData);
         }
 
         /// <summary>Host-only. Wire the summary Play Again button's onClick here. Restarts the tournament.</summary>
         public void OnPlayAgainPressed()
         {
-            if (!IsHost) return;
-            if (TournamentController.Instance != null)
-                TournamentController.Instance.RestartTournament();
-            else
+            if (!IsHost || _summaryActionTaken) return;
+            if (TournamentController.Instance == null)
+            {
                 CSDebug.LogError("[TournamentSceneView] TournamentController.Instance is null — cannot restart.");
+                return;
+            }
+            _summaryActionTaken = true;
+            DisableSummaryButtons();                              // anti-spam; the splash covers the screen next
+            TournamentController.Instance.RestartTournament();    // → SceneLoader.LaunchGame shows the splash immediately
         }
 
         /// <summary>Host-only. Wire the summary Main Menu button's onClick here. Returns everyone to Menu_Main.</summary>
         public void OnMainMenuPressed()
         {
-            if (!IsHost) return;
-            if (onClickToMainMenu != null)
-                onClickToMainMenu.Raise();   // → SceneLoader.ReturnToMainMenu (host loads, clients follow)
-            else
+            if (!IsHost || _summaryActionTaken) return;
+            if (onClickToMainMenu == null)
+            {
                 CSDebug.LogError("[TournamentSceneView] onClickToMainMenu event not wired — cannot return to menu.");
+                return;
+            }
+            _summaryActionTaken = true;
+            DisableSummaryButtons();      // anti-spam; the splash covers the screen next
+            onClickToMainMenu.Raise();    // → SceneLoader.ReturnToMainMenu (host loads, clients follow)
         }
 
-        static string Ordinal(int n) => n switch
+        // Hides both summary buttons so the host can't spam either after a choice is made. The scene is
+        // about to reload (Play Again) or be replaced (Main Menu); the loading splash covers the gap.
+        void DisableSummaryButtons()
         {
-            1 => "1st",
-            2 => "2nd",
-            3 => "3rd",
-            _ => $"{n}th",
-        };
+            if (playAgainButton) playAgainButton.SetActive(false);
+            if (mainMenuButton) mainMenuButton.SetActive(false);
+        }
     }
 }
