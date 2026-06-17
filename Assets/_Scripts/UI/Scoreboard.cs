@@ -390,16 +390,16 @@ namespace CosmicShore.UI
                 if (!string.IsNullOrEmpty(secondary))
                     card.ShowSecondaryStat(secondary);
 
-                // Winner gets the "+N crystals" reward indicator
-                if (winnerCrystalReward > 0 && stats.Name == winnerName)
-                    card.ShowCrystalReward(winnerCrystalReward);
+                // Reward badge: shuffle = this card's DOMAIN per-game {2,1,0}; else winner-only flat.
+                int reward = CardCrystalReward(stats.Domain, stats.Name, winnerName);
+                if (reward > 0)
+                    card.ShowCrystalReward(reward);
 
                 _spawnedCards.Add(card);
             }
 
-            // Award crystals once to the local player if they won — the scoreboard is
-            // the single crystal-award path.
-            AwardCrystalsIfLocalWinner(winnerName);
+            // The scoreboard is the single crystal-award path (local player only).
+            AwardCrystalsToLocalPlayer(winnerName);
         }
 
         /// <summary>
@@ -433,13 +433,14 @@ namespace CosmicShore.UI
                 if (!string.IsNullOrEmpty(r.Secondary))
                     card.ShowSecondaryStat(r.Secondary);
 
-                if (winnerCrystalReward > 0 && r.Name == winnerName)
-                    card.ShowCrystalReward(winnerCrystalReward);
+                int reward = CardCrystalReward(r.Domain, r.Name, winnerName);
+                if (reward > 0)
+                    card.ShowCrystalReward(reward);
 
                 _spawnedCards.Add(card);
             }
 
-            AwardCrystalsIfLocalWinner(winnerName);
+            AwardCrystalsToLocalPlayer(winnerName);
         }
 
         void ClearPlayerCards()
@@ -458,17 +459,51 @@ namespace CosmicShore.UI
             }
         }
 
-        void AwardCrystalsIfLocalWinner(string winnerName)
+        /// <summary>
+        /// The single crystal-award path (the Scoreboard is the only writer of the wallet). In
+        /// shuffle/tournament mode the local player earns their DOMAIN's per-game placement crystals
+        /// ({2,1,0}; 3rd place earns 0) — credited on every peer for its own local human, once per
+        /// game. In every other mode it stays the original winner-only flat <see cref="winnerCrystalReward"/>.
+        /// </summary>
+        void AwardCrystalsToLocalPlayer(string winnerName)
         {
-            if (winnerCrystalReward <= 0) return;
             var localName = gameData.LocalPlayer?.Name;
-            if (string.IsNullOrEmpty(localName) || localName != winnerName) return;
+            if (string.IsNullOrEmpty(localName)) return;
 
             var service = PlayerDataService.Instance;
             if (service == null) return;
 
-            int newBalance = service.AddCrystals(winnerCrystalReward, "game_reward");
-            CSDebug.Log($"[Scoreboard] Awarded {winnerCrystalReward} crystals to '{localName}'. New balance: {newBalance}");
+            int amount;
+            string source;
+            if (gameData.IsTournamentMode && TournamentController.Instance != null)
+            {
+                var localDomain = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
+                amount = TournamentController.Instance.PlacementCrystalsFor(localDomain);
+                source = "shuffle_placement";
+            }
+            else
+            {
+                // Original behavior: only the winner earns the flat reward.
+                if (winnerCrystalReward <= 0 || localName != winnerName) return;
+                amount = winnerCrystalReward;
+                source = "game_reward";
+            }
+
+            if (amount <= 0) return;   // e.g. a 3rd-place domain earns nothing this game
+
+            int newBalance = service.AddCrystals(amount, source);
+            CSDebug.Log($"[Scoreboard] Awarded {amount} crystals to '{localName}' ({source}). New balance: {newBalance}");
+        }
+
+        /// <summary>
+        /// The "+N crystals" badge amount for one card. Shuffle/tournament: the card's DOMAIN per-game
+        /// placement ({2,1,0}); otherwise the winner-only flat reward (0 for non-winners). 0 = no badge.
+        /// </summary>
+        int CardCrystalReward(Domains domain, string name, string winnerName)
+        {
+            if (gameData.IsTournamentMode && TournamentController.Instance != null)
+                return TournamentController.Instance.PlacementCrystalsFor(domain);
+            return (winnerCrystalReward > 0 && name == winnerName) ? winnerCrystalReward : 0;
         }
 
         // Single source of truth for domain color: the same ColorSet the vessels and

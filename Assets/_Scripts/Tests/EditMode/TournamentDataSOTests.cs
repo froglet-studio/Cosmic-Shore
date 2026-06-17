@@ -215,6 +215,35 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, _data.PointsForPlace(4), "Beyond the table scores 0.");
             Assert.AreEqual(0, _data.PointsForPlace(0), "Non-positive place scores 0.");
         }
+
+        [Test]
+        public void CrystalsForDomain_ReturnsThisGamePlacementReward()
+        {
+            var results = new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby), Row(3, Domains.Gold) };
+
+            Assert.AreEqual(2, _data.CrystalsForDomain(results, Domains.Jade), "1st-place domain earns 2.");
+            Assert.AreEqual(1, _data.CrystalsForDomain(results, Domains.Ruby), "2nd-place domain earns 1.");
+            Assert.AreEqual(0, _data.CrystalsForDomain(results, Domains.Gold), "3rd-place domain earns 0.");
+        }
+
+        [Test]
+        public void CrystalsForDomain_UsesBestPlayerRank()
+        {
+            // Jade holds the worst AND the best player; its best (rank 1) makes it 1st → 2.
+            var results = new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby), Row(3, Domains.Jade) };
+
+            Assert.AreEqual(2, _data.CrystalsForDomain(results, Domains.Jade));
+            Assert.AreEqual(1, _data.CrystalsForDomain(results, Domains.Ruby));
+        }
+
+        [Test]
+        public void CrystalsForDomain_DomainAbsentOrNullResults_ReturnsZero()
+        {
+            var results = new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby) };
+
+            Assert.AreEqual(0, _data.CrystalsForDomain(results, Domains.Gold), "Gold didn't play → 0.");
+            Assert.AreEqual(0, _data.CrystalsForDomain(null, Domains.Jade), "Null results → 0.");
+        }
     }
 }
 #endif

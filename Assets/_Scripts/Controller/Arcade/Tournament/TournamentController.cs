@@ -187,6 +187,16 @@ namespace CosmicShore.Gameplay
             _stateMachine.ResetToIdle();
         }
 
+        /// <summary>
+        /// The per-game placement crystals (<c>{2,1,0}</c>) <paramref name="domain"/> earned in the
+        /// just-finished game, read from the still-current <see cref="GameDataSO.Results"/>. The
+        /// Scoreboard uses this to credit the local player's wallet and label the cards in shuffle mode.
+        /// </summary>
+        public int PlacementCrystalsFor(CosmicShore.Data.Domains domain) =>
+            _tournament != null && _gameData != null
+                ? _tournament.CrystalsForDomain(_gameData.Results, domain)
+                : 0;
+
         // ── Host-only random draw + scene load (reuse the proven SceneLoader path) ─
 
         /// <summary>

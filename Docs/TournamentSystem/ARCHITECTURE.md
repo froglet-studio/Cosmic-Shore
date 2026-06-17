@@ -34,8 +34,8 @@ game the active **domains** are ranked and earn **placement crystals** by domain
 the leaderboard, and the session is a **race to `WinTarget` (6)** crystals — the first domain to
 reach it wins, with a hard **`MaxGames` (7)** cap so a stalemate still ends. It appears as a normal
 card in the Arcade panel (`GameModes.Tournament = 36`; the card's `DisplayName` is "Shuffle").
-*(Shipped: per-domain `{2,1,0}` scoring, randomized lineup, race-to-6 / cap-7. Next deltas: wallet
-credit + loading-splash summary — see `Docs/ShuffleSystem/ARCHITECTURE.md`.)*
+*(Shipped: per-domain `{2,1,0}` scoring, randomized lineup, race-to-6 / cap-7, crystal-wallet credit.
+Next delta: the loading-splash summary — see `Docs/ShuffleSystem/ARCHITECTURE.md`.)*
 
 **Lobby minimum — 2 players, 2 domains.** Placement points are meaningless without opposing
 teams (and the Joust leg is unplayable on a single domain — see JOUST.md Design Note 8). The Tournament
@@ -117,6 +117,15 @@ mode `Scoreboard.ConfigureLobbyButtons` shows **only Continue, host-only**:
 (a domain reached `WinTarget`, or `MaxGames` was hit) — loads the Tournament scene in Summary phase.
 Play Again / Main Menu are handled by `TournamentSceneView` (`OnPlayAgainPressed` / `OnMainMenuPressed`),
 not the Scoreboard.
+
+**Crystal reward (real wallet).** The placement crystals are also *real currency*: on each game's
+Scoreboard, `AwardCrystalsToLocalPlayer` credits the **local** human's wallet
+(`PlayerDataService.AddCrystals`, source `"shuffle_placement"`) with their domain's per-game `{2,1,0}`
+— `TournamentController.PlacementCrystalsFor(localDomain)` → `TournamentDataSO.CrystalsForDomain`
+(computed from the synced `Results`, so it's order-independent). Each peer credits only its own local
+player, once per game (AI have no wallet); a 3rd-place domain earns 0. The per-player score cards show
+the same per-domain badge via `CardCrystalReward`. Gated on `IsTournamentMode` — outside a shuffle the
+Scoreboard keeps its original winner-only flat `winnerCrystalReward`.
 
 **Restart determinism:** Play Again calls `RestartTournament()` → host draws + loads a fresh random
 game directly; every peer resets its standings when that game loads while still in phase `Summary`

@@ -199,23 +199,7 @@ namespace CosmicShore.Utility
         {
             if (results == null || results.Count == 0) return;
 
-            // Each domain's place this game = the best (lowest) Rank among its players.
-            var bestRankByDomain = new Dictionary<Domains, int>();
-            for (int i = 0; i < results.Count; i++)
-            {
-                var r = results[i];
-                if (!bestRankByDomain.TryGetValue(r.Domain, out var best) || r.Rank < best)
-                    bestRankByDomain[r.Domain] = r.Rank;
-            }
-
-            // Order domains by best rank ascending, ties broken by enum order (Jade<Ruby<Gold) so
-            // every peer assigns the same 1st / 2nd / 3rd.
-            var ordered = new List<Domains>(bestRankByDomain.Keys);
-            ordered.Sort((a, b) =>
-            {
-                int byRank = bestRankByDomain[a].CompareTo(bestRankByDomain[b]);
-                return byRank != 0 ? byRank : ((int)a).CompareTo((int)b);
-            });
+            var ordered = GetDomainPlacementOrder(results);
 
             // Award placement crystals by domain place (1st = PointsByPlace[0], …) + append history.
             for (int place = 0; place < ordered.Count; place++)
@@ -229,6 +213,51 @@ namespace CosmicShore.Utility
 
             OnGameResultRecorded.Raise();
             OnStandingsChanged.Raise();
+        }
+
+        /// <summary>
+        /// Orders the active domains by their finishing place in one game's ranked, per-player
+        /// <paramref name="results"/>: a domain's place = the best (lowest) player
+        /// <see cref="ScoreResult.Rank"/>; domains are sorted by that ascending, ties broken by enum
+        /// order (Jade→Ruby→Gold) so every peer agrees. Element 0 is 1st place. Shared by
+        /// <see cref="RecordResults"/> (the cumulative fold) and <see cref="CrystalsForDomain"/>
+        /// (the per-game reward), so both read identical placements.
+        /// </summary>
+        public List<Domains> GetDomainPlacementOrder(IReadOnlyList<ScoreResult> results)
+        {
+            var ordered = new List<Domains>();
+            if (results == null || results.Count == 0) return ordered;
+
+            // Each domain's place = the best (lowest) Rank among its players.
+            var bestRankByDomain = new Dictionary<Domains, int>();
+            for (int i = 0; i < results.Count; i++)
+            {
+                var r = results[i];
+                if (!bestRankByDomain.TryGetValue(r.Domain, out var best) || r.Rank < best)
+                    bestRankByDomain[r.Domain] = r.Rank;
+            }
+
+            ordered.AddRange(bestRankByDomain.Keys);
+            ordered.Sort((a, b) =>
+            {
+                int byRank = bestRankByDomain[a].CompareTo(bestRankByDomain[b]);
+                return byRank != 0 ? byRank : ((int)a).CompareTo((int)b);
+            });
+            return ordered;
+        }
+
+        /// <summary>
+        /// The placement crystals a domain earns from one game's ranked <paramref name="results"/> —
+        /// i.e. its per-game <c>{2,1,0}</c> via <see cref="PointsByPlace"/>. Returns 0 if the domain
+        /// did not play. Computed straight from <paramref name="results"/> (no dependency on
+        /// <see cref="RecordResults"/> having run first), so the Scoreboard can read the local
+        /// player's per-game reward regardless of event ordering.
+        /// </summary>
+        public int CrystalsForDomain(IReadOnlyList<ScoreResult> results, Domains domain)
+        {
+            var ordered = GetDomainPlacementOrder(results);
+            int idx = ordered.IndexOf(domain);
+            return idx >= 0 ? PointsForPlace(idx + 1) : 0;
         }
 
         /// <summary>
