@@ -151,11 +151,31 @@ namespace CosmicShore.Gameplay
             if (tournamentData == null) return;
             if (titleText) titleText.text = $"{tournamentData.ModeName.ToUpperInvariant()} RESULTS";
 
-            // Tag this client's own team row "(You)" so the owner can read which domain is theirs.
-            // LocalPlayer is the network player owned by this client; Blue (no-team sentinel) tags nothing.
-            Domains localDomain = gameData != null && gameData.LocalPlayer != null
-                ? gameData.LocalPlayer.Domain : Domains.Blue;
-            if (resultsText) resultsText.text = TournamentStandingsFormatter.FormatFinal(tournamentData, localDomain);
+            // Tag this client's own team row "(You)" so the owner can read which domain is their stats.
+            if (resultsText) resultsText.text = TournamentStandingsFormatter.FormatFinal(tournamentData, GetLocalDomain());
+        }
+
+        /// <summary>
+        /// The local player's domain for the "(You)" tag. Prefers <c>gameData.LocalPlayer</c>, but on this
+        /// summary scene that is null: <c>SceneLoader.LoadSceneAsync</c> calls <c>ResetRuntimeData</c>
+        /// (which clears <c>LocalPlayer</c>) before the load, and the summary scene spawns no vessel to
+        /// re-set it — game scenes re-register persistent players via
+        /// <c>ServerPlayerVesselInitializer.PrepareForNewScene</c>, but this scene has no spawner. The local
+        /// Player NetworkObject persists across the load (<c>CreatePlayerObject=true</c>) and carries the
+        /// live <see cref="Player.Domain"/>, so fall back to it via the local client — the same idiom as
+        /// <c>ArcadeGameConfigureModal.ResolveLocalOwnedPlayer</c>. Blue (the no-team sentinel) tags nothing.
+        /// </summary>
+        Domains GetLocalDomain()
+        {
+            if (gameData != null && gameData.LocalPlayer != null)
+                return gameData.LocalPlayer.Domain;
+
+            var nm = NetworkManager.Singleton;
+            var playerObj = nm != null ? nm.LocalClient?.PlayerObject : null;
+            if (playerObj != null && playerObj.TryGetComponent<Player>(out var local))
+                return local.Domain;
+
+            return Domains.Blue;
         }
 
         /// <summary>Host-only. Wire the summary Play Again button's onClick here. Restarts the tournament.</summary>
