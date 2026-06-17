@@ -1,5 +1,3 @@
-using System.Text;
-using CosmicShore.Core;
 using CosmicShore.Utility;
 using Unity.Netcode;
 using UnityEngine;
@@ -36,7 +34,6 @@ namespace CosmicShore.Gameplay
         readonly GameDataSO _gameData;
         readonly TournamentDataSO _tournament;
         readonly SceneNameListSO _sceneNames;
-        readonly SceneTransitionManager _sceneTransition;
         readonly TournamentStateMachine _stateMachine = new();
 
         public TournamentPhase Phase => _stateMachine.Current;
@@ -47,13 +44,11 @@ namespace CosmicShore.Gameplay
 
         static bool IsHost => NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
 
-        public TournamentController(GameDataSO gameData, TournamentDataSO tournament, SceneNameListSO sceneNames,
-                                    SceneTransitionManager sceneTransition)
+        public TournamentController(GameDataSO gameData, TournamentDataSO tournament, SceneNameListSO sceneNames)
         {
             _gameData = gameData;
             _tournament = tournament;
             _sceneNames = sceneNames;
-            _sceneTransition = sceneTransition;
             Instance = this;
 
             // OnMiniGameEnd fires on every peer after the mode synced Results; the handler
@@ -125,13 +120,6 @@ namespace CosmicShore.Gameplay
                 _stateMachine.TransitionTo(TournamentPhase.Complete);
                 _tournament.OnTournamentCompleted.Raise();
             }
-            else
-            {
-                // Between games: stage the running standings on the loading overlay so they show during
-                // the NEXT Single load's fade-to-black. Set on every peer from local standings (no extra
-                // networking); the overlay auto-clears when it fades back from black on the new scene.
-                _sceneTransition?.SetOverlayMessage(BuildStandingsSummary());
-            }
         }
 
         // ── Session control ──────────────────────────────────────────────────────
@@ -199,16 +187,6 @@ namespace CosmicShore.Gameplay
             _stateMachine.ResetToIdle();
         }
 
-        /// <summary>
-        /// The per-game placement crystals (<c>{2,1,0}</c>) <paramref name="domain"/> earned in the
-        /// just-finished game, read from the still-current <see cref="GameDataSO.Results"/>. The
-        /// Scoreboard uses this to credit the local player's wallet and label the cards in shuffle mode.
-        /// </summary>
-        public int PlacementCrystalsFor(CosmicShore.Data.Domains domain) =>
-            _tournament != null && _gameData != null
-                ? _tournament.CrystalsForDomain(_gameData.Results, domain)
-                : 0;
-
         // ── Host-only random draw + scene load (reuse the proven SceneLoader path) ─
 
         /// <summary>
@@ -262,21 +240,6 @@ namespace CosmicShore.Gameplay
             _gameData.IsMultiplayerMode = true;
             _gameData.IsTournamentMode = true;
             _gameData.InvokeGameLaunch();
-        }
-
-        // Compact running-standings text for the between-game loading overlay: a "first to N" header
-        // then each domain's cumulative crystals, best-first. Built from local standings (network-free,
-        // identical on every peer).
-        string BuildStandingsSummary()
-        {
-            if (_tournament == null) return string.Empty;
-
-            var standings = _tournament.BuildSortedStandings();
-            var sb = new StringBuilder();
-            sb.AppendLine($"SHUFFLE — first to {_tournament.WinTarget}");
-            for (int i = 0; i < standings.Count; i++)
-                sb.AppendLine($"{standings[i].Domain}  {standings[i].TotalPoints}");
-            return sb.ToString().TrimEnd();
         }
     }
 }

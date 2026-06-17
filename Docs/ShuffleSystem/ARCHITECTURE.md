@@ -58,13 +58,15 @@ classes; **no new mode, enum, or classes**. Status is per-row:
 | 1 | **Randomized lineup** — a random mode + a random intensity ∈ [1..X] per game (X = chosen intensity; pool = 3 modes × X "experiences", L1=3 … L4=12), with repeat-avoidance, instead of the fixed `GameQueue` | `TournamentDataSO`, `TournamentController` | ✅ **shipped** |
 | 2 | **Per-domain scoring `{2,1,0}`** (1st/2nd/3rd domain) instead of per-player `{10,6,3,1}`; standings keyed by `Domain`, placement derived from the synced `GameDataSO.Results` (each domain's place = its best player `Rank`) | `TournamentDataSO` | ✅ **shipped** |
 | 3 | **Race to 6 / cap 7 games** (`WinTarget`/`MaxGames`, `IsShuffleComplete`) instead of "played all N" | `TournamentController`, `TournamentDataSO` | ✅ **shipped** |
-| 4 | **Real crystal-wallet credit** of the `{2,1,0}` to each local player by their domain's per-game placement (generalized from the winner-only flat reward; cards also show the per-domain badge) | `Scoreboard.AwardCrystalsToLocalPlayer` / `CardCrystalReward`, `TournamentController.PlacementCrystalsFor`, `TournamentDataSO.CrystalsForDomain` | ✅ **shipped** |
-| 5 | **Loading-splash summary** between games — a reusable `SceneTransitionManager.SetOverlayMessage` text surface fed the running domain standings; shows during the inter-game load (the overlay is already opaque then) and auto-clears on fade-from-black | `SceneTransitionManager`, `TournamentController.BuildStandingsSummary` | ✅ **shipped** (needs the `TMP_Text` wired — below) |
+| 4 | **Real crystal-wallet credit** of the `{2,1,0}` to each local player by their domain's per-game placement (generalized from the winner-only flat reward; cards also show the per-domain badge). Reads `TournamentDataSO.CrystalsForDomain` via an **injected** `TournamentDataSO` — no static singleton reach-through | `Scoreboard.AwardCrystalsToLocalPlayer` / `CardCrystalReward`, `TournamentDataSO.CrystalsForDomain` | ✅ **shipped** |
+| 5 | **Between-game summary on the splash (SOAP).** Reuses the existing `BootStatusPanel` view + `Event_BootStatusRequest` channel: `BootStatusBroadcaster.HandleLaunchGame` raises the running standings (`TournamentStandingsFormatter.FormatRunning`) during a shuffle inter-game load instead of its usual `Hide`; its existing `HandleClientReady`→`Hide` clears it. `SceneTransitionManager` owns **only** fades (no `TMP_Text`). | `BootStatusBroadcaster`, `TournamentStandingsFormatter`, `BootStatusPanel` (reused) | ✅ **shipped** (needs `tournamentData` wired — below) |
 
 All five deltas are now **shipped**; the canonical `Docs/TournamentSystem/ARCHITECTURE.md` documents them.
 
-**Editor step for #5 (one-time):** assign the **existing loading-panel `TMP_Text`** (under the splash
-canvas wired into `SceneTransitionManager._splashOverlay`) to `SceneTransitionManager._overlayMessageText`
-— no new object needed. Position/size it for the standings as desired. Its authored text is captured at
-Awake and **restored** when the overlay fades from black, so reusing a label is safe. Until assigned,
-`SetOverlayMessage` no-ops — the feature is inert and nothing else breaks.
+**Editor steps (one-time wiring):**
+- **#5 summary:** wire `TournamentData.asset` into `BootStatusBroadcaster.tournamentData` (on the splash
+  canvas). The running standings then render on the existing `BootStatusPanel.statusText` during shuffle
+  inter-game loads — no new object, and **nothing on `SceneTransitionManager`** (it's pure fades now).
+- **#4 reward:** wire `TournamentData.asset` into each domain-game `Scoreboard.tournamentData`
+  (`GameCanvas-HexRace.prefab` + the scene-added Scoreboards in Joust / Crystal Capture).
+- Both degrade gracefully if unwired (clean splash / flat winner reward).

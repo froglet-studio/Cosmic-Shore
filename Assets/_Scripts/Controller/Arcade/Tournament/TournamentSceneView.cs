@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Linq;
 using System.Text;
 using CosmicShore.Utility;
 using Obvious.Soap;
@@ -58,16 +57,6 @@ namespace CosmicShore.Gameplay
         bool IsHost => NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
         bool HasStartButtonFlow => hostStartButton != null;
 
-        // Player-facing mode name. SINGLE SOURCE: the Arcade card's DisplayName (currently "Shuffle"),
-        // wired via TournamentDataSO.ModeCard — so the in-scene title tracks the same string the Arcade
-        // grid card shows. Falls back to "Tournament" if ModeCard is unwired. To rename the mode for
-        // players, change ONLY that card's DisplayName — see Docs/ShuffleSystem/ARCHITECTURE.md.
-        string ModeName =>
-            tournamentData != null && tournamentData.ModeCard != null
-            && !string.IsNullOrEmpty(tournamentData.ModeCard.DisplayName)
-                ? tournamentData.ModeCard.DisplayName
-                : "Tournament";
-
         void Start()
         {
             // Lift the loading splash that the Single load left opaque (no vessel here to raise
@@ -106,8 +95,9 @@ namespace CosmicShore.Gameplay
 
         void RenderLineup()
         {
-            if (titleText) titleText.text = ModeName.ToUpperInvariant();
-            if (lineupText == null || tournamentData == null) return;
+            if (tournamentData == null) return;
+            if (titleText) titleText.text = tournamentData.ModeName.ToUpperInvariant();
+            if (lineupText == null) return;
 
             // The lineup is RANDOM (a random pool game + random intensity each round), so show the
             // pool + the race rule, not a fixed "Game 1/2/3" order.
@@ -152,27 +142,9 @@ namespace CosmicShore.Gameplay
 
         void RenderSummary()
         {
-            if (titleText) titleText.text = $"{ModeName.ToUpperInvariant()} RESULTS";
-            if (resultsText == null || tournamentData == null) return;
-
-            var standings = tournamentData.BuildSortedStandings();
-            var sb = new StringBuilder();
-
-            sb.AppendLine("<b>FINAL STANDINGS</b>");
-            for (int i = 0; i < standings.Count; i++)
-                sb.AppendLine($"{i + 1}. {standings[i].Domain} — {standings[i].TotalPoints} pts");
-
-            // Per-game results: one block per game actually played (the lineup is random + variable
-            // length, and the played-mode sequence isn't tracked, so label generically by game number).
-            for (int g = 0; g < tournamentData.GamesPlayed; g++)
-            {
-                sb.AppendLine();
-                sb.AppendLine($"<b>Game {g + 1}</b>");
-                foreach (var s in standings.Where(s => g < s.Placements.Count).OrderBy(s => s.Placements[g]))
-                    sb.AppendLine($"  {Ordinal(s.Placements[g])}: {s.Domain}");
-            }
-
-            resultsText.text = sb.ToString().TrimEnd();
+            if (tournamentData == null) return;
+            if (titleText) titleText.text = $"{tournamentData.ModeName.ToUpperInvariant()} RESULTS";
+            if (resultsText) resultsText.text = TournamentStandingsFormatter.FormatFinal(tournamentData);
         }
 
         /// <summary>Host-only. Wire the summary Play Again button's onClick here. Restarts the tournament.</summary>
@@ -194,13 +166,5 @@ namespace CosmicShore.Gameplay
             else
                 CSDebug.LogError("[TournamentSceneView] onClickToMainMenu event not wired — cannot return to menu.");
         }
-
-        static string Ordinal(int n) => n switch
-        {
-            1 => "1st",
-            2 => "2nd",
-            3 => "3rd",
-            _ => $"{n}th",
-        };
     }
 }

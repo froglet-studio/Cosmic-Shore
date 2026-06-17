@@ -31,6 +31,9 @@ namespace CosmicShore.UI
 
         [Header("Data")]
         [SerializeField] protected GameDataSO gameData;
+        [Tooltip("Shuffle (Tournament meta) data — source of the per-domain placement crystals when " +
+                 "IsTournamentMode. Leave null for non-tournament scenes; the reward then stays the flat winner reward.")]
+        [SerializeField] protected TournamentDataSO tournamentData;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
         [Header("References")]
@@ -475,10 +478,10 @@ namespace CosmicShore.UI
 
             int amount;
             string source;
-            if (gameData.IsTournamentMode && TournamentController.Instance != null)
+            if (gameData.IsTournamentMode && tournamentData != null)
             {
                 var localDomain = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
-                amount = TournamentController.Instance.PlacementCrystalsFor(localDomain);
+                amount = tournamentData.CrystalsForDomain(gameData.Results, localDomain);
                 source = "shuffle_placement";
             }
             else
@@ -501,8 +504,8 @@ namespace CosmicShore.UI
         /// </summary>
         int CardCrystalReward(Domains domain, string name, string winnerName)
         {
-            if (gameData.IsTournamentMode && TournamentController.Instance != null)
-                return TournamentController.Instance.PlacementCrystalsFor(domain);
+            if (gameData.IsTournamentMode && tournamentData != null)
+                return tournamentData.CrystalsForDomain(gameData.Results, domain);
             return (winnerCrystalReward > 0 && name == winnerName) ? winnerCrystalReward : 0;
         }
 

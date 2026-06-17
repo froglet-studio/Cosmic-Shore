@@ -400,7 +400,7 @@ namespace CosmicShore.Core
             // c.Resolve, so an un-wired tournamentData degrades to an inert controller instead
             // of throwing at bootstrap.
             builder.RegisterFactory(
-                _ => new TournamentController(gameData, tournamentData, _sceneNames, sceneTransitionManager),
+                _ => new TournamentController(gameData, tournamentData, _sceneNames),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );

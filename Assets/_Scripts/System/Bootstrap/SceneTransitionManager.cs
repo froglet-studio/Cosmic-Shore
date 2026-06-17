@@ -2,7 +2,6 @@ using System;
 using System.Threading;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
-using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -47,22 +46,10 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Brief pause after scene load before fading in, letting the new scene's Awake/Start run.")]
         float _postLoadSettleDelay = 0.1f;
 
-        [Header("Overlay Message (Optional)")]
-        [SerializeField, Tooltip("Optional TMP_Text on the overlay, shown while the screen is faded to " +
-            "black (e.g. the Shuffle running standings between games). Reuse the existing loading-panel " +
-            "TMP_Text (or any TMP_Text on the overlay). Leave null to disable — SetOverlayMessage then " +
-            "no-ops. When the overlay fades back from black the text is restored to its authored content " +
-            "(captured at Awake), so reusing a label like \"LOADING\" is safe.")]
-        TMP_Text _overlayMessageText;
-
         CanvasGroup _fadeCanvasGroup;
         Canvas _fadeCanvas;
         bool _isTransitioning;
         CancellationTokenSource _cts;
-
-        // The wired message text's authored content, captured at Awake. ClearOverlayMessage restores
-        // this (not empty) so reusing an existing loading-panel TMP_Text doesn't lose its default label.
-        string _overlayMessageDefault = string.Empty;
 
         /// <summary>
         /// True while a scene transition is in progress.
@@ -84,11 +71,6 @@ namespace CosmicShore.Core
                 AdoptSplashOverlay();
             else
                 CreateFadeOverlay();
-
-            // Remember the message text's authored content so ClearOverlayMessage can restore it
-            // (we may be reusing an existing loading-panel TMP_Text rather than a dedicated one).
-            if (_overlayMessageText != null)
-                _overlayMessageDefault = _overlayMessageText.text;
         }
 
         void OnDestroy()
@@ -303,42 +285,6 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region Public API — Overlay Message
-
-        /// <summary>
-        /// Sets a message on the overlay (e.g. the Shuffle running standings) that is visible while the
-        /// overlay is faded to black. No-ops if no <see cref="_overlayMessageText"/> is wired. The text
-        /// auto-clears when the overlay next fades back from black (see <see cref="FadeAsync"/>), so the
-        /// caller only ever needs to set it. Empty/null text shows nothing.
-        /// </summary>
-        public void SetOverlayMessage(string message)
-        {
-            // Mirror SetFadeImmediate: touching a UnityEngine.Object off the main thread (e.g. from a
-            // UGS/Netcode continuation that forgot .AsMainThread()) throws EnsureRunningOnMainThread.
-            if (!MainThreadDispatcher.IsOnMainThread)
-            {
-                Debug.LogError("[SceneTransitionManager] SetOverlayMessage called off main thread — " +
-                               "ignoring to avoid EnsureRunningOnMainThread (caller forgot `.AsMainThread()`).");
-                return;
-            }
-
-            if (_overlayMessageText == null) return;
-            _overlayMessageText.text = message ?? string.Empty;
-        }
-
-        /// <summary>
-        /// Restores the overlay message text to its authored content (captured at Awake). Called
-        /// automatically when the overlay fades from black, so a reused loading-panel label is preserved.
-        /// </summary>
-        public void ClearOverlayMessage()
-        {
-            if (!MainThreadDispatcher.IsOnMainThread) return;
-            if (_overlayMessageText == null) return;
-            _overlayMessageText.text = _overlayMessageDefault;
-        }
-
-        #endregion
-
         #region Internal — Fade Animation
 
         async UniTask FadeAsync(float from, float to, CancellationToken ct)
@@ -354,7 +300,6 @@ namespace CosmicShore.Core
                 _fadeCanvasGroup.alpha = to;
                 _fadeCanvasGroup.blocksRaycasts = to > 0.01f;
                 _fadeCanvasGroup.interactable = to > 0.01f;
-                if (to <= 0.01f) ClearOverlayMessage();   // overlay revealed → drop any message
                 return;
             }
 
@@ -370,7 +315,6 @@ namespace CosmicShore.Core
             _fadeCanvasGroup.alpha = to;
             _fadeCanvasGroup.blocksRaycasts = to > 0.01f;
             _fadeCanvasGroup.interactable = to > 0.01f;
-            if (to <= 0.01f) ClearOverlayMessage();   // overlay revealed → drop any message
         }
 
         #endregion

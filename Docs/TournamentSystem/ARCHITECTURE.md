@@ -120,21 +120,25 @@ not the Scoreboard.
 
 **Crystal reward (real wallet).** The placement crystals are also *real currency*: on each game's
 Scoreboard, `AwardCrystalsToLocalPlayer` credits the **local** human's wallet
-(`PlayerDataService.AddCrystals`, source `"shuffle_placement"`) with their domain's per-game `{2,1,0}`
-— `TournamentController.PlacementCrystalsFor(localDomain)` → `TournamentDataSO.CrystalsForDomain`
-(computed from the synced `Results`, so it's order-independent). Each peer credits only its own local
-player, once per game (AI have no wallet); a 3rd-place domain earns 0. The per-player score cards show
-the same per-domain badge via `CardCrystalReward`. Gated on `IsTournamentMode` — outside a shuffle the
-Scoreboard keeps its original winner-only flat `winnerCrystalReward`.
+(`PlayerDataService.AddCrystals`, source `"shuffle_placement"`) with their domain's per-game `{2,1,0}`,
+read from the injected `TournamentDataSO.CrystalsForDomain(gameData.Results, localDomain)` (computed
+from the synced `Results`, so it's order-independent — and a plain data-container read, **not** a
+static `TournamentController.Instance` reach-through). Each peer credits only its own local player,
+once per game (AI have no wallet); a 3rd-place domain earns 0. The per-player score cards show the same
+per-domain badge via `CardCrystalReward`. Gated on `IsTournamentMode` — outside a shuffle the Scoreboard
+keeps its original winner-only flat `winnerCrystalReward`.
 
-**Between-game summary overlay.** After each non-final game, `TournamentController.HandleMiniGameEnd`
-stages the running domain standings on the loading overlay (`SceneTransitionManager.SetOverlayMessage`,
-on every peer from local standings — network-free, no RPC). The overlay is already opaque during the
-next `Single` load (`SceneLoader` calls `SetFadeImmediate(1f)` on host *and* clients), so the standings
-read on the loading splash for the whole transition; when the new scene fades from black the text is
-**restored to its authored content**. The surface is a `TMP_Text` wired to
-`SceneTransitionManager._overlayMessageText` (reuse the existing loading-panel label; see §7) — unwired,
-`SetOverlayMessage` no-ops.
+**Between-game summary overlay (SOAP — reuses the splash status surface).** `SceneTransitionManager`
+owns **only** fades — it holds no UI text. The splash already has a SOLID/SOAP text view,
+`BootStatusPanel`, fed by the `ScriptableEventBootStatusRequest` channel. On `OnLaunchGame` (fired on
+host *and* clients, when the loading splash goes opaque), `BootStatusBroadcaster.HandleLaunchGame` — the
+existing owner of "what the splash shows during a launch" — checks the shuffle state and, if mid-run
+(`tournamentData.IsActive && !IsShuffleComplete && GamesPlayed > 0`), raises
+`BootStatusRequest{Status, TournamentStandingsFormatter.FormatRunning(tournamentData)}` instead of its
+usual `Hide`. The standings (reduced from local standings on every peer — network-free) read on the
+splash for the whole load, then the broadcaster's existing `HandleClientReady`→`Hide` clears them when
+the new scene is ready. No new channel, view, or `TMP_Text` — and the controller no longer touches the
+splash at all.
 
 **Restart determinism:** Play Again calls `RestartTournament()` → host draws + loads a fresh random
 game directly; every peer resets its standings when that game loads while still in phase `Summary`
@@ -176,12 +180,13 @@ see §3), `IsShuffleComplete` (race target reached or game cap hit — drives su
 |---|---|
 | Mode enum | `_Scripts/Data/Enums/GameModes.cs` (`Tournament = 36`) |
 | Config flag | `_Scripts/Utility/DataContainers/GameDataSO.cs` (`IsTournamentMode`) |
-| Data container | `_Scripts/Utility/DataContainers/Tournament/TournamentDataSO.cs` |
+| Data container (+ `ModeName`, `CrystalsForDomain`) | `_Scripts/Utility/DataContainers/Tournament/TournamentDataSO.cs` |
+| Standings text formatting (shared, DRY) | `_Scripts/Utility/DataContainers/Tournament/TournamentStandingsFormatter.cs` |
 | State machine | `_Scripts/Controller/Arcade/Tournament/TournamentStateMachine.cs` |
 | Controller (brain) | `_Scripts/Controller/Arcade/Tournament/TournamentController.cs` |
 | Lobby scene view | `_Scripts/Controller/Arcade/Tournament/TournamentSceneView.cs` |
-| End-game buttons + entrance (`ShowScoreboardImmediate`) + placement wallet credit | `_Scripts/UI/Scoreboard.cs` |
-| Between-game loading-splash summary surface | `_Scripts/System/Bootstrap/SceneTransitionManager.cs` (`SetOverlayMessage` / `_overlayMessageText`) |
+| End-game buttons + entrance + placement wallet credit (via injected `TournamentDataSO`) | `_Scripts/UI/Scoreboard.cs` |
+| Between-game summary text (SOAP, reuses the splash status surface) | `_Scripts/UI/Screens/BootStatusBroadcaster.cs` (shuffle branch) → `BootStatusPanel` via `Event_BootStatusRequest` |
 | Lobby player/domain floor | `_Scripts/UI/Modals/ArcadeGameConfigureModal.cs` (`MinDomainsForGame`) |
 | Per-game min domains field | `_Scripts/ScriptableObjects/SO_ArcadeGame.cs` (`MinDomainsAllowed`) |
 | Joust-leg opponent-seek AI | `_Scripts/Controller/AI/AIPilot.cs` |
@@ -218,11 +223,13 @@ The mode runs end-to-end; one **optional** wire remains for the §4 between-game
   with `MinPlayersAllowed=2`, `MaxPlayersAllowed=4`, `MinDomainsAllowed=2`, `MinIntensity=1`,
   `MaxIntensity=4` (`87658960`) — so the configure modal floors both player and domain count to 2
   (see §1, *Lobby minimum*).
-- **Loading-splash summary `TMP_Text` (optional, outstanding).** Assign the **existing loading-panel
-  `TMP_Text`** (under the canvas wired to `SceneTransitionManager._splashOverlay`) to
-  `SceneTransitionManager._overlayMessageText` — no new object needed. It renders the §4 between-game
-  standings during the inter-game load; its authored content is restored on fade-from-black. Until
-  assigned, `SetOverlayMessage` no-ops — inert, nothing else breaks.
+- **Between-game summary (SOAP — outstanding wires).** Wire `TournamentData.asset` into
+  `BootStatusBroadcaster.tournamentData` (on the splash canvas). The §4 running standings then show on
+  the existing `BootStatusPanel.statusText` during shuffle inter-game loads — **no new object, and no
+  `TMP_Text`/field on `SceneTransitionManager`** (it owns only fades now). Also wire `TournamentData.asset`
+  into each domain-game `Scoreboard.tournamentData` (`GameCanvas-HexRace.prefab` + the scene-added
+  Scoreboards in Joust / Crystal Capture) for the placement wallet credit + card badge. Unwired, both
+  degrade gracefully (clean splash / flat winner reward).
 
 No per-button visibility code lives in the scene — `TournamentSceneView` and `Scoreboard`
 drive it (host-only, phase-selected).

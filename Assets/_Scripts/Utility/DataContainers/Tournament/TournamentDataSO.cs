@@ -120,6 +120,14 @@ namespace CosmicShore.Utility
 
         public int GameCount => GameQueue?.Count ?? 0;
 
+        /// <summary>
+        /// Player-facing mode name — the mode card's DisplayName (e.g. "Shuffle"); falls back to
+        /// "Tournament" if <see cref="ModeCard"/> is unwired. Single source for titles/headers, used by
+        /// the scene view and <see cref="TournamentStandingsFormatter"/>.
+        /// </summary>
+        public string ModeName =>
+            ModeCard != null && !string.IsNullOrEmpty(ModeCard.DisplayName) ? ModeCard.DisplayName : "Tournament";
+
         public bool IsLastGame =>
             GameQueue != null && GameQueue.Count > 0 && CurrentGameIndex >= GameQueue.Count - 1;
 
