@@ -191,6 +191,14 @@ namespace CosmicShore.Core
             PlayerPrefs.DeleteKey("ReturnToModal");
             PlayerPrefs.Save();
 
+            // Show the loading splash immediately so the transition is covered ASAP — e.g. the
+            // Tournament summary's Main Menu button, which otherwise left the summary on-screen during
+            // the async load (OnSceneLoaded only re-arms this once Menu_Main has finished loading). The
+            // idempotent helper arms the fade-back on the next OnClientReady (the menu autopilot vessel).
+            // Done before the client-defer guard so clients fade too.
+            _sceneTransitionManager?.SetFadeImmediate(1f);
+            ArmSplashFadeOnNextClientReady();
+
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
             var nm = NetworkManager.Singleton;
 

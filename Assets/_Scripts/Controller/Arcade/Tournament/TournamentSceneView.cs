@@ -57,6 +57,11 @@ namespace CosmicShore.Gameplay
         bool IsHost => NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
         bool HasStartButtonFlow => hostStartButton != null;
 
+        // Guards the summary's host-only buttons against double/spam clicks in the window between the
+        // press and the scene unload (interim until a confirm panel exists). Once a choice is made both
+        // buttons are disabled and the loading splash covers the screen.
+        bool _summaryActionTaken;
+
         void Start()
         {
             // Lift the loading splash that the Single load left opaque (no vessel here to raise
@@ -150,21 +155,37 @@ namespace CosmicShore.Gameplay
         /// <summary>Host-only. Wire the summary Play Again button's onClick here. Restarts the tournament.</summary>
         public void OnPlayAgainPressed()
         {
-            if (!IsHost) return;
-            if (TournamentController.Instance != null)
-                TournamentController.Instance.RestartTournament();
-            else
+            if (!IsHost || _summaryActionTaken) return;
+            if (TournamentController.Instance == null)
+            {
                 CSDebug.LogError("[TournamentSceneView] TournamentController.Instance is null — cannot restart.");
+                return;
+            }
+            _summaryActionTaken = true;
+            DisableSummaryButtons();                              // anti-spam; the splash covers the screen next
+            TournamentController.Instance.RestartTournament();    // → SceneLoader.LaunchGame shows the splash immediately
         }
 
         /// <summary>Host-only. Wire the summary Main Menu button's onClick here. Returns everyone to Menu_Main.</summary>
         public void OnMainMenuPressed()
         {
-            if (!IsHost) return;
-            if (onClickToMainMenu != null)
-                onClickToMainMenu.Raise();   // → SceneLoader.ReturnToMainMenu (host loads, clients follow)
-            else
+            if (!IsHost || _summaryActionTaken) return;
+            if (onClickToMainMenu == null)
+            {
                 CSDebug.LogError("[TournamentSceneView] onClickToMainMenu event not wired — cannot return to menu.");
+                return;
+            }
+            _summaryActionTaken = true;
+            DisableSummaryButtons();      // anti-spam; the splash covers the screen next
+            onClickToMainMenu.Raise();    // → SceneLoader.ReturnToMainMenu (host loads, clients follow)
+        }
+
+        // Hides both summary buttons so the host can't spam either after a choice is made. The scene is
+        // about to reload (Play Again) or be replaced (Main Menu); the loading splash covers the gap.
+        void DisableSummaryButtons()
+        {
+            if (playAgainButton) playAgainButton.SetActive(false);
+            if (mainMenuButton) mainMenuButton.SetActive(false);
         }
     }
 }
