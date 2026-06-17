@@ -163,6 +163,15 @@ namespace CosmicShore.UI
         {
             if (!data.ShipHUD) return;
 
+            // onShipHUDInitialized is a global, untargeted SOAP event: EVERY vessel that
+            // spawns on this machine raises it — including a remote/AI party member's vessel
+            // that the host spawns when someone joins. This screen-space "Game UI" canvas may
+            // only ever host the LOCAL player's vessel HUD. Without this guard the host would
+            // reparent (and Hide/cross-wire) a joining client's HUD on top of its own, which
+            // is what leaves the local energy/elemental bars dead after a second player joins
+            // — the multiplayer-only regression that never reproduces solo (one vessel only).
+            if (!IsLocalPlayerHUD(data.ShipHUD)) return;
+
             Hide();
 
             foreach (Transform child in data.ShipHUD.GetComponentsInChildren<Transform>(false))
@@ -179,6 +188,23 @@ namespace CosmicShore.UI
                 Show();
                 ShowLocalVesselHUD();
             }
+        }
+
+        /// <summary>
+        /// True when the given ship HUD belongs to the local player's vessel (the only HUD
+        /// that should be hoisted into this screen-space canvas). Falls back to true when the
+        /// local pair hasn't resolved yet or the HUD is already unparented, so a legitimate
+        /// local HUD is never dropped — only a positively-identified remote vessel is skipped.
+        /// </summary>
+        bool IsLocalPlayerHUD(MiniGameHUD shipHud)
+        {
+            var localVessel = gameData?.LocalPlayer?.Vessel;
+            if (localVessel == null) return true;
+
+            var vessel = shipHud.GetComponentInParent<IVessel>(true);
+            if (vessel == null) return true;
+
+            return ReferenceEquals(vessel, localVessel);
         }
 
         void InstantiatePauseMenu()

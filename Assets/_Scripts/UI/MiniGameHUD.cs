@@ -567,6 +567,12 @@ namespace CosmicShore.UI
         {
             if (!data.ShipHUD) return;
 
+            // onShipHUDInitialized is a global, untargeted SOAP event raised by EVERY vessel
+            // (including remote/AI vessels in a multiplayer session). This HUD canvas may only
+            // hoist the LOCAL player's vessel HUD — reparenting a remote vessel's HUD on top of
+            // it cross-wires the shared canvas and kills the local HUD's live bars.
+            if (!IsLocalPlayerHUD(data.ShipHUD)) return;
+
             Hide();
 
             foreach (Transform child in data.ShipHUD.GetComponentsInChildren<Transform>(false))
@@ -577,6 +583,23 @@ namespace CosmicShore.UI
             }
 
             data.ShipHUD.gameObject.SetActive(true);
+        }
+
+        /// <summary>
+        /// True when the given ship HUD belongs to the local player's vessel — the only HUD that
+        /// should be hoisted into this canvas. Falls back to true when the local pair hasn't
+        /// resolved yet or the HUD is already unparented, so a legitimate local HUD is never
+        /// dropped; only a positively-identified remote/AI vessel HUD is skipped.
+        /// </summary>
+        private bool IsLocalPlayerHUD(MiniGameHUD shipHud)
+        {
+            var localVessel = gameData?.LocalPlayer?.Vessel;
+            if (localVessel == null) return true;
+
+            var vessel = shipHud.GetComponentInParent<IVessel>(true);
+            if (vessel == null) return true;
+
+            return ReferenceEquals(vessel, localVessel);
         }
 
         protected virtual void UpdateScoreUI()
