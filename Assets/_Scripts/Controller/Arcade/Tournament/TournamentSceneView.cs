@@ -109,11 +109,16 @@ namespace CosmicShore.Gameplay
             if (titleText) titleText.text = ModeName.ToUpperInvariant();
             if (lineupText == null || tournamentData == null) return;
 
+            // The lineup is RANDOM (a random pool game + random intensity each round), so show the
+            // pool + the race rule, not a fixed "Game 1/2/3" order.
             var sb = new StringBuilder();
+            sb.AppendLine($"First domain to {tournamentData.WinTarget} wins!");
+            sb.AppendLine();
+            sb.AppendLine("<b>Random rotation</b>");
             for (int i = 0; i < tournamentData.GameQueue.Count; i++)
             {
                 var game = tournamentData.GameQueue[i];
-                sb.AppendLine($"Game {i + 1}: {(game != null ? game.DisplayName : "—")}");
+                if (game != null) sb.AppendLine($"• {game.DisplayName}");
             }
             lineupText.text = sb.ToString().TrimEnd();
         }
@@ -157,12 +162,12 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < standings.Count; i++)
                 sb.AppendLine($"{i + 1}. {standings[i].Domain} — {standings[i].TotalPoints} pts");
 
-            // Per-game results: order domains by their finishing place in each game.
-            for (int g = 0; g < tournamentData.GameQueue.Count; g++)
+            // Per-game results: one block per game actually played (the lineup is random + variable
+            // length, and the played-mode sequence isn't tracked, so label generically by game number).
+            for (int g = 0; g < tournamentData.GamesPlayed; g++)
             {
-                var game = tournamentData.GameQueue[g];
                 sb.AppendLine();
-                sb.AppendLine($"<b>{(game != null ? game.DisplayName : $"Game {g + 1}")}</b>");
+                sb.AppendLine($"<b>Game {g + 1}</b>");
                 foreach (var s in standings.Where(s => g < s.Placements.Count).OrderBy(s => s.Placements[g]))
                     sb.AppendLine($"  {Ordinal(s.Placements[g])}: {s.Domain}");
             }

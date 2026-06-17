@@ -148,20 +148,62 @@ namespace CosmicShore.Tests
             Assert.DoesNotThrow(() => _data.RecordResults(null));
             Assert.DoesNotThrow(() => _data.RecordResults(new ScoreResult[0]));
             Assert.AreEqual(0, _data.Standings.Count, "No standings created from null/empty results.");
+            Assert.AreEqual(0, _data.GamesPlayed, "Null/empty results don't count as a game played.");
         }
 
         [Test]
-        public void ResetRuntime_ClearsStandings()
+        public void RecordResults_IncrementsGamesPlayed()
+        {
+            Assert.AreEqual(0, _data.GamesPlayed);
+            _data.RecordResults(new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby) });
+            Assert.AreEqual(1, _data.GamesPlayed);
+            _data.RecordResults(new[] { Row(1, Domains.Ruby), Row(2, Domains.Jade) });
+            Assert.AreEqual(2, _data.GamesPlayed);
+        }
+
+        [Test]
+        public void IsShuffleComplete_FalseUntilADomainReachesWinTarget()
+        {
+            // Default WinTarget = 6. Jade wins each game (+2): 2, 4, 6.
+            var game = new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby), Row(3, Domains.Gold) };
+
+            _data.RecordResults(game);
+            Assert.IsFalse(_data.IsShuffleComplete, "Jade has 2 (< 6).");
+            _data.RecordResults(game);
+            Assert.IsFalse(_data.IsShuffleComplete, "Jade has 4 (< 6).");
+            _data.RecordResults(game);
+            Assert.IsTrue(_data.IsShuffleComplete, "Jade reached 6 (race target).");
+        }
+
+        [Test]
+        public void IsShuffleComplete_TrueAtGameCap_EvenWithNoWinner()
+        {
+            _data.WinTarget = 100;   // unreachable within the cap
+            _data.MaxGames = 2;
+
+            _data.RecordResults(new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby), Row(3, Domains.Gold) });
+            Assert.IsFalse(_data.IsShuffleComplete, "1 game played, cap is 2.");
+
+            _data.RecordResults(new[] { Row(1, Domains.Ruby), Row(2, Domains.Gold), Row(3, Domains.Jade) });
+            Assert.IsTrue(_data.IsShuffleComplete, "Hit the 2-game cap, so the shuffle ends.");
+        }
+
+        [Test]
+        public void ResetRuntime_ClearsStandingsAndGamesPlayed_KeepsIntensityCeiling()
         {
             _data.RecordResults(new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby), Row(3, Domains.Gold) });
             _data.IsActive = true;
             _data.CurrentGameIndex = 2;
+            _data.IntensityCeiling = 4;
 
             _data.ResetRuntime();
 
             Assert.AreEqual(0, _data.Standings.Count);
             Assert.AreEqual(0, _data.CurrentGameIndex);
+            Assert.AreEqual(0, _data.GamesPlayed, "GamesPlayed resets for a fresh shuffle.");
             Assert.IsFalse(_data.IsActive);
+            Assert.AreEqual(4, _data.IntensityCeiling,
+                "IntensityCeiling persists — Play Again routes through ResetRuntime and must keep it.");
         }
 
         [Test]

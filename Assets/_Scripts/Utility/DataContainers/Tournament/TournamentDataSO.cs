@@ -73,6 +73,14 @@ namespace CosmicShore.Utility
                  "2 = 3rd. Places beyond the table score 0. Shuffle awards {2,1,0}.")]
         public List<int> PointsByPlace = new() { 2, 1, 0 };
 
+        [Tooltip("Race target: the first DOMAIN whose cumulative placement crystals reach this total " +
+                 "wins the shuffle (with {2,1,0} per game, 6 ≈ three dominant finishes).")]
+        public int WinTarget = 6;
+
+        [Tooltip("Hard cap on games played so a stalemate still ends (e.g. a 6-6-2 split). The shuffle " +
+                 "ends when a domain hits WinTarget OR this many games have been played, whichever first.")]
+        public int MaxGames = 7;
+
         [Header("SOAP Events")]
         public ScriptableEventNoParam OnTournamentStarted;
         public ScriptableEventNoParam OnGameResultRecorded;
@@ -84,8 +92,22 @@ namespace CosmicShore.Utility
         /// <summary>True from tournament start until it ends / is exited.</summary>
         [System.NonSerialized] public bool IsActive;
 
-        /// <summary>Index into <see cref="GameQueue"/> of the game currently loaded/just finished.</summary>
+        /// <summary>
+        /// Pool index (into <see cref="GameQueue"/>) of the game currently loaded / just finished.
+        /// With the randomized lineup this tracks WHICH mode is loaded (for repeat-avoidance), not
+        /// progress — game count is <see cref="GamesPlayed"/>.
+        /// </summary>
         [System.NonSerialized] public int CurrentGameIndex;
+
+        /// <summary>Number of games whose results have been folded so far this shuffle.</summary>
+        [System.NonSerialized] public int GamesPlayed;
+
+        /// <summary>
+        /// Per-game intensity ceiling (X) captured from the lobby-chosen intensity at tournament
+        /// start; each game draws a random intensity in [1..X]. Persists across <see cref="ResetRuntime"/>
+        /// so Play Again keeps the same ceiling (it is re-captured only on a fresh start from the lobby).
+        /// </summary>
+        [System.NonSerialized] public int IntensityCeiling;
 
         /// <summary>
         /// AI display names seeded once at tournament start and reused for every game, so AI
@@ -103,6 +125,23 @@ namespace CosmicShore.Utility
 
         public bool IsComplete =>
             GameQueue != null && CurrentGameIndex >= GameQueue.Count;
+
+        /// <summary>
+        /// True once the shuffle is over: a domain reached <see cref="WinTarget"/> (race to 6), or the
+        /// <see cref="MaxGames"/> cap was hit. Reduced from the synced standings + <see cref="GamesPlayed"/>,
+        /// so it evaluates identically on every peer. Drives the controller's switch from "next random
+        /// game" to "load the summary".
+        /// </summary>
+        public bool IsShuffleComplete
+        {
+            get
+            {
+                if (MaxGames > 0 && GamesPlayed >= MaxGames) return true;
+                for (int i = 0; i < Standings.Count; i++)
+                    if (Standings[i].TotalPoints >= WinTarget) return true;
+                return false;
+            }
+        }
 
         public SO_ArcadeGame CurrentGame =>
             (GameQueue != null && CurrentGameIndex >= 0 && CurrentGameIndex < GameQueue.Count)
@@ -140,8 +179,11 @@ namespace CosmicShore.Utility
         {
             IsActive = false;
             CurrentGameIndex = 0;
+            GamesPlayed = 0;
             Standings.Clear();
             TournamentAINames.Clear();
+            // IntensityCeiling is intentionally NOT cleared — it is a config value captured at the
+            // fresh start (lobby load) and must survive Play Again's reset (which routes through here).
         }
 
         /// <summary>
@@ -182,6 +224,8 @@ namespace CosmicShore.Utility
                 standing.TotalPoints += PointsForPlace(place + 1);
                 standing.Placements.Add(place + 1);
             }
+
+            GamesPlayed++;
 
             OnGameResultRecorded.Raise();
             OnStandingsChanged.Raise();

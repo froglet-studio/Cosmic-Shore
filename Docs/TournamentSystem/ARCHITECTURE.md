@@ -25,13 +25,17 @@ three feature-complete domain minigames into one tournament with a per-player le
 
 ## 1. What it is
 
-One tournament plays a **fixed lineup** — **Skim Race (HexRace 33) → Joust (34) → Crystal
-Capture (35)** — back-to-back. After each game the active **domains** are ranked and earn
-**placement crystals** by domain place (1st = 2, 2nd = 1, 3rd = 0; `PointsByPlace`, configurable).
-The cumulative **per-domain** total is the leaderboard. It appears as a normal card in the Arcade
-panel (`GameModes.Tournament = 36`). *(Per-domain `{2,1,0}` scoring is shipped; the randomized
-lineup + race-to-6 termination + wallet credit are the next deltas — see
-`Docs/ShuffleSystem/ARCHITECTURE.md`.)*
+One session plays a **randomized lineup** drawn from the competitive domain games — **Skim Race
+(HexRace 33), Joust (34), Crystal Capture (35)**. Each game the host draws a random pool mode (no
+immediate repeat) **and** a random intensity in `[1..X]` (X = the lobby-chosen intensity ceiling),
+so a higher intensity widens the variety (`3 modes × X` "experiences", L1=3 … L4=12). After each
+game the active **domains** are ranked and earn **placement crystals** by domain place
+(1st = 2, 2nd = 1, 3rd = 0; `PointsByPlace`, configurable). The cumulative **per-domain** total is
+the leaderboard, and the session is a **race to `WinTarget` (6)** crystals — the first domain to
+reach it wins, with a hard **`MaxGames` (7)** cap so a stalemate still ends. It appears as a normal
+card in the Arcade panel (`GameModes.Tournament = 36`; the card's `DisplayName` is "Shuffle").
+*(Shipped: per-domain `{2,1,0}` scoring, randomized lineup, race-to-6 / cap-7. Next deltas: wallet
+credit + loading-splash summary — see `Docs/ShuffleSystem/ARCHITECTURE.md`.)*
 
 **Lobby minimum — 2 players, 2 domains.** Placement points are meaningless without opposing
 teams (and the Joust leg is unplayable on a single domain — see JOUST.md Design Note 8). The Tournament
@@ -52,10 +56,10 @@ with per-scene systems (duplicate `ServerPlayerVesselInitializer`, ambiguous
 
 ```
 Menu_Main → [Arcade card → ArcadeGameConfigureModal ready-up]
-  → Tournament (lobby)  → HexRace → Joust → Crystal Capture (each a Single load)
-                              └─ Scoreboard.Continue (host) advances on EVERY game; party follows
-  → Continue after the last game → Tournament (SUMMARY: all results)
-       └─ Play Again (restart whole tournament) | Main Menu → Menu_Main (lava lamp)
+  → Tournament (lobby) → random game → random game → …   (each a Single load)
+                              └─ Scoreboard.Continue (host) advances after EVERY game; party follows
+  → a domain hits 6 (or the 7-game cap) → Continue → Tournament (SUMMARY: all results)
+       └─ Play Again (fresh shuffle) | Main Menu → Menu_Main (lava lamp)
 ```
 
 The Tournament scene is **both** the intro lobby and the end-of-tournament **summary**;
@@ -77,20 +81,24 @@ A static `Instance` lets scene MonoBehaviours reach it (mirrors `PartyInviteCont
   its best (lowest) player `Rank`, domains ordered by that (ties → enum order Jade→Ruby→Gold), then
   awarded `{2,1,0}`. Recording happens *before* the next load's `ResetRuntimeData` clears `Results`.
 - **Only the host drives progression** (`BeginFirstGame` / `AdvanceToNextGame` /
-  `RestartTournament`) through `gameData.SyncFromArcadeGame(queue[i]) + InvokeGameLaunch()`; the
-  existing `SceneLoader` host-guard makes clients follow.
+  `RestartTournament`): it draws a random `(mode, intensity ∈ [1..X])`, sets the per-game intensity
+  on `gameData.SelectedIntensity`, then `SyncFromArcadeGame(mode) + InvokeGameLaunch()`. Clients
+  follow the Single load (mode = loaded scene; intensity rides the existing config sync) — no shared
+  RNG seed. Once `TournamentDataSO.IsShuffleComplete`, `AdvanceToNextGame` loads the **summary** instead.
 - **Phase is scene-load-driven** (deterministic on every peer): the **lobby scene** load runs
-  `StartTournament` (reset standings, `IsActive=true`, `IsTournamentMode=true`); each **queued
-  game scene** load sets `CurrentGameIndex`; **Menu_Main** load runs `EndTournament` (clears the
+  `StartTournament` (reset standings, capture the intensity ceiling, `IsActive=true`,
+  `IsTournamentMode=true`); each **pool game scene** load marks the loaded mode (`CurrentGameIndex`,
+  used for repeat-avoidance) and goes `InGame`; **Menu_Main** load runs `EndTournament` (clears the
   flags). `TournamentStateMachine` tracks `Idle → Lobby → InGame → Complete → Summary` — `Complete`
-  is the transient phase while the last game's scoreboard is up, `Summary` is the results scene
+  is the transient phase while the deciding game's scoreboard is up, `Summary` is the results scene
   itself (Play Again from `Summary` re-enters `InGame`; Main Menu returns to `Idle`).
 
 Per-game stat reset is automatic (`SceneLoader` → `ResetRuntimeData` + each persistent
 `Player.PrepareForNewScene` → `RoundStats.Cleanup`). Cumulative points live in `TournamentDataSO`,
 outside that reset, so they survive. AI backfill re-runs per scene; the **AI roster is seeded once**
-(first game) into `TournamentDataSO.TournamentAINames` and reused, so name-keyed bot standings
-attribute across games (AI `Player` objects are destroyed/recreated each scene).
+(first game) into `TournamentDataSO.TournamentAINames` and reused, so bot identities stay stable
+across games (AI `Player` objects are destroyed/recreated each scene). Standings are keyed by
+**domain**, so per-game roster churn never affects the leaderboard.
 
 ## 4. End-of-game UI — the Scoreboard is the progression surface
 
@@ -100,19 +108,20 @@ mode `Scoreboard.ConfigureLobbyButtons` shows **only Continue, host-only**:
 
 | Surface | Host sees | Hidden |
 |---|---|---|
-| Per-game scoreboard (EVERY game, incl. last) | **Continue** → `TournamentController.AdvanceToNextGame()` | Play Again, Main Menu, Leave |
+| Per-game scoreboard (after EVERY game) | **Continue** → `TournamentController.AdvanceToNextGame()` | Play Again, Main Menu, Leave |
 | Per-game scoreboard, on a client | — | all |
-| **Tournament Summary screen** (after last game) | **Play Again** (→ `RestartTournament()`) + **Main Menu** (→ `onClickToMainMenu` → Menu_Main) | — |
+| **Tournament Summary screen** (after the shuffle is decided) | **Play Again** (→ `RestartTournament()`) + **Main Menu** (→ `onClickToMainMenu` → Menu_Main) | — |
 | Tournament Summary screen, on a client | — (results only) | all |
 
-`AdvanceToNextGame` loads the next game, or — on the last game (`TournamentDataSO.IsLastGame`) —
-loads the Tournament scene in Summary phase. Play Again / Main Menu are handled by
-`TournamentSceneView` (`OnPlayAgainPressed` / `OnMainMenuPressed`), not the Scoreboard.
+`AdvanceToNextGame` draws + loads the next random game, or — once `TournamentDataSO.IsShuffleComplete`
+(a domain reached `WinTarget`, or `MaxGames` was hit) — loads the Tournament scene in Summary phase.
+Play Again / Main Menu are handled by `TournamentSceneView` (`OnPlayAgainPressed` / `OnMainMenuPressed`),
+not the Scoreboard.
 
-**Restart determinism:** Play Again calls `RestartTournament()` → host loads game 1 directly;
-every peer resets its standings when game 1 loads while still in phase `Summary` (see
-`TournamentController.HandleSceneLoaded`), so the wipe is consistent across the party without any
-extra networking.
+**Restart determinism:** Play Again calls `RestartTournament()` → host draws + loads a fresh random
+game directly; every peer resets its standings when that game loads while still in phase `Summary`
+(see `TournamentController.HandleSceneLoaded` — any pool game load in `Summary` is a restart), so the
+wipe is consistent across the party without extra networking.
 
 **Scoreboard position stability (`660e4d91`):** a tournament shows the Scoreboard once per leg, so
 it re-shows the board up to three times in one session — exactly the case that exposed a drift
@@ -132,12 +141,15 @@ on a faster cadence while unlocked. Full detail in JOUST.md Design Note 12.
 ## 5. Data — `TournamentDataSO`
 
 `_Scripts/Utility/DataContainers/Tournament/TournamentDataSO.cs` (asset:
-`_SO_Assets/Tournament/TournamentData.asset`). Authored: `GameQueue` (the 3 `SO_ArcadeGame`s),
-`ModeCard` (the mode's own card — player-facing name), `PointsByPlace` (`{2,1,0}`), `LobbySceneName`,
-four `ScriptableEventNoParam`s. Runtime (non-serialized): `IsActive`, `CurrentGameIndex`,
-`TournamentAINames`, `Standings` (a `List<TournamentDomainStanding>` — **keyed by `Domains`**, not
-player). Key methods: `RecordResults(results)` (per-domain fold — see §3), `BuildSortedStandings()`
-(points desc, tiebreak best placement, then domain enum order Jade→Ruby→Gold), `IsLastGame`,
+`_SO_Assets/Tournament/TournamentData.asset`). Authored: `GameQueue` (the draw **pool** — the 3
+`SO_ArcadeGame`s), `ModeCard` (the mode's own card — player-facing name), `PointsByPlace` (`{2,1,0}`),
+`WinTarget` (6), `MaxGames` (7), `LobbySceneName`, four `ScriptableEventNoParam`s. Runtime
+(non-serialized): `IsActive`, `CurrentGameIndex` (last loaded pool mode — repeat-avoidance),
+`GamesPlayed`, `IntensityCeiling` (X, captured at start; **survives `ResetRuntime`** so Play Again
+keeps it), `TournamentAINames`, `Standings` (a `List<TournamentDomainStanding>` — **keyed by
+`Domains`**, not player). Key methods: `RecordResults(results)` (per-domain fold + `GamesPlayed++`,
+see §3), `IsShuffleComplete` (race target reached or game cap hit — drives summary vs next game),
+`BuildSortedStandings()` (points desc, tiebreak best placement, then domain enum order Jade→Ruby→Gold),
 `ResetRuntime()`. Edit-mode coverage: `Assets/_Scripts/Tests/EditMode/TournamentDataSOTests.cs`.
 
 ## 6. File index
