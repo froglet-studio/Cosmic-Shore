@@ -91,6 +91,7 @@ namespace CosmicShore.Core
         JoustBuffMass = 32,
         JoustBuffSpace = 33,
         JoustBuffTime = 34,
+        TrackImpact = 35,
     }
 
     [DefaultExecutionOrder(-1)]
@@ -261,6 +262,10 @@ namespace CosmicShore.Core
 
         [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffTime — local ally was overtaken (jousted) by a teammate's skimmer and buffed; Time representative.")]
         EventReference joustBuffTimeEvent;
+
+        [Header("Track Impact Event (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.TrackImpact — a vessel ran into the HexRace track (an indestructible, environment-owned prism) rather than a destructible player trail. Spatialized at the impact position.")]
+        EventReference trackImpactEvent;
 
         [Header("Gameplay SFX Tuning")]
         [SerializeField, Range(0f, 1f), Tooltip(
@@ -732,6 +737,7 @@ namespace CosmicShore.Core
                 {GameplaySFXCategory.JoustBuffMass, joustBuffMassEvent},
                 {GameplaySFXCategory.JoustBuffSpace, joustBuffSpaceEvent},
                 {GameplaySFXCategory.JoustBuffTime, joustBuffTimeEvent},
+                {GameplaySFXCategory.TrackImpact, trackImpactEvent},
             };
         }
     }
