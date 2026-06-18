@@ -10,16 +10,17 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// <b>Tournament Data Card</b> — one round in the Maelstrom scroll. Shows the round header (mode
-    /// name + winning domain) and instantiates one <b>Player Data Card</b> (<see cref="PlayerScoreCard"/>)
-    /// per player who finished that round, tinted to each player's domain.
+    /// name + winning domain) and instantiates one <b>Player Data Card</b> (<see cref="TournamentPlayerCard"/>)
+    /// per player who finished that round, tinted to each player's domain, with their Round Score
+    /// (that round's result) and Total Score (their domain's cumulative tournament points, as-of that round).
     ///
     /// Two setup paths:
-    ///   • <see cref="Setup"/> — a completed round (mode + winning domain + per-player scores).
-    ///   • <see cref="SetupPreview"/> — the round-0 lobby preview (the upcoming roster, no scores, no
+    ///   • <see cref="Setup"/> — a completed round (mode + winning domain + per-player round/total scores).
+    ///   • <see cref="SetupPreview"/> — the round-0 lobby preview (the upcoming roster, no round score, no
     ///     winner) so the first intro isn't empty.
     ///
-    /// Pure view: the caller passes domain→colour and snapshot→avatar resolvers so the card stays
-    /// decoupled from the theme / profile systems.
+    /// Pure view: the caller passes domain→colour, snapshot→avatar, and domain→total resolvers so the card
+    /// stays decoupled from the theme / profile / standings systems.
     /// </summary>
     public class TournamentRoundCard : MonoBehaviour
     {
@@ -38,26 +39,28 @@ namespace CosmicShore.UI
         [SerializeField] GameObject currentRoundHighlight;
 
         [Header("Player Data Cards")]
-        [SerializeField] PlayerScoreCard playerCardPrefab;
+        [SerializeField] TournamentPlayerCard playerCardPrefab;
         [SerializeField] Transform playerCardContainer;
 
-        readonly List<PlayerScoreCard> _spawned = new();
+        readonly List<TournamentPlayerCard> _spawned = new();
 
         public void Setup(TournamentRoundRecord record, Func<Domains, Color> colorOf,
-                          Func<TournamentPlayerSnapshot, Sprite> avatarOf, bool isCurrent = false)
+                          Func<TournamentPlayerSnapshot, Sprite> avatarOf, Func<Domains, int> totalOf,
+                          bool isCurrent = false)
         {
             if (record == null) return;
             SetHeader(record.RoundNumber, record.ModeDisplayName, record.WinningDomain, colorOf, showWinner: true);
             if (currentRoundHighlight) currentRoundHighlight.SetActive(isCurrent);
-            BuildPlayers(record.Players, colorOf, avatarOf, showScores: true);
+            BuildPlayers(record.Players, colorOf, avatarOf, totalOf, showRoundScore: true);
         }
 
         public void SetupPreview(int roundNumber, IReadOnlyList<TournamentPlayerSnapshot> roster,
-                                 Func<Domains, Color> colorOf, Func<TournamentPlayerSnapshot, Sprite> avatarOf)
+                                 Func<Domains, Color> colorOf, Func<TournamentPlayerSnapshot, Sprite> avatarOf,
+                                 Func<Domains, int> totalOf)
         {
             SetHeader(roundNumber, modeName: null, winner: Domains.Blue, colorOf, showWinner: false);
             if (currentRoundHighlight) currentRoundHighlight.SetActive(true);
-            BuildPlayers(roster, colorOf, avatarOf, showScores: false);
+            BuildPlayers(roster, colorOf, avatarOf, totalOf, showRoundScore: false);
         }
 
         void SetHeader(int roundNumber, string modeName, Domains winner, Func<Domains, Color> colorOf, bool showWinner)
@@ -79,7 +82,7 @@ namespace CosmicShore.UI
         }
 
         void BuildPlayers(IReadOnlyList<TournamentPlayerSnapshot> players, Func<Domains, Color> colorOf,
-                          Func<TournamentPlayerSnapshot, Sprite> avatarOf, bool showScores)
+                          Func<TournamentPlayerSnapshot, Sprite> avatarOf, Func<Domains, int> totalOf, bool showRoundScore)
         {
             Clear();
             if (players == null || !playerCardPrefab || !playerCardContainer) return;
@@ -88,9 +91,12 @@ namespace CosmicShore.UI
             {
                 var s = players[i];
                 var card = Instantiate(playerCardPrefab, playerCardContainer);
-                string score = showScores ? (s.ScoreText ?? string.Empty) : string.Empty;
-                card.Setup(s.Name, score, colorOf != null ? colorOf(s.Domain) : Color.gray, i);
-                if (avatarOf != null) card.SetAvatar(avatarOf(s));
+                string round = showRoundScore ? (s.ScoreText ?? string.Empty) : string.Empty;
+                string total = totalOf != null ? totalOf(s.Domain).ToString() : string.Empty;
+                card.Setup(s.Name,
+                           avatarOf != null ? avatarOf(s) : null,
+                           colorOf != null ? colorOf(s.Domain) : Color.gray,
+                           round, total);
                 _spawned.Add(card);
             }
         }

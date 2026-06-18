@@ -92,22 +92,25 @@ deadline. Public: `SecondsRemaining`, `LocalReady`, `ReadyCount`, `TotalPlayers`
 `TournamentSceneView` drives three layouts by phase: **active** (lobby + hub), **summary**, **rank**.
 The active/summary scrolls hold **Tournament Data Cards**, each nesting its round's **Player Data Cards**.
 
-### Two prefabs (+ one reused)
+### Two prefabs (+ one for rank rows)
 - **Tournament Data Card** = `TournamentRoundCard` — round header + its own player-card container.
   Fields: `roundNameText` (mode), `roundNumberText` (opt), `winningDomainText`, `winnerColorTargets[]`,
-  `winningDomainRoot` (hidden in preview), `currentRoundHighlight`, `playerCardPrefab`, `playerCardContainer`.
-  `Setup(record,…)` for a completed round; `SetupPreview(roundNumber, roster,…)` for the round-0 lobby
-  (roster, no scores/winner).
-- **Player Data Card** = reuse `PlayerScoreCard` (avatar + name + per-round score + domain tint).
+  `winningDomainRoot` (hidden in preview), `currentRoundHighlight`, `playerCardPrefab`
+  (`TournamentPlayerCard`), `playerCardContainer`. `Setup(record,…)` for a completed round;
+  `SetupPreview(roundNumber, roster,…)` for the round-0 lobby (roster, no round score/winner).
+- **Player Data Card** = `TournamentPlayerCard` — fields: `avatarImage`, `nameText`, `roundScoreText`,
+  `roundScoreRoot` (opt, hidden in preview), `totalScoreText`, `totalScoreRoot` (opt), `colorTargets[]`
+  (domain tint). **Round Score** = the player's result that round (`snapshot.ScoreText`); **Total Score**
+  = the player's DOMAIN cumulative tournament points, as-of that round (climbs across cards).
 - `TournamentDomainScoreView` — `placeText, domainNameText, pointsText, colorTargets[], youBadge`.
-  Used for the **summary rank rows** (and available for an optional standings strip).
+  Used for the **summary rank rows**.
 
 ### `TournamentSceneView` serialized fields
 | Group | Fields |
 |---|---|
 | Data | `gameData`, `tournamentData`, `lobbyNetwork` |
 | Shared | `titleText` |
-| Active — top bar | `activeRoot`, `gameModesText` (pool), `roundCounterText`, `leadingDomainText`+`leadingDomainColorTargets[]`, `standingsText` (opt cumulative tally) |
+| Active — top bar | `activeRoot`, `gameModesText` (pool), `roundCounterText` ("ROUND N"), `raceRuleText` ("First domain to {WinTarget} points wins"), `leadingDomainText`+`leadingDomainColorTargets[]`, `standingsText` (opt — cumulative now lives in the player cards) |
 | Active — scroll | `roundCardPrefab` (Tournament Data Card) + `historyContent`, `historyScrollRect` |
 | Active — START | `readyButton`+`readyButtonLabel`, `readyTallyText` (opt) |
 | Summary | `summaryRoot`, `winnerBannerText`, `winnerBannerColorTargets[]`, `summaryHistoryContent`, `nextButton` |
@@ -153,9 +156,9 @@ The active/summary scrolls hold **Tournament Data Cards**, each nesting its roun
 
 ## 9. Phase 7 — UI wiring checklist (Maelstrom.unity)
 
-1. **Prefabs:** build the **Tournament Data Card** (`TournamentRoundCard`, with its `playerCardPrefab` +
-   `playerCardContainer`) and reuse `PlayerScoreCard.prefab` as the **Player Data Card**; build a
-   `TournamentDomainScoreView` prefab for the summary rank rows.
+1. **Prefabs:** build the **Player Data Card** (`TournamentPlayerCard` — round + total scores), the
+   **Tournament Data Card** (`TournamentRoundCard`, with its `playerCardPrefab` = the Player Data Card +
+   `playerCardContainer`), and a `TournamentDomainScoreView` prefab for the summary rank rows.
 2. **Lobby network:** add a GameObject with **`NetworkObject` + `TournamentLobbyNetwork`** (autoStart 30,
    allReady 5).
 3. **Scene view:** build `activeRoot` / `summaryRoot` / `rankRoot` and wire every field in §6 on the

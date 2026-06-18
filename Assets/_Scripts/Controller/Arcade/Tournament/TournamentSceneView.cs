@@ -50,6 +50,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] TMP_Text gameModesText;
         [Tooltip("\"ROUND N\" — the round about to be played (length is variable, so avoid \"/ 6\").")]
         [SerializeField] TMP_Text roundCounterText;
+        [Tooltip("Subtitle, e.g. \"First domain to 6 points wins\" — the X is filled from WinTarget.")]
+        [SerializeField] TMP_Text raceRuleText;
         [Tooltip("The leading domain's name (tinted via leadingDomainColorTargets).")]
         [SerializeField] TMP_Text leadingDomainText;
         [SerializeField] Graphic[] leadingDomainColorTargets;
@@ -157,6 +159,8 @@ namespace CosmicShore.Gameplay
 
             int gamesPlayed = tournamentData != null ? tournamentData.GamesPlayed : 0;
             if (roundCounterText) roundCounterText.text = $"ROUND {gamesPlayed + 1}";
+            if (raceRuleText && tournamentData != null)
+                raceRuleText.text = $"First domain to {tournamentData.WinTarget} points wins";
 
             RenderLeadingDomain();
             if (standingsText) standingsText.text = StandingsTally();
@@ -180,8 +184,10 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // One Tournament Data Card per completed round (with per-player scores), newest last + highlighted.
-        // Before any round is played, a single preview card shows the upcoming roster (no scores/winner).
+        // One Tournament Data Card per completed round (with per-player Round + Total scores), newest last
+        // + highlighted. Total Score is the player's DOMAIN cumulative tournament points AS-OF that round
+        // (so it climbs across cards). Before any round is played, a single preview card shows the
+        // upcoming roster (no round score, no winner, totals at 0).
         void PopulateRoundCards(Transform content, bool includePreviewWhenEmpty)
         {
             if (!roundCardPrefab || !content || tournamentData == null) return;
@@ -193,15 +199,29 @@ namespace CosmicShore.Gameplay
                 if (includePreviewWhenEmpty)
                 {
                     var preview = Instantiate(roundCardPrefab, content);
-                    preview.SetupPreview(1, OrderRoster(BuildActiveRoster()), DomainColor, ResolveAvatar);
+                    preview.SetupPreview(1, OrderRoster(BuildActiveRoster()), DomainColor, ResolveAvatar, _ => 0);
                 }
                 return;
             }
 
+            // Running per-domain points, accumulated round by round, so each card shows the standings
+            // as they stood after that round (matches Standings.TotalPoints at the final round).
+            var running = new Dictionary<Domains, int>();
             for (int i = 0; i < history.Count; i++)
             {
+                var rec = history[i];
+                for (int place = 0; place < rec.DomainOrder.Count; place++)
+                {
+                    var d = rec.DomainOrder[place];
+                    running.TryGetValue(d, out int cur);
+                    running[d] = cur + tournamentData.PointsForPlace(place + 1);
+                }
+
+                var asOf = new Dictionary<Domains, int>(running);   // snapshot for the card's closure
                 var card = Instantiate(roundCardPrefab, content);
-                card.Setup(history[i], DomainColor, ResolveAvatar, isCurrent: i == history.Count - 1);
+                card.Setup(rec, DomainColor, ResolveAvatar,
+                           d => asOf.TryGetValue(d, out int v) ? v : 0,
+                           isCurrent: i == history.Count - 1);
             }
         }
 
