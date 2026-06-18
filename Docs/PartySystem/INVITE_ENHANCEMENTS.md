@@ -12,9 +12,9 @@ Status legend: 🔴 not started · 🟡 in progress · 🟢 done · ⚪ deferred
 
 | # | Task | Layer | Status |
 |---|------|-------|--------|
-| 1 | Disable inviting a player already in my party | Party UI | 🔴 |
-| 2 | Online-panel refresh: panel-gated cadence (faster while open, slower — not stopped — while closed) | Presence | 🔴 |
-| 3 | Party-merge on accept: a **host** who accepts brings its whole party to the new host; a **member** moves alone | Party (Netcode + presence) | 🔴 |
+| 1 | Disable inviting a player already in my party — **decided: disable + relabel** ("IN YOUR PARTY") | Party UI | 🔴 ready to plan |
+| 2 | Make pending-invite / in-lobby status **responsive & live** (foreground/background poll, jitter, optimistic UI; push as the deep option) | Presence | 🔴 ready to plan |
+| 3 | Party-merge on accept (a **host** who accepts brings its whole party; a **member** moves alone) | Party (Netcode + presence) | ⛔ discuss-only |
 
 **Suggested order: 1 → 2 → 3.** Task 1 is a small, self-contained UI guard.
 Task 2 makes the online panel's lobby/status rows live and accurate, which
@@ -142,12 +142,15 @@ Re-render is already wired: `HandlePartyMemberChanged` calls
 `PopulateOnlineSection()` on every party-member add/remove, so the guard
 re-evaluates the moment B joins/leaves.
 
-**Open questions.**
-- Show the in-party member as a **disabled** row, or **hide** it from the
-  Online list entirely (since they're already shown in `ArcadeLobbyList`
-  slots)? The user asked to *disable*, so default to disabled + clear label.
-- Add a dedicated `Status.InYourParty` (clean label/colour) or just reuse the
-  disabled tint with the existing `InLobby` label?
+**Decision (locked): Disable + Relabel.** Keep the in-party member visible in
+the Online list but render the row **non-invitable** (disabled) **and
+relabel** it so the state is explicit — e.g. `IN YOUR PARTY` — instead of the
+misleading `IN LOBBY N/M`. Do NOT hide the row. Implementation: add a
+dedicated `OnlineInfoEntry.Status.InYourParty` value (own label text + colour)
+so the label/colour are clean and self-documenting rather than overloading the
+`InLobby`/`disabledTint` combo; `_invitable` stays false for it. The party
+member is still shown in `ArcadeLobbyList`'s slots as well — that's fine and
+intended (the Online row now reads as a status indicator, not an action).
 
 **Acceptance.** With A+B partied: in A's FriendsListPanel, B's row is visibly
 non-clickable (disabled tint, optional "in your party" label); clicking does
@@ -156,74 +159,104 @@ panel for A.
 
 ---
 
-## Task 2 — Online-panel refresh: panel-gated cadence 🔴
+## Task 2 — Make pending-invite / in-lobby status responsive & live 🔴
 
-**Goal (user's intent).** Don't poll fast forever. Refresh fast while the
-relevant panel (FriendsListPanel / ArcadeLobbyList) is open so the online +
-lobby-status rows are live; slow the cadence when no such panel is open.
+**The question (user's framing).** "What can we do to make the status of
+pending invite / in lobby more responsive and live?"
 
-**⚠️ Critical caveat — "stop when closed" is unsafe as-is.** Invite
-*detection*, party-member sync, the acceptance handshake, and the
-joined-member scan **all run inside the same `RefreshAsync`** (see "The
-refresh loop" above). If we stop the loop when the panel is closed:
-- a recipient with the panel closed would **never detect an incoming invite**
-  (the `OnInviteReceived` raise that auto-opens the panel happens *inside*
-  the loop) — invites break;
-- the host would not notice members joining/leaving;
-- the accept handshake would stall.
+**Why there's lag today.** Everything is **pure poll**. The presence lobby is
+read by an explicit GET (`PresenceLobbyService.RefreshAsync` → `lobby.RefreshAsync()`)
+on the `HostConnectionService` tick — base **1.5s**, **0.75s** while boosted
+(15s window after invite events). There is **no event subscription** on the
+presence lobby, so any remote status change (a player goes "IN LOBBY 2/4", an
+invite is accepted, a member leaves) is only seen on *your next GET tick*.
+Total visible latency = the other client's write-propagation + your poll
+interval. So "more live" = some mix of (a) poll faster when it matters,
+(b) stop the poll from being *delayed* by backoff, (c) update locally without
+waiting for a round-trip, and ultimately (d) switch from poll to push.
 
-So the loop must **keep running when closed, just slower** — not stop.
+### Levers (cheap → deep). Recommend shipping L1-L4 now; evaluate L5 (push) as the true-live follow-up.
 
-**Proposed approach.** Make the base cadence a function of "is a party/online
-panel open":
-- **Panel open →** fast cadence (e.g. ~1.0s, at the rate-limit floor) for
-  live status. Reuse the existing boost machinery or add a sticky
-  `SetForeground(bool)` that holds the fast interval while open (unlike
-  `Boost()`'s fixed 15s window).
-- **Panel closed →** slow cadence (e.g. 3-5s) — still polling so invites +
-  party sync work, just cheaper. This is the lever that cuts idle SDK churn
-  (B1/B6) and Relay/lobby cost.
+**L1 — Optimistic local UI (mostly already in; extend).** The sender's row
+already flips to `PENDING REQUEST` instantly on click
+(`OnlineInfoEntry.SetInvitePending`), and an accepted incoming invite row is
+removed optimistically (`FriendsListPanel.OnAccept…`). Extend the same idea to
+every *local* state change (e.g. when *I* join/leave, update my own rows
+immediately from the SOAP event rather than waiting for the next GET). Zero
+network cost, instant feel for the acting user.
 
-Wiring: `FriendsListPanel` / `ArcadeLobbyList` already have `OnEnable` /
-`OnDisable` and already call `ForceRefreshNow()` on open — add a
-`HostConnectionService.SetOnlinePanelOpen(bool)` (single-writer-safe; the UI
-calls it, HCS owns the scheduler) toggled from those same hooks. Guard for
-two panels open at once (refcount, not a bool).
+**L2 — Boost on the events that matter (already exists; broaden).**
+`LobbyRefreshScheduler.Boost()` drops the interval to 0.75s for 15s after
+invite send/receive/accept-signal. Confirm every status-relevant transition
+boosts (invite sent, invite received, member joined, member left, kick) so
+the *other* side's change is picked up within ~0.75s during the active window.
 
-**Folds in existing TODOs.**
-- `../PresenceSystem/TODOS.md` **TODO-P7** (gate the online diff on
-  visibility) — the diff itself is cheap, but the cadence change covers its
-  intent.
-- `../PresenceSystem/TODOS.md` **TODO-P3** (refresh jitter ±10%) — add when
-  changing cadence so multiple clients don't cluster reads on the same tick.
+**L3 — Panel-open "foreground" cadence (the main near-term win).** Hold a fast
+interval (~1.0s, at the rate-limit floor) **while `FriendsListPanel` /
+`ArcadeLobbyList` is open**, and fall back to a slower interval (~3-5s) when
+no such panel is open. Add a sticky `HostConnectionService.SetPanelForeground(bool)`
+(refcounted for two panels open at once), toggled from the existing
+`OnEnable`/`OnDisable` hooks that already call `ForceRefreshNow()`. UI calls
+it; HCS owns the scheduler (single-writer-safe).
 
-**"Decrease the refresh delay."** Base is already 1.5s, boosted 0.75s. The
-UGS read cap is ~1/s; the *effective* read rate is higher than the tick
-(refresh does a lobby read and often a session read, plus writes on change),
-which is the source of B1/B6 churn. So "faster" is only safe up to the floor,
-and only worth doing while a panel is open. Quantify against 429s in MPPM
-before committing a number.
+> **⚠️ Do NOT stop the poll when closed.** Invite *detection*, party-member
+> sync, the accept handshake, and the joined-member scan all run **inside the
+> same `RefreshAsync`**. If the loop stops while panels are closed, a recipient
+> never detects an incoming invite (the `OnInviteReceived` raise that
+> auto-opens the panel is *inside* the loop), the host misses joins/leaves,
+> and the handshake stalls. Closed = **slower**, never **off**.
 
-**Long-term alternative (out of scope here, noted).** The ROADMAP's
-**push-based invites/presence** item (`../MultiplayerArchitecture/ROADMAP.md`)
-would replace the invite/party-sync poll with lobby subscription events —
-*that* would let us genuinely stop polling when closed. Until then, keep a
-slow always-on poll.
+**L4 — Don't let the poll get *delayed* (jitter + coalesce).** Rate-limit
+backoff and stale-index retries (B1/B6) can stretch the effective interval far
+beyond the nominal one — that *is* a responsiveness bug. Add per-client
+refresh **jitter ±10%** (`../PresenceSystem/TODOS.md` **P3**) so clients don't
+cluster reads on the same wall-clock tick and trip 429s, and coalesce startup
+writes (**P2**). Net: fewer backoffs → the nominal cadence is actually
+honoured. (`../PresenceSystem/TODOS.md` **P7** — gate the online-list diff on
+visibility — folds in here too, though the diff itself is cheap.)
+
+**L5 — Switch presence to PUSH (the real "live" answer; bigger, riskier).**
+UGS Lobby supports `SubscribeToLobbyEventsAsync` (WebSocket `LobbyChanged`
+callbacks). The presence lobby does **not** subscribe today — it only polls.
+Subscribing would deliver remote changes in *real time* (raise our SOAP
+updates on the pushed delta) and let us cut the poll to a slow safety net.
+This is the ROADMAP **push-based invites/presence** item.
+**Risk:** this is the *same* SDK delta path that B1/B6 stale-index churn comes
+from (`LobbyPatcher.ApplyPatchesToLobby` fires on those very callbacks), so
+adopting push may amplify B1/B6. Gate behind `BenignLobbyLogFilter`, prove it
+in MPPM, and treat it as its own project — not part of the L1-L4 pass.
+
+**Floor constraint.** UGS lobby reads are rate-limited to ~1/s per client, and
+the *effective* read rate is already above the tick (a refresh does a lobby
+read, often a session read, plus writes on change — the B1/B6 source). So the
+fast/foreground interval can't go below ~1s without risking 429s. "Decrease
+the delay" is bounded by this floor; the real lever for *closed* idle is L3,
+and for *true* liveness is L5.
 
 **Open questions.**
-- Which panels count as "open" for the fast cadence — FriendsListPanel only,
-  or also ArcadeLobbyList (the party slots / "N Players Online")?
-- Closed-state interval value (invite latency vs cost): 3s? 5s?
-- Open-state interval value vs the 429 floor: 1.0s? keep 0.75s?
+- Which panels count as "foreground" — `FriendsListPanel` only, or also
+  `ArcadeLobbyList`?
+- Foreground vs background interval values: ~1.0s open / ~3-5s closed?
+- Do we pursue L5 (push) now, or only after B1/B6 are hardened?
 
-**Acceptance.** With a panel open, a remote player's status change ("ONLINE"
-→ "IN LOBBY 2/4") and a newly-online player appear within ~1 refresh. With
-all panels closed, an incoming invite still pops within the slow interval
-(no missed invites), and idle SDK read volume drops measurably.
+**Acceptance.** With a panel open: a remote's status change ("ONLINE" → "IN
+LOBBY 2/4"), a newly-online player, and a sender's `PENDING REQUEST` clearing
+on accept all appear within ~1 refresh (≈1s). With all panels closed: an
+incoming invite still pops within the slow interval (no missed invites) and
+idle SDK read volume drops measurably. No increase in B1/B6 429/stale-index
+log frequency.
 
 ---
 
 ## Task 3 — Party-merge on accept (voluntary host migration) 🔴
+
+> **⛔ DISCUSS-ONLY — do NOT implement yet.** Per owner direction, this needs
+> detailed, cautious design discussion before any code. This section is the
+> problem statement + an options sketch to argue from, not an agreed plan. It
+> touches the locked party core, voluntary host migration, concurrent
+> multi-join (the B5 failure surface), and Netcode session teardown — all of
+> which we will work through together before a single commit. Everything below
+> is provisional.
 
 **Goal.** Consider a party: host **A** + member **B**. Player **C** sees A
 and B in its online panel as "IN LOBBY 2/4".
