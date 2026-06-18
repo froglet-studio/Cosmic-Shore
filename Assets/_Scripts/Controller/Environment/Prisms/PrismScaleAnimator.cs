@@ -25,6 +25,12 @@ namespace CosmicShore.Gameplay
         public Vector3 AuthoredTargetScale => authoredTargetScale;
         public float GrowthRate { get; set; } = 0.01f;
 
+        /// <summary>
+        /// The Prism this animator belongs to (cached in Awake). PrismScaleManager's
+        /// batched apply uses it to refresh the prism's volume cache on growth frames.
+        /// </summary>
+        public Prism OwnerPrism => prism;
+
         private Prism prism;
         private MeshRenderer meshRenderer;
         private bool isRegistered;

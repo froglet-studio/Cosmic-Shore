@@ -90,6 +90,10 @@ namespace CosmicShore.Gameplay
                 else
                 {
                     block.transform.localScale = data.currentScale;
+                    // Refresh the volume cache here (O(growing)/frame) so the
+                    // cell's per-domain aggregation never has to read lossyScale for
+                    // the whole population (O(all)/recompute — the old ~23ms hotspot).
+                    block.OwnerPrism?.RefreshVolumeCache();
                 }
             }
 
@@ -101,6 +105,8 @@ namespace CosmicShore.Gameplay
 
                 // Hit target exactly
                 block.transform.localScale = targetScale;
+                // Final settled volume — last refresh until this prism scales again.
+                block.OwnerPrism?.RefreshVolumeCache();
 
                 // Stop scaling (may call back into manager depending on your base class)
                 block.IsScaling = false;
