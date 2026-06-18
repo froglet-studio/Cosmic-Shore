@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using DG.Tweening;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
@@ -98,6 +99,7 @@ namespace CosmicShore.Gameplay
 
         bool _active;               // active (lobby/hub) layout is showing — drives the Update countdown
         bool _summaryActionTaken;   // anti-spam guard for the host-only Play Again / Main Menu
+        int _lastShownSecs = -1;    // last countdown second rendered (for the per-tick pulse)
 
         void Awake()
         {
@@ -134,6 +136,15 @@ namespace CosmicShore.Gameplay
             {
                 string state = lobbyNetwork.LocalReady ? "READY ✓" : "TAP TO READY";
                 readyButtonLabel.text = $"{state}   {secs}";
+
+                // AAA polish: punch the label each time the second ticks down.
+                if (secs != _lastShownSecs)
+                {
+                    _lastShownSecs = secs;
+                    readyButtonLabel.transform.DOKill(true);
+                    readyButtonLabel.transform.localScale = Vector3.one;
+                    readyButtonLabel.transform.DOPunchScale(Vector3.one * 0.12f, 0.25f, 6, 0.6f).SetUpdate(true);
+                }
             }
             if (readyTallyText)
                 readyTallyText.text = $"{lobbyNetwork.ReadyCount}/{lobbyNetwork.TotalPlayers} ready";
@@ -210,10 +221,15 @@ namespace CosmicShore.Gameplay
 
         void AutoScrollToLatest()
         {
-            // Snap the scroll to the bottom (latest round) so the most recent card is in view on entry.
+            // AAA polish: smoothly scroll to the latest (bottom) round card on entry, so returning to
+            // the hub after round N lands on the round you just played. Assumes newest-at-bottom append
+            // order (verticalNormalizedPosition 0 = bottom). Force a layout pass first so the content
+            // size is valid before tweening.
             if (!historyScrollRect) return;
             Canvas.ForceUpdateCanvases();
-            historyScrollRect.verticalNormalizedPosition = 0f;
+            historyScrollRect.verticalNormalizedPosition = 1f;
+            historyScrollRect.DOKill();
+            historyScrollRect.DOVerticalNormalizedPos(0f, 0.5f).SetEase(Ease.OutCubic).SetUpdate(true);
         }
 
         void ConfigureReadyButton()

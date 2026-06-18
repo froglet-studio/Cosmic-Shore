@@ -80,6 +80,29 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void FormatConnecting_ShowsLeadingDomain()
+        {
+            var s = TournamentStandingsFormatter.FormatConnecting(_data, Domains.Blue);
+
+            StringAssert.Contains("JADE", s, "Leading domain (Jade, 2 pts) is named.");
+            StringAssert.Contains("leading", s);
+            Assert.AreEqual(0, CountTags(s), "Blue sentinel tags nothing.");
+        }
+
+        [Test]
+        public void FormatConnecting_TagsLocalLead_AndShowsUpNext()
+        {
+            _data.NextGameName = "Skim Race";
+            _data.NextGameIntensity = 3;
+
+            var s = TournamentStandingsFormatter.FormatConnecting(_data, Domains.Jade);
+
+            StringAssert.Contains(YouTag, s, "Local domain (Jade) tagged when it leads.");
+            StringAssert.Contains("Skim Race", s, "Up-next mode is shown.");
+            StringAssert.Contains("Intensity 3", s, "Up-next intensity is shown.");
+        }
+
+        [Test]
         public void NoLocalDomain_TagsNothing()
         {
             // Default arg (Domains.Blue, the no-team sentinel) and an absent domain both tag nothing.

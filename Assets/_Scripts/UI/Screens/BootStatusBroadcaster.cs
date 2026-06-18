@@ -175,20 +175,24 @@ namespace CosmicShore.UI
             // every instance — host and clients).
             _inLaunchTransition = true;
 
-            // Shuffle (Tournament meta): between games, show the running domain standings on the loading
-            // splash instead of clean branding. Only mid-run — a game has been played and the shuffle
-            // isn't decided yet; the first launch and the launch into the results summary keep the clean
-            // Hide. Reduced from local standings on every peer (network-free), so host + clients match.
-            if (tournamentData != null && tournamentData.IsActive
-                && !tournamentData.IsShuffleComplete && tournamentData.GamesPlayed > 0)
+            // Maelstrom (Tournament meta): when a GAME is loading (not the hub scene itself), show a
+            // LIGHTWEIGHT reveal on the loading splash — the leading domain + the mode/intensity that's
+            // coming. The DETAILED standings now live in the Maelstrom hub scene, so the splash stays
+            // light; when the hub is what's loading, keep the splash clean. Reduced from local standings
+            // on every peer (network-free), so host + clients match.
+            if (gameData != null && gameData.IsTournamentMode
+                && tournamentData != null && tournamentData.IsActive)
             {
-                // Tag this client's own team row "(You)" — LocalPlayer is the network player owned by this
-                // client; Blue (no-team sentinel) tags nothing if it isn't resolved yet on this peer.
-                Domains localDomain = gameData != null && gameData.LocalPlayer != null
-                    ? gameData.LocalPlayer.Domain : Domains.Blue;
-                requestEvent?.Raise(new BootStatusRequest(
-                    BootStatusMode.Status, TournamentStandingsFormatter.FormatRunning(tournamentData, localDomain)));
-                return;
+                bool loadingHub = tournamentData.LobbySceneName == gameData.SceneName;
+                if (!loadingHub)
+                {
+                    // Tag this client's own team row "(You)". Blue (no-team sentinel) tags nothing.
+                    Domains localDomain = gameData.LocalPlayer != null
+                        ? gameData.LocalPlayer.Domain : Domains.Blue;
+                    requestEvent?.Raise(new BootStatusRequest(
+                        BootStatusMode.Status, TournamentStandingsFormatter.FormatConnecting(tournamentData, localDomain)));
+                    return;
+                }
             }
 
             // Otherwise clear whatever status was last shown — in particular a stale Retry left over from

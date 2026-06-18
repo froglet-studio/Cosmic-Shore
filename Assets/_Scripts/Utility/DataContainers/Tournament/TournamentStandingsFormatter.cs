@@ -41,6 +41,28 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// Lightweight between-round reveal for the loading splash: just the leading domain plus the
+        /// "up next" mode + intensity (host-only — clients learn the mode from the synced game config
+        /// once the scene loads). The DETAILED standings now live in the Maelstrom hub scene, so the
+        /// splash stays light. The local player's domain is tagged "(You)".
+        /// </summary>
+        public static string FormatConnecting(TournamentDataSO data, Domains localDomain = Domains.Blue)
+        {
+            if (data == null) return string.Empty;
+
+            var sb = new StringBuilder();
+
+            var standings = data.BuildSortedStandings();
+            if (standings.Count > 0)
+                sb.AppendLine($"{standings[0].Domain.ToString().ToUpperInvariant()}{YouTag(standings[0].Domain, localDomain)} leading");
+
+            if (!string.IsNullOrEmpty(data.NextGameName))
+                sb.Append($"{data.NextGameName} · Intensity {data.NextGameIntensity}");
+
+            return sb.ToString().TrimEnd();
+        }
+
+        /// <summary>
         /// Full end-of-shuffle results: final per-domain standings (the local player's domain tagged
         /// "(You)"), then one block per game actually played listing the domains by their placement that
         /// game (the lineup is random + variable length and the played-mode sequence isn't tracked, so
