@@ -215,7 +215,11 @@ namespace CosmicShore.Gameplay
                 // RemoveBlock) are collected here instead of leaking forever.
                 if (!prism) { s_deadMassScratch.Add(prism); continue; }
 
-                float v = prism.CurrentVolume;
+                // Cached world-volume (Prism.CachedVolume) — identical to CurrentVolume
+                // but refreshed only when the prism's scale changes, so this whole-
+                // population recompute no longer does a transform.lossyScale parent-walk
+                // per prism (the ~23ms/recompute hotspot at high prism counts).
+                float v = prism.CachedVolume;
                 if (v <= 0f) continue; // destroyed / not yet grown
 
                 var domain = prism.Domain; // LIVE domain — steals re-attribute next tick

@@ -319,6 +319,7 @@ namespace CosmicShore.Gameplay
             destroyed = false;
             devastated = false;
             _lodCulled = false; // pool reuse: Initialize owns the collider again
+            CachedVolume = 0f;  // stale from the previous life; reseeded at CreateBlock
             IsSmallest = false;
             IsLargest = false;
             
@@ -388,6 +389,11 @@ namespace CosmicShore.Gameplay
             // cell's density grids. The cell binding is what makes trail mass
             // visible to fauna anti-domain targeting and the cell's phase system;
             // fauna bodies are excluded from that view inside the index.
+            // Seed the volume cache before the cell starts aggregating this prism
+            // (it enters massTracked via the Register → BindCell path below), so the
+            // first volume recompute reads a real value, not the default 0.
+            RefreshVolumeCache();
+
             var spatialIndex = PrismSpatialIndex.EnsureInstance();
             if (spatialIndex != null && spatialIndex.IsAvailable)
                 SpatialIndexId = spatialIndex.Register(this);
@@ -455,8 +461,32 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // Growth Methods
-        public void Grow(float amount = 1) => scaleAnimator.Grow(amount);
+        /// <summary>
+        /// Cached copy of <see cref="CurrentVolume"/>, refreshed ONLY when this prism's
+        /// scale actually changes (PrismScaleManager during growth + on settle, plus
+        /// create / restore). Cell.EnsureVolumeFresh reads THIS instead of CurrentVolume
+        /// so the per-domain volume aggregation over the whole prism population stops
+        /// doing a transform.lossyScale parent-walk per prism per recompute — the
+        /// dominant main-thread cost at high prism counts (a single recompute of ~9k
+        /// prisms was ~23 ms). Value is identical to CurrentVolume for settled prisms
+        /// (which never change scale) and lags by at most one frame for the handful
+        /// actively growing, so "volume is the spine" semantics are preserved — only the
+        /// compute cost moves from O(all prisms)/recompute to O(growing)/frame.
+        /// </summary>
+        internal float CachedVolume { get; private set; }
+
+        /// <summary>
+        /// Recompute <see cref="CachedVolume"/> from the live transform. Mirrors
+        /// <see cref="CurrentVolume"/> exactly. Cheap per call — the whole point is to
+        /// call it O(growing) times per frame instead of O(all prisms) per volume
+        /// recompute.
+        /// </summary>
+        internal void RefreshVolumeCache()
+        {
+            if (destroyed) { CachedVolume = 0f; return; }
+            float v = scaleAnimator ? scaleAnimator.GetCurrentVolume() : 0f;
+            CachedVolume = v > 0f ? v : Mathf.Max(prismProperties?.volume ?? 0f, 0f);
+        }
 
         // Collision Handling
         protected void OnTriggerEnter(Collider other)
@@ -491,6 +521,10 @@ namespace CosmicShore.Gameplay
 
             destroyed = true;
             devastated = devastate;
+
+            // Destroyed mass weighs nothing in the per-domain sums — drop it from the
+            // cache immediately (the cell may aggregate before the index unbinds it).
+            CachedVolume = 0f;
 
             // Mark destroyed in the spatial index: the AOE Burst job skips this
             // prism, its occupancy bucket frees so growth can fill the site, and
@@ -648,6 +682,9 @@ namespace CosmicShore.Gameplay
                 blockCollider.enabled = true;
                 SetRenderVisible(true);
                 destroyed = false;
+
+                // Restored mass weighs again — re-seed the cache (destroyed=false now).
+                RefreshVolumeCache();
 
                 // Same contract as the spawn window: the transition-based LOD
                 // sweep must classify this just-restored collider.
