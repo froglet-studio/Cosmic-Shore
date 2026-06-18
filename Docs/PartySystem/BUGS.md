@@ -723,10 +723,15 @@ load, so clients **never receive `OnClientDisconnect`** — this fix only fires 
 the host actually leaves/drops (Relay torn down). So there's no false "Host
 disconnected" on a normal host-led return.
 
-**Notice — interim.** Uses the existing bounce **toast** ("Host disconnected") for
-now: it's SOAP-driven and survives the scene reload, which a freshly-loaded popup
-would not. Once Task 0 (the SOAP confirm-popup, `INVITE_ENHANCEMENTS.md`) ships,
-upgrade the notice to a 1-button "OK" popup shown on the fresh solo menu.
+**Notice — interim.** Uses the existing bounce **toast** ("Host disconnected").
+Because `ToastService` is a **scene-bound** MonoBehaviour (subscribes to the
+channel in `OnEnable`, no `DontDestroyOnLoad`), a toast raised *before* the
+recovery's Menu_Main reload is silently dropped (the renderer is destroyed by
+the reload, and there is no `ToastService` at all in a game scene). So
+`BounceToSoloMenuAsync` was changed to recover **first**, then raise the toast on
+the fresh menu's live `ToastService`. Once Task 0 (the SOAP confirm-popup,
+`INVITE_ENHANCEMENTS.md`) ships, upgrade the notice to a 1-button "OK" popup
+(same post-recovery timing).
 
 **Recommendation (the "better thing").** Bounce-to-solo is the right call now —
 reliable, and it reuses proven machinery. True **host migration** (promote a
