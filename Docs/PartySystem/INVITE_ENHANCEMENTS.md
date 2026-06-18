@@ -163,15 +163,29 @@ heavy `ModalWindowManager` stack.
   `ScriptableEvent` fields); the presenter listens to a channel rather than
   exposing a new singleton.
 
+**Decided — invite shows in BOTH places, dedup on resolve.** An incoming invite
+surfaces as *both* the popup *and* a `FriendsListPanel` Requests row (popup =
+quick Accept/Decline, panel = full list / detail). When the invite is
+accepted/declined from **either** surface, **both** must clear — no leftover/
+stacked invite row for the same inviting host. This rides the existing
+`OnInviteResolved` SOAP event: the popup's accept/decline goes through
+`PartyInviteController.AcceptInviteAsync`/`DeclineInviteAsync` (which raise
+`OnInviteResolved`), and the popup adapter *also subscribes* to
+`OnInviteResolved` to dismiss itself — so resolving on the panel kills the
+popup and vice-versa. **Design note:** today `OnInviteResolved` is parameterless
+and `FriendsListPanel.HandleInviteResolved` clears *all* party-invite rows
+(fine while there's one pending invite). If we ever support multiple concurrent
+invites from different hosts, this needs a per-host resolved signal so accepting
+host A's invite doesn't wipe host B's row.
+
 **Open questions.**
 - Result delivery: a `PopupResult` **event channel keyed by `RequestId`** (fully
   SOAP — matches "through event channels") vs. callbacks carried in the request
   payload (simpler). Lean to the channel; confirm.
-- Does the invite popup **replace** the current `FriendsListPanel` auto-open, or
-  **coexist** (popup = quick Accept/Decline, panel = detail)?
-- **Queue vs stack** when multiple popups fire (`PopupManager` already
-  pools/offsets multiples — pick one-at-a-time queue or stacked).
-- **Modal** (block raycasts) vs non-modal.
+- **Modal vs non-modal** (block raycasts) and **queue vs stack** when multiple
+  popups fire — recommend per-request `Modal` flag (invites non-modal, confirms
+  modal) + a one-at-a-time queue (the panel is the see-everything list).
+  Pending sign-off.
 
 **Acceptance.** Raising a 2-label `PopupRequest` shows a 2-button popup; clicking
 either button raises the matching `PopupResult` on the channel; a 1-label
