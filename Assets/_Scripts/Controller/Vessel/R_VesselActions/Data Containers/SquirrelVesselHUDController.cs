@@ -109,6 +109,12 @@ namespace CosmicShore.UI
         {
             if (!view) return;
 
+            // Multiplayer: boostChanged is a shared global SOAP channel raised by EVERY
+            // vessel (notably the remote owner's per-frame DecayBoost). Ignore raises that
+            // didn't originate from our own vessel, else a remote vessel pins this HUD and
+            // the local owner's energy bar goes unresponsive.
+            if (payload.VesselStatus != null && payload.VesselStatus != _vesselStatus) return;
+
             float baseMult = boostBaseMultiplier ? boostBaseMultiplier.Value : 1f;
             float maxMult = payload.MaxMultiplier;
             if (maxMult <= 0f)
@@ -148,6 +154,8 @@ namespace CosmicShore.UI
         private void HandleJoustCollision(string playerName)
         {
             if (!view) return;
+            // Shared global event — only react to our own vessel's joust collisions.
+            if (playerName != _vesselStatus.PlayerName) return;
 
             _joustFlashTween?.Kill();
             view.UpdateDangerIcon(true);
