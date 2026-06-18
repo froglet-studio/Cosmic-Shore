@@ -11,7 +11,11 @@ namespace CosmicShore.Gameplay
         /// <summary>No tournament running.</summary>
         Idle = 0,
 
-        /// <summary>Tournament scene shown (intro / lineup), before the first game.</summary>
+        /// <summary>
+        /// Maelstrom scene shown as the intro lobby (before the first game) OR the between-round hub
+        /// (after a game, when the shuffle isn't decided) — both use the active layout with the
+        /// ready-up. The summary is its own phase (<see cref="Summary"/>).
+        /// </summary>
         Lobby = 1,
 
         /// <summary>A minigame in the lineup is loaded / being played.</summary>
@@ -37,7 +41,7 @@ namespace CosmicShore.Gameplay
         {
             [TournamentPhase.Idle]     = new HashSet<TournamentPhase> { TournamentPhase.Lobby },
             [TournamentPhase.Lobby]    = new HashSet<TournamentPhase> { TournamentPhase.InGame, TournamentPhase.Idle },
-            [TournamentPhase.InGame]   = new HashSet<TournamentPhase> { TournamentPhase.InGame, TournamentPhase.Complete, TournamentPhase.Idle },
+            [TournamentPhase.InGame]   = new HashSet<TournamentPhase> { TournamentPhase.InGame, TournamentPhase.Complete, TournamentPhase.Idle, TournamentPhase.Lobby },
             [TournamentPhase.Complete] = new HashSet<TournamentPhase> { TournamentPhase.Summary, TournamentPhase.Idle },
             [TournamentPhase.Summary]  = new HashSet<TournamentPhase> { TournamentPhase.InGame, TournamentPhase.Idle },
         };

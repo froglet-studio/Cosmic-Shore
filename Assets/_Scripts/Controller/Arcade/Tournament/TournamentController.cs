@@ -93,33 +93,32 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // The Tournament scene is BOTH the intro and the end-of-tournament results screen.
-            // Distinguish them by phase (deterministic on every peer): if the last game just
-            // finished (Complete), this load is the SUMMARY — show results, keep standings.
-            // Otherwise it's a fresh start — reset + lobby.
+            // The Maelstrom scene serves THREE roles, picked by phase (deterministic on every peer):
+            //   • Complete  → SUMMARY   (the shuffle just ended; show final results, keep standings).
+            //   • Summary   → restart   (Play Again from the summary → fresh lobby; reset but KEEP the
+            //                            intensity ceiling — see RestartFromSummary).
+            //   • mid-run   → HUB       (between rounds: IsActive with games played → show the standings
+            //                            hub; do NOT reset — standings/history must persist).
+            //   • otherwise → fresh start (entered from the arcade/menu → reset + capture the ceiling).
             if (scene.name == _tournament.LobbySceneName)
             {
                 if (_stateMachine.Current == TournamentPhase.Complete)
                     _stateMachine.TransitionTo(TournamentPhase.Summary);
+                else if (_stateMachine.Current == TournamentPhase.Summary)
+                    RestartFromSummary();
+                else if (_tournament.IsActive && _tournament.GamesPlayed > 0)
+                    _stateMachine.TransitionTo(TournamentPhase.Lobby);   // between-round hub (no reset)
                 else
                     StartTournament();
                 return;
             }
 
-            // A pool game scene loaded.
+            // A pool game scene loaded. Every game is now launched from the lobby/hub (BeginNextRound),
+            // so the restart wipe happens at LOBBY load (RestartFromSummary), not here — a game scene
+            // only ever loads while already in Lobby/InGame phase.
             int idx = _tournament.IndexOfSceneName(scene.name);
             if (idx >= 0 && _tournament.IsActive)
             {
-                // Play Again from the summary: ANY pool game loading while still in Summary phase is a
-                // fresh shuffle — reset standings on every peer (phase is Summary on all peers after the
-                // summary scene loaded, so the wipe is deterministic). With the randomized first game we
-                // can no longer key this on a fixed index (it used to be idx == 0).
-                if (_stateMachine.Current == TournamentPhase.Summary)
-                {
-                    _tournament.ResetRuntime();
-                    _tournament.IsActive = true;
-                    _gameData.IsTournamentMode = true;
-                }
                 _tournament.CurrentGameIndex = idx;   // which pool mode is loaded (for repeat-avoidance)
                 _stateMachine.TransitionTo(TournamentPhase.InGame);
             }
@@ -189,58 +188,78 @@ namespace CosmicShore.Gameplay
         // ── Session control ──────────────────────────────────────────────────────
 
         /// <summary>
-        /// Initializes (or re-initializes) a tournament. Called on every peer when the lobby
-        /// scene loads, so standings reset identically across the party.
+        /// Fresh start from the arcade/menu — resets standings AND captures the lobby-chosen intensity
+        /// as the per-game ceiling. Called on every peer when the lobby scene loads outside a run, so
+        /// standings reset identically across the party.
         /// </summary>
-        public void StartTournament()
+        public void StartTournament() => StartTournamentInternal(captureCeiling: true);
+
+        /// <summary>
+        /// Play Again from the summary — same fresh-lobby reset, but PRESERVES the intensity ceiling.
+        /// By the summary, <c>gameData.SelectedIntensity</c> holds the last game's rolled value (not the
+        /// original ceiling), so re-capturing it would corrupt the ceiling; <see cref="ResetRuntime"/>
+        /// already preserves it, so we just skip the re-capture. Runs on every peer (lobby load while
+        /// phase is Summary), so the wipe is deterministic across the party.
+        /// </summary>
+        void RestartFromSummary() => StartTournamentInternal(captureCeiling: false);
+
+        void StartTournamentInternal(bool captureCeiling)
         {
-            _tournament.ResetRuntime();
+            _tournament.ResetRuntime();   // preserves IntensityCeiling
             _tournament.IsActive = true;
             // Capture the lobby-chosen intensity as the per-game CEILING (X); each game then draws a
-            // random intensity in [1..X]. Set AFTER ResetRuntime (which preserves the ceiling) so a
-            // fresh start from the lobby re-captures the player's current choice.
-            _tournament.IntensityCeiling = _gameData.SelectedIntensity != null
-                ? Mathf.Max(1, _gameData.SelectedIntensity.Value)
-                : 1;
+            // random intensity in [1..X]. Set AFTER ResetRuntime so a fresh start re-captures the
+            // player's current choice; skipped on Play Again so the original ceiling survives.
+            if (captureCeiling)
+                _tournament.IntensityCeiling = _gameData.SelectedIntensity != null
+                    ? Mathf.Max(1, _gameData.SelectedIntensity.Value)
+                    : 1;
             _gameData.IsTournamentMode = true;
             _stateMachine.ResetToIdle();
             _stateMachine.TransitionTo(TournamentPhase.Lobby);
             _tournament.OnTournamentStarted.Raise();
         }
 
-        /// <summary>Host loads the first (random) game in the lineup (called from the lobby scene view).</summary>
-        public void BeginFirstGame()
+        /// <summary>
+        /// Host draws + loads the next random game (mode + intensity). Called from the Maelstrom
+        /// lobby/hub once the ready-up countdown elapses — so the draw happens at Ready, keeping the
+        /// upcoming mode hidden until its connecting panel. The party follows the Single load.
+        /// </summary>
+        public void BeginNextRound()
         {
             if (!IsHost) return;
             LoadRandomGame();
         }
 
+        /// <summary>Back-compat alias for <see cref="BeginNextRound"/> (the first round is just the
+        /// next round from a fresh lobby). Retained for the existing lobby view wiring.</summary>
+        public void BeginFirstGame() => BeginNextRound();
+
         /// <summary>
-        /// Host advances on the Scoreboard's host-only Continue button. If the shuffle is decided
-        /// (race target reached or game cap hit) it loads the Tournament scene, which shows the results
-        /// summary (phase Complete → Summary on load); otherwise it draws and loads the next random
-        /// game. The party follows the Single load.
+        /// Host advances on the Scoreboard's host-only Continue button. ALWAYS returns the party to the
+        /// Maelstrom scene: mid-run it shows the standings HUB (phase InGame → Lobby on load); once the
+        /// shuffle is decided it shows the results SUMMARY (phase Complete → Summary on load). The next
+        /// random game is drawn later, from the hub's ready-up (<see cref="BeginNextRound"/>), so the
+        /// upcoming mode stays hidden in the hub. The party follows the Single load.
         /// </summary>
         public void AdvanceToNextGame()
         {
             if (!IsHost) return;
             if (_tournament == null || !_tournament.IsActive) return;
 
-            if (_tournament.IsShuffleComplete)
-                LoadTournamentScene();   // → Summary results screen
-            else
-                LoadRandomGame();
+            LoadTournamentScene();
         }
 
         /// <summary>
-        /// Host restarts the whole tournament (the summary screen's Play Again). Loads a fresh random
-        /// game 1; the reset runs on every peer when that game loads while still in Summary phase
-        /// (see <see cref="HandleSceneLoaded"/>), so standings clear consistently across the party.
+        /// Host restarts the whole tournament (the summary screen's Play Again). Loads the Maelstrom
+        /// scene as a fresh lobby; the reset runs on every peer when it loads while still in Summary
+        /// phase (see <see cref="HandleSceneLoaded"/> → <see cref="RestartFromSummary"/>), so standings
+        /// clear consistently across the party while keeping the chosen intensity ceiling.
         /// </summary>
         public void RestartTournament()
         {
             if (!IsHost) return;
-            LoadRandomGame();
+            LoadTournamentScene();
         }
 
         /// <summary>Clears tournament state on every peer (Menu_Main return / exit).</summary>
