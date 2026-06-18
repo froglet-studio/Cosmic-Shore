@@ -38,6 +38,17 @@ namespace CosmicShore.Gameplay
         private const int BATCH_SIZE = 128;
         private const int INITIAL_CAPACITY = 64;
 
+        // Hard ceiling on CONCURRENTLY animating VFX. The per-frame spawn cap
+        // (PrismFactory, 64/frame) bounds new effects but NOT live ones: each
+        // explosion lasts 5s and each implosion 2s, so a sustained fauna swarm-eat
+        // accumulates thousands of active effects, and ProcessExplosions/Implosions'
+        // per-effect property-block apply is O(active) — profiled at ~97ms/frame.
+        // When full we recycle the OLDEST (longest-animating, hence nearly finished)
+        // so every death still animates out (continuity law) and only the oldest is
+        // truncated under extreme load — imperceptible in a frenzy of hundreds.
+        // See PRISM_PERFORMANCE_AUDIT.md rec 5.
+        private const int MAX_ACTIVE_EFFECTS = 256;
+
         // Explosion tracking
         private readonly List<PrismExplosion> activeExplosions = new(INITIAL_CAPACITY);
         private readonly List<PrismExplosion> tempExplosionList = new(INITIAL_CAPACITY);
@@ -85,6 +96,14 @@ namespace CosmicShore.Gameplay
         public void RegisterExplosion(PrismExplosion explosion)
         {
             if (explosion == null || activeExplosions.Contains(explosion)) return;
+            // Bound concurrent active VFX — recycle the oldest (front of the list,
+            // longest-running) to make room so the per-frame apply stays O(cap).
+            while (activeExplosions.Count >= MAX_ACTIVE_EFFECTS)
+            {
+                var oldest = activeExplosions[0];
+                activeExplosions.RemoveAt(0);
+                if (oldest != null) oldest.OnEffectComplete(); // already removed — Unregister is a no-op
+            }
             activeExplosions.Add(explosion);
             EnsureExplosionCapacity();
         }
@@ -97,6 +116,13 @@ namespace CosmicShore.Gameplay
         public void RegisterImplosion(PrismImplosion implosion)
         {
             if (implosion == null || activeImplosions.Contains(implosion)) return;
+            // Bound concurrent active VFX — recycle the oldest to keep apply O(cap).
+            while (activeImplosions.Count >= MAX_ACTIVE_EFFECTS)
+            {
+                var oldest = activeImplosions[0];
+                activeImplosions.RemoveAt(0);
+                if (oldest != null) oldest.OnEffectComplete(); // already removed — Unregister is a no-op
+            }
             activeImplosions.Add(implosion);
             EnsureImplosionCapacity();
         }
