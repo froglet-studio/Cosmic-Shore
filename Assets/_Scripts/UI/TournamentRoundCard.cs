@@ -68,15 +68,19 @@ namespace CosmicShore.UI
             if (roundNumberText) roundNumberText.text = $"ROUND {roundNumber}";
             if (roundNameText) roundNameText.text = string.IsNullOrEmpty(modeName) ? "UP NEXT" : modeName;
 
-            if (winningDomainRoot) winningDomainRoot.SetActive(showWinner && winner != Domains.Blue);
+            // The winning-domain block stays visible; the preview / undecided round shows a clean "—"
+            // placeholder (tinted neutral) rather than disappearing. winningDomainRoot can still be left
+            // unassigned to hide the block entirely.
+            bool hasWinner = showWinner && winner != Domains.Blue;
+            if (winningDomainRoot) winningDomainRoot.SetActive(true);
             if (winningDomainText)
-                winningDomainText.text = (showWinner && winner != Domains.Blue)
+                winningDomainText.text = hasWinner
                     ? $"WINNING DOMAIN : {winner.ToString().ToUpperInvariant()}"
-                    : string.Empty;
+                    : "WINNING DOMAIN : —";
 
             if (winnerColorTargets != null && colorOf != null)
             {
-                var c = colorOf(winner);
+                var c = colorOf(hasWinner ? winner : Domains.Blue);
                 foreach (var g in winnerColorTargets) if (g) g.color = c;
             }
         }
