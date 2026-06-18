@@ -404,6 +404,37 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Public entry for HOST-LOSS recovery: a client whose host left/disconnected
+        /// (or whose transport failed) bounces to its OWN solo menu + host, exactly like a
+        /// failed join. Routed here from <c>MultiplayerSetup.OnClientDisconnect</c> /
+        /// <c>OnTransportFailure</c> (genuine per-machine Netcode signals) instead of the
+        /// <c>OnSessionEnded → SceneLoader.HandleActiveSessionEnd</c> path, whose
+        /// "defer to server" guard waits on the now-dead server and hangs the client.
+        /// Works from the lava-lamp menu AND any game scene (recovery always returns to
+        /// Menu_Main). Idempotent via <see cref="_transitioning"/> so the
+        /// OnClientDisconnect + OnTransportFailure double-fire on a hard host drop runs a
+        /// single recovery. See Docs/PartySystem/BUGS.md B10.
+        /// </summary>
+        public async UniTask HandleHostLossAsync(string reason)
+        {
+            if (_transitioning)
+            {
+                Debug.Log($"[PartyInviteController] HandleHostLoss ignored — already transitioning ({reason}).");
+                return;
+            }
+
+            _transitioning = true;
+            try
+            {
+                await BounceToSoloMenuAsync(reason);
+            }
+            finally
+            {
+                _transitioning = false;
+            }
+        }
+
+        /// <summary>
         /// Terminal "bounce": surface a best-effort toast and return the player to their
         /// own functional solo menu via <see cref="RecoverFromFailedTransitionAsync"/>.
         /// Guarantees a failed join never ends in a permanent splash hang.

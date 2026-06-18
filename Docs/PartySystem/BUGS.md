@@ -16,6 +16,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B5 | TC2/TC4 second joiner fails to join | Uncertain (diagnose first) | 🔴 |
 | B7 | Client pair-init runs before remote identity replicates (`InitializePair Player=` empty, vessel-type `Random`) | Verified mostly benign | ⚪ |
 | B9 | Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) | Root-caused & fixed | 🟢 |
+| B10 | Host leaves/disconnects mid-party → client stuck (no bounce-to-solo + "Host disconnected") | Root-caused & fixed | 🟢 (MPPM-verify) |
 
 ---
 
@@ -678,10 +679,87 @@ be re-run.
 
 ---
 
+## B10 — Host leaves/disconnects mid-party → client stuck (no bounce-to-solo) 🟢 (fixed; MPPM-verify)
+
+**Symptom (reported 2026-06-18).** Host + client(s) in multiplayer freestyle
+(Menu_Main lava lamp) — or any game mode. The host leaves mid-session or
+disconnects. The client(s) **freeze / get stuck**: no return to a working menu,
+no fresh solo host, no notice. Expected: each client cleanly exits the dead
+party and **re-starts Menu_Main as its own host** (like a fresh launch), with a
+**"Host disconnected"** notice.
+
+**Root cause (confirmed in code).** A client whose host drops gets a genuine
+per-machine `NetworkManager.OnClientDisconnectCallback`
+(`MultiplayerSetup.OnClientDisconnect`, local-client branch ~`:362`), which raised
+`gameData.InvokeOnSessionEnded()` → `SceneLoader.HandleActiveSessionEnd` (~`:302`).
+That handler's **defer-to-server guard** (`IsListening && !IsServer`, ~`:308`)
+returns early "deferring to server" — but the host/server is **gone**, so nothing
+drives the transition and the client hangs. Even when it fell through, the path
+(`ReturnToMainMenu` → `LoadSceneAsync` local fallback) **never recreated the
+client's own solo Relay host** (`EnsurePartySessionAsync`), so the client would
+land in a hostless menu (no autopilot vessel, can't invite/play). No notice either.
+
+**Why the guard exists (and why it's wrong here).** The guard stops a
+still-connected MPPM client from running `ResetAllData()` on the *shared*
+`GameDataSO` when `OnSessionEnded` (a shared SOAP event) fires spuriously. But
+`OnClientDisconnect` is a **real per-machine Netcode callback**, not a shared SOAP
+event — so host-loss must be handled at *that* source, not routed through the
+shared-SOAP-guarded SceneLoader path.
+
+**Fix (this commit).** Route host-loss from the genuine per-machine signals
+(`MultiplayerSetup.OnClientDisconnect` local branch + `OnTransportFailure`) into a
+new `PartyInviteController.HandleHostLossAsync(reason)`, which reuses the proven,
+MPPM-verified self-rescue `RecoverFromFailedTransitionAsync` (the B3.b sequence):
+destroy local player+vessel → reset → leave UGS session → **NM shutdown** → load
+`Menu_Main` locally → **`EnsurePartySessionAsync`** (recreate own solo host) — plus a
+"Host disconnected" bounce toast. Works uniformly from the lava-lamp menu AND any
+game scene (recovery always returns to Menu_Main). Idempotent via `_transitioning`
+so the `OnClientDisconnect` + `OnTransportFailure` double-fire on a hard drop runs a
+single recovery.
+
+**Does NOT affect graceful host-return.** The host's deliberate "Main Menu /
+return whole party together" (S9) keeps the Relay alive and uses a Netcode scene
+load, so clients **never receive `OnClientDisconnect`** — this fix only fires when
+the host actually leaves/drops (Relay torn down). So there's no false "Host
+disconnected" on a normal host-led return.
+
+**Notice — interim.** Uses the existing bounce **toast** ("Host disconnected") for
+now: it's SOAP-driven and survives the scene reload, which a freshly-loaded popup
+would not. Once Task 0 (the SOAP confirm-popup, `INVITE_ENHANCEMENTS.md`) ships,
+upgrade the notice to a 1-button "OK" popup shown on the fresh solo menu.
+
+**Recommendation (the "better thing").** Bounce-to-solo is the right call now —
+reliable, and it reuses proven machinery. True **host migration** (promote a
+remaining client to host and keep the party alive) is the fancier alternative but a
+much larger project: Relay has no native re-host, Netcode has no native host
+migration, and it needs full game-state transfer. Tracked as the
+`../MultiplayerArchitecture/ROADMAP.md` "Host-loss resilience / migration (High)"
+item — revisit when the party core is otherwise stable.
+
+**Evidence (file:line — drifts).** `MultiplayerSetup.cs` `OnClientDisconnect`
+(~`:344-379`), `OnTransportFailure` (~`:396-431`); `SceneLoader.cs`
+`HandleActiveSessionEnd` defer-trap (~`:302-323`), `ReturnToMainMenu` (~`:190-222`),
+`LoadSceneAsync` (~`:224-257`); `PartyInviteController.cs` `HandleHostLossAsync` +
+`BounceToSoloMenuAsync` + `RecoverFromFailedTransitionAsync`.
+
+**Status. 🟢 Fixed — needs MPPM verification:**
+- **Menu freestyle (2-VP):** host + client in the lava lamp; host leaves → client
+  shows "Host disconnected", returns to its OWN Menu_Main as solo host (autopilot
+  vessel spawns, can invite again). No hang.
+- **Game mode:** host + client in HexRace / Joust / etc.; host quits mid-game →
+  client bounces to solo Menu_Main with the notice + working solo host.
+- **3-4 VP:** host drops → every client bounces to its own solo menu.
+- **Regression:** host's graceful "Main Menu" return still brings the whole party
+  back together — no false "Host disconnected".
+- **Hard drop:** kill the host process (not graceful) → clients still recover
+  (covers the `OnTransportFailure` path + the double-fire idempotency).
+
+---
+
 ## How we work bugs
 
 Method: see `../README.md` § "How we work bugs". Party-side priority
-order: **B2 → B5 → B7** (B3, B8, B9 fixed; B3 is fixed-by-construction
-pending its dedicated TC4 bounce repro). The presence-lobby cluster
-(B1, B4, B6) is the locked-design area and lives in
+order: **B2 → B5 → B7** (B3, B8, B9, B10 fixed; B3 is fixed-by-construction
+pending its dedicated TC4 bounce repro; B10 needs the host-loss MPPM sweep).
+The presence-lobby cluster (B1, B4, B6) is the locked-design area and lives in
 `../PresenceSystem/BUGS.md`.
