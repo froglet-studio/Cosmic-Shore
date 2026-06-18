@@ -758,6 +758,25 @@ item — revisit when the party core is otherwise stable.
   back together — no false "Host disconnected".
 - **Hard drop:** kill the host process (not graceful) → clients still recover
   (covers the `OnTransportFailure` path + the double-fire idempotency).
+- **Unrestricted after recovery (key acceptance).** The recreated solo host must be
+  a *full* host, not a degraded state — verify the bounced client can then, with no
+  app restart: (a) **invite** another player and have them join (client is now the
+  host of the new party); (b) **launch every game mode** (solo + AI backfill, and a
+  2-human game after re-inviting); (c) be **seen as invitable** by others again.
+  Guaranteed by construction: `EnsurePartySessionAsync` sets `IsPartyHost = true`,
+  `PartyState.InParty`, a fresh Relay session (`IsServer = true`), and
+  `SeedLocalPlayer(clearFirst:true)`; the presence lobby is never left (separate UGS
+  WebSocket on the always-alive HCS) — i.e. the **identical end-state as the
+  deliberate "Leave Party" flow** (`LeavePartyAndReturnToMenuAsync`), where play +
+  invite already work normally.
+
+> **Minor hygiene (non-blocking).** Recovery does not clear the client's own
+> `joined_party` presence property (unlike the deliberate `LeavePartyAsync`, which
+> calls `ClearJoinedPartyAsync`). This is **harmless**: the dead host is gone, B8
+> fix 1 makes any future host cross-check `joined_party` against its authoritative
+> session (so a stale value can never cause a phantom add), and the next refresh
+> re-publishes the client's solo party state (count = 1). It self-corrects on the
+> next join/leave. Clear it in recovery only if a future case shows it mattering.
 
 ---
 
