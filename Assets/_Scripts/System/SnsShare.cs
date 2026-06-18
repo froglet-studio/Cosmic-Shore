@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine.UI;
 using UnityEngine;
 using CosmicShore.Utility;
+using Reflex.Attributes;
 using System.Linq;
 using System.IO;
 
@@ -17,8 +18,12 @@ namespace CosmicShore.Core
         public Button replayButton;
         public GameObject VersionTMP;
 
+        [Inject] AnalyticsServiceFacade _analytics;
+        [Inject] GameDataSO _gameData;
+
         public void Share()
         {
+            _analytics?.RecordShareTriggered(_gameData != null ? _gameData.GameMode.ToString() : null);
             StartCoroutine(TakeScreenshotAndShare());
         }
 

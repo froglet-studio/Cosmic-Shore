@@ -69,6 +69,16 @@ namespace CosmicShore.Gameplay
         string _playerName;
         public string PlayerName { get; internal set; }
 
+        /// <summary>
+        /// True for environment/structure prisms (e.g. the HexRace track, spawnable shapes)
+        /// that are not laid by a player vessel. These keep the default owner because they
+        /// are spawned via <see cref="SpawnableBase.SpawnPrismTrail"/> with no player name,
+        /// and they survive vessel contact (no destructible player trail). Player-laid trail
+        /// prisms carry the owning vessel's player name instead.
+        /// </summary>
+        public bool IsEnvironmentOwned =>
+            string.IsNullOrEmpty(PlayerName) || PlayerName == DEFAULT_PLAYER_NAME;
+
         // Component references
         private MaterialPropertyAnimator materialAnimator;
         private PrismScaleAnimator scaleAnimator;

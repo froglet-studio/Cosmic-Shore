@@ -285,3 +285,13 @@ when the stat-row surface itself changes.
   `BUGS.md` B3; remove or wire correctly.
 - `DuelForCell` in-game HUD wiring is unclear (no dedicated HUD subclass) —
   confirm which HUD the Cellular Duel scene uses during the unified-path work.
+- `GameCanvas-HexRace.prefab` carries stale Scoreboard-era data: the internal
+  `Scoreboard`'s serialized fields predate the current class (old
+  `multiplayerController` name, `SinglePlayerBannerColor`, rematch panel refs),
+  and the retired rematch UI is still in the prefab with persistent calls to
+  deleted methods (`OnAcceptRematch`/`OnDeclineRematch` on the old
+  `HexRaceScoreboard` type). Inert — the rematch panels are removed per-scene
+  and a null-target persistent call is skipped — but it caused the wiring
+  confusion behind `BUGS.md` B13/B14. Re-save the prefab (refreshes serialized
+  field names) and delete the rematch subtree when the prefab is next touched;
+  re-check the three scenes' overrides afterward.
