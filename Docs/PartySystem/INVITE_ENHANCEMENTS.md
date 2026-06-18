@@ -13,7 +13,7 @@ Status legend: 🔴 not started · 🟡 in progress · 🟢 done · ⚪ deferred
 
 | # | Task | Layer | Status |
 |---|------|-------|--------|
-| 0 | **SOAP confirm-popup** — generic 1/2-button popup (dynamic labels) driven by event channels; surfaces party invites as Accept/Decline and serves OK/confirm dialogs elsewhere — **decided: SOAP-drive the existing `PopupPanel`** | UI infra | 🔴 ready to plan |
+| 0 | **SOAP confirm-popup** — generic 1/2-button popup (dynamic labels) driven by event channels; bottom-left non-modal invite popup (3s, latest-wins) + 10s panel row + host revert; **0b:** cancel-invite (✕) affordance — **decided: SOAP-drive the existing `PopupPanel`** | UI infra | 🔴 ready to plan |
 | 1 | Disable inviting a player already in my party — **decided: disable + relabel** ("IN YOUR PARTY") | Party UI | 🔴 ready to plan |
 | 2 | Make pending-invite / in-lobby status **responsive & live** (foreground/background poll, jitter, optimistic UI; push as the deep option) | Presence | 🔴 ready to plan |
 | 3 | Party-merge on accept (a **host** who accepts brings its whole party; a **member** moves alone) | Party (Netcode + presence) | ⛔ discuss-only |
@@ -64,7 +64,7 @@ Cadence (`LobbyRefreshScheduler.cs`):
 - Base `refreshIntervalSeconds = 1.5f` (serialized on HCS, ~`:63`).
 - Boosted `BOOSTED_INTERVAL_SECONDS = 0.75f` for `BOOST_WINDOW_SECONDS = 15f`
   after invite events (`Boost()`), then falls back to base.
-- UGS lobby reads are rate-limited to **~1/س per client** (SDK), which is the
+- UGS lobby reads are rate-limited to **~1/s per client** (SDK), which is the
   hard floor — going faster surfaces the B1/B6 stale-index churn.
 
 `RefreshAsync()` (~`:965`) does, in one tick, **all** of:
@@ -163,34 +163,86 @@ heavy `ModalWindowManager` stack.
   `ScriptableEvent` fields); the presenter listens to a channel rather than
   exposing a new singleton.
 
+**Decided — invite popup placement, style & timing.**
+- **Small, bottom-left, non-modal.** The invite popup is a small card anchored
+  bottom-left so it never covers the player's main UI. It does **not** block
+  raycasts — the user can ignore it and keep using the menu. (The per-request
+  `Modal` flag still exists for *confirm* dialogs elsewhere — leave-party,
+  purchases — which ARE modal. Invites set `Modal = false`.)
+- **Popup auto-hides after 3s.** Purely a visual teaser; hiding the popup does
+  NOT decline the invite.
+- **Latest-wins (not FIFO queue).** The popup always shows the **newest** invite.
+  If invite B arrives while invite A's popup is showing (say at 1.5s), the popup
+  **instantly swaps to B** and restarts its 3s timer. Preempted invites are NOT
+  lost — they remain in the `FriendsListPanel` Requests list (below) for their
+  full lifetime; only the single popup surface is latest-wins.
+
+**Decided — unified ~10s invite lifetime across all three surfaces.**
+- **Recipient panel row: 10s.** The invite's `RequestInfoEntry` row in
+  `FriendsListPanel` lives **10s**, then auto-removes (today `partyInviteExpirationSeconds = 30f`
+  → retune to 10).
+- **Host side clears at the same expiry.** When the invite expires (or is
+  resolved), the **host's** "Pending Invite" row reverts to the invitee's normal
+  **"online"** status and the host can **send a new invite** again. UGS gives the
+  sender no decline signal, so this is the host's own outgoing timeout
+  (`OUTGOING_INVITE_TIMEOUT_SECONDS = 30f` → retune to ~10 so all three surfaces
+  clear together) firing `OutgoingInviteCleared` → `HandleOutgoingInviteCleared`
+  resets the row (path already exists).
+- So one logical invite life ≈ 10s: popup visible 3s, panel row 10s, host pending
+  10s — all converging.
+
 **Decided — invite shows in BOTH places, dedup on resolve.** An incoming invite
-surfaces as *both* the popup *and* a `FriendsListPanel` Requests row (popup =
-quick Accept/Decline, panel = full list / detail). When the invite is
-accepted/declined from **either** surface, **both** must clear — no leftover/
-stacked invite row for the same inviting host. This rides the existing
+surfaces as *both* the popup *and* a `FriendsListPanel` Requests row. When the
+invite is accepted/declined from **either** surface, **both** must clear — no
+leftover / stacked invite row for the same inviting host. This rides the existing
 `OnInviteResolved` SOAP event: the popup's accept/decline goes through
 `PartyInviteController.AcceptInviteAsync`/`DeclineInviteAsync` (which raise
-`OnInviteResolved`), and the popup adapter *also subscribes* to
-`OnInviteResolved` to dismiss itself — so resolving on the panel kills the
-popup and vice-versa. **Design note:** today `OnInviteResolved` is parameterless
-and `FriendsListPanel.HandleInviteResolved` clears *all* party-invite rows
-(fine while there's one pending invite). If we ever support multiple concurrent
-invites from different hosts, this needs a per-host resolved signal so accepting
-host A's invite doesn't wipe host B's row.
+`OnInviteResolved`), and the popup adapter *also subscribes* to `OnInviteResolved`
+to dismiss itself — so resolving on the panel kills the popup and vice-versa.
+**Design note:** today `OnInviteResolved` is parameterless and
+`FriendsListPanel.HandleInviteResolved` clears *all* party-invite rows (fine while
+there's one pending invite). With latest-wins meaning multiple invites can sit in
+the panel at once, this needs a **per-host resolved signal** so accepting host A's
+invite doesn't wipe host B's row.
+
+### Task 0b — Cancel-invite affordance (host side) 🔴
+
+Tied to Task 0 + Task 1's row states. After a host sends an invite, the target's
+row shows **"Pending Invite"** (`OnlineInfoEntry.SetInvitePending` — yellow pulse,
+invite button disabled). **Add a cancel (✕) icon on that pending row** so the host
+can retract the outgoing invite manually (instead of only waiting for the 10s
+timeout).
+
+- On cancel → a new host-side `HostConnectionService.CancelInviteAsync(targetId)`:
+  remove the target from `InviteService`, **re-publish `invite_payloads` without
+  that line** (so the recipient's invite/popup/row disappear too), and fire
+  `OutgoingInviteCleared` → the row reverts to the invitee's "online" status,
+  re-invitable.
+- There's no public cancel path today (only `SendInviteAsync`); `InviteService`
+  already has `Remove(targetId)` + the timeout machinery to build on.
 
 **Open questions.**
 - Result delivery: a `PopupResult` **event channel keyed by `RequestId`** (fully
   SOAP — matches "through event channels") vs. callbacks carried in the request
   payload (simpler). Lean to the channel; confirm.
-- **Modal vs non-modal** (block raycasts) and **queue vs stack** when multiple
-  popups fire — recommend per-request `Modal` flag (invites non-modal, confirms
-  modal) + a one-at-a-time queue (the panel is the see-everything list).
-  Pending sign-off.
+- Per-host `OnInviteResolved` (needed once multiple invites can coexist in the
+  panel — see design note): add a `hostPlayerId` to the resolved signal, or key
+  the clear by the resolved invite's host.
+- Exact placement/size of the bottom-left popup vs. existing bottom-left HUD
+  elements (avoid overlap).
 
-**Acceptance.** Raising a 2-label `PopupRequest` shows a 2-button popup; clicking
-either button raises the matching `PopupResult` on the channel; a 1-label
-request shows a single OK button; an incoming party invite shows Accept/Decline
-and routes to accept/decline correctly; missing event references fail loud.
+**Acceptance.**
+- A 2-label `PopupRequest` shows a 2-button popup; clicking either raises the
+  matching `PopupResult`; a 1-label request shows a single OK button; missing
+  event refs fail loud.
+- An incoming invite shows a small **bottom-left** popup that **auto-hides after
+  3s** and does not block the menu; a second invite **instantly replaces** it.
+- The same invite sits in the `FriendsListPanel` Requests list for **10s** then
+  auto-removes; at that point the **host** sees the invitee as **"online"** again
+  and can re-invite.
+- Accept/decline from either popup or panel **clears both** for that host.
+- The host's **"Pending Invite"** row has a **cancel (✕)** that retracts the
+  invite (recipient's invite vanishes; host row reverts to online).
 
 ---
 
