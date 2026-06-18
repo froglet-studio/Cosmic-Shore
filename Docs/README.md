@@ -19,7 +19,10 @@ Docs/
 │   ├── TESTS.md                 manual procedures (S1-S8)
 │   ├── TODOS.md                 parking-lot items
 │   ├── INVITE_ENHANCEMENTS.md   planning: in-party invite guard,
-│   │                            panel-gated refresh, party-merge on accept
+│   │                            panel-gated refresh, party-merge on accept,
+│   │                            SOAP confirm-popup
+│   ├── UI.md                    party/friends UI surface: component
+│   │                            inventory, invite UX flow, scene wiring
 │   └── MPPM_SESSION_LOG.md      chronological MPPM session journal
 │
 ├── PresenceSystem/              ← the lobby-only discovery layer

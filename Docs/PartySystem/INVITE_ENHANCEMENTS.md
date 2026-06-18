@@ -1,26 +1,29 @@
 # Party Invite Enhancements — Task Capture & Planning
 
-Three related party-invite improvements, captured for planning. We will
+Four related party-invite improvements, captured for planning. We will
 plan and ship them **one at a time** (this doc is the shared capture; each
 task gets its own design sign-off + commit sequence when we pick it up).
 
-Read `ARCHITECTURE.md` (locked design), `BUGS.md` (open issues), and
-`../PresenceSystem/ARCHITECTURE.md` (presence lobby) before touching any of
-this — Tasks 2 and 3 are in the locked-design area.
+Read `ARCHITECTURE.md` (locked design), `BUGS.md` (open issues),
+`UI.md` (current UI surface), and `../PresenceSystem/ARCHITECTURE.md`
+(presence lobby) before touching any of this — Tasks 2 and 3 are in the
+locked-design area.
 
 Status legend: 🔴 not started · 🟡 in progress · 🟢 done · ⚪ deferred
 
 | # | Task | Layer | Status |
 |---|------|-------|--------|
+| 0 | **SOAP confirm-popup** — generic 1/2-button popup (dynamic labels) driven by event channels; surfaces party invites as Accept/Decline and serves OK/confirm dialogs elsewhere — **decided: SOAP-drive the existing `PopupPanel`** | UI infra | 🔴 ready to plan |
 | 1 | Disable inviting a player already in my party — **decided: disable + relabel** ("IN YOUR PARTY") | Party UI | 🔴 ready to plan |
 | 2 | Make pending-invite / in-lobby status **responsive & live** (foreground/background poll, jitter, optimistic UI; push as the deep option) | Presence | 🔴 ready to plan |
 | 3 | Party-merge on accept (a **host** who accepts brings its whole party; a **member** moves alone) | Party (Netcode + presence) | ⛔ discuss-only |
 
-**Suggested order: 1 → 2 → 3.** Task 1 is a small, self-contained UI guard.
-Task 2 makes the online panel's lobby/status rows live and accurate, which
-Task 3 *depends on* (players must see each other's live "in lobby N/M" state
-for the merge to feel correct). Task 3 is the large one (voluntary host
-migration) and should land last.
+**Suggested order: 0/1 → 2 → 3.** Task 0 (popup) is standalone UI infra and
+Task 1 is a small self-contained UI guard — either can go first (Task 0 also
+improves the invite UX that Task 1 touches). Task 2 makes the online panel's
+lobby/status rows live and accurate, which Task 3 *depends on* (players must
+see each other's live "in lobby N/M" state for the merge to feel correct).
+Task 3 is the large one (voluntary host migration) and should land last.
 
 ---
 
@@ -110,6 +113,70 @@ already called on panel open by `ArcadeLobbyList.OnEnable` and
   `Online / InLobby / LobbyFull / InMatch` from their advertised
   `PartyMemberCount` / `PartyMaxSlots` / `MatchName`. It already has an
   `IsInSameParty(playerId)` helper (used only for the LobbyFull branch today).
+
+---
+
+## Task 0 — SOAP confirm-popup (1/2-button, event-channel-driven) 🔴
+
+**Goal.** A small reusable popup with **1 or 2 dynamic-label buttons**, raised
+and answered through **SOAP event channels**, used to surface party invites
+(Accept / Decline) and generic OK / confirm dialogs everywhere else.
+
+**Decision (locked): SOAP-drive the existing `PopupPanel`.** Reuse
+`PopupPanel`'s lightweight visual + `PopupManager`'s pooling; add a second
+button + dynamic labels; drive it via a request/result `ScriptableEvent` pair.
+Do **not** add a third parallel popup system, and do **not** build it on the
+heavy `ModalWindowManager` stack.
+
+**Current state (what exists, why each is insufficient).**
+- `PopupManager` + `PopupPanel` (`_Scripts/Utility/`) — title + body + **one**
+  confirm/close button; static-instance API (`ShowPopupPanel(title, body,
+  closeable)`); **not SOAP**, **1 button**. The base we extend.
+- `PurchaseConfirmationModal : ModalWindowManager` — 2-button confirm but
+  **purchase-specific** (`VirtualItem` + `Action` callback), rides the heavy
+  `ScreenSwitcher.PushModal` stack. Wrong weight class.
+- Two toast systems (`UI/ToastSystem/` **and** `UI/ToastNotification/`) —
+  transient, **non-interactive**. Good for fire-and-forget "okay" toasts, not
+  for Accept/Decline. (Their duplication is a separate cleanup.)
+- `GenericEventChannelWithReturnSO<T,Y>` — **synchronous** `Func<T,Y>`; a popup
+  result comes back *later* (user clicks), so a sync return channel can't carry
+  it. Use a request event + a result event instead.
+
+**Design sketch (ratify in planning).**
+- **`PopupRequest`** payload: `Title`, `Message`, `PrimaryLabel`,
+  `SecondaryLabel` (null/empty → render a single OK button), `RequestId`.
+- **`ScriptableEventPopupRequest`** — any system raises it to show a popup.
+- **`ScriptableEventPopupResult`** — the popup raises it with
+  `{ RequestId, PopupResult: Primary | Secondary | Dismissed }`; requesters
+  correlate by `RequestId`.
+- A persistent **`PopupPresenter`** (or evolve `PopupManager`) subscribes to the
+  request channel, pulls a pooled `PopupPanel`, shows it, and raises the result
+  channel on click. `PopupManager.ShowPopupPanel` stays working (routes through
+  the same path or remains a thin info-only wrapper).
+- **Party-invite adapter:** subscribe to `OnInviteReceived` → raise
+  `PopupRequest("Party Invite", "<name> invited you", "Accept", "Decline")`; on
+  result `Primary` → `PartyInviteController.AcceptInviteAsync(invite)`,
+  `Secondary`/`Dismissed` → `DeclineInviteAsync`. The vestigial
+  `PartyInviteNotificationPanel` is then repurposed (its prefab becomes the
+  invite `PopupPanel`) or deleted.
+- **SOAP hygiene:** fail-loud on missing event refs (no if-null guards on
+  `ScriptableEvent` fields); the presenter listens to a channel rather than
+  exposing a new singleton.
+
+**Open questions.**
+- Result delivery: a `PopupResult` **event channel keyed by `RequestId`** (fully
+  SOAP — matches "through event channels") vs. callbacks carried in the request
+  payload (simpler). Lean to the channel; confirm.
+- Does the invite popup **replace** the current `FriendsListPanel` auto-open, or
+  **coexist** (popup = quick Accept/Decline, panel = detail)?
+- **Queue vs stack** when multiple popups fire (`PopupManager` already
+  pools/offsets multiples — pick one-at-a-time queue or stacked).
+- **Modal** (block raycasts) vs non-modal.
+
+**Acceptance.** Raising a 2-label `PopupRequest` shows a 2-button popup; clicking
+either button raises the matching `PopupResult` on the channel; a 1-label
+request shows a single OK button; an incoming party invite shows Accept/Decline
+and routes to accept/decline correctly; missing event references fail loud.
 
 ---
 
