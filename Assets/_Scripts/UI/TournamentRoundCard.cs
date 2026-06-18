@@ -1,5 +1,5 @@
 using System;
-using System.Text;
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Utility;
 using TMPro;
@@ -9,64 +9,100 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// One completed round in the Maelstrom history scroll: round number, the mode that was played
-    /// (revealed after the fact), its intensity, and the per-domain placement that round with the
-    /// winning domain's colour applied to the assigned targets.
+    /// <b>Tournament Data Card</b> — one round in the Maelstrom scroll. Shows the round header (mode
+    /// name + winning domain) and instantiates one <b>Player Data Card</b> (<see cref="PlayerScoreCard"/>)
+    /// per player who finished that round, tinted to each player's domain.
     ///
-    /// Pure view: <see cref="Setup"/> binds a <see cref="TournamentRoundRecord"/>; the caller passes a
-    /// domain→colour resolver so the card stays decoupled from the theme system.
+    /// Two setup paths:
+    ///   • <see cref="Setup"/> — a completed round (mode + winning domain + per-player scores).
+    ///   • <see cref="SetupPreview"/> — the round-0 lobby preview (the upcoming roster, no scores, no
+    ///     winner) so the first intro isn't empty.
+    ///
+    /// Pure view: the caller passes domain→colour and snapshot→avatar resolvers so the card stays
+    /// decoupled from the theme / profile systems.
     /// </summary>
     public class TournamentRoundCard : MonoBehaviour
     {
-        [SerializeField] TMP_Text roundLabelText;     // "ROUND 3"
-        [SerializeField] TMP_Text modeNameText;       // "Joust"
-        [SerializeField] TMP_Text intensityText;      // "Intensity 2"
-
-        [Tooltip("Per-domain placement for the round, e.g. \"1st JADE   2nd RUBY   3rd GOLD\".")]
-        [SerializeField] TMP_Text placementsText;
-
-        [Tooltip("Graphics tinted to the winning domain's colour (accent bar, background, …).")]
+        [Header("Round header")]
+        [Tooltip("Mode that was played, e.g. \"Hex Race\" (\"UP NEXT\" in the round-0 preview).")]
+        [SerializeField] TMP_Text roundNameText;
+        [Tooltip("Optional \"ROUND 3\" label.")]
+        [SerializeField] TMP_Text roundNumberText;
+        [Tooltip("\"WINNING DOMAIN : JADE\".")]
+        [SerializeField] TMP_Text winningDomainText;
+        [Tooltip("Graphics tinted to the winning domain's colour (header accent, border, …).")]
         [SerializeField] Graphic[] winnerColorTargets;
-
-        [Tooltip("Optional marker for the most-recently-played round (the auto-scroll target).")]
+        [Tooltip("Optional root for the winning-domain block — hidden in the preview (no winner yet).")]
+        [SerializeField] GameObject winningDomainRoot;
+        [Tooltip("Optional accent for the most-recently-played round (the auto-scroll target).")]
         [SerializeField] GameObject currentRoundHighlight;
 
-        public void Setup(TournamentRoundRecord record, Func<Domains, Color> colorOf, bool isCurrent = false)
+        [Header("Player Data Cards")]
+        [SerializeField] PlayerScoreCard playerCardPrefab;
+        [SerializeField] Transform playerCardContainer;
+
+        readonly List<PlayerScoreCard> _spawned = new();
+
+        public void Setup(TournamentRoundRecord record, Func<Domains, Color> colorOf,
+                          Func<TournamentPlayerSnapshot, Sprite> avatarOf, bool isCurrent = false)
         {
             if (record == null) return;
-
-            if (roundLabelText) roundLabelText.text = $"ROUND {record.RoundNumber}";
-            if (modeNameText) modeNameText.text = record.ModeDisplayName ?? string.Empty;
-            if (intensityText) intensityText.text = record.Intensity > 0 ? $"Intensity {record.Intensity}" : string.Empty;
-            if (placementsText) placementsText.text = BuildPlacements(record);
+            SetHeader(record.RoundNumber, record.ModeDisplayName, record.WinningDomain, colorOf, showWinner: true);
             if (currentRoundHighlight) currentRoundHighlight.SetActive(isCurrent);
+            BuildPlayers(record.Players, colorOf, avatarOf, showScores: true);
+        }
+
+        public void SetupPreview(int roundNumber, IReadOnlyList<TournamentPlayerSnapshot> roster,
+                                 Func<Domains, Color> colorOf, Func<TournamentPlayerSnapshot, Sprite> avatarOf)
+        {
+            SetHeader(roundNumber, modeName: null, winner: Domains.Blue, colorOf, showWinner: false);
+            if (currentRoundHighlight) currentRoundHighlight.SetActive(true);
+            BuildPlayers(roster, colorOf, avatarOf, showScores: false);
+        }
+
+        void SetHeader(int roundNumber, string modeName, Domains winner, Func<Domains, Color> colorOf, bool showWinner)
+        {
+            if (roundNumberText) roundNumberText.text = $"ROUND {roundNumber}";
+            if (roundNameText) roundNameText.text = string.IsNullOrEmpty(modeName) ? "UP NEXT" : modeName;
+
+            if (winningDomainRoot) winningDomainRoot.SetActive(showWinner && winner != Domains.Blue);
+            if (winningDomainText)
+                winningDomainText.text = (showWinner && winner != Domains.Blue)
+                    ? $"WINNING DOMAIN : {winner.ToString().ToUpperInvariant()}"
+                    : string.Empty;
 
             if (winnerColorTargets != null && colorOf != null)
             {
-                var c = colorOf(record.WinningDomain);
-                foreach (var g in winnerColorTargets)
-                    if (g) g.color = c;
+                var c = colorOf(winner);
+                foreach (var g in winnerColorTargets) if (g) g.color = c;
             }
         }
 
-        static string BuildPlacements(TournamentRoundRecord r)
+        void BuildPlayers(IReadOnlyList<TournamentPlayerSnapshot> players, Func<Domains, Color> colorOf,
+                          Func<TournamentPlayerSnapshot, Sprite> avatarOf, bool showScores)
         {
-            if (r.DomainOrder == null) return string.Empty;
-            var sb = new StringBuilder();
-            for (int i = 0; i < r.DomainOrder.Count; i++)
+            Clear();
+            if (players == null || !playerCardPrefab || !playerCardContainer) return;
+
+            for (int i = 0; i < players.Count; i++)
             {
-                if (i > 0) sb.Append("   ");
-                sb.Append(Ordinal(i + 1)).Append(' ').Append(r.DomainOrder[i].ToString().ToUpperInvariant());
+                var s = players[i];
+                var card = Instantiate(playerCardPrefab, playerCardContainer);
+                string score = showScores ? (s.ScoreText ?? string.Empty) : string.Empty;
+                card.Setup(s.Name, score, colorOf != null ? colorOf(s.Domain) : Color.gray, i);
+                if (avatarOf != null) card.SetAvatar(avatarOf(s));
+                _spawned.Add(card);
             }
-            return sb.ToString();
         }
 
-        static string Ordinal(int n) => n switch
+        void Clear()
         {
-            1 => "1st",
-            2 => "2nd",
-            3 => "3rd",
-            _ => $"{n}th",
-        };
+            foreach (var c in _spawned) if (c) Destroy(c.gameObject);
+            _spawned.Clear();
+
+            if (playerCardContainer)
+                for (int i = playerCardContainer.childCount - 1; i >= 0; i--)
+                    Destroy(playerCardContainer.GetChild(i).gameObject);
+        }
     }
 }

@@ -90,30 +90,36 @@ deadline. Public: `SecondsRemaining`, `LocalReady`, `ReadyCount`, `TotalPlayers`
 ## 6. Scene view + components (Phase 4) — the wiring contract
 
 `TournamentSceneView` drives three layouts by phase: **active** (lobby + hub), **summary**, **rank**.
+The active/summary scrolls hold **Tournament Data Cards**, each nesting its round's **Player Data Cards**.
 
-### New reusable components
+### Two prefabs (+ one reused)
+- **Tournament Data Card** = `TournamentRoundCard` — round header + its own player-card container.
+  Fields: `roundNameText` (mode), `roundNumberText` (opt), `winningDomainText`, `winnerColorTargets[]`,
+  `winningDomainRoot` (hidden in preview), `currentRoundHighlight`, `playerCardPrefab`, `playerCardContainer`.
+  `Setup(record,…)` for a completed round; `SetupPreview(roundNumber, roster,…)` for the round-0 lobby
+  (roster, no scores/winner).
+- **Player Data Card** = reuse `PlayerScoreCard` (avatar + name + per-round score + domain tint).
 - `TournamentDomainScoreView` — `placeText, domainNameText, pointsText, colorTargets[], youBadge`.
-  Used for **team-score side panels AND rank rows**.
-- `TournamentRoundCard` — `roundLabelText, modeNameText, intensityText, placementsText,
-  winnerColorTargets[], currentRoundHighlight`.
-- Roster list reuses the existing **`PlayerScoreCard`** prefab.
+  Used for the **summary rank rows** (and available for an optional standings strip).
 
 ### `TournamentSceneView` serialized fields
 | Group | Fields |
 |---|---|
 | Data | `gameData`, `tournamentData`, `lobbyNetwork` |
 | Shared | `titleText` |
-| Active | `activeRoot`, `roundCounterText`, `extraInfoText`, `playerCardPrefab`+`playerCardContainer`, `teamScorePanelPrefab`+`teamScoreContainer`, `roundCardPrefab`+`historyContent`, `historyScrollRect`, `readyButton`+`readyButtonLabel`, `readyTallyText` (opt) |
+| Active — top bar | `activeRoot`, `gameModesText` (pool), `roundCounterText`, `leadingDomainText`+`leadingDomainColorTargets[]`, `standingsText` (opt cumulative tally) |
+| Active — scroll | `roundCardPrefab` (Tournament Data Card) + `historyContent`, `historyScrollRect` |
+| Active — START | `readyButton`+`readyButtonLabel`, `readyTallyText` (opt) |
 | Summary | `summaryRoot`, `winnerBannerText`, `winnerBannerColorTargets[]`, `summaryHistoryContent`, `nextButton` |
-| Rank | `rankRoot`, `rankRowPrefab`, `rankContainer`, `playAgainButton`, `mainMenuButton`, `onClickToMainMenu` |
+| Rank | `rankRoot`, `rankRowPrefab` (`TournamentDomainScoreView`), `rankContainer`, `playAgainButton`, `mainMenuButton`, `onClickToMainMenu` |
 | Avatars | `profileIconList`, `aiProfileList` |
 
 > Button `onClick`s are **auto-wired in code** — assign the `Button` refs only; do **not** add inspector
 > `onClick` entries for ready/next/playAgain/mainMenu (double-fire).
 
-- Round-0 lobby shows only **human players** (AI spawn at game start) — by design.
-- `extraInfoText` is the reserved "TBD top slot" (defaults to the win-target hint).
-- Player roster + team panels reorder by the overall leader (`BuildSortedStandings`).
+- Round-0 lobby shows a single **preview card** (the roster, no scores) so the intro isn't empty.
+- Player roster + round cards reorder by the overall leader (`BuildSortedStandings`).
+- `standingsText` / `leadingDomainText` surface the cumulative race tally (the "first to 6" state).
 
 ---
 
@@ -147,8 +153,9 @@ deadline. Public: `SecondsRemaining`, `LocalReady`, `ReadyCount`, `TotalPlayers`
 
 ## 9. Phase 7 — UI wiring checklist (Maelstrom.unity)
 
-1. **Prefabs:** build `TournamentDomainScoreView` + `TournamentRoundCard` prefabs; reuse the existing
-   `PlayerScoreCard.prefab` for the roster.
+1. **Prefabs:** build the **Tournament Data Card** (`TournamentRoundCard`, with its `playerCardPrefab` +
+   `playerCardContainer`) and reuse `PlayerScoreCard.prefab` as the **Player Data Card**; build a
+   `TournamentDomainScoreView` prefab for the summary rank rows.
 2. **Lobby network:** add a GameObject with **`NetworkObject` + `TournamentLobbyNetwork`** (autoStart 30,
    allReady 5).
 3. **Scene view:** build `activeRoot` / `summaryRoot` / `rankRoot` and wire every field in §6 on the
