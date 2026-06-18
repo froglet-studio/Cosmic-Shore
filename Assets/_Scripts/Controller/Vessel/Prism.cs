@@ -488,6 +488,9 @@ namespace CosmicShore.Gameplay
             CachedVolume = v > 0f ? v : Mathf.Max(prismProperties?.volume ?? 0f, 0f);
         }
 
+        // Growth Methods
+        public void Grow(float amount = 1) => scaleAnimator.Grow(amount);
+
         // Collision Handling
         protected void OnTriggerEnter(Collider other)
         {
