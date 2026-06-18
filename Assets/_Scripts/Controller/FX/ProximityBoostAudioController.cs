@@ -321,13 +321,12 @@ namespace CosmicShore.Gameplay.Audio
             ResolveGates();
             if (!_classGatePass || !_localGatePass) return;
 
-            // The SOAP event is global; multiple vessels could in principle
-            // raise it. Filter to events that match our own vessel's
-            // current multiplier so we never react to a remote vessel's
-            // boost. Tolerance is a small epsilon since the impactor sets
-            // the field then raises the event in the same frame.
-            float ourMult = _status.BoostMultiplier;
-            if (Mathf.Abs(ourMult - payload.BoostMultiplier) > 0.001f) return;
+            // The SOAP event is global; every vessel (incl. the remote owner's
+            // per-frame DecayBoost) raises it. Filter by source-vessel identity so
+            // we only react to our own vessel's boost. Robust where two vessels
+            // momentarily share a multiplier — the old multiplier-match filter
+            // mis-fired in that case.
+            if (payload.VesselStatus != null && payload.VesselStatus != _status) return;
 
             // Rising edge → fire the per-skim tick one-shot. We compare
             // against the last observed raw multiplier so this is robust to
