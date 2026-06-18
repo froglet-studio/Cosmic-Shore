@@ -541,6 +541,39 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Live prisms within <paramref name="radius"/> of ANY of <paramref name="centers"/>,
+        /// in a SINGLE pass over the packed spatial array (early-break once a prism is
+        /// near any centre). Replaces N separate QuerySphere calls for the collider-LOD
+        /// union: a large LOD radius forces each QuerySphere into its linear-scan fallback,
+        /// so per-focus calls were O(centers × population); this is one cache-friendly pass.
+        /// </summary>
+        public int QueryUnionOfSpheres(List<Vector3> centers, float radius, List<Prism> results)
+        {
+            results.Clear();
+            if (!_spatial.IsCreated || centers == null || centers.Count == 0) return 0;
+
+            float radiusSq = radius * radius;
+            int centerCount = centers.Count;
+            // Stack-free: read centres straight from the list each test (centerCount is tiny).
+            for (int i = 0; i < _highWaterMark; i++)
+            {
+                var s = _spatial[i];
+                if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                for (int cI = 0; cI < centerCount; cI++)
+                {
+                    float3 ctr = (float3)(Vector3)centers[cI];
+                    if (math.distancesq(s.Position, ctr) <= radiusSq)
+                    {
+                        var prism = _prisms[i];
+                        if (prism) results.Add(prism);
+                        break; // near at least one focus — no need to test the rest
+                    }
+                }
+            }
+            return results.Count;
+        }
+
+        /// <summary>
         /// Copies every LIVE prism (active, not destroyed) into
         /// <paramref name="results"/> (cleared first); returns the count. One linear
         /// pass over the managed refs — the iteration view for whole-population

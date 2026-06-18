@@ -78,6 +78,7 @@ namespace CosmicShore.Gameplay
         bool _needsFullSweep = true;
         readonly List<Prism> _liveScratch = new(4096);
         readonly List<Prism> _queryScratch = new(1024);
+        readonly List<Vector3> _fociPos = new(16);
         HashSet<Prism> _nearSet = new();
         HashSet<Prism> _prevNearSet = new();
 
@@ -152,13 +153,17 @@ namespace CosmicShore.Gameplay
             }
 
             // Union of per-focus neighborhoods → the prisms that keep colliders.
-            _nearSet.Clear();
+            // ONE pass over the packed array against all foci (a large LOD radius
+            // forces QuerySphere into its O(population) linear-scan fallback, so the
+            // old per-focus loop was O(foci × population) per tick).
+            _fociPos.Clear();
             for (int f = 0; f < s_foci.Count; f++)
-            {
-                int hits = index.QuerySphere(s_foci[f].position, lodRadiusMeters, _queryScratch);
-                for (int i = 0; i < hits; i++)
-                    _nearSet.Add(_queryScratch[i]);
-            }
+                _fociPos.Add(s_foci[f].position);
+
+            _nearSet.Clear();
+            int hits = index.QueryUnionOfSpheres(_fociPos, lodRadiusMeters, _queryScratch);
+            for (int i = 0; i < hits; i++)
+                _nearSet.Add(_queryScratch[i]);
 
             if (_needsFullSweep)
             {

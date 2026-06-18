@@ -142,6 +142,9 @@ namespace CosmicShore.Gameplay
         {
             // Snap to clean state when the GameObject is disabled (e.g.
             // pooled back). Prevents stale visuals on pool reuse.
+            // Stop being ticked the moment we're pooled/disabled (cheap if not registered).
+            PrismOctahedronShieldManager.Instance?.Unregister(this);
+
             if (_isShielded || _isEngaging || _isShattering)
             {
                 _engageT = 0f;
@@ -243,6 +246,7 @@ namespace CosmicShore.Gameplay
                 _isEngaging = true;
                 DisableCollidersDuringMorph();
                 UpdateEngageMesh(engageCurve.Evaluate(_engageT));
+                PrismOctahedronShieldManager.EnsureInstance()?.Register(this);
             }
         }
 
@@ -275,6 +279,7 @@ namespace CosmicShore.Gameplay
                 // Start the shatter overlay.
                 _shatterT = 0f;
                 _isShattering = true;
+                PrismOctahedronShieldManager.EnsureInstance()?.Register(this);
                 EnsureShatterChild();
                 _shatterRenderer.sharedMaterial =
                     _meshRenderer != null ? _meshRenderer.sharedMaterial : null;
@@ -295,18 +300,27 @@ namespace CosmicShore.Gameplay
 
         // --- Transition driver -----------------------------------------------
 
-        private void Update()
+        /// <summary>
+        /// Advances any in-progress engage/shatter morph by <paramref name="dt"/>.
+        /// Called by <see cref="PrismOctahedronShieldManager"/> ONLY while this shield
+        /// is registered (i.e. actively transitioning) — idle shields are not ticked,
+        /// so there is no per-prism Update() at scale. Returns true while still
+        /// transitioning; the manager drops it when this returns false.
+        /// </summary>
+        internal bool Tick(float dt)
         {
             if (_isEngaging)
-                DriveEngage();
+                DriveEngage(dt);
 
             if (_isShattering)
-                DriveShatter();
+                DriveShatter(dt);
+
+            return _isEngaging || _isShattering;
         }
 
-        private void DriveEngage()
+        private void DriveEngage(float dt)
         {
-            float step = engageDuration > 0f ? Time.deltaTime / engageDuration : 1f;
+            float step = engageDuration > 0f ? dt / engageDuration : 1f;
             _engageT = Mathf.Clamp01(_engageT + step);
 
             UpdateEngageMesh(engageCurve.Evaluate(_engageT));
@@ -318,9 +332,9 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        private void DriveShatter()
+        private void DriveShatter(float dt)
         {
-            float step = shatterDuration > 0f ? Time.deltaTime / shatterDuration : 1f;
+            float step = shatterDuration > 0f ? dt / shatterDuration : 1f;
             _shatterT = Mathf.Clamp01(_shatterT + step);
 
             float t = shatterCurve.Evaluate(_shatterT);
