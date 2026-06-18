@@ -108,6 +108,45 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void RecordResults_RecordsPerRoundHistory()
+        {
+            _data.RecordResults(
+                new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby), Row(3, Domains.Gold) },
+                playerSnapshots: null, modeDisplayName: "Skim Race", intensity: 2);
+            _data.RecordResults(
+                new[] { Row(1, Domains.Ruby), Row(2, Domains.Gold), Row(3, Domains.Jade) },
+                playerSnapshots: null, modeDisplayName: "Joust", intensity: 3);
+
+            Assert.AreEqual(2, _data.History.Count, "One history record per recorded game.");
+
+            var r1 = _data.History[0];
+            Assert.AreEqual(1, r1.RoundNumber);
+            Assert.AreEqual("Skim Race", r1.ModeDisplayName);
+            Assert.AreEqual(2, r1.Intensity);
+            CollectionAssert.AreEqual(new[] { Domains.Jade, Domains.Ruby, Domains.Gold }, r1.DomainOrder);
+            Assert.AreEqual(Domains.Jade, r1.WinningDomain, "DomainOrder[0] is the round winner.");
+            Assert.AreEqual(3, r1.Players.Count, "Snapshot rebuilt from results when none supplied.");
+            Assert.AreEqual("P1", r1.Players[0].Name);
+            Assert.AreEqual(1, r1.Players[0].Rank, "Snapshot preserves per-round rank.");
+
+            var r2 = _data.History[1];
+            Assert.AreEqual(2, r2.RoundNumber);
+            Assert.AreEqual("Joust", r2.ModeDisplayName);
+            Assert.AreEqual(Domains.Ruby, r2.WinningDomain);
+        }
+
+        [Test]
+        public void ResetRuntime_ClearsHistory()
+        {
+            _data.RecordResults(new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby) });
+            Assert.AreEqual(1, _data.History.Count);
+
+            _data.ResetRuntime();
+
+            Assert.AreEqual(0, _data.History.Count, "History clears for a fresh shuffle.");
+        }
+
+        [Test]
         public void BuildSortedStandings_OrdersByPointsDescending()
         {
             _data.RecordResults(new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby), Row(3, Domains.Gold) });

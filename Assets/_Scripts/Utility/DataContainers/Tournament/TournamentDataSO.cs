@@ -37,6 +37,61 @@ namespace CosmicShore.Utility
     }
 
     /// <summary>
+    /// Display snapshot of one player's finish in a single tournament round, captured at game-end
+    /// into <see cref="TournamentDataSO.History"/>. Needed because the Maelstrom hub / summary is a
+    /// UI-only scene where <c>GameDataSO.Players</c> and <c>GameDataSO.Results</c> are already cleared
+    /// by the per-scene reset — the snapshot preserves everything the round cards and the lobby player
+    /// list need to render without those live objects.
+    /// </summary>
+    [System.Serializable]
+    public class TournamentPlayerSnapshot
+    {
+        public string Name;
+        public Domains Domain;
+
+        /// <summary>Profile-icon id for humans (resolve via SO_ProfileIconList); AI use the AI profile list by Name (-1 = none).</summary>
+        public int AvatarId = -1;
+        public bool IsAI;
+
+        /// <summary>1-based finishing rank within this round (1 = best).</summary>
+        public int Rank;
+
+        /// <summary>Mode-formatted primary score string for this round (e.g. "01:24:30", "12 Crystals").</summary>
+        public string ScoreText;
+
+        /// <summary>Optional mode-formatted secondary stat for this round, or null.</summary>
+        public string Secondary;
+    }
+
+    /// <summary>
+    /// One completed tournament round, captured at game-end. Drives the Maelstrom hub's per-round
+    /// scroll cards and the final summary. <see cref="DomainOrder"/> is the per-domain placement
+    /// (index 0 = 1st), so the points each domain earned this round are <c>PointsForPlace(i+1)</c>.
+    /// </summary>
+    [System.Serializable]
+    public class TournamentRoundRecord
+    {
+        /// <summary>1-based round number, equal to GamesPlayed at the time it was recorded.</summary>
+        public int RoundNumber;
+
+        /// <summary>Player-facing name of the mode that was played (revealed after the fact).</summary>
+        public string ModeDisplayName;
+
+        /// <summary>The intensity this round was played at.</summary>
+        public int Intensity;
+
+        /// <summary>Players who finished this round, ranked best-first.</summary>
+        public List<TournamentPlayerSnapshot> Players = new();
+
+        /// <summary>Active domains ordered by placement this round (index 0 = 1st place).</summary>
+        public List<Domains> DomainOrder = new();
+
+        /// <summary>The domain that placed 1st this round (Blue if unknown).</summary>
+        public Domains WinningDomain =>
+            DomainOrder != null && DomainOrder.Count > 0 ? DomainOrder[0] : Domains.Blue;
+    }
+
+    /// <summary>
     /// SOAP data container for a Tournament session — the single source of truth for
     /// the game lineup, the cumulative per-domain standings, and the placement-points
     /// table. Authored once as an asset (lineup + points table); the runtime fields
@@ -59,7 +114,7 @@ namespace CosmicShore.Utility
 
         [Tooltip("Scene loaded as the tournament lobby/intro (the SO_ArcadeGame card for " +
                  "the tournament points here). Its load is the per-peer 'tournament started' signal.")]
-        public string LobbySceneName = "Tournament";
+        public string LobbySceneName = "Maelstrom";
 
         [Tooltip("This meta-mode's OWN Arcade card (ArcadeGameTournament.asset). Its DisplayName is the " +
                  "player-facing name of the mode (currently \"Maelstrom\") and is the SINGLE SOURCE of that " +
@@ -125,6 +180,13 @@ namespace CosmicShore.Utility
 
         /// <summary>Cumulative standings, keyed by domain (team).</summary>
         [System.NonSerialized] public List<TournamentDomainStanding> Standings = new();
+
+        /// <summary>
+        /// Per-round completed-game history, captured at game-end by <see cref="RecordResults"/>.
+        /// Survives the per-scene <c>GameDataSO.ResetRuntimeData</c>, so the Maelstrom hub/summary
+        /// can render the full per-player roster and per-round cards.
+        /// </summary>
+        [System.NonSerialized] public List<TournamentRoundRecord> History = new();
 
         /// <summary>
         /// The upcoming pool game's display name and the intensity rolled for it, stamped by the host's
@@ -206,6 +268,7 @@ namespace CosmicShore.Utility
             CurrentGameIndex = 0;
             GamesPlayed = 0;
             Standings.Clear();
+            History.Clear();
             TournamentAINames.Clear();
             // IntensityCeiling is intentionally NOT cleared — it is a config value captured at the
             // fresh start (lobby load) and must survive Play Again's reset (which routes through here).
@@ -220,7 +283,15 @@ namespace CosmicShore.Utility
         /// <paramref name="results"/> is the already-synced <see cref="GameDataSO.Results"/>, so all
         /// peers converge on identical standings with no extra networking.
         /// </summary>
-        public void RecordResults(IReadOnlyList<ScoreResult> results)
+        /// <param name="playerSnapshots">Optional per-player display snapshot for this round's history
+        /// (carries avatar/AI metadata the bare <paramref name="results"/> lacks). When null, the
+        /// snapshot is rebuilt from <paramref name="results"/> alone (no avatar/AI info).</param>
+        /// <param name="modeDisplayName">Player-facing name of the mode just played (for the round card).</param>
+        /// <param name="intensity">Intensity this round was played at (for the round card).</param>
+        public void RecordResults(IReadOnlyList<ScoreResult> results,
+                                  List<TournamentPlayerSnapshot> playerSnapshots = null,
+                                  string modeDisplayName = null,
+                                  int intensity = 0)
         {
             if (results == null || results.Count == 0) return;
 
@@ -236,8 +307,46 @@ namespace CosmicShore.Utility
 
             GamesPlayed++;
 
+            // Per-round history snapshot — survives the per-scene reset so the Maelstrom hub/summary
+            // (a UI-only scene where gameData.Players/Results are already cleared) can render the full
+            // roster and per-round cards. Falls back to building from `results` alone when the caller
+            // supplies no snapshots, so history is always recorded (incl. from edit-mode tests).
+            History.Add(new TournamentRoundRecord
+            {
+                RoundNumber = GamesPlayed,
+                ModeDisplayName = modeDisplayName ?? string.Empty,
+                Intensity = intensity,
+                DomainOrder = new List<Domains>(ordered),
+                Players = playerSnapshots ?? BuildSnapshotsFromResults(results),
+            });
+
             OnGameResultRecorded.Raise();
             OnStandingsChanged.Raise();
+        }
+
+        /// <summary>
+        /// Builds bare per-player snapshots from ranked <paramref name="results"/> alone (no avatar/AI
+        /// metadata). Used as the fallback when <see cref="RecordResults"/> is called without an
+        /// enriched snapshot list (e.g. edit-mode tests).
+        /// </summary>
+        static List<TournamentPlayerSnapshot> BuildSnapshotsFromResults(IReadOnlyList<ScoreResult> results)
+        {
+            var list = new List<TournamentPlayerSnapshot>(results.Count);
+            for (int i = 0; i < results.Count; i++)
+            {
+                var r = results[i];
+                list.Add(new TournamentPlayerSnapshot
+                {
+                    Name = r.Name,
+                    Domain = r.Domain,
+                    Rank = r.Rank,
+                    ScoreText = r.ScoreText,
+                    Secondary = r.Secondary,
+                    AvatarId = -1,
+                    IsAI = false,
+                });
+            }
+            return list;
         }
 
         /// <summary>

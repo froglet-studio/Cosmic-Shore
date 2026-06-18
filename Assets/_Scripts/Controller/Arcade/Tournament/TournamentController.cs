@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using Unity.Netcode;
 using UnityEngine;
@@ -128,9 +130,12 @@ namespace CosmicShore.Gameplay
             if (_tournament == null || !_tournament.IsActive) return;
 
             // Fold this game's ranked, synced results into the cumulative per-domain standings (and
-            // bump GamesPlayed). Runs on every peer with identical input, BEFORE the next Single load
-            // clears Results.
-            _tournament.RecordResults(_gameData.Results);
+            // bump GamesPlayed) + capture a per-round history snapshot. Runs on every peer with
+            // identical input, BEFORE the next Single load clears Results / Players.
+            var snapshots = BuildPlayerSnapshots(_gameData.Results);
+            string modeName = _tournament.CurrentGame != null ? _tournament.CurrentGame.DisplayName : null;
+            int intensity = _gameData.SelectedIntensity != null ? _gameData.SelectedIntensity.Value : 0;
+            _tournament.RecordResults(_gameData.Results, snapshots, modeName, intensity);
 
             // Race to 6 (or the game cap): once the shuffle is decided, the next Continue loads the
             // summary instead of another game. Evaluated identically on every peer from synced state.
@@ -139,6 +144,46 @@ namespace CosmicShore.Gameplay
                 _stateMachine.TransitionTo(TournamentPhase.Complete);
                 _tournament.OnTournamentCompleted.Raise();
             }
+        }
+
+        /// <summary>
+        /// Builds enriched per-player history snapshots for the just-finished round by merging the
+        /// ranked <paramref name="results"/> with avatar / AI metadata from the still-populated
+        /// <c>gameData.Players</c> (matched by Name) — captured before the next Single load clears them.
+        /// Runs on every peer; avatar/AI fields are display-only so minor cross-peer differences are harmless.
+        /// </summary>
+        List<TournamentPlayerSnapshot> BuildPlayerSnapshots(IReadOnlyList<ScoreResult> results)
+        {
+            var list = new List<TournamentPlayerSnapshot>();
+            if (results == null) return list;
+
+            for (int i = 0; i < results.Count; i++)
+            {
+                var r = results[i];
+
+                IPlayer player = null;
+                var players = _gameData.Players;
+                if (players != null)
+                {
+                    for (int p = 0; p < players.Count; p++)
+                    {
+                        var candidate = players[p];
+                        if (candidate != null && candidate.Name == r.Name) { player = candidate; break; }
+                    }
+                }
+
+                list.Add(new TournamentPlayerSnapshot
+                {
+                    Name = r.Name,
+                    Domain = r.Domain,
+                    Rank = r.Rank,
+                    ScoreText = r.ScoreText,
+                    Secondary = r.Secondary,
+                    AvatarId = player != null ? player.AvatarId : -1,
+                    IsAI = player != null && player.IsInitializedAsAI,
+                });
+            }
+            return list;
         }
 
         // ── Session control ──────────────────────────────────────────────────────
