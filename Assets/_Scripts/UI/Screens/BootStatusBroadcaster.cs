@@ -177,7 +177,7 @@ namespace CosmicShore.UI
 
             // Keep the loading splash CLEAN on every game launch. The Maelstrom round reveal (mode /
             // intensity / leading domain) now lives on the dedicated in-game connecting panel
-            // (MaelstromConnectingPanel) rather than on the splash, so we just clear whatever status was
+            // (ConnectingPanelController) rather than on the splash, so we just clear whatever status was
             // last shown — in particular a stale Retry left over from a connection blip the auto-recovery
             // already handled.
             requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Hide));

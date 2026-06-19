@@ -310,7 +310,7 @@ The summary panel is per-player cards + a domain-rank readout (not per-domain ra
 `mainMenuButton`. On the summary card prefab: `domainBackground` + `palette`. Leave RandomInfoText
 (the stats placeholder) static.
 
-### v2.3 — in-game connecting panel (Shombith)
+### v2.3 — in-game connecting panel (Shombith) — *superseded by v2.4*
 
 The Maelstrom round reveal moves OFF the loading splash and onto a dedicated in-game panel:
 
@@ -329,3 +329,28 @@ The Maelstrom round reveal moves OFF the loading splash and onto a dedicated in-
 `TournamentConnectingInfo` with `gameData`/`tournamentData`/`palette` + its mode/intensity/lead texts).
 Assign the panel to `MiniGameHUD.connectingPanel` (on `GameCanvas-HexRace.prefab`, shared by the three
 domain games). Flow: scene loads → connecting panel (2s, own camera) → pre-game cinematic → ready/play.
+
+### v2.4 — connecting panel consolidated → `ConnectingPanelController` (Shombith)
+
+Replaces the v2.3 `MaelstromConnectingPanel` + `TournamentConnectingInfo` (both deleted) with **one**
+component, and makes the panel generic (every scene), not tournament-gated:
+
+- **`ConnectingPanelController`** (one script on the ConnectingPanel object — *not* "Tournament…"):
+  - `connectingCamera` — embedded in the prefab, enabled while the panel is up, disabled on hide so the
+    gameplay camera takes over.
+  - `statusText` — "CONNECTING TO SHORE" with the trailing dots animating `. .. … ….` on a loop
+    (`statusBaseText`, `dotInterval`).
+  - `gameModeText` — "{MODE} - INTENSITY {N}" (mode display name from the GameQueue, enum-name fallback).
+  - `maelstromRankText` — the ranked domains (each colour from the palette); the whole object is
+    **enabled only in a Maelstrom run**, hidden otherwise. `rankHeader` (default "DOMAIN RANK") prefixes it.
+  - Shows for `dwellSeconds` (2s) then hides; `gameData`, `tournamentData`, `palette` wired on it.
+- **The panel is a SIBLING of MiniGameHUD** (its own CanvasGroup). While it's up, `MiniGameHUD` hides
+  itself (`Hide()` → CG 0) and restores (`Show()` → CG 1) after — the panel can't be a child or the
+  HUD's CG would zero it out. `MiniGameHUD.connectingPanel` is the (now `ConnectingPanelController`)
+  reference; flow: scene loads → HUD hidden + connecting panel (2s) → HUD shown → cinematic → ready/play.
+- **Loading splash stays clean** (`BootStatusBroadcaster.HandleLaunchGame` clears it) — the reveal is
+  entirely on this in-game panel now.
+
+**Wire:** ConnectingPanel (sibling of MiniGameHUD under GameCanvas) → `ConnectingPanelController` with
+`gameData`/`tournamentData`/`palette`, `connectingCamera` (Depth above gameplay cam, Clear Flags
+Skybox/Solid), `statusText`, `gameModeText`, `maelstromRankText`. Assign it to `MiniGameHUD.connectingPanel`.

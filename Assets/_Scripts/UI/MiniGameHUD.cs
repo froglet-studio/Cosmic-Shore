@@ -36,9 +36,9 @@ namespace CosmicShore.UI
         [Header("Related UI Components")]
         [SerializeField] private Scoreboard scoreboard;
 
-        [Tooltip("Maelstrom-only connecting panel (its own camera + round reveal), shown ~2s before the " +
-                 "pre-game cinematic. No-ops outside a tournament. Leave null in scenes without it.")]
-        [SerializeField] private MaelstromConnectingPanel connectingPanel;
+        [Tooltip("Connecting panel (sibling of the HUD with its own camera + CanvasGroup), shown ~2s " +
+                 "before the pre-game cinematic. The HUD hides (CG 0) while it's up. Leave null in scenes without it.")]
+        [SerializeField] private ConnectingPanelController connectingPanel;
 
         [Header("Volume / Pause Button (universal domain-volume gauge)")]
         [Tooltip("The in-game pause button. The domain-volume hex gauge is auto-attached to it so the SAME gauge trains as the pause button across every gameplay scene. Leave null to auto-find a button named \"Volume / Pause Button\" under the HUD canvas.")]
@@ -324,7 +324,6 @@ namespace CosmicShore.UI
 
             try
             {
-                Show();
                 CleanupUI();
                 HideLocalVesselHUD();
                 UpdateTurnMonitorDisplay(string.Empty);
@@ -332,10 +331,15 @@ namespace CosmicShore.UI
                 view.UpdateScoreUI("0");
                 ToggleReadyButton(false);
 
-                // Maelstrom: hold the connecting panel (its own camera + round reveal) ~2s before the
-                // cinematic. No-ops outside a tournament, so other modes are unaffected.
+                // Connecting panel: hide the HUD (CG 0) while the panel (its own camera + reveal) holds
+                // ~2s, then restore the HUD. The panel is a sibling with its own CanvasGroup, so it stays
+                // visible while the HUD is hidden.
                 if (connectingPanel != null)
+                {
+                    Hide();
                     await connectingPanel.ShowAsync(ct);
+                }
+                Show();
 
                 // Play pre-game cinematic if available
                 if (enablePreGameCinematic && preGameCinematic != null)
