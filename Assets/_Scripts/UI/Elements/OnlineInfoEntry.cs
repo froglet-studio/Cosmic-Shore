@@ -31,6 +31,8 @@ namespace CosmicShore.UI
         [SerializeField] private Color inLobbyColor = new(0.4f, 0.8f, 1f, 1f);
         [SerializeField] private Color inMatchColor = new(0.9f, 0.2f, 0.2f, 1f);
         [SerializeField] private Color lobbyFullColor = new(0.5f, 0.5f, 0.5f, 1f);
+        [Tooltip("Label colour when this player is already in the local player's party (non-invitable).")]
+        [SerializeField] private Color inYourPartyColor = new(0.6f, 0.9f, 0.6f, 1f);
 
         [Header("Row Tints")]
         [Tooltip("Background tint when no invite is pending.")]
@@ -56,7 +58,7 @@ namespace CosmicShore.UI
         [Tooltip("Scale multiplier at the peak of the invite-click punch.")]
         [SerializeField] private float invitePressPunchScale = 1.08f;
 
-        public enum Status { Online, InLobby, InMatch, LobbyFull }
+        public enum Status { Online, InLobby, InMatch, LobbyFull, InYourParty }
 
         string _playerId;
         Action<string> _onInvite;
@@ -161,6 +163,10 @@ namespace CosmicShore.UI
                         ? "IN A MATCH"
                         : $"IN A MATCH — {matchName.ToUpperInvariant()}";
                     color = inMatchColor;
+                    break;
+                case Status.InYourParty:
+                    text = "IN YOUR PARTY";
+                    color = inYourPartyColor;
                     break;
                 default:
                     text = "ONLINE";

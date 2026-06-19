@@ -329,7 +329,14 @@ namespace CosmicShore.UI
                       : (connectionData != null ? connectionData.MaxPartySlots : 0);
             matchName = player.MatchName;
 
-            // In-match takes priority.
+            // Already in MY party → non-invitable "IN YOUR PARTY" (Task 1). Highest
+            // priority: a party member is in *my* lobby, not somewhere else. OnlineInfoEntry
+            // makes this status non-invitable, so the row disables + relabels (it is NOT
+            // hidden — the party member stays visible as a status indicator).
+            if (IsInSameParty(player.PlayerId))
+                return OnlineInfoEntry.Status.InYourParty;
+
+            // In-match takes priority (over lobby states).
             if (!string.IsNullOrEmpty(matchName))
                 return OnlineInfoEntry.Status.InMatch;
 
