@@ -66,9 +66,15 @@ namespace CosmicShore.Gameplay
 
         [Header("Active — START / ready button")]
         [SerializeField] Button readyButton;
+        [Tooltip("Optional — button face. Shows \"START\" / \"READY ✓\" when wired (else left as authored).")]
         [SerializeField] TMP_Text readyButtonLabel;
+        [Tooltip("Animated countdown text, e.g. \"Game will start in 12s\". Pulses each tick.")]
+        [SerializeField] TMP_Text countdownText;
         [Tooltip("Optional \"x / y ready\" tally.")]
         [SerializeField] TMP_Text readyTallyText;
+        [Tooltip("Display-only countdown used when no TournamentLobbyNetwork is wired (panel testing / " +
+                 "degraded mode). With the network component wired, the synced deadline drives it instead.")]
+        [SerializeField, Min(1f)] float localCountdownSeconds = 30f;
 
         [Header("Summary layout")]
         [SerializeField] GameObject summaryRoot;
@@ -96,6 +102,7 @@ namespace CosmicShore.Gameplay
         bool _active;
         bool _summaryActionTaken;
         int _lastShownSecs = -1;
+        float _localCountdownEnd;   // unscaled-time deadline for the display-only fallback countdown
 
         void Awake()
         {
@@ -125,24 +132,43 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!_active || lobbyNetwork == null) return;
+            if (!_active) return;
 
-            int secs = lobbyNetwork.SecondsRemaining;
-            if (readyButtonLabel)
+            int secs = CountdownSeconds();
+
+            if (countdownText)
             {
-                string state = lobbyNetwork.LocalReady ? "READY ✓" : "START";
-                readyButtonLabel.text = $"{state}   {secs}";
-
+                countdownText.text = $"Game will start in {secs}s";
                 if (secs != _lastShownSecs)   // AAA polish: punch on each tick
                 {
                     _lastShownSecs = secs;
-                    readyButtonLabel.transform.DOKill(true);
-                    readyButtonLabel.transform.localScale = Vector3.one;
-                    readyButtonLabel.transform.DOPunchScale(Vector3.one * 0.12f, 0.25f, 6, 0.6f).SetUpdate(true);
+                    Pulse(countdownText.transform);
                 }
             }
-            if (readyTallyText)
-                readyTallyText.text = $"{lobbyNetwork.ReadyCount}/{lobbyNetwork.TotalPlayers} ready";
+
+            // Button face + ready tally only apply with the networked component.
+            if (lobbyNetwork != null)
+            {
+                if (readyButtonLabel)
+                    readyButtonLabel.text = lobbyNetwork.LocalReady ? "READY ✓" : "START";
+                if (readyTallyText)
+                    readyTallyText.text = $"{lobbyNetwork.ReadyCount}/{lobbyNetwork.TotalPlayers} ready";
+            }
+        }
+
+        // Whole seconds left before the round starts. Uses the networked deadline when the component is
+        // wired; otherwise a display-only local timer (panel testing / degraded mode — no auto-advance).
+        int CountdownSeconds()
+        {
+            if (lobbyNetwork != null) return lobbyNetwork.SecondsRemaining;
+            return Mathf.Max(0, Mathf.CeilToInt(_localCountdownEnd - Time.unscaledTime));
+        }
+
+        static void Pulse(Transform t)
+        {
+            t.DOKill(true);
+            t.localScale = Vector3.one;
+            t.DOPunchScale(Vector3.one * 0.12f, 0.25f, 6, 0.6f).SetUpdate(true);
         }
 
         // ── Active layout (lobby + hub) ─────────────────────────────────────────────
@@ -150,12 +176,14 @@ namespace CosmicShore.Gameplay
         void ShowActive()
         {
             _active = true;
+            _lastShownSecs = -1;
+            _localCountdownEnd = Time.unscaledTime + localCountdownSeconds;
             SetRoot(activeRoot, true);
             SetRoot(summaryRoot, false);
             SetRoot(rankRoot, false);
 
             if (titleText) titleText.text = ModeName().ToUpperInvariant();
-            if (gameModesText) gameModesText.text = GameModesPool();
+            if (gameModesText) gameModesText.text = $"GAMEMODES : {GameModesPool()}";
 
             int gamesPlayed = tournamentData != null ? tournamentData.GamesPlayed : 0;
             if (roundCounterText) roundCounterText.text = $"ROUND {gamesPlayed + 1}";
@@ -175,8 +203,11 @@ namespace CosmicShore.Gameplay
         {
             var lead = WinningDomain();   // best-first standings leader
             if (leadingDomainText)
-                leadingDomainText.text = lead == Domains.Blue ? "—" : lead.ToString().ToUpperInvariant();
+                leadingDomainText.text = lead == Domains.Blue
+                    ? "LEADING DOMAIN : —"
+                    : $"LEADING DOMAIN : {Colored(lead.ToString().ToUpperInvariant(), DomainColor(lead))}";
 
+            // Optional extra tint targets (e.g. an icon/swatch); the name itself is coloured via rich text.
             if (leadingDomainColorTargets != null)
             {
                 var c = DomainColor(lead);
@@ -436,6 +467,10 @@ namespace CosmicShore.Gameplay
             gameData != null && gameData.ThemeManagerData != null
                 ? gameData.ThemeManagerData.GetDomainUIColor(domain)
                 : Color.gray;
+
+        // Wraps text in a TMP rich-text colour tag so only the domain NAME is tinted (label stays white).
+        static string Colored(string text, Color c) =>
+            $"<color=#{ColorUtility.ToHtmlStringRGB(c)}>{text}</color>";
 
         Sprite ResolveAvatar(TournamentPlayerSnapshot s)
         {

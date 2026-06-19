@@ -174,3 +174,84 @@ The active/summary scrolls hold **Tournament Data Cards**, each nesting its roun
 The in-scene `ConnectingPanel` has **no current driver** in code (no `ToggleConnectingPanel` caller). If
 you want the richer in-scene reveal (vs. the splash-only `FormatConnecting`), we need to wire its
 show/hide into the pre-game flow. Flag which surface you want and I'll wire it.
+
+---
+
+## v2 — UI integration (Shombith) ✅ (2026-06-19)
+
+Driven by the final Maelstrom intro-panel UI. All ✅ done; everything above is unchanged — this section
+only adds the v2 deltas + the exact scene-wiring map.
+
+### What changed (code)
+- **Player Data Card → `TournamentPlayerCard`** (new component): shows **Round Score** (that round's
+  result) + **Total Score** (the player's DOMAIN cumulative tournament points, *as-of that round*, so it
+  climbs across cards). Replaces the `PlayerScoreCard` reuse inside the round card.
+- **Tournament Data Card (`TournamentRoundCard`)** nests `TournamentPlayerCard`s and takes a domain→total
+  resolver. The winning-domain block always renders — `WINNING DOMAIN : —` in the preview / undecided round.
+- **Domain-coloured names via TMP rich text** — only the NAME is tinted (`LEADING DOMAIN : <jade>JADE</jade>`,
+  `WINNING DOMAIN : <jade>JADE</jade>`); the label stays white. The **card BG** tints to the winner via
+  `winnerColorTargets` (assign the card's background image), and the **player row** tints via the player
+  card's `colorTargets`.
+- **Separate animated countdown text** (`countdownText`) — "Game will start in {N}s", DOTween punch each
+  tick. The button face is now optional (`readyButtonLabel` shows START / READY ✓ only when wired).
+- **Local countdown fallback** (`localCountdownSeconds`, default 30) — ticks + animates for panel testing
+  even before `TournamentLobbyNetwork` is in the scene (display-only, no auto-advance).
+- **Top-bar labels** carry their full prefix in one TMP: `GAMEMODES : …`, `LEADING DOMAIN : …`, `ROUND N`,
+  and `raceRuleText` = "First domain to {WinTarget} points wins". Round counter is `ROUND N` (no "/6").
+- Round 0 shows a single **preview card** (roster, no scores, winner `—`); AI appear from round 1.
+
+### Scene-wiring map (Maelstrom.unity → final hierarchy)
+
+**`TournamentSceneView`** (on `GameCanvas - TournamentSceneView`):
+
+| Field | Hierarchy object |
+|---|---|
+| `gameData` / `tournamentData` | GameData SO / `TournamentData.asset` |
+| `lobbyNetwork` | *(empty for the first test — add the NetworkObject later)* |
+| `titleText` | Title Text (TMP) |
+| `activeRoot` | Intro Panel |
+| `gameModesText` | PoolText |
+| `roundCounterText` | RoundStatusText |
+| `raceRuleText` | InfoText |
+| `leadingDomainText` | LeadingDomainText |
+| `roundCardPrefab` | **MaelstromRoundScoreCardBG prefab asset** |
+| `historyContent` | Content |
+| `historyScrollRect` | MaelstromSummaryScrollView |
+| `readyButton` | Start Button |
+| `readyButtonLabel` | Start Button ▸ Text (TMP) *(optional)* |
+| `countdownText` | Text (TMP) (1) — "Game will start in X…" |
+| `profileIconList` / `aiProfileList` | `SO_ProfileIconList` / `MainAIProfileList.asset` |
+| `leadingDomainColorTargets` / `standingsText` | *(leave empty — name is rich-text coloured; cumulative lives in the cards)* |
+| Summary / Rank fields | *(later — Summary Panel)* |
+
+**`TournamentRoundCard`** (on the MaelstromRoundScoreCardBG prefab):
+
+| Field | Hierarchy object |
+|---|---|
+| `roundNameText` | RoundNameText |
+| `winningDomainText` | WinningDomainText |
+| `winnerColorTargets` | the card's background **Image** (MaelstromRoundScoreCardBG) |
+| `playerCardPrefab` | **MaelStromPlayerScoreCardContainer prefab asset** |
+| `playerCardContainer` | PlayerScoreCardContainer |
+| `roundNumberText` / `winningDomainRoot` / `currentRoundHighlight` | *(optional)* |
+
+**`TournamentPlayerCard`** (on the MaelStromPlayerScoreCardContainer prefab):
+
+| Field | Hierarchy object |
+|---|---|
+| `avatarImage` | Avatar |
+| `nameText` | PlayerNameText |
+| `roundScoreText` | RoundScoreText |
+| `totalScoreText` | TotalScoreText |
+| `colorTargets` | the player row's border/background **Image** |
+| `roundScoreRoot` / `totalScoreRoot` | *(optional — auto-hide when empty)* |
+
+### Notes
+- `roundCardPrefab` / `playerCardPrefab` must point to the **prefab assets**, not the scene template
+  instances — the templates under `Content` (and the sample player row) are cleared at runtime and
+  rebuilt from data, so an unbound prefab = empty scroll.
+- `lobbyNetwork` is optional for the first panel test (local countdown covers the animation); add a
+  `NetworkObject + TournamentLobbyNetwork` GameObject for the real 30s/5s ready-up.
+- With no live session (Play straight from the scene), the roster is empty (no Player objects) — the
+  chrome + countdown render, but cards have no rows. Run via the game flow (or ask for a debug sample-data
+  toggle) to see populated cards.

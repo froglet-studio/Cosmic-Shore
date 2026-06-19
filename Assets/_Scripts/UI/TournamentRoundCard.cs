@@ -74,10 +74,19 @@ namespace CosmicShore.UI
             bool hasWinner = showWinner && winner != Domains.Blue;
             if (winningDomainRoot) winningDomainRoot.SetActive(true);
             if (winningDomainText)
-                winningDomainText.text = hasWinner
-                    ? $"WINNING DOMAIN : {winner.ToString().ToUpperInvariant()}"
-                    : "WINNING DOMAIN : —";
+            {
+                if (hasWinner && colorOf != null)
+                {
+                    string hex = ColorUtility.ToHtmlStringRGB(colorOf(winner));
+                    winningDomainText.text = $"WINNING DOMAIN : <color=#{hex}>{winner.ToString().ToUpperInvariant()}</color>";
+                }
+                else
+                {
+                    winningDomainText.text = "WINNING DOMAIN : —";
+                }
+            }
 
+            // Tint the card BG / accents (winnerColorTargets) to the winning domain — neutral in preview.
             if (winnerColorTargets != null && colorOf != null)
             {
                 var c = colorOf(hasWinner ? winner : Domains.Blue);
