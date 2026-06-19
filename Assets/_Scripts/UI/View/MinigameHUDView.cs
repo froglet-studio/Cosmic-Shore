@@ -45,31 +45,17 @@ namespace CosmicShore.UI
 
         private void Awake()
         {
-            // Auto-discover the connecting-panel child components from the authored panel
-            // so only the connectingPanelCanvasGroup needs wiring in the inspector.
+            // Auto-discover connecting panel components when not assigned in Inspector
             if (connectingPanelCanvasGroup != null)
             {
                 var panelGO = connectingPanelCanvasGroup.gameObject;
                 if (connectingPanel == null)
                     connectingPanel = panelGO.GetComponent<ConnectingPanel>();
                 if (hackerTextAnimator == null)
-                    hackerTextAnimator = panelGO.GetComponentInChildren<DoTweenTypewriterAnimator>(true);
+                    hackerTextAnimator = panelGO.GetComponentInChildren<DoTweenTypewriterAnimator>();
                 if (dotsAnimator == null)
-                    dotsAnimator = panelGO.GetComponentInChildren<ConnectingDotsAnimator>(true);
+                    dotsAnimator = panelGO.GetComponentInChildren<ConnectingDotsAnimator>();
             }
-        }
-
-        /// <summary>True when a connecting panel is authored/wired in this scene or prefab.</summary>
-        public bool HasConnectingPanel => connectingPanelCanvasGroup != null;
-
-        /// <summary>
-        /// Sets the game-details line(s) shown on the connecting panel (mode name,
-        /// intensity, players in the room). No-op if no panel is present.
-        /// </summary>
-        public void SetConnectingDetails(string details)
-        {
-            if (connectingPanel != null)
-                connectingPanel.SetDetails(details);
         }
 
         public void UpdateScoreUI(string message) => scoreDisplay.text = message;

@@ -295,6 +295,7 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 | End-game sequencer | `EndGameSequencer.cs` (shared) | `_Scripts/Utility/DataContainers/` |
 | In-game HUD | `MultiplayerCrystalCaptureHUD.cs` | `_Scripts/UI/` |
 | Scoreboard | `MultiplayerCrystalCaptureScoreboard.cs` | `_Scripts/UI/` |
+| End-game scoreboard (shared base) | `Scoreboard.cs` | `_Scripts/UI/` |
 | Stats reporter | `CrystalCaptureStatsReporter.cs` | `_Scripts/Controller/Arcade/` |
 | Arcade game config modal | `ArcadeGameConfigureModal.cs` | `_Scripts/UI/Modals/` |
 | Game SO definition | `SO_ArcadeGame.cs` | `_Scripts/ScriptableObjects/` |
@@ -327,3 +328,5 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 7. **HUD refreshes on turn start**: `MultiplayerCrystalCaptureHUD` inherits the base `MultiplayerHUD` refresh on `OnMiniGameTurnStarted` — domain panels (or legacy per-player cards) are initialized from current `RoundStatsList` values, important for replay resets.
 
 8. **Solo play supported**: `MinPlayersAllowed=1` allows launching Crystal Capture without a party. AI backfill provides opponents via `ServerPlayerVesselInitializerWithAI`.
+
+9. **Scoreboard stays on-base across re-shows** (commit `660e4d91`): the shared `Scoreboard.PlayEntranceAnimation` slid the panel in by mutating its own `anchoredPosition` (reading the current pos as the rest target, shoving it down by `offset`, tweening back via `DOAnchorPos`) and never restored it on `HideScoreboard()`. On a stretch-anchored panel a re-entrant/interrupted show captured the already-displaced position as the new rest target, so the board drifted off-base in modes that re-show it — Crystal Capture and Joust. HexRace was immune (`HasEndGame=false` → shown once then a full scene reload). The slide is now disabled: `ShowScoreboard` calls `ShowScoreboardImmediate()` (authored position, forces full CanvasGroup alpha + unit banner scale). Re-enable the slide once the rest position is captured at `Awake` and restored on hide.

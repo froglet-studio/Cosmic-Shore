@@ -31,6 +31,9 @@ namespace CosmicShore.UI
 
         [Header("Data")]
         [SerializeField] protected GameDataSO gameData;
+        [Tooltip("Shuffle (Tournament meta) data — source of the per-domain placement crystals when " +
+                 "IsTournamentMode. Leave null for non-tournament scenes; the reward then stays the flat winner reward.")]
+        [SerializeField] protected TournamentDataSO tournamentData;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
 
         [Header("References")]
@@ -57,6 +60,10 @@ namespace CosmicShore.UI
         [SerializeField] protected SO_ProfileIconList profileIconList;
         [Tooltip("AI profile list used to resolve AI avatars by name.")]
         [SerializeField] protected SO_AIProfileList aiProfileList;
+
+        [Header("Winner Crystal Reward")]
+        [Tooltip("Crystals awarded to the winning player's card (+N indicator). Set 0 to disable.")]
+        [SerializeField] protected int winnerCrystalReward = 5;
 
         [Header("Play Again")]
         [Tooltip("Play Again button — host only in multiplayer. Hidden for non-host clients; the host's Play Again forces everyone to replay.")]
@@ -370,6 +377,8 @@ namespace CosmicShore.UI
                 return;
             }
 
+            string winnerName = orderedStats[0].Name;
+
             for (int i = 0; i < orderedStats.Count; i++)
             {
                 var stats = orderedStats[i];
@@ -384,8 +393,16 @@ namespace CosmicShore.UI
                 if (!string.IsNullOrEmpty(secondary))
                     card.ShowSecondaryStat(secondary);
 
+                // Reward badge: shuffle = this card's DOMAIN per-game {2,1,0}; else winner-only flat.
+                int reward = CardCrystalReward(stats.Domain, stats.Name, winnerName);
+                if (reward > 0)
+                    card.ShowCrystalReward(reward);
+
                 _spawnedCards.Add(card);
             }
+
+            // The scoreboard is the single crystal-award path (local player only).
+            AwardCrystalsToLocalPlayer(winnerName);
         }
 
         /// <summary>
@@ -406,6 +423,8 @@ namespace CosmicShore.UI
                 return;
             }
 
+            string winnerName = results[0].Name;
+
             for (int i = 0; i < results.Count; i++)
             {
                 var r = results[i];
@@ -417,8 +436,14 @@ namespace CosmicShore.UI
                 if (!string.IsNullOrEmpty(r.Secondary))
                     card.ShowSecondaryStat(r.Secondary);
 
+                int reward = CardCrystalReward(r.Domain, r.Name, winnerName);
+                if (reward > 0)
+                    card.ShowCrystalReward(reward);
+
                 _spawnedCards.Add(card);
             }
+
+            AwardCrystalsToLocalPlayer(winnerName);
         }
 
         void ClearPlayerCards()
@@ -435,6 +460,53 @@ namespace CosmicShore.UI
                 foreach (Transform child in playerCardContainer)
                     Destroy(child.gameObject);
             }
+        }
+
+        /// <summary>
+        /// The single crystal-award path (the Scoreboard is the only writer of the wallet). In
+        /// shuffle/tournament mode the local player earns their DOMAIN's per-game placement crystals
+        /// ({2,1,0}; 3rd place earns 0) — credited on every peer for its own local human, once per
+        /// game. In every other mode it stays the original winner-only flat <see cref="winnerCrystalReward"/>.
+        /// </summary>
+        void AwardCrystalsToLocalPlayer(string winnerName)
+        {
+            var localName = gameData.LocalPlayer?.Name;
+            if (string.IsNullOrEmpty(localName)) return;
+
+            var service = PlayerDataService.Instance;
+            if (service == null) return;
+
+            int amount;
+            string source;
+            if (gameData.IsTournamentMode && tournamentData != null)
+            {
+                var localDomain = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
+                amount = tournamentData.CrystalsForDomain(gameData.Results, localDomain);
+                source = "shuffle_placement";
+            }
+            else
+            {
+                // Original behavior: only the winner earns the flat reward.
+                if (winnerCrystalReward <= 0 || localName != winnerName) return;
+                amount = winnerCrystalReward;
+                source = "game_reward";
+            }
+
+            if (amount <= 0) return;   // e.g. a 3rd-place domain earns nothing this game
+
+            int newBalance = service.AddCrystals(amount, source);
+            CSDebug.Log($"[Scoreboard] Awarded {amount} crystals to '{localName}' ({source}). New balance: {newBalance}");
+        }
+
+        /// <summary>
+        /// The "+N crystals" badge amount for one card. Shuffle/tournament: the card's DOMAIN per-game
+        /// placement ({2,1,0}); otherwise the winner-only flat reward (0 for non-winners). 0 = no badge.
+        /// </summary>
+        int CardCrystalReward(Domains domain, string name, string winnerName)
+        {
+            if (gameData.IsTournamentMode && tournamentData != null)
+                return tournamentData.CrystalsForDomain(gameData.Results, domain);
+            return (winnerCrystalReward > 0 && name == winnerName) ? winnerCrystalReward : 0;
         }
 
         // Single source of truth for domain color: the same ColorSet the vessels and

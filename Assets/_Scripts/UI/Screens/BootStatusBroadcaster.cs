@@ -33,6 +33,10 @@ namespace CosmicShore.UI
         [SerializeField] private HostConnectionDataSO       connectionData;
         [SerializeField] private GameDataSO                 gameData;
 
+        [Tooltip("Optional: when a Shuffle (Tournament meta) is mid-run, the between-game loading splash " +
+                 "shows the running domain standings instead of clean branding. Leave null outside that mode.")]
+        [SerializeField] private TournamentDataSO           tournamentData;
+
         [Header("Outbound SOAP (request channel → BootStatusPanel)")]
         [SerializeField] private ScriptableEventBootStatusRequest requestEvent;
 
@@ -168,11 +172,14 @@ namespace CosmicShore.UI
         private void HandleLaunchGame()
         {
             // A game-launch splash just went opaque (SceneLoader.LaunchGame on
-            // every instance — host and clients). Clear whatever status was
-            // last shown — in particular a stale Retry left over from a
-            // connection blip the auto-recovery already handled — so the
-            // loading splash presents clean branding.
+            // every instance — host and clients).
             _inLaunchTransition = true;
+
+            // Keep the loading splash CLEAN on every game launch. The Maelstrom round reveal (mode /
+            // intensity / leading domain) now lives on the dedicated in-game connecting panel
+            // (ConnectingPanelController) rather than on the splash, so we just clear whatever status was
+            // last shown — in particular a stale Retry left over from a connection blip the auto-recovery
+            // already handled.
             requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Hide));
         }
 

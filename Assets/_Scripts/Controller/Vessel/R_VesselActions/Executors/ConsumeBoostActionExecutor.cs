@@ -173,7 +173,8 @@ namespace CosmicShore.Gameplay
             {
                 BoostMultiplier = _status.BoostMultiplier,
                 MaxMultiplier = 0f,
-                SourceDomain = Domains.Blue
+                SourceDomain = Domains.Blue,
+                VesselStatus = _status
             });
 
             if (stacks == 0 && _so && _available == 0 && !_reloading)
