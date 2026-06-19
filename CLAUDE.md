@@ -993,12 +993,15 @@ Each client has its own Cinemachine camera following its own vessel. No network 
 #### UI Components
 
 Party/social UI lives in `_Scripts/UI/Elements/` (`AddFriendPanel` in
-`_Scripts/UI/Views/`, vestigial `PartyInviteNotificationPanel` in
-`_Scripts/UI/Screens/`): `ArcadeLobbyList` (4-slot party panel) + `FriendInfoSlot`
+`_Scripts/UI/Views/`, `PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`):
+`ArcadeLobbyList` (4-slot party panel) + `FriendInfoSlot`
 (one slot), `FriendsListPanel` (combined Online + Requests, no tabs),
-`OnlineInfoEntry` (online row = invite button), `RequestInfoEntry`
-(Accept/Decline — friend-request + party-invite), `FriendInfoEntry` (friend row),
-`AddFriendPanel` (by-name). Full inventory + behaviour: **`Docs/PartySystem/UI.md`**.
+`OnlineInfoEntry` (online row = invite button; in-party rows show "IN YOUR PARTY N/M"
+and are non-invitable, with a cancel-✕ while an outgoing invite is pending),
+`RequestInfoEntry` (Accept/Decline — friend-request + party-invite), `FriendInfoEntry`
+(friend row), `AddFriendPanel` (by-name), and `PartyInviteNotificationPanel` (the
+bottom-left **global invite popup** in Menu_Main — avatar + name + Accept/Decline,
+3s auto-hide, latest-wins). Full inventory + behaviour: **`Docs/PartySystem/UI.md`**.
 
 #### SO Assets
 
@@ -1787,7 +1790,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu), `DomainAssigner` (team pool) | `_Scripts/Controller/Multiplayer/` |
 | Party / Invite | `HostConnectionService` (presence lobby + party sessions, single-writer to `HostConnectionDataSO`), `PartyInviteController` (Netcode host↔client transitions), `FriendsInitializer` (Friends service bridge) | `_Scripts/Controller/Party/` |
-| Party UI | `ArcadeLobbyList` (4-slot party panel) + `FriendInfoSlot` (single slot), `FriendsListPanel` (Online + Requests), `OnlineInfoEntry` (online row = invite button), `RequestInfoEntry` (accept/decline), `FriendInfoEntry` (friend row), `AddFriendPanel` (name input); `PartyInviteNotificationPanel` is vestigial | `_Scripts/UI/Elements/` (`AddFriendPanel` in `_Scripts/UI/Views/`, `PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`) |
+| Party UI | `ArcadeLobbyList` (4-slot party panel) + `FriendInfoSlot` (single slot), `FriendsListPanel` (Online + Requests), `OnlineInfoEntry` (online row = invite button; "IN YOUR PARTY" + cancel-✕ states), `RequestInfoEntry` (accept/decline), `FriendInfoEntry` (friend row), `AddFriendPanel` (name input), `PartyInviteNotificationPanel` (bottom-left global invite popup) | `_Scripts/UI/Elements/` (`AddFriendPanel` in `_Scripts/UI/Views/`, `PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`) |
 | Menu scene controller | `MainMenuController` (sub-state machine: None→Initializing→Ready→LaunchingGame), `MainMenuState` enum | `_Scripts/System/`, `_Scripts/Data/Enums/` |
 | Audio | `AudioSystem` (DI singleton), `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP) | `_Scripts/System/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
 | App systems | Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP, DailyChallenge, TrainingGameProgress | `_Scripts/System/` |

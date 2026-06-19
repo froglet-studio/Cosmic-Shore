@@ -28,7 +28,7 @@ Requests). They share the same component family:
 | `RequestInfoEntry` | A row in the Requests section with Accept/Decline. `Kind { FriendRequest, PartyInvite }` — one row type serves both (delegates to `FriendsServiceFacade` / `PartyInviteController`). |
 | `FriendInfoEntry` | A confirmed-friend row (avatar, name, online status, invite-to-party button → `HostConnectionService.SendInviteAsync`; no add-friend button — already friends). |
 | `AddFriendPanel` (`_Scripts/UI/Views/`) | Text input + [Send] to send a friend request by name → `FriendsServiceFacade.SendFriendRequestByNameAsync`. The only friend-request entry point in code. |
-| `PartyInviteNotificationPanel` (`_Scripts/UI/Screens/`) | **Vestigial** — the legacy standalone invite popup. Invites now surface in `FriendsListPanel` (which auto-opens a `RequestInfoEntry` row). No live references. |
+| `PartyInviteNotificationPanel` (`_Scripts/UI/Screens/`) | The **global invite popup** — a small bottom-left card (avatar + inviter name + Accept/Decline) shown anywhere in Menu_Main when an invite arrives. Subscribes to `OnInviteReceived`, routes to `PartyInviteController`, dismisses on `OnInviteResolved`. **3s auto-hide** (hides only — the invite stays in the `FriendsListPanel` Requests list); **latest-wins** (a newer invite replaces it). Prefab: `_Prefabs/UI Elements/Panels/Party/PartyInviteNotificationPanel.prefab` — must be placed in Menu_Main at a top-level canvas, bottom-left. |
 
 ## Invite UX flow (UI-level)
 
