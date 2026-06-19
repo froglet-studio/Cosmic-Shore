@@ -47,8 +47,10 @@ namespace CosmicShore.UI
         [Header("Settings")]
         [Tooltip("Seconds before an incoming request auto-declines. 0 = no expiry.")]
         [SerializeField] private float friendRequestExpirationSeconds = 600f;
-        [Tooltip("Seconds before an incoming party invite auto-declines.")]
-        [SerializeField] private float partyInviteExpirationSeconds = 30f;
+        [Tooltip("Seconds the incoming party-invite row lives in the Requests list before it is " +
+                 "auto-removed. Kept in step with the host's outgoing-invite timeout so both sides " +
+                 "clear together (host reverts the invitee to 'online' and can re-invite).")]
+        [SerializeField] private float partyInviteExpirationSeconds = 10f;
 
         [Inject] private FriendsServiceFacade friendsService;
 
@@ -305,7 +307,8 @@ namespace CosmicShore.UI
                 memberCount,
                 maxSlots,
                 matchName,
-                onInvite: OnInviteClicked);
+                onInvite: OnInviteClicked,
+                onCancel: OnCancelInviteClicked);
 
             // Preserve pending-invite tint if we have an outgoing invite in flight.
             if (_outgoingInvitePlayerIds.Contains(player.PlayerId))
@@ -529,6 +532,25 @@ namespace CosmicShore.UI
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to send invite: {e.Message}");
                 _outgoingInvitePlayerIds.Remove(playerId);
                 FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId)?.ResetInviteState();
+            }
+        }
+
+        // The host clicked the ✕ on a pending row. Retract the outgoing invite — HostConnectionService
+        // re-publishes invite_payloads without it (the recipient's invite/popup/row vanish) and fires
+        // OutgoingInviteCleared, which reverts the row to online. The row also resets optimistically.
+        async void OnCancelInviteClicked(string playerId)
+        {
+            _outgoingInvitePlayerIds.Remove(playerId);
+            if (HostConnectionService.Instance == null) return;
+
+            try
+            {
+                await HostConnectionService.Instance.CancelInviteAsync(playerId);
+                CSDebug.Log($"[FriendsListPanel] Invite to {playerId} cancelled");
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[FriendsListPanel] Failed to cancel invite: {e.Message}");
             }
         }
 

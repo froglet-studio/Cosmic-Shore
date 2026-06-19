@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
         private const string ACCEPTED_INVITE_KEY     = "accepted_invite";
         private const string PENDING_SESSION_ID      = "PENDING";
 
-        private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 30f;
+        private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 10f;
         private const int   MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
         private const float FORCE_REFRESH_COOLDOWN_SECONDS   = 0.5f;
         private const int   PROFILE_INIT_TIMEOUT_MS          = 5000;
@@ -595,6 +595,17 @@ namespace CosmicShore.Gameplay
                 _lobbyMutex.Release();
             }
         }
+
+        /// <summary>
+        /// Host-initiated cancel of an outgoing invite (the ✕ on a "Pending Invite" row). Reuses
+        /// the same clear path as the auto-timeout / join-detected clears: removes the invite from
+        /// the tracker, re-publishes <c>invite_payloads</c> WITHOUT that line (so the recipient's
+        /// invite / popup / Requests row disappear), and fires <see cref="OutgoingInviteCleared"/>
+        /// so the host's row reverts to the invitee's online status (re-invitable). No-op if no
+        /// outgoing invite is pending for the target.
+        /// </summary>
+        public UniTask CancelInviteAsync(string targetPlayerId)
+            => ClearOutgoingInviteIfPresentAsync(targetPlayerId, "user-cancel");
 
         public async UniTask AcceptInviteAsync(PartyInviteData invite)
         {

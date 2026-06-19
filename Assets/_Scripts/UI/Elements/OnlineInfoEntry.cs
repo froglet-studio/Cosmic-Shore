@@ -25,6 +25,9 @@ namespace CosmicShore.UI
         [SerializeField] private Image backgroundImage;
         [Tooltip("Button on the row background. Click sends an invite.")]
         [SerializeField] private Button inviteButton;
+        [Tooltip("Small cancel (✕) button shown only while an outgoing invite to this player is " +
+                 "pending. Click retracts the invite. Leave unassigned to disable the affordance.")]
+        [SerializeField] private Button cancelButton;
 
         [Header("Status Colors (applied to Label Text)")]
         [SerializeField] private Color onlineColor = Color.white;
@@ -62,6 +65,7 @@ namespace CosmicShore.UI
 
         string _playerId;
         Action<string> _onInvite;
+        Action<string> _onCancel;
         bool _invitable;
         Status _lastStatus;
         int _lastPartyMemberCount;
@@ -92,10 +96,12 @@ namespace CosmicShore.UI
             int partyMemberCount,
             int partyMaxSlots,
             string matchName,
-            Action<string> onInvite)
+            Action<string> onInvite,
+            Action<string> onCancel = null)
         {
             _playerId = playerId;
             _onInvite = onInvite;
+            _onCancel = onCancel;
 
             if (usernameText)
                 usernameText.text = displayName ?? "Unknown";
@@ -119,6 +125,14 @@ namespace CosmicShore.UI
                 inviteButton.onClick.RemoveAllListeners();
                 if (_invitable)
                     inviteButton.onClick.AddListener(HandleInviteClicked);
+            }
+
+            // Cancel (✕) — wired once, hidden until an invite is pending (SetInvitePending shows it).
+            if (cancelButton)
+            {
+                cancelButton.onClick.RemoveAllListeners();
+                cancelButton.onClick.AddListener(HandleCancelClicked);
+                cancelButton.gameObject.SetActive(false);
             }
 
             // Reset visual pending state when re-populating (unless
@@ -189,6 +203,7 @@ namespace CosmicShore.UI
         public void SetInvitePending()
         {
             if (inviteButton) inviteButton.interactable = false;
+            if (cancelButton) cancelButton.gameObject.SetActive(true);
 
             _isPending = true;
 
@@ -211,6 +226,7 @@ namespace CosmicShore.UI
             StopPulse();
             _isPending = false;
 
+            if (cancelButton) cancelButton.gameObject.SetActive(false);
             if (inviteButton) inviteButton.interactable = _invitable;
             ApplyRowTint(_invitable ? defaultTint : disabledTint);
 
@@ -287,6 +303,14 @@ namespace CosmicShore.UI
             StartCoroutine(PunchScale(transform));
             SetInvitePending();
             _onInvite?.Invoke(_playerId);
+        }
+
+        void HandleCancelClicked()
+        {
+            // Retract the pending invite. ResetInviteState (driven by OutgoingInviteCleared) reverts
+            // the row to its online state; call it optimistically too so the ✕ feels instant.
+            _onCancel?.Invoke(_playerId);
+            ResetInviteState();
         }
 
         IEnumerator PunchScale(Transform target)
