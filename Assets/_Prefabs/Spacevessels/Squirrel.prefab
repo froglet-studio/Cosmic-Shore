@@ -8574,10 +8574,10 @@ Rigidbody:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6417075533431866457}
-  serializedVersion: 4
+  serializedVersion: 5
   m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0
+  m_LinearDamping: 0
+  m_AngularDamping: 0
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -8852,6 +8852,7 @@ MonoBehaviour:
   drift: 0
   seekPlayers: 0
   playerSeekUpdateInterval: 0.5
+  playerReacquireInterval: 0.1
   abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 9105512684531825410}
@@ -9069,7 +9070,6 @@ MonoBehaviour:
   boostBaseMultiplier: {fileID: 11400000, guid: 0e852851d79640f47ab61340406a5a5c,
     type: 2}
   boostMaxMultiplier: {fileID: 11400000, guid: 10388f8ccaeb8b44f9c950ed00af3fbb, type: 2}
-  domainColors: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   joustFlashDuration: 1
   shieldFlashDuration: 1
 --- !u!114 &8755860699239805343
@@ -14534,7 +14534,7 @@ PrefabInstance:
     - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: centerFillAmount
-      value: 0.7
+      value: 0.3
       objectReference: {fileID: 0}
     - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
