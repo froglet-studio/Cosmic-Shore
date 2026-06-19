@@ -34,7 +34,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 170.94298, y: 72}
+  m_AnchoredPosition: {x: 175.02654, y: 68.99999}
   m_SizeDelta: {x: 190.6814, y: 14.8}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4065119529420837568
@@ -172,7 +172,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -16.9, y: 72}
+  m_AnchoredPosition: {x: -12.8164425, y: 68.99999}
   m_SizeDelta: {x: 159.887, y: 14.8}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &4117976666206168989
@@ -316,7 +316,7 @@ RectTransform:
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 605.5269, y: 165.3429}
+  m_SizeDelta: {x: 605.5269, y: 177.8705}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &3114697611147875408
 CanvasRenderer:
@@ -368,13 +368,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 24329cad9972496d88ecec8886b7ef33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.TournamentRoundCard
-  roundNameText: {fileID: 8132769157372173592}
   roundNumberText: {fileID: 1245805498213227095}
+  roundNameText: {fileID: 8132769157372173592}
   winningDomainText: {fileID: 4357848691178908371}
-  winnerColorTargets:
-  - {fileID: 9180720385522023811}
-  winningDomainRoot: {fileID: 0}
   currentRoundHighlight: {fileID: 0}
+  cardBackground: {fileID: 9180720385522023811}
+  palette: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   playerCardPrefab: {fileID: -6938534531381848714, guid: cd63e74244ceca240a435734402e496f,
     type: 3}
   playerCardContainer: {fileID: 3207760427120307821}
@@ -413,7 +412,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 5}
+  m_AnchoredPosition: {x: -6, y: 8}
   m_SizeDelta: {x: 605.53, y: 118.0686}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &8148933205127374221
@@ -514,7 +513,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -189.08356, y: 72}
+  m_AnchoredPosition: {x: -185, y: 69}
   m_SizeDelta: {x: 144.3714, y: 14.8}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &2915034912506133342
