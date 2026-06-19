@@ -1653,7 +1653,17 @@ namespace CosmicShore.Gameplay
                 "PublishJoinedParty");
         }
 
-        private async UniTask ClearJoinedPartyAsync()
+        /// <summary>
+        /// Clears our own <c>joined_party</c> presence property (sets it empty) — called when
+        /// departing a party: by the deliberate <see cref="LeavePartyAsync"/> (awaited, bounded)
+        /// and by host-loss recovery (<c>PartyInviteController.HandleHostLossAsync</c>,
+        /// fire-and-forget). Hygiene so no future host sees a dangling "I'm in your party"
+        /// claim; B8 fix 1 already makes a stale value inert, so it is best-effort. The presence
+        /// lobby is independent of the party session / NM, so this write still lands during a
+        /// host-loss teardown. <see cref="LobbyPropertyWriter.WriteAsync"/> swallows its own
+        /// exceptions (can only be slow, never throw).
+        /// </summary>
+        public async UniTask ClearJoinedPartyAsync()
         {
             var lobby = _lobbyService.ActiveLobby;
             if (lobby == null) return;

@@ -770,13 +770,16 @@ item — revisit when the party core is otherwise stable.
   deliberate "Leave Party" flow** (`LeavePartyAndReturnToMenuAsync`), where play +
   invite already work normally.
 
-> **Minor hygiene (non-blocking).** Recovery does not clear the client's own
-> `joined_party` presence property (unlike the deliberate `LeavePartyAsync`, which
-> calls `ClearJoinedPartyAsync`). This is **harmless**: the dead host is gone, B8
-> fix 1 makes any future host cross-check `joined_party` against its authoritative
-> session (so a stale value can never cause a phantom add), and the next refresh
-> re-publishes the client's solo party state (count = 1). It self-corrects on the
-> next join/leave. Clear it in recovery only if a future case shows it mattering.
+> **Hygiene (done).** `HandleHostLossAsync` now also fires
+> `HostConnectionService.ClearJoinedPartyAsync()` (exposed public) so the client's
+> own stale `joined_party` — still pointing at the dead host's session — is cleared
+> on recovery, mirroring the deliberate `LeavePartyAsync`. Fire-and-forget: the
+> presence lobby is independent of the torn-down party session / NM, so the write
+> lands; and B8 fix 1 already makes a stale value inert, so recovery never blocks on
+> it. This is a real (not just cosmetic) clear because `BuildLocalPlayerProperties`
+> only resets `joined_party` on a presence-lobby *rejoin*, which recovery does not do
+> — so without the explicit clear the stale value would persist until the next
+> join/leave.
 
 ---
 

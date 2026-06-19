@@ -426,6 +426,14 @@ namespace CosmicShore.Gameplay
             _transitioning = true;
             try
             {
+                // Hygiene: clear our stale joined_party presence property (it still points at
+                // the dead host's session) so no future host sees a dangling "I'm in your
+                // party" claim — the same clear the deliberate Leave path performs.
+                // Fire-and-forget: the presence lobby is a separate UGS session that survives
+                // the recovery teardown, and B8 fix 1 already makes a stale value inert, so
+                // recovery must not block on the write. See Docs/PartySystem/BUGS.md B10.
+                HostConnectionService.Instance?.ClearJoinedPartyAsync().Forget();
+
                 await BounceToSoloMenuAsync(reason);
             }
             finally
