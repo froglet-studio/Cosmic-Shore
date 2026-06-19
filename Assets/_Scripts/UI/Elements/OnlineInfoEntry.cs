@@ -179,7 +179,9 @@ namespace CosmicShore.UI
                     color = inMatchColor;
                     break;
                 case Status.InYourParty:
-                    text = "IN YOUR PARTY";
+                    text = partyMaxSlots > 0
+                        ? $"IN YOUR PARTY {partyMemberCount}/{partyMaxSlots}"
+                        : "IN YOUR PARTY";
                     color = inYourPartyColor;
                     break;
                 default:
