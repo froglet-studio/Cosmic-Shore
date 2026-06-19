@@ -13,8 +13,8 @@ Status legend: 🔴 not started · 🟡 in progress · 🟢 done · ⚪ deferred
 
 | # | Task | Layer | Status |
 |---|------|-------|--------|
-| 0 | **SOAP confirm-popup** — generic 1/2-button popup (dynamic labels) driven by event channels; bottom-left non-modal invite popup (3s, latest-wins) + 10s panel row + host revert; **0b:** cancel-invite (✕) affordance — **decided: SOAP-drive the existing `PopupPanel`** | UI infra | 🔴 ready to plan |
-| 1 | Disable inviting a player already in my party — **decided: disable + relabel** ("IN YOUR PARTY") | Party UI | 🔴 ready to plan |
+| 0 | **SOAP confirm-popup** — generic 1/2-button popup (dynamic labels) driven by event channels; bottom-left non-modal invite popup (3s, latest-wins) + 10s panel row + host revert; **0b:** cancel-invite (✕) affordance — **decided: SOAP-drive the existing `PopupPanel`** | UI infra | 🟡 code done · Unity wiring pending |
+| 1 | Disable inviting a player already in my party — **decided: disable + relabel** ("IN YOUR PARTY") | Party UI | 🟢 code done · verify |
 | 2 | Make pending-invite / in-lobby status **responsive & live** (foreground/background poll, jitter, optimistic UI; push as the deep option) | Presence | 🔴 ready to plan |
 | 3 | Party-merge on accept (a **host** who accepts brings its whole party; a **member** moves alone) | Party (Netcode + presence) | ⛔ discuss-only |
 
@@ -24,6 +24,59 @@ improves the invite UX that Task 1 touches). Task 2 makes the online panel's
 lobby/status rows live and accurate, which Task 3 *depends on* (players must
 see each other's live "in lobby N/M" state for the merge to feel correct).
 Task 3 is the large one (voluntary host migration) and should land last.
+
+---
+
+## Implementation status (2026-06-19) — Tasks 0, 0b, 1 CODE landed; Unity wiring required
+
+**Task 1 (disable + relabel)** — ✅ code complete (`OnlineInfoEntry.Status.InYourParty`
++ `FriendsListPanel.ResolveRemoteStatus`). Inspector: set `OnlineInfoEntry.inYourPartyColor`
+if the default green isn't wanted. No prefab structure change.
+
+**Task 0 (popup) + 0b (cancel-invite)** — ✅ code complete; the popup is inert until
+the Unity-side prefab/asset/scene wiring below is done (I can't author prefabs/assets
+here). Files: `Assets/_Scripts/Utility/PopupModels.cs`, `PopupChannel.cs`,
+`PopupPanel.cs` (extended), `PopupManager.cs` (extended),
+`Assets/_Scripts/Controller/Party/InvitePopupController.cs`; plus
+`HostConnectionService.CancelInviteAsync`, `OnlineInfoEntry` cancel-✕, and the 30→10
+timing retune.
+
+### Unity wiring checklist
+1. **`PopupChannel` asset** — Create → `ScriptableObjects/UI/Popup Channel` (e.g.
+   `_SO_Assets/UI/PopupChannel.asset`).
+2. **Popup prefab** — a UI prefab whose ROOT is a full-screen stretch `RectTransform`
+   with a `CanvasGroup` and the `PopupPanel` component. Children:
+   - `ModalBlocker`: full-screen `Image` (dim/transparent, raycast target ON), starts
+     inactive → wire `_modalBlocker`.
+   - `Card`: the visible popup `RectTransform` → wire `_card`. Inside it: title TMP
+     (`_titleText`), message TMP (`_mainText`), optional icon `Image` (`_iconImage`),
+     **Primary** `Button` (`_confirmButton`) + label TMP (`_confirmLabel`),
+     **Secondary** `Button` (`_secondaryButton`) + label TMP (`_secondaryLabel`).
+   - **Do NOT add a persistent `onClick` to the primary/secondary buttons** — the SOAP
+     path code-wires them (a persistent call would double-fire). The legacy
+     `OnConfirmClick` path is only for `SetupPopupPanel`.
+3. **`PopupManager`** — a GameObject under a Menu_Main `Canvas`: wire `_popupPanelPrefab`
+   = the popup prefab, `_channel` = `PopupChannel.asset` (+ `_notificationUI` if used).
+4. **`InvitePopupController`** — a Menu_Main GameObject: wire `connectionData` =
+   `HostConnectionData.asset`, `popupChannel` = `PopupChannel.asset`. Tune copy/timing
+   (default bottom-left, 3 s auto-hide, replaceKey `party_invite`).
+5. **`OnlineInfoEntry` prefab** — add a small cancel **✕** `Button` as a child of the
+   row → wire the new `cancelButton` field (it auto-shows only while pending).
+6. **`FriendsListPanel`** — set `partyInviteExpirationSeconds = 10` in the inspector
+   (the code default only applies to fresh instances; an existing serialized 30 wins).
+7. **`PartyInviteNotificationPanel`** (vestigial) — may be deleted, or reused as the
+   popup prefab's card art.
+
+### Known follow-up (scoped out of this pass)
+- **Per-host `OnInviteResolved`.** Resolve currently rides the existing broad
+  `OnInviteResolved` (NoParam): accepting/declining clears the popup AND all
+  `FriendsListPanel` invite rows. This satisfies "remove the resolved invite from both
+  surfaces", but in the rare case of simultaneous invites from two *different* hosts it
+  also clears the other host's row. Making it per-host needs `OnInviteResolved` to carry
+  the host id (a SOAP asset re-type + threading the id through `DeclineInviteAsync`) —
+  deferred. Single-inviter (the common case) is correct.
+- The B10 "Host disconnected" notice can later move from the toast to
+  `PopupChannel.Info(...)` (post-recovery timing) once this popup is wired.
 
 ---
 
