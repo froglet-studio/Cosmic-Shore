@@ -1,7 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using DG.Tweening;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
@@ -16,19 +16,19 @@ using UnityEngine.UI;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Data-driven view for the Maelstrom scene, three layouts picked by <see cref="TournamentController"/>'s
+    /// Data-driven view for the Maelstrom scene. Two panels, picked by <see cref="TournamentController"/>'s
     /// phase:
     ///
-    ///   • <b>Active</b> (intro lobby OR between-round hub, phase Lobby) — a top bar (mode pool, round
-    ///     index, leading domain + cumulative standings), a scroll of <b>Tournament Data Cards</b> (one
-    ///     per completed round, each nesting its players' <b>Player Data Cards</b>; a round-0 preview card
-    ///     shows the upcoming roster), and a networked Ready/START button whose 30s/5s countdown renders
-    ///     in the label.
-    ///   • <b>Summary</b> (phase Summary) — the winning-domain banner + the full round history; Next →
-    ///     rank panel.
-    ///   • <b>Rank panel</b> — the lightweight final domain ranking + host-only Play Again / Main Menu.
+    ///   • <b>Intro/active panel</b> (activeRoot) — used for the lobby, the between-round hub, AND the
+    ///     end-of-tournament results entry. Shows the top bar (mode pool, round, leading domain), the
+    ///     scroll of <b>Tournament Data Cards</b> (one per round, newest on top), and the button:
+    ///       – lobby/hub: <b>START</b> + an animated countdown that <b>auto-starts</b> the round.
+    ///       – complete (summary phase): <b>NEXT</b> → reveals the summary panel (no countdown).
+    ///   • <b>Summary panel</b> (summaryRoot) — winning-domain banner + the final domain ranking, with
+    ///     host-only Play Again / Main Menu.
     ///
-    /// Runs on every peer; only the host drives transitions. Roster/history are read from the persistent
+    /// Domain colours come from a <see cref="DomainColorPaletteSO"/> (no Graphic arrays). Runs on every
+    /// peer; only the host drives transitions. Roster/history are read from the persistent
     /// <see cref="TournamentDataSO"/> (the scene is UI-only, so <c>gameData.Players/Results</c> are cleared).
     /// </summary>
     public class TournamentSceneView : MonoBehaviour
@@ -36,56 +36,46 @@ namespace CosmicShore.Gameplay
         [Header("Data")]
         [SerializeField] GameDataSO gameData;
         [SerializeField] TournamentDataSO tournamentData;
-
-        [Tooltip("Networked ready-up + countdown. Optional: if unwired, the START button degrades to a " +
-                 "host-only immediate start (no 30s/5s countdown).")]
+        [Tooltip("Networked ready-up + countdown. Optional: without it the countdown still ticks/auto-starts " +
+                 "locally (host) for panel testing.")]
         [SerializeField] TournamentLobbyNetwork lobbyNetwork;
+        [Tooltip("Palette mapping Domain → colour (Assets/_SO_Assets/DomainColorPalette.asset).")]
+        [SerializeField] DomainColorPaletteSO palette;
 
         [Header("Shared")]
         [SerializeField] TMP_Text titleText;
 
         [Header("Active — top bar")]
         [SerializeField] GameObject activeRoot;
-        [Tooltip("The mode pool, e.g. \"HEX RACE - JOUST - CRYSTAL CAPTURE\" (shows the pool, never what's next).")]
+        [Tooltip("The mode pool, e.g. \"GAMEMODES : HEX RACE - SCRUM - JOUST\".")]
         [SerializeField] TMP_Text gameModesText;
-        [Tooltip("\"ROUND N\" — the round about to be played (length is variable, so avoid \"/ 6\").")]
+        [Tooltip("\"ROUND N\".")]
         [SerializeField] TMP_Text roundCounterText;
-        [Tooltip("Subtitle, e.g. \"First domain to 6 points wins\" — the X is filled from WinTarget.")]
+        [Tooltip("Subtitle — \"First domain to {WinTarget} points wins\".")]
         [SerializeField] TMP_Text raceRuleText;
-        [Tooltip("The leading domain's name (tinted via leadingDomainColorTargets).")]
+        [Tooltip("\"LEADING DOMAIN : JADE\" (domain name coloured from the palette).")]
         [SerializeField] TMP_Text leadingDomainText;
-        [SerializeField] Graphic[] leadingDomainColorTargets;
-        [Tooltip("Optional cumulative standings strip, e.g. \"JADE 4   RUBY 2   GOLD 1\" — shows the race tally.")]
-        [SerializeField] TMP_Text standingsText;
 
         [Header("Active — round scroll")]
-        [Tooltip("Tournament Data Card prefab (round header + nested Player Data Cards).")]
         [SerializeField] TournamentRoundCard roundCardPrefab;
         [SerializeField] Transform historyContent;
         [SerializeField] ScrollRect historyScrollRect;
 
-        [Header("Active — START / ready button")]
+        [Header("Active — START / NEXT button + countdown")]
         [SerializeField] Button readyButton;
-        [Tooltip("Optional — button face. Shows \"START\" / \"READY ✓\" when wired (else left as authored).")]
         [SerializeField] TMP_Text readyButtonLabel;
         [Tooltip("Animated countdown text, e.g. \"Game will start in 12s\". Pulses each tick.")]
         [SerializeField] TMP_Text countdownText;
         [Tooltip("Optional \"x / y ready\" tally.")]
         [SerializeField] TMP_Text readyTallyText;
-        [Tooltip("Display-only countdown used when no TournamentLobbyNetwork is wired (panel testing / " +
-                 "degraded mode). With the network component wired, the synced deadline drives it instead.")]
+        [Tooltip("Display countdown used when no TournamentLobbyNetwork is wired (host auto-starts at 0).")]
         [SerializeField, Min(1f)] float localCountdownSeconds = 30f;
 
-        [Header("Summary layout")]
+        [Header("Summary panel")]
         [SerializeField] GameObject summaryRoot;
         [SerializeField] TMP_Text winnerBannerText;
-        [SerializeField] Graphic[] winnerBannerColorTargets;
-        [Tooltip("Round history for the summary (all rounds). Reuses roundCardPrefab.")]
-        [SerializeField] Transform summaryHistoryContent;
-        [SerializeField] Button nextButton;
-
-        [Header("Rank panel (after Next)")]
-        [SerializeField] GameObject rankRoot;
+        [Tooltip("Optional banner image tinted to the winning domain.")]
+        [SerializeField] Image winnerBannerImage;
         [SerializeField] TournamentDomainScoreView rankRowPrefab;
         [SerializeField] Transform rankContainer;
         [SerializeField] Button playAgainButton;
@@ -100,14 +90,15 @@ namespace CosmicShore.Gameplay
         bool IsHost => NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
 
         bool _active;
-        bool _summaryActionTaken;
+        bool _summaryMode;          // complete phase — the intro panel shows NEXT → summary
+        bool _summaryActionTaken;   // anti-spam for Play Again / Main Menu
+        bool _localStarted;         // local-fallback auto-start guard
         int _lastShownSecs = -1;
-        float _localCountdownEnd;   // unscaled-time deadline for the display-only fallback countdown
+        float _localCountdownEnd;
 
         void Awake()
         {
             if (readyButton) readyButton.onClick.AddListener(OnReadyButtonPressed);
-            if (nextButton) nextButton.onClick.AddListener(OnNextButtonPressed);
             if (playAgainButton) playAgainButton.onClick.AddListener(OnPlayAgainPressed);
             if (mainMenuButton) mainMenuButton.onClick.AddListener(OnMainMenuPressed);
         }
@@ -115,7 +106,6 @@ namespace CosmicShore.Gameplay
         void OnDestroy()
         {
             if (readyButton) readyButton.onClick.RemoveListener(OnReadyButtonPressed);
-            if (nextButton) nextButton.onClick.RemoveListener(OnNextButtonPressed);
             if (playAgainButton) playAgainButton.onClick.RemoveListener(OnPlayAgainPressed);
             if (mainMenuButton) mainMenuButton.onClick.RemoveListener(OnMainMenuPressed);
         }
@@ -126,117 +116,103 @@ namespace CosmicShore.Gameplay
             if (gameData != null) gameData.InvokeClientReady();
 
             bool summary = TournamentController.Instance != null && TournamentController.Instance.IsShowingSummary;
-            if (summary) ShowSummary();
-            else ShowActive();
+            ShowActive(summary);
         }
 
         void Update()
         {
-            if (!_active) return;
+            if (!_active || _summaryMode) return;
 
             int secs = CountdownSeconds();
 
             if (countdownText)
             {
                 countdownText.text = $"Game will start in {secs}s";
-                if (secs != _lastShownSecs)   // AAA polish: punch on each tick
+                if (secs != _lastShownSecs)
                 {
                     _lastShownSecs = secs;
                     Pulse(countdownText.transform);
                 }
             }
 
-            // Button face + ready tally only apply with the networked component.
             if (lobbyNetwork != null)
             {
-                if (readyButtonLabel)
-                    readyButtonLabel.text = lobbyNetwork.LocalReady ? "READY ✓" : "START";
-                if (readyTallyText)
-                    readyTallyText.text = $"{lobbyNetwork.ReadyCount}/{lobbyNetwork.TotalPlayers} ready";
+                if (readyButtonLabel) readyButtonLabel.text = lobbyNetwork.LocalReady ? "READY ✓" : "START";
+                if (readyTallyText) readyTallyText.text = $"{lobbyNetwork.ReadyCount}/{lobbyNetwork.TotalPlayers} ready";
+            }
+            else if (IsHost && !_localStarted && secs <= 0)
+            {
+                // Local fallback: auto-start at 0 (the networked path auto-starts inside TournamentLobbyNetwork).
+                _localStarted = true;
+                TournamentController.Instance?.BeginNextRound();
             }
         }
 
-        // Whole seconds left before the round starts. Uses the networked deadline when the component is
-        // wired; otherwise a display-only local timer (panel testing / degraded mode — no auto-advance).
-        int CountdownSeconds()
-        {
-            if (lobbyNetwork != null) return lobbyNetwork.SecondsRemaining;
-            return Mathf.Max(0, Mathf.CeilToInt(_localCountdownEnd - Time.unscaledTime));
-        }
+        // ── Intro / active panel (lobby, hub, summary-entry) ─────────────────────────
 
-        static void Pulse(Transform t)
-        {
-            t.DOKill(true);
-            t.localScale = Vector3.one;
-            t.DOPunchScale(Vector3.one * 0.12f, 0.25f, 6, 0.6f).SetUpdate(true);
-        }
-
-        // ── Active layout (lobby + hub) ─────────────────────────────────────────────
-
-        void ShowActive()
+        void ShowActive(bool summaryMode)
         {
             _active = true;
+            _summaryMode = summaryMode;
+            _localStarted = false;
             _lastShownSecs = -1;
             _localCountdownEnd = Time.unscaledTime + localCountdownSeconds;
+
             SetRoot(activeRoot, true);
             SetRoot(summaryRoot, false);
-            SetRoot(rankRoot, false);
-
-            if (titleText) titleText.text = ModeName().ToUpperInvariant();
-            if (gameModesText) gameModesText.text = $"GAMEMODES : {GameModesPool()}";
 
             int gamesPlayed = tournamentData != null ? tournamentData.GamesPlayed : 0;
-            if (roundCounterText) roundCounterText.text = $"ROUND {gamesPlayed + 1}";
-            if (raceRuleText && tournamentData != null)
-                raceRuleText.text = $"First domain to {tournamentData.WinTarget} points wins";
 
+            if (titleText) titleText.text = summaryMode ? $"{ModeName().ToUpperInvariant()} RESULTS" : ModeName().ToUpperInvariant();
+            if (gameModesText) gameModesText.text = $"GAMEMODES : {GameModesPool()}";
+            if (roundCounterText) roundCounterText.text = summaryMode ? $"{gamesPlayed} ROUNDS PLAYED" : $"ROUND {gamesPlayed + 1}";
+            if (raceRuleText && tournamentData != null) raceRuleText.text = $"First domain to {tournamentData.WinTarget} points wins";
             RenderLeadingDomain();
-            if (standingsText) standingsText.text = StandingsTally();
 
-            PopulateRoundCards(historyContent, includePreviewWhenEmpty: true);
-            AutoScrollToLatest();
+            PopulateRoundCards(includePreviewWhenEmpty: !summaryMode);
+            AutoScrollToCurrent();
 
-            ConfigureReadyButton();
+            // Button + countdown.
+            if (countdownText) countdownText.gameObject.SetActive(!summaryMode);
+            if (readyTallyText) readyTallyText.gameObject.SetActive(!summaryMode && lobbyNetwork != null);
+            if (readyButton) readyButton.gameObject.SetActive(true);
+            if (readyButtonLabel)
+                readyButtonLabel.text = summaryMode
+                    ? "NEXT"
+                    : (lobbyNetwork != null && lobbyNetwork.LocalReady ? "READY ✓" : "START");
         }
 
         void RenderLeadingDomain()
         {
-            var lead = WinningDomain();   // best-first standings leader
-            if (leadingDomainText)
-                leadingDomainText.text = lead == Domains.Blue
-                    ? "LEADING DOMAIN : —"
-                    : $"LEADING DOMAIN : {Colored(lead.ToString().ToUpperInvariant(), DomainColor(lead))}";
-
-            // Optional extra tint targets (e.g. an icon/swatch); the name itself is coloured via rich text.
-            if (leadingDomainColorTargets != null)
-            {
-                var c = DomainColor(lead);
-                foreach (var g in leadingDomainColorTargets) if (g) g.color = c;
-            }
+            if (!leadingDomainText) return;
+            var lead = WinningDomain();
+            leadingDomainText.text = lead == Domains.Blue
+                ? "LEADING DOMAIN : —"
+                : $"LEADING DOMAIN : <color=#{ColorUtility.ToHtmlStringRGB(DomainColor(lead))}>{lead.ToString().ToUpperInvariant()}</color>";
         }
 
-        // One Tournament Data Card per completed round (with per-player Round + Total scores), newest last
-        // + highlighted. Total Score is the player's DOMAIN cumulative tournament points AS-OF that round
-        // (so it climbs across cards). Before any round is played, a single preview card shows the
-        // upcoming roster (no round score, no winner, totals at 0).
-        void PopulateRoundCards(Transform content, bool includePreviewWhenEmpty)
+        // One Tournament Data Card per completed round, in CHRONOLOGICAL order (Round 1 at the top,
+        // newest at the bottom). The last card is marked current; the scroll auto-scrolls DOWN to it.
+        // Total Score is the domain cumulative points as-of that round. Before any round, a single
+        // preview card shows the upcoming roster.
+        void PopulateRoundCards(bool includePreviewWhenEmpty)
         {
-            if (!roundCardPrefab || !content || tournamentData == null) return;
-            ClearChildren(content);
+            if (!roundCardPrefab || !historyContent || tournamentData == null) return;
+            ClearChildren(historyContent);
 
             var history = tournamentData.History;
             if (history.Count == 0)
             {
                 if (includePreviewWhenEmpty)
                 {
-                    var preview = Instantiate(roundCardPrefab, content);
-                    preview.SetupPreview(1, OrderRoster(BuildActiveRoster()), DomainColor, ResolveAvatar, _ => 0);
+                    var preview = Instantiate(roundCardPrefab, historyContent);
+                    preview.SetupPreview(1, OrderRoster(BuildActiveRoster()), ResolveAvatar, _ => 0);
                 }
                 return;
             }
 
-            // Running per-domain points, accumulated round by round, so each card shows the standings
-            // as they stood after that round (matches Standings.TotalPoints at the final round).
+            // Running per-domain totals, accumulated chronologically (so each card shows the standings
+            // after that round). Cards are instantiated in the same order → Round 1 first (top).
             var running = new Dictionary<Domains, int>();
             for (int i = 0; i < history.Count; i++)
             {
@@ -248,92 +224,67 @@ namespace CosmicShore.Gameplay
                     running[d] = cur + tournamentData.PointsForPlace(place + 1);
                 }
 
-                var asOf = new Dictionary<Domains, int>(running);   // snapshot for the card's closure
-                var card = Instantiate(roundCardPrefab, content);
-                card.Setup(rec, DomainColor, ResolveAvatar,
-                           d => asOf.TryGetValue(d, out int v) ? v : 0,
+                var asOf = new Dictionary<Domains, int>(running);
+                var card = Instantiate(roundCardPrefab, historyContent);
+                card.Setup(rec, ResolveAvatar, d => asOf.TryGetValue(d, out int v) ? v : 0,
                            isCurrent: i == history.Count - 1);
             }
         }
 
-        void AutoScrollToLatest()
+        // Scroll DOWN to the latest round (bottom). Deferred a frame so the layout group / size fitter
+        // has rebuilt the content height first — setting the position before layout is why the earlier
+        // attempt landed on empty space. (Requires a VerticalLayoutGroup + ContentSizeFitter on Content.)
+        void AutoScrollToCurrent()
         {
-            // AAA polish: smoothly scroll to the latest (bottom) round card on entry. Assumes
-            // newest-at-bottom append order (verticalNormalizedPosition 0 = bottom).
-            if (!historyScrollRect) return;
-            Canvas.ForceUpdateCanvases();
-            historyScrollRect.verticalNormalizedPosition = 1f;
-            historyScrollRect.DOKill();
-            historyScrollRect.DOVerticalNormalizedPos(0f, 0.5f).SetEase(Ease.OutCubic).SetUpdate(true);
+            if (!historyScrollRect || !isActiveAndEnabled) return;
+            StartCoroutine(ScrollToBottomRoutine());
         }
 
-        void ConfigureReadyButton()
+        IEnumerator ScrollToBottomRoutine()
         {
-            if (!readyButton) return;
-
-            bool show = lobbyNetwork != null || IsHost;
-            readyButton.gameObject.SetActive(show);
-            readyButton.interactable = true;
-
-            if (lobbyNetwork == null && readyButtonLabel)
-                readyButtonLabel.text = "START";
+            yield return null;   // let the layout build
+            if (historyContent is RectTransform rt)
+                LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
+            Canvas.ForceUpdateCanvases();
+            if (historyScrollRect) historyScrollRect.verticalNormalizedPosition = 0f;
         }
 
         public void OnReadyButtonPressed()
         {
+            if (_summaryMode) { ShowSummaryPanel(); return; }   // NEXT → results
+
             if (lobbyNetwork != null)
             {
-                lobbyNetwork.ToggleLocalReady();   // host-authoritative countdown drives the actual start
+                lobbyNetwork.ToggleLocalReady();   // host-authoritative countdown drives the start
                 return;
             }
 
-            if (IsHost && TournamentController.Instance != null)   // degraded path — no countdown wired
+            if (IsHost && !_localStarted)   // degraded path — start immediately
             {
-                if (readyButton) readyButton.interactable = false;
-                TournamentController.Instance.BeginNextRound();
+                _localStarted = true;
+                TournamentController.Instance?.BeginNextRound();
             }
         }
 
-        /// <summary>Back-compat hook for the old host Start button wiring — routes to the ready flow.</summary>
+        /// <summary>Back-compat hook for the old host Start button wiring.</summary>
         public void OnHostStartPressed() => OnReadyButtonPressed();
 
-        // ── Summary layout ──────────────────────────────────────────────────────────
+        // ── Summary panel (results) ──────────────────────────────────────────────────
 
-        void ShowSummary()
+        void ShowSummaryPanel()
         {
             _active = false;
+            _summaryMode = false;
             SetRoot(activeRoot, false);
             SetRoot(summaryRoot, true);
-            SetRoot(rankRoot, false);
-
-            if (titleText) titleText.text = $"{ModeName().ToUpperInvariant()} RESULTS";
 
             var winner = WinningDomain();
             if (winnerBannerText)
-                winnerBannerText.text = winner == Domains.Blue ? "GAME OVER" : $"{winner.ToString().ToUpperInvariant()} WINS";
-            if (winnerBannerColorTargets != null)
             {
-                var c = DomainColor(winner);
-                foreach (var g in winnerBannerColorTargets) if (g) g.color = c;
+                winnerBannerText.text = winner == Domains.Blue ? "GAME OVER" : $"{winner.ToString().ToUpperInvariant()} WINS";
+                winnerBannerText.color = DomainColor(winner);
             }
-
-            PopulateRoundCards(summaryHistoryContent, includePreviewWhenEmpty: false);
-
-            if (nextButton) nextButton.gameObject.SetActive(true);
-        }
-
-        public void OnNextButtonPressed()
-        {
-            SetRoot(summaryRoot, false);   // local navigation — reveal the rank panel on this peer
-            ShowRank();
-        }
-
-        // ── Rank panel ──────────────────────────────────────────────────────────────
-
-        void ShowRank()
-        {
-            _active = false;
-            SetRoot(rankRoot, true);
+            if (winnerBannerImage) winnerBannerImage.color = DomainColor(winner);
 
             PopulateRankRows();
 
@@ -352,8 +303,7 @@ namespace CosmicShore.Gameplay
             {
                 var standing = sorted[i];
                 var row = Instantiate(rankRowPrefab, rankContainer);
-                row.Setup(standing.Domain, DomainColor(standing.Domain), standing.TotalPoints, i + 1,
-                          standing.Domain == local);
+                row.Setup(standing.Domain, standing.TotalPoints, i + 1, standing.Domain == local);
             }
         }
 
@@ -392,9 +342,8 @@ namespace CosmicShore.Gameplay
         // ── Roster sourcing / ordering ──────────────────────────────────────────────
 
         /// <summary>
-        /// The roster for the round-0 preview. Between rounds the cards come from History instead. On the
-        /// round-0 lobby (no history yet, AI not spawned) it's the connected human players — every peer
-        /// sees all Player NetworkObjects via the spawn manager.
+        /// The roster for the round-0 preview — the connected human players (every peer sees all Player
+        /// NetworkObjects via the spawn manager). Between rounds the cards come from History instead.
         /// </summary>
         List<TournamentPlayerSnapshot> BuildActiveRoster()
         {
@@ -414,8 +363,6 @@ namespace CosmicShore.Gameplay
             return list;
         }
 
-        // Orders a roster by the overall tournament leader (domain standing), then by enum order — so
-        // teammates group under their team and the leading team shows first.
         List<TournamentPlayerSnapshot> OrderRoster(List<TournamentPlayerSnapshot> roster)
         {
             if (roster == null) return new List<TournamentPlayerSnapshot>();
@@ -433,27 +380,12 @@ namespace CosmicShore.Gameplay
 
         string ModeName() => tournamentData != null ? tournamentData.ModeName : "Maelstrom";
 
-        // The mode POOL (display names), joined — shows variety, never what's next.
         string GameModesPool()
         {
             if (tournamentData == null || tournamentData.GameQueue == null) return string.Empty;
             return string.Join(" - ", tournamentData.GameQueue
                 .Where(g => g != null && !string.IsNullOrEmpty(g.DisplayName))
                 .Select(g => g.DisplayName.ToUpperInvariant()));
-        }
-
-        // Cumulative race tally, best-first: "JADE 4   RUBY 2   GOLD 1".
-        string StandingsTally()
-        {
-            if (tournamentData == null) return string.Empty;
-            var sorted = tournamentData.BuildSortedStandings();
-            var sb = new StringBuilder();
-            for (int i = 0; i < sorted.Count; i++)
-            {
-                if (i > 0) sb.Append("   ");
-                sb.Append(sorted[i].Domain.ToString().ToUpperInvariant()).Append(' ').Append(sorted[i].TotalPoints);
-            }
-            return sb.ToString();
         }
 
         Domains WinningDomain()
@@ -463,14 +395,13 @@ namespace CosmicShore.Gameplay
             return sorted.Count > 0 ? sorted[0].Domain : Domains.Blue;
         }
 
-        Color DomainColor(Domains domain) =>
-            gameData != null && gameData.ThemeManagerData != null
-                ? gameData.ThemeManagerData.GetDomainUIColor(domain)
-                : Color.gray;
-
-        // Wraps text in a TMP rich-text colour tag so only the domain NAME is tinted (label stays white).
-        static string Colored(string text, Color c) =>
-            $"<color=#{ColorUtility.ToHtmlStringRGB(c)}>{text}</color>";
+        // Domain colour from the palette (falls back to the theme tint, then grey).
+        Color DomainColor(Domains domain)
+        {
+            if (palette) return palette.Get(domain);
+            if (gameData != null && gameData.ThemeManagerData != null) return gameData.ThemeManagerData.GetDomainUIColor(domain);
+            return Color.gray;
+        }
 
         Sprite ResolveAvatar(TournamentPlayerSnapshot s)
         {
@@ -490,10 +421,6 @@ namespace CosmicShore.Gameplay
             return null;
         }
 
-        /// <summary>
-        /// The local player's domain for the "(You)" markers. <c>gameData.LocalPlayer</c> is null on this
-        /// UI-only scene, so fall back to the persistent local Player NetworkObject. Blue tags nothing.
-        /// </summary>
         Domains GetLocalDomain()
         {
             if (gameData != null && gameData.LocalPlayer != null)
@@ -505,6 +432,19 @@ namespace CosmicShore.Gameplay
                 return local.Domain;
 
             return Domains.Blue;
+        }
+
+        static void Pulse(Transform t)
+        {
+            t.DOKill(true);
+            t.localScale = Vector3.one;
+            t.DOPunchScale(Vector3.one * 0.12f, 0.25f, 6, 0.6f).SetUpdate(true);
+        }
+
+        int CountdownSeconds()
+        {
+            if (lobbyNetwork != null) return lobbyNetwork.SecondsRemaining;
+            return Mathf.Max(0, Mathf.CeilToInt(_localCountdownEnd - Time.unscaledTime));
         }
 
         static void SetRoot(GameObject root, bool active)

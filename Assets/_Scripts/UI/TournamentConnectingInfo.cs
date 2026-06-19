@@ -1,4 +1,5 @@
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using TMPro;
@@ -15,14 +16,14 @@ namespace CosmicShore.UI
     /// <c>TournamentDataSO</c> standings.
     ///
     /// Pure view: call <see cref="Refresh"/> (also runs on enable) when the connecting panel is shown.
-    /// Drop it on the connecting panel of each domain-game HUD; harmless outside a tournament (it simply
-    /// blanks the fields when <c>IsTournamentMode</c> is false).
     /// </summary>
     public class TournamentConnectingInfo : MonoBehaviour
     {
         [Header("Data")]
         [SerializeField] GameDataSO gameData;
         [SerializeField] TournamentDataSO tournamentData;
+        [Tooltip("Palette mapping Domain → colour (Assets/_SO_Assets/DomainColorPalette.asset).")]
+        [SerializeField] DomainColorPaletteSO palette;
 
         [Header("Mode reveal")]
         [SerializeField] TMP_Text modeNameText;
@@ -30,8 +31,8 @@ namespace CosmicShore.UI
 
         [Header("Lead domain (above the panel)")]
         [SerializeField] TMP_Text leadDomainText;
-        [Tooltip("Graphics tinted to the leading domain's colour.")]
-        [SerializeField] Graphic[] leadDomainColorTargets;
+        [Tooltip("Optional background/swatch image tinted to the leading domain's colour.")]
+        [SerializeField] Image leadDomainBackground;
 
         void OnEnable() => Refresh();
 
@@ -51,12 +52,7 @@ namespace CosmicShore.UI
             if (leadDomainText)
                 leadDomainText.text = lead == Domains.Blue ? string.Empty : $"{lead.ToString().ToUpperInvariant()} LEADING";
 
-            if (leadDomainColorTargets != null)
-            {
-                var c = DomainColor(lead);
-                foreach (var g in leadDomainColorTargets)
-                    if (g) g.color = c;
-            }
+            if (leadDomainBackground && palette) leadDomainBackground.color = palette.Get(lead);
         }
 
         Domains LeadingDomain()
@@ -75,10 +71,5 @@ namespace CosmicShore.UI
             }
             return mode.ToString();
         }
-
-        Color DomainColor(Domains domain) =>
-            gameData != null && gameData.ThemeManagerData != null
-                ? gameData.ThemeManagerData.GetDomainUIColor(domain)
-                : Color.gray;
     }
 }

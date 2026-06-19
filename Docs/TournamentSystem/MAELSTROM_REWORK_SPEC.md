@@ -255,3 +255,33 @@ only adds the v2 deltas + the exact scene-wiring map.
 - With no live session (Play straight from the scene), the roster is empty (no Player objects) — the
   chrome + countdown render, but cards have no rows. Run via the game flow (or ask for a debug sample-data
   toggle) to see populated cards.
+
+### v2.1 — palette colours, NEXT→summary, auto-start, scroll fix (Shombith)
+
+Follow-up fixes from the in-editor pass. Supersedes the v2 colour wiring above (`colorTargets` /
+`winnerColorTargets` / banner color-target arrays are **removed** — no more `Graphic[]`).
+
+- **Domain colours via `DomainColorPaletteSO`** (`Assets/_SO_Assets/DomainColorPalette.asset`). Every card
+  now has an **Image + palette** pair instead of `Graphic[]`:
+  - `TournamentPlayerCard` → `domainBackground` + `palette` (player row tints to the player's domain).
+  - `TournamentRoundCard` → `cardBackground` + `palette` (card BG tints to the **winning** domain); the
+    WINNING DOMAIN **name** is rich-text coloured from the palette.
+  - `TournamentDomainScoreView` → `domainBackground` + `palette`; `Setup(domain, points, place, isLocal)`.
+  - `TournamentSceneView` → `palette`; LEADING DOMAIN name rich-text coloured; winner banner via
+    `winnerBannerText.color` + optional `winnerBannerImage` (no color-target arrays).
+- **Round-card header text** is now `ROUND INDEX : N` (`roundNumberText`), `ROUND NAME : SCRUM`
+  (`roundNameText`), `WINNING DOMAIN : X` (`winningDomainText`).
+- **Auto-start** — the round starts automatically when the countdown ends (no need to press START).
+  Networked path fires inside `TournamentLobbyNetwork`; the local fallback auto-starts on the host at 0.
+- **Scroll fix** — round cards render **chronologically** (Round 1 at the top, newest at the bottom) and
+  the scroll auto-scrolls **down** to the latest round, deferred one frame so the layout/size-fitter has
+  built the content height first (setting the position before layout is why the old attempt landed on
+  empty space). Requires a `VerticalLayoutGroup` + `ContentSizeFitter` on the scroll `Content`.
+- **End-of-tournament flow** — the complete phase shows the **intro panel** with the button reading
+  **NEXT** (no countdown); pressing NEXT reveals the **Summary panel** (`summaryRoot`: winner banner +
+  rank rows + host-only Play Again / Main Menu). The separate rank panel was merged into `summaryRoot`;
+  `nextButton` / `summaryHistoryContent` / `standingsText` fields were removed.
+
+**Re-wire after this change:** `palette` on the scene view + all three card prefabs; `domainBackground`
+(player + rank), `cardBackground` (round); `winnerBannerImage` (optional) on the summary panel. The
+START button doubles as NEXT (no separate button).
