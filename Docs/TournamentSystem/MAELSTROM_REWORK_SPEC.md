@@ -285,3 +285,27 @@ Follow-up fixes from the in-editor pass. Supersedes the v2 colour wiring above (
 **Re-wire after this change:** `palette` on the scene view + all three card prefabs; `domainBackground`
 (player + rank), `cardBackground` (round); `winnerBannerImage` (optional) on the summary panel. The
 START button doubles as NEXT (no separate button).
+
+### v2.2 — summary panel (Shombith)
+
+The summary panel is per-player cards + a domain-rank readout (not per-domain rank rows). New component
++ scene fields:
+
+- **`TournamentSummaryPlayerCard`** (MaelstromSummaryScoreCardContainer) — `avatarImage`, `nameText`,
+  `totalScoreText` ("Total Score : N"), `domainBackground` + `palette` (tints to the player's domain,
+  same as the in-round card). Pops in (fade + scale overshoot, staggered). The authored "stats"
+  placeholder is left untouched.
+- **`TournamentSceneView` summary fields** (replaces winner-banner/rank-row fields):
+  `summaryTitleText` ("MAELSTROM"), `summaryInfoText` ("GAME WON!" if the local domain won else
+  "GAME OVER"), `summaryWinningDomainText` ("WINNING DOMAIN : X", coloured), `summaryRankText`
+  ("DOMAIN RANK :" + ranked domains, coloured + typewriter/pop animated), `summaryCardPrefab` +
+  `summaryCardContainer` (the Content scroll), `playAgainButton`, `mainMenuButton`.
+- **First card full size, the rest ×0.9** (`PopulateSummaryCards` sets localScale before the pop-in).
+  Note: a `VerticalLayoutGroup` reserves full size regardless of scale, so 0.9 is a visual shrink only.
+- `TournamentDomainScoreView` is now **unused** (the summary uses cards + a rank text); kept for reference.
+
+**Wire the summary panel:** `summaryRoot` → Summary Panel; `summaryTitleText`/`summaryInfoText`/
+`summaryWinningDomainText`/`summaryRankText` → the Title/Info/LeadingDomain/Rank texts; `summaryCardPrefab`
+→ the MaelstromSummaryScoreCardContainer prefab; `summaryCardContainer` → Content; `playAgainButton`/
+`mainMenuButton`. On the summary card prefab: `domainBackground` + `palette`. Leave RandomInfoText
+(the stats placeholder) static.

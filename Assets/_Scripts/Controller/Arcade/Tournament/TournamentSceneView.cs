@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using DG.Tweening;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
@@ -73,11 +74,17 @@ namespace CosmicShore.Gameplay
 
         [Header("Summary panel")]
         [SerializeField] GameObject summaryRoot;
-        [SerializeField] TMP_Text winnerBannerText;
-        [Tooltip("Optional banner image tinted to the winning domain.")]
-        [SerializeField] Image winnerBannerImage;
-        [SerializeField] TournamentDomainScoreView rankRowPrefab;
-        [SerializeField] Transform rankContainer;
+        [Tooltip("Summary title — set to the mode name (\"MAELSTROM\").")]
+        [SerializeField] TMP_Text summaryTitleText;
+        [Tooltip("\"GAME WON!\" if the local player's domain won, else \"GAME OVER\".")]
+        [SerializeField] TMP_Text summaryInfoText;
+        [Tooltip("\"WINNING DOMAIN : JADE\" (domain name coloured).")]
+        [SerializeField] TMP_Text summaryWinningDomainText;
+        [Tooltip("\"DOMAIN RANK :\" + the ranked domains (coloured, animated in).")]
+        [SerializeField] TMP_Text summaryRankText;
+        [Tooltip("Per-player summary card (MaelstromSummaryScoreCardContainer).")]
+        [SerializeField] TournamentSummaryPlayerCard summaryCardPrefab;
+        [SerializeField] Transform summaryCardContainer;
         [SerializeField] Button playAgainButton;
         [SerializeField] Button mainMenuButton;
         [Tooltip("Shared main-menu SOAP event (same asset the Scoreboard's Main Menu uses).")]
@@ -279,32 +286,86 @@ namespace CosmicShore.Gameplay
             SetRoot(summaryRoot, true);
 
             var winner = WinningDomain();
-            if (winnerBannerText)
-            {
-                winnerBannerText.text = winner == Domains.Blue ? "GAME OVER" : $"{winner.ToString().ToUpperInvariant()} WINS";
-                winnerBannerText.color = DomainColor(winner);
-            }
-            if (winnerBannerImage) winnerBannerImage.color = DomainColor(winner);
+            var local = GetLocalDomain();
 
-            PopulateRankRows();
+            if (summaryTitleText) summaryTitleText.text = ModeName().ToUpperInvariant();
+
+            if (summaryInfoText)
+                summaryInfoText.text = (local != Domains.Blue && local == winner) ? "GAME WON!" : "GAME OVER";
+
+            if (summaryWinningDomainText)
+                summaryWinningDomainText.text = winner == Domains.Blue
+                    ? "WINNING DOMAIN : —"
+                    : $"WINNING DOMAIN : <color=#{ColorUtility.ToHtmlStringRGB(DomainColor(winner))}>{winner.ToString().ToUpperInvariant()}</color>";
+
+            BuildSummaryRankText();
+            PopulateSummaryCards();
 
             if (playAgainButton) playAgainButton.gameObject.SetActive(IsHost);
             if (mainMenuButton) mainMenuButton.gameObject.SetActive(IsHost);
         }
 
-        void PopulateRankRows()
+        // "DOMAIN RANK :" + the ranked domains (each coloured), revealed with an AAA typewriter + pop.
+        void BuildSummaryRankText()
         {
-            if (!rankRowPrefab || !rankContainer || tournamentData == null) return;
-            ClearChildren(rankContainer);
+            if (!summaryRankText) return;
 
-            var local = GetLocalDomain();
-            var sorted = tournamentData.BuildSortedStandings();
-            for (int i = 0; i < sorted.Count; i++)
+            var sb = new StringBuilder("DOMAIN RANK :");
+            if (tournamentData != null)
             {
-                var standing = sorted[i];
-                var row = Instantiate(rankRowPrefab, rankContainer);
-                row.Setup(standing.Domain, standing.TotalPoints, i + 1, standing.Domain == local);
+                var sorted = tournamentData.BuildSortedStandings();
+                for (int i = 0; i < sorted.Count; i++)
+                    sb.Append($"\n<color=#{ColorUtility.ToHtmlStringRGB(DomainColor(sorted[i].Domain))}>{sorted[i].Domain.ToString().ToUpperInvariant()}</color>");
             }
+            summaryRankText.text = sb.ToString();
+            AnimateRankText(summaryRankText);
+        }
+
+        static void AnimateRankText(TMP_Text txt)
+        {
+            txt.transform.DOKill();
+            txt.DOKill();
+            txt.ForceMeshUpdate();
+            int total = Mathf.Max(1, txt.textInfo.characterCount);
+
+            txt.maxVisibleCharacters = 0;
+            txt.transform.localScale = Vector3.one * 0.9f;
+            txt.transform.DOScale(1f, 0.4f).SetEase(Ease.OutBack).SetUpdate(true);
+            DOTween.To(() => txt.maxVisibleCharacters, x => txt.maxVisibleCharacters = x, total, 0.7f)
+                .SetEase(Ease.Linear).SetUpdate(true);
+        }
+
+        // Per-player summary cards (avatar + name + Total Score), tinted to each player's domain. The
+        // FIRST card is full size, the rest 0.9 (set before the pop-in so it animates to the right scale).
+        void PopulateSummaryCards()
+        {
+            if (!summaryCardPrefab || !summaryCardContainer || tournamentData == null) return;
+            ClearChildren(summaryCardContainer);
+
+            var roster = OrderRoster(SummaryRoster());
+            for (int i = 0; i < roster.Count; i++)
+            {
+                var s = roster[i];
+                var card = Instantiate(summaryCardPrefab, summaryCardContainer);
+                card.transform.localScale = i == 0 ? Vector3.one : Vector3.one * 0.9f;
+                card.Setup(s.Name, ResolveAvatar(s), s.Domain, StandingPoints(s.Domain));
+                card.PlayEntrance(i);
+            }
+        }
+
+        // The final roster = the last completed round's snapshot (full roster incl. AI + avatars).
+        List<TournamentPlayerSnapshot> SummaryRoster()
+        {
+            if (tournamentData != null && tournamentData.History.Count > 0)
+                return new List<TournamentPlayerSnapshot>(tournamentData.History[tournamentData.History.Count - 1].Players);
+            return BuildActiveRoster();
+        }
+
+        int StandingPoints(Domains domain)
+        {
+            if (tournamentData == null) return 0;
+            var s = tournamentData.Standings.Find(x => x.Domain == domain);
+            return s != null ? s.TotalPoints : 0;
         }
 
         public void OnPlayAgainPressed()

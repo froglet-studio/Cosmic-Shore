@@ -38,11 +38,14 @@ namespace CosmicShore.UI
             if (nameText) nameText.text = playerName;
             SetAvatar(avatar);
 
-            if (roundScoreText) roundScoreText.text = roundScore ?? string.Empty;
-            if (roundScoreRoot) roundScoreRoot.SetActive(!string.IsNullOrEmpty(roundScore));
+            // Cards emit the FULL labelled text ("Round Score : 6") — don't add a separate static label.
+            bool hasRound = !string.IsNullOrEmpty(roundScore);
+            if (roundScoreText) roundScoreText.text = hasRound ? $"Round Score : {roundScore}" : string.Empty;
+            if (roundScoreRoot) roundScoreRoot.SetActive(hasRound);
 
-            if (totalScoreText) totalScoreText.text = totalScore ?? string.Empty;
-            if (totalScoreRoot) totalScoreRoot.SetActive(!string.IsNullOrEmpty(totalScore));
+            bool hasTotal = !string.IsNullOrEmpty(totalScore);
+            if (totalScoreText) totalScoreText.text = hasTotal ? $"Total Score : {totalScore}" : string.Empty;
+            if (totalScoreRoot) totalScoreRoot.SetActive(hasTotal);
 
             if (domainBackground && palette) domainBackground.color = palette.Get(domain);
         }
