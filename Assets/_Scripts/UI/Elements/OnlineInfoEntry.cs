@@ -164,12 +164,12 @@ namespace CosmicShore.UI
             {
                 case Status.InLobby:
                     text = partyMaxSlots > 0
-                        ? $"IN LOBBY {partyMemberCount}/{partyMaxSlots}"
-                        : "IN LOBBY";
+                        ? $"IN PARTY {partyMemberCount}/{partyMaxSlots}"
+                        : "IN PARTY";
                     color = inLobbyColor;
                     break;
                 case Status.LobbyFull:
-                    text = "LOBBY FULL";
+                    text = "PARTY FULL";
                     color = lobbyFullColor;
                     break;
                 case Status.InMatch:
