@@ -309,3 +309,23 @@ The summary panel is per-player cards + a domain-rank readout (not per-domain ra
 → the MaelstromSummaryScoreCardContainer prefab; `summaryCardContainer` → Content; `playAgainButton`/
 `mainMenuButton`. On the summary card prefab: `domainBackground` + `palette`. Leave RandomInfoText
 (the stats placeholder) static.
+
+### v2.3 — in-game connecting panel (Shombith)
+
+The Maelstrom round reveal moves OFF the loading splash and onto a dedicated in-game panel:
+
+- **`BootStatusBroadcaster`** no longer renders standings on the loading splash — `HandleLaunchGame`
+  always clears it. (The splash stays clean for every launch, maelstrom or not.)
+- **`MaelstromConnectingPanel`** (new, on a prefab under the MiniGameHUD — same for all scenes): enables
+  its own `connectingCamera` (author the pose to match the Maelstrom lobby camera) and a
+  `TournamentConnectingInfo` reveal (mode / intensity / leading domain), holds for `dwellSeconds` (2s),
+  then hides and hands off to the pre-game cinematic. **No-ops outside a tournament**
+  (`gameData.IsTournamentMode`), so other modes skip it.
+- **`MiniGameHUD`** awaits `connectingPanel.ShowAsync(ct)` in its client-ready flow, *before* the
+  cinematic (field: `connectingPanel`, optional — leave null in scenes without it).
+
+**Wire:** put the connecting-panel prefab under MiniGameHUD; on it set `gameData`, `panelRoot`,
+`connectingCamera` (Depth above the gameplay camera + Clear Flags = Skybox/Solid Color), and `info` (a
+`TournamentConnectingInfo` with `gameData`/`tournamentData`/`palette` + its mode/intensity/lead texts).
+Assign the panel to `MiniGameHUD.connectingPanel` (on `GameCanvas-HexRace.prefab`, shared by the three
+domain games). Flow: scene loads → connecting panel (2s, own camera) → pre-game cinematic → ready/play.

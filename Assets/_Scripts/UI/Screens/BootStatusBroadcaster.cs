@@ -175,28 +175,11 @@ namespace CosmicShore.UI
             // every instance — host and clients).
             _inLaunchTransition = true;
 
-            // Maelstrom (Tournament meta): when a GAME is loading (not the hub scene itself), show a
-            // LIGHTWEIGHT reveal on the loading splash — the leading domain + the mode/intensity that's
-            // coming. The DETAILED standings now live in the Maelstrom hub scene, so the splash stays
-            // light; when the hub is what's loading, keep the splash clean. Reduced from local standings
-            // on every peer (network-free), so host + clients match.
-            if (gameData != null && gameData.IsTournamentMode
-                && tournamentData != null && tournamentData.IsActive)
-            {
-                bool loadingHub = tournamentData.LobbySceneName == gameData.SceneName;
-                if (!loadingHub)
-                {
-                    // Tag this client's own team row "(You)". Blue (no-team sentinel) tags nothing.
-                    Domains localDomain = gameData.LocalPlayer != null
-                        ? gameData.LocalPlayer.Domain : Domains.Blue;
-                    requestEvent?.Raise(new BootStatusRequest(
-                        BootStatusMode.Status, TournamentStandingsFormatter.FormatConnecting(tournamentData, localDomain)));
-                    return;
-                }
-            }
-
-            // Otherwise clear whatever status was last shown — in particular a stale Retry left over from
-            // a connection blip the auto-recovery already handled — so the loading splash is clean.
+            // Keep the loading splash CLEAN on every game launch. The Maelstrom round reveal (mode /
+            // intensity / leading domain) now lives on the dedicated in-game connecting panel
+            // (MaelstromConnectingPanel) rather than on the splash, so we just clear whatever status was
+            // last shown — in particular a stale Retry left over from a connection blip the auto-recovery
+            // already handled.
             requestEvent?.Raise(new BootStatusRequest(BootStatusMode.Hide));
         }
 

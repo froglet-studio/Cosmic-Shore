@@ -36,6 +36,10 @@ namespace CosmicShore.UI
         [Header("Related UI Components")]
         [SerializeField] private Scoreboard scoreboard;
 
+        [Tooltip("Maelstrom-only connecting panel (its own camera + round reveal), shown ~2s before the " +
+                 "pre-game cinematic. No-ops outside a tournament. Leave null in scenes without it.")]
+        [SerializeField] private MaelstromConnectingPanel connectingPanel;
+
         [Header("Volume / Pause Button (universal domain-volume gauge)")]
         [Tooltip("The in-game pause button. The domain-volume hex gauge is auto-attached to it so the SAME gauge trains as the pause button across every gameplay scene. Leave null to auto-find a button named \"Volume / Pause Button\" under the HUD canvas.")]
         [SerializeField] protected UnityEngine.UI.Button volumePauseButton;
@@ -327,6 +331,11 @@ namespace CosmicShore.UI
                 UpdateLifeformCounterDisplay("0");
                 view.UpdateScoreUI("0");
                 ToggleReadyButton(false);
+
+                // Maelstrom: hold the connecting panel (its own camera + round reveal) ~2s before the
+                // cinematic. No-ops outside a tournament, so other modes are unaffected.
+                if (connectingPanel != null)
+                    await connectingPanel.ShowAsync(ct);
 
                 // Play pre-game cinematic if available
                 if (enablePreGameCinematic && preGameCinematic != null)
