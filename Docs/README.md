@@ -15,7 +15,7 @@ Docs/
 │   │                            error-handling matrix, exit criteria
 │   ├── REFACTOR.md              active backlog + deferred items
 │   │                            + per-commit revision protocol
-│   ├── BUGS.md                  open bugs (B2, B5, B7; B3/B8/B9 fixed)
+│   ├── BUGS.md                  open bugs (B2, B5, B7; B3/B8/B9/B10 fixed)
 │   ├── TESTS.md                 manual procedures (S1-S8)
 │   ├── TODOS.md                 parking-lot items
 │   ├── INVITE_ENHANCEMENTS.md   planning: in-party invite guard,

@@ -16,7 +16,7 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | B5 | TC2/TC4 second joiner fails to join | Uncertain (diagnose first) | 🔴 |
 | B7 | Client pair-init runs before remote identity replicates (`InitializePair Player=` empty, vessel-type `Random`) | Verified mostly benign | ⚪ |
 | B9 | Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) | Root-caused & fixed | 🟢 |
-| B10 | Host leaves/disconnects mid-party → client stuck (no bounce-to-solo + "Host disconnected") | Root-caused & fixed | 🟢 (MPPM-verify) |
+| B10 | Host leaves/disconnects mid-party → client stuck (no bounce-to-solo + "Host disconnected") | Fixed & verified | 🟢 |
 
 ---
 
@@ -747,7 +747,11 @@ item — revisit when the party core is otherwise stable.
 `LoadSceneAsync` (~`:224-257`); `PartyInviteController.cs` `HandleHostLossAsync` +
 `BounceToSoloMenuAsync` + `RecoverFromFailedTransitionAsync`.
 
-**Status. 🟢 Fixed — needs MPPM verification:**
+**Status. 🟢 Fixed — verified in engine (2026-06-19).** The core bounce-to-solo,
+the post-recovery notice timing, and the `joined_party` hygiene clear are all
+confirmed working: a client whose host leaves reforms as its own solo host and can
+invite + play normally. The cases below stand as the regression checklist (re-run
+the 4-VP + hard-drop variants on any change to the recovery path):
 - **Menu freestyle (2-VP):** host + client in the lava lamp; host leaves → client
   shows "Host disconnected", returns to its OWN Menu_Main as solo host (autopilot
   vessel spawns, can invite again). No hang.
