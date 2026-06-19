@@ -116,6 +116,7 @@ namespace CosmicShore.Utility
         {
             bool didWin = DidLocalPlayerWin();
 
+            HaltOtherVessels();
             StartLocalVesselFlourish();
             AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
 
@@ -154,6 +155,26 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// Freezes every vessel EXCEPT the local player's (which flies the flourish), so the
+        /// field is still behind the reveal. Uses IsStationary + SetPause — both reset every
+        /// round (vessels are respawned on scene reload; SetPause is cleared by StartPlayer) —
+        /// so nothing leaks into the next tournament game.
+        /// </summary>
+        void HaltOtherVessels()
+        {
+            if (gameData == null || gameData.Players == null) return;
+
+            var local = gameData.LocalPlayer;
+            foreach (var player in gameData.Players)
+            {
+                if (player == null || player == local) continue;
+                if (player.Vessel?.VesselStatus != null)
+                    player.Vessel.VesselStatus.IsStationary = true;
+                player.InputController?.SetPause(true);
+            }
+        }
+
+        /// <summary>
         /// Hands the local vessel a (random) AI cinematic flourish so it keeps flying
         /// during the reveal instead of being frozen. Mirrors the old cinematic's
         /// <c>SetLocalVesselAI(true, …)</c>: disable human input, enable the AI pilot,
@@ -165,8 +186,14 @@ namespace CosmicShore.Utility
             var status = player?.Vessel?.VesselStatus;
             if (status == null) return;
 
+            // Pause human input so it doesn't fight the AI flourish. Use SetPause — NOT
+            // InputController.enabled = false — because the InputController lives on the
+            // PERSISTENT Player object: a disabled component is never re-enabled, so the
+            // vessel would stay uncontrollable in the next tournament round. SetPause(true)
+            // is the proven menu-autopilot pattern and is reset every round by
+            // Player.StartPlayer() -> SetPause(false).
             if (player.InputController != null)
-                player.InputController.enabled = false;
+                player.InputController.SetPause(true);
             player.Vessel.ToggleAIPilot(true);
 
             // Sparrow keeps laying prisms forever otherwise.
