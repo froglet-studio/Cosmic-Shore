@@ -352,20 +352,41 @@ Similarly, replace `CreateBlockCoroutine` with a delayed-activation manager that
 
 ---
 
-## Progress Update (March 2026)
+## Progress Update
 
-Since the original audit, the following optimizations have been implemented or are in active development:
+> The consolidated, continuously-maintained status of every recommendation lives in
+> **`Docs/PERFORMANCE.md` §4** (verified against live code). The summary below is kept
+> in sync with it.
 
-- **PrismEffectsManager** — centralized Jobs+Burst explosion/implosion animation manager; `PrismExplosion`/`PrismImplosion` now only register state and the manager batch-applies via a shared MaterialPropertyBlock (Recommendation 1)
-- **PrismTimerManager** — centralized timer system replacing per-prism coroutines (Recommendation 6)
-- **Per-frame explosion VFX cap** — limits concurrent explosion effects (Recommendation 5)
-- **MaterialPropertyAnimator sharedMaterial migration** — the material-clone paths cited in Recommendation 4 now use `sharedMaterial` (the per-prism instancing leak is resolved)
-- **EventListenerBase GC elimination** — reduced garbage collection from event listener allocations
-- **PrismAOEData** — cache-line-aware data layout with hot/cold splitting and bit-packed flags for AOE queries
-- **Burst-compiled spatial queries** — replaces Physics-based AOE prism damage (partial implementation of Recommendation 7)
-- **PrismColliderLodManager** — proximity-based collider culling (partial implementation of Recommendation 7)
+Implemented since the original audit:
 
-Recommendations 2 (GPU instanced explosion rendering), 3 (full DOTS conversion), and the collider-replacement remainder of 7 remain unimplemented — see `Docs/PERFORMANCE_REFACTOR_REVIEW.md` (July 2026) for the verified codebase-wide follow-up.
+- **PrismTimerManager** — centralized timer system replacing per-prism coroutines (Recommendation 6). ✅
+- **PrismEffectsManager** — Burst `IJobParallelFor` explosion/implosion VFX batching; `PrismExplosion`/`PrismImplosion` only register state and the manager batch-applies (Recommendation 1). ✅
+- **Per-frame explosion VFX cap** — `PrismFactory.MaxExplosionVFXPerFrame = 64` (Recommendation 5). ✅
+- **`sharedMaterial` everywhere** — `MaterialPropertyAnimator` no longer clones materials (Recommendation 4). ✅
+- **EventListenerBase GC elimination** — reduced garbage collection from event listener allocations.
+- **PrismSpatialIndex** (formerly `PrismAOERegistry`) — cache-line-aware hot/cold layout + Burst AOE
+  queries + occupancy reservations + neighborhood views; replaced `Physics.OverlapSphere`/`CheckBox`
+  across assemblers and fauna. Plus `PrismColliderLodManager` for proximity collider-LOD
+  (together: the shipped portion of Recommendation 7). ✅
+
+Still open:
+
+- **Recommendation 2** (GPU-instanced explosion rendering) — the Jobs *compute* landed via
+  `PrismEffectsManager`, but rendering is still one GameObject per explosion (N draw calls + N
+  per-frame `transform`/`SetPropertyBlock` writes). This is the biggest remaining prism win —
+  in progress on the `claude/zen-volta-t9su0i` instanced-rendering branch (see
+  `Docs/PERF_BRANCH_MERGE_PLAN.md`).
+- **Recommendation 3** (full DOTS/ECS conversion) — unimplemented; highest payoff, highest risk.
+- **Recommendation 7 remainder** — collider-LOD culls colliders by proximity, but the full
+  collider *replacement* (spatial-hash collision for moving objects, no per-prism PhysX collider)
+  envisioned by the recommendation has not shipped.
+- **Recommendation 8** (global prism budget / recycle oldest prisms) — **rejected by design**: it
+  conflicts with the locked mass-conservation invariant (no prism count caps or TTLs). The collider
+  budget (Rec 7) is the real budget; see `Docs/PERFORMANCE.md` §2.
+
+See also **`Docs/PERFORMANCE_REFACTOR_REVIEW.md`** (July 2026) — the verified codebase-wide
+review whose fix batches landed alongside this ledger.
 
 ---
 
