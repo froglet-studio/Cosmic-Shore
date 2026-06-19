@@ -115,7 +115,7 @@ MonoBehaviour:
   dotInterval: 0.35
   gameModeText: {fileID: 6280339008487199906}
   maelstromRankText: {fileID: 1901962995261546283}
-  rankHeader: MAESTROM RANKS
+  rankHeader: MAELSTROM RANKS
   dwellSeconds: 4
 --- !u!1 &917125772582838926
 GameObject:
