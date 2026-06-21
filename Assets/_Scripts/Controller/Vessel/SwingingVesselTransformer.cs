@@ -42,6 +42,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] float maxTetherLength = 150f;
         [SerializeField] float tetherRadius = 0.08f;
         [SerializeField] Material tetherMaterial;
+        [Tooltip("Seconds the tether takes to retract to the arm on release. Continuity-of-existence law: a player-visible beam must never instant-pop out. The ignite already grows from zero; this animates the retract.")]
+        [SerializeField] float tetherRetractDuration = 0.15f;
 
         [Header("Spinneret Arms")]
         [Tooltip("Visual thickness of the arm capsule.")]
@@ -96,6 +98,10 @@ namespace CosmicShore.Gameplay
             public Transform capsule;
             public MeshRenderer capsuleRenderer;
             public float sweepPulse;
+            // Continuity-of-existence retract: far end slides back to the arm.
+            public bool isRetracting;
+            public float retractTimer;
+            public Vector3 retractEnd;
         }
 
         // ---- Public API ----
@@ -395,6 +401,7 @@ namespace CosmicShore.Gameplay
         void FireTetherFromTip(ref TetherState tether, Vector3 tipPosition, Vector3 aimTarget)
         {
             tether.isFiring = true;
+            tether.isRetracting = false; // re-fire cancels any in-flight retract
             tether.extension = 0f;
             tether.fireOrigin = tipPosition;
             Vector3 dir = aimTarget - tipPosition;
@@ -404,11 +411,31 @@ namespace CosmicShore.Gameplay
 
         void ReleaseTether(ref TetherState tether)
         {
+            // Continuity of existence: the lightsaber retracts to the spinneret
+            // rather than vanishing. Capture the current far end and let
+            // UpdateTetherVisual slide the visible beam back to the arm tip.
+            bool wasVisible = tether.capsuleRenderer != null && tether.capsuleRenderer.enabled;
+            if (wasVisible && tetherRetractDuration > 0f)
+            {
+                if (tether.isAnchored && tether.anchor != null)
+                    tether.retractEnd = tether.anchor.position;
+                else if (tether.isFiring)
+                    tether.retractEnd = tether.fireOrigin + tether.fireDirection * tether.extension;
+                // else: already retracting — keep the existing retractEnd target
+
+                tether.retractTimer = tetherRetractDuration;
+                tether.isRetracting = true;
+            }
+            else if (tether.capsuleRenderer != null)
+            {
+                tether.capsuleRenderer.enabled = false;
+                tether.isRetracting = false;
+            }
+
             tether.isAnchored = false;
             tether.isFiring = false;
             tether.anchor = null;
             tether.sweepPulse = 0f;
-            tether.capsuleRenderer.enabled = false;
         }
 
         // ==================================================================
@@ -648,6 +675,19 @@ namespace CosmicShore.Gameplay
                 end = tether.anchor.position;
             else if (tether.isFiring)
                 end = tether.fireOrigin + tether.fireDirection * tether.extension;
+            else if (tether.isRetracting)
+            {
+                tether.retractTimer -= Time.deltaTime;
+                if (tether.retractTimer <= 0f)
+                {
+                    tether.isRetracting = false;
+                    tether.capsuleRenderer.enabled = false;
+                    return;
+                }
+                // Far end slides from its release point back to the arm tip.
+                float t = tetherRetractDuration > 0f ? tether.retractTimer / tetherRetractDuration : 0f;
+                end = Vector3.Lerp(start, tether.retractEnd, t);
+            }
             else
             {
                 tether.capsuleRenderer.enabled = false;
