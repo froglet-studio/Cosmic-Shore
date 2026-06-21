@@ -47,6 +47,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/Maelstrom.unity
     guid: 6e01e0c4ea227cd4a968f0ac405f06b9
+  - enabled: 1
+    path: Assets/_Scenes/Multiplayer Scenes/MinigameMantaSprawl.unity
+    guid: 48841f82613f4e03ad80387a9e2c0660
   m_configObjects:
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 274754c57f99f5144be86c9d1014705b,
       type: 2}

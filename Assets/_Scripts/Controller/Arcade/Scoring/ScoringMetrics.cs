@@ -19,6 +19,7 @@ namespace CosmicShore.Gameplay
             ScoringMetric.OmniCrystals      => stats.OmniCrystalsCollected,
             ScoringMetric.ElementalCrystals => stats.ElementalCrystalsCollected,
             ScoringMetric.Jousts            => stats.JoustCollisions,
+            ScoringMetric.Blocks            => stats.BlocksCreated,
             _                               => 0,
         };
 

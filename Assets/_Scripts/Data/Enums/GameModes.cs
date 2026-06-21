@@ -45,5 +45,9 @@ namespace CosmicShore.Data
         // (HexRace, Joust, CrystalCapture) into one tournament. See
         // Docs/TournamentSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
         Tournament = 36,
+        // MantaSprawl (37): Manta's party game — a time-boxed territory land-grab
+        // (most mass / BlocksCreated wins). The first per-vessel game beyond the
+        // Squirrel trio. Scene: MinigameMantaSprawl.
+        MantaSprawl = 37,
     }
 }

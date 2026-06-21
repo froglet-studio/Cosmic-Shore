@@ -32,7 +32,7 @@ namespace CosmicShore.ScriptableObjects
         [Header("Default Unlocks")]
         [Tooltip("Game modes that are ALWAYS unlocked regardless of quest progress " +
                  "(e.g. Tournament, a session-level meta that is not part of the chain).")]
-        public List<GameModes> alwaysUnlockedModes = new() { GameModes.Tournament };
+        public List<GameModes> alwaysUnlockedModes = new() { GameModes.Tournament, GameModes.MantaSprawl };
 
         [Tooltip("If true, the first quest in the quest list is always unlocked " +
                  "('the first game is free'). This is independent of the always-unlocked list.")]
@@ -48,7 +48,7 @@ namespace CosmicShore.ScriptableObjects
 
         [Tooltip("Game modes whose FULL intensity range is always available (not gated by " +
                  "play counts), e.g. Tournament (one intensity is picked in the lobby).")]
-        public List<GameModes> fullIntensityModes = new() { GameModes.Tournament };
+        public List<GameModes> fullIntensityModes = new() { GameModes.Tournament, GameModes.MantaSprawl };
 
         [Header("Participation XP")]
         [Tooltip("Flat XP awarded to the local player every game (win or lose). " +
