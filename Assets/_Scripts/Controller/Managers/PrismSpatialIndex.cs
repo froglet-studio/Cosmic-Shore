@@ -238,6 +238,14 @@ namespace CosmicShore.Gameplay
         public bool IsAvailable => _spatial.IsCreated;
         public int HighWaterMark => _highWaterMark;
 
+        /// <summary>
+        /// Number of live (active, not destroyed) entries — the O(1) counterpart
+        /// of <see cref="CopyLivePrisms"/>'s count, maintained by
+        /// Register/MarkDestroyed/MarkRestored/Unregister. Telemetry + LOD sizing;
+        /// population-scale consumers must not need an O(N) walk just to count.
+        /// </summary>
+        public int LiveCount { get; private set; }
+
         public static PrismSpatialIndex EnsureInstance()
         {
             if (Instance != null) return Instance;
@@ -543,6 +551,39 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Live prisms within <paramref name="radius"/> of ANY of <paramref name="centers"/>,
+        /// in a SINGLE pass over the packed spatial array (early-break once a prism is
+        /// near any centre). Replaces N separate QuerySphere calls for the collider-LOD
+        /// union: a large LOD radius forces each QuerySphere into its linear-scan fallback,
+        /// so per-focus calls were O(centers × population); this is one cache-friendly pass.
+        /// </summary>
+        public int QueryUnionOfSpheres(List<Vector3> centers, float radius, List<Prism> results)
+        {
+            results.Clear();
+            if (!_spatial.IsCreated || centers == null || centers.Count == 0) return 0;
+
+            float radiusSq = radius * radius;
+            int centerCount = centers.Count;
+            // Stack-free: read centres straight from the list each test (centerCount is tiny).
+            for (int i = 0; i < _highWaterMark; i++)
+            {
+                var s = _spatial[i];
+                if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+                for (int cI = 0; cI < centerCount; cI++)
+                {
+                    float3 ctr = (float3)(Vector3)centers[cI];
+                    if (math.distancesq(s.Position, ctr) <= radiusSq)
+                    {
+                        var prism = _prisms[i];
+                        if (prism) results.Add(prism);
+                        break; // near at least one focus — no need to test the rest
+                    }
+                }
+            }
+            return results.Count;
+        }
+
+        /// <summary>
         /// Copies every LIVE prism (active, not destroyed) into
         /// <paramref name="results"/> (cleared first); returns the count. One linear
         /// pass over the managed refs — the iteration view for whole-population
@@ -622,6 +663,7 @@ namespace CosmicShore.Gameplay
             };
 
             AddToBucket(index, position);
+            LiveCount++;
             // The prism this reservation protected has materialized — fulfil it.
             ConsumeReservationNear(prism.transform.position);
             // Coarse view: file into the containing cell's density grids.
@@ -640,7 +682,10 @@ namespace CosmicShore.Gameplay
             if (s.Flags == 0 && _prisms[index] == null) return;
             // Live entries hold a bucket slot; destroyed ones were already removed.
             if ((s.Flags & PrismFlags.JobSkipMask) == PrismFlags.JobPassValue)
+            {
                 RemoveFromBucket(index, s.Position);
+                LiveCount--;
+            }
             // Coarse view: leave the cell grids (no-op if MarkDestroyed already did).
             UnbindCell(index, _prisms[index]);
             s.Flags = 0; // clear all flags including IsActive
@@ -657,7 +702,10 @@ namespace CosmicShore.Gameplay
             if ((s.Flags & PrismFlags.Destroyed) != 0) return; // already destroyed
             // Destroyed mass no longer occupies space — growth may fill the site.
             if ((s.Flags & PrismFlags.IsActive) != 0)
+            {
                 RemoveFromBucket(index, s.Position);
+                LiveCount--;
+            }
             s.Flags |= PrismFlags.Destroyed;
             _spatial[index] = s;
             // Coarse view: destroyed mass must stop attracting fauna, and the
@@ -685,7 +733,10 @@ namespace CosmicShore.Gameplay
             s.Flags &= unchecked((byte)~PrismFlags.Destroyed);
             _spatial[index] = s;
             if ((s.Flags & PrismFlags.IsActive) != 0)
+            {
                 AddToBucket(index, s.Position);
+                LiveCount++;
+            }
             // Coarse view: restored mass re-enters the cell's density grids
             // (re-resolved at the restored position, like the old
             // Prism.RegisterWithCell call this replaces).
@@ -996,6 +1047,7 @@ namespace CosmicShore.Gameplay
             if (_damage.IsCreated) _damage.Dispose();
             if (_hitIndices.IsCreated) _hitIndices.Dispose();
             if (_buckets.IsCreated) _buckets.Dispose();
+            LiveCount = 0;
         }
 
         #endregion

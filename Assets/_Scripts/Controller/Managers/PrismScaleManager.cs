@@ -90,6 +90,13 @@ namespace CosmicShore.Gameplay
                 else
                 {
                     block.transform.localScale = data.currentScale;
+                    // Keep the companion render entity's matrix in lockstep with
+                    // the growth animation (no-op on the legacy path)...
+                    block.OwnerPrism?.SyncRenderTransform();
+                    // ...and refresh the volume cache here (O(growing)/frame) so the
+                    // cell's per-domain aggregation never has to read lossyScale for
+                    // the whole population (O(all)/recompute — the old ~23ms hotspot).
+                    block.OwnerPrism?.RefreshVolumeCache();
                 }
             }
 
@@ -101,6 +108,9 @@ namespace CosmicShore.Gameplay
 
                 // Hit target exactly
                 block.transform.localScale = targetScale;
+                block.OwnerPrism?.SyncRenderTransform();
+                // Final settled volume — last refresh until this prism scales again.
+                block.OwnerPrism?.RefreshVolumeCache();
 
                 // Stop scaling (may call back into manager depending on your base class)
                 block.IsScaling = false;

@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using CosmicShore.ECS;
 using CosmicShore.Gameplay;
 
 namespace CosmicShore.Utility
@@ -36,6 +37,75 @@ namespace CosmicShore.Utility
         internal bool IsGrowing { get; private set; }
         internal Renderer Renderer => prismRenderer;
 
+        // --- Instanced rendering (Entities Graphics companion entity) -----------
+        // Companion entity carrying _State/_Location overrides draws in the
+        // renderer's place — swarm-eat implosion storms batch instead of issuing
+        // one draw + SetPass each.
+        internal PrismRenderHandle RenderHandle;
+        MeshFilter _meshFilter;
+        Color _pendingBrightColor = Color.white;
+        Color _pendingDarkColor = Color.black;
+        bool _hasPendingTeamColors;
+
+        internal bool UsesEntityRenderPath => PrismRenderService.IsHandleUsable(in RenderHandle);
+
+        private static readonly int BrightColorID = Shader.PropertyToID("_BrightColor");
+        private static readonly int DarkColorID = Shader.PropertyToID("_DarkColor");
+
+        void EnsureRenderEntity()
+        {
+            if (PrismRenderService.IsHandleUsable(in RenderHandle)) return;
+            if (prismRenderer == null) return;
+            if (_meshFilter == null || _meshFilter.sharedMesh == null || prismRenderer.sharedMaterial == null) return;
+            RenderHandle = PrismRenderService.Create(
+                _meshFilter.sharedMesh, prismRenderer.sharedMaterial,
+                transform.localToWorldMatrix, gameObject.layer,
+                PrismRenderOverrideSet.Implosion);
+        }
+
+        /// <summary>Team colors from PrismFactory.ConfigureForTeam — stored and
+        /// applied at StartImplosion/StartGrow to whichever render path is active.</summary>
+        public void SetTeamColors(Color bright, Color dark)
+        {
+            _pendingBrightColor = bright;
+            _pendingDarkColor = dark;
+            _hasPendingTeamColors = true;
+        }
+
+        /// <summary>Routes initial shader state + visibility to the active render
+        /// path. Implosions are visible from frame zero (progress 0 = whole block).</summary>
+        void ApplyInitialVisualState(float initialState, Vector3 location)
+        {
+            EnsureRenderEntity();
+            if (UsesEntityRenderPath)
+            {
+                PrismRenderService.SetTransform(in RenderHandle, transform.localToWorldMatrix);
+                PrismRenderService.SetImplosionParams(in RenderHandle, initialState,
+                    new Unity.Mathematics.float3(location.x, location.y, location.z));
+                if (_hasPendingTeamColors)
+                {
+                    PrismRenderService.SetTeamColors(in RenderHandle,
+                        PrismRenderService.ToFloat4(_pendingBrightColor),
+                        PrismRenderService.ToFloat4(_pendingDarkColor));
+                }
+                PrismRenderService.SetVisible(in RenderHandle, true);
+                if (prismRenderer != null) prismRenderer.enabled = false;
+            }
+            else
+            {
+                if (prismRenderer != null && !prismRenderer.enabled) prismRenderer.enabled = true;
+                prismRenderer.GetPropertyBlock(mpb);
+                mpb.SetFloat(ImplosionProgressID, initialState);
+                mpb.SetVector(ConvergencePointID, location);
+                if (_hasPendingTeamColors)
+                {
+                    mpb.SetColor(BrightColorID, _pendingBrightColor);
+                    mpb.SetColor(DarkColorID, _pendingDarkColor);
+                }
+                prismRenderer.SetPropertyBlock(mpb);
+            }
+        }
+
         // Wall-clock start time, used by the watchdog. Tracking via Time.time (not the
         // manager-driven Elapsed counter) is robust against state-reset bugs that
         // would otherwise keep Elapsed pinned at 0 and starve the natural completion path.
@@ -54,6 +124,7 @@ namespace CosmicShore.Utility
         {
             if (!prismRenderer)
                 prismRenderer = GetComponent<Renderer>();
+            _meshFilter = GetComponent<MeshFilter>();
 
             mpb = new MaterialPropertyBlock();
         }
@@ -76,11 +147,24 @@ namespace CosmicShore.Utility
                 PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
             }
 
+            if (PrismRenderService.IsHandleUsable(in RenderHandle))
+                PrismRenderService.SetVisible(in RenderHandle, false);
+
+            // Parity with the MPB clear below: a pool reuse that skips
+            // ConfigureForTeam must show material defaults, not the previous
+            // team's palette.
+            _hasPendingTeamColors = false;
+
             if (prismRenderer != null && mpb != null)
             {
                 mpb.Clear();
                 prismRenderer.SetPropertyBlock(mpb);
             }
+        }
+
+        private void OnDestroy()
+        {
+            PrismRenderService.Destroy(ref RenderHandle);
         }
 
         // ---------------- API ----------------
@@ -113,11 +197,8 @@ namespace CosmicShore.Utility
             IsActive = true;
             _activatedAtTime = Time.time;
 
-            // Set initial shader state
-            prismRenderer.GetPropertyBlock(mpb);
-            mpb.SetFloat(ImplosionProgressID, 0f);
-            mpb.SetVector(ConvergencePointID, targetPos);
-            prismRenderer.SetPropertyBlock(mpb);
+            // Set initial shader state on the active render path
+            ApplyInitialVisualState(0f, targetPos);
 
             // Register with batched manager for frame updates (auto-creates if not in scene)
             PrismEffectsManager.EnsureInstance().RegisterImplosion(this);
@@ -146,11 +227,8 @@ namespace CosmicShore.Utility
             IsActive = true;
             _activatedAtTime = Time.time;
 
-            // Set initial collapsed state
-            prismRenderer.GetPropertyBlock(mpb);
-            mpb.SetFloat(ImplosionProgressID, 1f);
-            mpb.SetVector(ConvergencePointID, startPosition);
-            prismRenderer.SetPropertyBlock(mpb);
+            // Set initial collapsed state on the active render path
+            ApplyInitialVisualState(1f, startPosition);
 
             // Register with batched manager for frame updates (auto-creates if not in scene)
             PrismEffectsManager.EnsureInstance().RegisterImplosion(this);
@@ -182,6 +260,9 @@ namespace CosmicShore.Utility
                 IsActive = false;
                 PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
             }
+
+            if (PrismRenderService.IsHandleUsable(in RenderHandle))
+                PrismRenderService.SetVisible(in RenderHandle, false);
 
             if (prismRenderer && mpb != null)
             {

@@ -29,6 +29,10 @@ namespace CosmicShore.Gameplay
         private MeshRenderer meshRenderer;
         private bool isRegistered;
 
+        /// <summary>Owning prism — PrismScaleManager pushes transform updates to
+        /// the companion render entity through this after each scale write.</summary>
+        internal Prism OwnerPrism => prism;
+
         private bool isScaling;
         public bool IsScaling
         {

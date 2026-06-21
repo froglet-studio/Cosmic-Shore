@@ -26,6 +26,17 @@ namespace CosmicShore.Gameplay
         public Vector3 StartSpread { get; private set; }
         public Vector3 TargetSpread { get; private set; }
 
+        // Last colors actually displayed, written by MaterialStateManager each
+        // animated frame. This is the interruption start-state for BOTH render
+        // paths — the entity path has no MaterialPropertyBlock to read back from.
+        public Color CurrentBrightColor { get; internal set; }
+        public Color CurrentDarkColor { get; internal set; }
+        public Vector3 CurrentSpread { get; internal set; }
+
+        /// <summary>Owning prism — MaterialStateManager routes animated colors to
+        /// its companion render entity when the instanced path is active.</summary>
+        internal Prism CachedPrism => cachedPrism;
+
         public float Duration { get; private set; }
         
         private bool isAnimating;
@@ -123,8 +134,9 @@ namespace CosmicShore.Gameplay
                         MeshRenderer.sharedMaterial = activeTransparentMaterial;
                     else
                         MeshRenderer.sharedMaterial = activeOpaqueMaterial;
+                    cachedPrism.SyncRenderMaterial();
                 }
-                
+
                 materialsDirty = false;
                 return true;
             }
@@ -147,13 +159,14 @@ namespace CosmicShore.Gameplay
 
             if (!ValidateMaterials()) return;
 
-            // If already animating, capture current state as start state
+            // If already animating, capture current state as start state. Uses the
+            // manager-tracked current values (works for both the MPB path and the
+            // entity path, which has no property block to read back).
             if (IsAnimating)
             {
-                MeshRenderer.GetPropertyBlock(PropertyBlock);
-                StartBrightColor = PropertyBlock.GetColor(BrightColorId);
-                StartDarkColor = PropertyBlock.GetColor(DarkColorId);
-                StartSpread = PropertyBlock.GetVector(SpreadId);
+                StartBrightColor = CurrentBrightColor;
+                StartDarkColor = CurrentDarkColor;
+                StartSpread = CurrentSpread;
             }
             else
             {
@@ -162,6 +175,12 @@ namespace CosmicShore.Gameplay
                 StartDarkColor = currentMaterial.GetColor(DarkColorId);
                 StartSpread = currentMaterial.GetVector(SpreadId);
             }
+
+            // Seed the tracked currents so an interruption before the first
+            // animated frame still has a valid start state.
+            CurrentBrightColor = StartBrightColor;
+            CurrentDarkColor = StartDarkColor;
+            CurrentSpread = StartSpread;
 
             // Set target values
             TargetBrightColor = transparentMaterial.GetColor(BrightColorId);
@@ -181,6 +200,7 @@ namespace CosmicShore.Gameplay
                 {
                     MeshRenderer.sharedMaterial = cachedPrism.prismProperties.IsTransparent ?
                         transparentMaterial : opaqueMaterial;
+                    cachedPrism.SyncRenderMaterial();
                 }
 
                 onComplete?.Invoke();
@@ -193,12 +213,35 @@ namespace CosmicShore.Gameplay
             {
                 MeshRenderer.sharedMaterial = transparent ? activeTransparentMaterial : activeOpaqueMaterial;
                 cachedPrism.prismProperties.IsTransparent = transparent;
+                cachedPrism.SyncRenderMaterial();
             }
         }
 
         public void MarkMaterialsDirty()
         {
             materialsDirty = true;
+        }
+
+        /// <summary>
+        /// Writes the currently displayed colors into the renderer's
+        /// MaterialPropertyBlock. Used when rendering hands off from the
+        /// companion entity to the GameObject (octahedron engage): the MPB may
+        /// hold colors from long before the entity path took over, and a stale
+        /// block would flash for a frame. Mid-animation we pin the tracked
+        /// current values; at rest we clear so the base sharedMaterial (which
+        /// the completed animation already matched) shows through.
+        /// </summary>
+        internal void FlushDisplayedColorsToRenderer()
+        {
+            if (MeshRenderer == null || PropertyBlock == null) return;
+            PropertyBlock.Clear();
+            if (IsAnimating)
+            {
+                PropertyBlock.SetColor(BrightColorId, CurrentBrightColor);
+                PropertyBlock.SetColor(DarkColorId, CurrentDarkColor);
+                PropertyBlock.SetVector(SpreadId, new Vector4(CurrentSpread.x, CurrentSpread.y, CurrentSpread.z, 0));
+            }
+            MeshRenderer.SetPropertyBlock(PropertyBlock);
         }
 
         private void OnDestroy()

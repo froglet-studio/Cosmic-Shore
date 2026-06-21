@@ -7,6 +7,7 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using UnityEngine.Serialization;
 using CosmicShore.Data;
+using CosmicShore.ECS;
 using System.Linq;
 namespace CosmicShore.Gameplay
 {
@@ -84,7 +85,23 @@ namespace CosmicShore.Gameplay
         private PrismTeamManager teamManager;
         private PrismStateManager stateManager;
         private MeshRenderer meshRenderer;
+        private MeshFilter meshFilter;
         private BoxCollider blockCollider;
+
+        // --- Instanced rendering (Entities Graphics companion entity) -----------
+        // While the instanced path is active the MeshRenderer stays disabled and a
+        // companion entity draws in its place (PrismRenderService — see
+        // Docs/PRISM_ECS_MIGRATION.md). _renderVisible is the single visibility
+        // truth for BOTH paths; _exoticVisualActive forces the GameObject renderer
+        // for per-prism-unique geometry (octahedron shield morph/shatter).
+        internal PrismRenderHandle RenderHandle;
+        bool _renderVisible;
+        bool _exoticVisualActive;
+
+        /// <summary>True when per-frame color animation should sink into the
+        /// companion entity instead of a MaterialPropertyBlock.</summary>
+        internal bool UsesEntityColorSink =>
+            !_exoticVisualActive && PrismRenderService.IsHandleUsable(in RenderHandle);
 
         public Vector3 TargetScale
         {
@@ -124,6 +141,7 @@ namespace CosmicShore.Gameplay
             teamManager = GetComponent<PrismTeamManager>();
             stateManager = GetComponent<PrismStateManager>();
             meshRenderer = GetComponent<MeshRenderer>();
+            meshFilter = GetComponent<MeshFilter>();
             blockCollider = GetComponent<BoxCollider>();
 
             scaleAnimator.GrowthRate = growthRate;
@@ -150,6 +168,127 @@ namespace CosmicShore.Gameplay
                 PrismSpatialIndex.Instance?.ForwardDomainChangeToCell(SpatialIndexId);
         }
 
+        // --- Instanced rendering routing ----------------------------------------
+
+        /// <summary>
+        /// Single visibility entry point for both render paths. Replaces direct
+        /// meshRenderer.enabled writes throughout the lifecycle so the companion
+        /// entity and the MeshRenderer can never both draw.
+        /// </summary>
+        void SetRenderVisible(bool visible)
+        {
+            _renderVisible = visible;
+            ApplyRenderPath();
+        }
+
+        void ApplyRenderPath()
+        {
+            // An inactive GameObject must never show its entity: during pooled
+            // release, component OnDisable order is undefined — the octahedron
+            // shield's Disengage can route through here AFTER Prism.OnDisable
+            // already hid the entity, and re-showing it would orphan a visible
+            // entity until pool reuse.
+            bool show = _renderVisible && gameObject.activeInHierarchy;
+
+            if (show && !_exoticVisualActive && PrismRenderService.Enabled)
+                EnsureRenderEntity();
+
+            bool entityPath = !_exoticVisualActive && PrismRenderService.IsHandleUsable(in RenderHandle);
+            if (entityPath)
+            {
+                if (meshRenderer && meshRenderer.enabled) meshRenderer.enabled = false;
+                if (show)
+                {
+                    SyncRenderMaterial();
+                    SyncRenderTransform();
+                }
+                PrismRenderService.SetVisible(in RenderHandle, show);
+            }
+            else
+            {
+                if (PrismRenderService.IsHandleUsable(in RenderHandle))
+                    PrismRenderService.SetVisible(in RenderHandle, false);
+                if (meshRenderer) meshRenderer.enabled = _renderVisible;
+            }
+        }
+
+        void EnsureRenderEntity()
+        {
+            if (PrismRenderService.IsHandleUsable(in RenderHandle)) return;
+            if (!meshRenderer || !meshFilter) return;
+            if (meshFilter.sharedMesh == null || meshRenderer.sharedMaterial == null) return;
+            RenderHandle = PrismRenderService.Create(
+                meshFilter.sharedMesh, meshRenderer.sharedMaterial,
+                transform.localToWorldMatrix, gameObject.layer);
+        }
+
+        /// <summary>Pushes the live transform to the companion entity. Called on
+        /// show, by PrismScaleManager during growth, and by movers via
+        /// NotifyPositionChanged.</summary>
+        internal void SyncRenderTransform()
+        {
+            if (_exoticVisualActive) return;
+            if (!PrismRenderService.IsHandleUsable(in RenderHandle)) return;
+            PrismRenderService.SetTransform(in RenderHandle, transform.localToWorldMatrix);
+        }
+
+        /// <summary>Re-syncs the entity's base material from the MeshRenderer after
+        /// any sharedMaterial swap (domain / state / transparency changes).</summary>
+        internal void SyncRenderMaterial()
+        {
+            if (meshRenderer == null) return;
+            if (!PrismRenderService.IsHandleUsable(in RenderHandle))
+            {
+                // The material may only now have arrived (a prism shown before its
+                // domain material was assigned skipped entity creation) — give the
+                // instanced path another chance to claim rendering. EnsureRenderEntity
+                // is a no-op on failure, so this cannot recurse.
+                if (_renderVisible && !_exoticVisualActive && PrismRenderService.Enabled
+                    && gameObject.activeInHierarchy)
+                {
+                    EnsureRenderEntity();
+                    if (PrismRenderService.IsHandleUsable(in RenderHandle))
+                        ApplyRenderPath();
+                }
+                return;
+            }
+            bool refreshColors = materialAnimator == null || !materialAnimator.IsAnimating;
+            PrismRenderService.SetMaterial(in RenderHandle, meshRenderer.sharedMaterial, refreshColors);
+        }
+
+        /// <summary>
+        /// Octahedron shield (and any future per-prism-unique geometry) forces the
+        /// GameObject renderer while active; rendering returns to the instanced
+        /// path on release. Visibility state carries across the handoff.
+        /// </summary>
+        internal void SetExoticVisualActive(bool active)
+        {
+            if (_exoticVisualActive == active) return;
+            _exoticVisualActive = active;
+            ApplyRenderPath();
+
+            // Color continuity: the displayed colors live on the outgoing path —
+            // push them onto the incoming one so the handoff frame can't flash a
+            // stale MaterialPropertyBlock (engage) or pre-engage entity colors
+            // (disengage).
+            if (active)
+                materialAnimator?.FlushDisplayedColorsToRenderer();
+            else
+                SyncRenderColorsFromAnimator();
+        }
+
+        /// <summary>Pushes the animator's in-flight colors onto the companion
+        /// entity (used when the entity path resumes mid-animation).</summary>
+        internal void SyncRenderColorsFromAnimator()
+        {
+            if (materialAnimator == null || !materialAnimator.IsAnimating) return;
+            if (!PrismRenderService.IsHandleUsable(in RenderHandle)) return;
+            PrismRenderService.SetColors(in RenderHandle,
+                PrismRenderService.ToFloat4(materialAnimator.CurrentBrightColor),
+                PrismRenderService.ToFloat4(materialAnimator.CurrentDarkColor),
+                PrismRenderService.ToFloat3(materialAnimator.CurrentSpread));
+        }
+
         /// <summary>
         /// Called when spawning from pool. Resets state and starts growth.
         /// </summary>
@@ -160,7 +299,7 @@ namespace CosmicShore.Gameplay
 
             PlayerName = playerName;
             blockCollider.enabled = false;
-            meshRenderer.enabled = false;
+            SetRenderVisible(false);
 
             var authoredTargetScale = scaleAnimator ? scaleAnimator.TargetScale : transform.localScale;
             if (authoredTargetScale == Vector3.zero)
@@ -190,6 +329,7 @@ namespace CosmicShore.Gameplay
             destroyed = false;
             devastated = false;
             _lodCulled = false; // pool reuse: Initialize owns the collider again
+            CachedVolume = 0f;  // stale from the previous life; reseeded at CreateBlock
             IsSmallest = false;
             IsLargest = false;
             
@@ -201,7 +341,7 @@ namespace CosmicShore.Gameplay
             
             // Ensure physics/rendering are off until Coroutine enables them
             if (blockCollider) blockCollider.enabled = false;
-            if (meshRenderer) meshRenderer.enabled = false;
+            SetRenderVisible(false);
             
             StopAllCoroutines();
         }
@@ -236,7 +376,7 @@ namespace CosmicShore.Gameplay
             // AOE registry and cell grids.
             if (destroyed) yield break;
 
-            meshRenderer.enabled = true;
+            SetRenderVisible(true);
             blockCollider.enabled = true;
 
             if (scaleAnimator.TargetScale == Vector3.zero)
@@ -259,9 +399,19 @@ namespace CosmicShore.Gameplay
             // cell's density grids. The cell binding is what makes trail mass
             // visible to fauna anti-domain targeting and the cell's phase system;
             // fauna bodies are excluded from that view inside the index.
+            // Seed the volume cache before the cell starts aggregating this prism
+            // (it enters massTracked via the Register → BindCell path below), so the
+            // first volume recompute reads a real value, not the default 0.
+            RefreshVolumeCache();
+
             var spatialIndex = PrismSpatialIndex.EnsureInstance();
             if (spatialIndex != null && spatialIndex.IsAvailable)
                 SpatialIndexId = spatialIndex.Register(this);
+
+            // The LOD sweep is transition-based — it must be told about colliders
+            // that come online between ticks, or a prism born far from every focus
+            // keeps its collider until a bubble boundary happens to cross it.
+            PrismColliderLodManager.NotifyPrismActivated(this);
         }
 
         /// <summary>
@@ -321,6 +471,33 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Cached copy of <see cref="CurrentVolume"/>, refreshed ONLY when this prism's
+        /// scale actually changes (PrismScaleManager during growth + on settle, plus
+        /// create / restore). Cell.EnsureVolumeFresh reads THIS instead of CurrentVolume
+        /// so the per-domain volume aggregation over the whole prism population stops
+        /// doing a transform.lossyScale parent-walk per prism per recompute — the
+        /// dominant main-thread cost at high prism counts (a single recompute of ~9k
+        /// prisms was ~23 ms). Value is identical to CurrentVolume for settled prisms
+        /// (which never change scale) and lags by at most one frame for the handful
+        /// actively growing, so "volume is the spine" semantics are preserved — only the
+        /// compute cost moves from O(all prisms)/recompute to O(growing)/frame.
+        /// </summary>
+        internal float CachedVolume { get; private set; }
+
+        /// <summary>
+        /// Recompute <see cref="CachedVolume"/> from the live transform. Mirrors
+        /// <see cref="CurrentVolume"/> exactly. Cheap per call — the whole point is to
+        /// call it O(growing) times per frame instead of O(all prisms) per volume
+        /// recompute.
+        /// </summary>
+        internal void RefreshVolumeCache()
+        {
+            if (destroyed) { CachedVolume = 0f; return; }
+            float v = scaleAnimator ? scaleAnimator.GetCurrentVolume() : 0f;
+            CachedVolume = v > 0f ? v : Mathf.Max(prismProperties?.volume ?? 0f, 0f);
+        }
+
         // Growth Methods
         public void Grow(float amount = 1) => scaleAnimator.Grow(amount);
 
@@ -351,12 +528,16 @@ namespace CosmicShore.Gameplay
             }
 
             blockCollider.enabled = false;
-            meshRenderer.enabled = false;
+            SetRenderVisible(false);
 
             prismProperties.volume = Mathf.Max(scaleAnimator ? scaleAnimator.GetCurrentVolume() : 1f, 1f);
 
             destroyed = true;
             devastated = devastate;
+
+            // Destroyed mass weighs nothing in the per-domain sums — drop it from the
+            // cache immediately (the cell may aggregate before the index unbinds it).
+            CachedVolume = 0f;
 
             // Mark destroyed in the spatial index: the AOE Burst job skips this
             // prism, its occupancy bucket frees so growth can fill the site, and
@@ -512,8 +693,15 @@ namespace CosmicShore.Gameplay
                 }
 
                 blockCollider.enabled = true;
-                meshRenderer.enabled = true;
+                SetRenderVisible(true);
                 destroyed = false;
+
+                // Restored mass weighs again — re-seed the cache (destroyed=false now).
+                RefreshVolumeCache();
+
+                // Same contract as the spawn window: the transition-based LOD
+                // sweep must classify this just-restored collider.
+                PrismColliderLodManager.NotifyPrismActivated(this);
             }
         }
 
@@ -527,6 +715,11 @@ namespace CosmicShore.Gameplay
         {
             if (SpatialIndexId >= 0)
                 PrismSpatialIndex.Instance?.UpdatePosition(SpatialIndexId, transform.position);
+
+            // Movers (gyroid steering, fauna body prisms) must also keep the
+            // companion render entity's matrix honest — same contract as the
+            // spatial index position.
+            SyncRenderTransform();
         }
 
         private void OnDisable()
@@ -543,6 +736,12 @@ namespace CosmicShore.Gameplay
                 PrismSpatialIndex.Instance?.Unregister(SpatialIndexId);
                 SpatialIndexId = -1;
             }
+
+            // The companion entity is not tied to GameObject activation — hide it
+            // explicitly so a pooled prism can't keep drawing while it waits for
+            // reuse. (The next Initialize re-establishes visibility.)
+            if (PrismRenderService.IsHandleUsable(in RenderHandle))
+                PrismRenderService.SetVisible(in RenderHandle, false);
         }
 
         private void OnDestroy()
@@ -560,6 +759,9 @@ namespace CosmicShore.Gameplay
                 PrismSpatialIndex.Instance?.Unregister(SpatialIndexId);
                 SpatialIndexId = -1;
             }
+
+            // Companion render entity dies with its prism.
+            PrismRenderService.Destroy(ref RenderHandle);
         }
     }
 }

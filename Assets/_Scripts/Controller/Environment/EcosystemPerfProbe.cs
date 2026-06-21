@@ -82,8 +82,13 @@ namespace CosmicShore.Gameplay
             int near = PrismColliderLodManager.LastNearCount;
             int live = PrismColliderLodManager.LastLiveCount;
 
+            // Instanced-rendering telemetry: companion render entities currently
+            // alive (Docs/PRISM_ECS_MIGRATION.md). ents≈prisms ⇒ the batched path
+            // is carrying the population; ents=0 ⇒ legacy MeshRenderer path.
+            int renderEntities = CosmicShore.ECS.PrismRenderService.LiveEntityCount;
+
             _lastLine = $"[ECOSIM] prisms={prisms} volume={volume:F0} colliders={near}/{live} " +
-                        $"fauna={fauna} phase={phases} fps={fps:F1}" +
+                        $"ents={renderEntities} fauna={fauna} phase={phases} fps={fps:F1}" +
                         (cells > 1 ? $"  (cells={cells})" : "");
             Debug.Log(_lastLine);
         }

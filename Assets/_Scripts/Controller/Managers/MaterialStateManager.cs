@@ -133,10 +133,31 @@ namespace CosmicShore.Gameplay
 
                 foreach (var (animator, brightColor, darkColor, spread) in propertyUpdateQueue)
                 {
-                    sharedPropertyBlock.SetColor(BRIGHT_COLOR_PROP, ToColor(brightColor));
-                    sharedPropertyBlock.SetColor(DARK_COLOR_PROP, ToColor(darkColor));
-                    sharedPropertyBlock.SetVector(SPREAD_PROP, new Vector4(spread.x, spread.y, spread.z, 0));
-                    animator.MeshRenderer.SetPropertyBlock(sharedPropertyBlock);
+                    var bright = ToColor(brightColor);
+                    var dark = ToColor(darkColor);
+                    var spreadV3 = new Vector3(spread.x, spread.y, spread.z);
+
+                    // Track the displayed values — the interruption start-state
+                    // for re-targeted animations on both render paths.
+                    animator.CurrentBrightColor = bright;
+                    animator.CurrentDarkColor = dark;
+                    animator.CurrentSpread = spreadV3;
+
+                    // Instanced path: colors sink into the companion entity's
+                    // DOTS-instanced overrides. Legacy path: per-renderer MPB.
+                    var prism = animator.CachedPrism;
+                    if (prism != null && prism.UsesEntityColorSink)
+                    {
+                        CosmicShore.ECS.PrismRenderService.SetColors(
+                            in prism.RenderHandle, in brightColor, in darkColor, in spread);
+                    }
+                    else
+                    {
+                        sharedPropertyBlock.SetColor(BRIGHT_COLOR_PROP, bright);
+                        sharedPropertyBlock.SetColor(DARK_COLOR_PROP, dark);
+                        sharedPropertyBlock.SetVector(SPREAD_PROP, new Vector4(spread.x, spread.y, spread.z, 0));
+                        animator.MeshRenderer.SetPropertyBlock(sharedPropertyBlock);
+                    }
                 }
             }
         }
