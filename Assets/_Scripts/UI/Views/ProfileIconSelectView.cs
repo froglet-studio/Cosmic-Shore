@@ -5,6 +5,8 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
 using Reflex.Attributes;
+using Reflex.Core;
+using Reflex.Injectors;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -38,6 +40,10 @@ namespace CosmicShore.UI
         [Header("Profile / UGS")]
         [Inject] private PlayerDataService dataService;
         [Inject] private GameDataSO gameData;
+
+        // Needed to inject runtime-instantiated icon buttons — Reflex does not auto-inject
+        // prefabs created via Instantiate(), so the button's [Inject] AudioSystem would be null.
+        [Inject] private Container _container;
 
         // Internal state
         private ProfileIconSelectButton _selectedButton;
@@ -156,6 +162,11 @@ namespace CosmicShore.UI
             {
                 var buttonInstance = Instantiate(iconButtonPrefab, iconGrid.transform);
                 buttonInstance.transform.localScale = Vector3.one;
+
+                // Reflex doesn't auto-inject Instantiate()'d prefabs — inject so the button's
+                // [Inject] AudioSystem resolves (otherwise OnClick NREs on the audio call).
+                if (_container != null)
+                    GameObjectInjector.InjectRecursive(buttonInstance.gameObject, _container);
 
                 buttonInstance.ProfileIcon = profileIcon;
                 buttonInstance.IconView    = this;

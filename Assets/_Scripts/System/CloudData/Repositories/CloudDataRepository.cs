@@ -23,6 +23,7 @@ namespace CosmicShore.Core
 
         public T Data => _data;
         public bool IsLoaded { get; private set; }
+        public bool IsDirty => _dirty;
         public abstract string CloudKey { get; }
         public event Action OnDataChanged;
 
@@ -53,9 +54,9 @@ namespace CosmicShore.Core
                 _ = DebouncedSaveLoop();
         }
 
-        public async Task SaveAsync(CancellationToken ct = default)
+        public async Task<bool> SaveAsync(CancellationToken ct = default)
         {
-            await _provider.SaveAsync(CloudKey, _data, ct);
+            return await _provider.SaveAsync(CloudKey, _data, ct);
         }
 
         /// <summary>
@@ -91,7 +92,15 @@ namespace CosmicShore.Core
                 while (_dirty)
                 {
                     _dirty = false;
-                    await SaveAsync();
+                    bool saved = await SaveAsync();
+                    if (!saved)
+                    {
+                        // Provider already retried with backoff. Keep the data dirty so
+                        // the finally-reloop, the next mutation, network recovery, or an
+                        // app-pause flush retries it — never drop a pending change.
+                        _dirty = true;
+                        break;
+                    }
                 }
             }
             catch (Exception e)

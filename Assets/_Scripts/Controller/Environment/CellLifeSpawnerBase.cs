@@ -62,14 +62,10 @@ namespace CosmicShore.Gameplay
             host.RegisterSpawnedObject(go);
         }
 
-        protected Domains GetLocalDomainOr(GameDataSO gameData, Domains fallback) =>
-            gameData?.LocalRoundStats?.Domain ?? fallback;
-
-        protected Domains? GetExcludedDomain(bool excludeLocal, GameDataSO gameData, Domains fallbackLocal)
-        {
-            if (!excludeLocal) return null;
-            return GetLocalDomainOr(gameData, fallbackLocal);
-        }
+        // GetExcludedDomain / GetLocalDomainOr were removed with the exclusion roll:
+        // the locked no-domain-asymmetry invariant (CLAUDE.md ▸ Ecosystem Design
+        // Principles) says all three domains seed flora and fauna spawn in the
+        // controlling color — no spawner may bias against any domain.
 
         protected Domains PickRandomDomain(Domains? excluded)
         {

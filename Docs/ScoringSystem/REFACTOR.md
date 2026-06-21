@@ -213,6 +213,14 @@ Sequence **with R1** (unified always-networked path) — both touch the scoring 
 - 🟡 **C** (R1) — partially advanced: `IsLocalUser` → `IsMultiplayerOwner` (commit `10e541fc`, no
   offline single-player branch). Still open: remove the `IsMultiplayerMode` scoring branches
   (`Scoreboard.cs:147,454`) and retire `DomainStatsList[0]` as a winner source.
+- 🔴 **D** (next session) — **server-ORDERED results sync**: the rows are still re-SORTED on every
+  peer (`SyncFinalScores_ClientRpc` → `rule.BuildResults` over the local `RoundStatsList`), so tied
+  rows order differently host vs client. Sort once on the server, ship rows in rank order (+ the
+  formatted `ScoreText`/`Secondary` strings), clients build `Results` from the arrays verbatim. Plus
+  the per-player `LastCrystalCollectedTime` tie-break (owner rule, pending one ranking decision) and
+  the podium name-join hardening. **Full work package, design + commit sequence:
+  `RANKING_SYNC_PLAN.md`** (Steps 4–7; includes follow-ups F1 SOAP-ResetOn guard, F2
+  `RequestedDomainCount` comment drift, F3 optional ClientReady dedupe).
 
 ### R11 — ⚪ [deferred · needs device + UGS testing] Fully retire `GolfScoreSentinels`
 Follow-on to **R4**, which deliberately stopped at *centralizing* the sentinel into one file. This
@@ -277,3 +285,13 @@ when the stat-row surface itself changes.
   `BUGS.md` B3; remove or wire correctly.
 - `DuelForCell` in-game HUD wiring is unclear (no dedicated HUD subclass) —
   confirm which HUD the Cellular Duel scene uses during the unified-path work.
+- `GameCanvas-HexRace.prefab` carries stale Scoreboard-era data: the internal
+  `Scoreboard`'s serialized fields predate the current class (old
+  `multiplayerController` name, `SinglePlayerBannerColor`, rematch panel refs),
+  and the retired rematch UI is still in the prefab with persistent calls to
+  deleted methods (`OnAcceptRematch`/`OnDeclineRematch` on the old
+  `HexRaceScoreboard` type). Inert — the rematch panels are removed per-scene
+  and a null-target persistent call is skipped — but it caused the wiring
+  confusion behind `BUGS.md` B13/B14. Re-save the prefab (refreshes serialized
+  field names) and delete the rematch subtree when the prefab is next touched;
+  re-check the three scenes' overrides afterward.

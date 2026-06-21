@@ -62,6 +62,10 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Master list of all arcade games. Registered in DI for all consumers.")]
         SO_GameList gameList;
 
+        [Header("Tournament")]
+        [SerializeField, Tooltip("SOAP data container for the Tournament session (lineup, standings, points table).")]
+        TournamentDataSO tournamentData;
+
         [Header("Menu Freestyle Events")]
         [SerializeField, Tooltip("SOAP event container for menu/freestyle state transition bracket events.")]
         MenuFreestyleEventsContainerSO menuFreestyleEvents;
@@ -95,6 +99,13 @@ namespace CosmicShore.Core
         [Inject] FriendsServiceFacade friendsServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
         [Inject] ApplicationStateMachine applicationStateMachine;
+        // Injected so the facade is constructed at bootstrap — it has no other
+        // injection point until consumers appear, and its event subscriptions
+        // (sign-in, game lifecycle, pause/quit) must exist from app start.
+        [Inject] AnalyticsServiceFacade analyticsServiceFacade;
+        // Eagerly resolved so the tournament brain is alive from bootstrap (subscribed to
+        // OnMiniGameEnd + sceneLoaded) and survives every Single scene load.
+        [Inject] TournamentController tournamentController;
 
         static bool _hasBootstrapped;
         bool _resolved;
@@ -312,6 +323,7 @@ namespace CosmicShore.Core
             RegisterAsset(builder, friendsData, nameof(friendsData));
             RegisterAsset(builder, hostConnectionData, nameof(hostConnectionData));
             RegisterAsset(builder, gameList, nameof(gameList));
+            RegisterAsset(builder, tournamentData, nameof(tournamentData));
             RegisterAsset(builder, menuFreestyleEvents, nameof(menuFreestyleEvents));
             RegisterAsset(builder, lifecycleEvents, nameof(lifecycleEvents));
             RegisterAsset(builder, applicationStateDataVariable, nameof(applicationStateDataVariable));
@@ -364,6 +376,31 @@ namespace CosmicShore.Core
                     gameData,
                     networkMonitorDataVariable,
                     _bootstrapConfig == null || _bootstrapConfig.VerboseLogging),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            builder.RegisterFactory(
+                _ => new AnalyticsServiceFacade(
+                    authenticationDataVariable,
+                    networkMonitorDataVariable,
+                    gameData,
+                    lifecycleEvents,
+                    applicationStateDataVariable,
+                    menuFreestyleEvents,
+                    friendsData,
+                    hostConnectionData,
+                    _bootstrapConfig == null || _bootstrapConfig.VerboseLogging),
+                lifetime: Lifetime.Singleton,
+                resolution: Resolution.Lazy
+            );
+
+            // Tournament brain — persistent across the per-game Single loads. Capture the
+            // serialized fields directly (like ApplicationStateMachine above) rather than
+            // c.Resolve, so an un-wired tournamentData degrades to an inert controller instead
+            // of throwing at bootstrap.
+            builder.RegisterFactory(
+                _ => new TournamentController(gameData, tournamentData, _sceneNames),
                 lifetime: Lifetime.Singleton,
                 resolution: Resolution.Lazy
             );

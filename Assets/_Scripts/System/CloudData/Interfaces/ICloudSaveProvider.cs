@@ -19,8 +19,10 @@ namespace CosmicShore.Core
         Task<T> LoadAsync<T>(string key, CancellationToken ct = default) where T : class, new();
 
         /// <summary>
-        /// Saves a single key/value pair to cloud save.
+        /// Saves a single key/value pair to cloud save, retrying with backoff on
+        /// transient failure. Returns true on success, false if unavailable
+        /// (offline / not signed in) or all attempts failed.
         /// </summary>
-        Task SaveAsync<T>(string key, T data, CancellationToken ct = default) where T : class;
+        Task<bool> SaveAsync<T>(string key, T data, CancellationToken ct = default) where T : class;
     }
 }

@@ -28,12 +28,12 @@ systems; they render the same `GameDataSO` / `IRoundStats` data two ways.
 | | In-game HUD | Final scoreboard |
 |---|---|---|
 | Entry class | `MiniGameHUD` → `MultiplayerHUD` | `Scoreboard` |
-| Shown when | gameplay turn active | after `OnWinnerCalculated` → cinematic |
+| Shown when | gameplay turn active | after `OnWinnerCalculated` → `EndGameSequencer` |
 | Trigger event | `OnMiniGameTurnStarted` | `OnShowGameEndScreen` |
 | Per-player widget | `PlayerScoreEntry` (live) | `PlayerScoreCard` (final) |
 | Per-team widget | `DomainScorePanel` | banner + domain-tinted cards |
 | Data read | `IRoundStats.OnXxxChanged` (live) | `gameData.Results` (rule-produced, ranked) |
-| Mode customization | the mode's `ScoringRuleSO` (`LiveMetric`) | the mode's `ScoringRuleSO` (`BuildResults`/`BuildReveal`) |
+| Mode customization | the mode's `ScoringRuleSO` (`LiveMetric`) | the mode's `ScoringRuleSO` (`BuildResults`) |
 
 ---
 
@@ -182,13 +182,9 @@ Game controller (server) — OnTurnEndedCustom / rule.IsObjectiveReached end che
    ├─ gameData.CalculateDomainStats(golf)                ← DomainStatsList (legacy fallback)
    ├─ SyncFinalScores_ClientRpc(...)  → each client rebuilds gameData.Results
    └─ gameData.InvokeWinnerCalculated()
-        └► EndGameCinematicController.OnWinnerCalculated   (_Scripts/Utility/DataContainers/)
-             RunCompleteEndGameSequence:
-               victory lap → camera → PlayScoreRevealSequence:
-                 rule.BuildReveal(gameData, localStats, didWin) → ScoreReveal(header,label,value)
-                 → view.PlayScoreRevealAnimation
-               → intensity/quest toasts → Continue → connecting panel → reset
-             └─ gameData.InvokeShowGameEndScreen()
+        └► EndGameSequencer.HandleWinnerCalculated         (_Scripts/Utility/DataContainers/)
+             halt all vessels (IsStationary + input pause) → GameEnd SFX
+             → (optional preScoreboardDelay) → gameData.InvokeShowGameEndScreen()
                   └► Scoreboard.ShowScoreboard()             (_Scripts/UI/Scoreboard.cs)
                        ConfigureLobbyButtons()
                        banner domain = gameData.WinnerDomain → "{DOMAIN} VICTORY"
@@ -196,9 +192,9 @@ Game controller (server) — OnTurnEndedCustom / rule.IsObjectiveReached end che
                          in order, ScoreText (primary) + Secondary
                        PopulateDynamicStats() → ScoreboardStatsProvider.GetStats()
 ```
-The mode's `ScoringRuleSO` is the single producer (`BuildResults` / `BuildReveal`); the
-scoreboard + cinematic are mode-agnostic consumers of `gameData.Results` (R10). The crystal
-reward is the scoreboard's `AwardCrystalsIfLocalWinner` only (cinematic award path retired, R3).
+The mode's `ScoringRuleSO` is the single producer (`BuildResults`); the scoreboard is the
+mode-agnostic consumer of `gameData.Results` (R10). The crystal reward is the scoreboard's
+`AwardCrystalsIfLocalWinner` only. (`BuildReveal` fed the removed cinematic and is now unconsumed.)
 
 ### `Scoreboard` (base)
 - Subscribes `OnShowGameEndScreen → ShowScoreboard`, `OnResetForReplay →
@@ -222,15 +218,15 @@ optional secondary stat line, optional `+N` crystal reward. Entrance/punch/roll
 animations from `HUDAnimationSettingsSO`. (Distinct from the in-game
 `PlayerScoreEntry`.)
 
-### `EndGameCinematicController` (`_Scripts/Utility/DataContainers/`)
-Runs the cinematic between winner-calculation and the scoreboard. The base
-`PlayScoreRevealSequence` reads the reveal from the rule:
-`rule.BuildReveal(gameData, localStats, DetermineLocalPlayerWon())` → `ScoreReveal`
-(header, label, value, formatAsTime) → `view.PlayScoreRevealAnimation`.
-`DetermineLocalPlayerWon` compares `gameData.WinnerDomain` to the local domain. The
-per-mode cinematic subclasses were removed (R10); the cinematic crystal-award path was
-retired (R3) — the reward is the scoreboard's. `WildlifeBlitzEndGameCinematicController`
-remains for the non-rule blitz mode.
+### `EndGameSequencer` (`_Scripts/Utility/DataContainers/`)
+Slim bridge between winner-calculation and the scoreboard — there is **no end-game
+cinematic** (removed). On `OnWinnerCalculated` it halts every vessel
+(`VesselStatus.IsStationary = true` + input pause, so nothing flies behind the
+scoreboard), plays the GameEnd SFX, then raises `OnShowGameEndScreen` — the signal the
+`Scoreboard` and `LifeForm` (ecology cleanup) already listen for. It also re-homes the
+two end-of-game progression toasts (quest complete / intensity unlocked) off
+`GameModeProgressionService` events. The per-mode reveal (`ScoringRuleSO.BuildReveal`)
+is no longer consumed; the scoreboard cards read `gameData.Results` (`BuildResults`).
 
 ### Dynamic stats providers
 `ScoreboardStatsProvider` (abstract) → `GetStats() : List<StatData>`, rendered as
@@ -243,17 +239,18 @@ remains for the non-rule blitz mode.
 
 ## 5. Per-mode reference
 
-The rule modes each have **one `ScoringRuleSO` asset**; the HUD, scoreboard, and
-cinematic are shared and read its output. The last two rows are non-rule modes that
-keep their own scoreboard.
+The rule modes each have **one `ScoringRuleSO` asset**; the shared HUD and scoreboard
+read its output. The last two rows are non-rule modes that keep their own scoreboard.
+(The *Reveal* column records `BuildReveal`'s output, which is **no longer shown** — the
+end-game cinematic was removed; `EndGameSequencer` now just raises the scoreboard.)
 
 | Mode (id) | `ScoringRuleSO` | Metric | Sort | Winner / loser score | Reveal (`BuildReveal`) |
 |---|---|---|---|---|---|
 | **HexRace** (33) | `HexRaceScoringRuleSO` | Crystals | golf ↑, tiebreak `CrystalsCollected`↓ | finish time `MM:SS:CS` / `EncodeHexRaceLoserScore` (10000 + crystals-left) → "{N} Crystals Left" | VICTORY/RACE TIME • DEFEAT/CRYSTALS LEFT |
 | **Joust** (34) | `JoustScoringRuleSO` | Jousts | golf ↑, tiebreak `JoustCollisions`↓ | finish time `MM:SS:CS` / `JoustLoserScore` (99999) → "{N} Jousts Left" (domain deficit) | VICTORY/WON BY N JOUSTS • DEFEAT/LOST BY N JOUSTS |
 | **Crystal Capture** (35) | `CrystalCaptureScoringRuleSO` | Crystals | points ↓ | `Score` = CrystalsCollected → "{N} Crystals" (both) | WON/LOST BY N CRYSTALS |
-| **Cellular Duel** (29) | — (no rule) | `Score` | points ↓ | `"{N}"` | base cinematic; `DuelForCellScoreboard` |
-| **Wildlife Blitz** co-op (32) | — (no rule) | `Score` | base | base | `CoOpScoreBoard` + `WildlifeBlitzEndGameCinematicController` |
+| **Cellular Duel** (29) | — (no rule) | `Score` | points ↓ | `"{N}"` | `EndGameSequencer`; `DuelForCellScoreboard` |
+| **Wildlife Blitz** co-op (32) | — (no rule) | `Score` | base | base | `CoOpScoreBoard` + `EndGameSequencer` |
 
 > **Loser sentinels (centralized).** Golf modes encode a DNF loser score — HexRace
 > `10000 + crystalsLeft`, Joust `99999` — via the one `GolfScoreSentinels` helper
@@ -287,7 +284,7 @@ keep their own scoreboard.
   Views never compute the winner.
 - **One `ScoringRuleSO` per mode, not per-mode UI subclasses.** A mode's end
   condition, metric, winner, per-player score, ranked results, and reveal all live in
-  its `ScoringRuleSO`. The HUD, scoreboard, and cinematic are mode-agnostic and consume
+  its `ScoringRuleSO`. The HUD and scoreboard are mode-agnostic and consume
   the rule's output (`gameData.Results`, `BuildReveal`, `LiveMetric`) — do **not** subclass
   them per mode (the old `HexRaceHUD` / `*Scoreboard` / `*EndGameController` subclasses were
   removed, R10).
@@ -311,13 +308,12 @@ single-player/multiplayer **fork** so solo-host and online render identically
 | `Controller/Arcade/MultiplayerMiniGameControllerBase.cs:44,450` | reads/writes during config sync |
 | `UI/Scoreboard.cs:154,456` | lobby-button visibility + Play-Again host guard |
 | `UI/PauseMenu.cs:131` | pause-menu behavior |
-| `Utility/DataContainers/EndGameCinematicController.cs:245` | `fadeLoserTrail` only when MP |
 | `Controller/Multiplayer/MultiplayerSetup.cs:86` | session creation path |
 | `Controller/Party/HostConnectionService.cs:1714` | presence activity string |
 | `System/SceneLoader.cs:139` | log line only |
 
 **Target:** route all the above through the always-networked host model (solo =
-host + AI), driving lobby/cinematic/scoreboard behavior off concrete signals
+host + AI), driving lobby/scoreboard behavior off concrete signals
 (connected client count, `WinnerDomain`, domain membership) rather than the
 `IsMultiplayerMode` boolean, then remove the flag. **This is a discuss-first
 item** (`REFACTOR.md` R1) — agree the per-site replacement before any code.
@@ -326,21 +322,22 @@ item** (`REFACTOR.md` R1) — agree the per-site replacement before any code.
 
 ## 9. How to add a new game mode's scoreboard + HUD
 
-The per-mode work is **one `ScoringRuleSO`** — the shared HUD / scoreboard / cinematic
-are mode-agnostic and read its output. There are **no** per-mode HUD / scoreboard /
-cinematic subclasses any more.
+The per-mode work is **one `ScoringRuleSO`** — the shared HUD / scoreboard are
+mode-agnostic and read its output. There are **no** per-mode HUD / scoreboard
+subclasses any more, and **no end-game cinematic** (`EndGameSequencer` raises the scoreboard).
 
 1. **Write the rule:** subclass `ScoringRuleSO` (`_Scripts/Controller/Arcade/Scoring/`).
    Set `metric` + `golfRules`; implement `IsObjectiveReached` (end condition + winning
    domain), `AssignScores` (per-player `Score`), `BuildResults` (the ranked
    `List<ScoreResult>` — order + `ScoreText` + optional `Secondary`), and `BuildReveal`
-   (the VICTORY/DEFEAT `ScoreReveal`). Add the `[CreateAssetMenu]` and create the asset.
+   (abstract, so still required to compile, but **currently unconsumed** — the end-game
+   cinematic that displayed it was removed). Add the `[CreateAssetMenu]` and create the asset.
 2. **Wire it:** the mode's controller (a `MultiplayerDomainGamesController`) publishes the
    asset to `gameData.ScoringRule` and calls `gameData.SetResults(rule.BuildResults(gameData))`
    on turn end; the turn monitor calls `rule.IsObjectiveReached`.
 3. **No UI subclasses:** the shared `MultiplayerHUD` (domain boxes via `Player.Domain` +
-   server-synced sums), `Scoreboard` (`PopulateFromResults`), and
-   `EndGameCinematicController` (`rule.BuildReveal`) handle the rest.
+   server-synced sums), `Scoreboard` (`PopulateFromResults`), and the shared
+   `EndGameSequencer` (raises `OnShowGameEndScreen`) handle the rest.
 4. **Stats rows (optional):** add a `ScoreboardStatsProvider` (or wire
    `UniversalStatsProvider` + `StatModuleSO`s). *(R12: these per-mode providers are slated
    to fold behind the rule; until then this is how stat rows are added.)*
@@ -365,7 +362,7 @@ cinematic subclasses any more.
 | Ranked-results types | `_Scripts/Data/Structs/ScoreResult.cs`, `_Scripts/Controller/Arcade/ScoreResultBuilder.cs`, `_Scripts/Controller/Arcade/Scoring/ScoreReveal.cs` |
 | End-game scoreboard | `_Scripts/UI/Scoreboard.cs` (reads `gameData.Results`), `_Scripts/UI/PlayerScoreCard.cs` |
 | Non-rule scoreboards | `_Scripts/UI/DuelForCellScoreboard.cs`, `CoOpScoreBoard.cs` (rule modes use the base `Scoreboard`) |
-| End-game cinematic | `_Scripts/Utility/DataContainers/EndGameCinematicController.cs` + `EndGameCinematicView.cs` (reads `rule.BuildReveal`; `WildlifeBlitzEndGameCinematicController` for blitz) |
+| End-game sequencer | `_Scripts/Utility/DataContainers/EndGameSequencer.cs` (halts vessels, GameEnd SFX, raises `OnShowGameEndScreen`; shared by all modes) |
 | Stats providers | `_Scripts/UI/ScoreboardStatsProvider.cs`, `UniversalStatsProvider.cs`, `StatModuleSO.cs`, `StatRowUI.cs`; `_Scripts/Controller/Arcade/*StatsProvider.cs` |
 | Shared anim config | `_Scripts/UI/HUDAnimationSettingsSO.cs` |
 

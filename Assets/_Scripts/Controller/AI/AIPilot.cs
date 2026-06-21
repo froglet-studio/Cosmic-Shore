@@ -61,7 +61,10 @@ namespace CosmicShore.Gameplay
         [Tooltip("When true, AI targets enemy players instead of crystals/items (used for Joust)")]
         [SerializeField] bool seekPlayers;
         [Inject] GameDataSO gameData;
+        [Tooltip("Cadence (seconds) for re-selecting which opponent to chase while one is locked.")]
         [SerializeField] float playerSeekUpdateInterval = 0.5f;
+        [Tooltip("Faster re-scan cadence (seconds) used while the AI has NO opponent locked, so it re-acquires promptly (e.g. a 1v1 opponent mid-respawn).")]
+        [SerializeField] float playerReacquireInterval = 0.1f;
 
         /// <summary>
         /// Configure AI behavior at runtime (called after spawning for solo-play AI opponents).
@@ -101,6 +104,9 @@ namespace CosmicShore.Gameplay
         float _maxDistanceSquared;
 
         Vector3 _targetPosition;
+        // Live opponent the AI is chasing in player-seek (Joust) mode. Chosen by the
+        // UpdatePlayerTarget coroutine; Update() reads its current position every frame.
+        Transform _targetVesselTransform;
         Vector3 _distance;
         bool LookingAtCrystal;
 
@@ -184,36 +190,55 @@ namespace CosmicShore.Gameplay
                 _targetPosition = cellData.Cell.transform.position;
         }
 
+        // Joust targeting. The coroutine only RE-SELECTS which opponent to chase; Update()
+        // reads that opponent's LIVE position every frame (via _targetVesselTransform), so the
+        // AI never chases a stale 0.5s-old point. While locked on, it re-selects on the slower
+        // playerSeekUpdateInterval; with NO opponent it re-scans on the faster
+        // playerReacquireInterval and SelectClosestOpponent falls back to the cell centre,
+        // instead of holding a stale/zero target and flying off along the forward axis.
         IEnumerator UpdatePlayerTarget()
         {
             while (AutoPilotEnabled)
             {
-                if (gameData != null && vessel != null)
-                {
-                    var myDomain = VesselStatus.Domain;
-                    float closestSqDist = Mathf.Infinity;
-                    Vector3 bestPos = _targetPosition;
-
-                    foreach (var player in gameData.Players)
-                    {
-                        // Skip self and teammates
-                        if (player.Domain == myDomain) continue;
-                        if (player.Vessel == null) continue;
-
-                        var pos = player.Vessel.Transform.position;
-                        var sqDist = Vector3.SqrMagnitude(pos - transform.position);
-                        if (sqDist < closestSqDist)
-                        {
-                            closestSqDist = sqDist;
-                            bestPos = pos;
-                        }
-                    }
-
-                    _targetPosition = bestPos;
-                }
-
-                yield return new WaitForSeconds(playerSeekUpdateInterval);
+                SelectClosestOpponent();
+                yield return new WaitForSeconds(
+                    _targetVesselTransform != null ? playerSeekUpdateInterval : playerReacquireInterval);
             }
+        }
+
+        void SelectClosestOpponent()
+        {
+            if (gameData == null || vessel == null) return;
+
+            var myDomain = VesselStatus.Domain;
+            float closestSqDist = Mathf.Infinity;
+            Transform best = null;
+
+            foreach (var player in gameData.Players)
+            {
+                // Skip self and teammates (same-domain), and any player without a live vessel.
+                if (player.Domain == myDomain) continue;
+                if (player.Vessel == null) continue;
+
+                var candidate = player.Vessel.Transform;
+                if (candidate == null) continue; // destroyed vessel transform (Unity null)
+
+                var sqDist = Vector3.SqrMagnitude(candidate.position - transform.position);
+                if (sqDist < closestSqDist)
+                {
+                    closestSqDist = sqDist;
+                    best = candidate;
+                }
+            }
+
+            _targetVesselTransform = best;
+
+            if (best != null)
+                _targetPosition = best.position;
+            else if (cellData != null && cellData.Cell != null)
+                // No opponent found — loiter toward the cell centre rather than holding a
+                // stale/zero target. Mirrors the crystal-seek fallback in UpdateCellContent().
+                _targetPosition = cellData.Cell.transform.position;
         }
 
         public void Initialize(IVessel v)
@@ -279,6 +304,13 @@ namespace CosmicShore.Gameplay
             if (VesselStatus.IsStationary)
                 return;
 
+            // Player-seek (Joust): track the chosen opponent's LIVE position every frame so the
+            // AI steers at where the target IS, not where it was at the last coroutine tick. When
+            // _targetVesselTransform is null (no opponent / destroyed) we keep the fallback target
+            // the coroutine set (cell centre).
+            if (seekPlayers && _targetVesselTransform != null)
+                _targetPosition = _targetVesselTransform.position;
+
             _distance = _targetPosition - transform.position;
             Vector3 desiredDirection = _distance.normalized;
 
@@ -293,8 +325,21 @@ namespace CosmicShore.Gameplay
             else if (VesselStatus.IsDrifting) vessel.StopShipControllerActions(InputEvents.LeftStickAction);
 
 
-            if (_distance.magnitude < float.Epsilon) // Avoid division by zero
+            if (_distance.magnitude < float.Epsilon) // On top of the target — avoid div-by-zero
+            {
+                // Don't latch the previous frame's turn input (which would keep the vessel
+                // veering with nothing to steer toward). Fly a clean straight pass-through.
+                if (VesselStatus.IsSingleStickControls)
+                    _inputStatus.EasedLeftJoystickPosition = Vector2.zero;
+                else
+                {
+                    _inputStatus.XSum = 0;
+                    _inputStatus.YSum = 0;
+                    _inputStatus.YDiff = 0;
+                    _inputStatus.XDiff = Mathf.Clamp(throttle, 0, 1);
+                }
                 return;
+            }
 
             Vector3 combinedLocalCrossProduct = Vector3.zero;
             float sqrMagnitude = _distance.sqrMagnitude;

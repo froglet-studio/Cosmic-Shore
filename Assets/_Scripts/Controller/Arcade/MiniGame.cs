@@ -71,7 +71,6 @@ namespace CosmicShore.Gameplay
 
         public IPlayer ActivePlayer { get; protected set; }
 
-        // Firebase analytics events
         public delegate void MiniGameStart(GameModes mode, VesselClassType vessel, int playerCount, int intensity);
         public static event MiniGameStart OnMiniGameStart;
         public delegate void MiniGameEnd(GameModes mode, VesselClassType vessel, int playerCount, int intensity, int highScore);
@@ -105,25 +104,14 @@ namespace CosmicShore.Gameplay
 
         protected virtual void OnEnable()
         {
-            // GameManager.OnPlayGame += InitializeGame;
-            
-            // TODO - Replaced in MiniGameControllerBase
-            // OnMiniGameTurnStarted += FirebaseAnalyticsController.LogEventMiniGameStart;
-            // OnMiniGameEnd += FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused += HandleGamePaused;
             PauseSystem.OnGameResumed += HandleGameResumed;
         }
 
         protected virtual void OnDisable()
         {
-            // GameManager.OnPlayGame -= InitializeGame;
-            
-            // TODO - Replaced in MiniGameControllerBase
-            // OnMiniGameTurnStarted -= FirebaseAnalyticsController.LogEventMiniGameStart;
-            // OnMiniGameEnd -= FirebaseAnalyticsController.LogEventMiniGameEnd;
             PauseSystem.OnGamePaused -= HandleGamePaused;
             PauseSystem.OnGameResumed -= HandleGameResumed;
-
         }
 
         void InitializeGame()

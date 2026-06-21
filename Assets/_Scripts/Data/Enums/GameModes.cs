@@ -41,5 +41,9 @@ namespace CosmicShore.Data
         HexRace = 33,
         MultiplayerJoust = 34,
         MultiplayerCrystalCapture = 35,
+        // Tournament (36): session-level meta that chains the domain minigames
+        // (HexRace, Joust, CrystalCapture) into one tournament. See
+        // Docs/TournamentSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
+        Tournament = 36,
     }
 }

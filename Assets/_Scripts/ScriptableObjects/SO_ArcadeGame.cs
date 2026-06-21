@@ -14,6 +14,8 @@ namespace CosmicShore.ScriptableObjects
 
         public int MinPlayersAllowed = 1;
         public int MaxPlayersAllowed = 2;
+        [Tooltip("Minimum number of domains (teams) this mode requires. Modes that need opposing teams (e.g. Joust) set this to 2 so the lobby can never launch with every player on one domain — which would leave no opponents.")]
+        [Range(1, 3)] public int MinDomainsAllowed = 1;
         [Min(1)] public int MinIntensity = 1;
         [Range(1, 4)] public int MaxIntensity = 4;
         public CallToActionTargetType CallToActionTargetType;

@@ -64,10 +64,6 @@ namespace CosmicShore.Core
 
             CatalogManager.Instance.RewardClaimed(Element.Omni, CatalogManager.DailyRewardAmount);
 
-#if !UNITY_WEBGL
-            //FirebaseAnalytics.
-#endif
-
             CSDebug.Log($"Cloud script - The {result.FunctionName} function took {result.ExecutionTimeMilliseconds} to complete");
             CSDebug.Log($"Cloud script - Result: {result.FunctionResult}");
         }

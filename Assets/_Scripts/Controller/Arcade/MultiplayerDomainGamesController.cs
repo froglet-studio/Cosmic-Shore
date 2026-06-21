@@ -132,13 +132,16 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void NotifyPlayerReady_ClientRpc(string playerName)
         {
-            // Read RoundStats.Domain here (rather than Player.Domain) because this
-            // RPC fires before gameplay starts — RoundStats was just initialized from
-            // Player.NetDomain and is correct at this moment. Post-Phase-5,
-            // Player.OnNetDomainChanged keeps RoundStats.Domain live, but for an
-            // already-correct snapshot at game start there's no benefit to changing it.
-            var domain = gameData.RoundStatsList
-                .FirstOrDefault(s => s.Name == playerName)?.Domain ?? Domains.Blue;
+            // Domain attribution reads the live Player.Domain (the authoritative
+            // NetDomain mirror) via the Players roster — the same source the in-game
+            // domain boxes group by — rather than the name-keyed RoundStatsList,
+            // which historically resolved a stale pre-party shadow entry on joined
+            // clients (frozen at Jade). RoundStats fallback kept for the window
+            // before this peer's roster has re-registered the player.
+            var player = gameData.Players.FirstOrDefault(p => p != null && p.Name == playerName);
+            var domain = player?.Domain
+                         ?? gameData.RoundStatsList.FirstOrDefault(s => s.Name == playerName)?.Domain
+                         ?? Domains.Blue;
             GameFeedAPI.Post($"<b>{playerName}</b> Ready", domain, GameFeedType.PlayerReady);
         }
 

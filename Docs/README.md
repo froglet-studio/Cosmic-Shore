@@ -39,6 +39,14 @@ Docs/
 │   ├── BUGS.md                  open correctness issues (B1-B5)
 │   └── TESTS.md                 manual procedures (T1-T10)
 │
+├── TournamentSystem/            ← session-level meta chaining the 3 domain games
+│   └── ARCHITECTURE.md          load model, controller brain, standings,
+│                                end-game flow, data + file index
+│
+├── ShuffleSystem/               ← "Shuffle" = display name of Tournament mode
+│   └── ARCHITECTURE.md          pointer to TournamentSystem + a deferred list of
+│                                planned Shuffle behavior deltas (NOT a separate mode)
+│
 ├── THREADING.md                 main-thread affinity rules
 │                                (.AsMainThread() contract, MainThreadDispatcher)
 ├── SCENES.md                    scene inventory, game-mode reference,
@@ -68,6 +76,8 @@ session-scoped findings that benefit from a timeline view.
 | Understand the diagnostic overlay | `NetworkDiagnostics/ARCHITECTURE.md` |
 | Understand the scoring system (HUD + end-game) | `ScoringSystem/ARCHITECTURE.md` |
 | See scoring-system cleanup work / open issues | `ScoringSystem/REFACTOR.md` + `ScoringSystem/BUGS.md` |
+| Understand the tournament meta-mode (chains the 3 domain games) | `TournamentSystem/ARCHITECTURE.md` |
+| Find "Shuffle" (it's Tournament's card display name) | `ShuffleSystem/ARCHITECTURE.md` → `TournamentSystem/ARCHITECTURE.md` |
 | Understand the threading rules | `THREADING.md` |
 | Find a scene | `SCENES.md` |
 

@@ -296,58 +296,45 @@ TurnMonitorController.CheckEndOfTurn()  [server, every frame]
 
 Golf rules (`UseGolfRules = true`): Lower score = higher rank. Winner always ranks first.
 
-### 9. End Game Cinematic
+### 9. End Game (Scoreboard)
 
-`HexRaceEndGameController` (extends `EndGameCinematicController`) displays the result screen:
+There is no end-game cinematic. When the race ends, `EndGameSequencer` halts the vessels, plays the GameEnd SFX, and raises `OnShowGameEndScreen` — the signal the **`Scoreboard`** (and `LifeForm` ecology cleanup) already listen for. The `Scoreboard` is the sole end-game UI: a `"{DOMAIN} VICTORY"` banner plus one ranked `PlayerScoreCard` per player. Card order and text come from `HexRaceScoringRuleSO` (`Results`) — winners show race time (mm:ss), losers show crystals remaining. Server authority is unchanged: `WinnerName`/`WinnerDomain` are set by `SyncFinalScores_ClientRpc`.
 
-```csharp
-// Single source of truth from server — set by SyncFinalScores_ClientRpc
-bool didWin = !string.IsNullOrEmpty(gameData.WinnerName)
-           && gameData.WinnerName == localName;
-```
+The old animated per-player `VICTORY`/`DEFEAT` reveal belonged to the removed cinematic. `HexRaceScoringRuleSO.BuildReveal` is retained but currently unconsumed.
 
-| Result | Header | Label | Value |
-|---|---|---|---|
-| Winner | `"VICTORY"` | `"RACE TIME"` | Race time (formatted as mm:ss) |
-| Loser | `"DEFEAT"` | `"CRYSTALS LEFT"` | Crystals remaining (integer) |
-
-### 10. Replay & Rematch
+### 10. Replay (Play Again)
 
 HexRace uses **full network scene reload** for replay (`UseSceneReloadForReplay = true`). The in-place `OnResetForReplayCustom()` method was removed — flora, fauna, and environment spawners don't fully reset in-place, so a clean scene reload is required.
+
+Play Again is **host-only** (the old client rematch-request flow was removed with the per-mode scoreboard subclasses): `Scoreboard.ConfigureLobbyButtons` hides Play Again + Main Menu for non-host clients, and both `Scoreboard.OnPlayAgainButtonPressed` and `MultiplayerMiniGameControllerBase.RequestReplay` guard the call path. The host's replay carries every client along via the Netcode scene load.
 
 **Replay flow** (triggered by Scoreboard "Play Again" button):
 
 ```
-Scoreboard.OnPlayAgainButtonPressed()
+Scoreboard.OnPlayAgainButtonPressed()  [host only]
 │
-├─ [Multiplayer: 2+ humans]
-│   ├─ RequestRematch(playerName) → RequestRematch_ServerRpc → RequestRematch_ClientRpc
-│   │   └─ Opponent sees "PlayerName wants a rematch!" panel (YES/NO)
-│   ├─ YES → OnAcceptRematch() → RequestReplay()
-│   └─ NO → OnDeclineRematch() → NotifyRematchDeclined()
-│
-└─ [Solo with AI / accepted rematch]
-    └─ RequestReplay() → [Client] RequestReplay_ServerRpc → ExecuteReplaySequence()
-
-ExecuteReplaySequence()  [Server]
-│
-├─ Guard: if (_isResetting) return
-├─ _isResetting = true
-├─ UseSceneReloadForReplay=true → ExecuteSceneReloadReplay().Forget()
-│
-└─ ExecuteSceneReloadReplay()
-    ├─ gameData.IsReplayReload = true
-    ├─ PrepareForSceneReload_ClientRpc()  — all clients:
-    │   ├─ gameData.IsReplayReload = true
-    │   └─ sceneTransitionManager.SetFadeImmediate(1f)  — instant fade to black
-    ├─ await UniTask.Delay(500ms)  — wait for fade
-    ├─ Clear vessel references:
-    │   ├─ For each player: NetVesselId = 0
-    │   ├─ For each vessel: NetworkObject.Despawn(false)
-    │   └─ gameData.Vessels.Clear()
-    ├─ gameData.ResetRuntimeData()
-    └─ nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single)
-        └─ Scene destroyed + reloaded → fresh OnNetworkSpawn for everything
+├─ HideHostNavButtons()  — hide Play Again + Main Menu (anti-spam)
+└─ gameController.RequestReplay() → ExecuteReplaySequence()
+    │
+    ├─ Guard: if (_isResetting) return
+    ├─ _isResetting = true
+    ├─ UseSceneReloadForReplay=true → ExecuteSceneReloadReplay().Forget()
+    │
+    └─ ExecuteSceneReloadReplay()
+        ├─ gameData.IsReplayReload = true
+        ├─ PrepareForSceneReload_ClientRpc()  — all clients:
+        │   ├─ gameData.IsReplayReload = true
+        │   └─ sceneTransitionManager.SetFadeImmediate(1f)  — instant fade to black
+        ├─ await UniTask.Delay(500ms)  — wait for fade
+        ├─ Clear vessel references:
+        │   ├─ For each player: NetVesselId = 0
+        │   ├─ Despawn AI players (spawned destroyWithScene=false — without this,
+        │   │   SpawnAIs() would duplicate them after the reload)
+        │   ├─ For each vessel: NetworkObject.Despawn(true)
+        │   └─ gameData.Vessels.Clear()
+        ├─ gameData.ResetRuntimeData()
+        └─ nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single)
+            └─ Scene destroyed + reloaded → fresh OnNetworkSpawn for everything
 
 Post-Reload (via InitializeAfterDelay):
 ├─ gameData.IsReplayReload detected → subscribe to OnClientReady
@@ -356,13 +343,13 @@ Post-Reload (via InitializeAfterDelay):
 └─ Normal initialization continues (SetupNewRound, Ready button, etc.)
 ```
 
-**Rematch request UI** (multiplayer with 2+ humans):
+**Scoreboard nav-button gating** (`BUGS.md` B14 — wired into the HexRace scene as prefab-instance overrides on the GameCanvas-HexRace prefab's internal `Scoreboard`):
 
-| Panel | Recipient | Auto-Dismiss |
+| Field | Wired to | Behavior |
 |---|---|---|
-| "Waiting for Response..." | Requester (sender) | 2 seconds |
-| "PlayerName wants a rematch!" (YES/NO) | Opponent | None — waits for button press |
-| "Rematch declined" | Requester (if NO pressed) | 2 seconds |
+| `playAgainButton` | `PlayAgainButton` GO | Host-only — hidden for clients by `ConfigureLobbyButtons`; hidden for everyone once a navigation commits (`HideHostNavButtons`) |
+| `mainMenuButton` | `HomeButton` GO | Same gating; the button's onClick routes through `PauseMenu.OnClickMainMenu` (host-guarded) |
+| `onClickToMainMenu` | `EventOnClickToMainMenuButton.asset` | When the main-menu SOAP event fires (i.e. the transition is committed), the Scoreboard hides both nav buttons so the host can't spam-click during the unload |
 
 ## Elemental Comeback System
 
@@ -380,9 +367,9 @@ Post-Reload (via InitializeAfterDelay):
 |---|---|---|
 | In-game HUD | `HexRaceHUD` (extends `MultiplayerHUD`) | Per-player crystal count cards; subscribes to `OnOmniCrystalsCollectedChanged` |
 | HUD View | `HexRaceHUDView` (extends `MiniGameHUDView`) | Visual layout for HexRace HUD |
-| Scoreboard | `HexRaceScoreboard` (extends `Scoreboard`) | End-game player ranking display |
+| Scoreboard | `Scoreboard` (base — `HexRaceScoreboard` was deleted in the scoring refactor; lives inside the GameCanvas-HexRace prefab, `gameController` + nav buttons wired via scene overrides) | End-game player ranking display |
 | Stats Provider | `HexRaceStatsProvider` (extends `ScoreboardStatsProvider`) | Provides clean streak, drift, joust stats for scoreboard (WIP) |
-| End Game | `HexRaceEndGameController` (extends `EndGameCinematicController`) | Victory/defeat screen with score reveal animation |
+| End Game | `EndGameSequencer` (shared) | Halts vessels, plays GameEnd SFX, raises `OnShowGameEndScreen` → the `Scoreboard` shows results. No cinematic. |
 | Player Stats | `HexRacePlayerStatsProfile` | Cloud-saved best race times by mode+intensity key |
 
 ## Shared State & NetworkVariables
@@ -426,10 +413,10 @@ ugsStatsManager.ReportHexRaceStats(
 | Crystal turn monitor | `NetworkCrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Base crystal monitor | `CrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Track spawner | `SegmentSpawner.cs` | `_Scripts/Controller/Environment/MiniGameObjects/` |
-| End game controller | `HexRaceEndGameController.cs` | `_Scripts/Utility/DataContainers/` |
+| End-game sequencer | `EndGameSequencer.cs` (shared) | `_Scripts/Utility/DataContainers/` |
 | In-game HUD | `HexRaceHUD.cs` | `_Scripts/UI/` |
 | HUD view | `HexRaceHUDView.cs` | `_Scripts/UI/` |
-| Scoreboard | `HexRaceScoreboard.cs` | `_Scripts/UI/` |
+| Scoreboard | `Scoreboard.cs` (base — per-mode subclass deleted) | `_Scripts/UI/` |
 | Player stats profile | `HexRacePlayerStatsProfile.cs` | `_Scripts/UI/` |
 | Elemental comeback | `ElementalComebackSystem.cs` | `_Scripts/Controller/Arcade/` |
 | Arcade game config modal | `ArcadeGameConfigureModal.cs` | `_Scripts/UI/Modals/` |

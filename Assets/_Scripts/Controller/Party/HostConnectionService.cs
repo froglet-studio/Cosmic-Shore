@@ -313,7 +313,7 @@ namespace CosmicShore.Gameplay
             // All [Inject] fields (services + gameData) are populated before Start.
             // UGS auth completes asynchronously AFTER Start in the normal flow, so
             // OnSignedIn is the PRIMARY init trigger — subscribe in code, the same
-            // pattern used by MultiplayerSetup / UGSDataService / UnityAnalytics.
+            // pattern used by MultiplayerSetup / UGSDataService / AnalyticsServiceFacade.
             // There is no inspector EventListenerNoParam for this handler.
             // HandleSignedInEvent is idempotent — the immediate call (for the
             // already-signed-in case) and the event collapse through
@@ -1372,7 +1372,8 @@ namespace CosmicShore.Gameplay
 
         private async UniTask RefreshPartyMembersAsync(bool bypassGraceGate = false)
         {
-            if (_partySessionService.ActiveSession == null) return;
+            var tickSession = _partySessionService.ActiveSession;
+            if (tickSession == null) return;
             if (connectionData.PartyMembers == null) return;
 
             // Grace period: a freshly-provisioned session can transiently fail
@@ -1388,6 +1389,28 @@ namespace CosmicShore.Gameplay
             try { await _partySessionService.RefreshAsync(); }
             catch (Exception e)
             {
+                // [stale-tick] The session this tick was polling is no longer the
+                // active session — AcceptInviteAsync left it and joined the
+                // inviter's (or a recovery swapped it) while we were awaiting.
+                // Its errors — typically SessionDeleted / NotInLobby from our own
+                // deliberate leave — describe the OLD session, not the current
+                // one. Falling through to the [definite] branch would
+                // ClearSession() the just-joined ref, raise a spurious
+                // OnHostConnectionLost (the boot-status panel then shows
+                // "Connection lost. Tap retry." over the join splash), and start
+                // a solo-session recreation that races the join.
+                if (!ReferenceEquals(tickSession, _partySessionService.ActiveSession))
+                    return;
+
+                // [transition] Companion to the RefreshAsync outer-catch guard:
+                // while PartyInviteController is mid-transition the session refs
+                // are owned by the accept/leave flow, so any error landing here
+                // is teardown noise. Covers the interleaving the stale-tick check
+                // misses — the error lands a beat before ActiveSession is
+                // reassigned, so the refs still compare equal.
+                if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
+                    return;
+
                 // Error-handling matrix — see Docs/PartySystem/ARCHITECTURE.md.
                 //
                 // [benign] LobbyPatcher stale-index ArgumentOutOfRangeException —

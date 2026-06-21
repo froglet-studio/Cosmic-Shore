@@ -101,7 +101,7 @@ A stepping stone to our future dreams of a multi-biome esport, Duel for the Cell
 - **Haptics**: NiceVibrations (mobile)
 - **Animation**: Timeline, DOTween
 - **Performance**: Unity Jobs + Burst Compiler, Adaptive Performance, DOTS Entities (incremental adoption)
-- **Backend**: Unity Gaming Services (Analytics, CloudSave, Leaderboards, Multiplayer, IAP, Ads), PlayFab (legacy, migrating off), Firebase
+- **Backend**: Unity Gaming Services (Analytics, CloudSave, Leaderboards, Multiplayer, IAP, Ads), PlayFab (legacy, migrating off)
 - **Testing**: Unity Test Framework (NUnit)
 - **Tutorial**: Custom FTUE system with adapter pattern
 - **Dialogue**: Custom dialogue system with editor tools
@@ -169,7 +169,7 @@ Assets/
 │   │   ├── Bootstrap/         # BootstrapConfigSO, SceneTransitionManager, ApplicationLifecycleManager
 │   │   ├── Systems/Auth/      # AuthenticationController (MonoBehaviour adapter)
 │   │   ├── Playfab/           # Legacy PlayFab integration (deprecated auth)
-│   │   ├── Instrumentation/   # Analytics, Firebase
+│   │   ├── Instrumentation/   # Analytics (UGS)
 │   │   ├── Runtime/           # Dialogue runtime
 │   │   ├── AppManager.cs      # Top-level orchestrator + Reflex DI root
 │   │   ├── ApplicationStateMachine.cs  # App phase state machine (SOAP single-writer)
