@@ -36,6 +36,10 @@ namespace CosmicShore.UI
         [Header("Related UI Components")]
         [SerializeField] private Scoreboard scoreboard;
 
+        [Tooltip("Connecting panel (sibling of the HUD with its own camera + CanvasGroup), shown ~2s " +
+                 "before the pre-game cinematic. The HUD hides (CG 0) while it's up. Leave null in scenes without it.")]
+        [SerializeField] private ConnectingPanelController connectingPanel;
+
         [Header("Volume / Pause Button (universal domain-volume gauge)")]
         [Tooltip("The in-game pause button. The domain-volume hex gauge is auto-attached to it so the SAME gauge trains as the pause button across every gameplay scene. Leave null to auto-find a button named \"Volume / Pause Button\" under the HUD canvas.")]
         [SerializeField] protected UnityEngine.UI.Button volumePauseButton;
@@ -254,6 +258,23 @@ namespace CosmicShore.UI
             _lifecycleCts = null;
         }
 
+        /// <summary>
+        /// Mid-turn scene exits (pause-menu Main Menu) destroy the HUD without
+        /// OnMiniGameTurnEnd ever firing, leaking the per-stats handlers onto the
+        /// players' RoundStats — which live on the persistent Player NetworkObjects
+        /// and survive into the next game. Mirror the turn-end cleanup here so
+        /// destruction always detaches them. See Docs/ScoringSystem/BUGS.md B15.
+        /// </summary>
+        protected virtual void OnDestroy()
+        {
+            if (localRoundStats != null)
+                localRoundStats.OnScoreChanged -= UpdateScoreUI;
+
+            foreach (var kvp in _aiScoreHandlers)
+                kvp.Key.OnScoreChanged -= kvp.Value;
+            _aiScoreHandlers.Clear();
+        }
+
         protected virtual void SubscribeToEvents()
         {
             if (gameData != null)
@@ -303,13 +324,22 @@ namespace CosmicShore.UI
 
             try
             {
-                Show();
                 CleanupUI();
                 HideLocalVesselHUD();
                 UpdateTurnMonitorDisplay(string.Empty);
                 UpdateLifeformCounterDisplay("0");
                 view.UpdateScoreUI("0");
                 ToggleReadyButton(false);
+
+                // Connecting panel: hide the HUD (CG 0) while the panel (its own camera + reveal) holds
+                // ~2s, then restore the HUD. The panel is a sibling with its own CanvasGroup, so it stays
+                // visible while the HUD is hidden.
+                if (connectingPanel != null)
+                {
+                    Hide();
+                    await connectingPanel.ShowAsync(ct);
+                }
+                Show();
 
                 // Play pre-game cinematic if available
                 if (enablePreGameCinematic && preGameCinematic != null)

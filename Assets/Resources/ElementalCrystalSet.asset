@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27615a0df8c648af906f0ed7bf65e660, type: 3}
+  m_Name: ElementalCrystalSet
+  m_EditorClassIdentifier:
+  charge: {fileID: 6588436222817790495, guid: ba23c28d2d22a1b458f7b6e91c355d53, type: 3}
+  mass: {fileID: 6588436222817790495, guid: cccc6ba7985893f43841fccfbb53dc71, type: 3}
+  space: {fileID: 6588436222817790495, guid: a4bde9d72595bfb43aa3b791d02f4db8, type: 3}
+  time: {fileID: 6588436222817790495, guid: e707773a458187444a9dfbf3ec06568f, type: 3}

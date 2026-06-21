@@ -118,6 +118,15 @@ namespace CosmicShore.UI
         const int MinDomains = 1;
         const int DefaultDomainCount = 1;
 
+        // Per-game minimum domain (team) count, from SO_ArcadeGame.MinDomainsAllowed.
+        // Modes that need opposing teams (e.g. Joust) set it to 2 so the domain stepper
+        // and the computed default can never collapse to a single domain — which would
+        // put every player on one team, leaving the AI/humans with no opponents.
+        int MinDomainsForGame =>
+            _selectedGame != null
+                ? Mathf.Clamp(_selectedGame.MinDomainsAllowed, MinDomains, MaxSupportedDomains)
+                : MinDomains;
+
         // Runtime state
         SO_ArcadeGame _selectedGame;
         VideoPlayer   _previewVideo;
@@ -255,10 +264,13 @@ namespace CosmicShore.UI
 
             config.ResetState();
             config.SelectedGame = selectedGame;
-            config.DomainCount  = ComputeDefaultDomainCount();
 
             BuildAvailableShips(selectedGame);
             InitializeConfigFromGameDefaults(selectedGame);
+            // Compute the default domain count AFTER player count is set: the DC bound
+            // depends on PC (DC <= PC) and ResetState() leaves PlayerCount at 0. For modes
+            // with MinDomainsAllowed >= 2 (Joust) this defaults the stepper to 2, not 1.
+            config.DomainCount = ComputeDefaultDomainCount();
             InitializeGameMetaView(selectedGame);
             InitializeScreen1Controls(selectedGame);
             InitializeDefaultShipFromAvailable();
@@ -366,24 +378,28 @@ namespace CosmicShore.UI
             if (pcStepper)
                 pcStepper.Initialize(effectiveMin, pcMax, config.PlayerCount);
 
-            // Domain count stepper — max bound depends on current PC (DC <= PC).
+            // Domain count stepper — max bound depends on current PC (DC <= PC);
+            // min bound is the per-game minimum (2 for opposing-team modes like Joust).
             if (dcStepper)
-                dcStepper.Initialize(ComputeMinDomainCount(), ComputeMaxDomainCount(), config.DomainCount);
+                dcStepper.Initialize(MinDomainsForGame, ComputeMaxDomainCount(), config.DomainCount);
         }
 
-        // Per-game DC bounds: SO_ArcadeGame.Min/MaxDomainsAllowed constrain the global
-        // [MinDomains, MaxSupportedDomains] range (same pattern as MinPlayersAllowed for PC).
-        int ComputeMinDomainCount() =>
-            Mathf.Max(MinDomains, _selectedGame ? _selectedGame.MinDomainsAllowed : MinDomains);
-
-        int ComputeMaxDomainCount() =>
-            Mathf.Min(
-                Mathf.Min(config != null ? config.PlayerCount : MaxSupportedDomains, MaxSupportedDomains),
-                Mathf.Max(_selectedGame ? _selectedGame.MaxDomainsAllowed : MaxSupportedDomains,
-                          ComputeMinDomainCount()));
+        int ComputeMaxDomainCount()
+        {
+            // DC <= PC, capped at the hard max and at the per-game MaxDomainsAllowed
+            // (modes with a fixed team shape — e.g. Astro League — pin this to 2). Fall
+            // back to the hard max when PC isn't set yet (ResetState leaves it 0), and
+            // never drop below the per-game minimum.
+            int pc = config != null && config.PlayerCount > 0 ? config.PlayerCount : MaxSupportedDomains;
+            int gameMax = _selectedGame
+                ? Mathf.Clamp(_selectedGame.MaxDomainsAllowed, MinDomains, MaxSupportedDomains)
+                : MaxSupportedDomains;
+            int max = Mathf.Min(Mathf.Min(pc, MaxSupportedDomains), gameMax);
+            return Mathf.Max(max, MinDomainsForGame);
+        }
 
         int ComputeDefaultDomainCount() =>
-            Mathf.Clamp(DefaultDomainCount, ComputeMinDomainCount(), ComputeMaxDomainCount());
+            Mathf.Clamp(DefaultDomainCount, MinDomainsForGame, ComputeMaxDomainCount());
 
         void BuildAvailableShips(SO_ArcadeGame game)
         {
@@ -516,13 +532,12 @@ namespace CosmicShore.UI
                 pcStepper.SetValue(playerCount);
 
             // PC change may shrink the DC bound (DC <= PC). Re-clamp + re-bound the DC stepper.
-            int newDcMin = ComputeMinDomainCount();
             int newDcMax = ComputeMaxDomainCount();
-            int newDc = Mathf.Clamp(config.DomainCount, newDcMin, newDcMax);
+            int newDc = Mathf.Clamp(config.DomainCount, MinDomainsForGame, newDcMax);
             if (newDc != config.DomainCount)
                 config.DomainCount = newDc;
             if (dcStepper)
-                dcStepper.Initialize(newDcMin, newDcMax, config.DomainCount);
+                dcStepper.Initialize(MinDomainsForGame, newDcMax, config.DomainCount);
 
             RefreshTileVisibility();
             SyncGameDataConfig();
@@ -542,7 +557,7 @@ namespace CosmicShore.UI
             // a domain yet (CommitConfiguration resets all humans to Jade), so
             // there's nothing to protect against. No client broadcast either —
             // clients don't open the modal until commit.
-            int proposed = Mathf.Clamp(newDomainCount, ComputeMinDomainCount(), ComputeMaxDomainCount());
+            int proposed = Mathf.Clamp(newDomainCount, MinDomainsForGame, ComputeMaxDomainCount());
 
             if (proposed == config.DomainCount)
             {
@@ -1273,7 +1288,7 @@ namespace CosmicShore.UI
 
             config.ResetState();
             config.SelectedGame = game;
-            config.DomainCount  = Mathf.Clamp(domainCount, MinDomains, MaxSupportedDomains);
+            config.DomainCount  = Mathf.Clamp(domainCount, MinDomainsForGame, MaxSupportedDomains);
             config.Intensity    = intensity;
             config.PlayerCount  = playerCount;
 

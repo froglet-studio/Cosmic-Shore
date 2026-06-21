@@ -1,7 +1,4 @@
 using System;
-#if !UNITY_WEBGL
-using CosmicShore.Core;
-#endif
 using UnityEngine;
 using UnityEngine.Advertisements;
 using CosmicShore.Utility;
@@ -40,19 +37,8 @@ namespace CosmicShore.Core
             Initialize();
         }
 
-        private void OnEnable()
-        {
-#if !UNITY_WEBGL
-            AdLoaded += FirebaseAnalyticsController.LogEventAdImpression;
-#endif
-        }
-
-        private void OnDisable()
-        {
-#if !UNITY_WEBGL
-            AdLoaded -= FirebaseAnalyticsController.LogEventAdImpression;
-#endif
-        }
+        // Ad impression analytics: AnalyticsServiceFacade subscribes to the
+        // static AdLoaded event and records the UGS ad_impression event.
 
         public void Initialize()
         {

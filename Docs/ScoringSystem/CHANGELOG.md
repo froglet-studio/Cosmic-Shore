@@ -72,5 +72,47 @@ multiplayer cases need a 2-human pass (`TESTS.md` T11/T12); the single-player su
 need a normal play-test pass before relying on them.
 
 ## 7. Doc index
-`ARCHITECTURE.md` (design) · `REFACTOR.md` (R-backlog) · `BUGS.md` (B1–B10) ·
-`TODOS.md` (TD1–TD3) · `TESTS.md` (T1–T12).
+`ARCHITECTURE.md` (design) · `REFACTOR.md` (R-backlog) · `BUGS.md` (B1–B14) ·
+`TODOS.md` (TD1–TD3) · `TESTS.md` (T1–T14).
+
+---
+
+## Addendum — Play Again + scoreboard nav gating (branch `claude/amazing-cray-6uqq62`, 2026-06-12)
+
+Follow-up session: the scene-reload replay shipped in `21d538d3` turned out to be
+unreachable from the UI in two of the three domain modes — a scene-wiring defect,
+not a code one. **Owner-verified in engine** (Joust Play Again loop + button
+gating), unlike the read-and-reason caveat above.
+
+| Commit | What |
+|---|---|
+| `e21c778a` | **BUGS.md B13** — scoreboard Play Again was dead in Joust + Crystal Capture: both scenes remove the GameCanvas-HexRace prefab's internal `Scoreboard` and add their own, but the prefab `PlayAgainButton.onClick` still targeted the internal one (Joust: explicit null override; CC: removed component) — null-target persistent calls are silently skipped. Retargeted the onClick at the scene-added Scoreboard in both scenes. HexRace was never affected (keeps the internal Scoreboard, overrides only `gameController`). |
+| `3a021e50` | **BUGS.md B14** — host-only nav gating (`ConfigureLobbyButtons`) silently no-oped: the prefab predates the `playAgainButton`/`mainMenuButton` fields, so they were null in every scene and clients saw both buttons. Wired both (+ new `onClickToMainMenu` event field) in all three domain scenes; added `Scoreboard.HideHostNavButtons()` — Play Again hides both buttons on click, Main Menu hides them when `EventOnClickToMainMenuButton` fires (post host-guard), so the host can't spam navigation during the transition. |
+
+Docs: `JOUST.md` §9 rewritten for the scene-reload replay (+ wiring requirements);
+`CRYSTAL_CAPTURE.md` §9 / `HEXRACE.md` §10 updated (rematch flow + deleted per-mode
+scoreboard/end-game subclasses scrubbed); `TESTS.md` T8 updated, T13 (replay loop)
++ T14 (nav gating) added.
+
+---
+
+## End-game cinematic removed — `Scoreboard` is the sole end-game UI
+The end-game cinematic was deleted; the **`Scoreboard`** is now the only end-game
+surface. A slim `EndGameSequencer` (`_Scripts/Utility/DataContainers/`) replaces the
+~430-line `EndGameCinematicController`: on `OnWinnerCalculated` it halts every vessel
+(`VesselStatus.IsStationary = true` + input pause — nothing flies behind the scoreboard),
+plays the GameEnd SFX, then raises `OnShowGameEndScreen` (the existing signal the
+`Scoreboard` and `LifeForm` ecology cleanup already consume). The two end-of-game
+progression toasts (quest complete / intensity unlocked) are re-homed off
+`GameModeProgressionService` events.
+
+Deleted: `EndGameCinematicController`, `EndGameCinematicView`,
+`WildlifeBlitzEndGameCinematicController`, `EndGameVesselDisplay`(+`Manager`),
+`CinematicCameraController`, `CinematicDefinitionSO`, `SceneCinematicLibrarySO`,
+`VesselIconLibrarySO` + the `_SO_Assets/Cinematics/` assets. The controller component
+was GUID-swapped to `EndGameSequencer` in the Joust/CrystalCapture/WildlifeBlitz scenes,
+`GameCanvas-HexRace.prefab` and `EndGameStatsPanel.prefab` (preserving the `gameData`
+wiring). `ScoringRuleSO.BuildReveal` is retained (abstract) but now unconsumed.
+
+**Editor follow-up:** delete the now-dead cinematic UI GameObjects (score-reveal panel,
+vessel podium, cinematic camera) left as missing-scripts in those scenes/prefabs.

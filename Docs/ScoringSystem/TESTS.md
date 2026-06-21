@@ -5,9 +5,11 @@ Manual verification for the Scoring System's two surfaces: the in-game HUD
 Mode (MPPM)** per `Docs/README.md` (VP1 = host, VP2+ = joining players). Read
 `ARCHITECTURE.md` first.
 
-Run the relevant subset after any scoreboard change; run all of T1–T12 before
+Run the relevant subset after any scoreboard change; run all of T1–T15 before
 landing an item from `REFACTOR.md`. T11–T12 are the multiplayer client-sync cases
-(BUGS.md B8/B9) and need two players (MPPM VP1 host + VP2 client).
+(BUGS.md B8/B9) and need two players (MPPM VP1 host + VP2 client). T13–T14 cover
+the Play Again scene-reload replay and nav-button gating (BUGS.md B13/B14); T15 is
+the multiplayer menu-relaunch lifecycle case (BUGS.md B15, MPPM).
 
 ## Surface A — In-game HUD
 
@@ -60,6 +62,24 @@ also still tracks. Run all three modes — the fix is shared
 (`MultiplayerDomainGamesController` + per-mode `rule.Metric`); **Joust requires its
 scene be domain-wired** (`TODOS.md` TD2). A ~100ms value refresh cadence is expected.
 
+### T15 — Game end survives the menu → game → menu cycle (B15)
+VP1 host + ≥1 client, party in Menu_Main. Regression for the stale-RoundStats-
+subscriber leak: `RoundStats` persists on the Player NetworkObject across scene
+transitions, so any handler left attached by the previous game kills or corrupts
+the next game's end flow.
+1. Launch HexRace, play to the objective. **Expect:** the end flow fires on
+   every machine (turn end → scoreboard). Host taps **Main Menu**;
+   everyone returns together (S9).
+2. Relaunch HexRace, play to the objective again. **Expect:** the end flow fires
+   again on every machine — no silent never-ending race.
+3. **Poison-path variant:** repeat, but exit the FIRST race mid-turn via
+   pause-menu **Main Menu** (the turn-end cleanup never runs on this path).
+   The second race must still end cleanly.
+4. Repeat the full cycle 2–3× per `../PartySystem/TESTS.md` S9.
+Console: the `[FLOW-10]` pair (`TurnMonitorController` end-condition raise +
+`HexRaceController` objective-reached) appears at every game end; no
+`MissingReferenceException` from stat-event handlers in either game.
+
 ## Surface B — Final scoreboard
 
 ### T6 — Banner + ranking per mode
@@ -78,13 +98,33 @@ against the end-game reveal (**BUGS.md B2** — they should match once fixed).
 
 ### T8 — Host vs client lobby buttons (MPPM)
 Two VPs in one game. On end: **host (VP1)** sees Main Menu + Play Again;
-**client (VP2)** sees Leave Lobby only. Host Play Again restarts everyone;
-client Leave Lobby returns only VP2 to Menu_Main.
+**client (VP2)** sees neither (BUGS.md B14 — the three domain scenes wire
+`playAgainButton`/`mainMenuButton`; no Leave Lobby button exists in the
+GameCanvas-HexRace prefab yet, so `leaveLobbyButton` stays null and clients
+simply follow the host's navigation). Host Play Again restarts everyone; host
+Main Menu returns everyone to Menu_Main via the Netcode scene load.
+
+### T13 — Play Again performs a full scene-reload replay (BUGS.md B13)
+Per mode (HexRace / Joust / Crystal Capture), solo with AI backfill. Finish a
+game, click Play Again on the scoreboard. **Expect:** fade to black → network
+scene reload → fade in on vessel spawn → Ready button → countdown → a FRESH
+match: objective counter back at the full target (e.g. Joust shows 3 jousts
+remaining), score 0, AI respawned (no duplicates, no `[Invalid Destroy]`
+errors), environment regenerated. Repeat Play Again a second time to confirm
+the loop is stable.
+
+### T14 — Nav buttons hide once navigation commits (BUGS.md B14)
+As host, finish a game. Click **Play Again** → both Play Again and Main Menu
+disappear immediately (no second click possible during the fade/reload). Next
+game end: both buttons are back (`ConfigureLobbyButtons`). Repeat with
+**Main Menu** → both buttons disappear the moment the click is accepted (the
+hide rides the `EventOnClickToMainMenuButton` raise, after PauseMenu's host
+guard) and the whole party returns to Menu_Main.
 
 ### T9 — Crystal award once
 Win as the local player. **Expect:** crystal balance increases by exactly the
-configured reward **once** (no double-award between scoreboard and cinematic —
-**BUGS.md B4**).
+configured reward **once** — the scoreboard is the single crystal-award path
+(**BUGS.md B4**).
 
 ## Cross-surface / target
 

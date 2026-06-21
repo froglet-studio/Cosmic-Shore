@@ -208,45 +208,34 @@ TurnMonitor detects end condition → gameData.InvokeGameTurnConditionsMet()
 
 Non-golf rules (`UseGolfRules = false`): Higher score = higher rank. Scores sorted descending.
 
-### 8. End Game Cinematic
+### 8. End Game (Scoreboard)
 
-`MultiplayerCrystalCaptureEndGameController` (extends `EndGameCinematicController`) displays the result screen:
+There is no end-game cinematic. When the game ends, `EndGameSequencer` halts the vessels, plays the GameEnd SFX, and raises `OnShowGameEndScreen` — the signal the **`Scoreboard`** (and `LifeForm` ecology cleanup) already listen for. The `Scoreboard` is the sole end-game UI: a `"{DOMAIN} VICTORY"` banner plus one ranked `PlayerScoreCard` per player. Card order, score and the secondary line all come from `CrystalCaptureScoringRuleSO` (`Results`) — the single scoring source (crystal totals / difference vs the opposing domain).
 
-```csharp
-bool didWin = !string.IsNullOrEmpty(gameData.WinnerName)
-           && gameData.WinnerName == localName;
-```
-
-| Result | Header | Detail |
-|---|---|---|
-| Winner | `"VICTORY"` | `"WON BY N CRYSTAL(S)"` — difference vs opponent's best score |
-| Loser | `"DEFEAT"` | `"LOST BY N CRYSTAL(S)"` — difference vs winner's score |
+The old animated per-player `VICTORY`/`DEFEAT` reveal belonged to the removed cinematic. `CrystalCaptureScoringRuleSO.BuildReveal` is retained but currently unconsumed.
 
 The crystal difference is calculated against the opponent's maximum score (supports 2+ players).
 
-### 9. Replay & Rematch
+### 9. Replay (Play Again)
 
-Crystal Capture uses **full network scene reload** for replay (`UseSceneReloadForReplay = true`):
+Crystal Capture uses **full network scene reload** for replay (`UseSceneReloadForReplay = true`). Play Again is **host-only** (the old rematch-request flow was removed with the per-mode scoreboard subclasses): `Scoreboard.ConfigureLobbyButtons` hides Play Again + Main Menu for non-host clients, and the call path is guarded in both `Scoreboard.OnPlayAgainButtonPressed` and `RequestReplay`. The host's replay carries every client along via the Netcode scene load.
 
 ```
-Scoreboard.OnPlayAgainButtonPressed()
-│
-├─ [Multiplayer: 2+ humans]
-│   ├─ RequestRematch(playerName) → opponent sees rematch request panel
-│   └─ Accept → RequestReplay()
-│
-└─ [Solo with AI / accepted rematch]
-    └─ RequestReplay() → ExecuteReplaySequence()
-        └─ ExecuteSceneReloadReplay()
-            ├─ gameData.IsReplayReload = true
-            ├─ PrepareForSceneReload_ClientRpc()  — fade to black on all clients
-            ├─ await 500ms
-            ├─ Clear vessel references, despawn vessels
-            ├─ gameData.ResetRuntimeData()
-            └─ nm.SceneManager.LoadScene(sceneName)  — full scene reload
+Scoreboard.OnPlayAgainButtonPressed()  [host only]
+├─ HideHostNavButtons()  — hide Play Again + Main Menu (anti-spam)
+└─ gameController.RequestReplay() → ExecuteReplaySequence()
+    └─ ExecuteSceneReloadReplay()
+        ├─ gameData.IsReplayReload = true
+        ├─ PrepareForSceneReload_ClientRpc()  — fade to black on all clients
+        ├─ await 500ms
+        ├─ Clear vessel references, despawn AI players + vessels
+        ├─ gameData.ResetRuntimeData()
+        └─ nm.SceneManager.LoadScene(sceneName)  — full scene reload
 ```
 
 An `OnResetForReplayCustom()` method exists as an in-place reset fallback (resets `_finalResultsSent`, clears crystal counts and scores). This runs only via the `ResetForReplay_ClientRpc` path, which is not the default for Crystal Capture.
+
+**Scene wiring requirement (this broke Play Again once — `BUGS.md` B13):** the Crystal Capture scene removes the GameCanvas-HexRace prefab's internal `Scoreboard` component and adds its own scene-level `Scoreboard` (with `gameController` → `MultiplayerCrystalCaptureController`). The prefab's `PlayAgainButton.onClick` persistent call targets the *internal* prefab Scoreboard, so the scene **must override** the Button's onClick target to point at the scene-added Scoreboard — without the override the call's target resolves null (removed component) and the click silently no-ops. The scene also wires `mainMenuButton` (HomeButton GO) and `onClickToMainMenu` (`EventOnClickToMainMenuButton.asset`) so client-hiding and the anti-spam hide work (`BUGS.md` B14).
 
 ## End Conditions
 
@@ -263,8 +252,8 @@ To swap the end condition mode (e.g., timer-based), replace the turn monitor in 
 | Component | Class | Purpose |
 |---|---|---|
 | In-game HUD | `MultiplayerCrystalCaptureHUD` (extends `MultiplayerHUD`) | Per-player crystal count cards; subscribes to `OnCrystalsCollectedChanged`; refreshes all cards on turn start |
-| Scoreboard | `MultiplayerCrystalCaptureScoreboard` (extends `Scoreboard`) | End-game player ranking; displays "N Crystals" per player; sorts descending (highest first) |
-| End Game | `MultiplayerCrystalCaptureEndGameController` (extends `EndGameCinematicController`) | Victory/defeat screen with crystal difference display |
+| Scoreboard | `Scoreboard` (base — per-mode subclass deleted in the scoring refactor; scene-added component, `gameController` wired in inspector) | End-game player ranking; "N Crystals" per card from `CrystalCaptureScoringRuleSO.BuildResults`; sorts descending (highest first) |
+| End Game | `EndGameSequencer` (shared) | Halts vessels, plays GameEnd SFX, raises `OnShowGameEndScreen` → the `Scoreboard` shows results. No cinematic. |
 | Stats Reporter | `CrystalCaptureStatsReporter` | Reports winner's crystal count + vessel telemetry to UGS (winner only) |
 
 ## Shared State & NetworkVariables
@@ -303,9 +292,10 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 | Crystal turn monitor (base) | `CrystalCollisionTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Time turn monitor (network) | `NetworkTimeBasedTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
 | Time turn monitor (base) | `TimeBasedTurnMonitor.cs` | `_Scripts/Controller/Arcade/TurnMonitors/` |
-| End game controller | `MultiplayerCrystalCaptureEndGameController.cs` | `_Scripts/Utility/DataContainers/` |
+| End-game sequencer | `EndGameSequencer.cs` (shared) | `_Scripts/Utility/DataContainers/` |
 | In-game HUD | `MultiplayerCrystalCaptureHUD.cs` | `_Scripts/UI/` |
 | Scoreboard | `MultiplayerCrystalCaptureScoreboard.cs` | `_Scripts/UI/` |
+| End-game scoreboard (shared base) | `Scoreboard.cs` | `_Scripts/UI/` |
 | Stats reporter | `CrystalCaptureStatsReporter.cs` | `_Scripts/Controller/Arcade/` |
 | Arcade game config modal | `ArcadeGameConfigureModal.cs` | `_Scripts/UI/Modals/` |
 | Game SO definition | `SO_ArcadeGame.cs` | `_Scripts/ScriptableObjects/` |
@@ -338,3 +328,5 @@ Also reports vessel telemetry via `ugsStatsManager.ReportVesselTelemetry()`.
 7. **HUD refreshes on turn start**: `MultiplayerCrystalCaptureHUD` inherits the base `MultiplayerHUD` refresh on `OnMiniGameTurnStarted` — domain panels (or legacy per-player cards) are initialized from current `RoundStatsList` values, important for replay resets.
 
 8. **Solo play supported**: `MinPlayersAllowed=1` allows launching Crystal Capture without a party. AI backfill provides opponents via `ServerPlayerVesselInitializerWithAI`.
+
+9. **Scoreboard stays on-base across re-shows** (commit `660e4d91`): the shared `Scoreboard.PlayEntranceAnimation` slid the panel in by mutating its own `anchoredPosition` (reading the current pos as the rest target, shoving it down by `offset`, tweening back via `DOAnchorPos`) and never restored it on `HideScoreboard()`. On a stretch-anchored panel a re-entrant/interrupted show captured the already-displaced position as the new rest target, so the board drifted off-base in modes that re-show it — Crystal Capture and Joust. HexRace was immune (`HasEndGame=false` → shown once then a full scene reload). The slide is now disabled: `ShowScoreboard` calls `ShowScoreboardImmediate()` (authored position, forces full CanvasGroup alpha + unit banner scale). Re-enable the slide once the rest position is captured at `Awake` and restored on hide.

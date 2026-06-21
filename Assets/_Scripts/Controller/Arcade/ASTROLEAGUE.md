@@ -13,7 +13,7 @@ Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
 
 - **Scene**: `Assets/_Scenes/Multiplayer Scenes/MinigameAstroLeague.unity` (single
   unified scene — no separate singleplayer variant)
-- **GameMode enum**: `GameModes.AstroLeague = 36`
+- **GameMode enum**: `GameModes.AstroLeague = 37`
 - **Controller**: `AstroLeagueController : MultiplayerDomainGamesController`
 - **Scoring**: `AstroLeagueScoringRuleSO` (`metric = ScoringMetric.Goals`, points not
   golf), assigned to `GameDataSO.ScoringRule` in `OnNetworkSpawn`
@@ -134,7 +134,7 @@ destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`.
 
 | Change | File |
 |---|---|
-| `AstroLeague = 36` | `_Scripts/Data/Enums/GameModes.cs` |
+| `AstroLeague = 37` | `_Scripts/Data/Enums/GameModes.cs` |
 | `Goals = 4` metric | `_Scripts/Data/Enums/ScoringMetric.cs` + `Scoring/ScoringMetrics.cs` |
 | `GoalsScored` stat (+ event, Cleanup, NetworkVariable) | `_Scripts/Data/Enums/IRoundStats.cs`, `RoundStats.cs` |
 | `GameDataSO.GoalTargetCount` | `_Scripts/Utility/DataContainers/GameDataSO.cs` |
