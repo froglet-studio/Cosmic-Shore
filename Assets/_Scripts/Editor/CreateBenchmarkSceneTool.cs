@@ -90,10 +90,10 @@ namespace CosmicShore.Editor
             "InitialSpawnCount and LOWER Flora/FaunaSpawnIntervalSeconds so load ramps gradually over " +
             "frames (do NOT add decay/TTL — conserved-mass law). Assign it on the cloned cell's " +
             "CellConfigData. Tune for the load you want to stress.\n" +
-            "  4. HUD (your UI): add your in-scene benchmark HUD canvas — live FPS + quick graphics " +
-            "toggles bound to DisplayGraphicsSettings.Instance, a Run button driving " +
-            "PerformanceBenchmarkRunner (Configure → StartBenchmark), and an Exit button that raises " +
-            "the OnClickToMainMenuButton event SceneLoader listens to.\n" +
+            "  4. HUD: add your HUD canvas with the BenchmarkSceneHud component (you design the " +
+            "visuals); wire its FPS/1%-low labels, the quick-setting buttons, the Run button + " +
+            "BenchmarkConfig.asset, and the Exit button + the OnClickToMainMenuButton event " +
+            "SceneLoader listens to.\n" +
             "  5. LAUNCH: in Menu_Main, put BenchmarkSceneLauncher on the Settings panel and hook your " +
             "'Run Benchmark' button to LaunchBenchmark().";
     }

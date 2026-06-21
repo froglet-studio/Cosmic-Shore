@@ -49,11 +49,13 @@ cloud-sync (a phone and a PC must not share a resolution). They live in `Display
 | Benchmark scene launcher (Settings button) | `_Scripts/Controller/Settings/BenchmarkSceneLauncher.cs` |
 | Endless sandbox controller | `_Scripts/Controller/Arcade/SandboxBenchmarkController.cs` |
 | Create-scene editor tool | `_Scripts/Editor/CreateBenchmarkSceneTool.cs` |
-| **Settings panel UI + in-scene HUD** | **owned by the UI author — not in this branch** |
+| Settings panel controller (binds canvas → backend) | `_Scripts/UI/Modals/GameSettingsPanelController.cs` |
+| In-scene benchmark HUD controller | `_Scripts/UI/BenchmarkSceneHud.cs` |
 
-> The UI layer (the settings window prefab and the in-scene benchmark HUD) is intentionally NOT
-> provided. This branch ships the **backend** the UI binds to; the API contract below is the surface
-> to wire controls against.
+> The binding **scripts** are provided; the **visuals** (canvas, images, layout) are the UI author's.
+> Build the window/HUD, drop the controller on its root, and wire each control's event to a controller
+> method (the API contract below). Tabs are a visual grouping only — the controller is tab-agnostic,
+> so rearranging settings between tabs needs no script change.
 
 ## API contract for the UI
 
@@ -105,10 +107,10 @@ the in-scene **Benchmark**, which measures real frame cost via the author's
   spawns via `yield return null` / `WaitForSeconds` (it has a comment about fixing a ~48% spike that
   way). A high-density benchmark `SpawnProfileSO` raises counts/lowers intervals — **production only,
   no decay/TTL** (conserved-mass law).
-- **In-scene HUD (you build it):** show live FPS / frame-time / 1%-low, quick-toggle graphics
-  (quality, AA, VSync, frame cap, ecosystem density, auto-detect) so players "see which is best,"
-  a Run button (formal `PerformanceBenchmarkRunner` report), and Exit. It binds to the same API
-  contract above.
+- **In-scene HUD:** `BenchmarkSceneHud` drives the live FPS / frame-time / 1%-low readout, quick-toggle
+  graphics (quality, AA, VSync, frame cap, ecosystem density, auto-detect) so players "see which is
+  best," a Run button (formal `PerformanceBenchmarkRunner` report), and Exit. You build its visuals
+  and wire the labels/buttons to it.
 
 ## Consumer wiring still TODO (values persist + raise events today)
 
@@ -133,14 +135,15 @@ hook (each is its own follow-up, some are ecology-sensitive — use the `/ecolog
 
 ## Editor wiring checklist (Unity-side)
 
-1. **Settings panel UI (you build it):** build the 8-tab window and wire each control to the API
-   contract above (quality dropdown → `SetQualityPreset`, render-scale slider → `SetRenderScalePercent`,
-   consent toggle → `SetConsent`, links → `Application.OpenURL`). If you build a resolution dropdown,
-   populate it from `Screen.resolutions` and feed the choice to `SetResolution(w,h)`.
+1. **Settings panel UI (you design the visuals):** build the 8-tab window, drop
+   `GameSettingsPanelController` on its root, and wire each control's event to its method (quality
+   dropdown → `SetQualityPresetIndex`, render-scale slider → `SetRenderScale`, consent toggle →
+   `SetAnalyticsConsent`, links → `OpenPrivacyPolicy`/`OpenDeleteDataForm`/`OpenBugReport`). Assign the
+   resolution `TMP_Dropdown` (it auto-populates) and fill the URL fields.
 2. **Benchmark button:** add `BenchmarkSceneLauncher` and hook the button → `LaunchBenchmark()`.
 3. **Benchmark scene:** run `Tools > Cosmic Shore > Create Benchmark Scene`, then follow the Console
    checklist (Squirrel vessel on the spawner's AI entries, endless controller or remove TurnMonitor,
-   high-density `SpawnProfileSO`, add your in-scene HUD canvas, wire the Exit event).
+   high-density `SpawnProfileSO`, add your HUD canvas with `BenchmarkSceneHud`, wire the Exit event).
 4. **If you map dropdown indices to enums**, match the order in `GraphicsSettingsEnums.cs`: Display
    mode = Fullscreen/Borderless/Windowed; Quality = Very Low..Ultra; AA =
    Off/FXAA/SMAA/MSAA2x/4x/8x/TAA; frame cap your own list (pass the int to `SetTargetFrameRate`).
