@@ -19,18 +19,19 @@ density, AI crowd size, adaptive animation, collider detail, VFX density. None o
 (they tune *production*, not decay), so the conserved-mass law (CLAUDE.md ▸ Don't cheat emergence)
 is respected.
 
-## Tabs → store routing
+## Tabs → store routing (shipped 4-tab layout)
 
-| Tab | Settings | Store |
+| Tab | Settings | Store / method |
 |---|---|---|
-| **General** | Analytics/crash/ads consent, Delete-my-data (web form), Report-a-bug (URL), Privacy/Terms, version | `AnalyticsServiceFacade.SetConsent`, `Application.OpenURL` |
-| **Display** | Display mode, monitor/resolution, refresh, VSync, frame cap, **FOV** | `DisplayGraphicsSettings` (device-local) |
-| **Graphics** | Quality preset, anti-aliasing, render scale, upscaling, texture quality, + Auto-Detect / Run Benchmark | `DisplayGraphicsSettings` |
-| **Performance** | Adaptive performance, ecosystem density, physics/collider detail, AI crowd, VFX density | `DisplayGraphicsSettings` |
-| **Audio** | Music / SFX / Haptics (existing) | `GameSetting` (cloud-roaming) |
-| **Controls** | Invert Y / Throttle, Joystick visuals (existing) | `GameSetting` |
-| **Accessibility** | Colorblind mode, subtitles + scale, reduce-flashing, camera shake | `AccessibilitySettings` |
-| **Advanced** | Reset to defaults (live CPU/RAM/VRAM readout deferred to a later update) | `DisplayGraphicsSettings.ResetToDefaults` |
+| **GENERAL** | Colorblind mode · Subtitles · Subtitle scale · Analytics+crash consent · Bug Report / Privacy Policy / Delete My Data · Version | `AccessibilitySettings`, `AnalyticsServiceFacade.SetConsent`, `Application.OpenURL` |
+| **DISPLAY** | Display mode · Resolution · Frame Rate Limit · V-Sync · Field of View | `DisplayGraphicsSettings` (device-local) |
+| **PERFORMANCE** | Quality preset · Anti-aliasing · Texture quality · Upscaling · Adaptive performance · Physics detail · Auto-Detect · Benchmark | `DisplayGraphicsSettings` |
+| **OTHER** | Invert Y · Invert Throttle · Music+vol · SFX+vol · Haptics+vol | `GameSetting` (cloud-roaming) |
+
+Toggles are ON/OFF segmented → wire ON→`Set*(true)`, OFF→`Set*(false)`. Each row reads its saved
+state from the controller's `Current*` getter on open. Backend fields NOT surfaced in this 4-tab UI
+(still used by auto-detect / benchmark): render scale, monitor, refresh rate, ecosystem density, AI
+crowd size, VFX density, camera shake, reduce-flashing.
 
 **Device-local vs roaming:** display/graphics/performance are per-device and intentionally do NOT
 cloud-sync (a phone and a PC must not share a resolution). They live in `DisplayGraphicsSettings`
