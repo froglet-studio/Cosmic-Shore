@@ -52,6 +52,7 @@ cloud-sync (a phone and a PC must not share a resolution). They live in `Display
 | Create-scene editor tool | `_Scripts/Editor/CreateBenchmarkSceneTool.cs` |
 | Settings panel controller (binds canvas → backend) | `_Scripts/UI/Modals/GameSettingsPanelController.cs` |
 | In-scene benchmark HUD controller | `_Scripts/UI/BenchmarkSceneHud.cs` |
+| Camera FOV + post-AA consumer (drop-on) | `_Scripts/Controller/Camera/CameraSettingsApplier.cs` |
 
 > The binding **scripts** are provided; the **visuals** (canvas, images, layout) are the UI author's.
 > Build the window/HUD, drop the controller on its root, and wire each control's event to a controller
@@ -113,12 +114,24 @@ the in-scene **Benchmark**, which measures real frame cost via the author's
   best," a Run button (formal `PerformanceBenchmarkRunner` report), and Exit. You build its visuals
   and wire the labels/buttons to it.
 
+## Camera consumers — WIRED
+
+`CameraSettingsApplier` (drop it on the gameplay player camera) applies **FOV** and the per-camera
+post-process **AA modes (FXAA / SMAA / TAA)** live as the settings change; **MSAA** is global on the
+URP asset (handled by `DisplayGraphicsSettings`). Add it to the menu/brain camera too if you want AA
+there — FOV is Cinemachine-driven in the menu, so it no-ops on that camera (`applyFieldOfView` off).
+
+## Audio slider ranges
+
+Music / SFX / Haptics volume sliders are **min 0, max 1, whole-numbers off, default 1.0**. The legacy
+`AudioSource` path scales ×1/5 internally (the intentional "max .2" attenuation in `AudioSystem`), and
+the FMOD SFX path is `Clamp01(SFXLevel)` — both assume a 0–1 slider.
+
 ## Consumer wiring still TODO (values persist + raise events today)
 
 These settings are stored and broadcast change events; the systems that *read* them need a small
 hook (each is its own follow-up, some are ecology-sensitive — use the `/ecology` skill):
 
-- **FOV** → camera (`CameraSettingsSO` / `CustomCameraController`) via `OnFieldOfViewChanged`.
 - **Colorblind / Reduce-flashing** → a screen-space color/flash post-process.
 - **Subtitles / scale** → Dialogue System (`DialogueManager`) subtitle rendering.
 - **Ecosystem density / physics detail / AI crowd / VFX density** → spawn profile scaling, collider
