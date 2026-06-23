@@ -15,6 +15,10 @@ MonoBehaviour:
   matchDurationSeconds: 180
   goalLimit: 5
   goldenGoalOvertime: 1
+  intensityScaleAtMax: 10
+  maxIntensityLevel: 4
+  vesselRecoilSpeed: 30
+  vesselRecoilDuration: 0.2
   celebrationSeconds: 2.2
   celebrationTimeScale: 0.35
   kickoffFreezeSeconds: 2.4

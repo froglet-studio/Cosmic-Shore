@@ -23,9 +23,31 @@ namespace CosmicShore.Gameplay
         public Domains DefendingDomain => defendingDomain;
         public Vector3 MouthCenter => transform.position;
 
+        BoxCollider _box;
+        Vector3 _baseSize, _baseCenter;
+
         void Awake()
         {
-            GetComponent<Collider>().isTrigger = true;
+            var col = GetComponent<Collider>();
+            col.isTrigger = true;
+            _box = col as BoxCollider;
+            if (_box != null)
+            {
+                _baseSize = _box.size;
+                _baseCenter = _box.center;
+            }
+        }
+
+        /// <summary>
+        /// Scale the goal-mouth trigger to match the intensity-scaled arena (the controller also
+        /// repositions this goal to the scaled goal line). The mouth grows proportionally so the
+        /// bigger arena keeps the same relative goal size.
+        /// </summary>
+        public void ScaleTrigger(float scale)
+        {
+            if (_box == null) return;
+            _box.size = _baseSize * scale;
+            _box.center = _baseCenter * scale;
         }
 
         void OnTriggerEnter(Collider other)

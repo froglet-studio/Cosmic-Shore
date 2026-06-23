@@ -22,6 +22,23 @@ namespace CosmicShore.Gameplay
         [Tooltip("If true and the score is tied at full time, play sudden-death golden goal")]
         public bool goldenGoalOvertime = true;
 
+        [Header("Intensity Scale (arena + ball + team spawns)")]
+        [Tooltip("Arena, ball, goals and team-spawn distances scale from 1x at intensity 1 up to this " +
+                 "factor at the max intensity (4) — so a high-intensity match is a much bigger playfield " +
+                 "with a much bigger ball. Vessels stay their normal size.")]
+        public float intensityScaleAtMax = 10f;
+
+        [Tooltip("Highest intensity level used for the scale ramp (the arcade card's MaxIntensity).")]
+        public int maxIntensityLevel = 4;
+
+        [Header("Vessel Recoil (anti-clip)")]
+        [Tooltip("Backward velocity (units/sec) applied to a vessel when it strikes the ball, so it " +
+                 "bounces away and can't clip into the ball. Scaled by hit strength.")]
+        public float vesselRecoilSpeed = 30f;
+
+        [Tooltip("Seconds the vessel recoil impulse lasts (cosine-windowed by VesselTransformer).")]
+        public float vesselRecoilDuration = 0.2f;
+
         [Header("Kickoff Pacing")]
         [Tooltip("Seconds of GOAL! celebration (real time) before the ball resets")]
         public float celebrationSeconds = 2.2f;

@@ -119,12 +119,25 @@ server with billiard thinking:
   `OnCollisionEnter` (physics hull) AND `OnTriggerEnter` — Serpent and Sparrow have
   NO non-trigger collider, so without the trigger path they'd pass straight through.
   A per-vessel-root cooldown dedups the double-fire on ships that have both.
-- **Vessel never clips the ball.** On every strike the ball is ejected so its center
-  is at least `ball radius + vesselClearRadius` from the vessel root
-  (`EjectBallFromVessel`, `rb.position` republished to `n_Position`). Combined with the
-  ≥1× launch speed the ball stays ahead of the striker, so the hull mesh can't overlap
-  it — this is the only barrier for the trigger-only ships (which have no physical
-  depenetration).
+- **Vessel never clips the ball.** Two anti-clip mechanisms stack: (1) on every strike
+  the ball ejects so its center is at least `ball radius + vesselClearRadius` from the
+  vessel root (`EjectBallFromVessel`, `rb.position` republished to `n_Position`), and
+  (2) the controller recoils the striking vessel backward off the ball — a brief
+  `VesselTransformer.ModifyVelocity` impulse (`vesselRecoilSpeed` × hit strength, for
+  `vesselRecoilDuration`). Because vessels are owner-authoritative, the recoil is a
+  ClientRpc keyed by vessel `NetworkObjectId` and applied only where `IsNetworkOwner`.
+  Together the ball pops out and the ship bounces back, so the hull mesh can't overlap
+  the ball — the only barrier for the trigger-only ships (which have no depenetration).
+- **Intensity scales the whole playfield.** The controller computes a scale factor —
+  1× at intensity 1 ramping to `intensityScaleAtMax` (10×) at `maxIntensityLevel` (4) —
+  and broadcasts it in `SyncMatchConfig_ClientRpc` so every peer applies the same scale.
+  `AstroLeagueArena.Build(scale)` rebuilds the stadium at the scaled dimensions,
+  `AstroLeagueBall.SetSizeScale(scale)` resizes the ball (visual + collider) on top of
+  its authored base, and the controller pushes the goals + team spawns out to the scaled
+  goal lines (scaling each goal-mouth trigger). Vessels stay normal-size, so a
+  high-intensity match is a grand playfield with a giant ball. Players reset to the
+  scaled team positions on every kickoff (`ComputeKickoffPose` reads the scaled spawns
+  and scales the lateral teammate spacing too).
 - **3D fresnel look.** The ball clones `PrismMaterial.mat` (the prism `BlockGraph`
   fresnel shader) at runtime, so it renders solid with a bright view-dependent rim
   exactly like trail prisms. The speed/flash-reactive colour cycle drives the fresnel

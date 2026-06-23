@@ -36,6 +36,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Drag AstroLeagueScoringRule.asset — the per-mode scoring strategy (winner, scores, results).")]
         [SerializeField] ScoringRuleSO rule;
         [SerializeField] AstroLeagueBall ball;
+        [SerializeField] AstroLeagueArena arena;
         [SerializeField] AstroLeagueMatchMonitor matchMonitor;
         [Tooltip("One goal per active domain. Element order must match GameDataSO.ActiveDomains (Jade, Ruby).")]
         [SerializeField] List<AstroLeagueGoal> goals;
@@ -43,6 +44,11 @@ namespace CosmicShore.Gameplay
         [SerializeField] List<Transform> teamSpawns;
 
         [Inject] AudioSystem audioSystem;
+
+        // Intensity scaling: base (authored) positions captured at spawn, multiplied by the scale.
+        readonly List<Vector3> _baseGoalLocalPos = new();
+        readonly List<Vector3> _baseSpawnLocalPos = new();
+        float _currentScale = 1f;
 
         enum MatchPhase { PreMatch, Kickoff, Live, Celebration, Overtime, Finished }
         MatchPhase phase = MatchPhase.PreMatch;
@@ -80,13 +86,40 @@ namespace CosmicShore.Gameplay
             phase = MatchPhase.PreMatch;
             matchCts = new CancellationTokenSource();
 
+            CaptureBaseLayout();
+
             if (!IsServer) return;
 
             gameData.GoalTargetCount = settings.goalLimit;
-            SyncMatchConfig_ClientRpc(settings.goalLimit);
+            // Intensity scale is computed on the server and broadcast so every peer builds the
+            // arena / sizes the ball / lays out goals + team spawns at the exact same scale.
+            SyncMatchConfig_ClientRpc(settings.goalLimit, ScaleForIntensity());
 
             ball.OnStruckServer += HandleBallStruckServer;
             matchMonitor.OnClockExpired += HandleClockExpiredServer;
+        }
+
+        /// <summary>Captures the authored (intensity-1) goal + team-spawn local positions once.</summary>
+        void CaptureBaseLayout()
+        {
+            if (_baseGoalLocalPos.Count == 0 && goals != null)
+                foreach (var g in goals)
+                    _baseGoalLocalPos.Add(g != null ? g.transform.localPosition : Vector3.zero);
+
+            if (_baseSpawnLocalPos.Count == 0 && teamSpawns != null)
+                foreach (var t in teamSpawns)
+                    _baseSpawnLocalPos.Add(t != null ? t.localPosition : Vector3.zero);
+        }
+
+        /// <summary>Arena/ball/layout scale: 1x at intensity 1, ramping to intensityScaleAtMax at the top.</summary>
+        float ScaleForIntensity()
+        {
+            int maxLevel = Mathf.Max(2, settings.maxIntensityLevel);
+            int intensity = gameData.SelectedIntensity != null
+                ? Mathf.Clamp(gameData.SelectedIntensity.Value, 1, maxLevel)
+                : 1;
+            float t = (intensity - 1f) / (maxLevel - 1f);
+            return Mathf.Lerp(1f, Mathf.Max(1f, settings.intensityScaleAtMax), t);
         }
 
         public override void OnNetworkDespawn()
@@ -105,10 +138,44 @@ namespace CosmicShore.Gameplay
         }
 
         [ClientRpc]
-        void SyncMatchConfig_ClientRpc(int goalTarget)
+        void SyncMatchConfig_ClientRpc(int goalTarget, float intensityScale)
         {
+            // Layout scaling runs on EVERY peer (host included) so geometry, ball size, goals and
+            // team spawns match across the session.
+            ApplyIntensityScale(intensityScale);
+
             if (IsServer) return;
             gameData.GoalTargetCount = goalTarget;
+        }
+
+        /// <summary>
+        /// Scale the whole playfield to the match intensity: rebuild the arena, resize the ball,
+        /// and push the goals + team spawns out to the scaled goal lines (scaling each goal-mouth
+        /// trigger to match). Players reset to these scaled team positions on every kickoff.
+        /// </summary>
+        void ApplyIntensityScale(float scale)
+        {
+            _currentScale = Mathf.Max(1f, scale);
+            CaptureBaseLayout();
+
+            if (arena != null) arena.Build(_currentScale);
+            if (ball != null) ball.SetSizeScale(_currentScale);
+
+            if (goals != null)
+                for (int i = 0; i < goals.Count; i++)
+                {
+                    if (goals[i] == null) continue;
+                    if (i < _baseGoalLocalPos.Count)
+                        goals[i].transform.localPosition = _baseGoalLocalPos[i] * _currentScale;
+                    goals[i].ScaleTrigger(_currentScale);
+                }
+
+            if (teamSpawns != null)
+                for (int i = 0; i < teamSpawns.Count; i++)
+                {
+                    if (teamSpawns[i] == null || i >= _baseSpawnLocalPos.Count) continue;
+                    teamSpawns[i].localPosition = _baseSpawnLocalPos[i] * _currentScale;
+                }
         }
 
         // ── Match start ──────────────────────────────────────────────────────
@@ -147,11 +214,42 @@ namespace CosmicShore.Gameplay
             var striker = FindPlayerByVessel(vessel);
             if (striker == null) return;
 
+            // Recoil the striker away from the ball so it bounces back a bit — extra anti-clip
+            // insurance on top of the ball's own ejection.
+            ApplyVesselRecoil(striker, vessel, intensity);
+
             if (_lastStrikers.Count > 0 && _lastStrikers[0] == striker) return;
             _lastStrikers.Remove(striker);
             _lastStrikers.Insert(0, striker);
             if (_lastStrikers.Count > 2)
                 _lastStrikers.RemoveAt(_lastStrikers.Count - 1);
+        }
+
+        /// <summary>
+        /// Server: broadcast a backward recoil for the striking vessel. Vessels are
+        /// owner-authoritative (ClientNetworkTransform), so the impulse must be applied on the
+        /// OWNING peer — the ClientRpc resolves the vessel by NetworkObjectId and only the owner
+        /// applies <see cref="VesselTransformer.ModifyVelocity"/>.
+        /// </summary>
+        void ApplyVesselRecoil(IPlayer striker, IVessel vessel, float intensity)
+        {
+            if (vessel?.Transform == null || ball == null) return;
+            ulong vesselNetId = striker.VesselNetId;
+            if (vesselNetId == 0) return;
+
+            Vector3 away = vessel.Transform.position - ball.transform.position;
+            if (away.sqrMagnitude < 0.0001f) return;
+
+            float magnitude = settings.vesselRecoilSpeed * (0.4f + 0.6f * Mathf.Clamp01(intensity));
+            RecoilVessel_ClientRpc(vesselNetId, away.normalized, magnitude, settings.vesselRecoilDuration);
+        }
+
+        [ClientRpc]
+        void RecoilVessel_ClientRpc(ulong vesselNetId, Vector3 direction, float magnitude, float duration)
+        {
+            if (!gameData.TryGetVesselByNetworkObjectId(vesselNetId, out var vessel)) return;
+            if (!vessel.IsNetworkOwner) return; // only the owner actually moves the vessel
+            vessel.VesselStatus?.VesselTransformer?.ModifyVelocity(direction * magnitude, duration);
         }
 
         IPlayer FindPlayerByVessel(IVessel vessel)
@@ -441,9 +539,9 @@ namespace CosmicShore.Gameplay
                 .ToList();
             int slot = Mathf.Max(0, teammates.IndexOf(player));
 
-            // Slots fan out laterally: 0, +1, -1, +2, -2, ...
+            // Slots fan out laterally: 0, +1, -1, +2, -2, ... — spacing scales with the arena.
             int offsetSteps = (slot + 1) / 2 * (slot % 2 == 0 ? 1 : -1);
-            Vector3 lateral = anchor.right * (offsetSteps * settings.kickoffLateralSpacing);
+            Vector3 lateral = anchor.right * (offsetSteps * settings.kickoffLateralSpacing * _currentScale);
 
             Vector3 toCenter = (ball.transform.position - anchor.position).normalized;
             var rotation = toCenter.sqrMagnitude > 0.001f

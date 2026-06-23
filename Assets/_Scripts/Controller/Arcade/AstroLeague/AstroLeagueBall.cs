@@ -59,6 +59,7 @@ namespace CosmicShore.Gameplay
         Rigidbody rb;
         SphereCollider sphereCol;
         Vector3 spawnPosition;
+        Vector3 _baseScale = Vector3.one;
         bool hitstopActive;
         CancellationToken destroyToken;
 
@@ -130,7 +131,18 @@ namespace CosmicShore.Gameplay
             };
 
             spawnPosition = transform.position;
+            _baseScale = transform.localScale;
             SetupVisuals();
+        }
+
+        /// <summary>
+        /// Scale the ball (visual + collider) by the intensity factor on top of its authored
+        /// base size. Runs on every peer (server physics + client rendering both need it).
+        /// BallWorldRadius reads lossyScale, so the strike/eject maths track the new size.
+        /// </summary>
+        public void SetSizeScale(float factor)
+        {
+            transform.localScale = _baseScale * Mathf.Max(0.01f, factor);
         }
 
         public override void OnNetworkSpawn()

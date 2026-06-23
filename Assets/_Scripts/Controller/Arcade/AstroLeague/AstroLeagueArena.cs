@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -8,17 +9,21 @@ namespace CosmicShore.Gameplay
     /// - Invisible high-restitution boundary walls (pure physics; the server's ball
     ///   simulation bounces off them, clients only render the replicated ball)
     /// - Pulsing wireframe edge cage so pilots always read the playfield bounds
-    /// - Portal-style goal rings at each end (visible from inside and outside),
-    ///   with anticipation glow as the ball approaches
+    /// - Portal-style goal rings at each end, with anticipation glow as the ball approaches
     /// - Center ring marking midfield
     /// - Drifting plankton motes for hypersea atmosphere and speed perception
+    ///
+    /// The whole stadium scales with match intensity: the controller calls <see cref="Build"/>
+    /// with the intensity scale factor, and every dimension (and the goal-ring positions the
+    /// goal triggers align to) multiplies by it. The serialized dimensions are the BASE
+    /// (intensity-1) size.
     /// </summary>
     public class AstroLeagueArena : MonoBehaviour
     {
         [Header("Config")]
         [SerializeField] AstroLeagueSettingsSO settings;
 
-        [Header("Dimensions")]
+        [Header("Base Dimensions (intensity 1 — scaled up by Build)")]
         [SerializeField] float arenaLength = 300f;
         [SerializeField] float arenaWidth = 200f;
         [SerializeField] float arenaHeight = 100f;
@@ -29,8 +34,14 @@ namespace CosmicShore.Gameplay
         [SerializeField] AstroLeagueBall ball;
 
         public Vector3 Center => transform.position;
-        public float GoalRingRadius => goalRingRadius;
+        public float GoalRingRadius => goalRingRadius * _scale;
 
+        // Scale-resolved dimensions (set in Build).
+        float _scale = 1f;
+        float _L, _W, _H, _wall, _goalR;
+        bool _built;
+
+        readonly List<GameObject> _generated = new();
         LineRenderer[] edgeLines;
         Material edgeMaterial;
         Material jadeRingMaterial;
@@ -40,28 +51,45 @@ namespace CosmicShore.Gameplay
         Color JadeColor => settings != null ? settings.jadeGoalColor : new Color(0.15f, 1f, 0.55f, 0.5f);
         Color RubyColor => settings != null ? settings.rubyGoalColor : new Color(1f, 0.22f, 0.35f, 0.5f);
 
-        void Awake()
+        /// <summary>
+        /// Build (or rebuild) the stadium at the given intensity scale. Called by the controller on
+        /// every peer once the intensity is known. Idempotent — clears prior geometry first.
+        /// </summary>
+        public void Build(float scale)
         {
+            _scale = Mathf.Max(0.01f, scale);
+            _L = arenaLength * _scale;
+            _W = arenaWidth * _scale;
+            _H = arenaHeight * _scale;
+            _wall = wallThickness * _scale;
+            _goalR = goalRingRadius * _scale;
+
+            // Clear anything from a prior Build (defensive — normally built once per scene).
+            for (int i = _generated.Count - 1; i >= 0; i--)
+                if (_generated[i] != null) Destroy(_generated[i]);
+            _generated.Clear();
+
             BuildWalls();
             BuildEdgeCage();
-            BuildGoalPortal("GoalPortal_Jade", Center + Vector3.back * (arenaLength / 2f), Vector3.forward, JadeColor, out jadeRingMaterial);
-            BuildGoalPortal("GoalPortal_Ruby", Center + Vector3.forward * (arenaLength / 2f), Vector3.back, RubyColor, out rubyRingMaterial);
+            BuildGoalPortal("GoalPortal_Jade", Center + Vector3.back * (_L / 2f), Vector3.forward, JadeColor, out jadeRingMaterial);
+            BuildGoalPortal("GoalPortal_Ruby", Center + Vector3.forward * (_L / 2f), Vector3.back, RubyColor, out rubyRingMaterial);
             BuildCenterRing();
             BuildPlankton();
+            _built = true;
         }
 
         // ── Physics shell ────────────────────────────────────────────────────
 
         void BuildWalls()
         {
-            float hw = arenaWidth / 2f, hh = arenaHeight / 2f, hl = arenaLength / 2f;
+            float hw = _W / 2f, hh = _H / 2f, hl = _L / 2f;
 
-            CreateWall("Wall_Top",    Center + Vector3.up * (hh + wallThickness / 2f),      new Vector3(arenaWidth, wallThickness, arenaLength));
-            CreateWall("Wall_Bottom", Center + Vector3.down * (hh + wallThickness / 2f),    new Vector3(arenaWidth, wallThickness, arenaLength));
-            CreateWall("Wall_Left",   Center + Vector3.left * (hw + wallThickness / 2f),    new Vector3(wallThickness, arenaHeight, arenaLength));
-            CreateWall("Wall_Right",  Center + Vector3.right * (hw + wallThickness / 2f),   new Vector3(wallThickness, arenaHeight, arenaLength));
-            CreateWall("Wall_Back",   Center + Vector3.back * (hl + wallThickness / 2f),    new Vector3(arenaWidth, arenaHeight, wallThickness));
-            CreateWall("Wall_Front",  Center + Vector3.forward * (hl + wallThickness / 2f), new Vector3(arenaWidth, arenaHeight, wallThickness));
+            CreateWall("Wall_Top",    Center + Vector3.up * (hh + _wall / 2f),      new Vector3(_W, _wall, _L));
+            CreateWall("Wall_Bottom", Center + Vector3.down * (hh + _wall / 2f),    new Vector3(_W, _wall, _L));
+            CreateWall("Wall_Left",   Center + Vector3.left * (hw + _wall / 2f),    new Vector3(_wall, _H, _L));
+            CreateWall("Wall_Right",  Center + Vector3.right * (hw + _wall / 2f),   new Vector3(_wall, _H, _L));
+            CreateWall("Wall_Back",   Center + Vector3.back * (hl + _wall / 2f),    new Vector3(_W, _H, _wall));
+            CreateWall("Wall_Front",  Center + Vector3.forward * (hl + _wall / 2f), new Vector3(_W, _H, _wall));
         }
 
         void CreateWall(string wallName, Vector3 position, Vector3 size)
@@ -81,13 +109,14 @@ namespace CosmicShore.Gameplay
                 dynamicFriction = 0f,
                 staticFriction = 0f
             };
+            _generated.Add(wall);
         }
 
         // ── Visual cage ──────────────────────────────────────────────────────
 
         void BuildEdgeCage()
         {
-            float hw = arenaWidth / 2f, hh = arenaHeight / 2f, hl = arenaLength / 2f;
+            float hw = _W / 2f, hh = _H / 2f, hl = _L / 2f;
 
             Vector3[][] edges =
             {
@@ -105,7 +134,7 @@ namespace CosmicShore.Gameplay
             edgeMaterial = CreateLineMaterial(EdgeColor);
             edgeLines = new LineRenderer[edges.Length];
             for (int i = 0; i < edges.Length; i++)
-                edgeLines[i] = CreateLine($"Edge_{i}", edges[i], edgeMaterial, 0.8f);
+                edgeLines[i] = CreateLine($"Edge_{i}", edges[i], edgeMaterial, 0.8f * _scale);
 
             Vector3 V(float x, float y, float z) => Center + new Vector3(x, y, z);
         }
@@ -119,18 +148,18 @@ namespace CosmicShore.Gameplay
             ringMaterial = CreateLineMaterial(color);
             for (int i = 0; i < 3; i++)
             {
-                float depth = i * 6f;
-                float radius = goalRingRadius * (1f - i * 0.18f);
+                float depth = i * 6f * _scale;
+                float radius = _goalR * (1f - i * 0.18f);
                 CreateCircle($"{name}_Ring{i}",
                     mouthCenter - inward * depth, inward, radius, ringMaterial,
-                    width: 1.6f - i * 0.4f);
+                    width: (1.6f - i * 0.4f) * _scale);
             }
         }
 
         void BuildCenterRing()
         {
             var mat = CreateLineMaterial(new Color(1f, 1f, 1f, 0.18f));
-            CreateCircle("CenterRing", Center, Vector3.forward, arenaWidth * 0.35f, mat, 0.6f);
+            CreateCircle("CenterRing", Center, Vector3.forward, _W * 0.35f, mat, 0.6f * _scale);
         }
 
         LineRenderer CreateCircle(string name, Vector3 center, Vector3 normal, float radius, Material mat, float width)
@@ -160,6 +189,7 @@ namespace CosmicShore.Gameplay
             lr.sharedMaterial = mat;
             lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             lr.receiveShadows = false;
+            _generated.Add(go);
             return lr;
         }
 
@@ -189,8 +219,8 @@ namespace CosmicShore.Gameplay
             var ps = go.AddComponent<ParticleSystem>();
             var main = ps.main;
             main.startLifetime = 30f;
-            main.startSpeed = 0.6f;
-            main.startSize = new ParticleSystem.MinMaxCurve(0.15f, 0.6f);
+            main.startSpeed = 0.6f * _scale;
+            main.startSize = new ParticleSystem.MinMaxCurve(0.15f * _scale, 0.6f * _scale);
             int count = settings != null ? settings.planktonCount : 400;
             main.maxParticles = count;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
@@ -205,11 +235,11 @@ namespace CosmicShore.Gameplay
 
             var shape = ps.shape;
             shape.shapeType = ParticleSystemShapeType.Box;
-            shape.scale = new Vector3(arenaWidth, arenaHeight, arenaLength);
+            shape.scale = new Vector3(_W, _H, _L);
 
             var noise = ps.noise;
             noise.enabled = true;
-            noise.strength = 0.4f;
+            noise.strength = 0.4f * _scale;
             noise.frequency = 0.08f;
             noise.scrollSpeed = 0.05f;
 
@@ -221,12 +251,15 @@ namespace CosmicShore.Gameplay
             psMat.renderQueue = 3050;
             psRenderer.sharedMaterial = psMat;
             psRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            _generated.Add(go);
         }
 
         // ── Living arena ─────────────────────────────────────────────────────
 
         void Update()
         {
+            if (!_built) return;
+
             // Breathing edge cage
             if (edgeMaterial != null)
             {
@@ -238,8 +271,8 @@ namespace CosmicShore.Gameplay
             // Goal anticipation: portals flare as the ball closes in
             if (ball != null && !ball.IsHidden)
             {
-                FlareRing(jadeRingMaterial, JadeColor, Center + Vector3.back * (arenaLength / 2f));
-                FlareRing(rubyRingMaterial, RubyColor, Center + Vector3.forward * (arenaLength / 2f));
+                FlareRing(jadeRingMaterial, JadeColor, Center + Vector3.back * (_L / 2f));
+                FlareRing(rubyRingMaterial, RubyColor, Center + Vector3.forward * (_L / 2f));
             }
         }
 
@@ -248,7 +281,7 @@ namespace CosmicShore.Gameplay
             if (ringMat == null) return;
 
             float distance = Vector3.Distance(ball.transform.position, mouthCenter);
-            float anticipation = Mathf.Clamp01(1f - distance / (arenaLength * 0.45f));
+            float anticipation = Mathf.Clamp01(1f - distance / (_L * 0.45f));
             float flicker = 1f + anticipation * 0.6f * Mathf.Sin(Time.time * (6f + anticipation * 10f));
             float alpha = Mathf.Lerp(baseColor.a * 0.8f, 1f, anticipation) * flicker;
             ringMat.color = new Color(
@@ -260,12 +293,13 @@ namespace CosmicShore.Gameplay
 
         void OnDrawGizmos()
         {
+            float s = Application.isPlaying ? _scale : 1f;
             Gizmos.color = new Color(0.2f, 0.8f, 1f, 0.2f);
-            Gizmos.DrawWireCube(Center, new Vector3(arenaWidth, arenaHeight, arenaLength));
+            Gizmos.DrawWireCube(Center, new Vector3(arenaWidth, arenaHeight, arenaLength) * s);
             Gizmos.color = new Color(0.15f, 1f, 0.55f, 0.4f);
-            Gizmos.DrawWireSphere(Center + Vector3.back * (arenaLength / 2f), goalRingRadius);
+            Gizmos.DrawWireSphere(Center + Vector3.back * (arenaLength * s / 2f), goalRingRadius * s);
             Gizmos.color = new Color(1f, 0.22f, 0.35f, 0.4f);
-            Gizmos.DrawWireSphere(Center + Vector3.forward * (arenaLength / 2f), goalRingRadius);
+            Gizmos.DrawWireSphere(Center + Vector3.forward * (arenaLength * s / 2f), goalRingRadius * s);
         }
     }
 }
