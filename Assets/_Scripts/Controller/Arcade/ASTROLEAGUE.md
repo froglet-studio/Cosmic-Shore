@@ -135,25 +135,28 @@ server with billiard thinking:
 - Strike direction = `Slerp(deflectionDir, strikerHeading, directionalBias)` where
   deflectionDir points from the contact point through the ball center. A higher
   `directionalBias` (0.45) gives players more aim control over a struck ball.
-- Near-frictionless billiard feel: `ballBounciness = 1` (perfectly elastic) with a
-  very low speed-dependent drag curve (`highSpeedDrag` at speed, `lowSpeedDrag` near
-  rest, snap-to-rest under `stopThreshold`) that only gently bleeds energy so the
-  ball still settles for kickoffs. The ball is scaled up (world radius ≈ 5) so strikes
-  land cleanly — a bigger, more precise target.
-- **Trails are live obstacles the ball bounces off AND destroys.** On a prism bounce
-  above `prismDestroyMinSpeed`, the server broadcasts `ExplodePrismsAtPoint_ClientRpc`;
-  every peer (host included) runs `PrismSpatialIndex.QuerySphere(contactPoint,
-  prismDestroyRadius)` and calls the canonical animated `Prism.Damage` on its OWN
-  local trail copies (prisms are per-peer GameObjects laid by `VesselPrismController`
-  on every peer, not shared NetworkObjects — a position-deterministic broadcast keeps
-  host/clients/AI consistent). `OnCollisionEnter` runs post-solver so the ricochet
-  velocity is already banked before the destroy — the ball bounces off the wall face
-  and punches a hole through it. The ball is a NEUTRAL active force (`Domains.Blue`),
-  so it smashes any team's trail — walling your goal is legal but temporary defense.
-  Mass is conserved everywhere (no menu/mode exemptions): the ball is an active
-  consumer, the destruction goes through the standard explode-out path (spatial-index
-  release + VFX), never a raw `Destroy`. A `prismDestroyCooldown` throttles the
-  broadcast while plowing a dense wall.
+- **ZERO friction — collisions are the only speed decay.** `ballBounciness = 1`
+  (perfectly elastic reflection) and the per-frame drag is gone entirely: the ball
+  coasts at constant speed between collisions forever. The ONLY mechanism that slows
+  it is `collisionSpeedRetention` (0.85 = lose 15% per bounce), applied on every
+  wall/prism bounce in `HandleGeometryBounce`. Vessel strikes are the energy INPUT
+  (they set the launch velocity), so they don't decay; `maxSpeed` just caps the top
+  end. A ball drifting in open space never slows — only hitting something does.
+- **Every collision spawns a speed-scaled prism explosion.** Walls, prisms, and vessel
+  strikes all route through `EmitPrismExplosion`, which broadcasts
+  `ExplodePrismsAtPoint_ClientRpc` with a blast radius that lerps from
+  `prismDestroyRadius` up to `prismDestroyRadiusAtMaxSpeed` by impact speed — a fast
+  collision blasts a wide crater, a gentle one a small puff (below `prismDestroyMinSpeed`
+  it just bounces). Every peer (host included) runs `PrismSpatialIndex.QuerySphere`
+  and the canonical animated `Prism.Damage` on its OWN local trail copies (prisms are
+  per-peer GameObjects laid by `VesselPrismController` on every peer, not shared
+  NetworkObjects — a position-deterministic broadcast keeps host/clients/AI consistent).
+  `OnCollisionEnter` runs post-solver so the ricochet velocity is banked before the
+  destroy — the ball bounces off the wall face and punches a hole through it. The ball
+  is a NEUTRAL active force (`Domains.Blue`), so it smashes any team's trail. Mass is
+  conserved (explode-out via spatial-index release + VFX, never a raw `Destroy`). A
+  short `prismDestroyCooldown` throttles only the explosion broadcast (the speed decay
+  is applied on every bounce regardless).
 - Layers: the ball is on `Default` (0); prisms run on `TrailBlocks` (11); the physics
   matrix enables 0↔11 (and 0↔8 Ships), so the ball collides with both trail prisms
   and vessels.

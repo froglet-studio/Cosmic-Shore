@@ -63,33 +63,33 @@ namespace CosmicShore.Gameplay
                  "Roughly the vessel's visual hull reach.")]
         public float vesselClearRadius = 12f;
 
-        [Header("Ball — Physics")]
+        [Header("Ball — Physics (zero friction)")]
         public float maxSpeed = 220f;
         public float ballMass = 3f;
-        [Tooltip("1 = perfectly elastic (loses no speed on a bounce — stays lively); the speed-dependent " +
-                 "drag below is what gently bleeds energy so the ball still settles for kickoffs.")]
+        [Tooltip("1 = perfectly elastic reflection direction. The ball has ZERO passive friction/drag " +
+                 "— it coasts at constant speed between collisions; the ONLY speed decay is the " +
+                 "per-collision loss below.")]
         [Range(0f, 1f)] public float ballBounciness = 1f;
 
-        [Tooltip("Drag at max speed — near-zero keeps the ball coasting/bouncing like a frictionless billiard")]
-        public float highSpeedDrag = 0.04f;
+        [Tooltip("Fraction of speed KEPT on each wall/prism bounce — THE ONLY speed-decay mechanism " +
+                 "(0.85 = lose 15% per collision). Vessel strikes re-energize the ball. The energy " +
+                 "lost feeds the prism explosion.")]
+        [Range(0f, 1f)] public float collisionSpeedRetention = 0.85f;
 
-        [Tooltip("Drag near zero speed — kept low so late bounces still carry; raise only if the ball creeps")]
-        public float lowSpeedDrag = 0.6f;
+        [Header("Ball — Prism Explosion (per collision, scaled by speed)")]
+        [Tooltip("Every collision explodes live prisms within a speed-scaled radius of the contact " +
+                 "(the canonical animated Prism.Damage path — mass-conserving active force). This is " +
+                 "the radius at/below minimum impact speed.")]
+        public float prismDestroyRadius = 6f;
 
-        [Tooltip("Speed below which ball velocity snaps to zero (low so faint bounces aren't killed)")]
-        public float stopThreshold = 0.5f;
+        [Tooltip("Explosion radius at max ball speed — a fast collision blasts a much wider crater")]
+        public float prismDestroyRadiusAtMaxSpeed = 18f;
 
-        [Header("Ball — Prism Destruction")]
-        [Tooltip("On a prism bounce, every live prism within this radius of the contact point is " +
-                 "exploded (the canonical animated Prism.Damage path — mass-conserving active force). " +
-                 "Slightly larger than the ball so a hit punches a clean hole through a trail wall.")]
-        public float prismDestroyRadius = 7f;
-
-        [Tooltip("Ball speed required to smash prisms on contact — a slow ball just bounces off them")]
-        public float prismDestroyMinSpeed = 12f;
+        [Tooltip("Impact speed below which a collision doesn't explode prisms (a faint tap just bounces)")]
+        public float prismDestroyMinSpeed = 5f;
 
         [Tooltip("Minimum seconds between prism-explosion broadcasts (flood guard while plowing a wall)")]
-        public float prismDestroyCooldown = 0.06f;
+        public float prismDestroyCooldown = 0.02f;
 
         [Header("Ball — Client Replication")]
         [Tooltip("How aggressively non-server peers blend toward the dead-reckoned ball position (higher = snappier)")]

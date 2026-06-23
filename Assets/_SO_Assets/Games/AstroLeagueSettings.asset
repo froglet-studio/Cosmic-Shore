@@ -29,12 +29,11 @@ MonoBehaviour:
   maxSpeed: 220
   ballMass: 3
   ballBounciness: 1
-  highSpeedDrag: 0.04
-  lowSpeedDrag: 0.6
-  stopThreshold: 0.5
-  prismDestroyRadius: 7
-  prismDestroyMinSpeed: 12
-  prismDestroyCooldown: 0.06
+  collisionSpeedRetention: 0.85
+  prismDestroyRadius: 6
+  prismDestroyRadiusAtMaxSpeed: 18
+  prismDestroyMinSpeed: 5
+  prismDestroyCooldown: 0.02
   clientSmoothingRate: 12
   clientSnapDistance: 30
   hitstopDuration: 0.045
