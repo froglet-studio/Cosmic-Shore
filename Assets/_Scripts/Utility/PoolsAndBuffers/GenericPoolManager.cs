@@ -72,9 +72,20 @@ namespace CosmicShore.Utility
 
         protected T Get_(Vector3 position, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {
+            // A pooled instance can be destroyed out from under the pool: a double
+            // release (collectionCheck is off) pushes the same object twice, then the
+            // maxSize-overflow path Destroys it while a stale stack entry remains;
+            // scene teardown can do the same. Never hand back a dead object — drain
+            // any dead stack entries and pull/create a live one. Without this a single
+            // corrupted entry surfaced as an NRE per caller (the prism-explosion
+            // exception storm that tanked dense modes like Joust intensity 3) and,
+            // once the callers were null-guarded, as silently-skipped VFX (a death
+            // that fails to animate — a continuity-of-existence violation).
             var instance = pool.Get();
+            for (int guard = 0; !instance && guard < 16; guard++)
+                instance = pool.Get();
             if (!instance) return default;
-            
+
             // [Optimization] Add to tracking set
             _activeObjects.Add(instance);
 
