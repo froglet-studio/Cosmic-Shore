@@ -57,6 +57,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Vessel speed below this threshold is ignored (prevents ghost taps)")]
         public float minimumHitSpeed = 5f;
 
+        [Tooltip("On a strike, the ball is ejected so its center is at least (ball radius + this) " +
+                 "from the vessel root — guarantees the vessel hull never clips through the ball, " +
+                 "including the trigger-only ships (Serpent/Sparrow) that have no physical barrier. " +
+                 "Roughly the vessel's visual hull reach.")]
+        public float vesselClearRadius = 12f;
+
         [Header("Ball — Physics")]
         public float maxSpeed = 220f;
         public float ballMass = 3f;

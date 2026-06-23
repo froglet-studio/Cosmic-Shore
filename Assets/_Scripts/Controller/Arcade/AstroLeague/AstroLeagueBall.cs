@@ -35,6 +35,12 @@ namespace CosmicShore.Gameplay
         [SerializeField] AstroLeagueSettingsSO settings;
         [SerializeField] GameDataSO gameData;
 
+        [Header("Visuals")]
+        [Tooltip("The prism fresnel material (PrismMaterial.mat) — cloned at runtime so the ball " +
+                 "renders with the same 3D fresnel-rim look as trail prisms. Falls back to the " +
+                 "Shader Graphs/BlockGraph shader, then URP/Lit, if unassigned.")]
+        [SerializeField] Material prismMaterial;
+
         [Header("Payload Colors")]
         [SerializeField] Color primaryColor = new(1f, 0.6f, 0.1f, 1f);
         [SerializeField] Color secondaryColor = new(0.2f, 0.5f, 1f, 1f);
@@ -42,10 +48,16 @@ namespace CosmicShore.Gameplay
         [SerializeField] float colorCycleSpeed = 1.2f;
         [SerializeField] float baseLightIntensity = 3f;
 
+        // Prism fresnel-shader (BlockGraph) properties: bright rim + dark base.
+        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+        static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
         static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
+        bool _usesFresnel; // true when the ball material is the prism BlockGraph shader
+
         Rigidbody rb;
+        SphereCollider sphereCol;
         Vector3 spawnPosition;
         bool hitstopActive;
         CancellationToken destroyToken;
@@ -107,7 +119,7 @@ namespace CosmicShore.Gameplay
             rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
-            var sphereCol = GetComponent<SphereCollider>();
+            sphereCol = GetComponent<SphereCollider>();
             sphereCol.material = new PhysicsMaterial("AstroLeagueBall")
             {
                 bounciness = settings != null ? settings.ballBounciness : 0.98f,
@@ -159,13 +171,35 @@ namespace CosmicShore.Gameplay
             ballRenderer = GetComponent<Renderer>();
             if (ballRenderer != null)
             {
-                // One material instance created for the ball at startup; per-frame
-                // animation goes through the MaterialPropertyBlock, never .material.
-                var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-                mat.SetFloat("_Metallic", 0.9f);
-                mat.SetFloat("_Smoothness", 0.95f);
-                mat.SetColor(BaseColorId, primaryColor);
-                mat.EnableKeyword("_EMISSION");
+                // Clone the prism fresnel material so the ball reads as 3D with a bright
+                // view-dependent rim, exactly like trail prisms. One instance at startup;
+                // per-frame color animation goes through the MaterialPropertyBlock, never .material.
+                Material mat = null;
+                if (prismMaterial != null)
+                {
+                    mat = new Material(prismMaterial);
+                    _usesFresnel = true;
+                }
+                else
+                {
+                    var fresnelShader = Shader.Find("Shader Graphs/BlockGraph");
+                    if (fresnelShader != null)
+                    {
+                        mat = new Material(fresnelShader);
+                        mat.SetVector("_Spread", new Vector4(0.1f, 0.1f, 0.1f, 0f));
+                        _usesFresnel = true;
+                    }
+                    else
+                    {
+                        // Last-resort fallback: lit sphere with emission.
+                        mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+                        mat.SetFloat("_Metallic", 0.9f);
+                        mat.SetFloat("_Smoothness", 0.95f);
+                        mat.SetColor(BaseColorId, primaryColor);
+                        mat.EnableKeyword("_EMISSION");
+                        _usesFresnel = false;
+                    }
+                }
                 ballRenderer.sharedMaterial = mat;
             }
 
@@ -417,6 +451,60 @@ namespace CosmicShore.Gameplay
             ExplodePrismsAtPoint_ClientRpc(contactPoint, contactNormal, impactVector, intensity);
         }
 
+        /// <summary>
+        /// Trigger-collider strike path. Serpent and Sparrow have NO non-trigger hull collider,
+        /// so the ball never gets an OnCollisionEnter against them — without this they'd pass
+        /// straight through the ball. Every vessel has at least a trigger collider, so detect
+        /// strikes here too (the per-vessel cooldown dedups the double-fire on ships that have
+        /// both). The strike model sets the ball velocity and ejects the ball clear of the hull,
+        /// so the ball never clips even without a physical barrier.
+        /// </summary>
+        void OnTriggerEnter(Collider other)
+        {
+            if (settings == null || n_Frozen.Value || n_Hidden.Value) return;
+            if (IsSpawned && !IsServer) return;
+            if (other == null) return;
+
+            var vessel = other.GetComponentInParent<IVessel>();
+            if (vessel == null || vessel.Transform == null) return;
+
+            // Approximate the contact as the point on the ball surface facing the vessel.
+            Vector3 ballCenter = transform.position;
+            Vector3 toVessel = vessel.Transform.position - ballCenter;
+            Vector3 contactPoint = toVessel.sqrMagnitude > 0.0001f
+                ? ballCenter + toVessel.normalized * BallWorldRadius()
+                : ballCenter;
+
+            VesselStrike(vessel, contactPoint);
+        }
+
+        float BallWorldRadius()
+        {
+            var s = transform.lossyScale;
+            return sphereCol.radius * Mathf.Max(s.x, Mathf.Max(s.y, s.z));
+        }
+
+        /// <summary>
+        /// Guarantees the ball never overlaps the striking vessel's hull: if the ball center is
+        /// closer than (ball radius + vesselClearRadius) to the vessel root, push it straight out
+        /// to that distance. With the ≥1x launch speed this keeps the ball ahead of the vessel,
+        /// so the vessel mesh can't clip through it — including the trigger-only ships that have
+        /// no physical depenetration barrier. Server position is republished immediately so peers
+        /// see the ejected position without waiting for the next tick.
+        /// </summary>
+        void EjectBallFromVessel(Transform vesselRoot)
+        {
+            float minClear = BallWorldRadius() + settings.vesselClearRadius;
+            Vector3 away = transform.position - vesselRoot.position;
+            float dist = away.magnitude;
+            if (dist <= 0.001f || dist >= minClear) return;
+
+            Vector3 cleared = vesselRoot.position + away * (minClear / dist);
+            rb.position = cleared;          // physics-authoritative (server ball is non-kinematic)
+            transform.position = cleared;   // immediate visual + the n_Position read below
+            if (IsSpawned) n_Position.Value = cleared;
+        }
+
         void VesselStrike(IVessel vessel, Vector3 contactPoint)
         {
             var root = vessel.Transform;
@@ -450,6 +538,9 @@ namespace CosmicShore.Gameplay
 
             if (finalSpeed > settings.hitstopSpeedThreshold && IsSoloSession())
                 RunHitstopAsync().Forget();
+
+            // Pop the ball clear of the vessel hull so the vessel never clips through it.
+            EjectBallFromVessel(root);
 
             OnStruckServer?.Invoke(vessel, intensity);
         }
@@ -512,8 +603,22 @@ namespace CosmicShore.Gameplay
 
             float breath = 0.8f + 0.2f * Mathf.Sin(Time.time * 4f);
             float emissionIntensity = Mathf.Lerp(settings.minEmissionIntensity, settings.maxEmissionIntensity, speedRatio);
+            float glow = emissionIntensity * breath * currentEmissionBoost;
 
-            mpb.SetColor(EmissionColorId, emissionColor * (emissionIntensity * breath * currentEmissionBoost));
+            if (_usesFresnel)
+            {
+                // Drive the prism fresnel rim: bright HDR rim cycles + reacts to speed/flash,
+                // dark base is a dim version of the same hue so the sphere reads as 3D. Cap the
+                // flash boost so a thin rim doesn't blow out to pure white (full-surface emission
+                // tolerates much higher HDR than a grazing-angle rim).
+                float rim = emissionIntensity * breath * Mathf.Min(currentEmissionBoost, 4f);
+                mpb.SetColor(BrightColorId, emissionColor * rim);
+                mpb.SetColor(DarkColorId, emissionColor * 0.06f);
+            }
+            else
+            {
+                mpb.SetColor(EmissionColorId, emissionColor * glow);
+            }
             ballRenderer.SetPropertyBlock(mpb);
 
             if (ballLight != null)

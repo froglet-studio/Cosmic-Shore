@@ -23,7 +23,9 @@ Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
 - **Domains**: exactly two. `SO_ArcadeGame.MinDomainsAllowed = MaxDomainsAllowed = 2`
   pins the configure modal's DC stepper, so the standard pipeline (DomainAssigner →
   `ServerPlayerVesselInitializerWithAI` balancing) always produces Jade vs Ruby
-- **Featured vessel**: Squirrel (drift class). `SO_ArcadeGame.Vessels` = Squirrel only
+- **Vessels**: all six playable ships are selectable (`SO_ArcadeGame.Vessels` =
+  Squirrel, Manta, Dolphin, Rhino, Serpent, Sparrow — Squirrel is the default).
+  AI picks randomly among them. All six are registered in the Vessel Prefab Container.
 
 ## Class Inventory (`_Scripts/Controller/Arcade/AstroLeague/`)
 
@@ -113,6 +115,23 @@ server with billiard thinking:
   trustworthy on the server. `AstroLeagueBall` samples every vessel root's position
   per physics tick and uses the delta as strike velocity (`Course * Speed` is the
   first-tick fallback).
+- **Strike detection spans both collider paths.** The ball strikes vessels in
+  `OnCollisionEnter` (physics hull) AND `OnTriggerEnter` — Serpent and Sparrow have
+  NO non-trigger collider, so without the trigger path they'd pass straight through.
+  A per-vessel-root cooldown dedups the double-fire on ships that have both.
+- **Vessel never clips the ball.** On every strike the ball is ejected so its center
+  is at least `ball radius + vesselClearRadius` from the vessel root
+  (`EjectBallFromVessel`, `rb.position` republished to `n_Position`). Combined with the
+  ≥1× launch speed the ball stays ahead of the striker, so the hull mesh can't overlap
+  it — this is the only barrier for the trigger-only ships (which have no physical
+  depenetration).
+- **3D fresnel look.** The ball clones `PrismMaterial.mat` (the prism `BlockGraph`
+  fresnel shader) at runtime, so it renders solid with a bright view-dependent rim
+  exactly like trail prisms. The speed/flash-reactive colour cycle drives the fresnel
+  `_BrightColor` (HDR rim, flash-capped) with a dim `_DarkColor` base. Falls back to
+  `Shader.Find("Shader Graphs/BlockGraph")`, then URP/Lit, if the material is unwired.
+  The ball is scaled to world radius ≈ 7 for a chunky billiard feel and a clean,
+  precise strike target.
 - Strike direction = `Slerp(deflectionDir, strikerHeading, directionalBias)` where
   deflectionDir points from the contact point through the ball center. A higher
   `directionalBias` (0.45) gives players more aim control over a struck ball.

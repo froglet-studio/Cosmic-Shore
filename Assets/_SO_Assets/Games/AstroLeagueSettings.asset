@@ -25,6 +25,7 @@ MonoBehaviour:
   directionalBias: 0.45
   velocityRetention: 0.15
   minimumHitSpeed: 5
+  vesselClearRadius: 12
   maxSpeed: 220
   ballMass: 3
   ballBounciness: 1
