@@ -114,15 +114,32 @@ server with billiard thinking:
   per physics tick and uses the delta as strike velocity (`Course * Speed` is the
   first-tick fallback).
 - Strike direction = `Slerp(deflectionDir, strikerHeading, directionalBias)` where
-  deflectionDir points from the contact point through the ball center.
-- Speed-dependent drag curve: `lowSpeedDrag` near rest (no creeping),
-  `highSpeedDrag` at speed (billiard coast), hard stop under `stopThreshold`.
-- Walls and ball both use zero-friction, max-bounce `PhysicsMaterial`s.
-- **Trails are live obstacles.** Mass is conserved everywhere (no menu/mode
-  exemptions): Squirrel trails laid during a match persist and the ball bounces off
-  prisms — walling off your goal is legal, emergent defense; vessel abilities are
-  the active counterforce. Replay is a full scene reload, which is the standard
-  domain-games replay path (not a decay mechanism).
+  deflectionDir points from the contact point through the ball center. A higher
+  `directionalBias` (0.45) gives players more aim control over a struck ball.
+- Near-frictionless billiard feel: `ballBounciness = 1` (perfectly elastic) with a
+  very low speed-dependent drag curve (`highSpeedDrag` at speed, `lowSpeedDrag` near
+  rest, snap-to-rest under `stopThreshold`) that only gently bleeds energy so the
+  ball still settles for kickoffs. The ball is scaled up (world radius ≈ 5) so strikes
+  land cleanly — a bigger, more precise target.
+- **Trails are live obstacles the ball bounces off AND destroys.** On a prism bounce
+  above `prismDestroyMinSpeed`, the server broadcasts `ExplodePrismsAtPoint_ClientRpc`;
+  every peer (host included) runs `PrismSpatialIndex.QuerySphere(contactPoint,
+  prismDestroyRadius)` and calls the canonical animated `Prism.Damage` on its OWN
+  local trail copies (prisms are per-peer GameObjects laid by `VesselPrismController`
+  on every peer, not shared NetworkObjects — a position-deterministic broadcast keeps
+  host/clients/AI consistent). `OnCollisionEnter` runs post-solver so the ricochet
+  velocity is already banked before the destroy — the ball bounces off the wall face
+  and punches a hole through it. The ball is a NEUTRAL active force (`Domains.Blue`),
+  so it smashes any team's trail — walling your goal is legal but temporary defense.
+  Mass is conserved everywhere (no menu/mode exemptions): the ball is an active
+  consumer, the destruction goes through the standard explode-out path (spatial-index
+  release + VFX), never a raw `Destroy`. A `prismDestroyCooldown` throttles the
+  broadcast while plowing a dense wall.
+- Layers: the ball is on `Default` (0); prisms run on `TrailBlocks` (11); the physics
+  matrix enables 0↔11 (and 0↔8 Ships), so the ball collides with both trail prisms
+  and vessels.
+- Replay is a full scene reload (the standard domain-games replay path), which clears
+  accumulated trail mass with the scene — not a decay mechanism.
 
 ## Replay
 

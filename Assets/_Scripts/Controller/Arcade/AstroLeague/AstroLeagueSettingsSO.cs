@@ -47,8 +47,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("Multiplier on vessel speed when transferring momentum to the ball")]
         public float hitBoostMultiplier = 2.5f;
 
-        [Tooltip("0 = pure billiard deflection (away from contact point), 1 = pure push (vessel heading)")]
-        [Range(0f, 1f)] public float directionalBias = 0.35f;
+        [Tooltip("0 = pure billiard deflection (away from contact point), 1 = pure push (vessel heading). " +
+                 "Higher gives players more aim control over where a struck ball goes.")]
+        [Range(0f, 1f)] public float directionalBias = 0.45f;
 
         [Tooltip("Fraction of existing ball velocity preserved on vessel hit (redirect feel)")]
         [Range(0f, 1f)] public float velocityRetention = 0.15f;
@@ -59,16 +60,30 @@ namespace CosmicShore.Gameplay
         [Header("Ball — Physics")]
         public float maxSpeed = 220f;
         public float ballMass = 3f;
-        [Range(0f, 1f)] public float ballBounciness = 0.98f;
+        [Tooltip("1 = perfectly elastic (loses no speed on a bounce — stays lively); the speed-dependent " +
+                 "drag below is what gently bleeds energy so the ball still settles for kickoffs.")]
+        [Range(0f, 1f)] public float ballBounciness = 1f;
 
-        [Tooltip("Drag at max speed — low keeps the ball coasting like a billiard")]
-        public float highSpeedDrag = 0.25f;
+        [Tooltip("Drag at max speed — near-zero keeps the ball coasting/bouncing like a frictionless billiard")]
+        public float highSpeedDrag = 0.04f;
 
-        [Tooltip("Drag near zero speed — high stops creeping")]
-        public float lowSpeedDrag = 3f;
+        [Tooltip("Drag near zero speed — kept low so late bounces still carry; raise only if the ball creeps")]
+        public float lowSpeedDrag = 0.6f;
 
-        [Tooltip("Speed below which ball velocity snaps to zero")]
-        public float stopThreshold = 2f;
+        [Tooltip("Speed below which ball velocity snaps to zero (low so faint bounces aren't killed)")]
+        public float stopThreshold = 0.5f;
+
+        [Header("Ball — Prism Destruction")]
+        [Tooltip("On a prism bounce, every live prism within this radius of the contact point is " +
+                 "exploded (the canonical animated Prism.Damage path — mass-conserving active force). " +
+                 "Slightly larger than the ball so a hit punches a clean hole through a trail wall.")]
+        public float prismDestroyRadius = 7f;
+
+        [Tooltip("Ball speed required to smash prisms on contact — a slow ball just bounces off them")]
+        public float prismDestroyMinSpeed = 12f;
+
+        [Tooltip("Minimum seconds between prism-explosion broadcasts (flood guard while plowing a wall)")]
+        public float prismDestroyCooldown = 0.06f;
 
         [Header("Ball — Client Replication")]
         [Tooltip("How aggressively non-server peers blend toward the dead-reckoned ball position (higher = snappier)")]

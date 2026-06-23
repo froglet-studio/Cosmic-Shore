@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading;
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Unity.Netcode;
@@ -68,6 +69,12 @@ namespace CosmicShore.Gameplay
         // Per-vessel strike cooldown so one fly-through doesn't register as several hits
         readonly Dictionary<Transform, float> _lastStrikeTime = new();
         const float StrikeCooldownSeconds = 0.2f;
+
+        // Prism-explosion broadcast flood guard + reusable query buffer (every peer)
+        float _lastPrismExplodeTime = -999f;
+        readonly List<Prism> _prismQueryBuffer = new(32);
+        static readonly Domains BallAttackerDomain = Domains.Blue; // neutral payload — smashes any team's trail
+        const string BallAttackerName = "Astro League";
 
         // Visuals
         Light ballLight;
@@ -352,25 +359,62 @@ namespace CosmicShore.Gameplay
             if (settings == null || n_Frozen.Value || n_Hidden.Value) return;
             if (IsSpawned && !IsServer) return; // Server-authoritative contact resolution
             if (collision.contactCount == 0) return;
+            if (collision.collider == null) return;
 
             Vector3 contactPoint = collision.contacts[0].point;
             Vector3 contactNormal = collision.contacts[0].normal;
 
-            var vessel = collision.collider != null
-                ? collision.collider.GetComponentInParent<IVessel>()
-                : null;
-
-            if (vessel == null)
+            // Prism: Unity already resolved the bounce this physics step (OnCollisionEnter runs
+            // post-solver, so rb.linearVelocity is the ricochet velocity). We add the destruction
+            // on top, so the ball bounces off the trail wall AND punches a hole through it.
+            if (collision.collider.TryGetComponent<Prism>(out _))
             {
-                // Static geometry (arena walls, prisms): Unity resolved the bounce, we add feedback.
-                float bounceSpeed = rb.linearVelocity.magnitude;
-                float bounceIntensity = Mathf.Clamp01(bounceSpeed / settings.maxSpeed);
-                if (bounceSpeed > settings.hitstopSpeedThreshold * 0.3f)
-                    PlayImpactJuice_ClientRpc(contactPoint, contactNormal, bounceIntensity * 0.35f, false);
+                HandlePrismBounce(contactPoint, contactNormal);
                 return;
             }
 
-            VesselStrike(vessel, contactPoint);
+            var vessel = collision.collider.GetComponentInParent<IVessel>();
+            if (vessel != null)
+            {
+                VesselStrike(vessel, contactPoint);
+                return;
+            }
+
+            // Arena wall (static geometry): Unity resolved the bounce, we add feedback.
+            float bounceSpeed = rb.linearVelocity.magnitude;
+            float bounceIntensity = Mathf.Clamp01(bounceSpeed / settings.maxSpeed);
+            if (bounceSpeed > settings.hitstopSpeedThreshold * 0.3f)
+                PlayImpactJuice_ClientRpc(contactPoint, contactNormal, bounceIntensity * 0.35f, false);
+        }
+
+        /// <summary>
+        /// Server: the ball bounced off a trail prism. Above the speed gate, broadcast an
+        /// explode-at-position to every peer so each one destroys the prisms near the contact
+        /// point in its OWN local trail copies (prisms are per-peer GameObjects laid by
+        /// VesselPrismController on every peer — not shared NetworkObjects, so a server-only
+        /// Damage would desync). Each peer runs the canonical Prism.Damage path: animated
+        /// explode-out, spatial-index release, mass conserved (the ball is the active force).
+        /// </summary>
+        void HandlePrismBounce(Vector3 contactPoint, Vector3 contactNormal)
+        {
+            float bounceSpeed = rb.linearVelocity.magnitude;
+            float intensity = Mathf.Clamp01(bounceSpeed / settings.maxSpeed);
+
+            if (bounceSpeed < settings.prismDestroyMinSpeed)
+            {
+                // Too slow to smash — just a soft wall-style bounce.
+                if (bounceSpeed > settings.hitstopSpeedThreshold * 0.3f)
+                    PlayImpactJuice_ClientRpc(contactPoint, contactNormal, intensity * 0.35f, false);
+                return;
+            }
+
+            float now = Time.time;
+            if (now - _lastPrismExplodeTime < settings.prismDestroyCooldown) return;
+            _lastPrismExplodeTime = now;
+
+            // Scatter fragments in the ball's travel direction (into the surface it hit).
+            Vector3 impactVector = -contactNormal * bounceSpeed;
+            ExplodePrismsAtPoint_ClientRpc(contactPoint, contactNormal, impactVector, intensity);
         }
 
         void VesselStrike(IVessel vessel, Vector3 contactPoint)
@@ -514,6 +558,36 @@ namespace CosmicShore.Gameplay
             EmitBurst(position, Vector3.up, settings.goalParticleBurst);
             ShakeCamera(settings.goalShakeIntensity, settings.goalShakeDuration, position);
             HapticController.PlayHaptic(HapticType.MineCollision);
+        }
+
+        /// <summary>
+        /// Every peer (host included): smash this peer's own local trail prisms within
+        /// prismDestroyRadius of the contact point, then play the bounce juice. The ball is a
+        /// neutral active force (Domains.Blue) so it destroys any team's mass via the canonical
+        /// animated Prism.Damage path — spatial-index release + explosion VFX, mass conserved.
+        /// Position-deterministic (not instance-based) so it lands consistently on the host's,
+        /// each client's, and the AI's independently-laid copies of the same trail.
+        /// </summary>
+        [ClientRpc]
+        void ExplodePrismsAtPoint_ClientRpc(Vector3 position, Vector3 normal, Vector3 impactVector, float intensity)
+        {
+            var index = PrismSpatialIndex.Instance;
+            if (index != null)
+            {
+                index.QuerySphere(position, settings.prismDestroyRadius, _prismQueryBuffer);
+                for (int i = 0, n = _prismQueryBuffer.Count; i < n; i++)
+                {
+                    var prism = _prismQueryBuffer[i];
+                    if (prism != null && !prism.destroyed)
+                        prism.Damage(impactVector, BallAttackerDomain, BallAttackerName);
+                }
+            }
+
+            // Bounce feedback (same channel as wall/vessel impacts), plus a haptic thunk.
+            TriggerFlash(intensity);
+            EmitBurst(position, normal, (int)(settings.impactParticleBurst * Mathf.Max(0.4f, intensity)));
+            ShakeCamera(settings.strikeShakeIntensity * intensity * 0.6f, settings.strikeShakeDuration, position);
+            HapticController.PlayHaptic(HapticType.ShipCollision);
         }
 
         void TriggerFlash(float intensity) =>

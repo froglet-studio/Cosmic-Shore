@@ -22,15 +22,18 @@ MonoBehaviour:
   kickoffLineDistance: 110
   kickoffLateralSpacing: 30
   hitBoostMultiplier: 2.5
-  directionalBias: 0.35
+  directionalBias: 0.45
   velocityRetention: 0.15
   minimumHitSpeed: 5
   maxSpeed: 220
   ballMass: 3
-  ballBounciness: 0.98
-  highSpeedDrag: 0.25
-  lowSpeedDrag: 3
-  stopThreshold: 2
+  ballBounciness: 1
+  highSpeedDrag: 0.04
+  lowSpeedDrag: 0.6
+  stopThreshold: 0.5
+  prismDestroyRadius: 7
+  prismDestroyMinSpeed: 12
+  prismDestroyCooldown: 0.06
   clientSmoothingRate: 12
   clientSnapDistance: 30
   hitstopDuration: 0.045
