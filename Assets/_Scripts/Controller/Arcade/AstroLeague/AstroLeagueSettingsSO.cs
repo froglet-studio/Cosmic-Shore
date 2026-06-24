@@ -99,12 +99,13 @@ namespace CosmicShore.Gameplay
                  "direction, only its speed drops). Per eaten prism: speed ×= ballMass / (ballMass + " +
                  "this × prismVolume). 0 = no drag (ball never slows); higher = a thick enemy wall " +
                  "brakes the ball hard. Same-color and shielded prisms cost no speed.")]
-        public float prismDragMassScale = 0.5f;
+        public float prismDragMassScale = 0.25f;
 
         [Header("Ball — Angular Dynamics (rotational inertia)")]
-        [Tooltip("Angular damping on the ball rigidbody. Keep low so spin (imparted by off-center " +
-                 "vessel strikes) persists as the ball coasts — mass/momentum is conserved.")]
-        public float ballAngularDamping = 0.05f;
+        [Tooltip("Angular damping on the ball rigidbody. A small amount so spin imparted by off-center " +
+                 "vessel strikes gradually settles instead of tumbling forever, while still reading as " +
+                 "a freely-spinning billiard payload.")]
+        public float ballAngularDamping = 0.3f;
 
         [Tooltip("Cap on the ball's angular speed (rad/s). Unity's default rigidbody clamp (7 rad/s) " +
                  "is too low to read as a fast spin — raise it so off-center strikes produce a " +
