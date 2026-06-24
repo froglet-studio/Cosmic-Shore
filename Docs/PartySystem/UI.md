@@ -25,10 +25,9 @@ Requests). They share the same component family:
 | `FriendInfoSlot` | A single slot in `ArcadeLobbyList` — one of three states: local player, occupied (member avatar + name), or empty ("+" add button). |
 | `FriendsListPanel` | Combined social panel — **no tabs; both sections render at once**: **Online** (every presence-lobby player) + **Requests** (incoming friend requests AND incoming party invites). Auto-opens when a party invite arrives. Reads `HostConnectionDataSO` + `FriendsDataSO` SOAP lists. |
 | `OnlineInfoEntry` | A row in the Online section. The **whole row background is the invite button**; tints yellow + pulses while an invite is pending. Status label: ONLINE / IN LOBBY N/M / LOBBY FULL / IN A MATCH. |
-| `RequestInfoEntry` | A row in the Requests section with Accept/Decline. `Kind { FriendRequest, PartyInvite }` — one row type serves both (delegates to `FriendsServiceFacade` / `PartyInviteController`). |
-| `FriendInfoEntry` | A confirmed-friend row (avatar, name, online status, invite-to-party button → `HostConnectionService.SendInviteAsync`; no add-friend button — already friends). |
+| `RequestInfoEntry` | A row in the Requests section with Accept/Decline. `Kind { FriendRequest, PartyInvite }` — one row type serves both (delegates to `FriendsServiceFacade` / `PartyInviteController`). Lives on `RequestsInfo.prefab`, the shared base for the request/online/invite row family (`OnlineFriendsInfo Variant` is a prefab variant of it). |
 | `AddFriendPanel` (`_Scripts/UI/Views/`) | Text input + [Send] to send a friend request by name → `FriendsServiceFacade.SendFriendRequestByNameAsync`. The only friend-request entry point in code. |
-| `PartyInviteNotificationPanel` (`_Scripts/UI/Screens/`) | The **global invite popup** — a small bottom-left card (avatar + inviter name + Accept/Decline) shown anywhere in Menu_Main when an invite arrives. Subscribes to `OnInviteReceived`, routes to `PartyInviteController`, dismisses on `OnInviteResolved`. **3s auto-hide** (hides only — the invite stays in the `FriendsListPanel` Requests list); **latest-wins** (a newer invite replaces it). Prefab: `_Prefabs/UI Elements/Panels/Party/PartyInviteNotificationPanel.prefab` — must be placed in Menu_Main at a top-level canvas, bottom-left. |
+| `PartyInviteNotificationPanel` (`_Scripts/UI/Screens/`) | The **global invite popup** — a small bottom-left card (avatar + inviter name + Accept/Decline) shown anywhere in Menu_Main when an invite arrives. Subscribes to `OnInviteReceived`, routes to `PartyInviteController`, dismisses on `OnInviteResolved`. **3s auto-hide** (hides only — the invite stays in the `FriendsListPanel` Requests list); **latest-wins** (a newer invite replaces it). Lives as a **scene object in Menu_Main** (bottom-left, top-level canvas), with the component's fields wired in-scene — the standalone `PartyInviteNotificationPanel.prefab` was retired in favour of the shared `RequestsInfo` row layout. |
 
 ## Invite UX flow (UI-level)
 
@@ -94,10 +93,12 @@ are now invite-only (the whole row is the party-invite button).
 | Add Friend | `FriendsServiceFacade` → UGS Friends SDK | Persistent relationship (survives sessions) | `FriendsService.AddFriendAsync` / `AddFriendByNameAsync` |
 | Invite to Party | `HostConnectionService` → UGS Sessions SDK | Ephemeral (session-scoped, lobby player properties) | Presence-lobby player property: `invite_payloads` (one line per target) |
 
-The two affordances live on different rows: an **online** row (`OnlineInfoEntry`)
-is invite-only (the whole row is the party-invite button); a **friend** row
-(`FriendInfoEntry`) also has an invite-to-party button. Friend *requests* are
-sent separately, by name, via `AddFriendPanel`.
+The party-invite affordance lives on the **online** row (`OnlineInfoEntry`):
+an Invite button when the player can be invited, a ✕ to cancel a pending invite
+or (host only) kick an in-party member. Friend *requests* are sent separately,
+by name, via `AddFriendPanel`. (The separate confirmed-friend row,
+`FriendInfoEntry`, was retired — `FriendsListPanel` renders only Online +
+Requests sections.)
 
 ## Scene wiring checklist (Menu_Main)
 
@@ -111,7 +112,7 @@ sent separately, by name, via `AddFriendPanel`.
    - `FriendsListPanel` (Online + Requests) as child of the party area (start inactive); auto-opens on an incoming invite.
    - Wire `HostConnectionData.asset` into `ArcadeLobbyList` and `FriendsListPanel`.
    - Wire `FriendsData.asset` into `FriendsListPanel`.
-   - Wire the `OnlineInfoEntry`, `RequestInfoEntry`, and `FriendInfoEntry` row prefabs into `FriendsListPanel`.
+   - Wire the `OnlineInfoEntry` (`OnlineFriendsInfo Variant`) and `RequestInfoEntry` (`RequestsInfo`) row prefabs into `FriendsListPanel` (`onlineInfoPrefab` + `requestInfoPrefab` — the only two row prefabs it spawns).
    - Wire `SO_ProfileIconList` into `ArcadeLobbyList` / `FriendsListPanel` for avatars.
 
 Prefabs live in `_Prefabs/UI Elements/Panels/Party/`. SO assets
