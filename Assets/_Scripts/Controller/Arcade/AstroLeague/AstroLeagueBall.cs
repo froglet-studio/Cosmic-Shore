@@ -94,6 +94,7 @@ namespace CosmicShore.Gameplay
         // domain flip / kickoff / hide so a prism that changes color — or a pooled collider reused by a
         // new prism — stops being ignored. Server-only (non-server peers never run ball collisions).
         readonly HashSet<Collider> _ignoredColliders = new();
+        readonly List<Collider> _prismColliderBuffer = new(4); // reused by IgnorePrismCollider (no per-hit alloc)
 
         // Server-side velocity estimates for transform-driven vessels (root → last pos + velocity)
         readonly Dictionary<Transform, Vector3> _vesselLastPos = new();
@@ -492,7 +493,7 @@ namespace CosmicShore.Gameplay
             {
                 // Undo the solver's bounce — coast straight through own-color mass, losslessly.
                 rb.linearVelocity = _velocityBeforePhysics;
-                IgnorePrismCollider(prismCollider);
+                IgnorePrismCollider(prism, prismCollider);
             }
 
             // Domain-aware radius interaction (shields same-color, destroys opposing) on every peer.
@@ -503,12 +504,32 @@ namespace CosmicShore.Gameplay
                 rb.linearVelocity *= settings.collisionSpeedRetention;
         }
 
-        /// <summary>Server: ignore future contacts with a passed-through prism collider (tracked so it can be cleared).</summary>
-        void IgnorePrismCollider(Collider prismCollider)
+        /// <summary>
+        /// Server: ignore future contacts with a passed-through prism (tracked so it can be cleared).
+        /// Ignores EVERY collider on the prism, not just the one we touched: shielding it (via the
+        /// interaction broadcast) swaps the BoxCollider for a convex octahedron MeshCollider, so
+        /// ignoring only the contact collider would let the swapped-in collider bounce the ball. The
+        /// shield mesh collider is created lazily on the first shield, so a never-shielded prism only
+        /// exposes its BoxCollider here — the swapped-in collider is then caught by the next same-color
+        /// contact's self-heal (one negligible micro-bounce after the 0.35s shield morph completes).
+        /// </summary>
+        void IgnorePrismCollider(Prism prism, Collider contactCollider)
         {
-            if (prismCollider == null || sphereCol == null) return;
-            if (_ignoredColliders.Add(prismCollider))
-                Physics.IgnoreCollision(sphereCol, prismCollider, true);
+            if (sphereCol == null) return;
+
+            if (prism != null)
+            {
+                prism.GetComponents(_prismColliderBuffer);
+                for (int i = 0, n = _prismColliderBuffer.Count; i < n; i++)
+                    TryIgnoreCollider(_prismColliderBuffer[i]);
+            }
+            TryIgnoreCollider(contactCollider); // belt-and-suspenders if the contact lives off the prism root
+        }
+
+        void TryIgnoreCollider(Collider col)
+        {
+            if (col != null && _ignoredColliders.Add(col))
+                Physics.IgnoreCollision(sphereCol, col, true);
         }
 
         /// <summary>

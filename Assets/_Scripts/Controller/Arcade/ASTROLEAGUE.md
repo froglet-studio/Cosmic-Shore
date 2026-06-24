@@ -174,9 +174,11 @@ server with billiard thinking:
   - **Vessel** → `VesselStrike` (re-colors the ball, impulse, ejects, recoils).
   - **Trail prism** → `HandlePrismContact`, gated on `prism.Domain` vs the ball's domain:
     - **Same color** (own mass) → **pass through**: restore the pre-contact velocity (no
-      bounce, **no decay**), `Physics.IgnoreCollision` the prism collider for subsequent
-      frames (tracked, cleared on domain flip / kickoff / hide), and **shield** it
-      (`prism.ActivateShield()`). The one-frame micro-bounce before the restore is negligible.
+      bounce, **no decay**), `Physics.IgnoreCollision` **all of the prism's colliders** for
+      subsequent frames (shielding swaps the BoxCollider for a convex octahedron MeshCollider,
+      so ignoring only the contact collider would let the swapped-in one bounce the ball; tracked
+      and cleared on domain flip / kickoff / hide), and **shield** it (`prism.ActivateShield()`,
+      via the broadcast). The one-frame micro-bounce before the restore is negligible.
     - **Opposing color** (or a NEUTRAL ball) → **bounce** (the solver already reflected at
       `ballBounciness = 1`) + **destroy** + apply `collisionSpeedRetention` decay.
   - **Wall** (non-prism geometry) → **perfectly elastic** carom: NO decay, no prism

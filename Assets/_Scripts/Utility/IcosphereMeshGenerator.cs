@@ -29,9 +29,6 @@ namespace CosmicShore.Utility
         public static Mesh Generate(int subdivisions = DefaultSubdivisions, float radius = 0.5f, bool flatShaded = true)
         {
             var mesh = new Mesh { name = $"Icosphere_{subdivisions}" };
-            // 320 tris at level 2 stays well under 65k verts even flat-shaded (960),
-            // but keep the 32-bit index buffer headroom for higher subdivisions.
-            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
             PopulateMesh(mesh, subdivisions, radius, flatShaded);
             return mesh;
         }
@@ -40,6 +37,12 @@ namespace CosmicShore.Utility
         public static void PopulateMesh(Mesh mesh, int subdivisions = DefaultSubdivisions, float radius = 0.5f, bool flatShaded = true)
         {
             if (mesh == null) return;
+
+            // 32-bit index buffer so high subdivisions (flat-shaded vert count grows fast) never
+            // overflow the default 16-bit limit. Set here (not only in Generate) so callers that
+            // rewrite a Mesh in place are equally safe. Level 2 (320 tris / 960 flat verts) is fine
+            // either way; this is headroom for subdivisions ≥ 5.
+            mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
 
             subdivisions = Mathf.Clamp(subdivisions, 0, 6);
 
