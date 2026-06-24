@@ -34,7 +34,7 @@ Companion to the PDF dossier in `Docs/MultiplayerArchitecture/`
 ## ⚠️ Real risks — prioritized improvement queue (the “next TODOs”)
 
 ### High
-- [ ] **Host-loss resilience / migration.** The host *is* a player; a host drop ends the whole party — no migration/promotion path today. *Acceptance:* a mid-party host disconnect leaves remaining members in a working or cleanly-reformed party, not a dead session. *(Not addressed in any current doc.)*
+- [~] **Host-loss resilience / migration.** The host *is* a player; a host drop ends the whole party. **Clean-reform half DONE** (`../PartySystem/BUGS.md` B10): a mid-party host disconnect now bounces every remaining member to its OWN working solo menu+host with a "Host disconnected" notice (no dead-session hang), in the lava-lamp menu AND any game scene. **Still open — true migration:** promote a remaining client to host and keep the *same* party alive (Relay re-host + Netcode host-migration + state transfer). *Acceptance for the remaining work:* a mid-party host disconnect leaves the others **together** under a new host, not just cleanly reformed as solos.
 - [ ] **Prove 3–4-player party reliability (close B5).** The second sequential joiner fails today, so parties beyond two aren't dependable. *Acceptance:* 4-VP concurrent-invite MPPM (exit criterion 8) green repeatably. *Ref:* `../PartySystem/BUGS.md` B5.
 
 ### Med–High

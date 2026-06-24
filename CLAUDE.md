@@ -921,35 +921,10 @@ Location: `_Scripts/ScriptableObjects/SOAP/ScriptablePartyData/`
 
 #### Invite Flow
 
-```
-Sender presses "+" on empty party slot
-  ├─ PartyAreaPanel.OnAddSlotPressed() / PartyArcadeView.OnAddSlotPressed()
-  ├─ PartyInviteController.TransitionToPartyHostAsync() [if first invite]
-  │   ├─ CleanUpCurrentSession() — despawn menu vessels
-  │   ├─ ShutdownNetworkManagerAsync() — shutdown local host
-  │   ├─ HostConnectionService.CreatePartySessionPublicAsync() — Relay party session
-  │   └─ Load Menu_Main as network scene
-  ├─ OnlinePlayersPanel.Show() — display all online players
-  └─ User clicks "+" on a player entry
-      └─ HostConnectionService.SendInviteAsync(targetPlayerId)
-          ├─ Sets own player properties: invite_target, invite_data
-          └─ OnInviteSent SOAP event
-
-Recipient's refresh loop detects invite
-  ├─ HostConnectionService.RefreshAsync() [every 3s]
-  │   └─ Scans all lobby players' properties for invite_target matching local ID
-  ├─ OnInviteReceived SOAP event raised
-  ├─ PartyInviteNotificationPanel shows Accept/Decline
-  └─ User presses Accept
-      └─ PartyInviteController.AcceptInviteAsync(invite)
-          ├─ CleanUpCurrentSession()
-          ├─ ShutdownNetworkManagerAsync() — shutdown local host
-          ├─ HostConnectionService.AcceptInviteAsync() — join party session via Relay
-          ├─ WaitForClientConnectionAsync() — poll nm.IsConnectedClient
-          ├─ WaitForSceneLoadAsync() — wait for Menu_Main scene sync
-          ├─ OnPartyJoinCompleted SOAP event
-          └─ Host's MenuServerPlayerVesselInitializer spawns vessel + autopilot
-```
+The UI-level click → send → detect → accept flow, plus the `invite_payloads`
+per-property format, lives in **`Docs/PartySystem/UI.md`** (UI surface); the
+service/SOAP happy path is in **`Docs/PartySystem/ARCHITECTURE.md`** § "SOAP
+event flow — invite happy path".
 
 #### Multiplayer Freestyle Flight in Menu_Main
 
@@ -1017,18 +992,16 @@ Each client has its own Cinemachine camera following its own vessel. No network 
 
 #### UI Components
 
-| Component | File | Purpose |
-|---|---|---|
-| `PartyAreaPanel` | `_Scripts/UI/Elements/` | 3-slot party panel for Home screen |
-| `PartyArcadeView` | `_Scripts/UI/Views/` | 4-slot party panel for Arcade screen with friends button |
-| `PartySlotView` | `_Scripts/UI/Views/` | Single slot: occupied (avatar + name) or empty ("+" button) |
-| `OnlinePlayersPanel` | `_Scripts/UI/Views/` | Modal listing all online players with invite + add friend buttons |
-| `OnlinePlayerEntry` | `_Scripts/UI/Views/` | Individual row in online players panel |
-| `FriendsPanel` | `_Scripts/UI/Views/` | Tabbed panel: friends list, requests, add friend |
-| `FriendEntryView` | `_Scripts/UI/Views/` | Friend row with online status, invite, remove buttons |
-| `FriendRequestEntryView` | `_Scripts/UI/Views/` | Request row: incoming (accept/decline) or outgoing (cancel) |
-| `AddFriendPanel` | `_Scripts/UI/Views/` | Text input for friend requests by name |
-| `PartyInviteNotificationPanel` | `_Scripts/UI/Screens/` | Invite popup with accept/decline + auto-decline timeout |
+Party/social UI lives in `_Scripts/UI/Elements/` (`AddFriendPanel` in
+`_Scripts/UI/Views/`, `PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`):
+`ArcadeLobbyList` (4-slot party panel) + `FriendInfoSlot`
+(one slot), `FriendsListPanel` (combined Online + Requests, no tabs),
+`OnlineInfoEntry` (online row = invite button; in-party rows show "IN YOUR PARTY N/M"
+and are non-invitable, with a cancel-✕ while an outgoing invite is pending),
+`RequestInfoEntry` (Accept/Decline — friend-request + party-invite), `FriendInfoEntry`
+(friend row), `AddFriendPanel` (by-name), and `PartyInviteNotificationPanel` (the
+bottom-left **global invite popup** in Menu_Main — avatar + name + Accept/Decline,
+3s auto-hide, latest-wins). Full inventory + behaviour: **`Docs/PartySystem/UI.md`**.
 
 #### SO Assets
 
@@ -1056,19 +1029,11 @@ Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate mi
 
 #### Scene Setup Checklist (Menu_Main)
 
-1. **Persistent GameObjects** (in Bootstrap scene, `DontDestroyOnLoad`):
-   - `HostConnectionService` + `PartyInviteController` + `FriendsInitializer` on same GameObject
-   - Wire `HostConnectionDataSO`, `AuthenticationDataVariable` in inspector
-2. **AppManager** (Bootstrap scene):
-   - Assign `HostConnectionData.asset` to `hostConnectionData` field
-3. **Menu_Main scene UI**:
-   - `PartyAreaPanel` or `PartyArcadeView` as child of Home/Arcade screen
-   - `OnlinePlayersPanel`, `FriendsPanel`, `PartyInviteNotificationPanel` as children of party area (start inactive)
-   - Wire `HostConnectionData.asset` into all party UI components
-   - Wire `FriendsData.asset` into `FriendsPanel` and `PartyArcadeView`
-   - Wire `OnlinePlayerEntry` prefab into `OnlinePlayersPanel.playerEntryPrefab`
-   - Wire `FriendEntryView` prefab into `FriendsPanel.friendEntryPrefab`
-   - Wire `FriendRequestEntryView` prefab into `FriendsPanel.friendRequestEntryPrefab`
+Persistent services (`HostConnectionService` + `PartyInviteController` +
+`FriendsInitializer`) live on one Bootstrap `DontDestroyOnLoad` GameObject;
+`AppManager` holds `HostConnectionData.asset`. The full Menu_Main UI wiring
+checklist (panels, row prefabs, SO references) is in
+**`Docs/PartySystem/UI.md`** § "Scene wiring checklist".
 
 #### Party System Patterns to Follow
 
@@ -1131,9 +1096,9 @@ FriendsDataSO (ScriptableObject asset)
   │   └─ BlockedPlayers        (ScriptableListFriendData)
   │
   └─ Events:
-      ├─ OnFriendAdded         ──► FriendsPanel refreshes friend list
-      ├─ OnFriendRemoved       ──► FriendsPanel refreshes friend list
-      ├─ OnFriendRequestReceived ──► FriendsPanel shows request tab badge
+      ├─ OnFriendAdded         ──► FriendsListPanel refreshes friend list
+      ├─ OnFriendRemoved       ──► FriendsListPanel refreshes friend list
+      ├─ OnFriendRequestReceived ──► FriendsListPanel spawns the new request row
       └─ OnFriendsServiceReady ──► (subscribers know the service is usable)
 ```
 
@@ -1200,16 +1165,14 @@ The facade (`_Scripts/System/FriendsServiceFacade.cs`) exposes these operations.
 | Enter game scene | `Busy` | `"In Game"` (scene name, vessel class, party session ID) |
 | App shutdown / `OnDestroy` | `Offline` | — |
 
-Friends see presence updates via UGS SDK's `PresenceUpdated` event → `FriendsServiceFacade.OnPresenceUpdated()` → `SyncAllRelationships()` → `FriendData.Availability` updated in SOAP lists → `FriendEntryView` updates online status indicator color.
+Friends see presence updates via UGS SDK's `PresenceUpdated` event → `FriendsServiceFacade.OnPresenceUpdated()` → `SyncAllRelationships()` → `FriendData.Availability` updated in SOAP lists → `FriendInfoEntry` updates online status indicator color.
 
 #### Friend UI Components
 
-| Component | File | Purpose |
-|---|---|---|
-| `FriendsPanel` | `_Scripts/UI/Views/FriendsPanel.cs` | Tabbed panel with 3 tabs: Friends List, Requests (incoming + outgoing), Add Friend. Reads `FriendsDataSO` SOAP lists. |
-| `FriendEntryView` | `_Scripts/UI/Views/FriendEntryView.cs` | Single friend row: display name, online status color indicator, [Invite to Party] button (→ `HostConnectionService.SendInviteAsync`), [Remove] button (→ `FriendsServiceFacade.RemoveFriendAsync`). |
-| `FriendRequestEntryView` | `_Scripts/UI/Views/FriendRequestEntryView.cs` | Single request row: incoming shows [Accept]/[Decline], outgoing shows [Cancel]. Delegates to `FriendsServiceFacade`. |
-| `AddFriendPanel` | `_Scripts/UI/Views/AddFriendPanel.cs` | Text input + [Send] button. Uses `[Inject] FriendsServiceFacade` to call `SendFriendRequestByNameAsync`. |
+The friends UI shares the party UI family (`FriendsListPanel` combined Online +
+Requests, `FriendInfoEntry`, `RequestInfoEntry`, `AddFriendPanel`) — inventory +
+behaviour in **`Docs/PartySystem/UI.md`**. File locations are in the Key Files
+table below.
 
 #### Friend System Key Files
 
@@ -1223,68 +1186,30 @@ Friends see presence updates via UGS SDK's `PresenceUpdated` event → `FriendsS
 | SOAP event channel | `ScriptableEventFriendData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
 | SOAP reactive list | `ScriptableListFriendData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
 | SOAP MonoBehaviour listener | `EventListenerFriendData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
-| Tabbed friends panel UI | `FriendsPanel.cs` | `_Scripts/UI/Views/` |
-| Friend row UI | `FriendEntryView.cs` | `_Scripts/UI/Views/` |
-| Friend request row UI | `FriendRequestEntryView.cs` | `_Scripts/UI/Views/` |
+| Combined friends/online panel UI | `FriendsListPanel.cs` | `_Scripts/UI/Elements/` |
+| Friend row UI | `FriendInfoEntry.cs` | `_Scripts/UI/Elements/` |
+| Online row UI (row = invite button) | `OnlineInfoEntry.cs` | `_Scripts/UI/Elements/` |
+| Request row UI (friend request + party invite) | `RequestInfoEntry.cs` | `_Scripts/UI/Elements/` |
 | Add friend input UI | `AddFriendPanel.cs` | `_Scripts/UI/Views/` |
 | SO asset instance | `FriendsData.asset` | `_SO_Assets/Friends Data/` |
 
 #### Add Friend Entry Points
 
-There are **two distinct ways** a player can send a friend request. Both ultimately call `FriendsServiceFacade` — the single writer — but they use different SDK methods depending on whether the caller has a player ID or only a display name.
-
-| Entry Point | Input | Facade Method | UI Location |
-|---|---|---|---|
-| `AddFriendPanel` | Player name (text input) | `SendFriendRequestByNameAsync(name)` | FriendsPanel → "Add Friend" tab |
-| `OnlinePlayerEntry.addFriendButton` | Player ID (from presence lobby) | `SendFriendRequestAsync(playerId)` | OnlinePlayersPanel → per-row "+" button |
-
-**User navigation paths to reach "Add Friend":**
-
-```
-Path A — Friends Panel (by name):
-  PartyArcadeView.friendsButton → FriendsPanel.Show()
-    → Tab 2 ("Add Friend") → AddFriendPanel
-    → User types name → [Send] → FriendsServiceFacade.SendFriendRequestByNameAsync()
-    → Success: green feedback text "Request sent to 'Name'!"
-    → Failure: red feedback text with error message
-
-Path B — Online Players Panel (by ID):
-  PartyArcadeView "+" slot / PartyAreaPanel "+" slot → OnlinePlayersPanel.Show()
-    → Per-row [+] addFriendButton → OnlinePlayersPanel.OnAddFriendClicked()
-    → FriendsServiceFacade.SendFriendRequestAsync(playerId)
-    → Button disabled + friendRequestSentIndicator shown
-    → (addFriendButton hidden if already friends — checked via FriendsServiceFacade.IsFriend())
-```
-
-**`AddFriendPanel` behavior** (`_Scripts/UI/Views/AddFriendPanel.cs`):
-- Send button disabled until input is non-empty (`OnInputChanged` validates)
-- Button disabled during async request (re-enabled in `finally`)
-- Feedback text color: green (0.2, 0.9, 0.3) for success, red (0.9, 0.3, 0.3) for errors
-- Input field cleared on success, preserved on failure
-- Catches `FriendsServiceException` specifically for SDK errors
-
-**`OnlinePlayerEntry.addFriendButton` behavior** (`_Scripts/UI/Views/OnlinePlayerEntry.cs`):
-- Visibility controlled by `OnlinePlayersPanel.SpawnEntry()`: hidden if `friendsService` is null or player is already a friend
-- On press: button disabled + `friendRequestSentIndicator` shown (no undo)
-- Callback (`_onAddFriend`) set by `OnlinePlayersPanel` → calls `FriendsServiceFacade.SendFriendRequestAsync(playerId)`
-
-**Friend request vs. party invite** — these are separate systems:
-
-| Action | System | Persistence | SDK |
-|---|---|---|---|
-| Add Friend | `FriendsServiceFacade` → UGS Friends SDK | Persistent relationship (survives sessions) | `FriendsService.AddFriendAsync` / `AddFriendByNameAsync` |
-| Invite to Party | `HostConnectionService` → UGS Sessions SDK | Ephemeral (session-scoped, lobby player properties) | Session player properties: `invite_target`, `invite_data` |
-
-Both actions can appear on the same UI row: `OnlinePlayerEntry` has both `inviteButton` (party invite) and `addFriendButton` (friend request). `FriendEntryView` has `inviteButton` (party invite) but no add-friend button (they're already friends).
+Friend requests are sent **by display name only**, via `AddFriendPanel` →
+`FriendsServiceFacade.SendFriendRequestByNameAsync(name)` (the single writer).
+The former per-row "+" add-friend button is gone — online rows are invite-only.
+Friend-request (persistent UGS relationship) and party-invite (ephemeral session
+property) stay separate systems. Detail + the unused by-ID facade method:
+**`Docs/PartySystem/UI.md`** § "Add-friend entry points".
 
 #### Friend System Patterns to Follow
 
 - **Single writer**: Only `FriendsServiceFacade` writes to `FriendsDataSO`. UI components read via SOAP lists and events — they never call UGS SDK directly.
 - **Sync after mutate**: Every facade method that changes relationship state calls `SyncAllRelationships()` after the SDK call to keep SOAP lists in sync.
-- **Event-driven UI**: `FriendsPanel` and entry views subscribe to SOAP list events (`OnItemAdded`, `OnItemRemoved`, `OnCleared`) for reactive updates. No polling.
+- **Event-driven UI**: `FriendsListPanel` and entry views subscribe to SOAP list events (`OnItemAdded`, `OnItemRemoved`, `OnCleared`) for reactive updates. No polling.
 - **Presence via FriendsInitializer**: Scene transition presence is managed by `FriendsInitializer` — do not set presence from other MonoBehaviours.
 - **DI access**: UI components access `FriendsServiceFacade` via `[Inject]`, not by finding it in the scene.
-- **Bridge between Party and Friends**: `FriendEntryView`'s invite button calls `HostConnectionService.SendInviteAsync()` — the friend system feeds into the party system for social gameplay.
+- **Bridge between Party and Friends**: `FriendInfoEntry`'s invite button calls `HostConnectionService.SendInviteAsync()` — the friend system feeds into the party system for social gameplay.
 
 ### Player Count & AI Backfill Pipeline
 
@@ -1860,12 +1785,12 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Scene management | `SceneLoader` (MonoBehaviour, DontDestroyOnLoad in Bootstrap, game launch + restart + return-to-menu, SOAP code subscriptions), `SceneNameListSO` (centralized scene names, DI-registered) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
 | Authentication | `AuthenticationServiceFacade` (facade/writer), `AuthenticationController` (MonoBehaviour adapter), `AuthenticationSceneController` (scene UI), `SplashToAuthFlow` (splash routing), `AuthenticationData` / `AuthenticationDataVariable` (SOAP state) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Friends | `FriendsServiceFacade` (facade/single-writer for UGS Friends SDK), `FriendsInitializer` (MonoBehaviour bridge + presence), `FriendsDataSO` (SOAP container: 4 lists + 4 events), `FriendData`/`FriendPresenceActivity` (SOAP data types) | `_Scripts/System/`, `_Scripts/Controller/Party/`, `_Scripts/Utility/DataContainers/`, `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
-| Friends UI | `FriendsPanel` (tabbed: list + requests + add), `FriendEntryView` (friend row with invite/remove), `FriendRequestEntryView` (accept/decline/cancel), `AddFriendPanel` (name input) | `_Scripts/UI/Views/` |
+| Friends UI | `FriendsListPanel` (combined Online + Requests, no tabs), `FriendInfoEntry` (friend row + invite), `OnlineInfoEntry` (online row = invite button), `RequestInfoEntry` (accept/decline; friend-request + party-invite), `AddFriendPanel` (name input) | `_Scripts/UI/Elements/` (`AddFriendPanel` in `_Scripts/UI/Views/`) |
 | Player data | `PlayerDataService` (cloud profile, XP, rewards), `PlayerProfileData` | `_Scripts/UI/Views/` |
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu), `DomainAssigner` (team pool) | `_Scripts/Controller/Multiplayer/` |
 | Party / Invite | `HostConnectionService` (presence lobby + party sessions, single-writer to `HostConnectionDataSO`), `PartyInviteController` (Netcode host↔client transitions), `FriendsInitializer` (Friends service bridge) | `_Scripts/Controller/Party/` |
-| Party UI | `PartyAreaPanel` (3-slot), `PartyArcadeView` (4-slot), `PartySlotView`, `OnlinePlayersPanel`, `OnlinePlayerEntry`, `FriendsPanel`, `FriendEntryView`, `AddFriendPanel`, `PartyInviteNotificationPanel` | `_Scripts/UI/Views/`, `_Scripts/UI/Elements/`, `_Scripts/UI/Screens/` |
+| Party UI | `ArcadeLobbyList` (4-slot party panel) + `FriendInfoSlot` (single slot), `FriendsListPanel` (Online + Requests), `OnlineInfoEntry` (online row = invite button; "IN YOUR PARTY" + cancel-✕ states), `RequestInfoEntry` (accept/decline), `FriendInfoEntry` (friend row), `AddFriendPanel` (name input), `PartyInviteNotificationPanel` (bottom-left global invite popup) | `_Scripts/UI/Elements/` (`AddFriendPanel` in `_Scripts/UI/Views/`, `PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`) |
 | Menu scene controller | `MainMenuController` (sub-state machine: None→Initializing→Ready→LaunchingGame), `MainMenuState` enum | `_Scripts/System/`, `_Scripts/Data/Enums/` |
 | Audio | `AudioSystem` (DI singleton), `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP) | `_Scripts/System/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
 | App systems | Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP, DailyChallenge, TrainingGameProgress | `_Scripts/System/` |

@@ -166,7 +166,9 @@ the rejection can throw and abort the autopilot activation chain →
 `RoundStats.Domain` locally — the exact B10 sin of writing mirrors from anywhere but
 `NetDomain`. A stamp landing after a modal pick (duplicate `OnClientReady` raises from
 the roster-pull retries) left that machine believing Jade until the next NetDomain
-delta. **Done** (commits `53294068`, `65d4da96`, `c073636e`): menu domain reset moved
+delta. **Done** (commits `53294068`/`65d4da96`/`c073636e` — squashed into the
+bleeding-edge merge `0ea12370`, so the originals no longer resolve; change verified
+in code): menu domain reset moved
 server-side (`MenuServerPlayerVesselInitializer.OnPlayerReadyToSpawnAsync`, before
 vessel spawn), `ApplyMenuDomain` deleted, and the replication repaint completed by
 folding `RefreshShipMaterial` into `ShipHelper.SetShipProperties` (init-aware: skipped
@@ -191,7 +193,8 @@ own screen (correct on the host, whose list is rebuilt at launch),
 `SyncFinalScores_ClientRpc` wrote results onto the dead object, and client-side
 domain sums counted the local player under Jade with frozen stats. `LocalRoundStats`
 got the live instance, so the centerline score worked — masking the bug. **Done**
-(commits `52923bf8`, `6400eca0`): `ResetRuntimeDataForPartyJoin` clears
+(commits `52923bf8`/`6400eca0` — squashed into `0ea12370`, originals no longer
+resolve; change verified in code): `ResetRuntimeDataForPartyJoin` clears
 `RoundStatsList`/`DomainStatsList`/`LocalRoundStats` too; `AddPlayer` prunes destroyed
 roster entries and replaces same-name stale instances with the live component (logs
 "Replacing stale RoundStats entry"); the ready feed reads the live `Player.Domain`
@@ -294,7 +297,8 @@ the game end is permanently lost while gameplay continues normally, matching
 the report. Self-perpetuating: the only way out of an endless race is another
 mid-turn Main-Menu exit, which re-poisons the next game.
 
-**Fix (commit `d3cbbabb`).**
+**Fix (commit `d3cbbabb` — squashed into the bleeding-edge merge `0ea12370`, so
+the original no longer resolves; change verified in code).**
 - **Chokepoint reset:** new `RoundStats.ClearEventSubscriptions()` severs every
   external stat-event delegate. Called from `Player.PrepareForNewScene()`
   (server, BEFORE `Cleanup()` so the zeroing writes can't raise into dead
