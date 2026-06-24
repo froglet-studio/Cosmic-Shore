@@ -299,6 +299,11 @@ namespace CosmicShore.UI
         {
             var status = ResolveRemoteStatus(player, out int memberCount, out int maxSlots, out string matchName);
 
+            // The ✕ doubles as a kick when this row is a member of MY party and I'm the
+            // host (KickPartyMemberAsync is host-only). Otherwise: no kick affordance.
+            bool canKick = status == OnlineInfoEntry.Status.InYourParty &&
+                           connectionData != null && connectionData.IsPartyHost;
+
             entry.Populate(
                 player.PlayerId,
                 player.DisplayName,
@@ -308,7 +313,8 @@ namespace CosmicShore.UI
                 maxSlots,
                 matchName,
                 onInvite: OnInviteClicked,
-                onCancel: OnCancelInviteClicked);
+                onCancel: OnCancelInviteClicked,
+                onKick: canKick ? OnKickMemberClicked : null);
 
             // Preserve pending-invite tint if we have an outgoing invite in flight.
             if (_outgoingInvitePlayerIds.Contains(player.PlayerId))
@@ -551,6 +557,26 @@ namespace CosmicShore.UI
             catch (System.Exception e)
             {
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to cancel invite: {e.Message}");
+            }
+        }
+
+        // The host clicked the ✕ on a row for a member of their own party. Remove that
+        // member via HostConnectionService (host-only). OnPartyMemberKicked re-renders the
+        // online section, so the row reverts to its invitable state on success.
+        async void OnKickMemberClicked(string playerId)
+        {
+            if (HostConnectionService.Instance == null) return;
+
+            try
+            {
+                await HostConnectionService.Instance.KickPartyMemberAsync(playerId);
+                CSDebug.Log($"[FriendsListPanel] Kicked {playerId} from party");
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[FriendsListPanel] Failed to kick member: {e.Message}");
+                // Re-render so the optimistically-hidden ✕ recovers if the kick didn't take.
+                PopulateOnlineSection();
             }
         }
 
