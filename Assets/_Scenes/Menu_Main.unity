@@ -4080,6 +4080,54 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1058295897}
   m_CullTransparentMesh: 1
+--- !u!114 &1074042269 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2324162600694344237, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+    type: 3}
+  m_PrefabInstance: {fileID: 1892651051}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79ea4952d8cd481438f1cfeabdecd7eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.FriendInfoSlot
+--- !u!114 &1074042270 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7381915442717861795, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+    type: 3}
+  m_PrefabInstance: {fileID: 1892651051}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79ea4952d8cd481438f1cfeabdecd7eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.FriendInfoSlot
+--- !u!114 &1074042271 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2495930239255066253, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+    type: 3}
+  m_PrefabInstance: {fileID: 1892651051}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79ea4952d8cd481438f1cfeabdecd7eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.FriendInfoSlot
+--- !u!114 &1074042272 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 6083894677938077420, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+    type: 3}
+  m_PrefabInstance: {fileID: 1892651051}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79ea4952d8cd481438f1cfeabdecd7eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.UI.FriendInfoSlot
 --- !u!1 &1104334522
 GameObject:
   m_ObjectHideFlags: 0
@@ -8139,10 +8187,10 @@ MonoBehaviour:
   connectionData: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5, type: 2}
   profileIcons: {fileID: 11400000, guid: 3e6cb5b838253c7468480627fd86af5f, type: 2}
   slots:
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
-  - {fileID: 0}
+  - {fileID: 1074042272}
+  - {fileID: 1074042271}
+  - {fileID: 1074042270}
+  - {fileID: 1074042269}
   onlineStatusText: {fileID: 414011391}
   leaveButton: {fileID: 1032728616}
   friendsListPanel: {fileID: 688672356}
