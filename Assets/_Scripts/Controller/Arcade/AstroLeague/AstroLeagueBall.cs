@@ -181,6 +181,15 @@ namespace CosmicShore.Gameplay
             {
                 n_Position.Value = transform.position;
                 ApplyFrozenPhysics(n_Frozen.Value);
+
+                // Register the ball as a collider-LOD focus. Prism colliders are culled unless near a
+                // focus (vessels / projectiles); the ball is neither, so without this it would fly
+                // THROUGH LOD-culled prisms with no OnCollisionEnter and the domain pass-through /
+                // shield / destroy would never fire (the old model destroyed prisms via collider-free
+                // radius QuerySphere, so it never needed this). Like a projectile waking the colliders
+                // it is about to hit. Server-only: ball physics + collisions run only on the server.
+                PrismColliderLodManager.EnsureInstance();
+                PrismColliderLodManager.RegisterFocus(transform);
             }
             else
             {
@@ -1041,6 +1050,7 @@ namespace CosmicShore.Gameplay
         public override void OnDestroy()
         {
             base.OnDestroy();
+            PrismColliderLodManager.UnregisterFocus(transform); // idempotent; also pruned by the LOD sweep
             ClearIgnoredColliders();
             if (_ballMesh != null) Destroy(_ballMesh);
         }

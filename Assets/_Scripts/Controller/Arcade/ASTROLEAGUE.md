@@ -200,6 +200,14 @@ server with billiard thinking:
 - Layers: the ball is on `Default` (0); prisms run on `TrailBlocks` (11); the physics
   matrix enables 0↔11 (and 0↔8 Ships), so the ball collides with both trail prisms
   and vessels.
+- **The ball is a collider-LOD focus.** Prism colliders are culled unless near a focus
+  (vessels / projectiles — `PrismColliderLodManager`, the collider-budget gate). The ball
+  is neither, so it registers ITSELF as a focus (server-side, in `OnNetworkSpawn`) so
+  prisms within the LOD radius keep live colliders — without this the ball flies THROUGH
+  culled prisms with no `OnCollisionEnter` and the pass-through / shield / destroy never
+  fires. (The pre-domain model destroyed prisms via a collider-free radius `QuerySphere`
+  on wall/strike bounces, so it never needed a focus.) Collider-budget impact: one extra
+  focus bubble (one LOD radius of live colliders that tracks the ball).
 - Replay is a full scene reload (the standard domain-games replay path), which clears
   accumulated trail mass with the scene — not a decay mechanism.
 
