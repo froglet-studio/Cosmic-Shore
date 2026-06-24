@@ -32,7 +32,7 @@ Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
 | Class | Role |
 |---|---|
 | `AstroLeagueController` | Match director (server-authoritative): kickoffs, goal attribution, celebrations, golden-goal overtime, winner banner, AI striker arming, final-score sync (HexRace/Joust/CC `SyncFinalScores_ClientRpc` pattern) |
-| `AstroLeagueBall` | Server-simulated billiard payload (`NetworkBehaviour`). Server owns the rigidbody; clients dead-reckon from replicated position+velocity NetworkVariables. Strike velocity comes from server-side per-vessel transform sampling (vessels are transform-driven, so rigidbody velocity and remote `VesselStatus.Speed` are useless). Impact juice replicates via ClientRpc |
+| `AstroLeagueBall` | Server-simulated billiard payload (`NetworkBehaviour`). Server owns a real non-kinematic rigidbody with full **angular dynamics**; clients dead-reckon from replicated position + velocity + **angular velocity** NetworkVariables (the kinematic replica free-spins so the faceted icosphere's tumble shows everywhere). Strikes are **impulse-based at the contact point** so spin emerges from off-center contacts. Carries the **last-striker's domain** (`n_LastHitDomain`) which drives the ball tint and the selective prism interaction (own color → pass through + shield, opposing → destroy + decay). Strike velocity comes from server-side per-vessel transform sampling (vessels are transform-driven, so rigidbody velocity and remote `VesselStatus.Speed` are useless). Impact juice replicates via ClientRpc |
 | `AstroLeagueMatchMonitor` | `TurnMonitor` match clock, server-authoritative ("M:SS"/"OT" pushed by ClientRpc on the shared display channel). Pauses during celebrations; the controller decides full-time vs overtime; turn ends only on `ForceEnd()` |
 | `AstroLeagueGoal` | Goal-mouth trigger (server-gated); reports to `AstroLeagueController.HandleGoalServer` — attribution lives in the controller |
 | `AstroLeagueArena` | Runtime HyperSea stadium, built identically on every peer (no networking): invisible 1.0-restitution walls, pulsing edge cage, portal goal rings with ball-proximity anticipation flare, center ring, drifting plankton motes |
@@ -85,8 +85,9 @@ FinishMatch             winner banner (real time) → matchMonitor.ForceEnd()
 
 | Concern | Owner | Mechanism |
 |---|---|---|
-| Ball physics + strikes | Server | Rigidbody sim; `OnCollisionEnter` (server-gated) |
-| Ball position/velocity | Server → all | `NetworkVariable<Vector3>` ×2, client dead reckoning + smoothing |
+| Ball physics + strikes | Server | Rigidbody sim (linear + angular); impulse-based `OnCollisionEnter`/`OnTriggerEnter` (server-gated) |
+| Ball position/velocity/spin | Server → all | `NetworkVariable<Vector3>` ×3 (pos, linear vel, angular vel), client dead reckoning + smoothing + free-spin |
+| Ball last-hit domain (color/interaction) | Server → all | `NetworkVariable<Domains> n_LastHitDomain` (Blue = neutral) |
 | Ball frozen/hidden | Server → all | `NetworkVariable<bool>` ×2 |
 | Strike velocity | Server | Per-vessel transform sampling each FixedUpdate (`gameData.Vessels`) — correct for host, remote and AI vessels alike |
 | Goal detection + attribution | Server | Trigger + last-striker ring buffer |
@@ -138,38 +139,62 @@ server with billiard thinking:
   high-intensity match is a grand playfield with a giant ball. Players reset to the
   scaled team positions on every kickoff (`ComputeKickoffPose` reads the scaled spawns
   and scales the lateral teammate spacing too).
-- **3D fresnel look.** The ball clones `PrismMaterial.mat` (the prism `BlockGraph`
-  fresnel shader) at runtime, so it renders solid with a bright view-dependent rim
-  exactly like trail prisms. The speed/flash-reactive colour cycle drives the fresnel
-  `_BrightColor` (HDR rim, flash-capped) with a dim `_DarkColor` base. Falls back to
+- **Faceted icosphere — rotation you can see.** The mesh is a medium-poly **flat-shaded
+  icosphere** generated at runtime (`IcosphereMeshGenerator`, default 2 subdivisions =
+  320 tris) and assigned to the MeshFilter in `SetupVisuals` (the SphereCollider is kept,
+  so the inertia tensor stays a uniform sphere → free rotation about any axis). The
+  authored Unity Sphere mesh is replaced at load; the icosphere is radius 0.5 to match
+  the collider, so the visual hull tracks the physics hull at every intensity scale.
+  Flat facets are what make the spin legible: each facet catches the fresnel rim
+  differently as the ball tumbles, instead of a uniform glowing ring.
+- **3D fresnel look + domain color.** The ball clones `PrismMaterial.mat` (the prism
+  `BlockGraph` fresnel shader) at runtime, so it renders solid with a bright
+  view-dependent rim exactly like trail prisms, driving the fresnel `_BrightColor` (HDR
+  rim, flash-capped) with a dim `_DarkColor` base. **The hue keys to the last striker's
+  domain** (`n_LastHitDomain`): a Jade striker tints the ball Jade (`jadeGoalColor`), a
+  Ruby striker Ruby (`rubyGoalColor`), matching the arena palette. Before any strike the
+  ball is **neutral** (`Domains.Blue`) and runs the original three-way rainbow cycle so it
+  reads as "unclaimed"; it resets to neutral on every kickoff. Falls back to
   `Shader.Find("Shader Graphs/BlockGraph")`, then URP/Lit, if the material is unwired.
-  The ball is scaled to world radius ≈ 7 for a chunky billiard feel and a clean,
-  precise strike target.
-- Strike direction = `Slerp(deflectionDir, strikerHeading, directionalBias)` where
-  deflectionDir points from the contact point through the ball center. A higher
-  `directionalBias` (0.45) gives players more aim control over a struck ball.
-- **ZERO friction — collisions are the only speed decay.** `ballBounciness = 1`
-  (perfectly elastic reflection) and the per-frame drag is gone entirely: the ball
-  coasts at constant speed between collisions forever. The ONLY mechanism that slows
-  it is `collisionSpeedRetention` (0.85 = lose 15% per bounce), applied on every
-  wall/prism bounce in `HandleGeometryBounce`. Vessel strikes are the energy INPUT
-  (they set the launch velocity), so they don't decay; `maxSpeed` just caps the top
-  end. A ball drifting in open space never slows — only hitting something does.
-- **Every collision spawns a speed-scaled prism explosion.** Walls, prisms, and vessel
-  strikes all route through `EmitPrismExplosion`, which broadcasts
-  `ExplodePrismsAtPoint_ClientRpc` with a blast radius that lerps from
-  `prismDestroyRadius` up to `prismDestroyRadiusAtMaxSpeed` by impact speed — a fast
-  collision blasts a wide crater, a gentle one a small puff (below `prismDestroyMinSpeed`
-  it just bounces). Every peer (host included) runs `PrismSpatialIndex.QuerySphere`
-  and the canonical animated `Prism.Damage` on its OWN local trail copies (prisms are
-  per-peer GameObjects laid by `VesselPrismController` on every peer, not shared
-  NetworkObjects — a position-deterministic broadcast keeps host/clients/AI consistent).
-  `OnCollisionEnter` runs post-solver so the ricochet velocity is banked before the
-  destroy — the ball bounces off the wall face and punches a hole through it. The ball
-  is a NEUTRAL active force (`Domains.Blue`), so it smashes any team's trail. Mass is
-  conserved (explode-out via spatial-index release + VFX, never a raw `Destroy`). A
-  short `prismDestroyCooldown` throttles only the explosion broadcast (the speed decay
-  is applied on every bounce regardless).
+  Scaled to world radius ≈ 7 for a chunky billiard feel and a precise strike target.
+- **Impulse-based strikes → real spin (rigidbody angular dynamics).** A strike no longer
+  overwrites `linearVelocity` with a scripted vector. It computes the same tuned desired
+  velocity (`retain·v + resultDir·strikerSpeed·hitBoost`, capped to `maxSpeed`) and applies
+  it as the split form of `AddForceAtPosition(impulse, contactPoint)`: the linear part is
+  set directly (immediate, deterministic feel) and the matching **torque** from the
+  OFF-CENTER contact (`τ = (contact − COM) × impulse`) is added via `AddTorque` — so the
+  ball **spins** from genuine angular dynamics, clamped by `maxAngularSpeed`
+  (`rb.maxAngularVelocity`) and persisting under low `ballAngularDamping`. Strike
+  direction is still `Slerp(deflectionDir, strikerHeading, directionalBias)`
+  (deflectionDir points from the contact through the ball center); a non-radial impulse is
+  exactly what produces the torque. Wall/opposing-prism bounces are frictionless and
+  elastic, so (correctly) they impart no spin — only off-center strikes do.
+- **Domain-selective collisions — pass/shield own, destroy opposing, lossless walls.**
+  Each contact is dispatched by type:
+  - **Vessel** → `VesselStrike` (re-colors the ball, impulse, ejects, recoils).
+  - **Trail prism** → `HandlePrismContact`, gated on `prism.Domain` vs the ball's domain:
+    - **Same color** (own mass) → **pass through**: restore the pre-contact velocity (no
+      bounce, **no decay**), `Physics.IgnoreCollision` the prism collider for subsequent
+      frames (tracked, cleared on domain flip / kickoff / hide), and **shield** it
+      (`prism.ActivateShield()`). The one-frame micro-bounce before the restore is negligible.
+    - **Opposing color** (or a NEUTRAL ball) → **bounce** (the solver already reflected at
+      `ballBounciness = 1`) + **destroy** + apply `collisionSpeedRetention` decay.
+  - **Wall** (non-prism geometry) → **perfectly elastic** carom: NO decay, no prism
+    interaction, light bounce juice only.
+  **Bouncing off opposing-color prisms is the ONLY thing that slows the ball** — the old
+  unconditional per-bounce decay is gone (walls and same-color pass-throughs are lossless;
+  vessel strikes re-energize; `maxSpeed` just caps the top). A ball coasting in open space,
+  or weaving through its own trail, never slows.
+- **Prism interaction is a domain-aware, position-deterministic broadcast.**
+  `EmitPrismInteraction` broadcasts `PrismInteraction_ClientRpc(... , (int)ballDomain)` with
+  a blast radius lerping `prismDestroyRadius → prismDestroyRadiusAtMaxSpeed` by impact speed.
+  Every peer (host included) runs `PrismSpatialIndex.QuerySphere` over its OWN local trail
+  copies (prisms are per-peer GameObjects laid by `VesselPrismController` on every peer, not
+  shared NetworkObjects — a server-only resolution would desync) and, per prism: **shields**
+  it if it matches the ball's domain (skipping already-shielded ones), else **destroys** it
+  via the canonical animated `Prism.Damage` path. A neutral (Blue) ball destroys every
+  team's mass, as before. Mass is conserved (explode-out via spatial-index release + VFX,
+  never a raw `Destroy`). A short `prismDestroyCooldown` throttles only the broadcast.
 - Layers: the ball is on `Default` (0); prisms run on `TrailBlocks` (11); the physics
   matrix enables 0↔11 (and 0↔8 Ships), so the ball collides with both trail prisms
   and vessels.
@@ -191,6 +216,7 @@ destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`.
 | `GoalsScored` stat (+ event, Cleanup, NetworkVariable) | `_Scripts/Data/Enums/IRoundStats.cs`, `RoundStats.cs` |
 | `GameDataSO.GoalTargetCount` | `_Scripts/Utility/DataContainers/GameDataSO.cs` |
 | `AIPilot.SetExternalTargetProvider` | `_Scripts/Controller/AI/AIPilot.cs` |
+| `IcosphereMeshGenerator` (runtime faceted icosphere for the ball mesh) | `_Scripts/Utility/IcosphereMeshGenerator.cs` |
 | `CustomCameraController.Shake` | `_Scripts/Controller/Camera/CustomCameraController.cs` |
 | `SO_ArcadeGame.Min/MaxDomainsAllowed` (+ modal DC bounds) | `_Scripts/ScriptableObjects/SO_ArcadeGame.cs`, `_Scripts/UI/Modals/ArcadeGameConfigureModal.cs` |
 | `ScoreDifferenceSource.Goals` | `_Scripts/Controller/Arcade/ElementalComebackSystem.cs` |
