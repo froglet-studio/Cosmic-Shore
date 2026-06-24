@@ -161,13 +161,16 @@ namespace CosmicShore.Gameplay
             if (arena != null) arena.Build(_currentScale);
             if (ball != null) ball.SetSizeScale(_currentScale);
 
+            Vector3 arenaCenter = arena != null ? arena.Center : transform.position;
             if (goals != null)
                 for (int i = 0; i < goals.Count; i++)
                 {
                     if (goals[i] == null) continue;
                     if (i < _baseGoalLocalPos.Count)
                         goals[i].transform.localPosition = _baseGoalLocalPos[i] * _currentScale;
-                    goals[i].ScaleTrigger(_currentScale);
+                    // Wire the ball + arena center + scale AFTER repositioning so the goal's inward
+                    // normal and mouth radius are computed from its final scaled world position.
+                    goals[i].Configure(ball, arenaCenter, _currentScale);
                 }
 
             if (teamSpawns != null)

@@ -117,20 +117,12 @@ namespace CosmicShore.Gameplay
                  "rotation is clearly visible, dense enough to read as round.")]
         public int ballMeshSubdivisions = 2;
 
-        [Header("Ball — Prism Explosion (per collision, scaled by speed)")]
-        [Tooltip("Every collision explodes live prisms within a speed-scaled radius of the contact " +
-                 "(the canonical animated Prism.Damage path — mass-conserving active force). This is " +
-                 "the radius at/below minimum impact speed.")]
-        public float prismDestroyRadius = 6f;
-
-        [Tooltip("Explosion radius at max ball speed — a fast collision blasts a much wider crater")]
-        public float prismDestroyRadiusAtMaxSpeed = 18f;
-
-        [Tooltip("Impact speed below which a collision doesn't explode prisms (a faint tap just bounces)")]
-        public float prismDestroyMinSpeed = 5f;
-
-        [Tooltip("Minimum seconds between prism-explosion broadcasts (flood guard while plowing a wall)")]
-        public float prismDestroyCooldown = 0.02f;
+        [Header("Ball — Prism Scan")]
+        [Tooltip("Radius (× the ball's world radius) of the per-tick spatial scan that resolves prism " +
+                 "interactions. 1 = exactly the ball's cross-section (clears a ball-sized tunnel); " +
+                 "slightly above 1 catches prisms just grazing the surface. The ball is a first-class " +
+                 "entity — this scan runs every physics tick on every peer, independent of colliders.")]
+        public float prismScanRadiusFactor = 1.1f;
 
         [Header("Ball — Client Replication")]
         [Tooltip("How aggressively non-server peers blend toward the dead-reckoned ball position (higher = snappier)")]

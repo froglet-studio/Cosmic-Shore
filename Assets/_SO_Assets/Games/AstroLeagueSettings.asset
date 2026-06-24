@@ -37,10 +37,7 @@ MonoBehaviour:
   ballAngularDamping: 0.05
   maxAngularSpeed: 40
   ballMeshSubdivisions: 2
-  prismDestroyRadius: 6
-  prismDestroyRadiusAtMaxSpeed: 18
-  prismDestroyMinSpeed: 5
-  prismDestroyCooldown: 0.02
+  prismScanRadiusFactor: 1.1
   clientSmoothingRate: 12
   clientSnapDistance: 30
   hitstopDuration: 0.045

@@ -86,15 +86,8 @@ namespace CosmicShore.Gameplay
 
         // Velocity the ball carries INTO each physics step (captured pre-simulation in
         // ServerFixedUpdate). OnCollisionEnter runs post-solver, so this is the pre-bounce velocity —
-        // used to (a) restore motion on a same-color pass-through and (b) size the explosion by true
-        // impact speed rather than the just-decayed/just-reflected value.
+        // used to size the wall-bounce juice by true impact speed (not the just-reflected value).
         Vector3 _velocityBeforePhysics;
-
-        // Prism colliders the ball is currently ignoring (same-color pass-throughs). Cleared on every
-        // domain flip / kickoff / hide so a prism that changes color — or a pooled collider reused by a
-        // new prism — stops being ignored. Server-only (non-server peers never run ball collisions).
-        readonly HashSet<Collider> _ignoredColliders = new();
-        readonly List<Collider> _prismColliderBuffer = new(4); // reused by IgnorePrismCollider (no per-hit alloc)
 
         // Server-side velocity estimates for transform-driven vessels (root → last pos + velocity)
         readonly Dictionary<Transform, Vector3> _vesselLastPos = new();
@@ -104,9 +97,13 @@ namespace CosmicShore.Gameplay
         // taps (see VesselContact). Gated by settings.vesselStrikeCooldown.
         readonly Dictionary<Transform, float> _lastStrikeTime = new();
 
-        // Prism-interaction broadcast flood guard + reusable query buffer (every peer)
-        float _lastPrismExplodeTime = -999f;
-        readonly List<Prism> _prismQueryBuffer = new(32);
+        // Per-tick prism scan state (ProcessPrismInteractions, every peer): reusable query buffer, the
+        // set of prisms seen this tick (for pruning), the opposing prisms whose shield we popped this
+        // visit (protected from being eaten until they leave range), and last scan position (sweep).
+        readonly List<Prism> _prismQueryBuffer = new(64);
+        readonly HashSet<Prism> _scanInRange = new();
+        readonly List<Prism> _shieldPoppedThisVisit = new(16);
+        Vector3 _lastPrismScanPos;
         const string BallAttackerName = "Astro League";
 
         // Visuals
@@ -158,6 +155,16 @@ namespace CosmicShore.Gameplay
                 staticFriction = 0f
             };
 
+            // The ball NEVER physically collides with prisms — it passes through ALL of them and
+            // resolves them by domain via a per-tick spatial scan (ProcessPrismInteractions), which is
+            // reliable along the WHOLE path (prism colliders are LOD-culled away from vessels, and a
+            // fast ball tunnels past tiny colliders). Excluding the TrailBlocks layer on the ball's own
+            // collider stops the solver from ever bouncing/snagging it on a prism. It still bounces off
+            // walls and vessels (other layers), so the elastic game stays intact.
+            int trailBlocksLayer = LayerMask.NameToLayer("TrailBlocks");
+            if (trailBlocksLayer >= 0)
+                sphereCol.excludeLayers = 1 << trailBlocksLayer;
+
             spawnPosition = transform.position;
             _baseScale = transform.localScale;
             SetupVisuals();
@@ -181,15 +188,6 @@ namespace CosmicShore.Gameplay
             {
                 n_Position.Value = transform.position;
                 ApplyFrozenPhysics(n_Frozen.Value);
-
-                // Register the ball as a collider-LOD focus. Prism colliders are culled unless near a
-                // focus (vessels / projectiles); the ball is neither, so without this it would fly
-                // THROUGH LOD-culled prisms with no OnCollisionEnter and the domain pass-through /
-                // shield / destroy would never fire (the old model destroyed prisms via collider-free
-                // radius QuerySphere, so it never needed this). Like a projectile waking the colliders
-                // it is about to hit. Server-only: ball physics + collisions run only on the server.
-                PrismColliderLodManager.EnsureInstance();
-                PrismColliderLodManager.RegisterFocus(transform);
             }
             else
             {
@@ -390,15 +388,18 @@ namespace CosmicShore.Gameplay
 
             if (!n_Frozen.Value)
             {
-                // ZERO friction: the ball coasts at constant speed between collisions. There is no
-                // passive drag — the ONLY speed decay is the per-collision loss when the ball bounces
-                // off an opposing-color prism (HandlePrismContact). Walls and same-color prisms are
-                // lossless. Just cap the top speed so vessel strikes can't make it run away.
+                // ZERO friction: the ball coasts at constant speed between collisions. The ONLY thing
+                // that slows it is plowing through opposing-color prism mass (ProcessPrismInteractions);
+                // walls and vessels are elastic. Cap the top speed so strikes can't make it run away.
                 if (rb.linearVelocity.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
                     rb.linearVelocity = rb.linearVelocity.normalized * settings.maxSpeed;
 
-                // Snapshot the pre-simulation velocity; OnCollisionEnter (post-solver) reads it to
-                // restore motion through same-color prisms and to size explosions by true impact speed.
+                // First-class per-tick prism resolution — shield own / eat+slow opposing / unshield
+                // shielded. The server applies the eaten-mass speed drag here, before replication.
+                ProcessPrismInteractions();
+
+                // Snapshot the pre-simulation velocity; the wall-bounce juice (OnCollisionEnter,
+                // post-solver) reads it for the true impact speed.
                 _velocityBeforePhysics = rb.linearVelocity;
             }
 
@@ -426,6 +427,10 @@ namespace CosmicShore.Gameplay
                 float t = 1f - Mathf.Exp(-settings.clientSmoothingRate * Time.fixedDeltaTime);
                 transform.position = Vector3.Lerp(transform.position, predicted, t);
             }
+
+            // Clients resolve prisms locally too (per-peer trail copies) so each peer sees the ball
+            // shield/clear the trail it sees; the server's eaten-mass drag arrives via replicated velocity.
+            ProcessPrismInteractions();
         }
 
         /// <summary>
@@ -468,17 +473,9 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // Trail prism: the ball NEVER bounces off prisms — it passes through, with a domain-keyed
-            // side effect (slow+destroy opposing, shield same, unshield shielded-opposing). See HandlePrismContact.
-            var prism = collision.collider.GetComponentInParent<Prism>();
-            if (prism != null)
-            {
-                HandlePrismContact(collision.collider, prism, contactPoint, contactNormal);
-                return;
-            }
-
-            // Arena wall (or other non-prism geometry): perfectly elastic — the solver already
-            // reflected at bounciness 1, and we add NO decay and destroy nothing.
+            // Anything else is an arena wall — the ball can't collide with prisms at all (excludeLayers
+            // in Awake), and resolves them by a per-tick spatial scan instead. Perfectly elastic carom:
+            // the solver already reflected at bounciness 1, no decay.
             HandleWallBounce(contactPoint, contactNormal);
         }
 
@@ -501,91 +498,103 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Server: the ball contacted a trail prism. The ball NEVER bounces off a prism — it always
-        /// passes through (continues in the same direction); only the SPEED and the prism state change,
-        /// keyed by the ball's domain (last striker's team) vs the prism's domain + shield state:
-        ///   • SAME color (own trail)            → pass through unimpeded; SHIELD the prism (if not already).
-        ///   • OPPOSING + UNSHIELDED (or NEUTRAL  → pass through but SLOW by the prism's MASS (volume);
-        ///     ball, which has no own color)         DESTROY the prism (eats the opposing mass).
-        ///   • OPPOSING + SHIELDED               → pass through unimpeded; UNSHIELD the prism, leave it.
-        /// The only things the ball bounces off are walls and vessels (elastic). The solver may apply a
-        /// one-frame micro-bounce before we restore the pre-contact velocity here; it is negligible, and
-        /// IgnorePrismCollider makes subsequent frames pass cleanly. Per-prism state changes ride the
-        /// position-deterministic broadcast (EmitPrismInteraction) so every peer's local trail matches.
+        /// FIRST-CLASS per-tick prism resolution — the ball is treated like a player. Every physics
+        /// tick (on EVERY peer) it sweeps `PrismSpatialIndex.QuerySphere` over the segment it just
+        /// travelled and resolves the prisms it overlaps by domain, INDEPENDENT of physics colliders
+        /// (the ball excludes the TrailBlocks layer entirely, and prism colliders are LOD-culled away
+        /// from vessels — neither is reliable for a fast ball). This is what makes the ball
+        /// clear/shield trail consistently along its WHOLE path, not just near vessels:
+        ///   • SAME color (own trail)              → SHIELD it (if not already). No speed change.
+        ///   • OPPOSING + UNSHIELDED (or a NEUTRAL → EAT it: destroy + slow the ball by the prism's
+        ///     ball, which has no color yet)           mass (speed ×= M/(M + k·volume), direction kept).
+        ///                                             The ONLY thing that slows the ball.
+        ///   • OPPOSING + SHIELDED                 → UNSHIELD it and LEAVE it standing this visit (the
+        ///                                             shield absorbs the pass); a later visit eats it.
+        /// Prisms are per-peer GameObjects, so each peer resolves its OWN local copies (position-
+        /// deterministic). Only the SERVER applies the speed drag; clients get the slowed velocity via
+        /// replication and just mirror the shield/destroy on their copies.
         /// </summary>
-        void HandlePrismContact(Collider prismCollider, Prism prism, Vector3 contactPoint, Vector3 contactNormal)
+        void ProcessPrismInteractions()
         {
+            var index = PrismSpatialIndex.Instance;
+            if (index == null || n_Frozen.Value || n_Hidden.Value)
+            {
+                _shieldPoppedThisVisit.Clear();
+                _lastPrismScanPos = transform.position;
+                return;
+            }
+
+            bool isServer = !IsSpawned || IsServer;
             Domains ballDomain = n_LastHitDomain.Value;
             bool ballNeutral = ballDomain == Domains.Blue;
-            bool same = !ballNeutral && prism.Domain == ballDomain;
-            bool shielded = prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded;
+            Vector3 ballVel = isServer ? rb.linearVelocity : n_Velocity.Value;
 
-            // Continue straight through the prism (no bounce, ever). For opposing UNSHIELDED mass the
-            // ball is slowed by the prism's mass but keeps its direction; same/shielded pass losslessly.
-            Vector3 preVel = _velocityBeforePhysics;
-            if (!same && !shielded)
+            float radius = BallWorldRadius() * Mathf.Max(1f, settings.prismScanRadiusFactor);
+            Vector3 to = transform.position;
+            Vector3 from = _lastPrismScanPos;
+            _lastPrismScanPos = to;
+
+            // Sweep the segment travelled this tick so a fast ball doesn't skip prisms between samples.
+            float moved = Vector3.Distance(from, to);
+            int samples = Mathf.Clamp(Mathf.CeilToInt(moved / Mathf.Max(0.5f, radius)), 1, 8);
+
+            _scanInRange.Clear();
+            float eatenMass = 0f;
+
+            for (int s = 0; s < samples; s++)
             {
-                // Eat opposing mass: momentum-style drag — heavier prism (more volume) slows it more,
-                // direction preserved, speed never reversed. v' = v · M / (M + k·prismVolume).
-                float prismMass = settings.prismDragMassScale * Mathf.Max(0f, prism.CurrentVolume);
-                float retain = rb.mass / Mathf.Max(0.0001f, rb.mass + prismMass);
-                rb.linearVelocity = preVel * retain;
+                Vector3 c = samples == 1 ? to : Vector3.Lerp(from, to, (s + 1) / (float)samples);
+                index.QuerySphere(c, radius, _prismQueryBuffer);
+                for (int i = 0, n = _prismQueryBuffer.Count; i < n; i++)
+                {
+                    var prism = _prismQueryBuffer[i];
+                    if (prism == null || prism.destroyed) continue;
+                    _scanInRange.Add(prism);
+
+                    bool same = !ballNeutral && prism.Domain == ballDomain;
+                    bool shielded = prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded;
+
+                    if (same)
+                    {
+                        if (!shielded) prism.ActivateShield();
+                    }
+                    else if (shielded)
+                    {
+                        // Opposing + shielded: pop the shield and LEAVE the prism this visit.
+                        prism.DeactivateShields();
+                        if (!_shieldPoppedThisVisit.Contains(prism)) _shieldPoppedThisVisit.Add(prism);
+                    }
+                    else
+                    {
+                        // Opposing + unshielded: eat it — unless we just popped its shield THIS visit.
+                        if (_shieldPoppedThisVisit.Contains(prism)) continue;
+                        eatenMass += Mathf.Max(0f, prism.CurrentVolume);
+                        prism.Damage(ballVel, ballDomain, BallAttackerName);
+                    }
+                }
             }
-            else
+
+            // Drop "just-popped" protection for prisms that left range, so a later visit can eat them.
+            for (int i = _shieldPoppedThisVisit.Count - 1; i >= 0; i--)
             {
-                // Same color or shielded-opposing: pass through with NO speed change.
-                rb.linearVelocity = preVel;
+                var p = _shieldPoppedThisVisit[i];
+                if (p == null || p.destroyed || !_scanInRange.Contains(p))
+                {
+                    int lastIdx = _shieldPoppedThisVisit.Count - 1;
+                    _shieldPoppedThisVisit[i] = _shieldPoppedThisVisit[lastIdx];
+                    _shieldPoppedThisVisit.RemoveAt(lastIdx);
+                }
             }
 
-            IgnorePrismCollider(prism, prismCollider); // never bounce off a prism — pass cleanly hereafter
+            if (eatenMass <= 0f) return;
 
-            // Per-peer prism state change (shield same / unshield shielded-opposing / destroy opposing),
-            // broadcast position-deterministically. Direction-of-travel impact for the explode scatter.
-            EmitPrismInteraction(contactPoint, preVel, ballDomain);
-        }
-
-        /// <summary>
-        /// Server: ignore future contacts with a passed-through prism (tracked so it can be cleared).
-        /// Ignores EVERY collider on the prism, not just the one we touched: shielding it (via the
-        /// interaction broadcast) swaps the BoxCollider for a convex octahedron MeshCollider, so
-        /// ignoring only the contact collider would let the swapped-in collider bounce the ball. The
-        /// shield mesh collider is created lazily on the first shield, so a never-shielded prism only
-        /// exposes its BoxCollider here — the swapped-in collider is then caught by the next same-color
-        /// contact's self-heal (one negligible micro-bounce after the 0.35s shield morph completes).
-        /// </summary>
-        void IgnorePrismCollider(Prism prism, Collider contactCollider)
-        {
-            if (sphereCol == null) return;
-
-            if (prism != null)
+            // Server slows the ball by the eaten mass (direction preserved); clients mirror via velocity.
+            if (isServer)
             {
-                prism.GetComponents(_prismColliderBuffer);
-                for (int i = 0, n = _prismColliderBuffer.Count; i < n; i++)
-                    TryIgnoreCollider(_prismColliderBuffer[i]);
+                float prismMass = settings.prismDragMassScale * eatenMass;
+                rb.linearVelocity *= rb.mass / Mathf.Max(0.0001f, rb.mass + prismMass);
             }
-            TryIgnoreCollider(contactCollider); // belt-and-suspenders if the contact lives off the prism root
-        }
-
-        void TryIgnoreCollider(Collider col)
-        {
-            if (col != null && _ignoredColliders.Add(col))
-                Physics.IgnoreCollision(sphereCol, col, true);
-        }
-
-        /// <summary>
-        /// Server: stop ignoring every prism collider we passed through. Called whenever the
-        /// same/opposing relationship can change (domain flip on a strike, kickoff reset, hide), so a
-        /// recolored prism — or a pooled collider reused by a new prism — collides normally again.
-        /// (Same-color prisms are shielded on pass-through and rarely die-then-reuse mid-segment, and
-        /// domain flips between Jade/Ruby strikes are frequent, so the stale window is tiny.)
-        /// </summary>
-        void ClearIgnoredColliders()
-        {
-            if (_ignoredColliders.Count == 0) return;
-            foreach (var col in _ignoredColliders)
-                if (col != null && sphereCol != null)
-                    Physics.IgnoreCollision(sphereCol, col, false);
-            _ignoredColliders.Clear();
+            TriggerFlash(0.6f); // local "chomp" feedback on every peer that ate mass
         }
 
         /// <summary>
@@ -596,31 +605,6 @@ namespace CosmicShore.Gameplay
         {
             float intensity = Mathf.Clamp01(_velocityBeforePhysics.magnitude / settings.maxSpeed);
             WallBounce_ClientRpc(contactPoint, contactNormal, intensity);
-        }
-
-        /// <summary>
-        /// Server: broadcast a domain-aware, speed-scaled prism interaction to every peer so each one
-        /// resolves it against its OWN local trail copies (prisms are per-peer GameObjects laid by
-        /// VesselPrismController on every peer — not shared NetworkObjects, so a server-only resolution
-        /// would desync). Each peer runs PrismSpatialIndex.QuerySphere and, per prism (vs the ball's
-        /// domain + that prism's shield state): SHIELDS own-color mass, UNSHIELDS shielded opposing
-        /// mass, or DESTROYS unshielded opposing mass via the canonical animated Prism.Damage path
-        /// (mass conserved — the ball is the active force). Blast radius scales with impact speed; the
-        /// fragments scatter along the ball's travel direction.
-        /// </summary>
-        void EmitPrismInteraction(Vector3 contactPoint, Vector3 ballVelocity, Domains ballDomain)
-        {
-            float speed = ballVelocity.magnitude;
-            if (speed < settings.prismDestroyMinSpeed) return;
-
-            float now = Time.time;
-            if (now - _lastPrismExplodeTime < settings.prismDestroyCooldown) return;
-            _lastPrismExplodeTime = now;
-
-            float intensity = Mathf.Clamp01(speed / settings.maxSpeed);
-            float radius = Mathf.Lerp(settings.prismDestroyRadius, settings.prismDestroyRadiusAtMaxSpeed, intensity);
-            Vector3 travelDir = speed > 0.001f ? ballVelocity / speed : Vector3.up;
-            PrismInteraction_ClientRpc(contactPoint, travelDir, ballVelocity, intensity, radius, (int)ballDomain);
         }
 
         /// <summary>
@@ -693,11 +677,15 @@ namespace CosmicShore.Gameplay
             VesselStrike(vessel, contactPoint, strikerVelocity, n, deliberate);
         }
 
-        float BallWorldRadius()
+        /// <summary>The ball's world-space radius (collider radius × max lossy scale) — tracks intensity scaling.</summary>
+        public float BallWorldRadius()
         {
             var s = transform.lossyScale;
             return sphereCol.radius * Mathf.Max(s.x, Mathf.Max(s.y, s.z));
         }
+
+        /// <summary>Configured top speed (used by AstroLeagueGoal's teleport guard).</summary>
+        public float MaxSpeed => settings != null ? settings.maxSpeed : 220f;
 
         /// <summary>
         /// Guarantees the ball never overlaps the striking vessel's hull: if the ball center is
@@ -733,15 +721,11 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void VesselStrike(IVessel vessel, Vector3 contactPoint, Vector3 strikerVelocity, Vector3 n, bool deliberate)
         {
-            // Re-color the ball to the striker's domain (requirement 1) — every bounce counts as the
-            // last hit. The same/opposing prism relationship flips with it, so drop every same-color
-            // pass-through we were ignoring.
+            // Re-color the ball to the striker's domain — every bounce counts as the last hit. The
+            // per-tick prism scan picks up the new same/opposing relationship automatically next tick.
             Domains strikerDomain = vessel.VesselStatus != null ? vessel.VesselStatus.Domain : Domains.Blue;
             if (n_LastHitDomain.Value != strikerDomain)
-            {
                 n_LastHitDomain.Value = strikerDomain;
-                ClearIgnoredColliders();
-            }
 
             float strikerSpeed = strikerVelocity.magnitude;
             Vector3 ballVel = rb.linearVelocity;
@@ -777,10 +761,8 @@ namespace CosmicShore.Gameplay
 
             float finalSpeed = desiredVelocity.magnitude;
             float intensity = Mathf.Clamp01(finalSpeed / settings.maxSpeed);
-
-            // A strike also interacts with prisms at the contact (juice + shields/charges nearby
-            // own-color mass and clears opposing mass with the freshly-set domain).
-            EmitPrismInteraction(contactPoint, desiredVelocity, strikerDomain);
+            // Prisms near the strike are handled by the per-tick ProcessPrismInteractions scan, which
+            // already sees the freshly-set domain — no separate strike-time prism pass needed.
 
             if (!deliberate) return;
 
@@ -934,53 +916,6 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Every peer (host included): resolve a domain-aware prism interaction within the blast
-        /// radius of the contact, on this peer's OWN local trail copies. Per prism: SHIELD it if it
-        /// matches the ball's domain (own-color mass, requirement 2), else DESTROY it via the
-        /// canonical animated Prism.Damage path (opposing-color, requirement 3 — spatial-index
-        /// release + explosion VFX, mass conserved). A NEUTRAL ball (Blue, not yet struck) smashes
-        /// every team's mass, as before. Position-deterministic (not instance-based) so it lands
-        /// consistently on the host's, each client's, and the AI's independently-laid trail copies.
-        /// </summary>
-        [ClientRpc]
-        void PrismInteraction_ClientRpc(Vector3 position, Vector3 normal, Vector3 impactVector, float intensity, float radius, int ballDomainInt)
-        {
-            var ballDomain = (Domains)ballDomainInt;
-            bool ballClaimed = ballDomain != Domains.Blue;
-
-            var index = PrismSpatialIndex.Instance;
-            if (index != null)
-            {
-                index.QuerySphere(position, radius, _prismQueryBuffer);
-                for (int i = 0, n = _prismQueryBuffer.Count; i < n; i++)
-                {
-                    var prism = _prismQueryBuffer[i];
-                    if (prism == null || prism.destroyed) continue;
-
-                    if (ballClaimed && prism.Domain == ballDomain)
-                    {
-                        // own-color: shield it (skip if already shielded so repeated broadcasts
-                        // while passing through don't re-fire the shield audio/material).
-                        if (!prism.prismProperties.IsShielded && !prism.prismProperties.IsSuperShielded)
-                            prism.ActivateShield();
-                    }
-                    else
-                    {
-                        prism.Damage(impactVector, ballDomain, BallAttackerName); // opposing (or neutral ball): destroy
-                    }
-                }
-            }
-
-            // Bounce feedback (same channel as wall/vessel impacts), plus a haptic thunk.
-            // Burst + shake scale with both the impact intensity and the blast radius.
-            float radiusScale = Mathf.Clamp01(radius / Mathf.Max(1f, settings.prismDestroyRadiusAtMaxSpeed));
-            TriggerFlash(intensity);
-            EmitBurst(position, normal, (int)(settings.impactParticleBurst * Mathf.Max(0.4f, intensity) * (0.6f + radiusScale)));
-            ShakeCamera(settings.strikeShakeIntensity * intensity * 0.6f, settings.strikeShakeDuration, position);
-            HapticController.PlayHaptic(HapticType.ShipCollision);
-        }
-
-        /// <summary>
         /// Every peer: lightweight wall-bounce feedback (perfectly elastic — no prism interaction,
         /// no decay). Half the prism-impact burst/shake so a wall ricochet reads as a clean carom.
         /// </summary>
@@ -1097,7 +1032,6 @@ namespace CosmicShore.Gameplay
             {
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
-                ClearIgnoredColliders(); // ball is leaving play — drop any same-color pass-throughs
             }
             ApplyHiddenVisuals(hidden); // NetworkVariable callback covers remote peers; host applies inline
         }
@@ -1124,9 +1058,10 @@ namespace CosmicShore.Gameplay
             n_Position.Value = spawnPosition;
             n_Velocity.Value = Vector3.zero;
             n_AngularVelocity.Value = Vector3.zero;
-            // Fresh ball at kickoff: unclaimed until the first strike, and no stale pass-throughs.
+            // Fresh ball at kickoff: unclaimed until the first strike.
             n_LastHitDomain.Value = Domains.Blue;
-            ClearIgnoredColliders();
+            _shieldPoppedThisVisit.Clear();
+            _lastPrismScanPos = spawnPosition;
             if (trail != null) trail.Clear();
         }
 
@@ -1135,8 +1070,6 @@ namespace CosmicShore.Gameplay
         public override void OnDestroy()
         {
             base.OnDestroy();
-            PrismColliderLodManager.UnregisterFocus(transform); // idempotent; also pruned by the LOD sweep
-            ClearIgnoredColliders();
             if (_ballMesh != null) Destroy(_ballMesh);
         }
     }
