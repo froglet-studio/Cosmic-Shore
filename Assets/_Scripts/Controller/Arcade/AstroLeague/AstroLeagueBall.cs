@@ -72,8 +72,28 @@ namespace CosmicShore.Gameplay
             new(true, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
         readonly NetworkVariable<bool> n_Hidden =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        // Real rigidbody angular velocity (rad/s), replicated so non-server peers can free-spin
+        // the kinematic replica and the icosphere's tumble is visible everywhere, not just on the host.
+        readonly NetworkVariable<Vector3> n_AngularVelocity =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+        // Domain (team color) of the vessel that struck the ball LAST. Drives the ball tint, the
+        // selective prism interaction (own color → pass through + shield, opposing → destroy + decay),
+        // and the attacker domain for Prism.Damage. Blue = neutral (no strike yet) → smashes any team's mass.
+        readonly NetworkVariable<Domains> n_LastHitDomain =
+            new(Domains.Blue, readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
         float _lastSnapshotTime;
+
+        // Velocity the ball carries INTO each physics step (captured pre-simulation in
+        // ServerFixedUpdate). OnCollisionEnter runs post-solver, so this is the pre-bounce velocity —
+        // used to (a) restore motion on a same-color pass-through and (b) size the explosion by true
+        // impact speed rather than the just-decayed/just-reflected value.
+        Vector3 _velocityBeforePhysics;
+
+        // Prism colliders the ball is currently ignoring (same-color pass-throughs). Cleared on every
+        // domain flip / kickoff / hide so a prism that changes color — or a pooled collider reused by a
+        // new prism — stops being ignored. Server-only (non-server peers never run ball collisions).
+        readonly HashSet<Collider> _ignoredColliders = new();
 
         // Server-side velocity estimates for transform-driven vessels (root → last pos + velocity)
         readonly Dictionary<Transform, Vector3> _vesselLastPos = new();
@@ -83,16 +103,17 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Transform, float> _lastStrikeTime = new();
         const float StrikeCooldownSeconds = 0.2f;
 
-        // Prism-explosion broadcast flood guard + reusable query buffer (every peer)
+        // Prism-interaction broadcast flood guard + reusable query buffer (every peer)
         float _lastPrismExplodeTime = -999f;
         readonly List<Prism> _prismQueryBuffer = new(32);
-        static readonly Domains BallAttackerDomain = Domains.Blue; // neutral payload — smashes any team's trail
         const string BallAttackerName = "Astro League";
 
         // Visuals
         Light ballLight;
         TrailRenderer trail;
         Renderer ballRenderer;
+        MeshFilter meshFilter;
+        Mesh _ballMesh; // generated icosphere, owned (destroyed in OnDestroy)
         MaterialPropertyBlock mpb;
         ParticleSystem auraParticles;
         ParticleSystem impactParticles;
@@ -107,6 +128,8 @@ namespace CosmicShore.Gameplay
         public Vector3 Velocity => IsServer ? rb.linearVelocity : n_Velocity.Value;
         public bool IsFrozen => n_Frozen.Value;
         public bool IsHidden => n_Hidden.Value;
+        /// <summary>Domain whose color the ball currently carries (Blue = neutral). Set by the last striker.</summary>
+        public Domains LastHitDomain => n_LastHitDomain.Value;
 
         void Awake()
         {
@@ -115,8 +138,12 @@ namespace CosmicShore.Gameplay
             rb = GetComponent<Rigidbody>();
             rb.useGravity = false;
             rb.mass = settings != null ? settings.ballMass : 3f;
-            rb.linearDamping = 0f; // Speed-dependent drag applied in FixedUpdate
-            rb.angularDamping = 0.05f;
+            rb.linearDamping = 0f; // ZERO passive drag — the ball coasts at constant speed (see ServerFixedUpdate)
+            // Keep angular damping low so spin imparted by off-center strikes persists (momentum
+            // conserved), and lift the default 7 rad/s angular-velocity clamp so a hard off-center
+            // smack reads as a real tumble on the faceted icosphere.
+            rb.angularDamping = settings != null ? settings.ballAngularDamping : 0.05f;
+            rb.maxAngularVelocity = settings != null ? settings.maxAngularSpeed : 40f;
             rb.interpolation = RigidbodyInterpolation.Interpolate;
             rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
@@ -179,6 +206,20 @@ namespace CosmicShore.Gameplay
         void SetupVisuals()
         {
             mpb = new MaterialPropertyBlock();
+
+            // Swap the authored Sphere mesh for a medium-poly faceted icosphere so the ball's
+            // rotation is legible as it travels — each flat facet catches the fresnel rim
+            // differently, making the spin readable instead of a uniform glowing ring. Mesh radius
+            // matches the SphereCollider, so the visual hull tracks the physics hull at every
+            // intensity scale (BallWorldRadius reads lossyScale).
+            meshFilter = GetComponent<MeshFilter>();
+            if (meshFilter != null)
+            {
+                int subdiv = settings != null ? settings.ballMeshSubdivisions : IcosphereMeshGenerator.DefaultSubdivisions;
+                float meshRadius = sphereCol != null ? sphereCol.radius : 0.5f;
+                _ballMesh = IcosphereMeshGenerator.Generate(subdiv, meshRadius, flatShaded: true);
+                meshFilter.sharedMesh = _ballMesh;
+            }
 
             ballRenderer = GetComponent<Renderer>();
             if (ballRenderer != null)
@@ -340,16 +381,22 @@ namespace CosmicShore.Gameplay
             if (!n_Frozen.Value)
             {
                 // ZERO friction: the ball coasts at constant speed between collisions. There is no
-                // passive drag — the ONLY speed decay is the per-collision loss in HandleGeometryBounce.
-                // Just cap the top speed so vessel strikes can't make it run away.
+                // passive drag — the ONLY speed decay is the per-collision loss when the ball bounces
+                // off an opposing-color prism (HandlePrismContact). Walls and same-color prisms are
+                // lossless. Just cap the top speed so vessel strikes can't make it run away.
                 if (rb.linearVelocity.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
                     rb.linearVelocity = rb.linearVelocity.normalized * settings.maxSpeed;
+
+                // Snapshot the pre-simulation velocity; OnCollisionEnter (post-solver) reads it to
+                // restore motion through same-color prisms and to size explosions by true impact speed.
+                _velocityBeforePhysics = rb.linearVelocity;
             }
 
             if (IsSpawned)
             {
                 n_Position.Value = transform.position;
                 n_Velocity.Value = n_Frozen.Value ? Vector3.zero : rb.linearVelocity;
+                n_AngularVelocity.Value = n_Frozen.Value ? Vector3.zero : rb.angularVelocity;
             }
         }
 
@@ -403,8 +450,7 @@ namespace CosmicShore.Gameplay
             Vector3 contactPoint = collision.contacts[0].point;
             Vector3 contactNormal = collision.contacts[0].normal;
 
-            // Vessel strikes are the energy INPUT (launch). Everything else — arena walls and
-            // trail prisms alike — is a geometry bounce: explode prisms by speed + decay the ball.
+            // Vessel strikes are the energy INPUT (launch): they re-color the ball and re-energize it.
             var vessel = collision.collider.GetComponentInParent<IVessel>();
             if (vessel != null)
             {
@@ -412,36 +458,95 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            HandleGeometryBounce(contactPoint, contactNormal);
+            // Trail prism: the DOMAIN relationship decides bounce-and-destroy vs pass-and-shield.
+            var prism = collision.collider.GetComponentInParent<Prism>();
+            if (prism != null)
+            {
+                HandlePrismContact(collision.collider, prism, contactPoint, contactNormal);
+                return;
+            }
+
+            // Arena wall (or other non-prism geometry): perfectly elastic — the solver already
+            // reflected at bounciness 1, and we add NO decay and destroy nothing (requirement 4).
+            HandleWallBounce(contactPoint, contactNormal);
         }
 
         /// <summary>
-        /// Server: the ball bounced off static geometry (arena wall or trail prism). OnCollisionEnter
-        /// runs post-solver, so rb.linearVelocity is already the reflected (full-speed, bounciness=1)
-        /// ricochet. We then (1) emit a speed-scaled prism explosion at the contact — destroying any
-        /// trail prisms in the blast radius — and (2) apply the per-collision speed decay, which is
-        /// the ONLY way the ball loses speed (there is no passive friction). The energy lost on the
-        /// bounce is, conceptually, what powers the explosion.
+        /// Server: the ball contacted a trail prism. The ball's domain (the last striker's team)
+        /// decides everything:
+        ///   • SAME color as the ball (own trail) → PASS THROUGH: restore the pre-contact velocity so
+        ///     no bounce/decay happens, ignore this collider for subsequent frames, and shield the
+        ///     prisms via the broadcast. The single micro-bounce before the restore is negligible.
+        ///   • OPPOSING color (or a NEUTRAL ball that has not been struck yet) → BOUNCE (the solver
+        ///     already reflected at bounciness 1) + DESTROY the prisms via the broadcast + apply the
+        ///     per-collision speed decay. Bouncing off opposing mass is the ONLY thing that slows the
+        ///     ball (requirement 4) — the energy lost is, conceptually, what powers the explosion.
         /// </summary>
-        void HandleGeometryBounce(Vector3 contactPoint, Vector3 contactNormal)
+        void HandlePrismContact(Collider prismCollider, Prism prism, Vector3 contactPoint, Vector3 contactNormal)
         {
-            float impactSpeed = rb.linearVelocity.magnitude;
+            Domains ballDomain = n_LastHitDomain.Value;
+            bool same = ballDomain != Domains.Blue && prism.Domain == ballDomain;
+            float impactSpeed = _velocityBeforePhysics.magnitude;
 
-            EmitPrismExplosion(contactPoint, contactNormal, impactSpeed);
+            if (same)
+            {
+                // Undo the solver's bounce — coast straight through own-color mass, losslessly.
+                rb.linearVelocity = _velocityBeforePhysics;
+                IgnorePrismCollider(prismCollider);
+            }
 
-            // The only speed-decay mechanism: keep a fraction of speed on every bounce.
-            rb.linearVelocity *= settings.collisionSpeedRetention;
+            // Domain-aware radius interaction (shields same-color, destroys opposing) on every peer.
+            EmitPrismInteraction(contactPoint, contactNormal, impactSpeed, ballDomain);
+
+            // Speed decay fires ONLY on an opposing-color bounce (requirement 4).
+            if (!same)
+                rb.linearVelocity *= settings.collisionSpeedRetention;
+        }
+
+        /// <summary>Server: ignore future contacts with a passed-through prism collider (tracked so it can be cleared).</summary>
+        void IgnorePrismCollider(Collider prismCollider)
+        {
+            if (prismCollider == null || sphereCol == null) return;
+            if (_ignoredColliders.Add(prismCollider))
+                Physics.IgnoreCollision(sphereCol, prismCollider, true);
         }
 
         /// <summary>
-        /// Server: broadcast a speed-scaled explode-at-position to every peer so each one destroys
-        /// the prisms near the contact point in its OWN local trail copies (prisms are per-peer
-        /// GameObjects laid by VesselPrismController on every peer — not shared NetworkObjects, so a
-        /// server-only Damage would desync). Each peer runs the canonical Prism.Damage path: animated
-        /// explode-out, spatial-index release, mass conserved (the ball is the active force). Blast
-        /// radius scales from prismDestroyRadius up to prismDestroyRadiusAtMaxSpeed with impact speed.
+        /// Server: stop ignoring every prism collider we passed through. Called whenever the
+        /// same/opposing relationship can change (domain flip on a strike, kickoff reset, hide), so a
+        /// recolored prism — or a pooled collider reused by a new prism — collides normally again.
+        /// (Same-color prisms are shielded on pass-through and rarely die-then-reuse mid-segment, and
+        /// domain flips between Jade/Ruby strikes are frequent, so the stale window is tiny.)
         /// </summary>
-        void EmitPrismExplosion(Vector3 contactPoint, Vector3 contactNormal, float speed)
+        void ClearIgnoredColliders()
+        {
+            if (_ignoredColliders.Count == 0) return;
+            foreach (var col in _ignoredColliders)
+                if (col != null && sphereCol != null)
+                    Physics.IgnoreCollision(sphereCol, col, false);
+            _ignoredColliders.Clear();
+        }
+
+        /// <summary>
+        /// Server: a wall (or other non-prism geometry) bounce. Perfectly elastic — the solver's
+        /// reflection at bounciness 1 stands, NO decay, no prism interaction; just bounce juice.
+        /// </summary>
+        void HandleWallBounce(Vector3 contactPoint, Vector3 contactNormal)
+        {
+            float intensity = Mathf.Clamp01(_velocityBeforePhysics.magnitude / settings.maxSpeed);
+            WallBounce_ClientRpc(contactPoint, contactNormal, intensity);
+        }
+
+        /// <summary>
+        /// Server: broadcast a domain-aware, speed-scaled prism interaction to every peer so each one
+        /// resolves it against its OWN local trail copies (prisms are per-peer GameObjects laid by
+        /// VesselPrismController on every peer — not shared NetworkObjects, so a server-only resolution
+        /// would desync). Each peer runs PrismSpatialIndex.QuerySphere and, per prism: shields it if it
+        /// matches the ball's domain (own mass), else destroys it via the canonical animated
+        /// Prism.Damage path (spatial-index release + VFX, mass conserved — the ball is the active
+        /// force). Blast radius scales from prismDestroyRadius up to prismDestroyRadiusAtMaxSpeed.
+        /// </summary>
+        void EmitPrismInteraction(Vector3 contactPoint, Vector3 contactNormal, float speed, Domains ballDomain)
         {
             if (speed < settings.prismDestroyMinSpeed) return;
 
@@ -452,7 +557,7 @@ namespace CosmicShore.Gameplay
             float intensity = Mathf.Clamp01(speed / settings.maxSpeed);
             float radius = Mathf.Lerp(settings.prismDestroyRadius, settings.prismDestroyRadiusAtMaxSpeed, intensity);
             Vector3 impactVector = -contactNormal * speed; // scatter fragments in the ball's travel direction
-            ExplodePrismsAtPoint_ClientRpc(contactPoint, contactNormal, impactVector, intensity, radius);
+            PrismInteraction_ClientRpc(contactPoint, contactNormal, impactVector, intensity, radius, (int)ballDomain);
         }
 
         /// <summary>
@@ -522,25 +627,44 @@ namespace CosmicShore.Gameplay
 
             _lastStrikeTime[root] = now;
 
+            // Re-color the ball to the striker's domain (requirement 1). The same/opposing prism
+            // relationship flips with it, so drop every same-color pass-through we were ignoring.
+            Domains strikerDomain = vessel.VesselStatus != null ? vessel.VesselStatus.Domain : Domains.Blue;
+            if (n_LastHitDomain.Value != strikerDomain)
+            {
+                n_LastHitDomain.Value = strikerDomain;
+                ClearIgnoredColliders();
+            }
+
             // Billiard deflection blended toward the striker's heading.
             Vector3 deflectionDir = (transform.position - contactPoint).normalized;
             Vector3 pushDir = strikerVelocity.normalized;
             Vector3 resultDir = Vector3.Slerp(deflectionDir, pushDir, settings.directionalBias).normalized;
 
-            Vector3 retained = rb.linearVelocity * settings.velocityRetention;
-            rb.linearVelocity = retained + resultDir * (strikerSpeed * settings.hitBoostMultiplier);
+            // Desired post-strike COM velocity (same tuned model as before): keep a little of the
+            // inbound velocity, add the striker's speed × boost along the result direction, cap to max.
+            Vector3 desiredVelocity = rb.linearVelocity * settings.velocityRetention
+                                    + resultDir * (strikerSpeed * settings.hitBoostMultiplier);
+            if (desiredVelocity.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
+                desiredVelocity = desiredVelocity.normalized * settings.maxSpeed;
 
-            float finalSpeed = rb.linearVelocity.magnitude;
-            if (finalSpeed > settings.maxSpeed)
-            {
-                rb.linearVelocity = rb.linearVelocity.normalized * settings.maxSpeed;
-                finalSpeed = settings.maxSpeed;
-            }
+            // Impulse-based contact (requirement 6): instead of overwriting linearVelocity, set the
+            // COM velocity exactly (preserving the tuned feel) AND inject the matching torque from the
+            // OFF-CENTER contact, so the ball spins from real angular dynamics. This is the split form
+            // of AddForceAtPosition(impulse, contactPoint) — direct linear keeps the result immediate
+            // (AddForce* defers a tick), AddTorque ramps the spin in over the next tick (cosmetic).
+            Vector3 oldVelocity = rb.linearVelocity;
+            rb.linearVelocity = desiredVelocity;
+            Vector3 impulse = rb.mass * (desiredVelocity - oldVelocity);
+            Vector3 lever = contactPoint - rb.worldCenterOfMass;
+            rb.AddTorque(Vector3.Cross(lever, impulse), ForceMode.Impulse); // clamped by rb.maxAngularVelocity
 
+            float finalSpeed = desiredVelocity.magnitude;
             float intensity = Mathf.Clamp01(finalSpeed / settings.maxSpeed);
-            // A strike is also a collision — explode prisms at the contact, scaled by launch speed
-            // (no speed decay here; the strike IS the energy input). Gives the smack its burst + shake.
-            EmitPrismExplosion(contactPoint, deflectionDir, finalSpeed);
+            // A strike is also a prism interaction at the contact, scaled by launch speed (no decay —
+            // the strike IS the energy input). With the freshly-set domain it shields own-color mass
+            // and clears opposing mass around the smack, on top of the burst + shake juice.
+            EmitPrismInteraction(contactPoint, deflectionDir, finalSpeed, strikerDomain);
 
             if (finalSpeed > settings.hitstopSpeedThreshold && IsSoloSession())
                 RunHitstopAsync().Forget();
@@ -585,6 +709,17 @@ namespace CosmicShore.Gameplay
         {
             if (settings == null || ballRenderer == null) return;
 
+            // Non-server peers free-spin the kinematic replica from the replicated angular velocity
+            // (the server rigidbody owns the real rotation, interpolated natively). Purely cosmetic —
+            // no gameplay reads client rotation, so any dead-reckoned drift is invisible.
+            if (IsSpawned && !IsServer && !n_Frozen.Value && !n_Hidden.Value)
+            {
+                Vector3 w = n_AngularVelocity.Value;
+                float wMag = w.magnitude;
+                if (wMag > 1e-4f)
+                    transform.rotation = Quaternion.AngleAxis(wMag * Mathf.Rad2Deg * Time.deltaTime, w / wMag) * transform.rotation;
+            }
+
             float speedRatio = Mathf.Clamp01(Velocity.magnitude / settings.speedForMaxVisuals);
 
             // Impact flash decay
@@ -599,13 +734,24 @@ namespace CosmicShore.Gameplay
                 currentEmissionBoost = 1f;
             }
 
-            // Three-way color cycle with breathing pulse
-            float phase = (Time.time * colorCycleSpeed) % 3f;
-            Color emissionColor = phase < 1f
-                ? Color.Lerp(primaryColor, secondaryColor, phase)
-                : phase < 2f
-                    ? Color.Lerp(secondaryColor, tertiaryColor, phase - 1f)
-                    : Color.Lerp(tertiaryColor, primaryColor, phase - 2f);
+            // Color keys to the LAST-HIT domain (requirement 1): a Jade striker tints the ball Jade,
+            // a Ruby striker Ruby. Before any strike the payload is neutral (Blue) and runs the
+            // original three-way rainbow cycle so it reads as "unclaimed".
+            Color emissionColor;
+            Domains dom = n_LastHitDomain.Value;
+            if (dom == Domains.Blue)
+            {
+                float phase = (Time.time * colorCycleSpeed) % 3f;
+                emissionColor = phase < 1f
+                    ? Color.Lerp(primaryColor, secondaryColor, phase)
+                    : phase < 2f
+                        ? Color.Lerp(secondaryColor, tertiaryColor, phase - 1f)
+                        : Color.Lerp(tertiaryColor, primaryColor, phase - 2f);
+            }
+            else
+            {
+                emissionColor = DomainTint(dom);
+            }
 
             float breath = 0.8f + 0.2f * Mathf.Sin(Time.time * 4f);
             float emissionIntensity = Mathf.Lerp(settings.minEmissionIntensity, settings.maxEmissionIntensity, speedRatio);
@@ -648,6 +794,18 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>Base hue for a claimed (non-neutral) ball — matches the arena's per-domain palette.</summary>
+        Color DomainTint(Domains d)
+        {
+            switch (d)
+            {
+                case Domains.Jade: return settings.jadeGoalColor;
+                case Domains.Ruby: return settings.rubyGoalColor;
+                case Domains.Gold: return new Color(1f, 0.82f, 0.2f, 1f);
+                default: return primaryColor;
+            }
+        }
+
         #endregion
 
         #region Juice (replicated to every peer)
@@ -661,16 +819,20 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Every peer (host included): smash this peer's own local trail prisms within
-        /// prismDestroyRadius of the contact point, then play the bounce juice. The ball is a
-        /// neutral active force (Domains.Blue) so it destroys any team's mass via the canonical
-        /// animated Prism.Damage path — spatial-index release + explosion VFX, mass conserved.
-        /// Position-deterministic (not instance-based) so it lands consistently on the host's,
-        /// each client's, and the AI's independently-laid copies of the same trail.
+        /// Every peer (host included): resolve a domain-aware prism interaction within the blast
+        /// radius of the contact, on this peer's OWN local trail copies. Per prism: SHIELD it if it
+        /// matches the ball's domain (own-color mass, requirement 2), else DESTROY it via the
+        /// canonical animated Prism.Damage path (opposing-color, requirement 3 — spatial-index
+        /// release + explosion VFX, mass conserved). A NEUTRAL ball (Blue, not yet struck) smashes
+        /// every team's mass, as before. Position-deterministic (not instance-based) so it lands
+        /// consistently on the host's, each client's, and the AI's independently-laid trail copies.
         /// </summary>
         [ClientRpc]
-        void ExplodePrismsAtPoint_ClientRpc(Vector3 position, Vector3 normal, Vector3 impactVector, float intensity, float radius)
+        void PrismInteraction_ClientRpc(Vector3 position, Vector3 normal, Vector3 impactVector, float intensity, float radius, int ballDomainInt)
         {
+            var ballDomain = (Domains)ballDomainInt;
+            bool ballClaimed = ballDomain != Domains.Blue;
+
             var index = PrismSpatialIndex.Instance;
             if (index != null)
             {
@@ -678,8 +840,19 @@ namespace CosmicShore.Gameplay
                 for (int i = 0, n = _prismQueryBuffer.Count; i < n; i++)
                 {
                     var prism = _prismQueryBuffer[i];
-                    if (prism != null && !prism.destroyed)
-                        prism.Damage(impactVector, BallAttackerDomain, BallAttackerName);
+                    if (prism == null || prism.destroyed) continue;
+
+                    if (ballClaimed && prism.Domain == ballDomain)
+                    {
+                        // own-color: shield it (skip if already shielded so repeated broadcasts
+                        // while passing through don't re-fire the shield audio/material).
+                        if (!prism.prismProperties.IsShielded && !prism.prismProperties.IsSuperShielded)
+                            prism.ActivateShield();
+                    }
+                    else
+                    {
+                        prism.Damage(impactVector, ballDomain, BallAttackerName); // opposing (or neutral ball): destroy
+                    }
                 }
             }
 
@@ -689,6 +862,19 @@ namespace CosmicShore.Gameplay
             TriggerFlash(intensity);
             EmitBurst(position, normal, (int)(settings.impactParticleBurst * Mathf.Max(0.4f, intensity) * (0.6f + radiusScale)));
             ShakeCamera(settings.strikeShakeIntensity * intensity * 0.6f, settings.strikeShakeDuration, position);
+            HapticController.PlayHaptic(HapticType.ShipCollision);
+        }
+
+        /// <summary>
+        /// Every peer: lightweight wall-bounce feedback (perfectly elastic — no prism interaction,
+        /// no decay). Half the prism-impact burst/shake so a wall ricochet reads as a clean carom.
+        /// </summary>
+        [ClientRpc]
+        void WallBounce_ClientRpc(Vector3 position, Vector3 normal, float intensity)
+        {
+            TriggerFlash(intensity * 0.6f);
+            EmitBurst(position, normal, (int)(settings.impactParticleBurst * 0.5f * Mathf.Max(0.4f, intensity)));
+            ShakeCamera(settings.strikeShakeIntensity * intensity * 0.35f, settings.strikeShakeDuration, position);
             HapticController.PlayHaptic(HapticType.ShipCollision);
         }
 
@@ -780,6 +966,10 @@ namespace CosmicShore.Gameplay
             {
                 rb.isKinematic = false;
                 rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+                // Start the kickoff coast from rest — no stale linear/angular velocity carried
+                // across the freeze (a kinematic body preserves its velocity fields).
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
             }
         }
 
@@ -792,6 +982,7 @@ namespace CosmicShore.Gameplay
             {
                 rb.linearVelocity = Vector3.zero;
                 rb.angularVelocity = Vector3.zero;
+                ClearIgnoredColliders(); // ball is leaving play — drop any same-color pass-throughs
             }
             ApplyHiddenVisuals(hidden); // NetworkVariable callback covers remote peers; host applies inline
         }
@@ -807,18 +998,30 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>Server: respawn at center — visible, frozen, zero velocity.</summary>
+        /// <summary>Server: respawn at center — visible, frozen, zero velocity, NEUTRAL color again.</summary>
         public void ResetToCenterServer()
         {
             if (!IsServer) return;
             SetFrozenServer(true);
             SetHiddenServer(false);
             transform.position = spawnPosition;
+            transform.rotation = Quaternion.identity;
             n_Position.Value = spawnPosition;
             n_Velocity.Value = Vector3.zero;
+            n_AngularVelocity.Value = Vector3.zero;
+            // Fresh ball at kickoff: unclaimed until the first strike, and no stale pass-throughs.
+            n_LastHitDomain.Value = Domains.Blue;
+            ClearIgnoredColliders();
             if (trail != null) trail.Clear();
         }
 
         #endregion
+
+        public override void OnDestroy()
+        {
+            base.OnDestroy();
+            ClearIgnoredColliders();
+            if (_ballMesh != null) Destroy(_ballMesh);
+        }
     }
 }
