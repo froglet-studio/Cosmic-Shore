@@ -236,7 +236,7 @@ MonoBehaviour:
   labelText: {fileID: 1835180383508896597}
   backgroundImage: {fileID: 4515292952354701357}
   inviteButton: {fileID: 3622358010890365329}
-  cancelButton: {fileID: 3622358010890365329}
+  cancelButton: {fileID: 8517248296640600557}
   onlineColor: {r: 1, g: 1, b: 1, a: 1}
   inLobbyColor: {r: 0.4, g: 0.8, b: 1, a: 1}
   inMatchColor: {r: 0.9, g: 0.2, b: 0.2, a: 1}
