@@ -637,6 +637,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -991,6 +992,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -1327,6 +1329,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -1809,12 +1812,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 700f55ec68c5d124ebb8eb6d14268efb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!224 &414011380 stripped
-RectTransform:
-  m_CorrespondingSourceObject: {fileID: 1769152618339064765, guid: 4afd6beb328c37b4f97c61ac43f439e2,
-    type: 3}
-  m_PrefabInstance: {fileID: 1892651051}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &414011381 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5130249921551712790, guid: 4afd6beb328c37b4f97c61ac43f439e2,
@@ -2083,6 +2080,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -2840,44 +2838,44 @@ MonoBehaviour:
   closeButton: {fileID: 951941307}
   inviteReceivedAudio: 9
   friendRequestExpirationSeconds: 600
-  partyInviteExpirationSeconds: 30
+  partyInviteExpirationSeconds: 10
 --- !u!1001 &694051689
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
   m_Modification:
     serializedVersion: 3
-    m_TransformParent: {fileID: 414011380}
+    m_TransformParent: {fileID: 1892651054}
     m_Modifications:
     - target: {fileID: 5156703378403233676, guid: 28c3d169aaf35ed4b996a7fcc31c3d2e,
         type: 3}
       propertyPath: m_Pivot.x
-      value: 0.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5156703378403233676, guid: 28c3d169aaf35ed4b996a7fcc31c3d2e,
         type: 3}
       propertyPath: m_Pivot.y
-      value: 0.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5156703378403233676, guid: 28c3d169aaf35ed4b996a7fcc31c3d2e,
         type: 3}
       propertyPath: m_AnchorMax.x
-      value: 0.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5156703378403233676, guid: 28c3d169aaf35ed4b996a7fcc31c3d2e,
         type: 3}
       propertyPath: m_AnchorMax.y
-      value: 0.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5156703378403233676, guid: 28c3d169aaf35ed4b996a7fcc31c3d2e,
         type: 3}
       propertyPath: m_AnchorMin.x
-      value: 0.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5156703378403233676, guid: 28c3d169aaf35ed4b996a7fcc31c3d2e,
         type: 3}
       propertyPath: m_AnchorMin.y
-      value: 0.5
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 5156703378403233676, guid: 28c3d169aaf35ed4b996a7fcc31c3d2e,
         type: 3}
@@ -2927,12 +2925,12 @@ PrefabInstance:
     - target: {fileID: 5156703378403233676, guid: 28c3d169aaf35ed4b996a7fcc31c3d2e,
         type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -2000
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 5156703378403233676, guid: 28c3d169aaf35ed4b996a7fcc31c3d2e,
         type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: 5156703378403233676, guid: 28c3d169aaf35ed4b996a7fcc31c3d2e,
         type: 3}
@@ -3834,7 +3832,6 @@ MonoBehaviour:
   m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
   m_RequiresDepthTexture: 0
   m_RequiresColorTexture: 0
-  m_Version: 2
   m_TaaSettings:
     m_Quality: 3
     m_FrameInfluence: 0.1
@@ -3842,6 +3839,7 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
 --- !u!114 &989920299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4169,6 +4167,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -4305,6 +4304,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -4441,6 +4441,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -5083,6 +5084,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -5370,7 +5372,6 @@ MonoBehaviour:
   clientPlayerVesselInitializer: {fileID: 1486013842}
   vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
     type: 2}
-  shutdownNetworkOnDespawn: 1
   playerSpawnPoints:
   - {fileID: 1564324325}
   - {fileID: 673228694}
@@ -5378,6 +5379,7 @@ MonoBehaviour:
   - {fileID: 1867942830}
   preSpawnDelayMs: 200
   postSpawnDelayMs: 200
+  menuVesselDomain: 1
 --- !u!114 &1486013850
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5422,7 +5424,6 @@ MonoBehaviour:
   menuVesselClass: 6
   menuPlayerCount: 3
   menuIntensity: 1
-  menuVesselDomain: 1
 --- !u!114 &1486013852
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5590,6 +5591,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -5726,6 +5728,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -6110,6 +6113,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -6757,6 +6761,7 @@ MonoBehaviour:
   m_VerticalAlignment: 256
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -8113,14 +8118,14 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 1799603819}
+    - targetCorrespondingSourceObject: {fileID: 4432980322364734296, guid: 4afd6beb328c37b4f97c61ac43f439e2,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 694051690}
     - targetCorrespondingSourceObject: {fileID: 3251318990097861395, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 797780468}
-    - targetCorrespondingSourceObject: {fileID: 1769152618339064765, guid: 4afd6beb328c37b4f97c61ac43f439e2,
-        type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 694051690}
     - targetCorrespondingSourceObject: {fileID: 6818916199757629315, guid: 4afd6beb328c37b4f97c61ac43f439e2,
         type: 3}
       insertIndex: 4
@@ -8516,6 +8521,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   canvasGroup: {fileID: 1960000003}
   volumePauseButton: {fileID: 1960000012}
+  domainVolumeIndicator: {fileID: 0}
   crystalClickHandler: {fileID: 1486013850}
   onShipHUDInitialized: {fileID: 11400000, guid: a03bc39518f9381478a7a3957f9d44af,
     type: 2}
@@ -8751,6 +8757,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
