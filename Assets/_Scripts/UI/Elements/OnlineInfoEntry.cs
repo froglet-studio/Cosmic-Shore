@@ -8,9 +8,11 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Row entry for the Online section of FriendsListPanel.
-    /// Shows avatar, username, lobby/match status, and acts as the invite button
-    /// (the row background is the button). Click sends an invite, tinting the row
-    /// yellowish and pulsing until the target accepts/declines/times out.
+    /// Shows avatar, username, lobby/match status, plus a small Invite button and a
+    /// Cancel (✕) button. The two are mutually exclusive — Invite is interactable only
+    /// when no invite is pending; Cancel is shown only while one is. Sending an invite
+    /// tints the row yellowish and pulses until the target accepts/declines/times out.
+    /// Both actions pass through a shared cooldown so the buttons can't be spam-clicked.
     /// </summary>
     public class OnlineInfoEntry : MonoBehaviour
     {
@@ -19,11 +21,12 @@ namespace CosmicShore.UI
         [SerializeField] private TMP_Text usernameText;
         [SerializeField] private TMP_Text labelText;
 
-        [Header("Invite (whole-row button)")]
-        [Tooltip("The row background image. Acts as the invite button and receives " +
-                 "the yellowish tint while an invite is pending.")]
+        [Header("Invite / Cancel Buttons")]
+        [Tooltip("The row background image. Receives the yellowish pending tint " +
+                 "while an invite to this player is in-flight.")]
         [SerializeField] private Image backgroundImage;
-        [Tooltip("Button on the row background. Click sends an invite.")]
+        [Tooltip("Invite button. Click sends an invite to this player. Interactable " +
+                 "only while no invite is pending.")]
         [SerializeField] private Button inviteButton;
         [Tooltip("Small cancel (✕) button shown only while an outgoing invite to this player is " +
                  "pending. Click retracts the invite. Leave unassigned to disable the affordance.")]
@@ -61,6 +64,12 @@ namespace CosmicShore.UI
         [Tooltip("Scale multiplier at the peak of the invite-click punch.")]
         [SerializeField] private float invitePressPunchScale = 1.08f;
 
+        [Header("Anti-Spam")]
+        [Tooltip("Minimum seconds between consecutive invite/cancel actions on this row. " +
+                 "Throttles double-taps and rapid invite↔cancel toggling so the buttons " +
+                 "can't be spam-clicked. Shared by both buttons.")]
+        [SerializeField] private float actionCooldownSeconds = 0.4f;
+
         public enum Status { Online, InLobby, InMatch, LobbyFull, InYourParty }
 
         string _playerId;
@@ -72,6 +81,7 @@ namespace CosmicShore.UI
         int _lastPartyMaxSlots;
         string _lastMatchName;
         bool _isPending;
+        float _nextActionAllowedTime;
         Coroutine _pulseCoroutine;
         CanvasGroup _canvasGroup;
 
@@ -302,6 +312,7 @@ namespace CosmicShore.UI
         void HandleInviteClicked()
         {
             if (!_invitable) return;
+            if (!TryBeginAction()) return;
             StartCoroutine(PunchScale(transform));
             SetInvitePending();
             _onInvite?.Invoke(_playerId);
@@ -309,10 +320,25 @@ namespace CosmicShore.UI
 
         void HandleCancelClicked()
         {
+            if (!TryBeginAction()) return;
             // Retract the pending invite. ResetInviteState (driven by OutgoingInviteCleared) reverts
             // the row to its online state; call it optimistically too so the ✕ feels instant.
             _onCancel?.Invoke(_playerId);
             ResetInviteState();
+        }
+
+        /// <summary>
+        /// Anti-spam gate shared by the Invite and Cancel buttons. Returns false (and
+        /// ignores the click) when called within <see cref="actionCooldownSeconds"/> of the
+        /// previous accepted action; otherwise arms the next cooldown window and returns true.
+        /// Unscaled so it still throttles while the menu is paused (timeScale 0).
+        /// </summary>
+        bool TryBeginAction()
+        {
+            if (Time.unscaledTime < _nextActionAllowedTime)
+                return false;
+            _nextActionAllowedTime = Time.unscaledTime + Mathf.Max(0f, actionCooldownSeconds);
+            return true;
         }
 
         IEnumerator PunchScale(Transform target)
