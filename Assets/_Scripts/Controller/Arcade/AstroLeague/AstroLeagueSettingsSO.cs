@@ -60,39 +60,46 @@ namespace CosmicShore.Gameplay
         [Tooltip("Lateral spacing between teammates parked on the same kickoff line")]
         public float kickoffLateralSpacing = 30f;
 
-        [Header("Ball — Collision Response")]
-        [Tooltip("Multiplier on vessel speed when transferring momentum to the ball")]
+        [Header("Ball — Vessel Strike (elastic, momentum-conserving)")]
+        [Tooltip("Arcade pop on a vessel strike. The strike is a momentum-conserving ELASTIC bounce " +
+                 "off the moving hull (the ball gains up to ~2× the vessel's speed on a head-on hit); " +
+                 "this adds an EXTRA launch of (multiplier − 1) × vessel speed along the aim direction. " +
+                 "1 = pure elastic, no extra pop.")]
         public float hitBoostMultiplier = 2.5f;
 
-        [Tooltip("0 = pure billiard deflection (away from contact point), 1 = pure push (vessel heading). " +
-                 "Higher gives players more aim control over where a struck ball goes.")]
+        [Tooltip("Aim bias for the strike's extra pop: 0 = along the physical contact normal " +
+                 "(pure billiard deflection), 1 = along the pilot's heading (full aim control).")]
         [Range(0f, 1f)] public float directionalBias = 0.45f;
-
-        [Tooltip("Fraction of existing ball velocity preserved on vessel hit (redirect feel)")]
-        [Range(0f, 1f)] public float velocityRetention = 0.15f;
 
         [Tooltip("Vessel speed below this threshold is ignored (prevents ghost taps)")]
         public float minimumHitSpeed = 5f;
 
-        [Tooltip("On a strike, the ball is ejected so its center is at least (ball radius + this) " +
-                 "from the vessel root — guarantees the vessel hull never clips through the ball, " +
-                 "including the trigger-only ships (Serpent/Sparrow) that have no physical barrier. " +
-                 "Roughly the vessel's visual hull reach.")]
+        [Tooltip("Minimum seconds between strikes from the SAME vessel. Dedups the hull+trigger " +
+                 "double-fire AND paces dribble taps while a vessel keeps pushing the ball. The " +
+                 "anti-clip depenetration runs every contact frame regardless of this cooldown, so a " +
+                 "vessel can never clip the ball even between strikes.")]
+        public float vesselStrikeCooldown = 0.12f;
+
+        [Tooltip("Anti-clip: every contact frame the ball is pushed so its center is at least " +
+                 "(ball radius + this) from the vessel root — guarantees the vessel hull never clips " +
+                 "through the ball, including the trigger-only ships (Serpent/Sparrow) that have no " +
+                 "physical depenetration. Roughly the vessel's visual hull reach.")]
         public float vesselClearRadius = 12f;
 
         [Header("Ball — Physics (zero friction)")]
         public float maxSpeed = 220f;
         public float ballMass = 3f;
-        [Tooltip("1 = perfectly elastic reflection direction. The ball has ZERO passive friction/drag " +
-                 "— it coasts at constant speed between collisions; the ONLY speed decay is the " +
-                 "per-collision loss below.")]
+        [Tooltip("Restitution for the ball's ELASTIC bounces off walls and vessels (1 = perfectly " +
+                 "elastic). The ball has ZERO passive friction/drag — it coasts at constant speed " +
+                 "between collisions. It NEVER bounces off prisms (it passes through them); the only " +
+                 "thing that slows it is plowing through opposing-color prism mass (see below).")]
         [Range(0f, 1f)] public float ballBounciness = 1f;
 
-        [Tooltip("Fraction of speed KEPT when the ball bounces off an OPPOSING-color prism (and " +
-                 "destroys it) — THE ONLY speed-decay mechanism (0.85 = lose 15%). Walls are " +
-                 "perfectly elastic (no decay) and same-color prisms are passed through (no decay). " +
-                 "Vessel strikes re-energize the ball; the energy lost feeds the prism explosion.")]
-        [Range(0f, 1f)] public float collisionSpeedRetention = 0.85f;
+        [Tooltip("How hard opposing-color prism MASS slows the ball as it plows through (it keeps its " +
+                 "direction, only its speed drops). Per eaten prism: speed ×= ballMass / (ballMass + " +
+                 "this × prismVolume). 0 = no drag (ball never slows); higher = a thick enemy wall " +
+                 "brakes the ball hard. Same-color and shielded prisms cost no speed.")]
+        public float prismDragMassScale = 0.5f;
 
         [Header("Ball — Angular Dynamics (rotational inertia)")]
         [Tooltip("Angular damping on the ball rigidbody. Keep low so spin (imparted by off-center " +

@@ -100,9 +100,9 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Transform, Vector3> _vesselLastPos = new();
         readonly Dictionary<Transform, Vector3> _vesselVelocity = new();
 
-        // Per-vessel strike cooldown so one fly-through doesn't register as several hits
+        // Per-vessel-root time of last strike — dedups the hull+trigger double-fire and paces dribble
+        // taps (see VesselContact). Gated by settings.vesselStrikeCooldown.
         readonly Dictionary<Transform, float> _lastStrikeTime = new();
-        const float StrikeCooldownSeconds = 0.2f;
 
         // Prism-interaction broadcast flood guard + reusable query buffer (every peer)
         float _lastPrismExplodeTime = -999f;
@@ -460,15 +460,16 @@ namespace CosmicShore.Gameplay
             Vector3 contactPoint = collision.contacts[0].point;
             Vector3 contactNormal = collision.contacts[0].normal;
 
-            // Vessel strikes are the energy INPUT (launch): they re-color the ball and re-energize it.
+            // Vessel: momentum-conserving elastic bounce off the moving hull + anti-clip depenetration.
             var vessel = collision.collider.GetComponentInParent<IVessel>();
             if (vessel != null)
             {
-                VesselStrike(vessel, contactPoint);
+                VesselContact(vessel, contactPoint);
                 return;
             }
 
-            // Trail prism: the DOMAIN relationship decides bounce-and-destroy vs pass-and-shield.
+            // Trail prism: the ball NEVER bounces off prisms — it passes through, with a domain-keyed
+            // side effect (slow+destroy opposing, shield same, unshield shielded-opposing). See HandlePrismContact.
             var prism = collision.collider.GetComponentInParent<Prism>();
             if (prism != null)
             {
@@ -477,40 +478,70 @@ namespace CosmicShore.Gameplay
             }
 
             // Arena wall (or other non-prism geometry): perfectly elastic — the solver already
-            // reflected at bounciness 1, and we add NO decay and destroy nothing (requirement 4).
+            // reflected at bounciness 1, and we add NO decay and destroy nothing.
             HandleWallBounce(contactPoint, contactNormal);
         }
 
         /// <summary>
-        /// Server: the ball contacted a trail prism. The ball's domain (the last striker's team)
-        /// decides everything:
-        ///   • SAME color as the ball (own trail) → PASS THROUGH: restore the pre-contact velocity so
-        ///     no bounce/decay happens, ignore this collider for subsequent frames, and shield the
-        ///     prisms via the broadcast. The single micro-bounce before the restore is negligible.
-        ///   • OPPOSING color (or a NEUTRAL ball that has not been struck yet) → BOUNCE (the solver
-        ///     already reflected at bounciness 1) + DESTROY the prisms via the broadcast + apply the
-        ///     per-collision speed decay. Bouncing off opposing mass is the ONLY thing that slows the
-        ///     ball (requirement 4) — the energy lost is, conceptually, what powers the explosion.
+        /// Server: a vessel is STILL overlapping the ball (physics hull). Re-runs VesselContact every
+        /// physics tick so the ball is depenetrated out of the hull continuously — the ball can never
+        /// clip even if the pilot keeps driving into it — and a re-hit lands as soon as the per-vessel
+        /// strike cooldown allows (dribbling). Prisms/walls do nothing on Stay (the ball passes through
+        /// prisms and bounces cleanly off walls on Enter).
+        /// </summary>
+        void OnCollisionStay(Collision collision)
+        {
+            if (settings == null || n_Frozen.Value || n_Hidden.Value) return;
+            if (IsSpawned && !IsServer) return;
+            if (collision.collider == null || collision.contactCount == 0) return;
+
+            var vessel = collision.collider.GetComponentInParent<IVessel>();
+            if (vessel != null)
+                VesselContact(vessel, collision.contacts[0].point);
+        }
+
+        /// <summary>
+        /// Server: the ball contacted a trail prism. The ball NEVER bounces off a prism — it always
+        /// passes through (continues in the same direction); only the SPEED and the prism state change,
+        /// keyed by the ball's domain (last striker's team) vs the prism's domain + shield state:
+        ///   • SAME color (own trail)            → pass through unimpeded; SHIELD the prism (if not already).
+        ///   • OPPOSING + UNSHIELDED (or NEUTRAL  → pass through but SLOW by the prism's MASS (volume);
+        ///     ball, which has no own color)         DESTROY the prism (eats the opposing mass).
+        ///   • OPPOSING + SHIELDED               → pass through unimpeded; UNSHIELD the prism, leave it.
+        /// The only things the ball bounces off are walls and vessels (elastic). The solver may apply a
+        /// one-frame micro-bounce before we restore the pre-contact velocity here; it is negligible, and
+        /// IgnorePrismCollider makes subsequent frames pass cleanly. Per-prism state changes ride the
+        /// position-deterministic broadcast (EmitPrismInteraction) so every peer's local trail matches.
         /// </summary>
         void HandlePrismContact(Collider prismCollider, Prism prism, Vector3 contactPoint, Vector3 contactNormal)
         {
             Domains ballDomain = n_LastHitDomain.Value;
-            bool same = ballDomain != Domains.Blue && prism.Domain == ballDomain;
-            float impactSpeed = _velocityBeforePhysics.magnitude;
+            bool ballNeutral = ballDomain == Domains.Blue;
+            bool same = !ballNeutral && prism.Domain == ballDomain;
+            bool shielded = prism.prismProperties.IsShielded || prism.prismProperties.IsSuperShielded;
 
-            if (same)
+            // Continue straight through the prism (no bounce, ever). For opposing UNSHIELDED mass the
+            // ball is slowed by the prism's mass but keeps its direction; same/shielded pass losslessly.
+            Vector3 preVel = _velocityBeforePhysics;
+            if (!same && !shielded)
             {
-                // Undo the solver's bounce — coast straight through own-color mass, losslessly.
-                rb.linearVelocity = _velocityBeforePhysics;
-                IgnorePrismCollider(prism, prismCollider);
+                // Eat opposing mass: momentum-style drag — heavier prism (more volume) slows it more,
+                // direction preserved, speed never reversed. v' = v · M / (M + k·prismVolume).
+                float prismMass = settings.prismDragMassScale * Mathf.Max(0f, prism.CurrentVolume);
+                float retain = rb.mass / Mathf.Max(0.0001f, rb.mass + prismMass);
+                rb.linearVelocity = preVel * retain;
+            }
+            else
+            {
+                // Same color or shielded-opposing: pass through with NO speed change.
+                rb.linearVelocity = preVel;
             }
 
-            // Domain-aware radius interaction (shields same-color, destroys opposing) on every peer.
-            EmitPrismInteraction(contactPoint, contactNormal, impactSpeed, ballDomain);
+            IgnorePrismCollider(prism, prismCollider); // never bounce off a prism — pass cleanly hereafter
 
-            // Speed decay fires ONLY on an opposing-color bounce (requirement 4).
-            if (!same)
-                rb.linearVelocity *= settings.collisionSpeedRetention;
+            // Per-peer prism state change (shield same / unshield shielded-opposing / destroy opposing),
+            // broadcast position-deterministically. Direction-of-travel impact for the explode scatter.
+            EmitPrismInteraction(contactPoint, preVel, ballDomain);
         }
 
         /// <summary>
@@ -571,13 +602,15 @@ namespace CosmicShore.Gameplay
         /// Server: broadcast a domain-aware, speed-scaled prism interaction to every peer so each one
         /// resolves it against its OWN local trail copies (prisms are per-peer GameObjects laid by
         /// VesselPrismController on every peer — not shared NetworkObjects, so a server-only resolution
-        /// would desync). Each peer runs PrismSpatialIndex.QuerySphere and, per prism: shields it if it
-        /// matches the ball's domain (own mass), else destroys it via the canonical animated
-        /// Prism.Damage path (spatial-index release + VFX, mass conserved — the ball is the active
-        /// force). Blast radius scales from prismDestroyRadius up to prismDestroyRadiusAtMaxSpeed.
+        /// would desync). Each peer runs PrismSpatialIndex.QuerySphere and, per prism (vs the ball's
+        /// domain + that prism's shield state): SHIELDS own-color mass, UNSHIELDS shielded opposing
+        /// mass, or DESTROYS unshielded opposing mass via the canonical animated Prism.Damage path
+        /// (mass conserved — the ball is the active force). Blast radius scales with impact speed; the
+        /// fragments scatter along the ball's travel direction.
         /// </summary>
-        void EmitPrismInteraction(Vector3 contactPoint, Vector3 contactNormal, float speed, Domains ballDomain)
+        void EmitPrismInteraction(Vector3 contactPoint, Vector3 ballVelocity, Domains ballDomain)
         {
+            float speed = ballVelocity.magnitude;
             if (speed < settings.prismDestroyMinSpeed) return;
 
             float now = Time.time;
@@ -586,19 +619,25 @@ namespace CosmicShore.Gameplay
 
             float intensity = Mathf.Clamp01(speed / settings.maxSpeed);
             float radius = Mathf.Lerp(settings.prismDestroyRadius, settings.prismDestroyRadiusAtMaxSpeed, intensity);
-            Vector3 impactVector = -contactNormal * speed; // scatter fragments in the ball's travel direction
-            PrismInteraction_ClientRpc(contactPoint, contactNormal, impactVector, intensity, radius, (int)ballDomain);
+            Vector3 travelDir = speed > 0.001f ? ballVelocity / speed : Vector3.up;
+            PrismInteraction_ClientRpc(contactPoint, travelDir, ballVelocity, intensity, radius, (int)ballDomain);
         }
 
         /// <summary>
-        /// Trigger-collider strike path. Serpent and Sparrow have NO non-trigger hull collider,
-        /// so the ball never gets an OnCollisionEnter against them — without this they'd pass
-        /// straight through the ball. Every vessel has at least a trigger collider, so detect
-        /// strikes here too (the per-vessel cooldown dedups the double-fire on ships that have
-        /// both). The strike model sets the ball velocity and ejects the ball clear of the hull,
-        /// so the ball never clips even without a physical barrier.
+        /// Trigger-collider vessel path (Enter). Serpent and Sparrow have NO non-trigger hull collider,
+        /// so the ball never gets an OnCollisionEnter against them — without this they'd pass straight
+        /// through. Every vessel has at least a trigger collider. The per-vessel strike cooldown dedups
+        /// the double-fire on ships that have both a hull and a trigger.
         /// </summary>
-        void OnTriggerEnter(Collider other)
+        void OnTriggerEnter(Collider other) => HandleVesselTrigger(other);
+
+        /// <summary>
+        /// Trigger-collider vessel path (Stay): keep depenetrating + allow re-hits every frame the
+        /// vessel overlaps, so trigger-only ships (no physics depenetration) can never clip the ball.
+        /// </summary>
+        void OnTriggerStay(Collider other) => HandleVesselTrigger(other);
+
+        void HandleVesselTrigger(Collider other)
         {
             if (settings == null || n_Frozen.Value || n_Hidden.Value) return;
             if (IsSpawned && !IsServer) return;
@@ -614,7 +653,44 @@ namespace CosmicShore.Gameplay
                 ? ballCenter + toVessel.normalized * BallWorldRadius()
                 : ballCenter;
 
-            VesselStrike(vessel, contactPoint);
+            VesselContact(vessel, contactPoint);
+        }
+
+        /// <summary>
+        /// Server: unified vessel↔ball contact (from both collider paths, Enter AND Stay), layered so
+        /// the ball can NEVER clip a vessel and ALWAYS bounces off one:
+        ///   1. Anti-clip — ALWAYS depenetrate the ball out of the hull (EjectBallFromVessel only acts
+        ///      while overlapping), every contact frame. The hull can't pass through the ball even if
+        ///      the pilot keeps driving in, and even for trigger-only ships with no physics depenetration.
+        ///   2. Elastic bounce — on every frame the ball is moving INTO the vessel (approach &lt; 0), it
+        ///      bounces off (momentum-conserving moving-paddle reflection) + re-colors + spins. This is
+        ///      self-limiting (once it bounces away it stops approaching) and self-deduping (a second
+        ///      collider path the same frame sees the ball already separating), so a stationary or
+        ///      trigger-only ship still cleanly reflects the ball instead of letting it stick.
+        ///   3. Deliberate-strike extras — the arcade pop, vessel recoil (it bounces off too), and
+        ///      hitstop are rate-limited per vessel by vesselStrikeCooldown (and gated on minimumHitSpeed)
+        ///      so a fast committed hit pops + recoils while continuous dribble contact doesn't spam RPCs.
+        /// </summary>
+        void VesselContact(IVessel vessel, Vector3 contactPoint)
+        {
+            var root = vessel.Transform;
+            if (root == null) return;
+
+            EjectBallFromVessel(root); // anti-clip every frame — independent of the bounce/strike gating
+
+            Vector3 strikerVelocity = ResolveStrikerVelocity(vessel);
+
+            // Only respond when the ball is actually moving INTO the vessel — avoids re-launching a ball
+            // that has already bounced away (self-limiting) and double-bouncing on the second collider path.
+            Vector3 n = (transform.position - contactPoint).normalized;
+            if (Vector3.Dot(rb.linearVelocity - strikerVelocity, n) >= 0f) return;
+
+            float now = Time.time;
+            bool deliberate = strikerVelocity.magnitude >= settings.minimumHitSpeed
+                && (!_lastStrikeTime.TryGetValue(root, out var last) || now - last >= settings.vesselStrikeCooldown);
+            if (deliberate) _lastStrikeTime[root] = now;
+
+            VesselStrike(vessel, contactPoint, strikerVelocity, n, deliberate);
         }
 
         float BallWorldRadius()
@@ -644,21 +720,22 @@ namespace CosmicShore.Gameplay
             if (IsSpawned) n_Position.Value = cleared;
         }
 
-        void VesselStrike(IVessel vessel, Vector3 contactPoint)
+        /// <summary>
+        /// Server: momentum-conserving ELASTIC bounce of the ball off the moving vessel hull. Vessels
+        /// are transform-driven, so the hull is treated as an infinite-mass moving paddle: in the
+        /// vessel's frame the approaching component of the ball's velocity reflects about the contact
+        /// normal (restitution = ballBounciness); transforming back adds the vessel velocity, so a fast
+        /// vessel imparts up to ~2× its speed (the kick) and the ball cleanly bounces off — a stationary
+        /// vessel still reflects the ball's own velocity. The off-center contact injects torque → spin,
+        /// and the ball re-colors to the striker's domain. Always runs on an approaching contact (the
+        /// caller guarantees that). When <paramref name="deliberate"/> (fast hit, off cooldown) it also
+        /// adds the arcade pop (hitBoostMultiplier, aim-biased), recoils the vessel, and may hitstop.
+        /// </summary>
+        void VesselStrike(IVessel vessel, Vector3 contactPoint, Vector3 strikerVelocity, Vector3 n, bool deliberate)
         {
-            var root = vessel.Transform;
-            float now = Time.time;
-            if (_lastStrikeTime.TryGetValue(root, out var last) && now - last < StrikeCooldownSeconds)
-                return;
-
-            Vector3 strikerVelocity = ResolveStrikerVelocity(vessel);
-            float strikerSpeed = strikerVelocity.magnitude;
-            if (strikerSpeed < settings.minimumHitSpeed) return;
-
-            _lastStrikeTime[root] = now;
-
-            // Re-color the ball to the striker's domain (requirement 1). The same/opposing prism
-            // relationship flips with it, so drop every same-color pass-through we were ignoring.
+            // Re-color the ball to the striker's domain (requirement 1) — every bounce counts as the
+            // last hit. The same/opposing prism relationship flips with it, so drop every same-color
+            // pass-through we were ignoring.
             Domains strikerDomain = vessel.VesselStatus != null ? vessel.VesselStatus.Domain : Domains.Blue;
             if (n_LastHitDomain.Value != strikerDomain)
             {
@@ -666,43 +743,51 @@ namespace CosmicShore.Gameplay
                 ClearIgnoredColliders();
             }
 
-            // Billiard deflection blended toward the striker's heading.
-            Vector3 deflectionDir = (transform.position - contactPoint).normalized;
-            Vector3 pushDir = strikerVelocity.normalized;
-            Vector3 resultDir = Vector3.Slerp(deflectionDir, pushDir, settings.directionalBias).normalized;
+            float strikerSpeed = strikerVelocity.magnitude;
+            Vector3 ballVel = rb.linearVelocity;
 
-            // Desired post-strike COM velocity (same tuned model as before): keep a little of the
-            // inbound velocity, add the striker's speed × boost along the result direction, cap to max.
-            Vector3 desiredVelocity = rb.linearVelocity * settings.velocityRetention
-                                    + resultDir * (strikerSpeed * settings.hitBoostMultiplier);
+            // Elastic collision off the moving paddle (momentum-conserving against an infinite-mass
+            // hull): reflect the APPROACHING component of the relative velocity, then add V back.
+            Vector3 rel = ballVel - strikerVelocity;
+            float approach = Vector3.Dot(rel, n);                       // < 0: ball moving into the hull
+            float e = Mathf.Clamp01(settings.ballBounciness);
+            Vector3 reflectedRel = rel - (1f + e) * Mathf.Min(0f, approach) * n;
+            Vector3 desiredVelocity = reflectedRel + strikerVelocity;
+
+            if (deliberate)
+            {
+                // Arcade pop: extra launch biased from the contact normal toward the pilot's heading
+                // (aim), scaled by strike strength. directionalBias 0 = pure normal, 1 = pure heading.
+                Vector3 aimDir = strikerSpeed > 0.0001f
+                    ? Vector3.Slerp(n, strikerVelocity / strikerSpeed, settings.directionalBias).normalized
+                    : n;
+                desiredVelocity += aimDir * (strikerSpeed * Mathf.Max(0f, settings.hitBoostMultiplier - 1f));
+            }
+
             if (desiredVelocity.sqrMagnitude > settings.maxSpeed * settings.maxSpeed)
                 desiredVelocity = desiredVelocity.normalized * settings.maxSpeed;
 
-            // Impulse-based contact (requirement 6): instead of overwriting linearVelocity, set the
-            // COM velocity exactly (preserving the tuned feel) AND inject the matching torque from the
-            // OFF-CENTER contact, so the ball spins from real angular dynamics. This is the split form
-            // of AddForceAtPosition(impulse, contactPoint) — direct linear keeps the result immediate
-            // (AddForce* defers a tick), AddTorque ramps the spin in over the next tick (cosmetic).
-            Vector3 oldVelocity = rb.linearVelocity;
+            // Apply as set-linear + matching off-center torque (the split form of
+            // AddForceAtPosition(impulse, contactPoint)): spin emerges from real angular dynamics while
+            // the linear result is immediate (AddForce* would defer a tick).
+            Vector3 impulse = rb.mass * (desiredVelocity - ballVel);
             rb.linearVelocity = desiredVelocity;
-            Vector3 impulse = rb.mass * (desiredVelocity - oldVelocity);
             Vector3 lever = contactPoint - rb.worldCenterOfMass;
             rb.AddTorque(Vector3.Cross(lever, impulse), ForceMode.Impulse); // clamped by rb.maxAngularVelocity
 
             float finalSpeed = desiredVelocity.magnitude;
             float intensity = Mathf.Clamp01(finalSpeed / settings.maxSpeed);
-            // A strike is also a prism interaction at the contact, scaled by launch speed (no decay —
-            // the strike IS the energy input). With the freshly-set domain it shields own-color mass
-            // and clears opposing mass around the smack, on top of the burst + shake juice.
-            EmitPrismInteraction(contactPoint, deflectionDir, finalSpeed, strikerDomain);
+
+            // A strike also interacts with prisms at the contact (juice + shields/charges nearby
+            // own-color mass and clears opposing mass with the freshly-set domain).
+            EmitPrismInteraction(contactPoint, desiredVelocity, strikerDomain);
+
+            if (!deliberate) return;
 
             if (finalSpeed > settings.hitstopSpeedThreshold && IsSoloSession())
                 RunHitstopAsync().Forget();
 
-            // Pop the ball clear of the vessel hull so the vessel never clips through it.
-            EjectBallFromVessel(root);
-
-            OnStruckServer?.Invoke(vessel, intensity);
+            OnStruckServer?.Invoke(vessel, intensity); // controller recoils the vessel (it bounces off too)
         }
 
         /// <summary>
