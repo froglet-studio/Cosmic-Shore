@@ -96,6 +96,14 @@ A static `Instance` lets scene MonoBehaviours reach it (mirrors `PartyInviteCont
   flags). `TournamentStateMachine` tracks `Idle → Lobby → InGame → Complete → Summary` — `Complete`
   is the transient phase while the deciding game's scoreboard is up, `Summary` is the results scene
   itself (Play Again from `Summary` re-enters `InGame`; Main Menu returns to `Idle`).
+- **The summary decision is authoritative, not phase-driven (race-to-6 fix).** At the Maelstrom scene
+  load, `HandleSceneLoaded` shows the **Summary** when `IsActive && TournamentDataSO.IsShuffleComplete`
+  (deterministic on every peer) — **not** when the transient `Complete` phase happens to be set.
+  `HandleMiniGameEnd` still sets `Complete` as a best-effort signal, but that transition only lands when
+  the deciding game ends in the `InGame` phase; relying on it alone once let a domain hit `WinTarget` (6)
+  yet route back to the hub for another game (the win silently swallowed). `EnterSummary` reaches
+  `Summary` from `InGame`/`Lobby`/`Complete`, so the win always surfaces. Covered by
+  `TournamentStateMachineTests` + `TournamentDataSOTests.IsShuffleComplete_*`.
 
 Per-game stat reset is automatic (`SceneLoader` → `ResetRuntimeData` + each persistent
 `Player.PrepareForNewScene` → `RoundStats.Cleanup`). Cumulative points live in `TournamentDataSO`,

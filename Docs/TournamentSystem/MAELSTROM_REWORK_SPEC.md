@@ -68,13 +68,23 @@ Per-round history survives the per-scene reset (the UI-only scene has no live `g
 ## 4. Flow / state machine (Phase 2)
 
 `TournamentController`:
-- `AdvanceToNextGame()` → `LoadTournamentScene()` (hub or summary by phase).
+- `AdvanceToNextGame()` → `LoadTournamentScene()` (hub or summary, decided at the load below).
 - `BeginNextRound()` → draw + load the next random game (called by the hub ready-up).
 - `RestartTournament()` (Play Again) → loads a **fresh lobby** (reset keeps the intensity ceiling via
   `RestartFromSummary`).
-- `HandleSceneLoaded` (Maelstrom scene): `Complete`→Summary · `Summary`→restart · active+games→**hub
-  (no reset)** · else→fresh start.
-- State machine adds `InGame → Lobby`.
+- `HandleSceneLoaded` (Maelstrom scene), evaluated in order: `Summary` phase→restart ·
+  **`IsActive && IsShuffleComplete`→Summary** (via `EnterSummary`) · active+games→**hub (no reset)** ·
+  else→fresh start.
+- State machine adds `InGame → Lobby` and `Lobby → Complete`.
+
+> **Summary-vs-hub is authoritative, not phase-driven (race-to-6 fix).** The decision keys off the
+> deterministic `TournamentDataSO.IsShuffleComplete` (folded identically on every peer), **not** the
+> transient `Complete` phase that `HandleMiniGameEnd` sets. That phase transition only lands when the
+> deciding game ends in the `InGame` phase; relying on it alone let a missed transition route the win
+> back to the hub for "one more game" (a domain hit 6 but the tournament kept going). `EnterSummary`
+> drives the machine to `Summary` from `InGame`/`Lobby`/`Complete`, so the win always surfaces as the
+> results screen. `HandleMiniGameEnd` still sets `Complete` (best-effort signal + `OnTournamentCompleted`),
+> but it is no longer the source of truth for ending the shuffle.
 
 ---
 

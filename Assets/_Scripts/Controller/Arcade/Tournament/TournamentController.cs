@@ -93,23 +93,31 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // The Maelstrom scene serves THREE roles, picked by phase (deterministic on every peer):
-            //   • Complete  → SUMMARY   (the shuffle just ended; show final results, keep standings).
-            //   • Summary   → restart   (Play Again from the summary → fresh lobby; reset but KEEP the
-            //                            intensity ceiling — see RestartFromSummary).
-            //   • mid-run   → HUB       (between rounds: IsActive with games played → show the standings
-            //                            hub; do NOT reset — standings/history must persist).
-            //   • otherwise → fresh start (entered from the arcade/menu → reset + capture the ceiling).
+            // The Maelstrom scene serves FOUR roles, decided here (deterministic on every peer):
+            //   • Summary phase → restart  (Play Again from the summary → fresh lobby; reset but KEEP the
+            //                               intensity ceiling — see RestartFromSummary). Must be checked
+            //                               FIRST: standings still read complete here, so it has to win
+            //                               over the IsShuffleComplete branch below.
+            //   • shuffle decided → SUMMARY (a domain hit WinTarget / the game cap → show final results).
+            //   • mid-run        → HUB      (between rounds: IsActive with games played → standings hub;
+            //                               do NOT reset — standings/history must persist).
+            //   • otherwise      → fresh start (entered from the arcade/menu → reset + capture the ceiling).
+            //
+            // Summary-vs-hub keys off the AUTHORITATIVE TournamentDataSO.IsShuffleComplete (folded
+            // identically on every peer from the synced results), NOT the transient Complete phase that
+            // HandleMiniGameEnd sets. That phase is only honored when the deciding game ends in the InGame
+            // phase; if it is ever missed, the win MUST still surface as the summary instead of silently
+            // routing back to the hub for "one more game" (the race-to-6 regression). See EnterSummary.
             if (scene.name == _tournament.LobbySceneName)
             {
-                if (_stateMachine.Current == TournamentPhase.Complete)
-                    _stateMachine.TransitionTo(TournamentPhase.Summary);
-                else if (_stateMachine.Current == TournamentPhase.Summary)
-                    RestartFromSummary();
+                if (_stateMachine.Current == TournamentPhase.Summary)
+                    RestartFromSummary();                                // Play Again → fresh lobby (keep ceiling)
+                else if (_tournament.IsActive && _tournament.IsShuffleComplete)
+                    EnterSummary();                                      // shuffle decided → results summary
                 else if (_tournament.IsActive && _tournament.GamesPlayed > 0)
                     _stateMachine.TransitionTo(TournamentPhase.Lobby);   // between-round hub (no reset)
                 else
-                    StartTournament();
+                    StartTournament();                                   // fresh start from arcade/menu
                 return;
             }
 
@@ -138,6 +146,10 @@ namespace CosmicShore.Gameplay
 
             // Race to 6 (or the game cap): once the shuffle is decided, the next Continue loads the
             // summary instead of another game. Evaluated identically on every peer from synced state.
+            // The Complete transition is a best-effort signal (it only lands when the game ends in the
+            // InGame phase) — it is NOT the source of truth for showing the summary. The authoritative,
+            // phase-independent decision is re-made from IsShuffleComplete at the Maelstrom scene load
+            // (see HandleSceneLoaded → EnterSummary), so a missed transition here can't swallow the win.
             if (_tournament.IsShuffleComplete)
             {
                 _stateMachine.TransitionTo(TournamentPhase.Complete);
@@ -218,6 +230,23 @@ namespace CosmicShore.Gameplay
             _stateMachine.ResetToIdle();
             _stateMachine.TransitionTo(TournamentPhase.Lobby);
             _tournament.OnTournamentStarted.Raise();
+        }
+
+        /// <summary>
+        /// Drives the state machine to the results <see cref="TournamentPhase.Summary"/> when the shuffle
+        /// is decided. Routed through <see cref="TournamentPhase.Complete"/> so the Complete signal is still
+        /// observed, but it does NOT depend on <see cref="HandleMiniGameEnd"/> having already set Complete:
+        /// the win is authoritative via <see cref="TournamentDataSO.IsShuffleComplete"/>, so the summary
+        /// must show even if the per-game-end Complete transition was missed (e.g. the deciding game ended
+        /// in a phase other than InGame). Idempotent and safe from Lobby / InGame / Complete (the only
+        /// phases that occur at a mid-run Maelstrom load); runs on every peer, so it stays deterministic.
+        /// </summary>
+        void EnterSummary()
+        {
+            if (_stateMachine.Current == TournamentPhase.Summary) return;
+            if (_stateMachine.Current != TournamentPhase.Complete)
+                _stateMachine.TransitionTo(TournamentPhase.Complete);
+            _stateMachine.TransitionTo(TournamentPhase.Summary);
         }
 
         /// <summary>
