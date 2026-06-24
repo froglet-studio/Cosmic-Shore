@@ -88,10 +88,27 @@ namespace CosmicShore.Gameplay
                  "per-collision loss below.")]
         [Range(0f, 1f)] public float ballBounciness = 1f;
 
-        [Tooltip("Fraction of speed KEPT on each wall/prism bounce — THE ONLY speed-decay mechanism " +
-                 "(0.85 = lose 15% per collision). Vessel strikes re-energize the ball. The energy " +
-                 "lost feeds the prism explosion.")]
+        [Tooltip("Fraction of speed KEPT when the ball bounces off an OPPOSING-color prism (and " +
+                 "destroys it) — THE ONLY speed-decay mechanism (0.85 = lose 15%). Walls are " +
+                 "perfectly elastic (no decay) and same-color prisms are passed through (no decay). " +
+                 "Vessel strikes re-energize the ball; the energy lost feeds the prism explosion.")]
         [Range(0f, 1f)] public float collisionSpeedRetention = 0.85f;
+
+        [Header("Ball — Angular Dynamics (rotational inertia)")]
+        [Tooltip("Angular damping on the ball rigidbody. Keep low so spin (imparted by off-center " +
+                 "vessel strikes) persists as the ball coasts — mass/momentum is conserved.")]
+        public float ballAngularDamping = 0.05f;
+
+        [Tooltip("Cap on the ball's angular speed (rad/s). Unity's default rigidbody clamp (7 rad/s) " +
+                 "is too low to read as a fast spin — raise it so off-center strikes produce a " +
+                 "visible tumble on the faceted icosphere.")]
+        public float maxAngularSpeed = 40f;
+
+        [Header("Ball — Mesh")]
+        [Tooltip("Icosphere subdivision count for the ball mesh (each level ×4 the faces: " +
+                 "0=20, 1=80, 2=320, 3=1280 tris). Level 2 is medium-poly — faceted enough that " +
+                 "rotation is clearly visible, dense enough to read as round.")]
+        public int ballMeshSubdivisions = 2;
 
         [Header("Ball — Prism Explosion (per collision, scaled by speed)")]
         [Tooltip("Every collision explodes live prisms within a speed-scaled radius of the contact " +

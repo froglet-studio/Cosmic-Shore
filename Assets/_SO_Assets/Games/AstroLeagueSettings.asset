@@ -34,6 +34,9 @@ MonoBehaviour:
   ballMass: 3
   ballBounciness: 1
   collisionSpeedRetention: 0.85
+  ballAngularDamping: 0.05
+  maxAngularSpeed: 40
+  ballMeshSubdivisions: 2
   prismDestroyRadius: 6
   prismDestroyRadiusAtMaxSpeed: 18
   prismDestroyMinSpeed: 5
