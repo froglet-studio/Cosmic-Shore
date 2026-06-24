@@ -8,6 +8,15 @@ namespace CosmicShore.Gameplay
 {
     public partial class BulkFilamentsController
     {
+        [Header("Bulk Camera Zoom")]
+        [SerializeField, Min(24f)] float cameraMinFollowDistance = 62f;
+        [SerializeField, Min(24f)] float cameraMaxFollowDistance = 180f;
+        [SerializeField, Min(1f)] float cameraZoomUnitsPerSecond = 92f;
+
+        bool _leftLatchTriggerHeld;
+        bool _rightLatchTriggerHeld;
+        float _cameraFollowDistance = 120f;
+
         void UpdateCamera()
         {
             if (!_mainCamera)
@@ -17,7 +26,7 @@ namespace CosmicShore.Gameplay
 
             var filament = _filaments[Mathf.Clamp(_currentFilamentIndex, 0, _filaments.Count - 1)];
             Vector3 vesselPosition = _vessel.Transform.position;
-            Vector3 chasePosition = vesselPosition - filament.Direction * 120f + filament.Up * 48f;
+            Vector3 chasePosition = vesselPosition - filament.Direction * _cameraFollowDistance + filament.Up * 48f;
             float gap = PlayerRouteDistance - _naniteRouteDistance;
             float naniteLook = Mathf.Clamp01((naniteCatchBuffer * 1.35f - gap) / naniteCatchBuffer);
             float pitchOffset = Mathf.Sin(_cameraLookPitch * Mathf.Deg2Rad) * 220f;
@@ -40,6 +49,17 @@ namespace CosmicShore.Gameplay
             _mainCamera.transform.position = Vector3.Lerp(_mainCamera.transform.position, chasePosition, Time.deltaTime * positionLerp);
             Quaternion rotation = Quaternion.LookRotation(lookTarget - _mainCamera.transform.position, Vector3.up);
             _mainCamera.transform.rotation = Quaternion.Slerp(_mainCamera.transform.rotation, rotation, Time.deltaTime * 6f);
+        }
+
+        void UpdateCameraZoom(float zoomInput, float dt)
+        {
+            if (Mathf.Abs(zoomInput) < 0.08f)
+                return;
+
+            _cameraFollowDistance = Mathf.Clamp(
+                _cameraFollowDistance - zoomInput * cameraZoomUnitsPerSecond * dt,
+                cameraMinFollowDistance,
+                cameraMaxFollowDistance);
         }
 
         void EnsureMainCamera()
@@ -77,6 +97,27 @@ namespace CosmicShore.Gameplay
             _mainCamera.targetDisplay = 0;
             _mainCamera.enabled = true;
             EnsureSingleAudioListener();
+        }
+
+        void SetEstablishingCameraPose()
+        {
+            if (!_mainCamera || _filaments.Count == 0)
+                return;
+
+            FilamentRuntime first = _filaments[0];
+            Vector3 subject = first.Center + first.Up * Mathf.Max(24f, tubeRadius * 0.08f);
+            Vector3 offset = -first.Direction * Mathf.Max(170f, tubeRadius * 0.44f)
+                             - Vector3.up * Mathf.Max(90f, tubeRadius * 0.24f)
+                             + first.Side * Mathf.Max(80f, tubeRadius * 0.2f);
+            Vector3 position = subject + offset;
+            Vector3 look = subject - position;
+            if (look.sqrMagnitude < 0.01f)
+                look = Vector3.forward;
+
+            _mainCamera.transform.SetPositionAndRotation(position, Quaternion.LookRotation(look, Vector3.up));
+            _mainCamera.fieldOfView = 76f;
+            _mainCamera.nearClipPlane = 0.05f;
+            _mainCamera.farClipPlane = Mathf.Max(1000f, _targetTransfers * filamentRisePerTransfer + tubeRadius * 4f);
         }
 
         Vector2 ReadOrbitInput()
@@ -138,22 +179,76 @@ namespace CosmicShore.Gameplay
             return Vector2.zero;
         }
 
-        bool ReadLatchPressed()
+        LatchInput ReadLatchInput()
         {
 #if UNITY_EDITOR
             if (ConsumeEditorQaLatchPressed())
-                return true;
+                return _latchState == LatchState.FrontLocked ? LatchInput.Rear : LatchInput.Front;
 #endif
 #if ENABLE_INPUT_SYSTEM
-            if (Gamepad.current != null &&
-                (Gamepad.current.rightTrigger.wasPressedThisFrame || Gamepad.current.leftTrigger.wasPressedThisFrame))
+            if (Gamepad.current != null)
+            {
+                bool leftPressed = Gamepad.current.leftTrigger.ReadValue() >= LatchTriggerPressPoint;
+                bool rightPressed = Gamepad.current.rightTrigger.ReadValue() >= LatchTriggerPressPoint;
+                bool leftEdge = leftPressed && !_leftLatchTriggerHeld;
+                bool rightEdge = rightPressed && !_rightLatchTriggerHeld;
+                _leftLatchTriggerHeld = leftPressed;
+                _rightLatchTriggerHeld = rightPressed;
+
+                if (_latchState == LatchState.FrontLocked && leftEdge)
+                    return LatchInput.Rear;
+                if (rightEdge)
+                    return LatchInput.Front;
+                if (leftEdge)
+                    return LatchInput.Rear;
+            }
+            else
+            {
+                _leftLatchTriggerHeld = false;
+                _rightLatchTriggerHeld = false;
+            }
+
+            if (Keyboard.current != null)
+            {
+                if (Keyboard.current.spaceKey.wasPressedThisFrame)
+                    return LatchInput.Front;
+                if (Keyboard.current.enterKey.wasPressedThisFrame)
+                    return LatchInput.Rear;
+            }
+#endif
+            return LatchInput.None;
+        }
+
+        bool IsFrontLatchHeld()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Gamepad.current != null && Gamepad.current.rightTrigger.ReadValue() >= LatchTriggerPressPoint)
                 return true;
 
-            if (Keyboard.current != null &&
-                (Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.enterKey.wasPressedThisFrame))
+            if (Keyboard.current != null && Keyboard.current.spaceKey.isPressed)
                 return true;
 #endif
             return false;
+        }
+
+        bool IsRearLatchHeld()
+        {
+#if ENABLE_INPUT_SYSTEM
+            if (Gamepad.current != null && Gamepad.current.leftTrigger.ReadValue() >= LatchTriggerPressPoint)
+                return true;
+
+            if (Keyboard.current != null && Keyboard.current.enterKey.isPressed)
+                return true;
+#endif
+            return false;
+        }
+
+        void ResetLatchInputState()
+        {
+            _leftLatchTriggerHeld = false;
+            _rightLatchTriggerHeld = false;
+            _cameraFollowDistance = Mathf.Clamp(120f, cameraMinFollowDistance, cameraMaxFollowDistance);
+            ResetLatchTransferState();
         }
     }
 }

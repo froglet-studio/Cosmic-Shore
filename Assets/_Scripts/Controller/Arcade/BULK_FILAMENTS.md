@@ -2,6 +2,11 @@
 
 First playable prototype for `GameModes.TheBulkFilaments`.
 
+Living docs:
+
+- `Docs/BulkFilaments/PRD.md`
+- `Docs/BulkFilaments/DEVLOG.md`
+
 ## Fantasy
 
 Arks sometimes send vessels out of a cell and into the Bulk, the higher-dimensional
@@ -16,30 +21,45 @@ follow the computed route and deliver information faster than rival couriers.
 - Scene: `MinigameBulkFilaments`.
 - Controller: `BulkFilamentsController`.
 - Music: `Resources/Audio/Music/Dopamine.mp3`.
+- Latch SFX: `Resources/Audio/BulkFilaments/BulkGrappleFire.mp3` and
+  `Resources/Audio/BulkFilaments/BulkLatchSurge.mp3`.
+- Power crystal SFX: `Resources/Audio/BulkFilaments/BulkPowerCrystal.mp3`.
 - Arcade Explore card: `OrganicRematchGames.asset` is the runtime-injected menu list.
-- Runtime-generated wormhole, filaments, crystals, latch rings, nanites, and simple
-  HUD telemetry.
+- Runtime-generated wormhole, filaments, live music waveform overlays, crystals,
+  latch rings, nanites, and simple HUD telemetry.
 
 ## Controls
 
-- Left stick up/down: bias speed along the current filament.
+- Left stick up/down: look ahead/down the wormhole with the follow camera.
+- Left stick left/right: zoom the follow camera out/in.
 - Right stick left/right: orbit around the current filament.
-- Left or right trigger: fire the auto-aimed latch rings at the next filament.
-- Keyboard fallback: W/S throttle, A/D or arrows orbit, Space/Enter latch.
+- Right stick up/down: bias speed along the current filament.
+- Right trigger: fire the front latch ring at the next filament.
+- Left trigger: fire the rear latch ring after the front ring locks.
+- Keyboard fallback: W/S throttle, A/D or left/right arrows orbit,
+  up/down arrows camera look, Space front latch, Enter rear latch.
 
 ## Loop
 
 1. The active filament is green.
 2. The next filament shifts from red/orange/yellow toward green near closest approach.
-3. Trigger inside the timing window to transfer.
-4. Trigger too early/late to miss; if the vessel runs out of filament, it respawns at
+3. Pull or hold right trigger inside the timing window to lock the front ring.
+4. After the front ring energizes, pull left trigger within 2 seconds to complete
+   the transfer.
+5. Trigger too early/late to miss; if the vessel runs out of filament, it respawns at
    the previous filament while the clock and nanite chase continue.
-5. Filament nanites rise from below and catch the player if they fail to keep pace.
-6. Finish after an intensity-scaled number of transfers.
+6. Filament nanites rise from below and catch the player if they fail to keep pace.
+7. Power crystals add speed, lightning pickup bursts, and time credit.
+8. Wormhole lightning crawls along the walls; filament-to-filament bolts can reset
+   speed if they hit the vessel.
+9. Live Dopamine waveform ribbons pulse over the filaments opposite the vessel's
+   travel direction at 8x vessel speed.
+10. Finish after the Bulk controller's 20-30 transfer chain is completed.
 
 ## Intensity
 
-Transfer count scales as `12 / 18 / 24 / 30` for intensities 1-4.
+Transfer count scales from roughly `24` to `30` transfers for intensities 1-4,
+with the `Dopamine.mp3` length used as a lower bound when available.
 
 ## Scoring
 
@@ -54,6 +74,7 @@ Lower score is better. Crystals collected are also written to `RoundStats`.
 - Replace cloned Wildlife Blitz HUD/endgame references with Bulk-specific HUD/endgame
   presentation.
 - Replace runtime primitive placeholders with authored shader/sprite assets.
-- Add actual audio analysis or authored beat map for Dopamine lightning/surges.
+- Extend live Dopamine analysis from filament waveforms into authored lightning
+  and fauna surge beats.
 - Add multiplayer lanes where each player gets a distinct filament chain in the same
   wormhole volume.

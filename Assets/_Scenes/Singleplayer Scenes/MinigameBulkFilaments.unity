@@ -134,20 +134,11 @@ MonoBehaviour:
   m_GameObject: {fileID: 1556114763}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 071b3544aaba4dc5a53296bd520aa187, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Script: {fileID: 11500000, guid: 86cfe17c56c343bf83a92cca9b1618f5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  sceneCinematicLibrary: {fileID: 11400000, guid: f4f9f13d3b8dc74458a910f0ab4a0883,
-    type: 2}
-  cinematicCameraController: {fileID: 642151802}
-  view: {fileID: 642151803}
-  crystalsPerGame: 5
-  crystalRewardRoot: {fileID: 0}
-  crystalRewardText: {fileID: 0}
-  crystalFadeDuration: 0.5
-  delegateCrystalRewardToScoreboard: 1
-  xpPerGame: 25
+  preScoreboardDelay: 0
 --- !u!1001 &300632320
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -236,8 +227,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 05f25773e3ee4abc86fa268757d3f4ad, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
 --- !u!114 &300632323
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -248,8 +239,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b418899d51c04d9ea0bb2f928046963e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   _playerSpawner: {fileID: 300632322}
   _initializeDatas: []
@@ -750,6 +741,9 @@ GameObject:
   m_Component:
   - component: {fileID: 1078953705}
   - component: {fileID: 1078953712}
+  - component: {fileID: 1078953722}
+  - component: {fileID: 1078953723}
+  - component: {fileID: 1078953724}
   - component: {fileID: 1078953716}
   - component: {fileID: 1078953714}
   - component: {fileID: 1078953715}
@@ -932,6 +926,8 @@ MonoBehaviour:
   introCameraDuration: 5.5
   cameraLookDegreesPerSecond: 72
   cameraLookPitchLimit: 42
+  autoStartCountdown: 1
+  autoStartDelay: 0.75
 --- !u!114 &1078953720
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -977,6 +973,52 @@ MonoBehaviour:
   onUpdateTurnMonitorDisplay: {fileID: 11400000, guid: eeddfa759c802804cb806e62ab076f4d,
     type: 2}
   duration: 120
+--- !u!114 &1078953722
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078953702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 112c623451eca5647a6ad4742a4f18aa, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &1078953723
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078953702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc7ff967d6770d241a956a121fdcfa63, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  ShowTopMostFoldoutHeaderGroup: 1
+  themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
+--- !u!114 &1078953724
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1078953702}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 60055a52b62641648a575758553575f7, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  clientPlayerVesselInitializer: {fileID: 1078953723}
+  vesselPrefabContainer: {fileID: 11400000, guid: 05f8f1205bd90e14b8e59cf78da1a6f2,
+    type: 2}
+  playerSpawnPoints:
+  - {fileID: 1192541911}
+  preSpawnDelayMs: 200
+  postSpawnDelayMs: 200
 --- !u!1 &1192541910
 GameObject:
   m_ObjectHideFlags: 0
@@ -1706,7 +1748,7 @@ MonoBehaviour:
   OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
   preGameCinematic: {fileID: 0}
   cinematicLookAtCenter: {x: 0, y: 0, z: 0}
-  enablePreGameCinematic: 1
+  enablePreGameCinematic: 0
   isAIAvailable: 0
   profileIconList: {fileID: 0}
   aiProfileList: {fileID: 0}

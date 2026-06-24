@@ -16,6 +16,7 @@ namespace CosmicShore.Gameplay
         const float MaxFilamentDiameterRatio = 1f;
         const float FilamentTravelRatio = 0.92f;
         const float TransferDistanceRatio = 0.84f;
+        const float LatchTriggerPressPoint = 0.42f;
 
         [Header("Run Length")]
         [SerializeField, Min(1)] int intensityOneTransfers = 24;
@@ -38,10 +39,14 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float filamentTransferNudge = 22f;
 
         [Header("Timing")]
-        [SerializeField, Min(0.1f)] float slowSpeedLatchWindow = 34f;
-        [SerializeField, Min(0.1f)] float fastSpeedLatchWindow = 12f;
+        [SerializeField, Min(0.1f)] float slowSpeedLatchWindow = 48f;
+        [SerializeField, Min(0.1f)] float fastSpeedLatchWindow = 24f;
         [SerializeField, Min(0f)] float missCooldown = 0.35f;
         [SerializeField, Min(0f)] float respawnTimePenalty = 4f;
+
+        [Header("Power Crystals")]
+        [SerializeField, Min(0f)] float powerCrystalSpeedImpulse = 12f;
+        [SerializeField, Min(0f)] float powerCrystalStackBonus = 2.8f;
 
         [Header("Nanite Chase")]
         [SerializeField, Min(0f)] float naniteBaseSpeed = 8f;
@@ -96,6 +101,7 @@ namespace CosmicShore.Gameplay
         float _impactTimer;
         float _cameraIntroTimer;
         float _cameraLookPitch;
+        float _crystalSpeedBonus;
         bool _isRunning;
         bool _turnFinished;
 
@@ -104,6 +110,7 @@ namespace CosmicShore.Gameplay
         int Intensity => Mathf.Clamp(gameData != null ? gameData.SelectedIntensity.Value : 1, 1, 4);
         FilamentRuntime CurrentFilament => _filaments[Mathf.Clamp(_currentFilamentIndex, 0, _filaments.Count - 1)];
         float PlayerRouteDistance => _filaments.Count == 0 ? _distanceOnFilament : CurrentFilament.RouteStartDistance + _distanceOnFilament;
+        float CurrentMaximumSpeed => maximumSpeed + Intensity * 4f + _crystalSpeedBonus;
 
         protected override void Start()
         {
@@ -113,13 +120,14 @@ namespace CosmicShore.Gameplay
             if (gameData != null)
                 gameData.selectedVesselClass.Value = VesselClassType.Squirrel;
 
+            DisableCopiedTurnMonitorController();
             base.Start();
         }
 
         protected override void SetupNewTurn()
         {
             BuildRun();
-            RaiseToggleReadyButtonEvent(true);
+            ConfigureNewTurnStartFlow();
             base.SetupNewTurn();
         }
 
@@ -133,7 +141,9 @@ namespace CosmicShore.Gameplay
             _missTimer = 0f;
             _speed = minimumSpeed;
             _naniteRouteDistance = -naniteCatchBuffer - naniteRespawnSetback;
+            ResetLatchInputState();
 
+            CSDebug.Log("[BulkFilaments] Countdown ended; run active.");
             StartMusic();
             AcquireVessel();
         }
@@ -148,7 +158,9 @@ namespace CosmicShore.Gameplay
         {
             AnimateWormhole();
             AnimateFilamentColors();
+            AnimateFilamentWaveforms();
             AnimateNanites();
+            TickAutoStartCountdown();
 
             if (!_isRunning || _turnFinished || !AcquireVessel())
                 return;
@@ -164,16 +176,20 @@ namespace CosmicShore.Gameplay
             Vector2 lookInput = ReadCameraLookInput();
             _orbitAngle += orbitInput.x * orbitDegreesPerSecond * dt;
             _cameraLookPitch = Mathf.Clamp(_cameraLookPitch + lookInput.y * cameraLookDegreesPerSecond * dt, -cameraLookPitchLimit, cameraLookPitchLimit);
+            UpdateCameraZoom(lookInput.x, dt);
 
             float speed01 = Mathf.InverseLerp(minimumSpeed, maximumSpeed, _speed);
             float acceleration = automaticAcceleration + throttleInput * throttleBias - speed01 * 2f;
-            _speed = Mathf.Clamp(_speed + acceleration * dt, minimumSpeed * 0.55f, maximumSpeed + Intensity * 4f);
+            _speed = Mathf.Clamp(_speed + acceleration * dt, minimumSpeed * 0.55f, CurrentMaximumSpeed);
             _distanceOnFilament += _speed * dt;
 
             AdvanceNanites(dt, throttleInput);
+            TickLatchState(dt);
 
-            if (ReadLatchPressed())
-                TryTransferLatch();
+            LatchInput latchInput = ReadLatchInput();
+            if (latchInput != LatchInput.None)
+                TryTransferLatch(latchInput);
+            TryHeldLatchRequests();
 
             if (_distanceOnFilament > CurrentFilament.TravelLength)
             {
@@ -190,6 +206,7 @@ namespace CosmicShore.Gameplay
             UpdateVesselPose();
             CollectNearbyCrystals();
             CheckHazardGraze();
+            AnimateLightning(dt);
             UpdateRoundStats();
         }
 
@@ -208,20 +225,6 @@ namespace CosmicShore.Gameplay
             base.OnDisable();
         }
 
-        bool AcquireVessel()
-        {
-            if (_vessel != null && _vessel.Transform != null)
-                return true;
-
-            _vessel = gameData?.LocalPlayer?.Vessel;
-            if (_vessel == null)
-                return false;
-
-            _vessel.VesselStatus.IsStationary = true;
-            _vessel.VesselStatus.VesselPrismController?.StopSpawn();
-            return true;
-        }
-
         void BuildRun()
         {
             ResetRuntime();
@@ -236,13 +239,16 @@ namespace CosmicShore.Gameplay
             _cameraLookPitch = 0f;
             _cameraIntroTimer = introCameraDuration;
             _speed = minimumSpeed;
+            _crystalSpeedBonus = 0f;
 
             _runtimeRoot = new GameObject("Bulk Filaments Runtime");
 
             CreateMaterials();
             CreateWormhole();
             CreateFilaments();
+            ResetLightningSchedule();
             EnsureMainCamera();
+            SetEstablishingCameraPose();
             CreateLatchRig();
             CreateNaniteSwarm();
         }
@@ -254,6 +260,7 @@ namespace CosmicShore.Gameplay
             _vessel = null;
             _filaments.Clear();
             _tubeRings.Clear();
+            ResetFilamentWaveforms();
             _tethers.Clear();
             _latchRings.Clear();
             _hazards.Clear();
@@ -262,8 +269,23 @@ namespace CosmicShore.Gameplay
             if (_musicSource)
                 _musicSource.Stop();
 
+            RestoreBulkAudioMix();
+            ResetLightningState();
+
             if (_runtimeRoot)
                 Destroy(_runtimeRoot);
+
+            ResetLatchInputState();
+        }
+
+        void DisableCopiedTurnMonitorController()
+        {
+            var monitorController = GetComponent<TurnMonitorController>();
+            if (!monitorController || !monitorController.enabled)
+                return;
+
+            monitorController.enabled = false;
+            CSDebug.Log("[BulkFilaments] Disabled copied scene turn monitors; Bulk owns its transfer finish condition.");
         }
 
         sealed class FilamentRuntime

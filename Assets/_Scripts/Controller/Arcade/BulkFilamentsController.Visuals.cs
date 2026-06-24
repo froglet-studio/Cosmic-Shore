@@ -17,9 +17,12 @@ namespace CosmicShore.Gameplay
             };
 
             float delta = CurrentFilament.TransferDistance - _distanceOnFilament;
+            float latchWindow = CurrentLatchWindow();
+            string latchState = CurrentLatchHudState(delta, latchWindow);
             string fakeMath =
                 $"BULK NAV  INT psi({Intensity})  t={_elapsedTime:000.0}\n" +
-                $"lambda transfer d={delta:00.0}  omega={_speed:00.0}  eps={CurrentLatchWindow():0.0}\n" +
+                $"chain {_successfulTransfers:00}/{_targetTransfers:00}  latch={latchState}  eps={latchWindow:0.0}\n" +
+                $"lambda transfer d={delta:00.0}  omega={_speed:00.0}  RT front / LT rear\n" +
                 $"chi crystals={_crystalsCollected:00}  eta swarm={Mathf.Max(0f, PlayerRouteDistance - _naniteRouteDistance):000.0}\n" +
                 $"proj: rho^2 + theta' -> latch ring convergence";
 
@@ -105,8 +108,24 @@ namespace CosmicShore.Gameplay
             Vector3 attach = AttachPoint(filament, _distanceOnFilament);
             Vector3 frontRing = attach + filament.Direction * 2.8f;
             Vector3 rearRing = attach - filament.Direction * 2.8f;
-            UpdateRing(_latchRings[0], frontRing, filament.Direction, filament.Up, filament.Side, 1.45f);
-            UpdateRing(_latchRings[1], rearRing, filament.Direction, filament.Up, filament.Side, 1.45f);
+
+            if (TryGetNextLatchPose(out Vector3 nextFront, out Vector3 nextRear, out Vector3 nextAxis, out Vector3 nextUp, out Vector3 nextSide))
+            {
+                if (_frontRingShotTimer > 0f)
+                    frontRing = Vector3.Lerp(frontRing, nextFront, 1f - _frontRingShotTimer / 0.35f);
+                if (_rearRingShotTimer > 0f)
+                    rearRing = Vector3.Lerp(rearRing, nextRear, 1f - _rearRingShotTimer / 0.35f);
+                if (_latchState == LatchState.FrontLocked)
+                    frontRing = nextFront;
+
+                UpdateRing(_latchRings[0], frontRing, nextAxis, nextUp, nextSide, _latchState == LatchState.FrontLocked ? 1.72f : 1.45f);
+                UpdateRing(_latchRings[1], rearRing, _rearRingShotTimer > 0f ? nextAxis : filament.Direction, _rearRingShotTimer > 0f ? nextUp : filament.Up, _rearRingShotTimer > 0f ? nextSide : filament.Side, 1.45f);
+            }
+            else
+            {
+                UpdateRing(_latchRings[0], frontRing, filament.Direction, filament.Up, filament.Side, 1.45f);
+                UpdateRing(_latchRings[1], rearRing, filament.Direction, filament.Up, filament.Side, 1.45f);
+            }
 
             Transform vesselTransform = _vessel.Transform;
             Vector3[] localEngines =
@@ -122,9 +141,74 @@ namespace CosmicShore.Gameplay
                 Vector3 engine = vesselTransform.TransformPoint(localEngines[i]);
                 Vector3 ringPoint = i < 2 ? frontRing : rearRing;
                 ringPoint += (i % 2 == 0 ? filament.Side : -filament.Side) * 0.8f;
-                _tethers[i].SetPosition(0, engine);
-                _tethers[i].SetPosition(1, ringPoint);
+                UpdateTether(_tethers[i], engine, ringPoint, filament, i);
             }
+        }
+
+        void UpdateTether(LineRenderer tether, Vector3 engine, Vector3 ringPoint, FilamentRuntime filament, int index)
+        {
+            if (!tether)
+                return;
+
+            if (tether.positionCount < 6)
+                tether.positionCount = 6;
+
+            float transfer01 = _redirectTimer > 0f
+                ? 1f - Mathf.Clamp01(_redirectTimer / RedirectDurationSeconds)
+                : 1f;
+            float stretch = _redirectTimer > 0f ? DampedTetherStretch(transfer01) : 0f;
+            Vector3 span = ringPoint - engine;
+            Vector3 sagAxis = Vector3.Cross(span.normalized, filament.Direction);
+            if (sagAxis.sqrMagnitude < 0.01f)
+                sagAxis = filament.Side;
+            sagAxis.Normalize();
+
+            float sideSign = index % 2 == 0 ? 1f : -1f;
+            float length = span.magnitude;
+            float bow = length * stretch * sideSign;
+
+            for (int i = 0; i < tether.positionCount; i++)
+            {
+                float t = i / (float)(tether.positionCount - 1);
+                float envelope = Mathf.Sin(t * Mathf.PI);
+                Vector3 retract = -span.normalized * (length * Mathf.Max(0f, -stretch) * envelope * 0.22f);
+                Vector3 curve = sagAxis * bow * envelope;
+                tether.SetPosition(i, Vector3.Lerp(engine, ringPoint, t) + curve + retract);
+            }
+        }
+
+        static float DampedTetherStretch(float t)
+        {
+            t = Mathf.Clamp01(t);
+            float longPull = Mathf.Exp(-3.2f * t) * 0.34f;
+            float undershoot = -0.11f * Mathf.Exp(-80f * (t - 0.58f) * (t - 0.58f));
+            float settle = 0.025f * Mathf.Sin(t * Mathf.PI * 2f) * Mathf.Exp(-5.5f * t);
+            return longPull + undershoot + settle;
+        }
+
+        string CurrentLatchHudState(float delta, float latchWindow)
+        {
+            if (_latchState == LatchState.FrontLocked)
+                return $"LT REAR {_frontLatchTimer:0.0}s";
+            if (Mathf.Abs(delta) <= latchWindow)
+                return "RT FRONT";
+            return delta > 0f ? "approach" : "late";
+        }
+
+        bool TryGetNextLatchPose(out Vector3 front, out Vector3 rear, out Vector3 axis, out Vector3 up, out Vector3 side)
+        {
+            front = rear = axis = up = side = Vector3.zero;
+            if (_currentFilamentIndex + 1 >= _filaments.Count)
+                return false;
+
+            FilamentRuntime next = _filaments[_currentFilamentIndex + 1];
+            Vector3 attach = AttachPoint(next, 0f);
+            axis = next.Direction;
+            up = next.Up;
+            side = next.Side;
+            front = attach + next.Direction * 2.8f;
+            rear = attach - next.Direction * 2.8f;
+            return true;
         }
 
         void UpdateRing(LineRenderer ring, Vector3 center, Vector3 axis, Vector3 up, Vector3 side, float radius)
@@ -137,35 +221,5 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void StartMusic()
-        {
-            if (!_runtimeRoot)
-                return;
-
-            _musicSource = _runtimeRoot.GetComponent<AudioSource>();
-            if (!_musicSource)
-                _musicSource = _runtimeRoot.AddComponent<AudioSource>();
-
-            if (!_musicSource.clip)
-                _musicSource.clip = Resources.Load<AudioClip>(MusicResourcePath);
-
-            _musicSource.loop = true;
-            _musicSource.playOnAwake = false;
-            _musicSource.pitch = 1f;
-            _musicSource.volume = 0.8f;
-
-            if (_musicSource.clip)
-                _musicSource.Play();
-            else
-                CSDebug.LogWarning($"[BulkFilaments] Missing music resource at Resources/{MusicResourcePath}.");
-        }
-
-        float BeatPulse()
-        {
-            float sourceTime = _musicSource && _musicSource.isPlaying ? _musicSource.time : Time.time;
-            float beat = sourceTime * (musicBpm / 60f);
-            float phase = beat - Mathf.Floor(beat);
-            return Mathf.Pow(1f - phase, 5f);
-        }
     }
 }

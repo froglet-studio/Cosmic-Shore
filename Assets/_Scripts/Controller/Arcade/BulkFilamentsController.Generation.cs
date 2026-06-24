@@ -13,6 +13,7 @@ namespace CosmicShore.Gameplay
             _crystalMaterial = MakeMaterial("Bulk Crystal", new Color(0.95f, 0.35f, 1f, 1f));
             _hazardMaterial = MakeMaterial("Bulk Flora/Fauna", new Color(1f, 0.38f, 0.22f, 0.9f));
             _naniteMaterial = MakeMaterial("Bulk Nanites", new Color(0.05f, 0.95f, 0.75f, 1f));
+            _lightningMaterial = MakeMaterial("Bulk Lightning", new Color(0.75f, 1f, 1f, 1f));
         }
 
         int ResolveTargetTransferCount()
@@ -102,6 +103,7 @@ namespace CosmicShore.Gameplay
                     RouteStartDistance = routeStart,
                 };
                 filament.Beam = MakeFilamentBeam(filament);
+                CreateFilamentWaveform(filament);
 
                 CreateRootFlares(filament);
                 CreateCrystals(filament);
@@ -196,7 +198,7 @@ namespace CosmicShore.Gameplay
         void CreateLatchRig()
         {
             for (int i = 0; i < 4; i++)
-                _tethers.Add(MakeLine($"Latch Tether {i}", 2, 0.13f, _activeFilamentMaterial));
+                _tethers.Add(MakeLine($"Latch Tether {i}", 6, 0.13f, _activeFilamentMaterial));
 
             _latchRings.Add(MakeLine("Front Latch Ring", 49, 0.18f, _activeFilamentMaterial));
             _latchRings.Add(MakeLine("Rear Latch Ring", 49, 0.18f, _activeFilamentMaterial));

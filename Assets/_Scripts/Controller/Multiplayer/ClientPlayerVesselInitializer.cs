@@ -32,7 +32,7 @@ namespace CosmicShore.Gameplay
     {
         [SerializeField] ThemeManagerDataContainerSO themeManagerData;
 
-        [Inject] protected GameDataSO gameData;
+        [SerializeField, Inject] protected GameDataSO gameData;
         [Inject] Container _container;
 
         readonly List<(ulong playerNetId, ulong vesselNetId)> _pendingPairs = new();
@@ -49,6 +49,12 @@ namespace CosmicShore.Gameplay
 
             if (NetworkManager.Singleton.IsServer)
                 return;
+
+            if (!EnsureGameData())
+            {
+                enabled = false;
+                return;
+            }
 
             // Re-register persistent Players that survived the Netcode scene load
             // but were cleared from gameData.Players by ResetRuntimeData().
@@ -75,9 +81,16 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
-            gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= OnPlayerNetworkSpawnedForPending;
-            gameData.OnVesselNetworkSpawned.OnRaised -= ProcessPendingPairs;
-            gameData.OnVesselNetworkSpawned.OnRaised -= ProcessPendingSwaps;
+            if (gameData != null)
+            {
+                if (gameData.OnPlayerNetworkSpawnedUlong != null)
+                    gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= OnPlayerNetworkSpawnedForPending;
+                if (gameData.OnVesselNetworkSpawned != null)
+                {
+                    gameData.OnVesselNetworkSpawned.OnRaised -= ProcessPendingPairs;
+                    gameData.OnVesselNetworkSpawned.OnRaised -= ProcessPendingSwaps;
+                }
+            }
             _pendingPairs.Clear();
             _pendingSwaps.Clear();
 
@@ -102,6 +115,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void ReRegisterPersistentPlayers()
         {
+            if (!EnsureGameData())
+                return;
+
             var nm = NetworkManager.Singleton;
             if (nm == null || nm.SpawnManager == null) return;
 
@@ -286,6 +302,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void ProcessPendingPairs()
         {
+            if (!EnsureGameData())
+                return;
+
             for (int i = _pendingPairs.Count - 1; i >= 0; i--)
             {
                 var (pId, vId) = _pendingPairs[i];
@@ -326,6 +345,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void ProcessPendingSwaps()
         {
+            if (!EnsureGameData())
+                return;
+
             for (int i = _pendingSwaps.Count - 1; i >= 0; i--)
             {
                 var (pId, vId) = _pendingSwaps[i];
@@ -358,11 +380,15 @@ namespace CosmicShore.Gameplay
             if (NetworkManager.Singleton != null && NetworkManager.Singleton.IsServer)
                 return;
 
-            GameObjectInjector.InjectRecursive(vessel.Transform.gameObject, _container);
+            if (_container != null)
+                GameObjectInjector.InjectRecursive(vessel.Transform.gameObject, _container);
         }
 
         void InitializePair(IPlayer player, IVessel vessel)
         {
+            if (!EnsureGameData())
+                return;
+
             Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] InitializePair — Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}</color>");
             InjectVesselDependencies(vessel);
             player.InitializeForMultiplayerMode(vessel);
@@ -403,6 +429,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void ReInitializePair(IPlayer player, IVessel newVessel)
         {
+            if (!EnsureGameData())
+                return;
+
             InjectVesselDependencies(newVessel);
             player.ChangeVessel(newVessel);
             newVessel.Initialize(player);
@@ -412,6 +441,32 @@ namespace CosmicShore.Gameplay
 
             if (player.IsLocalUser && CameraManager.Instance)
                 CameraManager.Instance.SnapPlayerCameraToTarget();
+        }
+
+        bool EnsureGameData()
+        {
+            if (gameData == null)
+                gameData = ResolveRuntimeGameData();
+
+            if (gameData != null)
+                return true;
+
+            Debug.LogError("[ClientPlayerVesselInitializer] GameDataSO is missing; cannot initialize player-vessel pairs.", this);
+            return false;
+        }
+
+        static GameDataSO ResolveRuntimeGameData()
+        {
+            GameDataSO fallback = null;
+            foreach (var candidate in Resources.FindObjectsOfTypeAll<GameDataSO>())
+            {
+                if (candidate == null) continue;
+                if (candidate.name == "Runtime GameData")
+                    return candidate;
+                fallback ??= candidate;
+            }
+
+            return fallback;
         }
     }
 }

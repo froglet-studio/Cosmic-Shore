@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
     public class ServerPlayerVesselInitializer : MonoBehaviour
     {
         [Header("Dependencies")]
-        [Inject] protected GameDataSO gameData;
+        [SerializeField, Inject] protected GameDataSO gameData;
         [Inject] protected Container _container;
 
         [FormerlySerializedAs("clientPlayerSpawner")]
@@ -87,6 +87,9 @@ namespace CosmicShore.Gameplay
 
         protected virtual void OnNetworkSpawn()
         {
+            if (!EnsureDependencies())
+                return;
+
             if (!NetworkManager.Singleton.IsServer)
             {
                 Debug.Log("<color=#00FF00>[FLOW-5] [ServerVesselInit] OnNetworkSpawn — NOT server, disabling</color>");
@@ -146,7 +149,8 @@ namespace CosmicShore.Gameplay
 
         protected virtual void OnNetworkDespawn()
         {
-            gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= HandlePlayerNetworkSpawned;
+            if (gameData != null && gameData.OnPlayerNetworkSpawnedUlong != null)
+                gameData.OnPlayerNetworkSpawnedUlong.OnRaised -= HandlePlayerNetworkSpawned;
             if (clientPlayerVesselInitializer != null)
                 clientPlayerVesselInitializer.OnRosterRequested = null;
             _processedPlayers.Clear();
@@ -393,7 +397,10 @@ namespace CosmicShore.Gameplay
             }
 
             var networkVessel = Instantiate(shipNetworkObject);
-            GameObjectInjector.InjectRecursive(networkVessel.gameObject, _container);
+            if (_container != null)
+                GameObjectInjector.InjectRecursive(networkVessel.gameObject, _container);
+            else
+                CSDebug.LogWarning("[ServerPlayerVesselInitializer] Reflex container is null; spawned vessel will use serialized references and runtime fallbacks.");
             networkVessel.SpawnWithOwnership(clientId, DestroyVesselWithScene);
             networkPlayer.NetVesselId.Value = networkVessel.NetworkObjectId;
             return networkVessel;
@@ -462,5 +469,48 @@ namespace CosmicShore.Gameplay
 
         protected static bool IsValidVesselType(VesselClassType type) =>
             type != VesselClassType.Random && type != VesselClassType.Any;
+
+        protected bool EnsureDependencies()
+        {
+            if (gameData == null)
+                gameData = ResolveRuntimeGameData();
+
+            if (gameData == null)
+            {
+                CSDebug.LogError("[ServerPlayerVesselInitializer] GameDataSO is missing; cannot spawn player vessels.", this);
+                enabled = false;
+                return false;
+            }
+
+            if (clientPlayerVesselInitializer == null)
+            {
+                CSDebug.LogError("[ServerPlayerVesselInitializer] ClientPlayerVesselInitializer is missing.", this);
+                enabled = false;
+                return false;
+            }
+
+            if (vesselPrefabContainer == null)
+            {
+                CSDebug.LogError("[ServerPlayerVesselInitializer] VesselPrefabContainer is missing.", this);
+                enabled = false;
+                return false;
+            }
+
+            return true;
+        }
+
+        static GameDataSO ResolveRuntimeGameData()
+        {
+            GameDataSO fallback = null;
+            foreach (var candidate in Resources.FindObjectsOfTypeAll<GameDataSO>())
+            {
+                if (candidate == null) continue;
+                if (candidate.name == "Runtime GameData")
+                    return candidate;
+                fallback ??= candidate;
+            }
+
+            return fallback;
+        }
     }
 }

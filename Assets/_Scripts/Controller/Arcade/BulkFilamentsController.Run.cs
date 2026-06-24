@@ -5,6 +5,15 @@ namespace CosmicShore.Gameplay
 {
     public partial class BulkFilamentsController
     {
+        const float RedirectDurationSeconds = 3f;
+
+        float _redirectTimer;
+        Vector3 _redirectStartPosition;
+        Vector3 _redirectStartVelocity;
+        Quaternion _redirectStartRotation;
+        Vector3 _lastVesselPosition;
+        bool _hasLastVesselPosition;
+
         void AdvanceNanites(float dt, float throttleInput)
         {
             float pressure = naniteBaseSpeed + Intensity * naniteSpeedPerIntensity;
@@ -14,33 +23,33 @@ namespace CosmicShore.Gameplay
             _naniteRouteDistance += pressure * dt;
         }
 
-        void TryTransferLatch()
-        {
-            if (_missTimer > 0f || _currentFilamentIndex >= _targetTransfers)
-                return;
-
-            float delta = Mathf.Abs(_distanceOnFilament - CurrentFilament.TransferDistance);
-            if (delta <= CurrentLatchWindow())
-            {
-                CompleteTransfer();
-                return;
-            }
-
-            _missTimer = missCooldown;
-            _speed *= 0.94f;
-            _impactTimer = 0.28f;
-        }
-
         void CompleteTransfer()
         {
+            Vector3 startPosition = _vessel?.Transform.position ?? PositionOnFilament(CurrentFilament, _distanceOnFilament, _orbitAngle * Mathf.Deg2Rad, orbitRadius);
+            Quaternion startRotation = _vessel != null ? _vessel.Transform.rotation : Quaternion.LookRotation(CurrentFilament.Direction, CurrentFilament.Up);
+            Vector3 routeVelocity = CurrentFilament.Direction * _speed;
+            if (_hasLastVesselPosition && Time.deltaTime > 0.0001f)
+                routeVelocity = (startPosition - _lastVesselPosition) / Time.deltaTime;
+
             _currentFilamentIndex++;
             _successfulTransfers++;
             _distanceOnFilament = 0f;
             _speed = Mathf.Max(minimumSpeed, _speed * 0.82f);
-            _swingTimer = Mathf.Lerp(0.55f, 1.2f, Mathf.InverseLerp(minimumSpeed, maximumSpeed + Intensity * 4f, _speed));
+            _swingTimer = Mathf.Lerp(0.55f, 1.2f, Mathf.InverseLerp(minimumSpeed, CurrentMaximumSpeed, _speed));
+            BeginTransferRedirect(startPosition, startRotation, routeVelocity);
+            ResetLatchTransferState();
+            CSDebug.Log($"[BulkFilaments] Latch transfer {_successfulTransfers}/{_targetTransfers}.");
 
             if (_currentFilamentIndex >= _targetTransfers)
                 FinishRun();
+        }
+
+        void BeginTransferRedirect(Vector3 position, Quaternion rotation, Vector3 velocity)
+        {
+            _redirectTimer = RedirectDurationSeconds;
+            _redirectStartPosition = position;
+            _redirectStartRotation = rotation;
+            _redirectStartVelocity = Vector3.ClampMagnitude(velocity, CurrentMaximumSpeed * 1.35f);
         }
 
         void RespawnAtPreviousFilament(string reason)
@@ -53,6 +62,7 @@ namespace CosmicShore.Gameplay
             _impactTimer = 1f;
             _missTimer = missCooldown;
             _naniteRouteDistance = Mathf.Min(_naniteRouteDistance + 12f, PlayerRouteDistance - naniteRespawnSetback);
+            ResetLatchTransferState();
 
             if (gameData?.LocalRoundStats != null)
                 gameData.LocalRoundStats.Score += respawnTimePenalty;
@@ -71,12 +81,6 @@ namespace CosmicShore.Gameplay
             gameData.InvokeGameTurnConditionsMet();
         }
 
-        float CurrentLatchWindow()
-        {
-            float speed01 = Mathf.InverseLerp(minimumSpeed, maximumSpeed + Intensity * 4f, _speed);
-            return Mathf.Lerp(slowSpeedLatchWindow, fastSpeedLatchWindow, speed01);
-        }
-
         void UpdateVesselPose()
         {
             FilamentRuntime filament = CurrentFilament;
@@ -91,7 +95,33 @@ namespace CosmicShore.Gameplay
             _vessel.VesselStatus.IsStationary = true;
             _vessel.VesselStatus.Course = filament.Direction;
             _vessel.VesselStatus.Speed = _speed;
-            _vessel.SetPose(new Pose(position, Quaternion.LookRotation(filament.Direction, up)));
+            Quaternion rotation = Quaternion.LookRotation(filament.Direction, up);
+
+            if (_redirectTimer > 0f)
+            {
+                float t = 1f - Mathf.Clamp01(_redirectTimer / RedirectDurationSeconds);
+                float eased = Mathf.SmoothStep(0f, 1f, t);
+                Vector3 control = _redirectStartPosition + _redirectStartVelocity * 1.05f;
+                Vector3 a = Vector3.Lerp(_redirectStartPosition, control, eased);
+                Vector3 b = Vector3.Lerp(control, position, eased);
+                position = Vector3.Lerp(a, b, eased);
+                position += up * UnderdampedVesselTetherOffset(t);
+                rotation = Quaternion.Slerp(_redirectStartRotation, rotation, eased);
+                _redirectTimer = Mathf.Max(0f, _redirectTimer - Time.deltaTime);
+            }
+
+            _vessel.SetPose(new Pose(position, rotation));
+            _lastVesselPosition = position;
+            _hasLastVesselPosition = true;
+        }
+
+        float UnderdampedVesselTetherOffset(float t)
+        {
+            t = Mathf.Clamp01(t);
+            float pullTooClose = -orbitRadius * 0.46f * Mathf.Exp(-34f * (t - 0.62f) * (t - 0.62f));
+            float rebound = orbitRadius * 0.16f * Mathf.Exp(-48f * (t - 0.82f) * (t - 0.82f));
+            float dyingRing = orbitRadius * 0.05f * Mathf.Sin(t * Mathf.PI * 3.4f) * Mathf.Exp(-4.8f * t);
+            return pullTooClose + rebound + dyingRing;
         }
 
         Vector3 AttachPoint(FilamentRuntime filament, float distance)
@@ -149,6 +179,7 @@ namespace CosmicShore.Gameplay
                 crystal.Collected = true;
                 crystal.GameObject.SetActive(false);
                 _crystalsCollected++;
+                ApplyPowerCrystalPickup(crystal.Position);
                 if (gameData?.LocalRoundStats != null)
                     gameData.LocalRoundStats.CrystalsCollected = _crystalsCollected;
             }
