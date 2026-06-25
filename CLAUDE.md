@@ -992,14 +992,15 @@ Each client has its own Cinemachine camera following its own vessel. No network 
 
 #### UI Components
 
-Party/social UI lives in `_Scripts/UI/Elements/` (`AddFriendPanel` in
-`_Scripts/UI/Views/`, `PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`):
-`ArcadeLobbyList` (4-slot party panel) + `FriendInfoSlot`
+Party/social UI lives in `_Scripts/UI/Elements/`
+(`PartyInviteNotificationPanel` is in `_Scripts/UI/Screens/`):
+`ArcadeLobbyList` (4-slot party panel; host-only per-slot kick ✕) + `FriendInfoSlot`
 (one slot), `FriendsListPanel` (combined Online + Requests, no tabs),
-`OnlineInfoEntry` (online row = invite button; in-party rows show "IN YOUR PARTY N/M"
-and are non-invitable, with a cancel-✕ while an outgoing invite is pending),
+`OnlineInfoEntry` (online row: an Invite button when invitable + a ✕ that cancels a
+pending outgoing invite or — host only — kicks an in-party member; "IN YOUR PARTY N/M"
+for party members; Invite/cancel/kick share an anti-spam cooldown),
 `RequestInfoEntry` (Accept/Decline — friend-request + party-invite),
-`AddFriendPanel` (by-name), and `PartyInviteNotificationPanel` (the
+and `PartyInviteNotificationPanel` (the
 bottom-left **global invite popup** in Menu_Main — avatar + name + Accept/Decline,
 3s auto-hide, latest-wins). Full inventory + behaviour: **`Docs/PartySystem/UI.md`**.
 
@@ -1170,7 +1171,7 @@ Friends see presence updates via UGS SDK's `PresenceUpdated` event → `FriendsS
 #### Friend UI Components
 
 The friends UI shares the party UI family (`FriendsListPanel` combined Online +
-Requests, `RequestInfoEntry`, `AddFriendPanel`) — inventory +
+Requests, `RequestInfoEntry`) — inventory +
 behaviour in **`Docs/PartySystem/UI.md`**. File locations are in the Key Files
 table below.
 
@@ -1189,17 +1190,18 @@ table below.
 | Combined friends/online panel UI | `FriendsListPanel.cs` | `_Scripts/UI/Elements/` |
 | Online row UI (invite / cancel / kick) | `OnlineInfoEntry.cs` | `_Scripts/UI/Elements/` |
 | Request row UI (friend request + party invite) | `RequestInfoEntry.cs` | `_Scripts/UI/Elements/` |
-| Add friend input UI | `AddFriendPanel.cs` | `_Scripts/UI/Views/` |
 | SO asset instance | `FriendsData.asset` | `_SO_Assets/Friends Data/` |
 
-#### Add Friend Entry Points
+#### Friend Requests (no UI entry point today)
 
-Friend requests are sent **by display name only**, via `AddFriendPanel` →
-`FriendsServiceFacade.SendFriendRequestByNameAsync(name)` (the single writer).
-The former per-row "+" add-friend button is gone — online rows are invite-only.
-Friend-request (persistent UGS relationship) and party-invite (ephemeral session
-property) stay separate systems. Detail + the unused by-ID facade method:
-**`Docs/PartySystem/UI.md`** § "Add-friend entry points".
+The by-name `AddFriendPanel` and the confirmed-friend row `FriendInfoEntry` were
+retired, so there is currently **no UI control to send a friend request** —
+`FriendsListPanel` renders only the Online + Requests sections. The single-writer
+facade methods remain for re-introducing one: `FriendsServiceFacade.SendFriendRequestByNameAsync(name)`
+(by name) and `.SendFriendRequestAsync(playerId)` (by ID). Incoming requests still
+arrive as `RequestInfoEntry` rows (Accept/Decline). Friend-request (persistent UGS
+relationship) and party-invite (ephemeral session property) stay separate systems.
+Detail: **`Docs/PartySystem/UI.md`** § "Friend requests vs. party invites".
 
 #### Friend System Patterns to Follow
 
@@ -1784,12 +1786,12 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Scene management | `SceneLoader` (MonoBehaviour, DontDestroyOnLoad in Bootstrap, game launch + restart + return-to-menu, SOAP code subscriptions), `SceneNameListSO` (centralized scene names, DI-registered) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
 | Authentication | `AuthenticationServiceFacade` (facade/writer), `AuthenticationController` (MonoBehaviour adapter), `AuthenticationSceneController` (scene UI), `SplashToAuthFlow` (splash routing), `AuthenticationData` / `AuthenticationDataVariable` (SOAP state) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Friends | `FriendsServiceFacade` (facade/single-writer for UGS Friends SDK), `FriendsInitializer` (MonoBehaviour bridge + presence), `FriendsDataSO` (SOAP container: 4 lists + 4 events), `FriendData`/`FriendPresenceActivity` (SOAP data types) | `_Scripts/System/`, `_Scripts/Controller/Party/`, `_Scripts/Utility/DataContainers/`, `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
-| Friends UI | `FriendsListPanel` (combined Online + Requests, no tabs), `OnlineInfoEntry` (online row = invite/cancel/kick button), `RequestInfoEntry` (accept/decline; friend-request + party-invite), `AddFriendPanel` (name input) | `_Scripts/UI/Elements/` (`AddFriendPanel` in `_Scripts/UI/Views/`) |
+| Friends UI | `FriendsListPanel` (combined Online + Requests, no tabs), `OnlineInfoEntry` (online row = invite/cancel/kick button), `RequestInfoEntry` (accept/decline; friend-request + party-invite) | `_Scripts/UI/Elements/` |
 | Player data | `PlayerDataService` (cloud profile, XP, rewards), `PlayerProfileData` | `_Scripts/UI/Views/` |
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu), `DomainAssigner` (team pool) | `_Scripts/Controller/Multiplayer/` |
 | Party / Invite | `HostConnectionService` (presence lobby + party sessions, single-writer to `HostConnectionDataSO`), `PartyInviteController` (Netcode host↔client transitions), `FriendsInitializer` (Friends service bridge) | `_Scripts/Controller/Party/` |
-| Party UI | `ArcadeLobbyList` (4-slot party panel; per-slot kick ✕ for host) + `FriendInfoSlot` (single slot), `FriendsListPanel` (Online + Requests), `OnlineInfoEntry` (online row = invite button; "IN YOUR PARTY" + cancel-✕/kick states), `RequestInfoEntry` (accept/decline), `AddFriendPanel` (name input), `PartyInviteNotificationPanel` (bottom-left global invite popup) | `_Scripts/UI/Elements/` (`AddFriendPanel` in `_Scripts/UI/Views/`, `PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`) |
+| Party UI | `ArcadeLobbyList` (4-slot party panel; per-slot kick ✕ for host) + `FriendInfoSlot` (single slot), `FriendsListPanel` (Online + Requests), `OnlineInfoEntry` (online row = invite button; "IN YOUR PARTY" + cancel-✕/kick states), `RequestInfoEntry` (accept/decline), `PartyInviteNotificationPanel` (bottom-left global invite popup) | `_Scripts/UI/Elements/` (`PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`) |
 | Menu scene controller | `MainMenuController` (sub-state machine: None→Initializing→Ready→LaunchingGame), `MainMenuState` enum | `_Scripts/System/`, `_Scripts/Data/Enums/` |
 | Audio | `AudioSystem` (DI singleton), `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP) | `_Scripts/System/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
 | App systems | Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP, DailyChallenge, TrainingGameProgress | `_Scripts/System/` |

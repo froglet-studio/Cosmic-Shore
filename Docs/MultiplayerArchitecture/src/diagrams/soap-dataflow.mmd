@@ -5,8 +5,8 @@ flowchart LR
 
   W["HostConnectionService<br/>single writer"]:::writer
   D["HostConnectionDataSO<br/>lists: OnlinePlayers · PartyMembers<br/>events: OnInviteReceived · OnPartyMemberJoined / Left · OnPartyJoinCompleted"]:::data
-  r1["OnlinePlayersPanel"]:::reader
-  r2["PartyArcadeView / PartyAreaPanel"]:::reader
+  r1["FriendsListPanel / OnlineInfoEntry"]:::reader
+  r2["ArcadeLobbyList"]:::reader
   r3["PartyInviteNotificationPanel"]:::reader
   r4["FriendsInitializer (presence)"]:::reader
 

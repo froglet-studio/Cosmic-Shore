@@ -10,8 +10,7 @@ Service/SOAP-level mechanics live in `ARCHITECTURE.md`; this doc is the **UI
 surface** only.
 
 All components live in `Assets/_Scripts/UI/Elements/` unless noted
-(`AddFriendPanel` is in `_Scripts/UI/Views/`, `PartyInviteNotificationPanel` in
-`_Scripts/UI/Screens/`).
+(`PartyInviteNotificationPanel` is in `_Scripts/UI/Screens/`).
 
 ## Component inventory
 
@@ -22,11 +21,10 @@ Requests). They share the same component family:
 | Component | Purpose |
 |---|---|
 | `ArcadeLobbyList` | The party panel: 4 slots (slot 0 = local player, slots 1-3 = remote `PartyMembers`), a Leave button, and a live "N Players Online" counter. An empty slot's "+" opens `FriendsListPanel`. |
-| `FriendInfoSlot` | A single slot in `ArcadeLobbyList` — one of three states: local player, occupied (member avatar + name), or empty ("+" add button). |
+| `FriendInfoSlot` | A single slot in `ArcadeLobbyList` — one of three states: local player, occupied (member avatar + name; plus a **host-only kick ✕** on remote-member slots), or empty ("+" add button). On `FriendsInfo.prefab`. |
 | `FriendsListPanel` | Combined social panel — **no tabs; both sections render at once**: **Online** (every presence-lobby player) + **Requests** (incoming friend requests AND incoming party invites). Auto-opens when a party invite arrives. Reads `HostConnectionDataSO` + `FriendsDataSO` SOAP lists. |
-| `OnlineInfoEntry` | A row in the Online section. The **whole row background is the invite button**; tints yellow + pulses while an invite is pending. Status label: ONLINE / IN LOBBY N/M / LOBBY FULL / IN A MATCH. |
-| `RequestInfoEntry` | A row in the Requests section with Accept/Decline. `Kind { FriendRequest, PartyInvite }` — one row type serves both (delegates to `FriendsServiceFacade` / `PartyInviteController`). Lives on `RequestsInfo.prefab`, the shared base for the request/online/invite row family (`OnlineFriendsInfo Variant` is a prefab variant of it). |
-| `AddFriendPanel` (`_Scripts/UI/Views/`) | Text input + [Send] to send a friend request by name → `FriendsServiceFacade.SendFriendRequestByNameAsync`. The only friend-request entry point in code. |
+| `OnlineInfoEntry` | A row in the Online section with a small **Invite** button (shown only when the player is invitable) and a **✕** that cancels a pending outgoing invite or (host only) kicks an in-party member. Tints yellow + pulses while an invite is pending; Invite/cancel/kick share an anti-spam cooldown. Status label: ONLINE / IN PARTY N/M / PARTY FULL / IN A MATCH / IN YOUR PARTY N/M. On `OnlineFriendsInfo Variant.prefab` (a variant of `RequestsInfo`). |
+| `RequestInfoEntry` | A row in the Requests section with Accept/Decline. `Kind { FriendRequest, PartyInvite }` — one row type serves both (delegates to `FriendsServiceFacade` / `PartyInviteController`). Lives on `RequestsInfo.prefab`, the shared base for the row family (`OnlineFriendsInfo Variant` and `PartyInviteNotificationPanel Variant` are prefab variants of it). |
 | `PartyInviteNotificationPanel` (`_Scripts/UI/Screens/`) | The **global invite popup** — a small bottom-left card (avatar + inviter name + Accept/Decline) shown anywhere in Menu_Main when an invite arrives. Subscribes to `OnInviteReceived`, routes to `PartyInviteController`, dismisses on `OnInviteResolved`. **3s auto-hide** (hides only — the invite stays in the `FriendsListPanel` Requests list); **latest-wins** (a newer invite replaces it). Lives as **`PartyInviteNotificationPanel Variant.prefab`** — a **prefab variant of `RequestsInfo`** (the request-row layout reused: inherited `RequestInfoEntry` removed, a `CanvasGroup` + this component added and wired to the row's avatar/name/accept/decline). Instanced bottom-left on a top-level canvas in Menu_Main. |
 
 ## Invite UX flow (UI-level)
@@ -62,43 +60,27 @@ Recipient's refresh loop detects invite
           └─ Host's MenuServerPlayerVesselInitializer spawns vessel + autopilot
 ```
 
-## Add-friend entry points
+## Friend requests vs. party invites
 
-A player sends a friend request **by display name** via `AddFriendPanel`, which
-calls `FriendsServiceFacade.SendFriendRequestByNameAsync(name)` — the single
-writer. This is the **only friend-request entry point in code today**: the
-former per-row "+" add-friend button on online rows was removed, so online rows
-are now invite-only (the whole row is the party-invite button).
-
-| Entry Point | Input | Facade Method |
-|---|---|---|
-| `AddFriendPanel` | Player name (text input) | `SendFriendRequestByNameAsync(name)` |
-
-**`AddFriendPanel` behavior:**
-- Send button disabled until input is non-empty (`OnInputChanged` validates)
-- Button disabled during async request (re-enabled in `finally`)
-- Feedback text color: green for success, red for errors
-- Input field cleared on success, preserved on failure
-- Catches `FriendsServiceException` specifically for SDK errors
-
-> **Note:** `AddFriendPanel` has no in-code opener (scene-wired, or currently
-> unsurfaced), and `FriendsServiceFacade.SendFriendRequestAsync(playerId)` (by
-> ID) still exists on the facade but has no UI caller. If an add-friend
-> affordance returns to the online/friends rows, wire it to that by-ID method.
-
-**Friend request vs. party invite — separate systems:**
+Two separate systems — don't conflate them:
 
 | Action | System | Persistence | SDK |
 |---|---|---|---|
 | Add Friend | `FriendsServiceFacade` → UGS Friends SDK | Persistent relationship (survives sessions) | `FriendsService.AddFriendAsync` / `AddFriendByNameAsync` |
 | Invite to Party | `HostConnectionService` → UGS Sessions SDK | Ephemeral (session-scoped, lobby player properties) | Presence-lobby player property: `invite_payloads` (one line per target) |
 
-The party-invite affordance lives on the **online** row (`OnlineInfoEntry`):
-an Invite button when the player can be invited, a ✕ to cancel a pending invite
-or (host only) kick an in-party member. Friend *requests* are sent separately,
-by name, via `AddFriendPanel`. (The separate confirmed-friend row,
-`FriendInfoEntry`, was retired — `FriendsListPanel` renders only Online +
-Requests sections.)
+**Party invites** are surfaced on the **online** row (`OnlineInfoEntry`): an Invite
+button when the player can be invited, plus a ✕ to cancel a pending outgoing invite
+or (host only) kick an in-party member. The party panel's `FriendInfoSlot` carries
+the same host-only kick ✕ per occupied member slot.
+
+**Friend requests have no UI entry point today.** The by-name `AddFriendPanel` and
+the confirmed-friend row `FriendInfoEntry` were both retired — `FriendsListPanel`
+now renders only the Online + Requests sections. The facade capability remains for
+when an add-friend affordance is re-introduced: `FriendsServiceFacade.SendFriendRequestByNameAsync(name)`
+(by name) and `.SendFriendRequestAsync(playerId)` (by ID) are both live single-writer
+entry points — wire a new control to either. Incoming friend requests still arrive in
+the Requests section as `RequestInfoEntry` rows (Accept/Decline).
 
 ## Scene wiring checklist (Menu_Main)
 

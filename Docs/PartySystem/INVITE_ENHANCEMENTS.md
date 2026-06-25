@@ -151,7 +151,7 @@ already called on panel open by `ArcadeLobbyList.OnEnable` and
   5. `PublishJoinedPartyAsync(sessionId)` — write `joined_party = sessionId`
      so the host's scan admits us.
 
-### The online-panel UI (note: CLAUDE.md's `OnlinePlayersPanel`/`OnlinePlayerEntry` names are stale)
+### The online-panel UI
 
 - **`FriendsListPanel`** (`UI/Elements/FriendsListPanel.cs`) renders the
   Online section (one `OnlineInfoEntry` per `OnlinePlayers` entry, local
