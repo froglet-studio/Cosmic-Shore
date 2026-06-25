@@ -252,3 +252,50 @@ destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`.
 | Scoring rule | `_SO_Assets/Scoring Rules/AstroLeagueScoringRule.asset` |
 | Comeback profile | `_SO_Assets/ComebackProfiles/AstroLeagueComebackProfile.asset` |
 | End-game cinematic | `_SO_Assets/Cinematics/MinigameAstroLeagueCinematicDefinition.asset` (registered in `SceneCinematicLibrary.asset`) |
+| Cell config (biome) | `_SO_Assets/Cell Configs/Astro League Cell/Astro League Cell Config.asset` |
+| Spawn profile (food web) | `_SO_Assets/Cell Configs/Astro League Cell/Astro League Spawn Profile.asset` |
+
+## Cell Ecosystem (fauna)
+
+Astro League runs the **standard cell ecosystem** — zero bespoke ecology code. A `Cell`
+(plain instance of `Assets/_Prefabs/Environment/Cell.prefab`'s component set) sits at the
+arena center (origin) in the scene and self-initializes on `OnInitializeGame` like every
+other biome. Vessel-trail prisms inside the cell's sense radius auto-bind to it via
+`PrismSpatialIndex`, so the cell's per-domain volume/count climbs as trails accumulate and
+falls as the ball eats them — no controller wiring.
+
+- **Biome = `Astro League Cell Config`** (cloned from the Skim Race trail-grazing biome —
+  the no-flora "fauna eat AI trail obstacles" template):
+  - `SupportedFloras = []` — **no flora**. Mass is purely vessel trails; nothing is planted.
+  - **Food web = `Astro League Spawn Profile`** → the two forager herbivores
+    (`Skim Race Tadpole`/`Brittlestar` fauna configs, reused). The **tadpole forager grazes
+    any unshielded non-fauna prism of ANY domain** (incl. the controlling domain's own
+    trail); the brittlestar grazes opposing mass. No shark (apex predator omitted, as in
+    Skim Race — predators thin foragers, counterproductive to trail cleanup).
+  - `SenseRadiusOverride = 1000` — a fixed sphere that covers the arena at every intensity
+    (the 4× arena's farthest corner is ≈ 748 from center; 1000 has margin). Decoupled from
+    the visual membrane, exactly like Skim Race's 3000 over the HexRace track.
+  - **Phase thresholds** (count; auto-derive ×16 to volume): `RestlessEnter 500` =
+    "excess of prisms" → fauna start **hunting** opposing trail (L1). `FrenzyEnter 1500` =
+    "final threshold" → **Frenzy/L2**: fauna seek the densest ANY-domain region, drop
+    friendly avoidance, and the forager eats **same-domain** mass — exactly the requested
+    frenzy. These are first-guess values; the ball constantly eats trail, so watch the
+    `EcosystemPerfProbe` `[ECOSIM]` line and tune `Restless/FrenzyEnter` so the cell breathes
+    Calm→Restless→Frenzy over a real match.
+- **Controlling color is emergent** — the cell's `DominantDomain` is whichever domain holds
+  the most trail mass; fauna spawn in that color and hunt the opposition (no domain
+  asymmetry, no manual assignment).
+- **Collider budget:** the cell adds **no new prism colliders** — fauna senses ride
+  `PrismSpatialIndex.QuerySphere` (not `Physics.OverlapSphere`), and prism colliders are
+  already proximity-LOD'd by vessel foci. The only added cost is the forager bodies
+  (bounded by each species' `MaxLivePopulation` perf cap) and the ~0.25s volume recompute.
+  The ball excludes the `TrailBlocks` layer, so it never collides with the prisms the fauna
+  graze — the two systems are orthogonal (ball eats via `Prism.Damage`, fauna via `Consume`,
+  both idempotent on the shared `prism.destroyed` flag).
+- **Mass is conserved / continuity:** fauna wither-to-crystal on death (sealed in
+  `Fauna.Die`); the only prism sinks are the ball (an active force) and fauna consumption.
+  No decay, no lifespan.
+- **Networking:** fauna + trail prisms are client-local (no `NetworkObject`) — each peer
+  runs its own cell/spawner over its own trail copies, matching the Skim Race/HexRace model.
+  Phase can diverge slightly across clients (a known ecosystem caveat); fine for this
+  per-client environmental layer.
