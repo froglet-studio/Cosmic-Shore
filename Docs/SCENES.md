@@ -176,7 +176,7 @@ None(0) → Initializing(1) → Ready(2) ⇄ Freestyle(4)
 - `MenuCrystalClickHandler` — toggles between autopilot and freestyle control
 - `MenuVesselSelectionPanelController` — network-aware vessel swapping
 - `ScreenSwitcher` — horizontal sliding panel navigation
-- `PartyAreaPanel` / `PartyArcadeView` — party invite UI
+- `ArcadeLobbyList` / `FriendsListPanel` — party + social (invite) UI
 - `MenuMiniGameHUD` — freestyle HUD with vessel change trigger
 - Game UI container with `CanvasGroup` for freestyle fade in/out
 
