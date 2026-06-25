@@ -65,7 +65,9 @@ namespace CosmicShore.Editor
                 "The single source of truth for how each mode ends. Applies wherever the mode runs " +
                 "(tournament or standalone).\n\n0 = auto/default:\n" +
                 "  • HexRace / Crystal Capture: auto-calc from track waypoints.\n" +
-                "  • Joust: default " + EndConditionOverridesSO.DefaultJoustCount + ".",
+                "  • Joust: default " + EndConditionOverridesSO.DefaultJoustCount + ".\n" +
+                "  • Maelstrom: placement points to win the shuffle (race to N), default " +
+                EndConditionOverridesSO.DefaultMaelstromWinTarget + ".",
                 MessageType.Info);
 
             // ---- Live input fields (used at runtime) ----
@@ -75,12 +77,14 @@ namespace CosmicShore.Editor
             int hex = Mathf.Max(0, EditorGUILayout.IntField("HexRace — Crystal Count", _config.hexRaceCrystalCount));
             int cc  = Mathf.Max(0, EditorGUILayout.IntField("Crystal Capture — Crystal Count", _config.crystalCaptureCrystalCount));
             int jo  = Mathf.Max(0, EditorGUILayout.IntField("Joust — Joust Count", _config.joustCount));
+            int mw  = Mathf.Max(0, EditorGUILayout.IntField("Maelstrom — Win Target (points)", _config.maelstromWinTarget));
             if (EditorGUI.EndChangeCheck())
                 Persist("Edit End Game Conditions", () =>
                 {
                     _config.hexRaceCrystalCount = hex;
                     _config.crystalCaptureCrystalCount = cc;
                     _config.joustCount = jo;
+                    _config.maelstromWinTarget = mw;
                 });
 
             EditorGUILayout.Space();
@@ -89,6 +93,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField("HexRace", hex > 0 ? hex.ToString() : "auto (track waypoints)");
             EditorGUILayout.LabelField("Crystal Capture", cc > 0 ? cc.ToString() : "auto (track waypoints)");
             EditorGUILayout.LabelField("Joust", jo > 0 ? jo.ToString() : EndConditionOverridesSO.DefaultJoustCount + " (default)");
+            EditorGUILayout.LabelField("Maelstrom", mw > 0 ? mw.ToString() : EndConditionOverridesSO.DefaultMaelstromWinTarget + " (default)");
             EditorGUI.indentLevel--;
 
             // ---- Build baseline (read-only display + capture button) ----
@@ -120,7 +125,8 @@ namespace CosmicShore.Editor
         {
             return "HexRace: " + Fmt(_config.hexRaceCrystalCountBuild, "auto") + "\n" +
                    "Crystal Capture: " + Fmt(_config.crystalCaptureCrystalCountBuild, "auto") + "\n" +
-                   "Joust: " + Fmt(_config.joustCountBuild, "default " + EndConditionOverridesSO.DefaultJoustCount);
+                   "Joust: " + Fmt(_config.joustCountBuild, "default " + EndConditionOverridesSO.DefaultJoustCount) + "\n" +
+                   "Maelstrom: " + Fmt(_config.maelstromWinTargetBuild, "default " + EndConditionOverridesSO.DefaultMaelstromWinTarget);
 
             static string Fmt(int value, string zeroMeaning) => value > 0 ? value.ToString() : "0 (" + zeroMeaning + ")";
         }

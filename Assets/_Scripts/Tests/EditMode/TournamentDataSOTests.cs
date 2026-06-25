@@ -228,6 +228,35 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void ResolveWinTarget_OverridesSerializedWinTarget_ForShuffleComplete()
+        {
+            // The End Game Conditions tool is the authority: TournamentController stamps the resolved
+            // race-to-N target via ResolveWinTarget. A tool value of 3 must end the shuffle at 3 even
+            // though the serialized fallback WinTarget is still 6.
+            _data.ResolveWinTarget(3);
+            Assert.AreEqual(3, _data.EffectiveWinTarget, "Resolved tool value wins over the serialized fallback.");
+
+            var game = new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby), Row(3, Domains.Gold) };
+
+            _data.RecordResults(game);                                   // Jade 2
+            Assert.IsFalse(_data.IsShuffleComplete, "Jade has 2 (< 3).");
+            _data.RecordResults(game);                                   // Jade 4
+            Assert.IsTrue(_data.IsShuffleComplete, "Jade reached 4 (>= the resolved target 3).");
+        }
+
+        [Test]
+        public void EffectiveWinTarget_FallsBackToSerializedWinTarget_WhenUnresolved()
+        {
+            // Pure data SO (no TournamentController run) → no tool value resolved → use the field.
+            Assert.AreEqual(_data.WinTarget, _data.EffectiveWinTarget,
+                "Until ResolveWinTarget runs, EffectiveWinTarget mirrors the serialized fallback.");
+
+            _data.ResolveWinTarget(0);   // non-positive clears the override
+            Assert.AreEqual(_data.WinTarget, _data.EffectiveWinTarget,
+                "A non-positive resolve clears the override (back to the serialized fallback).");
+        }
+
+        [Test]
         public void ResetRuntime_ClearsStandingsAndGamesPlayed_KeepsIntensityCeiling()
         {
             _data.RecordResults(new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby), Row(3, Domains.Gold) });

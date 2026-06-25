@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Unity.Netcode;
 using UnityEngine;
@@ -219,6 +220,14 @@ namespace CosmicShore.Gameplay
         {
             _tournament.ResetRuntime();   // preserves IntensityCeiling
             _tournament.IsActive = true;
+
+            // Resolve the race-to-N win target from the End Game Conditions tool (Resources/EndConditionOverrides,
+            // edited via Tools > Cosmic Shore > End Game Conditions) once per shuffle start. Runs on every peer
+            // from the same committed asset, so IsShuffleComplete stays deterministic across the party; falls
+            // back to the asset's serialized WinTarget if the tool asset is missing.
+            var endConditions = EndConditionOverridesSO.Instance;
+            _tournament.ResolveWinTarget(endConditions != null ? endConditions.GetMaelstromWinTarget() : _tournament.WinTarget);
+
             // Capture the lobby-chosen intensity as the per-game CEILING (X); each game then draws a
             // random intensity in [1..X]. Set AFTER ResetRuntime so a fresh start re-captures the
             // player's current choice; skipped on Play Again so the original ceiling survives.

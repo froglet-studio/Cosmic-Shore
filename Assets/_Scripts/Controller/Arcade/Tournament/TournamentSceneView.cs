@@ -52,7 +52,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] TMP_Text gameModesText;
         [Tooltip("\"ROUND N\".")]
         [SerializeField] TMP_Text roundCounterText;
-        [Tooltip("Subtitle — \"First domain to {WinTarget} points wins\".")]
+        [Tooltip("Subtitle — auto-filled \"First domain to N points wins\", where N is the Maelstrom " +
+                 "win target from Tools > Cosmic Shore > End Game Conditions (TournamentDataSO.EffectiveWinTarget).")]
         [SerializeField] TMP_Text raceRuleText;
         [Tooltip("\"LEADING DOMAIN : JADE\" (domain name coloured from the palette).")]
         [SerializeField] TMP_Text leadingDomainText;
@@ -173,7 +174,7 @@ namespace CosmicShore.Gameplay
             if (titleText) titleText.text = summaryMode ? $"{ModeName().ToUpperInvariant()} RESULTS" : ModeName().ToUpperInvariant();
             if (gameModesText) gameModesText.text = $"GAMEMODES : {GameModesPool()}";
             if (roundCounterText) roundCounterText.text = summaryMode ? $"{gamesPlayed} ROUNDS PLAYED" : $"ROUND {gamesPlayed + 1}";
-            if (raceRuleText && tournamentData != null) raceRuleText.text = $"First domain to {tournamentData.WinTarget} points wins";
+            if (raceRuleText && tournamentData != null) raceRuleText.text = $"First domain to {tournamentData.EffectiveWinTarget} points wins";
             RenderLeadingDomain();
 
             PopulateRoundCards(includePreviewWhenEmpty: !summaryMode);
