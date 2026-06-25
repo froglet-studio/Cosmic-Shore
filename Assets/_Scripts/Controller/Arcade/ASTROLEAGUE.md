@@ -264,6 +264,23 @@ every other biome. Vessel-trail prisms inside the cell's sense radius auto-bind 
 `PrismSpatialIndex`, so the cell's per-domain volume/count climbs as trails accumulate and falls
 as the ball + fauna eat them — no controller wiring.
 
+**Spawner bootstrap — the cell needs a crystal (this was the "no fauna" bug).** `Cell.cs` only
+calls `StartSpawnerForMode()` from `InitilizePostFirstCellItem()`, which runs on the **first
+`runtime.OnCellItemsUpdated` raise** — and that is raised **only when a crystal registers**
+(`CellRuntimeDataSO.AddCrystalToList` ← a crystal manager). A cell with no crystal never starts
+its spawner, so no amount of phase-threshold tuning produces fauna. Astro League therefore wires a
+**`NetworkCrystalManager`** onto the `Game` controller GameObject (sharing its existing
+`NetworkObject`), configured for a **single** neutral anchor crystal: `cellData` = the shared
+`Runtime Cell Data` SO (same asset the Cell uses), `crystalPrefab` = `Crystal.prefab`,
+`crystalCountMode = FixedCount`, `fixedCrystalCount = 1`, `spawnCrystalWithPlayerDomain = false`,
+`spawnOnClientReady = true`. On client-ready the server writes one crystal slot to its `n_Slots`
+`NetworkList`; the slot replicates and **every peer instantiates its own local crystal** and calls
+`AddCrystalToList` locally — bootstrapping each peer's client-local cell. The crystal doubles as a
+midfield elemental power-up; it is **not** a scoring/turn objective (Astro League ends on the
+time-based `AstroLeagueMatchMonitor` + goal scoring, never on crystals). *(Joust has the identical
+latent "cell but no crystal manager → spawner never starts" gap — fix it the same way when its
+ecology is wired.)*
+
 **The Cell owns the environment, not the arena** (`Docs/ECOSYSTEM_MASTERPLAN.md §5.1`,
 `CLAUDE.md ▸ "The Cell owns the environment"`). The arena builds only gameplay-bearing structure
 (physics walls, goal portals, midfield ring). Everything atmospheric/territorial lives on the

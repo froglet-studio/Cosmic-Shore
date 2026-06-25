@@ -808,6 +808,7 @@ GameObject:
   - component: {fileID: 1628508333}
   - component: {fileID: 1628508338}
   - component: {fileID: 1628508340}
+  - component: {fileID: 1628508400}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -992,6 +993,30 @@ MonoBehaviour:
   - {fileID: 1700000031}
   - {fileID: 1700000041}
   - {fileID: 0}
+--- !u!114 &1628508400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1628508325}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90215a90a50249e8a32f1bd48fb31fb1, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  ShowTopMostFoldoutHeaderGroup: 1
+  cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
+  crystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811,
+    type: 3}
+  scaleCrystalPositionWithIntensity: 0
+  intensityLevelData: {fileID: 11400000, guid: 490485287c38a2f4e9178566394efd69, type: 2}
+  listOfCrystalPositions: []
+  crystalCountMode: 0
+  fixedCrystalCount: 1
+  extraCrystalsToSpawnBeyondPlayerCount: 0
+  spawnCrystalWithPlayerDomain: 0
+  spawnOnClientReady: 1
 --- !u!114 &1628508347
 MonoBehaviour:
   m_ObjectHideFlags: 0
