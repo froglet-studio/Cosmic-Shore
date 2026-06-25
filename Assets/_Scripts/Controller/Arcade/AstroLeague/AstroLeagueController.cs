@@ -86,9 +86,10 @@ namespace CosmicShore.Gameplay
             if (!IsServer) return;
 
             gameData.GoalTargetCount = settings.goalLimit;
-            // Intensity scale is computed on the server and broadcast so every peer builds the
-            // arena / sizes the ball / lays out goals + team spawns at the exact same scale.
-            SyncMatchConfig_ClientRpc(settings.goalLimit, ScaleForIntensity());
+            // Intensity scale + court shape are computed on the server and broadcast so every peer
+            // builds the arena / sizes the ball / lays out goals + team spawns / morphs the nucleus
+            // at the exact same scale and geometry.
+            SyncMatchConfig_ClientRpc(settings.goalLimit, ScaleForIntensity(), (int)ShapeForIntensity());
 
             ball.OnStruckServer += HandleBallStruckServer;
             matchMonitor.OnClockExpired += HandleClockExpiredServer;
@@ -117,6 +118,15 @@ namespace CosmicShore.Gameplay
             return Mathf.Lerp(1f, Mathf.Max(1f, settings.intensityScaleAtMax), t);
         }
 
+        /// <summary>Court geometry for the selected intensity — one ricochet test shape per level.</summary>
+        AstroLeagueBoundaryShape ShapeForIntensity()
+        {
+            int intensity = gameData.SelectedIntensity != null
+                ? Mathf.Max(1, gameData.SelectedIntensity.Value)
+                : 1;
+            return settings.ShapeForIntensity(intensity);
+        }
+
         public override void OnNetworkDespawn()
         {
             if (IsServer)
@@ -133,33 +143,50 @@ namespace CosmicShore.Gameplay
         }
 
         [ClientRpc]
-        void SyncMatchConfig_ClientRpc(int goalTarget, float intensityScale)
+        void SyncMatchConfig_ClientRpc(int goalTarget, float intensityScale, int shape)
         {
-            // Layout scaling runs on EVERY peer (host included) so geometry, ball size, goals and
-            // team spawns match across the session.
-            ApplyIntensityScale(intensityScale);
+            // Layout scaling + court shape run on EVERY peer (host included) so geometry, ball size,
+            // goals, team spawns and the nucleus cage match across the session.
+            ApplyIntensityScale(intensityScale, (AstroLeagueBoundaryShape)shape);
 
             if (IsServer) return;
             gameData.GoalTargetCount = goalTarget;
         }
 
         /// <summary>
-        /// Scale the whole playfield to the match intensity: rebuild the arena, resize the ball,
-        /// and push the goals + team spawns out to the scaled goal lines (scaling each goal-mouth
-        /// trigger to match). Players reset to these scaled team positions on every kickoff.
+        /// Scale the whole playfield to the match intensity and apply the court shape: rebuild the
+        /// arena boundary, resize the ball, push the goals + team spawns out to the scaled goal lines,
+        /// and morph the cell nucleus to the boundary geometry. Players reset to the scaled team
+        /// positions on every kickoff.
         /// </summary>
-        void ApplyIntensityScale(float scale)
+        void ApplyIntensityScale(float scale, AstroLeagueBoundaryShape shape)
         {
             _currentScale = Mathf.Max(1f, scale);
             CaptureBaseLayout();
 
-            if (arena != null) arena.Build(_currentScale);
+            if (arena != null) arena.Build(_currentScale, shape);
             if (ball != null) ball.SetSizeScale(_currentScale);
 
-            // The spherical play boundary IS the cell nucleus: resize it to the arena's bounce radius
-            // so the visible nucleus sphere coincides with the surface the ball bounces off. The
-            // setter is race-proof (caches the radius if the nucleus hasn't spawned yet).
-            if (cell != null && arena != null) cell.SetNucleusWorldRadius(arena.BoundaryRadius);
+            // The play boundary IS the cell nucleus: morph the visible nucleus to coincide with the
+            // surface the ball bounces off, so the wall you see is the wall the ball hits. A polytope
+            // gets the generated convex-hull mesh (keeping the nucleus CageMaterial); the legacy sphere
+            // keeps its prefab mesh and is just resized. Both setters are race-proof (cache until the
+            // nucleus spawns).
+            if (cell != null && arena != null && arena.Boundary != null)
+            {
+                if (shape == AstroLeagueBoundaryShape.Sphere)
+                {
+                    cell.SetNucleusWorldRadius(arena.BoundaryRadius);
+                }
+                else
+                {
+                    // Polytopes get the generated convex-hull cage mesh; curved/degenerate shapes
+                    // (e.g. Cylinder) have no hull mesh — fall back to a sphere sized to the boundary.
+                    Mesh cage = arena.Boundary.BuildVisualMesh();
+                    if (cage != null) cell.SetNucleusMesh(cage);
+                    else cell.SetNucleusWorldRadius(arena.Boundary.MaxExtent);
+                }
+            }
 
             Vector3 arenaCenter = arena != null ? arena.Center : transform.position;
             if (goals != null)

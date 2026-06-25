@@ -31,12 +31,41 @@ namespace CosmicShore.Gameplay
         [Tooltip("Highest intensity level used for the scale ramp (the arcade card's MaxIntensity).")]
         public int maxIntensityLevel = 4;
 
-        [Header("Arena — Spherical Boundary (the cell nucleus)")]
-        [Tooltip("Radius (at intensity 1) of the spherical play boundary. The arena scales the cell " +
-                 "NUCLEUS to this radius so the nucleus sphere IS the wall, and the ball bounces " +
-                 "elastically off its inner surface (a radial reflect, no collider). ~190 circumscribes " +
-                 "the legacy 300x200x100 box so the goals/spawns sit inside. Scales with match intensity.")]
+        [Header("Arena — Court Boundary (the cell nucleus)")]
+        [Tooltip("Court geometry the ball bounces off, ONE PER INTENSITY (index 0 = intensity 1). FLAT " +
+                 "polytope walls BANK the ball (billiards/air-hockey/Rocket-League feel); a Sphere " +
+                 "focuses it toward center (the legacy baseline). The cell NUCLEUS is morphed to this " +
+                 "shape so the wall you see is the wall the ball hits. Default 1-4: Box, Octagon, " +
+                 "BeveledBox, Hex — re-map freely. Falls back to the last entry above maxIntensityLevel.")]
+        public AstroLeagueBoundaryShape[] boundaryShapesByIntensity =
+        {
+            AstroLeagueBoundaryShape.Box,
+            AstroLeagueBoundaryShape.OctagonalPrism,
+            AstroLeagueBoundaryShape.BeveledBox,
+            AstroLeagueBoundaryShape.HexagonalPrism,
+        };
+
+        [Tooltip("Radius (at intensity 1) of the boundary ONLY when the shape is Sphere. ~190 " +
+                 "circumscribes the legacy 300x200x100 court. Scales with match intensity. Polytope " +
+                 "shapes derive their walls from the arena's length/width/height instead.")]
         public float boundaryRadius = 190f;
+
+        [Tooltip("0..1 chamfer depth for the OctagonalPrism (how far the 4 goal-axis edges are cut " +
+                 "toward the corner). ~0.5 reads as a clean octagon; higher = more cut.")]
+        [Range(0f, 1f)] public float octagonBevelFraction = 0.5f;
+
+        [Tooltip("0..1 chamfer depth for the BeveledBox (every edge + corner cut). Higher = rounder, " +
+                 "more Rocket-League corner-ramp redirect; lower = closer to a sharp box.")]
+        [Range(0f, 1f)] public float beveledBoxBevelFraction = 0.45f;
+
+        /// <summary>Court shape for an intensity level (1-based), clamped to the configured array.</summary>
+        public AstroLeagueBoundaryShape ShapeForIntensity(int intensity)
+        {
+            if (boundaryShapesByIntensity == null || boundaryShapesByIntensity.Length == 0)
+                return AstroLeagueBoundaryShape.Box;
+            int idx = Mathf.Clamp(intensity - 1, 0, boundaryShapesByIntensity.Length - 1);
+            return boundaryShapesByIntensity[idx];
+        }
 
         [Header("Vessel Recoil (anti-clip)")]
         [Tooltip("Backward velocity (units/sec) applied to a vessel when it strikes the ball, so it " +

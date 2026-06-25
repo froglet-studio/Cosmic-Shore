@@ -46,12 +46,16 @@ namespace CosmicShore.Gameplay
         public Vector3 Center => transform.position;
         public float GoalRingRadius => goalRingRadius * _scale;
 
-        /// <summary>World-space radius of the spherical play boundary at the current intensity scale.</summary>
+        /// <summary>World-space radius of the SPHERE boundary at the current intensity scale (sphere shape only).</summary>
         public float BoundaryRadius => _boundaryRadius;
+
+        /// <summary>The court boundary the ball bounces off at the current intensity (shape + scaled dims).</summary>
+        public AstroLeagueBoundary Boundary => _boundary;
 
         // Scale-resolved dimensions (set in Build).
         float _scale = 1f;
         float _L, _W, _H, _goalR, _boundaryRadius;
+        AstroLeagueBoundary _boundary;
         bool _built;
 
         readonly List<GameObject> _generated = new();
@@ -62,10 +66,12 @@ namespace CosmicShore.Gameplay
         Color RubyColor => settings != null ? settings.rubyGoalColor : new Color(1f, 0.22f, 0.35f, 0.5f);
 
         /// <summary>
-        /// Build (or rebuild) the stadium at the given intensity scale. Called by the controller on
-        /// every peer once the intensity is known. Idempotent — clears prior geometry first.
+        /// Build (or rebuild) the stadium at the given intensity scale + court shape. Called by the
+        /// controller on every peer once the intensity is known. Idempotent — clears prior geometry
+        /// first. The boundary is exposed via <see cref="Boundary"/> so the controller can morph the
+        /// cell nucleus to match (mesh for polytopes, radius for the sphere).
         /// </summary>
-        public void Build(float scale)
+        public void Build(float scale, AstroLeagueBoundaryShape shape)
         {
             _scale = Mathf.Max(0.01f, scale);
             _L = arenaLength * _scale;
@@ -79,10 +85,16 @@ namespace CosmicShore.Gameplay
                 if (_generated[i] != null) Destroy(_generated[i]);
             _generated.Clear();
 
-            // The spherical nucleus IS the wall: hand the ball its containment sphere (radial
-            // reflect, no collider). The nucleus visual is resized to match by the controller
-            // (Cell.SetNucleusWorldRadius(BoundaryRadius)).
-            if (ball != null) ball.SetBoundary(Center, _boundaryRadius);
+            // The nucleus IS the wall: build the court boundary (flat polytope faces BANK the ball; a
+            // sphere focuses it) and hand it to the ball — a reflect off its walls, no collider. The
+            // half-extents are (width/2, height/2, length/2); the goal axis is Z (length), so the flat
+            // goal caps sit on the goal lines (±length/2) and "backboard" missed shots. The nucleus
+            // visual is morphed to match by the controller (Cell.SetNucleusMesh / SetNucleusWorldRadius).
+            Vector3 halfExtents = new Vector3(_W / 2f, _H / 2f, _L / 2f);
+            float octFrac = settings != null ? settings.octagonBevelFraction : 0.5f;
+            float bevFrac = settings != null ? settings.beveledBoxBevelFraction : 0.45f;
+            _boundary = new AstroLeagueBoundary(shape, Center, halfExtents, _boundaryRadius, octFrac, bevFrac);
+            if (ball != null) ball.SetBoundary(_boundary);
 
             BuildGoalPortal("GoalPortal_Jade", Center + Vector3.back * (_L / 2f), Vector3.forward, JadeColor, out jadeRingMaterial);
             BuildGoalPortal("GoalPortal_Ruby", Center + Vector3.forward * (_L / 2f), Vector3.back, RubyColor, out rubyRingMaterial);
