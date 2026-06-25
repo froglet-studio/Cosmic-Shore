@@ -7,17 +7,20 @@ namespace CosmicShore.Gameplay
     /// HyperSea stadium for Astro League — only the GAMEPLAY-bearing structure, constructed at
     /// runtime on every peer (purely deterministic local visuals + static physics, nothing here
     /// needs networking):
-    /// - Invisible high-restitution boundary walls (pure physics; the server's ball
-    ///   simulation bounces off them, clients only render the replicated ball)
+    /// - A SPHERICAL play boundary that IS the Cell's nucleus: the arena scales the nucleus to
+    ///   <see cref="BoundaryRadius"/>, and the server's ball bounces elastically off its inner
+    ///   surface (a radial reflect in the ball — no collider; see <c>AstroLeagueBall.SetBoundary</c>).
+    ///   This replaced six invisible BoxCollider walls (−6 colliders).
     /// - Portal-style goal rings at each end, with anticipation glow as the ball approaches
     /// - Center ring marking the soccer midfield / kickoff line
     ///
     /// Everything ATMOSPHERIC or TERRITORIAL is owned by the standard Cell ecosystem, NOT by this
     /// arena (CLAUDE.md ▸ "Universality — one HyperSea, one rule set"): the playfield boundary read
     /// is the Cell's <c>MembranePrefab</c>, the drifting motes are the Cell's <c>CytoplasmPrefab</c>,
-    /// and the core marker is the Cell's <c>NucleusPrefab</c>. A previous bespoke wireframe edge cage
-    /// and a bespoke plankton particle system were removed because they duplicated the membrane and
-    /// cytoplasm — do not reintroduce arena-local versions of cell-owned visuals.
+    /// and the boundary/core sphere is the Cell's <c>NucleusPrefab</c> (the arena only resizes it via
+    /// <c>Cell.SetNucleusWorldRadius</c> — it does not own a duplicate). A previous bespoke wireframe
+    /// edge cage and a bespoke plankton particle system were removed because they duplicated the
+    /// membrane and cytoplasm — do not reintroduce arena-local versions of cell-owned visuals.
     ///
     /// The whole stadium scales with match intensity: the controller calls <see cref="Build"/>
     /// with the intensity scale factor, and every dimension (and the goal-ring positions the
@@ -30,10 +33,11 @@ namespace CosmicShore.Gameplay
         [SerializeField] AstroLeagueSettingsSO settings;
 
         [Header("Base Dimensions (intensity 1 — scaled up by Build)")]
+        [Tooltip("Used only to place the end goals (Z = ±arenaLength/2) and size the midfield ring; " +
+                 "the play boundary itself is the spherical nucleus (settings.boundaryRadius).")]
         [SerializeField] float arenaLength = 300f;
         [SerializeField] float arenaWidth = 200f;
         [SerializeField] float arenaHeight = 100f;
-        [SerializeField] float wallThickness = 4f;
         [SerializeField] float goalRingRadius = 26f;
 
         [Header("References")]
@@ -42,9 +46,12 @@ namespace CosmicShore.Gameplay
         public Vector3 Center => transform.position;
         public float GoalRingRadius => goalRingRadius * _scale;
 
+        /// <summary>World-space radius of the spherical play boundary at the current intensity scale.</summary>
+        public float BoundaryRadius => _boundaryRadius;
+
         // Scale-resolved dimensions (set in Build).
         float _scale = 1f;
-        float _L, _W, _H, _wall, _goalR;
+        float _L, _W, _H, _goalR, _boundaryRadius;
         bool _built;
 
         readonly List<GameObject> _generated = new();
@@ -64,53 +71,23 @@ namespace CosmicShore.Gameplay
             _L = arenaLength * _scale;
             _W = arenaWidth * _scale;
             _H = arenaHeight * _scale;
-            _wall = wallThickness * _scale;
             _goalR = goalRingRadius * _scale;
+            _boundaryRadius = (settings != null ? settings.boundaryRadius : 190f) * _scale;
 
             // Clear anything from a prior Build (defensive — normally built once per scene).
             for (int i = _generated.Count - 1; i >= 0; i--)
                 if (_generated[i] != null) Destroy(_generated[i]);
             _generated.Clear();
 
-            BuildWalls();
+            // The spherical nucleus IS the wall: hand the ball its containment sphere (radial
+            // reflect, no collider). The nucleus visual is resized to match by the controller
+            // (Cell.SetNucleusWorldRadius(BoundaryRadius)).
+            if (ball != null) ball.SetBoundary(Center, _boundaryRadius);
+
             BuildGoalPortal("GoalPortal_Jade", Center + Vector3.back * (_L / 2f), Vector3.forward, JadeColor, out jadeRingMaterial);
             BuildGoalPortal("GoalPortal_Ruby", Center + Vector3.forward * (_L / 2f), Vector3.back, RubyColor, out rubyRingMaterial);
             BuildCenterRing();
             _built = true;
-        }
-
-        // ── Physics shell ────────────────────────────────────────────────────
-
-        void BuildWalls()
-        {
-            float hw = _W / 2f, hh = _H / 2f, hl = _L / 2f;
-
-            CreateWall("Wall_Top",    Center + Vector3.up * (hh + _wall / 2f),      new Vector3(_W, _wall, _L));
-            CreateWall("Wall_Bottom", Center + Vector3.down * (hh + _wall / 2f),    new Vector3(_W, _wall, _L));
-            CreateWall("Wall_Left",   Center + Vector3.left * (hw + _wall / 2f),    new Vector3(_wall, _H, _L));
-            CreateWall("Wall_Right",  Center + Vector3.right * (hw + _wall / 2f),   new Vector3(_wall, _H, _L));
-            CreateWall("Wall_Back",   Center + Vector3.back * (hl + _wall / 2f),    new Vector3(_W, _H, _wall));
-            CreateWall("Wall_Front",  Center + Vector3.forward * (hl + _wall / 2f), new Vector3(_W, _H, _wall));
-        }
-
-        void CreateWall(string wallName, Vector3 position, Vector3 size)
-        {
-            var wall = new GameObject(wallName);
-            wall.transform.SetParent(transform);
-            wall.transform.position = position;
-            wall.layer = gameObject.layer;
-
-            var col = wall.AddComponent<BoxCollider>();
-            col.size = size;
-            col.material = new PhysicsMaterial("ArenaWall")
-            {
-                bounciness = 1f,
-                bounceCombine = PhysicsMaterialCombine.Maximum,
-                frictionCombine = PhysicsMaterialCombine.Minimum,
-                dynamicFriction = 0f,
-                staticFriction = 0f
-            };
-            _generated.Add(wall);
         }
 
         // ── Goal portals + midfield ──────────────────────────────────────────

@@ -37,6 +37,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] ScoringRuleSO rule;
         [SerializeField] AstroLeagueBall ball;
         [SerializeField] AstroLeagueArena arena;
+        [Tooltip("The standard Cell whose nucleus is scaled to become the spherical play boundary.")]
+        [SerializeField] Cell cell;
         [SerializeField] AstroLeagueMatchMonitor matchMonitor;
         [Tooltip("One goal per active domain. Element order must match GameDataSO.ActiveDomains (Jade, Ruby).")]
         [SerializeField] List<AstroLeagueGoal> goals;
@@ -153,6 +155,11 @@ namespace CosmicShore.Gameplay
 
             if (arena != null) arena.Build(_currentScale);
             if (ball != null) ball.SetSizeScale(_currentScale);
+
+            // The spherical play boundary IS the cell nucleus: resize it to the arena's bounce radius
+            // so the visible nucleus sphere coincides with the surface the ball bounces off. The
+            // setter is race-proof (caches the radius if the nucleus hasn't spawned yet).
+            if (cell != null && arena != null) cell.SetNucleusWorldRadius(arena.BoundaryRadius);
 
             Vector3 arenaCenter = arena != null ? arena.Center : transform.position;
             if (goals != null)

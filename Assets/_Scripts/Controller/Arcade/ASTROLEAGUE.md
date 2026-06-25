@@ -32,10 +32,10 @@ Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
 | Class | Role |
 |---|---|
 | `AstroLeagueController` | Match director (server-authoritative): kickoffs, goal attribution, celebrations, golden-goal overtime, winner banner, AI striker arming, final-score sync (HexRace/Joust/CC `SyncFinalScores_ClientRpc` pattern) |
-| `AstroLeagueBall` | Server-simulated billiard payload (`NetworkBehaviour`). Server owns a real non-kinematic rigidbody with full **angular dynamics**; clients dead-reckon from replicated position + velocity + **angular velocity** NetworkVariables (the kinematic replica free-spins so the faceted icosphere's tumble shows everywhere). Vessel hits are a **momentum-conserving elastic bounce off the moving hull** (off-center → spin) and the ball can never clip a vessel. Carries the **last-striker's domain** (`n_LastHitDomain`) which drives the ball tint and the selective prism interaction (own color → pass through + shield; opposing unshielded → slow by mass + destroy; opposing shielded → unshield + leave). The ball bounces elastically only off **walls and vessels**, never off prisms. Strike velocity comes from server-side per-vessel transform sampling (vessels are transform-driven, so rigidbody velocity and remote `VesselStatus.Speed` are useless). Impact juice replicates via ClientRpc |
+| `AstroLeagueBall` | Server-simulated billiard payload (`NetworkBehaviour`). Server owns a real non-kinematic rigidbody with full **angular dynamics**; clients dead-reckon from replicated position + velocity + **angular velocity** NetworkVariables (the kinematic replica free-spins so the faceted icosphere's tumble shows everywhere). Vessel hits are a **momentum-conserving elastic bounce off the moving hull** (off-center → spin) and the ball can never clip a vessel. Carries the **last-striker's domain** (`n_LastHitDomain`) which drives the ball tint and the selective prism interaction (own color → pass through + shield; opposing unshielded → slow by mass + destroy; opposing shielded → unshield + leave). The ball bounces elastically only off the **spherical nucleus boundary and vessels**, never off prisms. Strike velocity comes from server-side per-vessel transform sampling (vessels are transform-driven, so rigidbody velocity and remote `VesselStatus.Speed` are useless). Impact juice replicates via ClientRpc |
 | `AstroLeagueMatchMonitor` | `TurnMonitor` match clock, server-authoritative ("M:SS"/"OT" pushed by ClientRpc on the shared display channel). Pauses during celebrations; the controller decides full-time vs overtime; turn ends only on `ForceEnd()` |
 | `AstroLeagueGoal` | Accurate goal detector (server-gated): per-tick polls the ball for a genuine INWARD crossing of the goal-line plane WITHIN the mouth circle (no fat-trigger false positives, teleport-guarded); reports to `AstroLeagueController.HandleGoalServer` — attribution lives in the controller |
-| `AstroLeagueArena` | Runtime **gameplay-only** HyperSea stadium, built identically on every peer (no networking): invisible 1.0-restitution physics walls (the ball must bounce), portal goal rings with ball-proximity anticipation flare, and a midfield/kickoff center ring. **Owns no environment dressing** — the boundary read is the Cell's `MembranePrefab` and the drifting motes are the Cell's `CytoplasmPrefab` (a bespoke edge cage + plankton particle system were removed; see `Docs/ECOSYSTEM_MASTERPLAN.md §5.1`) |
+| `AstroLeagueArena` | Runtime **gameplay-only** HyperSea stadium, built identically on every peer (no networking): a **spherical play boundary that IS the Cell's nucleus** (the arena scales the nucleus to `settings.boundaryRadius`×intensity and the ball bounces elastically off its inner surface via a radial reflect — no collider; this replaced six invisible BoxCollider walls, −6 colliders), portal goal rings with ball-proximity anticipation flare, and a midfield/kickoff center ring. **Owns no environment dressing** — the boundary read is the Cell's `MembranePrefab`, the drifting motes are the Cell's `CytoplasmPrefab`, and the boundary sphere is the Cell's `NucleusPrefab` (a bespoke edge cage + plankton particle system were removed; see `Docs/ECOSYSTEM_MASTERPLAN.md §5.1`) |
 | `AstroLeagueSettingsSO` | All tunables |
 | `AstroLeagueScoringRuleSO` | Scoring strategy: mercy-rule end condition over per-domain `GoalsScored` sums, Score = personal goals, "WON BY N GOALS" reveal |
 
@@ -85,7 +85,7 @@ FinishMatch             winner banner (real time) → matchMonitor.ForceEnd()
 
 | Concern | Owner | Mechanism |
 |---|---|---|
-| Ball physics + strikes | Server | Rigidbody sim (linear + angular); elastic vessel/wall bounce via `OnCollision`/`OnTrigger` Enter+Stay; prisms resolved by a per-tick `QuerySphere` scan (every peer), not collisions |
+| Ball physics + strikes | Server | Rigidbody sim (linear + angular); elastic vessel bounce via `OnCollision`/`OnTrigger` Enter+Stay; spherical-boundary containment via per-tick radial reflect (`ContainWithinBoundary`); prisms resolved by a per-tick `QuerySphere` scan (every peer), not collisions |
 | Ball position/velocity/spin | Server → all | `NetworkVariable<Vector3>` ×3 (pos, linear vel, angular vel), client dead reckoning + smoothing + free-spin |
 | Ball last-hit domain (color/interaction) | Server → all | `NetworkVariable<Domains> n_LastHitDomain` (Blue = neutral) |
 | Ball frozen/hidden | Server → all | `NetworkVariable<bool>` ×2 |
@@ -112,15 +112,19 @@ server with billiard thinking:
 ## Ball Physics Notes
 
 > **The feel we're building: Rocket League in the HyperSea.** The ball is a real,
-> momentum-carrying payload. It bounces *elastically* off only two things — the arena
-> **walls** and the **vessels** — and everything else is about the ball's DOMAIN (the team
+> momentum-carrying payload. It bounces *elastically* off only two things — the spherical
+> **nucleus boundary** and the **vessels** — and everything else is about the ball's DOMAIN (the team
 > color of whoever struck it last) interacting with the colored mass of the prismscape:
 > it glides through friendly trail (shielding it), eats enemy trail (slowing as it plows),
 > and pops enemy shields. There is no friction and no scripted strike — speed is gained
 > from vessel hits and lost only by plowing enemy mass, so a well-placed shot screams
-> across the arena and a defender can wall it off with their own trail. (Coming next:
-> fauna spawned for the **controlling domain** — the cell-ecosystem food web layered onto
-> the arena so the dominant team's mass grows a living defense.)
+> across the arena and a defender can wall it off with their own trail. Fauna are spawned for
+> the **controlling domain** — the cell-ecosystem food web layered onto the arena so the
+> dominant team's mass grows a living (ambient) defense (see "Cell ecosystem" below).
+>
+> The HUD **objective indicator always points at the ball** (`AstroLeagueObjectiveProvider`,
+> auto-wired by `MiniGameHUD` for `GameModes.AstroLeague`), hiding while the ball is hidden
+> during a goal celebration / kickoff reset.
 
 - Vessels move via `transform.position +=` (`VesselTransformer`), so neither
   `collision.rigidbody` velocity nor (for remote vessels) `VesselStatus.Speed` is
@@ -216,8 +220,10 @@ server with billiard thinking:
   velocity via `n_Velocity` replication and just mirror the shield/destroy on their copies.
   Mass is conserved (animated explode-out via spatial-index release + VFX, never raw `Destroy`).
 - Layers: the ball is on `Default` (0); prisms run on `TrailBlocks` (11). The ball
-  **excludes layer 11** so it passes through all prisms, but still collides with the arena
-  walls (layer 0) and vessels (Ships, layer 8) for its elastic bounces. (Because prism
+  **excludes layer 11** so it passes through all prisms, and still collides with vessels
+  (Ships, layer 8) for its elastic strike bounces. The **arena boundary is no longer a
+  collider** — containment is a server-side radial reflect off the nucleus sphere
+  (`ContainWithinBoundary`), so there are no wall colliders on any layer. (Because prism
   interaction no longer needs colliders, the ball is NOT a `PrismColliderLodManager` focus —
   no extra collider-budget cost.)
 - Replay is a full scene reload (the standard domain-games replay path), which clears
@@ -283,21 +289,27 @@ ecology is wired.)*
 
 **The Cell owns the environment, not the arena** (`Docs/ECOSYSTEM_MASTERPLAN.md §5.1`,
 `CLAUDE.md ▸ "The Cell owns the environment"`). The arena builds only gameplay-bearing structure
-(physics walls, goal portals, midfield ring). Everything atmospheric/territorial lives on the
-`CellConfigDataSO`:
+(the spherical boundary's ball physics, goal portals, midfield ring). Everything
+atmospheric/territorial — including the boundary sphere itself — lives on the `CellConfigDataSO`:
 
 | Need | Cell field | (removed bespoke duplicate) |
 |---|---|---|
 | Playfield boundary read | `MembranePrefab` | ~~`AstroLeagueArena.BuildEdgeCage` + `settings.edgeColor`~~ |
 | Drifting hypersea motes | `CytoplasmPrefab` (`SnowChanger`) | ~~`AstroLeagueArena.BuildPlankton` + `settings.planktonColor/planktonCount`~~ |
-| Core marker | `NucleusPrefab` | — |
+| **Spherical play boundary** (ball bounces off it) | `NucleusPrefab`, scaled to `settings.boundaryRadius` by `AstroLeagueArena` via `Cell.SetNucleusWorldRadius` | ~~6 `BoxCollider` arena walls~~ |
 
 - **Biome = `Astro League Cell Config`** (cloned from the Skim Race trail-grazing biome —
   the no-flora "fauna eat AI trail obstacles" template):
   - `SupportedFloras = []` — **no flora**. Mass is purely vessel trails; nothing is planted.
   - **Food web = `Astro League Spawn Profile`** → two herbivore foragers
-    (`Skim Race Tadpole`/`Brittlestar` fauna configs, reused; both `FaunaDiet.Herbivore`, no apex
-    predator — predators thin foragers, counterproductive to trail cleanup). Diet is opposing
+    (`Astro League Tadpole`/`Brittlestar` fauna configs; both `FaunaDiet.Herbivore`, no apex
+    predator — predators thin foragers, counterproductive to trail cleanup). These are
+    Astro-League-specific **low-population** copies of the Skim Race foragers — Tadpole
+    `PopulationSize 4`/`MaxLivePopulation 8`, Brittlestar `2`/`4` (≈ **12 live fauna** cap, ⅕ of the
+    Skim Race 40+16=56 swarm) — so the arena reads as an ambient ecosystem, not a cloud. They are
+    separate assets because the originals are still live in HexRace (via the Skim Race cell) and
+    must keep their large populations. Churn is also gentled on the profile:
+    `BaseFaunaSpawnTime 30`, `FaunaSpawnIntervalSeconds 2`, `InitialFaunaSpawnWaitTime 8`. Diet is opposing
     prism mass; the **phase/aggression ladder** decides reach: at **Restless/L1** they hunt the
     nearest opposing-color trail; at **Frenzy/L2** they converge on the densest **ANY-domain**
     region and graze even the controlling color — the requested "frenzy eats same-domain mass."

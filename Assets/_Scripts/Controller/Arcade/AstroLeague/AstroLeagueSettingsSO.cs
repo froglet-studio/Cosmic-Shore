@@ -31,6 +31,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Highest intensity level used for the scale ramp (the arcade card's MaxIntensity).")]
         public int maxIntensityLevel = 4;
 
+        [Header("Arena — Spherical Boundary (the cell nucleus)")]
+        [Tooltip("Radius (at intensity 1) of the spherical play boundary. The arena scales the cell " +
+                 "NUCLEUS to this radius so the nucleus sphere IS the wall, and the ball bounces " +
+                 "elastically off its inner surface (a radial reflect, no collider). ~190 circumscribes " +
+                 "the legacy 300x200x100 box so the goals/spawns sit inside. Scales with match intensity.")]
+        public float boundaryRadius = 190f;
+
         [Header("Vessel Recoil (anti-clip)")]
         [Tooltip("Backward velocity (units/sec) applied to a vessel when it strikes the ball, so it " +
                  "bounces away and can't clip into the ball. Scaled by hit strength.")]

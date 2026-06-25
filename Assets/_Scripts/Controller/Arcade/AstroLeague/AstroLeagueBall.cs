@@ -89,6 +89,12 @@ namespace CosmicShore.Gameplay
         // used to size the wall-bounce juice by true impact speed (not the just-reflected value).
         Vector3 _velocityBeforePhysics;
 
+        // Spherical play boundary (the cell nucleus) — set by AstroLeagueArena.Build via SetBoundary.
+        // The ball is contained by a server-side radial reflect off the inner surface (no collider),
+        // which replaced the six BoxCollider walls. radius <= 0 means "not set yet" (uncontained).
+        Vector3 _boundaryCenter;
+        float _boundaryRadius;
+
         // Server-side velocity estimates for transform-driven vessels (root → last pos + velocity)
         readonly Dictionary<Transform, Vector3> _vesselLastPos = new();
         readonly Dictionary<Transform, Vector3> _vesselVelocity = new();
@@ -401,6 +407,9 @@ namespace CosmicShore.Gameplay
                 // Snapshot the pre-simulation velocity; the wall-bounce juice (OnCollisionEnter,
                 // post-solver) reads it for the true impact speed.
                 _velocityBeforePhysics = rb.linearVelocity;
+
+                // Spherical boundary: bounce the ball off the inner surface of the nucleus sphere.
+                ContainWithinBoundary();
             }
 
             if (IsSpawned)
@@ -605,6 +614,45 @@ namespace CosmicShore.Gameplay
         {
             float intensity = Mathf.Clamp01(_velocityBeforePhysics.magnitude / settings.maxSpeed);
             WallBounce_ClientRpc(contactPoint, contactNormal, intensity);
+        }
+
+        /// <summary>
+        /// Set the spherical play boundary (the cell nucleus). Called by <c>AstroLeagueArena.Build</c>
+        /// once the intensity scale is known. The ball bounces off the inner surface (see
+        /// <see cref="ContainWithinBoundary"/>); this replaced the six BoxCollider arena walls.
+        /// </summary>
+        public void SetBoundary(Vector3 center, float radius)
+        {
+            _boundaryCenter = center;
+            _boundaryRadius = Mathf.Max(0f, radius);
+        }
+
+        /// <summary>
+        /// Server: keep the ball inside the spherical nucleus by reflecting its velocity off the inner
+        /// surface and clamping its position — the radial equivalent of the old perfectly-elastic wall
+        /// bounce (no collider, no decay). Runs once per server tick after the speed cap.
+        /// </summary>
+        void ContainWithinBoundary()
+        {
+            if (_boundaryRadius <= 0f) return; // not configured yet (frozen showpiece pre-kickoff)
+
+            Vector3 fromCenter = rb.position - _boundaryCenter;
+            float maxDist = _boundaryRadius - BallWorldRadius(); // ball SURFACE kisses the wall
+            if (maxDist <= 0f) return;
+
+            float dist = fromCenter.magnitude;
+            if (dist <= maxDist || dist < 1e-4f) return; // still inside
+
+            Vector3 outward = fromCenter / dist;        // points from center toward the ball
+            Vector3 surfaceNormal = -outward;           // inward wall normal at the contact point
+
+            // Reflect only the outward-bound component (don't double-bounce a ball already turning in).
+            if (Vector3.Dot(rb.linearVelocity, outward) > 0f)
+                rb.linearVelocity = Vector3.Reflect(rb.linearVelocity, surfaceNormal) * settings.ballBounciness;
+
+            // Depenetrate: clamp the center back onto the boundary, then fire the shared wall juice.
+            rb.position = _boundaryCenter + outward * maxDist;
+            HandleWallBounce(_boundaryCenter + outward * _boundaryRadius, surfaceNormal);
         }
 
         /// <summary>

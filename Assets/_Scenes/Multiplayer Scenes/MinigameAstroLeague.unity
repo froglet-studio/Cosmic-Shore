@@ -985,6 +985,7 @@ MonoBehaviour:
   rule: {fileID: 11400000, guid: 083d5196578f41e4b79b6bd29cf37667, type: 2}
   ball: {fileID: 1700000057}
   arena: {fileID: 1700000003}
+  cell: {fileID: 1700000065}
   matchMonitor: {fileID: 1628508337}
   goals:
   - {fileID: 1700000013}
