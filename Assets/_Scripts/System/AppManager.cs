@@ -126,6 +126,17 @@ namespace CosmicShore.Core
         /// </summary>
         public static bool HasBootstrapped => _hasBootstrapped;
 
+        /// <summary>
+        /// True when the app should boot the offline main-menu shell instead of the
+        /// auth → Relay-host → networked-menu path. WebGL can never be a Netcode host, so it is
+        /// always offline; on other platforms it follows the BootstrapConfigSO flag (for Editor testing).
+        /// When true, <see cref="StartAuthentication"/> is skipped (no UGS sign-in ⇒ no host, party,
+        /// friends, or analytics) and <see cref="RunBootstrapAsync"/> loads the offline WebGL menu scene.
+        /// </summary>
+        bool IsOfflineMenuShell =>
+            (_bootstrapConfig != null && _bootstrapConfig.OfflineMenuShell)
+            || Application.platform == RuntimePlatform.WebGLPlayer;
+
         #region Unity Lifecycle
 
         void Awake()
@@ -149,7 +160,12 @@ namespace CosmicShore.Core
 
             ConfigureGameData();
             StartNetworkMonitor();
-            StartAuthentication();
+
+            // Offline WebGL shell: skip UGS sign-in entirely. No OnSignedIn ⇒ no Relay host,
+            // no party/presence lobby, no Friends sync, no analytics-on-signin — the whole
+            // networking/instrumentation stack stays dormant on its own.
+            if (!IsOfflineMenuShell)
+                StartAuthentication();
 
             _cts = new CancellationTokenSource();
             RunBootstrapAsync(_cts.Token).Forget();
@@ -239,7 +255,19 @@ namespace CosmicShore.Core
                 OnBootstrapComplete?.Invoke();
                 applicationStateMachine?.TransitionTo(ApplicationState.Authenticating);
 
-                string targetScene = _sceneNames != null ? _sceneNames.AuthenticationScene : "Authentication";
+                // Offline WebGL shell: bypass the Authentication scene (and its Relay-gated networked
+                // Menu_Main load) and boot straight into the offline menu scene. Authenticating→MainMenu
+                // is a valid transition; we pass through it without doing any UGS/Netcode work.
+                string targetScene;
+                if (IsOfflineMenuShell)
+                {
+                    applicationStateMachine?.TransitionTo(ApplicationState.MainMenu);
+                    targetScene = _sceneNames != null ? _sceneNames.MainMenuWebGLScene : "Menu_Main_WebGL";
+                }
+                else
+                {
+                    targetScene = _sceneNames != null ? _sceneNames.AuthenticationScene : "Authentication";
+                }
                 Log($"Loading scene: {targetScene}");
 
                 // Use SceneTransitionManager if available (provides fade transitions).

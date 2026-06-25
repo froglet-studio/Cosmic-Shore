@@ -1,0 +1,15 @@
+<!--
+  IL2CPP managed-stripping preservation for the WebGL build.
+
+  First-party code compiles into Assembly-CSharp (no runtime asmdefs). Reflex DI resolves services
+  by reflection and Newtonsoft.Json deserializes DTOs by reflection, so IL2CPP stripping (WebGL =
+  Low, but reflection-only types still strip) can drop types referenced only via reflection,
+  surfacing as runtime TypeLoad/MissingMethod on the auth/profile/DI paths.
+
+  Preserve the first-party assembly wholesale for now. Tighten to specific namespaces if WebGL
+  build size becomes a concern. UGS/Netcode packages ship their own link.xml.
+-->
+<linker>
+  <assembly fullname="Assembly-CSharp" preserve="all" />
+  <assembly fullname="Newtonsoft.Json" preserve="all" />
+</linker>

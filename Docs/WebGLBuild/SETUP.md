@@ -22,6 +22,26 @@ This is a **WebGL target build**, not a gameplay build. Launching actual games i
 
 ---
 
+## Status
+
+**Landed in code on this branch** (compile-verify on first open in Unity — written without an Editor/compiler here):
+- `BootstrapConfigSO.OfflineMenuShell` flag (auto-true on WebGL) — §4.1
+- `AppManager` skips `StartAuthentication()` + boots straight to the WebGL menu scene when offline — §4.2/§4.3
+- `SceneNameListSO.MainMenuWebGLScene` (`"Menu_Main_WebGL"`)
+- `MenuOfflineVesselSpawner.cs` — non-networked lava-lamp spawn + autopilot + `OnClientReady` — §4.4
+- `Assets/link.xml` — IL2CPP preservation — §7
+
+**Pending (you, in the Unity Editor):** the §5 scene duplication/strip/wiring (incl. adding the
+`MenuOfflineVesselSpawner` + `PlayerSpawner` objects and registering `Menu_Main_WebGL` in the build), the §6
+ecosystem `.asset` tuning, the VFX audit, WebGL player settings, package guards, and the build itself.
+
+**Verify in-editor:** `MainMenuController.HandleMenuReady()` / `ApplyMenuVesselClassToHost()` assume a
+networked Player — confirm they don't NRE with a single non-networked player; guard behind `OfflineMenuShell`
+if they do. Also confirm Script Execution Order: `MenuOfflineVesselSpawner` must subscribe before
+`MainMenuController` raises `OnInitializeGame`.
+
+---
+
 ## 1. Why a separate scene + branch (and what each actually buys)
 
 - **The branch is what gives isolation.** Every change here — including edits to shared startup code —
