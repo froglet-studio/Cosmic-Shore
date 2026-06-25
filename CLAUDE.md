@@ -296,6 +296,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `ScoringSystem/` | `Docs/` | Scoring system (in-game score HUD + final scoreboard): `ARCHITECTURE.md` (shared data layer, event dispatch, per-mode override table, target = one unified networked scoring path), `REFACTOR.md` (sequenced backlog + ground rules: SOAP/observer/SOLID/DRY/KISS, retire `IsMultiplayerMode`), `BUGS.md`, `TESTS.md`. |
 | `TournamentSystem/` | `Docs/` | Tournament mode (`GameModes.Tournament = 36`): `ARCHITECTURE.md` — session-level meta chaining the three domain minigames (HexRace → Joust → Crystal Capture) via sequential `Single` loads; network-free standings folded from the synced `GameDataSO.Results` by the persistent `TournamentController`; host-only Continue→hub→Summary end-game flow (summary-vs-hub keyed off the authoritative `IsShuffleComplete`, race-to-6); `TournamentDataSO` data + file index. |
 | `ShuffleSystem/` | `Docs/` | **"Maelstrom" is the player-facing display name of Tournament mode** (the docs folder keeps the legacy "Shuffle" name) — the `ArcadeGameTournament.asset` card carries `DisplayName = "Maelstrom"`. It is **not** a separate mode: code/data/enum stay **Tournament** (`GameModes.Tournament = 36`); the scene file was renamed to `Maelstrom.unity` in the v2 rework. `ARCHITECTURE.md` is a **pointer** to `TournamentSystem/ARCHITECTURE.md`; the former Shuffle-specific behavior deltas (randomized lineup, per-domain `{2,1,0}` scoring + crystal-wallet credit, race-to-6) are now **shipped**. |
+| `QuestSystem/` | `Docs/` | **Quest Track + Breadcrumb player-activation engine** (formerly the "XP track"): `ARCHITECTURE.md` (the chain-of-unlocks design — each unlock reveals any app feature gated by a quest; the Call-to-Action breadcrumb guides the player to it; current-vs-target tags; locked constraints C1–C4) + `HANDOFF.md` (engineer work plan / migration + retirement checklist). **XP is removed entirely** — quest completion is the only progression currency. Spine = `GameModeProgressionService`; breadcrumb = `CallToActionSystem`; the legacy `Quest`/`QuestSystem`/`UserJourneySystem`/`SO_QuestChain` stack + all XP code are retire-targets. |
 | `CameraMigrationReview.md` | `Docs/` | Camera system migration tracking |
 | `BOOTSTRAP_AUDIT.md` | `_Scripts/System/Bootstrap/` | Bootstrap scene audit, execution order, DI registration |
 | `HEXRACE.md` | `_Scripts/Controller/Arcade/` | HexRace game mode technical reference |
@@ -1742,6 +1743,39 @@ At any total at most two adjacent colours show (e.g. +8 → 3 blue + 2 white). P
 - **Petal sprites are pure-white silhouettes** tinted at runtime. Add a new element by adding its sprite to the config's `petals` list and `Resources/ElementPetals/`.
 - **Rolling out to another vessel**: add an `ElementalBarsView` to that vessel's HUD (or run the wirer), then assign it to the vessel's `SilhouetteController.elementBars`. No code changes.
 - **Performance**: petals render at ~88px — keep `maxTextureSize` small (128). One `Image` per petal (20 total), `raycastTarget` off, event-driven (no `Update`), `SetLevel`/`RefreshBar` early-out when nothing changed, tweens `SetLink`ed and killed + snapped to rest on `OnDisable` for pooled/toggled HUDs.
+
+### Quest Track & Breadcrumb (Player Activation)
+
+The **Quest Track** (formerly the "XP track") and the **Breadcrumb / Call-to-Action**
+system compose into one player-activation engine. The quest track is a **chain of
+unlocks** — each unlock reveals a new app feature and is gated by a **quest** (a
+completion condition); claiming a completed quest reveals the next one. The breadcrumb
+can highlight **any** element of the app shell (and the whole nested path to it via
+dependency targets), so the two systems together can guide a player anywhere. **The
+track decides what's next; the breadcrumb walks the player there.**
+
+Canonical design + engineer work plan: **`Docs/QuestSystem/ARCHITECTURE.md`** (design of
+record, current-vs-target tagged) and **`Docs/QuestSystem/HANDOFF.md`** (migration +
+retirement checklist). Visual aid:
+<https://claude.ai/design/p/e205f3d2-aa6a-41b6-985e-e4d8f8ee17b9?file=Quest+Track+%2B+Breadcrumb.dc.html>.
+
+- **Spine (keep, generalize):** `GameModeProgressionService` + `GameModeProgressionData`
+  (cloud-persisted via `UGSDataService.ProgressionRepo`) + `SO_GameModeQuestData` /
+  `SO_GameModeQuestList` + `SO_ProgressionConfig`, rendered by `QuestTrackView` /
+  `QuestItemCard`. Generalize so an unlock can reveal **any feature kind** (GameMode,
+  Vessel, IntensityTier, Screen, Captain, Episode, UIElement), not just game modes.
+- **Breadcrumb (keep, wire to spine):** `CallToActionSystem` / `CallToAction` /
+  `CallToActionTarget` (`CallToActionTargetType`), driven by `UserActionSystem` /
+  `UserActionType`. Today it is wired to the legacy quest stack, **not** the progression
+  service — closing that wire is the core deliverable.
+- **Locked constraints (do not violate):** **C1** XP removed entirely — quest completion
+  is the only progression currency; **C2** single guidance channel — all in-app guidance
+  routes through the CTA/breadcrumb (no bespoke highlights/tutorials); **C3** continuity
+  law — unlock reveals and CTA indicators bloom/fade, never pop; **C4** unlocks persistent
+  & monotonic with exactly one cloud-persisted source of truth.
+- **Retire-targets:** all XP code (`SO_XPTrackData`, `SO_XPTrackReward`, `XPTrackView`,
+  `ParticipationXpAwarder`, `PlayerDataService` XP members) and the legacy
+  `Quest` / `QuestSystem` / `UserJourneySystem` / `SO_QuestChain` stack.
 
 ### Namespace Convention
 

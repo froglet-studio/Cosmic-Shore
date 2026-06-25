@@ -45,6 +45,13 @@ Do **not** remove `HangarScreen : IScreen` or the `_lastLoadFrame` double-load g
 > participation odometer (+25 XP/game, win or lose) that currently grants nothing.
 > Games unlock through a **quest chain**; vessels unlock by **spending crystals**;
 > intensity tiers unlock by **playing**. All three are independent of XP.
+>
+> **⚠️ Decision (XP removed entirely):** XP is being **deleted**, not kept as a cosmetic
+> odometer. Quest completion is the only progression currency going forward. The quest
+> chain + the Call-to-Action breadcrumb are being unified into one player-activation
+> engine — see **`Docs/QuestSystem/ARCHITECTURE.md`** (design of record) and
+> **`Docs/QuestSystem/HANDOFF.md`** (migration + retirement checklist). § 2d below is
+> retained only to describe what is being removed.
 
 ### 2a. Arcade game modes — quest chain
 
@@ -83,9 +90,20 @@ The locked intensity buttons live in `ArcadeGameConfigureModal` (`IsIntensityUnl
 - **Access to the Hangar feature** is gated by the quest chain: `IsVesselHangarUnlocked()` returns true once every quest *before* the quest named `SO_ProgressionConfig.vesselHangarQuestDisplayName` ("VESSEL HANGAR") is completed.
 - **Individual vessels** are gated by **crystals**, not XP or quests. Lock state + price live on the `SO_Vessel` asset (`isLocked`, `UnlockCost`, default 100). `VesselUnlockSystem.TryPurchaseVessel` spends crystals via `PlayerDataService.TrySpendCrystals` and persists the unlock to the Hangar cloud repo.
 
-### 2d. XP track (cosmetic)
+### 2d. XP track (REMOVED — see `Docs/QuestSystem/`)
 
-`ParticipationXpAwarder` awards a flat `participationXpPerGame` (default 25) to the local player each game, feeding the menu XP bar via `PlayerDataService.AddXP`. The `XPTrackView` renders milestones from `SO_XPTrackData`, but **its milestone rewards grant nothing** — `PlayerDataService.UnlockReward` has no callers. If you want XP to actually grant content later, wire `SO_XPTrackReward.unlockType` / `unlockReferenceId` to a grant call; the seam exists but is unused.
+> **Status: retire-target.** Per the decision above, XP is being removed entirely. Quest
+> completion replaces it as the only progression currency. The files described here are
+> the deletion targets — see `Docs/QuestSystem/HANDOFF.md` § 3 for the full retirement
+> checklist. Do **not** add new XP grants or wire `SO_XPTrackReward` to content.
+
+What exists today (all to be deleted): `ParticipationXpAwarder` awards a flat
+`participationXpPerGame` (default 25) to the local player each game, feeding the menu XP
+bar via `PlayerDataService.AddXP`. The `XPTrackView` renders milestones from
+`SO_XPTrackData`, but **its milestone rewards grant nothing** — `PlayerDataService.UnlockReward`
+has no callers. Retire-targets: `SO_XPTrackData`, `SO_XPTrackReward`, `XPTrackView`,
+`ParticipationXpAwarder`, and the XP members in `PlayerDataService`
+(`GetXP` / `AddXP` / `UnlockReward`).
 
 ---
 

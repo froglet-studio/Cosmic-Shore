@@ -52,6 +52,11 @@ Docs/
 │   └── ARCHITECTURE.md          pointer to TournamentSystem + a deferred list of
 │                                planned Shuffle behavior deltas (NOT a separate mode)
 │
+├── QuestSystem/                ← Quest Track + Breadcrumb player-activation engine
+│   ├── ARCHITECTURE.md          chain-of-unlocks design (any feature, quest-gated) +
+│   │                            CTA breadcrumb; current-vs-target; constraints C1-C4
+│   └── HANDOFF.md               engineer work plan + migration/retirement checklist
+│
 ├── THREADING.md                 main-thread affinity rules
 │                                (.AsMainThread() contract, MainThreadDispatcher)
 ├── SCENES.md                    scene inventory, game-mode reference,
@@ -83,6 +88,8 @@ session-scoped findings that benefit from a timeline view.
 | See scoring-system cleanup work / open issues | `ScoringSystem/REFACTOR.md` + `ScoringSystem/BUGS.md` |
 | Understand the tournament meta-mode (chains the 3 domain games) | `TournamentSystem/ARCHITECTURE.md` |
 | Find "Shuffle" (it's Tournament's card display name) | `ShuffleSystem/ARCHITECTURE.md` → `TournamentSystem/ARCHITECTURE.md` |
+| Understand the quest track + breadcrumb (player activation) | `QuestSystem/ARCHITECTURE.md` |
+| Pick up the quest/breadcrumb build (work plan + retirement checklist) | `QuestSystem/HANDOFF.md` |
 | Understand the threading rules | `THREADING.md` |
 | Find a scene | `SCENES.md` |
 
