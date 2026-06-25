@@ -18,12 +18,12 @@ MonoBehaviour:
   FloraSpawnIntervalSeconds: 0
   SupportedFloras: []
   FaunaExcludeLocalDomain: 0
-  InitialFaunaSpawnWaitTime: 5
+  InitialFaunaSpawnWaitTime: 8
   FaunaSpawnVolumeThreshold: 1
-  BaseFaunaSpawnTime: 15
+  BaseFaunaSpawnTime: 30
   FaunaFoodFloor: 5
   FaunaInitialDelaySeconds: 0
-  FaunaSpawnIntervalSeconds: 1
+  FaunaSpawnIntervalSeconds: 2
   SupportedFaunas:
-  - {fileID: 11400000, guid: 25d148d3058b434ea219fe0e5a5783f5, type: 2}
-  - {fileID: 11400000, guid: ab0dc8255c7c41f0a2f94c3e5f094da2, type: 2}
+  - {fileID: 11400000, guid: 8c1ead101dc84a9eb4c3e33e9611ffc2, type: 2}
+  - {fileID: 11400000, guid: f36f897ae32945e983b22ccacea5b86b, type: 2}
