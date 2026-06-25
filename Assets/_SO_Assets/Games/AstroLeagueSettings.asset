@@ -33,7 +33,7 @@ MonoBehaviour:
   maxSpeed: 220
   ballMass: 3
   ballBounciness: 1
-  prismDragMassScale: 0.1
+  prismDragMassScale: 0.05
   ballAngularDamping: 0.3
   maxAngularSpeed: 40
   ballMeshSubdivisions: 2
