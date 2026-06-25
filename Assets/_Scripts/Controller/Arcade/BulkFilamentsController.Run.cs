@@ -68,10 +68,11 @@ namespace CosmicShore.Gameplay
             _swingTimer = Mathf.Lerp(0.55f, 1.2f, Mathf.InverseLerp(minimumSpeed, CurrentMaximumSpeed, _speed));
             BeginTransferRedirect(startPosition, startRotation, routeVelocity);
             ResetLatchTransferState();
+            SpawnContactBurst(startPosition, new Color(0.16f, 1f, 0.48f, 1f), 1.7f);
             CSDebug.Log($"[BulkFilaments] Latch transfer {_successfulTransfers}/{_targetTransfers}.");
 
             if (_currentFilamentIndex >= _targetTransfers)
-                FinishRun();
+                BeginMissionFinale(startPosition, startRotation, routeVelocity);
         }
 
         void BeginTransferRedirect(Vector3 position, Quaternion rotation, Vector3 velocity)
@@ -97,6 +98,7 @@ namespace CosmicShore.Gameplay
             if (gameData?.LocalRoundStats != null)
                 gameData.LocalRoundStats.Score += respawnTimePenalty;
 
+            SpawnContactBurst(_vessel?.Transform.position ?? AttachPoint(filament, _distanceOnFilament), new Color(1f, 0.32f, 0.18f, 1f), 2.2f);
             CSDebug.Log($"[BulkFilaments] Respawned after {reason}.");
         }
 
@@ -109,6 +111,111 @@ namespace CosmicShore.Gameplay
             _isRunning = false;
             UpdateRoundStats(final: true);
             gameData.InvokeGameTurnConditionsMet();
+        }
+
+        void BeginMissionFinale(Vector3 startPosition, Quaternion startRotation, Vector3 routeVelocity)
+        {
+            if (_missionFinaleActive)
+                return;
+
+            _missionFinaleActive = true;
+            _isRunning = false;
+            _missionFinaleTimer = 0f;
+            _missionFinaleHudPulse = 0f;
+            _missionFinaleStartPosition = startPosition;
+            _missionFinaleStartRotation = startRotation;
+
+            Vector3 radial = new Vector3(startPosition.x, 0f, startPosition.z);
+            if (radial.sqrMagnitude < 1f)
+                radial = Vector3.forward;
+            radial.Normalize();
+
+            Vector3 route = routeVelocity.sqrMagnitude > 0.01f ? routeVelocity.normalized : CurrentFilament.Direction;
+            _missionFinaleLaunchDirection = (radial * 0.85f + Vector3.up * 1.22f + route * 0.36f).normalized;
+            SpawnFinaleLaunchBurst(startPosition, _missionFinaleLaunchDirection);
+            CreateMissionStarfield(startPosition, _missionFinaleLaunchDirection);
+            UpdateRoundStats(final: true);
+            CSDebug.Log("[BulkFilaments] Mission finale launch initiated.");
+        }
+
+        void UpdateMissionFinale(float dt)
+        {
+            _missionFinaleTimer += dt;
+            _missionFinaleHudPulse = Mathf.Max(0f, _missionFinaleHudPulse - dt * 0.8f);
+
+            if (_vessel != null)
+            {
+                float t = Mathf.Clamp01(_missionFinaleTimer / Mathf.Max(0.01f, missionFinaleDuration));
+                float launch = 1f - Mathf.Pow(1f - t, 2.6f);
+                Vector3 curlAxis = Vector3.Cross(_missionFinaleLaunchDirection, Vector3.up);
+                if (curlAxis.sqrMagnitude < 0.01f)
+                    curlAxis = Vector3.right;
+                curlAxis.Normalize();
+
+                Vector3 position = _missionFinaleStartPosition
+                                   + _missionFinaleLaunchDirection * (missionFinaleLaunchDistance * launch)
+                                   + curlAxis * Mathf.Sin(t * Mathf.PI * 2.2f) * missionFinaleStarfieldRadius * (1f - t * 0.35f);
+                Quaternion rotation = Quaternion.Slerp(
+                    _missionFinaleStartRotation,
+                    Quaternion.LookRotation(_missionFinaleLaunchDirection, Vector3.up),
+                    Mathf.SmoothStep(0f, 1f, t));
+                _vessel.SetPose(new Pose(position, rotation));
+                _lastVesselPosition = position;
+
+                if (_mainCamera)
+                {
+                    Vector3 cameraPosition = position - _missionFinaleLaunchDirection * Mathf.Lerp(78f, 210f, t) + Vector3.up * Mathf.Lerp(30f, 82f, t);
+                    _mainCamera.transform.position = Vector3.Lerp(_mainCamera.transform.position, cameraPosition, dt * 2.8f);
+                    _mainCamera.transform.rotation = Quaternion.Slerp(
+                        _mainCamera.transform.rotation,
+                        Quaternion.LookRotation(position + _missionFinaleLaunchDirection * 120f - _mainCamera.transform.position, Vector3.up),
+                        dt * 4.2f);
+                    _mainCamera.fieldOfView = Mathf.Lerp(_mainCamera.fieldOfView, Mathf.Lerp(78f, 96f, t), dt * 2.5f);
+                }
+            }
+
+            if (_missionFinaleTimer >= missionFinaleDuration)
+            {
+                _missionFinaleActive = false;
+                FinishRun();
+            }
+        }
+
+        void CreateMissionStarfield(Vector3 origin, Vector3 direction)
+        {
+            if (!_runtimeRoot)
+                return;
+
+            _missionFinaleRoot = new GameObject("Bulk Mission Accomplished Starfield");
+            _missionFinaleRoot.transform.SetParent(_runtimeRoot.transform, false);
+            _missionFinaleRoot.transform.position = origin + direction * (missionFinaleLaunchDistance * 0.54f);
+
+            var particles = _missionFinaleRoot.AddComponent<ParticleSystem>();
+            var main = particles.main;
+            main.duration = missionFinaleDuration + 1.2f;
+            main.loop = true;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(2.5f, 4.8f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(8f, 18f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.28f, 1.15f);
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(0.75f, 1f, 0.95f, 0.95f), new Color(0.1f, 0.55f, 1f, 0.72f));
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = 360;
+
+            var emission = particles.emission;
+            emission.enabled = true;
+            emission.rateOverTime = 120f;
+
+            var shape = particles.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = Mathf.Max(35f, missionFinaleStarfieldRadius);
+
+            var renderer = particles.GetComponent<ParticleSystemRenderer>();
+            if (renderer)
+                renderer.sharedMaterial = _lightningMaterial ? _lightningMaterial : _whiteEnergyMaterial;
+
+            particles.Play();
+            Destroy(_missionFinaleRoot, missionFinaleDuration + 2.5f);
         }
 
         void UpdateVesselPose()
@@ -203,6 +310,13 @@ namespace CosmicShore.Gameplay
 
                 crystal.Position = PositionOnFilament(filament, crystal.Distance, crystal.OrbitAngleRadians + Time.time * 0.42f, orbitRadius + 1.2f);
                 crystal.GameObject.transform.position = crystal.Position;
+                Color crystalColor = CrystalColor(crystal);
+                if (crystal.Renderer && crystal.Renderer.sharedMaterial)
+                {
+                    SetMaterialColor(crystal.Renderer.sharedMaterial, crystalColor);
+                    SetMaterialFloat(crystal.Renderer.sharedMaterial, "_Pulse", BeatPulse() * 1.8f + _waveformEnergy * 0.8f);
+                }
+
                 float pulse = 1f + BeatPulse() * 0.13f + _waveformEnergy * 0.1f;
                 crystal.GameObject.transform.localScale = Vector3.one * (1.4f * speedDiamondScaleMultiplier * pulse);
                 crystal.GameObject.transform.Rotate(0f, 140f * Time.deltaTime, 90f * Time.deltaTime);
@@ -212,10 +326,18 @@ namespace CosmicShore.Gameplay
                 crystal.Collected = true;
                 crystal.GameObject.SetActive(false);
                 _crystalsCollected++;
-                ApplyPowerCrystalPickup(crystal.Position);
+                ApplyPowerCrystalPickup(crystal.Position, crystalColor);
                 if (gameData?.LocalRoundStats != null)
                     gameData.LocalRoundStats.CrystalsCollected = _crystalsCollected;
             }
+        }
+
+        Color CrystalColor(CrystalRuntime crystal)
+        {
+            float hue = Mathf.Repeat(crystal.HueOffset + Time.time * 0.085f + Mathf.Sin(Time.time * 0.23f + crystal.HueOffset * 9f) * 0.035f, 1f);
+            float saturation = 0.82f + Mathf.Sin(Time.time * 0.37f + crystal.HueOffset * 13f) * 0.1f;
+            float value = 0.88f + BeatPulse() * 0.12f;
+            return Color.HSVToRGB(hue, Mathf.Clamp01(saturation), Mathf.Clamp01(value));
         }
 
         void CheckHazardGraze()
@@ -245,6 +367,7 @@ namespace CosmicShore.Gameplay
                 _speed = Mathf.Max(minimumSpeed * 0.7f, _speed * 0.72f);
                 _naniteRouteDistance += 8f;
                 _impactTimer = 0.8f;
+                SpawnContactBurst(hazard.transform.position, new Color(1f, 0.24f, 0.12f, 1f), 1.8f);
                 break;
             }
         }
@@ -278,13 +401,21 @@ namespace CosmicShore.Gameplay
             if (gameData?.LocalRoundStats == null)
                 return;
 
-            float crystalCredit = _crystalsCollected * 2f;
+            float transferCompletion = _targetTransfers <= 0 ? 1f : Mathf.Clamp01(_successfulTransfers / (float)_targetTransfers);
+            float missedFilamentPenalty = Mathf.Max(0, _targetTransfers - _successfulTransfers) * targetSecondsPerTransfer * 1.6f;
+            float transferCredit = _successfulTransfers * 1.35f;
+            float crystalCredit = _crystalsCollected * 4.5f;
             float respawnPenalty = _respawns * respawnTimePenalty;
             gameData.LocalRoundStats.CrystalsCollected = _crystalsCollected;
-            gameData.LocalRoundStats.Score = Mathf.Max(0.01f, _elapsedTime + respawnPenalty - crystalCredit);
+            gameData.LocalRoundStats.Score = Mathf.Max(0.01f, _elapsedTime + missedFilamentPenalty + respawnPenalty - transferCredit - crystalCredit);
 
             if (final)
+            {
                 gameData.LocalRoundStats.OmniCrystalsCollected = _successfulTransfers;
+                gameData.LocalRoundStats.Score = Mathf.Max(
+                    0.01f,
+                    gameData.LocalRoundStats.Score - transferCompletion * targetSecondsPerTransfer * 0.75f);
+            }
         }
     }
 }

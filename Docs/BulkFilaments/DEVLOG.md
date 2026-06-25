@@ -3,6 +3,42 @@
 Newest entries first. Keep this as the local implementation trail; preserve broader
 handoff context in Second Brain Prime.
 
+## 2026-06-24 - Depth sprites, visible nanites, finale, and scoring pass
+
+Todd asked for the brighter level to regain depth and texture, for stronger
+contact explosions, for the nanite chase to become readable, for a mission
+accomplished launch finale, for realtime-ish mirror reflection, and for scoring
+to consider route progress, elapsed time, and speed crystals.
+
+Changes:
+
+- Added a lightweight animated dark-glyph sprite shader for surface detail.
+- Added animated glyph quads along filaments, on speed crystal faces, and on the
+  front/rear latch riding rings to add darker moving highlights over the bright
+  energy palette.
+- Made speed diamonds use per-crystal material instances with non-white,
+  constantly shifting hues.
+- Increased speed diamond, pulse gate, nanite, hazard, latch, respawn, and
+  transfer contact particle/lightning bursts.
+- Made the nanite swarm much larger and added a visible chase wake line so the
+  tail pressure reads clearly during play.
+- Added a low-resolution realtime reflection probe for the outer mirror wall;
+  the shader now blends probe reflection with its procedural Voronoi facets.
+- Added a Bulk Break finale: on final transfer the squirrel launches out of the
+  wormhole into a starfield while green mission-complete HUD text appears.
+- Changed score calculation to combine elapsed time, filaments traversed, speed
+  crystals collected, respawns, and incomplete-route penalties while preserving
+  low-score/golf-style sorting.
+- Hardened the editor QA driver so if bootstrap/auth/menu scenes steal focus
+  after Bulk loads, it reloads Bulk and resumes the smoke test.
+
+Verification:
+
+- Unity 6000.3.17f1 batch import completed with no C# compile errors and no
+  shader errors.
+- Bulk Filaments direct Play Mode smoke test passed after bootstrap reload:
+  3 transfers, 1 crystal.
+
 ## 2026-06-24 - Visual/gameplay upgrade implementation burst
 
 Todd asked to bring the playable prototype closer to the visual upgrade report:

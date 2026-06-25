@@ -69,6 +69,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(1f)] float naniteCatchBuffer = 34f;
         [SerializeField, Min(0f)] float naniteRespawnSetback = 46f;
         [SerializeField, Min(0f)] float naniteDirectionBurstCooldown = 0.18f;
+        [SerializeField, Min(1f)] float naniteVisualTailDistance = 24f;
 
         [Header("Wormhole Visuals")]
         [SerializeField, Min(8f)] float tubeRadius = 440f;
@@ -83,6 +84,11 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float cameraLookDegreesPerSecond = 72f;
         [SerializeField, Min(0f)] float cameraLookPitchLimit = 42f;
 
+        [Header("Bulk Break Finale")]
+        [SerializeField, Min(1f)] float missionFinaleDuration = 6.25f;
+        [SerializeField, Min(10f)] float missionFinaleLaunchDistance = 680f;
+        [SerializeField, Min(0f)] float missionFinaleStarfieldRadius = 90f;
+
         readonly List<FilamentRuntime> _filaments = new();
         readonly List<LineRenderer> _tubeRings = new();
         readonly List<LineRenderer> _tethers = new();
@@ -93,8 +99,10 @@ namespace CosmicShore.Gameplay
         readonly List<HazardRuntime> _hazardRuntimes = new();
         readonly List<PulseGateRuntime> _pulseGates = new();
         readonly List<TransientShardRuntime> _transientShards = new();
+        readonly List<GlyphSpriteRuntime> _glyphSprites = new();
 
         GameObject _runtimeRoot;
+        GameObject _missionFinaleRoot;
         Material _activeFilamentMaterial;
         Material _nextFilamentMaterial;
         Material _whiteEnergyMaterial;
@@ -105,6 +113,9 @@ namespace CosmicShore.Gameplay
         Material _mirrorWallMaterial;
         Material _gateMaterial;
         Material _shardMaterial;
+        Material _glyphMaterial;
+        LineRenderer _naniteWakeLine;
+        ReflectionProbe _mirrorReflectionProbe;
 
         AudioSource _musicSource;
         Camera _mainCamera;
@@ -129,9 +140,16 @@ namespace CosmicShore.Gameplay
         float _cameraLookPitch;
         float _crystalSpeedBonus;
         float _nextNaniteDirectionBurstTime;
+        float _nextMirrorProbeRefreshTime;
+        float _missionFinaleTimer;
+        float _missionFinaleHudPulse;
         int _lastOrbitInputSign;
         bool _isRunning;
         bool _turnFinished;
+        bool _missionFinaleActive;
+        Vector3 _missionFinaleStartPosition;
+        Vector3 _missionFinaleLaunchDirection;
+        Quaternion _missionFinaleStartRotation;
 
         protected override bool UseGolfRules => true;
 
@@ -193,10 +211,17 @@ namespace CosmicShore.Gameplay
             UpdateDynamicFilamentPoses();
             AnimateFilamentColors();
             AnimateFilamentWaveforms();
+            AnimateGlyphSprites();
             AnimateNanites();
             AnimatePulseGates();
             UpdateTransientShards(Time.deltaTime);
             TickAutoStartCountdown();
+
+            if (_missionFinaleActive)
+            {
+                UpdateMissionFinale(Time.deltaTime);
+                return;
+            }
 
             if (!_isRunning || _turnFinished || !AcquireVessel())
                 return;
@@ -252,6 +277,9 @@ namespace CosmicShore.Gameplay
             if (_vessel == null)
                 return;
 
+            if (_missionFinaleActive)
+                return;
+
             UpdateCamera();
             UpdateLatchRig();
         }
@@ -276,6 +304,10 @@ namespace CosmicShore.Gameplay
             _orbitAngularVelocity = 0f;
             _lastOrbitInputSign = 0;
             _nextNaniteDirectionBurstTime = 0f;
+            _nextMirrorProbeRefreshTime = 0f;
+            _missionFinaleActive = false;
+            _missionFinaleTimer = 0f;
+            _missionFinaleHudPulse = 0f;
             _cameraLookPitch = 0f;
             _cameraIntroTimer = introCameraDuration;
             _speed = minimumSpeed;
@@ -286,6 +318,7 @@ namespace CosmicShore.Gameplay
             CreateMaterials();
             CreateWormhole();
             CreateMirrorWall();
+            CreateMirrorReflectionProbe();
             CreateFilaments();
             CreatePulseGates();
             ResetLightningSchedule();
@@ -311,6 +344,11 @@ namespace CosmicShore.Gameplay
             _naniteRespawnTimers.Clear();
             _pulseGates.Clear();
             _transientShards.Clear();
+            _glyphSprites.Clear();
+            _naniteWakeLine = null;
+            _mirrorReflectionProbe = null;
+            _missionFinaleRoot = null;
+            _missionFinaleActive = false;
 
             if (_musicSource)
                 _musicSource.Stop();
@@ -365,7 +403,9 @@ namespace CosmicShore.Gameplay
             public Vector3 Position;
             public float Distance;
             public float OrbitAngleRadians;
+            public float HueOffset;
             public bool Collected;
+            public Renderer Renderer;
         }
 
         sealed class HazardRuntime
@@ -395,6 +435,21 @@ namespace CosmicShore.Gameplay
             public float Age;
             public float Lifetime;
             public Vector3 BaseScale;
+        }
+
+        enum GlyphAnchorKind { Filament, LatchRing }
+
+        sealed class GlyphSpriteRuntime
+        {
+            public Transform Transform;
+            public GlyphAnchorKind Anchor;
+            public FilamentRuntime Filament;
+            public float Distance;
+            public float OrbitAngleRadians;
+            public int RingIndex;
+            public float Ring01;
+            public Vector2 BaseScale;
+            public float Phase;
         }
     }
 }

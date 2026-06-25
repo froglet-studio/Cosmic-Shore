@@ -122,6 +122,7 @@ namespace CosmicShore.Gameplay
             _frontLatchSignedDelta = signedDelta;
             _missTimer = 0f;
             PlayLatchLockSound();
+            SpawnContactBurst(AttachPoint(CurrentFilament, _distanceOnFilament), new Color(0.12f, 0.9f, 1f, 1f), 1.1f);
             LogLatchAttempt(result, LatchInput.Front, true, signedDelta);
         }
 
@@ -137,6 +138,7 @@ namespace CosmicShore.Gameplay
             _speed *= 0.94f;
             _impactTimer = 0.28f;
             PlayLatchMissSound();
+            SpawnContactBurst(_vessel?.Transform.position ?? AttachPoint(CurrentFilament, _distanceOnFilament), new Color(1f, 0.18f, 0.08f, 1f), 0.9f);
             LogLatchAttempt(result, input, false, signedDelta);
         }
 

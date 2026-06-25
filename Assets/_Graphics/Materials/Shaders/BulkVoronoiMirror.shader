@@ -31,6 +31,8 @@ Shader "CosmicShore/BulkVoronoiMirror"
             float _Pulse;
             float _MirrorStrength;
             float _Distortion;
+            UNITY_DECLARE_TEXCUBE(unity_SpecCube0);
+            float4 unity_SpecCube0_HDR;
 
             struct appdata
             {
@@ -102,8 +104,12 @@ Shader "CosmicShore/BulkVoronoiMirror"
                 float facet = sin(dot(floor(i.uv * 7.0), float2(13.7, 41.3)) + _Time.y * 0.6);
                 float reflection = sin((i.worldPos.x + i.worldPos.z) * 0.028 + facet * _Distortion + _Time.y * 0.85) * 0.5 + 0.5;
                 float edge = 1.0 - smoothstep(0.025, 0.105, voronoiEdge(i.uv * 2.8));
+                float3 reflectDir = reflect(-viewDir, normalize(n + float3(sin(facet) * 0.08, cos(facet) * 0.04, sin(facet * 1.7) * 0.08)));
+                half4 encodedReflection = UNITY_SAMPLE_TEXCUBE(unity_SpecCube0, reflectDir);
+                float3 probeReflection = DecodeHDR(encodedReflection, unity_SpecCube0_HDR);
 
                 float3 mirror = lerp(_BaseColor.rgb * 0.36, float3(0.85, 0.96, 1.0), reflection * _MirrorStrength);
+                mirror = lerp(mirror, probeReflection * (0.42 + fresnel * 0.85) + _BaseColor.rgb * 0.18, _MirrorStrength * 0.48);
                 mirror += fresnel * float3(0.18, 0.55, 1.0);
                 mirror = lerp(mirror, _LineColor.rgb * (1.0 + _Pulse * 0.55), edge);
 

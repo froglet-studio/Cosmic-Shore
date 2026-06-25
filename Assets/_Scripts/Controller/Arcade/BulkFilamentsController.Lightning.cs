@@ -23,14 +23,14 @@ namespace CosmicShore.Gameplay
             _nextFilamentLightningTime = 0f;
         }
 
-        void ApplyPowerCrystalPickup(Vector3 position)
+        void ApplyPowerCrystalPickup(Vector3 position, Color crystalColor)
         {
             _crystalSpeedBonus += powerCrystalStackBonus;
             _speed = Mathf.Clamp(_speed + powerCrystalSpeedImpulse, minimumSpeed, CurrentMaximumSpeed);
             _impactTimer = Mathf.Max(_impactTimer, 0.18f);
             PlayPowerCrystalSound();
-            SpawnPickupLightning(position);
-            SpawnSpeedDiamondBurst(position);
+            SpawnPickupLightning(position, crystalColor);
+            SpawnSpeedDiamondBurst(position, crystalColor);
         }
 
         void AnimateLightning(float dt)
@@ -56,38 +56,41 @@ namespace CosmicShore.Gameplay
             UpdateLightningBolts(dt);
         }
 
-        void SpawnPickupLightning(Vector3 center)
+        void SpawnPickupLightning(Vector3 center, Color color)
         {
-            for (int i = 0; i < 3; i++)
+            CreateParticleBurst("Speed Diamond Contact Flash", center, color, 42, 0.36f, 24f, 0.55f, 1.9f);
+            for (int i = 0; i < 6; i++)
             {
                 Vector3 end = center
-                              + Random.onUnitSphere * Random.Range(7f, 13f)
-                              + Vector3.up * Random.Range(2f, 8f);
-                CreateLightningBolt(center, end, 0.34f, 0.9f, false, 0.2f);
+                              + Random.onUnitSphere * Random.Range(8f, 18f)
+                              + Vector3.up * Random.Range(2f, 10f);
+                CreateLightningBolt(center, end, 0.42f, 1.45f, false, 0.26f);
             }
         }
 
-        void SpawnSpeedDiamondBurst(Vector3 center)
+        void SpawnSpeedDiamondBurst(Vector3 center, Color color)
         {
-            CreateParticleBurst("Speed Diamond Glow Burst", center, new Color(1f, 0.32f, 1f, 1f), 36, 0.62f, 18f);
-            for (int i = 0; i < 12; i++)
+            CreateParticleBurst("Speed Diamond Glow Burst", center, color, 72, 0.72f, 28f, 0.35f, 1.7f);
+            CreateParticleBurst("Speed Diamond Dark Glass Burst", center, new Color(0.02f, 0.025f, 0.05f, 0.92f), 38, 0.9f, 18f, 0.4f, 2.2f);
+            for (int i = 0; i < 20; i++)
             {
                 Vector3 direction = Random.onUnitSphere;
                 if (direction.y < -0.2f)
                     direction.y = Mathf.Abs(direction.y);
 
                 Vector3 end = center + direction.normalized * Random.Range(12f, 24f);
-                CreateLightningBolt(center, end, 0.28f, 1.8f, false, 0.34f);
-                CreateTransientShard(center, direction.normalized * Random.Range(18f, 34f), Random.Range(0.34f, 0.72f));
+                CreateLightningBolt(center, end, 0.34f, 2.4f, false, 0.42f);
+                CreateTransientShard(center, direction.normalized * Random.Range(22f, 48f), Random.Range(0.42f, 0.95f), color);
             }
         }
 
         void SpawnPulseGateBurst(Vector3 center, FilamentRuntime filament)
         {
-            CreateParticleBurst("Pulse Gate Surge", center, new Color(0.1f, 0.9f, 1f, 1f), 48, 0.7f, 22f);
-            for (int i = 0; i < 10; i++)
+            CreateParticleBurst("Pulse Gate Surge", center, new Color(0.1f, 0.9f, 1f, 1f), 80, 0.82f, 30f, 0.32f, 1.8f);
+            CreateParticleBurst("Pulse Gate Carbon Wake", center, new Color(0f, 0.02f, 0.06f, 0.86f), 32, 1.05f, 18f, 0.45f, 2.4f);
+            for (int i = 0; i < 16; i++)
             {
-                float angle = i / 10f * Mathf.PI * 2f + Random.Range(-0.16f, 0.16f);
+                float angle = i / 16f * Mathf.PI * 2f + Random.Range(-0.16f, 0.16f);
                 Vector3 start = center + (filament.Up * Mathf.Cos(angle) + filament.Side * Mathf.Sin(angle)) * orbitRadius * 0.6f;
                 Vector3 end = center + (filament.Up * Mathf.Cos(angle + 0.42f) + filament.Side * Mathf.Sin(angle + 0.42f)) * orbitRadius * 1.75f;
                 end += filament.Direction * Random.Range(-8f, 16f);
@@ -97,11 +100,35 @@ namespace CosmicShore.Gameplay
 
         void SpawnNanitePop(Vector3 center)
         {
-            CreateParticleBurst("Bulk Nanite Pop", center, new Color(0.08f, 1f, 0.76f, 1f), 26, 0.44f, 13f);
-            for (int i = 0; i < 5; i++)
+            CreateParticleBurst("Bulk Nanite Pop", center, new Color(0.08f, 1f, 0.76f, 1f), 44, 0.52f, 22f, 0.28f, 1.45f);
+            CreateParticleBurst("Bulk Nanite Dark Chaff", center, new Color(0f, 0.02f, 0.018f, 0.95f), 20, 0.72f, 14f, 0.42f, 1.8f);
+            for (int i = 0; i < 9; i++)
             {
                 Vector3 end = center + Random.onUnitSphere * Random.Range(5f, 11f);
-                CreateLightningBolt(center, end, 0.2f, 0.8f, false, 0.13f);
+                CreateLightningBolt(center, end, 0.24f, 1.1f, false, 0.18f);
+            }
+        }
+
+        void SpawnContactBurst(Vector3 center, Color color, float scale = 1f)
+        {
+            CreateParticleBurst("Bulk Contact Burst", center, color, Mathf.RoundToInt(34 * scale), 0.46f * Mathf.Sqrt(scale), 18f * scale, 0.28f, 1.5f);
+            CreateParticleBurst("Bulk Contact Dark Flecks", center, new Color(0f, 0.012f, 0.02f, 0.9f), Mathf.RoundToInt(16 * scale), 0.68f, 12f * scale, 0.34f, 1.8f);
+            for (int i = 0; i < Mathf.RoundToInt(4 * scale); i++)
+            {
+                Vector3 end = center + Random.onUnitSphere * Random.Range(5f * scale, 13f * scale);
+                CreateLightningBolt(center, end, 0.18f + scale * 0.08f, 0.75f * scale, false, 0.12f + 0.08f * scale);
+            }
+        }
+
+        void SpawnFinaleLaunchBurst(Vector3 center, Vector3 direction)
+        {
+            CreateParticleBurst("Bulk Break Finale Plasma", center, new Color(0.18f, 1f, 0.46f, 1f), 140, 1.25f, 42f, 0.36f, 2.4f);
+            CreateParticleBurst("Bulk Break Finale Star Glass", center, new Color(0.78f, 0.95f, 1f, 0.92f), 120, 1.55f, 58f, 0.18f, 1.3f);
+            CreateParticleBurst("Bulk Break Finale Dark Shell", center, new Color(0f, 0.018f, 0.04f, 0.92f), 80, 1.8f, 34f, 0.55f, 2.6f);
+            for (int i = 0; i < 28; i++)
+            {
+                Vector3 spread = (direction + Random.onUnitSphere * 0.62f).normalized;
+                CreateLightningBolt(center - direction * Random.Range(2f, 10f), center + spread * Random.Range(34f, 92f), 0.58f, 5.4f, false, 0.52f);
             }
         }
 
@@ -126,7 +153,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void CreateParticleBurst(string burstName, Vector3 center, Color color, int count, float lifetime, float speed)
+        void CreateParticleBurst(string burstName, Vector3 center, Color color, int count, float lifetime, float speed, float minSize = 0.35f, float maxSize = 1.4f)
         {
             if (!_runtimeRoot)
                 return;
@@ -139,7 +166,7 @@ namespace CosmicShore.Gameplay
             main.duration = lifetime;
             main.startLifetime = new ParticleSystem.MinMaxCurve(lifetime * 0.45f, lifetime);
             main.startSpeed = new ParticleSystem.MinMaxCurve(speed * 0.45f, speed);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.35f, 1.4f);
+            main.startSize = new ParticleSystem.MinMaxCurve(minSize, maxSize);
             main.startColor = color;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.maxParticles = Mathf.Max(count, 16);
@@ -162,7 +189,7 @@ namespace CosmicShore.Gameplay
             Destroy(burst, lifetime + 1.2f);
         }
 
-        void CreateTransientShard(Vector3 center, Vector3 velocity, float lifetime)
+        void CreateTransientShard(Vector3 center, Vector3 velocity, float lifetime, Color? colorOverride = null)
         {
             if (!_runtimeRoot)
                 return;
@@ -173,7 +200,17 @@ namespace CosmicShore.Gameplay
             shard.transform.position = center;
             shard.transform.localScale = new Vector3(0.55f, 0.12f, 1.6f) * Random.Range(0.75f, 1.6f);
             shard.transform.rotation = Random.rotation;
-            shard.GetComponent<Renderer>().sharedMaterial = _shardMaterial ? _shardMaterial : _crystalMaterial;
+            var renderer = shard.GetComponent<Renderer>();
+            if (colorOverride.HasValue && _shardMaterial)
+            {
+                Material material = new(_shardMaterial) { name = "Bulk Colored Speed Shard" };
+                SetMaterialColor(material, colorOverride.Value);
+                renderer.sharedMaterial = material;
+            }
+            else
+            {
+                renderer.sharedMaterial = _shardMaterial ? _shardMaterial : _crystalMaterial;
+            }
             Destroy(shard.GetComponent<Collider>());
             _transientShards.Add(new TransientShardRuntime
             {

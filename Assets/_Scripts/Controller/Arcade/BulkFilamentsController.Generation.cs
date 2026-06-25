@@ -1,5 +1,6 @@
 using CosmicShore.Utility;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace CosmicShore.Gameplay
 {
@@ -18,6 +19,7 @@ namespace CosmicShore.Gameplay
             _mirrorWallMaterial = MakeMirrorWallMaterial();
             _gateMaterial = MakeMaterial("Bulk Pulse Gate", new Color(0.25f, 0.82f, 1f, 0.9f));
             _shardMaterial = MakeMaterial("Bulk Speed Shards", new Color(1f, 0.56f, 1f, 0.92f));
+            _glyphMaterial = MakeGlyphMaterial();
         }
 
         int ResolveTargetTransferCount()
@@ -39,6 +41,22 @@ namespace CosmicShore.Gameplay
             var material = new Material(shader) { name = materialName };
             SetMaterialColor(material, color);
             SetMaterialFloat(material, "_Alpha", color.a);
+            return material;
+        }
+
+        Material MakeGlyphMaterial()
+        {
+            Shader shader = Shader.Find("CosmicShore/BulkGlyphSprite")
+                            ?? Shader.Find("Sprites/Default")
+                            ?? Shader.Find("Universal Render Pipeline/Unlit")
+                            ?? Shader.Find("Unlit/Color");
+            var material = new Material(shader) { name = "Bulk Dark Animated Glyphs" };
+            SetMaterialColor(material, new Color(0.015f, 0.035f, 0.052f, 0.88f));
+            if (material.HasProperty("_AccentColor"))
+                material.SetColor("_AccentColor", new Color(0.04f, 0.95f, 1f, 0.72f));
+            if (material.HasProperty("_DarkColor"))
+                material.SetColor("_DarkColor", new Color(0f, 0.004f, 0.012f, 0.96f));
+            SetMaterialFloat(material, "_Alpha", 0.84f);
             return material;
         }
 
@@ -113,7 +131,30 @@ namespace CosmicShore.Gameplay
             renderer.sharedMaterial = _mirrorWallMaterial;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
+            renderer.reflectionProbeUsage = ReflectionProbeUsage.BlendProbes;
             filter.sharedMesh = BuildMirrorWallMesh(length);
+        }
+
+        void CreateMirrorReflectionProbe()
+        {
+            if (!_runtimeRoot)
+                return;
+
+            float length = _targetTransfers * (filamentRisePerTransfer + tubeRadius * 0.095f) + tubeRadius * 1.5f;
+            var probeObject = new GameObject("Bulk Realtime Mirror Probe");
+            probeObject.transform.SetParent(_runtimeRoot.transform, false);
+            probeObject.transform.position = Vector3.up * (length * 0.42f);
+            _mirrorReflectionProbe = probeObject.AddComponent<ReflectionProbe>();
+            _mirrorReflectionProbe.mode = ReflectionProbeMode.Realtime;
+            _mirrorReflectionProbe.refreshMode = ReflectionProbeRefreshMode.ViaScripting;
+            _mirrorReflectionProbe.timeSlicingMode = ReflectionProbeTimeSlicingMode.IndividualFaces;
+            _mirrorReflectionProbe.resolution = 64;
+            _mirrorReflectionProbe.intensity = 0.62f;
+            _mirrorReflectionProbe.size = new Vector3(tubeRadius * 2.55f, length * 1.08f, tubeRadius * 2.55f);
+            _mirrorReflectionProbe.nearClipPlane = 0.25f;
+            _mirrorReflectionProbe.farClipPlane = tubeRadius * 3.4f;
+            _mirrorReflectionProbe.clearFlags = ReflectionProbeClearFlags.SolidColor;
+            _mirrorReflectionProbe.backgroundColor = new Color(0.005f, 0.002f, 0.014f, 1f);
         }
 
         Mesh BuildMirrorWallMesh(float length)
@@ -206,6 +247,7 @@ namespace CosmicShore.Gameplay
                 CreateRootFlares(filament);
                 CreateCrystals(filament);
                 CreateHazards(filament);
+                CreateFilamentGlyphs(filament, random);
                 _filaments.Add(filament);
                 previous = filament;
                 routeStart += travelLength;
@@ -274,15 +316,75 @@ namespace CosmicShore.Gameplay
                 var filter = crystal.GetComponent<MeshFilter>();
                 if (filter)
                     filter.sharedMesh = OctahedronMeshGenerator.Generate(Vector3.one * 0.5f);
-                crystal.GetComponent<Renderer>().sharedMaterial = _crystalMaterial;
+                Renderer renderer = crystal.GetComponent<Renderer>();
+                Material crystalMaterial = new(_crystalMaterial) { name = $"Bulk Crystal Hue {filament.Index:00}-{i:00}" };
+                float hue = Mathf.Repeat(0.11f + filament.Index * 0.137f + i * 0.291f, 1f);
+                SetMaterialColor(crystalMaterial, Color.HSVToRGB(hue, 0.9f, 1f));
+                renderer.sharedMaterial = crystalMaterial;
                 Destroy(crystal.GetComponent<Collider>());
+                CreateCrystalGlyphs(crystal.transform, hue, filament.Index, i);
 
                 filament.Crystals.Add(new CrystalRuntime
                 {
                     GameObject = crystal,
                     Position = position,
                     Distance = distance,
-                    OrbitAngleRadians = angle
+                    OrbitAngleRadians = angle,
+                    HueOffset = hue,
+                    Renderer = renderer
+                });
+            }
+        }
+
+        void CreateCrystalGlyphs(Transform crystal, float hue, int filamentIndex, int crystalIndex)
+        {
+            if (!_glyphMaterial)
+                return;
+
+            Vector3[] normals =
+            {
+                new(0.72f, 0.48f, 0.5f),
+                new(-0.62f, 0.54f, 0.57f),
+                new(0.16f, -0.72f, 0.68f)
+            };
+
+            for (int i = 0; i < normals.Length; i++)
+            {
+                Vector3 normal = normals[i].normalized;
+                GameObject glyph = GameObject.CreatePrimitive(PrimitiveType.Quad);
+                glyph.name = $"Crystal Dark Glyph {filamentIndex:00}-{crystalIndex:00}-{i:00}";
+                glyph.transform.SetParent(crystal, false);
+                glyph.transform.localPosition = normal * 0.53f;
+                glyph.transform.localRotation = Quaternion.LookRotation(normal, Vector3.up);
+                glyph.transform.localScale = new Vector3(0.34f, 0.16f, 1f) * (1f + i * 0.18f);
+                var renderer = glyph.GetComponent<Renderer>();
+                renderer.sharedMaterial = _glyphMaterial;
+                if (renderer.material.HasProperty("_Phase"))
+                    renderer.material.SetFloat("_Phase", hue * 11f + filamentIndex * 0.31f + i);
+                Destroy(glyph.GetComponent<Collider>());
+            }
+        }
+
+        void CreateFilamentGlyphs(FilamentRuntime filament, System.Random random)
+        {
+            if (!_glyphMaterial)
+                return;
+
+            int count = Mathf.Clamp(4 + Intensity, 4, 8);
+            for (int i = 0; i < count; i++)
+            {
+                float distance = Mathf.Lerp(12f, filament.TravelLength - 12f, (i + 0.5f) / count);
+                float angle = RandomRange(random, 0f, Mathf.PI * 2f);
+                var glyph = CreateGlyphSprite($"Filament Glyph {filament.Index:00}-{i:00}", new Vector2(RandomRange(random, 6f, 12f), RandomRange(random, 2.2f, 4.2f)));
+                _glyphSprites.Add(new GlyphSpriteRuntime
+                {
+                    Transform = glyph.transform,
+                    Anchor = GlyphAnchorKind.Filament,
+                    Filament = filament,
+                    Distance = distance,
+                    OrbitAngleRadians = angle,
+                    BaseScale = new Vector2(glyph.transform.localScale.x, glyph.transform.localScale.y),
+                    Phase = RandomRange(random, 0f, 9f)
                 });
             }
         }
@@ -349,24 +451,63 @@ namespace CosmicShore.Gameplay
 
             _latchRings.Add(MakeLine("Front Latch Ring", 49, 0.18f, _activeFilamentMaterial));
             _latchRings.Add(MakeLine("Rear Latch Ring", 49, 0.18f, _activeFilamentMaterial));
+            CreateLatchRingGlyphs();
+        }
+
+        void CreateLatchRingGlyphs()
+        {
+            if (!_glyphMaterial)
+                return;
+
+            for (int ring = 0; ring < 2; ring++)
+            {
+                for (int i = 0; i < 7; i++)
+                {
+                    var glyph = CreateGlyphSprite($"Latch Ring Glyph {ring}-{i}", new Vector2(1.55f, 0.44f));
+                    _glyphSprites.Add(new GlyphSpriteRuntime
+                    {
+                        Transform = glyph.transform,
+                        Anchor = GlyphAnchorKind.LatchRing,
+                        RingIndex = ring,
+                        Ring01 = (i + 0.5f) / 7f,
+                        BaseScale = new Vector2(1.55f, 0.44f),
+                        Phase = ring * 1.7f + i * 0.43f
+                    });
+                }
+            }
+        }
+
+        GameObject CreateGlyphSprite(string glyphName, Vector2 scale)
+        {
+            var glyph = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            glyph.name = glyphName;
+            glyph.transform.SetParent(_runtimeRoot.transform, false);
+            glyph.transform.localScale = new Vector3(scale.x, scale.y, 1f);
+            var renderer = glyph.GetComponent<Renderer>();
+            renderer.sharedMaterial = _glyphMaterial;
+            Destroy(glyph.GetComponent<Collider>());
+            return glyph;
         }
 
         void CreateNaniteSwarm()
         {
-            for (int i = 0; i < 18; i++)
+            for (int i = 0; i < 26; i++)
             {
                 var nanite = new GameObject($"Filament Nanite {i:00}");
                 nanite.name = $"Filament Nanite {i:00}";
                 nanite.transform.SetParent(_runtimeRoot.transform, false);
 
-                float scale = Random.Range(0.55f, 1.2f);
+                float scale = Random.Range(1.45f, 2.85f);
                 CreateNanitePart(nanite.transform, PrimitiveType.Sphere, Vector3.zero, Vector3.one * scale, _naniteMaterial);
                 CreateNanitePart(nanite.transform, PrimitiveType.Cube, new Vector3(0f, 0f, -0.75f * scale), new Vector3(0.22f, 0.22f, 1.25f) * scale, _activeFilamentMaterial);
                 CreateNanitePart(nanite.transform, PrimitiveType.Cube, new Vector3(0.55f * scale, 0f, 0.12f * scale), new Vector3(0.16f, 0.62f, 0.9f) * scale, _hazardMaterial);
                 CreateNanitePart(nanite.transform, PrimitiveType.Cube, new Vector3(-0.55f * scale, 0f, 0.12f * scale), new Vector3(0.16f, 0.62f, 0.9f) * scale, _hazardMaterial);
+                CreateNanitePart(nanite.transform, PrimitiveType.Sphere, new Vector3(0f, 0f, 0.12f * scale), Vector3.one * scale * 1.7f, _glyphMaterial ? _glyphMaterial : _naniteMaterial);
                 _nanites.Add(nanite);
                 _naniteRespawnTimers.Add(0f);
             }
+
+            _naniteWakeLine = MakeLine("Bulk Nanite Chase Warning Trail", 18, 0.44f, _naniteMaterial);
         }
 
         void CreateNanitePart(Transform parent, PrimitiveType shape, Vector3 localPosition, Vector3 localScale, Material material)

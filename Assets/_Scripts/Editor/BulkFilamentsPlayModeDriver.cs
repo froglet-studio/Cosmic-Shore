@@ -189,6 +189,14 @@ namespace CosmicShore.EditorTools
                     batchStep = 1;
                     break;
                 case 1:
+                    if (SceneManager.GetActiveScene().path != BulkScenePath)
+                    {
+                        Debug.Log($"[BulkFilamentsBatchQA] Active scene changed to '{SceneManager.GetActiveScene().path}'; reloading Bulk scene.");
+                        batchStep = 0;
+                        batchNextStepTime = EditorApplication.timeSinceStartup + 0.5d;
+                        return;
+                    }
+
                     if (!FindSceneComponent<BulkFilamentsController>())
                     {
                         if (EditorApplication.timeSinceStartup >= batchNextControllerLogTime)
@@ -205,6 +213,18 @@ namespace CosmicShore.EditorTools
                     batchNextStepTime = EditorApplication.timeSinceStartup + 0.25d;
                     break;
                 case 2:
+                    if (!qaCompleted && SceneManager.GetActiveScene().path != BulkScenePath)
+                    {
+                        Debug.Log($"[BulkFilamentsBatchQA] Active scene changed during control QA to '{SceneManager.GetActiveScene().path}'; reloading Bulk scene.");
+                        StopControlQa();
+                        qaCompleted = false;
+                        qaSucceeded = false;
+                        qaResult = string.Empty;
+                        batchStep = 0;
+                        batchNextStepTime = EditorApplication.timeSinceStartup + 0.5d;
+                        return;
+                    }
+
                     if (qaCompleted)
                         CompleteBatchQa(qaSucceeded, qaResult);
                     break;

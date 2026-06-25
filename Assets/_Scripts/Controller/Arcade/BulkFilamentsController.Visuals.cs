@@ -7,6 +7,12 @@ namespace CosmicShore.Gameplay
     {
         void OnGUI()
         {
+            if (_missionFinaleActive)
+            {
+                DrawMissionFinaleHud();
+                return;
+            }
+
             if (!_isRunning || _turnFinished)
                 return;
 
@@ -29,6 +35,36 @@ namespace CosmicShore.Gameplay
             GUI.Label(new Rect(24, 22, 540, 120), fakeMath, style);
         }
 
+        void DrawMissionFinaleHud()
+        {
+            float alpha = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(_missionFinaleTimer / 1.2f));
+            float flicker = 0.82f + Mathf.Sin(Time.time * 22f) * 0.08f + _missionFinaleHudPulse * 0.1f;
+            var titleStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 38,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.UpperLeft,
+                normal = { textColor = new Color(0.15f, 1f, 0.45f, alpha * flicker) }
+            };
+            var bodyStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 22,
+                alignment = TextAnchor.UpperLeft,
+                normal = { textColor = new Color(0.12f, 0.92f, 0.38f, alpha * 0.94f) }
+            };
+
+            float x = Mathf.Max(28f, Screen.width * 0.065f);
+            float y = Mathf.Max(36f, Screen.height * 0.1f);
+            GUI.Label(new Rect(x, y, 720, 58), "MISSION ACCOMPLISHED", titleStyle);
+            GUI.Label(
+                new Rect(x, y + 62f, 760, 180),
+                "ARK Route Secured\n" +
+                "Pathfinder Rank Increment +1\n" +
+                "Temporal Field: Normalized\n" +
+                "Rendezvous with Ark at Checkpoint Gamma",
+                bodyStyle);
+        }
+
         void AnimateWormhole()
         {
             if (_tubeRings.Count == 0)
@@ -43,6 +79,7 @@ namespace CosmicShore.Gameplay
             SetMaterialFloat(_whiteEnergyMaterial, "_Pulse", beat * 0.75f);
             SetMaterialFloat(_crystalMaterial, "_Pulse", beat * 1.6f);
             SetMaterialFloat(_gateMaterial, "_Pulse", beat * 2.1f + finale);
+            SetMaterialFloat(_glyphMaterial, "_Pulse", beat * 0.8f + finale * 0.45f);
             for (int i = 0; i < _tubeRings.Count; i++)
             {
                 var ring = _tubeRings[i];
@@ -66,6 +103,18 @@ namespace CosmicShore.Gameplay
             float pulse = Mathf.Max(BeatPulse(), _waveformEnergy * 0.65f);
             SetMaterialFloat(_mirrorWallMaterial, "_Pulse", pulse + FinaleIntensity01);
             SetMaterialFloat(_mirrorWallMaterial, "_Distortion", Mathf.Lerp(0.42f, 1.1f, FinaleIntensity01));
+            RefreshMirrorProbeIfNeeded();
+        }
+
+        void RefreshMirrorProbeIfNeeded()
+        {
+            if (!_mirrorReflectionProbe || Time.time < _nextMirrorProbeRefreshTime)
+                return;
+
+            Vector3 probePosition = _vessel?.Transform.position ?? (_filaments.Count > 0 ? CurrentFilament.Center : Vector3.zero);
+            _mirrorReflectionProbe.transform.position = probePosition;
+            _mirrorReflectionProbe.RenderProbe();
+            _nextMirrorProbeRefreshTime = Time.time + Mathf.Lerp(0.9f, 0.38f, FinaleIntensity01);
         }
 
         void AnimateFilamentColors()
@@ -103,10 +152,21 @@ namespace CosmicShore.Gameplay
             if (_nanites.Count == 0 || _filaments.Count == 0)
                 return;
 
-            FilamentRuntime filament = FilamentAtRouteDistance(Mathf.Max(0f, _naniteRouteDistance), out float localDistance);
+            float visualRoute = Mathf.Max(0f, _naniteRouteDistance);
+            if (_isRunning)
+            {
+                float desiredTail = Mathf.Max(8f, naniteVisualTailDistance);
+                visualRoute = Mathf.Clamp(
+                    _naniteRouteDistance,
+                    PlayerRouteDistance - naniteCatchBuffer * 1.18f,
+                    PlayerRouteDistance - desiredTail);
+            }
+
+            FilamentRuntime filament = FilamentAtRouteDistance(Mathf.Max(0f, visualRoute), out float localDistance);
             if (filament == null)
                 return;
 
+            Vector3 swarmCenter = PositionOnFilament(filament, localDistance, Time.time * 0.74f, orbitRadius + 7f);
             for (int i = 0; i < _nanites.Count; i++)
             {
                 if (i < _naniteRespawnTimers.Count && _naniteRespawnTimers[i] > 0f)
@@ -120,11 +180,38 @@ namespace CosmicShore.Gameplay
                 if (!_nanites[i].activeSelf)
                     _nanites[i].SetActive(true);
 
-                float angle = (i / (float)_nanites.Count) * Mathf.PI * 2f + Time.time * (0.7f + i * 0.01f);
-                float swarmDistance = localDistance - i * 0.8f;
-                _nanites[i].transform.position = PositionOnFilament(filament, swarmDistance, angle, orbitRadius + 8f + Mathf.Sin(Time.time + i) * 2f);
-                _nanites[i].transform.Rotate(90f * Time.deltaTime, 130f * Time.deltaTime, 70f * Time.deltaTime);
+                float angle = (i / (float)_nanites.Count) * Mathf.PI * 2f + Time.time * (1.35f + i * 0.018f);
+                float swarmDistance = localDistance - i * 0.42f + Mathf.Sin(Time.time * 1.7f + i) * 1.8f;
+                float radius = orbitRadius + 5.2f + Mathf.Sin(Time.time * 2.1f + i) * 3.5f;
+                Vector3 position = PositionOnFilament(filament, swarmDistance, angle, radius);
+                _nanites[i].transform.position = position;
+                _nanites[i].transform.localScale = Vector3.one * (1f + BeatPulse() * 0.16f);
+                _nanites[i].transform.Rotate(180f * Time.deltaTime, 230f * Time.deltaTime, 140f * Time.deltaTime);
+                if (i == 0)
+                    swarmCenter = position;
             }
+
+            UpdateNaniteWake(swarmCenter);
+        }
+
+        void UpdateNaniteWake(Vector3 swarmCenter)
+        {
+            if (!_naniteWakeLine || _vessel == null)
+                return;
+
+            _naniteWakeLine.gameObject.SetActive(_isRunning || _missionFinaleActive);
+            Vector3 vesselPosition = _vessel.Transform.position;
+            for (int i = 0; i < _naniteWakeLine.positionCount; i++)
+            {
+                float t = i / (float)(_naniteWakeLine.positionCount - 1);
+                Vector3 p = Vector3.Lerp(swarmCenter, vesselPosition, t);
+                Vector3 jitter = Random.onUnitSphere * Mathf.Sin(Time.time * 8f + i) * (1f - t) * 1.6f;
+                _naniteWakeLine.SetPosition(i, p + jitter);
+            }
+
+            float gap = Mathf.Max(0f, PlayerRouteDistance - _naniteRouteDistance);
+            float danger = Mathf.Clamp01((naniteCatchBuffer * 1.5f - gap) / Mathf.Max(1f, naniteCatchBuffer));
+            _naniteWakeLine.widthMultiplier = Mathf.Lerp(0.28f, 1.1f, danger + BeatPulse() * 0.2f);
         }
 
         void AnimatePulseGates()
@@ -172,6 +259,64 @@ namespace CosmicShore.Gameplay
                             + filament.Up * Mathf.Cos(a) * (radius * (0.72f + weave))
                             + filament.Side * Mathf.Sin(a) * (radius * (1.08f - weave));
                 core.SetPosition(i, p);
+            }
+        }
+
+        void AnimateGlyphSprites()
+        {
+            if (_glyphSprites.Count == 0)
+                return;
+
+            Vector3 cameraPosition = _mainCamera ? _mainCamera.transform.position : Vector3.zero;
+            for (int i = 0; i < _glyphSprites.Count; i++)
+            {
+                GlyphSpriteRuntime glyph = _glyphSprites[i];
+                if (glyph.Transform == null)
+                    continue;
+
+                if (glyph.Anchor == GlyphAnchorKind.Filament)
+                {
+                    if (glyph.Filament == null)
+                        continue;
+
+                    float drift = Mathf.Sin(Time.time * 0.33f + glyph.Phase) * 2.5f;
+                    float distance = Mathf.Clamp(glyph.Distance + drift, 0f, glyph.Filament.TravelLength);
+                    Vector3 attach = AttachPoint(glyph.Filament, distance);
+                    float angle = glyph.OrbitAngleRadians + Time.time * 0.18f;
+                    Vector3 normal = (glyph.Filament.Up * Mathf.Cos(angle) + glyph.Filament.Side * Mathf.Sin(angle)).normalized;
+                    glyph.Transform.position = attach + normal * 1.65f;
+                    glyph.Transform.rotation = Quaternion.LookRotation(normal, glyph.Filament.Direction);
+                    float pulse = 1f + Mathf.Sin(Time.time * 2.2f + glyph.Phase) * 0.11f + BeatPulse() * 0.08f;
+                    glyph.Transform.localScale = new Vector3(glyph.BaseScale.x, glyph.BaseScale.y * pulse, 1f);
+                    continue;
+                }
+
+                if (glyph.Anchor == GlyphAnchorKind.LatchRing)
+                {
+                    if (glyph.RingIndex < 0 || glyph.RingIndex >= _latchRings.Count || !_latchRings[glyph.RingIndex])
+                    {
+                        glyph.Transform.gameObject.SetActive(false);
+                        continue;
+                    }
+
+                    LineRenderer ring = _latchRings[glyph.RingIndex];
+                    if (!ring.gameObject.activeInHierarchy)
+                    {
+                        glyph.Transform.gameObject.SetActive(false);
+                        continue;
+                    }
+
+                    glyph.Transform.gameObject.SetActive(true);
+                    int index = Mathf.Clamp(Mathf.RoundToInt(glyph.Ring01 * (ring.positionCount - 1)), 0, ring.positionCount - 1);
+                    Vector3 position = ring.GetPosition(index);
+                    Vector3 toCamera = cameraPosition - position;
+                    if (toCamera.sqrMagnitude < 0.01f)
+                        toCamera = Vector3.up;
+                    glyph.Transform.position = position + toCamera.normalized * 0.05f;
+                    glyph.Transform.rotation = Quaternion.LookRotation(-toCamera.normalized, Vector3.up);
+                    float pulse = 1f + BeatPulse() * 0.2f + Mathf.Sin(Time.time * 5f + glyph.Phase) * 0.08f;
+                    glyph.Transform.localScale = new Vector3(glyph.BaseScale.x * pulse, glyph.BaseScale.y, 1f);
+                }
             }
         }
 
