@@ -814,7 +814,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Resize the nucleus marker to a target WORLD radius (mesh-agnostic, via renderer bounds, so
         /// it works regardless of the prefab mesh's base size). Lets a mode repurpose the nucleus as
-        /// its play boundary — e.g. Astro League scales it to the arena's spherical bounce radius.
+        /// its play boundary — e.g. Astro League uses it for the Sphere-shaped court (see
+        /// <see cref="SetNucleusMesh"/> for the flat-walled polytope courts).
         /// Safe to call before the nucleus spawns: the target is cached and applied in SpawnVisuals.
         /// </summary>
         public void SetNucleusWorldRadius(float worldRadius)

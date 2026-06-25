@@ -378,9 +378,12 @@ namespace CosmicShore.Gameplay
             Vector3 deepestNormal = Vector3.zero;
             float deepestOffset = 0f;
 
-            // Two passes: pass 1 resolves the violated faces; pass 2 catches a residual poke that the
-            // first depenetration nudged across a neighbouring (non-orthogonal) plane in a corner.
-            for (int pass = 0; pass < 2; pass++)
+            // Up to 4 passes: each resolves the violated faces; later passes catch a residual poke that
+            // the prior depenetration nudged across a neighbouring (non-orthogonal) plane in a corner.
+            // Box/prisms settle in 1-2 passes (orthogonal/well-separated normals → the early-out below
+            // fires immediately); only a deep multi-plane vertex (e.g. an Octahedron corner, where 4
+            // non-orthogonal planes meet) actually consumes passes 3-4, so the extra cap is free.
+            for (int pass = 0; pass < 4; pass++)
             {
                 bool anyThisPass = false;
                 for (int i = 0; i < _planes.Count; i++)
@@ -418,14 +421,21 @@ namespace CosmicShore.Gameplay
         // ── Visual cage mesh (convex hull of the face planes) ────────────────
 
         /// <summary>
-        /// Build the convex hull mesh of the polytope from its face planes, centered on the origin in
-        /// world units (the nucleus GameObject sits at <see cref="Center"/> with unit scale). The same
-        /// planes drive physics and visuals, so the glowing cage silhouette IS the wall the ball hits.
-        /// Returns null for curved shapes (Sphere/Cylinder keep their own prefab/analytic visual).
+        /// Build the boundary's visual mesh, centered on the origin in world units (the nucleus
+        /// GameObject sits at <see cref="Center"/> with unit scale). For polytopes this is the convex
+        /// hull of the face planes, so the same planes drive physics and visuals — the glowing cage
+        /// silhouette IS the wall the ball hits. Cylinder builds a barrel + caps mesh that matches its
+        /// analytic walls. Returns null for the Sphere (it keeps its prefab mesh, just resized).
         /// </summary>
         public Mesh BuildVisualMesh()
         {
+            if (Shape == AstroLeagueBoundaryShape.Cylinder) return BuildCylinderMesh();
             if (_planes.Count < 4) return null;
+
+            // Tolerances scale with arena size (50..600u half-extent across intensities) so a small
+            // feature isn't merged away and a vertex on a large arena still registers on its face.
+            float eps = Mathf.Max(0.1f, MaxExtent * 2e-3f);
+            float epsSqr = eps * eps;
 
             // 1. Candidate vertices = intersection of every plane triple that lies inside all planes.
             var verts = new List<Vector3>();
@@ -435,8 +445,8 @@ namespace CosmicShore.Gameplay
                     for (int k = j + 1; k < p; k++)
                     {
                         if (TrySolveTriple(_planes[i], _planes[j], _planes[k], out Vector3 v)
-                            && InsideAllPlanes(v))
-                            AddUniqueVertex(verts, v);
+                            && InsideAllPlanes(v, eps))
+                            AddUniqueVertex(verts, v, epsSqr);
                     }
             if (verts.Count < 4) return null;
 
@@ -451,7 +461,7 @@ namespace CosmicShore.Gameplay
                 FacePlane plane = _planes[f];
                 onPlane.Clear();
                 for (int vi = 0; vi < verts.Count; vi++)
-                    if (Mathf.Abs(Vector3.Dot(verts[vi], plane.Normal) - plane.Offset) < 0.5f)
+                    if (Mathf.Abs(Vector3.Dot(verts[vi], plane.Normal) - plane.Offset) < eps)
                         onPlane.Add(vi);
                 if (onPlane.Count < 3) continue;
 
@@ -485,9 +495,64 @@ namespace CosmicShore.Gameplay
             }
 
             if (tris.Count < 3) return null;
+            return FinalizeMesh(meshVerts, tris, normals);
+        }
 
-            // Double-side: the players fly INSIDE the boundary, so the cage must render no matter what
-            // the nucleus material's cull mode is. Mirror every triangle with a flipped-normal copy.
+        /// <summary>Barrel (N segments) + flat ±Z caps, matching <see cref="ContainCylinder"/>'s walls.</summary>
+        Mesh BuildCylinderMesh()
+        {
+            const int seg = 32;
+            float r = _cylinderRadius, hz = _capHalfLength;
+            var meshVerts = new List<Vector3>();
+            var tris = new List<int>();
+            var normals = new List<Vector3>();
+
+            // Barrel: a ring of quads with outward radial normals.
+            for (int i = 0; i < seg; i++)
+            {
+                float a0 = i / (float)seg * Mathf.PI * 2f;
+                float a1 = (i + 1) / (float)seg * Mathf.PI * 2f;
+                Vector3 d0 = new Vector3(Mathf.Cos(a0), Mathf.Sin(a0), 0f);
+                Vector3 d1 = new Vector3(Mathf.Cos(a1), Mathf.Sin(a1), 0f);
+                int b = meshVerts.Count;
+                meshVerts.Add(d0 * r + Vector3.forward * hz); normals.Add(d0);
+                meshVerts.Add(d1 * r + Vector3.forward * hz); normals.Add(d1);
+                meshVerts.Add(d1 * r + Vector3.back * hz);    normals.Add(d1);
+                meshVerts.Add(d0 * r + Vector3.back * hz);    normals.Add(d0);
+                tris.Add(b); tris.Add(b + 1); tris.Add(b + 2);
+                tris.Add(b); tris.Add(b + 2); tris.Add(b + 3);
+            }
+
+            // Caps: a fan at each ±Z end.
+            for (int s = -1; s <= 1; s += 2)
+            {
+                Vector3 capN = new Vector3(0f, 0f, s);
+                int center = meshVerts.Count;
+                meshVerts.Add(capN * hz); normals.Add(capN);
+                int ring = meshVerts.Count;
+                for (int i = 0; i < seg; i++)
+                {
+                    float a = i / (float)seg * Mathf.PI * 2f;
+                    meshVerts.Add(new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, s * hz));
+                    normals.Add(capN);
+                }
+                for (int i = 0; i < seg; i++)
+                {
+                    int v0 = ring + i, v1 = ring + (i + 1) % seg;
+                    tris.Add(center); tris.Add(v0); tris.Add(v1);
+                }
+            }
+
+            return FinalizeMesh(meshVerts, tris, normals);
+        }
+
+        /// <summary>
+        /// Double-side the geometry (players fly INSIDE the boundary, so the cage must render no matter
+        /// what the nucleus material's cull mode is — mirror every triangle with a flipped-normal copy)
+        /// and assemble the Mesh.
+        /// </summary>
+        Mesh FinalizeMesh(List<Vector3> meshVerts, List<int> tris, List<Vector3> normals)
+        {
             int single = meshVerts.Count;
             for (int i = 0; i < single; i++) { meshVerts.Add(meshVerts[i]); normals.Add(-normals[i]); }
             int triCount = tris.Count;
@@ -515,18 +580,18 @@ namespace CosmicShore.Gameplay
             return Vector3.Normalize(t - normal * Vector3.Dot(t, normal));
         }
 
-        bool InsideAllPlanes(Vector3 v)
+        bool InsideAllPlanes(Vector3 v, float eps)
         {
             for (int i = 0; i < _planes.Count; i++)
-                if (Vector3.Dot(v, _planes[i].Normal) - _planes[i].Offset > 0.5f)
+                if (Vector3.Dot(v, _planes[i].Normal) - _planes[i].Offset > eps)
                     return false;
             return true;
         }
 
-        static void AddUniqueVertex(List<Vector3> verts, Vector3 v)
+        static void AddUniqueVertex(List<Vector3> verts, Vector3 v, float epsSqr)
         {
             for (int i = 0; i < verts.Count; i++)
-                if ((verts[i] - v).sqrMagnitude < 0.25f)
+                if ((verts[i] - v).sqrMagnitude < epsSqr)
                     return;
             verts.Add(v);
         }

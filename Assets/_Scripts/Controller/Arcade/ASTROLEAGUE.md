@@ -113,8 +113,9 @@ server with billiard thinking:
 ## Ball Physics Notes
 
 > **The feel we're building: Rocket League in the HyperSea.** The ball is a real,
-> momentum-carrying payload. It bounces *elastically* off only two things — the spherical
-> **nucleus boundary** and the **vessels** — and everything else is about the ball's DOMAIN (the team
+> momentum-carrying payload. It bounces *elastically* off only two things — the **nucleus court
+> boundary** (`AstroLeagueBoundary` — flat-walled by default so it BANKS like billiards; Sphere is
+> the legacy center-focusing baseline) and the **vessels** — and everything else is about the ball's DOMAIN (the team
 > color of whoever struck it last) interacting with the colored mass of the prismscape:
 > it glides through friendly trail (shielding it), eats enemy trail (slowing as it plows),
 > and pops enemy shields. There is no friction and no scripted strike — speed is gained

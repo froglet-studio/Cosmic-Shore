@@ -52,6 +52,10 @@ namespace CosmicShore.Gameplay
         readonly List<Vector3> _baseSpawnLocalPos = new();
         float _currentScale = 1f;
 
+        // The runtime-generated nucleus cage mesh (polytope/cylinder courts) — owned here and destroyed
+        // on despawn so it doesn't leak across matches/replays (the scene-reload replay re-generates it).
+        Mesh _generatedNucleusMesh;
+
         enum MatchPhase { PreMatch, Kickoff, Live, Celebration, Overtime, Finished }
         MatchPhase phase = MatchPhase.PreMatch;
 
@@ -139,6 +143,12 @@ namespace CosmicShore.Gameplay
             matchCts?.Dispose();
             matchCts = null;
 
+            if (_generatedNucleusMesh != null)
+            {
+                Destroy(_generatedNucleusMesh);
+                _generatedNucleusMesh = null;
+            }
+
             base.OnNetworkDespawn();
         }
 
@@ -180,11 +190,19 @@ namespace CosmicShore.Gameplay
                 }
                 else
                 {
-                    // Polytopes get the generated convex-hull cage mesh; curved/degenerate shapes
-                    // (e.g. Cylinder) have no hull mesh — fall back to a sphere sized to the boundary.
+                    // Polytope + cylinder courts get a generated cage mesh that matches their walls; a
+                    // degenerate shape with no mesh falls back to a sphere sized to the boundary.
                     Mesh cage = arena.Boundary.BuildVisualMesh();
-                    if (cage != null) cell.SetNucleusMesh(cage);
-                    else cell.SetNucleusWorldRadius(arena.Boundary.MaxExtent);
+                    if (cage != null)
+                    {
+                        if (_generatedNucleusMesh != null) Destroy(_generatedNucleusMesh); // free a prior rebuild
+                        _generatedNucleusMesh = cage;
+                        cell.SetNucleusMesh(cage);
+                    }
+                    else
+                    {
+                        cell.SetNucleusWorldRadius(arena.Boundary.MaxExtent);
+                    }
                 }
             }
 

@@ -56,9 +56,6 @@ namespace CosmicShore.Gameplay
             _hasLast = false;
         }
 
-        /// <summary>Kept for the controller's intensity-scale call: the mouth grows with the arena.</summary>
-        public void ScaleTrigger(float scale) => _scale = Mathf.Max(0.01f, scale);
-
         void FixedUpdate()
         {
             // Server-authoritative: only the server simulates the ball and decides goals.
