@@ -17,9 +17,11 @@ three feature-complete domain minigames into one tournament with a per-player le
 > (`ArcadeGameTournament.asset` `DisplayName = "Maelstrom"`, rendered by `GameCard`). The in-scene
 > lobby/summary banner is **data-driven from that same field** — `TournamentSceneView.ModeName` reads
 > `TournamentDataSO.ModeCard.DisplayName` (the `ModeCard` reference is wired to the card asset), so the
-> card's `DisplayName` is the **single source** of the player-facing name. The code, scene
-> (`Tournament.unity`), data (`TournamentDataSO`), enum (`GameModes.Tournament = 36`), and this doc keep
-> the **Tournament** name — *Shuffle and Tournament are the same meta-mode*. **To rename the mode, change
+> card's `DisplayName` is the **single source** of the player-facing name. The code, data
+> (`TournamentDataSO`), enum (`GameModes.Tournament = 36`), controller, and this doc keep the
+> **Tournament** name — *Shuffle and Tournament are the same meta-mode*. (The **scene file** was renamed
+> to `Maelstrom.unity` in the v2 rework; only the file name changed — the classes/data/enum stay Tournament.)
+> **To rename the mode, change
 > only the card's `DisplayName`** — full guide + what NOT to touch is in `Docs/ShuffleSystem/ARCHITECTURE.md`
 > ("Renaming the mode"). Planned Shuffle-specific *behavior* changes (randomized lineup, per-domain
 > `{2,1,0}` scoring + crystal-wallet credit, race-to-6) are tracked in that same doc as future extensions
@@ -60,17 +62,17 @@ with per-scene systems (duplicate `ServerPlayerVesselInitializer`, ambiguous
 
 ```
 Menu_Main → [Arcade card → ArcadeGameConfigureModal ready-up]
-  → Tournament (lobby) → random game → random game → …   (each a Single load)
-                              └─ Scoreboard.Continue (host) advances after EVERY game; party follows
-  → a domain hits 6 (or the 7-game cap) → Continue → Tournament (SUMMARY: all results)
+  → Maelstrom (lobby) → ready-up → random game            (each transition a Single load)
+       └─ game ends → Scoreboard.Continue (host) → Maelstrom (HUB: standings) → ready-up → random game → …
+  → a domain hits 6 (or the 7-game cap) → Continue → Maelstrom (SUMMARY) → NEXT → results
        └─ Play Again (fresh shuffle) | Main Menu → Menu_Main (lava lamp)
 ```
 
-The Tournament scene is **both** the intro lobby and the end-of-tournament **summary**;
-`TournamentSceneView` picks the layout from `TournamentController.IsShowingSummary`
-(phase `Summary`). Continue is shown on every game's scoreboard (host); the final Continue
-loads the Tournament scene in Summary phase, and **Play Again / Main Menu live there**, not on
-the per-game scoreboard.
+The Maelstrom scene serves **three roles** — the intro lobby, the between-round **hub**, and the
+end-of-tournament **summary** — and `TournamentSceneView` picks the layout per load
+(phase / `TournamentController.IsShowingSummary`). Continue is shown on every game's scoreboard (host) and
+always returns to the Maelstrom scene; once a domain reaches the target it loads in Summary phase, and
+**Play Again / Main Menu live there** (behind the summary's NEXT step), not on the per-game scoreboard.
 
 ## 3. The brain — `TournamentController` (persistent, network-free)
 
@@ -96,6 +98,14 @@ A static `Instance` lets scene MonoBehaviours reach it (mirrors `PartyInviteCont
   flags). `TournamentStateMachine` tracks `Idle → Lobby → InGame → Complete → Summary` — `Complete`
   is the transient phase while the deciding game's scoreboard is up, `Summary` is the results scene
   itself (Play Again from `Summary` re-enters `InGame`; Main Menu returns to `Idle`).
+- **The summary decision is authoritative, not phase-driven (race-to-6 fix).** At the Maelstrom scene
+  load, `HandleSceneLoaded` shows the **Summary** when `IsActive && TournamentDataSO.IsShuffleComplete`
+  (deterministic on every peer) — **not** when the transient `Complete` phase happens to be set.
+  `HandleMiniGameEnd` still sets `Complete` as a best-effort signal, but that transition only lands when
+  the deciding game ends in the `InGame` phase; relying on it alone once let a domain hit `WinTarget` (6)
+  yet route back to the hub for another game (the win silently swallowed). `EnterSummary` reaches
+  `Summary` from `InGame`/`Lobby`/`Complete`, so the win always surfaces. Covered by
+  `TournamentStateMachineTests` + `TournamentDataSOTests.IsShuffleComplete_*`.
 
 Per-game stat reset is automatic (`SceneLoader` → `ResetRuntimeData` + each persistent
 `Player.PrepareForNewScene` → `RoundStats.Cleanup`). Cumulative points live in `TournamentDataSO`,
@@ -114,13 +124,22 @@ mode `Scoreboard.ConfigureLobbyButtons` shows **only Continue, host-only**:
 |---|---|---|
 | Per-game scoreboard (after EVERY game) | **Continue** → `TournamentController.AdvanceToNextGame()` | Play Again, Main Menu, Leave |
 | Per-game scoreboard, on a client | — | all |
-| **Tournament Summary screen** (after the shuffle is decided) | **Play Again** (→ `RestartTournament()`) + **Main Menu** (→ `onClickToMainMenu` → Menu_Main) | — |
-| Tournament Summary screen, on a client | — (results only) | all |
+| **Maelstrom hub** (between rounds, shuffle not decided) | ready-up countdown → **START**, then auto-advances to the next random game | — |
+| **Maelstrom summary** (shuffle decided) | **NEXT** → reveals results → host-only **Play Again** (→ `RestartTournament()`) + **Main Menu** (→ `onClickToMainMenu` → Menu_Main) | — |
+| Maelstrom hub / summary, on a client | — (follows the host's load; results only) | host-only buttons |
 
-`AdvanceToNextGame` draws + loads the next random game, or — once `TournamentDataSO.IsShuffleComplete`
-(a domain reached `WinTarget`, or `MaxGames` was hit) — loads the Tournament scene in Summary phase.
-Play Again / Main Menu are handled by `TournamentSceneView` (`OnPlayAgainPressed` / `OnMainMenuPressed`),
-not the Scoreboard.
+`AdvanceToNextGame` **always** loads the Maelstrom scene (`LoadTournamentScene`); the hub-vs-summary
+choice is made on load from the authoritative, deterministic `TournamentDataSO.IsShuffleComplete` (a
+domain reached `WinTarget`, or `MaxGames` was hit) — **not** the transient `Complete` phase (see §3).
+Mid-run it shows the standings **hub** (ready-up → next random game via `BeginNextRound`); once decided it
+shows the results **summary**, whose active-panel button reads **NEXT** and reveals the host-only Play
+Again / Main Menu panel (`TournamentSceneView.OnPlayAgainPressed` / `OnMainMenuPressed`), not the Scoreboard.
+
+**All Maelstrom-scene buttons are code-wired only** (`TournamentSceneView.Awake` adds the listeners) — the
+scene must NOT also add inspector `onClick` entries. Duplicate inspector wiring double-fired NEXT / Play
+Again / Main Menu into `BeginNextRound`, launching a stray game off the summary (fixed; see
+`MAELSTROM_REWORK_SPEC.md` v2.5). The summary cards and the round-card rows order by cumulative Total
+Score (highest first), matching the leaderboard.
 
 **Crystal reward (real wallet).** The placement crystals are also *real currency*: on each game's
 Scoreboard, `AwardCrystalsToLocalPlayer` credits the **local** human's wallet
@@ -157,10 +176,10 @@ the usual pre-load wait before `LoadScene`. Host-only: clients defer the load to
 `LaunchGame` defer guard, so holding the host's `LoadScene` holds the whole party's splash. Zero outside
 the window, so the first game, the load into the final summary, and Main-Menu returns are never delayed.
 
-**Restart determinism:** Play Again calls `RestartTournament()` → host draws + loads a fresh random
-game directly; every peer resets its standings when that game loads while still in phase `Summary`
-(see `TournamentController.HandleSceneLoaded` — any pool game load in `Summary` is a restart), so the
-wipe is consistent across the party without extra networking.
+**Restart determinism:** Play Again calls `RestartTournament()` → host loads the Maelstrom scene as a
+fresh lobby; every peer resets its standings (keeping the intensity ceiling) when that scene loads while
+still in phase `Summary` (`TournamentController.HandleSceneLoaded` → `RestartFromSummary`), so the wipe is
+consistent across the party without extra networking.
 
 **Scoreboard position stability (`660e4d91`):** a tournament shows the Scoreboard once per leg, so
 it re-shows the board up to three times in one session — exactly the case that exposed a drift
@@ -213,7 +232,7 @@ see §3), `IsShuffleComplete` (race target reached or game cap hit — drives su
 | Card unlock | `_Scripts/System/Progression/GameModeProgressionService.cs` |
 | Data asset | `_SO_Assets/Tournament/TournamentData.asset` (+ 4 `Event_Tournament*.asset`) |
 | Arcade card | `_SO_Assets/Games/ArcadeGameTournament.asset` (in `GameLists/ArcadeGames.asset`) |
-| Lobby scene | `_Scenes/Multiplayer Scenes/Tournament.unity` |
+| Lobby / hub / summary scene | `_Scenes/Multiplayer Scenes/Maelstrom.unity` |
 
 ## 7. Editor wiring
 
@@ -223,14 +242,15 @@ The mode runs end-to-end; one **optional** wire remains for the §4 between-game
 - **AppManager** — `tournamentData` assigned; `TournamentController` registered and constructed with
   `gameData` + `tournamentData` + `sceneNames` + `sceneTransitionManager`, created eagerly at bootstrap
   so it survives every Single load.
-- **`Tournament.unity`** — a UI-only scene whose `TournamentSceneView` drives two mutually-exclusive
-  layouts, chosen per load from `TournamentController.IsShowingSummary`:
-  - *Lobby* (`lobbyRoot`): `titleText` + `lineupText` (random rotation + "first to N") + a host-only **Start**
-    button (`hostStartButton`) wired to `OnHostStartPressed()` — or, if no button, the host
-    auto-advances after `autoStartDelaySeconds`.
-  - *Summary* (`summaryRoot`): `resultsText` (final standings + per-game placements) + host-only
-    **Play Again** → `OnPlayAgainPressed()` and **Main Menu** → `OnMainMenuPressed()`. The view's
-    `onClickToMainMenu` is wired to `EventOnClickToMainMenuButton.asset` — the **same** main-menu
+- **`Maelstrom.unity`** — a UI-only scene whose `TournamentSceneView` drives the intro lobby, the
+  between-round hub, and the results summary (layout chosen per load by phase / `IsShuffleComplete`). The
+  **current v2 layout + the exact field-by-field wiring** (active/summary panels, round cards,
+  `TournamentLobbyNetwork` ready-up) is documented in `MAELSTROM_REWORK_SPEC.md` §6 + the v2 sections —
+  refer there rather than re-describing it here.
+  - **Buttons are code-wired only** — `TournamentSceneView.Awake` adds `OnReadyButtonPressed` (START/NEXT),
+    `OnPlayAgainPressed`, and `OnMainMenuPressed`. Do **NOT** add inspector `onClick` entries: duplicate
+    wiring double-fires the press and launches a stray game off the summary (`MAELSTROM_REWORK_SPEC.md`
+    v2.5). `onClickToMainMenu` is wired to `EventOnClickToMainMenuButton.asset` — the **same** main-menu
     `ScriptableEventNoParam` the Scoreboard's Main Menu raises and `SceneLoader` listens to.
 - **Scoreboard Continue button** — present on the shared end-game canvas
   (`GameCanvas-HexRace.prefab`, used by all three domain-game scenes — HexRace, Joust, Crystal
