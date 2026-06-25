@@ -30,6 +30,7 @@ namespace CosmicShore.Gameplay
             _impactTimer = Mathf.Max(_impactTimer, 0.18f);
             PlayPowerCrystalSound();
             SpawnPickupLightning(position);
+            SpawnSpeedDiamondBurst(position);
         }
 
         void AnimateLightning(float dt)
@@ -43,13 +44,13 @@ namespace CosmicShore.Gameplay
             if (_nextWallLightningTime <= 0f)
             {
                 SpawnWallLightning();
-                _nextWallLightningTime = Random.Range(0.08f, 0.22f);
+                _nextWallLightningTime = Random.Range(0.08f, 0.22f) * Mathf.Lerp(1f, 0.38f, FinaleIntensity01);
             }
 
             if (_isRunning && _nextFilamentLightningTime <= 0f)
             {
                 SpawnFilamentLightning();
-                _nextFilamentLightningTime = Random.Range(3.5f, 6.3f) - Intensity * 0.28f;
+                _nextFilamentLightningTime = (Random.Range(3.5f, 6.3f) - Intensity * 0.28f) * Mathf.Lerp(1f, 0.42f, FinaleIntensity01);
             }
 
             UpdateLightningBolts(dt);
@@ -66,6 +67,44 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        void SpawnSpeedDiamondBurst(Vector3 center)
+        {
+            CreateParticleBurst("Speed Diamond Glow Burst", center, new Color(1f, 0.32f, 1f, 1f), 36, 0.62f, 18f);
+            for (int i = 0; i < 12; i++)
+            {
+                Vector3 direction = Random.onUnitSphere;
+                if (direction.y < -0.2f)
+                    direction.y = Mathf.Abs(direction.y);
+
+                Vector3 end = center + direction.normalized * Random.Range(12f, 24f);
+                CreateLightningBolt(center, end, 0.28f, 1.8f, false, 0.34f);
+                CreateTransientShard(center, direction.normalized * Random.Range(18f, 34f), Random.Range(0.34f, 0.72f));
+            }
+        }
+
+        void SpawnPulseGateBurst(Vector3 center, FilamentRuntime filament)
+        {
+            CreateParticleBurst("Pulse Gate Surge", center, new Color(0.1f, 0.9f, 1f, 1f), 48, 0.7f, 22f);
+            for (int i = 0; i < 10; i++)
+            {
+                float angle = i / 10f * Mathf.PI * 2f + Random.Range(-0.16f, 0.16f);
+                Vector3 start = center + (filament.Up * Mathf.Cos(angle) + filament.Side * Mathf.Sin(angle)) * orbitRadius * 0.6f;
+                Vector3 end = center + (filament.Up * Mathf.Cos(angle + 0.42f) + filament.Side * Mathf.Sin(angle + 0.42f)) * orbitRadius * 1.75f;
+                end += filament.Direction * Random.Range(-8f, 16f);
+                CreateLightningBolt(start, end, 0.38f, 2.2f, false, 0.26f);
+            }
+        }
+
+        void SpawnNanitePop(Vector3 center)
+        {
+            CreateParticleBurst("Bulk Nanite Pop", center, new Color(0.08f, 1f, 0.76f, 1f), 26, 0.44f, 13f);
+            for (int i = 0; i < 5; i++)
+            {
+                Vector3 end = center + Random.onUnitSphere * Random.Range(5f, 11f);
+                CreateLightningBolt(center, end, 0.2f, 0.8f, false, 0.13f);
+            }
+        }
+
         void SpawnWallLightning()
         {
             if (_filaments.Count == 0)
@@ -73,7 +112,7 @@ namespace CosmicShore.Gameplay
 
             float baseY = CurrentFilament.Center.y + Random.Range(-tubeRadius * 0.36f, tubeRadius * 0.9f);
             float baseAngle = Random.Range(0f, Mathf.PI * 2f);
-            int waves = Random.Range(2, 4);
+            int waves = Random.Range(2, 4) + Mathf.RoundToInt(FinaleIntensity01 * 3f);
             for (int i = 0; i < waves; i++)
             {
                 float direction = Random.value < 0.5f ? -1f : 1f;
@@ -84,6 +123,91 @@ namespace CosmicShore.Gameplay
                 Vector3 end = TubeWallPoint(angle + arc, y + Random.Range(tubeRadius * 0.2f, tubeRadius * 0.52f));
                 CreateLightningBolt(start, end, 0.58f, tubeRadius * 0.082f, false, 0.46f);
                 SpawnWallLightningBranches(start, end, 0.48f);
+            }
+        }
+
+        void CreateParticleBurst(string burstName, Vector3 center, Color color, int count, float lifetime, float speed)
+        {
+            if (!_runtimeRoot)
+                return;
+
+            var burst = new GameObject(burstName);
+            burst.transform.SetParent(_runtimeRoot.transform, false);
+            burst.transform.position = center;
+            var particles = burst.AddComponent<ParticleSystem>();
+            var main = particles.main;
+            main.duration = lifetime;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(lifetime * 0.45f, lifetime);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(speed * 0.45f, speed);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.35f, 1.4f);
+            main.startColor = color;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            main.maxParticles = Mathf.Max(count, 16);
+
+            var emission = particles.emission;
+            emission.enabled = true;
+            emission.rateOverTime = 0f;
+            emission.SetBursts(new[] { new ParticleSystem.Burst(0f, (short)count) });
+
+            var shape = particles.shape;
+            shape.enabled = true;
+            shape.shapeType = ParticleSystemShapeType.Sphere;
+            shape.radius = 0.35f;
+
+            var renderer = particles.GetComponent<ParticleSystemRenderer>();
+            if (renderer)
+                renderer.sharedMaterial = _shardMaterial ? _shardMaterial : _lightningMaterial;
+
+            particles.Play();
+            Destroy(burst, lifetime + 1.2f);
+        }
+
+        void CreateTransientShard(Vector3 center, Vector3 velocity, float lifetime)
+        {
+            if (!_runtimeRoot)
+                return;
+
+            var shard = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            shard.name = "Bulk Speed Diamond Shard";
+            shard.transform.SetParent(_runtimeRoot.transform, false);
+            shard.transform.position = center;
+            shard.transform.localScale = new Vector3(0.55f, 0.12f, 1.6f) * Random.Range(0.75f, 1.6f);
+            shard.transform.rotation = Random.rotation;
+            shard.GetComponent<Renderer>().sharedMaterial = _shardMaterial ? _shardMaterial : _crystalMaterial;
+            Destroy(shard.GetComponent<Collider>());
+            _transientShards.Add(new TransientShardRuntime
+            {
+                Transform = shard.transform,
+                Velocity = velocity,
+                AngularVelocity = Random.onUnitSphere * Random.Range(220f, 520f),
+                Lifetime = lifetime,
+                BaseScale = shard.transform.localScale
+            });
+        }
+
+        void UpdateTransientShards(float dt)
+        {
+            for (int i = _transientShards.Count - 1; i >= 0; i--)
+            {
+                TransientShardRuntime shard = _transientShards[i];
+                shard.Age += dt;
+                if (shard.Transform)
+                {
+                    float life01 = Mathf.Clamp01(shard.Age / Mathf.Max(0.01f, shard.Lifetime));
+                    shard.Transform.position += shard.Velocity * dt;
+                    shard.Transform.Rotate(shard.AngularVelocity * dt, Space.World);
+                    shard.Transform.localScale = shard.BaseScale * (1f - life01);
+                }
+
+                if (shard.Age < shard.Lifetime)
+                {
+                    _transientShards[i] = shard;
+                    continue;
+                }
+
+                if (shard.Transform)
+                    Destroy(shard.Transform.gameObject);
+                _transientShards.RemoveAt(i);
             }
         }
 

@@ -17,6 +17,8 @@ namespace CosmicShore.Gameplay
         AudioClip _latchSurgeClip;
         AudioClip _latchMissClip;
         AudioClip _powerCrystalClip;
+        AudioClip _nanitePopClip;
+        AudioClip _pulseGateClip;
         readonly List<AudioSourceSnapshot> _bulkAudioSnapshots = new();
         bool _audioStartupLogged;
         bool _bulkMixApplied;
@@ -86,6 +88,18 @@ namespace CosmicShore.Gameplay
             PlayOneShotClip(_powerCrystalClip, 1.05f, "power_crystal");
         }
 
+        void PlayNanitePopSound()
+        {
+            EnsureBulkAudioSources();
+            PlayOneShotClip(_nanitePopClip, 0.74f, "nanite_pop");
+        }
+
+        void PlayPulseGateSound()
+        {
+            EnsureBulkAudioSources();
+            PlayOneShotClip(_pulseGateClip, 1.05f, "pulse_gate");
+        }
+
         void PlayOneShotClip(AudioClip clip, float volumeScale, string eventName)
         {
             if (!_sfxSource || !clip)
@@ -142,12 +156,15 @@ namespace CosmicShore.Gameplay
             _latchMissClip ??= MakeProceduralClip("Bulk Latch Miss", 0.18f, 260f, 120f, 0.38f, 0.3f);
             _powerCrystalClip ??= Resources.Load<AudioClip>(PowerCrystalResourcePath) ??
                 MakeProceduralClip("Bulk Power Crystal", 0.42f, 420f, 1540f, 0.8f, 0.12f);
+            _nanitePopClip ??= MakeProceduralClip("Bulk Nanite Pop", 0.16f, 2100f, 420f, 0.48f, 0.34f);
+            _pulseGateClip ??= MakeProceduralClip("Bulk Pulse Gate", 0.5f, 120f, 1380f, 0.72f, 0.06f);
 
             if (!_audioStartupLogged)
             {
                 _audioStartupLogged = true;
                 CSDebug.Log(
                     $"[BulkFilamentsAudio] clips fire={_grappleFireClip?.name} surge={_latchSurgeClip?.name} miss={_latchMissClip?.name} power={_powerCrystalClip?.name} " +
+                    $"nanite={_nanitePopClip?.name} gate={_pulseGateClip?.name} " +
                     $"listenerPause={AudioListener.pause} listenerVolume={AudioListener.volume:0.00}.");
             }
         }

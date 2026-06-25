@@ -3,6 +3,45 @@
 Newest entries first. Keep this as the local implementation trail; preserve broader
 handoff context in Second Brain Prime.
 
+## 2026-06-24 - Visual/gameplay upgrade implementation burst
+
+Todd asked to bring the playable prototype closer to the visual upgrade report:
+richer tunnel texture, beat-reactive motion, living filaments, bigger speed
+diamonds, pulse gates, nanite pressure, and a stronger finale.
+
+Changes:
+
+- Changed orbit input into an angular thruster model: controller input adds
+  angular velocity, the vessel keeps arcing after thrust, and transfers damp but
+  do not fully erase rotational motion.
+- Added per-filament rotation around the wormhole axis so latch alignment is a
+  moving target while the widened transfer window keeps the prototype forgiving.
+- Replaced straight beam samples with low-amplitude multi-period sine offsets so
+  filaments read more like living vines/branches.
+- Enlarged speed diamonds by 4x, swapped them to runtime octahedron meshes, and
+  added pickup shard bursts, local particles, and extra lightning branches.
+- Added pulse gates at roughly 15% route intervals; passing one fires a blue
+  ring surge, speed impulse, stacked max-speed bonus, procedural SFX, particles,
+  and lightning.
+- Added direction-change nanite pops: reversing orbit thrust can destroy a few
+  trailing nanites in glowing particle/lightning bursts.
+- Added a finale ramp after roughly 72% route progress: wall pulse, lightning
+  cadence, nanite pressure, material pulse, and camera FOV all intensify.
+- Added a lightweight fake mirror/Voronoi wall shader and runtime cylinder mesh
+  outside the wormhole rings for the trippy hall-of-mirrors look.
+- Added a lightweight emissive transparent shader for Bulk energy lines,
+  diamonds, gates, shards, nanites, and lightning.
+- Lowered minimum camera follow distance from 62 to 31 so the player can zoom
+  about 2x closer to the Squirrel.
+
+Verification:
+
+- Unity batchmode compile could not run because this project was already open in
+  another Unity instance.
+- A temporary Unity reference-assembly C# harness compiled the Bulk partials and
+  `OctahedronMeshGenerator` successfully with `UNITY_EDITOR` and
+  `ENABLE_INPUT_SYSTEM` defined.
+
 ## 2026-06-23 - Live filament waveform overlay
 
 Todd asked for the actual `Dopamine.mp3` waveform to be drawn over each filament

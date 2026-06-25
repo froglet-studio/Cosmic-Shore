@@ -19,11 +19,97 @@ namespace CosmicShore.Gameplay
 
         Vector3 NextFilamentStart(FilamentRuntime previous, System.Random random)
         {
-            Vector3 transferPoint = AttachPoint(previous, previous.TransferDistance);
+            Vector3 transferPoint = CenterlinePoint(previous, previous.TransferDistance);
             Vector2 nudge = UnitFromAngle(RandomRange(random, 0f, Mathf.PI * 2f));
             float nudgeSize = RandomRange(random, 0f, filamentTransferNudge);
             Vector3 start = transferPoint + Vector3.up * filamentRisePerTransfer + new Vector3(nudge.x, 0f, nudge.y) * nudgeSize;
             return ClampTubeRadius(start, tubeRadius * 0.88f);
+        }
+
+        void ConfigureFilamentMotion(FilamentRuntime filament, System.Random random)
+        {
+            filament.BaseCenter = filament.Center;
+            filament.BaseDirection = filament.Direction;
+            filament.RotationPhaseDegrees = RandomRange(random, 0f, 360f);
+            float direction = random.NextDouble() < 0.5 ? -1f : 1f;
+            filament.RotationSpeedDegrees = RandomRange(random, filamentRotationMinDegreesPerSecond, filamentRotationMaxDegreesPerSecond) * direction;
+            filament.WaveAmplitude = filamentWaveAmplitude * RandomRange(random, 0.75f, 1.35f);
+            filament.WaveSpeed = filamentWaveSpeed * RandomRange(random, 0.75f, 1.45f);
+            filament.WavePhase = RandomRange(random, 0f, Mathf.PI * 2f);
+
+            float periodRatio = 1f;
+            for (int i = 0; i < filament.WaveFrequencies.Length; i++)
+            {
+                periodRatio *= RandomRange(random, 0.8f, 1.2f);
+                filament.WaveFrequencies[i] = (i + 1f) * periodRatio * RandomRange(random, 0.72f, 1.28f);
+                filament.WavePhases[i] = RandomRange(random, 0f, Mathf.PI * 2f);
+                filament.WaveWeights[i] = 1f / (i + 1.35f);
+            }
+        }
+
+        void UpdateDynamicFilamentPoses()
+        {
+            if (_filaments.Count == 0)
+                return;
+
+            float time = Time.time;
+            for (int i = 0; i < _filaments.Count; i++)
+            {
+                FilamentRuntime filament = _filaments[i];
+                float rotation = filament.RotationPhaseDegrees + time * filament.RotationSpeedDegrees;
+                Quaternion twist = Quaternion.AngleAxis(rotation, Vector3.up);
+                filament.Center = RotateHorizontalAroundOrigin(filament.BaseCenter, twist);
+                filament.Direction = RotateHorizontalDirection(filament.BaseDirection, twist).normalized;
+                filament.Side = Vector3.Cross(Vector3.up, filament.Direction).normalized;
+                if (filament.Side.sqrMagnitude < 0.01f)
+                    filament.Side = Vector3.right;
+                filament.Up = Vector3.Cross(filament.Direction, filament.Side).normalized;
+                UpdateFilamentBeam(filament);
+            }
+        }
+
+        static Vector3 RotateHorizontalAroundOrigin(Vector3 point, Quaternion rotation)
+        {
+            Vector3 horizontal = rotation * new Vector3(point.x, 0f, point.z);
+            return new Vector3(horizontal.x, point.y, horizontal.z);
+        }
+
+        static Vector3 RotateHorizontalDirection(Vector3 direction, Quaternion rotation)
+        {
+            Vector3 horizontal = rotation * new Vector3(direction.x, 0f, direction.z);
+            return new Vector3(horizontal.x, direction.y, horizontal.z);
+        }
+
+        Vector3 CenterlinePoint(FilamentRuntime filament, float distance)
+        {
+            float halfTravel = filament.Length * FilamentTravelRatio * 0.5f;
+            float axisDistance = Mathf.Lerp(-halfTravel, halfTravel, Mathf.Clamp01(distance / filament.TravelLength));
+            return filament.Center + filament.Direction * axisDistance;
+        }
+
+        Vector3 FilamentSurfacePoint(FilamentRuntime filament, float axis01)
+        {
+            axis01 = Mathf.Clamp01(axis01);
+            float axisDistance = Mathf.Lerp(-0.5f, 0.5f, axis01) * filament.Length;
+            return filament.Center + filament.Direction * axisDistance + FilamentWaveOffset(filament, axis01);
+        }
+
+        Vector3 FilamentWaveOffset(FilamentRuntime filament, float axis01)
+        {
+            float time = Time.time * filament.WaveSpeed + filament.WavePhase;
+            float sideWave = 0f;
+            float upWave = 0f;
+            for (int i = 0; i < filament.WaveFrequencies.Length; i++)
+            {
+                float frequency = filament.WaveFrequencies[i];
+                float phase = filament.WavePhases[i];
+                float weight = filament.WaveWeights[i];
+                sideWave += Mathf.Sin(axis01 * Mathf.PI * 2f * frequency + phase + time) * weight;
+                upWave += Mathf.Cos(axis01 * Mathf.PI * 2f * (frequency * 0.83f) + phase * 1.37f - time * 0.72f) * weight;
+            }
+
+            float envelope = Mathf.Sin(axis01 * Mathf.PI);
+            return (filament.Side * sideWave + filament.Up * upWave * 0.58f) * filament.WaveAmplitude * envelope;
         }
 
         Vector3 FilamentDirectionFromStart(Vector3 start, float length, System.Random random)

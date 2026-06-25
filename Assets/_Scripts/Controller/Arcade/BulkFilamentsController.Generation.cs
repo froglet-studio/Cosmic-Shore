@@ -1,3 +1,4 @@
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -14,6 +15,9 @@ namespace CosmicShore.Gameplay
             _hazardMaterial = MakeMaterial("Bulk Flora/Fauna", new Color(1f, 0.38f, 0.22f, 0.9f));
             _naniteMaterial = MakeMaterial("Bulk Nanites", new Color(0.05f, 0.95f, 0.75f, 1f));
             _lightningMaterial = MakeMaterial("Bulk Lightning", new Color(0.75f, 1f, 1f, 1f));
+            _mirrorWallMaterial = MakeMirrorWallMaterial();
+            _gateMaterial = MakeMaterial("Bulk Pulse Gate", new Color(0.25f, 0.82f, 1f, 0.9f));
+            _shardMaterial = MakeMaterial("Bulk Speed Shards", new Color(1f, 0.56f, 1f, 0.92f));
         }
 
         int ResolveTargetTransferCount()
@@ -28,11 +32,27 @@ namespace CosmicShore.Gameplay
 
         Material MakeMaterial(string materialName, Color color)
         {
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit")
+            Shader shader = Shader.Find("CosmicShore/BulkEnergyUnlit")
+                            ?? Shader.Find("Universal Render Pipeline/Unlit")
                             ?? Shader.Find("Sprites/Default")
                             ?? Shader.Find("Unlit/Color");
             var material = new Material(shader) { name = materialName };
             SetMaterialColor(material, color);
+            SetMaterialFloat(material, "_Alpha", color.a);
+            return material;
+        }
+
+        Material MakeMirrorWallMaterial()
+        {
+            Shader shader = Shader.Find("CosmicShore/BulkVoronoiMirror")
+                            ?? Shader.Find("Universal Render Pipeline/Unlit")
+                            ?? Shader.Find("Unlit/Color");
+            var material = new Material(shader) { name = "Bulk Voronoi Mirror Wall" };
+            SetMaterialColor(material, new Color(0.14f, 0.58f, 0.95f, 0.56f));
+            if (material.HasProperty("_LineColor"))
+                material.SetColor("_LineColor", new Color(0.05f, 0.86f, 1f, 1f));
+            SetMaterialFloat(material, "_Alpha", 0.58f);
+            SetMaterialFloat(material, "_MirrorStrength", 0.92f);
             return material;
         }
 
@@ -50,6 +70,12 @@ namespace CosmicShore.Gameplay
                 material.EnableKeyword("_EMISSION");
                 material.SetColor("_EmissionColor", color * 1.8f);
             }
+        }
+
+        static void SetMaterialFloat(Material material, string property, float value)
+        {
+            if (material && material.HasProperty(property))
+                material.SetFloat(property, value);
         }
 
         void CreateWormhole()
@@ -72,6 +98,77 @@ namespace CosmicShore.Gameplay
 
                 _tubeRings.Add(ring);
             }
+        }
+
+        void CreateMirrorWall()
+        {
+            if (!_runtimeRoot)
+                return;
+
+            float length = _targetTransfers * (filamentRisePerTransfer + tubeRadius * 0.095f) + tubeRadius * 1.5f;
+            var wall = new GameObject("Bulk Voronoi Hall Of Mirrors");
+            wall.transform.SetParent(_runtimeRoot.transform, false);
+            var filter = wall.AddComponent<MeshFilter>();
+            var renderer = wall.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = _mirrorWallMaterial;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            filter.sharedMesh = BuildMirrorWallMesh(length);
+        }
+
+        Mesh BuildMirrorWallMesh(float length)
+        {
+            int rings = Mathf.Max(3, mirrorWallRingCount);
+            int segments = Mathf.Max(8, mirrorWallSegments);
+            float radius = tubeRadius * 1.075f;
+            var vertices = new Vector3[(rings + 1) * (segments + 1)];
+            var normals = new Vector3[vertices.Length];
+            var uv = new Vector2[vertices.Length];
+            var triangles = new int[rings * segments * 6];
+
+            for (int yIndex = 0; yIndex <= rings; yIndex++)
+            {
+                float y01 = yIndex / (float)rings;
+                float y = Mathf.Lerp(-tubeRadius * 0.65f, length, y01);
+                for (int xIndex = 0; xIndex <= segments; xIndex++)
+                {
+                    float x01 = xIndex / (float)segments;
+                    float angle = x01 * Mathf.PI * 2f;
+                    float facet = Mathf.PerlinNoise(xIndex * 0.17f, yIndex * 0.23f) - 0.5f;
+                    float localRadius = radius + facet * tubeRadius * 0.028f;
+                    int index = yIndex * (segments + 1) + xIndex;
+                    Vector3 radial = new(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                    vertices[index] = radial * localRadius + Vector3.up * y;
+                    normals[index] = (-radial + Vector3.up * facet * 0.15f).normalized;
+                    uv[index] = new Vector2(x01 * 8f, y01 * 18f);
+                }
+            }
+
+            int ti = 0;
+            for (int yIndex = 0; yIndex < rings; yIndex++)
+            {
+                for (int xIndex = 0; xIndex < segments; xIndex++)
+                {
+                    int a = yIndex * (segments + 1) + xIndex;
+                    int b = a + 1;
+                    int c = a + segments + 1;
+                    int d = c + 1;
+                    triangles[ti++] = a;
+                    triangles[ti++] = c;
+                    triangles[ti++] = b;
+                    triangles[ti++] = b;
+                    triangles[ti++] = c;
+                    triangles[ti++] = d;
+                }
+            }
+
+            var mesh = new Mesh { name = "Bulk_Voronoi_Mirror_Wall" };
+            mesh.vertices = vertices;
+            mesh.normals = normals;
+            mesh.uv = uv;
+            mesh.triangles = triangles;
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         void CreateFilaments()
@@ -102,6 +199,7 @@ namespace CosmicShore.Gameplay
                     TransferDistance = travelLength * TransferDistanceRatio,
                     RouteStartDistance = routeStart,
                 };
+                ConfigureFilamentMotion(filament, random);
                 filament.Beam = MakeFilamentBeam(filament);
                 CreateFilamentWaveform(filament);
 
@@ -117,14 +215,21 @@ namespace CosmicShore.Gameplay
         LineRenderer MakeFilamentBeam(FilamentRuntime filament)
         {
             float width = Mathf.Max(0.72f, tubeRadius * 0.0032f);
-            var beam = MakeLine($"Filament {filament.Index:00}", 9, width, _whiteEnergyMaterial);
-            for (int i = 0; i < 9; i++)
-            {
-                float t = Mathf.Lerp(-0.5f, 0.5f, i / 8f);
-                Vector3 ripple = Vector3.up * Mathf.Sin((filament.Index + i) * 1.7f) * tubeRadius * 0.002f;
-                beam.SetPosition(i, filament.Center + filament.Direction * (t * filament.Length) + ripple);
-            }
+            var beam = MakeLine($"Filament {filament.Index:00}", 41, width, _whiteEnergyMaterial);
+            UpdateFilamentBeam(filament);
             return beam;
+        }
+
+        void UpdateFilamentBeam(FilamentRuntime filament)
+        {
+            if (filament?.Beam == null)
+                return;
+
+            for (int i = 0; i < filament.Beam.positionCount; i++)
+            {
+                float axis01 = i / (float)(filament.Beam.positionCount - 1);
+                filament.Beam.SetPosition(i, FilamentSurfacePoint(filament, axis01));
+            }
         }
 
         void CreateRootFlares(FilamentRuntime filament)
@@ -164,11 +269,21 @@ namespace CosmicShore.Gameplay
                 crystal.name = $"Bulk Crystal {filament.Index:00}-{i:00}";
                 crystal.transform.SetParent(_runtimeRoot.transform, false);
                 crystal.transform.position = position;
-                crystal.transform.localScale = Vector3.one * 1.4f;
+                crystal.transform.localScale = Vector3.one * (1.4f * speedDiamondScaleMultiplier);
+                crystal.transform.rotation = Quaternion.Euler(45f, 0f, 45f);
+                var filter = crystal.GetComponent<MeshFilter>();
+                if (filter)
+                    filter.sharedMesh = OctahedronMeshGenerator.Generate(Vector3.one * 0.5f);
                 crystal.GetComponent<Renderer>().sharedMaterial = _crystalMaterial;
                 Destroy(crystal.GetComponent<Collider>());
 
-                filament.Crystals.Add(new CrystalRuntime { GameObject = crystal, Position = position });
+                filament.Crystals.Add(new CrystalRuntime
+                {
+                    GameObject = crystal,
+                    Position = position,
+                    Distance = distance,
+                    OrbitAngleRadians = angle
+                });
             }
         }
 
@@ -192,6 +307,38 @@ namespace CosmicShore.Gameplay
                 hazard.GetComponent<Renderer>().sharedMaterial = _hazardMaterial;
                 Destroy(hazard.GetComponent<Collider>());
                 _hazards.Add(hazard);
+                _hazardRuntimes.Add(new HazardRuntime
+                {
+                    GameObject = hazard,
+                    Filament = filament,
+                    Distance = distance,
+                    OrbitAngleRadians = angle,
+                    SpinDegreesPerSecond = RandomRange(new System.Random(filament.Index * 9281 + i * 71), 55f, 135f)
+                });
+            }
+        }
+
+        void CreatePulseGates()
+        {
+            if (_filaments.Count == 0 || _targetTransfers <= 0)
+                return;
+
+            int gateCount = Mathf.Max(1, Mathf.FloorToInt(1f / Mathf.Max(0.05f, pulseGateRouteInterval)));
+            for (int i = 1; i <= gateCount; i++)
+            {
+                float route01 = Mathf.Clamp01(i * pulseGateRouteInterval);
+                int filamentIndex = Mathf.Clamp(Mathf.RoundToInt(route01 * (_targetTransfers - 1)), 1, _filaments.Count - 2);
+                FilamentRuntime filament = _filaments[filamentIndex];
+                float distance = Mathf.Lerp(filament.TravelLength * 0.24f, filament.TransferDistance * 0.78f, (i * 0.37f) % 1f);
+                var ring = MakeLine($"Pulse Gate {i:00} Ring", 65, Mathf.Max(0.18f, tubeRadius * 0.0013f), _gateMaterial);
+                var core = MakeLine($"Pulse Gate {i:00} Core", 33, Mathf.Max(0.1f, tubeRadius * 0.00075f), _activeFilamentMaterial);
+                _pulseGates.Add(new PulseGateRuntime
+                {
+                    Filament = filament,
+                    Distance = distance,
+                    Ring = ring,
+                    Core = core
+                });
             }
         }
 
@@ -218,6 +365,7 @@ namespace CosmicShore.Gameplay
                 CreateNanitePart(nanite.transform, PrimitiveType.Cube, new Vector3(0.55f * scale, 0f, 0.12f * scale), new Vector3(0.16f, 0.62f, 0.9f) * scale, _hazardMaterial);
                 CreateNanitePart(nanite.transform, PrimitiveType.Cube, new Vector3(-0.55f * scale, 0f, 0.12f * scale), new Vector3(0.16f, 0.62f, 0.9f) * scale, _hazardMaterial);
                 _nanites.Add(nanite);
+                _naniteRespawnTimers.Add(0f);
             }
         }
 

@@ -34,8 +34,15 @@ namespace CosmicShore.Gameplay
             if (_tubeRings.Count == 0)
                 return;
 
-            float beat = BeatPulse();
+            float beat = Mathf.Max(BeatPulse(), _waveformEnergy * 0.72f);
+            float finale = FinaleIntensity01;
             float time = Time.time;
+            SetMaterialFloat(_tubeMaterial, "_Pulse", beat + finale * 0.65f);
+            SetMaterialFloat(_activeFilamentMaterial, "_Pulse", beat * 1.35f + finale);
+            SetMaterialFloat(_nextFilamentMaterial, "_Pulse", beat);
+            SetMaterialFloat(_whiteEnergyMaterial, "_Pulse", beat * 0.75f);
+            SetMaterialFloat(_crystalMaterial, "_Pulse", beat * 1.6f);
+            SetMaterialFloat(_gateMaterial, "_Pulse", beat * 2.1f + finale);
             for (int i = 0; i < _tubeRings.Count; i++)
             {
                 var ring = _tubeRings[i];
@@ -43,12 +50,22 @@ namespace CosmicShore.Gameplay
                 for (int j = 0; j < ring.positionCount; j++)
                 {
                     float a = j / (float)(ring.positionCount - 1) * Mathf.PI * 2f;
-                    float undulation = Mathf.Sin(a * 6f + time * 1.8f + i * 0.27f) * tubeRadius * 0.035f;
-                    float beatSurge = beat * Mathf.Sin(a * 3f + i) * tubeRadius * 0.018f;
+                    float undulation = Mathf.Sin(a * 6f + time * (1.8f + finale * 1.1f) + i * 0.27f) * tubeRadius * Mathf.Lerp(0.035f, 0.062f, finale);
+                    float beatSurge = beat * Mathf.Sin(a * 3f + i) * tubeRadius * Mathf.Lerp(0.018f, 0.046f, finale);
                     float radius = tubeRadius + undulation + beatSurge;
                     ring.SetPosition(j, new Vector3(Mathf.Cos(a) * radius, y, Mathf.Sin(a) * radius));
                 }
             }
+        }
+
+        void AnimateMirrorWall()
+        {
+            if (!_mirrorWallMaterial)
+                return;
+
+            float pulse = Mathf.Max(BeatPulse(), _waveformEnergy * 0.65f);
+            SetMaterialFloat(_mirrorWallMaterial, "_Pulse", pulse + FinaleIntensity01);
+            SetMaterialFloat(_mirrorWallMaterial, "_Distortion", Mathf.Lerp(0.42f, 1.1f, FinaleIntensity01));
         }
 
         void AnimateFilamentColors()
@@ -92,11 +109,100 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < _nanites.Count; i++)
             {
+                if (i < _naniteRespawnTimers.Count && _naniteRespawnTimers[i] > 0f)
+                {
+                    _naniteRespawnTimers[i] = Mathf.Max(0f, _naniteRespawnTimers[i] - Time.deltaTime);
+                    if (_nanites[i].activeSelf)
+                        _nanites[i].SetActive(false);
+                    continue;
+                }
+
+                if (!_nanites[i].activeSelf)
+                    _nanites[i].SetActive(true);
+
                 float angle = (i / (float)_nanites.Count) * Mathf.PI * 2f + Time.time * (0.7f + i * 0.01f);
                 float swarmDistance = localDistance - i * 0.8f;
                 _nanites[i].transform.position = PositionOnFilament(filament, swarmDistance, angle, orbitRadius + 8f + Mathf.Sin(Time.time + i) * 2f);
                 _nanites[i].transform.Rotate(90f * Time.deltaTime, 130f * Time.deltaTime, 70f * Time.deltaTime);
             }
+        }
+
+        void AnimatePulseGates()
+        {
+            if (_pulseGates.Count == 0)
+                return;
+
+            for (int i = 0; i < _pulseGates.Count; i++)
+            {
+                PulseGateRuntime gate = _pulseGates[i];
+                if (gate.Filament == null)
+                    continue;
+
+                gate.PulseTimer = Mathf.Max(0f, gate.PulseTimer - Time.deltaTime);
+                _pulseGates[i] = gate;
+                Vector3 center = AttachPoint(gate.Filament, gate.Distance);
+                float beat = BeatPulse();
+                float triggerPulse = gate.PulseTimer > 0f ? Mathf.Sin((1f - gate.PulseTimer / 0.78f) * Mathf.PI) : 0f;
+                float radius = orbitRadius * (1.36f + beat * 0.08f + triggerPulse * 0.45f);
+                float width = Mathf.Max(0.18f, tubeRadius * 0.0013f) * (1f + triggerPulse * 2f);
+
+                if (gate.Ring)
+                {
+                    gate.Ring.widthMultiplier = width;
+                    UpdateRing(gate.Ring, center, gate.Filament.Direction, gate.Filament.Up, gate.Filament.Side, radius);
+                    gate.Ring.gameObject.SetActive(!gate.Triggered || gate.PulseTimer > 0f);
+                }
+
+                if (gate.Core)
+                {
+                    gate.Core.widthMultiplier = width * 0.54f;
+                    UpdateGateCore(gate.Core, center, gate.Filament, radius * 0.72f, beat + triggerPulse);
+                    gate.Core.gameObject.SetActive(!gate.Triggered || gate.PulseTimer > 0f);
+                }
+            }
+        }
+
+        void UpdateGateCore(LineRenderer core, Vector3 center, FilamentRuntime filament, float radius, float pulse)
+        {
+            for (int i = 0; i < core.positionCount; i++)
+            {
+                float a = i / (float)(core.positionCount - 1) * Mathf.PI * 2f;
+                float weave = Mathf.Sin(a * 5f + Time.time * 5f) * pulse * 0.18f;
+                Vector3 p = center
+                            + filament.Up * Mathf.Cos(a) * (radius * (0.72f + weave))
+                            + filament.Side * Mathf.Sin(a) * (radius * (1.08f - weave));
+                core.SetPosition(i, p);
+            }
+        }
+
+        void BurstTrailingNanites()
+        {
+            if (_nanites.Count == 0 || _vessel == null)
+                return;
+
+            Vector3 vesselPosition = _vessel.Transform.position;
+            int popped = 0;
+            for (int pass = 0; pass < _nanites.Count && popped < 3; pass++)
+            {
+                int index = (pass * 7 + _successfulTransfers) % _nanites.Count;
+                if (index < _naniteRespawnTimers.Count && _naniteRespawnTimers[index] > 0f)
+                    continue;
+
+                GameObject nanite = _nanites[index];
+                if (!nanite || !nanite.activeSelf)
+                    continue;
+
+                if (Vector3.Distance(nanite.transform.position, vesselPosition) > orbitRadius * 3.4f)
+                    continue;
+
+                SpawnNanitePop(nanite.transform.position);
+                _naniteRespawnTimers[index] = Random.Range(0.48f, 0.9f);
+                nanite.SetActive(false);
+                popped++;
+            }
+
+            if (popped > 0)
+                PlayNanitePopSound();
         }
 
         void UpdateLatchRig()

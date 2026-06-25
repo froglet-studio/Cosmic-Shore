@@ -31,12 +31,20 @@ namespace CosmicShore.Gameplay
         [SerializeField, Min(0f)] float automaticAcceleration = 6.2f;
         [SerializeField, Min(0f)] float throttleBias = 19f;
         [SerializeField, Min(0f)] float orbitDegreesPerSecond = 130f;
+        [SerializeField, Min(0f)] float orbitThrusterAcceleration = 360f;
+        [SerializeField, Min(0f)] float orbitMaxAngularVelocity = 310f;
+        [SerializeField, Min(0f)] float orbitAngularDrag = 7.5f;
+        [SerializeField, Min(0f)] float transferAngularDamping = 0.22f;
         [SerializeField, Min(0.1f)] float orbitRadius = 18f;
         [SerializeField, Min(0.1f)] float tetherRise = 7f;
         [SerializeField, Min(0.01f)] float filamentLengthMeanDiameter = 0.84f;
         [SerializeField, Min(0.01f)] float filamentLengthStdDevDiameter = 0.1f;
         [SerializeField, Min(1f)] float filamentRisePerTransfer = 32f;
         [SerializeField, Min(0f)] float filamentTransferNudge = 22f;
+        [SerializeField, Min(0f)] float filamentRotationMinDegreesPerSecond = 3.5f;
+        [SerializeField, Min(0f)] float filamentRotationMaxDegreesPerSecond = 8.5f;
+        [SerializeField, Min(0f)] float filamentWaveAmplitude = 3.4f;
+        [SerializeField, Min(0f)] float filamentWaveSpeed = 0.34f;
 
         [Header("Timing")]
         [SerializeField, Min(0.1f)] float slowSpeedLatchWindow = 48f;
@@ -47,17 +55,27 @@ namespace CosmicShore.Gameplay
         [Header("Power Crystals")]
         [SerializeField, Min(0f)] float powerCrystalSpeedImpulse = 12f;
         [SerializeField, Min(0f)] float powerCrystalStackBonus = 2.8f;
+        [SerializeField, Min(1f)] float speedDiamondScaleMultiplier = 4f;
+        [SerializeField, Min(0.1f)] float speedDiamondPickupRadius = 10f;
+
+        [Header("Pulse Gates")]
+        [SerializeField, Range(0.05f, 0.5f)] float pulseGateRouteInterval = 0.15f;
+        [SerializeField, Min(0f)] float pulseGateSpeedImpulse = 17f;
+        [SerializeField, Min(0f)] float pulseGateStackBonus = 2.2f;
 
         [Header("Nanite Chase")]
         [SerializeField, Min(0f)] float naniteBaseSpeed = 8f;
         [SerializeField, Min(0f)] float naniteSpeedPerIntensity = 2.8f;
         [SerializeField, Min(1f)] float naniteCatchBuffer = 34f;
         [SerializeField, Min(0f)] float naniteRespawnSetback = 46f;
+        [SerializeField, Min(0f)] float naniteDirectionBurstCooldown = 0.18f;
 
         [Header("Wormhole Visuals")]
         [SerializeField, Min(8f)] float tubeRadius = 440f;
         [SerializeField, Min(3)] int tubeRingCount = 160;
         [SerializeField, Min(8)] int tubeRingResolution = 80;
+        [SerializeField, Min(8)] int mirrorWallSegments = 96;
+        [SerializeField, Min(3)] int mirrorWallRingCount = 38;
         [SerializeField, Min(0.01f)] float musicBpm = 128f;
 
         [Header("Camera")]
@@ -71,6 +89,10 @@ namespace CosmicShore.Gameplay
         readonly List<LineRenderer> _latchRings = new();
         readonly List<GameObject> _hazards = new();
         readonly List<GameObject> _nanites = new();
+        readonly List<float> _naniteRespawnTimers = new();
+        readonly List<HazardRuntime> _hazardRuntimes = new();
+        readonly List<PulseGateRuntime> _pulseGates = new();
+        readonly List<TransientShardRuntime> _transientShards = new();
 
         GameObject _runtimeRoot;
         Material _activeFilamentMaterial;
@@ -80,6 +102,9 @@ namespace CosmicShore.Gameplay
         Material _crystalMaterial;
         Material _hazardMaterial;
         Material _naniteMaterial;
+        Material _mirrorWallMaterial;
+        Material _gateMaterial;
+        Material _shardMaterial;
 
         AudioSource _musicSource;
         Camera _mainCamera;
@@ -99,9 +124,12 @@ namespace CosmicShore.Gameplay
         float _missTimer;
         float _swingTimer;
         float _impactTimer;
+        float _orbitAngularVelocity;
         float _cameraIntroTimer;
         float _cameraLookPitch;
         float _crystalSpeedBonus;
+        float _nextNaniteDirectionBurstTime;
+        int _lastOrbitInputSign;
         bool _isRunning;
         bool _turnFinished;
 
@@ -110,7 +138,11 @@ namespace CosmicShore.Gameplay
         int Intensity => Mathf.Clamp(gameData != null ? gameData.SelectedIntensity.Value : 1, 1, 4);
         FilamentRuntime CurrentFilament => _filaments[Mathf.Clamp(_currentFilamentIndex, 0, _filaments.Count - 1)];
         float PlayerRouteDistance => _filaments.Count == 0 ? _distanceOnFilament : CurrentFilament.RouteStartDistance + _distanceOnFilament;
-        float CurrentMaximumSpeed => maximumSpeed + Intensity * 4f + _crystalSpeedBonus;
+        float RunProgress01 => _targetTransfers <= 0 || _filaments.Count == 0
+            ? 0f
+            : Mathf.Clamp01((_successfulTransfers + Mathf.Clamp01(_distanceOnFilament / Mathf.Max(1f, CurrentFilament.TravelLength))) / _targetTransfers);
+        float FinaleIntensity01 => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.72f, 1f, RunProgress01));
+        float CurrentMaximumSpeed => maximumSpeed + Intensity * 4f + _crystalSpeedBonus + FinaleIntensity01 * 14f;
 
         protected override void Start()
         {
@@ -157,9 +189,13 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             AnimateWormhole();
+            AnimateMirrorWall();
+            UpdateDynamicFilamentPoses();
             AnimateFilamentColors();
             AnimateFilamentWaveforms();
             AnimateNanites();
+            AnimatePulseGates();
+            UpdateTransientShards(Time.deltaTime);
             TickAutoStartCountdown();
 
             if (!_isRunning || _turnFinished || !AcquireVessel())
@@ -174,7 +210,7 @@ namespace CosmicShore.Gameplay
             Vector2 orbitInput = ReadOrbitInput();
             float throttleInput = ReadThrottleInput();
             Vector2 lookInput = ReadCameraLookInput();
-            _orbitAngle += orbitInput.x * orbitDegreesPerSecond * dt;
+            UpdateOrbitThruster(orbitInput.x, dt);
             _cameraLookPitch = Mathf.Clamp(_cameraLookPitch + lookInput.y * cameraLookDegreesPerSecond * dt, -cameraLookPitchLimit, cameraLookPitchLimit);
             UpdateCameraZoom(lookInput.x, dt);
 
@@ -205,6 +241,7 @@ namespace CosmicShore.Gameplay
 
             UpdateVesselPose();
             CollectNearbyCrystals();
+            CheckPulseGatePassage();
             CheckHazardGraze();
             AnimateLightning(dt);
             UpdateRoundStats();
@@ -236,6 +273,9 @@ namespace CosmicShore.Gameplay
             _respawns = 0;
             _distanceOnFilament = 0f;
             _orbitAngle = 0f;
+            _orbitAngularVelocity = 0f;
+            _lastOrbitInputSign = 0;
+            _nextNaniteDirectionBurstTime = 0f;
             _cameraLookPitch = 0f;
             _cameraIntroTimer = introCameraDuration;
             _speed = minimumSpeed;
@@ -245,7 +285,9 @@ namespace CosmicShore.Gameplay
 
             CreateMaterials();
             CreateWormhole();
+            CreateMirrorWall();
             CreateFilaments();
+            CreatePulseGates();
             ResetLightningSchedule();
             EnsureMainCamera();
             SetEstablishingCameraPose();
@@ -264,7 +306,11 @@ namespace CosmicShore.Gameplay
             _tethers.Clear();
             _latchRings.Clear();
             _hazards.Clear();
+            _hazardRuntimes.Clear();
             _nanites.Clear();
+            _naniteRespawnTimers.Clear();
+            _pulseGates.Clear();
+            _transientShards.Clear();
 
             if (_musicSource)
                 _musicSource.Stop();
@@ -291,6 +337,8 @@ namespace CosmicShore.Gameplay
         sealed class FilamentRuntime
         {
             public int Index;
+            public Vector3 BaseCenter;
+            public Vector3 BaseDirection;
             public Vector3 Center;
             public Vector3 Direction;
             public Vector3 Side;
@@ -299,6 +347,14 @@ namespace CosmicShore.Gameplay
             public float TravelLength;
             public float TransferDistance;
             public float RouteStartDistance;
+            public float RotationPhaseDegrees;
+            public float RotationSpeedDegrees;
+            public float WaveAmplitude;
+            public float WaveSpeed;
+            public float WavePhase;
+            public readonly float[] WaveFrequencies = new float[5];
+            public readonly float[] WavePhases = new float[5];
+            public readonly float[] WaveWeights = new float[5];
             public LineRenderer Beam;
             public readonly List<CrystalRuntime> Crystals = new();
         }
@@ -307,7 +363,38 @@ namespace CosmicShore.Gameplay
         {
             public GameObject GameObject;
             public Vector3 Position;
+            public float Distance;
+            public float OrbitAngleRadians;
             public bool Collected;
+        }
+
+        sealed class HazardRuntime
+        {
+            public GameObject GameObject;
+            public FilamentRuntime Filament;
+            public float Distance;
+            public float OrbitAngleRadians;
+            public float SpinDegreesPerSecond;
+        }
+
+        sealed class PulseGateRuntime
+        {
+            public FilamentRuntime Filament;
+            public LineRenderer Ring;
+            public LineRenderer Core;
+            public float Distance;
+            public bool Triggered;
+            public float PulseTimer;
+        }
+
+        sealed class TransientShardRuntime
+        {
+            public Transform Transform;
+            public Vector3 Velocity;
+            public Vector3 AngularVelocity;
+            public float Age;
+            public float Lifetime;
+            public Vector3 BaseScale;
         }
     }
 }

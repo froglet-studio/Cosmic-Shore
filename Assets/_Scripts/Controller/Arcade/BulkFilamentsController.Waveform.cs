@@ -105,11 +105,10 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < waveform.positionCount; i++)
             {
                 float axis01 = i / (float)(waveform.positionCount - 1);
-                float axisDistance = Mathf.Lerp(-0.5f, 0.5f, axis01) * filament.Length;
                 float sample01 = Mathf.Repeat(axis01 + scroll01 + filament.Index * 0.071f, 1f);
                 float sample = SampleMusicWaveform(sample01);
                 float envelope = 0.35f + Mathf.Sin(axis01 * Mathf.PI) * 0.65f;
-                Vector3 baseline = filament.Center + filament.Direction * axisDistance;
+                Vector3 baseline = FilamentSurfacePoint(filament, axis01);
                 waveform.SetPosition(i, baseline + topOffset + lateral * (sample * amplitude * envelope));
             }
         }

@@ -6,16 +6,25 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace CosmicShore.EditorTools
 {
+    [InitializeOnLoad]
     public static class BulkFilamentsPlayModeDriver
     {
         const string MenuRoot = "FrogletTools/Bulk Filaments/";
+        const string MenuScenePath = "Assets/_Scenes/Menu_Main.unity";
+        const string BulkScenePath = "Assets/_Scenes/Singleplayer Scenes/MinigameBulkFilaments.unity";
         const string BulkGamePath = "Assets/_SO_Assets/Games/ArcadeGameTheBulkFilaments.asset";
+        const string BatchQaActiveSessionKey = "CosmicShore.BulkFilaments.BatchQaActive";
+        const string BatchQaActiveEditorKey = "CosmicShore.BulkFilaments.BatchQaActiveEditor";
+        const string BatchQaProcessEditorKey = "CosmicShore.BulkFilaments.BatchQaProcess";
         const int QaTransfersToVerify = 3;
         const double QaTimeoutSeconds = 95d;
+        const double BatchQaTimeoutSeconds = 180d;
         static int step;
         static double nextStepTime;
         static bool selectedBulk;
@@ -23,6 +32,36 @@ namespace CosmicShore.EditorTools
         static int qaStartTransfers;
         static double qaStartTime;
         static double qaNextLatchTime;
+        static bool qaCompleted;
+        static bool qaSucceeded;
+        static string qaResult;
+        static int batchStep;
+        static double batchStartTime;
+        static double batchNextStepTime;
+        static double batchNextControllerLogTime;
+
+        static BulkFilamentsPlayModeDriver()
+        {
+            EditorApplication.delayCall -= ResumeBatchQaAfterReload;
+            EditorApplication.delayCall += ResumeBatchQaAfterReload;
+        }
+
+        static void ResumeBatchQaAfterReload()
+        {
+            if (!IsBatchQaArmedForThisProcess())
+                return;
+
+            batchStep = 0;
+            batchStartTime = EditorApplication.timeSinceStartup;
+            batchNextStepTime = batchStartTime + 0.5d;
+            batchNextControllerLogTime = batchStartTime;
+            qaCompleted = false;
+            qaSucceeded = false;
+            qaResult = string.Empty;
+
+            ArmBatchQaDriver();
+            Debug.Log("[BulkFilamentsBatchQA] Resumed batch QA after Play Mode reload.");
+        }
 
         [MenuItem(MenuRoot + "Open Arcade Panel", priority = 10)]
         public static void OpenArcadePanel()
@@ -82,8 +121,94 @@ namespace CosmicShore.EditorTools
             qaStartTransfers = -1;
             qaStartTime = EditorApplication.timeSinceStartup;
             qaNextLatchTime = qaStartTime;
+            qaCompleted = false;
+            qaSucceeded = false;
+            qaResult = string.Empty;
             EditorApplication.update += DriveControlQa;
             Debug.Log("[BulkFilamentsQA] Armed control QA.");
+        }
+
+        public static void RunBatchLaunchAndControlQa()
+        {
+            StopDriving();
+            StopControlQa();
+            EditorApplication.update -= DriveBatchLaunchAndControlQa;
+
+            batchStep = 0;
+            selectedBulk = false;
+            qaCompleted = false;
+            qaSucceeded = false;
+            qaResult = string.Empty;
+            batchStartTime = EditorApplication.timeSinceStartup;
+            batchNextStepTime = batchStartTime;
+            batchNextControllerLogTime = batchStartTime;
+
+            SessionState.SetBool(BatchQaActiveSessionKey, true);
+            EditorPrefs.SetBool(BatchQaActiveEditorKey, true);
+            EditorPrefs.SetInt(BatchQaProcessEditorKey, System.Diagnostics.Process.GetCurrentProcess().Id);
+            ArmBatchQaDriver();
+            EditorApplication.EnterPlaymode();
+            Debug.Log("[BulkFilamentsBatchQA] Starting direct scene/control QA.");
+        }
+
+        static void ArmBatchQaDriver()
+        {
+            if (batchStartTime <= 0d)
+                batchStartTime = EditorApplication.timeSinceStartup;
+
+            if (batchNextStepTime <= 0d)
+                batchNextStepTime = batchStartTime;
+
+            EditorApplication.update -= DriveBatchLaunchAndControlQa;
+            EditorApplication.update += DriveBatchLaunchAndControlQa;
+        }
+
+        static void DriveBatchLaunchAndControlQa()
+        {
+            if (EditorApplication.timeSinceStartup - batchStartTime > BatchQaTimeoutSeconds)
+            {
+                CompleteBatchQa(false, $"timed out in batch step {batchStep}");
+                return;
+            }
+
+            if (!EditorApplication.isPlaying || EditorApplication.timeSinceStartup < batchNextStepTime)
+                return;
+
+            switch (batchStep)
+            {
+                case 0:
+                    if (SceneManager.GetActiveScene().path != BulkScenePath)
+                    {
+                        Debug.Log($"[BulkFilamentsBatchQA] Loading Bulk scene from '{SceneManager.GetActiveScene().path}'.");
+                        EditorSceneManager.LoadSceneInPlayMode(BulkScenePath, new LoadSceneParameters(LoadSceneMode.Single));
+                        batchStep = 1;
+                        batchNextStepTime = EditorApplication.timeSinceStartup + 1d;
+                        return;
+                    }
+
+                    batchStep = 1;
+                    break;
+                case 1:
+                    if (!FindSceneComponent<BulkFilamentsController>())
+                    {
+                        if (EditorApplication.timeSinceStartup >= batchNextControllerLogTime)
+                        {
+                            Debug.Log("[BulkFilamentsBatchQA] Waiting for BulkFilamentsController.");
+                            batchNextControllerLogTime = EditorApplication.timeSinceStartup + 5d;
+                        }
+
+                        return;
+                    }
+
+                    RunControlQa();
+                    batchStep = 2;
+                    batchNextStepTime = EditorApplication.timeSinceStartup + 0.25d;
+                    break;
+                case 2:
+                    if (qaCompleted)
+                        CompleteBatchQa(qaSucceeded, qaResult);
+                    break;
+            }
         }
 
         static void DriveLaunch()
@@ -167,6 +292,9 @@ namespace CosmicShore.EditorTools
             if (completed >= QaTransfersToVerify)
             {
                 Debug.Log($"[BulkFilamentsQA] PASS transfers={completed} crystals={controller.EditorQaCrystalsCollected}.");
+                qaCompleted = true;
+                qaSucceeded = true;
+                qaResult = $"transfers={completed} crystals={controller.EditorQaCrystalsCollected}";
                 StopControlQa();
                 return;
             }
@@ -243,7 +371,38 @@ namespace CosmicShore.EditorTools
         static void FailControlQa(string reason)
         {
             Debug.LogWarning($"[BulkFilamentsQA] FAIL {reason}");
+            qaCompleted = true;
+            qaSucceeded = false;
+            qaResult = reason;
             StopControlQa();
+        }
+
+        static void CompleteBatchQa(bool success, string message)
+        {
+            SessionState.SetBool(BatchQaActiveSessionKey, false);
+            EditorPrefs.SetBool(BatchQaActiveEditorKey, false);
+            EditorPrefs.DeleteKey(BatchQaProcessEditorKey);
+            EditorApplication.update -= DriveBatchLaunchAndControlQa;
+            StopDriving();
+            StopControlQa();
+
+            if (success)
+                Debug.Log($"[BulkFilamentsBatchQA] PASS {message}");
+            else
+                Debug.LogWarning($"[BulkFilamentsBatchQA] FAIL {message}");
+
+            EditorApplication.Exit(success ? 0 : 1);
+        }
+
+        static bool IsBatchQaArmedForThisProcess()
+        {
+            if (SessionState.GetBool(BatchQaActiveSessionKey, false))
+                return true;
+
+            if (!EditorPrefs.GetBool(BatchQaActiveEditorKey, false))
+                return false;
+
+            return EditorPrefs.GetInt(BatchQaProcessEditorKey, -1) == System.Diagnostics.Process.GetCurrentProcess().Id;
         }
 
         static bool EnsurePlaying()

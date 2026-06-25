@@ -20,7 +20,36 @@ namespace CosmicShore.Gameplay
             if (throttleInput < 0.1f)
                 pressure += (0.1f - throttleInput) * 7f;
 
+            pressure += FinaleIntensity01 * 13f;
             _naniteRouteDistance += pressure * dt;
+        }
+
+        void UpdateOrbitThruster(float input, float dt)
+        {
+            float deadzoned = Mathf.Abs(input) >= 0.08f ? input : 0f;
+            if (Mathf.Abs(deadzoned) > 0f)
+            {
+                float acceleration = Mathf.Max(orbitThrusterAcceleration, orbitDegreesPerSecond);
+                _orbitAngularVelocity = Mathf.Clamp(
+                    _orbitAngularVelocity + deadzoned * acceleration * dt,
+                    -orbitMaxAngularVelocity,
+                    orbitMaxAngularVelocity);
+
+                int sign = deadzoned > 0f ? 1 : -1;
+                if (_lastOrbitInputSign != 0 && sign != _lastOrbitInputSign && Time.time >= _nextNaniteDirectionBurstTime)
+                {
+                    BurstTrailingNanites();
+                    _nextNaniteDirectionBurstTime = Time.time + naniteDirectionBurstCooldown;
+                }
+
+                _lastOrbitInputSign = sign;
+            }
+            else if (orbitAngularDrag > 0f)
+            {
+                _orbitAngularVelocity = Mathf.MoveTowards(_orbitAngularVelocity, 0f, orbitAngularDrag * dt);
+            }
+
+            _orbitAngle += _orbitAngularVelocity * dt;
         }
 
         void CompleteTransfer()
@@ -35,6 +64,7 @@ namespace CosmicShore.Gameplay
             _successfulTransfers++;
             _distanceOnFilament = 0f;
             _speed = Mathf.Max(minimumSpeed, _speed * 0.82f);
+            _orbitAngularVelocity *= Mathf.Clamp01(1f - transferAngularDamping);
             _swingTimer = Mathf.Lerp(0.55f, 1.2f, Mathf.InverseLerp(minimumSpeed, CurrentMaximumSpeed, _speed));
             BeginTransferRedirect(startPosition, startRotation, routeVelocity);
             ResetLatchTransferState();
@@ -126,9 +156,8 @@ namespace CosmicShore.Gameplay
 
         Vector3 AttachPoint(FilamentRuntime filament, float distance)
         {
-            float halfTravel = filament.Length * FilamentTravelRatio * 0.5f;
-            float axisDistance = Mathf.Lerp(-halfTravel, halfTravel, Mathf.Clamp01(distance / filament.TravelLength));
-            return filament.Center + filament.Direction * axisDistance;
+            float axis01 = Mathf.Clamp01(distance / Mathf.Max(0.001f, filament.TravelLength));
+            return CenterlinePoint(filament, distance) + FilamentWaveOffset(filament, axis01);
         }
 
         FilamentRuntime FilamentAtRouteDistance(float routeDistance, out float localDistance)
@@ -172,8 +201,12 @@ namespace CosmicShore.Gameplay
                 if (crystal.Collected || !crystal.GameObject)
                     continue;
 
+                crystal.Position = PositionOnFilament(filament, crystal.Distance, crystal.OrbitAngleRadians + Time.time * 0.42f, orbitRadius + 1.2f);
+                crystal.GameObject.transform.position = crystal.Position;
+                float pulse = 1f + BeatPulse() * 0.13f + _waveformEnergy * 0.1f;
+                crystal.GameObject.transform.localScale = Vector3.one * (1.4f * speedDiamondScaleMultiplier * pulse);
                 crystal.GameObject.transform.Rotate(0f, 140f * Time.deltaTime, 90f * Time.deltaTime);
-                if (Vector3.Distance(vesselPosition, crystal.Position) > 4.2f)
+                if (Vector3.Distance(vesselPosition, crystal.Position) > speedDiamondPickupRadius)
                     continue;
 
                 crystal.Collected = true;
@@ -191,12 +224,21 @@ namespace CosmicShore.Gameplay
                 return;
 
             Vector3 vesselPosition = _vessel.Transform.position;
-            foreach (var hazard in _hazards)
+            foreach (var hazardRuntime in _hazardRuntimes)
             {
-                if (!hazard || !hazard.activeSelf)
+                GameObject hazard = hazardRuntime.GameObject;
+                if (!hazard || !hazard.activeSelf || hazardRuntime.Filament == null)
                     continue;
 
-                hazard.transform.Rotate(20f * Time.deltaTime, 70f * Time.deltaTime, 35f * Time.deltaTime);
+                hazard.transform.position = PositionOnFilament(
+                    hazardRuntime.Filament,
+                    hazardRuntime.Distance,
+                    hazardRuntime.OrbitAngleRadians + Time.time * 0.18f,
+                    orbitRadius + 2.8f);
+                hazard.transform.Rotate(
+                    20f * Time.deltaTime,
+                    hazardRuntime.SpinDegreesPerSecond * Time.deltaTime,
+                    35f * Time.deltaTime);
                 if (Vector3.Distance(vesselPosition, hazard.transform.position) > 3.3f)
                     continue;
 
@@ -204,6 +246,30 @@ namespace CosmicShore.Gameplay
                 _naniteRouteDistance += 8f;
                 _impactTimer = 0.8f;
                 break;
+            }
+        }
+
+        void CheckPulseGatePassage()
+        {
+            if (_pulseGates.Count == 0 || _currentFilamentIndex >= _filaments.Count)
+                return;
+
+            for (int i = 0; i < _pulseGates.Count; i++)
+            {
+                PulseGateRuntime gate = _pulseGates[i];
+                if (gate.Triggered || gate.Filament == null || gate.Filament.Index != _currentFilamentIndex)
+                    continue;
+
+                if (_distanceOnFilament < gate.Distance)
+                    continue;
+
+                gate.Triggered = true;
+                gate.PulseTimer = 0.78f;
+                _pulseGates[i] = gate;
+                _crystalSpeedBonus += pulseGateStackBonus;
+                _speed = Mathf.Clamp(_speed + pulseGateSpeedImpulse, minimumSpeed, CurrentMaximumSpeed);
+                PlayPulseGateSound();
+                SpawnPulseGateBurst(AttachPoint(gate.Filament, gate.Distance), gate.Filament);
             }
         }
 

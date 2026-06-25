@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay
     public partial class BulkFilamentsController
     {
         [Header("Bulk Camera Zoom")]
-        [SerializeField, Min(24f)] float cameraMinFollowDistance = 62f;
+        [SerializeField, Min(24f)] float cameraMinFollowDistance = 31f;
         [SerializeField, Min(24f)] float cameraMaxFollowDistance = 180f;
         [SerializeField, Min(1f)] float cameraZoomUnitsPerSecond = 92f;
 
@@ -49,6 +49,7 @@ namespace CosmicShore.Gameplay
             _mainCamera.transform.position = Vector3.Lerp(_mainCamera.transform.position, chasePosition, Time.deltaTime * positionLerp);
             Quaternion rotation = Quaternion.LookRotation(lookTarget - _mainCamera.transform.position, Vector3.up);
             _mainCamera.transform.rotation = Quaternion.Slerp(_mainCamera.transform.rotation, rotation, Time.deltaTime * 6f);
+            _mainCamera.fieldOfView = Mathf.Lerp(_mainCamera.fieldOfView, 76f + BeatPulse() * 1.8f + FinaleIntensity01 * 8f, Time.deltaTime * 3.2f);
         }
 
         void UpdateCameraZoom(float zoomInput, float dt)
@@ -247,7 +248,7 @@ namespace CosmicShore.Gameplay
         {
             _leftLatchTriggerHeld = false;
             _rightLatchTriggerHeld = false;
-            _cameraFollowDistance = Mathf.Clamp(120f, cameraMinFollowDistance, cameraMaxFollowDistance);
+            _cameraFollowDistance = Mathf.Clamp(92f, cameraMinFollowDistance, cameraMaxFollowDistance);
             ResetLatchTransferState();
         }
     }
