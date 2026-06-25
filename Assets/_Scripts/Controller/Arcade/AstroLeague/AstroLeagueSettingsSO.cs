@@ -172,12 +172,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("When recovering position, how far past the ball the AI swings wide")]
         public float strikerRecoverDistance = 60f;
 
-        [Header("Arena — Visuals")]
-        public Color edgeColor = new(0.25f, 0.85f, 1f, 0.55f);
+        [Header("Arena — Goal Portal Colors")]
+        [Tooltip("Only the GAMEPLAY goal-portal rings are colored here. The arena no longer owns any " +
+                 "boundary or atmosphere visuals — the playfield boundary read is the Cell's MembranePrefab " +
+                 "and the drifting hypersea motes are the Cell's CytoplasmPrefab (CLAUDE.md ▸ \"Universality — " +
+                 "one HyperSea, one rule set\"). Do not re-add an arena-local edge cage or plankton system; " +
+                 "tune those on the Astro League Cell Config / its prefabs instead.")]
         public Color jadeGoalColor = new(0.15f, 1f, 0.55f, 0.5f);
         public Color rubyGoalColor = new(1f, 0.22f, 0.35f, 0.5f);
-        public Color planktonColor = new(0.55f, 0.8f, 1f, 0.35f);
-        [Tooltip("Drifting hypersea motes that give speed perception inside the arena")]
-        public int planktonCount = 400;
     }
 }

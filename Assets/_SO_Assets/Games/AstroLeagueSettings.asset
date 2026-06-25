@@ -61,8 +61,5 @@ MonoBehaviour:
   speedForMaxVisuals: 160
   strikerApproachLead: 18
   strikerRecoverDistance: 60
-  edgeColor: {r: 0.19540359, g: 0.27291858, b: 0.9559748, a: 0.55}
   jadeGoalColor: {r: 0.18695846, g: 0.8200566, b: 0.8616352, a: 0.5}
   rubyGoalColor: {r: 0.9056604, g: 0.15094331, b: 0.66856146, a: 0.5}
-  planktonColor: {r: 0.7211335, g: 0.7157548, b: 0.9685534, a: 0.35}
-  planktonCount: 400

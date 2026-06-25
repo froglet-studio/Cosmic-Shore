@@ -145,6 +145,40 @@ Make a Cell+ecology a *default* any scene gets, like a `ContainerScope`:
   axis. Intensity also scales spawn population / growth budget.
 - Ecology must be **opt-out-able** per mode (a race may want sparse life) but **present by default**.
 
+### 5.1 The Cell owns the environment — minigames must not build parallel systems (LOCKED best-practice)
+
+When wiring ecology into a mode, the **Cell is the environment**. Everything atmospheric,
+territorial, or boundary-defining is already a Cell responsibility, configured on the
+`CellConfigDataSO` (and its `SpawnProfileSO`), not re-implemented per mode. This is the
+"build systems once, use them everywhere" rule of **Universality** (`CLAUDE.md`) applied to
+mode-wiring — a minigame that ships its own boundary/atmosphere/population system is the same
+class of mistake as cheating emergence: a bespoke duplicate of a fundamental.
+
+| Environment need | The Cell system that owns it | Do **not** build a mode-local… |
+|---|---|---|
+| Playfield boundary / "where the arena ends" read | `CellConfigDataSO.MembranePrefab` | wireframe edge cage, boundary box outline, perimeter shell |
+| Drifting motes / atmosphere / speed-perception particles | `CellConfigDataSO.CytoplasmPrefab` (a `SnowChanger`) | plankton / dust / mote `ParticleSystem` |
+| Core / centre marker, crystal anchor | `CellConfigDataSO.NucleusPrefab` | bespoke centre beacon |
+| Population (which flora/fauna, how many, how often, prey floor) | `CellConfigDataSO.SpawnProfile` | per-mode spawner, hand-placed creatures, mode-local food gating |
+| Phase / aggression / "excess of mass triggers a frenzy that grazes it down" | `CellConfigDataSO.PhaseThresholds` (volume spine; count backstop) | mode-local timers, cullers, or decay |
+
+What a mode legitimately owns is only its **gameplay-bearing** structure — e.g. Astro League keeps
+its physics walls (the ball must bounce), its goal portals, and its midfield ring, because those
+*are* the soccer game, not environment dressing. Anything that would merely *re-show* a Cell
+concept belongs on the Cell config.
+
+**Tuning the Cell for a mode's prism profile (volume is the spine).** Phase thresholds are read in
+VOLUME, and `CellPhaseThresholds.WithDerivedVolumeScale` derives missing volume fields from the
+count fields × `NominalPrismVolume` (16, the 4×4×1 flora leaf). A mode whose vessel lays
+**low-volume prisms** (e.g. Squirrel trail prisms ≈ **3.1** volume each, ~⅕ nominal) must author
+**explicit `*EnterVolume` / `*ExitVolume`** values — otherwise the ×16 derivation sets the ladder
+~5× too high, the volume gauge barely moves, and fauna never reach the hunting/frenzy phases. Set
+`RestlessEnterVolume` low enough that fauna start grazing opposing trail **early**, `FrenzyEnterVolume`
+at the "excess of mass" point where they graze *any* domain, and lower `SpawnProfileSO.FaunaFoodFloor`
+(authored in nominal prisms, ×16 for the prey-volume check) so herbivores actually seed against the
+mode's thinner prey. The `DomainVolumeIndicator` hex gauge reads the same `FrenzyEnterVolume`, so a
+well-tuned ladder is also a readable gauge.
+
 ---
 
 ## 6. The roadmap (each phase: emergence · collider cost · tunability · gameplay · life-criterion)

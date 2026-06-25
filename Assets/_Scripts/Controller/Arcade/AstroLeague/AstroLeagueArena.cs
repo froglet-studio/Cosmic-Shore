@@ -4,14 +4,20 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// HyperSea stadium for Astro League, constructed at runtime on every peer (purely
-    /// deterministic local visuals + static physics — nothing here needs networking):
+    /// HyperSea stadium for Astro League — only the GAMEPLAY-bearing structure, constructed at
+    /// runtime on every peer (purely deterministic local visuals + static physics, nothing here
+    /// needs networking):
     /// - Invisible high-restitution boundary walls (pure physics; the server's ball
     ///   simulation bounces off them, clients only render the replicated ball)
-    /// - Pulsing wireframe edge cage so pilots always read the playfield bounds
     /// - Portal-style goal rings at each end, with anticipation glow as the ball approaches
-    /// - Center ring marking midfield
-    /// - Drifting plankton motes for hypersea atmosphere and speed perception
+    /// - Center ring marking the soccer midfield / kickoff line
+    ///
+    /// Everything ATMOSPHERIC or TERRITORIAL is owned by the standard Cell ecosystem, NOT by this
+    /// arena (CLAUDE.md ▸ "Universality — one HyperSea, one rule set"): the playfield boundary read
+    /// is the Cell's <c>MembranePrefab</c>, the drifting motes are the Cell's <c>CytoplasmPrefab</c>,
+    /// and the core marker is the Cell's <c>NucleusPrefab</c>. A previous bespoke wireframe edge cage
+    /// and a bespoke plankton particle system were removed because they duplicated the membrane and
+    /// cytoplasm — do not reintroduce arena-local versions of cell-owned visuals.
     ///
     /// The whole stadium scales with match intensity: the controller calls <see cref="Build"/>
     /// with the intensity scale factor, and every dimension (and the goal-ring positions the
@@ -42,12 +48,9 @@ namespace CosmicShore.Gameplay
         bool _built;
 
         readonly List<GameObject> _generated = new();
-        LineRenderer[] edgeLines;
-        Material edgeMaterial;
         Material jadeRingMaterial;
         Material rubyRingMaterial;
 
-        Color EdgeColor => settings != null ? settings.edgeColor : new Color(0.25f, 0.85f, 1f, 0.55f);
         Color JadeColor => settings != null ? settings.jadeGoalColor : new Color(0.15f, 1f, 0.55f, 0.5f);
         Color RubyColor => settings != null ? settings.rubyGoalColor : new Color(1f, 0.22f, 0.35f, 0.5f);
 
@@ -70,11 +73,9 @@ namespace CosmicShore.Gameplay
             _generated.Clear();
 
             BuildWalls();
-            BuildEdgeCage();
             BuildGoalPortal("GoalPortal_Jade", Center + Vector3.back * (_L / 2f), Vector3.forward, JadeColor, out jadeRingMaterial);
             BuildGoalPortal("GoalPortal_Ruby", Center + Vector3.forward * (_L / 2f), Vector3.back, RubyColor, out rubyRingMaterial);
             BuildCenterRing();
-            BuildPlankton();
             _built = true;
         }
 
@@ -112,32 +113,7 @@ namespace CosmicShore.Gameplay
             _generated.Add(wall);
         }
 
-        // ── Visual cage ──────────────────────────────────────────────────────
-
-        void BuildEdgeCage()
-        {
-            float hw = _W / 2f, hh = _H / 2f, hl = _L / 2f;
-
-            Vector3[][] edges =
-            {
-                // Bottom rectangle
-                new[] { V(-hw, -hh, -hl), V(hw, -hh, -hl) }, new[] { V(hw, -hh, -hl), V(hw, -hh, hl) },
-                new[] { V(hw, -hh, hl), V(-hw, -hh, hl) },   new[] { V(-hw, -hh, hl), V(-hw, -hh, -hl) },
-                // Top rectangle
-                new[] { V(-hw, hh, -hl), V(hw, hh, -hl) },   new[] { V(hw, hh, -hl), V(hw, hh, hl) },
-                new[] { V(hw, hh, hl), V(-hw, hh, hl) },     new[] { V(-hw, hh, hl), V(-hw, hh, -hl) },
-                // Verticals
-                new[] { V(-hw, -hh, -hl), V(-hw, hh, -hl) }, new[] { V(hw, -hh, -hl), V(hw, hh, -hl) },
-                new[] { V(hw, -hh, hl), V(hw, hh, hl) },     new[] { V(-hw, -hh, hl), V(-hw, hh, hl) },
-            };
-
-            edgeMaterial = CreateLineMaterial(EdgeColor);
-            edgeLines = new LineRenderer[edges.Length];
-            for (int i = 0; i < edges.Length; i++)
-                edgeLines[i] = CreateLine($"Edge_{i}", edges[i], edgeMaterial, 0.8f * _scale);
-
-            Vector3 V(float x, float y, float z) => Center + new Vector3(x, y, z);
-        }
+        // ── Goal portals + midfield ──────────────────────────────────────────
 
         /// <summary>
         /// Three concentric rings receding into the goal mouth — reads as a glowing
@@ -208,65 +184,11 @@ namespace CosmicShore.Gameplay
             return mat;
         }
 
-        // ── HyperSea atmosphere ──────────────────────────────────────────────
-
-        void BuildPlankton()
-        {
-            var go = new GameObject("HyperSeaPlankton");
-            go.transform.SetParent(transform, false);
-            go.transform.position = Center;
-
-            var ps = go.AddComponent<ParticleSystem>();
-            var main = ps.main;
-            main.startLifetime = 30f;
-            main.startSpeed = 0.6f * _scale;
-            main.startSize = new ParticleSystem.MinMaxCurve(0.15f * _scale, 0.6f * _scale);
-            int count = settings != null ? settings.planktonCount : 400;
-            main.maxParticles = count;
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
-            main.prewarm = true;
-            main.loop = true;
-            Color motes = settings != null ? settings.planktonColor : new Color(0.55f, 0.8f, 1f, 0.35f);
-            main.startColor = new ParticleSystem.MinMaxGradient(motes, motes * 0.5f);
-            main.gravityModifier = 0f;
-
-            var emission = ps.emission;
-            emission.rateOverTime = count / 30f;
-
-            var shape = ps.shape;
-            shape.shapeType = ParticleSystemShapeType.Box;
-            shape.scale = new Vector3(_W, _H, _L);
-
-            var noise = ps.noise;
-            noise.enabled = true;
-            noise.strength = 0.4f * _scale;
-            noise.frequency = 0.08f;
-            noise.scrollSpeed = 0.05f;
-
-            var psRenderer = go.GetComponent<ParticleSystemRenderer>();
-            var psMat = new Material(Shader.Find("Universal Render Pipeline/Particles/Unlit"));
-            psMat.SetFloat("_Surface", 1);
-            psMat.SetInt("_Blend", 1); // Additive — motes glow softly against the sea
-            psMat.SetColor(Shader.PropertyToID("_BaseColor"), Color.white);
-            psMat.renderQueue = 3050;
-            psRenderer.sharedMaterial = psMat;
-            psRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            _generated.Add(go);
-        }
-
         // ── Living arena ─────────────────────────────────────────────────────
 
         void Update()
         {
             if (!_built) return;
-
-            // Breathing edge cage
-            if (edgeMaterial != null)
-            {
-                float pulse = 0.45f + 0.2f * Mathf.Sin(Time.time * 1.4f);
-                var c = EdgeColor;
-                edgeMaterial.color = new Color(c.r, c.g, c.b, c.a * pulse / 0.55f);
-            }
 
             // Goal anticipation: portals flare as the ball closes in
             if (ball != null && !ball.IsHidden)

@@ -45,6 +45,19 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
 - **Collider budget is a hard gate.** No ecology feature ships without stating its active-collider
   impact; respect the per-cell budget (collider-LOD by phase + Burst density-grid fauna queries,
   not `Physics.OverlapSphere`). See `Docs/ECOSYSTEM_MASTERPLAN.md §4`.
+- **The Cell owns the environment — minigames don't build parallel systems.** When a mode needs
+  ecology, wire the standard **Cell** (`CellConfigDataSO` + `SpawnProfileSO`) and configure it; do
+  **not** ship a mode-local duplicate of something the Cell already owns. The Cell's `MembranePrefab`
+  is the playfield-boundary read, its `CytoplasmPrefab` (a `SnowChanger`) is the drifting
+  atmosphere/motes, its `NucleusPrefab` is the core marker, its `SpawnProfile` is the population, and
+  its `PhaseThresholds` are the phase/aggression ladder — a bespoke arena edge cage, plankton
+  particle system, per-mode spawner, or mode-local culler is the same class of mistake as cheating
+  emergence. A mode owns only its **gameplay-bearing** structure (physics walls a ball must bounce
+  off, goal portals, a midfield ring). Tune the ladder in **volume** — modes whose vessel lays
+  low-volume prisms (Squirrel trail ≈ 3.1 vol each, ~⅕ the nominal 16) must author explicit
+  `*EnterVolume`/`*ExitVolume` (else the ×16 count-derivation sets the ladder ~5× too high and fauna
+  never hunt) and lower `SpawnProfile.FaunaFoodFloor` so herbivores seed against the thinner prey.
+  Full table + rationale: `Docs/ECOSYSTEM_MASTERPLAN.md §5.1`.
 
 **Protocol:** (1) restate which invariants the change touches + confirm none are violated;
 (2) confirm at genuine forks (AskUserQuestion); (3) implement surgically, config-driven; (4) state

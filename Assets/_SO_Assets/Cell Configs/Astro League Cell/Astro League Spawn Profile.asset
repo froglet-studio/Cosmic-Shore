@@ -21,7 +21,7 @@ MonoBehaviour:
   InitialFaunaSpawnWaitTime: 5
   FaunaSpawnVolumeThreshold: 1
   BaseFaunaSpawnTime: 15
-  FaunaFoodFloor: 10
+  FaunaFoodFloor: 5
   FaunaInitialDelaySeconds: 0
   FaunaSpawnIntervalSeconds: 1
   SupportedFaunas:
