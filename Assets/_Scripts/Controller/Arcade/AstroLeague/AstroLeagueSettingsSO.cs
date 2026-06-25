@@ -24,9 +24,9 @@ namespace CosmicShore.Gameplay
 
         [Header("Intensity Scale (arena + ball + team spawns)")]
         [Tooltip("Arena, ball, goals and team-spawn distances scale from 1x at intensity 1 up to this " +
-                 "factor at the max intensity (4) — so a high-intensity match is a much bigger playfield " +
-                 "with a much bigger ball. Vessels stay their normal size.")]
-        public float intensityScaleAtMax = 10f;
+                 "factor at the max intensity (4). 4x is the playable ceiling (the old 10x was too big); " +
+                 "intensities 1-4 step evenly 1x / 2x / 3x / 4x. Vessels stay their normal size.")]
+        public float intensityScaleAtMax = 4f;
 
         [Tooltip("Highest intensity level used for the scale ramp (the arcade card's MaxIntensity).")]
         public int maxIntensityLevel = 4;

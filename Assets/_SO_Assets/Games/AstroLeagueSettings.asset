@@ -15,7 +15,7 @@ MonoBehaviour:
   matchDurationSeconds: 180
   goalLimit: 5
   goldenGoalOvertime: 1
-  intensityScaleAtMax: 10
+  intensityScaleAtMax: 4
   maxIntensityLevel: 4
   vesselRecoilSpeed: 30
   vesselRecoilDuration: 0.2

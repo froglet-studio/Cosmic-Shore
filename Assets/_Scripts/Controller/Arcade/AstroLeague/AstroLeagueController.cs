@@ -69,13 +69,6 @@ namespace CosmicShore.Gameplay
         // duplicate InvokeWinnerCalculated from SyncGameEnd_ClientRpc.
         protected override bool HasEndGame => false;
 
-        // ── Announcer feed (raised on every peer from ClientRpcs; consumed by AstroLeagueMatchUI) ──
-        public event Action<int> OnKickoffCount;                    // 3, 2, 1
-        public event Action OnKickoffGo;
-        public event Action<string, Domains> OnGoalAnnounced;       // scorer name, scoring domain
-        public event Action OnOvertimeAnnounced;
-        public event Action<Domains> OnMatchFinished;               // winning domain
-
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -325,13 +318,10 @@ namespace CosmicShore.Gameplay
             _lastStrikers.Clear();
             ParkVesselsForKickoff_ClientRpc();
 
-            // Count-in: 3 — 2 — 1 — GO, spread across the kickoff freeze window.
-            float step = settings.kickoffFreezeSeconds / 3f;
-            for (int count = 3; count >= 1; count--)
-            {
-                AnnounceKickoffCount_ClientRpc(count);
-                await UniTask.Delay(TimeSpan.FromSeconds(step), ignoreTimeScale: true, cancellationToken: token);
-            }
+            // Hold the ball frozen for the kickoff count-in window, then go (the shared 3-2-1
+            // countdown canvas / GO cue is the existing-system feedback; no bespoke banner here).
+            await UniTask.Delay(TimeSpan.FromSeconds(settings.kickoffFreezeSeconds),
+                ignoreTimeScale: true, cancellationToken: token);
 
             if (phase == MatchPhase.Finished) return;
             phase = returnToOvertime ? MatchPhase.Overtime : MatchPhase.Live;
@@ -614,24 +604,15 @@ namespace CosmicShore.Gameplay
             return null;
         }
 
-        // ── Announcer ClientRpcs (raise local events + audio on every peer) ──
+        // ── Announcer ClientRpcs (play the shared AudioSystem cue on every peer) ──
 
         [ClientRpc]
-        void AnnounceKickoffCount_ClientRpc(int count) => OnKickoffCount?.Invoke(count);
-
-        [ClientRpc]
-        void AnnounceKickoffGo_ClientRpc()
-        {
-            OnKickoffGo?.Invoke();
+        void AnnounceKickoffGo_ClientRpc() =>
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.SpeedBurst);
-        }
 
         [ClientRpc]
-        void AnnounceGoal_ClientRpc(FixedString64Bytes scorerName, int scoringDomain)
-        {
-            OnGoalAnnounced?.Invoke(scorerName.ToString(), (Domains)scoringDomain);
+        void AnnounceGoal_ClientRpc(FixedString64Bytes scorerName, int scoringDomain) =>
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.ScoreReveal);
-        }
 
         [ClientRpc]
         void Celebrate_ClientRpc(int scoringDomain)
@@ -667,17 +648,11 @@ namespace CosmicShore.Gameplay
         }
 
         [ClientRpc]
-        void AnnounceOvertime_ClientRpc()
-        {
-            OnOvertimeAnnounced?.Invoke();
+        void AnnounceOvertime_ClientRpc() =>
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.ComebackCharge);
-        }
 
         [ClientRpc]
-        void AnnounceMatchFinished_ClientRpc(int winnerDomain)
-        {
-            OnMatchFinished?.Invoke((Domains)winnerDomain);
+        void AnnounceMatchFinished_ClientRpc(int winnerDomain) =>
             audioSystem?.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
-        }
     }
 }

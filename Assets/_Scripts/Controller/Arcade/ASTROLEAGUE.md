@@ -36,7 +36,6 @@ Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
 | `AstroLeagueMatchMonitor` | `TurnMonitor` match clock, server-authoritative ("M:SS"/"OT" pushed by ClientRpc on the shared display channel). Pauses during celebrations; the controller decides full-time vs overtime; turn ends only on `ForceEnd()` |
 | `AstroLeagueGoal` | Accurate goal detector (server-gated): per-tick polls the ball for a genuine INWARD crossing of the goal-line plane WITHIN the mouth circle (no fat-trigger false positives, teleport-guarded); reports to `AstroLeagueController.HandleGoalServer` — attribution lives in the controller |
 | `AstroLeagueArena` | Runtime HyperSea stadium, built identically on every peer (no networking): invisible 1.0-restitution walls, pulsing edge cage, portal goal rings with ball-proximity anticipation flare, center ring, drifting plankton motes |
-| `AstroLeagueMatchUI` | Runtime overlay canvas: domain score (reads the server-synced `GameDataSO.GetDomainMetricSum`), announcer banners, off-screen ball arrow |
 | `AstroLeagueSettingsSO` | All tunables |
 | `AstroLeagueScoringRuleSO` | Scoring strategy: mercy-rule end condition over per-domain `GoalsScored` sums, Score = personal goals, "WON BY N GOALS" reveal |
 
@@ -69,9 +68,10 @@ FinishMatch             winner banner (real time) → matchMonitor.ForceEnd()
 - **Metric**: `ScoringMetric.Goals = 4` reading the new `IRoundStats.GoalsScored`
   (full `RoundStats` NetworkVariable pattern, same as `JoustCollisions`).
 - **Domain aggregation**: the base `MultiplayerDomainGamesController` domain-sum
-  NetworkVariables replicate per-domain goal sums to every peer — `MultiplayerHUD`
-  domain boxes and `AstroLeagueMatchUI`'s score line both read
-  `GameDataSO.GetDomainMetricSum` and can never diverge from the host.
+  NetworkVariables replicate per-domain goal sums to every peer — the in-game score is
+  shown by the **shared `MultiplayerHUD` domain boxes** (the existing system, reading
+  `GameDataSO.GetDomainMetricSum`), so it can never diverge from the host. Astro League adds
+  no bespoke score UI.
 - **Goal target**: `GameDataSO.GoalTargetCount` (mercy rule), published by the
   controller from `AstroLeagueSettingsSO.goalLimit` and synced by ClientRpc.
 - **Final scores**: every player's `Score` = personal `GoalsScored`; the winning
@@ -94,7 +94,7 @@ FinishMatch             winner banner (real time) → matchMonitor.ForceEnd()
 | GoalsScored | Server → all | `RoundStats.n_GoalsScored` NetworkVariable |
 | Match phase / clock | Server | Controller fields + monitor; display via ClientRpc |
 | Kickoff parking | Owning peer | `ParkVesselsForKickoff_ClientRpc`; deterministic slots (domain members sorted by name) |
-| Announcer beats / juice | All peers | ClientRpcs → C# events → `AstroLeagueMatchUI` / camera shake / haptics |
+| Announcer beats / juice | All peers | ClientRpcs → shared `AudioSystem` cues (kickoff GO, goal, overtime, game-end) + ball-impact camera shake / haptics |
 | Hitstop & celebration slow-mo | Solo sessions ONLY | Local `Time.timeScale` desyncs connected peers (see `MenuCrystalClickHandler` precedent) — gated on `ConnectedClientsIds.Count <= 1` |
 
 ## AI Striker
@@ -157,16 +157,17 @@ server with billiard thinking:
   dribble contact doesn't spam. The recoil (the vessel "bouncing off" too) is the
   controller's `RecoilVessel_ClientRpc` — owner-authoritative vessels move only where
   `IsNetworkOwner`, so it's keyed by vessel `NetworkObjectId`.
-- **Intensity scales the whole playfield.** The controller computes a scale factor —
-  1× at intensity 1 ramping to `intensityScaleAtMax` (10×) at `maxIntensityLevel` (4) —
-  and broadcasts it in `SyncMatchConfig_ClientRpc` so every peer applies the same scale.
-  `AstroLeagueArena.Build(scale)` rebuilds the stadium at the scaled dimensions,
-  `AstroLeagueBall.SetSizeScale(scale)` resizes the ball (visual + collider) on top of
-  its authored base, and the controller pushes the goals + team spawns out to the scaled
-  goal lines (scaling each goal-mouth trigger). Vessels stay normal-size, so a
-  high-intensity match is a grand playfield with a giant ball. Players reset to the
-  scaled team positions on every kickoff (`ComputeKickoffPose` reads the scaled spawns
-  and scales the lateral teammate spacing too).
+- **Intensity scales the whole playfield.** The controller computes a scale factor that
+  steps evenly with intensity — **1× / 2× / 3× / 4×** for intensities 1-4 (`lerp(1,
+  intensityScaleAtMax=4, (i-1)/(maxIntensityLevel-1))`) — and broadcasts it in
+  `SyncMatchConfig_ClientRpc` so every peer applies the same scale. (4× is the playable
+  ceiling; the earlier 10× max was too big.) `AstroLeagueArena.Build(scale)` rebuilds the
+  stadium at the scaled dimensions, `AstroLeagueBall.SetSizeScale(scale)` resizes the ball
+  (visual + collider) on top of its authored base, and the controller pushes the goals +
+  team spawns out to the scaled goal lines. Vessels stay normal-size, so a high-intensity
+  match is a bigger playfield with a bigger ball. Players reset to the scaled team positions
+  on every kickoff (`ComputeKickoffPose` reads the scaled spawns and scales the lateral
+  teammate spacing too).
 - **Faceted icosphere — rotation you can see.** The mesh is a medium-poly **flat-shaded
   icosphere** generated at runtime (`IcosphereMeshGenerator`, default 2 subdivisions =
   320 tris) and assigned to the MeshFilter in `SetupVisuals` (the SphereCollider is kept,
