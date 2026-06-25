@@ -36,8 +36,10 @@ namespace CosmicShore.UI
         [SerializeField] private SO_ProfileIconList profileIcons;
 
         [Header("Timing")]
-        [Tooltip("Seconds before the invite notification auto-dismisses.")]
-        [SerializeField] private float autoDeclineSeconds = 30f;
+        [Tooltip("Seconds the bottom-left popup stays before it auto-HIDES. Hiding does NOT decline — " +
+                 "the invite remains in the FriendsListPanel Requests list, and the host's pending " +
+                 "invite clears on its own outgoing-invite timeout.")]
+        [SerializeField] private float autoHideSeconds = 3f;
 
         [Header("Audio")]
         [Tooltip("Menu SFX category played when an invite appears.")]
@@ -112,10 +114,17 @@ namespace CosmicShore.UI
         {
             if (!_pendingInvite.HasValue) return;
 
-            _timer += Time.deltaTime;
-            if (_timer >= autoDeclineSeconds)
+            // Unscaled so a paused / zero-timescale menu still hides the teaser.
+            _timer += Time.unscaledDeltaTime;
+            if (_timer >= autoHideSeconds)
             {
-                OnDeclinePressed();
+                // Auto-HIDE only — do NOT decline. The invite stays in the FriendsListPanel
+                // Requests list for its own lifetime; the host's pending clears via its timeout.
+                // (A newer invite would have already replaced _pendingInvite + reset the timer —
+                // latest-wins is inherent in OnInviteReceived.)
+                _pendingInvite = null;
+                _timer = 0f;
+                ShowPanel(false);
             }
         }
 

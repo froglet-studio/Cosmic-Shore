@@ -47,8 +47,10 @@ namespace CosmicShore.UI
         [Header("Settings")]
         [Tooltip("Seconds before an incoming request auto-declines. 0 = no expiry.")]
         [SerializeField] private float friendRequestExpirationSeconds = 600f;
-        [Tooltip("Seconds before an incoming party invite auto-declines.")]
-        [SerializeField] private float partyInviteExpirationSeconds = 30f;
+        [Tooltip("Seconds the incoming party-invite row lives in the Requests list before it is " +
+                 "auto-removed. Kept in step with the host's outgoing-invite timeout so both sides " +
+                 "clear together (host reverts the invitee to 'online' and can re-invite).")]
+        [SerializeField] private float partyInviteExpirationSeconds = 10f;
 
         [Inject] private FriendsServiceFacade friendsService;
 
@@ -297,6 +299,11 @@ namespace CosmicShore.UI
         {
             var status = ResolveRemoteStatus(player, out int memberCount, out int maxSlots, out string matchName);
 
+            // The ✕ doubles as a kick when this row is a member of MY party and I'm the
+            // host (KickPartyMemberAsync is host-only). Otherwise: no kick affordance.
+            bool canKick = status == OnlineInfoEntry.Status.InYourParty &&
+                           connectionData != null && connectionData.IsPartyHost;
+
             entry.Populate(
                 player.PlayerId,
                 player.DisplayName,
@@ -305,7 +312,9 @@ namespace CosmicShore.UI
                 memberCount,
                 maxSlots,
                 matchName,
-                onInvite: OnInviteClicked);
+                onInvite: OnInviteClicked,
+                onCancel: OnCancelInviteClicked,
+                onKick: canKick ? OnKickMemberClicked : null);
 
             // Preserve pending-invite tint if we have an outgoing invite in flight.
             if (_outgoingInvitePlayerIds.Contains(player.PlayerId))
@@ -329,7 +338,14 @@ namespace CosmicShore.UI
                       : (connectionData != null ? connectionData.MaxPartySlots : 0);
             matchName = player.MatchName;
 
-            // In-match takes priority.
+            // Already in MY party → non-invitable "IN YOUR PARTY" (Task 1). Highest
+            // priority: a party member is in *my* lobby, not somewhere else. OnlineInfoEntry
+            // makes this status non-invitable, so the row disables + relabels (it is NOT
+            // hidden — the party member stays visible as a status indicator).
+            if (IsInSameParty(player.PlayerId))
+                return OnlineInfoEntry.Status.InYourParty;
+
+            // In-match takes priority (over lobby states).
             if (!string.IsNullOrEmpty(matchName))
                 return OnlineInfoEntry.Status.InMatch;
 
@@ -522,6 +538,45 @@ namespace CosmicShore.UI
                 CSDebug.LogWarning($"[FriendsListPanel] Failed to send invite: {e.Message}");
                 _outgoingInvitePlayerIds.Remove(playerId);
                 FindEntryByPlayerId<OnlineInfoEntry>(_spawnedOnline, playerId)?.ResetInviteState();
+            }
+        }
+
+        // The host clicked the ✕ on a pending row. Retract the outgoing invite — HostConnectionService
+        // re-publishes invite_payloads without it (the recipient's invite/popup/row vanish) and fires
+        // OutgoingInviteCleared, which reverts the row to online. The row also resets optimistically.
+        async void OnCancelInviteClicked(string playerId)
+        {
+            _outgoingInvitePlayerIds.Remove(playerId);
+            if (HostConnectionService.Instance == null) return;
+
+            try
+            {
+                await HostConnectionService.Instance.CancelInviteAsync(playerId);
+                CSDebug.Log($"[FriendsListPanel] Invite to {playerId} cancelled");
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[FriendsListPanel] Failed to cancel invite: {e.Message}");
+            }
+        }
+
+        // The host clicked the ✕ on a row for a member of their own party. Remove that
+        // member via HostConnectionService (host-only). OnPartyMemberKicked re-renders the
+        // online section, so the row reverts to its invitable state on success.
+        async void OnKickMemberClicked(string playerId)
+        {
+            if (HostConnectionService.Instance == null) return;
+
+            try
+            {
+                await HostConnectionService.Instance.KickPartyMemberAsync(playerId);
+                CSDebug.Log($"[FriendsListPanel] Kicked {playerId} from party");
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogWarning($"[FriendsListPanel] Failed to kick member: {e.Message}");
+                // Re-render so the optimistically-hidden ✕ recovers if the kick didn't take.
+                PopulateOnlineSection();
             }
         }
 

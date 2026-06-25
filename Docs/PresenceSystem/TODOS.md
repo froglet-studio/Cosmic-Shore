@@ -80,7 +80,7 @@ that data (deciding `LobbyMembershipMonitor` states).
 UI feedback today. Users see an empty online-player panel with no
 explanation.
 
-**Touchpoint.** `OnlinePlayersPanel` and `PartyAreaPanel` could
+**Touchpoint.** `FriendsListPanel` and `ArcadeLobbyList` could
 subscribe to `PartyStateMachine` state changes and overlay a small
 spinner / text label during `Reconnecting`.
 
