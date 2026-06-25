@@ -364,3 +364,23 @@ component, and makes the panel generic (every scene), not tournament-gated:
 **Wire:** ConnectingPanel (sibling of MiniGameHUD under GameCanvas) → `ConnectingPanelController` with
 `gameData`/`tournamentData`/`palette`, `connectingCamera` (Depth above gameplay cam, Clear Flags
 Skybox/Solid), `statusText`, `gameModeText`, `maelstromRankText`. Assign it to `MiniGameHUD.connectingPanel`.
+
+### v2.5 — summary button double-fire + standings ordering fixes
+
+Two playtest regressions in the v2 scene/UI, both now fixed (code is the single source the spec already
+mandated):
+
+- **NEXT / Play Again / Main Menu started a new game instead of advancing/ending.** All three summary
+  buttons (`readyButton` 1067315745, `playAgainButton` 1932153207, `mainMenuButton` 2009116738) had an
+  **inspector `onClick → OnHostStartPressed`** on top of the code listener `Awake()` adds — the exact
+  double-fire §6 warns about. On NEXT the first invocation ran `ShowSummaryPanel()` (which clears
+  `_active`/`_summaryMode`); the second then fell through to `BeginNextRound()` and launched a game. Play
+  Again/Main Menu were wired to the *wrong* method entirely (`OnHostStartPressed`), so they also started a
+  game. **Fix:** removed all three inspector `onClick` entries from `Maelstrom.unity` (code listeners
+  `OnReadyButtonPressed`/`OnPlayAgainPressed`/`OnMainMenuPressed` are now the only source) + a defensive
+  `if (!_active) return;` guard at the top of `OnReadyButtonPressed`.
+- **Final standings listed by per-round placement, not cumulative total.** `TournamentRoundCard.BuildPlayers`
+  rendered `record.Players` in that round's finishing order; on the deciding round (round-winner ≠ overall
+  leader) the rows read as mis-ordered against the Total Score they show. **Fix:** order the round-card rows
+  by cumulative Total Score descending (stable tiebreak by domain enum), per §6 "reorder by the overall
+  leader" — so the leading domain is always on top, consistent with the summary panel.

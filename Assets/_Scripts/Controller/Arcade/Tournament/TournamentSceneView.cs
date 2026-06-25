@@ -258,6 +258,13 @@ namespace CosmicShore.Gameplay
 
         public void OnReadyButtonPressed()
         {
+            // Defense-in-depth against a double-wired button (inspector onClick + this code listener):
+            // ShowSummaryPanel() clears _active, so a stray second synchronous invocation can't fall
+            // through to the round-start path and launch a game off the summary screen. The onClick is
+            // code-wired only now (the inspector OnHostStartPressed entries were removed from
+            // Maelstrom.unity — they double-fired NEXT/Play Again/Main Menu into BeginNextRound).
+            if (!_active) return;
+
             if (_summaryMode) { ShowSummaryPanel(); return; }   // NEXT → results
 
             if (lobbyNetwork != null)
