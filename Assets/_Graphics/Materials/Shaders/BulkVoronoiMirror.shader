@@ -2,12 +2,12 @@ Shader "CosmicShore/BulkVoronoiMirror"
 {
     Properties
     {
-        _BaseColor ("Mirror Tint", Color) = (0.12, 0.5, 0.95, 0.58)
-        _Color ("Color", Color) = (0.12, 0.5, 0.95, 0.58)
+        _BaseColor ("Mirror Tint", Color) = (0.025, 0.13, 0.24, 0.82)
+        _Color ("Color", Color) = (0.025, 0.13, 0.24, 0.82)
         _LineColor ("Cell Line Color", Color) = (0.03, 0.9, 1, 1)
-        _Alpha ("Alpha", Range(0, 1)) = 0.58
+        _Alpha ("Alpha", Range(0, 1)) = 0.82
         _Pulse ("Pulse", Range(0, 4)) = 0
-        _MirrorStrength ("Mirror Strength", Range(0, 1)) = 0.9
+        _MirrorStrength ("Mirror Strength", Range(0, 1)) = 0.48
         _Distortion ("Facet Distortion", Range(0, 2)) = 0.55
     }
     SubShader
@@ -103,19 +103,23 @@ Shader "CosmicShore/BulkVoronoiMirror"
                 float fresnel = pow(1.0 - saturate(dot(n, viewDir)), 2.4);
                 float facet = sin(dot(floor(i.uv * 7.0), float2(13.7, 41.3)) + _Time.y * 0.6);
                 float reflection = sin((i.worldPos.x + i.worldPos.z) * 0.028 + facet * _Distortion + _Time.y * 0.85) * 0.5 + 0.5;
-                float edge = 1.0 - smoothstep(0.025, 0.105, voronoiEdge(i.uv * 2.8));
+                float cellEdge = voronoiEdge(i.uv * 3.6);
+                float edge = 1.0 - smoothstep(0.055, 0.18, cellEdge);
+                float circuit = smoothstep(0.035, 0.0, abs(frac(i.uv.y * 18.0 + sin(i.uv.x * 9.0 + _Time.y * 0.7) * 0.18) - 0.5) - 0.18);
+                float darkFacet = sin(dot(floor(i.uv * 9.0), float2(17.3, 29.7)) + _Time.y * 0.35) * 0.5 + 0.5;
                 float3 reflectDir = reflect(-viewDir, normalize(n + float3(sin(facet) * 0.08, cos(facet) * 0.04, sin(facet * 1.7) * 0.08)));
                 half4 encodedReflection = UNITY_SAMPLE_TEXCUBE(unity_SpecCube0, reflectDir);
                 float3 probeReflection = DecodeHDR(encodedReflection, unity_SpecCube0_HDR);
 
-                float3 mirror = lerp(_BaseColor.rgb * 0.36, float3(0.85, 0.96, 1.0), reflection * _MirrorStrength);
-                mirror = lerp(mirror, probeReflection * (0.42 + fresnel * 0.85) + _BaseColor.rgb * 0.18, _MirrorStrength * 0.48);
-                mirror += fresnel * float3(0.18, 0.55, 1.0);
-                mirror = lerp(mirror, _LineColor.rgb * (1.0 + _Pulse * 0.55), edge);
+                float3 mirror = lerp(_BaseColor.rgb * (0.28 + darkFacet * 0.18), float3(0.36, 0.72, 0.95), reflection * _MirrorStrength * 0.62);
+                mirror = lerp(mirror, probeReflection * (0.22 + fresnel * 0.42) + _BaseColor.rgb * 0.55, _MirrorStrength * 0.24);
+                mirror += fresnel * float3(0.08, 0.35, 0.65);
+                float lineMask = saturate(edge + circuit * 0.5);
+                mirror = lerp(mirror, _LineColor.rgb * (1.15 + _Pulse * 0.65), lineMask);
 
                 fixed4 color;
                 color.rgb = mirror;
-                color.a = saturate(_Alpha * (0.3 + fresnel * 0.5 + edge * 0.7 + _Pulse * 0.08));
+                color.a = saturate(_Alpha * (0.42 + fresnel * 0.28 + lineMask * 0.72 + _Pulse * 0.08));
                 return color;
             }
             ENDCG

@@ -22,6 +22,8 @@ namespace CosmicShore.Gameplay
         readonly List<AudioSourceSnapshot> _bulkAudioSnapshots = new();
         bool _audioStartupLogged;
         bool _bulkMixApplied;
+        bool _bulkMusicSettingsSubscribed;
+        float _nextBulkMixEnforceTime;
 
         void StartMusic()
         {
@@ -35,22 +37,22 @@ namespace CosmicShore.Gameplay
             _musicSource.loop = true;
             _musicSource.playOnAwake = false;
             _musicSource.pitch = 1f;
-            _musicSource.volume = 1f;
             _musicSource.spatialBlend = 0f;
             _musicSource.ignoreListenerPause = true;
             _musicSource.mute = false;
             _musicSource.outputAudioMixerGroup = null;
 
             AudioListener.pause = false;
-            AudioListener.volume = 1f;
             EnsureSingleAudioListener();
+            SubscribeBulkMusicSettings();
+            ApplyBulkMusicVolume();
             ApplyBulkAudioMix();
 
             if (_musicSource.clip)
             {
                 if (!_musicSource.isPlaying)
                     _musicSource.Play();
-                CSDebug.Log($"[BulkFilaments] Music playing: {_musicSource.clip.name}, length={_musicSource.clip.length:0.0}s, listenerVolume={AudioListener.volume:0.00}.");
+                CSDebug.Log($"[BulkFilaments] Music playing: {_musicSource.clip.name}, length={_musicSource.clip.length:0.0}s, volume={_musicSource.volume:0.00}.");
             }
             else
             {
@@ -109,8 +111,56 @@ namespace CosmicShore.Gameplay
             }
 
             AudioListener.pause = false;
-            AudioListener.volume = 1f;
             _sfxSource.PlayOneShot(clip, volumeScale);
+        }
+
+        void SubscribeBulkMusicSettings()
+        {
+            if (_bulkMusicSettingsSubscribed)
+                return;
+
+            _bulkMusicSettingsSubscribed = true;
+            GameSetting.OnChangeMusicEnabledStatus += OnBulkMusicEnabledChanged;
+            GameSetting.OnChangeMusicLevel += OnBulkMusicLevelChanged;
+        }
+
+        void UnsubscribeBulkMusicSettings()
+        {
+            if (!_bulkMusicSettingsSubscribed)
+                return;
+
+            _bulkMusicSettingsSubscribed = false;
+            GameSetting.OnChangeMusicEnabledStatus -= OnBulkMusicEnabledChanged;
+            GameSetting.OnChangeMusicLevel -= OnBulkMusicLevelChanged;
+        }
+
+        void OnBulkMusicEnabledChanged(bool _) => ApplyBulkMusicVolume();
+
+        void OnBulkMusicLevelChanged(float _) => ApplyBulkMusicVolume();
+
+        void ApplyBulkMusicVolume()
+        {
+            if (!_musicSource)
+                return;
+
+            bool enabled = true;
+            float level = 1f;
+            var setting = GameSetting.Instance;
+            if (setting)
+            {
+                enabled = setting.MusicEnabled;
+                level = setting.MusicLevel;
+            }
+            else
+            {
+                enabled = PlayerPrefs.GetInt(nameof(GameSetting.PlayerPrefKeys.MusicEnabled), 1) == 1;
+                level = PlayerPrefs.GetFloat(nameof(GameSetting.PlayerPrefKeys.MusicLevel), 1f);
+            }
+
+            // Match AudioSystem's legacy music source scaling so the settings
+            // slider has the same loudness curve inside Bulk Filaments.
+            _musicSource.volume = enabled ? Mathf.Clamp01(level) / 5f : 0f;
+            _musicSource.mute = !enabled;
         }
 
         float BeatPulse()
@@ -210,6 +260,31 @@ namespace CosmicShore.Gameplay
 
             _bulkAudioSnapshots.Clear();
             _bulkMixApplied = false;
+            UnsubscribeBulkMusicSettings();
+        }
+
+        void EnforceBulkAudioMix()
+        {
+            if (!_bulkMixApplied || Time.unscaledTime < _nextBulkMixEnforceTime)
+                return;
+
+            _nextBulkMixEnforceTime = Time.unscaledTime + 0.75f;
+            ApplyBulkMusicVolume();
+
+            var sources = UnityEngine.Object.FindObjectsByType<AudioSource>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            foreach (var source in sources)
+            {
+                if (!source || IsBulkSource(source) || !IsBackgroundAudioLayer(source))
+                    continue;
+
+                if (!_bulkAudioSnapshots.Exists(snapshot => snapshot.Source == source))
+                    _bulkAudioSnapshots.Add(new AudioSourceSnapshot(source, source.volume, source.mute, source.isPlaying));
+
+                source.volume = 0f;
+                source.mute = true;
+                if (source.isPlaying)
+                    source.Pause();
+            }
         }
 
         bool IsBulkSource(AudioSource source)

@@ -66,11 +66,11 @@ namespace CosmicShore.Gameplay
                             ?? Shader.Find("Universal Render Pipeline/Unlit")
                             ?? Shader.Find("Unlit/Color");
             var material = new Material(shader) { name = "Bulk Voronoi Mirror Wall" };
-            SetMaterialColor(material, new Color(0.14f, 0.58f, 0.95f, 0.56f));
+            SetMaterialColor(material, new Color(0.025f, 0.13f, 0.24f, 0.82f));
             if (material.HasProperty("_LineColor"))
-                material.SetColor("_LineColor", new Color(0.05f, 0.86f, 1f, 1f));
-            SetMaterialFloat(material, "_Alpha", 0.58f);
-            SetMaterialFloat(material, "_MirrorStrength", 0.92f);
+                material.SetColor("_LineColor", new Color(0.02f, 0.92f, 1f, 1f));
+            SetMaterialFloat(material, "_Alpha", 0.82f);
+            SetMaterialFloat(material, "_MirrorStrength", 0.48f);
             return material;
         }
 

@@ -3,6 +3,31 @@
 Newest entries first. Keep this as the local implementation trail; preserve broader
 handoff context in Second Brain Prime.
 
+## 2026-06-24 - Music slider and wall-art restore
+
+Todd playtested the richer build and reported that Bulk's custom music was too
+loud and ignored the music volume slider, and that the wormhole wall artwork had
+become less visible.
+
+Changes:
+
+- Bulk's custom `Dopamine` music source now listens to `GameSetting` music
+  enable/level events.
+- Bulk music uses the same `/5` legacy `AudioSystem` music scaling as the normal
+  music sources, so the settings music slider controls it live.
+- Removed the forced `AudioListener.volume = 1` behavior from Bulk audio.
+- Added periodic Bulk audio mix enforcement so normal jukebox/background layers
+  stay muted if they start after Bulk has already loaded.
+- Retuned the Voronoi mirror wall toward darker stained-glass/circuit artwork:
+  stronger opacity, stronger blue cell boundaries, darker facets, and less
+  reflection-probe washout.
+
+Verification:
+
+- `git diff --check` passed.
+- Unity batch import and Play Mode QA were blocked because the project was open
+  in another Unity instance.
+
 ## 2026-06-24 - Depth sprites, visible nanites, finale, and scoring pass
 
 Todd asked for the brighter level to regain depth and texture, for stronger

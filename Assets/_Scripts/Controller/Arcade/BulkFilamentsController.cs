@@ -215,6 +215,7 @@ namespace CosmicShore.Gameplay
             AnimateNanites();
             AnimatePulseGates();
             UpdateTransientShards(Time.deltaTime);
+            EnforceBulkAudioMix();
             TickAutoStartCountdown();
 
             if (_missionFinaleActive)
