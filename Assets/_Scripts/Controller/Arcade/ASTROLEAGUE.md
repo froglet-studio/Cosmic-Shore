@@ -36,7 +36,7 @@ Joust / Crystal Capture — solo play is just a party of one plus AI backfill.
 | `AstroLeagueMatchMonitor` | `TurnMonitor` match clock, server-authoritative ("M:SS"/"OT" pushed by ClientRpc on the shared display channel). Pauses during celebrations; the controller decides full-time vs overtime; turn ends only on `ForceEnd()` |
 | `AstroLeagueGoal` | Accurate goal detector (server-gated): per-tick polls the ball for a genuine INWARD crossing of the goal-line plane WITHIN the mouth circle (no fat-trigger false positives, teleport-guarded); reports to `AstroLeagueController.HandleGoalServer` — attribution lives in the controller |
 | `AstroLeagueArena` | Runtime **gameplay-only** HyperSea stadium, built identically on every peer (no networking): a **court play boundary that IS the Cell's nucleus** (the arena builds an `AstroLeagueBoundary` at `settings`-driven scaled dimensions and the ball reflects off its walls — no collider; this replaced six invisible BoxCollider walls, −6 colliders), portal goal rings with ball-proximity anticipation flare, and a midfield/kickoff center ring. The boundary **shape is pluggable per intensity** (see "Court Geometry" below) — flat polytope faces BANK the ball; the legacy sphere focuses it. **Owns no environment dressing** — the boundary read is the Cell's `MembranePrefab`, the drifting motes are the Cell's `CytoplasmPrefab`, and the boundary/core is the Cell's `NucleusPrefab` morphed to the court shape (a bespoke edge cage + plankton particle system were removed; see `Docs/ECOSYSTEM_MASTERPLAN.md §5.1`) |
-| `AstroLeagueBoundary` | The court geometry the ball bounces off (plain C# object, built per intensity on every peer). Every ricochet shape (box, octagonal/hexagonal prism, beveled box, octahedron) is a **convex polytope = a list of inward face-planes**, so one generic `Contain` reflects the ball off each violated plane — flat faces preserve the wall-PARALLEL velocity (the bank), only the perpendicular flips, exactly like billiards/air-hockey/Rocket-League boards. Sphere + Cylinder keep an analytic curved branch (Sphere = the legacy center-focusing baseline). The same plane list drives `BuildVisualMesh()` (convex hull of the planes, double-sided), so the nucleus **cage silhouette IS the wall the ball hits** |
+| `AstroLeagueBoundary` | The court geometry the ball bounces off (plain C# object, built per intensity on every peer). Every ricochet polytope (box, octagonal/hexagonal prism, beveled box, octahedron) is a **convex polytope = a list of inward face-planes**, so one generic `Contain` reflects the ball off each violated plane — flat faces preserve the wall-PARALLEL velocity (the bank), only the perpendicular flips, exactly like billiards/air-hockey/Rocket-League boards. Sphere + Cylinder keep an analytic curved branch (Sphere = the legacy center-focusing baseline). **NotchedRing** layers a central torus OBSTACLE (the ball bounces off its OUTSIDE, with an angular notch) inside a chosen outer court — a center choke point. The same geometry drives `BuildVisualMesh()` (outer hull + notched torus, double-sided), so the nucleus **cage silhouette IS the wall the ball hits** |
 | `AstroLeagueSettingsSO` | All tunables |
 | `AstroLeagueScoringRuleSO` | Scoring strategy: mercy-rule end condition over per-domain `GoalsScored` sums, Score = personal goals, "WON BY N GOALS" reveal |
 
@@ -164,17 +164,19 @@ server with billiard thinking:
   controller's `RecoilVessel_ClientRpc` — owner-authoritative vessels move only where
   `IsNetworkOwner`, so it's keyed by vessel `NetworkObjectId`.
 - **Intensity scales the whole playfield AND picks the court shape.** The controller computes a
-  scale factor that steps evenly with intensity — **1× / 2× / 3× / 4×** for intensities 1-4 (`lerp(1,
-  intensityScaleAtMax=4, (i-1)/(maxIntensityLevel-1))`) — and a **court shape** per intensity
-  (`settings.boundaryShapesByIntensity`, default Box / Octagon / BeveledBox / Hex), and broadcasts
-  both in `SyncMatchConfig_ClientRpc` so every peer applies the same scale + geometry. (4× is the
-  playable ceiling; the earlier 10× max was too big.) `AstroLeagueArena.Build(scale, shape)` rebuilds
-  the stadium boundary at the scaled dimensions, `AstroLeagueBall.SetSizeScale(scale)` resizes the
-  ball (visual + collider) on top of its authored base, the controller pushes the goals + team spawns
-  out to the scaled goal lines, and the nucleus is morphed to the boundary (mesh for polytopes, radius
-  for sphere). Vessels stay normal-size, so a high-intensity match is a bigger playfield with a bigger
-  ball. Players reset to the scaled team positions on every kickoff (`ComputeKickoffPose` reads the
-  scaled spawns and scales the lateral teammate spacing too).
+  scale factor that steps evenly with intensity — kept tight at **1× / 1.33× / 1.67× / 2×** for
+  intensities 1-4 (`lerp(1, intensityScaleAtMax=2, (i-1)/(maxIntensityLevel-1))`) so all four courts
+  play at a similar size — and a **court shape** per intensity (`settings.boundaryShapesByIntensity`,
+  default BeveledBox / Hex / Cylinder / NotchedRing). Both are published as **NetworkVariables**
+  (`n_IntensityScale`, `n_BoundaryShape`, `n_GoalTarget`) so every peer — including a client that
+  spawns AFTER the server set them — applies the same scale + geometry (a one-shot ClientRpc used to
+  miss late joiners, leaving them with no visible arena). `AstroLeagueArena.Build(scale, shape)`
+  rebuilds the stadium boundary at the scaled dimensions, `AstroLeagueBall.SetSizeScale(scale)`
+  resizes the ball (visual + collider) on top of its authored base, the controller pushes the goals +
+  team spawns out to the scaled goal lines, and the nucleus is morphed to the boundary (mesh for
+  polytopes/cylinder/ring, radius for sphere). Vessels stay normal-size. Players reset to the scaled
+  team positions on every kickoff (`ComputeKickoffPose` reads the scaled spawns and scales the lateral
+  teammate spacing too).
 - **Faceted icosphere — rotation you can see.** The mesh is a medium-poly **flat-shaded
   icosphere** generated at runtime (`IcosphereMeshGenerator`, default 2 subdivisions =
   320 tris) and assigned to the MeshFilter in `SetupVisuals` (the SphereCollider is kept,
@@ -255,23 +257,27 @@ the wall the ball hits.
 
 | Shape | Feel | Notes |
 |---|---|---|
+| `BeveledBox` | Rocket-League-style | Box with every edge + corner chamfered — flat faces + angled ramps that redirect instead of trap. **(default i1)** |
+| `HexagonalPrism` | Tighter 6-wall arena | Elongated hexagon cross-section extruded along the goal axis, flat caps. **(default i2)** |
+| `Cylinder` | Banks lengthwise, focuses across | Flat goal caps + curved barrel. **(default i3)** |
+| `NotchedRing` | Center choke point, lots of bounces | A central **torus ring obstacle** (axis = goal axis) inside an outer court (default Cylinder). The ball bounces off the ring's OUTSIDE; the central hole + an angular **notch** stay open as shooting lanes. **(default i4)** |
 | `Box` | Pool / air-hockey — sharpest banks | 6 flat walls, 90° corners (can trap). Flat goal caps backboard missed shots. |
 | `OctagonalPrism` | "Cage" arena, varied bank angles | Box with its 4 goal-axis edges chamfered → octagon cross-section, 135° corners, flat caps. |
-| `HexagonalPrism` | Tighter 6-wall arena | Elongated hexagon cross-section extruded along the goal axis, flat caps. |
-| `BeveledBox` | Rocket-League-style | Box with every edge + corner chamfered — flat faces + angled ramps that redirect instead of trap. |
 | `Octahedron` | Diamond, every wall banks | 8 angled faces; very different, more chaotic. |
-| `Cylinder` | Banks lengthwise, focuses across | Flat goal caps + curved barrel. |
 | `Sphere` | Legacy center-focusing baseline | The original behavior, kept for A/B comparison. |
 
 **Per-intensity test harness.** `AstroLeagueSettingsSO.boundaryShapesByIntensity[]` maps one shape to
-each intensity (default 1-4 = Box / Octagon / BeveledBox / Hex). The controller reads
-`settings.ShapeForIntensity(intensity)`, broadcasts it with the scale in `SyncMatchConfig_ClientRpc`,
-and `ApplyIntensityScale(scale, shape)` rebuilds the boundary + morphs the nucleus on every peer.
-Re-map shapes freely in the inspector — it's pure data. Chamfer depth is tunable via
-`settings.octagonBevelFraction` / `beveledBoxBevelFraction`; the sphere radius (sphere shape only)
-stays `settings.boundaryRadius`. Polytope walls derive from the arena's `arenaLength/width/height`
-(the goal axis is Z, so the flat ±length/2 caps sit on the goal lines and "backboard" missed shots —
-`AstroLeagueGoal`'s plane-cross-within-the-mouth detection is shape-agnostic and unchanged).
+each intensity (default 1-4 = **BeveledBox / Hex / Cylinder / NotchedRing**). The server reads
+`settings.ShapeForIntensity(intensity)`, publishes it + the scale via NetworkVariables, and every
+peer's `ApplyIntensityScale(scale, shape)` rebuilds the boundary + morphs the nucleus. Re-map shapes
+freely in the inspector — it's pure data. Tunables: `octagonBevelFraction` / `beveledBoxBevelFraction`
+(chamfer depth); `boundaryRadius` (sphere only); and the **NotchedRing** ring — `notchedRingOuterShape`
+(default Cylinder), `ringMajorRadiusFraction` / `ringTubeRadiusFraction` (ring size, as fractions of
+the court cross-section radius — the central hole = major − tube must clear the ball), and
+`notchCenterDegrees` / `notchHalfWidthDegrees` (the gap). Polytope/cylinder/ring outer walls derive
+from the arena's `arenaLength/width/height` (the goal axis is Z, so the flat ±length/2 caps sit on the
+goal lines and "backboard" missed shots — `AstroLeagueGoal`'s plane-cross-within-the-mouth detection
+is shape-agnostic and unchanged).
 
 ## Replay
 
@@ -333,8 +339,8 @@ ecology is wired.)*
 
 **The Cell owns the environment, not the arena** (`Docs/ECOSYSTEM_MASTERPLAN.md §5.1`,
 `CLAUDE.md ▸ "The Cell owns the environment"`). The arena builds only gameplay-bearing structure
-(the spherical boundary's ball physics, goal portals, midfield ring). Everything
-atmospheric/territorial — including the boundary sphere itself — lives on the `CellConfigDataSO`:
+(the court boundary's ball physics, goal portals, midfield ring). Everything
+atmospheric/territorial — including the boundary surface itself — lives on the `CellConfigDataSO`:
 
 | Need | Cell field | (removed bespoke duplicate) |
 |---|---|---|

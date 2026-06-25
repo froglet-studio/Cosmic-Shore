@@ -24,25 +24,26 @@ namespace CosmicShore.Gameplay
 
         [Header("Intensity Scale (arena + ball + team spawns)")]
         [Tooltip("Arena, ball, goals and team-spawn distances scale from 1x at intensity 1 up to this " +
-                 "factor at the max intensity (4). 4x is the playable ceiling (the old 10x was too big); " +
-                 "intensities 1-4 step evenly 1x / 2x / 3x / 4x. Vessels stay their normal size.")]
-        public float intensityScaleAtMax = 4f;
+                 "factor at the max intensity. Kept tight (1x..2x) so all four courts play at a similar " +
+                 "size: intensities 1-4 step evenly 1x / 1.33x / 1.67x / 2x. Vessels stay normal size.")]
+        public float intensityScaleAtMax = 2f;
 
         [Tooltip("Highest intensity level used for the scale ramp (the arcade card's MaxIntensity).")]
         public int maxIntensityLevel = 4;
 
         [Header("Arena — Court Boundary (the cell nucleus)")]
         [Tooltip("Court geometry the ball bounces off, ONE PER INTENSITY (index 0 = intensity 1). FLAT " +
-                 "polytope walls BANK the ball (billiards/air-hockey/Rocket-League feel); a Sphere " +
-                 "focuses it toward center (the legacy baseline). The cell NUCLEUS is morphed to this " +
-                 "shape so the wall you see is the wall the ball hits. Default 1-4: Box, Octagon, " +
-                 "BeveledBox, Hex — re-map freely. Falls back to the last entry above maxIntensityLevel.")]
+                 "polytope walls BANK the ball (billiards/air-hockey/Rocket-League feel); Sphere focuses " +
+                 "it toward center (the legacy baseline); NotchedRing adds a central ring choke point. " +
+                 "The cell NUCLEUS is morphed to this shape so the wall you see is the wall the ball " +
+                 "hits. Default 1-4: BeveledBox, Hex, Cylinder, NotchedRing — re-map freely. Falls back " +
+                 "to the last entry above maxIntensityLevel.")]
         public AstroLeagueBoundaryShape[] boundaryShapesByIntensity =
         {
-            AstroLeagueBoundaryShape.Box,
-            AstroLeagueBoundaryShape.OctagonalPrism,
             AstroLeagueBoundaryShape.BeveledBox,
             AstroLeagueBoundaryShape.HexagonalPrism,
+            AstroLeagueBoundaryShape.Cylinder,
+            AstroLeagueBoundaryShape.NotchedRing,
         };
 
         [Tooltip("Radius (at intensity 1) of the boundary ONLY when the shape is Sphere. ~190 " +
@@ -57,6 +58,25 @@ namespace CosmicShore.Gameplay
         [Tooltip("0..1 chamfer depth for the BeveledBox (every edge + corner cut). Higher = rounder, " +
                  "more Rocket-League corner-ramp redirect; lower = closer to a sharp box.")]
         [Range(0f, 1f)] public float beveledBoxBevelFraction = 0.45f;
+
+        [Header("Arena — NotchedRing (central ring obstacle)")]
+        [Tooltip("Outer court the central ring sits inside, for the NotchedRing shape (default Cylinder). " +
+                 "Anything except NotchedRing itself.")]
+        public AstroLeagueBoundaryShape notchedRingOuterShape = AstroLeagueBoundaryShape.Cylinder;
+
+        [Tooltip("Ring radius as a fraction of the court cross-section radius (min(width,height)/2). The " +
+                 "central hole = (major − tube) and must clear the ball, so keep major above tube.")]
+        [Range(0f, 1f)] public float ringMajorRadiusFraction = 0.5f;
+
+        [Tooltip("Ring thickness (tube radius) as a fraction of the court cross-section radius. The ball " +
+                 "bounces off the OUTSIDE of this tube.")]
+        [Range(0f, 1f)] public float ringTubeRadiusFraction = 0.18f;
+
+        [Tooltip("Angle (degrees, atan2(y,x)) of the notch center — the gap cut in the ring, a shooting lane.")]
+        public float notchCenterDegrees = 0f;
+
+        [Tooltip("Half-width of the notch gap in degrees (0 = a solid ring, no gap). 30 = a 60° opening.")]
+        [Range(0f, 90f)] public float notchHalfWidthDegrees = 30f;
 
         /// <summary>Court shape for an intensity level (1-based), clamped to the configured array.</summary>
         public AstroLeagueBoundaryShape ShapeForIntensity(int intensity)

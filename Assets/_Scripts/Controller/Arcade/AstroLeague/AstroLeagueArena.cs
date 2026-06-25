@@ -95,7 +95,13 @@ namespace CosmicShore.Gameplay
             Vector3 halfExtents = new Vector3(_W / 2f, _H / 2f, _L / 2f);
             float octFrac = settings != null ? settings.octagonBevelFraction : 0.5f;
             float bevFrac = settings != null ? settings.beveledBoxBevelFraction : 0.45f;
-            _boundary = new AstroLeagueBoundary(shape, Center, halfExtents, _boundaryRadius, octFrac, bevFrac);
+            var ringOuter = settings != null ? settings.notchedRingOuterShape : AstroLeagueBoundaryShape.Cylinder;
+            float ringMajor = settings != null ? settings.ringMajorRadiusFraction : 0.5f;
+            float ringTube = settings != null ? settings.ringTubeRadiusFraction : 0.18f;
+            float notchCenter = (settings != null ? settings.notchCenterDegrees : 0f) * Mathf.Deg2Rad;
+            float notchHalf = (settings != null ? settings.notchHalfWidthDegrees : 30f) * Mathf.Deg2Rad;
+            _boundary = new AstroLeagueBoundary(shape, Center, halfExtents, _boundaryRadius, octFrac, bevFrac,
+                ringOuter, ringMajor, ringTube, notchCenter, notchHalf);
             if (ball != null) ball.SetBoundary(_boundary);
 
             BuildGoalPortal("GoalPortal_Jade", Center + Vector3.back * (_L / 2f), Vector3.forward, JadeColor, out jadeRingMaterial);

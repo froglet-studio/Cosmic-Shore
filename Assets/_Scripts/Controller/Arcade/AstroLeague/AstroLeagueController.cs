@@ -56,6 +56,22 @@ namespace CosmicShore.Gameplay
         // on despawn so it doesn't leak across matches/replays (the scene-reload replay re-generates it).
         Mesh _generatedNucleusMesh;
 
+        // Match config (intensity scale, court shape, goal target) replicated via NetworkVariables rather
+        // than a one-shot ClientRpc, so a client that spawns AFTER the server set them still builds the
+        // arena (a one-shot RPC missed late joiners — the "not all players see the arena" bug). Every
+        // peer reads the current value at spawn AND subscribes to changes, then morphs its own arena.
+        readonly NetworkVariable<float> n_IntensityScale =
+            new(1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        readonly NetworkVariable<int> n_BoundaryShape =
+            new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        readonly NetworkVariable<int> n_GoalTarget =
+            new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        // Last (scale, shape) actually applied, so a re-read + an OnValueChanged don't rebuild twice.
+        bool _matchConfigApplied;
+        float _appliedScale = -1f;
+        AstroLeagueBoundaryShape _appliedShape;
+
         enum MatchPhase { PreMatch, Kickoff, Live, Celebration, Overtime, Finished }
         MatchPhase phase = MatchPhase.PreMatch;
 
@@ -87,16 +103,50 @@ namespace CosmicShore.Gameplay
 
             CaptureBaseLayout();
 
-            if (!IsServer) return;
+            if (IsServer)
+            {
+                // Compute scale + court shape from the (server-authoritative) selected intensity and
+                // publish them; they replicate to every current AND future peer. Set BEFORE subscribing
+                // so the host doesn't fire OnValueChanged per-field and rebuild the arena mid-config.
+                n_GoalTarget.Value = settings.goalLimit;
+                n_IntensityScale.Value = ScaleForIntensity();
+                n_BoundaryShape.Value = (int)ShapeForIntensity();
 
-            gameData.GoalTargetCount = settings.goalLimit;
-            // Intensity scale + court shape are computed on the server and broadcast so every peer
-            // builds the arena / sizes the ball / lays out goals + team spawns / morphs the nucleus
-            // at the exact same scale and geometry.
-            SyncMatchConfig_ClientRpc(settings.goalLimit, ScaleForIntensity(), (int)ShapeForIntensity());
+                ball.OnStruckServer += HandleBallStruckServer;
+                matchMonitor.OnClockExpired += HandleClockExpiredServer;
+            }
 
-            ball.OnStruckServer += HandleBallStruckServer;
-            matchMonitor.OnClockExpired += HandleClockExpiredServer;
+            // Every peer (host + clients + late joiners) tracks the replicated match config and morphs
+            // its own arena. Subscribe to later deltas (covers a same-tick client whose value arrives
+            // after spawn), then apply whatever is already replicated (covers a late joiner, whose
+            // OnValueChanged won't fire for the initial value it received with the spawn).
+            n_IntensityScale.OnValueChanged += OnMatchConfigChanged;
+            n_BoundaryShape.OnValueChanged += OnMatchConfigChanged;
+            n_GoalTarget.OnValueChanged += OnGoalTargetChanged;
+
+            gameData.GoalTargetCount = n_GoalTarget.Value;
+            ApplyMatchConfig();
+        }
+
+        void OnMatchConfigChanged(float _, float __) => ApplyMatchConfig();
+        void OnMatchConfigChanged(int _, int __) => ApplyMatchConfig();
+        void OnGoalTargetChanged(int _, int v) => gameData.GoalTargetCount = v;
+
+        /// <summary>
+        /// Build the arena + morph the nucleus from the replicated match config, skipping a redundant
+        /// rebuild if the (scale, shape) hasn't changed since the last apply.
+        /// </summary>
+        void ApplyMatchConfig()
+        {
+            float scale = n_IntensityScale.Value;
+            var shape = (AstroLeagueBoundaryShape)n_BoundaryShape.Value;
+            if (_matchConfigApplied && Mathf.Approximately(scale, _appliedScale) && shape == _appliedShape)
+                return;
+
+            _matchConfigApplied = true;
+            _appliedScale = scale;
+            _appliedShape = shape;
+            ApplyIntensityScale(scale, shape);
         }
 
         /// <summary>Captures the authored (intensity-1) goal + team-spawn local positions once.</summary>
@@ -133,6 +183,10 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkDespawn()
         {
+            n_IntensityScale.OnValueChanged -= OnMatchConfigChanged;
+            n_BoundaryShape.OnValueChanged -= OnMatchConfigChanged;
+            n_GoalTarget.OnValueChanged -= OnGoalTargetChanged;
+
             if (IsServer)
             {
                 ball.OnStruckServer -= HandleBallStruckServer;
@@ -150,17 +204,6 @@ namespace CosmicShore.Gameplay
             }
 
             base.OnNetworkDespawn();
-        }
-
-        [ClientRpc]
-        void SyncMatchConfig_ClientRpc(int goalTarget, float intensityScale, int shape)
-        {
-            // Layout scaling + court shape run on EVERY peer (host included) so geometry, ball size,
-            // goals, team spawns and the nucleus cage match across the session.
-            ApplyIntensityScale(intensityScale, (AstroLeagueBoundaryShape)shape);
-
-            if (IsServer) return;
-            gameData.GoalTargetCount = goalTarget;
         }
 
         /// <summary>
