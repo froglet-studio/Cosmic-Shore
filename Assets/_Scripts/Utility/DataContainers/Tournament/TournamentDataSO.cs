@@ -128,8 +128,10 @@ namespace CosmicShore.Utility
                  "2 = 3rd. Places beyond the table score 0. Shuffle awards {2,1,0}.")]
         public List<int> PointsByPlace = new() { 2, 1, 0 };
 
-        [Tooltip("Race target: the first DOMAIN whose cumulative placement crystals reach this total " +
-                 "wins the shuffle (with {2,1,0} per game, 6 ≈ three dominant finishes).")]
+        [Tooltip("FALLBACK race target only — used when the End Game Conditions tool asset is missing. " +
+                 "The authority is Tools > Cosmic Shore > End Game Conditions (Maelstrom — Win Target); " +
+                 "read EffectiveWinTarget, not this field. First DOMAIN whose cumulative placement " +
+                 "crystals reach the target wins the shuffle (with {2,1,0} per game, 6 ≈ three dominant finishes).")]
         public int WinTarget = 6;
 
         [Tooltip("Hard cap on games played so a stalemate still ends (e.g. a 6-6-2 split). The shuffle " +
@@ -207,6 +209,31 @@ namespace CosmicShore.Utility
         public string ModeName =>
             ModeCard != null && !string.IsNullOrEmpty(ModeCard.DisplayName) ? ModeCard.DisplayName : "Tournament";
 
+        /// <summary>
+        /// Runtime win target stamped by <see cref="ResolveWinTarget"/> at tournament start (0 until then).
+        /// Never serialized — re-resolved on every fresh shuffle. See <see cref="EffectiveWinTarget"/>.
+        /// </summary>
+        [System.NonSerialized] int _resolvedWinTarget;
+
+        /// <summary>
+        /// The win target actually used at runtime ("race to N"): the value resolved from the End Game
+        /// Conditions tool at tournament start (see <see cref="ResolveWinTarget"/> /
+        /// <c>TournamentController.StartTournamentInternal</c>), falling back to the serialized
+        /// <see cref="WinTarget"/> until then (and in pure unit tests). Use this everywhere — the win
+        /// check (<see cref="IsShuffleComplete"/>) and the UI race-rule text — so the displayed target
+        /// and the actual target can't drift. See the /EndGameConditions skill.
+        /// </summary>
+        public int EffectiveWinTarget => _resolvedWinTarget > 0 ? _resolvedWinTarget : WinTarget;
+
+        /// <summary>
+        /// Stamp the runtime win target, resolved by <c>TournamentController</c> from the End Game
+        /// Conditions tool (Tools &gt; Cosmic Shore &gt; End Game Conditions). Called once per shuffle
+        /// start on every peer from the same committed asset, so <see cref="IsShuffleComplete"/> stays
+        /// deterministic across the party. A non-positive value clears the override (falls back to
+        /// <see cref="WinTarget"/>).
+        /// </summary>
+        public void ResolveWinTarget(int target) => _resolvedWinTarget = Mathf.Max(0, target);
+
         public bool IsLastGame =>
             GameQueue != null && GameQueue.Count > 0 && CurrentGameIndex >= GameQueue.Count - 1;
 
@@ -214,18 +241,19 @@ namespace CosmicShore.Utility
             GameQueue != null && CurrentGameIndex >= GameQueue.Count;
 
         /// <summary>
-        /// True once the shuffle is over: a domain reached <see cref="WinTarget"/> (race to 6), or the
-        /// <see cref="MaxGames"/> cap was hit. Reduced from the synced standings + <see cref="GamesPlayed"/>,
-        /// so it evaluates identically on every peer. Drives the controller's switch from "next random
-        /// game" to "load the summary".
+        /// True once the shuffle is over: a domain reached <see cref="EffectiveWinTarget"/> (race to N,
+        /// authored in the End Game Conditions tool), or the <see cref="MaxGames"/> cap was hit. Reduced
+        /// from the synced standings + <see cref="GamesPlayed"/>, so it evaluates identically on every
+        /// peer. Drives the controller's switch from "next random game" to "load the summary".
         /// </summary>
         public bool IsShuffleComplete
         {
             get
             {
                 if (MaxGames > 0 && GamesPlayed >= MaxGames) return true;
+                int target = EffectiveWinTarget;
                 for (int i = 0; i < Standings.Count; i++)
-                    if (Standings[i].TotalPoints >= WinTarget) return true;
+                    if (Standings[i].TotalPoints >= target) return true;
                 return false;
             }
         }
@@ -267,6 +295,7 @@ namespace CosmicShore.Utility
             IsActive = false;
             CurrentGameIndex = 0;
             GamesPlayed = 0;
+            _resolvedWinTarget = 0;   // re-resolved from the End Game Conditions tool at the next start
             Standings.Clear();
             History.Clear();
             TournamentAINames.Clear();
