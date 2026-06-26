@@ -298,6 +298,11 @@ namespace CosmicShore.Gameplay
                 var imp = activeImplosions[i];
                 if (imp == null || !imp.IsActive) continue;
 
+                // Track the moving target: refresh the sink from the live fauna/vessel
+                // transform before sampling it. The _Location write below already happens
+                // every frame, so this only adds one Transform.position read per implosion.
+                imp.RefreshConvergence();
+
                 implosionJobData[count] = new ImplosionJobData
                 {
                     targetPosition = imp.TargetPosition,

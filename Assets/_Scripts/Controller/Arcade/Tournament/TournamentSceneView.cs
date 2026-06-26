@@ -52,7 +52,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] TMP_Text gameModesText;
         [Tooltip("\"ROUND N\".")]
         [SerializeField] TMP_Text roundCounterText;
-        [Tooltip("Subtitle — \"First domain to {WinTarget} points wins\".")]
+        [Tooltip("Subtitle — auto-filled \"First domain to N points wins\", where N is the Maelstrom " +
+                 "win target from Tools > Cosmic Shore > End Game Conditions (TournamentDataSO.EffectiveWinTarget).")]
         [SerializeField] TMP_Text raceRuleText;
         [Tooltip("\"LEADING DOMAIN : JADE\" (domain name coloured from the palette).")]
         [SerializeField] TMP_Text leadingDomainText;
@@ -173,7 +174,7 @@ namespace CosmicShore.Gameplay
             if (titleText) titleText.text = summaryMode ? $"{ModeName().ToUpperInvariant()} RESULTS" : ModeName().ToUpperInvariant();
             if (gameModesText) gameModesText.text = $"GAMEMODES : {GameModesPool()}";
             if (roundCounterText) roundCounterText.text = summaryMode ? $"{gamesPlayed} ROUNDS PLAYED" : $"ROUND {gamesPlayed + 1}";
-            if (raceRuleText && tournamentData != null) raceRuleText.text = $"First domain to {tournamentData.WinTarget} points wins";
+            if (raceRuleText && tournamentData != null) raceRuleText.text = $"First domain to {tournamentData.EffectiveWinTarget} points wins";
             RenderLeadingDomain();
 
             PopulateRoundCards(includePreviewWhenEmpty: !summaryMode);
@@ -258,6 +259,13 @@ namespace CosmicShore.Gameplay
 
         public void OnReadyButtonPressed()
         {
+            // Defense-in-depth against a double-wired button (inspector onClick + this code listener):
+            // ShowSummaryPanel() clears _active, so a stray second synchronous invocation can't fall
+            // through to the round-start path and launch a game off the summary screen. The onClick is
+            // code-wired only now (the inspector OnHostStartPressed entries were removed from
+            // Maelstrom.unity — they double-fired NEXT/Play Again/Main Menu into BeginNextRound).
+            if (!_active) return;
+
             if (_summaryMode) { ShowSummaryPanel(); return; }   // NEXT → results
 
             if (lobbyNetwork != null)

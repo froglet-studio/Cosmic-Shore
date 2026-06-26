@@ -1,5 +1,10 @@
 # Maelstrom Between-Game / Summary UX — Session Handoff
 
+> **⚠️ Historical (point-in-time session log).** Some specifics below are superseded: the scene was later
+> renamed `Tournament.unity` → `Maelstrom.unity`, and the end-game flow was reworked (hub-between-rounds +
+> a NEXT→summary step, with summary-vs-hub keyed off the authoritative `IsShuffleComplete`). For the
+> current state see this folder's `ARCHITECTURE.md` and `MAELSTROM_REWORK_SPEC.md`.
+
 > **Scope of this document.** A self-contained handoff for the session that built the Maelstrom
 > (Tournament meta-mode) **presentation/UX layer**: the between-game loading splash, the readable
 > dwell, the player-facing rename, and the end-of-shuffle summary. It captures what changed, how the

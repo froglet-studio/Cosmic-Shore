@@ -26,6 +26,16 @@ namespace CosmicShore.Utility
         private static readonly int ImplosionProgressID = Shader.PropertyToID("_State");
         private static readonly int ConvergencePointID = Shader.PropertyToID("_Location");
 
+        // The live convergence target (the consuming fauna / vessel). The suction sink
+        // FOLLOWS this transform as it keeps moving — a fauna swims a long way during the
+        // ~2s implosion, so a position snapshotted at consumption time would suck the
+        // prisms toward where the creature WAS, not where it is. Refreshed each frame by
+        // PrismEffectsManager via RefreshConvergence(). Held as a reference (not copied to
+        // a Vector3 and discarded) precisely so it can track. Fake-null safe: if the target
+        // withers / despawns mid-suction (starvation & predation outlive this VFX), we fall
+        // back to the last known position rather than throwing.
+        private Transform _convergenceTransform;
+
         // State exposed to PrismEffectsManager for batched updates
         internal Vector3 TargetPosition { get; private set; }
         internal float Elapsed { get; set; }
@@ -70,6 +80,10 @@ namespace CosmicShore.Utility
 
         private void OnDisable()
         {
+            // Pool return / scene teardown may bypass CompleteEffect — never carry a target
+            // reference (possibly a destroyed transform) across pool reuse.
+            _convergenceTransform = null;
+
             if (IsActive)
             {
                 IsActive = false;
@@ -104,6 +118,9 @@ namespace CosmicShore.Utility
 
             var targetPos = convergenceTransform.position;
 
+            // Keep the live transform so the sink tracks the moving fauna each frame.
+            _convergenceTransform = convergenceTransform;
+
             // Store state for manager to read
             TargetPosition = targetPos;
             Elapsed = 0f;
@@ -136,6 +153,11 @@ namespace CosmicShore.Utility
                 PrismEffectsManager.Instance?.UnregisterImplosion(this); // safe: may already be null during teardown
 
             var startPosition = ownerTransform.position;
+
+            // Grow is the reverse animation but uses the same moving-target convergence:
+            // track the owner transform so a prism growing out of a moving creature stays
+            // anchored to it instead of to its spawn-instant position.
+            _convergenceTransform = ownerTransform;
 
             // Store state for manager to read
             TargetPosition = startPosition;
@@ -173,10 +195,29 @@ namespace CosmicShore.Utility
         // ---------------- Internals ----------------
 
         /// <summary>
+        /// Re-read the convergence point from the live target transform. Called once per
+        /// frame by PrismEffectsManager before it samples TargetPosition into the job, so
+        /// the suction sink tracks the still-moving fauna. One Transform.position read per
+        /// active implosion — the per-frame _Location write to the shader already happens
+        /// unconditionally, so this is the only marginal cost of following the target.
+        /// Fake-null safe: a target destroyed mid-suction leaves TargetPosition at its last
+        /// known value.
+        /// </summary>
+        internal void RefreshConvergence()
+        {
+            if (_convergenceTransform)
+                TargetPosition = _convergenceTransform.position;
+        }
+
+        /// <summary>
         /// Called internally or by PrismEffectsManager to stop the animation and clear overrides.
         /// </summary>
         internal void CompleteEffect()
         {
+            // Drop the target reference so a pooled instance can't keep a destroyed
+            // transform alive or track a stale target on its next reuse.
+            _convergenceTransform = null;
+
             if (IsActive)
             {
                 IsActive = false;

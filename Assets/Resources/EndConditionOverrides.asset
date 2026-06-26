@@ -15,7 +15,9 @@ MonoBehaviour:
   hexRaceCrystalCount: 0
   crystalCaptureCrystalCount: 20
   joustCount: 3
+  maelstromWinTarget: 6
   hexRaceCrystalCountBuild: 0
   crystalCaptureCrystalCountBuild: 20
   joustCountBuild: 3
+  maelstromWinTargetBuild: 6
   autoRestoreBuildValuesBeforeBuild: 1
