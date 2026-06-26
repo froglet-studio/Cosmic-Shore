@@ -131,6 +131,7 @@ namespace CosmicShore.Game.Arcade
                 ScoringModes.OmniCrystalsCollected => new CrystalsCollectedScoring(this, gameData, multiplier, CrystalsCollectedScoring.CrystalType.Omni),
                 ScoringModes.ElementalCrystalsCollected => new CrystalsCollectedScoring(this, gameData, multiplier, CrystalsCollectedScoring.CrystalType.Elemental),
                 ScoringModes.CrystalsCollectedScaleWithSize => new CrystalsCollectedScoring(this, gameData, multiplier, CrystalsCollectedScoring.CrystalType.Elemental, true),
+                ScoringModes.JoustCollisions => new JoustCollisionsScoring(this, gameData, multiplier),
                 _ => throw new ArgumentException($"Unknown scoring mode: {mode}")
             };
         }
