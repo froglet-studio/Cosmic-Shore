@@ -36,11 +36,15 @@ namespace CosmicShore.UI
         [Inject] GameSetting gameSetting;
         [Inject] AnalyticsServiceFacade analytics;
 
-        [Header("ON/OFF label colors")]
+        [Header("Panel")]
+        [SerializeField, Tooltip("OptionsMenuContent root — enabled by Open(), disabled by Close(). Wire the settings modal's open event to Open() and its close event to Close().")]
+        GameObject optionsMenuContent;
+
+        [Header("Button Highlight Colors")]
         [SerializeField] Color selectedColor = Color.white;
         [SerializeField] Color unselectedColor = new Color(0.5f, 0.5f, 0.5f, 1f);
 
-        [Header("GENERAL — accessibility + legal")]
+        [Header("General")]
         [SerializeField] TMP_Dropdown colorblindDropdown;
         [SerializeField] OnOffControl subtitles;
         [SerializeField] TMP_Dropdown subtitleScaleDropdown;
@@ -50,7 +54,7 @@ namespace CosmicShore.UI
         [SerializeField] Button deleteDataButton;
         [SerializeField] TMP_Text versionText;
 
-        [Header("DISPLAY")]
+        [Header("Display")]
         [SerializeField] TMP_Dropdown displayModeDropdown;
         [SerializeField] TMP_Dropdown resolutionDropdown;
         [SerializeField] TMP_Dropdown frameCapDropdown;
@@ -58,7 +62,7 @@ namespace CosmicShore.UI
         [SerializeField] Slider fovSlider;
         [SerializeField] float fovMin = 60f, fovMax = 90f;
 
-        [Header("PERFORMANCE — graphics + perf")]
+        [Header("Performance")]
         [SerializeField] TMP_Dropdown qualityDropdown;
         [SerializeField] TMP_Dropdown antiAliasingDropdown;
         [SerializeField] TMP_Dropdown textureQualityDropdown;
@@ -69,7 +73,7 @@ namespace CosmicShore.UI
         [SerializeField] Button benchmarkButton;
         [SerializeField] BenchmarkSceneLauncher benchmarkLauncher;
 
-        [Header("OTHER — controls + audio")]
+        [Header("Other")]
         [SerializeField] OnOffControl invertY;
         [SerializeField] OnOffControl invertThrottle;
         [SerializeField] OnOffControl music;
@@ -79,7 +83,7 @@ namespace CosmicShore.UI
         [SerializeField] OnOffControl haptics;
         [SerializeField] Slider hapticsSlider;
 
-        [Header("General tab — links")]
+        [Header("Links")]
         [SerializeField] string privacyPolicyUrl = "https://cosmicshore.com/privacy";
         [SerializeField] string deleteDataUrl = "https://cosmicshore.com/delete-my-data";
         [SerializeField] string bugReportUrl = "https://cosmicshore.com/support";
@@ -114,6 +118,23 @@ namespace CosmicShore.UI
             // Refresh shown values when the panel is reopened (settings may have changed in the
             // benchmark scene or via auto-detect). Skip before the first Start (injection not ready).
             if (_bound) RefreshValues();
+        }
+
+        /// <summary>
+        /// Shows the options panel by enabling OptionsMenuContent. Wire the settings modal's open
+        /// event here. Safe to call while this component's GameObject is inactive (it activates the
+        /// referenced content, which triggers binding on first show).
+        /// </summary>
+        public void Open()
+        {
+            if (optionsMenuContent != null) optionsMenuContent.SetActive(true);
+            if (_bound) RefreshValues();
+        }
+
+        /// <summary>Hides the options panel by disabling OptionsMenuContent. Wire the modal's close event here.</summary>
+        public void Close()
+        {
+            if (optionsMenuContent != null) optionsMenuContent.SetActive(false);
         }
 
         // ───────────────────────── self-wiring ─────────────────────────

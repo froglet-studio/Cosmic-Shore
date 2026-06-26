@@ -163,6 +163,8 @@ hook (each is its own follow-up, some are ecology-sensitive — use the `/ecolog
    UnityEvent wiring, no option authoring, and no init step. ON/OFF rows have two slots — drag the ON
    button into `onButton` and the OFF button into `offButton` (tune `selectedColor`/`unselectedColor`
    for the highlight). Set the FOV slot's min/max, drag in `benchmarkLauncher`, and fill the URL fields.
+   Assign `optionsMenuContent` and wire the settings modal's open event → `Open()` and close → `Close()`
+   so the panel shows/hides with the modal.
 2. **Benchmark button:** add `BenchmarkSceneLauncher` and hook the button → `LaunchBenchmark()`.
 3. **Benchmark scene:** run `Tools > Cosmic Shore > Create Benchmark Scene`, then follow the Console
    checklist (Squirrel vessel on the spawner's AI entries, endless controller or remove TurnMonitor,
