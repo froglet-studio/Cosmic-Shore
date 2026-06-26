@@ -114,12 +114,16 @@ the in-scene **Benchmark**, which measures real frame cost via the author's
   best," a Run button (formal `PerformanceBenchmarkRunner` report), and Exit. You build its visuals
   and wire the labels/buttons to it.
 
-## Camera consumers — WIRED
+## Camera consumers — WIRED (automatic)
 
-`CameraSettingsApplier` (drop it on the gameplay player camera) applies **FOV** and the per-camera
-post-process **AA modes (FXAA / SMAA / TAA)** live as the settings change; **MSAA** is global on the
-URP asset (handled by `DisplayGraphicsSettings`). Add it to the menu/brain camera too if you want AA
-there — FOV is Cinemachine-driven in the menu, so it no-ops on that camera (`applyFieldOfView` off).
+`CameraManager` applies **FOV** and per-camera post-process **AA (FXAA/SMAA/TAA)** to every camera it
+manages (player / death / end) on each camera setup AND live as settings change — **no per-camera
+reference needed**, so it survives the runtime-spawned vessel (the cameras are children of the
+manager; the vessel is just the follow target). MSAA is global on the URP asset.
+
+`CameraSettingsApplier` remains an optional drop-on for any camera `CameraManager` does NOT own — e.g.
+the menu Cinemachine brain camera if you want SMAA/TAA there, or the benchmark-scene camera. Turn
+`applyFieldOfView` off on Cinemachine cameras (the vCam re-drives FOV each frame).
 
 ## Audio slider ranges
 
