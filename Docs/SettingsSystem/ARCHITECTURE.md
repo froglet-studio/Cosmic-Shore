@@ -28,8 +28,11 @@ is respected.
 | **PERFORMANCE** | Quality preset · Anti-aliasing · Texture quality · Upscaling · Adaptive performance · Physics detail · Auto-Detect · Benchmark | `DisplayGraphicsSettings` |
 | **OTHER** | Invert Y · Invert Throttle · Music+vol · SFX+vol · Haptics+vol | `GameSetting` (cloud-roaming) |
 
-Toggles are ON/OFF segmented → wire ON→`Set*(true)`, OFF→`Set*(false)`. Each row reads its saved
-state from the controller's `Current*` getter on open. Backend fields NOT surfaced in this 4-tab UI
+**Self-wiring:** `GameSettingsPanelController` exposes a serialized slot per control — drag each in and
+it populates dropdown options (from the enums, so order can't drift), sets saved values, and attaches
+listeners on `Start` (and refreshes on reopen). No per-control UnityEvent wiring or init. ON/OFF rows
+take a Unity `Toggle`; a custom two-button widget instead wires to `Set*(true)`/`Set*(false)` and reads
+the `*On` getter for its highlight. Backend fields NOT surfaced in this 4-tab UI
 (still used by auto-detect / benchmark): render scale, monitor, refresh rate, ecosystem density, AI
 crowd size, VFX density, camera shake, reduce-flashing.
 
@@ -153,11 +156,12 @@ hook (each is its own follow-up, some are ecology-sensitive — use the `/ecolog
 
 ## Editor wiring checklist (Unity-side)
 
-1. **Settings panel UI (you design the visuals):** build the 8-tab window, drop
-   `GameSettingsPanelController` on its root, and wire each control's event to its method (quality
-   dropdown → `SetQualityPresetIndex`, render-scale slider → `SetRenderScale`, consent toggle →
-   `SetAnalyticsConsent`, links → `OpenPrivacyPolicy`/`OpenDeleteDataForm`/`OpenBugReport`). Assign the
-   resolution `TMP_Dropdown` (it auto-populates) and fill the URL fields.
+1. **Settings panel UI (you design the visuals):** build the panel, drop `GameSettingsPanelController`
+   on its root, and **drag each control into its serialized slot** (grouped by tab in the inspector).
+   The controller self-wires — options, saved values, and listeners — so there's no per-control
+   UnityEvent wiring, no option authoring, and no init step. Assign a Unity `Toggle` for ON/OFF rows
+   (or wire a custom two-button widget to `Set*(true)`/`Set*(false)`), set the FOV slot's min/max, drag
+   in `benchmarkLauncher`, and fill the URL fields.
 2. **Benchmark button:** add `BenchmarkSceneLauncher` and hook the button → `LaunchBenchmark()`.
 3. **Benchmark scene:** run `Tools > Cosmic Shore > Create Benchmark Scene`, then follow the Console
    checklist (Squirrel vessel on the spawner's AI entries, endless controller or remove TurnMonitor,
