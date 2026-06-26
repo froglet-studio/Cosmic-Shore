@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using Reflex.Attributes;
 using TMPro;
 using UnityEngine;
@@ -37,10 +39,15 @@ namespace CosmicShore.UI
 
         [Inject] GameSetting gameSetting;
         [Inject] AnalyticsServiceFacade analytics;
+        [Inject] ApplicationStateDataVariable appState;
 
         [Header("Panel")]
         [SerializeField, Tooltip("OptionsMenuContent root — enabled by Open(), disabled by Close(). Wire the settings modal's open event to Open() and its close event to Close().")]
         GameObject optionsMenuContent;
+        [SerializeField, Tooltip("Shown while the panel is open IN-GAME: Performance settings + Auto-Detect + Benchmark are locked outside the main menu (big graphics changes happen in the menu only).")]
+        GameObject menuOnlyHint;
+        [SerializeField, Tooltip("Shown when a renderer-level change (Quality / AA / Texture / Upscaling) is made — 'some changes apply after a restart'. Hidden on open.")]
+        GameObject restartRequiredNotice;
 
         [Header("ON/OFF Highlight")]
         [SerializeField] Color selectedColor = Color.white;
@@ -132,6 +139,7 @@ namespace CosmicShore.UI
         public void Open()
         {
             if (optionsMenuContent != null) optionsMenuContent.SetActive(true);
+            if (restartRequiredNotice != null) restartRequiredNotice.SetActive(false);
             if (_bound) RefreshValues();
         }
 
@@ -139,6 +147,38 @@ namespace CosmicShore.UI
         public void Close()
         {
             if (optionsMenuContent != null) optionsMenuContent.SetActive(false);
+        }
+
+        // ───────────────────────── context lock (menu vs in-game) ─────────────────────────
+
+        /// <summary>True only in the main menu — big graphics + Auto-Detect + Benchmark are locked elsewhere.</summary>
+        bool InMainMenu => appState == null || appState.Value == null || appState.Value.State == ApplicationState.MainMenu;
+
+        /// <summary>
+        /// Locks the Performance settings + Auto-Detect + Benchmark to the main menu (real-game pattern:
+        /// big graphics changes don't happen mid-session). Live-safe settings (audio, controls, FOV,
+        /// VSync, frame cap) stay editable in-game. Shows <see cref="menuOnlyHint"/> while locked.
+        /// </summary>
+        void ApplyContextLock()
+        {
+            bool menu = InMainMenu;
+            SetInteractable(qualityDropdown, menu);
+            SetInteractable(antiAliasingDropdown, menu);
+            SetInteractable(textureQualityDropdown, menu);
+            SetInteractable(upscalingDropdown, menu);
+            SetInteractable(adaptivePerformanceDropdown, menu);
+            SetInteractable(physicsDetailDropdown, menu);
+            SetInteractable(autoDetectButton, menu);
+            SetInteractable(benchmarkButton, menu);
+            if (menuOnlyHint != null) menuOnlyHint.SetActive(!menu);
+        }
+
+        static void SetInteractable(Selectable s, bool on) { if (s != null) s.interactable = on; }
+
+        /// <summary>Shows the "some changes apply after a restart" notice for renderer-level changes.</summary>
+        void FlagRestartNeeded()
+        {
+            if (restartRequiredNotice != null) restartRequiredNotice.SetActive(true);
         }
 
         // ───────────────────────── self-wiring ─────────────────────────
@@ -215,6 +255,8 @@ namespace CosmicShore.UI
             SetSliderValue(sfxSlider, SFXLevel);
             UpdateOnOff(haptics, HapticsOn);
             SetSliderValue(hapticsSlider, HapticsLevel);
+
+            ApplyContextLock();
         }
 
         // ───────────────────────── ON/OFF button pairs ─────────────────────────
@@ -309,12 +351,25 @@ namespace CosmicShore.UI
         public void SetVSync(bool on) => S?.SetVSync(on ? VSyncSetting.On : VSyncSetting.Off);
         public void SetFieldOfView(float fov) => S?.SetFieldOfView(fov);
 
-        public void AutoDetect() { S?.ApplyAutoDetect(); RefreshValues(); }
-        public void RunBenchmark() => benchmarkLauncher?.LaunchBenchmark();
-        public void SetQualityPresetIndex(int index) => S?.SetQualityPreset((QualityPresetSetting)index);
-        public void SetAntiAliasingIndex(int index) => S?.SetAntiAliasing((AntiAliasingSetting)index);
-        public void SetTextureQualityIndex(int index) => S?.SetTextureQuality(index);
-        public void SetUpscalingIndex(int index) => S?.SetUpscaling((UpscalingSetting)index);
+        public void AutoDetect()
+        {
+            if (!InMainMenu) { CSDebug.Log("[Settings] Auto-Detect is available only in the main menu."); return; }
+            S?.ApplyAutoDetect();
+            RefreshValues();
+            FlagRestartNeeded();
+            CSDebug.Log($"[Settings] Auto-Detect applied — Quality preset index {QualityIndex}, AA index {AntiAliasingIndex}.");
+        }
+
+        public void RunBenchmark()
+        {
+            if (!InMainMenu) { CSDebug.Log("[Settings] Benchmark is available only in the main menu."); return; }
+            benchmarkLauncher?.LaunchBenchmark();
+        }
+
+        public void SetQualityPresetIndex(int index) { S?.SetQualityPreset((QualityPresetSetting)index); FlagRestartNeeded(); }
+        public void SetAntiAliasingIndex(int index) { S?.SetAntiAliasing((AntiAliasingSetting)index); FlagRestartNeeded(); }
+        public void SetTextureQualityIndex(int index) { S?.SetTextureQuality(index); FlagRestartNeeded(); }
+        public void SetUpscalingIndex(int index) { S?.SetUpscaling((UpscalingSetting)index); FlagRestartNeeded(); }
         public void SetAdaptivePerformanceIndex(int index) => S?.SetAdaptivePerformance((AdaptivePerformanceSetting)index);
         public void SetPhysicsDetailIndex(int index) => S?.SetPhysicsDetail((PhysicsDetailSetting)index);
 

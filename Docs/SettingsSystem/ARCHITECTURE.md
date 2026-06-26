@@ -136,6 +136,19 @@ Music / SFX / Haptics volume sliders are **min 0, max 1, whole-numbers off, defa
 `AudioSource` path scales ×1/5 internally (the intentional "max .2" attenuation in `AudioSystem`), and
 the FMOD SFX path is `Clamp01(SFXLevel)` — both assume a 0–1 slider.
 
+## In-game restrictions (real-game pattern)
+
+Opened **in the main menu**, everything is editable. Opened **in-game** (any state ≠ MainMenu, via
+`ApplicationStateDataVariable`), the panel locks the **Performance** controls (Quality, AA, Texture,
+Upscaling, Adaptive, Physics) + **Auto-Detect** + **Benchmark** (`interactable = false`) and shows the
+optional `menuOnlyHint`. Live-safe settings (audio, controls, FOV, VSync, frame cap, accessibility)
+stay editable everywhere. Renderer-level changes (Quality/AA/Texture/Upscaling) and Auto-Detect raise
+the optional `restartRequiredNotice` ("some changes apply after a restart"), hidden again on open.
+Auto-Detect also logs via `CSDebug`. Wire `menuOnlyHint` + `restartRequiredNotice` (both start hidden).
+
+> Note: in Unity these renderer settings actually apply live; the restart notice is the AAA UX
+> convention, not a technical necessity — drop the `FlagRestartNeeded()` calls if you'd rather not show it.
+
 ## Consumer wiring still TODO (values persist + raise events today)
 
 These settings are stored and broadcast change events; the systems that *read* them need a small
