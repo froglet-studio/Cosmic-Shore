@@ -55,6 +55,7 @@ cloud-sync (a phone and a PC must not share a resolution). They live in `Display
 | Endless sandbox controller | `_Scripts/Controller/Arcade/SandboxBenchmarkController.cs` |
 | Create-scene editor tool | `_Scripts/Editor/CreateBenchmarkSceneTool.cs` |
 | Settings panel controller (binds canvas → backend) | `_Scripts/UI/Modals/GameSettingsPanelController.cs` |
+| Tab navigation (content + underline + scale) | `_Scripts/UI/Modals/SettingsTabBar.cs` |
 | In-scene benchmark HUD controller | `_Scripts/UI/BenchmarkSceneHud.cs` |
 | Camera FOV + post-AA consumer (drop-on) | `_Scripts/Controller/Camera/CameraSettingsApplier.cs` |
 

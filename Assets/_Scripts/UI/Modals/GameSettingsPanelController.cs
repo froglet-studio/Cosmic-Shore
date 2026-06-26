@@ -25,12 +25,14 @@ namespace CosmicShore.UI
     /// </summary>
     public class GameSettingsPanelController : MonoBehaviour
     {
-        /// <summary>A two-button ON/OFF row. Both buttons optional/null-tolerant.</summary>
+        /// <summary>A two-button ON/OFF row, each with an optional active-state underline. All fields null-tolerant.</summary>
         [Serializable]
         public class OnOffControl
         {
             public Button onButton;
+            public GameObject onUnderline;
             public Button offButton;
+            public GameObject offUnderline;
         }
 
         [Inject] GameSetting gameSetting;
@@ -40,9 +42,11 @@ namespace CosmicShore.UI
         [SerializeField, Tooltip("OptionsMenuContent root — enabled by Open(), disabled by Close(). Wire the settings modal's open event to Open() and its close event to Close().")]
         GameObject optionsMenuContent;
 
-        [Header("Button Highlight Colors")]
+        [Header("ON/OFF Highlight")]
         [SerializeField] Color selectedColor = Color.white;
         [SerializeField] Color unselectedColor = new Color(0.5f, 0.5f, 0.5f, 1f);
+        [SerializeField, Tooltip("Scale of the selected ON/OFF button.")] float selectedScale = 1.1f;
+        [SerializeField, Tooltip("Scale of the unselected ON/OFF button.")] float unselectedScale = 0.95f;
 
         [Header("General")]
         [SerializeField] TMP_Dropdown colorblindDropdown;
@@ -226,8 +230,16 @@ namespace CosmicShore.UI
         void UpdateOnOff(OnOffControl c, bool isOn)
         {
             if (c == null) return;
-            SetLabelColor(c.onButton, isOn ? selectedColor : unselectedColor);
-            SetLabelColor(c.offButton, isOn ? unselectedColor : selectedColor);
+            SetButtonVisual(c.onButton, c.onUnderline, isOn);
+            SetButtonVisual(c.offButton, c.offUnderline, !isOn);
+        }
+
+        /// <summary>Tints the label, toggles the underline, and scales the button for the selected/unselected state.</summary>
+        void SetButtonVisual(Button b, GameObject underline, bool selected)
+        {
+            SetLabelColor(b, selected ? selectedColor : unselectedColor);
+            if (underline != null) underline.SetActive(selected);
+            if (b != null) b.transform.localScale = Vector3.one * (selected ? selectedScale : unselectedScale);
         }
 
         static void SetLabelColor(Button b, Color col)
