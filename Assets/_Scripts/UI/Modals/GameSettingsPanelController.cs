@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
@@ -11,29 +12,39 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Self-wiring controller for the 4-tab options panel. Drag each UI control into its serialized
-    /// slot and you're done — on <c>Start</c> the controller populates every dropdown's options (from
-    /// the enums, so order can never drift), sets each control to its saved value, and attaches the
-    /// change listener. Reopening the panel refreshes displayed values. No per-control UnityEvent
-    /// wiring, no option authoring, no init code.
+    /// slot — the controller populates dropdown options (from the enums, so order can't drift), sets
+    /// saved values, attaches listeners, and drives the ON/OFF highlight. No per-control UnityEvent
+    /// wiring, no option authoring, no init step. Reopening the panel refreshes displayed values.
     ///
-    /// ON/OFF rows: assign a Unity <see cref="Toggle"/> if that's what your row uses. If your segmented
-    /// ON/OFF is a custom two-button widget, leave the Toggle slot empty and wire your buttons to the
-    /// public <c>Set*(bool)</c> methods (read the <c>*On</c> getter for the highlight).
+    /// ON/OFF rows are a separate ON button + OFF button (see <see cref="OnOffControl"/>): the controller
+    /// wires ON→Set(true), OFF→Set(false) and tints each button's label selected/dimmed.
     ///
-    /// Routes to: <see cref="DisplayGraphicsSettings"/> (display/graphics/perf), <see cref="GameSetting"/>
+    /// Routes to <see cref="DisplayGraphicsSettings"/> (display/graphics/perf), <see cref="GameSetting"/>
     /// (audio/controls), <see cref="AccessibilitySettings"/>, <see cref="AnalyticsServiceFacade"/>
     /// (consent), <see cref="Application.OpenURL"/> (links). Needs a Reflex ContainerScope in the scene.
     /// </summary>
     public class GameSettingsPanelController : MonoBehaviour
     {
+        /// <summary>A two-button ON/OFF row. Both buttons optional/null-tolerant.</summary>
+        [Serializable]
+        public class OnOffControl
+        {
+            public Button onButton;
+            public Button offButton;
+        }
+
         [Inject] GameSetting gameSetting;
         [Inject] AnalyticsServiceFacade analytics;
 
+        [Header("ON/OFF label colors")]
+        [SerializeField] Color selectedColor = Color.white;
+        [SerializeField] Color unselectedColor = new Color(0.5f, 0.5f, 0.5f, 1f);
+
         [Header("GENERAL — accessibility + legal")]
         [SerializeField] TMP_Dropdown colorblindDropdown;
-        [SerializeField] Toggle subtitlesToggle;
+        [SerializeField] OnOffControl subtitles;
         [SerializeField] TMP_Dropdown subtitleScaleDropdown;
-        [SerializeField] Toggle analyticsConsentToggle;
+        [SerializeField] OnOffControl analyticsConsent;
         [SerializeField] Button bugReportButton;
         [SerializeField] Button privacyPolicyButton;
         [SerializeField] Button deleteDataButton;
@@ -43,7 +54,7 @@ namespace CosmicShore.UI
         [SerializeField] TMP_Dropdown displayModeDropdown;
         [SerializeField] TMP_Dropdown resolutionDropdown;
         [SerializeField] TMP_Dropdown frameCapDropdown;
-        [SerializeField] Toggle vsyncToggle;
+        [SerializeField] OnOffControl vsync;
         [SerializeField] Slider fovSlider;
         [SerializeField] float fovMin = 60f, fovMax = 90f;
 
@@ -59,13 +70,13 @@ namespace CosmicShore.UI
         [SerializeField] BenchmarkSceneLauncher benchmarkLauncher;
 
         [Header("OTHER — controls + audio")]
-        [SerializeField] Toggle invertYToggle;
-        [SerializeField] Toggle invertThrottleToggle;
-        [SerializeField] Toggle musicToggle;
+        [SerializeField] OnOffControl invertY;
+        [SerializeField] OnOffControl invertThrottle;
+        [SerializeField] OnOffControl music;
         [SerializeField] Slider musicSlider;
-        [SerializeField] Toggle sfxToggle;
+        [SerializeField] OnOffControl sfx;
         [SerializeField] Slider sfxSlider;
-        [SerializeField] Toggle hapticsToggle;
+        [SerializeField] OnOffControl haptics;
         [SerializeField] Slider hapticsSlider;
 
         [Header("General tab — links")]
@@ -73,7 +84,7 @@ namespace CosmicShore.UI
         [SerializeField] string deleteDataUrl = "https://cosmicshore.com/delete-my-data";
         [SerializeField] string bugReportUrl = "https://cosmicshore.com/support";
 
-        // Option labels (index == enum value — never author these in the dropdown, the controller fills them)
+        // Option labels (index == enum value — the controller fills these, never author them in the dropdown)
         static readonly string[] ColorblindOpts = { "Off", "Protanopia", "Deuteranopia", "Tritanopia" };
         static readonly string[] SubtitleScaleOpts = { "Small", "Medium", "Large" };
         static readonly string[] DisplayModeOpts = { "Fullscreen", "Borderless", "Windowed" };
@@ -100,9 +111,8 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
-            // Re-pull current values whenever the panel is shown again (settings may have changed in
-            // the benchmark scene or via auto-detect). Skip before the first Start, when injected
-            // services aren't ready yet.
+            // Refresh shown values when the panel is reopened (settings may have changed in the
+            // benchmark scene or via auto-detect). Skip before the first Start (injection not ready).
             if (_bound) RefreshValues();
         }
 
@@ -115,8 +125,8 @@ namespace CosmicShore.UI
             // GENERAL
             BindDropdown(colorblindDropdown, ColorblindOpts, SetColorblindModeIndex);
             BindDropdown(subtitleScaleDropdown, SubtitleScaleOpts, SetSubtitleScaleIndex);
-            BindToggle(subtitlesToggle, SetSubtitles);
-            BindToggle(analyticsConsentToggle, SetAnalyticsConsent);
+            BindOnOff(subtitles, SetSubtitles, () => SubtitlesOn);
+            BindOnOff(analyticsConsent, SetAnalyticsConsent, () => ConsentOn);
             BindButton(bugReportButton, OpenBugReport);
             BindButton(privacyPolicyButton, OpenPrivacyPolicy);
             BindButton(deleteDataButton, OpenDeleteDataForm);
@@ -125,7 +135,7 @@ namespace CosmicShore.UI
             BindDropdown(displayModeDropdown, DisplayModeOpts, SetDisplayModeIndex);
             PopulateResolutionDropdown();
             BindDropdown(frameCapDropdown, FrameCapOpts, SetFrameCapIndex);
-            BindToggle(vsyncToggle, SetVSync);
+            BindOnOff(vsync, SetVSync, () => VSyncOn);
             BindSlider(fovSlider, fovMin, fovMax, true, SetFieldOfView);
 
             // PERFORMANCE
@@ -139,30 +149,30 @@ namespace CosmicShore.UI
             BindButton(benchmarkButton, RunBenchmark);
 
             // OTHER
-            BindToggle(invertYToggle, SetInvertY);
-            BindToggle(invertThrottleToggle, SetInvertThrottle);
-            BindToggle(musicToggle, SetMusic);
+            BindOnOff(invertY, SetInvertY, () => InvertYOn);
+            BindOnOff(invertThrottle, SetInvertThrottle, () => InvertThrottleOn);
+            BindOnOff(music, SetMusic, () => MusicOn);
             BindSlider(musicSlider, 0f, 1f, false, SetMusicLevel);
-            BindToggle(sfxToggle, SetSFX);
+            BindOnOff(sfx, SetSFX, () => SFXOn);
             BindSlider(sfxSlider, 0f, 1f, false, SetSFXLevel);
-            BindToggle(hapticsToggle, SetHaptics);
+            BindOnOff(haptics, SetHaptics, () => HapticsOn);
             BindSlider(hapticsSlider, 0f, 1f, false, SetHapticsLevel);
 
             RefreshValues();
         }
 
-        /// <summary>Pushes the current saved values into every assigned control (no listener changes).</summary>
+        /// <summary>Pushes current saved values into every assigned control (no listener changes).</summary>
         void RefreshValues()
         {
             SetDropdown(colorblindDropdown, ColorblindIndex);
             SetDropdown(subtitleScaleDropdown, SubtitleScaleIndex);
-            SetToggle(subtitlesToggle, SubtitlesOn);
-            SetToggle(analyticsConsentToggle, ConsentOn);
+            UpdateOnOff(subtitles, SubtitlesOn);
+            UpdateOnOff(analyticsConsent, ConsentOn);
 
             SetDropdown(displayModeDropdown, DisplayModeIndex);
             SetDropdown(resolutionDropdown, ResolutionIndex);
             SetDropdown(frameCapDropdown, FrameCapIndex);
-            SetToggle(vsyncToggle, VSyncOn);
+            UpdateOnOff(vsync, VSyncOn);
             SetSliderValue(fovSlider, FieldOfView);
 
             SetDropdown(qualityDropdown, QualityIndex);
@@ -172,15 +182,41 @@ namespace CosmicShore.UI
             SetDropdown(adaptivePerformanceDropdown, AdaptivePerformanceIndex);
             SetDropdown(physicsDetailDropdown, PhysicsDetailIndex);
 
-            SetToggle(invertYToggle, InvertYOn);
-            SetToggle(invertThrottleToggle, InvertThrottleOn);
-            SetToggle(musicToggle, MusicOn);
+            UpdateOnOff(invertY, InvertYOn);
+            UpdateOnOff(invertThrottle, InvertThrottleOn);
+            UpdateOnOff(music, MusicOn);
             SetSliderValue(musicSlider, MusicLevel);
-            SetToggle(sfxToggle, SFXOn);
+            UpdateOnOff(sfx, SFXOn);
             SetSliderValue(sfxSlider, SFXLevel);
-            SetToggle(hapticsToggle, HapticsOn);
+            UpdateOnOff(haptics, HapticsOn);
             SetSliderValue(hapticsSlider, HapticsLevel);
         }
+
+        // ───────────────────────── ON/OFF button pairs ─────────────────────────
+
+        void BindOnOff(OnOffControl c, Action<bool> setter, Func<bool> getter)
+        {
+            if (c == null) return;
+            if (c.onButton) c.onButton.onClick.AddListener(() => { setter(true); UpdateOnOff(c, true); });
+            if (c.offButton) c.offButton.onClick.AddListener(() => { setter(false); UpdateOnOff(c, false); });
+            UpdateOnOff(c, getter());
+        }
+
+        void UpdateOnOff(OnOffControl c, bool isOn)
+        {
+            if (c == null) return;
+            SetLabelColor(c.onButton, isOn ? selectedColor : unselectedColor);
+            SetLabelColor(c.offButton, isOn ? unselectedColor : selectedColor);
+        }
+
+        static void SetLabelColor(Button b, Color col)
+        {
+            if (b == null) return;
+            var label = b.GetComponentInChildren<TMP_Text>(true);
+            if (label) label.color = col;
+        }
+
+        // ───────────────────────── dropdown / slider / button binding ─────────────────────────
 
         static void BindDropdown(TMP_Dropdown dd, string[] options, UnityAction<int> onChange)
         {
@@ -201,13 +237,6 @@ namespace CosmicShore.UI
             s.onValueChanged.AddListener(onChange);
         }
 
-        static void BindToggle(Toggle t, UnityAction<bool> onChange)
-        {
-            if (t == null) return;
-            t.onValueChanged.RemoveListener(onChange);
-            t.onValueChanged.AddListener(onChange);
-        }
-
         static void BindButton(Button b, UnityAction onClick)
         {
             if (b == null) return;
@@ -220,7 +249,6 @@ namespace CosmicShore.UI
             if (dd != null && index >= 0 && index < dd.options.Count) dd.SetValueWithoutNotify(index);
         }
 
-        static void SetToggle(Toggle t, bool on) { if (t != null) t.SetIsOnWithoutNotify(on); }
         static void SetSliderValue(Slider s, float v) { if (s != null) s.SetValueWithoutNotify(v); }
 
         // ───────────────────────── setters (listeners call these) ─────────────────────────
@@ -266,7 +294,7 @@ namespace CosmicShore.UI
         public void SetSFXLevel(float level) => gameSetting?.SetSFXLevel(level);
         public void SetHapticsLevel(float level) => gameSetting?.SetHapticsLevel(level);
 
-        // ───────────────────────── getters (for custom widgets / external readers) ─────────────────────────
+        // ───────────────────────── getters ─────────────────────────
 
         public int ColorblindIndex => (int)AccessibilitySettings.ColorblindMode;
         public bool SubtitlesOn => AccessibilitySettings.Subtitles;
