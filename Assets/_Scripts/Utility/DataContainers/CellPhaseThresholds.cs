@@ -7,27 +7,27 @@ namespace CosmicShore.Utility
     /// <summary>
     /// Per-biome up/down thresholds that drive <see cref="Cell"/>'s phase transitions.
     ///
-    /// VOLUME IS THE SPINE (locked invariant — CLAUDE.md ▸ Ecosystem Design Principles):
+    /// VOLUME IS THE SPINE (locked invariant - CLAUDE.md > Ecosystem Design Principles):
     /// the phase ladder climbs on the cell's live per-domain prism VOLUME
-    /// (<c>Cell.LiveVolume</c> — every prism contributes: trail, flora, fauna bodies).
-    /// With the 3-phase ladder (Calm → Restless → Frenzy) there are two boundaries to
+    /// (<c>Cell.LiveVolume</c> - every prism contributes: trail, flora, fauna bodies).
+    /// With the 3-phase ladder (Calm -> Restless -> Frenzy) there are two boundaries to
     /// author: where fauna start hunting (Restless) and the frenzy ceiling (Frenzy).
     /// Each has an UpEnter (climb threshold) and a DownExit (fall threshold); the gap
-    /// is the hysteresis band — values in the band leave the phase unchanged.
+    /// is the hysteresis band - values in the band leave the phase unchanged.
     ///
     /// The legacy COUNT fields remain as the rare perf BACKSTOP the invariant allows:
-    /// a runaway prism COUNT (many tiny prisms — colliders/instances, not mass) forces
+    /// a runaway prism COUNT (many tiny prisms - colliders/instances, not mass) forces
     /// Frenzy so growth freezes, even while volume is below the volume ladder.
     ///
     /// Authoring: biomes whose volume fields are zero (every pre-volume asset) derive
-    /// them from the count fields × <see cref="NominalPrismVolume"/>, keeping each
+    /// them from the count fields x <see cref="NominalPrismVolume"/>, keeping each
     /// biome proportional until it is retuned in-editor.
     /// </summary>
     [Serializable]
     public struct CellPhaseThresholds
     {
         /// <summary>
-        /// Volume of one nominal prism (the 4×4×1 flora leaf — lossyScale product).
+        /// Volume of one nominal prism (the 4x4x1 flora leaf - lossyScale product).
         /// The single conversion anchor for deriving volume-scale values from legacy
         /// count-scale ones (phase thresholds, FaunaFoodFloor). Retune per-biome in
         /// the editor rather than changing this constant.
@@ -35,13 +35,13 @@ namespace CosmicShore.Utility
         public const float NominalPrismVolume = 16f;
 
         [Tooltip("Count BACKSTOP ladder (perf): a runaway prism COUNT forces Frenzy regardless of volume. " +
-                 "Also the derivation source (×16) for biomes whose volume fields below are still zero.")]
+                 "Also the derivation source (x16) for biomes whose volume fields below are still zero.")]
         [Min(0)] public int RestlessEnter;
         [Min(0)] public int RestlessExit;
         [Min(0)] public int FrenzyEnter;
         [Min(0)] public int FrenzyExit;
 
-        [Tooltip("VOLUME ladder (the spine). Zero = derive from the count fields × NominalPrismVolume (16).")]
+        [Tooltip("VOLUME ladder (the spine). Zero = derive from the count fields x NominalPrismVolume (16).")]
         [Min(0)] public float RestlessEnterVolume;
         [Min(0)] public float RestlessExitVolume;
         [Min(0)] public float FrenzyEnterVolume;
@@ -70,7 +70,7 @@ namespace CosmicShore.Utility
         };
 
         /// <summary>
-        /// True when every threshold is zero — the deserialized state of a CellConfig
+        /// True when every threshold is zero - the deserialized state of a CellConfig
         /// asset that existed before <c>PhaseThresholds</c> was added (or one whose
         /// legacy 5-phase fields were dropped by the 3-phase migration). Lets callers
         /// substitute <see cref="Default"/> instead of letting every cell collapse
@@ -84,7 +84,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Returns this table with any zeroed volume field derived from its count
-        /// counterpart × <see cref="NominalPrismVolume"/> — the migration path for
+        /// counterpart x <see cref="NominalPrismVolume"/> - the migration path for
         /// every CellConfig authored before volume became the spine. A biome with
         /// explicit volume values is returned untouched.
         /// </summary>
@@ -101,7 +101,7 @@ namespace CosmicShore.Utility
 
     public static class CellPhaseRules
     {
-        // Ordered ascending so an int index walks Calm → Frenzy.
+        // Ordered ascending so an int index walks Calm -> Frenzy.
         static readonly CellPhase[] Order =
         {
             CellPhase.Calm,
@@ -112,12 +112,12 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Resolves a new phase from the cell's live VOLUME (the spine), its live
         /// prism COUNT (the perf backstop), the current phase, and a per-biome
-        /// threshold table (volume fields already derived — see
+        /// threshold table (volume fields already derived - see
         /// <see cref="CellPhaseThresholds.WithDerivedVolumeScale"/>). The volume
         /// ladder climbs while volume meets the next phase's enter threshold and
         /// descends below the current phase's exit threshold (asymmetric thresholds
         /// produce hysteresis; multi-step transitions resolve in one call). The count
-        /// backstop then forces Frenzy — with its own hysteresis on the count exit —
+        /// backstop then forces Frenzy - with its own hysteresis on the count exit -
         /// when sheer prism count is a perf hazard even at low volume.
         /// </summary>
         public static CellPhase Compute(float volume, int count, CellPhase current, in CellPhaseThresholds thresholds)

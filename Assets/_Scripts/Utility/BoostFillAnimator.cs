@@ -10,7 +10,7 @@ namespace CosmicShore.Utility
         [SerializeField] private Image boostFillImage;
         private Tween currentTween;
 
-        /// Instantly set the fill amount (0�1).
+        /// Instantly set the fill amount (0-1).
         public void SetFill(float amount)
         {
             KillTween();

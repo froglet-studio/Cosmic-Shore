@@ -183,11 +183,11 @@ namespace CosmicShore.Gameplay
                     if (now < _crystalHoldEndTime)
                         continue;
 
-                    // Hold finished – go back to normal and allow decay.
+                    // Hold finished - go back to normal and allow decay.
                     _crystalState = CrystalState.None;
                 }
 
-                // Respect reset delay (or +∞ while in Armed state).
+                // Respect reset delay (or +inf while in Armed state).
                 if (now < _noDecayUntil)
                     continue;
 

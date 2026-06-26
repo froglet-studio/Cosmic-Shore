@@ -1,11 +1,11 @@
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // IPartySessionService.cs
 // Contract for the Relay-backed party session (the actual multiplayer session).
 //
 // KEY CONSTRAINT: implementors must NOT touch NetworkManager.  Starting and
 // stopping Netcode is INetworkTransitionService's job.  This interface only
 // manages the UGS session object (create, join, leave, refresh).
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 using System;
 using Cysharp.Threading.Tasks;
@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Manages the UGS Relay session (the live party session used for actual
     /// multiplayer networking).  Responsible for creating, joining, and leaving
-    /// the session — not for Netcode transport.
+    /// the session - not for Netcode transport.
     ///
     /// Lifetime: extracted from <see cref="HostConnectionService"/> in Phase 9.
     /// Implemented by <c>PartySessionService</c> in the Services folder.
@@ -84,7 +84,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Synchronously clears <see cref="ActiveSession"/> without calling the UGS SDK.
-        /// Use for stale-reference cleanup (game→menu transition) or after non-rate-limit
+        /// Use for stale-reference cleanup (game->menu transition) or after non-rate-limit
         /// refresh failures.  Call <see cref="LeaveAsync"/> for a graceful leave.
         /// </summary>
         void ClearSession();

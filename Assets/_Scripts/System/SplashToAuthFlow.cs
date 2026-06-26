@@ -103,7 +103,7 @@ namespace CosmicShore.Core
 
                 await LoadSceneWithTransitionAsync(_sceneNames.AuthenticationScene);
             }
-            catch (OperationCanceledException) { /* scene destroyed — expected */ }
+            catch (OperationCanceledException) { /* scene destroyed - expected */ }
             catch (Exception ex)
             {
                 CSDebug.LogWarning($"[SplashToAuthFlow] Error during splash flow: {ex.Message}. Falling back to auth scene.");

@@ -18,20 +18,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 {
     /// <summary>
     /// In-build diagnostics overlay (uGUI). Auto-spawns in the Editor and Development builds only
-    /// (stripped from Release). Shows live performance data and can record a "diagnostic" — a
+    /// (stripped from Release). Shows live performance data and can record a "diagnostic" - a
     /// timed spike capture written to the user's Documents folder as JSON + a readable .txt.
     ///
-    /// • Normal mode: FPS + Frame Time (ms) + CPU/GPU split (busy CPU work vs GPU time) and a
+    /// - Normal mode: FPS + Frame Time (ms) + CPU/GPU split (busy CPU work vs GPU time) and a
     ///   live bound verdict (CPU-bound / GPU-bound / Balanced / Capped) via FrameTimingManager.
-    /// • Advanced mode: + CPU thread breakdown (total, main thread, present wait, render thread),
+    /// - Advanced mode: + CPU thread breakdown (total, main thread, present wait, render thread),
     ///   draw calls / batches / triangles / SetPass, memory (GC per frame, managed heap, Unity
     ///   allocated, reserved vs device RAM, graphics driver, device RAM/VRAM), and network
     ///   (RTT/ping, NetVars dirty, RPCs, bytes per frame).
-    /// • Run Diagnostic: records spikes for the selected seconds (works in editor and build),
+    /// - Run Diagnostic: records spikes for the selected seconds (works in editor and build),
     ///   then saves Documents/CosmicShore Diagnostics/diag_*.json (+ .txt).
     ///
     /// Buttons drive everything; keyboard fallbacks exist in case the scene's EventSystem can't
-    /// route clicks: F7 toggle · F6 advanced · F5 run diagnostic.
+    /// route clicks: F7 toggle * F6 advanced * F5 run diagnostic.
     /// </summary>
     public class DiagnosticsHUD : MonoBehaviour
     {
@@ -47,11 +47,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _instance = go.AddComponent<DiagnosticsHUD>();
         }
 
-        // ── config ──
+        // -- config --
         const Key ToggleKey = Key.F7, AdvancedKey = Key.F6, DiagnosticKey = Key.F5;
         const string OutputFolderName = "CosmicShore Diagnostics";
 
-        // ── state ──
+        // -- state --
         bool _visible = true, _advanced;
         int _diagSeconds = 10;
 
@@ -78,13 +78,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         ProfilerRecorder _drawCalls, _setPass, _batches, _triangles, _vertices, _gcAlloc;
         ProfilerRecorder _rpcs, _netVars, _netBytes;
 
-        // ui — two side-by-side blocks, each a label sub-column + value sub-column
+        // ui - two side-by-side blocks, each a label sub-column + value sub-column
         Text _labelA, _valueA, _labelB, _valueB, _advBtnLabel, _diagBtnLabel;
         RectTransform _panel, _labelART, _valueART, _labelBRT, _valueBRT, _buttonRow;
         GameObject _canvasGO;
         Font _font;
 
-        // cached once — local machine region + UTC offset (UGS auto-picks the Relay region and
+        // cached once - local machine region + UTC offset (UGS auto-picks the Relay region and
         // doesn't surface it, so we report the client's OS region; ping gives latency to host).
         string _regionCache, _utcCache;
 
@@ -101,7 +101,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (_instance == this) _instance = null;
         }
 
-        // ── recorders ─────────────────────────────────────────────────────
+        // -- recorders -----------------------------------------------------
         void StartRecorders()
         {
             _drawCalls = ProfilerRecorder.StartNew(ProfilerCategory.Render, "Draw Calls Count");
@@ -139,7 +139,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             return -1;
         }
 
-        // ── loop ──────────────────────────────────────────────────────────
+        // -- loop ----------------------------------------------------------
         void Update()
         {
             var kb = Keyboard.current;
@@ -216,14 +216,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (_recording)
             {
                 float left = Mathf.Max(0f, _recEnd - Time.unscaledTime);
-                Row(la, va, "● Recording", Col(Warn, left.ToString("F0") + "s left"));
-                Row(la, va, "Captured", Col(Dim, _recFrames + " f · " + _recSpikes.Count + " spikes"));
+                Row(la, va, "* Recording", Col(Warn, left.ToString("F0") + "s left"));
+                Row(la, va, "Captured", Col(Dim, _recFrames + " f * " + _recSpikes.Count + " spikes"));
             }
 
             Row(la, va, "FPS", Col(FpsColor(_displayFps), _displayFps.ToString("F0")));
             Row(la, va, "Frame Time", Col(MsColor(_displayMs), _displayMs.ToString("F1") + " ms"));
 
-            // CPU vs GPU dependence — busy CPU (work minus present wait) against GPU time,
+            // CPU vs GPU dependence - busy CPU (work minus present wait) against GPU time,
             // plus the verdict for which side limits the frame.
             float busyCpuMs = FrameBoundness.BusyCpuMs(_smCpuMs, _smMainMs, _smWaitMs, _smRenderMs);
             Row(la, va, "CPU (busy)", MsValue(busyCpuMs));
@@ -232,7 +232,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
             if (_advanced)
             {
-                // Left block — local frame cost (cpu/gpu threads + render + memory).
+                // Left block - local frame cost (cpu/gpu threads + render + memory).
                 Header(la, va, "CPU / GPU");
                 Row(la, va, "CPU Total", MsValue(_smCpuMs));
                 Row(la, va, "Main Thread", MsValue(_smMainMs));
@@ -256,7 +256,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 Row(la, va, "Gfx Driver", gfxBytes > 0 ? Col(White, Mb(gfxBytes)) : Col(Dim, "n/a"));
                 Row(la, va, "Device", Col(Dim, DeviceMemory()));
 
-                // Right block — connection (network + region).
+                // Right block - connection (network + region).
                 Header(lb, vb, "Network");
                 double rtt = Rtt();
                 Row(lb, vb, "Ping", rtt >= 0
@@ -303,7 +303,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             return _utcCache;
         }
 
-        // ── cpu/gpu + memory helpers ──────────────────────────────────────
+        // -- cpu/gpu + memory helpers --------------------------------------
         static void Smooth(ref float current, float sample) =>
             current = current <= 0f ? sample : Mathf.Lerp(current, sample, 0.1f);
 
@@ -321,7 +321,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         static string Mb(long bytes) => (bytes / (1024f * 1024f)).ToString("F0") + " MB";
 
-        // Reserved (Unity's total footprint) against the device's physical RAM — the number
+        // Reserved (Unity's total footprint) against the device's physical RAM - the number
         // that predicts OS kills on mobile.
         static string ReservedRamValue(long reservedBytes)
         {
@@ -334,7 +334,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         }
 
         string DeviceMemory() =>
-            _deviceMemCache ??= SystemInfo.systemMemorySize + " MB RAM · " +
+            _deviceMemCache ??= SystemInfo.systemMemorySize + " MB RAM * " +
                                 SystemInfo.graphicsMemorySize + " MB VRAM";
         string _deviceMemCache;
 
@@ -385,7 +385,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (_visible) RefreshText();
         }
 
-        // ── diagnostic recording ──────────────────────────────────────────
+        // -- diagnostic recording ------------------------------------------
         void ToggleDiagnostic()
         {
             if (_recording) FinishDiagnostic();
@@ -515,20 +515,20 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         static string BuildTxt(DiagReport r)
         {
             var sb = new StringBuilder(2048);
-            sb.AppendLine($"Cosmic Shore diagnostic — {r.scene}   {r.timestamp}");
-            sb.AppendLine($"duration {r.durationSec}s · {r.frames} frames · avg {r.avgFps:F1} fps " +
-                          $"({r.avgFrameMs:F1} ms) · p99 {r.p99FrameMs:F1} ms · max {r.maxFrameMs:F1} ms");
-            sb.AppendLine($"draws {r.draws} · tris {r.tris:N0} · RTT {(r.rttMs >= 0 ? r.rttMs.ToString("F0") + " ms" : "n/a")}");
-            sb.AppendLine($"cpu {r.avgCpuMs:F1} ms (busy {r.avgCpuBusyMs:F1}) · " +
-                          $"gpu {(r.avgGpuMs > 0.001f ? r.avgGpuMs.ToString("F1") + " ms" : "n/a")} · {r.boundVerdict} · " +
+            sb.AppendLine($"Cosmic Shore diagnostic - {r.scene}   {r.timestamp}");
+            sb.AppendLine($"duration {r.durationSec}s * {r.frames} frames * avg {r.avgFps:F1} fps " +
+                          $"({r.avgFrameMs:F1} ms) * p99 {r.p99FrameMs:F1} ms * max {r.maxFrameMs:F1} ms");
+            sb.AppendLine($"draws {r.draws} * tris {r.tris:N0} * RTT {(r.rttMs >= 0 ? r.rttMs.ToString("F0") + " ms" : "n/a")}");
+            sb.AppendLine($"cpu {r.avgCpuMs:F1} ms (busy {r.avgCpuBusyMs:F1}) * " +
+                          $"gpu {(r.avgGpuMs > 0.001f ? r.avgGpuMs.ToString("F1") + " ms" : "n/a")} * {r.boundVerdict} * " +
                           $"mem {r.allocMB}/{r.reservedMB} MB (device {r.systemMB} MB)");
             sb.AppendLine($"spikes ({r.spikes?.Count ?? 0}):");
             if (r.spikes != null)
                 foreach (var s in r.spikes)
-                    sb.AppendLine($"  [{s.t:F1}s] {s.ms:F1} ms ({s.fps:F0} fps) · draws {s.draws} · " +
-                                  $"tris {s.tris:N0} · GC {s.gcKB:F1} KB" +
-                                  (s.cpuMs > 0.001f || s.gpuMs > 0.001f ? $" · cpu {s.cpuMs:F1} / gpu {s.gpuMs:F1} ms" : "") +
-                                  (s.rttMs >= 0 ? $" · RTT {s.rttMs:F0} ms" : ""));
+                    sb.AppendLine($"  [{s.t:F1}s] {s.ms:F1} ms ({s.fps:F0} fps) * draws {s.draws} * " +
+                                  $"tris {s.tris:N0} * GC {s.gcKB:F1} KB" +
+                                  (s.cpuMs > 0.001f || s.gpuMs > 0.001f ? $" * cpu {s.cpuMs:F1} / gpu {s.gpuMs:F1} ms" : "") +
+                                  (s.rttMs >= 0 ? $" * RTT {s.rttMs:F0} ms" : ""));
             return sb.ToString();
         }
 
@@ -539,7 +539,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             return s;
         }
 
-        // ── UI construction (uGUI) ────────────────────────────────────────
+        // -- UI construction (uGUI) ----------------------------------------
         void SetVisible(bool v)
         {
             _visible = v;
@@ -582,7 +582,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _valueBRT = CreateRect("ValuesB", _panel, new Vector2(0, 1), new Vector2(0, 1), new Vector2(310, -TopY), new Vector2(90, 40));
             _valueB = MakeColumn(_valueBRT, TextAnchor.UpperLeft);
 
-            // Button row — a container Relayout() slides up to sit just below the table.
+            // Button row - a container Relayout() slides up to sit just below the table.
             _buttonRow = CreateRect("ButtonRow", _panel, new Vector2(0, 1), new Vector2(0, 1),
                 new Vector2(Pad, -52), new Vector2(0, BtnH));
             _advBtnLabel = CreateButton("Advanced", _buttonRow, 0, 92, ToggleAdvanced);
@@ -657,7 +657,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 _diagBtnLabel.text = _recording ? "Stop" : $"Run {_diagSeconds}s";
         }
 
-        // ── serializable report ───────────────────────────────────────────
+        // -- serializable report -------------------------------------------
         [Serializable]
         class DiagSpike
         {

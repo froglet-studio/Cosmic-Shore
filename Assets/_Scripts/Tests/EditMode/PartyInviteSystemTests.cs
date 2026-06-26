@@ -9,7 +9,7 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// PartyInviteSystem Tests — Comprehensive coverage of the party/invite system.
+    /// PartyInviteSystem Tests - Comprehensive coverage of the party/invite system.
     ///
     /// WHY THIS MATTERS:
     /// The invite system is the backbone of multiplayer party formation. These tests
@@ -46,9 +46,9 @@ namespace CosmicShore.Tests
             Object.DestroyImmediate(_data);
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // HostConnectionDataSO — HasOpenSlots (with wired list)
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
+        // HostConnectionDataSO - HasOpenSlots (with wired list)
+        // ---------------------------------------------------------------------
 
         #region HasOpenSlots With Wired List
 
@@ -109,9 +109,9 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // HostConnectionDataSO — RemotePartyMemberCount (with wired list)
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
+        // HostConnectionDataSO - RemotePartyMemberCount (with wired list)
+        // ---------------------------------------------------------------------
 
         #region RemotePartyMemberCount With Wired List
 
@@ -169,9 +169,9 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // HostConnectionDataSO — RemovePartyMember (with wired list)
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
+        // HostConnectionDataSO - RemovePartyMember (with wired list)
+        // ---------------------------------------------------------------------
 
         #region RemovePartyMember With Wired List
 
@@ -233,9 +233,9 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // HostConnectionDataSO — ResetRuntimeData (with wired lists)
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
+        // HostConnectionDataSO - ResetRuntimeData (with wired lists)
+        // ---------------------------------------------------------------------
 
         #region ResetRuntimeData With Wired Lists
 
@@ -289,9 +289,9 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // ParseInviteLine — Format Validation (via reflection)
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
+        // ParseInviteLine - Format Validation (via reflection)
+        // ---------------------------------------------------------------------
 
         #region ParseInviteLine Format Validation
 
@@ -420,7 +420,7 @@ namespace CosmicShore.Tests
         [Test]
         public void ParseInvite_ExtraPipes_StillSucceeds()
         {
-            // More than 4 parts — the parser only reads the first 4
+            // More than 4 parts - the parser only reads the first 4
             var result = InvokeParseInvite("host|session|name|5|extra|data");
 
             Assert.IsTrue(result.HasValue,
@@ -471,9 +471,9 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Invite Format Round-Trip
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         #region Invite Format Round-Trip
 
@@ -509,16 +509,16 @@ namespace CosmicShore.Tests
                 "This test documents the pipe-in-name edge case behavior.");
 
             // The actual behavior: parts = ["host","sess","Name","With","Pipe","3"]
-            // parts[3] = "With" → int.TryParse fails → returns null
+            // parts[3] = "With" -> int.TryParse fails -> returns null
             Assert.IsFalse(result.HasValue,
                 "A pipe character in the display name corrupts the invite format.");
         }
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // PartyPlayerData — Collection Contract (HashSet / Dictionary)
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
+        // PartyPlayerData - Collection Contract (HashSet / Dictionary)
+        // ---------------------------------------------------------------------
 
         #region Collection Contract
 
@@ -606,9 +606,9 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // ScriptableList + PartyPlayerData Integration
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         #region ScriptableList Integration
 
@@ -709,9 +709,9 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Party Slot Management — Realistic Scenarios
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
+        // Party Slot Management - Realistic Scenarios
+        // ---------------------------------------------------------------------
 
         #region Party Slot Scenarios
 
@@ -802,9 +802,9 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // ArcadeGameConfigureModal.ShouldLocalPlayerLaunch predicate
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         //
         // Regression coverage for the "Start Game silently no-ops for non-
         // presence-lobby-host users" bug: when multiple users were signed in,
@@ -817,7 +817,7 @@ namespace CosmicShore.Tests
         [Test]
         public void ShouldLocalPlayerLaunch_NoSyncManager_AlwaysLaunches()
         {
-            // Legacy solo path — no networked sync at all.
+            // Legacy solo path - no networked sync at all.
             bool result = CosmicShore.UI.ArcadeGameConfigureModal
                 .ShouldLocalPlayerLaunch(_data, hasSyncManager: false);
 
@@ -855,7 +855,7 @@ namespace CosmicShore.Tests
         [Test]
         public void ShouldLocalPlayerLaunch_Solo_PresenceLobbyHost_Launches()
         {
-            // First user — owns the presence lobby. Should still launch (this is
+            // First user - owns the presence lobby. Should still launch (this is
             // the case that always worked, kept as a sanity check).
             _data.LocalPlayerId = "firstUser";
             _data.IsPresenceLobbyHost = true;
@@ -904,9 +904,9 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Online Players List
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         #region Online Players
 
@@ -953,9 +953,9 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Dedup Guard — _lastFiredInvite Pattern Validation
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
+        // Dedup Guard - _lastFiredInvite Pattern Validation
+        // ---------------------------------------------------------------------
 
         #region Dedup Guard Logic
 
@@ -1011,9 +1011,9 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // PartyInviteController — IsTransitioning State Validation
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
+        // PartyInviteController - IsTransitioning State Validation
+        // ---------------------------------------------------------------------
 
         #region IsTransitioning State
 
@@ -1041,9 +1041,9 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // HostConnectionService — API Contract Validation
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
+        // HostConnectionService - API Contract Validation
+        // ---------------------------------------------------------------------
 
         #region HostConnectionService API Contract
 
@@ -1055,7 +1055,7 @@ namespace CosmicShore.Tests
                     BindingFlags.Static | BindingFlags.NonPublic);
 
             Assert.IsNotNull(method, "ParseInviteLine should exist as a private static method.");
-            // Returns Nullable<(string targetId, PartyInviteData invite)> — verify
+            // Returns Nullable<(string targetId, PartyInviteData invite)> - verify
             // it is Nullable<T> where T is a 2-tuple containing PartyInviteData.
             Assert.IsTrue(method.ReturnType.IsGenericType);
             Assert.AreEqual(typeof(System.Nullable<>), method.ReturnType.GetGenericTypeDefinition());
@@ -1148,9 +1148,9 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // FriendsInitializer — API Contract
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
+        // FriendsInitializer - API Contract
+        // ---------------------------------------------------------------------
 
         #region FriendsInitializer API Contract
 
@@ -1180,9 +1180,9 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        // ─────────────────────────────────────────────────────────────────────
-        // PartyStateMachine — legal transitions, guard, event, round-trips
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
+        // PartyStateMachine - legal transitions, guard, event, round-trips
+        // ---------------------------------------------------------------------
 
         #region PartyStateMachine
 
@@ -1344,7 +1344,7 @@ namespace CosmicShore.Tests
         [Test]
         public void StateMachine_JoiningToHostingParty_IsLegalOnFailure()
         {
-            // Accept flow failed or timed out — recreate own solo Relay session
+            // Accept flow failed or timed out - recreate own solo Relay session
             var sm = new CosmicShore.Gameplay.PartyStateMachine();
             sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
             sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
@@ -1357,12 +1357,12 @@ namespace CosmicShore.Tests
             Assert.AreEqual(CosmicShore.Gameplay.PartyState.HostingParty, sm.CurrentState);
         }
 
-        // ─── Eager per-user Relay model transitions ──────────────────────────────
+        // --- Eager per-user Relay model transitions ------------------------------
 
         [Test]
         public void StateMachine_InPresenceLobbyToHostingParty_IsLegal()
         {
-            // Auto-advance: presence lobby joined → create solo Relay session
+            // Auto-advance: presence lobby joined -> create solo Relay session
             var sm = new CosmicShore.Gameplay.PartyStateMachine();
             sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
 
@@ -1390,7 +1390,7 @@ namespace CosmicShore.Tests
         [Test]
         public void StateMachine_InPartyToJoiningParty_IsLegal()
         {
-            // Accept someone else's invite — leave own Relay, join theirs
+            // Accept someone else's invite - leave own Relay, join theirs
             var sm = new CosmicShore.Gameplay.PartyStateMachine();
             sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
             sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
@@ -1405,7 +1405,7 @@ namespace CosmicShore.Tests
         [Test]
         public void StateMachine_InPartyToHostingParty_IsLegal()
         {
-            // Leave party → recreate own solo Relay session
+            // Leave party -> recreate own solo Relay session
             var sm = new CosmicShore.Gameplay.PartyStateMachine();
             sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
             sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
@@ -1436,7 +1436,7 @@ namespace CosmicShore.Tests
         [Test]
         public void StateMachine_JoiningPartyToHostingParty_IsLegal()
         {
-            // Join failed → recreate own solo Relay session
+            // Join failed -> recreate own solo Relay session
             var sm = new CosmicShore.Gameplay.PartyStateMachine();
             sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
             sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);
@@ -1479,7 +1479,7 @@ namespace CosmicShore.Tests
         [Test]
         public void StateMachine_InPartyToInPresenceLobby_IsIllegal()
         {
-            // InPresenceLobby is no longer a valid destination from InParty — always recreate a party
+            // InPresenceLobby is no longer a valid destination from InParty - always recreate a party
             var sm = new CosmicShore.Gameplay.PartyStateMachine();
             sm.TryTransition(CosmicShore.Gameplay.PartyState.InPresenceLobby);
             sm.TryTransition(CosmicShore.Gameplay.PartyState.HostingParty);

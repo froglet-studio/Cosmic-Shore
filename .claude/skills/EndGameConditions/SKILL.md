@@ -1,15 +1,15 @@
 ---
 name: EndGameConditions
-description: Use when setting, changing, or asking where the end-game / win-condition COUNTS live for the domain modes — HexRace crystal count, Joust joust count, Crystal Capture crystal count (how many crystals/jousts end a turn), and Maelstrom/Tournament win target (placement points to win the whole shuffle, "race to N"). These are now authored ONLY through the Tools > Cosmic Shore > End Game Conditions editor window (backed by Resources/EndConditionOverrides.asset), never via per-scene inspector fields. Trigger when editing CrystalCollisionTurnMonitor / JoustCollisionTurnMonitor / NetworkCrystalCollisionTurnMonitor / NetworkJoustCollisionTurnMonitor, TournamentDataSO / TournamentController, EndConditionOverridesSO, or when someone wants to make a mode end sooner/later.
+description: Use when setting, changing, or asking where the end-game / win-condition COUNTS live for the domain modes - HexRace crystal count, Joust joust count, Crystal Capture crystal count (how many crystals/jousts end a turn), and Maelstrom/Tournament win target (placement points to win the whole shuffle, "race to N"). These are now authored ONLY through the Tools > Cosmic Shore > End Game Conditions editor window (backed by Resources/EndConditionOverrides.asset), never via per-scene inspector fields. Trigger when editing CrystalCollisionTurnMonitor / JoustCollisionTurnMonitor / NetworkCrystalCollisionTurnMonitor / NetworkJoustCollisionTurnMonitor, TournamentDataSO / TournamentController, EndConditionOverridesSO, or when someone wants to make a mode end sooner/later.
 ---
 
-# End Game Conditions — how the modes' win counts are set
+# End Game Conditions - how the modes' win counts are set
 
-The per-mode end-game **count** — how many crystals (HexRace, Crystal Capture) or jousts
+The per-mode end-game **count** - how many crystals (HexRace, Crystal Capture) or jousts
 (Joust) end a turn, and how many placement points a domain needs to win a whole **Maelstrom /
-Tournament** ("race to N") — is set in **one place** and one place only:
+Tournament** ("race to N") - is set in **one place** and one place only:
 
-> **Tools ▸ Cosmic Shore ▸ End Game Conditions**
+> **Tools > Cosmic Shore > End Game Conditions**
 
 That window edits the single config asset **`Assets/Resources/EndConditionOverrides.asset`**
 (`EndConditionOverridesSO`). The turn monitors (and `TournamentController` for Maelstrom) load it
@@ -19,16 +19,16 @@ at runtime via `Resources.Load`.
 
 - **There are NO per-scene inspector fields for these counts.** The old
   `CrystalCollisionTurnMonitor.CrystalCollisions` and `JoustCollisionTurnMonitor.collisionsNeeded`
-  `[SerializeField]`s were removed on purpose. **Do not re-add `[SerializeField]` to them** — they
+  `[SerializeField]`s were removed on purpose. **Do not re-add `[SerializeField]` to them** - they
   are now plain internal fields that just hold the *resolved* value. If you want a count changed,
   change it in the tool, not in a scene.
 - **`0` = auto/default, `> 0` = explicit count** (same semantic the old field had, moved into the tool):
-  - **HexRace / Crystal Capture** — `0` → auto-calc from the track waypoints (then 39).
-  - **Joust** — `0` → `EndConditionOverridesSO.DefaultJoustCount` (3).
-  - **Maelstrom** — `0` → `EndConditionOverridesSO.DefaultMaelstromWinTarget` (6). This is the
+  - **HexRace / Crystal Capture** - `0` -> auto-calc from the track waypoints (then 39).
+  - **Joust** - `0` -> `EndConditionOverridesSO.DefaultJoustCount` (3).
+  - **Maelstrom** - `0` -> `EndConditionOverridesSO.DefaultMaelstromWinTarget` (6). This is the
     "race to N" win target: the first DOMAIN whose cumulative `{2,1,0}` placement points reach it
-    wins the shuffle. NOT a per-turn count — it ends the whole tournament.
-- The setting **applies wherever the mode runs** — standalone arcade *and* inside a Tournament.
+    wins the shuffle. NOT a per-turn count - it ends the whole tournament.
+- The setting **applies wherever the mode runs** - standalone arcade *and* inside a Tournament.
 - HexRace and Crystal Capture share the same monitor class, so the SO keys the count by
   `gameData.GameMode` (HexRace 33 vs MultiplayerCrystalCapture 35). Keep that switch in
   `EndConditionOverridesSO.GetCrystalCount`.
@@ -36,18 +36,18 @@ at runtime via `Resources.Load`.
 ## How it flows at runtime
 
 ```
-EndConditionOverridesSO (Resources/EndConditionOverrides.asset)   ← edited by the Tools window
-        │  GetCrystalCount(mode, autoCalc) / GetJoustCount() / GetMaelstromWinTarget()
-        ▼
-CrystalCollisionTurnMonitor.GetCrystalCollisionCount()   → resolves CrystalCollisions (HexRace, Crystal Capture)
-JoustCollisionTurnMonitor.StartMonitor()                 → resolves collisionsNeeded (Joust)
-TournamentController.StartTournamentInternal()           → TournamentDataSO.ResolveWinTarget(...) (Maelstrom)
-        │  (0 in the tool → waypoint auto-calc / default 3 / default 6)
-        ▼
-NetworkCrystalCollisionTurnMonitor → gameData.CrystalTargetCount   (synced to clients)
-NetworkJoustCollisionTurnMonitor   → gameData.JoustTargetCount
-TournamentDataSO.EffectiveWinTarget → IsShuffleComplete + the lobby/summary race-rule text
-        ▼
+EndConditionOverridesSO (Resources/EndConditionOverrides.asset)   <- edited by the Tools window
+        |  GetCrystalCount(mode, autoCalc) / GetJoustCount() / GetMaelstromWinTarget()
+        v
+CrystalCollisionTurnMonitor.GetCrystalCollisionCount()   -> resolves CrystalCollisions (HexRace, Crystal Capture)
+JoustCollisionTurnMonitor.StartMonitor()                 -> resolves collisionsNeeded (Joust)
+TournamentController.StartTournamentInternal()           -> TournamentDataSO.ResolveWinTarget(...) (Maelstrom)
+        |  (0 in the tool -> waypoint auto-calc / default 3 / default 6)
+        v
+NetworkCrystalCollisionTurnMonitor -> gameData.CrystalTargetCount   (synced to clients)
+NetworkJoustCollisionTurnMonitor   -> gameData.JoustTargetCount
+TournamentDataSO.EffectiveWinTarget -> IsShuffleComplete + the lobby/summary race-rule text
+        v
 the mode's ScoringRuleSO.IsObjectiveReached(...) ends the turn on that target;
 for Maelstrom, the first DOMAIN to reach EffectiveWinTarget cumulative points ends the shuffle
 ```
@@ -62,9 +62,9 @@ networking.
 
 ## To change a count
 
-1. Unity → **Tools ▸ Cosmic Shore ▸ End Game Conditions** (auto-creates the asset on first open).
-2. Set **HexRace — Crystal Count**, **Crystal Capture — Crystal Count**, **Joust — Joust Count**,
-   and/or **Maelstrom — Win Target (points)**. Leave `0` for auto/default. The window shows the
+1. Unity -> **Tools > Cosmic Shore > End Game Conditions** (auto-creates the asset on first open).
+2. Set **HexRace - Crystal Count**, **Crystal Capture - Crystal Count**, **Joust - Joust Count**,
+   and/or **Maelstrom - Win Target (points)**. Leave `0` for auto/default. The window shows the
    effective value and saves on edit.
 3. Commit `Assets/Resources/EndConditionOverrides.asset` (and its `.meta`).
 
@@ -76,25 +76,25 @@ HexRace `0` (auto), Crystal Capture `20`, Joust `3`, Maelstrom `6`.
 The asset stores **two** sets of counts:
 
 - **Live values** (`hexRaceCrystalCount` / `crystalCaptureCrystalCount` / `joustCount` /
-  `maelstromWinTarget`) — what the turn monitors (and `TournamentController` for Maelstrom) actually
+  `maelstromWinTarget`) - what the turn monitors (and `TournamentController` for Maelstrom) actually
   read at runtime. Lower these to end a mode quickly while testing.
-- **Build baseline** (`*Build` fields) — the values a shipping build must use. They are *not* read at
-  runtime; they're the restore target. You don't type them in — click **"Set Build Values"** in the
+- **Build baseline** (`*Build` fields) - the values a shipping build must use. They are *not* read at
+  runtime; they're the restore target. You don't type them in - click **"Set Build Values"** in the
   window to snapshot the current Live values as the baseline (shown read-only above the button). Do
   this once, when the Live values are the real production counts.
 
 The safety net is the toggle **"Auto-restore build values before build"** (`autoRestoreBuildValuesBeforeBuild`,
 **on by default**). When on, `EndConditionBuildRestore` (`IPreprocessBuildWithReport`) copies the
-Build baseline onto the Live counts and saves the asset at build start — no warning, no block, it
-just restores — so test values can't ship. Turn it off to build with the current Live values.
+Build baseline onto the Live counts and saves the asset at build start - no warning, no block, it
+just restores - so test values can't ship. Turn it off to build with the current Live values.
 
-`EndConditionOverridesSO.ApplyBuildValues()` (build → live, used by the build restore),
-`CaptureBuildValues()` (live → build, used by "Set Build Values"), and `LiveMatchesBuild` (skip if
+`EndConditionOverridesSO.ApplyBuildValues()` (build -> live, used by the build restore),
+`CaptureBuildValues()` (live -> build, used by "Set Build Values"), and `LiveMatchesBuild` (skip if
 already in sync) are the shared helpers. Keep the committed asset's `*Build` fields equal to its Live
 fields so a clean checkout is already in sync.
 
-Testing workflow: (one time) set production counts → **Set Build Values** → commit. Then: drop a Live
-count → test → build (auto-restore puts the baseline back) — or click nothing and just rely on the
+Testing workflow: (one time) set production counts -> **Set Build Values** -> commit. Then: drop a Live
+count -> test -> build (auto-restore puts the baseline back) - or click nothing and just rely on the
 build restore.
 
 ## Files
@@ -107,7 +107,7 @@ build restore.
 | Build-time auto-restore | `Assets/_Scripts/Editor/EndConditionBuildRestore.cs` |
 | Crystal modes read it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/CrystalCollisionTurnMonitor.cs` (`GetCrystalCollisionCount`) |
 | Joust reads it here | `Assets/_Scripts/Controller/Arcade/TurnMonitors/JoustCollisionTurnMonitor.cs` (`StartMonitor`) |
-| Maelstrom resolves it here | `Assets/_Scripts/Controller/Arcade/Tournament/TournamentController.cs` (`StartTournamentInternal` → `ResolveWinTarget`) |
+| Maelstrom resolves it here | `Assets/_Scripts/Controller/Arcade/Tournament/TournamentController.cs` (`StartTournamentInternal` -> `ResolveWinTarget`) |
 | Maelstrom reads it here | `Assets/_Scripts/Utility/DataContainers/Tournament/TournamentDataSO.cs` (`EffectiveWinTarget`, `IsShuffleComplete`) |
 | Network sync (unchanged) | `NetworkCrystalCollisionTurnMonitor.cs` (`CrystalTargetCount`), `NetworkJoustCollisionTurnMonitor.cs` (`JoustTargetCount`) |
 
@@ -116,13 +116,13 @@ build restore.
 Add a Live field **and** its `*Build` counterpart (+ a `case`/getter) in `EndConditionOverridesSO`,
 include both in `LiveMatchesBuild` / `ApplyBuildValues` / `CaptureBuildValues`, add the Live input
 row + the Build-baseline display line in the editor window, then have that mode resolve its count
-through the SO — **never** with a new per-scene `[SerializeField]`.
+through the SO - **never** with a new per-scene `[SerializeField]`.
 
 - **Per-turn modes** (crystal/joust): the turn monitor resolves the count at `StartMonitor`.
-- **Session-level modes** (Maelstrom/Tournament): there is no turn monitor — resolve once at the
+- **Session-level modes** (Maelstrom/Tournament): there is no turn monitor - resolve once at the
   session start. Maelstrom's `TournamentController.StartTournamentInternal` reads
   `GetMaelstromWinTarget()` and stamps it via `TournamentDataSO.ResolveWinTarget`; everything reads
   `TournamentDataSO.EffectiveWinTarget` (which falls back to the serialized `WinTarget` when the tool
-  asset is missing / in unit tests). Resolving once per start — instead of calling
-  `EndConditionOverridesSO.Instance` from a data-container getter — keeps the pure-logic unit tests
+  asset is missing / in unit tests). Resolving once per start - instead of calling
+  `EndConditionOverridesSO.Instance` from a data-container getter - keeps the pure-logic unit tests
   decoupled from the committed Resources asset.

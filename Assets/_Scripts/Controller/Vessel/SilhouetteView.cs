@@ -1,4 +1,4 @@
-﻿using CosmicShore.Gameplay;
+using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;

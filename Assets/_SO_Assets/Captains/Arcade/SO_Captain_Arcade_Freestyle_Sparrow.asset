@@ -15,8 +15,7 @@ MonoBehaviour:
   Name: Feist
   Description: Slowest heat build up for Velocity Surge
   AIBehaviorDescription: Uses boosts to get crystals
-  Flavor: “If you're gonna use boosters, make sure they're big enough to leave
-    a lasting impression!”
+  Flavor: "\"If you're gonna use boosters, make sure they're big enough to leave a lasting impression!\""
   Image: {fileID: 21300000, guid: f5c723a675fdfe94ea5c2e0b09c9456f, type: 3}
   HeadshotImage: {fileID: 0}
   IconActive: {fileID: 21300000, guid: 6c4f40eef57f4d04bbd01083161212ff, type: 3}

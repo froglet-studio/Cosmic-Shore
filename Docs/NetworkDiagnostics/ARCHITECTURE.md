@@ -1,18 +1,18 @@
-# Network Diagnostics — Overlay Architecture
+# Network Diagnostics - Overlay Architecture
 
 Cross-cutting diagnostic overlay for party / lobby / session /
-transition failures. Pure observability — adding a call site never
+transition failures. Pure observability - adding a call site never
 changes behavior.
 
 **Logging channel: `CSDebug.Log` (not `Debug.*`).** Every line this
-overlay emits — the per-catch `NetDiag` lines and the `NetworkMonitor`
-transition lines — goes through `CSDebug.Log`
+overlay emits - the per-catch `NetDiag` lines and the `NetworkMonitor`
+transition lines - goes through `CSDebug.Log`
 (`Assets/_Scripts/Utility/CSDebug.cs`). This is deliberate:
 
 - **Stripped from release builds.** `CSDebug.Log` carries
   `[Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]`, so
   in a shipping (non-dev) build the compiler removes the entire call
-  *including its argument evaluation* — `ClassifyException(e)` and
+  *including its argument evaluation* - `ClassifyException(e)` and
   `GetSnapshot()` are never invoked, and the interpolated string is
   never built. **Zero runtime cost, zero allocation in release.**
 - **Muteable at runtime.** In Editor / development builds the line
@@ -20,7 +20,7 @@ transition lines — goes through `CSDebug.Log`
   the diagnostic noise can be silenced from `LogControlWindow` without
   touching code.
 
-Do **not** "promote" these to `Debug.Log` / `Debug.LogWarning` — that
+Do **not** "promote" these to `Debug.Log` / `Debug.LogWarning` - that
 would reintroduce release-build allocation and console noise that the
 team explicitly does not want for diagnostics.
 
@@ -66,7 +66,7 @@ public static string ClassifyException(Exception e);
 - `Initialize` is called once from `AppManager.StartNetworkMonitor()`.
   Pins the live `NetworkMonitorDataVariable` so `GetSnapshot()` can
   include monitor state. If `Initialize` is never called (e.g. in a
-  test harness), `GetSnapshot()` still returns reachability — just
+  test harness), `GetSnapshot()` still returns reachability - just
   with `monitor=Uninitialized`.
 - `GetSnapshot()` returns the formatted snapshot string. Zero
   allocations beyond the returned string. Safe to call from any thread
@@ -85,15 +85,15 @@ writes the new state to `NetworkMonitorData.IsOnline` +
 `CSDebug.Log` line:
 
 ```
-[NetworkMonitor] Online → Offline (reach=NotReachable, t=12.4s)
-[NetworkMonitor] Offline → Online (reach=ReachableViaLAN, t=18.9s)
+[NetworkMonitor] Online -> Offline (reach=NotReachable, t=12.4s)
+[NetworkMonitor] Offline -> Online (reach=ReachableViaLAN, t=18.9s)
 ```
 
-Both lines are `CSDebug.Log` (info severity) — stripped from release
+Both lines are `CSDebug.Log` (info severity) - stripped from release
 builds and runtime-muteable, same as the NetDiag catch lines. The
 `reach=` + timestamp tag is the canary you pair with a subsequent
 party-flow `NetDiag` line to see whether the network changed around the
-failure. (Logs only fire on an actual Online↔Offline transition, so a
+failure. (Logs only fire on an actual Online<->Offline transition, so a
 stable connection produces nothing.)
 
 ### `Assets/_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/NetworkMonitorData.cs`
@@ -111,7 +111,7 @@ Read-only for everyone else. The existing SOAP events
 
 ## Where it's wired
 
-Sixteen catch-block decorations across five files — every party /
+Sixteen catch-block decorations across five files - every party /
 lobby / session / transition catch that classifies a failure (the
 party-session-refresh `[definite]` and `[transient]` sites were added
 in a follow-up after a 2026-06-01 MPPM session surfaced a gap; see
@@ -126,7 +126,7 @@ in a follow-up after a 2026-06-01 MPPM session surfaced a gap; see
 | `Controller/Party/Services/NetworkTransitionService.cs` | `ShutdownAsync` timeout catch, `WaitForClientConnectionAsync` timeout catch, `WaitForSceneSyncAsync` timeout catch |
 
 Existing log literals are preserved verbatim. The NetDiag line is
-appended (via `CSDebug.Log`) — never replaces. The three
+appended (via `CSDebug.Log`) - never replaces. The three
 `NetworkTransitionService` sites fire only on a timeout
 (`OperationCanceledException` when the flow's own token was *not*
 cancelled), so they hard-code `class=Timeout` rather than running it
@@ -174,7 +174,7 @@ pair it with `monitor=` for cross-checking. Tests A and D in
 source-of-truth predicate for retry-loop control. They are
 intentionally separate to avoid coupling log format to retry policy.
 
-If you change the retry policy, update `IsTransientSessionException` —
+If you change the retry policy, update `IsTransientSessionException` -
 NOT `ClassifyException`. They can diverge legitimately (e.g. a future
 `PaymentRequired` class is interesting for logs but should not trigger
 a retry).
@@ -186,32 +186,32 @@ take up to 5 s to register in `monitor=`, so `sinceChange=` may
 under-represent how recently the network actually changed. The
 exception classifier still gets it right by matching on the
 caught exception type. A `BoostPolling(int s)` hook is the obvious
-future improvement — see `TODOS.md`.
+future improvement - see `TODOS.md`.
 
 ## Adopting NetDiag in non-party catches
 
 The same pattern applies elsewhere. Use `CSDebug.Log` for the appended
-NetDiag line so it strips from release and stays muteable — leave the
+NetDiag line so it strips from release and stays muteable - leave the
 pre-existing log literal on whatever channel it already uses:
 
 ```csharp
 catch (Exception e)
 {
-    Debug.LogWarning($"[<MyTag>] <existing message>: {e.Message}"); // pre-existing — untouched
-    // ↓ one new line, appended — CSDebug.Log so it strips in release + mutes at runtime
+    Debug.LogWarning($"[<MyTag>] <existing message>: {e.Message}"); // pre-existing - untouched
+    // v one new line, appended - CSDebug.Log so it strips in release + mutes at runtime
     CosmicShore.Utility.CSDebug.Log($"[<MyTag>] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
     // existing recovery / rethrow / etc
 }
 ```
 
-No injection needed — `NetworkDiagnostics` is a static helper. See
+No injection needed - `NetworkDiagnostics` is a static helper. See
 `TODOS.md` for the candidate non-party adoption list.
 
 ## Related docs
 
-- `TESTS.md` — Tests A-E for verifying the diagnostic accuracy
-- `TODOS.md` — `BoostPolling`, active probing, baseline-entry log,
+- `TESTS.md` - Tests A-E for verifying the diagnostic accuracy
+- `TODOS.md` - `BoostPolling`, active probing, baseline-entry log,
   broader adoption
-- `../PartySystem/ARCHITECTURE.md` — party system that the overlay sits behind
-- `../PresenceSystem/ARCHITECTURE.md` — presence system that the overlay sits behind
-- `../THREADING.md` — main-thread affinity rules respected by the catches
+- `../PartySystem/ARCHITECTURE.md` - party system that the overlay sits behind
+- `../PresenceSystem/ARCHITECTURE.md` - presence system that the overlay sits behind
+- `../THREADING.md` - main-thread affinity rules respected by the catches

@@ -16,7 +16,7 @@ namespace CosmicShore.Core
     /// <summary>
     /// Unified facade for all player cloud data.
     /// Single Responsibility: orchestrates initialization and provides typed access
-    ///                        to every data domain — does not own any domain logic.
+    ///                        to every data domain - does not own any domain logic.
     /// Dependency Inversion: depends on ICloudSaveProvider and ICloudDataRepository
     ///                       interfaces, not concrete UGS types.
     ///
@@ -37,7 +37,7 @@ namespace CosmicShore.Core
 
         [Inject] AuthenticationDataVariable _authData;
 
-        // ── Repositories ──
+        // -- Repositories --
         PlayerProfileRepository _profile;
         PlayerStatsRepository _stats;
         VesselStatsRepository _vesselStats;
@@ -53,7 +53,7 @@ namespace CosmicShore.Core
         ICloudSaveProvider _provider;
         List<ICloudDataWriter> _allRepos;
 
-        // ── IUGSDataService ──
+        // -- IUGSDataService --
 
         public bool IsInitialized { get; private set; }
         public event Action OnInitialized;
@@ -171,7 +171,7 @@ namespace CosmicShore.Core
                 _loadout.LoadAsync(ct)
             );
 
-            // Restore vessel unlock state from cloud → SO_Vessel assets
+            // Restore vessel unlock state from cloud -> SO_Vessel assets
             SyncHangarToVessels();
 
             IsInitialized = true;
@@ -182,7 +182,7 @@ namespace CosmicShore.Core
 
         public async Task FlushAllAsync(CancellationToken ct = default)
         {
-            // Only flush repositories with pending changes — clean repos would
+            // Only flush repositories with pending changes - clean repos would
             // otherwise re-upload an unchanged payload on every flush.
             var tasks = new List<Task>();
             foreach (var repo in _allRepos)

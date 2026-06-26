@@ -26,7 +26,7 @@ public class SpawnableArrow : SpawnableShapeBase
         float sl = shaftLength * sizeMul;
         float sw = shaftWidth * sizeMul;
 
-        // Arrow outline: tip → right wing → right shaft → bottom right → bottom left → left shaft → left wing → back to tip
+        // Arrow outline: tip -> right wing -> right shaft -> bottom right -> bottom left -> left shaft -> left wing -> back to tip
         float shaftTop = -hh * 0.1f; // shaft starts slightly below tip
         var vertices = new Vector3[]
         {

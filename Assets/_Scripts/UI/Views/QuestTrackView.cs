@@ -97,7 +97,7 @@ namespace CosmicShore.UI
             float vel = Mathf.Abs(scrollRect.velocity.x);
             bool isMoving = vel > snapSpeedThreshold;
 
-            // User scroll momentum just settled → snap to nearest card
+            // User scroll momentum just settled -> snap to nearest card
             if (_wasMoving && !isMoving)
                 SnapToNearestCard();
 
@@ -116,7 +116,7 @@ namespace CosmicShore.UI
             UpdateActiveDescription(false);
         }
 
-        // ── Setup ─────────────────────────────────────────────────────────────
+        // -- Setup -------------------------------------------------------------
 
         void EnsureSliderIgnoresLayout()
         {
@@ -172,7 +172,7 @@ namespace CosmicShore.UI
                 SnapToCard(activeIndex, true);
         }
 
-        // ── Card State ────────────────────────────────────────────────────────
+        // -- Card State --------------------------------------------------------
 
         QuestItemState GetCardState(int questIndex)
         {
@@ -227,15 +227,15 @@ namespace CosmicShore.UI
             }
         }
 
-        // ── Claim Fanfare ─────────────────────────────────────────────────────
+        // -- Claim Fanfare -----------------------------------------------------
         //
         //  Choreographed timeline:
-        //  1. Button clicked → claim animation (scale bounce)
+        //  1. Button clicked -> claim animation (scale bounce)
         //  2. Description text fades out
         //  3. Slider + ghost slider start moving to next position
         //     + scroll view begins panning to the next card
-        //  4. As slider leaves current card (~35%) → current card → Claimed
-        //  5. As slider reaches next card (~90%) → next card → Unlocked, pulse moves
+        //  4. As slider leaves current card (~35%) -> current card -> Claimed
+        //  5. As slider reaches next card (~90%) -> next card -> Unlocked, pulse moves
         //  6. Description text fades in with new quest goal
         //
 
@@ -249,7 +249,7 @@ namespace CosmicShore.UI
 
             card.SetButtonInteractable(false);
 
-            // Scale-bounce → then kick off the full choreographed sequence
+            // Scale-bounce -> then kick off the full choreographed sequence
             card.PlayClaimAnimation(() => PlayClaimSequence(cardIndex, quest));
         }
 
@@ -258,7 +258,7 @@ namespace CosmicShore.UI
             _isPlayingClaimSequence = true;
             _claimSequence?.Kill();
 
-            // Commit the data change — OnProgressionChanged will be skipped due to the flag
+            // Commit the data change - OnProgressionChanged will be skipped due to the flag
             GameModeProgressionService.Instance?.ClaimQuestAndUnlockNext(quest.GameMode);
 
             // Pre-compute slider targets from the now-updated data
@@ -270,14 +270,14 @@ namespace CosmicShore.UI
 
             var seq = DOTween.Sequence();
 
-            // ── Step 1: Fade out current description ────────────────────────
+            // -- Step 1: Fade out current description ------------------------
             if (_lastActiveDescIndex >= 0 && _lastActiveDescIndex < _descriptionLabels.Count)
             {
                 var oldCg = _descriptionLabels[_lastActiveDescIndex];
                 seq.Append(DOTween.To(() => oldCg.alpha, a => oldCg.alpha = a, 0f, fadeDur));
             }
 
-            // ── Step 2: Slider + ghost slider start moving ──────────────────
+            // -- Step 2: Slider + ghost slider start moving ------------------
             // Also begin scrolling to the next card alongside the slider
             float sliderStart = seq.Duration();
 
@@ -306,7 +306,7 @@ namespace CosmicShore.UI
                 seq.InsertCallback(scrollDelay, () => SnapToCard(nextCardIndex, false, sliderAnimDuration));
             }
 
-            // ── Step 3: Slider leaves current card (~35%) → mark Claimed ────
+            // -- Step 3: Slider leaves current card (~35%) -> mark Claimed ----
             float claimedTime = sliderStart + sliderAnimDuration * 0.35f;
             seq.InsertCallback(claimedTime, () =>
             {
@@ -314,7 +314,7 @@ namespace CosmicShore.UI
                 _cards[cardIndex].SetActiveFrontier(false);
             });
 
-            // ── Step 4: Slider reaches next card (~90%) → unlock + pulse ────
+            // -- Step 4: Slider reaches next card (~90%) -> unlock + pulse ----
             if (hasNextCard)
             {
                 float unlockTime = sliderStart + sliderAnimDuration * 0.9f;
@@ -325,7 +325,7 @@ namespace CosmicShore.UI
                 });
             }
 
-            // ── Step 5: Fade in new description ─────────────────────────────
+            // -- Step 5: Fade in new description -----------------------------
             float fadeInTime = sliderStart + sliderAnimDuration;
             int newActiveIndex = hasNextCard ? nextCardIndex : cardIndex;
 
@@ -336,11 +336,11 @@ namespace CosmicShore.UI
             }
             _lastActiveDescIndex = newActiveIndex;
 
-            // ── Cleanup ─────────────────────────────────────────────────────
+            // -- Cleanup -----------------------------------------------------
             seq.OnComplete(() =>
             {
                 _isPlayingClaimSequence = false;
-                // Final sync — ensure all cards reflect the true data state
+                // Final sync - ensure all cards reflect the true data state
                 RefreshAllCards();
                 UpdateActivePulse();
             });
@@ -349,7 +349,7 @@ namespace CosmicShore.UI
             _claimSequence = seq;
         }
 
-        // ── Slider ────────────────────────────────────────────────────────────
+        // -- Slider ------------------------------------------------------------
 
         void SetSliderImmediate()
         {
@@ -385,7 +385,7 @@ namespace CosmicShore.UI
             return count;
         }
 
-        // ── Ghost Slider ────────────────────────────────────────────────────
+        // -- Ghost Slider ----------------------------------------------------
 
         void ConfigureGhostSlider()
         {
@@ -421,7 +421,7 @@ namespace CosmicShore.UI
             }
         }
 
-        // ── Quest Description Labels ─────────────────────────────────────────
+        // -- Quest Description Labels -----------------------------------------
 
         void SpawnDescriptionLabels()
         {
@@ -498,7 +498,7 @@ namespace CosmicShore.UI
             _lastActiveDescIndex = activeIndex;
         }
 
-        // ── Scroll Snap ──────────────────────────────────────────────────────
+        // -- Scroll Snap ------------------------------------------------------
 
         void SnapToNearestCard()
         {
@@ -575,7 +575,7 @@ namespace CosmicShore.UI
             return nearest;
         }
 
-        // ── Parallax Depth ────────────────────────────────────────────────────
+        // -- Parallax Depth ----------------------------------------------------
 
         void UpdateParallax()
         {
@@ -601,7 +601,7 @@ namespace CosmicShore.UI
             }
         }
 
-        // ── Cleanup ───────────────────────────────────────────────────────────
+        // -- Cleanup -----------------------------------------------------------
 
         void ClearSpawned()
         {

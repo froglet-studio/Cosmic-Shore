@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using UnityEngine;
 using CosmicShore.Utility;

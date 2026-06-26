@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
     /// <see cref="ClientPlayerVesselInitializer.ReplaceVesselForPlayer_ClientRpc"/>.
     ///
     /// Game data configuration (vessel class, player count, intensity) is handled
-    /// by <see cref="Core.MainMenuController"/> — this class only handles the
+    /// by <see cref="Core.MainMenuController"/> - this class only handles the
     /// network spawn chain, autopilot activation, and vessel swap.
     ///
     /// Listens to <see cref="GameDataSO.OnPlayerNetworkSpawnedUlong"/> via the base class,
@@ -30,8 +30,8 @@ namespace CosmicShore.Gameplay
         [Tooltip("Domain (team color) forced on every human's menu vessel. Jade by default " +
                  "so the autopilot renders green and the cell's flora/fauna react to a " +
                  "consistent domain. Server-write only: replicates to all peers via " +
-                 "Player.NetDomain → OnNetDomainChanged (mirrors + full repaint). This is " +
-                 "the ONLY menu domain reset — client code must never write domain locally.")]
+                 "Player.NetDomain -> OnNetDomainChanged (mirrors + full repaint). This is " +
+                 "the ONLY menu domain reset - client code must never write domain locally.")]
         [SerializeField] Domains menuVesselDomain = Domains.Jade;
 
         bool _isSwapping;
@@ -42,7 +42,7 @@ namespace CosmicShore.Gameplay
         // Menu vessels spawn with destroyWithScene=false so a joining client's vessel
         // survives the client's Single-mode Menu_Main scene-synchronize, which would
         // otherwise batch with and destroy the just-spawned vessel (the AI-vessel race).
-        // Menu→game and leave-party paths despawn all vessels explicitly
+        // Menu->game and leave-party paths despawn all vessels explicitly
         // (SceneLoader.ClearPlayerVesselReferences / GameDataSO.DestroyPlayerAndVessel),
         // so there is no leak.
         protected override bool DestroyVesselWithScene => false;
@@ -68,7 +68,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Menu override: reset the player's domain to the menu domain BEFORE the base
         /// spawns + paints the vessel, then activate autopilot after.
-        /// Server-authoritative — the ONLY menu domain reset. Runs on every menu entry
+        /// Server-authoritative - the ONLY menu domain reset. Runs on every menu entry
         /// path (fresh start, party join, host-return from a game) and applies identically
         /// to the solo host and to party members: there is no separate single-player path.
         /// Writing before base means the vessel paints the menu domain at init; if the

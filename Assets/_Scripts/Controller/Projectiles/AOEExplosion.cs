@@ -60,8 +60,8 @@ namespace CosmicShore.Gameplay
         /// While batch processing is active, exclude the prism layer from the
         /// SphereCollider so PhysX never generates the thousands of trigger pairs
         /// that OnTriggerEnter would discard (they're handled by ProcessBatchFrame).
-        /// Only TrailBlocks is excluded — vessel pairs must stay live because
-        /// explosion→vessel effects (e.g. VesselChangeSpeedByExplosionEffect) are
+        /// Only TrailBlocks is excluded - vessel pairs must stay live because
+        /// explosion->vessel effects (e.g. VesselChangeSpeedByExplosionEffect) are
         /// resolved through this collider's OnTriggerEnter, not the batch path.
         /// </summary>
         private void ApplyPrismExclusion()
@@ -122,13 +122,13 @@ namespace CosmicShore.Gameplay
 
             explosionCts = new CancellationTokenSource();
 
-            // Start invisible — ExplodeAsync enables the renderer once the animation
+            // Start invisible - ExplodeAsync enables the renderer once the animation
             // begins. Without this, the mesh is visible at prefab default scale for
             // the entire ExplosionDelay, appearing as a full-size opaque sphere.
             transform.localScale = Vector3.zero;
             if (meshRenderer) meshRenderer.enabled = false;
 
-            // Subscribe to game events — OnEnable fires before DI injection
+            // Subscribe to game events - OnEnable fires before DI injection
             // for runtime-spawned objects, so retry here after injection.
             SubscribeToGameEvents();
         }
@@ -173,19 +173,19 @@ namespace CosmicShore.Gameplay
 
         protected virtual async UniTaskVoid ExplodeAsync(CancellationToken ct)
         {
-            // Cache impactor ref — _explosionImpactor may be null after Destroy
+            // Cache impactor ref - _explosionImpactor may be null after Destroy
             var impactor = _explosionImpactor;
             // Track collider state outside try/catch so catch blocks can restore it
             bool colliderDisabledForBatch = false;
             try
             {
-                // Start batch AOE processing — skips Physics OnTriggerEnter for prisms
+                // Start batch AOE processing - skips Physics OnTriggerEnter for prisms
                 impactor?.BeginBatchProcessing();
 
                 if (impactor != null && impactor.IsBatchProcessing && _sphereCollider != null)
                 {
                     // Batch processing is active: stop PhysX from generating
-                    // prism trigger pairs — the Burst job handles spatial queries.
+                    // prism trigger pairs - the Burst job handles spatial queries.
                     ApplyPrismExclusion();
                     colliderDisabledForBatch = true;
                 }
@@ -193,7 +193,7 @@ namespace CosmicShore.Gameplay
                 {
                     // Falling back to Physics triggers (index unavailable or
                     // ForceLegacyPhysics). A previous cancelled run may have left
-                    // the prism exclusion applied — prisms must be visible again.
+                    // the prism exclusion applied - prisms must be visible again.
                     RestorePrismExclusion();
                 }
 
@@ -240,7 +240,7 @@ namespace CosmicShore.Gameplay
 
                         if (!shouldContinue)
                         {
-                            // Super-shielded enemy hit — mirrors original Destroy(gameObject) in
+                            // Super-shielded enemy hit - mirrors original Destroy(gameObject) in
                             // ExecuteCommonPrismCommands. Stop explosion immediately.
                             impactor?.EndBatchProcessing();
                             if (colliderDisabledForBatch) RestorePrismExclusion();
@@ -272,7 +272,7 @@ namespace CosmicShore.Gameplay
                 // Deliberately NOT restoring the prism exclusion here: a cancelled
                 // explosion (e.g. OnMiniGameTurnEnd) stays alive frozen at its
                 // current scale. Re-including TrailBlocks would make PhysX refilter
-                // and fire OnTriggerEnter for every overlapping prism — a damage
+                // and fire OnTriggerEnter for every overlapping prism - a damage
                 // burst through the Physics fallback path after the turn ended.
                 // The exclusion is restored lazily at the start of the next
                 // ExplodeAsync run, or discarded with the GameObject on reset.
@@ -280,7 +280,7 @@ namespace CosmicShore.Gameplay
             catch (System.Exception e)
             {
                 // Safety net: any unexpected exception (e.g. NativeList overflow) must still
-                // clean up batch processing and destroy the explosion — otherwise it stays
+                // clean up batch processing and destroy the explosion - otherwise it stays
                 // stuck at max scale with _useBatchProcessing permanently true.
                 Debug.LogException(e);
                 impactor?.EndBatchProcessing();

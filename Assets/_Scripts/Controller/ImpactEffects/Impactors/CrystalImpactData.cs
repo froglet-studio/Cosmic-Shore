@@ -10,7 +10,7 @@ namespace CosmicShore.Gameplay
         public float SpeedBuffAmount;
         public bool IsAlive;
 
-        // 🔥 The factory method
+        //  The factory method
         public static CrystalImpactData FromCrystal(Crystal crystal)
         {
             return new CrystalImpactData

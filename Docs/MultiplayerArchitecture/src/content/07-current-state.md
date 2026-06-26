@@ -1,23 +1,23 @@
-<div class="sec-eyebrow">Part I · Overview</div>
+<div class="sec-eyebrow">Part I * Overview</div>
 
 # Where it stands
 
 The party system has an explicit definition of "done": a set of **unbreakable exit criteria** that
-must hold under adversarial conditions — network drops, client crashes, fast input, and concurrent
+must hold under adversarial conditions - network drops, client crashes, fast input, and concurrent
 invites.
 
 | # | Criterion | Status |
 |---|---|---|
-| 1 | No fatal failure — no vessel despawn outside an intentional leave, no kicks, no uncaught UGS exception | <span class="badge fixed">🟢 Passing</span> |
-| 2 | No stuck UI — party UI always reflects ground truth | <span class="badge fixed">🟢 Passing</span> |
-| 3 | No silent state divergence — host and clients agree within one refresh tick | <span class="badge fixed">🟢 Passing</span> |
-| 4 | All transitions reversible — a failed accept returns cleanly to solo menu | <span class="badge fixed">🟢 Passing</span> |
-| 5 | Idempotent retries — double-tap Accept can't start two transitions | <span class="badge fixed">🟢 Passing</span> |
-| 6 | 3-VP accept / decline / leave smoke green every commit | <span class="badge investigating">🟡 Per-commit gate</span> |
-| 7 | 3-VP stress (5 accepts, random declines/leaves) green | <span class="badge investigating">🟡 Per-commit gate</span> |
-| 8 | 4-VP concurrent invites — all clients join or bounce cleanly | <span class="badge investigating">🟡 Per-commit gate</span> |
+| 1 | No fatal failure - no vessel despawn outside an intentional leave, no kicks, no uncaught UGS exception | <span class="badge fixed">[green] Passing</span> |
+| 2 | No stuck UI - party UI always reflects ground truth | <span class="badge fixed">[green] Passing</span> |
+| 3 | No silent state divergence - host and clients agree within one refresh tick | <span class="badge fixed">[green] Passing</span> |
+| 4 | All transitions reversible - a failed accept returns cleanly to solo menu | <span class="badge fixed">[green] Passing</span> |
+| 5 | Idempotent retries - double-tap Accept can't start two transitions | <span class="badge fixed">[green] Passing</span> |
+| 6 | 3-VP accept / decline / leave smoke green every commit | <span class="badge investigating">[yellow] Per-commit gate</span> |
+| 7 | 3-VP stress (5 accepts, random declines/leaves) green | <span class="badge investigating">[yellow] Per-commit gate</span> |
+| 8 | 4-VP concurrent invites - all clients join or bounce cleanly | <span class="badge investigating">[yellow] Per-commit gate</span> |
 
-Criteria 1–5 hold as of the 17-commit refactor plus the catch-guard fix. Criteria 6–8 are the active
+Criteria 1-5 hold as of the 17-commit refactor plus the catch-guard fix. Criteria 6-8 are the active
 verification gate run on every change via Unity's **Multiplayer Play Mode (MPPM)**, which boots
 several virtual players in one editor.
 
@@ -33,7 +33,7 @@ several virtual players in one editor.
 :::
 
 ::: insight Hardening as a discipline, not an event
-The system is "hardened toward unbreakable" — an explicit, ongoing posture. Every catch block maps to
+The system is "hardened toward unbreakable" - an explicit, ongoing posture. Every catch block maps to
 a named recovery action, every diagnostic line is classified and strippable from release builds, and
 every locked decision has a written rationale so a future change doesn't silently reintroduce a solved
 problem. The remaining open bugs are edge cases, not architectural cracks.

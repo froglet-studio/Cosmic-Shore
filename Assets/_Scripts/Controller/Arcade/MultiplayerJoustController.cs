@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     public class MultiplayerJoustController : MultiplayerDomainGamesController
     {
         [Header("Scoring")]
-        [Tooltip("Drag JoustScoringRule.asset — the per-mode scoring strategy (winner, scores, results).")]
+        [Tooltip("Drag JoustScoringRule.asset - the per-mode scoring strategy (winner, scores, results).")]
         [SerializeField] ScoringRuleSO rule;
 
         private bool _finalResultsSent;
@@ -21,9 +21,9 @@ namespace CosmicShore.Gameplay
         protected override bool UseGolfRules => true;
         protected override bool UseSceneReloadForReplay => true; // match HexRace / CrystalCapture
 
-        // Joust handles end-game through OnTurnEndedCustom (server-side winner detection) →
+        // Joust handles end-game through OnTurnEndedCustom (server-side winner detection) ->
         // SyncJoustResults_ClientRpc, which calls InvokeWinnerCalculated + InvokeMiniGameEnd.
-        // Suppress the base controller's turn→round→game flow so we don't get a duplicate
+        // Suppress the base controller's turn->round->game flow so we don't get a duplicate
         // InvokeMiniGameEnd from SyncGameEnd_ClientRpc.
         protected override bool HasEndGame => false;
 
@@ -36,7 +36,7 @@ namespace CosmicShore.Gameplay
             _finalResultsSent = false;
         }
 
-        // ── Server-authoritative game end ─────────────────────────────────
+        // -- Server-authoritative game end ---------------------------------
 
         protected override void OnTurnEndedCustom()
         {
@@ -59,12 +59,12 @@ namespace CosmicShore.Gameplay
         {
             float currentTime = Time.time - gameData.TurnStartTime;
 
-            // Winning domain (highest joust sum, Jade→Ruby→Gold tie-break) + per-player
+            // Winning domain (highest joust sum, Jade->Ruby->Gold tie-break) + per-player
             // scores (winner = elapsed time, losers = sentinel) delegated to the rule.
             Domains winningDomain = rule.ResolveWinner(gameData);
 
             // Representative winner-name = best individual contributor on the winning
-            // domain. Used for the WinnerName legacy field (display strings only —
+            // domain. Used for the WinnerName legacy field (display strings only -
             // VICTORY/DEFEAT attribution is via WinnerDomain).
             var winnerRep = winningDomain == Domains.Blue
                 ? null
@@ -95,7 +95,7 @@ namespace CosmicShore.Gameplay
             base.SetupNewRound();
         }
 
-        // ── Score sync ───────────────────────────────────────────────────
+        // -- Score sync ---------------------------------------------------
 
         void SyncJoustResults_Authoritative()
         {
@@ -148,7 +148,7 @@ namespace CosmicShore.Gameplay
                 stat.Domain          = (Domains)domains[i];
             }
 
-            // Authoritative winner — written to gameData, consumed by EndGameControllers
+            // Authoritative winner - written to gameData, consumed by EndGameControllers
             // OnWinnerCalculated (below) is the "results ready" signal.
             gameData.WinnerName = winnerName.ToString();
             gameData.WinnerDomain = (Domains)winnerDomain;
@@ -164,8 +164,8 @@ namespace CosmicShore.Gameplay
             gameData.InvokeMiniGameEnd();
         }
 
-        // ── Replay ───────────────────────────────────────────────────────
-        // OnResetForReplayCustom removed — Joust uses UseSceneReloadForReplay = true, which
+        // -- Replay -------------------------------------------------------
+        // OnResetForReplayCustom removed - Joust uses UseSceneReloadForReplay = true, which
         // performs a full network scene reload. _finalResultsSent / _winningDomain and all
         // per-player stats are re-initialized fresh via OnNetworkSpawn + a rebuilt RoundStatsList.
     }

@@ -17,7 +17,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SquirrelVesselTelemetry : VesselTelemetry
     {
-        [Header("Stat Events — Squirrel")]
+        [Header("Stat Events - Squirrel")]
         [SerializeField] private VesselStatEventSO maxCleanStreakStat;
         [SerializeField] private VesselStatEventSO joustsWonStat;
         [SerializeField] private VesselStatEventSO prismsStolen;
@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private ScriptableEventCrystalStats onCrystalCollected;
         [SerializeField] private ScriptableEventString onJoustCollisionEvent;
 
-        // ── Public records ─────────────────────────────────────────────────────
+        // -- Public records -----------------------------------------------------
 
         public int MaxCleanStreak { get; private set; }
         public int JoustsWon      { get; private set; }
@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
 
         private int _currentCleanStreak;
 
-        // ── Registration ───────────────────────────────────────────────────────
+        // -- Registration -------------------------------------------------------
 
         protected override void RegisterStatsExtended()
         {
@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
             RegisterStat(prismsStolen);
         }
 
-        // ── Turn lifecycle ─────────────────────────────────────────────────────
+        // -- Turn lifecycle -----------------------------------------------------
 
         protected override void OnTurnStartedExtended()
         {
@@ -73,7 +73,7 @@ namespace CosmicShore.Gameplay
             prismsStolen?.Reset();
         }
 
-        // ── Event handlers ─────────────────────────────────────────────────────
+        // -- Event handlers -----------------------------------------------------
 
         private void HandleCrystalCollected(CrystalStats stats)
         {

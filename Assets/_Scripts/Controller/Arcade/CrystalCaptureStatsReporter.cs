@@ -1,4 +1,4 @@
-﻿// CrystalCaptureStatsReporter.cs
+// CrystalCaptureStatsReporter.cs
 using System.Linq;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;

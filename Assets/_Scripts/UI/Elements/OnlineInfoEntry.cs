@@ -9,8 +9,8 @@ namespace CosmicShore.UI
     /// <summary>
     /// Row entry for the Online section of FriendsListPanel.
     /// Shows avatar, username, lobby/match status, plus an Invite button and a
-    /// Cancel/Kick (✕) button. The Invite button is shown only when the player can be
-    /// invited (Online / IN PARTY). The ✕ is shown when an outgoing invite is pending
+    /// Cancel/Kick (X) button. The Invite button is shown only when the player can be
+    /// invited (Online / IN PARTY). The X is shown when an outgoing invite is pending
     /// (click = cancel the invite) OR the player is in YOUR party and you are the host
     /// (click = kick them). Sending an invite tints the row yellowish and pulses until
     /// the target accepts/declines/times out. Invite, cancel and kick all pass through
@@ -30,7 +30,7 @@ namespace CosmicShore.UI
         [Tooltip("Invite button. Click sends an invite to this player. Shown only " +
                  "while the player can be invited (Online / IN PARTY).")]
         [SerializeField] private Button inviteButton;
-        [Tooltip("Cancel / Kick (✕) button. Shown while an outgoing invite is pending (click " +
+        [Tooltip("Cancel / Kick (X) button. Shown while an outgoing invite is pending (click " +
                  "retracts it) OR when this player is in your party and you're the host (click " +
                  "kicks them). Leave unassigned to disable the affordance.")]
         [SerializeField] private Button cancelButton;
@@ -54,7 +54,7 @@ namespace CosmicShore.UI
         [SerializeField] private Color disabledTint = new(0.35f, 0.35f, 0.35f, 1f);
 
         [Header("Pending Pulse")]
-        [Tooltip("Seconds for one full pulse cycle (default→bright→default).")]
+        [Tooltip("Seconds for one full pulse cycle (default->bright->default).")]
         [SerializeField] private float pendingPulsePeriodSeconds = 1.1f;
         [Tooltip("Text label shown while invite is pending.")]
         [SerializeField] private string pendingRequestLabel = "PENDING REQUEST";
@@ -69,7 +69,7 @@ namespace CosmicShore.UI
 
         [Header("Anti-Spam")]
         [Tooltip("Minimum seconds between consecutive invite/cancel actions on this row. " +
-                 "Throttles double-taps and rapid invite↔cancel toggling so the buttons " +
+                 "Throttles double-taps and rapid invite<->cancel toggling so the buttons " +
                  "can't be spam-clicked. Shared by both buttons.")]
         [SerializeField] private float actionCooldownSeconds = 0.4f;
 
@@ -103,8 +103,8 @@ namespace CosmicShore.UI
         /// <param name="partyMaxSlots">Max party slots (for InLobby/LobbyFull rendering).</param>
         /// <param name="matchName">Match name text (for InMatch status).</param>
         /// <param name="onInvite">Invite callback; null (or a non-invitable status) hides the Invite button.</param>
-        /// <param name="onCancel">Cancel-invite callback, fired by the ✕ while an invite is pending.</param>
-        /// <param name="onKick">Kick callback; pass non-null only for a kickable party member (host view) — its presence shows the ✕ in kick mode.</param>
+        /// <param name="onCancel">Cancel-invite callback, fired by the X while an invite is pending.</param>
+        /// <param name="onKick">Kick callback; pass non-null only for a kickable party member (host view) - its presence shows the X in kick mode.</param>
         public void Populate(
             string playerId,
             string displayName,
@@ -134,7 +134,7 @@ namespace CosmicShore.UI
             SetStatus(status, partyMemberCount, partyMaxSlots, matchName);
 
             // Invite button shows ONLY when the status permits an invite
-            // (Online / InLobby) and a callback is provided — hidden otherwise.
+            // (Online / InLobby) and a callback is provided - hidden otherwise.
             _invitable = onInvite != null &&
                          (status == Status.Online || status == Status.InLobby);
 
@@ -151,7 +151,7 @@ namespace CosmicShore.UI
                 inviteButton.gameObject.SetActive(_invitable);
             }
 
-            // Cancel / Kick (✕) — one button, two roles. Wired once; visible when an
+            // Cancel / Kick (X) - one button, two roles. Wired once; visible when an
             // invite is pending (cancel) OR this is a kickable party member (kick). The
             // pending case is (re)applied by FriendsListPanel via SetInvitePending right
             // after Populate, so here we only seed the kick-mode visibility.
@@ -177,7 +177,7 @@ namespace CosmicShore.UI
             _lastPartyMaxSlots = partyMaxSlots;
             _lastMatchName = matchName;
 
-            // While pending, the label is overridden — don't clobber it.
+            // While pending, the label is overridden - don't clobber it.
             if (_isPending) return;
 
             ApplyStatusLabel(status, partyMemberCount, partyMaxSlots, matchName);
@@ -203,7 +203,7 @@ namespace CosmicShore.UI
                 case Status.InMatch:
                     text = string.IsNullOrEmpty(matchName)
                         ? "IN A MATCH"
-                        : $"IN A MATCH — {matchName.ToUpperInvariant()}";
+                        : $"IN A MATCH - {matchName.ToUpperInvariant()}";
                     color = inMatchColor;
                     break;
                 case Status.InYourParty:
@@ -226,7 +226,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Marks the row as "invite pending" — tints the background yellowish,
+        /// Marks the row as "invite pending" - tints the background yellowish,
         /// swaps the label to "PENDING REQUEST", starts the pulse animation,
         /// and disables further invite clicks until reset.
         /// </summary>
@@ -256,7 +256,7 @@ namespace CosmicShore.UI
             StopPulse();
             _isPending = false;
 
-            // The ✕ stays visible only if this row is a kickable party member.
+            // The X stays visible only if this row is a kickable party member.
             if (cancelButton) cancelButton.gameObject.SetActive(_kickable);
             if (inviteButton)
             {
@@ -276,7 +276,7 @@ namespace CosmicShore.UI
 
             while (_isPending)
             {
-                // sin wave 0→1→0 over the period.
+                // sin wave 0->1->0 over the period.
                 float t = 0.5f * (1f + Mathf.Sin((elapsed / period) * Mathf.PI * 2f - Mathf.PI * 0.5f));
                 ApplyRowTint(Color.Lerp(pendingInviteTint, pendingInviteTintBright, t));
 
@@ -349,14 +349,14 @@ namespace CosmicShore.UI
             {
                 // Retract the pending invite. ResetInviteState (also driven by
                 // OutgoingInviteCleared) reverts the row to its online state; call it
-                // optimistically too so the ✕ feels instant.
+                // optimistically too so the X feels instant.
                 _onCancel?.Invoke(_playerId);
                 ResetInviteState();
             }
             else if (_kickable)
             {
                 // Kick this member from my party. The host's RemovePartyMember +
-                // OnPartyMemberKicked refresh re-renders the row; hide the ✕ immediately
+                // OnPartyMemberKicked refresh re-renders the row; hide the X immediately
                 // so it can't be re-clicked during the async gap.
                 _onKick?.Invoke(_playerId);
                 if (cancelButton) cancelButton.gameObject.SetActive(false);

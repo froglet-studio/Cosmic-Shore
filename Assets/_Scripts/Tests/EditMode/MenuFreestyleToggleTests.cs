@@ -6,7 +6,7 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Tests for the Menu ↔ Freestyle toggle flow in Menu_Main.
+    /// Tests for the Menu <-> Freestyle toggle flow in Menu_Main.
     ///
     /// Validates:
     ///   - <see cref="Gameplay.MenuCrystalClickHandler"/> has the expected ownership guard
@@ -44,7 +44,7 @@ namespace CosmicShore.Tests
         [Test]
         public void MenuCrystalClickHandler_IsMultiplayerSession_ReturnsFalse_WhenNoNetworkManager()
         {
-            // In edit mode, NetworkManager.Singleton is null — should return false (not throw).
+            // In edit mode, NetworkManager.Singleton is null - should return false (not throw).
             var method = typeof(Gameplay.MenuCrystalClickHandler)
                 .GetMethod("IsMultiplayerSession", BindingFlags.Static | BindingFlags.NonPublic);
 
@@ -88,7 +88,7 @@ namespace CosmicShore.Tests
 
             Assert.IsNotNull(method,
                 "MainMenuController should have HandleEnterFreestyle to combine " +
-                "state transition (→ Freestyle) with camera switching.");
+                "state transition (-> Freestyle) with camera switching.");
         }
 
         [Test]
@@ -99,7 +99,7 @@ namespace CosmicShore.Tests
 
             Assert.IsNotNull(method,
                 "MainMenuController should have HandleExitFreestyle to combine " +
-                "state transition (→ Ready) with camera switching.");
+                "state transition (-> Ready) with camera switching.");
         }
 
         [Test]

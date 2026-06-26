@@ -1,7 +1,7 @@
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using System;
-﻿
+
 namespace CosmicShore.Gameplay
 {
     [System.Serializable]

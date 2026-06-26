@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
@@ -57,7 +57,7 @@ namespace CosmicShore.Core
         {
             _ugsDataService.OnInitialized -= HandleDataServiceReady;
 
-            // Use the repo's data directly — no separate cloud load needed
+            // Use the repo's data directly - no separate cloud load needed
             if (_ugsDataService.StatsRepo != null)
                 _cachedProfile = _ugsDataService.StatsRepo.Data;
             if (_ugsDataService.VesselStatsRepo != null)
@@ -163,20 +163,20 @@ namespace CosmicShore.Core
         {
             if (!_isReady || telemetry == null || string.IsNullOrEmpty(vesselTypeName))
             {
-                Debug.LogWarning($"[UGSStats] ReportVesselTelemetry skipped — " +
+                Debug.LogWarning($"[UGSStats] ReportVesselTelemetry skipped - " +
                     $"ready={_isReady}, telemetry={(telemetry != null ? telemetry.GetType().Name : "NULL")}, " +
                     $"vessel='{vesselTypeName}'");
                 return;
             }
 
-            Debug.Log($"[UGSStats] ReportVesselTelemetry — {telemetry.GetType().Name} for '{vesselTypeName}', " +
+            Debug.Log($"[UGSStats] ReportVesselTelemetry - {telemetry.GetType().Name} for '{vesselTypeName}', " +
                 $"drift={telemetry.MaxDriftTime:F2}s, boost={telemetry.MaxBoostTime:F2}s, " +
                 $"prismsDmg={telemetry.PrismsDamaged}");
 
             var stats = _vesselStats.GetOrCreate(vesselTypeName);
             stats.GamesPlayed++;
 
-            // Common stats — keep best values
+            // Common stats - keep best values
             if (telemetry.MaxDriftTime > stats.BestDriftTime)
                 stats.BestDriftTime = telemetry.MaxDriftTime;
             if (telemetry.MaxBoostTime > stats.BestBoostTime)
@@ -187,14 +187,14 @@ namespace CosmicShore.Core
             switch (telemetry)
             {
                 case SparrowVesselTelemetry sparrow:
-                    Debug.Log($"[UGSStats] Sparrow stats — prismBlocks={sparrow.PrismBlocksShot}, " +
+                    Debug.Log($"[UGSStats] Sparrow stats - prismBlocks={sparrow.PrismBlocksShot}, " +
                         $"skyburst={sparrow.SkyburstMissilesShot}, dangerBlocks={sparrow.DangerBlocksSpawned}");
                     stats.IncrementCounter("PrismBlocksShot", sparrow.PrismBlocksShot);
                     stats.IncrementCounter("SkyburstMissilesShot", sparrow.SkyburstMissilesShot);
                     stats.IncrementCounter("DangerBlocksSpawned", sparrow.DangerBlocksSpawned);
                     break;
                 case SquirrelVesselTelemetry squirrel:
-                    Debug.Log($"[UGSStats] Squirrel stats — jousts={squirrel.JoustsWon}, " +
+                    Debug.Log($"[UGSStats] Squirrel stats - jousts={squirrel.JoustsWon}, " +
                         $"stolen={squirrel.PrismsStolen}, cleanStreak={squirrel.MaxCleanStreak}");
                     stats.IncrementCounter("JoustsWon", squirrel.JoustsWon);
                     stats.IncrementCounter("PrismsStolen", squirrel.PrismsStolen);

@@ -12,7 +12,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
             return new BenchmarkReport { statistics = stats, spikes = spikes ?? new List<SpikeEntry>() };
         }
 
-        // ── Grade ───────────────────────────────────────
+        // -- Grade ---------------------------------------
 
         [Test]
         public void Grade_ZeroFrames_ReportsNoData()
@@ -29,7 +29,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
             Assert.AreEqual("A", BenchmarkGrade.Evaluate(stats));
         }
 
-        // ── Score ───────────────────────────────────────
+        // -- Score ---------------------------------------
 
         [Test]
         public void Score_ZeroFrames_IsZero()
@@ -53,7 +53,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
             Assert.Greater(g, a);
         }
 
-        // ── Hint engine (default rules) ─────────────────
+        // -- Hint engine (default rules) -----------------
 
         [Test]
         public void Analyze_SteepMemorySlope_FiresLeakBlocker()
@@ -81,7 +81,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
             {
                 totalFrames = 10,
                 avgFps = 60,
-                totalGcAllocated = 10L * 8 * 1024 // ≈ 8 KB/frame, over the 4 KB default
+                totalGcAllocated = 10L * 8 * 1024 // ~ 8 KB/frame, over the 4 KB default
             };
 
             var result = BenchmarkAnalysis.Analyze(ReportWith(stats), null);

@@ -1,7 +1,7 @@
 
 namespace CosmicShore.Utility
 {
-    ﻿
+    
         /// <summary>
         /// Stats specific to Wildlife Blitz mode
         /// Can be expanded to include more stats for end screen display

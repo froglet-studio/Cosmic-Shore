@@ -107,7 +107,7 @@ namespace CosmicShore.UI
 
             if (BackgroundImage != null)
             {
-                // Only save the original color when transitioning from unlocked → locked
+                // Only save the original color when transitioning from unlocked -> locked
                 // to avoid overwriting it with the tinted color on repeated SetLocked(true) calls
                 if (locked && !_isLocked)
                     _originalBgColor = BackgroundImage.color;

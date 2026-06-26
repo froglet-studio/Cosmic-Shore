@@ -1,4 +1,4 @@
-# Cosmic Shore – Git Rules & Standards
+# Cosmic Shore - Git Rules & Standards
 
 Target level: **AAA / Metacore-style** cleanliness  
 Scope: **All Cosmic Shore repos** (game, tools, backends, etc.)
@@ -36,7 +36,7 @@ Short-lived branches for actual work:
 - `hotfix/<area>-<short-description>`
 - `chore/<area>-<short-description>`
 
-**Examples (Cosmic Shore–specific):**
+**Examples (Cosmic Shore-specific):**
 
 - `feature/arcade-swap-tray-powerup`
 - `feature/app-apple-signin-flow`
@@ -56,7 +56,7 @@ Short-lived branches for actual work:
 - [ ] Branch name follows `type/area-short-description`
 - [ ] Branch is based on **latest `main`**
 - [ ] Only **one logical feature/fix/chore** in this branch  
-- [ ] No temporary test scenes / PlayGround scenes that aren’t intended to be kept
+- [ ] No temporary test scenes / PlayGround scenes that aren't intended to be kept
 
 ---
 
@@ -65,7 +65,7 @@ Short-lived branches for actual work:
 ### 2.1 Principles
 
 - Small, **atomic** commits  
-  → One commit = one logical change
+  -> One commit = one logical change
 - Code in a shared branch should **build & run**
 - No secrets (API keys, passwords) in commits
 - No junk:
@@ -75,7 +75,7 @@ Short-lived branches for actual work:
 Unity-specific:
 
 - Save scenes & prefabs before committing.
-- Avoid committing huge binary assets “just because”. If needed, use **Git LFS** (if repo is configured).
+- Avoid committing huge binary assets "just because". If needed, use **Git LFS** (if repo is configured).
 
 ---
 
@@ -87,13 +87,13 @@ Unity-specific:
 
 **Allowed types:**
 
-- `feat` – new feature
-- `fix` – bug fix
-- `refactor` – internal code changes, no feature/behavior change
-- `chore` – maintenance, CI, configs, package updates
-- `docs` – documentation only
-- `test` – tests only
-- `perf` – performance improvements
+- `feat` - new feature
+- `fix` - bug fix
+- `refactor` - internal code changes, no feature/behavior change
+- `chore` - maintenance, CI, configs, package updates
+- `docs` - documentation only
+- `test` - tests only
+- `perf` - performance improvements
 
 **Scope examples (optional but encouraged):**
 
@@ -101,8 +101,8 @@ Unity-specific:
 
 **Summary line rules:**
 
-- Imperative mood: “add”, “fix”, “update”, NOT “added”, “fixing”
-- Keep under ~60–72 chars
+- Imperative mood: "add", "fix", "update", NOT "added", "fixing"
+- Keep under ~60-72 chars
 - No trailing period
 - No emojis
 
@@ -136,7 +136,7 @@ docs(git): add cosmic shore git rules
 
 ### 2.4 Commit Body (Optional but Recommended)
 
-Use a body when the **“why”** isn’t obvious from the diff.
+Use a body when the **"why"** isn't obvious from the diff.
 
 ```text
 fix(scoring): compute round2 score using volume delta
@@ -200,7 +200,7 @@ Copy-paste this in the PR description (GitHub/GitLab template recommended):
 
 ```md
 ## Summary
-Short 1–3 line description of what this PR does.
+Short 1-3 line description of what this PR does.
 
 ## Motivation / Context
 Why is this needed?
@@ -254,14 +254,14 @@ Before assigning reviewers:
 - [ ] Project builds locally in Unity
 - [ ] Manual testing done (and documented in PR)
 - [ ] Removed debug logs / commented-out code
-- [ ] PR scope is focused (not “refactor + new feature + random stuff”)
+- [ ] PR scope is focused (not "refactor + new feature + random stuff")
 - [ ] PR description is filled and clear
 
 ---
 
 ### 3.4 Reviewer Checklist
 
-When reviewing someone else’s PR:
+When reviewing someone else's PR:
 
 **Understanding**
 
@@ -293,7 +293,7 @@ When reviewing someone else’s PR:
 
 - [ ] Approve if everything is okay
 - [ ] Request changes with clear, constructive comments if not
-- [ ] Use “Comment” for non-blocking suggestions
+- [ ] Use "Comment" for non-blocking suggestions
 
 ---
 
@@ -301,10 +301,10 @@ When reviewing someone else’s PR:
 
 Be precise and professional:
 
-- ✅ “Can we rename `lastVolume` to `lastVolumeCreated` to match the serialized field name?”
-- ✅ “This logic looks similar to `LevelSpawner`. Can we reuse or extract a shared helper?”
-- ❌ “This code is bad”
-- ❌ “Why did you do this?”
+- [x] "Can we rename `lastVolume` to `lastVolumeCreated` to match the serialized field name?"
+- [x] "This logic looks similar to `LevelSpawner`. Can we reuse or extract a shared helper?"
+- X "This code is bad"
+- X "Why did you do this?"
 
 Goal: Make future Cosmic Shore devs feel confident reading this code.
 
@@ -318,18 +318,18 @@ Goal: Make future Cosmic Shore devs feel confident reading this code.
     ```text
     feat: add swap-tray powerup to arcade mode
     ```
-- Keep history **linear and clean**. Avoid long chains of “Merge branch 'main' into …” when possible:
+- Keep history **linear and clean**. Avoid long chains of "Merge branch 'main' into ..." when possible:
   - Prefer `git fetch` + `git rebase origin/main` in your feature branch before pushing.
 
 ---
 
-## 5. Unity & Cosmic Shore–Specific Rules
+## 5. Unity & Cosmic Shore-Specific Rules
 
 - Do not commit:
   - `Library/`, `Temp/`, `Logs/`, `Obj/`, `Build/`, `.vs/`, `.user`, etc.
 - Do commit:
   - `Assets/`, `ProjectSettings/`, `Packages/`, `.editorconfig`, `*.meta` (yes, metas are required).
-  - Assembly definition files (`*.asmdef`) — these define the C# compilation units.
+  - Assembly definition files (`*.asmdef`) - these define the C# compilation units.
 - Scenes & prefabs:
   - Save changes intentionally; avoid noisy edits in unrelated scenes.
 - Platform-specific configs (e.g. iOS/Android settings):

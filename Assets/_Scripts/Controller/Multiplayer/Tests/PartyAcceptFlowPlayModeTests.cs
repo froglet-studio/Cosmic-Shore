@@ -21,14 +21,14 @@ namespace CosmicShore.Gameplay
     /// cannot be launched from a single PlayMode test method. The MPPM
     /// integration is documented as a manual smoke procedure in CLAUDE.md;
     /// when a single-process two-NM harness exists the tests below can be
-    /// expanded — see TODO comments.
+    /// expanded - see TODO comments.
     /// </summary>
     [TestFixture]
     public class PartyAcceptFlowPlayModeTests
     {
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Benign-error detector
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         [Test]
         public void BenignLobbyPatcherError_DetectsDirectAOORE()
@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
         {
             var ex = new ArgumentOutOfRangeException("idx",
                 "Index out of range from non-SDK code");
-            // No LobbyPatcher frame on the stack — must NOT be classified benign,
+            // No LobbyPatcher frame on the stack - must NOT be classified benign,
             // otherwise the refresh loop would silently drop real session
             // corruption.
             Assert.IsFalse(InvokeIsBenignLobbyPatcherError(ex),
@@ -69,10 +69,10 @@ namespace CosmicShore.Gameplay
                 "Non-AOORE exceptions must not be classified benign.");
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Plan Test 1 — happy-path accept (host + invitee both reach Ready)
-        // Plan Test 2 — invite click does NOT respawn host vessel
-        // Plan Test 3 — injected SDK AOORE does not destabilise session
+        // ---------------------------------------------------------------------
+        // Plan Test 1 - happy-path accept (host + invitee both reach Ready)
+        // Plan Test 2 - invite click does NOT respawn host vessel
+        // Plan Test 3 - injected SDK AOORE does not destabilise session
         //
         // TODO: implement once a two-NetworkManager harness or MPPM-driven
         //   test runner is available.  Until then the manual MPPM smoke
@@ -86,12 +86,12 @@ namespace CosmicShore.Gameplay
         //   5. Verify on VP-A: new vessel (VP-B's) appears; host vessel still
         //                      same NetworkObjectId.
         //   6. Verify on VP-B: two vessels visible. VP-A's vessel rendered + flying.
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
-        // ─────────────────────────────────────────────────────────────────────
-        // Reflection plumbing — the helper is private static so we can keep
+        // ---------------------------------------------------------------------
+        // Reflection plumbing - the helper is private static so we can keep
         // it tightly scoped to HostConnectionService.
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         private static MethodInfo _benignMethod;
 
@@ -110,7 +110,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Constructs an <see cref="ArgumentOutOfRangeException"/> whose stack
-        /// trace contains the substring <c>"LobbyPatcher"</c> — matching the
+        /// trace contains the substring <c>"LobbyPatcher"</c> - matching the
         /// SDK's exception surface without taking a dependency on the SDK
         /// assembly. The detector only inspects <c>StackTrace</c> as a string,
         /// so a thrown-then-caught exception from a method named to contain

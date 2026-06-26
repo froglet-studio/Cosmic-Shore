@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Block Appearance")]
         [SerializeField] private Vector3 blockScale = new(20f, 2f, 6f);
-        [SerializeField] private Vector3 rotationOffsetEuler = new(0f, 90f, 0f); // <— rotate 90° by default
+        [SerializeField] private Vector3 rotationOffsetEuler = new(0f, 90f, 0f); // <- rotate 90 deg by default
 
         [Header("Pooling")]
         [SerializeField] private PrismType prismType = PrismType.Sparrow;

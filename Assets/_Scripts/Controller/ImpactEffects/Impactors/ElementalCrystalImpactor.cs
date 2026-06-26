@@ -95,7 +95,7 @@ namespace CosmicShore.Gameplay
 
             // Let collect animators (e.g. the Space crystal's blendshape shrink) play out
             // before destroying. Crystals without an animator (Charge / Mass / Time) have
-            // no hide animation, so they are destroyed as soon as they reach the vessel —
+            // no hide animation, so they are destroyed as soon as they reach the vessel -
             // otherwise they linger as full-scale artifacts at the end of the flight.
             float delay = 0f;
             var crystalModels = Crystal.CrystalModels;

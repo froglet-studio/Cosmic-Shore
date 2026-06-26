@@ -4,11 +4,11 @@ namespace CosmicShore.Data
     // breaks scene-wired NetworkVariables and SOAP asset references silently.
     //
     // Fauna aggression state within a Cell. Since the 3-phase collapse this maps 1:1
-    // onto CellPhase (Calm→Level0, Restless→Level1, Frenzy→Level2) — the phase IS the
+    // onto CellPhase (Calm->Level0, Restless->Level1, Frenzy->Level2) - the phase IS the
     // aggression band. The enum is kept distinct only because it indexes the per-level
     // multiplier arrays (cadence / consume-radius / speed) as a clean 0/1/2 index.
     // Flora are no longer staggered on separate phase rungs: they grow + plant at a
-    // steady rate until Frenzy, so there is one ladder now, not two. See ECOSYSTEM.md §0.
+    // steady rate until Frenzy, so there is one ladder now, not two. See ECOSYSTEM.md Sec 0.
     //
     // Level behaviors:
     //   Level0 - Fauna head toward the cell's crystal; normal cleanup cadence and avoidance.

@@ -13,21 +13,21 @@ namespace CosmicShore.Gameplay
     /// Persistent brain for a Tournament / Shuffle session. Pure C# DI singleton (created eagerly by
     /// <c>AppManager</c>, so it is alive from bootstrap and survives every Single scene load).
     /// A static <see cref="Instance"/> is exposed so scene MonoBehaviours (the Scoreboard's
-    /// Continue button, the Tournament scene view) can reach it without DI injection — mirroring
+    /// Continue button, the Tournament scene view) can reach it without DI injection - mirroring
     /// <c>PartyInviteController.Instance</c> / <c>CameraManager.Instance</c>.
     ///
     /// Design (see Docs/TournamentSystem/ARCHITECTURE.md):
-    ///   • Sequential <c>LoadSceneMode.Single</c> loads — the network session / Relay / Player
+    ///   - Sequential <c>LoadSceneMode.Single</c> loads - the network session / Relay / Player
     ///     objects already persist across them. The host drives every scene load; clients follow
     ///     via Netcode. No additive loading, no new NetworkBehaviour.
-    ///   • <b>Randomized lineup</b> (the "Shuffle" card): each game the host draws a random pool mode
+    ///   - <b>Randomized lineup</b> (the "Shuffle" card): each game the host draws a random pool mode
     ///     + a random intensity in [1..ceiling] and launches it. Clients learn the mode from the
-    ///     loaded scene and the intensity from the existing config sync — no shared RNG seed needed.
-    ///   • <b>Race to 6</b>: standings are network-free — on <c>OnMiniGameEnd</c> EVERY peer folds the
+    ///     loaded scene and the intensity from the existing config sync - no shared RNG seed needed.
+    ///   - <b>Race to 6</b>: standings are network-free - on <c>OnMiniGameEnd</c> EVERY peer folds the
     ///     already-synced <see cref="GameDataSO.Results"/> into per-domain crystals identically and
     ///     evaluates <see cref="TournamentDataSO.IsShuffleComplete"/> (a domain hit the target, or the
     ///     game cap). The host then advances to the next random game or the summary.
-    ///   • Phase is driven by scene loads (deterministic on every peer): the lobby scene starts the
+    ///   - Phase is driven by scene loads (deterministic on every peer): the lobby scene starts the
     ///     session, each pool game scene marks it in-game, Menu_Main ends it.
     /// </summary>
     public class TournamentController
@@ -46,10 +46,10 @@ namespace CosmicShore.Gameplay
         public bool IsShowingSummary => _stateMachine.Current == TournamentPhase.Summary;
 
         /// <summary>
-        /// True for the between-game transition whose loading splash shows the running standings — a
+        /// True for the between-game transition whose loading splash shows the running standings - a
         /// tournament is active, a game has been played, and the shuffle isn't decided yet. Mirrors the
         /// exact condition <c>BootStatusBroadcaster.HandleLaunchGame</c> uses to render those standings,
-        /// so the dwell below applies precisely when — and because — that summary is on screen.
+        /// so the dwell below applies precisely when - and because - that summary is on screen.
         /// </summary>
         public bool IsBetweenGamesStandingsShown =>
             _tournament != null && _tournament.IsActive
@@ -59,7 +59,7 @@ namespace CosmicShore.Gameplay
         /// Minimum seconds the loading splash should hold before the next scene load begins, so the
         /// between-game running standings are readable. Zero outside that window, so normal game launches,
         /// the first game, and the load into the final summary are never slowed. Read by
-        /// <c>SceneLoader.LaunchGame</c> (host path) — holding the host's load holds the whole party's splash.
+        /// <c>SceneLoader.LaunchGame</c> (host path) - holding the host's load holds the whole party's splash.
         /// </summary>
         public float MinLoadSplashDwellSeconds =>
             IsBetweenGamesStandingsShown ? Mathf.Max(0f, _tournament.BetweenGameSummaryDwellSeconds) : 0f;
@@ -79,7 +79,7 @@ namespace CosmicShore.Gameplay
             SceneManager.sceneLoaded += HandleSceneLoaded;
         }
 
-        // ── Scene-driven lifecycle (runs on every peer) ──────────────────────────
+        // -- Scene-driven lifecycle (runs on every peer) --------------------------
 
         void HandleSceneLoaded(Scene scene, LoadSceneMode mode)
         {
@@ -95,14 +95,14 @@ namespace CosmicShore.Gameplay
             }
 
             // The Maelstrom scene serves FOUR roles, decided here (deterministic on every peer):
-            //   • Summary phase → restart  (Play Again from the summary → fresh lobby; reset but KEEP the
-            //                               intensity ceiling — see RestartFromSummary). Must be checked
+            //   - Summary phase -> restart  (Play Again from the summary -> fresh lobby; reset but KEEP the
+            //                               intensity ceiling - see RestartFromSummary). Must be checked
             //                               FIRST: standings still read complete here, so it has to win
             //                               over the IsShuffleComplete branch below.
-            //   • shuffle decided → SUMMARY (a domain hit WinTarget / the game cap → show final results).
-            //   • mid-run        → HUB      (between rounds: IsActive with games played → standings hub;
-            //                               do NOT reset — standings/history must persist).
-            //   • otherwise      → fresh start (entered from the arcade/menu → reset + capture the ceiling).
+            //   - shuffle decided -> SUMMARY (a domain hit WinTarget / the game cap -> show final results).
+            //   - mid-run        -> HUB      (between rounds: IsActive with games played -> standings hub;
+            //                               do NOT reset - standings/history must persist).
+            //   - otherwise      -> fresh start (entered from the arcade/menu -> reset + capture the ceiling).
             //
             // Summary-vs-hub keys off the AUTHORITATIVE TournamentDataSO.IsShuffleComplete (folded
             // identically on every peer from the synced results), NOT the transient Complete phase that
@@ -112,9 +112,9 @@ namespace CosmicShore.Gameplay
             if (scene.name == _tournament.LobbySceneName)
             {
                 if (_stateMachine.Current == TournamentPhase.Summary)
-                    RestartFromSummary();                                // Play Again → fresh lobby (keep ceiling)
+                    RestartFromSummary();                                // Play Again -> fresh lobby (keep ceiling)
                 else if (_tournament.IsActive && _tournament.IsShuffleComplete)
-                    EnterSummary();                                      // shuffle decided → results summary
+                    EnterSummary();                                      // shuffle decided -> results summary
                 else if (_tournament.IsActive && _tournament.GamesPlayed > 0)
                     _stateMachine.TransitionTo(TournamentPhase.Lobby);   // between-round hub (no reset)
                 else
@@ -123,7 +123,7 @@ namespace CosmicShore.Gameplay
             }
 
             // A pool game scene loaded. Every game is now launched from the lobby/hub (BeginNextRound),
-            // so the restart wipe happens at LOBBY load (RestartFromSummary), not here — a game scene
+            // so the restart wipe happens at LOBBY load (RestartFromSummary), not here - a game scene
             // only ever loads while already in Lobby/InGame phase.
             int idx = _tournament.IndexOfSceneName(scene.name);
             if (idx >= 0 && _tournament.IsActive)
@@ -148,9 +148,9 @@ namespace CosmicShore.Gameplay
             // Race to 6 (or the game cap): once the shuffle is decided, the next Continue loads the
             // summary instead of another game. Evaluated identically on every peer from synced state.
             // The Complete transition is a best-effort signal (it only lands when the game ends in the
-            // InGame phase) — it is NOT the source of truth for showing the summary. The authoritative,
+            // InGame phase) - it is NOT the source of truth for showing the summary. The authoritative,
             // phase-independent decision is re-made from IsShuffleComplete at the Maelstrom scene load
-            // (see HandleSceneLoaded → EnterSummary), so a missed transition here can't swallow the win.
+            // (see HandleSceneLoaded -> EnterSummary), so a missed transition here can't swallow the win.
             if (_tournament.IsShuffleComplete)
             {
                 _stateMachine.TransitionTo(TournamentPhase.Complete);
@@ -161,7 +161,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Builds enriched per-player history snapshots for the just-finished round by merging the
         /// ranked <paramref name="results"/> with avatar / AI metadata from the still-populated
-        /// <c>gameData.Players</c> (matched by Name) — captured before the next Single load clears them.
+        /// <c>gameData.Players</c> (matched by Name) - captured before the next Single load clears them.
         /// Runs on every peer; avatar/AI fields are display-only so minor cross-peer differences are harmless.
         /// </summary>
         List<TournamentPlayerSnapshot> BuildPlayerSnapshots(IReadOnlyList<ScoreResult> results)
@@ -198,17 +198,17 @@ namespace CosmicShore.Gameplay
             return list;
         }
 
-        // ── Session control ──────────────────────────────────────────────────────
+        // -- Session control ------------------------------------------------------
 
         /// <summary>
-        /// Fresh start from the arcade/menu — resets standings AND captures the lobby-chosen intensity
+        /// Fresh start from the arcade/menu - resets standings AND captures the lobby-chosen intensity
         /// as the per-game ceiling. Called on every peer when the lobby scene loads outside a run, so
         /// standings reset identically across the party.
         /// </summary>
         public void StartTournament() => StartTournamentInternal(captureCeiling: true);
 
         /// <summary>
-        /// Play Again from the summary — same fresh-lobby reset, but PRESERVES the intensity ceiling.
+        /// Play Again from the summary - same fresh-lobby reset, but PRESERVES the intensity ceiling.
         /// By the summary, <c>gameData.SelectedIntensity</c> holds the last game's rolled value (not the
         /// original ceiling), so re-capturing it would corrupt the ceiling; <see cref="ResetRuntime"/>
         /// already preserves it, so we just skip the re-capture. Runs on every peer (lobby load while
@@ -260,7 +260,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Host draws + loads the next random game (mode + intensity). Called from the Maelstrom
-        /// lobby/hub once the ready-up countdown elapses — so the draw happens at Ready, keeping the
+        /// lobby/hub once the ready-up countdown elapses - so the draw happens at Ready, keeping the
         /// upcoming mode hidden until its connecting panel. The party follows the Single load.
         /// </summary>
         public void BeginNextRound()
@@ -275,8 +275,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Host advances on the Scoreboard's host-only Continue button. ALWAYS returns the party to the
-        /// Maelstrom scene: mid-run it shows the standings HUB (phase InGame → Lobby on load); once the
-        /// shuffle is decided it shows the results SUMMARY (phase Complete → Summary on load). The next
+        /// Maelstrom scene: mid-run it shows the standings HUB (phase InGame -> Lobby on load); once the
+        /// shuffle is decided it shows the results SUMMARY (phase Complete -> Summary on load). The next
         /// random game is drawn later, from the hub's ready-up (<see cref="BeginNextRound"/>), so the
         /// upcoming mode stays hidden in the hub. The party follows the Single load.
         /// </summary>
@@ -291,7 +291,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Host restarts the whole tournament (the summary screen's Play Again). Loads the Maelstrom
         /// scene as a fresh lobby; the reset runs on every peer when it loads while still in Summary
-        /// phase (see <see cref="HandleSceneLoaded"/> → <see cref="RestartFromSummary"/>), so standings
+        /// phase (see <see cref="HandleSceneLoaded"/> -> <see cref="RestartFromSummary"/>), so standings
         /// clear consistently across the party while keeping the chosen intensity ceiling.
         /// </summary>
         public void RestartTournament()
@@ -308,10 +308,10 @@ namespace CosmicShore.Gameplay
             _stateMachine.ResetToIdle();
         }
 
-        // ── Host-only random draw + scene load (reuse the proven SceneLoader path) ─
+        // -- Host-only random draw + scene load (reuse the proven SceneLoader path) -
 
         /// <summary>
-        /// Draws a random (mode, intensity ∈ [1..ceiling]) "experience" from the pool and launches it.
+        /// Draws a random (mode, intensity in [1..ceiling]) "experience" from the pool and launches it.
         /// The host drives the Single load; clients follow it (the mode is the loaded scene, the
         /// intensity rides the existing <c>SyncGameConfigToClients</c> path), so no shared RNG/seed is
         /// needed. Avoids immediately repeating the previous mode when the pool has more than one.
@@ -336,14 +336,14 @@ namespace CosmicShore.Gameplay
             if (_gameData.SelectedIntensity != null)
                 _gameData.SelectedIntensity.Value = intensity;
 
-            // Stamp what's loading so the between-game splash can show "up next: <mode> · Intensity N"
+            // Stamp what's loading so the between-game splash can show "up next: <mode> * Intensity N"
             // (see TournamentStandingsFormatter.FormatRunning). Set before InvokeGameLaunch fires OnLaunchGame.
             _tournament.NextGameName = game.DisplayName;
             _tournament.NextGameIntensity = intensity;
 
             _gameData.SyncFromArcadeGame(game);        // scene / mode / multiplayer
             _gameData.IsTournamentMode = true;         // SyncFromArcadeGame doesn't set it; keep it on.
-            _gameData.InvokeGameLaunch();              // → SceneLoader.LaunchGame (host loads; clients follow)
+            _gameData.InvokeGameLaunch();              // -> SceneLoader.LaunchGame (host loads; clients follow)
         }
 
         // Uniform random pool index, optionally excluding `avoid` (-1 = no exclusion).
@@ -359,7 +359,7 @@ namespace CosmicShore.Gameplay
         }
 
         // Loads the Tournament scene (the intro lobby on a fresh start, the results summary after
-        // the shuffle is decided — the scene view picks the layout from the phase).
+        // the shuffle is decided - the scene view picks the layout from the phase).
         void LoadTournamentScene()
         {
             _gameData.SceneName = _tournament.LobbySceneName;

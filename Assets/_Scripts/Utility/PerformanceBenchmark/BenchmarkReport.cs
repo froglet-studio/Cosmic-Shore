@@ -11,7 +11,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// </summary>
     public enum ReportOrigin { Editor = 0, DevBuild = 1 }
 
-    /// <summary>Where a run came from — so cross-source runs aren't silently compared.</summary>
+    /// <summary>Where a run came from - so cross-source runs aren't silently compared.</summary>
     [Serializable]
     public class SourceInfo
     {
@@ -42,7 +42,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     [Serializable]
     public class BenchmarkReport
     {
-        // ── Schema / source ─────────────────────────────
+        // -- Schema / source -----------------------------
         // Bump CurrentSchemaVersion on any field change; readers must tolerate older/unknown
         // versions. Defaults to 0 (no initializer) so legacy JSON lacking the key reads as 0
         // = "legacy/unversioned"; PopulateEnvironment stamps the current version on new runs.
@@ -50,14 +50,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public int schemaVersion;
         public SourceInfo source = new();
 
-        // ── Identity ────────────────────────────────────
+        // -- Identity ------------------------------------
         public string reportId;
         public string label;
         public string timestamp;
         public string sceneName;
         public int networkTickRate;
 
-        // ── Environment ─────────────────────────────────
+        // -- Environment ---------------------------------
         public string gitCommitHash;
         public string gitBranch;
         public string deviceModel;
@@ -73,17 +73,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public int vSyncCount;
         public string qualityLevel;
 
-        // ── Config ──────────────────────────────────────
+        // -- Config --------------------------------------
         public float warmupDuration;
         public float sampleDuration;
 
-        // ── Data ────────────────────────────────────────
+        // -- Data ----------------------------------------
         public List<FrameSnapshot> snapshots = new();
         public BenchmarkStatistics statistics;
         public List<SpikeEntry> spikes = new();
         public BenchmarkAnalysisResult analysis;
 
-        // ── Manual sweep extras (empty for ordinary captures) ──
+        // -- Manual sweep extras (empty for ordinary captures) --
         public List<SweepError> errors = new();
         public List<SweepMark> marks = new();
 

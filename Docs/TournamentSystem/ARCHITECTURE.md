@@ -1,80 +1,80 @@
-# Tournament System — Architecture
+# Tournament System - Architecture
 
-Canonical reference for **Tournament Mode** — the session-level meta (P3 / R2) that strings the
+Canonical reference for **Tournament Mode** - the session-level meta (P3 / R2) that strings the
 three feature-complete domain minigames into one tournament with a per-player leaderboard.
 
-> **See also:** `MAELSTROM_UX_HANDOFF.md` (same folder) — session handoff for the between-game splash,
-> readable dwell, the Shuffle→Maelstrom display rename, and the summary `(You)` owner tag, with sequence
+> **See also:** `MAELSTROM_UX_HANDOFF.md` (same folder) - session handoff for the between-game splash,
+> readable dwell, the Shuffle->Maelstrom display rename, and the summary `(You)` owner tag, with sequence
 > diagrams, the inspector wiring those features depend on, and recommended next tasks.
 
 > **Status:** implemented end-to-end. Code, data assets, **and** the Unity-editor wiring (scene
 > content, prefab buttons, inspector references) are all in place: the Tournament scene drives both
 > its lobby and summary layouts, and every domain game's Scoreboard carries a host-only Continue
-> button (see **§7**, now complete). Remaining work is the **§9 Deferred** backlog (rewards, share
+> button (see **Sec 7**, now complete). Remaining work is the **Sec 9 Deferred** backlog (rewards, share
 > screen, instrumentation) only.
 
-> **Player-facing name — "Maelstrom":** the Arcade card for this mode is shown to players as **Maelstrom**
+> **Player-facing name - "Maelstrom":** the Arcade card for this mode is shown to players as **Maelstrom**
 > (`ArcadeGameTournament.asset` `DisplayName = "Maelstrom"`, rendered by `GameCard`). The in-scene
-> lobby/summary banner is **data-driven from that same field** — `TournamentSceneView.ModeName` reads
+> lobby/summary banner is **data-driven from that same field** - `TournamentSceneView.ModeName` reads
 > `TournamentDataSO.ModeCard.DisplayName` (the `ModeCard` reference is wired to the card asset), so the
 > card's `DisplayName` is the **single source** of the player-facing name. The code, data
 > (`TournamentDataSO`), enum (`GameModes.Tournament = 36`), controller, and this doc keep the
-> **Tournament** name — *Shuffle and Tournament are the same meta-mode*. (The **scene file** was renamed
-> to `Maelstrom.unity` in the v2 rework; only the file name changed — the classes/data/enum stay Tournament.)
+> **Tournament** name - *Shuffle and Tournament are the same meta-mode*. (The **scene file** was renamed
+> to `Maelstrom.unity` in the v2 rework; only the file name changed - the classes/data/enum stay Tournament.)
 > **To rename the mode, change
-> only the card's `DisplayName`** — full guide + what NOT to touch is in `Docs/ShuffleSystem/ARCHITECTURE.md`
+> only the card's `DisplayName`** - full guide + what NOT to touch is in `Docs/ShuffleSystem/ARCHITECTURE.md`
 > ("Renaming the mode"). Planned Shuffle-specific *behavior* changes (randomized lineup, per-domain
 > `{2,1,0}` scoring + crystal-wallet credit, race-to-6) are tracked in that same doc as future extensions
-> of this meta — not a new mode.
+> of this meta - not a new mode.
 
 ---
 
 ## 1. What it is
 
-One session plays a **randomized lineup** drawn from the competitive domain games — **Skim Race
+One session plays a **randomized lineup** drawn from the competitive domain games - **Skim Race
 (HexRace 33), Joust (34), Crystal Capture (35)**. Each game the host draws a random pool mode (no
 immediate repeat) **and** a random intensity in `[1..X]` (X = the lobby-chosen intensity ceiling),
-so a higher intensity widens the variety (`3 modes × X` "experiences", L1=3 … L4=12). After each
+so a higher intensity widens the variety (`3 modes x X` "experiences", L1=3 ... L4=12). After each
 game the active **domains** are ranked and earn **placement crystals** by domain place
 (1st = 2, 2nd = 1, 3rd = 0; `PointsByPlace`, configurable). The cumulative **per-domain** total is
-the leaderboard, and the session is a **race to `WinTarget` (6)** crystals — the first domain to
+the leaderboard, and the session is a **race to `WinTarget` (6)** crystals - the first domain to
 reach it wins, with a hard **`MaxGames` (7)** cap so a stalemate still ends. It appears as a normal
 card in the Arcade panel (`GameModes.Tournament = 36`; the card's `DisplayName` is "Shuffle").
 *(All Shuffle deltas shipped: per-domain `{2,1,0}` scoring, randomized lineup, race-to-6 / cap-7,
-crystal-wallet credit, and the between-game loading-splash summary — see `Docs/ShuffleSystem/ARCHITECTURE.md`.)*
+crystal-wallet credit, and the between-game loading-splash summary - see `Docs/ShuffleSystem/ARCHITECTURE.md`.)*
 
-**Lobby minimum — 2 players, 2 domains.** Placement points are meaningless without opposing
-teams (and the Joust leg is unplayable on a single domain — see JOUST.md Design Note 8). The Tournament
+**Lobby minimum - 2 players, 2 domains.** Placement points are meaningless without opposing
+teams (and the Joust leg is unplayable on a single domain - see JOUST.md Design Note 8). The Tournament
 arcade card therefore sets `MinPlayersAllowed=2` and `MinDomainsAllowed=2` (`87658960`); the
 configure modal floors both via `ArcadeGameConfigureModal.MinDomainsForGame`, so a solo host
 always launches with at least one AI opponent on a second domain. No tournament-specific code is
-needed — `TournamentController` preserves the lobby's player/domain config across all three
+needed - `TournamentController` preserves the lobby's player/domain config across all three
 `Single` loads (`SyncFromArcadeGame` only sets scene/mode/multiplayer, never the counts).
 
-## 2. The load model — sequential `Single`, no additive
+## 2. The load model - sequential `Single`, no additive
 
 Every transition is a **host-driven `LoadSceneMode.Single` load** via the existing
 `SceneLoader`/`NetworkManager.SceneManager`. The NetworkManager / UGS session / Relay and the
 `Player` NetworkObjects already **persist across Single loads** (eager-Relay locked design), so
-the tournament rides that proven path. **There is no additive scene loading** — it would collide
+the tournament rides that proven path. **There is no additive scene loading** - it would collide
 with per-scene systems (duplicate `ServerPlayerVesselInitializer`, ambiguous
 `Scoreboard.gameController`, shared `gameData`/`CameraManager` singletons).
 
 ```
-Menu_Main → [Arcade card → ArcadeGameConfigureModal ready-up]
-  → Maelstrom (lobby) → ready-up → random game            (each transition a Single load)
-       └─ game ends → Scoreboard.Continue (host) → Maelstrom (HUB: standings) → ready-up → random game → …
-  → a domain hits 6 (or the 7-game cap) → Continue → Maelstrom (SUMMARY) → NEXT → results
-       └─ Play Again (fresh shuffle) | Main Menu → Menu_Main (lava lamp)
+Menu_Main -> [Arcade card -> ArcadeGameConfigureModal ready-up]
+  -> Maelstrom (lobby) -> ready-up -> random game            (each transition a Single load)
+       +- game ends -> Scoreboard.Continue (host) -> Maelstrom (HUB: standings) -> ready-up -> random game -> ...
+  -> a domain hits 6 (or the 7-game cap) -> Continue -> Maelstrom (SUMMARY) -> NEXT -> results
+       +- Play Again (fresh shuffle) | Main Menu -> Menu_Main (lava lamp)
 ```
 
-The Maelstrom scene serves **three roles** — the intro lobby, the between-round **hub**, and the
-end-of-tournament **summary** — and `TournamentSceneView` picks the layout per load
+The Maelstrom scene serves **three roles** - the intro lobby, the between-round **hub**, and the
+end-of-tournament **summary** - and `TournamentSceneView` picks the layout per load
 (phase / `TournamentController.IsShowingSummary`). Continue is shown on every game's scoreboard (host) and
 always returns to the Maelstrom scene; once a domain reaches the target it loads in Summary phase, and
 **Play Again / Main Menu live there** (behind the summary's NEXT step), not on the per-game scoreboard.
 
-## 3. The brain — `TournamentController` (persistent, network-free)
+## 3. The brain - `TournamentController` (persistent, network-free)
 
 `TournamentController` (`_Scripts/Controller/Arcade/Tournament/`) is a **pure-C# DI singleton**
 created eagerly by `AppManager` (so it is alive from bootstrap and survives every Single load).
@@ -82,60 +82,60 @@ A static `Instance` lets scene MonoBehaviours reach it (mirrors `PartyInviteCont
 
 - **Standings are network-free.** On `gameData.OnMiniGameEnd`, **every peer** folds the
   already-synced `gameData.Results` (the ranked per-player `List<ScoreResult>`) into
-  `TournamentDataSO` via `RecordResults` — identical inputs → identical standings, no extra RPC.
+  `TournamentDataSO` via `RecordResults` - identical inputs -> identical standings, no extra RPC.
   `RecordResults` reduces the per-player ranks to **per-domain** placement: each domain's place =
-  its best (lowest) player `Rank`, domains ordered by that (ties → enum order Jade→Ruby→Gold), then
+  its best (lowest) player `Rank`, domains ordered by that (ties -> enum order Jade->Ruby->Gold), then
   awarded `{2,1,0}`. Recording happens *before* the next load's `ResetRuntimeData` clears `Results`.
 - **Only the host drives progression** (`BeginFirstGame` / `AdvanceToNextGame` /
-  `RestartTournament`): it draws a random `(mode, intensity ∈ [1..X])`, sets the per-game intensity
+  `RestartTournament`): it draws a random `(mode, intensity in [1..X])`, sets the per-game intensity
   on `gameData.SelectedIntensity`, then `SyncFromArcadeGame(mode) + InvokeGameLaunch()`. Clients
-  follow the Single load (mode = loaded scene; intensity rides the existing config sync) — no shared
+  follow the Single load (mode = loaded scene; intensity rides the existing config sync) - no shared
   RNG seed. Once `TournamentDataSO.IsShuffleComplete`, `AdvanceToNextGame` loads the **summary** instead.
 - **Phase is scene-load-driven** (deterministic on every peer): the **lobby scene** load runs
   `StartTournament` (reset standings, capture the intensity ceiling, `IsActive=true`,
   `IsTournamentMode=true`); each **pool game scene** load marks the loaded mode (`CurrentGameIndex`,
   used for repeat-avoidance) and goes `InGame`; **Menu_Main** load runs `EndTournament` (clears the
-  flags). `TournamentStateMachine` tracks `Idle → Lobby → InGame → Complete → Summary` — `Complete`
+  flags). `TournamentStateMachine` tracks `Idle -> Lobby -> InGame -> Complete -> Summary` - `Complete`
   is the transient phase while the deciding game's scoreboard is up, `Summary` is the results scene
   itself (Play Again from `Summary` re-enters `InGame`; Main Menu returns to `Idle`).
 - **The summary decision is authoritative, not phase-driven (race-to-6 fix).** At the Maelstrom scene
   load, `HandleSceneLoaded` shows the **Summary** when `IsActive && TournamentDataSO.IsShuffleComplete`
-  (deterministic on every peer) — **not** when the transient `Complete` phase happens to be set.
+  (deterministic on every peer) - **not** when the transient `Complete` phase happens to be set.
   `HandleMiniGameEnd` still sets `Complete` as a best-effort signal, but that transition only lands when
   the deciding game ends in the `InGame` phase; relying on it alone once let a domain hit `WinTarget` (6)
   yet route back to the hub for another game (the win silently swallowed). `EnterSummary` reaches
   `Summary` from `InGame`/`Lobby`/`Complete`, so the win always surfaces. Covered by
   `TournamentStateMachineTests` + `TournamentDataSOTests.IsShuffleComplete_*`.
 
-Per-game stat reset is automatic (`SceneLoader` → `ResetRuntimeData` + each persistent
-`Player.PrepareForNewScene` → `RoundStats.Cleanup`). Cumulative points live in `TournamentDataSO`,
+Per-game stat reset is automatic (`SceneLoader` -> `ResetRuntimeData` + each persistent
+`Player.PrepareForNewScene` -> `RoundStats.Cleanup`). Cumulative points live in `TournamentDataSO`,
 outside that reset, so they survive. AI backfill re-runs per scene; the **AI roster is seeded once**
 (first game) into `TournamentDataSO.TournamentAINames` and reused, so bot identities stay stable
 across games (AI `Player` objects are destroyed/recreated each scene). Standings are keyed by
 **domain**, so per-game roster churn never affects the leaderboard.
 
-## 4. End-of-game UI — the Scoreboard is the progression surface
+## 4. End-of-game UI - the Scoreboard is the progression surface
 
 The cinematic was removed (`Ys-bleeding-edge` `dbc7c703`); `EndGameSequencer` halts vessels,
-plays the SFX, and raises `OnShowGameEndScreen` → `Scoreboard` (sole end-game UI). In tournament
+plays the SFX, and raises `OnShowGameEndScreen` -> `Scoreboard` (sole end-game UI). In tournament
 mode `Scoreboard.ConfigureLobbyButtons` shows **only Continue, host-only**:
 
 | Surface | Host sees | Hidden |
 |---|---|---|
-| Per-game scoreboard (after EVERY game) | **Continue** → `TournamentController.AdvanceToNextGame()` | Play Again, Main Menu, Leave |
-| Per-game scoreboard, on a client | — | all |
-| **Maelstrom hub** (between rounds, shuffle not decided) | ready-up countdown → **START**, then auto-advances to the next random game | — |
-| **Maelstrom summary** (shuffle decided) | **NEXT** → reveals results → host-only **Play Again** (→ `RestartTournament()`) + **Main Menu** (→ `onClickToMainMenu` → Menu_Main) | — |
-| Maelstrom hub / summary, on a client | — (follows the host's load; results only) | host-only buttons |
+| Per-game scoreboard (after EVERY game) | **Continue** -> `TournamentController.AdvanceToNextGame()` | Play Again, Main Menu, Leave |
+| Per-game scoreboard, on a client | - | all |
+| **Maelstrom hub** (between rounds, shuffle not decided) | ready-up countdown -> **START**, then auto-advances to the next random game | - |
+| **Maelstrom summary** (shuffle decided) | **NEXT** -> reveals results -> host-only **Play Again** (-> `RestartTournament()`) + **Main Menu** (-> `onClickToMainMenu` -> Menu_Main) | - |
+| Maelstrom hub / summary, on a client | - (follows the host's load; results only) | host-only buttons |
 
 `AdvanceToNextGame` **always** loads the Maelstrom scene (`LoadTournamentScene`); the hub-vs-summary
 choice is made on load from the authoritative, deterministic `TournamentDataSO.IsShuffleComplete` (a
-domain reached `WinTarget`, or `MaxGames` was hit) — **not** the transient `Complete` phase (see §3).
-Mid-run it shows the standings **hub** (ready-up → next random game via `BeginNextRound`); once decided it
+domain reached `WinTarget`, or `MaxGames` was hit) - **not** the transient `Complete` phase (see Sec 3).
+Mid-run it shows the standings **hub** (ready-up -> next random game via `BeginNextRound`); once decided it
 shows the results **summary**, whose active-panel button reads **NEXT** and reveals the host-only Play
 Again / Main Menu panel (`TournamentSceneView.OnPlayAgainPressed` / `OnMainMenuPressed`), not the Scoreboard.
 
-**All Maelstrom-scene buttons are code-wired only** (`TournamentSceneView.Awake` adds the listeners) — the
+**All Maelstrom-scene buttons are code-wired only** (`TournamentSceneView.Awake` adds the listeners) - the
 scene must NOT also add inspector `onClick` entries. Duplicate inspector wiring double-fired NEXT / Play
 Again / Main Menu into `BeginNextRound`, launching a stray game off the summary (fixed; see
 `MAELSTROM_REWORK_SPEC.md` v2.5). The summary cards and the round-card rows order by cumulative Total
@@ -145,48 +145,48 @@ Score (highest first), matching the leaderboard.
 Scoreboard, `AwardCrystalsToLocalPlayer` credits the **local** human's wallet
 (`PlayerDataService.AddCrystals`, source `"shuffle_placement"`) with their domain's per-game `{2,1,0}`,
 read from the injected `TournamentDataSO.CrystalsForDomain(gameData.Results, localDomain)` (computed
-from the synced `Results`, so it's order-independent — and a plain data-container read, **not** a
+from the synced `Results`, so it's order-independent - and a plain data-container read, **not** a
 static `TournamentController.Instance` reach-through). Each peer credits only its own local player,
 once per game (AI have no wallet); a 3rd-place domain earns 0. The per-player score cards show the same
-per-domain badge via `CardCrystalReward`. Gated on `IsTournamentMode` — outside a shuffle the Scoreboard
+per-domain badge via `CardCrystalReward`. Gated on `IsTournamentMode` - outside a shuffle the Scoreboard
 keeps its original winner-only flat `winnerCrystalReward`.
 
-**Between-game summary overlay (SOAP — reuses the splash status surface).** `SceneTransitionManager`
-owns **only** fades — it holds no UI text. The splash already has a SOLID/SOAP text view,
+**Between-game summary overlay (SOAP - reuses the splash status surface).** `SceneTransitionManager`
+owns **only** fades - it holds no UI text. The splash already has a SOLID/SOAP text view,
 `BootStatusPanel`, fed by the `ScriptableEventBootStatusRequest` channel. On `OnLaunchGame` (fired on
-host *and* clients, when the loading splash goes opaque), `BootStatusBroadcaster.HandleLaunchGame` — the
-existing owner of "what the splash shows during a launch" — checks the shuffle state and, if mid-run
+host *and* clients, when the loading splash goes opaque), `BootStatusBroadcaster.HandleLaunchGame` - the
+existing owner of "what the splash shows during a launch" - checks the shuffle state and, if mid-run
 (`tournamentData.IsActive && !IsShuffleComplete && GamesPlayed > 0`), raises
 `BootStatusRequest{Status, TournamentStandingsFormatter.FormatRunning(tournamentData)}` instead of its
-usual `Hide`. The standings (reduced from local standings on every peer — network-free) read on the
-splash for the whole load, then the broadcaster's existing `HandleClientReady`→`Hide` clears them when
-the new scene is ready. No new channel, view, or `TMP_Text` — and the controller no longer touches the
+usual `Hide`. The standings (reduced from local standings on every peer - network-free) read on the
+splash for the whole load, then the broadcaster's existing `HandleClientReady`->`Hide` clears them when
+the new scene is ready. No new channel, view, or `TMP_Text` - and the controller no longer touches the
 splash at all.
 
 **Owner tag.** Scoring is per-DOMAIN (one row per team), so each peer passes its local player's domain
-(`gameData.LocalPlayer.Domain`) into the formatter and the matching row is tagged ` <b>(You)</b>` — on
-both the between-game splash (`FormatRunning`) and the final summary (`FormatFinal`) — so the owner can
+(`gameData.LocalPlayer.Domain`) into the formatter and the matching row is tagged ` <b>(You)</b>` - on
+both the between-game splash (`FormatRunning`) and the final summary (`FormatFinal`) - so the owner can
 read which team line is theirs. `Domains.Blue` (the no-team sentinel, never a standings row) tags nothing.
 
 **Readable dwell.** A fast scene load would flash the standings by, so the load is held briefly behind
 the opaque splash. `SceneLoader.LaunchGame` reads `TournamentController.MinLoadSplashDwellSeconds`
 (non-zero only under the *same* `IsActive && !IsShuffleComplete && GamesPlayed > 0` condition that shows
-the standings — value `TournamentDataSO.BetweenGameSummaryDwellSeconds`, default 2s) and `Max`es it with
+the standings - value `TournamentDataSO.BetweenGameSummaryDwellSeconds`, default 2s) and `Max`es it with
 the usual pre-load wait before `LoadScene`. Host-only: clients defer the load to the host at the
 `LaunchGame` defer guard, so holding the host's `LoadScene` holds the whole party's splash. Zero outside
 the window, so the first game, the load into the final summary, and Main-Menu returns are never delayed.
 
-**Restart determinism:** Play Again calls `RestartTournament()` → host loads the Maelstrom scene as a
+**Restart determinism:** Play Again calls `RestartTournament()` -> host loads the Maelstrom scene as a
 fresh lobby; every peer resets its standings (keeping the intensity ceiling) when that scene loads while
-still in phase `Summary` (`TournamentController.HandleSceneLoaded` → `RestartFromSummary`), so the wipe is
+still in phase `Summary` (`TournamentController.HandleSceneLoaded` -> `RestartFromSummary`), so the wipe is
 consistent across the party without extra networking.
 
 **Scoreboard position stability (`660e4d91`):** a tournament shows the Scoreboard once per leg, so
-it re-shows the board up to three times in one session — exactly the case that exposed a drift
+it re-shows the board up to three times in one session - exactly the case that exposed a drift
 bug. `Scoreboard.PlayEntranceAnimation` slid the panel in by mutating its own `anchoredPosition`
 and never restored it on hide; on a stretch-anchored panel each re-show captured the displaced
 position as the new rest target, so the board crept off-base across the Joust / Crystal Capture
-legs (HexRace was immune — it shows the board once then full-scene-reloads). The entrance slide is
+legs (HexRace was immune - it shows the board once then full-scene-reloads). The entrance slide is
 now disabled in favour of `Scoreboard.ShowScoreboardImmediate` (authored position, full alpha,
 unit banner scale). See JOUST.md / CRYSTAL_CAPTURE.md for the per-mode notes.
 
@@ -196,18 +196,18 @@ player-seek AI was fixed so bots keep jousting instead of flying off when they l
 transform every frame, falls back to the cell centre when no opponent qualifies, and re-acquires
 on a faster cadence while unlocked. Full detail in JOUST.md Design Note 12.
 
-## 5. Data — `TournamentDataSO`
+## 5. Data - `TournamentDataSO`
 
 `_Scripts/Utility/DataContainers/Tournament/TournamentDataSO.cs` (asset:
-`_SO_Assets/Tournament/TournamentData.asset`). Authored: `GameQueue` (the draw **pool** — the 3
-`SO_ArcadeGame`s), `ModeCard` (the mode's own card — player-facing name), `PointsByPlace` (`{2,1,0}`),
+`_SO_Assets/Tournament/TournamentData.asset`). Authored: `GameQueue` (the draw **pool** - the 3
+`SO_ArcadeGame`s), `ModeCard` (the mode's own card - player-facing name), `PointsByPlace` (`{2,1,0}`),
 `WinTarget` (6), `MaxGames` (7), `LobbySceneName`, four `ScriptableEventNoParam`s. Runtime
-(non-serialized): `IsActive`, `CurrentGameIndex` (last loaded pool mode — repeat-avoidance),
+(non-serialized): `IsActive`, `CurrentGameIndex` (last loaded pool mode - repeat-avoidance),
 `GamesPlayed`, `IntensityCeiling` (X, captured at start; **survives `ResetRuntime`** so Play Again
-keeps it), `TournamentAINames`, `Standings` (a `List<TournamentDomainStanding>` — **keyed by
+keeps it), `TournamentAINames`, `Standings` (a `List<TournamentDomainStanding>` - **keyed by
 `Domains`**, not player). Key methods: `RecordResults(results)` (per-domain fold + `GamesPlayed++`,
-see §3), `IsShuffleComplete` (race target reached or game cap hit — drives summary vs next game),
-`BuildSortedStandings()` (points desc, tiebreak best placement, then domain enum order Jade→Ruby→Gold),
+see Sec 3), `IsShuffleComplete` (race target reached or game cap hit - drives summary vs next game),
+`BuildSortedStandings()` (points desc, tiebreak best placement, then domain enum order Jade->Ruby->Gold),
 `ResetRuntime()`. Edit-mode coverage: `Assets/_Scripts/Tests/EditMode/TournamentDataSOTests.cs`.
 
 ## 6. File index
@@ -222,7 +222,7 @@ see §3), `IsShuffleComplete` (race target reached or game cap hit — drives su
 | Controller (brain) | `_Scripts/Controller/Arcade/Tournament/TournamentController.cs` |
 | Lobby scene view | `_Scripts/Controller/Arcade/Tournament/TournamentSceneView.cs` |
 | End-game buttons + entrance + placement wallet credit (via injected `TournamentDataSO`) | `_Scripts/UI/Scoreboard.cs` |
-| Between-game summary text (SOAP, reuses the splash status surface) | `_Scripts/UI/Screens/BootStatusBroadcaster.cs` (shuffle branch) → `BootStatusPanel` via `Event_BootStatusRequest` |
+| Between-game summary text (SOAP, reuses the splash status surface) | `_Scripts/UI/Screens/BootStatusBroadcaster.cs` (shuffle branch) -> `BootStatusPanel` via `Event_BootStatusRequest` |
 | Lobby player/domain floor | `_Scripts/UI/Modals/ArcadeGameConfigureModal.cs` (`MinDomainsForGame`) |
 | Per-game min domains field | `_Scripts/ScriptableObjects/SO_ArcadeGame.cs` (`MinDomainsAllowed`) |
 | Joust-leg opponent-seek AI | `_Scripts/Controller/AI/AIPilot.cs` |
@@ -236,39 +236,39 @@ see §3), `IsShuffleComplete` (race target reached or game cap hit — drives su
 
 ## 7. Editor wiring
 
-The mode runs end-to-end; one **optional** wire remains for the §4 between-game summary overlay
+The mode runs end-to-end; one **optional** wire remains for the Sec 4 between-game summary overlay
 (last bullet).
 
-- **AppManager** — `tournamentData` assigned; `TournamentController` registered and constructed with
+- **AppManager** - `tournamentData` assigned; `TournamentController` registered and constructed with
   `gameData` + `tournamentData` + `sceneNames` + `sceneTransitionManager`, created eagerly at bootstrap
   so it survives every Single load.
-- **`Maelstrom.unity`** — a UI-only scene whose `TournamentSceneView` drives the intro lobby, the
+- **`Maelstrom.unity`** - a UI-only scene whose `TournamentSceneView` drives the intro lobby, the
   between-round hub, and the results summary (layout chosen per load by phase / `IsShuffleComplete`). The
   **current v2 layout + the exact field-by-field wiring** (active/summary panels, round cards,
-  `TournamentLobbyNetwork` ready-up) is documented in `MAELSTROM_REWORK_SPEC.md` §6 + the v2 sections —
+  `TournamentLobbyNetwork` ready-up) is documented in `MAELSTROM_REWORK_SPEC.md` Sec 6 + the v2 sections -
   refer there rather than re-describing it here.
-  - **Buttons are code-wired only** — `TournamentSceneView.Awake` adds `OnReadyButtonPressed` (START/NEXT),
+  - **Buttons are code-wired only** - `TournamentSceneView.Awake` adds `OnReadyButtonPressed` (START/NEXT),
     `OnPlayAgainPressed`, and `OnMainMenuPressed`. Do **NOT** add inspector `onClick` entries: duplicate
     wiring double-fires the press and launches a stray game off the summary (`MAELSTROM_REWORK_SPEC.md`
-    v2.5). `onClickToMainMenu` is wired to `EventOnClickToMainMenuButton.asset` — the **same** main-menu
+    v2.5). `onClickToMainMenu` is wired to `EventOnClickToMainMenuButton.asset` - the **same** main-menu
     `ScriptableEventNoParam` the Scoreboard's Main Menu raises and `SceneLoader` listens to.
-- **Scoreboard Continue button** — present on the shared end-game canvas
-  (`GameCanvas-HexRace.prefab`, used by all three domain-game scenes — HexRace, Joust, Crystal
-  Capture — plus `EndGameStatsPanel.prefab`) and wired to `OnContinueButtonPressed()`. Host-only,
-  shown on every game (see §4).
-- **Arcade card + grid cell** — `ArcadeGameTournament.asset` present in `GameLists/ArcadeGames.asset`,
+- **Scoreboard Continue button** - present on the shared end-game canvas
+  (`GameCanvas-HexRace.prefab`, used by all three domain-game scenes - HexRace, Joust, Crystal
+  Capture - plus `EndGameStatsPanel.prefab`) and wired to `OnContinueButtonPressed()`. Host-only,
+  shown on every game (see Sec 4).
+- **Arcade card + grid cell** - `ArcadeGameTournament.asset` present in `GameLists/ArcadeGames.asset`,
   with `MinPlayersAllowed=2`, `MaxPlayersAllowed=4`, `MinDomainsAllowed=2`, `MinIntensity=1`,
-  `MaxIntensity=4` (`87658960`) — so the configure modal floors both player and domain count to 2
-  (see §1, *Lobby minimum*).
-- **Between-game summary (SOAP — outstanding wires).** Wire `TournamentData.asset` into
-  `BootStatusBroadcaster.tournamentData` (on the splash canvas). The §4 running standings then show on
-  the existing `BootStatusPanel.statusText` during shuffle inter-game loads — **no new object, and no
+  `MaxIntensity=4` (`87658960`) - so the configure modal floors both player and domain count to 2
+  (see Sec 1, *Lobby minimum*).
+- **Between-game summary (SOAP - outstanding wires).** Wire `TournamentData.asset` into
+  `BootStatusBroadcaster.tournamentData` (on the splash canvas). The Sec 4 running standings then show on
+  the existing `BootStatusPanel.statusText` during shuffle inter-game loads - **no new object, and no
   `TMP_Text`/field on `SceneTransitionManager`** (it owns only fades now). Also wire `TournamentData.asset`
   into each domain-game `Scoreboard.tournamentData` (`GameCanvas-HexRace.prefab` + the scene-added
   Scoreboards in Joust / Crystal Capture) for the placement wallet credit + card badge. Unwired, both
   degrade gracefully (clean splash / flat winner reward).
 
-No per-button visibility code lives in the scene — `TournamentSceneView` and `Scoreboard`
+No per-button visibility code lives in the scene - `TournamentSceneView` and `Scoreboard`
 drive it (host-only, phase-selected).
 
 ## 8. Verification

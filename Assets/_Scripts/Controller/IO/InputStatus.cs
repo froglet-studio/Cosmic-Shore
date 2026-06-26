@@ -10,7 +10,7 @@ namespace CosmicShore.Gameplay
     {
         public event Action<bool> OnToggleInputPaused;
         
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
         // Inspector-driven events & controller (unchanged)
         [SerializeField] ScriptableEventInputEvents _onButtonPressed;
         public ScriptableEventInputEvents OnButtonPressed => _onButtonPressed;
@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
 
         public InputController InputController { get; set; }
 
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
         // Local fallbacks
         float   _xSumLocal,   _ySumLocal,   _xDiffLocal,   _yDiffLocal,   _throttleLocal,
                 _leftTrigAnalogLocal, _rightTrigAnalogLocal;
@@ -32,7 +32,7 @@ namespace CosmicShore.Gameplay
                 _rEasedLocal, _lEasedLocal, _singleTouchLocal;
         Vector3 _threeDLocal;
 
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
         // NetworkVariables
         readonly NetworkVariable<float>   n_xSum   = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<float>   n_ySum   = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
@@ -63,7 +63,7 @@ namespace CosmicShore.Gameplay
         readonly NetworkVariable<Vector2> n_single = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
         readonly NetworkVariable<Vector3> n_3dPos  = new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Owner);
 
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
         // Properties switch on IsSpawned
         public float XSum
         {

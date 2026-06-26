@@ -195,7 +195,7 @@ namespace CosmicShore.Gameplay
             int rows = config.pipsPerColumn;
 
             // Each pip index 0..19 maps to level (MinLevel + 1 + index)
-            // pip 0 → level -4, pip 4 → level 0, pip 19 → level 15
+            // pip 0 -> level -4, pip 4 -> level 0, pip 19 -> level 15
             // A pip is filled when the current level >= its represented level
             for (int p = 0; p < rows; p++)
             {

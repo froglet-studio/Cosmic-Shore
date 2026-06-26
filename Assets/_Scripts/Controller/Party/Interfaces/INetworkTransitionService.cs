@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // INetworkTransitionService.cs
 // Contract for NetworkManager lifecycle transitions during party operations.
 //
@@ -11,7 +11,7 @@
 //
 // KEY CONSTRAINT: this service only deals with NetworkManager lifecycle.
 //   It does NOT create UGS sessions, send invites, or update SOAP state.
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 using System.Threading;
 using Cysharp.Threading.Tasks;
@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
         /// <param name="timeoutSeconds">
         /// Maximum seconds to wait for shutdown.  Returns false if exceeded.
         /// </param>
-        /// <param name="ct">Cancellation token — cancels the wait if triggered.</param>
+        /// <param name="ct">Cancellation token - cancels the wait if triggered.</param>
         /// <returns>
         /// <c>true</c> if shutdown completed within the timeout; <c>false</c> if
         /// it timed out or NM was not running.

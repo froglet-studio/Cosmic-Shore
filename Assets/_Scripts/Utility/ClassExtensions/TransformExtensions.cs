@@ -28,9 +28,9 @@ namespace CosmicShore.Utility
                  + transform.position;
         }
 
-        // ─────────────────────────────────────────────────────────────
+        // -------------------------------------------------------------
         // NEW: ResizeForSeconds EXTENSION (UniTask + CancellationToken)
-        // ─────────────────────────────────────────────────────────────
+        // -------------------------------------------------------------
 
         // Holds per-Transform cancellation tokens
         private static readonly Dictionary<Transform, CancellationTokenSource> resizeTokens =
@@ -70,9 +70,9 @@ namespace CosmicShore.Utility
 
             try
             {
-                // ────────────────────────────────
-                // 1) ORIGINAL → TARGET (1 second)
-                // ────────────────────────────────
+                // --------------------------------
+                // 1) ORIGINAL -> TARGET (1 second)
+                // --------------------------------
                 t = 0f;
                 while (t < transitionTime)
                 {
@@ -86,9 +86,9 @@ namespace CosmicShore.Utility
 
                 transform.localScale = target;
 
-                // ────────────────────────────────
+                // --------------------------------
                 // 2) HOLD at TARGET
-                // ────────────────────────────────
+                // --------------------------------
                 float hold = 0f;
                 while (hold < holdDuration)
                 {
@@ -97,9 +97,9 @@ namespace CosmicShore.Utility
                     await UniTask.Yield(PlayerLoopTiming.Update, linkedCts.Token);
                 }
 
-                // ────────────────────────────────
-                // 3) TARGET → ORIGINAL (1 second)
-                // ────────────────────────────────
+                // --------------------------------
+                // 3) TARGET -> ORIGINAL (1 second)
+                // --------------------------------
                 t = 0f;
                 while (t < transitionTime)
                 {

@@ -1,12 +1,12 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
     [CreateAssetMenu(fileName = "TrailScaleProfile", menuName = "ScriptableObjects/Trail/Scale Profile")]
     public class TrailScaleProfileSO : ScriptableObject
     {
-        // If true → multiply current scalers by vector
-        // If false → set absolute scalers to vector
+        // If true -> multiply current scalers by vector
+        // If false -> set absolute scalers to vector
         public bool isChange = true;
 
         // XScaler, YScaler, ZScaler targets or multipliers (depending on isChange)

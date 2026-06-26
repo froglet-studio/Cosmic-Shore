@@ -7,19 +7,19 @@ namespace CosmicShore.Gameplay
     /// Manages the visual and physical transition between a prism's unshielded
     /// box state and its super-shielded stellated octahedron (Stella Octangula)
     /// state. Mirrors <see cref="PrismOctahedronShield"/> but uses the
-    /// stellation — the compound of two interpenetrating tetrahedra whose
+    /// stellation - the compound of two interpenetrating tetrahedra whose
     /// intersection is the octahedron shield and whose union has spike tips
     /// at the 8 cube corners.
     ///
     /// States:
     ///   Unshielded:        BoxCollider active, authored prism mesh visible,
-    ///                      mass = ρ · 8·a·b·c
+    ///                      mass = rho * 8*a*b*c
     ///   Super-shielded:    MeshCollider (convex) with stellated mesh,
     ///                      stellation mesh visible,
-    ///                      mass = ρ · 108·a·b·c (exactly 13.5× box mass by default,
-    ///                      3× the inscribed octahedron shield's mass)
+    ///                      mass = rho * 108*a*b*c (exactly 13.5x box mass by default,
+    ///                      3x the inscribed octahedron shield's mass)
     ///
-    /// Engage: per-face bloom morph — 24 outer faces grow outward from their
+    /// Engage: per-face bloom morph - 24 outer faces grow outward from their
     /// centroids.
     /// Disengage: box mesh snaps back immediately, then a shatter overlay plays
     ///   where each of the 24 faces simultaneously shrinks and flies outward
@@ -56,17 +56,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("Optional Rigidbody whose mass scales with shield state. If null, mass scaling is skipped.")]
         [SerializeField] private Rigidbody rb;
 
-        [Tooltip("Uniform density (kg / unit^3) used for mass = density · volume. Set negative to disable density-based mass and use massRatioSuperShielded instead.")]
+        [Tooltip("Uniform density (kg / unit^3) used for mass = density * volume. Set negative to disable density-based mass and use massRatioSuperShielded instead.")]
         [SerializeField] private float density = 1f;
 
-        [Tooltip("Multiplier applied to the unshielded (box) mass when entering the super-shielded state. Default 13.5 matches V_stellated / V_box = 108·a·b·c / 8·a·b·c.")]
+        [Tooltip("Multiplier applied to the unshielded (box) mass when entering the super-shielded state. Default 13.5 matches V_stellated / V_box = 108*a*b*c / 8*a*b*c.")]
         [SerializeField] private float massRatioSuperShielded = StellatedOctahedronMeshGenerator.SUPER_SHIELD_TO_BOX_VOLUME_RATIO;
 
         [Header("Engage Transition")]
         [Tooltip("Duration of the face-bloom engage morph. 0 snaps instantly.")]
         [SerializeField] private float engageDuration = 0.45f;
 
-        [Tooltip("Easing curve applied to the engage morph progress (0→1).")]
+        [Tooltip("Easing curve applied to the engage morph progress (0->1).")]
         [SerializeField] private AnimationCurve engageCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
         [Header("Shatter (Disengage)")]
@@ -76,7 +76,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far each face flies outward (in local-space units) at the end of the shatter.")]
         [SerializeField] private float shatterMaxOffset = 4f;
 
-        [Tooltip("Easing curve applied to the shatter progress (0→1). Output drives both face-offset and face-shrink.")]
+        [Tooltip("Easing curve applied to the shatter progress (0->1). Output drives both face-offset and face-shrink.")]
         [SerializeField] private AnimationCurve shatterCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
         [Header("Shield Geometry")]
@@ -198,7 +198,7 @@ namespace CosmicShore.Gameplay
         {
             if (density > 0f)
             {
-                // V_box = 8·a·b·c, V_stellated = 108·a·b·c.
+                // V_box = 8*a*b*c, V_stellated = 108*a*b*c.
                 _boxMass = density * 8f * _halfExtents.x * _halfExtents.y * _halfExtents.z;
                 _shieldMass = density * 108f * _halfExtents.x * _halfExtents.y * _halfExtents.z;
             }
@@ -283,7 +283,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Branchless point-in-shield test (world-space input). Only valid
         /// while <see cref="IsShielded"/> is true. Uses the 4-linear-form
-        /// tetrahedral check — a point is inside the stellation iff it lies
+        /// tetrahedral check - a point is inside the stellation iff it lies
         /// in either constituent tetrahedron.
         /// </summary>
         public bool IsPointInsideShield(Vector3 worldPoint)
@@ -352,8 +352,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void UpdateShatterMesh(float t)
         {
-            float faceScale  = 1f - t;                // 1→0 (shrink)
-            float faceOffset = t * shatterMaxOffset;  // 0→max (fly outward)
+            float faceScale  = 1f - t;                // 1->0 (shrink)
+            float faceOffset = t * shatterMaxOffset;  // 0->max (fly outward)
 
             StellatedOctahedronMeshGenerator.PopulateMeshFaceShatter(
                 _shatterMesh, _halfExtents, faceScale, faceOffset, shieldScale);
@@ -377,7 +377,7 @@ namespace CosmicShore.Gameplay
                 shieldMeshCollider.sharedMesh = _stellatedMesh;
                 // Convex is required for Rigidbody interaction. Note: the
                 // stellation is non-convex, so Unity will compute a convex
-                // hull approximation (≈ the bounding cube). For accurate
+                // hull approximation (~ the bounding cube). For accurate
                 // gameplay containment use IsPointInsideShield, which does
                 // the true tetrahedral-union check.
                 shieldMeshCollider.convex = true;
@@ -432,7 +432,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Lazily create the shatter overlay child. Only allocated when the
-        /// first disengage actually happens — most prisms are never
+        /// first disengage actually happens - most prisms are never
         /// super-shielded, so most never pay this cost.
         /// </summary>
         private void EnsureShatterChild()

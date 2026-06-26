@@ -156,7 +156,7 @@ namespace CosmicShore.Gameplay
             if (skinnedMeshRenderer == null) return;
 
             var baked = new Mesh();
-            // do NOT bake scale; we’ll set it explicitly from the model
+            // do NOT bake scale; we'll set it explicitly from the model
             skinnedMeshRenderer.BakeMesh(baked, true);
 
             _ghostGo = new GameObject("ShipGhost");

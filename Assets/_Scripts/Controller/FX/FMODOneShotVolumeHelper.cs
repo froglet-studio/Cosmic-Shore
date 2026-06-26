@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay.Audio
     /// <c>GameSetting.SFXEnabled</c>.
     ///
     /// Why this exists: FMOD's PlayOneShot family has no overload that
-    /// accepts per-instance volume — the call internally creates the
+    /// accepts per-instance volume - the call internally creates the
     /// instance, starts it, and releases it before user code can call
     /// <c>setVolume()</c>. The result is one-shots that ignore the in-game
     /// SFX slider unless the FMOD project routes the event through a bus

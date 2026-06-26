@@ -1,4 +1,4 @@
-﻿using Obvious.Soap;
+using Obvious.Soap;
 using UnityEngine;
 
 namespace CosmicShore.UI

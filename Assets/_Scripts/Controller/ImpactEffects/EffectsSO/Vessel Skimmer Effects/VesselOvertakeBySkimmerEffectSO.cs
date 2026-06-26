@@ -55,14 +55,14 @@ namespace CosmicShore.Gameplay
             // Don't trigger on self-collision
             if (impactorVessel == impacteeVessel) return;
 
-            // Only the slower vessel — the one being overtaken — is affected
+            // Only the slower vessel - the one being overtaken - is affected
             if (impactorVessel.VesselStatus.Speed >= impacteeVessel.VesselStatus.Speed) return;
 
             var overtakenStatus = impactorVessel.VesselStatus;
             var rs = overtakenStatus.ResourceSystem;
             if (rs == null) return;
 
-            // Cooldown check — anti-spam per overtaken vessel
+            // Cooldown check - anti-spam per overtaken vessel
             var now = Time.time;
             if (_lastEffectTime.TryGetValue(rs, out var lastTime) && now - lastTime < cooldown)
                 return;
@@ -71,7 +71,7 @@ namespace CosmicShore.Gameplay
             // Haptic feedback
             HapticController.PlayConstant(hapticAmplitude, hapticFrequency, hapticDuration);
 
-            // Allies are buffed, opponents debuffed — both as temporary, decaying effects.
+            // Allies are buffed, opponents debuffed - both as temporary, decaying effects.
             bool isAlly = overtakenStatus.Domain == impacteeVessel.VesselStatus.Domain;
             float magnitude = isAlly ? buffMagnitude : debuffMagnitude;
 

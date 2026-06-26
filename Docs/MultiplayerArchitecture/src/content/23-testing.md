@@ -1,4 +1,4 @@
-<div class="sec-eyebrow">Part II · Verification</div>
+<div class="sec-eyebrow">Part II * Verification</div>
 
 # Testing strategy
 
@@ -20,8 +20,8 @@ the multi-client behaviour that can't be unit-tested.
 
 ::: insight Test the seams, not the cloud
 The interface-per-service decomposition is what makes the orchestrator testable without standing up
-real UGS sessions. The control logic — state transitions, payload parsing, member diffing, team
-balancing — is exercised in fast edit-mode tests; only the genuinely networked accept flow needs a
+real UGS sessions. The control logic - state transitions, payload parsing, member diffing, team
+balancing - is exercised in fast edit-mode tests; only the genuinely networked accept flow needs a
 play-mode harness.
 :::
 
@@ -34,16 +34,16 @@ Unity's Multiplayer Play Mode (several virtual players in one editor):
   accepts with random declines/leaves interleaved.
 - **Presence procedures (P-series):** discovery, simultaneous-create convergence, invite delivery
   across a lobby split.
-- **Diagnostics procedures (A–E):** verify the NetDiag classifier and `NetworkMonitor` accuracy,
+- **Diagnostics procedures (A-E):** verify the NetDiag classifier and `NetworkMonitor` accuracy,
   including the case where the Editor's `internetReachability` lies.
 
-A chronological **MPPM session log** captures session-scoped findings — the timeline view matters
+A chronological **MPPM session log** captures session-scoped findings - the timeline view matters
 because many bugs (like B3.b and B8) were only understood by reading the exact ordering of log lines
 across two clients.
 
 ## The per-commit gate
 
-The eight unbreakable exit criteria are the acceptance bar. Criteria 1–5 (no fatal failure, no stuck
+The eight unbreakable exit criteria are the acceptance bar. Criteria 1-5 (no fatal failure, no stuck
 UI, no silent divergence, reversible transitions, idempotent retries) are demonstrated to hold;
-criteria 6–8 (3-VP smoke, 3-VP stress, 4-VP concurrent invites) are re-verified per commit. A change
+criteria 6-8 (3-VP smoke, 3-VP stress, 4-VP concurrent invites) are re-verified per commit. A change
 isn't "done" until that gate is green.

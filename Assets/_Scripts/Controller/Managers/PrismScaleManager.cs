@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
         private readonly List<(PrismScaleAnimator block, Vector3 scale)> completionQueue =
             new List<(PrismScaleAnimator, Vector3)>(32);
 
-        // ✅ This list is the critical fix: animators aligned 1:1 with animationData indices.
+        // [x] This list is the critical fix: animators aligned 1:1 with animationData indices.
         private readonly List<PrismScaleAnimator> scalingAnimators =
             new List<PrismScaleAnimator>(256);
 

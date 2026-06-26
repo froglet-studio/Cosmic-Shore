@@ -71,7 +71,7 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>
         /// Runtime flag set when the quest goal is achieved during gameplay.
-        /// Not serialized — lives only in the current session, synced from ProgressionData on load.
+        /// Not serialized - lives only in the current session, synced from ProgressionData on load.
         /// </summary>
         [System.NonSerialized] public bool IsCompleted;
     }
@@ -103,7 +103,7 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Unlock intensity 4 by playing enough games at each intensity tier</summary>
         IntensityUnlocked = 6,
 
-        /// <summary>Placeholder — quest auto-completes or uses custom logic</summary>
+        /// <summary>Placeholder - quest auto-completes or uses custom logic</summary>
         Placeholder = 99,
     }
 }

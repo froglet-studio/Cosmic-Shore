@@ -3,7 +3,7 @@
 **Audience:** anyone awaiting a UGS / Netcode `Task` or a `UniTask` that crosses the thread pool.
 **TL;DR:** wrap every cross-thread `await` in `.AsMainThread()`. Don't use
 `UniTask.SwitchToMainThread()` or `UniTask.Yield(PlayerLoopTiming.Update)` for thread
-marshaling — they don't work reliably on this UniTask version.
+marshaling - they don't work reliably on this UniTask version.
 
 ---
 
@@ -11,13 +11,13 @@ marshaling — they don't work reliably on this UniTask version.
 
 UGS-SDK (`Unity.Services.Multiplayer`, `Unity.Services.Friends`, etc.) and Netcode-for-GameObjects
 methods return `System.Threading.Tasks.Task`. When you `await` one, the continuation lands on
-whatever thread the SDK's HTTP / WebSocket pump completes on — typically the .NET ThreadPool.
+whatever thread the SDK's HTTP / WebSocket pump completes on - typically the .NET ThreadPool.
 From the ThreadPool:
 
 - Any `UnityEngine.Object` access (incl. `obj == null`, which routes through
-  `Object.op_Equality` → `GetInstanceID` → `EnsureRunningOnMainThread`) throws.
+  `Object.op_Equality` -> `GetInstanceID` -> `EnsureRunningOnMainThread`) throws.
 - Any `Obvious.Soap.ScriptableEvent.Raise()` invokes its listeners **inline on the calling thread**
-  (confirmed by reading `Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEventNoParam.cs`) —
+  (confirmed by reading `Assets/Plugins/Obvious/Soap/Core/Runtime/ScriptableEvents/ScriptableEventNoParam.cs`) -
   so if a listener touches Unity state, it crashes too.
 
 If you wire SOAP events to UGS-callback chains naively, your `OnEstablished` listener fires on
@@ -39,20 +39,20 @@ That single sentence is why every UniTask-native main-thread switch we tried fai
 
 | Primitive | What it claims | What it does on `com.cysharp.unitask@86b6e6a2e286` | Verdict |
 |---|---|---|---|
-| `await UniTask.SwitchToMainThread()` | Switch to Unity main thread | Awaiter's `IsCompleted` returns `true` when called from ThreadPool → continuation runs **inline** on ThreadPool. No switch. | **Broken on this version.** |
+| `await UniTask.SwitchToMainThread()` | Switch to Unity main thread | Awaiter's `IsCompleted` returns `true` when called from ThreadPool -> continuation runs **inline** on ThreadPool. No switch. | **Broken on this version.** |
 | `await UniTask.Yield(PlayerLoopTiming.Update)` | Yield until next PlayerLoop.Update | Yields. But UniTask's `ContinuationQueue` does **not** capture or marshal through `SynchronizationContext`, so the resumption can run on a worker thread. | **Broken on this version.** Known issue ([UniTask#561](https://github.com/Cysharp/UniTask/discussions/561)). |
-| `await UniTask.NextFrame()` / `DelayFrame(1)` | Wait one frame | Same as `Yield(Update)` internally — same bypass, same flaw. | **Broken on this version.** |
+| `await UniTask.NextFrame()` / `DelayFrame(1)` | Wait one frame | Same as `Yield(Update)` internally - same bypass, same flaw. | **Broken on this version.** |
 
 References (recorded here so the next session doesn't have to re-find them):
 
-- [Cysharp/UniTask#319 — Thread Context Preservation](https://github.com/Cysharp/UniTask/issues/319) — confirms the SyncContext bypass is by design.
-- [Cysharp/UniTask#561 — "Yield(PlayerLoopTiming.Update) is not resuming at Update sometimes"](https://github.com/Cysharp/UniTask/discussions/561) — exact symptom we hit.
-- [Cysharp/UniTask#151 — SwitchToMainThread quirks](https://github.com/Cysharp/UniTask/issues/151).
-- [Unity Discussions — request to expose `Object.CurrentThreadIsMainThread()`](https://discussions.unity.com/t/could-object-currentthreadismainthread-be-exposed-publicly/749484) — confirms no public Unity API for the check.
+- [Cysharp/UniTask#319 - Thread Context Preservation](https://github.com/Cysharp/UniTask/issues/319) - confirms the SyncContext bypass is by design.
+- [Cysharp/UniTask#561 - "Yield(PlayerLoopTiming.Update) is not resuming at Update sometimes"](https://github.com/Cysharp/UniTask/discussions/561) - exact symptom we hit.
+- [Cysharp/UniTask#151 - SwitchToMainThread quirks](https://github.com/Cysharp/UniTask/issues/151).
+- [Unity Discussions - request to expose `Object.CurrentThreadIsMainThread()`](https://discussions.unity.com/t/could-object-currentthreadismainthread-be-exposed-publicly/749484) - confirms no public Unity API for the check.
 
 ---
 
-## 3. The fix — `MainThreadDispatcher` + `.AsMainThread()`
+## 3. The fix - `MainThreadDispatcher` + `.AsMainThread()`
 
 We bypass UniTask's bypass by going through **Unity's own `SynchronizationContext`**, which is
 properly main-thread-bound.
@@ -94,7 +94,7 @@ Why this is reliable:
   point is Unity's `UnitySynchronizationContext`, and `Thread.CurrentThread` is Unity's main thread.
 - `SynchronizationContext.Post(...)` enqueues a callback onto that context. Unity's context drains
   on the main thread. When the callback runs, we're on the main thread.
-- The awaiter completes from inside the callback → the continuation is also on the main thread.
+- The awaiter completes from inside the callback -> the continuation is also on the main thread.
 
 ### 3.2 `.AsMainThread()` (the boundary helper)
 
@@ -118,11 +118,11 @@ regardless of whether the SDK returns `Task` or `UniTask`.**
 > uses `.AsMainThread()`.
 
 ```csharp
-// Bad — continuation may land on ThreadPool:
+// Bad - continuation may land on ThreadPool:
 await MultiplayerService.Instance.CreateSessionAsync(opts);
-connectionData.IsPartyHost = true;          // off-thread → SOAP raise crashes
+connectionData.IsPartyHost = true;          // off-thread -> SOAP raise crashes
 
-// Good — continuation guaranteed on main thread:
+// Good - continuation guaranteed on main thread:
 ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(opts).AsMainThread();
 connectionData.IsPartyHost = true;          // safe
 ```
@@ -132,7 +132,7 @@ invariant at every boundary.
 
 ---
 
-## 4. The canary — `SceneTransitionManager.SetFadeImmediate`
+## 4. The canary - `SceneTransitionManager.SetFadeImmediate`
 
 `Assets/_Scripts/System/Bootstrap/SceneTransitionManager.cs` line ~271:
 
@@ -142,7 +142,7 @@ public void SetFadeImmediate(float alpha)
     if (!MainThreadDispatcher.IsOnMainThread)
     {
         Debug.LogError(
-            "[SceneTransitionManager] SetFadeImmediate called off main thread — " +
+            "[SceneTransitionManager] SetFadeImmediate called off main thread - " +
             "caller forgot `.AsMainThread()` on a UGS / Netcode Task await " +
             "(see UniTaskExtensions.cs). Ignoring to avoid EnsureRunningOnMainThread.");
         return;
@@ -152,12 +152,12 @@ public void SetFadeImmediate(float alpha)
 ```
 
 This is the trip-wire. `SetFadeImmediate` is on a hot path (every scene transition fades it),
-and it touches a `CanvasGroup` — exactly the kind of access that crashes off-thread. If a new
+and it touches a `CanvasGroup` - exactly the kind of access that crashes off-thread. If a new
 UGS call site is added later and someone forgets `.AsMainThread()`, the canary's `Debug.LogError`
 fires immediately with `EnsureRunningOnMainThread` mentioned in the message, naming the helper
 to use. Cheaper than a crash.
 
-Both `SetFadeImmediate` and `AsMainThread()` read `MainThreadDispatcher.IsOnMainThread` — one
+Both `SetFadeImmediate` and `AsMainThread()` read `MainThreadDispatcher.IsOnMainThread` - one
 source of truth, no risk of divergent capture sites.
 
 ---
@@ -169,11 +169,11 @@ source of truth, no risk of divergent capture sites.
 | `await` a UGS / Netcode / any cross-thread `Task` | `.AsMainThread()` |
 | `await` a `UniTask` you wrote that internally awaits UGS | `.AsMainThread()` at the inner site, no wrapping needed at the caller |
 | Need to switch to main thread *without* a Task to attach to (e.g., at the start of a `catch` block whose body touches Unity state) | `await MainThreadDispatcher.SwitchToMainThreadAsync()` |
-| Need to yield one frame so PlayerLoop processes pending work (NOT for thread marshaling) | `await UniTask.Yield(PlayerLoopTiming.Update)` — fine, just don't rely on it for thread affinity |
+| Need to yield one frame so PlayerLoop processes pending work (NOT for thread marshaling) | `await UniTask.Yield(PlayerLoopTiming.Update)` - fine, just don't rely on it for thread affinity |
 | Asserting we're on main thread (debug only) | `MainThreadDispatcher.IsOnMainThread` |
 
 There are exactly three `Yield(PlayerLoopTiming.Update)` calls remaining in
-`Controller/Party/PartyInviteController.cs` (in catch / recovery blocks) — they're "wait for the
+`Controller/Party/PartyInviteController.cs` (in catch / recovery blocks) - they're "wait for the
 next PlayerLoop tick" semantics, not threading. Leave them alone.
 
 ---
@@ -182,11 +182,11 @@ next PlayerLoop tick" semantics, not threading. Leave them alone.
 
 | Commit | What it tried | Verdict |
 |---|---|---|
-| `4d7ce98c5` | `await CreateOwnPartySessionAsync()` race-guard inside `SendInviteAsync` | **KEEP** — separate concern, real race, unrelated to threading |
-| `c2865c8b0` | First `await UniTask.SwitchToMainThread()` inside `PartySessionService.CreateAsync` | Removed — broken on this UniTask version |
-| `7e096d4d1` | Broad `SwitchToMainThread` migration across 25 sites | Removed — same flaw, scaled |
+| `4d7ce98c5` | `await CreateOwnPartySessionAsync()` race-guard inside `SendInviteAsync` | **KEEP** - separate concern, real race, unrelated to threading |
+| `c2865c8b0` | First `await UniTask.SwitchToMainThread()` inside `PartySessionService.CreateAsync` | Removed - broken on this UniTask version |
+| `7e096d4d1` | Broad `SwitchToMainThread` migration across 25 sites | Removed - same flaw, scaled |
 | `124d07c6c` | `SwitchToMainThread()` *after* UGS awaits in HCS / AuthSceneController / PartyInviteController; thread-id canary; full-exception logging | Canary and full-exception logging **KEPT**; SwitchToMainThread inserts removed |
-| `e39c22893` | Replaced SwitchToMainThread with `Yield(PlayerLoopTiming.Update)` | Removed — yields, but doesn't guarantee main-thread resumption |
+| `e39c22893` | Replaced SwitchToMainThread with `Yield(PlayerLoopTiming.Update)` | Removed - yields, but doesn't guarantee main-thread resumption |
 | `e67cf819c` | One `.AsMainThread()` boundary helper, ~32 call sites | Wrapper retained; internals replaced again in next commit |
 | `6a544e30e` | `MainThreadDispatcher` + `.AsMainThread()` rebuilt on Unity's `SynchronizationContext` | **CURRENT FIX.** |
 
@@ -199,7 +199,7 @@ this document first**. We have already tried both, and they don't work.
 ## 7. Verification recipe
 
 1. **Run the host alone.** Console must show:
-   - `[HostConnectionService] Solo party session ready: <id> — InParty, vessel will spawn.`
+   - `[HostConnectionService] Solo party session ready: <id> - InParty, vessel will spawn.`
    - `[AuthScene] Relay session confirmed live (attempt 1/3).`
    - `[AuthScene] Loading Menu_Main via network scene management...`
    - **No** `[SceneTransitionManager] SetFadeImmediate called off main thread` warning.
@@ -218,7 +218,7 @@ this document first**. We have already tried both, and they don't work.
    canary in `SceneTransitionManager`.
 
 3. **If the canary fires after a new UGS-aware feature ships:** the new code missed an
-   `.AsMainThread()` somewhere. The canary's `Debug.LogError` is the call-graph anchor —
+   `.AsMainThread()` somewhere. The canary's `Debug.LogError` is the call-graph anchor -
    read the stack and add the wrapper at the offending await.
 
 ---
@@ -231,10 +231,10 @@ this document first**. We have already tried both, and they don't work.
 | `Assets/_Scripts/Utility/ClassExtensions/UniTaskExtensions.cs` | `.AsMainThread()` overloads (Task, Task<T>, UniTask, UniTask<T>) + `WaitOneFrame` helpers. |
 | `Assets/_Scripts/System/Bootstrap/SceneTransitionManager.cs` | Canary at `SetFadeImmediate`. |
 | `Assets/_Scripts/Controller/Party/HostConnectionService.cs` | Heaviest caller of `.AsMainThread()`. |
-| `Assets/_Scripts/Controller/Party/PartyInviteController.cs` | Second-heaviest caller. Three retained `Yield(Update)` calls in catch blocks — those are intentional. |
+| `Assets/_Scripts/Controller/Party/PartyInviteController.cs` | Second-heaviest caller. Three retained `Yield(Update)` calls in catch blocks - those are intentional. |
 | `Assets/_Scripts/Controller/Party/Services/PartySessionService.cs` | UGS session lifecycle, every UGS call uses `.AsMainThread()`. |
 | `Assets/_Scripts/Controller/Party/Services/PresenceLobbyService.cs` | UGS lobby lifecycle, same pattern. |
 | `Assets/_Scripts/Controller/Party/Services/LobbyPropertyWriter.cs` | UGS property writes, same pattern. |
-| `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs` | Only awaits our own UniTask facades — no direct UGS Task, so no `.AsMainThread()` needed at this layer. |
+| `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs` | Only awaits our own UniTask facades - no direct UGS Task, so no `.AsMainThread()` needed at this layer. |
 | `Assets/_Scripts/System/FriendsServiceFacade.cs` | UGS Friends SDK, every call uses `.AsMainThread()` (12 sites). |
-| `Assets/_Scripts/System/AuthenticationSceneController.cs` | `LoadMainMenuNetworkedAsync` — uses `.AsMainThread()` on every relay-wait. |
+| `Assets/_Scripts/System/AuthenticationSceneController.cs` | `LoadMainMenuNetworkedAsync` - uses `.AsMainThread()` on every relay-wait. |

@@ -47,7 +47,7 @@ namespace CosmicShore.Gameplay
         }
 
         // --------------------------------------------------------------------
-        // Explosion override – only spawns formation, then destroys itself
+        // Explosion override - only spawns formation, then destroys itself
         // --------------------------------------------------------------------
 
         protected override async UniTaskVoid ExplodeAsync(CancellationToken ct)

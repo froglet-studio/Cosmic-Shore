@@ -14,9 +14,9 @@ namespace CosmicShore.Utility
         menuName = "ScriptableObjects/DataContainers/Benchmark Data")]
     public class BenchmarkDataSO : ScriptableObject
     {
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Lifecycle Events
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         [Header("Lifecycle Events")]
         [Tooltip("Raised when a benchmark run begins (after warmup starts).")]
@@ -31,17 +31,17 @@ namespace CosmicShore.Utility
         [Tooltip("Raised when a benchmark is stopped early before completion.")]
         public ScriptableEventBenchmarkStateData OnBenchmarkStopped;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Progress Updates
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         [Header("Progress")]
         [Tooltip("Raised periodically during sampling with current progress and live stats.")]
         public ScriptableEventBenchmarkStateData OnProgressUpdated;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Runtime State (written by runner, read by consumers)
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         [Header("Runtime State")]
         [HideInInspector] public bool IsRunning;
@@ -51,9 +51,9 @@ namespace CosmicShore.Utility
         [HideInInspector] public string ActiveLabel;
         [HideInInspector] public string LastReportPath;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Lifecycle
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         public void ResetRuntimeData()
         {

@@ -1,15 +1,15 @@
-<div class="sec-eyebrow">Part II · The record</div>
+<div class="sec-eyebrow">Part II * The record</div>
 
 # Design-decisions ledger
 
-The load-bearing decisions, each with what it buys and what it costs. These are *locked* — the
-project treats re-opening them as the most common way solved bugs return — so each carries a written
+The load-bearing decisions, each with what it buys and what it costs. These are *locked* - the
+project treats re-opening them as the most common way solved bugs return - so each carries a written
 rationale that a future change has to argue against explicitly.
 
 | Decision | Pros | Cost / trade-off |
 |---|---|---|
 | **EAGER per-user Relay** ("Always-InParty") | Invites become joins, not create-then-handoff; eliminates the shutdown-and-recreate race class | Every solo player holds a Relay allocation |
-| **Two-level sessions** (lobby + party) | Cheap global discovery; invites need no host privilege; gameplay transport stays small | Two sessions to keep coherent; the "lobby ≠ party" confusion if conflated |
+| **Two-level sessions** (lobby + party) | Cheap global discovery; invites need no host privilege; gameplay transport stays small | Two sessions to keep coherent; the "lobby != party" confusion if conflated |
 | **Single-writer SOAP** | One place to debug shared state; UI fully decoupled and testable; no two-writer races | A little ceremony to add new state |
 | **State machine over boolean flags** | Illegal transitions are loud and immediate; one logged lifecycle timeline | Must define every legal transition up front |
 | **Session authoritative over presence** | Host roster can't be fooled by stale lobby properties (killed B8) | Presence data can be cosmetically stale (harmless) |
@@ -22,7 +22,7 @@ rationale that a future change has to argue against explicitly.
 ## A few decisions worth their own note
 
 ::: decision One create surface: `EnsurePartySessionAsync`
-The four old `RetryCreate*` call sites were not really retries — three were first-time creates and one
+The four old `RetryCreate*` call sites were not really retries - three were first-time creates and one
 was recovery. Collapsing them into a single idempotent create-or-no-op removed a whole category of
 "did we already create one?" ambiguity. Recovery is the only site that clears a stale session first.
 :::
@@ -30,7 +30,7 @@ was recovery. Collapsing them into a single idempotent create-or-no-op removed a
 ::: decision State-machine recovery, not null-checking
 Runtime nulls inside a service method imply an invariant violation, so the response is to **log + drive
 the state machine to a recoverable state** (typically `Disconnected`), letting the normal sign-in /
-retry loop pick back up — rather than scattering defensive null-checks that hide the real problem.
+retry loop pick back up - rather than scattering defensive null-checks that hide the real problem.
 :::
 
 ::: insight The decisions compose into the invariant

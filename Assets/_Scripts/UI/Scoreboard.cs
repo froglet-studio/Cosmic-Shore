@@ -1,4 +1,4 @@
-// Scoreboard.cs — dynamic per-player cards, always multiplayer view
+// Scoreboard.cs - dynamic per-player cards, always multiplayer view
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Core;
@@ -31,7 +31,7 @@ namespace CosmicShore.UI
 
         [Header("Data")]
         [SerializeField] protected GameDataSO gameData;
-        [Tooltip("Shuffle (Tournament meta) data — source of the per-domain placement crystals when " +
+        [Tooltip("Shuffle (Tournament meta) data - source of the per-domain placement crystals when " +
                  "IsTournamentMode. Leave null for non-tournament scenes; the reward then stays the flat winner reward.")]
         [SerializeField] protected TournamentDataSO tournamentData;
         [SerializeField] private ScriptableEventNoParam OnResetForReplay;
@@ -66,21 +66,21 @@ namespace CosmicShore.UI
         [SerializeField] protected int winnerCrystalReward = 5;
 
         [Header("Play Again")]
-        [Tooltip("Play Again button — host only in multiplayer. Hidden for non-host clients; the host's Play Again forces everyone to replay.")]
+        [Tooltip("Play Again button - host only in multiplayer. Hidden for non-host clients; the host's Play Again forces everyone to replay.")]
         [SerializeField] private GameObject playAgainButton;
 
         [Header("Host / Client Buttons")]
-        [Tooltip("Main Menu button — host only in multiplayer (host-initiated return takes everyone). Always visible in single-player.")]
+        [Tooltip("Main Menu button - host only in multiplayer (host-initiated return takes everyone). Always visible in single-player.")]
         [SerializeField] private GameObject mainMenuButton;
 
-        [Tooltip("Leave Lobby button — non-host clients only. Disconnects from the party session and returns to Menu_Main.")]
+        [Tooltip("Leave Lobby button - non-host clients only. Disconnects from the party session and returns to Menu_Main.")]
         [SerializeField] private GameObject leaveLobbyButton;
 
-        [Tooltip("Main-menu SOAP event — the same asset the Main Menu button raises (via PauseMenu.OnClickMainMenu) and SceneLoader listens to. When it fires, the host nav buttons hide so the transition can't be spam-clicked.")]
+        [Tooltip("Main-menu SOAP event - the same asset the Main Menu button raises (via PauseMenu.OnClickMainMenu) and SceneLoader listens to. When it fires, the host nav buttons hide so the transition can't be spam-clicked.")]
         [SerializeField] private ScriptableEventNoParam onClickToMainMenu;
 
         [Header("Tournament")]
-        [Tooltip("Continue button — HOST ONLY, shown after EVERY tournament game (incl. the last). " +
+        [Tooltip("Continue button - HOST ONLY, shown after EVERY tournament game (incl. the last). " +
                  "Mid-lineup it advances the party to the next game; on the last game it loads the " +
                  "Tournament results screen. Wire its onClick to OnContinueButtonPressed(). " +
                  "Leave unassigned in non-tournament scenes.")]
@@ -166,7 +166,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Shows Main Menu + Play Again for the host, Leave Lobby for non-host clients.
-        /// Non-host clients cannot restart the game — the host's Play Again forces everyone to replay,
+        /// Non-host clients cannot restart the game - the host's Play Again forces everyone to replay,
         /// so exposing the button to clients would be misleading.
         /// </summary>
         void ConfigureLobbyButtons()
@@ -176,7 +176,7 @@ namespace CosmicShore.UI
 
             // Tournament mode: the host gets Continue on EVERY game (including the last) and
             // clients see no buttons. Continue on the last game takes the party to the Tournament
-            // results screen, which is where Play Again / Main Menu live now — so they are never
+            // results screen, which is where Play Again / Main Menu live now - so they are never
             // shown on the per-game scoreboard here.
             if (gameData != null && gameData.IsTournamentMode)
             {
@@ -249,7 +249,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Shows the scoreboard at its authored position with no slide/fade. Replaces
-        /// <see cref="PlayEntranceAnimation"/> while the entrance slide is disabled — see the
+        /// <see cref="PlayEntranceAnimation"/> while the entrance slide is disabled - see the
         /// note in <see cref="ShowScoreboard"/>. Forces full alpha and unit banner scale in case
         /// a previously-killed entrance tween left either mid-animation.
         /// </summary>
@@ -310,15 +310,15 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Winning domain for the banner. Prefers the server-authoritative
-        /// <see cref="GameDataSO.WinnerDomain"/> — the SAME value the end-game
-        /// cinematic uses — so the banner and the cinematic can't disagree on a tie
+        /// <see cref="GameDataSO.WinnerDomain"/> - the SAME value the end-game
+        /// cinematic uses - so the banner and the cinematic can't disagree on a tie
         /// and there is one source of truth for "who won". Modes that don't set it
         /// (single-player / co-op / DuelForCell) leave it <see cref="Domains.Blue"/>
-        /// — it is reset on every scene load (SceneLoader → GameDataSO.ResetRuntimeData)
-        /// and on replay (ResetRuntimeDataForReplay) — and fall back to the per-domain
+        /// - it is reset on every scene load (SceneLoader -> GameDataSO.ResetRuntimeData)
+        /// and on replay (ResetRuntimeDataForReplay) - and fall back to the per-domain
         /// sum order exactly as before. Subclasses may override.
         /// (Interim step: R10 will replace WinnerDomain + DomainStatsList with one
-        /// synced ranked-results list — see Docs/ScoringSystem/REFACTOR.md.)
+        /// synced ranked-results list - see Docs/ScoringSystem/REFACTOR.md.)
         /// </summary>
         protected virtual Domains DetermineWinnerDomain(List<IRoundStats> orderedStats)
         {
@@ -371,7 +371,7 @@ namespace CosmicShore.UI
             if (orderedStats == null || orderedStats.Count == 0) return;
             if (!playerCardContainer || !playerCardPrefab)
             {
-                CSDebug.LogWarning($"[Scoreboard] PopulatePlayerCards skipped — " +
+                CSDebug.LogWarning($"[Scoreboard] PopulatePlayerCards skipped - " +
                     $"container={(playerCardContainer != null ? "OK" : "NULL")}, " +
                     $"prefab={(playerCardPrefab != null ? "OK" : "NULL")}");
                 return;
@@ -406,7 +406,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Renders cards from the single source of truth — the mode's ranked, formatted
+        /// Renders cards from the single source of truth - the mode's ranked, formatted
         /// <see cref="GameDataSO.Results"/>. Order, primary text and secondary line all come
         /// from the ScoringRule, so the scoreboard and the end-game cinematic can't disagree.
         /// </summary>
@@ -417,7 +417,7 @@ namespace CosmicShore.UI
             if (results == null || results.Count == 0) return;
             if (!playerCardContainer || !playerCardPrefab)
             {
-                CSDebug.LogWarning($"[Scoreboard] PopulateFromResults skipped — " +
+                CSDebug.LogWarning($"[Scoreboard] PopulateFromResults skipped - " +
                     $"container={(playerCardContainer != null ? "OK" : "NULL")}, " +
                     $"prefab={(playerCardPrefab != null ? "OK" : "NULL")}");
                 return;
@@ -465,7 +465,7 @@ namespace CosmicShore.UI
         /// <summary>
         /// The single crystal-award path (the Scoreboard is the only writer of the wallet). In
         /// shuffle/tournament mode the local player earns their DOMAIN's per-game placement crystals
-        /// ({2,1,0}; 3rd place earns 0) — credited on every peer for its own local human, once per
+        /// ({2,1,0}; 3rd place earns 0) - credited on every peer for its own local human, once per
         /// game. In every other mode it stays the original winner-only flat <see cref="winnerCrystalReward"/>.
         /// </summary>
         void AwardCrystalsToLocalPlayer(string winnerName)
@@ -511,7 +511,7 @@ namespace CosmicShore.UI
 
         // Single source of truth for domain color: the same ColorSet the vessels and
         // prisms read from (GameDataSO.ThemeManagerData.ColorSet -> TrailHighlightColor).
-        // No per-Scoreboard palette or hardcoded fallbacks — see Docs/ScoringSystem/REFACTOR.md R5.
+        // No per-Scoreboard palette or hardcoded fallbacks - see Docs/ScoringSystem/REFACTOR.md R5.
         Color GetDomainColor(Domains domain)
         {
             return gameData != null && gameData.ThemeManagerData != null
@@ -523,7 +523,7 @@ namespace CosmicShore.UI
 
         Sprite ResolveAvatarSpriteByName(string playerName)
         {
-            // AI players — look up by name in AI profile list (struct, not nullable)
+            // AI players - look up by name in AI profile list (struct, not nullable)
             if (aiProfileList != null && aiProfileList.aiProfiles != null)
             {
                 foreach (var p in aiProfileList.aiProfiles)
@@ -533,7 +533,7 @@ namespace CosmicShore.UI
                 }
             }
 
-            // Human players — look up by AvatarId via gameData.Players
+            // Human players - look up by AvatarId via gameData.Players
             if (profileIconList != null && profileIconList.profileIcons != null && gameData?.Players != null)
             {
                 var player = gameData.Players.FirstOrDefault(pl => pl.Name == playerName);
@@ -581,7 +581,7 @@ namespace CosmicShore.UI
         #region Play Again
 
         /// <summary>
-        /// Play Again is host-only in multiplayer — non-host clients don't see the button
+        /// Play Again is host-only in multiplayer - non-host clients don't see the button
         /// (see <see cref="ConfigureLobbyButtons"/>). A host click forces everyone to replay
         /// through the controller's server-authoritative reset pipeline.
         /// </summary>
@@ -595,7 +595,7 @@ namespace CosmicShore.UI
             var nm = NetworkManager.Singleton;
             if (nm == null || !nm.IsServer)
             {
-                CSDebug.LogWarning("[Scoreboard] Play Again ignored — only the host can restart the game.");
+                CSDebug.LogWarning("[Scoreboard] Play Again ignored - only the host can restart the game.");
                 return;
             }
 
@@ -605,7 +605,7 @@ namespace CosmicShore.UI
 
             if (gameController == null)
             {
-                CSDebug.LogError("[Scoreboard] gameController not assigned — wire the scene's MiniGameControllerBase in the inspector.");
+                CSDebug.LogError("[Scoreboard] gameController not assigned - wire the scene's MiniGameControllerBase in the inspector.");
                 return;
             }
 
@@ -624,7 +624,7 @@ namespace CosmicShore.UI
             var nm = NetworkManager.Singleton;
             if (nm != null && !nm.IsServer)
             {
-                CSDebug.LogWarning("[Scoreboard] Continue ignored — only the host advances the tournament.");
+                CSDebug.LogWarning("[Scoreboard] Continue ignored - only the host advances the tournament.");
                 return;
             }
 
@@ -632,12 +632,12 @@ namespace CosmicShore.UI
             if (TournamentController.Instance != null)
                 TournamentController.Instance.AdvanceToNextGame();
             else
-                CSDebug.LogError("[Scoreboard] TournamentController.Instance is null — cannot advance the tournament.");
+                CSDebug.LogError("[Scoreboard] TournamentController.Instance is null - cannot advance the tournament.");
         }
 
         /// <summary>
         /// Hides the host-only navigation buttons (Play Again + Main Menu + Continue) once a
-        /// navigation action is committed — a button clicked or the main-menu SOAP event raised —
+        /// navigation action is committed - a button clicked or the main-menu SOAP event raised -
         /// so the host can't spam-click during the scene transition. The next game end
         /// re-activates the right ones via <see cref="ConfigureLobbyButtons"/>.
         /// </summary>
@@ -659,7 +659,7 @@ namespace CosmicShore.UI
 
             if (PartyInviteController.Instance == null)
             {
-                CSDebug.LogError("[Scoreboard] PartyInviteController not available — cannot leave lobby.");
+                CSDebug.LogError("[Scoreboard] PartyInviteController not available - cannot leave lobby.");
                 return;
             }
 

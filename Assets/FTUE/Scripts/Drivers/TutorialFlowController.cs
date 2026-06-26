@@ -93,7 +93,7 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Called by each handler when it�s done.
+        /// Called by each handler when it's done.
         /// </summary>
         public void StepCompleted()
         {

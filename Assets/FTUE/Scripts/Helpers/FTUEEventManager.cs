@@ -10,7 +10,7 @@ namespace CosmicShore.Core
     public static class FTUEEventManager
     {
         /// <summary>
-        /// Fired when the player clicks �Next� on any FTUE step.
+        /// Fired when the player clicks "Next" on any FTUE step.
         /// </summary>
         public static event Action OnNextPressed;
         public static void RaiseNextPressed() => OnNextPressed?.Invoke();

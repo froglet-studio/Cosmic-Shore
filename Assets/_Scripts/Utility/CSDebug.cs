@@ -81,10 +81,10 @@ namespace CosmicShore.Utility
             }
         }
 
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
         //  Log  (info / debug level)
         //  Stripped entirely in release builds.
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
 
         [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -116,10 +116,10 @@ namespace CosmicShore.Utility
             Debug.LogFormat(context, format, args);
         }
 
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
         //  Warning
         //  Always compiled; respects runtime LogLevel.
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void LogWarning(object message)
@@ -147,10 +147,10 @@ namespace CosmicShore.Utility
             Debug.LogWarningFormat(context, format, args);
         }
 
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
         //  Error
         //  Always compiled; respects runtime LogLevel.
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static void LogError(object message)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using CosmicShore.Utility;
 using Unity.Netcode;
@@ -20,12 +20,12 @@ namespace CosmicShore.Gameplay
         private static readonly List<T> s_ActiveInstances = new();
 
         /// <summary>
-        /// Read‐only access to all currently spawned instances of T.
+        /// Read-only access to all currently spawned instances of T.
         /// </summary>
         public static IReadOnlyList<T> ActiveInstances => s_ActiveInstances;
 
         /// <summary>
-        /// The T component on *this* client’s owned GameObject.
+        /// The T component on *this* client's owned GameObject.
         /// </summary>
         public static T OwnInstance { get; private set; }
 

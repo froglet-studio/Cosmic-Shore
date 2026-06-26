@@ -9,10 +9,10 @@ namespace CosmicShore.Gameplay
     /// trigger volume (which false-positives when the ball grazes, bounces near, or is teleported
     /// into the goal area), it polls the ball each physics tick and registers a goal only when the
     /// ball genuinely crosses the goal-line PLANE, INWARD, WITHIN the mouth circle. The back wall is
-    /// solid, so we fire when the ball's LEADING EDGE reaches the goal plane (center distance = −radius)
-    /// — that happens just before the ball would bounce off the wall, and the controller detonates it.
+    /// solid, so we fire when the ball's LEADING EDGE reaches the goal plane (center distance = -radius)
+    /// - that happens just before the ball would bounce off the wall, and the controller detonates it.
     ///
-    /// Attribution — which domain the goal counts for — is the controller's job (last striker, own-goal
+    /// Attribution - which domain the goal counts for - is the controller's job (last striker, own-goal
     /// rules); this only reports a clean, real crossing.
     /// </summary>
     public class AstroLeagueGoal : MonoBehaviour
@@ -88,7 +88,7 @@ namespace CosmicShore.Gameplay
             if ((cur - prev).sqrMagnitude > maxStep * maxStep) return;
 
             Vector3 mouth = transform.position;
-            // Fire when the ball's LEADING EDGE reaches the goal plane (center distance crosses −radius),
+            // Fire when the ball's LEADING EDGE reaches the goal plane (center distance crosses -radius),
             // so a big ball scores before bouncing off the solid back wall behind the mouth.
             float threshold = -_ball.BallWorldRadius();
             float dPrev = Vector3.Dot(prev - mouth, _inwardNormal);

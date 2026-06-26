@@ -215,7 +215,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"Performance trend for '{sceneName}' (last {recent.Count} runs):");
             sb.AppendLine($"{"Date",-22} {"Label",-16} {"Avg FPS",8} {"P1 FPS",8} {"Avg ms",8} {"P99 ms",8} {"Frames",7}  Tag");
-            sb.AppendLine(new string('─', 100));
+            sb.AppendLine(new string('-', 100));
 
             foreach (var e in recent)
             {
@@ -238,7 +238,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             return sb.ToString();
         }
 
-        // ── Internal helpers ──────────────────────────────
+        // -- Internal helpers ------------------------------
 
         static string GetIndexPath(string folder)
         {

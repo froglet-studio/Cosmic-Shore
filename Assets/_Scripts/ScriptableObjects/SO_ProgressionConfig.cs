@@ -8,17 +8,17 @@ namespace CosmicShore.ScriptableObjects
     /// Designer-tunable knobs for the game-mode quest progression system.
     ///
     /// Game unlocks are driven by the quest chain (<see cref="SO_GameModeQuestList"/> +
-    /// <see cref="SO_GameModeQuestData"/>), NOT by the player's XP — the XP track is a
+    /// <see cref="SO_GameModeQuestData"/>), NOT by the player's XP - the XP track is a
     /// cosmetic participation odometer. This asset centralizes the rules that used to be
     /// hardcoded inside <c>GameModeProgressionService</c> so they can be changed without
     /// touching code:
     ///
-    ///   • which modes are always unlocked (e.g. Tournament),
-    ///   • whether the first quest in the chain is free,
-    ///   • the intensity floor a mode starts at and the absolute intensity cap,
-    ///   • which modes ignore intensity gating,
-    ///   • the flat participation XP awarded per game,
-    ///   • the DisplayName that marks the Vessel Hangar feature-unlock quest.
+    ///   - which modes are always unlocked (e.g. Tournament),
+    ///   - whether the first quest in the chain is free,
+    ///   - the intensity floor a mode starts at and the absolute intensity cap,
+    ///   - which modes ignore intensity gating,
+    ///   - the flat participation XP awarded per game,
+    ///   - the DisplayName that marks the Vessel Hangar feature-unlock quest.
     ///
     /// When no asset is wired the service falls back to a default instance whose field
     /// values reproduce the previous hardcoded behavior exactly, so wiring this asset is

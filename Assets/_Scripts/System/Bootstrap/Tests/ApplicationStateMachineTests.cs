@@ -220,7 +220,7 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region ShuttingDown (Terminal — Always Allowed)
+        #region ShuttingDown (Terminal - Always Allowed)
 
         [Test]
         public void ShuttingDown_AllowedFromNone()

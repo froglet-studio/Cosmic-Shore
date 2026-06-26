@@ -4,7 +4,7 @@
 
 Canonical locations for everything referenced in this document. Line counts are approximate.
 
-## Party / presence services — `Assets/_Scripts/Controller/Party/`
+## Party / presence services - `Assets/_Scripts/Controller/Party/`
 
 | File | Lines | Role |
 |---|---|---|
@@ -13,7 +13,7 @@ Canonical locations for everything referenced in this document. Line counts are 
 | `FriendsInitializer.cs` | 236 | Friends service bridge + presence |
 | `Services/PresenceLobbyService.cs` | 503 | Lobby-only session lifecycle |
 | `Services/PartySessionService.cs` | 369 | Relay-backed session lifecycle + retry |
-| `Services/AcceptanceSignalService.cs` | 316 | Sender↔receiver handshake |
+| `Services/AcceptanceSignalService.cs` | 316 | Sender<->receiver handshake |
 | `Services/NetworkTransitionService.cs` | 288 | NM shutdown + connection/scene waits |
 | `Services/InviteService.cs` | 269 | Outgoing-invite tracking + serialization |
 | `Services/SoapPartyEventBus.cs` | 206 | Centralized SOAP raises |
@@ -22,9 +22,9 @@ Canonical locations for everything referenced in this document. Line counts are 
 | `Services/LobbyRefreshScheduler.cs` | 173 | Refresh cadence + boost |
 | `StateMachine/PartyStateMachine.cs` | 155 | Validated lifecycle transitions |
 | `StateMachine/PartyState.cs` | 90 | The 7 lifecycle states |
-| `Interfaces/*` | — | `IPresenceLobbyService`, `IPartySessionService`, `INetworkTransitionService`, `IPartyMemberService`, `IInviteService`, `IPartyStateQuery` |
+| `Interfaces/*` | - | `IPresenceLobbyService`, `IPartySessionService`, `INetworkTransitionService`, `IPartyMemberService`, `IInviteService`, `IPartyStateQuery` |
 
-## Netcode / multiplayer — `Assets/_Scripts/Controller/Multiplayer/`
+## Netcode / multiplayer - `Assets/_Scripts/Controller/Multiplayer/`
 
 | File | Lines | Role |
 |---|---|---|
@@ -36,7 +36,7 @@ Canonical locations for everything referenced in this document. Line counts are 
 | `MenuVesselSelectionPanelController.cs` | 251 | Network-aware vessel swap |
 | `ArcadeConfigSyncManager.cs` | 243 | Config sync |
 | `MenuServerPlayerVesselInitializer.cs` | 238 | Menu autopilot spawner |
-| `DomainAssigner.cs` | — | Team pool assignment |
+| `DomainAssigner.cs` | - | Team pool assignment |
 
 ## Cross-cutting & SOAP
 
@@ -51,9 +51,9 @@ Canonical locations for everything referenced in this document. Line counts are 
 | `Assets/_Scripts/Utility/DataContainers/HostConnectionDataSO.cs` | Party SOAP container |
 | `Assets/_Scripts/Utility/DataContainers/FriendsDataSO.cs` | Friends SOAP container |
 
-## Canonical engineering docs — `Docs/`
+## Canonical engineering docs - `Docs/`
 
-`PartySystem/` (ARCHITECTURE · REFACTOR · BUGS · TESTS · TODOS · MPPM_SESSION_LOG) ·
-`PresenceSystem/` (ARCHITECTURE · REFACTOR · BUGS · TESTS · TODOS) ·
-`NetworkDiagnostics/` (README · TESTS · TODOS) · `THREADING.md` · `SCENES.md`. This document is
+`PartySystem/` (ARCHITECTURE * REFACTOR * BUGS * TESTS * TODOS * MPPM_SESSION_LOG) *
+`PresenceSystem/` (ARCHITECTURE * REFACTOR * BUGS * TESTS * TODOS) *
+`NetworkDiagnostics/` (README * TESTS * TODOS) * `THREADING.md` * `SCENES.md`. This document is
 synthesised from those sources.

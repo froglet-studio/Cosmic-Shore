@@ -7,9 +7,9 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark.Editor
 {
     /// <summary>
     /// Inspector for DensityPartitionBenchmarkRunner. Two prominent action buttons:
-    ///   - "Run All && Dump Report" — runs every algorithm against every scenario,
+    ///   - "Run All && Dump Report" - runs every algorithm against every scenario,
     ///     dumps to the Console, and stores the result in lastReport.
-    ///   - "Copy lastReport to Clipboard" — pastes the most recent report into the
+    ///   - "Copy lastReport to Clipboard" - pastes the most recent report into the
     ///     OS clipboard so the user can paste it back to the prompter.
     /// </summary>
     [CustomEditor(typeof(DensityPartitionBenchmarkRunner))]
@@ -61,8 +61,8 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark.Editor
                 "Edit-Mode safe. No Play Mode required.\n" +
                 "Default scenarios cover the audit's failure modes (UniformRandom, " +
                 "SingleCluster, MultiCluster, Gradient, plus a 30%-stale variant " +
-                "that reproduces the ChangeTeam-after-AddBlock bug from §2.3.1).\n" +
-                "Paste the report back to the prompter — that's the falsifiable " +
+                "that reproduces the ChangeTeam-after-AddBlock bug from Sec 2.3.1).\n" +
+                "Paste the report back to the prompter - that's the falsifiable " +
                 "contract any algorithm redesign has to meet.",
                 MessageType.Info);
         }

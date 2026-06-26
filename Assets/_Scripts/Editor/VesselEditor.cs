@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using UnityEditor;
 using System.Reflection;
 using CosmicShore.Utility;

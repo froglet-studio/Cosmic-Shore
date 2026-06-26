@@ -75,14 +75,14 @@ namespace CosmicShore.Gameplay
                 _ => ratio
             };
 
-            var neutralZ = _controller.NeutralOffsetZ; // e.g. –45
+            var neutralZ = _controller.NeutralOffsetZ; // e.g. -45
             var targetZ = Mathf.Min(neutralZ * eff, neutralZ); // never inside neutral
 
             var newZ = Mathf.SmoothDamp(_controller.GetCameraDistance(), targetZ, ref _vel, _controller.ZoomSmoothTime, MaxZoomSpeed);    
         
             _controller.SetCameraDistance(newZ);
         
-            CSDebug.Log($"[CamZoom] {_zoomDir,3} | Ratio={ratio:0.#} → Eff={eff:0.#} " + $"TargetZ={targetZ:0.#} ActZ={newZ:0.#}");
+            CSDebug.Log($"[CamZoom] {_zoomDir,3} | Ratio={ratio:0.#} -> Eff={eff:0.#} " + $"TargetZ={targetZ:0.#} ActZ={newZ:0.#}");
 
             _prevRatio = ratio;
         }

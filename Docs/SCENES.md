@@ -9,12 +9,12 @@ Comprehensive documentation of all Unity scenes, game modes, and their related s
 The open-ended flying experience hosted in **Menu_Main** has two names depending on
 perspective: when you are *viewing* it from the menu (autopilot vessels drifting behind
 the UI) it is called the **lava lamp**; when you are *playing* it (tap the crystal,
-take control) it is called **freestyle**. One system, two names — there is no separate
+take control) it is called **freestyle**. One system, two names - there is no separate
 freestyle game.
 
 A standalone arcade game called "Freestyle" (`GameModes.Freestyle = 7`,
 `MinigameFreestyle.unity`, `SinglePlayerFreestyleController`) used to exist. It was a
-vestige of the pre-lava-lamp era and has been removed — do not reintroduce it. Its
+vestige of the pre-lava-lamp era and has been removed - do not reintroduce it. Its
 shape-drawing flow (planned for lava-lamp Phase 2) can be recovered from git history;
 the supporting scripts (`ShapeDrawingManager`, `SegmentSpawner`, spawnable shapes)
 remain in the codebase. `MultiplayerFreestyle (28)` is a separate multiplayer sandbox
@@ -31,7 +31,7 @@ game scene and still exists.
 | **Bootstrap** | 0 (must be first) | `_Scenes/Bootstrap.unity` | App entry point: DI registration, platform config, auth start, splash |
 | **Authentication** | 1 | `_Scenes/Authentication.unity` | Auth UI, cached session check, NetworkManager host start |
 | **Menu_Main** | 2 | `_Scenes/Menu_Main.unity` | Main menu with networked autopilot vessel, screen navigation |
-| **SplashScreen** | — | `_Scenes/SplashScreen.unity` | Optional splash screen (used by `SplashToAuthFlow`) |
+| **SplashScreen** | - | `_Scenes/SplashScreen.unity` | Optional splash screen (used by `SplashToAuthFlow`) |
 
 ### Single-Player Game Scenes
 
@@ -69,64 +69,64 @@ game scene and still exists.
 
 ```
 Bootstrap (build index 0)
-  │
-  ├─ AppManager [DefaultExecutionOrder(-100)]
-  │   ├─ DontDestroyOnLoad, platform config, DI registration
-  │   ├─ ApplicationStateMachine → Bootstrapping
-  │   ├─ StartAuthentication() (fire-and-forget)
-  │   └─ RunBootstrapAsync()
-  │       ├─ Minimum splash duration
-  │       ├─ ApplicationStateMachine → Authenticating
-  │       └─ Load Authentication scene
-  │
-  ▼
+  |
+  +- AppManager [DefaultExecutionOrder(-100)]
+  |   +- DontDestroyOnLoad, platform config, DI registration
+  |   +- ApplicationStateMachine -> Bootstrapping
+  |   +- StartAuthentication() (fire-and-forget)
+  |   +- RunBootstrapAsync()
+  |       +- Minimum splash duration
+  |       +- ApplicationStateMachine -> Authenticating
+  |       +- Load Authentication scene
+  |
+  v
 Authentication Scene
-  │
-  ├─ Check cached session → skip if already signed in
-  ├─ Guest login or auto-anonymous sign-in
-  ├─ Wait for PlayerDataService initialization
-  ├─ Username setup if needed
-  ├─ ApplicationStateMachine → MainMenu
-  ├─ Ensure NetworkManager host started
-  └─ Load Menu_Main as networked scene
-  │
-  ▼
+  |
+  +- Check cached session -> skip if already signed in
+  +- Guest login or auto-anonymous sign-in
+  +- Wait for PlayerDataService initialization
+  +- Username setup if needed
+  +- ApplicationStateMachine -> MainMenu
+  +- Ensure NetworkManager host started
+  +- Load Menu_Main as networked scene
+  |
+  v
 Menu_Main Scene (networked)
-  │
-  ├─ MainMenuController configures game data
-  ├─ DomainAssigner.Initialize()
-  ├─ MenuServerPlayerVesselInitializer spawns autopilot vessels
-  ├─ Menu sub-state: None → Initializing → Ready ↔ Freestyle
-  │
-  ├─ [Player selects game from Arcade screen]
-  │   └─ ArcadeGameConfigureModal → configure intensity/players/vessel
-  │       └─ OnStartGameClicked() → gameData.InvokeGameLaunch()
-  │
-  ▼
+  |
+  +- MainMenuController configures game data
+  +- DomainAssigner.Initialize()
+  +- MenuServerPlayerVesselInitializer spawns autopilot vessels
+  +- Menu sub-state: None -> Initializing -> Ready <-> Freestyle
+  |
+  +- [Player selects game from Arcade screen]
+  |   +- ArcadeGameConfigureModal -> configure intensity/players/vessel
+  |       +- OnStartGameClicked() -> gameData.InvokeGameLaunch()
+  |
+  v
 SceneLoader.LaunchGame()  [MonoBehaviour, Bootstrap DontDestroyOnLoad]
-  │
-  ├─ ApplicationStateMachine → LoadingGame
-  ├─ SetFadeImmediate(1f) — black screen
-  ├─ gameData.ResetRuntimeData()
-  └─ Load game scene (network or local)
-  │
-  ▼
+  |
+  +- ApplicationStateMachine -> LoadingGame
+  +- SetFadeImmediate(1f) - black screen
+  +- gameData.ResetRuntimeData()
+  +- Load game scene (network or local)
+  |
+  v
 Game Scene (e.g., MinigameHexRace)
-  │
-  ├─ MultiplayerMiniGameControllerBase.OnNetworkSpawn()
-  │   └─ [Server] SyncGameConfigToClients_ClientRpc — syncs game config to clients
-  ├─ Controller.OnNetworkSpawn() / Start()
-  ├─ InitializeGame() → spawn players + vessels
-  ├─ ApplicationStateMachine → InGame
-  ├─ SetupNewRound() → show Ready button
-  ├─ Gameplay loop (turns, rounds)
-  ├─ EndGame() → ApplicationStateMachine → GameOver
-  └─ Replay or ReturnToMainMenu
+  |
+  +- MultiplayerMiniGameControllerBase.OnNetworkSpawn()
+  |   +- [Server] SyncGameConfigToClients_ClientRpc - syncs game config to clients
+  +- Controller.OnNetworkSpawn() / Start()
+  +- InitializeGame() -> spawn players + vessels
+  +- ApplicationStateMachine -> InGame
+  +- SetupNewRound() -> show Ready button
+  +- Gameplay loop (turns, rounds)
+  +- EndGame() -> ApplicationStateMachine -> GameOver
+  +- Replay or ReturnToMainMenu
 ```
 
 ---
 
-## Core Application Scenes — Detailed
+## Core Application Scenes - Detailed
 
 ### Bootstrap Scene
 
@@ -148,8 +148,8 @@ The Bootstrap scene is always build index 0. It initializes the application plat
 Handles UGS authentication with auto-skip for cached sessions. Timeouts: cached auth (3s), player data (5s), safety (10s), network host (3s).
 
 **Flow**:
-1. Already signed in? → HandlePostAuthFlow → Menu_Main
-2. Try cached sign-in → success? → Menu_Main
+1. Already signed in? -> HandlePostAuthFlow -> Menu_Main
+2. Try cached sign-in -> success? -> Menu_Main
 3. Show auth panel (guest login button)
 4. Wait for PlayerDataService initialization
 5. Username setup if needed
@@ -166,19 +166,19 @@ The main menu runs as a networked scene. A vessel flies on autopilot in the back
 
 **Sub-state machine** (`MainMenuState`):
 ```
-None(0) → Initializing(1) → Ready(2) ⇄ Freestyle(4)
-                               │            │
-                               ▼            ▼
-                          LaunchingGame(3) ←─┘
+None(0) -> Initializing(1) -> Ready(2) <-> Freestyle(4)
+                               |            |
+                               v            v
+                          LaunchingGame(3) <--+
 ```
 
 **Key systems in Menu_Main**:
-- `MenuServerPlayerVesselInitializer` — spawns autopilot vessel for menu background
-- `MenuCrystalClickHandler` — toggles between autopilot and freestyle control
-- `MenuVesselSelectionPanelController` — network-aware vessel swapping
-- `ScreenSwitcher` — horizontal sliding panel navigation
-- `ArcadeLobbyList` / `FriendsListPanel` — party + social (invite) UI
-- `MenuMiniGameHUD` — freestyle HUD with vessel change trigger
+- `MenuServerPlayerVesselInitializer` - spawns autopilot vessel for menu background
+- `MenuCrystalClickHandler` - toggles between autopilot and freestyle control
+- `MenuVesselSelectionPanelController` - network-aware vessel swapping
+- `ScreenSwitcher` - horizontal sliding panel navigation
+- `ArcadeLobbyList` / `FriendsListPanel` - party + social (invite) UI
+- `MenuMiniGameHUD` - freestyle HUD with vessel change trigger
 - Game UI container with `CanvasGroup` for freestyle fade in/out
 
 ---
@@ -187,46 +187,46 @@ None(0) → Initializing(1) → Ready(2) ⇄ Freestyle(4)
 
 ```
 MiniGameControllerBase (abstract, NetworkBehaviour)
-│   Template Method: rounds → turns → countdown → gameplay → end
-│   Properties: numberOfRounds, numberOfTurnsPerRound, UseGolfRules, HasEndGame
-│
-├── SinglePlayerMiniGameControllerBase (abstract)
-│   │   Start(): subscribe to SOAP events, InitializeGame(), InvokeClientReady()
-│   │
-│   ├── SinglePlayerCellularDuelController — vessel swap on turn end (2-player vs AI)
-│   ├── SinglePlayerSlipnStrideController  — procedural course with intensity scaling
-│   ├── SinglePlayerWildlifeBlitzController — blitz scoring with wildlife turn monitor
-│   └── WildlifeBlitzMiniGame             — minimal variant of wildlife blitz
-│
-└── MultiplayerMiniGameControllerBase (abstract, NetworkBehaviour)
-    │   OnNetworkSpawn(): server-authoritative setup + InitDelayMs (1000ms)
-    │   Server-driven turn/round/game flow via ClientRpc synchronization
-    │   Replay + Rematch systems via ServerRpc/ClientRpc
-    │
-    ├── MultiplayerFreestyleController     — per-player activation, player removal protocol
-    ├── MultiplayerWildlifeBlitzMiniGame    — own ready-sync (not domain-based)
-    │
-    └── MultiplayerDomainGamesController
-        │   Ready synchronization: all players must click Ready before countdown
-        │   Domain (team) stat calculation on game end
-        │   Player disconnect handling via session events
-        │
-        ├── HexRaceController              — deterministic track, crystal race, golf scoring
-        ├── MultiplayerJoustController      — collision tracking, server-authoritative winner, golf scoring
-        ├── MultiplayerCellularDuelController — vessel ownership swap between rounds
-        ├── MultiplayerCrystalCaptureController — minimal subclass (1 round, 1 turn)
-        └── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
+|   Template Method: rounds -> turns -> countdown -> gameplay -> end
+|   Properties: numberOfRounds, numberOfTurnsPerRound, UseGolfRules, HasEndGame
+|
++-- SinglePlayerMiniGameControllerBase (abstract)
+|   |   Start(): subscribe to SOAP events, InitializeGame(), InvokeClientReady()
+|   |
+|   +-- SinglePlayerCellularDuelController - vessel swap on turn end (2-player vs AI)
+|   +-- SinglePlayerSlipnStrideController  - procedural course with intensity scaling
+|   +-- SinglePlayerWildlifeBlitzController - blitz scoring with wildlife turn monitor
+|   +-- WildlifeBlitzMiniGame             - minimal variant of wildlife blitz
+|
++-- MultiplayerMiniGameControllerBase (abstract, NetworkBehaviour)
+    |   OnNetworkSpawn(): server-authoritative setup + InitDelayMs (1000ms)
+    |   Server-driven turn/round/game flow via ClientRpc synchronization
+    |   Replay + Rematch systems via ServerRpc/ClientRpc
+    |
+    +-- MultiplayerFreestyleController     - per-player activation, player removal protocol
+    +-- MultiplayerWildlifeBlitzMiniGame    - own ready-sync (not domain-based)
+    |
+    +-- MultiplayerDomainGamesController
+        |   Ready synchronization: all players must click Ready before countdown
+        |   Domain (team) stat calculation on game end
+        |   Player disconnect handling via session events
+        |
+        +-- HexRaceController              - deterministic track, crystal race, golf scoring
+        +-- MultiplayerJoustController      - collision tracking, server-authoritative winner, golf scoring
+        +-- MultiplayerCellularDuelController - vessel ownership swap between rounds
+        +-- MultiplayerCrystalCaptureController - minimal subclass (1 round, 1 turn)
+        +-- AstroLeagueController             - hypersea soccer, server-simulated ball, golden goal
 ```
 
 ---
 
-## Game Modes — Complete Reference
+## Game Modes - Complete Reference
 
 ### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
 
 | ID | Mode | Category | Has Scene | Has Controller |
 |---|---|---|---|---|
-| 0 | `Random` | Meta | — | — |
+| 0 | `Random` | Meta | - | - |
 | 1 | `Elimination` | SP Arcade | Shared | Scene-configured |
 | 2 | `Rampage` | SP Arcade | Shared | Scene-configured |
 | 3 | `Darts` | SP Arcade | Shared | Scene-configured |
@@ -262,7 +262,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | 35 | `MultiplayerCrystalCapture` | MP | MinigameCrystalCaptureMultiplayer_Gameplay | `MultiplayerCrystalCaptureController` |
 | 37 | `AstroLeague` | MP | MinigameAstroLeague | `AstroLeagueController` |
 
-Note: IDs 7 and 31 are skipped in the enum. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp — see the naming note at the top of this document). Many single-player arcade modes (1-6, 9-25, 27) share scenes configured by `SO_ArcadeGame` assets rather than having dedicated scene files; they use the same underlying scene infrastructure with different turn monitors, scoring, and environment configurations.
+Note: IDs 7 and 31 are skipped in the enum. 31 was never assigned; 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp - see the naming note at the top of this document). Many single-player arcade modes (1-6, 9-25, 27) share scenes configured by `SO_ArcadeGame` assets rather than having dedicated scene files; they use the same underlying scene infrastructure with different turn monitors, scoring, and environment configurations.
 
 ---
 
@@ -270,18 +270,18 @@ Note: IDs 7 and 31 are skipped in the enum. 31 was never assigned; 7 was the ret
 
 ### Freestyle (Menu_Main lava lamp)
 
-Freestyle is not a standalone game — it is the playable side of the Menu_Main lava lamp
+Freestyle is not a standalone game - it is the playable side of the Menu_Main lava lamp
 (see the naming note at the top of this document and the "Lava-Lamp Mode" section of
 CLAUDE.md). Tap the crystal in Menu_Main to take control of your vessel; tap the center
 to return to autopilot/menu.
 
-The retired standalone game's shape-drawing flow (collision → freeze player → nuke
-environment → shape preview → countdown → draw shape → evaluate → restore environment)
+The retired standalone game's shape-drawing flow (collision -> freeze player -> nuke
+environment -> shape preview -> countdown -> draw shape -> evaluate -> restore environment)
 is planned to return as lava-lamp Phase 2. The supporting scripts still exist:
 
-- `ShapeDrawingManager` — manages shape preview → draw → score flow
-- `SegmentSpawner.cs` — spawns trail segments with shape triggers
-- `SinglePlayerFreestyleController.cs` — removed; recover the flow from git history when porting
+- `ShapeDrawingManager` - manages shape preview -> draw -> score flow
+- `SegmentSpawner.cs` - spawns trail segments with shape triggers
+- `SinglePlayerFreestyleController.cs` - removed; recover the flow from git history when porting
 
 ### Cellular Duel (Single-Player)
 
@@ -293,7 +293,7 @@ Two-player duel where the player alternates between two vessels (playing both si
 
 **Key features**:
 - `ShouldResetPlayersOnTurnEnd => true`
-- `gameData.SwapVessels()` on turn end — player plays from both perspectives
+- `gameData.SwapVessels()` on turn end - player plays from both perspectives
 - Ready button shown at start of each round
 
 ### Wildlife Blitz (Single-Player)
@@ -305,9 +305,9 @@ Two-player duel where the player alternates between two vessels (playing both si
 Blitz-mode wildlife collection with dedicated score tracking and turn monitoring.
 
 **Key features**:
-- `SinglePlayerWildlifeBlitzScoreTracker` — dedicated score tracker
-- `SingleplayerWildlifeBlitzTurnMonitor` — wildlife-specific end condition
-- `TimeBasedTurnMonitor` — time-based alternative (currently commented out)
+- `SinglePlayerWildlifeBlitzScoreTracker` - dedicated score tracker
+- `SingleplayerWildlifeBlitzTurnMonitor` - wildlife-specific end condition
+- `TimeBasedTurnMonitor` - time-based alternative (currently commented out)
 - Score reset on initialization and replay
 
 ### SlipNStride (Single-Player)
@@ -321,7 +321,7 @@ Procedurally generated trail-based course with intensity-driven difficulty scali
 - Procedural course via `SegmentSpawner` with configurable seed
 - Intensity scaling: `numberOfSegments = base * Intensity`, `straightLineLength = base / Intensity`
 - Optional `SpawnableHelix` for spiral geometry: `radius = Intensity / 1.3`
-- `resetEnvironmentOnEachTurn` — configurable course regeneration per turn
+- `resetEnvironmentOnEachTurn` - configurable course regeneration per turn
 - Deterministic replay via fixed seed field
 
 ### HexRace (Multiplayer)
@@ -331,14 +331,14 @@ Procedurally generated trail-based course with intensity-driven difficulty scali
 **Base**: `MultiplayerDomainGamesController`
 **See also**: `Assets/_Scripts/Controller/Arcade/HEXRACE.md`
 
-Competitive 1-4 player crystal-collection racing. Single unified scene — no separate singleplayer scene. Solo play uses AI backfill via `ServerPlayerVesselInitializerWithAI`.
+Competitive 1-4 player crystal-collection racing. Single unified scene - no separate singleplayer scene. Solo play uses AI backfill via `ServerPlayerVesselInitializerWithAI`.
 
 **Key features**:
 - Server-authoritative winner determination with `_raceEnded` guard
-- Deterministic track: server seed → `_netTrackSeed` NetworkVariable → identical tracks on all clients
+- Deterministic track: server seed -> `_netTrackSeed` NetworkVariable -> identical tracks on all clients
 - Crystal target: 39 default, synced via `_netCrystalsToFinish` NetworkVariable
 - Golf scoring: winner = race time (seconds), loser = `10000 + crystalsRemaining`
-- `ElementalComebackSystem` — buffs losing players based on crystal deficit
+- `ElementalComebackSystem` - buffs losing players based on crystal deficit
 - Replay: `OnResetForReplayCustom()` generates new track seed
 
 **NetworkVariables**: `_netTrackSeed`, `_netCrystalsToFinish`, `_netCrystalCollisions`
@@ -366,7 +366,7 @@ Competitive 1-4 player crystal-collection racing. Single unified scene — no se
 Collision-based competitive duel. Players collide with each other; first to reach the collision threshold wins.
 
 **Key features**:
-- `UseGolfRules => true` — lower score = better
+- `UseGolfRules => true` - lower score = better
 - Server-authoritative collision tracking: clients report via ServerRpc, server monotonically updates counts
 - Winner score = elapsed time; loser score = 99999
 - `JoustCollisionTurnMonitor` with `CollisionsNeeded` threshold
@@ -392,12 +392,12 @@ Networked vessel-swapping duel for exactly 2 players. Between rounds, players sw
 **Controller**: `MultiplayerCrystalCaptureController`
 **Base**: `MultiplayerDomainGamesController`
 
-Minimal domain games subclass — 1 round, 1 turn. Crystal collection goal. All game logic is inherited from base classes + scene-placed turn monitors.
+Minimal domain games subclass - 1 round, 1 turn. Crystal collection goal. All game logic is inherited from base classes + scene-placed turn monitors.
 
 **Key features**:
-- `UseGolfRules => false` — higher score = better
+- `UseGolfRules => false` - higher score = better
 - 1 round, 1 turn (set in `OnNetworkSpawn`)
-- Near-empty subclass — all flow inherited from `MultiplayerDomainGamesController`
+- Near-empty subclass - all flow inherited from `MultiplayerDomainGamesController`
 
 ### Astro League
 
@@ -405,10 +405,10 @@ Minimal domain games subclass — 1 round, 1 turn. Crystal collection goal. All 
 **Controller**: `AstroLeagueController`
 **Base**: `MultiplayerDomainGamesController`
 
-Hypersea soccer (Rocket League-inspired) — two domains slam a server-simulated billiard ball through the opposing goal portal. Match clock with mercy rule and golden-goal overtime. See `Assets/_Scripts/Controller/Arcade/ASTROLEAGUE.md` for the full technical reference.
+Hypersea soccer (Rocket League-inspired) - two domains slam a server-simulated billiard ball through the opposing goal portal. Match clock with mercy rule and golden-goal overtime. See `Assets/_Scripts/Controller/Arcade/ASTROLEAGUE.md` for the full technical reference.
 
 **Key features**:
-- `UseGolfRules => false` — domain with the highest goal sum wins; per-player `Score` = personal `GoalsScored`
+- `UseGolfRules => false` - domain with the highest goal sum wins; per-player `Score` = personal `GoalsScored`
 - Exactly 2 domains, pinned via `SO_ArcadeGame.MinDomainsAllowed/MaxDomainsAllowed = 2`
 - Server-authoritative ball (`AstroLeagueBall` NetworkVariables + client dead reckoning), goal attribution by last non-defending striker (own goals credit the opponent)
 - `UseSceneReloadForReplay => true`
@@ -447,11 +447,11 @@ Co-op wildlife blitz with its own ready synchronization pattern.
 
 ### Data Flow Layers
 
-1. **`SO_ArcadeGame` asset** — static config: mode, scene name, multiplayer flag, captains, min/max players/intensity, scoring rules
-2. **`ArcadeGameConfigSO`** — ephemeral runtime state: player's chosen game + intensity + player count + vessel
-3. **`GameDataSO`** — shared SOAP runtime state: scene name, game mode, vessel class, player count, AI backfill, intensity, all SOAP events
-4. **`SceneLoader`** — MonoBehaviour singleton in Bootstrap (DontDestroyOnLoad). Subscribes to `OnLaunchGame`, `OnClickToMainMenuButton`, `OnActiveSessionEnd`, `OnClickToRestartButton` via SOAP code subscriptions. Game config sync to clients handled by `MultiplayerMiniGameControllerBase.OnNetworkSpawn()`
-5. **Game controller** — scene-placed `MiniGameControllerBase` subclass drives the turn/round/game lifecycle
+1. **`SO_ArcadeGame` asset** - static config: mode, scene name, multiplayer flag, captains, min/max players/intensity, scoring rules
+2. **`ArcadeGameConfigSO`** - ephemeral runtime state: player's chosen game + intensity + player count + vessel
+3. **`GameDataSO`** - shared SOAP runtime state: scene name, game mode, vessel class, player count, AI backfill, intensity, all SOAP events
+4. **`SceneLoader`** - MonoBehaviour singleton in Bootstrap (DontDestroyOnLoad). Subscribes to `OnLaunchGame`, `OnClickToMainMenuButton`, `OnActiveSessionEnd`, `OnClickToRestartButton` via SOAP code subscriptions. Game config sync to clients handled by `MultiplayerMiniGameControllerBase.OnNetworkSpawn()`
+5. **Game controller** - scene-placed `MiniGameControllerBase` subclass drives the turn/round/game lifecycle
 
 ### SO_ArcadeGame Configuration
 
@@ -472,44 +472,44 @@ SO_ArcadeGame assets are registered in `SO_GameList` ScriptableObject assets at 
 
 ```
 ArcadeExploreView.SelectGame(game)
-  └─ ArcadeGameConfigureModal.SetSelectedGame(game)
-      ├─ Build available vessels from game.Captains
-      ├─ Initialize config defaults (intensity, player count)
-      └─ Show configuration screens
+  +- ArcadeGameConfigureModal.SetSelectedGame(game)
+      +- Build available vessels from game.Captains
+      +- Initialize config defaults (intensity, player count)
+      +- Show configuration screens
 
 Player configures and clicks "Start Game"
-  └─ ArcadeGameConfigureModal.OnStartGameClicked()
-      ├─ SyncAllGameDataForLaunch():
-      │   ├─ gameData.SceneName = selectedGame.SceneName
-      │   ├─ gameData.GameMode = selectedGame.Mode
-      │   ├─ gameData.IsMultiplayerMode = selectedGame.IsMultiplayer
-      │   ├─ gameData.SelectedPlayerCount = humanCount (party members)
-      │   ├─ gameData.RequestedAIBackfillCount = max(0, configPlayerCount - humanCount)
-      │   │   └─ If multiplayer + solo + aiBackfill < 1 → force aiBackfill = 1
-      │   └─ gameData.ActiveSession = HostConnectionService.PartySession
-      └─ gameData.InvokeGameLaunch() → OnLaunchGame SOAP event
+  +- ArcadeGameConfigureModal.OnStartGameClicked()
+      +- SyncAllGameDataForLaunch():
+      |   +- gameData.SceneName = selectedGame.SceneName
+      |   +- gameData.GameMode = selectedGame.Mode
+      |   +- gameData.IsMultiplayerMode = selectedGame.IsMultiplayer
+      |   +- gameData.SelectedPlayerCount = humanCount (party members)
+      |   +- gameData.RequestedAIBackfillCount = max(0, configPlayerCount - humanCount)
+      |   |   +- If multiplayer + solo + aiBackfill < 1 -> force aiBackfill = 1
+      |   +- gameData.ActiveSession = HostConnectionService.PartySession
+      +- gameData.InvokeGameLaunch() -> OnLaunchGame SOAP event
 
 SceneLoader.LaunchGame() [MonoBehaviour, Bootstrap DontDestroyOnLoad, subscribed to OnLaunchGame]
-  ├─ PauseSystem.TogglePauseGame(false)
-  ├─ ApplicationStateMachine → LoadingGame
-  ├─ SceneTransitionManager.SetFadeImmediate(1f) — black screen
-  └─ LoadSceneAsync(sceneName)
+  +- PauseSystem.TogglePauseGame(false)
+  +- ApplicationStateMachine -> LoadingGame
+  +- SceneTransitionManager.SetFadeImmediate(1f) - black screen
+  +- LoadSceneAsync(sceneName)
       Note: Game config sync to clients now handled by
       MultiplayerMiniGameControllerBase.OnNetworkSpawn() in the game scene
-      ├─ gameData.ResetRuntimeData()
-      ├─ Wait 0.5s for RPC delivery
-      └─ Host-driven Netcode scene load (local fallback only if no NetworkManager)
+      +- gameData.ResetRuntimeData()
+      +- Wait 0.5s for RPC delivery
+      +- Host-driven Netcode scene load (local fallback only if no NetworkManager)
 ```
 
 ---
 
 ## Turn Monitor System
 
-Turn monitors determine when a turn ends. They are scene-placed components managed by `TurnMonitorController` (unified class — handles both singleplayer via `OnEnable` and multiplayer via `OnNetworkSpawn`).
+Turn monitors determine when a turn ends. They are scene-placed components managed by `TurnMonitorController` (unified class - handles both singleplayer via `OnEnable` and multiplayer via `OnNetworkSpawn`).
 
 | Monitor | File | Trigger Condition |
 |---|---|---|
-| `TimeBasedTurnMonitor` | `TurnMonitors/` | Elapsed time ≥ duration |
+| `TimeBasedTurnMonitor` | `TurnMonitors/` | Elapsed time >= duration |
 | `NetworkTimeBasedTurnMonitor` | `TurnMonitors/` | Network-aware time-based |
 | `CrystalCollisionTurnMonitor` | `TurnMonitors/` | Player collects N crystals |
 | `NetworkCrystalCollisionTurnMonitor` | `TurnMonitors/` | Network-aware crystal collection |
@@ -554,31 +554,31 @@ All turn monitors live in `Assets/_Scripts/Controller/Arcade/TurnMonitors/`.
 
 ```
 ServerPlayerVesselInitializerWithAI.OnNetworkSpawn()
-  ├─ Pre-spawn AI players (RequestedAIBackfillCount)
-  └─ Subscribe to OnPlayerNetworkSpawnedUlong
-      └─ HandlePlayerNetworkSpawned() → SpawnVesselForPlayer()
-          └─ ClientPlayerVesselInitializer.InitializePlayerAndVessel()
+  +- Pre-spawn AI players (RequestedAIBackfillCount)
+  +- Subscribe to OnPlayerNetworkSpawnedUlong
+      +- HandlePlayerNetworkSpawned() -> SpawnVesselForPlayer()
+          +- ClientPlayerVesselInitializer.InitializePlayerAndVessel()
 ```
 
 ### Menu_Main Scene
 
 ```
 MenuServerPlayerVesselInitializer.OnNetworkSpawn()
-  └─ ProcessPreExistingPlayers() (catches host Player from Auth scene)
-      └─ Override: ActivateAutopilot() after base spawn
-          ├─ player.StartPlayer()
-          ├─ Vessel.ToggleAIPilot(true)
-          └─ InputController.SetPause(true)
+  +- ProcessPreExistingPlayers() (catches host Player from Auth scene)
+      +- Override: ActivateAutopilot() after base spawn
+          +- player.StartPlayer()
+          +- Vessel.ToggleAIPilot(true)
+          +- InputController.SetPause(true)
 ```
 
 ### Single-Player Scenes
 
 ```
 MiniGamePlayerSpawnerAdapter.InitializeGame() [on OnInitializeGame]
-  └─ PlayerSpawner.SpawnPlayerAndShip(data)
-      ├─ Instantiate player + DI inject
-      ├─ VesselSpawner.SpawnShip(vesselClass)
-      └─ player.InitializeForSinglePlayerMode(data, vessel)
+  +- PlayerSpawner.SpawnPlayerAndShip(data)
+      +- Instantiate player + DI inject
+      +- VesselSpawner.SpawnShip(vesselClass)
+      +- player.InitializeForSinglePlayerMode(data, vessel)
 ```
 
 ---

@@ -9,7 +9,7 @@ using System.IO;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Integration tests that verify the Bootstrap → Authentication → Menu_Main
+    /// Integration tests that verify the Bootstrap -> Authentication -> Menu_Main
     /// scene flow is correctly wired across all configuration assets and code.
     ///
     /// Scene names are centralized in <see cref="CosmicShore.Utility.SceneNameListSO"/>,

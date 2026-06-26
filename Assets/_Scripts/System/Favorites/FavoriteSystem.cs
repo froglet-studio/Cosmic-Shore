@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Data;
@@ -14,7 +14,7 @@ namespace CosmicShore.Core
         const string GameFavoritesSaveFileName = "game_favorites.data";
 
         /// <summary>Raised after a favorite toggle. Args: (game, isNowFavorited).
-        /// AnalyticsServiceFacade subscribes — keeps this static utility decoupled from UI.</summary>
+        /// AnalyticsServiceFacade subscribes - keeps this static utility decoupled from UI.</summary>
         public static event Action<GameModes, bool> OnFavoriteChanged;
 
         public static void Init()

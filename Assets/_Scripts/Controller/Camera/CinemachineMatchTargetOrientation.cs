@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// Operates at the Aim pipeline stage: CinemachineFollow handles position (Body),
     /// then this extension computes orientation from the resulting camera position.
     /// During CinemachineBrain blends, the Brain interpolates between vCam CameraStates
-    /// so transitions remain smooth — and because the look direction shifts naturally
+    /// so transitions remain smooth - and because the look direction shifts naturally
     /// as position interpolates, rotation and position transition simultaneously.
     /// </summary>
     [AddComponentMenu("")] // Added programmatically by MainMenuCameraController
@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
 
             // LookAt rotation from the computed camera position toward the follow target.
             // This matches CustomCameraController.SnapToTarget()'s SafeLookRotation so the
-            // bridge→PlayerCam handoff has zero rotation discontinuity.
+            // bridge->PlayerCam handoff has zero rotation discontinuity.
             var dir = target.position - state.GetFinalPosition();
             if (dir.sqrMagnitude < 0.001f) return;
 

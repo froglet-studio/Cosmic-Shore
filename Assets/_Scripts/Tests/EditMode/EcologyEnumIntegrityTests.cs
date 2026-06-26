@@ -9,9 +9,9 @@ namespace CosmicShore.Tests
     /// <summary>
     /// Serialization-drift guards for the ecology enums. Unity serializes enums by
     /// integer value, so reordering or renumbering these silently corrupts every
-    /// prefab/asset field that stores them — e.g. `FaunaDiet` is serialized on the
+    /// prefab/asset field that stores them - e.g. `FaunaDiet` is serialized on the
     /// fauna prefabs (`diet: 1` = Predator), and `CellPhase`/`CellAggressionLevel`
-    /// drive flora/fauna gating. These lock the integer ↔ name mapping.
+    /// drive flora/fauna gating. These lock the integer <-> name mapping.
     /// </summary>
     [TestFixture]
     public class EcologyEnumIntegrityTests
@@ -24,18 +24,18 @@ namespace CosmicShore.Tests
         public void FaunaDiet_HasCorrectIntegerValue(FaunaDiet diet, int expected)
         {
             Assert.AreEqual(expected, (int)diet,
-                $"FaunaDiet.{diet} changed value — breaks the serialized `diet:` field on fauna prefabs.");
+                $"FaunaDiet.{diet} changed value - breaks the serialized `diet:` field on fauna prefabs.");
         }
 
         [Test]
         public void FaunaDiet_HasExpectedMemberCount()
         {
             Assert.AreEqual(2, Enum.GetValues(typeof(FaunaDiet)).Length,
-                "FaunaDiet member count changed — update tests + any diet switch logic.");
+                "FaunaDiet member count changed - update tests + any diet switch logic.");
         }
 
         // ---- CellPhase (drives flora growth + fauna aggression) ----
-        // 3-phase ladder since the steady-until-frenzy collapse (Docs/ECOSYSTEM.md §0/§5):
+        // 3-phase ladder since the steady-until-frenzy collapse (Docs/ECOSYSTEM.md Sec 0/Sec 5):
         // phase maps 1:1 onto CellAggressionLevel.
 
         [Test]
@@ -46,14 +46,14 @@ namespace CosmicShore.Tests
         public void CellPhase_HasCorrectIntegerValue(CellPhase phase, int expected)
         {
             Assert.AreEqual(expected, (int)phase,
-                $"CellPhase.{phase} changed value — breaks CellNetworkSync replication + phase-gated assets.");
+                $"CellPhase.{phase} changed value - breaks CellNetworkSync replication + phase-gated assets.");
         }
 
         [Test]
         public void CellPhase_HasExpectedMemberCount()
         {
             Assert.AreEqual(4, Enum.GetValues(typeof(CellPhase)).Length,
-                "CellPhase member count changed — update tests, CellPhaseThresholds, and the aggression map.");
+                "CellPhase member count changed - update tests, CellPhaseThresholds, and the aggression map.");
         }
 
         [Test]
@@ -75,7 +75,7 @@ namespace CosmicShore.Tests
         {
             // Cast to int is used to index aggression-scaled arrays in Fauna/LightFauna.
             Assert.AreEqual(expected, (int)level,
-                $"CellAggressionLevel.{level} changed value — breaks the aggression-indexed multiplier arrays.");
+                $"CellAggressionLevel.{level} changed value - breaks the aggression-indexed multiplier arrays.");
         }
 
         [Test]
@@ -90,7 +90,7 @@ namespace CosmicShore.Tests
         {
             var values = Enum.GetValues(typeof(T)).Cast<int>().ToList();
             var dupes = values.GroupBy(v => v).Where(g => g.Count() > 1).Select(g => g.Key);
-            Assert.IsEmpty(dupes, $"Duplicate integer values in {typeof(T).Name} — ambiguous deserialization.");
+            Assert.IsEmpty(dupes, $"Duplicate integer values in {typeof(T).Name} - ambiguous deserialization.");
         }
     }
 }

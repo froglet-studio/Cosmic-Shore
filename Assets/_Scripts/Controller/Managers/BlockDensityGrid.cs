@@ -11,29 +11,29 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Burst job that finds the densest region of a flattened count grid.
     ///
-    /// Pipeline (proven by DensityPartitionBenchmark + DensityPartitionTemporalSim —
-    /// see Docs/DENSITY_PARTITIONING_AUDIT.md §6/§7):
-    ///   1. Separable 3D box filter (sliding window — O(N³) per pass, independent
+    /// Pipeline (proven by DensityPartitionBenchmark + DensityPartitionTemporalSim -
+    /// see Docs/DENSITY_PARTITIONING_AUDIT.md Sec 6/Sec 7):
+    ///   1. Separable 3D box filter (sliding window - O(N^3) per pass, independent
     ///      of kernel width) of the raw counts into a smoothed float field.
     ///   2. Argmax over the smoothed field.
     ///   3. Parabolic sub-voxel interpolation around the peak, so the answer is
     ///      not quantized to the grid stride.
     ///   4. Mean-shift refinement over the RAW counts: iteratively move the answer
     ///      to the centroid of mass within the kernel radius. This is what makes
-    ///      the target TRACK remaining mass as fauna consume a cluster's core —
+    ///      the target TRACK remaining mass as fauna consume a cluster's core -
     ///      without it the answer stays pinned to the (smoothed) cluster centre
     ///      even after the centre has been eaten hollow, and consumption stalls
     ///      (the temporal sim's "plateau at Frenzy" failure mode).
     ///
     /// Outputs: result[0] = world-space densest point;
-    ///          resultMeta[0] = peak smoothed density (0 ⇒ the grid is empty).
+    ///          resultMeta[0] = peak smoothed density (0 => the grid is empty).
     /// </summary>
     [BurstCompile]
     public struct FindDensestRegionJob : IJob
     {
-        [ReadOnly] public NativeArray<ushort> values; // flattened raw counts, length dim³
-        public NativeArray<float> bufA;               // scratch, length dim³
-        public NativeArray<float> bufB;               // scratch, length dim³
+        [ReadOnly] public NativeArray<ushort> values; // flattened raw counts, length dim^3
+        public NativeArray<float> bufA;               // scratch, length dim^3
+        public NativeArray<float> bufB;               // scratch, length dim^3
         public NativeArray<float3> result;            // result[0] = world-space densest point
         public NativeArray<float> resultMeta;         // resultMeta[0] = peak smoothed density
 
@@ -152,7 +152,7 @@ namespace CosmicShore.Gameplay
                     total += v;
                 }
 
-                if (total < 1e-3f) break;          // no mass in reach — keep the interp answer
+                if (total < 1e-3f) break;          // no mass in reach - keep the interp answer
                 float3 next = weighted / total;
                 if (math.distancesq(next, seed) < 1e-6f) { seed = next; break; } // converged
                 seed = next;
@@ -180,7 +180,7 @@ namespace CosmicShore.Gameplay
             return new float3(a, b, c);
         }
 
-        /// <summary>Continuous offset of a parabolic peak through (a,b,c) at (-1,0,+1), clamped to ±0.5.</summary>
+        /// <summary>Continuous offset of a parabolic peak through (a,b,c) at (-1,0,+1), clamped to +/-0.5.</summary>
         static float ParabolicOffset(float3 abc)
         {
             float a = abc.x, b = abc.y, c = abc.z;
@@ -194,15 +194,15 @@ namespace CosmicShore.Gameplay
     public class BlockDensityGrid
     {
         // ------------------------------------------------------------------
-        //  Physical constants — all tied to the swarm-effective consumption
-        //  scale, NOT to the grid or the cell. See the audit §6/§7: the swarm
+        //  Physical constants - all tied to the swarm-effective consumption
+        //  scale, NOT to the grid or the cell. See the audit Sec 6/Sec 7: the swarm
         //  (consumeRadius 40-72m + boid-separation spread) collectively covers
         //  a ~150m-radius volume, so that is the scale the algorithm samples
         //  density at, and the voxel size resolves features at half that scale.
         // ------------------------------------------------------------------
 
         /// <summary>
-        /// Physical smoothing-kernel radius in metres — the swarm-effective
+        /// Physical smoothing-kernel radius in metres - the swarm-effective
         /// consumption volume (consumeRadius + boid separation spread). The
         /// box-filter half-width in voxels is derived from this and the stride,
         /// so the smoothing scale stays physical regardless of cell size.
@@ -210,12 +210,12 @@ namespace CosmicShore.Gameplay
         public const float SmoothingRadiusMeters = 150f;
 
         /// <summary>
-        /// Target physical voxel size in metres — half the smoothing kernel
+        /// Target physical voxel size in metres - half the smoothing kernel
         /// (Nyquist: voxels at half the kernel scale resolve features at the
         /// kernel scale). Grid resolution is derived per cell from this, so a
         /// 2400m Blob cell gets ~33 points/axis (~75m voxels) while a small
-        /// cell gets proportionally fewer. The previous fixed 17³ resolution
-        /// gave 141m voxels at Blob-cell scale — coarse enough that an entire
+        /// cell gets proportionally fewer. The previous fixed 17^3 resolution
+        /// gave 141m voxels at Blob-cell scale - coarse enough that an entire
         /// flora cluster fit in one voxel, so the argmax could not shift as
         /// fauna depleted the cluster's core (temporal sim: "MID plateaus").
         /// </summary>
@@ -225,8 +225,8 @@ namespace CosmicShore.Gameplay
         public const int MinGridPointsPerDimension = 9;
 
         /// <summary>
-        /// Resolution ceiling for memory safety. 33³ = 35,937 voxels:
-        /// ushort counts (72KB) + two float scratch buffers (288KB) ≈ 360KB
+        /// Resolution ceiling for memory safety. 33^3 = 35,937 voxels:
+        /// ushort counts (72KB) + two float scratch buffers (288KB) ~ 360KB
         /// per grid, ~1.4MB per cell (4 grids).
         /// </summary>
         public const int MaxGridPointsPerDimension = 33;
@@ -237,7 +237,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Minimum seconds between job runs while the grid is changing. Fauna
         /// re-query their goal every 0.5-2s, so a 0.25s-stale answer is
-        /// indistinguishable from an exact one — but this bound turns
+        /// indistinguishable from an exact one - but this bound turns
         /// "every fauna's query runs the job" (100s of redundant runs/sec at
         /// production population scale) into "at most 4 runs/sec per grid".
         /// </summary>
@@ -250,7 +250,7 @@ namespace CosmicShore.Gameplay
 
         protected int nGridPointsPerDimension;
         protected int kernelHalfWidth;
-        protected NativeArray<ushort> jobValues;   // sole count storage — written directly by Add/RemoveBlock
+        protected NativeArray<ushort> jobValues;   // sole count storage - written directly by Add/RemoveBlock
         protected NativeArray<float> jobBufA;
         protected NativeArray<float> jobBufB;
         protected NativeArray<float3> jobResult;
@@ -261,8 +261,8 @@ namespace CosmicShore.Gameplay
         // The answer only changes when blocks are added/removed (dirty flag), and
         // even then fauna can tolerate MinRecomputeIntervalSeconds of staleness.
         // Without this, every fauna's GetExplosionTarget call re-ran the full job
-        // on identical data — at production population scale (4 fauna per 100
-        // prisms ⇒ 100s of fauna) that was 100s of redundant job runs per second.
+        // on identical data - at production population scale (4 fauna per 100
+        // prisms => 100s of fauna) that was 100s of redundant job runs per second.
         bool dirty = true;
         bool hasCachedResult = false;
         Vector3 cachedResult;
@@ -271,7 +271,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Peak smoothed density found by the most recent job run. 0 means the grid
-        /// was empty — callers should fall back to their anchor position instead of
+        /// was empty - callers should fall back to their anchor position instead of
         /// using the returned location.
         /// </summary>
         public float LastResultDensity => cachedResultDensity;
@@ -283,8 +283,8 @@ namespace CosmicShore.Gameplay
         /// Initialize the grid to cover a cube of side <paramref name="worldDiameter"/>
         /// centered on <paramref name="cellCenter"/>.
         ///
-        /// Sizing the grid to the owning cell — instead of the old hard-coded
-        /// 1000m cube anchored at world origin — is the structural fix for the
+        /// Sizing the grid to the owning cell - instead of the old hard-coded
+        /// 1000m cube anchored at world origin - is the structural fix for the
         /// production grid being blind to ~86% of a 1200m-radius cell's volume.
         /// Resolution is derived from TargetVoxelSizeMeters so the voxel size is
         /// a physical constant rather than a fraction of the cell size.
@@ -316,7 +316,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Releases the persistent NativeArrays. Plain C# class — the owning Cell
+        /// Releases the persistent NativeArrays. Plain C# class - the owning Cell
         /// must call this explicitly when discarding a grid.
         /// </summary>
         public void Dispose()
@@ -357,7 +357,7 @@ namespace CosmicShore.Gameplay
         {
             if (!jobSystemInitialized) return 0;
             Vector3Int idx = MapCoordinatesToGridIndices(coords);
-            // Bounds guard — FindDensestRegion returns sub-voxel positions and
+            // Bounds guard - FindDensestRegion returns sub-voxel positions and
             // arbitrary callers may pass world points outside the grid. Out-of-grid
             // is density 0 (the caller's "fall back to anchor" path).
             if (!InBounds(idx)) return 0;
@@ -373,10 +373,10 @@ namespace CosmicShore.Gameplay
                 return origin + Vector3.one * (totalLength / 2f); // grid center fallback
 
             // Cache policy:
-            //  - clean (no block changes since last run) → exact cached answer
-            //  - dirty but computed < MinRecomputeIntervalSeconds ago → cached answer
+            //  - clean (no block changes since last run) -> exact cached answer
+            //  - dirty but computed < MinRecomputeIntervalSeconds ago -> cached answer
             //    (bounded staleness, invisible at fauna's 0.5-2s goal cadence)
-            //  - dirty and stale → run the job
+            //  - dirty and stale -> run the job
             if (hasCachedResult)
             {
                 bool recentlyComputed = Time.time - lastComputeTime < MinRecomputeIntervalSeconds;
@@ -429,7 +429,7 @@ namespace CosmicShore.Gameplay
             if (!InBounds(idx)) return;
 
             int flat = FlatIndex(idx);
-            // Saturate instead of wrapping. (The previous byte storage wrapped at 255 —
+            // Saturate instead of wrapping. (The previous byte storage wrapped at 255 -
             // production cells reach 10,000+ prisms, so a hot voxel could overflow and
             // erase its own density.)
             if (jobValues[flat] < ushort.MaxValue)

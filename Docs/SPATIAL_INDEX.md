@@ -1,10 +1,10 @@
-# PrismSpatialIndex — The Canonical Spatial Index of Prism Mass
+# PrismSpatialIndex - The Canonical Spatial Index of Prism Mass
 
 `Assets/_Scripts/Controller/Managers/PrismSpatialIndex.cs`
 
 **Read this before writing ANY new spatial query against prisms.** If you are
 about to call `Physics.OverlapSphere`, `Physics.CheckBox`, or build a new
-grid/registry/octree over prisms — stop. The capability either already exists
+grid/registry/octree over prisms - stop. The capability either already exists
 here or belongs here. The point of this system is that there is exactly **one**
 answer to "what mass is where," fed by exactly **one** registration lifecycle.
 
@@ -17,12 +17,12 @@ the same prism population, plus ad-hoc physics queries:
 |---|---|---|
 | `PrismAOERegistry` | Flat NativeArrays: position + flags + domain/volume | No spatial acceleration (linear scan); registered 0.6s after spawn |
 | `Cell.countGrids` (`BlockDensityGrid`) | 75m-voxel per-domain counts | Same 0.6s-late registration; too coarse for occupancy |
-| Unity physics broadphase | Colliders | Prism colliders are **disabled for the first `Prism.waitTime` (0.6s)** after spawn — physics queries are structurally blind to fresh prisms |
+| Unity physics broadphase | Colliders | Prism colliders are **disabled for the first `Prism.waitTime` (0.6s)** after spawn - physics queries are structurally blind to fresh prisms |
 
 The blindness window was the root cause of gyroid flora stacking prisms on
 occupied sites: `Physics.CheckBox` in `GyroidAssembler.GetGrowthInfo` could not
 see siblings spawned within the last 0.6s, so concurrent branches (and
-concurrent floras) double-filled sites — hidden mass, wasted cost.
+concurrent floras) double-filled sites - hidden mass, wasted cost.
 
 The unification keeps the proven query *math* of each system and consolidates
 the *bookkeeping*: `PrismAOERegistry` was renamed to `PrismSpatialIndex` and
@@ -33,96 +33,96 @@ understood as a **view** of the same lifecycle, not an independent system.
 ## Architecture
 
 ```
-                       ┌──────────────────────────────────────────────┐
-   one lifecycle       │              PrismSpatialIndex               │
-                       │                                              │
- TryReserve(pos) ────► │  _reservations  Dictionary<key, claim+TTL>   │  occupancy
- (growth decision,     │  _buckets       MultiHashMap<int3, index>    │  + neighborhood
-  BEFORE Instantiate)  │                                              │  views
-                       │  _spatial[i]    16B hot: position + flags    │  AOE view
- Register(prism) ────► │  _damage[i]     8B cold: volume + domain     │  (Burst scan)
- (CreateBlockCoroutine,│  _prisms[i]     managed Prism refs           │
-  consumes reservation)│                                              │
-                       └──────────────────────────────────────────────┘
- MarkDestroyed(i)  → AOE skips it, bucket freed (site can be regrown)
- MarkRestored(i)   → re-enters AOE + bucket (trail restore mechanics)
- UpdatePosition(i) → rebuckets (gyroid/wall bonding steers existing blocks;
-                     fauna body prisms swim — movers keep positions honest)
- Unregister(i)     → slot freed (pool return / destroy)
+                       +----------------------------------------------+
+   one lifecycle       |              PrismSpatialIndex               |
+                       |                                              |
+ TryReserve(pos) ----> |  _reservations  Dictionary<key, claim+TTL>   |  occupancy
+ (growth decision,     |  _buckets       MultiHashMap<int3, index>    |  + neighborhood
+  BEFORE Instantiate)  |                                              |  views
+                       |  _spatial[i]    16B hot: position + flags    |  AOE view
+ Register(prism) ----> |  _damage[i]     8B cold: volume + domain     |  (Burst scan)
+ (CreateBlockCoroutine,|  _prisms[i]     managed Prism refs           |
+  consumes reservation)|                                              |
+                       +----------------------------------------------+
+ MarkDestroyed(i)  -> AOE skips it, bucket freed (site can be regrown)
+ MarkRestored(i)   -> re-enters AOE + bucket (trail restore mechanics)
+ UpdatePosition(i) -> rebuckets (gyroid/wall bonding steers existing blocks;
+                     fauna body prisms swim - movers keep positions honest)
+ Unregister(i)     -> slot freed (pool return / destroy)
 
  QuerySphere / IsAnyPrismWithin (neighborhood views over _buckets/_spatial)
- — fauna senses (LightFauna, Boid), assembler mate-finding (Gyroid, Wall),
+ - fauna senses (LightFauna, Boid), assembler mate-finding (Gyroid, Wall),
    trail passives (ScoutTrailPrismScaler). Replaced the Physics.OverlapSphere
    calls those systems used to make against prism colliders.
 
- _cells[i] (Cell.AddBlock / RemoveBlock — 75m per-domain density grids,
+ _cells[i] (Cell.AddBlock / RemoveBlock - 75m per-domain density grids,
  fauna targeting, cell phase LiveBlockCount)
- — the coarse-density view, driven by the SAME lifecycle since Phase 3:
+ - the coarse-density view, driven by the SAME lifecycle since Phase 3:
    Register/MarkRestored bind the containing cell, MarkDestroyed/Unregister
    release it, ForwardDomainChangeToCell re-files steals. One stream feeds
    both the fine and coarse views, so they cannot diverge. Fauna bodies are
    bound VOLUME-ONLY in this view (BindCell files them into the cell's
-   volume accounting — volume is the spine, every prism counts — but keeps
+   volume accounting - volume is the spine, every prism counts - but keeps
    them out of the targeting grids and counts). The flora ownership
-   stream (HealthBlockTracker → Cell.AddBlock for the LifeForm's host cell)
+   stream (HealthBlockTracker -> Cell.AddBlock for the LifeForm's host cell)
    remains a second, idempotent contributor.
 ```
 
 ### Data structures
 
-- **Hot array** `_spatial[i]` — `PrismSpatialData`, 16 bytes (float3 position +
+- **Hot array** `_spatial[i]` - `PrismSpatialData`, 16 bytes (float3 position +
   flags byte), 4 per cache line. Scanned by the Burst AOE job.
-- **Cold array** `_damage[i]` — volume + domain, read on the main thread only
+- **Cold array** `_damage[i]` - volume + domain, read on the main thread only
   for prisms that pass the spatial filter.
-- **Bucket grid** `_buckets` — `NativeParallelMultiHashMap<int3, int>` mapping
-  `floor(position / BucketSizeMeters)` → registry index. One entry per **live**
-  (active, not destroyed) prism. Maintained incrementally — prisms are mostly
+- **Bucket grid** `_buckets` - `NativeParallelMultiHashMap<int3, int>` mapping
+  `floor(position / BucketSizeMeters)` -> registry index. One entry per **live**
+  (active, not destroyed) prism. Maintained incrementally - prisms are mostly
   static, so there is no per-frame rebucketing cost. (Fauna body prisms are the
   moving minority: their `Fauna.NotifyBodyPrismsMoved` calls only rebucket when
   a body crosses an 8m bucket boundary.)
-- **Adaptive query strategy** — `QuerySphere`/`IsAnyPrismWithin` walk the bucket
+- **Adaptive query strategy** - `QuerySphere`/`IsAnyPrismWithin` walk the bucket
   AABB for tight radii, but fall back to one linear pass over the 16B hot array
   when the AABB covers more buckets than there are slots (a 100m Scout probe is
-  26³ ≈ 17k bucket lookups vs one ~64KB scan).
-- **Reservation set** `_reservations` — managed `Dictionary` keyed by quantized
+  26^3 ~ 17k bucket lookups vs one ~64KB scan).
+- **Reservation set** `_reservations` - managed `Dictionary` keyed by quantized
   position. A reservation is a *claim* on a site by a growth system, made
-  synchronously with the grow decision. It is **bookkeeping, not mass** — it
+  synchronously with the grow decision. It is **bookkeeping, not mass** - it
   never appears in AOE queries, density grids, or scoring.
 
 ### Constants (tuning)
 
 | Constant | Value | Rationale |
 |---|---|---|
-| `BucketSizeMeters` | 8 | Gyroid bond spacing (~8m = \|DeltaPosition\| ≈ 2.7 × separationDistance 3). An occupancy probe of radius ≤ half-spacing touches ≤ 8 buckets. |
-| `ReservationQuantum` | 4 | Half bond spacing — key granularity for the claim set. |
+| `BucketSizeMeters` | 8 | Gyroid bond spacing (~8m = \|DeltaPosition\| ~ 2.7 x separationDistance 3). An occupancy probe of radius <= half-spacing touches <= 8 buckets. |
+| `ReservationQuantum` | 4 | Half bond spacing - key granularity for the claim set. |
 | `ReservationTtlSeconds` | 5 | Safety net for claims never confirmed by a Register (spawn skipped, prism killed inside `Prism.waitTime`). Comfortably past waitTime (0.6s) + one flora grow cadence. |
 
 ## The reservation lifecycle (why overlaps are now impossible)
 
-The old physics check ran at grow time but could only see colliders — and a
+The old physics check ran at grow time but could only see colliders - and a
 prism's collider turns on 0.6s after spawn. Two branches deciding within 0.6s
 of each other both saw "empty" and both spawned. **No collider-based check can
 close this race; the claim has to be synchronous with the decision.**
 
 ```
 GyroidAssembler / WallAssembler / SchwarzPAssembler . GetGrowthInfo()
-  └─ TryReserve(newPosition, clearRadius)        ← atomic check-and-claim
-       ├─ live prism within clearRadius?   → false (site occupied → knit lattice)
-       ├─ active reservation within range? → false (sibling already claimed it)
-       └─ else: claim recorded, returns true → caller may Instantiate
+  +- TryReserve(newPosition, clearRadius)        <- atomic check-and-claim
+       +- live prism within clearRadius?   -> false (site occupied -> knit lattice)
+       +- active reservation within range? -> false (sibling already claimed it)
+       +- else: claim recorded, returns true -> caller may Instantiate
 AssembledFlora.Grow()
-  └─ Instantiate(healthPrism, growthInfo.Position, ...)
-       └─ Prism.Initialize → CreateBlockCoroutine (0.6s)
-            └─ Register(prism)                    ← consumes the claim (matched
-                                                    by proximity, ±2m, because
+  +- Instantiate(healthPrism, growthInfo.Position, ...)
+       +- Prism.Initialize -> CreateBlockCoroutine (0.6s)
+            +- Register(prism)                    <- consumes the claim (matched
+                                                    by proximity, +/-2m, because
                                                     spindle re-parenting round-
                                                     trips the position through
                                                     parent matrices)
   [prism killed inside the 0.6s window / spawn never happens]
-            └─ claim lapses after ReservationTtlSeconds — no leak
+            +- claim lapses after ReservationTtlSeconds - no leak
 ```
 
-`clearRadius` at the call sites is `max(2, 0.4 × bond spacing)` — below
+`clearRadius` at the call sites is `max(2, 0.4 x bond spacing)` - below
 half-spacing so legitimate neighbor lattice sites are never blocked, above any
 positional drift so a same-site duplicate always is.
 
@@ -138,7 +138,7 @@ blocked for up to 5s). `AssembledFlora` orders its random-skip *before*
 | `TryReserve(pos, clearRadius)` | Growth systems at the grow decision | Atomic occupancy check + claim |
 | `IsPositionOccupied(pos, clearRadius)` | Anyone (read-only) | Live prism or active claim in range? |
 | `IsAnyPrismWithin(pos, radius)` | Anyone (read-only) | Live prism in range (claims excluded) |
-| `QuerySphere(pos, radius, results)` | Anyone (read-only) | Gather live prisms in range into a caller scratch list — the replacement for `Physics.OverlapSphere` against prisms |
+| `QuerySphere(pos, radius, results)` | Anyone (read-only) | Gather live prisms in range into a caller scratch list - the replacement for `Physics.OverlapSphere` against prisms |
 | `CopyLivePrisms(results)` | `PrismColliderLodManager`, telemetry | Whole-population sweep: one linear pass copying every live prism into a caller scratch list |
 | `ReleaseReservation(pos)` | A claimant that changed its mind | Explicit cancel |
 | `Register(prism)` | `Prism.CreateBlockCoroutine` (+ `Prism.Restore` for spawn-window-killed prisms) | Enter the index; consumes matching claim; binds the containing cell's density grids |
@@ -155,14 +155,14 @@ All methods are **main-thread only**. The Burst job inside
 
 `QuerySphere` results are an unordered **snapshot**: the caller's own side
 effects (consume, predate, steal/convert) can destroy entries mid-iteration,
-so iterate with a `!prism || prism.destroyed` guard — the same contract
+so iterate with a `!prism || prism.destroyed` guard - the same contract
 collider snapshots had. Reuse a static scratch list per call site
 (`Fauna.PrismScratch`, the assemblers' `s_mateScratch`); ticks are
 main-thread and consume the list within one call, so one list per site is
 allocation-free and safe.
 
 **The movers contract**: anything that moves a registered prism must call
-`Prism.NotifyPositionChanged()` after moving it — the index stores positions,
+`Prism.NotifyPositionChanged()` after moving it - the index stores positions,
 and AOE damage, occupancy, and all neighborhood queries read the *stored*
 position. Current movers: gyroid bond steering (`GyroidAssembler`), wall bond
 pulling (`WallAssembler`), and swimming fauna bodies
@@ -172,7 +172,7 @@ their spawn point instead of where they actually were.
 
 ## Mass-conservation alignment
 
-Per CLAUDE.md's design philosophy: mass is conserved — prisms are removed only
+Per CLAUDE.md's design philosophy: mass is conserved - prisms are removed only
 by **active forces** (vessel abilities, fauna consumption). The index respects
 this exactly: a bucket entry frees only on `MarkDestroyed`/`Unregister`, both
 of which are driven by active-force code paths. Reservations are the only
@@ -182,32 +182,32 @@ Nothing in this system decays, culls, or auto-corrects prism populations.
 ## What NOT to use it for
 
 - **Raycasts / narrow-phase geometry** (`AIPilot` obstacle rays, skimmer
-  `Collider.ClosestPoint`, arch-burst placement rays) — the index stores
+  `Collider.ClosestPoint`, arch-burst placement rays) - the index stores
   points, not extents+rotations. Physics is the right tool there.
-- **Non-prism fauna proxies** — fauna senses (LightFauna, Boid) DO ride the
+- **Non-prism fauna proxies** - fauna senses (LightFauna, Boid) DO ride the
   index, because fauna bodies *are* HealthPrisms: registered mass, kept honest
   by the movers contract. What stays forbidden is registering anything that
   isn't a prism (a synthetic "boid marker" entry, a vessel, a crystal) just to
-  get neighbor queries — that would corrupt the AOE and occupancy views, which
+  get neighbor queries - that would corrupt the AOE and occupancy views, which
   assume every entry is damageable, consumable mass. (The cell *density* view
-  still excludes fauna bodies from its TARGETING grids/counts —
-  `PrismSpatialIndex.BindCell` binds them volume-only — because a forager
+  still excludes fauna bodies from its TARGETING grids/counts -
+  `PrismSpatialIndex.BindCell` binds them volume-only - because a forager
   swarm must not read as its own mass concentration; their volume still feeds
   `Cell.LiveVolume`, the phase spine.)
-- **Unregistered mound blocks** — `Boid.NewBlock` builds mound blocks without
+- **Unregistered mound blocks** - `Boid.NewBlock` builds mound blocks without
   `Prism.Initialize`, so they never register. The two queries that must find
   them stay physics-based on the dedicated `Mound` layer:
   `GyroidAssembler.FindClosestMate`'s supplemental Mound probe and
   `Boid.AddToMoundCoroutine`'s naked-edge scan. Tiny population, narrow layer
-  — physics is fine there.
-- **Cross-network queries** — the index is local sim state, not replicated.
+  - physics is fine there.
+- **Cross-network queries** - the index is local sim state, not replicated.
 
 A note on **lattice bookkeeping**: an assembler may keep its own *graph-side*
-state about its lattice — the gyroid's bond-site flags, the Schwarz P frame's
+state about its lattice - the gyroid's bond-site flags, the Schwarz P frame's
 param-space registry (`SchwarzPSurfaceFrame.occupied`). That is fine: it
 encodes adjacency semantics in the assembler's own coordinate system, which a
-world-space index cannot express. The rule is that **world-space occupancy** —
-"is physical space free, across all structures" — goes through this index, and
+world-space index cannot express. The rule is that **world-space occupancy** -
+"is physical space free, across all structures" - goes through this index, and
 only this index. `SchwarzPAssembler.GetGrowthInfo` shows the pattern: frame
 registry for its own lattice, `TryReserve` for the world.
 
@@ -216,19 +216,19 @@ registry for its own lattice, `TryReserve` for the world.
 - `UpdateDomain` / `UpdateVolume` have **no callers**: a stolen prism keeps its
   registration-time domain in the AOE cold data, and a grown prism keeps its
   spawn-time volume. Pre-existing behavior, preserved through the rename.
-  Wiring `PrismTeamManager` → `UpdateDomain` changes AOE friend/foe results and
+  Wiring `PrismTeamManager` -> `UpdateDomain` changes AOE friend/foe results and
   must be its own tested change.
 - Occupancy treats prisms as points with a clearance radius, not oriented
   boxes. A fat trail block whose *center* is outside `clearRadius` can still
-  visually intersect a grown gyroid block — same tolerance the game already
+  visually intersect a grown gyroid block - same tolerance the game already
   has for trails crossing trails.
 - The cell density binding is **registration-time**: `UpdatePosition` does not
-  re-resolve the containing cell when a mover (gyroid steering, fauna body —
+  re-resolve the containing cell when a mover (gyroid steering, fauna body -
   the latter excluded from this view anyway) crosses a cell membrane. Same
   behavior the old `Prism.RegisterWithCell` had; revisit only if movers start
   crossing cells at scale.
 - `Boid.NewBlock` mound blocks bypass `Prism.Initialize` and therefore never
-  register (no AOE, no occupancy, no neighborhood visibility) — mound
+  register (no AOE, no occupancy, no neighborhood visibility) - mound
   mate-finding compensates with a Mound-layer collider probe (see "What NOT to
   use it for"). Routing mound blocks through the real `Initialize` lifecycle
   would retire that probe, but changes their layer/collider/grow behavior and
@@ -239,16 +239,16 @@ registry for its own lattice, `TryReserve` for the world.
 | Phase | Scope | Status |
 |---|---|---|
 | 1 | Bucket grid + reservations; `GyroidAssembler`/`WallAssembler`/`SchwarzPAssembler` switch from `Physics.CheckBox` to `TryReserve`; lifecycle holes fixed (`Restore` re-entry, pool-return staleness, mover positions) | **Shipped** |
-| 2 | `QuerySphere` neighborhood view replaces the remaining physics queries against prisms: `GyroidAssembler.FindClosestMate` (+ fixes its stale `OverlapSphereNonAlloc` array bug, keeps a Mound-layer probe for unregistered mound blocks), `WallAssembler` mate-finding (was allocating `OverlapSphere`; its `MoveMateToSite` now also upholds the movers contract), `ScoutTrailPrismScaler` (adaptive `IsAnyPrismWithin`), `LightFauna` (prisms via index, vessels via prism-masked physics), `Boid` prism-attraction + boid-neighbor scan (fully index-based). Fauna bodies uphold the movers contract via `Fauna.NotifyBodyPrismsMoved` — also fixes batch AOE hitting creatures at their spawn point. A planned `FindNearest` view was folded into callers' own scoring loops (every caller filters candidates with custom logic). | **Shipped** |
-| 3 | Cell density grids driven by the index lifecycle: `Register`/`MarkRestored` bind the containing cell (`Cell.AddBlock`), `MarkDestroyed`/`Unregister` release it, `ForwardDomainChangeToCell` re-files steals. `Prism` lost `_registeredCell`/`RegisterWithCell`/`UnregisterFromCell` — every lifecycle moment makes ONE index call and the coarse view follows. Bonus consistency fix: restoring a prism that was killed inside its spawn window (never registered) now does a full `Register`, where the old code put it in the cell grids but left it invisible to AOE/occupancy. The flora ownership stream (`HealthBlockTracker`) remains a second, idempotent `Cell.AddBlock` contributor. | **Shipped** |
-| 4 | Optional: bucket-accelerated AOE if profiling ever demands it. (A second index instance over fauna is no longer needed for current populations — fauna bodies are registered prisms and their senses already ride this index; it would only return if a non-prism fauna population appears.) | Candidate |
+| 2 | `QuerySphere` neighborhood view replaces the remaining physics queries against prisms: `GyroidAssembler.FindClosestMate` (+ fixes its stale `OverlapSphereNonAlloc` array bug, keeps a Mound-layer probe for unregistered mound blocks), `WallAssembler` mate-finding (was allocating `OverlapSphere`; its `MoveMateToSite` now also upholds the movers contract), `ScoutTrailPrismScaler` (adaptive `IsAnyPrismWithin`), `LightFauna` (prisms via index, vessels via prism-masked physics), `Boid` prism-attraction + boid-neighbor scan (fully index-based). Fauna bodies uphold the movers contract via `Fauna.NotifyBodyPrismsMoved` - also fixes batch AOE hitting creatures at their spawn point. A planned `FindNearest` view was folded into callers' own scoring loops (every caller filters candidates with custom logic). | **Shipped** |
+| 3 | Cell density grids driven by the index lifecycle: `Register`/`MarkRestored` bind the containing cell (`Cell.AddBlock`), `MarkDestroyed`/`Unregister` release it, `ForwardDomainChangeToCell` re-files steals. `Prism` lost `_registeredCell`/`RegisterWithCell`/`UnregisterFromCell` - every lifecycle moment makes ONE index call and the coarse view follows. Bonus consistency fix: restoring a prism that was killed inside its spawn window (never registered) now does a full `Register`, where the old code put it in the cell grids but left it invisible to AOE/occupancy. The flora ownership stream (`HealthBlockTracker`) remains a second, idempotent `Cell.AddBlock` contributor. | **Shipped** |
+| 4 | Optional: bucket-accelerated AOE if profiling ever demands it. (A second index instance over fauna is no longer needed for current populations - fauna bodies are registered prisms and their senses already ride this index; it would only return if a non-prism fauna population appears.) | Candidate |
 
 ## Adding a consumer (checklist)
 
 1. Does an existing query method answer your question? Use it.
 2. Need a new query shape? Add it **to this class** as a method over `_buckets`
-   / `_spatial` — do not build a parallel store.
+   / `_spatial` - do not build a parallel store.
 3. Never cache registry indices across frames outside `Prism.SpatialIndexId`.
 4. Never call `Register`/`Unregister`/`Mark*` from outside the `Prism`
-   lifecycle methods listed above — single-writer per lifecycle event is what
+   lifecycle methods listed above - single-writer per lifecycle event is what
    keeps the views consistent.

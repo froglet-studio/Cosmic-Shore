@@ -15,7 +15,7 @@ MonoBehaviour:
   Name: Trace
   Description: Highest top speed in Class
   AIBehaviorDescription: Hunts players
-  Flavor: “You go on ahead. I’ll be right behind you... And then I won’t!”
+  Flavor: "\"You go on ahead. I'll be right behind you... And then I won't!\""
   Image: {fileID: 21300000, guid: f67a59b9420cbd343a85be97b887cbb3, type: 3}
   HeadshotImage: {fileID: 0}
   IconActive: {fileID: 21300000, guid: 91356a0f113024c40a1ccaa4fcdddc93, type: 3}

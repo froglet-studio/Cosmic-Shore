@@ -73,7 +73,7 @@ namespace CosmicShore.Gameplay
             Vector3 basePoint = hitFound ? hit.point : origin + fwd * fallbackForward;
             basePoint += fwd * forwardPush;
 
-            // Bézier spine across width, bowed forward by bowDepth
+            // Bezier spine across width, bowed forward by bowDepth
             Vector3 uP0 = basePoint - right * (width * 0.5f);
             Vector3 uP2 = basePoint + right * (width * 0.5f);
             Vector3 uP1 = basePoint + fwd * bowDepth;

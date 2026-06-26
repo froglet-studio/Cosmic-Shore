@@ -1,13 +1,13 @@
-# Party System — Architecture Snapshot
+# Party System - Architecture Snapshot
 
 The party / invite / lobby system has been hardened through a 17-commit
 refactor (formerly tracked in `PARTY_SYSTEM_REFACTOR.md`, now archived
-via git history). This doc captures the **current state** — the locked
+via git history). This doc captures the **current state** - the locked
 design, the moving parts, and the exit criteria. For the active refactor
 queue see `REFACTOR.md`; for known bugs see `BUGS.md`; for manual test
 procedures see `TESTS.md`.
 
-## Locked design — do not relitigate
+## Locked design - do not relitigate
 
 These decisions have been made and shipped. Re-opening them is the most
 common way recurring party-invite bugs return.
@@ -15,20 +15,20 @@ common way recurring party-invite bugs return.
 - **EAGER per-user Relay party session.** Every authenticated player
   hosts their own Relay-backed party session from the moment they enter
   `Menu_Main` ("Always InParty" model). **Do not reintroduce LAZY /
-  on-first-invite Relay creation** — the shutdown-and-recreate cascade
+  on-first-invite Relay creation** - the shutdown-and-recreate cascade
   it caused is the root of every recurring party-invite bug. If a
   future bug appears to argue for lazy creation, re-examine the root
   cause through the unbreakable-exit-criteria lens below first.
 - **`ActiveSession` is never nulled outside an intentional leave.**
   `PartySessionService.ActiveSession` reads/writes
   `gameData.ActiveSession`. Single backing field on `GameDataSO`.
-- **One public create-or-no-op surface: `EnsurePartySessionAsync`** —
+- **One public create-or-no-op surface: `EnsurePartySessionAsync`** -
   idempotent (no-op if `IsHostingParty`, create otherwise). All other
   `RetryCreate*` wrappers were deleted.
 - **`MultiplayerService.Instance` is always resolved at use time**, never
   cached in a constructor. Lazy DI singletons are constructed during
-  Bootstrap DI resolution — *before* `UnityServices.InitializeAsync()`
-  completes — so a constructor-time read would pin null. Expose via a
+  Bootstrap DI resolution - *before* `UnityServices.InitializeAsync()`
+  completes - so a constructor-time read would pin null. Expose via a
   private property: `private IMultiplayerService _multiplayerService => MultiplayerService.Instance;`.
 - **Every null guard logs `Debug.LogError`** with field name and
   suspected cause. Loud, traceable failures.
@@ -37,11 +37,11 @@ common way recurring party-invite bugs return.
   `ActiveSession`. No catch leaves the system in a worse state than
   entry.**
 - **State machine is the authority for recovery, not nulls.** Runtime
-  nulls inside a service method imply an invariant violation → log +
+  nulls inside a service method imply an invariant violation -> log +
   transition to a recoverable state (typically `Disconnected`), so the
   normal sign-in / retry path picks back up.
 - **Main-thread affinity is mandatory at every UGS / Netcode await.**
-  See `Docs/THREADING.md`. Use `.AsMainThread()` — never
+  See `Docs/THREADING.md`. Use `.AsMainThread()` - never
   `UniTask.SwitchToMainThread()` or
   `UniTask.Yield(PlayerLoopTiming.Update)` as a thread-marshaling fix.
 
@@ -56,7 +56,7 @@ The party system layers two distinct UGS sessions:
 
 The presence lobby is a lobby-only UGS session that coexists safely with
 an active NetworkManager. Players set their own player properties to
-send invites — no host privilege required.
+send invites - no host privilege required.
 
 See `../PresenceSystem/ARCHITECTURE.md` for presence-lobby details. This
 doc focuses on the party (Relay-backed) layer.
@@ -71,13 +71,13 @@ auto-joins the presence lobby for discovery, runs the
 party-level operations (`AcceptInviteAsync`, `LeavePartyKeepHostAsync`,
 `KickPartyMemberAsync`, `EnsurePartySessionAsync`).
 
-**Single writer to `HostConnectionDataSO`** — every other system reads
+**Single writer to `HostConnectionDataSO`** - every other system reads
 through SOAP events and lists on that data container.
 
 Already refactored (the 17-commit work). The remaining party-side
 refactor work targets the orchestrator above it (`PartyInviteController`)
 and the two extracted services (`PartySessionService`,
-`NetworkTransitionService`) — see `REFACTOR.md`.
+`NetworkTransitionService`) - see `REFACTOR.md`.
 
 ### `PartySessionService` (pure C#, constructor-injected)
 
@@ -89,7 +89,7 @@ loops keyed on three exception classifiers:
 |---|---|
 | `IsHostConflictException` | Retry up to `HOST_CONFLICT_MAX_RETRIES`, no backoff |
 | `IsRateLimitException` (HTTP 429) | Retry up to `RATE_LIMIT_MAX_RETRIES` with exponential backoff |
-| `IsTransientSessionException` | Retry up to `TRANSIENT_MAX_RETRIES` with exponential backoff — covers SDK `SessionException` NRE / lobby-events 23006 / non-fatal session-state collisions |
+| `IsTransientSessionException` | Retry up to `TRANSIENT_MAX_RETRIES` with exponential backoff - covers SDK `SessionException` NRE / lobby-events 23006 / non-fatal session-state collisions |
 
 Non-transient errors propagate to `HostConnectionService.AcceptInviteAsync`,
 which logs and rethrows so `PartyInviteController` fails fast.
@@ -110,7 +110,7 @@ The user-facing flow orchestrator. `AcceptInviteAsync`,
 `DeclineInviteAsync`, `LeavePartyAndReturnToMenuAsync`. Reads
 `HostConnectionService.Instance` (today) and delegates to
 `INetworkTransitionService` for Netcode work. Recovery on failure runs
-through `RecoverFromFailedTransitionAsync` →
+through `RecoverFromFailedTransitionAsync` ->
 `gameData.DestroyPlayerAndVessel` + `LeavePartyKeepHostAsync` +
 Menu_Main reload.
 
@@ -119,27 +119,27 @@ that prevents in-flight presence refreshes from escalating during a
 transition. (Both the entry guard at the top of `RefreshAsync` and the
 second-layer guard inside the catch consult it.)
 
-## SOAP event flow — invite happy path
+## SOAP event flow - invite happy path
 
 ```
 Sender's HCS lobby property write (invite_target, invite_data)
-        │
-        ▼  (next refresh tick, 3-5 s)
+        |
+        v  (next refresh tick, 3-5 s)
 Recipient's HCS.RefreshAsync detects invite property
-        │
-        ▼
-OnInviteReceived SOAP event ──► PartyInviteNotificationPanel.Show()
-        │
-        ▼  (user presses Accept)
+        |
+        v
+OnInviteReceived SOAP event --> PartyInviteNotificationPanel.Show()
+        |
+        v  (user presses Accept)
 PartyInviteController.AcceptInviteAsync
-        │
-        ├─ TransitionVisuals: SetFadeImmediate(1) + ArmSplashFadeOnNextClientReady + Unpause
-        ├─ NetworkTransition.ShutdownAsync (with 8s timeout)
-        ├─ HostConnectionService.AcceptInviteAsync (publishes acceptance signal, then JoinByIdAsync)
-        ├─ NetworkTransition.WaitForClientConnectionAsync (with 8s timeout)
-        ├─ NetworkTransition.WaitForSceneSyncAsync (with 8s timeout)
-        ├─ WaitForClientReadyAsync (with 10s timeout — waits for local vessel to spawn)
-        └─ Raise OnPartyJoinCompleted ──► Party Area UI refreshes
+        |
+        +- TransitionVisuals: SetFadeImmediate(1) + ArmSplashFadeOnNextClientReady + Unpause
+        +- NetworkTransition.ShutdownAsync (with 8s timeout)
+        +- HostConnectionService.AcceptInviteAsync (publishes acceptance signal, then JoinByIdAsync)
+        +- NetworkTransition.WaitForClientConnectionAsync (with 8s timeout)
+        +- NetworkTransition.WaitForSceneSyncAsync (with 8s timeout)
+        +- WaitForClientReadyAsync (with 10s timeout - waits for local vessel to spawn)
+        +- Raise OnPartyJoinCompleted --> Party Area UI refreshes
 ```
 
 Each `await` is `.AsMainThread()`-wrapped per `Docs/THREADING.md`. Each
@@ -155,7 +155,7 @@ concurrent invites):
 1. **No fatal failure.** No vessel despawn outside an intentional leave;
    no kicked clients; no NRE crash; no UGS exception surfaces to the
    user uncaught.
-2. **No stuck UI.** Party UI always reflects ground truth — no stale
+2. **No stuck UI.** Party UI always reflects ground truth - no stale
    "in party" when there is no party; no missing party members; no
    undismissable invite popups.
 3. **No silent state divergence.** Host's view of party membership
@@ -175,7 +175,7 @@ concurrent invites):
 7. **3-VP MPPM stress** (5 consecutive accepts with random
    declines/leaves interleaved) is green.
 8. **4-VP MPPM concurrent invites** (host invites 2-3 clients
-   simultaneously) — all clients either join cleanly or bounce
+   simultaneously) - all clients either join cleanly or bounce
    cleanly with no leftover state.
 
 Criteria 1-5 are passing as of the 17-commit refactor + the YS2
@@ -192,14 +192,14 @@ verification gate per commit.
 | Netcode transitions | `Assets/_Scripts/Controller/Party/Services/NetworkTransitionService.cs` |
 | Lobby property writes (mutex + retry) | `Assets/_Scripts/Controller/Party/Services/LobbyPropertyWriter.cs` |
 | Invite-receive detection | `Assets/_Scripts/Controller/Party/Services/InviteService.cs` |
-| Acceptance signal (sender ↔ receiver handshake) | `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs` |
+| Acceptance signal (sender <-> receiver handshake) | `Assets/_Scripts/Controller/Party/Services/AcceptanceSignalService.cs` |
 | Refresh cadence (boost + base) | `Assets/_Scripts/Controller/Party/Services/LobbyRefreshScheduler.cs` |
 | SOAP event bus | `Assets/_Scripts/Controller/Party/Services/SoapPartyEventBus.cs` |
 | Party member sync | `Assets/_Scripts/Controller/Party/Services/PartyMemberService.cs` |
 | State machine | `Assets/_Scripts/Controller/Party/StateMachine/PartyStateMachine.cs` |
 | SOAP data container | `Assets/_Scripts/Utility/DataContainers/HostConnectionDataSO.cs` |
 
-## Investigation answers — design Q&A
+## Investigation answers - design Q&A
 
 These are the load-bearing design questions resolved during the 17-commit
 refactor. Kept verbatim because several code comments and future
@@ -208,7 +208,7 @@ refactors reference the specific reasoning (not just the conclusion).
 ### Q1. Why does `CreateOwnPartySessionAsync` call `ShutdownAsync` first?
 
 `NetworkTransitionService.ShutdownAsync` guards `if (nm == null || !nm.IsListening)`
-— no-op whenever NM is down. It's real work only when NM is hosting. Real work
+- no-op whenever NM is down. It's real work only when NM is hosting. Real work
 currently happens only in the `RecoverFromFailedTransitionAsync` path. The
 commit-by-commit plan replaced the unconditional `ShutdownAsync` with
 `LeavePartyKeepHostAsync` (Commit 10) so the recovery path no longer cycles NM at
@@ -216,7 +216,7 @@ all.
 
 ### Q2. Is `IsListening` the strongest possible guard?
 
-For `nm.Shutdown()` specifically — yes. Netcode treats `Shutdown()` as a no-op when
+For `nm.Shutdown()` specifically - yes. Netcode treats `Shutdown()` as a no-op when
 `!IsListening`. For the broader "do we have a host?" question, the canonical
 project-wide predicate is `IsHostingParty`:
 
@@ -234,7 +234,7 @@ private bool IsHostingParty
 We use `IsHostingParty` everywhere the question is "am I a live party host?", and
 `IsListening` only where the question is "is Netcode up at all?".
 
-### Q3. The four `RetryCreate*` callsites — none of them are really "retries"
+### Q3. The four `RetryCreate*` callsites - none of them are really "retries"
 
 | Site | What just happened | Prior `ActiveSession`? | Needs `ClearSession()` first? |
 |---|---|---|---|
@@ -269,13 +269,13 @@ SDK NRE handling, identity properties, grace-period tracking, idempotency.
 
 ### Q6. Can we leave a party without shutting down NM?
 
-Yes — `PartySessionService.LeaveAsync` only touches the UGS SDK; NM shutdown is the
-**caller's** choice. Today every leave path shuts NM down → menu-vessel respawn. We
+Yes - `PartySessionService.LeaveAsync` only touches the UGS SDK; NM shutdown is the
+**caller's** choice. Today every leave path shuts NM down -> menu-vessel respawn. We
 added a new `LeavePartyKeepHostAsync` path that leaves the UGS session and immediately
 calls `EnsurePartySessionAsync` to create a fresh solo session, **without cycling NM**.
 Removes the entire shutdown-and-recreate antipattern.
 
-### Q7. Stale UI when server deleted the session — is that a bug?
+### Q7. Stale UI when server deleted the session - is that a bug?
 
 Yes. The unbreakable invariant says **the UI must never show "in party" when there is
 no party**. Achieved by classifying refresh errors:
@@ -284,16 +284,16 @@ no party**. Achieved by classifying refresh errors:
 - **Definite** (404 / not-found / "session does not exist"): treat as server-side leave.
   Call `LeavePartyKeepHostAsync` automatically, raise `OnPartyMemberLeft` for each
   remaining member so UI updates, raise `OnHostConnectionLost`. State transitions to
-  `HostingParty` (solo) → user sees an empty party slot, no manual action required.
+  `HostingParty` (solo) -> user sees an empty party slot, no manual action required.
 
-Implemented in Commits 11–12.
+Implemented in Commits 11-12.
 
-### Q8. Awake / OnDestroy null-safety — recovery action for each branch
+### Q8. Awake / OnDestroy null-safety - recovery action for each branch
 
 Awake (after `LobbyPatcherLogFilter` removal) touches no `[Inject]` fields. Safe.
 
-OnDestroy is best-effort cleanup. We can't recover during destruction — the gameobject
-is going away — but we log loudly so missing prefab references / DI failures surface:
+OnDestroy is best-effort cleanup. We can't recover during destruction - the gameobject
+is going away - but we log loudly so missing prefab references / DI failures surface:
 
 | Null field | Cause | Action |
 |---|---|---|
@@ -302,14 +302,14 @@ is going away — but we log loudly so missing prefab references / DI failures s
 | `_lobbyMutex` | Ctor failed or double-destroy | `LogError`, skip dispose |
 | `_sessionCreationMutex` | Ctor failed or double-destroy | `LogError`, skip dispose |
 
-For runtime null guards inside service methods (rare — most cases are handled via
+For runtime null guards inside service methods (rare - most cases are handled via
 state-machine predicates), the action is: `LogError` + transition state to `Disconnected`
 + raise `OnHostConnectionLost` so the normal recovery loop picks back up.
 
 ### Q9. Is the Start-polling deletion safe?
 
 HCS is `DontDestroyOnLoad` in Bootstrap. Auth completes later, in the Authentication
-scene. Worst race: auth completes between HCS-Awake and HCS-Start — `Start()` then
+scene. Worst race: auth completes between HCS-Awake and HCS-Start - `Start()` then
 calls `HandleSignedInEvent()`, which is **idempotent** (sees `_joining == true` or
 already-initialized state and no-ops). Safe.
 
@@ -323,19 +323,19 @@ Bootstrap DI resolution, *before* `UnityServices.InitializeAsync()` completes, s
 constructor-time read would pin null forever. Also a project-wide anti-pattern in
 `CLAUDE.md`.
 
-## Error-handling matrix — recovery action for every catch site
+## Error-handling matrix - recovery action for every catch site
 
 Every catch in `HostConnectionService` / `PartySessionService` /
 `PresenceLobbyService` maps to one of these recovery actions. **No catch silently
 drops state.** This is the recovery-policy spec; it is distinct from the NetDiag
 log classifier (see `../NetworkDiagnostics/ARCHITECTURE.md`, "Not a retry-control
-predicate") — the matrix decides *what to do*, NetDiag only decides *what to log*.
+predicate") - the matrix decides *what to do*, NetDiag only decides *what to log*.
 
 | Catch site | Failure class | Recovery |
 |---|---|---|
 | `RefreshPartyMembersAsync` benign Lobby-patcher noise | Spurious SDK NRE | Swallow silently (known SDK bug) |
 | `RefreshPartyMembersAsync` `RateLimitedException` | UGS rate limit | Set `_rateLimitBackoffUntil`, skip this tick, retry next interval. State unchanged. |
-| `RefreshPartyMembersAsync` 404 / SessionNotFound | Server-side session deleted | Classify **definite**: call `LeavePartyKeepHostAsync` → fresh solo session. UI updates via `OnHostConnectionLost` + per-member `OnPartyMemberLeft`. |
+| `RefreshPartyMembersAsync` 404 / SessionNotFound | Server-side session deleted | Classify **definite**: call `LeavePartyKeepHostAsync` -> fresh solo session. UI updates via `OnHostConnectionLost` + per-member `OnPartyMemberLeft`. |
 | `RefreshPartyMembersAsync` other `SessionException` | Transient | Log warning, increment `_consecutiveRefreshErrors`, retry next tick. After threshold (3), promote to definite. |
 | `PartySessionService.LeaveAsync` inner UGS throw | Session already gone | Already wrapped; ref cleared regardless. Caller ends in clean state. No change. |
 | `KickPartyMemberAsync` UGS throw | Dead session / disconnected target | Wrap in try/catch, log, state unchanged. Host can retry (target reappears on next refresh). |
@@ -343,15 +343,15 @@ predicate") — the matrix decides *what to do*, NetDiag only decides *what to l
 | `CreateAsync` `RateLimitedException` | UGS rate limit | Existing backoff. No change. |
 | `CreateAsync` other | Permanent failure | Bubble to `EnsurePartySessionAsync`, which raises retry event for `BootStatusPanel`. User-visible recovery. |
 | `SendInviteAsync` UGS throw | Lobby gone / target offline | Wrap, log, return false. UI shows error toast (already wired). |
-| `AcceptInviteAsync` UGS throw on join | Inviter session gone | Caller (`PartyInviteController.AcceptInviteAsync`) catches → `RecoverFromFailedTransitionAsync`. |
-| `OnDestroy` null fields | Missing inspector ref / Reflex DI failure | `Debug.LogError`, skip the dependent cleanup. Loud failure → visible in editor. |
+| `AcceptInviteAsync` UGS throw on join | Inviter session gone | Caller (`PartyInviteController.AcceptInviteAsync`) catches -> `RecoverFromFailedTransitionAsync`. |
+| `OnDestroy` null fields | Missing inspector ref / Reflex DI failure | `Debug.LogError`, skip the dependent cleanup. Loud failure -> visible in editor. |
 
 ## Related docs
 
-- `REFACTOR.md` — the active refactor backlog (PIC + PartySessionService + NetworkTransitionService)
-- `BUGS.md` — open party-side bugs
-- `TESTS.md` — manual MPPM test procedures
-- `TODOS.md` — minor parking-lot items
-- `../PresenceSystem/ARCHITECTURE.md` — presence-lobby layer
-- `../NetworkDiagnostics/ARCHITECTURE.md` — NetDiag overlay used by all party catches
-- `../THREADING.md` — main-thread affinity rules (mandatory for every UGS / Netcode await)
+- `REFACTOR.md` - the active refactor backlog (PIC + PartySessionService + NetworkTransitionService)
+- `BUGS.md` - open party-side bugs
+- `TESTS.md` - manual MPPM test procedures
+- `TODOS.md` - minor parking-lot items
+- `../PresenceSystem/ARCHITECTURE.md` - presence-lobby layer
+- `../NetworkDiagnostics/ARCHITECTURE.md` - NetDiag overlay used by all party catches
+- `../THREADING.md` - main-thread affinity rules (mandatory for every UGS / Netcode await)

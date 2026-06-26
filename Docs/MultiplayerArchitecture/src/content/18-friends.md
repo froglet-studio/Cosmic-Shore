@@ -1,4 +1,4 @@
-<div class="sec-eyebrow">Part II · Social</div>
+<div class="sec-eyebrow">Part II * Social</div>
 
 # The friends system
 
@@ -15,7 +15,7 @@ Every mutating method calls `SyncAllRelationships()` after the SDK call to keep 
 | `InitializeAsync` | `FriendsService.InitializeAsync` | Wire events, sync lists, raise `OnFriendsServiceReady` |
 | `SendFriendRequestByNameAsync` | `AddFriendByNameAsync` | Add to `OutgoingRequests` |
 | `SendFriendRequestAsync` | `AddFriendAsync` | Add to `OutgoingRequests` |
-| `AcceptFriendRequestAsync` | `AddFriendAsync` | Move incoming → `Friends`, raise `OnFriendAdded` |
+| `AcceptFriendRequestAsync` | `AddFriendAsync` | Move incoming -> `Friends`, raise `OnFriendAdded` |
 | `DeclineFriendRequestAsync` | `DeleteIncomingFriendRequestAsync` | Remove from `IncomingRequests` |
 | `RemoveFriendAsync` | `DeleteFriendAsync` | Remove from `Friends`, raise `OnFriendRemoved` |
 | `BlockPlayerAsync` / `UnblockPlayerAsync` | `AddBlockAsync` / `DeleteBlockAsync` | Manage `BlockedPlayers` |
@@ -30,11 +30,11 @@ Every mutating method calls `SyncAllRelationships()` after the SDK call to keep 
 |---|---|---|
 | Enter menu / sign-in | `Online` | "In Menu" (`Menu_Main`) |
 | Enter a game scene | `Busy` | "In Game" (scene, vessel class, party session id) |
-| App shutdown | `Offline` | — |
+| App shutdown | `Offline` | - |
 
 ## Adding a friend
 
-There is currently **no UI entry point** for sending a friend request — the by-name
+There is currently **no UI entry point** for sending a friend request - the by-name
 `AddFriendPanel` and the per-row add-friend control were both retired, and
 `FriendsListPanel` now renders only the Online + Requests sections. The single-writer
 facade methods remain for when an add-friend control is re-introduced; pick by the
@@ -49,7 +49,7 @@ Incoming requests arrive as `RequestInfoEntry` rows (Accept/Decline) in the Requ
 
 ::: insight Friends vs. party invites are different systems
 Adding a friend is a **persistent** relationship via the Friends SDK; a party invite is an
-**ephemeral**, session-scoped exchange via lobby player properties. They never share state — and the
+**ephemeral**, session-scoped exchange via lobby player properties. They never share state - and the
 friend system *feeds* the party system (an online row's "invite" button calls
 `HostConnectionService.SendInviteAsync`), rather than duplicating it.
 :::

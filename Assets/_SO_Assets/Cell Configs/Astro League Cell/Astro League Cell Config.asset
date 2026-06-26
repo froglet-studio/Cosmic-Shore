@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Astro League Cell Config
   m_EditorClassIdentifier:
   CellName: Astro League
-  Description: Hypersea-soccer arena cell with a trail-grazing food web — fauna spawn
+  Description: Hypersea-soccer arena cell with a trail-grazing food web - fauna spawn
     in the controlling color, hunt opposing trail, and at Frenzy graze any-domain mass.
   Icon: {fileID: 21300000, guid: 6aa1c06e11b265744a5f9fa8858ac72a, type: 3}
   Difficulty: 2

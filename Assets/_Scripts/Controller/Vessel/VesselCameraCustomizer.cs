@@ -6,7 +6,7 @@ using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Applies the CameraSettingsSO—including any ControlOverrideFlags—
+    /// Applies the CameraSettingsSO-including any ControlOverrideFlags-
     /// to the active ICameraController and CameraManager.
     /// </summary>
     public class VesselCameraCustomizer : ElementalShipComponent, ICameraConfigurator
@@ -60,7 +60,7 @@ namespace CosmicShore.Gameplay
                 _cameraCtrl is CustomCameraController cccOrtho)
             {
                 cccOrtho.SetOrthographic(true, settings.orthographicSize);
-                CSDebug.Log($"[ShipCameraCustomizer] Orthographic override → size {settings.orthographicSize}");
+                CSDebug.Log($"[ShipCameraCustomizer] Orthographic override -> size {settings.orthographicSize}");
             }
         }
         

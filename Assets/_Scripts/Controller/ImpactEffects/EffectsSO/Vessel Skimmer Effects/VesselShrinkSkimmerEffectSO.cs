@@ -23,10 +23,10 @@ namespace CosmicShore.Gameplay
         private float minScale = 0.1f;
 
         [Header("Smoothing")]
-        [SerializeField, Tooltip("Seconds to lerp from current → shrunken size.")]
+        [SerializeField, Tooltip("Seconds to lerp from current -> shrunken size.")]
         private float shrinkLerpSeconds = 0.15f;
 
-        [SerializeField, Tooltip("Seconds to lerp from current → baseline when restoring.")]
+        [SerializeField, Tooltip("Seconds to lerp from current -> baseline when restoring.")]
         private float restoreLerpSeconds = 0.25f;
 
         [Header("Per-attacker cooldown")]

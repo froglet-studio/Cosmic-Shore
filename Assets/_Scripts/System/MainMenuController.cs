@@ -30,12 +30,12 @@ namespace CosmicShore.Core
     /// Single-writer: only this class transitions the menu state.
     ///
     /// Flow:
-    ///   None → Initializing   : Start() — configures game data, fires InitializeGame
-    ///   Initializing → Ready  : OnClientReady SOAP event (autopilot vessel spawned and active)
-    ///   Ready → Freestyle     : OnGameStateTransitionStart SOAP event (local player takes vessel control)
-    ///   Freestyle → Ready     : OnMenuStateTransitionStart SOAP event (local player returns to autopilot)
-    ///   Ready → LaunchingGame : OnLaunchGame SOAP event (player selected a game mode)
-    ///   Freestyle → LaunchingGame : can launch directly from freestyle
+    ///   None -> Initializing   : Start() - configures game data, fires InitializeGame
+    ///   Initializing -> Ready  : OnClientReady SOAP event (autopilot vessel spawned and active)
+    ///   Ready -> Freestyle     : OnGameStateTransitionStart SOAP event (local player takes vessel control)
+    ///   Freestyle -> Ready     : OnMenuStateTransitionStart SOAP event (local player returns to autopilot)
+    ///   Ready -> LaunchingGame : OnLaunchGame SOAP event (player selected a game mode)
+    ///   Freestyle -> LaunchingGame : can launch directly from freestyle
     ///
     /// In multiplayer party sessions, each client independently toggles between
     /// Ready and Freestyle for their own vessel. The state is local to each client.
@@ -70,7 +70,7 @@ namespace CosmicShore.Core
         /// </summary>
         public event Action<MainMenuState> OnStateChanged;
 
-        // ── Transition table ────────────────────────────────────────────
+        // -- Transition table --------------------------------------------
         static readonly Dictionary<MainMenuState, HashSet<MainMenuState>> ValidTransitions = new()
         {
             [MainMenuState.None] = new HashSet<MainMenuState>
@@ -98,7 +98,7 @@ namespace CosmicShore.Core
             },
         };
 
-        // ── Unity Lifecycle ─────────────────────────────────────────────
+        // -- Unity Lifecycle ---------------------------------------------
 
         void Start()
         {
@@ -113,7 +113,7 @@ namespace CosmicShore.Core
             UnsubscribeEvents();
         }
 
-        // ── Event Wiring ────────────────────────────────────────────────
+        // -- Event Wiring ------------------------------------------------
 
         void SubscribeEvents()
         {
@@ -145,13 +145,13 @@ namespace CosmicShore.Core
             _freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleExitFreestyle;
         }
 
-        // ── Game Data Configuration ─────────────────────────────────────
+        // -- Game Data Configuration -------------------------------------
 
         void ConfigureMenuGameData()
         {
             _gameData.SetSpawnPositions(_playerOrigins);
             _gameData.selectedVesselClass.Value = menuVesselClass;
-            // SelectedPlayerCount is NOT set here — menu autopilot spawns exactly 1 Player
+            // SelectedPlayerCount is NOT set here - menu autopilot spawns exactly 1 Player
             // via the Netcode pipeline. The game-launch path sets it via ConfigurePlayerCounts().
             _gameData.SelectedIntensity.Value = menuIntensity;
 
@@ -159,7 +159,7 @@ namespace CosmicShore.Core
             // gameData.selectedVesselClass was Squirrel (set by AppManager.ConfigureGameData).
             // That value got locked into NetDefaultVesselType in Player.OnNetworkSpawn before
             // Menu_Main loaded. ServerPlayerVesselInitializer's retry loop only overwrites
-            // NetDefaultVesselType when the current value is INVALID (Random/Any) — Squirrel
+            // NetDefaultVesselType when the current value is INVALID (Random/Any) - Squirrel
             // is valid, so the menu's selection (e.g. Serpent) never reaches the spawn chain.
             // Explicitly push the menu's selection onto the host's NetDefaultVesselType here
             // so the spawn chain spawns whatever the inspector dropdown says.
@@ -183,7 +183,7 @@ namespace CosmicShore.Core
                 hostPlayer.NetDefaultVesselType.Value = menuVesselClass;
         }
 
-        // ── Event Handlers ──────────────────────────────────────────────
+        // -- Event Handlers ----------------------------------------------
 
         void HandleMenuReady()
         {
@@ -197,7 +197,7 @@ namespace CosmicShore.Core
         /// player-vessel pair finishes initialization on this client.
         /// Replaces the old batch activation in HandleMenuReady which raced
         /// against pairs that hadn't resolved yet.
-        /// Host skips this — <see cref="MenuServerPlayerVesselInitializer"/>
+        /// Host skips this - <see cref="MenuServerPlayerVesselInitializer"/>
         /// already activates every player via ActivateAutopilot().
         /// </summary>
         void HandlePlayerPairInitialized(ulong playerNetObjId)
@@ -229,10 +229,10 @@ namespace CosmicShore.Core
             TransitionTo(MainMenuState.Ready);
         }
 
-        // ── Autopilot ─────────────────────────────────────────────
+        // -- Autopilot ---------------------------------------------
 
         /// <summary>
-        /// Activates autopilot on the local player's vessel — each machine's local
+        /// Activates autopilot on the local player's vessel - each machine's local
         /// activation. On the host machine <see cref="MenuServerPlayerVesselInitializer"/>
         /// already activated every player via ActivateAutopilot, so this is redundant
         /// there; on client machines it is the primary activation for the locally-owned
@@ -240,7 +240,7 @@ namespace CosmicShore.Core
         /// Domain is NOT touched here. The menu domain is server-authoritative:
         /// MenuServerPlayerVesselInitializer resets NetDomain before vessel spawn, and
         /// Player.OnNetDomainChanged keeps the local mirrors + vessel paint in sync on
-        /// every peer. Client code must never write domain locally — a local overwrite
+        /// every peer. Client code must never write domain locally - a local overwrite
         /// desyncs this machine from the replicated truth until the next NetDomain delta
         /// (Docs/ScoringSystem/BUGS.md B10 relapse; Docs/PartySystem/BUGS.md B9).
         /// </summary>
@@ -254,7 +254,7 @@ namespace CosmicShore.Core
             player.InputController?.SetPause(true);
         }
 
-        // ── State Machine ───────────────────────────────────────────────
+        // -- State Machine -----------------------------------------------
 
         bool TransitionTo(MainMenuState newState)
         {
@@ -263,13 +263,13 @@ namespace CosmicShore.Core
 
             if (!ValidTransitions.TryGetValue(_state, out var allowed) || !allowed.Contains(newState))
             {
-                CSDebug.LogWarning($"[MainMenuController] Invalid transition: {_state} → {newState}");
+                CSDebug.LogWarning($"[MainMenuController] Invalid transition: {_state} -> {newState}");
                 return false;
             }
 
             var previous = _state;
             _state = newState;
-            CSDebug.Log($"[MainMenuController] {previous} → {newState}");
+            CSDebug.Log($"[MainMenuController] {previous} -> {newState}");
             OnStateChanged?.Invoke(newState);
             return true;
         }

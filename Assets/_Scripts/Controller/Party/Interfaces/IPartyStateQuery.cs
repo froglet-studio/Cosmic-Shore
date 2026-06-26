@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // IPartyStateQuery.cs
 // Read-only window into the current party lifecycle phase.
 //
@@ -6,7 +6,7 @@
 //   FriendsInitializer and any UI component that wants to display "In Party"
 //   or show the active session ID should NOT depend on the full
 //   HostConnectionService class.  Depending on the concrete class creates
-//   a tight coupling — if HCS changes, every reader might break.
+//   a tight coupling - if HCS changes, every reader might break.
 //
 //   With this interface, readers only see what they actually need:
 //   - What state are we in?
@@ -16,7 +16,7 @@
 //   HostConnectionService implements this interface; clients receive it via
 //   Reflex DI or by reading HostConnectionService.Instance (which is always
 //   valid after Awake on the same persistent GO).
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 namespace CosmicShore.Gameplay
 {
@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
     /// Implemented by <see cref="HostConnectionService"/> (single writer).
     ///
     /// Use this interface in consumers (FriendsInitializer, UI) instead of
-    /// depending directly on HostConnectionService — it narrows the surface
+    /// depending directly on HostConnectionService - it narrows the surface
     /// and makes each dependency explicit and testable.
     /// </summary>
     public interface IPartyStateQuery

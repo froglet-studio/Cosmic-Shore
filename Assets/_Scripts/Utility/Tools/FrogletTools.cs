@@ -14,7 +14,7 @@ namespace CosmicShore.Utility
             LogControlWindow.LoadPrefs();
         }
 
-        // ── Legacy menu items (all tools live in the Toolbox panel now) ──────
+        // -- Legacy menu items (all tools live in the Toolbox panel now) ------
 
         [MenuItem("FrogletTools/Legacy/Logging/All Logs", false, 100)]
         static void LegacyLogAll() { CSDebug.LogLevel = CSLogLevel.All; PersistLogPrefs(); }
@@ -48,7 +48,7 @@ namespace CosmicShore.Utility
             EditorPrefs.SetBool("CSDebug_ErrorsEnabled", CSDebug.ErrorsEnabled);
         }
 
-        // ─── Performance tools ───────────────────────────
+        // --- Performance tools ---------------------------
 
         [MenuItem("FrogletTools/AOE Benchmark Overlay", false, 300)]
         private static void ToggleAOEBenchmark()
@@ -74,7 +74,7 @@ namespace CosmicShore.Utility
 
             var go = new GameObject("[AOEBenchmarkRunner]");
             go.AddComponent<AOEBenchmarkRunner>();
-            Debug.Log("[FrogletTools] AOE Benchmark started — check Console for results.");
+            Debug.Log("[FrogletTools] AOE Benchmark started - check Console for results.");
         }
     }
 }

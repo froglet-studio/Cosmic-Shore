@@ -12,22 +12,22 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SparrowVesselTelemetry : VesselTelemetry
     {
-        [Header("Stat Events — Sparrow")]
+        [Header("Stat Events - Sparrow")]
         [SerializeField] private VesselStatEventSO prismBlocksShotStat;
         [SerializeField] private VesselStatEventSO skyburstMissilesShotStat;
         [SerializeField] private VesselStatEventSO dangerBlocksSpawnedStat;
 
-        // ── Public records ─────────────────────────────────────────────────────
+        // -- Public records -----------------------------------------------------
 
         public int PrismBlocksShot       { get; private set; }
         public int SkyburstMissilesShot  { get; private set; }
         public int DangerBlocksSpawned   { get; private set; }
 
-        // ── Registration ───────────────────────────────────────────────────────
+        // -- Registration -------------------------------------------------------
 
         protected override void RegisterStatsExtended()
         {
-            Debug.Log($"[SparrowTelemetry] RegisterStats — " +
+            Debug.Log($"[SparrowTelemetry] RegisterStats - " +
                 $"prismBlocks={(prismBlocksShotStat != null ? "OK" : "NULL")}, " +
                 $"skyburst={(skyburstMissilesShotStat != null ? "OK" : "NULL")}, " +
                 $"dangerBlocks={(dangerBlocksSpawnedStat != null ? "OK" : "NULL")}");
@@ -36,14 +36,14 @@ namespace CosmicShore.Gameplay
             RegisterStat(dangerBlocksSpawnedStat);
         }
 
-        // ── Turn lifecycle ─────────────────────────────────────────────────────
+        // -- Turn lifecycle -----------------------------------------------------
 
         protected override void OnTurnStartedExtended()
         {
             FullAutoBlockShootActionExecutor.OnBlockShot += HandleBlockShot;
             FireGunActionExecutor.OnShotFired            += HandleSkyburstFired;
             VesselPrismController.OnDangerBlockCreated   += HandleDangerBlockSpawned;
-            Debug.Log("[SparrowTelemetry] Turn started — subscribed to BlockShot, ShotFired, DangerBlockCreated");
+            Debug.Log("[SparrowTelemetry] Turn started - subscribed to BlockShot, ShotFired, DangerBlockCreated");
         }
 
         protected override void OnTurnEndedExtended()
@@ -51,7 +51,7 @@ namespace CosmicShore.Gameplay
             FullAutoBlockShootActionExecutor.OnBlockShot -= HandleBlockShot;
             FireGunActionExecutor.OnShotFired            -= HandleSkyburstFired;
             VesselPrismController.OnDangerBlockCreated   -= HandleDangerBlockSpawned;
-            Debug.Log($"[SparrowTelemetry] Turn ended — prismBlocks={PrismBlocksShot}, " +
+            Debug.Log($"[SparrowTelemetry] Turn ended - prismBlocks={PrismBlocksShot}, " +
                 $"skyburst={SkyburstMissilesShot}, dangerBlocks={DangerBlocksSpawned}");
         }
 
@@ -66,7 +66,7 @@ namespace CosmicShore.Gameplay
             dangerBlocksSpawnedStat?.Reset();
         }
 
-        // ── Event handlers ─────────────────────────────────────────────────────
+        // -- Event handlers -----------------------------------------------------
 
         private void HandleBlockShot(string playerName)
         {

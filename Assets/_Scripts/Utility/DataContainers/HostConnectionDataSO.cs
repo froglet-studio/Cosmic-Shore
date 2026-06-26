@@ -14,9 +14,9 @@ namespace CosmicShore.Utility
         menuName = "ScriptableObjects/DataContainers/Host Connection Data")]
     public class HostConnectionDataSO : ScriptableObject
     {
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Connection State
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         [Header("Connection Events")]
         [Tooltip("Raised when the local player successfully joins or creates the presence lobby.")]
@@ -25,17 +25,17 @@ namespace CosmicShore.Utility
         [Tooltip("Raised when the local player leaves or is disconnected from the presence lobby.")]
         public ScriptableEventNoParam OnHostConnectionLost;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Online Players (Presence Lobby)
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         [Header("Online Players")]
         [Tooltip("Reactive list of all online players currently in the presence lobby (excluding local player).")]
         public ScriptableListPartyPlayerData OnlinePlayers;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Party Members
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         [Header("Party")]
         [Tooltip("Reactive list of players currently in the local player's party (includes self at index 0).")]
@@ -56,9 +56,9 @@ namespace CosmicShore.Utility
 
         public int MaxPartySlots => maxPartySlots;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Invites
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         [Header("Invites")]
         [Tooltip("Raised when the local player receives a party invite from another player.")]
@@ -76,9 +76,9 @@ namespace CosmicShore.Utility
                  "also dismisses the same invite shown elsewhere.")]
         public ScriptableEventNoParam OnInviteResolved;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Local Player Identity
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         [Header("Local Player (runtime)")]
         [HideInInspector] public string LocalPlayerId;
@@ -93,7 +93,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// True when the local player owns the shared UGS presence/discovery lobby
         /// (i.e. they were the first user to sign in and create it). This has no
-        /// bearing on game-launch authority or party ownership — it only reflects
+        /// bearing on game-launch authority or party ownership - it only reflects
         /// who happens to own the global discovery session.
         /// </summary>
         [HideInInspector] public bool IsPresenceLobbyHost;
@@ -107,9 +107,9 @@ namespace CosmicShore.Utility
         /// </summary>
         [HideInInspector] public bool IsPartyHost;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Lifecycle
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         public bool HasOpenSlots => PartyMembers == null || PartyMembers.Count < maxPartySlots;
 

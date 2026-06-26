@@ -8,7 +8,7 @@ namespace CosmicShore.Utility
     /// a regular icosahedron and projecting every vertex onto the sphere of the
     /// requested radius.
     ///
-    /// Subdivision count drives the poly budget — each level quadruples the face
+    /// Subdivision count drives the poly budget - each level quadruples the face
     /// count: level 0 = 20 tris, 1 = 80, 2 = 320, 3 = 1280. Level 2 is a good
     /// "medium-poly" default: dense enough to read as round, faceted enough that
     /// rotation is clearly visible (see <see cref="AstroLeagueBall"/>).
@@ -41,7 +41,7 @@ namespace CosmicShore.Utility
             // 32-bit index buffer so high subdivisions (flat-shaded vert count grows fast) never
             // overflow the default 16-bit limit. Set here (not only in Generate) so callers that
             // rewrite a Mesh in place are equally safe. Level 2 (320 tris / 960 flat verts) is fine
-            // either way; this is headroom for subdivisions ≥ 5.
+            // either way; this is headroom for subdivisions >= 5.
             mesh.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
 
             subdivisions = Mathf.Clamp(subdivisions, 0, 6);
@@ -67,7 +67,7 @@ namespace CosmicShore.Utility
             mesh.RecalculateBounds();
         }
 
-        // ── Base icosahedron (12 verts, 20 faces) ────────────────────────────
+        // -- Base icosahedron (12 verts, 20 faces) ----------------------------
 
         static void BuildIcosahedron(out List<Vector3> verts, out List<int> tris)
         {
@@ -93,7 +93,7 @@ namespace CosmicShore.Utility
             };
         }
 
-        // ── One subdivision pass: split each tri into 4, sharing midpoints ────
+        // -- One subdivision pass: split each tri into 4, sharing midpoints ----
 
         static void Subdivide(List<Vector3> verts, List<int> tris, Dictionary<long, int> cache, float radius)
         {
@@ -128,7 +128,7 @@ namespace CosmicShore.Utility
             return index;
         }
 
-        // ── Mesh writers ─────────────────────────────────────────────────────
+        // -- Mesh writers -----------------------------------------------------
 
         static void WriteSmooth(Mesh mesh, List<Vector3> verts, List<int> tris)
         {

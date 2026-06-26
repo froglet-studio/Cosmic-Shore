@@ -12,7 +12,7 @@ namespace CosmicShore.UI
     public class WidescreenLayoutAdapter : MonoBehaviour
     {
         [Tooltip("Maximum allowed aspect ratio (width / height). " +
-                 "Content wider than this gets pillarboxed. Default 2.17 ≈ 19.5:9.")]
+                 "Content wider than this gets pillarboxed. Default 2.17 ~ 19.5:9.")]
         [SerializeField] private float maxAspectRatio = 2.17f;
 
         private RectTransform _rt;
@@ -39,7 +39,7 @@ namespace CosmicShore.UI
             float screenAspect = (float)Screen.width / Screen.height;
             if (screenAspect <= maxAspectRatio)
             {
-                // Within allowed aspect ratio — fill the screen
+                // Within allowed aspect ratio - fill the screen
                 _rt.anchorMin = Vector2.zero;
                 _rt.anchorMax = Vector2.one;
                 _rt.offsetMin = Vector2.zero;

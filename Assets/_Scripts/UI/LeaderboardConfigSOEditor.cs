@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
@@ -288,7 +288,7 @@ namespace CosmicShore.UI
             if (mappingIndex >= 0 && mappingIndex < leaderboardMappingsProperty.arraySize)
             {
                 GUI.backgroundColor = new Color(1f, 0.5f, 0.5f);
-                if (GUILayout.Button("×", GUILayout.Width(25)))
+                if (GUILayout.Button("x", GUILayout.Width(25)))
                 {
                     DeleteMapping(mappingIndex, gameMode, intensity);
                 }
@@ -432,13 +432,13 @@ namespace CosmicShore.UI
             string message = "Validation Results:\n\n";
             
             if (duplicates.Count > 0)
-                message += $"⚠️ Duplicate IDs found: {string.Join(", ", duplicates)}\n\n";
+                message += $"(!) Duplicate IDs found: {string.Join(", ", duplicates)}\n\n";
             
             if (missing.Count > 0)
-                message += $"⚠️ Missing mappings:\n{string.Join("\n", missing)}\n\n";
+                message += $"(!) Missing mappings:\n{string.Join("\n", missing)}\n\n";
             
             if (duplicates.Count == 0 && missing.Count == 0)
-                message += "✅ All mappings are valid!";
+                message += "[x] All mappings are valid!";
 
             EditorUtility.DisplayDialog("Validation Results", message, "OK");
         }

@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {
@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class ShapeDrawingCrystalManager : LocalCrystalManager
     {
-        // ── Events ────────────────────────────────────────────────────────────
+        // -- Events ------------------------------------------------------------
 
         /// <summary>
         /// Fired when a shape waypoint crystal is hit.
@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public event System.Action<int> OnWaypointCrystalHit;
 
-        // ── Overrides ─────────────────────────────────────────────────────────
+        // -- Overrides ---------------------------------------------------------
 
         /// <summary>
         /// Intercepts the standard explode flow.
@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
                     crystal.Explode(explodeParams);
             }
 
-            // Notify the shape drawing manager — do NOT call RespawnCrystal here
+            // Notify the shape drawing manager - do NOT call RespawnCrystal here
             OnWaypointCrystalHit?.Invoke(crystalId);
         }
 
@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public override void RespawnCrystal(int crystalId)
         {
-            // Just destroy the crystal — ShapeDrawingManager.HandleCrystalHit
+            // Just destroy the crystal - ShapeDrawingManager.HandleCrystalHit
             // will spawn the next waypoint crystal.
             if (cellData.TryGetCrystalById(crystalId, out var crystal) && crystal)
                 crystal.DestroyCrystal();

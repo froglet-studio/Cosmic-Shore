@@ -1,4 +1,4 @@
-﻿// ICellLifeSpawner.cs
+// ICellLifeSpawner.cs
 using CosmicShore.Utility;
 
 namespace CosmicShore.Gameplay

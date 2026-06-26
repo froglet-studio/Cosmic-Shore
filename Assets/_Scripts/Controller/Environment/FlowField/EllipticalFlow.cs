@@ -1,7 +1,7 @@
 
 namespace CosmicShore.Gameplay
 {
-    ﻿using UnityEngine;
+    using UnityEngine;
 
     [CreateAssetMenu(fileName = "EllipticalFlowData", menuName = "ScriptableObjects/Flow/EllipticalFlow", order = 30)]
     [System.Serializable] 

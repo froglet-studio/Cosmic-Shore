@@ -15,10 +15,10 @@ namespace CosmicShore.UI
     ///
     /// Opt-in + safe by default: collection stays OFF until an age-eligible player
     /// explicitly taps Accept (see <see cref="AnalyticsServiceFacade"/>). If this
-    /// panel is never built/wired, nothing is collected — the fail-safe is silence.
+    /// panel is never built/wired, nothing is collected - the fail-safe is silence.
     ///
     /// Not a consent wall: "Decline" / "Under 13" both dismiss the panel and let
-    /// the player continue — they just leave analytics off (legally required).
+    /// the player continue - they just leave analytics off (legally required).
     /// </summary>
     public class PrivacyConsentController : MonoBehaviour
     {
@@ -32,7 +32,7 @@ namespace CosmicShore.UI
         [SerializeField] GameObject ageGatePanel;
         [SerializeField] GameObject consentPanel;
 
-        [Header("Age gate (neutral — preferred)")]
+        [Header("Age gate (neutral - preferred)")]
         [Tooltip("Optional. If assigned, populated with birth years; the submit button reads the selection.")]
         [SerializeField] TMP_Dropdown birthYearDropdown;
         [SerializeField] Button birthYearSubmitButton;
@@ -66,7 +66,7 @@ namespace CosmicShore.UI
             {
                 // No facade injected (e.g. scene missing a ContainerScope). Stay hidden;
                 // the facade's opt-in gate keeps collection off regardless.
-                Debug.LogWarning("[PrivacyConsent] AnalyticsServiceFacade not injected — hiding privacy flow.");
+                Debug.LogWarning("[PrivacyConsent] AnalyticsServiceFacade not injected - hiding privacy flow.");
                 root.SetActive(false);
                 return;
             }
@@ -120,7 +120,7 @@ namespace CosmicShore.UI
             if (consentPanel != null) consentPanel.SetActive(true);
         }
 
-        // ── Age gate ──
+        // -- Age gate --
 
         public void OnBirthYearSubmitted()
         {
@@ -152,7 +152,7 @@ namespace CosmicShore.UI
                 Finish();
         }
 
-        // ── Consent ──
+        // -- Consent --
 
         public void OnAccept()
         {
@@ -166,7 +166,7 @@ namespace CosmicShore.UI
             Finish();
         }
 
-        // ── Shared ──
+        // -- Shared --
 
         public void OpenPrivacyPolicy()
         {

@@ -12,20 +12,20 @@ using UnityEngine.Audio;
 /// <summary>
 /// Central audio service. Two parallel pipelines:
 ///
-///   1. **FMOD events** (preferred / new) — one-shot SFX wired in the
+///   1. **FMOD events** (preferred / new) - one-shot SFX wired in the
 ///      inspector as <see cref="EventReference"/> per
 ///      <see cref="MenuAudioCategory"/> and <see cref="GameplaySFXCategory"/>.
 ///      Routed through <see cref="FMODOneShotVolumeHelper"/> so each one-shot
 ///      respects <see cref="GameSetting.SFXLevel"/> / SFXEnabled.
 ///
-///   2. **Unity AudioSource** (legacy) — music routing via two
+///   2. **Unity AudioSource** (legacy) - music routing via two
 ///      <see cref="AudioSource"/>s (<see cref="MusicSource1"/> /
 ///      <see cref="MusicSource2"/>) with crossfade support, plus a single
 ///      shared <see cref="sfxSource"/> for the older
 ///      <see cref="PlaySFXClip(AudioClip)"/> API still used by
 ///      <c>CountdownTimer</c>, <c>ProfileModal</c>, and <c>Crystal</c>.
 ///      The mixer-bus volume (<see cref="masterMixer"/>) only affects this
-///      path — FMOD events bypass it entirely.
+///      path - FMOD events bypass it entirely.
 ///
 /// Migration path: convert callers from <see cref="PlaySFXClip(AudioClip)"/>
 /// to <see cref="PlaySFXEvent(EventReference)"/> (or one of its overloads)
@@ -102,10 +102,10 @@ namespace CosmicShore.Core
         #region Fields
         [Inject] GameSetting gameSetting;
 
-        [Header("Music Routing (Unity AudioSource — legacy)")]
+        [Header("Music Routing (Unity AudioSource - legacy)")]
         [SerializeField, Tooltip(
             "Master AudioMixer driving the legacy music + SFX AudioSources. " +
-            "FMOD events do NOT route through this mixer — their volume is " +
+            "FMOD events do NOT route through this mixer - their volume is " +
             "applied per-instance via FMODOneShotVolumeHelper.")]
         AudioMixer masterMixer;
 
@@ -120,7 +120,7 @@ namespace CosmicShore.Core
         [SerializeField] float musicVolume = .1f;
         [SerializeField] float sfxVolume = .1f;
 
-        [Header("Menu Audio Events (FMOD) — wire in the inspector")]
+        [Header("Menu Audio Events (FMOD) - wire in the inspector")]
         [SerializeField, Tooltip("Played for MenuAudioCategory.OptionClick.")]
         EventReference optionClickEvent;
 
@@ -157,7 +157,7 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Played for MenuAudioCategory.RedeemTicket.")]
         EventReference redeemTicketEvent;
 
-        [Header("Gameplay SFX Events (FMOD) — wire in the inspector")]
+        [Header("Gameplay SFX Events (FMOD) - wire in the inspector")]
         [SerializeField, Tooltip("Played for GameplaySFXCategory.BlockDestroy.")]
         EventReference blockDestroyEvent;
 
@@ -218,53 +218,53 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip("Played for GameplaySFXCategory.CrystalSkim.")]
         EventReference crystalSkimEvent;
 
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustScored — local player's skimmer overtook an opponent.")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustScored - local player's skimmer overtook an opponent.")]
         EventReference joustScoredEvent;
 
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustReceived — local player was overtaken by an opponent's skimmer.")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustReceived - local player was overtaken by an opponent's skimmer.")]
         EventReference joustReceivedEvent;
 
-        [Header("Elemental Crystal Receive Events (FMOD) — wire in the inspector")]
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementChargeReceived — local player collected a Charge crystal.")]
+        [Header("Elemental Crystal Receive Events (FMOD) - wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementChargeReceived - local player collected a Charge crystal.")]
         EventReference elementChargeReceivedEvent;
 
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementMassReceived — local player collected a Mass crystal.")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementMassReceived - local player collected a Mass crystal.")]
         EventReference elementMassReceivedEvent;
 
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementSpaceReceived — local player collected a Space crystal.")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementSpaceReceived - local player collected a Space crystal.")]
         EventReference elementSpaceReceivedEvent;
 
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementTimeReceived — local player collected a Time crystal.")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementTimeReceived - local player collected a Time crystal.")]
         EventReference elementTimeReceivedEvent;
 
-        [Header("Comeback Boost Events (FMOD) — wire in the inspector")]
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackCharge — local player receives a Charge comeback buff.")]
+        [Header("Comeback Boost Events (FMOD) - wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackCharge - local player receives a Charge comeback buff.")]
         EventReference comebackChargeEvent;
 
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackMass — local player receives a Mass comeback buff.")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackMass - local player receives a Mass comeback buff.")]
         EventReference comebackMassEvent;
 
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackSpace — local player receives a Space comeback buff.")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackSpace - local player receives a Space comeback buff.")]
         EventReference comebackSpaceEvent;
 
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackTime — local player receives a Time comeback buff.")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackTime - local player receives a Time comeback buff.")]
         EventReference comebackTimeEvent;
 
-        [Header("Joust Buff Events (FMOD) — wire in the inspector")]
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffCharge — local ally was overtaken (jousted) by a teammate's skimmer and buffed; Charge representative.")]
+        [Header("Joust Buff Events (FMOD) - wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffCharge - local ally was overtaken (jousted) by a teammate's skimmer and buffed; Charge representative.")]
         EventReference joustBuffChargeEvent;
 
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffMass — local ally was overtaken (jousted) by a teammate's skimmer and buffed; Mass representative.")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffMass - local ally was overtaken (jousted) by a teammate's skimmer and buffed; Mass representative.")]
         EventReference joustBuffMassEvent;
 
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffSpace — local ally was overtaken (jousted) by a teammate's skimmer and buffed; Space representative.")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffSpace - local ally was overtaken (jousted) by a teammate's skimmer and buffed; Space representative.")]
         EventReference joustBuffSpaceEvent;
 
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffTime — local ally was overtaken (jousted) by a teammate's skimmer and buffed; Time representative.")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffTime - local ally was overtaken (jousted) by a teammate's skimmer and buffed; Time representative.")]
         EventReference joustBuffTimeEvent;
 
-        [Header("Track Impact Event (FMOD) — wire in the inspector")]
-        [SerializeField, Tooltip("Played for GameplaySFXCategory.TrackImpact — a vessel ran into the HexRace track (an indestructible, environment-owned prism) rather than a destructible player trail. Spatialized at the impact position.")]
+        [Header("Track Impact Event (FMOD) - wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.TrackImpact - a vessel ran into the HexRace track (an indestructible, environment-owned prism) rather than a destructible player trail. Spatialized at the impact position.")]
         EventReference trackImpactEvent;
 
         [Header("Gameplay SFX Tuning")]
@@ -284,7 +284,7 @@ namespace CosmicShore.Core
         [SerializeField, Min(1), Tooltip(
             "Max BlockDestroy one-shots allowed to start within " +
             "blockDestroyThrottleWindow seconds. Breaks beyond this cap in the " +
-            "same window are dropped — the sound is already saturated, so the " +
+            "same window are dropped - the sound is already saturated, so the " +
             "extra voices are inaudible individually but would otherwise stack " +
             "into harsh noise and waste FMOD voices.")]
         int blockDestroyMaxPerWindow = 4;
@@ -298,7 +298,7 @@ namespace CosmicShore.Core
         [SerializeField, Tooltip(
             "When true, log a warning the first time a category is played " +
             "without an EventReference wired. Useful during the AudioClip " +
-            "→ FMOD migration; turn off once all slots are filled.")]
+            "-> FMOD migration; turn off once all slots are filled.")]
         bool warnOnUnwiredCategory = true;
 
         public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
@@ -350,7 +350,7 @@ namespace CosmicShore.Core
 
             if (gameSetting == null)
             {
-                CSDebug.LogError("[AudioSystem] GameSetting not injected — ensure GameSetting is registered in the DI container.");
+                CSDebug.LogError("[AudioSystem] GameSetting not injected - ensure GameSetting is registered in the DI container.");
                 return;
             }
 
@@ -403,7 +403,7 @@ namespace CosmicShore.Core
             sfxVolume = level / 5f;   // max .2 -- default max volume is too high
         }
 
-        // ---------- Music API (Unity AudioSource — legacy) ----------
+        // ---------- Music API (Unity AudioSource - legacy) ----------
 
         public void PlayMusicClip(AudioClip audioClip)
         {
@@ -496,7 +496,7 @@ namespace CosmicShore.Core
             return musicSource1.isPlaying || musicSource2.isPlaying;
         }
 
-        // ---------- SFX API (FMOD — preferred) ----------
+        // ---------- SFX API (FMOD - preferred) ----------
 
         /// <summary>
         /// Plays the FMOD event wired for <paramref name="category"/>. Volume
@@ -595,7 +595,7 @@ namespace CosmicShore.Core
             FMODOneShotVolumeHelper.PlaySFXOneShotAttached(reference, attachTo, ResolveFMODSFXVolume());
         }
 
-        // ---------- SFX API (Unity AudioSource — legacy) ----------
+        // ---------- SFX API (Unity AudioSource - legacy) ----------
 
         public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
         {
@@ -631,7 +631,7 @@ namespace CosmicShore.Core
         /// Linear 0..1 volume for FMOD SFX one-shots. Returns 0 when SFX is
         /// muted via the settings panel; otherwise returns the slider value.
         /// Decoupled from <see cref="sfxVolume"/> (which uses a /5 scale for
-        /// the legacy AudioSource path) — FMOD events are authored at
+        /// the legacy AudioSource path) - FMOD events are authored at
         /// project-appropriate levels in FMOD Studio so we pass the slider
         /// through unscaled.
         /// </summary>

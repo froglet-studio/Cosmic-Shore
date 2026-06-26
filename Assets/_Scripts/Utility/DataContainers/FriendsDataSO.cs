@@ -14,9 +14,9 @@ namespace CosmicShore.Utility
         menuName = "ScriptableObjects/DataContainers/Friends Data")]
     public class FriendsDataSO : ScriptableObject
     {
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Friends List
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         [Header("Friends")]
         [Tooltip("Reactive list of confirmed friends.")]
@@ -28,9 +28,9 @@ namespace CosmicShore.Utility
         [Tooltip("Raised when a friend is removed.")]
         public ScriptableEventFriendData OnFriendRemoved;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Friend Requests
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         [Header("Friend Requests")]
         [Tooltip("Reactive list of incoming friend requests (awaiting local player's response).")]
@@ -45,17 +45,17 @@ namespace CosmicShore.Utility
         [Tooltip("Raised when an outgoing friend request is sent.")]
         public ScriptableEventFriendData OnFriendRequestSent;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Blocked Players
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         [Header("Blocked")]
         [Tooltip("Reactive list of blocked players.")]
         public ScriptableListFriendData BlockedPlayers;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Service State
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         [Header("Service State (runtime)")]
         [HideInInspector] public bool IsInitialized;
@@ -63,9 +63,9 @@ namespace CosmicShore.Utility
         [Tooltip("Raised when the friends service finishes initialization.")]
         public ScriptableEventNoParam OnFriendsServiceReady;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Computed Properties
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         public int FriendCount => Friends != null ? Friends.Count : 0;
         public int IncomingRequestCount => IncomingRequests != null ? IncomingRequests.Count : 0;
@@ -81,9 +81,9 @@ namespace CosmicShore.Utility
             }
         }
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Lifecycle
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         public void ResetRuntimeData()
         {

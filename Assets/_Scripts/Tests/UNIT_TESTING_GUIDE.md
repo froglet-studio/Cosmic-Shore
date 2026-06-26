@@ -1,10 +1,10 @@
-# Unit Testing Guide — Cosmic Shore
+# Unit Testing Guide - Cosmic Shore
 
 ## Test Inventory
 
 35 test files, ~450+ individual tests across 6 locations.
 
-### Edit-Mode Tests (`Assets/_Scripts/Tests/EditMode/`) — 21 files
+### Edit-Mode Tests (`Assets/_Scripts/Tests/EditMode/`) - 21 files
 
 | File | Subject Under Test | Why It Exists |
 |---|---|---|
@@ -24,13 +24,13 @@
 | `CSDebugTests` | `CSDebug` log levels | Wrong preset = silent failures in production OR verbose logs killing performance. |
 | `GameObjectExtensionTests` | `GetOrAdd`, `OrNull`, `EnableChildren`, `DisableChildren`, `DestroyChildren`, `TryGetInterface`, `IsLayer` | Used everywhere. GetOrAdd duplicating = invisible component doubling. |
 | `IRoundStatsCleanupTests` | `IRoundStats.Cleanup()` | Zeroes 30+ stats between rounds. Missing property = score bleed. Most common stats bug. |
-| `GameDataSOTests` | `GameDataSO` — reset, sorting, domain stats, volume, turns | Single most important runtime data object. Bugs cascade to every game mode. |
+| `GameDataSOTests` | `GameDataSO` - reset, sorting, domain stats, volume, turns | Single most important runtime data object. Bugs cascade to every game mode. |
 | `MainMenuStateTests` | `MainMenuState` enum + `MainMenuController` transition table | Menu state machine validation. Invalid transition allowed = menu stuck or crash. |
 | `MenuFreestyleToggleTests` | `MenuCrystalClickHandler` + `MainMenuController` freestyle SOAP | Autopilot-to-freestyle toggle API. Missing guards = Time.timeScale freeze in multiplayer. |
 | `PartyInviteControllerTests` | `PartyInviteController` preconditions | Host-to-client transition guards. Missing guard = Netcode crash during invite accept. |
-| `PartyInviteSystemTests` | Full party/invite lifecycle — ParseInvite, collection contracts, slot management, dedup, API | Most comprehensive test file. Entire invite pipeline from parsing to HashSet dedup to slot scenarios. |
+| `PartyInviteSystemTests` | Full party/invite lifecycle - ParseInvite, collection contracts, slot management, dedup, API | Most comprehensive test file. Entire invite pipeline from parsing to HashSet dedup to slot scenarios. |
 
-### Bootstrap Tests (`Assets/_Scripts/System/Bootstrap/Tests/`) — 6 files
+### Bootstrap Tests (`Assets/_Scripts/System/Bootstrap/Tests/`) - 6 files
 
 | File | Why |
 |---|---|
@@ -41,13 +41,13 @@
 | `ApplicationLifecycleManagerTests` | Pause/focus/quit propagation, SOAP wiring, ResetStatics, scene events. IsQuitting not set = cleanup skipped. |
 | `SceneFlowIntegrationTests` | Build settings: Bootstrap is index 0, scene ordering, SceneNameListSO matches build settings, scene files exist. |
 
-### Multiplayer Tests (`Assets/_Scripts/Controller/Multiplayer/Tests/`) — 1 file
+### Multiplayer Tests (`Assets/_Scripts/Controller/Multiplayer/Tests/`) - 1 file
 
 | File | Why |
 |---|---|
-| `ServerPlayerVesselInitializerWithAITests` | AI placement: contiguous active-domain slice, 3-tier tie-break (lowest total → fewest humans → Jade > Ruby > Gold), worked sequences from spec. Without this, AI piles onto one domain or differs between machines. |
+| `ServerPlayerVesselInitializerWithAITests` | AI placement: contiguous active-domain slice, 3-tier tie-break (lowest total -> fewest humans -> Jade > Ruby > Gold), worked sequences from spec. Without this, AI piles onto one domain or differs between machines. |
 
-### Performance Benchmark Tests (`Assets/_Scripts/Utility/PerformanceBenchmark/Tests/Editor/`) — 6 files
+### Performance Benchmark Tests (`Assets/_Scripts/Utility/PerformanceBenchmark/Tests/Editor/`) - 6 files
 
 | File | Why |
 |---|---|
@@ -58,9 +58,9 @@
 | `BenchmarkReportTests` | Report formatting and output. |
 | `MetricDeltaTests` | Metric delta calculations between runs. |
 
-### PlayFab Tests — 1 file (stub)
+### PlayFab Tests - 1 file (stub)
 
-`PlayFabCatalogTests` — placeholder with trivial assert.
+`PlayFabCatalogTests` - placeholder with trivial assert.
 
 ---
 
@@ -68,7 +68,7 @@
 
 ### 1. Test Contracts, Not Implementation
 
-The best tests don't test how something works internally — they test the **promises** a type makes to its callers.
+The best tests don't test how something works internally - they test the **promises** a type makes to its callers.
 
 `PartyPlayerDataTests` tests the equality contract: "Same PlayerId = equal, regardless of other fields." `HashSet`, `Dictionary`, and `ScriptableList.Contains()` all depend on that contract.
 
@@ -97,7 +97,7 @@ For every state machine, test:
 - Every invalid transition (the denied cases are MORE important)
 - Same-state idempotency
 - Terminal states (allowed from anywhere?)
-- Recovery paths (Disconnected → MainMenu)
+- Recovery paths (Disconnected -> MainMenu)
 
 ### 5. Test the Reset Path
 
@@ -110,12 +110,12 @@ Every `Reset`/`Clear`/`Cleanup` method needs:
 ### 6. Test Collection Compatibility
 
 Any type used as Dictionary key, HashSet element, or matched via Contains/Equals:
-- Same key → deduplicates
-- Different keys → both present
+- Same key -> deduplicates
+- Different keys -> both present
 - Contains finds by the correct field
 - Remove works by the correct field
 
-### 7. Test Parse ↔ Format Round-Trips
+### 7. Test Parse <-> Format Round-Trips
 
 Any serialization format needs:
 - Valid round-trip preserves all fields
@@ -149,7 +149,7 @@ SO tests create instances in SetUp and DestroyImmediate in TearDown. No asset po
 
 | Assembly | Location |
 |---|---|
-| `CosmicShore.Tests.EditMode` | `Assets/_Scripts/Tests/EditMode/` (no .asmdef — compiles in default assembly) |
+| `CosmicShore.Tests.EditMode` | `Assets/_Scripts/Tests/EditMode/` (no .asmdef - compiles in default assembly) |
 | `CosmicShore.Bootstrap.Tests` | `Assets/_Scripts/System/Bootstrap/Tests/` (no .asmdef) |
 | `CosmicShore.Multiplayer.Tests` | `Assets/_Scripts/Controller/Multiplayer/Tests/` (no .asmdef) |
 | `CosmicShore.PlayFabTests` | `Assets/_Scripts/System/Playfab/PlayFabTests/` (has .asmdef) |
@@ -161,10 +161,10 @@ Note: Most test directories compile in Unity's default assembly. Only `PlayFabTe
 
 ## Coverage Gaps (Opportunities)
 
-- **No play-mode tests** — multiplayer spawn chain, SOAP event runtime firing, async UniTask flows untested
-- **No integration tests for SOAP event wiring** — data contracts verified but not cross-system event propagation
-- **Impact effects system** — 20+ effect SO types and 11 impactor types, zero coverage
-- **Vessel actions** — 40+ VesselActionSO types untested
-- **Input system** — IInputStrategy implementations, InputController strategy switching
-- **Pool system** — GenericPoolManager async buffer maintenance
-- **PlayFab tests** — placeholder only
+- **No play-mode tests** - multiplayer spawn chain, SOAP event runtime firing, async UniTask flows untested
+- **No integration tests for SOAP event wiring** - data contracts verified but not cross-system event propagation
+- **Impact effects system** - 20+ effect SO types and 11 impactor types, zero coverage
+- **Vessel actions** - 40+ VesselActionSO types untested
+- **Input system** - IInputStrategy implementations, InputController strategy switching
+- **Pool system** - GenericPoolManager async buffer maintenance
+- **PlayFab tests** - placeholder only

@@ -9,16 +9,16 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// TournamentDataSO Tests — validates the per-DOMAIN {2,1,0} placement scoring fold that
+    /// TournamentDataSO Tests - validates the per-DOMAIN {2,1,0} placement scoring fold that
     /// powers the Tournament/Shuffle meta-mode.
     ///
     /// WHY THIS MATTERS:
     /// Standings are reduced LOCALLY on every peer from the already-synced GameDataSO.Results
     /// (no extra networking), so the fold MUST be deterministic and identical everywhere:
-    ///   • a domain's place each game = the best (lowest) player Rank on that domain,
-    ///   • domains ordered by that best rank (ties → enum order Jade→Ruby→Gold),
-    ///   • placement crystals {2,1,0} awarded by place and accumulated across games,
-    ///   • final sort: points desc, then best single placement, then enum order.
+    ///   - a domain's place each game = the best (lowest) player Rank on that domain,
+    ///   - domains ordered by that best rank (ties -> enum order Jade->Ruby->Gold),
+    ///   - placement crystals {2,1,0} awarded by place and accumulated across games,
+    ///   - final sort: points desc, then best single placement, then enum order.
     /// A divergence here desyncs the leaderboard between host and clients.
     /// </summary>
     [TestFixture]
@@ -32,7 +32,7 @@ namespace CosmicShore.Tests
         {
             _data = ScriptableObject.CreateInstance<TournamentDataSO>();
             // RecordResults raises these SOAP events; wire throwaway instances (fail-loud in
-            // production means they are never null there — here we supply test doubles).
+            // production means they are never null there - here we supply test doubles).
             _data.OnTournamentStarted   = MakeEvent();
             _data.OnGameResultRecorded  = MakeEvent();
             _data.OnStandingsChanged    = MakeEvent();
@@ -76,7 +76,7 @@ namespace CosmicShore.Tests
         [Test]
         public void RecordResults_DomainPlace_UsesBestPlayerRank()
         {
-            // Jade has the worst AND the best player; its best (rank 1) decides its place → 1st.
+            // Jade has the worst AND the best player; its best (rank 1) decides its place -> 1st.
             _data.RecordResults(new[]
             {
                 Row(1, Domains.Jade),
@@ -175,10 +175,10 @@ namespace CosmicShore.Tests
 
             var sorted = _data.BuildSortedStandings();
 
-            // Points tie → best placement: Jade(1) & Ruby(1) above Gold(2); Jade<Ruby by enum order.
+            // Points tie -> best placement: Jade(1) & Ruby(1) above Gold(2); Jade<Ruby by enum order.
             Assert.AreEqual(Domains.Jade, sorted[0].Domain);
             Assert.AreEqual(Domains.Ruby, sorted[1].Domain);
-            Assert.AreEqual(Domains.Gold, sorted[2].Domain, "Gold last — never placed better than 2nd.");
+            Assert.AreEqual(Domains.Gold, sorted[2].Domain, "Gold last - never placed better than 2nd.");
         }
 
         [Test]
@@ -247,7 +247,7 @@ namespace CosmicShore.Tests
         [Test]
         public void EffectiveWinTarget_FallsBackToSerializedWinTarget_WhenUnresolved()
         {
-            // Pure data SO (no TournamentController run) → no tool value resolved → use the field.
+            // Pure data SO (no TournamentController run) -> no tool value resolved -> use the field.
             Assert.AreEqual(_data.WinTarget, _data.EffectiveWinTarget,
                 "Until ResolveWinTarget runs, EffectiveWinTarget mirrors the serialized fallback.");
 
@@ -271,7 +271,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, _data.GamesPlayed, "GamesPlayed resets for a fresh shuffle.");
             Assert.IsFalse(_data.IsActive);
             Assert.AreEqual(4, _data.IntensityCeiling,
-                "IntensityCeiling persists — Play Again routes through ResetRuntime and must keep it.");
+                "IntensityCeiling persists - Play Again routes through ResetRuntime and must keep it.");
         }
 
         [Test]
@@ -297,7 +297,7 @@ namespace CosmicShore.Tests
         [Test]
         public void CrystalsForDomain_UsesBestPlayerRank()
         {
-            // Jade holds the worst AND the best player; its best (rank 1) makes it 1st → 2.
+            // Jade holds the worst AND the best player; its best (rank 1) makes it 1st -> 2.
             var results = new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby), Row(3, Domains.Jade) };
 
             Assert.AreEqual(2, _data.CrystalsForDomain(results, Domains.Jade));
@@ -309,8 +309,8 @@ namespace CosmicShore.Tests
         {
             var results = new[] { Row(1, Domains.Jade), Row(2, Domains.Ruby) };
 
-            Assert.AreEqual(0, _data.CrystalsForDomain(results, Domains.Gold), "Gold didn't play → 0.");
-            Assert.AreEqual(0, _data.CrystalsForDomain(null, Domains.Jade), "Null results → 0.");
+            Assert.AreEqual(0, _data.CrystalsForDomain(results, Domains.Gold), "Gold didn't play -> 0.");
+            Assert.AreEqual(0, _data.CrystalsForDomain(null, Domains.Jade), "Null results -> 0.");
         }
     }
 }

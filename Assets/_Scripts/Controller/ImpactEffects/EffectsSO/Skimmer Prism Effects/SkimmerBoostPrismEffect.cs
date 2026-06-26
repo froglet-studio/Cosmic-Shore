@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
             float baseMult = boostBaseMultiplier != null ? boostBaseMultiplier.Value : 1f;
             float maxMult  = boostMaxMultiplier  != null ? boostMaxMultiplier.Value  : 5f;
 
-            // HARD GUARDS (prevents “stuck forever”)
+            // HARD GUARDS (prevents "stuck forever")
             baseMult = Mathf.Max(0.0001f, baseMult);
             maxMult  = Mathf.Max(baseMult, maxMult);
 

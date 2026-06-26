@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
         int maxCharges = 4;
 
         [SerializeField] float reloadCooldown = 3f; // wait before reload begins
-        [SerializeField] float reloadFillTime = 0.8f; // HUD fill anim time for ALL pips (0→1)
+        [SerializeField] float reloadFillTime = 0.8f; // HUD fill anim time for ALL pips (0->1)
 
         [Header("Optional resource gate (one-time spend per shot; set <=0 to ignore)")] [SerializeField]
         int resourceIndex = 1;
@@ -27,9 +27,9 @@ namespace CosmicShore.Gameplay
         [SerializeField] float resourceCost = 0f;
 
         // HUD events (magazine-based)
-        public event Action<int, int> OnChargesSnapshot; // (available, max) – fire on init & after reload
-        public event Action<int, float> OnChargeConsumed; // (pipIndex, durationSeconds) – animate 1→0
-        public event Action<float> OnReloadStarted; // (reloadFillTimeSeconds) – animate all pips 0→1
+        public event Action<int, int> OnChargesSnapshot; // (available, max) - fire on init & after reload
+        public event Action<int, float> OnChargeConsumed; // (pipIndex, durationSeconds) - animate 1->0
+        public event Action<float> OnReloadStarted; // (reloadFillTimeSeconds) - animate all pips 0->1
         public event Action OnReloadCompleted; // fired when charges restored
 
         // (legacy; safe to ignore in HUD)
@@ -136,7 +136,7 @@ namespace CosmicShore.Gameplay
             if (reloadCooldown > 0f)
                 yield return new WaitForSeconds(reloadCooldown);
 
-            // tell HUD to animate ALL pips 0→1 over reloadFillTime
+            // tell HUD to animate ALL pips 0->1 over reloadFillTime
             OnReloadStarted?.Invoke(Mathf.Max(0.01f, reloadFillTime));
             if (reloadFillTime > 0f)
                 yield return new WaitForSeconds(reloadFillTime);

@@ -132,7 +132,7 @@ namespace CosmicShore.UI
             if (cardBackground != null) cardBackground.color = isLocked ? lockedTint : _originalBgColor;
             if (descriptionText != null && isClaimed) descriptionText.text = "Completed";
 
-            // Animate unlock transition (Locked → anything visible), skip on initial spawn
+            // Animate unlock transition (Locked -> anything visible), skip on initial spawn
             if (!isFirstSet && prevState == QuestItemState.Locked && !isLocked)
                 PlayUnlockAnimation();
         }

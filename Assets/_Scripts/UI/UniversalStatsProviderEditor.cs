@@ -80,7 +80,7 @@ namespace CosmicShore.UI
             var headerStyle = new GUIStyle(EditorStyles.boldLabel);
             var originalColor = GUI.contentColor;
             GUI.contentColor = TrackerColor;
-            EditorGUILayout.LabelField("🎯 Score Tracker", headerStyle);
+            EditorGUILayout.LabelField(" Score Tracker", headerStyle);
             GUI.contentColor = originalColor;
             
             EditorGUILayout.Space(3);
@@ -124,7 +124,7 @@ namespace CosmicShore.UI
                     var statusStyle = new GUIStyle(EditorStyles.miniLabel);
                     statusStyle.normal.textColor = SuccessColor;
                     EditorGUILayout.LabelField(
-                        $"✓ {tracker.GetType().Name} ({statsCount} stats available)", 
+                        $"[x] {tracker.GetType().Name} ({statsCount} stats available)", 
                         statusStyle
                     );
                 }
@@ -152,7 +152,7 @@ namespace CosmicShore.UI
             
             // Header
             var headerStyle = new GUIStyle(EditorStyles.boldLabel);
-            EditorGUILayout.LabelField("📊 Stats to Display", headerStyle);
+            EditorGUILayout.LabelField(" Stats to Display", headerStyle);
             
             EditorGUILayout.Space(3);
             
@@ -193,7 +193,7 @@ namespace CosmicShore.UI
             
             // Show available stats
             GUI.enabled = scoreTrackerProp.objectReferenceValue != null;
-            if (GUILayout.Button("📋 Show Available Stats", buttonStyle, GUILayout.Height(32)))
+            if (GUILayout.Button(" Show Available Stats", buttonStyle, GUILayout.Height(32)))
             {
                 ShowAvailableStats();
             }
@@ -201,7 +201,7 @@ namespace CosmicShore.UI
             
             // Preview stats (play mode only)
             GUI.enabled = Application.isPlaying;
-            if (GUILayout.Button("▶ Preview Current Values", buttonStyle, GUILayout.Height(32)))
+            if (GUILayout.Button("> Preview Current Values", buttonStyle, GUILayout.Height(32)))
             {
                 PreviewStats();
             }
@@ -225,7 +225,7 @@ namespace CosmicShore.UI
             
             if (!provider.ValidateBindings(out var errors))
             {
-                showValidation = EditorGUILayout.Foldout(showValidation, "⚠ Validation Issues", true);
+                showValidation = EditorGUILayout.Foldout(showValidation, "(!) Validation Issues", true);
                 
                 if (showValidation)
                 {
@@ -237,7 +237,7 @@ namespace CosmicShore.UI
                     
                     foreach (var error in errors)
                     {
-                        EditorGUILayout.LabelField($"  • {error}", errorStyle);
+                        EditorGUILayout.LabelField($"  - {error}", errorStyle);
                     }
                     
                     EditorGUILayout.EndVertical();
@@ -287,7 +287,7 @@ namespace CosmicShore.UI
                 }
                 else
                 {
-                    EditorGUI.LabelField(iconRect, "❓");
+                    EditorGUI.LabelField(iconRect, "?");
                 }
             }
             
@@ -378,9 +378,9 @@ namespace CosmicShore.UI
                     "No Stats Available",
                     "The tracker has no exposed stats.\n\n" +
                     "Make sure:\n" +
-                    "• A tracker is assigned\n" +
-                    "• Tracker implements IStatExposable\n" +
-                    "• GetExposedStats() returns values",
+                    "- A tracker is assigned\n" +
+                    "- Tracker implements IStatExposable\n" +
+                    "- GetExposedStats() returns values",
                     "OK"
                 );
                 return;
@@ -389,7 +389,7 @@ namespace CosmicShore.UI
             var message = $"Your tracker exposes {keys.Count} stats:\n\n";
             foreach (var key in keys)
             {
-                message += $"  • {key}\n";
+                message += $"  - {key}\n";
             }
             message += "\nUse these as data sources for your stat bindings.";
             
@@ -403,23 +403,23 @@ namespace CosmicShore.UI
             
             if (stats.Count == 0)
             {
-                CSDebug.LogWarning("═══════════════════════════════════\n" +
+                CSDebug.LogWarning("===================================\n" +
                                  "No stats configured or returned\n" +
-                                 "═══════════════════════════════════");
+                                 "===================================");
                 return;
             }
             
-            CSDebug.Log("═══════════════════════════════════");
+            CSDebug.Log("===================================");
             CSDebug.Log($"<color=cyan><b>  STATS PREVIEW ({stats.Count} total)</b></color>");
-            CSDebug.Log("═══════════════════════════════════");
+            CSDebug.Log("===================================");
             
             foreach (var stat in stats)
             {
-                var icon = stat.Icon != null ? "✓" : " ";
+                var icon = stat.Icon != null ? "[x]" : " ";
                 CSDebug.Log($"<color=cyan>[{icon}] <b>{stat.Label}</b>: {stat.Value}</color>");
             }
             
-            CSDebug.Log("═══════════════════════════════════");
+            CSDebug.Log("===================================");
         }
         
         #endregion

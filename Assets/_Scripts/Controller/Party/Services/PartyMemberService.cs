@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // PartyMemberService.cs
 // Owns the party member list: diff, seed, repopulate, and clear.
 //
@@ -16,12 +16,12 @@
 //   fetched by the caller) and writes to the SOAP data container.
 //
 // LIFETIME:
-//   Pure C# — no MonoBehaviour.  Instantiated as a field on
+//   Pure C# - no MonoBehaviour.  Instantiated as a field on
 //   HostConnectionService for Phases 10-11.  Phase 12 registers it in Reflex DI.
 //
 // THREAD SAFETY:
 //   Main-thread only.
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
@@ -38,36 +38,36 @@ namespace CosmicShore.Gameplay
     /// to keep party-slot UI in sync.
     ///
     /// <para>
-    /// Does NOT call any UGS SDK or touch NetworkManager — it only reads from
+    /// Does NOT call any UGS SDK or touch NetworkManager - it only reads from
     /// <c>ISession.Players</c> (already refreshed by <see cref="IPartySessionService"/>)
     /// and mutates the <see cref="HostConnectionDataSO.PartyMembers"/> list.
     /// </para>
     ///
-    /// Lifetime: pure C# — no MonoBehaviour.  Created as a field on
+    /// Lifetime: pure C# - no MonoBehaviour.  Created as a field on
     /// <see cref="HostConnectionService"/>; will be DI-registered in Phase 12.
     /// Thread-safety: main-thread only.
     /// </summary>
     public sealed class PartyMemberService : IPartyMemberService
     {
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Constants
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         // Property key names mirror the values written by PresenceLobbyService
         // and PartySessionService so that player-property reads are consistent.
         private const string DISPLAY_NAME_KEY = "displayName";
         private const string AVATAR_ID_KEY    = "avatarId";
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Dependencies
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         private readonly HostConnectionDataSO _connectionData;
         private readonly SoapPartyEventBus    _eventBus;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Construction
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         /// <summary>
         /// Creates the party member service.
@@ -86,9 +86,9 @@ namespace CosmicShore.Gameplay
             _eventBus       = eventBus;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // IPartyMemberService
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         /// <inheritdoc/>
         public void SeedLocalPlayer(bool clearFirst = true)

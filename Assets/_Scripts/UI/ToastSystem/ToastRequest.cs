@@ -1,4 +1,4 @@
-﻿// using CosmicShore.UI;
+// using CosmicShore.UI;
 // using UnityEngine;
 //
 // public readonly struct ToastRequest

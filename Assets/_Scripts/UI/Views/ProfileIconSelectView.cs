@@ -41,7 +41,7 @@ namespace CosmicShore.UI
         [Inject] private PlayerDataService dataService;
         [Inject] private GameDataSO gameData;
 
-        // Needed to inject runtime-instantiated icon buttons — Reflex does not auto-inject
+        // Needed to inject runtime-instantiated icon buttons - Reflex does not auto-inject
         // prefabs created via Instantiate(), so the button's [Inject] AudioSystem would be null.
         [Inject] private Container _container;
 
@@ -163,7 +163,7 @@ namespace CosmicShore.UI
                 var buttonInstance = Instantiate(iconButtonPrefab, iconGrid.transform);
                 buttonInstance.transform.localScale = Vector3.one;
 
-                // Reflex doesn't auto-inject Instantiate()'d prefabs — inject so the button's
+                // Reflex doesn't auto-inject Instantiate()'d prefabs - inject so the button's
                 // [Inject] AudioSystem resolves (otherwise OnClick NREs on the audio call).
                 if (_container != null)
                     GameObjectInjector.InjectRecursive(buttonInstance.gameObject, _container);
@@ -312,7 +312,7 @@ namespace CosmicShore.UI
             // Revert input to current profile name
             PopulateDisplayNameFromProfile();
 
-            // Either close the modal or just go back to avatar tab; I’ll close for now:
+            // Either close the modal or just go back to avatar tab; I'll close for now:
             ModalWindowOut();
         }
     }

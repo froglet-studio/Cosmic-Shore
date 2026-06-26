@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private Crystal crystalPrefab;
         [SerializeField] private float   forwardOffset = 12f;
         [SerializeField] private float   fadeValue     = 0.5f;
-        [Tooltip("Optional terrain mask – leave empty to skip the ray-stop check")]
+        [Tooltip("Optional terrain mask - leave empty to skip the ray-stop check")]
         [SerializeField] private LayerMask rayMask;
 
         [Header("Cooldown")]
@@ -26,12 +26,12 @@ namespace CosmicShore.Gameplay
 
         public override void StartAction()
         {
-            // 1️⃣ Check cooldown
+            // 1 Check cooldown
             float timeSinceLastUse = Time.time - _lastUseTime;
             if (timeSinceLastUse < cooldown)
             {
                 float remaining = cooldown - timeSinceLastUse;
-                CSDebug.Log($"[DeployTeamCrystalAction] Ability on cooldown – {remaining:F1}s left");
+                CSDebug.Log($"[DeployTeamCrystalAction] Ability on cooldown - {remaining:F1}s left");
                 return;
             }
 
@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
             ActivateCrystal(_ghostCrystal);
             _ghostCrystal = null;
 
-            // 2️⃣ Mark ability as used
+            // 2 Mark ability as used
             _lastUseTime = Time.time;
             CSDebug.Log($"[DeployTeamCrystalAction] Crystal deployed. Cooldown started ({cooldown}s)");
         }

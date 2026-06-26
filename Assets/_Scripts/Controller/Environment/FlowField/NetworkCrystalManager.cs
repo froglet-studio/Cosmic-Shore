@@ -121,7 +121,7 @@ namespace CosmicShore.Gameplay
 
         void OnResetForReplay()
         {
-            // Reset base class spawn state on ALL clients — destroys old crystals,
+            // Reset base class spawn state on ALL clients - destroys old crystals,
             // clears anchor/position tracking so spawning starts fresh from index 0.
             ResetSpawnState();
 
@@ -131,7 +131,7 @@ namespace CosmicShore.Gameplay
 
             for (int i = 0; i < n_Slots.Count; i++)
                 n_Slots[i] = CrystalSlotData.Empty;
-            CSDebug.Log("[NetworkCrystalManager] Reset for replay — anchor index and slots cleared.");
+            CSDebug.Log("[NetworkCrystalManager] Reset for replay - anchor index and slots cleared.");
         }
 
         // ---------------- Server Turn Start ----------------
@@ -324,7 +324,7 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// Atomic crystal slot data — position + domain in a single NetworkList entry.
+    /// Atomic crystal slot data - position + domain in a single NetworkList entry.
     /// Guarantees that when OnListChanged fires on any client, both the position
     /// and the server-authoritative domain are available in the same callback.
     /// </summary>

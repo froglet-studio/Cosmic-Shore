@@ -42,12 +42,12 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Touch-tuned easing: mostly linear with a subtle cubic dead zone.
-        /// The gamepad cosine curve crushes mid-range to ~15% output — that
+        /// The gamepad cosine curve crushes mid-range to ~15% output - that
         /// compensates for stick resistance but feels sluggish on glass where
         /// there is no friction. This blend keeps a gentle noise filter near
         /// center while staying responsive through mid-range.
         ///
-        /// Input [-2, 2] → Output [-1, 1] (same domain/range as gamepad Ease).
+        /// Input [-2, 2] -> Output [-1, 1] (same domain/range as gamepad Ease).
         /// </summary>
         protected override float Ease(float input)
         {
@@ -106,12 +106,12 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Detects touch-count transitions that map to drift actions.
-        /// 2+ → 1: a finger was lifted → start drift (single or double based on which thumb lifted)
-        /// 1 → 2+ or 1 → 0: drift ends
+        /// 2+ -> 1: a finger was lifted -> start drift (single or double based on which thumb lifted)
+        /// 1 -> 2+ or 1 -> 0: drift ends
         /// </summary>
         private void HandleDriftTransitions(int touchCount)
         {
-            // 2+ → 1: finger lifted, start drifting
+            // 2+ -> 1: finger lifted, start drifting
             if (prevTouchCount >= 2 && touchCount == 1)
             {
                 var remainingPosition = Touch.activeTouches[0].screenPosition;
@@ -119,28 +119,28 @@ namespace CosmicShore.Gameplay
 
                 if (remainingIsLeft)
                 {
-                    // Right thumb was lifted, only left remains → OnlyLeftStickAction
+                    // Right thumb was lifted, only left remains -> OnlyLeftStickAction
                     onlyLeftActive = true;
                     isDrifting = true;
                     inputStatus.OnButtonPressed.Raise(InputEvents.OnlyLeftStickAction);
                 }
                 else
                 {
-                    // Left thumb was lifted, only right remains → OnlyRightStickAction
+                    // Left thumb was lifted, only right remains -> OnlyRightStickAction
                     onlyRightActive = true;
                     isDrifting = true;
                     inputStatus.OnButtonPressed.Raise(InputEvents.OnlyRightStickAction);
                 }
             }
 
-            // Drift ends: 1 → 2+ (finger put back down) or 1 → 0 (remaining finger lifted)
+            // Drift ends: 1 -> 2+ (finger put back down) or 1 -> 0 (remaining finger lifted)
             if ((prevTouchCount == 1 && touchCount >= 2) ||
                 (prevTouchCount == 1 && touchCount == 0))
             {
                 StopDrift();
             }
 
-            // Edge case: 2+ → 0 (both lifted same frame) — no drift, just idle
+            // Edge case: 2+ -> 0 (both lifted same frame) - no drift, just idle
             if (prevTouchCount >= 2 && touchCount == 0)
             {
                 StopDrift();

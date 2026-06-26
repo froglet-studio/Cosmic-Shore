@@ -62,7 +62,7 @@ namespace CosmicShore.Utility
                 // File exists. Open read-only with FileShare.ReadWrite so concurrent
                 // access (e.g. two MPPM virtual players sharing one persistentDataPath,
                 // or a comparator re-reading during List.Sort) does not throw a
-                // sharing violation — the IOException would otherwise escape into
+                // sharing violation - the IOException would otherwise escape into
                 // callers like FavoriteSystem.IsFavorited inside a sort comparator.
                 using FileStream dataStream = new FileStream(
                     FilePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);

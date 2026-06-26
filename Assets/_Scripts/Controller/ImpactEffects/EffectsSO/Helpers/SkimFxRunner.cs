@@ -39,7 +39,7 @@ namespace CosmicShore.Gameplay
 
                 while (!token.IsCancellationRequested)
                 {
-                    // 🔑 Explicit null-check cancellation
+                    //  Explicit null-check cancellation
                     if (shipTransform == null || prism == null)
                     {
                         linkedCts.Cancel(); // cancel everything

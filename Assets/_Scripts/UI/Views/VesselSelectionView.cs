@@ -151,7 +151,7 @@ namespace CosmicShore.UI
                 bool isSelected = (selectedType == slot.vesselType);
 
                 if (verboseLogging)
-                    CSDebug.Log($"[ShipSelectionView] Slot {i} ({slot.vesselType}) → {ship.Name} (selected={isSelected})");
+                    CSDebug.Log($"[ShipSelectionView] Slot {i} ({slot.vesselType}) -> {ship.Name} (selected={isSelected})");
 
                 var capturedType = slot.vesselType;
                 var capturedShip = ship;

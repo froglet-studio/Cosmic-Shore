@@ -67,7 +67,7 @@ namespace CosmicShore.Gameplay
             UnsubscribeFromInputEvents();
 
             // During scene teardown the Player may already be destroyed.
-            // The event lives on the Player, so it's GC'd with it — skip the unsubscribe.
+            // The event lives on the Player, so it's GC'd with it - skip the unsubscribe.
             if (_subscribedToInputPaused && vesselStatus?.Player is UnityEngine.Object obj && obj != null)
             {
                 vesselStatus.InputStatus.OnToggleInputPaused -= OnToggleInputPaused;

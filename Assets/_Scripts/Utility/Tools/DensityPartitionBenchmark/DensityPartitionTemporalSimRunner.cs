@@ -15,28 +15,28 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     /// The geometric benchmark (DensityPartitionBenchmarkRunner) answers "is one
     /// query accurate?". This answers the question that actually matters: "over
     /// time, does the algorithm + flora growth + fauna consumption produce the
-    /// two-frequency oscillation the design wants — or a static plateau?"
+    /// two-frequency oscillation the design wants - or a static plateau?"
     ///
     /// It models the production loop faithfully enough to be load-bearing:
     ///   - Flora at fixed positions spawn prisms of their own domain while the
-    ///     cell phase is below Frenzy (FloraGrowingEnabled) — steady until frenzy.
+    ///     cell phase is below Frenzy (FloraGrowingEnabled) - steady until frenzy.
     ///   - Cell phase is driven by total prism count through CellPhaseRules /
-    ///     CellPhaseThresholds — the real production transition table.
+    ///     CellPhaseThresholds - the real production transition table.
     ///   - Fauna spawn for the *dominant* domain once the cell holds mass, seek the
     ///     density algorithm's anti-own-domain target (any-domain at Frenzy), and
     ///     continuously sweep an orbit sphere around it (re-rolling a sub-goal on
-    ///     arrival — the sim's stand-in for boid separation spreading the swarm),
+    ///     arrival - the sim's stand-in for boid separation spreading the swarm),
     ///     consuming opposing-domain prisms within consumeRadius along the way.
     ///
-    /// The headline test: run the whole sim three times and compare —
-    ///   OLD: the LITERAL shipped grid (fixed ±500m box). Outer-shell mass is
+    /// The headline test: run the whole sim three times and compare -
+    ///   OLD: the LITERAL shipped grid (fixed +/-500m box). Outer-shell mass is
     ///        invisible to the algorithm, so no fauna is ever directed there.
-    ///   MID: the c058663 fix (cell-sized grid at 17³ + smoothing + sub-voxel
+    ///   MID: the c058663 fix (cell-sized grid at 17^3 + smoothing + sub-voxel
     ///        interp). Sees the whole cell but its 141m voxels can't resolve
     ///        sub-cluster structure: fauna swarm one cluster, deplete its core,
     ///        then idle (the densest voxel never shifts because the cluster's
     ///        out-of-reach shell keeps the bin loaded).
-    ///   NEW: ProductionV2 — the Phase-2 BlockDensityGrid pipeline (75m adaptive
+    ///   NEW: ProductionV2 - the Phase-2 BlockDensityGrid pipeline (75m adaptive
     ///        voxels + smoothing + interp + voxel mean-shift). The answer tracks
     ///        remaining mass as fauna consume, so consumption sustains.
     /// The geometric benchmark proved MID is far more ACCURATE than OLD; this
@@ -47,7 +47,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     ///   - Swarm spread is modeled as an orbit-sphere sweep, not boid separation.
     ///   - Population is a flat cap, not production's base + 4-per-100-prisms
     ///     scaling (LightFaunaManagerDataSO.extraFaunaPerHundredPrisms).
-    ///   - Sim fauna travel ~7× faster than production (250 vs 35 m/s).
+    ///   - Sim fauna travel ~7x faster than production (250 vs 35 m/s).
     ///   These make the sim's absolute numbers unreliable; only the RELATIVE
     ///   comparison between the three runs (same fauna model) is load-bearing.
     ///   In-game observation in Menu_Main is the final ecology validation.
@@ -73,11 +73,11 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         public int seed = 42;
 
         [Header("Flora layout")]
-        [Tooltip("Flora placed within the production grid's ±500m box (the shipped grid CAN see these). " +
-                 "Distributed across innerClusterCount cluster centers — uniform-random placement creates " +
+        [Tooltip("Flora placed within the production grid's +/-500m box (the shipped grid CAN see these). " +
+                 "Distributed across innerClusterCount cluster centers - uniform-random placement creates " +
                  "a flat density field that the algorithm has nothing to lock onto.")]
         [Min(0)] public int innerFloraCount = 60;
-        [Tooltip("Flora placed in the 500m..(membrane-100m) outer shell (the shipped ±500m grid CANNOT see these). " +
+        [Tooltip("Flora placed in the 500m..(membrane-100m) outer shell (the shipped +/-500m grid CANNOT see these). " +
                  "Distributed across outerClusterCount cluster centers.")]
         [Min(0)] public int outerFloraCount = 60;
         [Tooltip("How many inner cluster centers innerFloraCount flora are distributed across. " +
@@ -109,9 +109,9 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         [Min(0.5f)] public float faunaGoalUpdateIntervalSeconds = 5f;
         [Tooltip("Radius (m) of the orbit sphere each fauna sweeps around the density target. " +
                  "The fauna continuously re-rolls a sub-goal inside this sphere, so the swarm " +
-                 "collectively covers a volume of roughly this + consumeRadius — the sim's " +
+                 "collectively covers a volume of roughly this + consumeRadius - the sim's " +
                  "stand-in for boid separation spreading the swarm. Default 120m so total reach " +
-                 "(120 + 40 = 160m) matches the algorithm's 150m smoothing kernel — i.e. the " +
+                 "(120 + 40 = 160m) matches the algorithm's 150m smoothing kernel - i.e. the " +
                  "swarm's effective consumption volume equals the volume the algorithm samples " +
                  "for density. Set lower (~60m) to model a tighter swarm; the cluster shell will " +
                  "become unreachable and consumption stalls.")]
@@ -139,52 +139,52 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             sb.AppendLine("=== DensityPartitionTemporalSim v1.0 ===");
             sb.AppendLine($"Date: {dateUtc}   Seed: {seed}");
             sb.AppendLine($"Cell membrane radius: {cellMembraneRadius:F0}m   Sim: {simDurationSeconds:F0}s @ {tickIntervalSeconds:F2}s/tick");
-            sb.AppendLine($"Flora: {innerFloraCount} inner (within ±500m) across {Math.Max(1, innerClusterCount)} clusters " +
+            sb.AppendLine($"Flora: {innerFloraCount} inner (within +/-500m) across {Math.Max(1, innerClusterCount)} clusters " +
                           $"+ {outerFloraCount} outer shell (>500m) across {Math.Max(1, outerClusterCount)} clusters, " +
-                          $"σ={floraClusterScatterRadius:F0}m");
+                          $"sigma={floraClusterScatterRadius:F0}m");
             var th = ScaledThresholds();
-            sb.AppendLine($"Phase thresholds (Default × {thresholdScale:F2}): " +
+            sb.AppendLine($"Phase thresholds (Default x {thresholdScale:F2}): " +
                           $"Restless {th.RestlessEnter}/{th.RestlessExit}  Frenzy {th.FrenzyEnter}/{th.FrenzyExit}");
             float floraRate = (innerFloraCount + outerFloraCount) / Mathf.Max(0.01f, floraGrowthIntervalSeconds);
             sb.AppendLine($"Flora production capacity: {floraRate:F0} prisms/s   " +
-                          $"Fauna consumption capacity: ~{faunaPopulationCap * faunaConsumePerTickInRange / Mathf.Max(0.01f, tickIntervalSeconds):F0} prisms/s (cap × rate)");
+                          $"Fauna consumption capacity: ~{faunaPopulationCap * faunaConsumePerTickInRange / Mathf.Max(0.01f, tickIntervalSeconds):F0} prisms/s (cap x rate)");
             sb.AppendLine();
-            sb.AppendLine("Three-way comparison: OLD is the literal shipped fixed-±500m grid; MID is the");
-            sb.AppendLine("c058663 fix (cell-sized 17³ + smoothing + sub-voxel interp); NEW is ProductionV2 —");
+            sb.AppendLine("Three-way comparison: OLD is the literal shipped fixed-+/-500m grid; MID is the");
+            sb.AppendLine("c058663 fix (cell-sized 17^3 + smoothing + sub-voxel interp); NEW is ProductionV2 -");
             sb.AppendLine("the Phase-2 BlockDensityGrid pipeline (75m adaptive voxels + smoothing + interp +");
             sb.AppendLine("voxel mean-shift). Geometric accuracy is necessary but not sufficient for the");
-            sb.AppendLine("ecology to oscillate — the algorithm also has to direct fauna onto locations where");
+            sb.AppendLine("ecology to oscillate - the algorithm also has to direct fauna onto locations where");
             sb.AppendLine("consumption is sustainable as the mass distribution shifts. Coarse-voxel smoothed");
             sb.AppendLine("argmax is sticky (fauna deplete one cluster's core and idle); fine voxels + voxel");
             sb.AppendLine("mean-shift let the target track remaining mass, sustaining consumption.");
             sb.AppendLine();
 
-            // --- Run A: the LITERAL shipped grid (fixed ±500m box) ---
+            // --- Run A: the LITERAL shipped grid (fixed +/-500m box) ---
             var optOld = DensityPartitionBenchmarkAlgorithms.ProductionFixedGrid17();
             var resultOld = RunOne(optOld);
-            AppendRun(sb, "OLD — ProductionFixedGrid17 (fixed ±500m box, the shipped grid)", resultOld, th);
+            AppendRun(sb, "OLD - ProductionFixedGrid17 (fixed +/-500m box, the shipped grid)", resultOld, th);
 
             // --- Run B: the cell-sized smoothed-interp grid (the c058663 fix as shipped) ---
             var optMid = DensityPartitionBenchmarkAlgorithms.GridSmoothedInterp17();
             var resultMid = RunOne(optMid);
-            AppendRun(sb, "MID — GridSmoothedInterp17 (cell-sized + smoothing + sub-voxel interp, c058663)", resultMid, th);
+            AppendRun(sb, "MID - GridSmoothedInterp17 (cell-sized + smoothing + sub-voxel interp, c058663)", resultMid, th);
 
-            // --- Run C: ProductionV2 — the EXACT Phase-2 production pipeline ---
-            // What BlockDensityGrid ships after the audit's §7.3 fix: adaptive
+            // --- Run C: ProductionV2 - the EXACT Phase-2 production pipeline ---
+            // What BlockDensityGrid ships after the audit's Sec 7.3 fix: adaptive
             // resolution targeting 75m voxels (33 points/axis at Blob-cell scale),
             // box smoothing at 150m, sub-voxel interp, then 5 iterations of
             // mean-shift over the RAW VOXEL HISTOGRAM (the production grid stores
-            // only counts — no prism positions to refine against).
+            // only counts - no prism positions to refine against).
             //
             // Why this beats MID: with 141m voxels (MID), an entire flora cluster
             // fits in one voxel, so the argmax can't shift as fauna deplete the
-            // cluster's reachable core — the out-of-reach shell keeps the bin
+            // cluster's reachable core - the out-of-reach shell keeps the bin
             // loaded and fauna idle. 75m voxels resolve sub-cluster structure, and
             // the voxel mean-shift walks the answer onto whatever mass actually
             // remains, so the target tracks consumption.
             var optNew = DensityPartitionBenchmarkAlgorithms.ProductionV2();
             var resultNew = RunOne(optNew);
-            AppendRun(sb, "NEW — ProductionV2 (75m voxels + smoothing + interp + voxel mean-shift — Phase 2 ship)", resultNew, th);
+            AppendRun(sb, "NEW - ProductionV2 (75m voxels + smoothing + interp + voxel mean-shift - Phase 2 ship)", resultNew, th);
 
             // --- Verdict ---
             sb.AppendLine("=== Verdict ===");
@@ -194,16 +194,16 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             sb.AppendLine();
 
             // What the three-way comparison can prove:
-            //  OLD plateau + MID plateau + NEW oscillates → the grid-sizing fix
+            //  OLD plateau + MID plateau + NEW oscillates -> the grid-sizing fix
             //    is necessary BUT the algorithm also needs mean-shift centroid
             //    refinement. The bare smoothed argmax sticks on one cluster and
             //    fauna deplete its core in seconds, then sit idle until the next
             //    goal update (5s); meanshift pulls the answer outward to where
             //    the remaining prisms are, sustaining consumption.
-            //  OLD plateau + MID oscillates → c058663 alone is sufficient (the
+            //  OLD plateau + MID oscillates -> c058663 alone is sufficient (the
             //    earlier sim that showed MID locking was a flora-distribution
             //    artifact, now fixed by clustering).
-            //  All three plateau → it's parameter-side, not algorithm-side.
+            //  All three plateau -> it's parameter-side, not algorithm-side.
             //    Likely: goal-update interval too long, fauna speed too low,
             //    or threshold scale needs nudging.
             bool oldOsc = !resultOld.IsPlateau;
@@ -213,13 +213,13 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             bool newBlind = !resultNew.OuterShellBounded;
             if (!midOsc && newOsc && !newBlind)
             {
-                sb.AppendLine("  CONFIRMED: the c058663 grid-sizing fix is necessary BUT not sufficient — the");
+                sb.AppendLine("  CONFIRMED: the c058663 grid-sizing fix is necessary BUT not sufficient - the");
                 sb.AppendLine("  Phase 2 pipeline (ProductionV2: 75m adaptive voxels + voxel mean-shift) is what");
                 sb.AppendLine("  sustains consumption. With 141m voxels (MID) one cluster fits per voxel, so the");
-                sb.AppendLine("  densest voxel can't shift as fauna eat the core — the out-of-reach shell keeps");
+                sb.AppendLine("  densest voxel can't shift as fauna eat the core - the out-of-reach shell keeps");
                 sb.AppendLine("  the bin loaded. 75m voxels resolve sub-cluster structure and the voxel");
                 sb.AppendLine("  mean-shift walks the answer onto remaining mass as the core empties.");
-                sb.AppendLine("  This is exactly what the Phase-2 BlockDensityGrid ships — see the audit §7.3.");
+                sb.AppendLine("  This is exactly what the Phase-2 BlockDensityGrid ships - see the audit Sec 7.3.");
             }
             else if (midOsc && !midBlind)
             {
@@ -229,7 +229,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             }
             else if (!oldOsc && !midOsc && !newOsc)
             {
-                sb.AppendLine("  ALL THREE PLATEAU — algorithm choice is not the load-bearing dimension here.");
+                sb.AppendLine("  ALL THREE PLATEAU - algorithm choice is not the load-bearing dimension here.");
                 sb.AppendLine("  Tune parameters: shorten faunaGoalUpdateIntervalSeconds (fauna retarget more");
                 sb.AppendLine("  often as they deplete a cluster), raise faunaPopulationCap, or lower");
                 sb.AppendLine("  thresholdScale so the Frenzy entry/exit band is tighter relative to flora");
@@ -237,7 +237,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             }
             else
             {
-                sb.AppendLine("  Mixed result — inspect the per-run tables above. The robust discriminator is");
+                sb.AppendLine("  Mixed result - inspect the per-run tables above. The robust discriminator is");
                 sb.AppendLine("  whether outer-shell mass is BOUNDED (count rises and falls) vs UNBOUNDED");
                 sb.AppendLine("  (count never decreases). A run that plateaus in Frenzy will look UNBOUNDED");
                 sb.AppendLine("  because Frenzy freezes flora at the moment of entry; that's a phase-lock,");
@@ -302,7 +302,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
             // --- Place flora deterministically, around CLUSTER CENTERS ---
             // Uniform-random flora over a 1200m sphere produces a near-flat density
-            // field — the algorithm has no clear peaks to lock onto and the swarm
+            // field - the algorithm has no clear peaks to lock onto and the swarm
             // wanders in low-contrast regions where consumption can't keep up with
             // growth. Production SpawnProfile data places flora in discrete biome
             // clumps; we model that with a small number of cluster centers.
@@ -367,7 +367,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 }
                 int total = jade + ruby + gold;
                 // The sim tracks nominal prisms (no per-prism scale), so its volume is
-                // count × NominalPrismVolume — with derived thresholds this reproduces
+                // count x NominalPrismVolume - with derived thresholds this reproduces
                 // the same ladder the old count-driven Compute walked.
                 phase = CellPhaseRules.Compute(
                     total * CellPhaseThresholds.NominalPrismVolume, total, phase, in thresholds);
@@ -422,7 +422,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 // --- 4. Fauna behaviour ---
                 if (fauna.Count > 0)
                 {
-                    // Build the BenchmarkPrism snapshot once per tick — reused by every
+                    // Build the BenchmarkPrism snapshot once per tick - reused by every
                     // fauna's density query this tick (allocation-free, the list is reused).
                     benchPrisms.Clear();
                     for (int i = 0; i < prisms.Count; i++)
@@ -451,12 +451,12 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                         }
 
                         // Move toward the sub-goal. On arrival, re-roll a new sub-goal
-                        // inside the orbit sphere around the density target — so the
+                        // inside the orbit sphere around the density target - so the
                         // fauna continuously SWEEPS the goal region instead of parking
                         // at one offset point. This is the sim's stand-in for boid
                         // separation spreading the swarm across a volume; without it a
                         // fauna parks goalOrbitRadius away from the mass and its
-                        // consumeRadius never reaches the prisms — consumption stalls
+                        // consumeRadius never reaches the prisms - consumption stalls
                         // at ~0 and the cell shows a false plateau.
                         Vector3 toGoal = fa.SubGoal - fa.Pos;
                         float dist = toGoal.magnitude;
@@ -583,7 +583,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             // wide (1500/1425 = 5% of 1500), so a healthy primary cycle that
             // overshoots the band edges should easily exceed 5% swing. Anything
             // tighter than that is either a true plateau or a faint oscillation
-            // hugging the band — both indistinguishable from "no real cycle".
+            // hugging the band - both indistinguishable from "no real cycle".
             float swing = maxTotal > 0 ? (float)(maxTotal - minTotal) / maxTotal : 0f;
             result.IsPlateau = swing < 0.05f;
 
@@ -591,15 +591,15 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             if (result.IsPlateau)
             {
                 if (maxTotal < thresholds.RestlessEnter)
-                    result.Verdict = $"COLLAPSE — total pinned at {maxTotal} (< Restless enter {thresholds.RestlessEnter}), fauna ate everything";
+                    result.Verdict = $"COLLAPSE - total pinned at {maxTotal} (< Restless enter {thresholds.RestlessEnter}), fauna ate everything";
                 else if (last.Phase == CellPhase.Frenzy)
-                    result.Verdict = $"PLATEAU at FRENZY — total pinned ~{minTotal}-{maxTotal}, phase stuck at Frenzy, peak outer-shell prisms {peakOuter}";
+                    result.Verdict = $"PLATEAU at FRENZY - total pinned ~{minTotal}-{maxTotal}, phase stuck at Frenzy, peak outer-shell prisms {peakOuter}";
                 else
-                    result.Verdict = $"PLATEAU — total pinned ~{minTotal}-{maxTotal} (swing {swing * 100f:F0}%), phase {last.Phase}";
+                    result.Verdict = $"PLATEAU - total pinned ~{minTotal}-{maxTotal} (swing {swing * 100f:F0}%), phase {last.Phase}";
             }
             else
             {
-                result.Verdict = $"OSCILLATING — total swings {minTotal}-{maxTotal} (~{swing * 100f:F0}%), " +
+                result.Verdict = $"OSCILLATING - total swings {minTotal}-{maxTotal} (~{swing * 100f:F0}%), " +
                                  $"{cycles} cycles in steady window, {rabidEntries} Frenzy dips, peak outer-shell {peakOuter}";
             }
         }
@@ -619,7 +619,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             sb.AppendLine($"  steady-state total: {r.MinTotalSteady:F0}-{r.MaxTotalSteady:F0}   " +
                           $"cycles: {r.CycleCount}   Frenzy dips: {r.RabidEntries}");
             sb.AppendLine($"  outer-shell prisms (steady): {r.OuterShellMinSteady}-{r.OuterShellMaxSteady}, peak {r.PeakOuterShellPrisms}   " +
-                          $"=> outer-shell mass {(r.OuterShellBounded ? "BOUNDED (fauna reach it)" : "UNBOUNDED (never consumed — grid is blind to it)")}");
+                          $"=> outer-shell mass {(r.OuterShellBounded ? "BOUNDED (fauna reach it)" : "UNBOUNDED (never consumed - grid is blind to it)")}");
             sb.AppendLine();
         }
 
@@ -641,7 +641,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
         static Vector3 RandomInBall(System.Random rng, float radius)
         {
-            // Rejection-free: direction on sphere × cube-root-distributed radius.
+            // Rejection-free: direction on sphere x cube-root-distributed radius.
             Vector3 dir = RandomOnSphere(rng);
             float r = radius * Mathf.Pow((float)rng.NextDouble(), 1f / 3f);
             return dir * r;

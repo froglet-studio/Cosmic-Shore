@@ -97,7 +97,7 @@ namespace CosmicShore.Gameplay
                 inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
             // vessel.StopShipControllerActions(InputEvents.FlipAction);
 
-            // Triggers — read analog values and use custom deadzone for edge detection.
+            // Triggers - read analog values and use custom deadzone for edge detection.
             // This gives full analog range (0-1) for drift scaling while keeping
             // binary event compatibility for button-style triggers (which snap 0/1).
             float leftTriggerValue = Gamepad.current.leftTrigger.ReadValue();
@@ -205,9 +205,9 @@ namespace CosmicShore.Gameplay
             {
                 CSDebug.Log($"[GamepadInput] Reparameterize Debug:\n" +
                           $"  Raw Sticks - L: {leftStickRaw}, R: {rightStickRaw}\n" +
-                          $"  YSum: {ySumBefore:F2} → {inputStatus.YSum:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
-                          $"  YDiff: {yDiffBefore:F2} → {inputStatus.YDiff:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
-                          $"  XDiff: {xDiffBefore:F2} → {inputStatus.XDiff:F2} (InvertThrottle: {inputStatus.InvertThrottleEnabled})");
+                          $"  YSum: {ySumBefore:F2} -> {inputStatus.YSum:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
+                          $"  YDiff: {yDiffBefore:F2} -> {inputStatus.YDiff:F2} (InvertY: {inputStatus.InvertYEnabled})\n" +
+                          $"  XDiff: {xDiffBefore:F2} -> {inputStatus.XDiff:F2} (InvertThrottle: {inputStatus.InvertThrottleEnabled})");
             }
             #endif
         }

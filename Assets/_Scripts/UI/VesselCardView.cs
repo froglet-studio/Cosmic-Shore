@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -10,7 +10,7 @@ namespace CosmicShore.UI
     public sealed class ShipCardView : MonoBehaviour
     {
         [Header("Data")]
-        [SerializeField] int number;                   // your “slot/number”
+        [SerializeField] int number;                   // your "slot/number"
         [SerializeField] ScriptableObject soShip;     
         [SerializeField] VesselClassType vesselClass;  // set this explicitly for reliability
 

@@ -99,7 +99,7 @@ namespace CosmicShore.Core
         [Inject] FriendsServiceFacade friendsServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
         [Inject] ApplicationStateMachine applicationStateMachine;
-        // Injected so the facade is constructed at bootstrap — it has no other
+        // Injected so the facade is constructed at bootstrap - it has no other
         // injection point until consumers appear, and its event subscriptions
         // (sign-in, game lifecycle, pause/quit) must exist from app start.
         [Inject] AnalyticsServiceFacade analyticsServiceFacade;
@@ -243,7 +243,7 @@ namespace CosmicShore.Core
                 Log($"Loading scene: {targetScene}");
 
                 // Use SceneTransitionManager if available (provides fade transitions).
-                // Skip fadeOut — the splash overlay is already opaque from bootstrap.
+                // Skip fadeOut - the splash overlay is already opaque from bootstrap.
                 if (sceneTransitionManager != null)
                     await sceneTransitionManager.LoadSceneAsync(targetScene, fadeOut: false);
                 else
@@ -267,7 +267,7 @@ namespace CosmicShore.Core
         /// <summary>
         /// Best-effort early resolution of manager references from the scene.
         /// Finds unassigned managers via FindAnyObjectByType and marks them
-        /// DontDestroyOnLoad. Does not warn on missing managers — the lazy
+        /// DontDestroyOnLoad. Does not warn on missing managers - the lazy
         /// DI factory handles that at injection time.
         /// </summary>
         void TryResolveManagersEarly()
@@ -313,7 +313,7 @@ namespace CosmicShore.Core
             // before Awake, so we cannot rely on Awake alone.
             TryResolveManagersEarly();
 
-            // ── ScriptableObject assets ──────────────────────────────────
+            // -- ScriptableObject assets ----------------------------------
             // Project-level assets wired via inspector. RegisterValue is the
             // correct Reflex API: the instance already exists and is immutable.
             RegisterAsset(builder, _sceneNames, nameof(_sceneNames));
@@ -328,7 +328,7 @@ namespace CosmicShore.Core
             RegisterAsset(builder, lifecycleEvents, nameof(lifecycleEvents));
             RegisterAsset(builder, applicationStateDataVariable, nameof(applicationStateDataVariable));
 
-            // ── MonoBehaviour singletons (lazy factory) ──────────────────
+            // -- MonoBehaviour singletons (lazy factory) ------------------
             // Scene-resolved managers may not exist in the Bootstrap scene at
             // registration time. RegisterFactory with Lazy resolution defers
             // the scene lookup until first [Inject] access, so registration
@@ -349,7 +349,7 @@ namespace CosmicShore.Core
             RegisterManagerSingleton<UGSDataService>(builder, ugsDataService);
             RegisterManagerSingleton<PrismFactory>(builder, prismFactory);
 
-            // ── Pure C# service singletons ───────────────────────────────
+            // -- Pure C# service singletons -------------------------------
             // Created by factory, no scene object needed. Lazy so they are
             // only instantiated when first injected.
             builder.RegisterFactory(
@@ -395,7 +395,7 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
-            // Tournament brain — persistent across the per-game Single loads. Capture the
+            // Tournament brain - persistent across the per-game Single loads. Capture the
             // serialized fields directly (like ApplicationStateMachine above) rather than
             // c.Resolve, so an un-wired tournamentData degrades to an inert controller instead
             // of throwing at bootstrap.
@@ -405,11 +405,11 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
-            // ── Party system services ────────────────────────────────────────
-            // Pure C# — registered as lazy singletons.
+            // -- Party system services ----------------------------------------
+            // Pure C# - registered as lazy singletons.
             // Concrete types for fields declared as concrete; interface types
             // for fields declared as interface (see HostConnectionService).
-            // Registration order does not matter — all factories are lazy and
+            // Registration order does not matter - all factories are lazy and
             // resolve their own deps from the container on first injection.
 
             builder.RegisterFactory(
@@ -480,7 +480,7 @@ namespace CosmicShore.Core
                 builder.RegisterValue(asset);
                 return;
             }
-            Debug.LogError($"[AppManager] {fieldName} ScriptableObject asset is not assigned — DI registration skipped.");
+            Debug.LogError($"[AppManager] {fieldName} ScriptableObject asset is not assigned - DI registration skipped.");
         }
 
         /// <summary>
@@ -514,7 +514,7 @@ namespace CosmicShore.Core
                         return found;
                     }
 
-                    Debug.LogError($"[AppManager] {typeof(T).Name} not found at injection time — DI resolution failed.");
+                    Debug.LogError($"[AppManager] {typeof(T).Name} not found at injection time - DI resolution failed.");
                     return null;
                 },
                 lifetime: Lifetime.Singleton,
@@ -544,7 +544,7 @@ namespace CosmicShore.Core
         {
             if (!gameData)
             {
-                Debug.LogError("[AppManager] gameData is not assigned — cannot configure game data.");
+                Debug.LogError("[AppManager] gameData is not assigned - cannot configure game data.");
                 return;
             }
 

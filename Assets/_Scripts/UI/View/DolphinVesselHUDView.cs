@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
@@ -7,7 +7,7 @@ namespace CosmicShore.UI
 {
     public class DolphinVesselHUDView : VesselHUDView
     {
-        [Header("Charge steps (ordered low → high)")]
+        [Header("Charge steps (ordered low -> high)")]
         [SerializeField] private List<Sprite> chargeSteps = new();
 
         [SerializeField] private Image chargeBoostImage;
@@ -24,7 +24,7 @@ namespace CosmicShore.UI
 
 
         /// <summary>
-        /// 0–1 normalized charge → choose correct sprite.
+        /// 0-1 normalized charge -> choose correct sprite.
         /// </summary>
         public void SetChargeNormalized(float norm01)
         {

@@ -14,7 +14,7 @@ public class ShapeDefinitionEditor : Editor
         var def = (ShapeDefinition)target;
 
         EditorGUILayout.Space(10);
-        EditorGUILayout.LabelField("─── Procedural Generation ───", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("--- Procedural Generation ---", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
             "These buttons overwrite the current waypoints with a procedural shape. " +
             "Use as a starting point, then tweak waypoints manually.",

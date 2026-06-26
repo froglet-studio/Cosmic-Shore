@@ -7,19 +7,19 @@ namespace CosmicShore.UI
 {
     public class RhinoVesselHUDView : VesselHUDView
     {
-        [Header("Rhino – Skimmer Size Icon")]
+        [Header("Rhino - Skimmer Size Icon")]
         [SerializeField] private RectTransform skimmerSizeIcon;
         [SerializeField] private float minIconSize = 50f;
         [SerializeField] private float maxIconSize = 100f;
 
-        [Header("Rhino – Crystal Slow Icon")]
+        [Header("Rhino - Crystal Slow Icon")]
         [SerializeField] private Image crystalIcon;
         [SerializeField] private TextMeshProUGUI slowedCountText;
 
-        [Header("Rhino – Slow Line Icon")]
+        [Header("Rhino - Slow Line Icon")]
         [SerializeField] private Image lineIcon;
 
-        [Header("Rhino – Debuff Icon")]
+        [Header("Rhino - Debuff Icon")]
         [SerializeField] private Image debuffIcon;
         [SerializeField] private TextMeshProUGUI debuffTimerText;
 

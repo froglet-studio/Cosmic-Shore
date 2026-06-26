@@ -7,7 +7,7 @@ using System.Linq;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Spawns prisms along a (p,q)-torus knot — a curve that winds p times around the
+    /// Spawns prisms along a (p,q)-torus knot - a curve that winds p times around the
     /// hole of a torus and q times through it.
     ///
     /// Torus knots are the simplest nontrivial knots and produce beautiful braided paths
@@ -16,10 +16,10 @@ namespace CosmicShore.Gameplay
     /// arena with parallel rails.
     ///
     /// The parametrization on a torus (R, r):
-    ///   x(t) = (R + r·cos(q·t)) · cos(p·t)
-    ///   y(t) = (R + r·cos(q·t)) · sin(p·t)
-    ///   z(t) = r · sin(q·t)
-    /// where t ∈ [0, 2π) traces one full period when gcd(p,q) = 1.
+    ///   x(t) = (R + r*cos(q*t)) * cos(p*t)
+    ///   y(t) = (R + r*cos(q*t)) * sin(p*t)
+    ///   z(t) = r * sin(q*t)
+    /// where t in [0, 2pi) traces one full period when gcd(p,q) = 1.
     /// </summary>
     public class SpawnableTorusKnot : SpawnableBase
     {

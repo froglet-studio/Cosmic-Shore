@@ -2,7 +2,7 @@ using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace CosmicShore.Gameplay
 {

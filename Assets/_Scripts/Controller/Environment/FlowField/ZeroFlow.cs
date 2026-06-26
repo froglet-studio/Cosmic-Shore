@@ -1,7 +1,7 @@
 
 namespace CosmicShore.Gameplay
 {
-    ﻿using UnityEngine;
+    using UnityEngine;
 
     [CreateAssetMenu(fileName = "ZeroFlowData", menuName = "ScriptableObjects/Flow/ZeroFlow", order = 30)]
     [System.Serializable] 

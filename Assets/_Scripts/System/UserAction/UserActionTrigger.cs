@@ -1,6 +1,6 @@
 using CosmicShore.Data;
 
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace CosmicShore.Core
 {

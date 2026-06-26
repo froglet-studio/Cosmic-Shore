@@ -117,7 +117,7 @@ namespace CosmicShore.UI
             var cloudData = ds.ProfileRepo.Data;
             if (cloudData == null || string.IsNullOrEmpty(cloudData.userId))
             {
-                // No cloud profile → push local defaults to cloud
+                // No cloud profile -> push local defaults to cloud
                 SyncCurrentProfileToRepo();
                 return;
             }
@@ -236,7 +236,7 @@ namespace CosmicShore.UI
 
             CurrentProfile.avatarId = avatarId;
             // OnProfileChanged drives the menu UI (ProfileScreen/widgets), gameData.LocalPlayerAvatarId,
-            // and the local Player's NetAvatarId (Player.HandleProfileLoadedAfterSpawn → replicates
+            // and the local Player's NetAvatarId (Player.HandleProfileLoadedAfterSpawn -> replicates
             // the new avatar to every peer in-game).
             OnProfileChanged?.Invoke(CurrentProfile);
             ScheduleSave();

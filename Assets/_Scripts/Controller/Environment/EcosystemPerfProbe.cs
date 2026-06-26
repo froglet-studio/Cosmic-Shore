@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Closes the ecosystem perf loop: logs parseable <c>[ECOSIM] prisms=… fauna=… fps=…</c>
+    /// Closes the ecosystem perf loop: logs parseable <c>[ECOSIM] prisms=... fauna=... fps=...</c>
     /// lines so the headless tuner (<c>Tools/ecosim/ecosim.py</c>) can be recalibrated to
     /// real frame cost without a human eyeballing the profiler. Copy a steady-state line
     /// into <c>Tools/ecosim/calibration.csv</c> and re-run ecosim; the model then predicts
@@ -12,12 +12,12 @@ namespace CosmicShore.Gameplay
     ///
     /// Reads the ecosystem state with zero wiring: smoothed unscaled FPS from frame deltas,
     /// and per-cell prism + live-fauna counts from <see cref="Cell"/>'s static active-cell
-    /// registry (so it works in any scene with a Cell — menu or gameplay — with no [Inject]
+    /// registry (so it works in any scene with a Cell - menu or gameplay - with no [Inject]
     /// and no serialized references).
     ///
     /// Usage: drop on any GameObject in the scene you want to measure (e.g. Menu_Main), or
     /// define the <c>ECOSIM_PROBE</c> scripting symbol to auto-spawn one. It is inert in
-    /// shipping builds unless explicitly added, and never affects gameplay — read-only.
+    /// shipping builds unless explicitly added, and never affects gameplay - read-only.
     /// </summary>
     [DisallowMultipleComponent]
     public class EcosystemPerfProbe : MonoBehaviour
@@ -62,7 +62,7 @@ namespace CosmicShore.Gameplay
         {
             // Sum prisms + live fauna across every active cell (one cell in the menu;
             // several in WildlifeBlitz). LiveFauna only counts lineage-registered
-            // creatures — exactly what drives the OverlapSphere cost.
+            // creatures - exactly what drives the OverlapSphere cost.
             int prisms = 0, fauna = 0, cells = 0;
             float volume = 0f;
             var phases = new System.Text.StringBuilder();
@@ -78,7 +78,7 @@ namespace CosmicShore.Gameplay
             }
 
             // Collider telemetry from the LOD sweep: active (near-focus) colliders vs
-            // live prisms — the §4 budget made observable. 0/0 = LOD idle (no foci).
+            // live prisms - the Sec 4 budget made observable. 0/0 = LOD idle (no foci).
             int near = PrismColliderLodManager.LastNearCount;
             int live = PrismColliderLodManager.LastLiveCount;
 

@@ -5,7 +5,7 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// CSDebug Tests — Validates the centralized logging system's level controls.
+    /// CSDebug Tests - Validates the centralized logging system's level controls.
     ///
     /// WHY THIS MATTERS:
     /// CSDebug controls what gets logged at runtime. If log level presets don't
@@ -116,7 +116,7 @@ namespace CosmicShore.Tests
         [Test]
         public void LogLevel_SetThenGet_Roundtrips()
         {
-            // Set → Get should return the same preset.
+            // Set -> Get should return the same preset.
             CSDebug.LogLevel = CSLogLevel.WarningsAndErrors;
             Assert.AreEqual(CSLogLevel.WarningsAndErrors, CSDebug.LogLevel);
 
@@ -171,7 +171,7 @@ namespace CosmicShore.Tests
             CSDebug.WarningsEnabled = false;
             CSDebug.ErrorsEnabled = true;
 
-            // Apply preset — should overwrite all flags
+            // Apply preset - should overwrite all flags
             CSDebug.LogLevel = CSLogLevel.Off;
 
             Assert.IsFalse(CSDebug.LogEnabled);

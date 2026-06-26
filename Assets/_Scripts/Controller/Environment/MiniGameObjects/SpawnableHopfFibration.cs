@@ -7,11 +7,11 @@ using System.Linq;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Spawns prisms along fibers of the Hopf fibration: S³ → S².
+    /// Spawns prisms along fibers of the Hopf fibration: S^3 -> S^2.
     ///
     /// Each point on the 2-sphere has a corresponding great circle (fiber) on the 3-sphere.
-    /// Points on the same latitude circle of S² produce fibers that form a torus in R³
-    /// after stereographic projection. The result is nested, interlocking tori — one of
+    /// Points on the same latitude circle of S^2 produce fibers that form a torus in R^3
+    /// after stereographic projection. The result is nested, interlocking tori - one of
     /// the most beautiful structures in mathematics.
     ///
     /// The Hopf fibration is fundamental in gauge theory (it's the simplest nontrivial
@@ -25,7 +25,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] Vector3 blockScale = new Vector3(2f, 2f, 4f);
 
         [Header("Fibration Structure")]
-        [Tooltip("Number of latitude bands on S² to sample fibers from. Each band produces a torus.")]
+        [Tooltip("Number of latitude bands on S^2 to sample fibers from. Each band produces a torus.")]
         [SerializeField] int latitudeBands = 6;
 
         [Tooltip("Number of fibers per latitude band. More fibers = denser tori.")]
@@ -58,11 +58,11 @@ namespace CosmicShore.Gameplay
         };
 
         [Header("Extras")]
-        [Tooltip("Include the polar fibers (north and south pole of S²). These project to a " +
-                 "straight line and a circle — the axis and outermost ring of the structure.")]
+        [Tooltip("Include the polar fibers (north and south pole of S^2). These project to a " +
+                 "straight line and a circle - the axis and outermost ring of the structure.")]
         [SerializeField] bool includePolarFibers = true;
 
-        [Tooltip("Add a Villarceau circle set — diagonal slices through the tori that reveal " +
+        [Tooltip("Add a Villarceau circle set - diagonal slices through the tori that reveal " +
                  "additional linked circles at oblique angles. Bridges between tori for connected paths.")]
         [SerializeField] bool includeVillarceauCircles = true;
 
@@ -73,10 +73,10 @@ namespace CosmicShore.Gameplay
         {
             var trailDataList = new List<SpawnTrailData>();
 
-            // --- Main fibration: sample latitude bands on S² ---
+            // --- Main fibration: sample latitude bands on S^2 ---
             for (int band = 0; band < latitudeBands; band++)
             {
-                // theta ∈ (0, π) — colatitude on S²
+                // theta in (0, pi) - colatitude on S^2
                 // Exclude exact poles (handled separately) to avoid degenerate fibers
                 float theta = Mathf.PI * (band + 1f) / (latitudeBands + 1f);
 
@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
 
                 for (int fiber = 0; fiber < fibersPerBand; fiber++)
                 {
-                    // phi ∈ [0, 2π) — longitude on S²
+                    // phi in [0, 2pi) - longitude on S^2
                     float phi = 2f * Mathf.PI * fiber / fibersPerBand;
 
                     var points = GenerateFiberPoints(theta, phi, blocksPerFiber, blockScale);
@@ -103,7 +103,7 @@ namespace CosmicShore.Gameplay
                 if (northPoints.Count > 0)
                     trailDataList.Add(new SpawnTrailData(northPoints.ToArray(), false, Domains.Gold));
 
-                // South pole (theta=π): projects to a line through the origin (the axis)
+                // South pole (theta=pi): projects to a line through the origin (the axis)
                 var southPoints = GeneratePolarFiberPoints(isNorth: false);
                 if (southPoints.Count > 0)
                     trailDataList.Add(new SpawnTrailData(southPoints.ToArray(), false, Domains.Gold));
@@ -127,14 +127,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Generate spawn points along a single Hopf fiber corresponding to the point (theta, phi) on S².
+        /// Generate spawn points along a single Hopf fiber corresponding to the point (theta, phi) on S^2.
         ///
         /// The fiber parameterization:
-        ///   z₁ = cos(θ/2) · e^{i(t + φ/2)}
-        ///   z₂ = sin(θ/2) · e^{i(t - φ/2)}
-        /// where t ∈ [0, 2π) traces the fiber circle on S³.
+        ///   z1 = cos(theta/2) * e^{i(t + phi/2)}
+        ///   z2 = sin(theta/2) * e^{i(t - phi/2)}
+        /// where t in [0, 2pi) traces the fiber circle on S^3.
         ///
-        /// We then stereographically project (x₁,x₂,x₃,x₄) ∈ S³ → R³.
+        /// We then stereographically project (x1,x2,x3,x4) in S^3 -> R^3.
         /// </summary>
         List<SpawnPoint> GenerateFiberPoints(float theta, float phi, int blockCount, Vector3 scale)
         {
@@ -150,9 +150,9 @@ namespace CosmicShore.Gameplay
             {
                 float t = 2f * Mathf.PI * i / blockCount;
 
-                // S³ coordinates via Hopf fiber parameterization
-                // z₁ = cos(θ/2) · e^{i(t + φ/2)},  z₂ = sin(θ/2) · e^{i(t - φ/2)}
-                // Writing z₁ = x₁ + ix₂, z₂ = x₃ + ix₄:
+                // S^3 coordinates via Hopf fiber parameterization
+                // z1 = cos(theta/2) * e^{i(t + phi/2)},  z2 = sin(theta/2) * e^{i(t - phi/2)}
+                // Writing z1 = x1 + ix2, z2 = x3 + ix4:
                 float x1 = cosHalfTheta * Mathf.Cos(t + halfPhi);
                 float x2 = cosHalfTheta * Mathf.Sin(t + halfPhi);
                 float x3 = sinHalfTheta * Mathf.Cos(t - halfPhi);
@@ -192,8 +192,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Polar fibers are special cases:
-        /// - North pole (θ=0): z₁ = e^{it}, z₂ = 0 → a great circle in the (x₁,x₂) plane
-        /// - South pole (θ=π): z₁ = 0, z₂ = e^{it} → a great circle in the (x₃,x₄) plane
+        /// - North pole (theta=0): z1 = e^{it}, z2 = 0 -> a great circle in the (x1,x2) plane
+        /// - South pole (theta=pi): z1 = 0, z2 = e^{it} -> a great circle in the (x3,x4) plane
         /// After stereographic projection, one becomes a finite circle and the other
         /// passes through infinity (appears as a long line).
         /// </summary>
@@ -265,9 +265,9 @@ namespace CosmicShore.Gameplay
             float cosHalfTheta = Mathf.Cos(theta * 0.5f);
             float sinHalfTheta = Mathf.Sin(theta * 0.5f);
 
-            // Apply a rotation in S³ to get Villarceau-type circles
-            // This is a right-isoclinic rotation: (z₁, z₂) → (z₁·e^{iα}, z₂·e^{iβ})
-            // with α ≠ β, which maps fibers of one Hopf fibration to fibers of a different one
+            // Apply a rotation in S^3 to get Villarceau-type circles
+            // This is a right-isoclinic rotation: (z1, z2) -> (z1*e^{ialpha}, z2*e^{ibeta})
+            // with alpha != beta, which maps fibers of one Hopf fibration to fibers of a different one
             float alpha = phi;
             float beta = phi * 1.618f; // Golden ratio offset for maximal visual variety
 
@@ -319,12 +319,12 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Stereographic projection from S³ ⊂ R⁴ to R³.
+        /// Stereographic projection from S^3 subset of R^4 to R^3.
         /// Projects from the pole (0,0,0,poleW) where poleW is set by projectionPole.
         ///
-        /// The formula: (x₁,x₂,x₃,x₄) → scale · (x₁, x₂, x₃) / (poleW - x₄)
+        /// The formula: (x1,x2,x3,x4) -> scale * (x1, x2, x3) / (poleW - x4)
         ///
-        /// This is conformal (angle-preserving) and maps circles on S³ to circles in R³,
+        /// This is conformal (angle-preserving) and maps circles on S^3 to circles in R^3,
         /// which is why the Hopf fibers remain perfect circles after projection.
         /// </summary>
         Vector3 StereographicProject(float x1, float x2, float x3, float x4)

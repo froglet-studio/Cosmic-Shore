@@ -4,23 +4,23 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// HyperSea stadium for Astro League — only the GAMEPLAY-bearing structure, constructed at
+    /// HyperSea stadium for Astro League - only the GAMEPLAY-bearing structure, constructed at
     /// runtime on every peer (purely deterministic local visuals + static physics, nothing here
     /// needs networking):
     /// - A SPHERICAL play boundary that IS the Cell's nucleus: the arena scales the nucleus to
     ///   <see cref="BoundaryRadius"/>, and the server's ball bounces elastically off its inner
-    ///   surface (a radial reflect in the ball — no collider; see <c>AstroLeagueBall.SetBoundary</c>).
-    ///   This replaced six invisible BoxCollider walls (−6 colliders).
+    ///   surface (a radial reflect in the ball - no collider; see <c>AstroLeagueBall.SetBoundary</c>).
+    ///   This replaced six invisible BoxCollider walls (-6 colliders).
     /// - Portal-style goal rings at each end, with anticipation glow as the ball approaches
     /// - Center ring marking the soccer midfield / kickoff line
     ///
     /// Everything ATMOSPHERIC or TERRITORIAL is owned by the standard Cell ecosystem, NOT by this
-    /// arena (CLAUDE.md ▸ "Universality — one HyperSea, one rule set"): the playfield boundary read
+    /// arena (CLAUDE.md > "Universality - one HyperSea, one rule set"): the playfield boundary read
     /// is the Cell's <c>MembranePrefab</c>, the drifting motes are the Cell's <c>CytoplasmPrefab</c>,
     /// and the boundary/core sphere is the Cell's <c>NucleusPrefab</c> (the arena only resizes it via
-    /// <c>Cell.SetNucleusWorldRadius</c> — it does not own a duplicate). A previous bespoke wireframe
+    /// <c>Cell.SetNucleusWorldRadius</c> - it does not own a duplicate). A previous bespoke wireframe
     /// edge cage and a bespoke plankton particle system were removed because they duplicated the
-    /// membrane and cytoplasm — do not reintroduce arena-local versions of cell-owned visuals.
+    /// membrane and cytoplasm - do not reintroduce arena-local versions of cell-owned visuals.
     ///
     /// The whole stadium scales with match intensity: the controller calls <see cref="Build"/>
     /// with the intensity scale factor, and every dimension (and the goal-ring positions the
@@ -32,8 +32,8 @@ namespace CosmicShore.Gameplay
         [Header("Config")]
         [SerializeField] AstroLeagueSettingsSO settings;
 
-        [Header("Base Dimensions (intensity 1 — scaled up by Build)")]
-        [Tooltip("Used only to place the end goals (Z = ±arenaLength/2) and size the midfield ring; " +
+        [Header("Base Dimensions (intensity 1 - scaled up by Build)")]
+        [Tooltip("Used only to place the end goals (Z = +/-arenaLength/2) and size the midfield ring; " +
                  "the play boundary itself is the spherical nucleus (settings.boundaryRadius).")]
         [SerializeField] float arenaLength = 300f;
         [SerializeField] float arenaWidth = 200f;
@@ -63,7 +63,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Build (or rebuild) the stadium at the given intensity scale. Called by the controller on
-        /// every peer once the intensity is known. Idempotent — clears prior geometry first.
+        /// every peer once the intensity is known. Idempotent - clears prior geometry first.
         /// </summary>
         public void Build(float scale)
         {
@@ -74,7 +74,7 @@ namespace CosmicShore.Gameplay
             _goalR = goalRingRadius * _scale;
             _boundaryRadius = (settings != null ? settings.boundaryRadius : 190f) * _scale;
 
-            // Clear anything from a prior Build (defensive — normally built once per scene).
+            // Clear anything from a prior Build (defensive - normally built once per scene).
             for (int i = _generated.Count - 1; i >= 0; i--)
                 if (_generated[i] != null) Destroy(_generated[i]);
             _generated.Clear();
@@ -90,10 +90,10 @@ namespace CosmicShore.Gameplay
             _built = true;
         }
 
-        // ── Goal portals + midfield ──────────────────────────────────────────
+        // -- Goal portals + midfield ------------------------------------------
 
         /// <summary>
-        /// Three concentric rings receding into the goal mouth — reads as a glowing
+        /// Three concentric rings receding into the goal mouth - reads as a glowing
         /// portal from anywhere in the arena (LineRenderers are inherently double-sided).
         /// </summary>
         void BuildGoalPortal(string name, Vector3 mouthCenter, Vector3 inward, Color color, out Material ringMaterial)
@@ -161,7 +161,7 @@ namespace CosmicShore.Gameplay
             return mat;
         }
 
-        // ── Living arena ─────────────────────────────────────────────────────
+        // -- Living arena -----------------------------------------------------
 
         void Update()
         {

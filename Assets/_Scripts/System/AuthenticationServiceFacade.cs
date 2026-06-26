@@ -203,9 +203,9 @@ namespace CosmicShore.Core
         public Task LinkWithFacebookAsync(string accessToken) => Task.CompletedTask;
         public Task LinkWithSteamAsync(string steamSessionTicket) => Task.CompletedTask;
 
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
         //  MPPM Profile Isolation
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
 
         /// <summary>
         /// When running as an MPPM virtual player, switches to a tag-based
@@ -228,9 +228,9 @@ namespace CosmicShore.Core
 #endif
         }
 
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
         //  UGS Auth Event Wiring
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
 
         void WireAuthEventsOnce()
         {
@@ -251,9 +251,9 @@ namespace CosmicShore.Core
             AuthenticationService.Instance.Expired += () => OnSignedOut("Auth event: Session Expired");
         }
 
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
         //  Centralized State + SOAP Event Helpers
-        // ──────────────────────────────────────────────
+        // ----------------------------------------------
 
         void OnSignInSuccess()
         {

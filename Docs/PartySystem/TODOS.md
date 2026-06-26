@@ -1,9 +1,9 @@
-# Party System — TODOs
+# Party System - TODOs
 
 Parking lot for minor improvements that don't rise to a refactor commit
 or a bug. Each entry has enough context that it can be picked up cold.
 
-> **Looking for the big-picture “what should I work on next?”** — the
+> **Looking for the big-picture "what should I work on next?"** - the
 > cross-cutting roadmap (host-loss resilience, multi-joiner reliability,
 > push-vs-poll, scale/cost, production observability, CI) plus the
 > strengths-to-preserve invariants live in
@@ -27,7 +27,7 @@ unassignment).
 **Risk.** Low if done after the test migration. Anything else still
 reading `HostConnectionService.Instance` would surface at compile time.
 
-### TODO-2. `Docs/PARTY_OPEN_BUGS.md` reference updates — DONE
+### TODO-2. `Docs/PARTY_OPEN_BUGS.md` reference updates - DONE
 
 **Status.** Resolved. The old file is deleted; its 7 bugs were split into
 `Docs/PartySystem/BUGS.md` (B2, B3, B5, B7) and
@@ -35,11 +35,11 @@ reading `HostConnectionService.Instance` would surface at compile time.
 references to `PARTY_OPEN_BUGS` (verified by grep), so no code comments
 needed updating.
 
-### TODO-3. `Docs/PARTY_SYSTEM_REFACTOR.md` reference updates — DONE
+### TODO-3. `Docs/PARTY_SYSTEM_REFACTOR.md` reference updates - DONE
 
 **Status.** Resolved. The old file is deleted; its content was migrated in
 full (locked design, investigation Q&A, error-handling matrix, exit
-criteria → `ARCHITECTURE.md`; per-commit protocol + deferred items D1-D5 →
+criteria -> `ARCHITECTURE.md`; per-commit protocol + deferred items D1-D5 ->
 `REFACTOR.md`). All 20 inline code comments across 9 files were repointed to
 `Docs/PartySystem/ARCHITECTURE.md` (with the specific Q-anchor where the
 comment referenced one). Verified 0 remaining `PARTY_SYSTEM_REFACTOR`
@@ -47,32 +47,32 @@ references in `Assets/`.
 
 ## Diagnostics
 
-### TODO-4. Adopt NetDiag in non-party catch sites → see NetworkDiagnostics
+### TODO-4. Adopt NetDiag in non-party catch sites -> see NetworkDiagnostics
 
-Canonical: `../NetworkDiagnostics/TODOS.md` § "TODO-2. Broader adoption
-— non-party UGS catches" (pattern + candidate site list:
+Canonical: `../NetworkDiagnostics/TODOS.md` Sec "TODO-2. Broader adoption
+- non-party UGS catches" (pattern + candidate site list:
 `AuthenticationServiceFacade`, `FriendsServiceFacade`, PlayFab, IAP,
 leaderboards-write). Not duplicated here.
 
-## UI / UX (deferred — needs design pass)
+## UI / UX (deferred - needs design pass)
 
 ### TODO-5. Specific toast messages per NetDiag class
 
-**Why.** Today's bounce-to-solo-menu always shows "Couldn't join —
+**Why.** Today's bounce-to-solo-menu always shows "Couldn't join -
 returned to your menu." Once NetDiag log data tells us which classes
 fire in practice, we can pick which classes deserve a specific message.
 
-**Candidate matrix (sketch — needs design sign-off):**
+**Candidate matrix (sketch - needs design sign-off):**
 
 | Class | Possible specific toast |
 |---|---|
-| `Offline` | "Internet connection lost — returned to your menu" |
+| `Offline` | "Internet connection lost - returned to your menu" |
 | `SessionGone` | "Host left the party" |
 | `Cancelled` (user-driven) | Suppress toast entirely |
-| `RateLimit` | Generic "Couldn't join — please try again in a moment" |
-| `AuthRequired` | "Signed out — please log in again" |
+| `RateLimit` | Generic "Couldn't join - please try again in a moment" |
+| `AuthRequired` | "Signed out - please log in again" |
 | `Transient` | Generic (existing) |
-| `Unknown` | Generic (existing) — also a signal to extend `ClassifyException` |
+| `Unknown` | Generic (existing) - also a signal to extend `ClassifyException` |
 
 **Touchpoint.** `PartyInviteController.RecoverFromFailedTransitionAsync`
 or its successor `TransitionRecoveryService` after Refactor 1.
@@ -102,12 +102,12 @@ generous window (e.g. 60 s) to avoid false rejections.
 
 ## Performance / polish
 
-### TODO-8. Coalesce startup property writes → see PresenceSystem
+### TODO-8. Coalesce startup property writes -> see PresenceSystem
 
 This is a presence-lobby write-path concern (the `LobbyPropertyWriter`
 startup churn that contributes to B1). Tracked canonically in
-`../PresenceSystem/TODOS.md` § "TODO-P2. Coalesce startup property
-writes" — not duplicated here.
+`../PresenceSystem/TODOS.md` Sec "TODO-P2. Coalesce startup property
+writes" - not duplicated here.
 
 ### TODO-9. Document `LobbyRefreshScheduler.Boost()` semantics
 

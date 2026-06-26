@@ -9,12 +9,12 @@ namespace CosmicShore.Gameplay
     ///
     /// States:
     ///   Unshielded:   BoxCollider active, authored prism mesh visible,
-    ///                 mass = rho · 8·a·b·c
+    ///                 mass = rho * 8*a*b*c
     ///   Supershielded: MeshCollider (convex) active with generated octahedron,
-    ///                 octahedron mesh visible, mass = rho · 36·a·b·c
-    ///                 (exactly 4.5× the box mass by default)
+    ///                 octahedron mesh visible, mass = rho * 36*a*b*c
+    ///                 (exactly 4.5x the box mass by default)
     ///
-    /// Engage: per-face bloom morph — 8 faces grow outward from their centroids.
+    /// Engage: per-face bloom morph - 8 faces grow outward from their centroids.
     /// Disengage: box mesh snaps back immediately, then a shatter overlay plays
     ///   where each octahedron face simultaneously shrinks and flies outward
     ///   along its face normal, mirroring the prism destruction VFX.
@@ -44,17 +44,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("Optional Rigidbody whose mass scales with shield state. If null, mass scaling is skipped.")]
         [SerializeField] private Rigidbody rb;
 
-        [Tooltip("Uniform density (kg / unit^3) used for mass = density · volume. Set negative to disable density-based mass and use massRatioShielded instead.")]
+        [Tooltip("Uniform density (kg / unit^3) used for mass = density * volume. Set negative to disable density-based mass and use massRatioShielded instead.")]
         [SerializeField] private float density = 1f;
 
-        [Tooltip("Multiplier applied to the unshielded (box) mass when entering the shielded state. Default 4.5 matches the geometric volume ratio V_oct_circum / V_box = 36·a·b·c / 8·a·b·c.")]
+        [Tooltip("Multiplier applied to the unshielded (box) mass when entering the shielded state. Default 4.5 matches the geometric volume ratio V_oct_circum / V_box = 36*a*b*c / 8*a*b*c.")]
         [SerializeField] private float massRatioShielded = OctahedronMeshGenerator.SHIELD_TO_BOX_VOLUME_RATIO;
 
         [Header("Engage Transition")]
         [Tooltip("Duration of the face-bloom engage morph. 0 snaps instantly.")]
         [SerializeField] private float engageDuration = 0.35f;
 
-        [Tooltip("Easing curve applied to the engage morph progress (0→1).")]
+        [Tooltip("Easing curve applied to the engage morph progress (0->1).")]
         [SerializeField] private AnimationCurve engageCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
         [Header("Shatter (Disengage)")]
@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far each face flies outward (in local-space units) at the end of the shatter.")]
         [SerializeField] private float shatterMaxOffset = 3f;
 
-        [Tooltip("Easing curve applied to the shatter progress (0→1). Output drives both face-offset and face-shrink.")]
+        [Tooltip("Easing curve applied to the shatter progress (0->1). Output drives both face-offset and face-shrink.")]
         [SerializeField] private AnimationCurve shatterCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
         [Header("Shield Geometry")]
@@ -338,8 +338,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void UpdateShatterMesh(float t)
         {
-            float faceScale = 1f - t;            // 1→0 (shrink)
-            float faceOffset = t * shatterMaxOffset; // 0→max (fly outward)
+            float faceScale = 1f - t;            // 1->0 (shrink)
+            float faceOffset = t * shatterMaxOffset; // 0->max (fly outward)
 
             OctahedronMeshGenerator.PopulateMeshFaceShatter(
                 _shatterMesh, _halfExtents, faceScale, faceOffset, shieldScale);
@@ -413,7 +413,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Lazily create the shatter overlay child. Only allocated when the
-        /// first disengage actually happens — most prisms are never shielded,
+        /// first disengage actually happens - most prisms are never shielded,
         /// so most never pay this cost.
         /// </summary>
         private void EnsureShatterChild()

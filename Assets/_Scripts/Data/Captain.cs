@@ -1,4 +1,4 @@
-﻿using CosmicShore.Data;
+using CosmicShore.Data;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.ScriptableObjects;

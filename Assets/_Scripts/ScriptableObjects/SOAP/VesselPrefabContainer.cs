@@ -1,4 +1,4 @@
-﻿using CosmicShore.Gameplay;
+using CosmicShore.Gameplay;
 using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Data;
@@ -29,7 +29,7 @@ namespace CosmicShore.ScriptableObjects
 
                 if (!prefab.TryGetComponent(out IVesselStatus shipStatus))
                 {
-                    CSDebug.LogWarning($"Vessel prefab {prefab.name} does not have a VesselStatus component — skipping.");
+                    CSDebug.LogWarning($"Vessel prefab {prefab.name} does not have a VesselStatus component - skipping.");
                     continue;
                 }
 

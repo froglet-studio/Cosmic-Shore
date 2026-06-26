@@ -64,9 +64,9 @@ namespace CosmicShore.UI
             else Hide();
         }
 
-        // ─────────────────────────────────────────
+        // -----------------------------------------
         // ROUND FLOW
-        // ─────────────────────────────────────────
+        // -----------------------------------------
 
         void OnMiniGameTurnStarted()
         {
@@ -91,9 +91,9 @@ namespace CosmicShore.UI
             Show(); // make sure it's visible at round end
         }
 
-        // ─────────────────────────────────────────
+        // -----------------------------------------
         // STATE RESET
-        // ─────────────────────────────────────────
+        // -----------------------------------------
 
         void ResetStateAndUI()
         {
@@ -114,9 +114,9 @@ namespace CosmicShore.UI
             Hide();     // scoreboard starts hidden; player can toggle it
         }
 
-        // ─────────────────────────────────────────
+        // -----------------------------------------
         // ROUND STATS SUBSCRIPTION
-        // ─────────────────────────────────────────
+        // -----------------------------------------
 
         void TrySubscribeToRoundStats()
         {
@@ -159,9 +159,9 @@ namespace CosmicShore.UI
             RefreshAllRows();
         }
 
-        // ─────────────────────────────────────────
+        // -----------------------------------------
         // SNAPSHOTS
-        // ─────────────────────────────────────────
+        // -----------------------------------------
 
         void CaptureRound1Snapshots()
         {
@@ -180,9 +180,9 @@ namespace CosmicShore.UI
             round1SnapshotCaptured = true;
         }
 
-        // ─────────────────────────────────────────
+        // -----------------------------------------
         // MAIN UI UPDATE
-        // ─────────────────────────────────────────
+        // -----------------------------------------
 
         void RefreshAllRows()
         {
@@ -223,7 +223,7 @@ namespace CosmicShore.UI
                 {
                     // ROUND 2 (or after round 1 is finished):
                     //  - Round 1 row shows frozen snapshot from end of round 1
-                    //  - Round 2 row shows "round-2 only" delta = current cumulative – round1 snapshot
+                    //  - Round 2 row shows "round-2 only" delta = current cumulative - round1 snapshot
                     var baseData = round1Snapshots[i];
 
                     rowRound1.Data = baseData;
@@ -235,9 +235,9 @@ namespace CosmicShore.UI
             }
         }
 
-        // ─────────────────────────────────────────
+        // -----------------------------------------
         // HELPERS TO BUILD ROW DATA
-        // ─────────────────────────────────────────
+        // -----------------------------------------
 
         // Round1 = direct mapping from stats
         StatsRowData BuildRound1Data(IRoundStats stats)
@@ -295,9 +295,9 @@ namespace CosmicShore.UI
             };
         }
 
-        // ─────────────────────────────────────────
+        // -----------------------------------------
         // UI VISIBILITY
-        // ─────────────────────────────────────────
+        // -----------------------------------------
 
         void Show()
         {
@@ -313,9 +313,9 @@ namespace CosmicShore.UI
             canvasGroup.interactable = false;
         }
 
-        // ─────────────────────────────────────────
+        // -----------------------------------------
         // DATA STRUCT
-        // ─────────────────────────────────────────
+        // -----------------------------------------
 
         public struct StatsRowData
         {

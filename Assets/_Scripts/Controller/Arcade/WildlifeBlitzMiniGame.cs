@@ -2,7 +2,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// WildlifeBlitz game mode.
-    /// Simple mode with: Start → Play → End → Cinematics → Scoreboard
+    /// Simple mode with: Start -> Play -> End -> Cinematics -> Scoreboard
     /// </summary>
     public class WildlifeBlitzMiniGame : SinglePlayerMiniGameControllerBase
     {

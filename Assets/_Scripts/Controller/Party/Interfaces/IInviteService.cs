@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // IInviteService.cs
 // Contract for building, tracking, serialising, and parsing invite payloads.
 //
@@ -9,7 +9,7 @@
 //   INVITE_LINE_SEPARATOR-delimited format, and expiring timed-out invites.
 //   Extracting it here makes the format independently testable without
 //   spinning up a UGS lobby.
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 using System.Collections.Generic;
 
@@ -17,7 +17,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Builds, tracks, serialises, and parses outgoing invite payloads.
-    /// Implementors own the in-memory map of targetPlayerId → payload string and
+    /// Implementors own the in-memory map of targetPlayerId -> payload string and
     /// the serialised composite property value written to the lobby.
     ///
     /// Lifetime: extracted from <see cref="HostConnectionService"/> in Phase 5.

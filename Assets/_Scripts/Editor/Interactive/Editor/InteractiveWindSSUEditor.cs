@@ -211,7 +211,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.BeginHorizontal();
             GUI.color = Color.white;
             EditorGUILayout.LabelField(title, style);
-            if (GUILayout.Button("<size=10>" + (toggleVariable ? "▼" : "▲") + "</size>", button, GUILayout.Width(20)))
+            if (GUILayout.Button("<size=10>" + (toggleVariable ? "v" : "^") + "</size>", button, GUILayout.Width(20)))
             {
                 toggleVariable = !toggleVariable;
             }

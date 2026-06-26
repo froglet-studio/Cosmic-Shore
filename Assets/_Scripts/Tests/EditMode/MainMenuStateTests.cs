@@ -109,7 +109,7 @@ namespace CosmicShore.Tests
         {
             var table = GetTransitionTable();
             Assert.IsTrue(table[MainMenuState.Ready].Contains(MainMenuState.Freestyle),
-                "Ready → Freestyle transition must be allowed for menu/freestyle toggle.");
+                "Ready -> Freestyle transition must be allowed for menu/freestyle toggle.");
         }
 
         [Test]
@@ -117,7 +117,7 @@ namespace CosmicShore.Tests
         {
             var table = GetTransitionTable();
             Assert.IsTrue(table[MainMenuState.Freestyle].Contains(MainMenuState.Ready),
-                "Freestyle → Ready transition must be allowed to return to menu.");
+                "Freestyle -> Ready transition must be allowed to return to menu.");
         }
 
         [Test]
@@ -132,7 +132,7 @@ namespace CosmicShore.Tests
         {
             var table = GetTransitionTable();
             Assert.IsTrue(table[MainMenuState.Freestyle].Contains(MainMenuState.LaunchingGame),
-                "Freestyle → LaunchingGame transition must be allowed to launch games from freestyle.");
+                "Freestyle -> LaunchingGame transition must be allowed to launch games from freestyle.");
         }
 
         [Test]
@@ -140,7 +140,7 @@ namespace CosmicShore.Tests
         {
             var table = GetTransitionTable();
             Assert.IsTrue(table[MainMenuState.LaunchingGame].Contains(MainMenuState.Ready),
-                "LaunchingGame → Ready transition must be allowed for cancelled launches.");
+                "LaunchingGame -> Ready transition must be allowed for cancelled launches.");
         }
 
         [Test]
@@ -148,7 +148,7 @@ namespace CosmicShore.Tests
         {
             var table = GetTransitionTable();
             Assert.IsFalse(table[MainMenuState.Freestyle].Contains(MainMenuState.Initializing),
-                "Freestyle → Initializing transition should not be allowed.");
+                "Freestyle -> Initializing transition should not be allowed.");
         }
 
         [Test]
@@ -156,7 +156,7 @@ namespace CosmicShore.Tests
         {
             var table = GetTransitionTable();
             Assert.IsFalse(table[MainMenuState.None].Contains(MainMenuState.Freestyle),
-                "None → Freestyle transition should not be allowed (menu not ready).");
+                "None -> Freestyle transition should not be allowed (menu not ready).");
         }
 
         [Test]
@@ -164,7 +164,7 @@ namespace CosmicShore.Tests
         {
             var table = GetTransitionTable();
             Assert.IsFalse(table[MainMenuState.Initializing].Contains(MainMenuState.Freestyle),
-                "Initializing → Freestyle transition should not be allowed (vessel not spawned yet).");
+                "Initializing -> Freestyle transition should not be allowed (vessel not spawned yet).");
         }
 
         #endregion

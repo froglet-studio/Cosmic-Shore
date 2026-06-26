@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Unity.Netcode;
 
 namespace CosmicShore.Utility

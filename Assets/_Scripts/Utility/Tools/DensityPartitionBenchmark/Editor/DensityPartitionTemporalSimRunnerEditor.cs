@@ -7,7 +7,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark.Editor
 {
     /// <summary>
     /// Inspector for DensityPartitionTemporalSimRunner. Runs the ecology sim twice
-    /// (old fixed ±500m grid vs new cell-sized grid) and dumps the comparison.
+    /// (old fixed +/-500m grid vs new cell-sized grid) and dumps the comparison.
     /// </summary>
     [CustomEditor(typeof(DensityPartitionTemporalSimRunner))]
     public class DensityPartitionTemporalSimRunnerEditor : UnityEditor.Editor
@@ -42,8 +42,8 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark.Editor
             EditorGUILayout.Space(4);
             EditorGUILayout.HelpBox(
                 "Edit-Mode safe. Runs the flora/fauna/phase loop for simDurationSeconds " +
-                "twice — once with the literal shipped ±500m grid, once with the cell-sized " +
-                "grid — and reports whether outer-shell mass stays bounded (fauna reach it) " +
+                "twice - once with the literal shipped +/-500m grid, once with the cell-sized " +
+                "grid - and reports whether outer-shell mass stays bounded (fauna reach it) " +
                 "or accumulates forever (the grid is blind to it).\n" +
                 "This is also an ecology tuning bench: adjust the flora/fauna rate fields " +
                 "to search for the parameter regime that produces the two-frequency " +

@@ -7,7 +7,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 {
     /// <summary>
     /// One prism in the synthetic input tape. The benchmark never spawns real Prism
-    /// MonoBehaviours — Edit Mode can't drive the pool, the SOAP events, the AOE
+    /// MonoBehaviours - Edit Mode can't drive the pool, the SOAP events, the AOE
     /// registry singleton, or PrismProperties initialization. Instead, each candidate
     /// algorithm receives a list of these structs and returns a Vector3 answer; the
     /// ground-truth scan operates on the same list, so the comparison is apples to
@@ -30,11 +30,11 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
         /// <summary>
         /// K clusters at deterministic positions, each cluster dominated by one
-        /// domain (cluster i → {Jade, Ruby, Gold}[i % 3] with `segregatedPurity`
+        /// domain (cluster i -> {Jade, Ruby, Gold}[i % 3] with `segregatedPurity`
         /// fraction of prisms in that domain, the rest split among the others).
         ///
         /// Models a "territorial" game state where each team has carved out a
-        /// region. This is the scenario where the §2.3.1 staleness bug should
+        /// region. This is the scenario where the Sec 2.3.1 staleness bug should
         /// actually move the answer: phantom-Blue prisms at the Jade-dominant
         /// cluster's position pollute anti-Jade's view, potentially flipping
         /// the algorithm's pick from "Ruby/Gold cluster" to "polluted Jade
@@ -45,7 +45,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
     /// <summary>
     /// Whether a scenario actually has a peak to find. Peaked scenarios are where
-    /// peak-finding accuracy is meaningful — the summary headline ranks algorithms
+    /// peak-finding accuracy is meaningful - the summary headline ranks algorithms
     /// only on these. Diffuse scenarios (uniform random, density gradient) have no
     /// well-defined peak and serve as a diagnostic floor: every algorithm "fails"
     /// them, and that failure is not a regression. Keep them in the report for
@@ -60,7 +60,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     /// <summary>
     /// Deterministic scenario definition. Serializable so the runner inspector can
     /// edit a list. Build() expands into a list of BenchmarkPrism structs and is
-    /// repeatable for a given seed — every algorithm in the report sees the same
+    /// repeatable for a given seed - every algorithm in the report sees the same
     /// input tape.
     /// </summary>
     [Serializable]
@@ -81,7 +81,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         [Tooltip("Total prism count produced by Build().")]
         [Min(10)] public int prismCount = 2000;
 
-        [Tooltip("Deterministic RNG seed. Same seed → same input tape.")]
+        [Tooltip("Deterministic RNG seed. Same seed -> same input tape.")]
         public int seed = 42;
 
         [Tooltip("World-space half-extent for UniformRandom and the bounding box for other shapes.")]
@@ -118,19 +118,19 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         [Tooltip("Maximum prism volume. Set min==max for uniform 1.0 (the current production grid's effective weighting).")]
         [Min(0.1f)] public float volumeMax = 1f;
 
-        [Header("Staleness injection (models the §2.3.1 dynamic Add/Remove bug)")]
+        [Header("Staleness injection (models the Sec 2.3.1 dynamic Add/Remove bug)")]
         [Tooltip("Fraction of prisms to *duplicate* as Blue-tagged phantoms at the " +
                  "same position. Models Cell.AddBlock running while block.Domain is " +
                  "still Blue (the pool default) so the prism is added to all three " +
                  "per-domain countGrids, then RemoveBlock running after ChangeTeam " +
-                 "fails to remove from the prism's eventual domain's grid — a phantom " +
+                 "fails to remove from the prism's eventual domain's grid - a phantom " +
                  "is left at the prism's position in its own anti-domain bucket. " +
                  "Ground truth never sees the phantoms.")]
         [Range(0f, 1f)] public float staleFraction = 0f;
 
         /// <summary>
         /// Build the synthetic prism list. Always returns the same list for the same
-        /// (seed, kind, prismCount, distribution params) — used as the canonical
+        /// (seed, kind, prismCount, distribution params) - used as the canonical
         /// input tape for every algorithm in this scenario.
         /// </summary>
         public List<BenchmarkPrism> Build()
@@ -235,7 +235,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 case ScenarioKind.Gradient:
                 {
                     // Density linear in the projection of position onto axis.
-                    // Inverse-CDF sampling: u² gives a triangular density.
+                    // Inverse-CDF sampling: u^2 gives a triangular density.
                     float u = (float)rng.NextDouble();
                     float along = Mathf.Sqrt(u) * worldHalfExtent;
                     // Orthogonal axes: pick any two perpendicular to axis.
@@ -257,7 +257,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
         static Vector3 GaussianVector(System.Random rng)
         {
-            // Box-Muller (paired samples, second is discarded — we generate three
+            // Box-Muller (paired samples, second is discarded - we generate three
             // pairs across x/y/z for vector samples; per-axis bias is fine because
             // each call is independent and the report aggregates across hundreds).
             double u1 = 1.0 - rng.NextDouble();
@@ -275,21 +275,21 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         /// <summary>
         /// Apply staleness to the input tape sent to an algorithm under test.
         ///
-        /// Models the §2.3.1 dynamic-cycle failure: HealthBlockTracker.Add runs
+        /// Models the Sec 2.3.1 dynamic-cycle failure: HealthBlockTracker.Add runs
         /// `cell.AddBlock(hp)` while `hp.Domain` is still Blue (the pool default),
         /// so Cell.AddBlock's `if (t != block.Domain)` loop increments ALL THREE
         /// per-domain countGrids. Later, `hp.ChangeTeam(domain)` sets the real
         /// domain. If the prism dies after that, RemoveBlock's same-shaped loop
-        /// only decrements two of the three buckets — the bucket matching the
+        /// only decrements two of the three buckets - the bucket matching the
         /// prism's eventual domain is left with a phantom entry forever.
         ///
-        /// Implementation: append `staleFraction × N` phantom prisms at the same
+        /// Implementation: append `staleFraction x N` phantom prisms at the same
         /// positions as randomly-chosen real prisms, tagged Blue so they pass
-        /// every anti-D filter (Blue ∉ {Jade, Ruby, Gold}). Each phantom adds one
-        /// "phantom enemy" near a real prism — the cumulative effect of the bug
+        /// every anti-D filter (Blue not in {Jade, Ruby, Gold}). Each phantom adds one
+        /// "phantom enemy" near a real prism - the cumulative effect of the bug
         /// over a long-running ecosystem.
         ///
-        /// Ground truth never sees the phantoms — it scores the clean truth tape.
+        /// Ground truth never sees the phantoms - it scores the clean truth tape.
         /// </summary>
         public List<BenchmarkPrism> ApplyStaleness(List<BenchmarkPrism> truth)
         {

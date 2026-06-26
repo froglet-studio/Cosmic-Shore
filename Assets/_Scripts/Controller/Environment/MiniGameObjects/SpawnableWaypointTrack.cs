@@ -258,7 +258,7 @@ public class SpawnableWaypointTrack : SpawnableBase
     /// Compute how many blocks to spawn on a given segment so that the prism
     /// spacing is consistent across segments of differing length. Falls back
     /// to <see cref="blocksPerSegment"/> when <see cref="prismSpacing"/> is
-    /// not configured (≤ 0). Spline segments approximate arc length by
+    /// not configured (<= 0). Spline segments approximate arc length by
     /// sampling the Catmull-Rom curve.
     /// </summary>
     private int ResolveBlocksThisSegment(List<Vector3> positions, int segment, bool spline)

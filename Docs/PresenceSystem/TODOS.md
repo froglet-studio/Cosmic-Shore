@@ -1,4 +1,4 @@
-# Presence System — TODOs
+# Presence System - TODOs
 
 Parking lot for minor improvements that don't rise to a refactor
 commit or a bug. Each entry has enough context that it can be picked
@@ -13,7 +13,7 @@ up cold.
 rebuild. This is documented in a code comment but is a frequent source
 of confusion for B4-style invite-vanish bugs.
 
-**Action.** Add a short paragraph to `ARCHITECTURE.md` § "How invites
+**Action.** Add a short paragraph to `ARCHITECTURE.md` Sec "How invites
 travel" explaining the reset semantics and why
 (`BuildLocalPlayerProperties` is called on rejoin / reconnect, and
 preserving stale invites across a rejoin would mis-deliver them).
@@ -26,7 +26,7 @@ the contributors to B1 (`LobbyPatcher` exception spam). Coalescing the
 property writes at startup would reduce SDK delta churn.
 
 **Touchpoint.** `LobbyPropertyWriter.SaveWithRetryAsync` (already does
-post-save refresh — may need to batch).
+post-save refresh - may need to batch).
 
 **Risk.** Touches the fragile lobby property write path. Worth doing
 *only* if B1 returns after the `BenignLobbyLogFilter` proves
@@ -38,8 +38,8 @@ insufficient.
 property reads/writes at the SDK and contributes to rate-limit
 incidence on the 429 hot window after invite-receive.
 
-**Touchpoint.** `LobbyRefreshScheduler` — base interval is currently
-fixed. Add a per-client uniform jitter of ±10% so refreshes spread out
+**Touchpoint.** `LobbyRefreshScheduler` - base interval is currently
+fixed. Add a per-client uniform jitter of +/-10% so refreshes spread out
 across the wall-clock window.
 
 **Risk.** Low; jitter is additive, doesn't change median cadence
@@ -68,13 +68,13 @@ the class frequencies. File the tally in `BUGS.md` under the relevant
 bug.
 
 **Mechanism.** The generic class-count aggregation tool is tracked in
-`../NetworkDiagnostics/TODOS.md` § "TODO-8. Aggregate NetDiag class
+`../NetworkDiagnostics/TODOS.md` Sec "TODO-8. Aggregate NetDiag class
 counts across MPPM runs"; this entry is the presence-specific *use* of
 that data (deciding `LobbyMembershipMonitor` states).
 
 ## UI / UX
 
-### TODO-P6. "Reconnecting…" indicator
+### TODO-P6. "Reconnecting..." indicator
 
 **Why.** When `HostConnectionService` enters `Reconnecting` state, no
 UI feedback today. Users see an empty online-player panel with no

@@ -22,7 +22,7 @@ namespace CosmicShore.Core
         /// Set of game mode names where the quest has been completed
         /// (target met) but the player hasn't yet claimed/acknowledged the unlock.
         /// When the player taps the unlock button on the quest screen,
-        /// the mode moves from CompletedQuests → UnlockedModes for the next mode.
+        /// the mode moves from CompletedQuests -> UnlockedModes for the next mode.
         /// </summary>
         public List<string> CompletedQuests = new();
 
@@ -81,7 +81,7 @@ namespace CosmicShore.Core
             return true;
         }
 
-        // ── Intensity Progression ────────────────────────────────────────────
+        // -- Intensity Progression --------------------------------------------
 
         static string PlayCountKey(string modeName, int intensity) => $"{modeName}:{intensity}";
 

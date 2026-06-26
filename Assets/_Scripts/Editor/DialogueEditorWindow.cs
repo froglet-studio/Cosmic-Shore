@@ -457,7 +457,7 @@ namespace CosmicShore.Editor
 
 
         // -------------------------------------------------------------------
-        // Right Panel: Always-visible preview of the set�s portraits and line text
+        // Right Panel: Always-visible preview of the set's portraits and line text
         // -------------------------------------------------------------------
         private void DrawRightPanel()
         {
@@ -566,7 +566,7 @@ namespace CosmicShore.Editor
                 // 3) Get that line
                 DialogueLine line = selectedSet.lines[idx];
 
-                // 4) Heading: use the line�s speakerName (or setId if you prefer)
+                // 4) Heading: use the line's speakerName (or setId if you prefer)
                 EditorGUILayout.LabelField(line.speakerName + ":", titleStyle);
 
                 GUILayout.Space(8);

@@ -20,30 +20,30 @@ namespace CosmicShore.Gameplay
         [Header("Data")]
         [Inject] protected GameDataSO gameData;
 
-        [Header("Stat Events — Flight (all vessels)")]
+        [Header("Stat Events - Flight (all vessels)")]
         [SerializeField] private VesselStatEventSO longestDriftStat;
         [SerializeField] private VesselStatEventSO maxBoostTimeStat;
 
-        [Header("Stat Events — Combat (all vessels)")]
+        [Header("Stat Events - Combat (all vessels)")]
         [SerializeField] private VesselStatEventSO prismsDamagedStat;
 
         [Header("Tracking Thresholds")]
         [Tooltip("Minimum BoostMultiplier required while IsBoosting for boost time to count toward Max Boost. " +
-                 "Tune per vessel — e.g. Squirrel's ChargeBoost peaks at 2x, so a 4x threshold would never fire.")]
+                 "Tune per vessel - e.g. Squirrel's ChargeBoost peaks at 2x, so a 4x threshold would never fire.")]
         [SerializeField] private float boostMultiplierThreshold = 1.5f;
 
-        // ── Public records ─────────────────────────────────────────────────────
+        // -- Public records -----------------------------------------------------
 
         public float MaxDriftTime    { get; private set; }
         public float MaxBoostTime    { get; private set; }
         public int   PrismsDamaged   { get; private set; }
 
-        // ── Protected access for subclasses ───────────────────────────────────
+        // -- Protected access for subclasses -----------------------------------
 
         protected IVesselStatus Vessel     { get; private set; }
         protected bool          IsTracking { get; private set; }
 
-        // ── Stat registry ──────────────────────────────────────────────────────
+        // -- Stat registry ------------------------------------------------------
 
         private readonly List<VesselStatEventSO> _allStats = new();
 
@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
             if (stat != null) _allStats.Add(stat);
         }
 
-        // ── Runtime injection (used by VesselTelemetryBootstrapper) ────────────
+        // -- Runtime injection (used by VesselTelemetryBootstrapper) ------------
 
         /// <summary>
         /// Sets gameData when the component is added at runtime via AddComponent.
@@ -62,13 +62,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void InjectGameData(GameDataSO data) => gameData = data;
 
-        // ── Private accumulators ───────────────────────────────────────────────
+        // -- Private accumulators -----------------------------------------------
 
         private float _currentDriftTime;
         private float _currentBoostTime;
         private bool  _subscribed;
 
-        // ── Lifecycle ──────────────────────────────────────────────────────────
+        // -- Lifecycle ----------------------------------------------------------
 
         private void Awake()
         {
@@ -77,7 +77,7 @@ namespace CosmicShore.Gameplay
             RegisterStat(prismsDamagedStat);
             RegisterStatsExtended();
 
-            Debug.Log($"[VesselTelemetry] {GetType().Name} Awake — " +
+            Debug.Log($"[VesselTelemetry] {GetType().Name} Awake - " +
                 $"registered {_allStats.Count} stat(s), " +
                 $"gameData={(gameData != null ? "OK" : "NULL")}, " +
                 $"drift={(longestDriftStat != null ? "OK" : "NULL")}, " +
@@ -122,7 +122,7 @@ namespace CosmicShore.Gameplay
             OnUpdateExtended();
         }
 
-        // ── Turn lifecycle ─────────────────────────────────────────────────────
+        // -- Turn lifecycle -----------------------------------------------------
 
         private void HandleTurnStarted()
         {
@@ -132,7 +132,7 @@ namespace CosmicShore.Gameplay
 
             if (Vessel == null || !Vessel.IsLocalUser)
             {
-                Debug.LogWarning($"[VesselTelemetry] {GetType().Name} HandleTurnStarted — " +
+                Debug.LogWarning($"[VesselTelemetry] {GetType().Name} HandleTurnStarted - " +
                     $"NOT tracking (Vessel={(Vessel != null ? Vessel.VesselType.ToString() : "NULL")}, " +
                     $"IsLocal={Vessel?.IsLocalUser})");
                 IsTracking = false;
@@ -140,7 +140,7 @@ namespace CosmicShore.Gameplay
             }
 
             IsTracking = true;
-            Debug.Log($"[VesselTelemetry] {GetType().Name} HandleTurnStarted — " +
+            Debug.Log($"[VesselTelemetry] {GetType().Name} HandleTurnStarted - " +
                 $"tracking {Vessel.VesselType} for player '{Vessel.PlayerName}', " +
                 $"{_allStats.Count} stat(s) registered");
             OnTurnStartedExtended();
@@ -152,11 +152,11 @@ namespace CosmicShore.Gameplay
             FinalizeInProgressBoost();
             IsTracking = false;
             OnTurnEndedExtended();
-            Debug.Log($"[VesselTelemetry] {GetType().Name} HandleTurnEnded — " +
+            Debug.Log($"[VesselTelemetry] {GetType().Name} HandleTurnEnded - " +
                 $"drift={MaxDriftTime:F2}s, boost={MaxBoostTime:F2}s, prismsDmg={PrismsDamaged}");
         }
 
-        // ── Extension points ───────────────────────────────────────────────────
+        // -- Extension points ---------------------------------------------------
 
         protected virtual void RegisterStatsExtended() { }
         protected virtual void OnTurnStartedExtended() { }
@@ -164,7 +164,7 @@ namespace CosmicShore.Gameplay
         protected virtual void OnUpdateExtended()      { }
         protected virtual void ResetExtended()         { }
 
-        // ── Event handlers ─────────────────────────────────────────────────────
+        // -- Event handlers -----------------------------------------------------
 
         private void HandlePrismDamaged(string playerName)
         {
@@ -173,7 +173,7 @@ namespace CosmicShore.Gameplay
             prismsDamagedStat?.Raise(PrismsDamaged);
         }
 
-        // ── Frame tracking ─────────────────────────────────────────────────────
+        // -- Frame tracking -----------------------------------------------------
 
         private void TrackDrift()
         {
@@ -214,7 +214,7 @@ namespace CosmicShore.Gameplay
             _currentBoostTime = 0f;
         }
 
-        // ── Reset ──────────────────────────────────────────────────────────────
+        // -- Reset --------------------------------------------------------------
 
         private void ResetAll()
         {

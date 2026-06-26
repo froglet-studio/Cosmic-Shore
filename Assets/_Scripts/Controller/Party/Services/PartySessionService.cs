@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // PartySessionService.cs
 // Owns the UGS Relay-backed party session lifecycle.
 //
@@ -20,17 +20,17 @@
 //   CreateAsync retries on host-conflict (happens when the local NM is still
 //   shutting down) and rate-limit (HTTP 429) errors with exponential back-off.
 //   JoinByIdAsync retries transient errors (rate-limit / SDK SessionException NRE /
-//   lobby-events 23006) — two clients accepting the same host invite can collide on
+//   lobby-events 23006) - two clients accepting the same host invite can collide on
 //   the host's session state. Non-transient join errors propagate to the caller
 //   (AcceptInviteAsync), which logs and rethrows them for fail-fast recovery.
 //
 // LIFETIME:
-//   Pure C# — no MonoBehaviour.  Instantiated as a field on
+//   Pure C# - no MonoBehaviour.  Instantiated as a field on
 //   HostConnectionService for Phases 9-11.  Phase 12 registers it in Reflex DI.
 //
 // THREAD SAFETY:
 //   Main-thread only.
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 using System;
 using System.Collections.Generic;
@@ -53,15 +53,15 @@ namespace CosmicShore.Gameplay
     /// <see cref="NetworkTransitionService"/> in Phase 11.
     /// </para>
     ///
-    /// Lifetime: pure C# — no MonoBehaviour.  Created as a field on
+    /// Lifetime: pure C# - no MonoBehaviour.  Created as a field on
     /// <see cref="HostConnectionService"/>; will be DI-registered in Phase 12.
     /// Thread-safety: main-thread only.
     /// </summary>
     public sealed class PartySessionService : IPartySessionService
     {
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Constants
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         private const int RATE_LIMIT_MAX_RETRIES  = 3;
         private const int RATE_LIMIT_BASE_DELAY_MS = 2000;
@@ -69,7 +69,7 @@ namespace CosmicShore.Gameplay
         private const int TRANSIENT_MAX_RETRIES   = 5;
         private const int TRANSIENT_BASE_DELAY_MS = 1000;
 
-        // Lobby player-property keys — written during session create/join so
+        // Lobby player-property keys - written during session create/join so
         // other lobby members can see our display name, party info, etc.
         private const string DISPLAY_NAME_KEY    = "displayName";
         private const string AVATAR_ID_KEY       = "avatarId";
@@ -80,16 +80,16 @@ namespace CosmicShore.Gameplay
         private const string INVITE_PAYLOADS_KEY = "invite_payloads";
         private const string ACCEPTED_INVITE_KEY = "accepted_invite";
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Dependencies + state
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         private readonly HostConnectionDataSO _connectionData;
         private readonly GameDataSO _gameData;
 
         /// <summary>
         /// UGS multiplayer service, resolved fresh at use time. Never cache
-        /// <see cref="MultiplayerService.Instance"/> in the constructor — this
+        /// <see cref="MultiplayerService.Instance"/> in the constructor - this
         /// service is a lazy DI singleton constructed during Bootstrap DI
         /// resolution, before <c>UnityServices.InitializeAsync()</c> completes,
         /// so a constructor-time read would pin null. See
@@ -97,13 +97,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private IMultiplayerService _multiplayerService => MultiplayerService.Instance;
 
-        // ─────────────────────────────────────────────────────────────────────
-        // IPartySessionService — state properties
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
+        // IPartySessionService - state properties
+        // ---------------------------------------------------------------------
 
         /// <inheritdoc/>
         /// <remarks>
-        /// Backed by <c>GameDataSO.ActiveSession</c> — single source of truth
+        /// Backed by <c>GameDataSO.ActiveSession</c> - single source of truth
         /// for the active Relay session reference, shared with every other
         /// reader (HCS, MultiplayerSetup, MultiplayerMiniGameControllerBase,
         /// Player, etc.). See Docs/PartySystem/ARCHITECTURE.md locked design.
@@ -123,14 +123,14 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Relay for the underlying <c>ISession.PlayerLeaving</c>.  Wired immediately
         /// after every <see cref="ActiveSession"/> assignment (create/join) and unwired
-        /// in <see cref="ClearSession"/> — the single point that nulls the reference —
+        /// in <see cref="ClearSession"/> - the single point that nulls the reference -
         /// so no handler outlives the session object it was attached to.
         /// </summary>
         private void OnSessionPlayerLeaving(string playerId) => PlayerLeaving?.Invoke(playerId);
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Construction
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         /// <summary>
         /// Creates the party session service.
@@ -140,7 +140,7 @@ namespace CosmicShore.Gameplay
         /// avatar id) when building player properties for session create/join.
         /// </param>
         /// <param name="gameData">
-        /// Shared game-data SO. Backs <see cref="ActiveSession"/> — every reader
+        /// Shared game-data SO. Backs <see cref="ActiveSession"/> - every reader
         /// of the active session reference (this service, HCS, game controllers,
         /// MultiplayerSetup) goes through the same field.
         /// </param>
@@ -150,9 +150,9 @@ namespace CosmicShore.Gameplay
             _gameData = gameData;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
-        // IPartySessionService — session lifecycle
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
+        // IPartySessionService - session lifecycle
+        // ---------------------------------------------------------------------
 
         /// <summary>
         /// Creates a new private Relay-backed party session and sets
@@ -189,18 +189,18 @@ namespace CosmicShore.Gameplay
                 }
                 catch (Exception e) when (attempt < HOST_CONFLICT_MAX_RETRIES && IsHostConflictException(e))
                 {
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Host conflict — retry {attempt + 1}/{HOST_CONFLICT_MAX_RETRIES}");
+                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Host conflict - retry {attempt + 1}/{HOST_CONFLICT_MAX_RETRIES}");
                 }
                 catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Rate limited — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Rate limited - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                     await UniTask.Delay(delay);
                 }
                 catch (Exception e) when (attempt < TRANSIENT_MAX_RETRIES && IsTransientSessionException(e))
                 {
                     int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Transient session error — retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e}");
+                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Transient session error - retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e}");
                     CosmicShore.Utility.CSDebug.Log($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                     await UniTask.Delay(delay);
                 }
@@ -213,7 +213,7 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>
         /// The caller must ensure <paramref name="sessionId"/> is the real (non-PENDING)
-        /// Relay session id before calling — use
+        /// Relay session id before calling - use
         /// <see cref="AcceptanceSignalService.WaitForRealSessionIdAsync"/> to obtain it.
         /// </para>
         /// </summary>
@@ -244,13 +244,13 @@ namespace CosmicShore.Gameplay
                 catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
                 {
                     int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Join rate limited — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Join rate limited - retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
                     await UniTask.Delay(delay);
                 }
                 catch (Exception e) when (attempt < TRANSIENT_MAX_RETRIES && IsTransientSessionException(e))
                 {
                     int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
-                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Join transient error — retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e.Message}");
+                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Join transient error - retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e.Message}");
                     CosmicShore.Utility.CSDebug.Log($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                     await UniTask.Delay(delay);
                 }
@@ -283,7 +283,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Refreshes the active session's player list from the UGS backend.
-        /// Throws on SDK errors — caller is responsible for error handling and
+        /// Throws on SDK errors - caller is responsible for error handling and
         /// grace-period enforcement.
         /// </summary>
         public async UniTask RefreshAsync()
@@ -298,7 +298,7 @@ namespace CosmicShore.Gameplay
         ///
         /// <para>
         /// Use when the session reference should be discarded without a graceful
-        /// leave (e.g., game→menu transition stale-session clear, or after a
+        /// leave (e.g., game->menu transition stale-session clear, or after a
         /// non-rate-limit refresh failure when retaining the session would trigger
         /// duplicate creation that kicks the joining client).
         /// </para>
@@ -312,9 +312,9 @@ namespace CosmicShore.Gameplay
             CreatedAtUnscaledTime = 0f;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Private helpers
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         /// <summary>
         /// Builds the player-property dictionary written to the UGS session on

@@ -1,7 +1,7 @@
 namespace CosmicShore.Data
 {
     /// <summary>
-    /// One row of final, ranked scoring results — the single source of truth for
+    /// One row of final, ranked scoring results - the single source of truth for
     /// "who placed where" that every end-game surface (scoreboard banner + cards,
     /// end-game cinematic, crystal reward) reads. Produced once by the game mode
     /// (server-side in networked modes, locally in single-player) and, in networked
@@ -21,7 +21,7 @@ namespace CosmicShore.Data
         public readonly float Score;
 
         /// <summary>
-        /// Mode-formatted PRIMARY display string — what the scoreboard card's main score
+        /// Mode-formatted PRIMARY display string - what the scoreboard card's main score
         /// shows and what the end-game cinematic reveals (winner: "01:24:30"; loser:
         /// "3 Crystals Left" / "3 Jousts Left"; CrystalCapture: "12 Crystals"). Computed
         /// once by the producing mode so the scoreboard and the reveal can never disagree

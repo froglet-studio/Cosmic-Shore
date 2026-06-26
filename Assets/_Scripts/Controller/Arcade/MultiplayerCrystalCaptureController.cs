@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     public class MultiplayerCrystalCaptureController : MultiplayerDomainGamesController
     {
         [Header("Scoring")]
-        [Tooltip("Drag CrystalCaptureScoringRule.asset — the per-mode scoring strategy (winner, scores, results).")]
+        [Tooltip("Drag CrystalCaptureScoringRule.asset - the per-mode scoring strategy (winner, scores, results).")]
         [SerializeField] ScoringRuleSO rule;
 
         private bool _finalResultsSent;
@@ -19,9 +19,9 @@ namespace CosmicShore.Gameplay
         protected override bool UseGolfRules => false;
         protected override bool UseSceneReloadForReplay => true;
 
-        // Crystal Capture handles end-game through OnTurnEndedCustom (server-side winner detection) →
+        // Crystal Capture handles end-game through OnTurnEndedCustom (server-side winner detection) ->
         // SyncFinalScores_ClientRpc, which calls InvokeWinnerCalculated + InvokeMiniGameEnd.
-        // Suppress the base controller's turn→round→game flow so we don't get a duplicate
+        // Suppress the base controller's turn->round->game flow so we don't get a duplicate
         // InvokeWinnerCalculated from SyncGameEnd_ClientRpc.
         protected override bool HasEndGame => false;
 
@@ -34,11 +34,11 @@ namespace CosmicShore.Gameplay
             _finalResultsSent = false;
         }
 
-        // ── Server-authoritative game end ─────────────────────────────────
+        // -- Server-authoritative game end ---------------------------------
 
         /// <summary>
         /// Server-side winner detection, mirroring HexRace/Joust pattern.
-        /// Called from SyncTurnEnd_ClientRpc BEFORE ExecuteServerTurnEnd → SetupNewRound,
+        /// Called from SyncTurnEnd_ClientRpc BEFORE ExecuteServerTurnEnd -> SetupNewRound,
         /// so _finalResultsSent is set in time to suppress the Ready button.
         /// </summary>
         protected override void OnTurnEndedCustom()
@@ -47,9 +47,9 @@ namespace CosmicShore.Gameplay
             if (!IsServer || _finalResultsSent) return;
             if (gameData.RoundStatsList == null || gameData.RoundStatsList.Count == 0) return;
 
-            // Winning domain (highest crystal sum, Jade→Ruby→Gold tie-break) delegated to the
+            // Winning domain (highest crystal sum, Jade->Ruby->Gold tie-break) delegated to the
             // rule; representative winner-name = best individual contributor on that domain
-            // (legacy display field — victory/defeat attribution uses WinnerDomain).
+            // (legacy display field - victory/defeat attribution uses WinnerDomain).
             var winningDomain = rule.ResolveWinner(gameData);
             if (winningDomain == Domains.Blue) return;
 
@@ -73,7 +73,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Suppress the base flow's SetupNewRound when the game just ended.
         /// HasEndGame=false causes ExecuteServerRoundEnd to call SetupNewRound instead of
-        /// ExecuteServerGameEnd — this override prevents the Ready button from appearing.
+        /// ExecuteServerGameEnd - this override prevents the Ready button from appearing.
         /// </summary>
         protected override void SetupNewRound()
         {
@@ -81,7 +81,7 @@ namespace CosmicShore.Gameplay
             base.SetupNewRound();
         }
 
-        // ── Score sync ───────────────────────────────────────────────────
+        // -- Score sync ---------------------------------------------------
 
         void SyncFinalScoresSnapshot(string winnerName, Domains winnerDomain)
         {
@@ -129,7 +129,7 @@ namespace CosmicShore.Gameplay
                 stat.CrystalsCollected = crystalsCollected[i];
             }
 
-            // Authoritative winner — written to gameData, consumed by EndGameControllers
+            // Authoritative winner - written to gameData, consumed by EndGameControllers
             // OnWinnerCalculated (below) is the "results ready" signal.
             gameData.WinnerName = winnerName.ToString();
             gameData.WinnerDomain = (Domains)winnerDomain;
@@ -141,7 +141,7 @@ namespace CosmicShore.Gameplay
             gameData.InvokeMiniGameEnd();
         }
 
-        // ── Replay ───────────────────────────────────────────────────────
+        // -- Replay -------------------------------------------------------
 
         protected override void OnResetForReplayCustom()
         {

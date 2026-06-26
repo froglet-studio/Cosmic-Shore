@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using Obvious.Soap;
 using UnityEngine;
 using CosmicShore.Utility;

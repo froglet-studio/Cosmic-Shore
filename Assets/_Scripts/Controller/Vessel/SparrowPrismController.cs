@@ -21,11 +21,11 @@ namespace CosmicShore.Gameplay
         
         protected override Vector3 ApplyBoostScale(Vector3 scale)
         {
-            // If boosting → normal
+            // If boosting -> normal
             if (vesselStatus is { IsBoosting: true })
                 return scale;
 
-            // If NOT boosting → double size
+            // If NOT boosting -> double size
             return scale * nonBoostingScaleMultiplier;
         }
         
@@ -40,11 +40,11 @@ namespace CosmicShore.Gameplay
         
         protected override float ApplyBoostSpawnDelay(float delay)
         {
-            // If boosting → keep normal spawn frequency
+            // If boosting -> keep normal spawn frequency
             if (vesselStatus is { IsBoosting: true })
                 return delay;
 
-            // Not boosting → increase time between spawns (double, or whatever you want)
+            // Not boosting -> increase time between spawns (double, or whatever you want)
             return delay * nonBoostSpawnDelayMultiplier;
         }
     }

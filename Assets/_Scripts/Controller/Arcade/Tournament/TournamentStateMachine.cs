@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Maelstrom scene shown as the intro lobby (before the first game) OR the between-round hub
-        /// (after a game, when the shuffle isn't decided) — both use the active layout with the
+        /// (after a game, when the shuffle isn't decided) - both use the active layout with the
         /// ready-up. The summary is its own phase (<see cref="Summary"/>).
         /// </summary>
         Lobby = 1,
@@ -21,7 +21,7 @@ namespace CosmicShore.Gameplay
         /// <summary>A minigame in the lineup is loaded / being played.</summary>
         InGame = 2,
 
-        /// <summary>The final game has finished; its scoreboard is up (Continue → Summary).</summary>
+        /// <summary>The final game has finished; its scoreboard is up (Continue -> Summary).</summary>
         Complete = 3,
 
         /// <summary>The Tournament results scene is up after the last game (Play Again / Main Menu).</summary>
@@ -40,8 +40,8 @@ namespace CosmicShore.Gameplay
         static readonly Dictionary<TournamentPhase, HashSet<TournamentPhase>> Valid = new()
         {
             [TournamentPhase.Idle]     = new HashSet<TournamentPhase> { TournamentPhase.Lobby },
-            // Lobby → Complete: the shuffle can be found decided at a Maelstrom (hub) load even if the
-            // deciding game's end did not land the InGame → Complete transition (see EnterSummary). This
+            // Lobby -> Complete: the shuffle can be found decided at a Maelstrom (hub) load even if the
+            // deciding game's end did not land the InGame -> Complete transition (see EnterSummary). This
             // lets the authoritative IsShuffleComplete check route to the summary from the hub phase too.
             [TournamentPhase.Lobby]    = new HashSet<TournamentPhase> { TournamentPhase.InGame, TournamentPhase.Idle, TournamentPhase.Complete },
             [TournamentPhase.InGame]   = new HashSet<TournamentPhase> { TournamentPhase.InGame, TournamentPhase.Complete, TournamentPhase.Idle, TournamentPhase.Lobby },

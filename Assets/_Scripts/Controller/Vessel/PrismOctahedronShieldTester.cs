@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     /// PrismStateManager lifecycle.
     ///
     /// The <c>OctahedronShieldTest.prefab</c> under <c>Assets/_Prefabs/Tools/</c>
-    /// is preconfigured with everything this harness needs — drag it into
+    /// is preconfigured with everything this harness needs - drag it into
     /// any scene and press Space.
     ///
     /// Uses the new Input System package (<c>UnityEngine.InputSystem</c>)
@@ -45,7 +45,7 @@ namespace CosmicShore.Gameplay
             {
                 _shield.Toggle();
                 if (logToggles)
-                    Debug.Log($"[ShieldTester] Space → shielded={_shield.IsShielded}");
+                    Debug.Log($"[ShieldTester] Space -> shielded={_shield.IsShielded}");
             }
 
             if (autoToggle)
@@ -56,7 +56,7 @@ namespace CosmicShore.Gameplay
                     _timer = 0f;
                     _shield.Toggle();
                     if (logToggles)
-                        Debug.Log($"[ShieldTester] auto-toggled → shielded={_shield.IsShielded}");
+                        Debug.Log($"[ShieldTester] auto-toggled -> shielded={_shield.IsShielded}");
                 }
             }
         }

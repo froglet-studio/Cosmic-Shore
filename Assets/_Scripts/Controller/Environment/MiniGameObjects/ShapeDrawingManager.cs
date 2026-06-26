@@ -107,7 +107,7 @@ namespace CosmicShore.Gameplay
         float _nextSampleTime;
         bool _trackingPath;
 
-        // ── Shape Orientation Helpers ────────────────────────────────────────
+        // -- Shape Orientation Helpers ----------------------------------------
 
         Quaternion ShapeRotation => Quaternion.Euler(shapeOrientationEuler);
 
@@ -168,7 +168,7 @@ namespace CosmicShore.Gameplay
                 (Vector3.back * _activeShape.revealCameraDistance);
         }
 
-        // ── Lifecycle ────────────────────────────────────────────────────────
+        // -- Lifecycle --------------------------------------------------------
 
         void Awake()
         {
@@ -209,7 +209,7 @@ namespace CosmicShore.Gameplay
             SamplePlayerPosition();
         }
 
-        // ── Public API ───────────────────────────────────────────────────────
+        // -- Public API -------------------------------------------------------
 
         public bool IsInShapeMode => _isActive;
 
@@ -235,10 +235,10 @@ namespace CosmicShore.Gameplay
             // Cache vessel status via the vessel interface (NOT GetComponent)
             _vesselStatus = gameData.LocalPlayer?.Vessel?.VesselStatus;
 
-            // Return existing prisms to pool via SO event — clean slate for shape mode
+            // Return existing prisms to pool via SO event - clean slate for shape mode
             if (onShapeGameModeStarted) onShapeGameModeStarted.Raise();
 
-            // Freeze player — Ready button will release via IsStationary = false
+            // Freeze player - Ready button will release via IsStationary = false
             if (_vesselStatus != null)
                 _vesselStatus.IsStationary = true;
 
@@ -267,7 +267,7 @@ namespace CosmicShore.Gameplay
             if (!_isActive || _drawingStarted) return;
             _drawingStarted = true;
 
-            // Release player — vessel's natural prism spawning takes over
+            // Release player - vessel's natural prism spawning takes over
             if (_vesselStatus != null)
                 _vesselStatus.IsStationary = false;
 
@@ -344,7 +344,7 @@ namespace CosmicShore.Gameplay
             OnFreestyleResumed?.Invoke();
         }
 
-        // ── Prism Keeping ────────────────────────────────────────────────────
+        // -- Prism Keeping ----------------------------------------------------
 
         /// <summary>
         /// Captures all player-drawn prisms from VesselPrismController trails,
@@ -460,7 +460,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ── Preview Sequence (Phase 1) ───────────────────────────────────────
+        // -- Preview Sequence (Phase 1) ---------------------------------------
 
         IEnumerator PreviewSequence()
         {
@@ -473,7 +473,7 @@ namespace CosmicShore.Gameplay
             // Camera flies to shape overview, holds, then returns to player
             yield return StartCoroutine(ShapePreviewCinematic());
 
-            // Fire event — controller shows ready button
+            // Fire event - controller shows ready button
             OnPreviewComplete?.Invoke();
         }
 
@@ -553,7 +553,7 @@ namespace CosmicShore.Gameplay
             ReleaseCamera();
         }
 
-        // ── Drawing Logic ────────────────────────────────────────────────────
+        // -- Drawing Logic ----------------------------------------------------
 
         void SpawnCrystal(int index)
         {
@@ -581,14 +581,14 @@ namespace CosmicShore.Gameplay
             {
                 _trackingPath = true;
                 _nextSampleTime = Time.time;
-                Debug.Log("[ShapeDrawing] First crystal hit — tracking started.");
+                Debug.Log("[ShapeDrawing] First crystal hit - tracking started.");
             }
 
             _currentWaypointIndex++;
             SpawnCrystal(_currentWaypointIndex);
         }
 
-        // ── SnowChanger ─────────────────────────────────────────────────────
+        // -- SnowChanger -----------------------------------------------------
 
         void SpawnSnowChanger()
         {
@@ -609,7 +609,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ── Guide Line ──────────────────────────────────────────────────────
+        // -- Guide Line ------------------------------------------------------
 
         void UpdateGuideLine()
         {
@@ -632,7 +632,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ── Ghost Shape ─────────────────────────────────────────────────────
+        // -- Ghost Shape -----------------------------------------------------
 
         void DrawGhostShape()
         {
@@ -653,7 +653,7 @@ namespace CosmicShore.Gameplay
             ghostLine.positionCount = 0;
         }
 
-        // ── LineRenderer Auto-Creation ───────────────────────────────────────
+        // -- LineRenderer Auto-Creation ---------------------------------------
 
         void EnsureGuideLine()
         {
@@ -699,7 +699,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ── Camera Helpers ──────────────────────────────────────────────────
+        // -- Camera Helpers --------------------------------------------------
 
         Transform AcquireCamera()
         {
@@ -733,7 +733,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ── Scoring ─────────────────────────────────────────────────────────
+        // -- Scoring ---------------------------------------------------------
 
         void SamplePlayerPosition()
         {
@@ -764,7 +764,7 @@ namespace CosmicShore.Gameplay
             var worldWaypoints = GetAllWorldWaypoints();
             int waypointCount = worldWaypoints.Length;
 
-            // Compute average segment length — thresholds scale with the shape's size
+            // Compute average segment length - thresholds scale with the shape's size
             float totalSegLength = 0f;
             int segCount = 0;
             for (int i = 0; i < waypointCount - 1; i++)
@@ -785,7 +785,7 @@ namespace CosmicShore.Gameplay
 
                 // Only check the segment the player was on and its immediate neighbors.
                 // segIdx is the NEXT waypoint the player was heading toward.
-                // The relevant segment is [segIdx-1 → segIdx], plus neighbors for tolerance.
+                // The relevant segment is [segIdx-1 -> segIdx], plus neighbors for tolerance.
                 int segFrom = Mathf.Max(0, segIdx - 2);
                 int segTo = Mathf.Min(waypointCount - 2, segIdx);
 
@@ -829,7 +829,7 @@ namespace CosmicShore.Gameplay
             return Vector3.Distance(point, closest);
         }
 
-        // ── Finish & Reveal ─────────────────────────────────────────────────
+        // -- Finish & Reveal -------------------------------------------------
 
         void FinishShape()
         {
@@ -838,14 +838,14 @@ namespace CosmicShore.Gameplay
 
             var score = CalculateScore();
 
-            Debug.Log($"[ShapeDrawing] ── Shape Complete ──────────────────────\n" +
+            Debug.Log($"[ShapeDrawing] -- Shape Complete ----------------------\n" +
                       $"  Shape:        {score.ShapeName}\n" +
                       $"  Elapsed:      {score.ElapsedTime:F2}s  (par {_activeShape.parTime:F1}s)\n" +
                       $"  Accuracy:     {score.AccuracyPercent:F1}%\n" +
                       $"  Stars:        {score.StarRating}/5\n" +
                       $"  Path samples: {_playerPathSamples.Count}\n" +
                       $"  Waypoints:    {_activeShape.waypoints.Count}\n" +
-                      $"───────────────────────────────────────────");
+                      $"-------------------------------------------");
 
             StartCoroutine(RevealSequence(score));
         }
@@ -887,7 +887,7 @@ namespace CosmicShore.Gameplay
             if (endShapeHUD) endShapeHUD.Show(score);
         }
 
-        // ── Debug Screenshot ─────────────────────────────────────────────
+        // -- Debug Screenshot ---------------------------------------------
 
         /// <summary>
         /// Captures a screenshot excluding UI layers.

@@ -1,4 +1,4 @@
-﻿// BlockProjectilePoolManager.cs
+// BlockProjectilePoolManager.cs
 using CosmicShore.Gameplay;
 using UnityEngine;
 using CosmicShore.Utility;

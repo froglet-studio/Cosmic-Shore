@@ -1,4 +1,4 @@
-﻿using CosmicShore.Core;
+using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;

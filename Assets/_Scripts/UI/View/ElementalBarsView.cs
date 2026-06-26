@@ -11,11 +11,11 @@ namespace CosmicShore.UI
     /// <summary>
     /// Shared elemental-bar HUD widget for every vessel. Renders four element "flowers"; each element
     /// is five copies of one crisp white petal sprite (charge = irregular pentagon, mass = triangle,
-    /// space = kite, time = rhombus), pivot-centred and rotated 72°·n into a 5-fold flower.
+    /// space = kite, time = rhombus), pivot-centred and rotated 72 deg*n into a 5-fold flower.
     ///
-    /// The element level is an integer in [-5, 15] (ResourceSystem.GetLevel = floor(level·10),
-    /// level ∈ [-0.5, 1.5]) distributed round-robin across the five petals, so each petal holds a
-    /// per-tick value in {-1,0,1,2,3} → {fire, grey, white, blue, lime}:
+    /// The element level is an integer in [-5, 15] (ResourceSystem.GetLevel = floor(level*10),
+    /// level in [-0.5, 1.5]) distributed round-robin across the five petals, so each petal holds a
+    /// per-tick value in {-1,0,1,2,3} -> {fire, grey, white, blue, lime}:
     ///
     ///   all fire = -5 | all grey = 0 | all white = 5 | all blue = 10 | all lime = 15
     ///
@@ -49,7 +49,7 @@ namespace CosmicShore.UI
             public Sprite normalLabelSprite;
         }
 
-        [Header("Config (shared spec — single source of truth)")]
+        [Header("Config (shared spec - single source of truth)")]
         [Tooltip("Colours, petal sprites and juice timings. Loaded from Resources/ElementalBarsConfig when empty.")]
         [SerializeField] private ElementalBarsConfigSO config;
 
@@ -190,7 +190,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Applies the shared petal layout: stretch to fill the flower container, pivot on the flower
-        /// centre, rotate 72°·index, assign the sprite. Public so a petal authored in the prefab as
+        /// centre, rotate 72 deg*index, assign the sprite. Public so a petal authored in the prefab as
         /// "Petal{index}" matches exactly what the runtime builds (and is reused, not duplicated).
         /// </summary>
         public static void ConfigurePetal(Image img, Sprite sprite, int petalIndex)
@@ -205,7 +205,7 @@ namespace CosmicShore.UI
             rt.localRotation = Quaternion.Euler(0f, 0f, -ElementalBarsConfigSO.PetalSpacing * petalIndex);
 
             img.sprite = sprite;
-            img.raycastTarget = false;     // decorative — never block touches
+            img.raycastTarget = false;     // decorative - never block touches
             img.preserveAspect = true;
         }
 
@@ -333,7 +333,7 @@ namespace CosmicShore.UI
                 tweens[p]?.Kill();
                 var rt = img.rectTransform;
 
-                // Buff pops scale; debuff shakes position — different transform channels. If one
+                // Buff pops scale; debuff shakes position - different transform channels. If one
                 // interrupts the other mid-flight, the killed tween leaves its channel dirty (scale
                 // stuck > 1, or an off-centre shake offset) and the flower looks mis-arranged. Snap
                 // both channels back to rest first so the arrangement is always clean before animating.
@@ -506,7 +506,7 @@ namespace CosmicShore.UI
         }
 
         // Kill in-flight tweens and snap everything to its rest pose. Because Build() is guarded by
-        // _built, a disable/re-enable cycle (e.g. a pooled or toggled HUD) won't rebuild — so we leave
+        // _built, a disable/re-enable cycle (e.g. a pooled or toggled HUD) won't rebuild - so we leave
         // the petals at the correct colour/scale and labels at rest rather than mid-tween.
         void OnDisable()
         {

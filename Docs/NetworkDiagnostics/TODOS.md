@@ -1,4 +1,4 @@
-# Network Diagnostics — TODOs
+# Network Diagnostics - TODOs
 
 Deferred improvements to the overlay. Each entry has enough context
 that it can be picked up cold.
@@ -31,7 +31,7 @@ read per tick.
 
 ## Coverage
 
-### TODO-2. Broader adoption — non-party UGS catches
+### TODO-2. Broader adoption - non-party UGS catches
 
 **Why.** The helper exists; only party-side catches use it today.
 
@@ -39,21 +39,21 @@ read per tick.
 
 | File / area | Why it's a candidate |
 |---|---|
-| `Assets/_Scripts/System/AuthenticationServiceFacade.cs` | `SignInAnonymouslyAsync` catches — would distinguish offline auth from quota/UGS errors |
-| `Assets/_Scripts/System/FriendsServiceFacade.cs` | Friend-request, presence-set catches — UGS Friends service can drop the same way |
-| `Assets/_Scripts/System/Playfab/Authentication/*.cs` (legacy, deprecated) | Lower priority — auth is moving to UGS |
+| `Assets/_Scripts/System/AuthenticationServiceFacade.cs` | `SignInAnonymouslyAsync` catches - would distinguish offline auth from quota/UGS errors |
+| `Assets/_Scripts/System/FriendsServiceFacade.cs` | Friend-request, presence-set catches - UGS Friends service can drop the same way |
+| `Assets/_Scripts/System/Playfab/Authentication/*.cs` (legacy, deprecated) | Lower priority - auth is moving to UGS |
 | `Assets/_Scripts/System/Instrumentation/CSAnalyticsManager.cs` | Analytics upload catches |
 | `Assets/_Scripts/Integrations/PlayFabSDK/*` | PlayFab catalog / inventory / leaderboard catches |
 | `Assets/_Scripts/System/IAPManager.cs` | Purchase failure paths |
 
-**Pattern.** Identical to the party-side decoration — one appended log
+**Pattern.** Identical to the party-side decoration - one appended log
 line per catch. No DI needed. No constructor changes.
 
 ```csharp
 catch (Exception e)
 {
-    Debug.LogWarning($"[<MyTag>] <existing message>: {e.Message}"); // pre-existing — untouched
-    // ↓ one new line, appended — CSDebug.Log so it strips in release + mutes at runtime
+    Debug.LogWarning($"[<MyTag>] <existing message>: {e.Message}"); // pre-existing - untouched
+    // v one new line, appended - CSDebug.Log so it strips in release + mutes at runtime
     CosmicShore.Utility.CSDebug.Log($"[<MyTag>] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
     // existing recovery / rethrow / etc
 }
@@ -68,7 +68,7 @@ other reasons.
 **Why.** Today's overlay logs only on catch. A baseline log at the
 top of `AcceptInviteAsync` and `LeavePartyAndReturnToMenuAsync` would
 let the catch-time log be diffed against the baseline to compute
-"state changed mid-flow at …".
+"state changed mid-flow at ...".
 
 **Outline.** One `CSDebug.Log` (info-level, release-stripped) at the
 top of each public flow method, matching the channel used by every
@@ -87,7 +87,7 @@ path. Currently we keep the happy path silent. Pick this up if a real
 failure surfaces where the exception class alone doesn't tell us
 whether the network state was bad at flow start vs. went bad mid-flow.
 
-### TODO-4. Adoption inside HCS `RefreshAsync` non-benign branch — full coverage
+### TODO-4. Adoption inside HCS `RefreshAsync` non-benign branch - full coverage
 
 **Why.** The catch-time NetDiag (single log line on the non-benign
 else branch) is already in place. Extending into the retry /
@@ -136,7 +136,7 @@ insufficient. Today's classifier covers the cases we know about.
    (which includes `e.GetType().Name`).
 2. A new branch added to `ClassifyException` in the appropriate
    position (more specific cases first).
-3. A documentation entry in `ARCHITECTURE.md` § "Classification rules".
+3. A documentation entry in `ARCHITECTURE.md` Sec "Classification rules".
 
 **Open question.** Should `class=Unknown` itself escalate to an
 error-level log? Currently it's Warning. Argument for Error: it
@@ -146,7 +146,7 @@ indicates the helper is incomplete. Argument against: noise.
 
 **Why.** Today `class=Transient` covers both "UGS is having a bad
 minute" and "my SDK call failed mid-flow for unrelated reasons". These
-are operationally different — UGS-degraded warrants no client action;
+are operationally different - UGS-degraded warrants no client action;
 mid-flow failure may warrant a specific retry.
 
 **Outline.** Add a `class=ServiceDegraded` class for HTTP 503 with
@@ -162,7 +162,7 @@ see whether the split is worth modeling.
 **Why.** The whole point of the overlay is to surface failure-class
 frequencies. A simple script that scans recent log files and tallies
 `NetDiag: class=*` occurrences would directly inform refactor
-priority (see `../PartySystem/REFACTOR.md` § "Sequencing").
+priority (see `../PartySystem/REFACTOR.md` Sec "Sequencing").
 
 **Outline.** Editor menu item `Tools > Cosmic Shore > NetDiag Report`
 that:
@@ -170,4 +170,4 @@ that:
 2. Counts `NetDiag: class=*` per class, per source file.
 3. Outputs a summary table to a markdown file or the Console.
 
-**Risk.** None — read-only.
+**Risk.** None - read-only.

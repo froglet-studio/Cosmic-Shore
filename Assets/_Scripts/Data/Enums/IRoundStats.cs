@@ -1,12 +1,12 @@
-﻿using System;
+using System;
 
 namespace CosmicShore.Data
 {
     public interface IRoundStats
     {
-        //──────────────────────────────────────────
+        //------------------------------------------
         // EVENTS
-        //──────────────────────────────────────────
+        //------------------------------------------
 
         event Action<IRoundStats> OnAnyStatChanged;
         event Action OnScoreChanged;
@@ -53,9 +53,9 @@ namespace CosmicShore.Data
         event Action<IRoundStats> OnButton2AbilityActiveTimeChanged;
         event Action<IRoundStats> OnButton3AbilityActiveTimeChanged;
 
-        //──────────────────────────────────────────
+        //------------------------------------------
         // PROPERTIES
-        //──────────────────────────────────────────
+        //------------------------------------------
 
         string Name { get; set; }
         Domains Domain { get; set; }
@@ -104,9 +104,9 @@ namespace CosmicShore.Data
         float Button2AbilityActiveTime { get; set; }
         float Button3AbilityActiveTime { get; set; }
 
-        //──────────────────────────────────────────
+        //------------------------------------------
         // RESET
-        //──────────────────────────────────────────
+        //------------------------------------------
 
         public void Cleanup()
         {

@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
         void HandleCrystalCollected(string playerName)
         {
             totalCrystalsCollected++;
-            CSDebug.Log($"<color=cyan>💎 [COLLECT] {playerName} collected Crystal #{totalCrystalsCollected}! +{scoreMultiplier} pts</color>");
+            CSDebug.Log($"<color=cyan> [COLLECT] {playerName} collected Crystal #{totalCrystalsCollected}! +{scoreMultiplier} pts</color>");
             
             Score += scoreMultiplier;
         }

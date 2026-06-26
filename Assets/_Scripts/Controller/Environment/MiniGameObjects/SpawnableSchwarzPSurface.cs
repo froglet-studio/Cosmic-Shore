@@ -6,7 +6,7 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Spawns prisms along the Schwarz P minimal surface — the simplest triply periodic
+    /// Spawns prisms along the Schwarz P minimal surface - the simplest triply periodic
     /// minimal surface (TPMS).
     ///
     /// The surface is approximated by the zero-level-set of:
@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     ///
     /// This creates a network of interconnected tunnels running in all three coordinate
     /// directions, with cubic symmetry. Each tunnel opens into six neighbors, forming
-    /// a labyrinth that rewards exploration. The structure tiles infinitely — we sample
+    /// a labyrinth that rewards exploration. The structure tiles infinitely - we sample
     /// a finite number of periods.
     ///
     /// Schwarz discovered this surface in 1865; it appears naturally in block copolymers,
@@ -78,7 +78,7 @@ namespace CosmicShore.Gameplay
             var result = new List<SurfaceNode>();
 
             int totalSamples = periods * samplesPerPeriod;
-            float halfExtent = periods * Mathf.PI; // f uses raw radians; one period = 2π
+            float halfExtent = periods * Mathf.PI; // f uses raw radians; one period = 2pi
 
             for (int ix = 0; ix < totalSamples; ix++)
             {
@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
                 {
                     for (int iz = 0; iz < totalSamples; iz++)
                     {
-                        // Map grid index to [0, periods*2π)
+                        // Map grid index to [0, periods*2pi)
                         float u = 2f * Mathf.PI * ix / samplesPerPeriod;
                         float v = 2f * Mathf.PI * iy / samplesPerPeriod;
                         float w = 2f * Mathf.PI * iz / samplesPerPeriod;
@@ -103,7 +103,7 @@ namespace CosmicShore.Gameplay
                             (w - halfExtent) * worldScale
                         );
 
-                        // Gradient of f gives surface normal — use it for block orientation
+                        // Gradient of f gives surface normal - use it for block orientation
                         Vector3 gradient = new Vector3(
                             -Mathf.Sin(u),
                             -Mathf.Sin(v),

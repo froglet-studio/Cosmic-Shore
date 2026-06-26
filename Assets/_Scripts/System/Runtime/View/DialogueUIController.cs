@@ -211,7 +211,7 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
-        /// Plays the appropriate �pop-in� (exit) animation, then cleans up.
+        /// Plays the appropriate "pop-in" (exit) animation, then cleans up.
         /// </summary>
         public void HideWithAnimation(bool wasMonologue, Action onHidden)
         {

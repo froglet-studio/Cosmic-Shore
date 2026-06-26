@@ -5,7 +5,7 @@ using NUnit.Framework;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Tests for <see cref="TournamentStateMachine"/> — the Maelstrom (Tournament) phase tracker.
+    /// Tests for <see cref="TournamentStateMachine"/> - the Maelstrom (Tournament) phase tracker.
     ///
     /// The race-to-6 end condition depends on the machine being able to reach
     /// <see cref="TournamentPhase.Summary"/> when a domain hits the win target. The controller decides
@@ -40,7 +40,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(TournamentPhase.Summary, _sm.Current);
         }
 
-        // The deciding game ended in InGame and set Complete — the standard EnterSummary route.
+        // The deciding game ended in InGame and set Complete - the standard EnterSummary route.
         [Test]
         public void EnterSummary_FromInGame_ReachesSummary()
         {

@@ -11,7 +11,7 @@ namespace CosmicShore.UI
     /// <summary>
     /// Detail view for a selected vessel in the Hangar.
     /// Tab system: General shows description + unlock, Ability tabs show ability info.
-    /// Unlock flow: press unlock button → spend crystals panel (confirm disabled if not enough).
+    /// Unlock flow: press unlock button -> spend crystals panel (confirm disabled if not enough).
     /// </summary>
     public class HangarVesselDetailView : MonoBehaviour
     {
@@ -30,7 +30,7 @@ namespace CosmicShore.UI
         [SerializeField] private Button vibeButton;
 
         [Header("Tab Button Backgrounds")]
-        [Tooltip("Child BG GameObject on each tab button — enabled when selected.")]
+        [Tooltip("Child BG GameObject on each tab button - enabled when selected.")]
         [SerializeField] private GameObject generalButtonBG;
         [SerializeField] private GameObject[] abilityButtonBGs = new GameObject[4];
 

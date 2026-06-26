@@ -6,15 +6,15 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Tests for <see cref="CellPhaseRules.Compute"/> — the pure phase-resolution
-    /// function that is the spine of the cell ecology (Docs/ECOSYSTEM.md §1).
+    /// Tests for <see cref="CellPhaseRules.Compute"/> - the pure phase-resolution
+    /// function that is the spine of the cell ecology (Docs/ECOSYSTEM.md Sec 1).
     /// VOLUME is the spine (locked invariant): the ladder climbs when LiveVolume meets
     /// a phase's UpEnter volume, descends below the current phase's DownExit volume,
     /// and HOLDS inside the hysteresis band (Exit..Enter) so the cell never chatters
     /// on the boundary (which would make flora/fauna gating flicker). COUNT is only
-    /// the Frenzy perf backstop. The ladder is the 3-phase Calm → Restless → Frenzy.
+    /// the Frenzy perf backstop. The ladder is the 3-phase Calm -> Restless -> Frenzy.
     /// Uses the Default table: counts Restless 8000/7500, Frenzy 15000/14000; volume
-    /// fields derived ×NominalPrismVolume (16) → Restless 128000/120000,
+    /// fields derived xNominalPrismVolume (16) -> Restless 128000/120000,
     /// Frenzy 240000/224000.
     /// </summary>
     [TestFixture]
@@ -91,7 +91,7 @@ namespace CosmicShore.Tests
         public void Climb_RequiresEnter_NotExit()
         {
             // From Restless just under FrenzyEnter (but >= FrenzyExit) we must NOT climb
-            // to Frenzy — climbing keys off Enter, descending off Exit.
+            // to Frenzy - climbing keys off Enter, descending off Exit.
             Assert.AreEqual(CellPhase.Restless, ComputeV(T.FrenzyEnterVolume - 1f, CellPhase.Restless));
         }
 
@@ -147,7 +147,7 @@ namespace CosmicShore.Tests
         [Test]
         public void CountBackstop_Releases_BelowCountExit()
         {
-            // Count falls through the band and volume is calm → the cell descends.
+            // Count falls through the band and volume is calm -> the cell descends.
             Assert.AreEqual(CellPhase.Calm,
                 CellPhaseRules.Compute(0f, T.FrenzyExit - 1, CellPhase.Frenzy, T));
         }
@@ -165,7 +165,7 @@ namespace CosmicShore.Tests
         public void Default_EnterAlwaysAboveExit_PerPhase()
         {
             // The hysteresis band must be positive at every boundary, else the cell can
-            // chatter. (Calm has no band — it's the floor.)
+            // chatter. (Calm has no band - it's the floor.)
             Assert.Greater(T.RestlessEnterVolume, T.RestlessExitVolume);
             Assert.Greater(T.FrenzyEnterVolume, T.FrenzyExitVolume);
             Assert.Greater(T.FrenzyEnter, T.FrenzyExit);
@@ -196,7 +196,7 @@ namespace CosmicShore.Tests
         [Test]
         public void DerivedVolumeScale_FromLegacyCountAsset()
         {
-            // A pre-volume asset (count fields only) derives volume = count × 16.
+            // A pre-volume asset (count fields only) derives volume = count x 16.
             var legacy = new CellPhaseThresholds
             {
                 RestlessEnter = 700, RestlessExit = 500,

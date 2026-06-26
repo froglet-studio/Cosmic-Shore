@@ -5,7 +5,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Two-mouse symmetric flight controls — the desktop-with-two-mice
+    /// Two-mouse symmetric flight controls - the desktop-with-two-mice
     /// counterpart of touch (two thumbs), gamepad (two thumbsticks) and
     /// keyboard (two hands).
     ///
@@ -13,17 +13,17 @@ namespace CosmicShore.Gameplay
     ///   movement deflects the stick (accumulated delta, clamped to a unit
     ///   circle), and the stick eases back to center when the mouse is
     ///   still. Buttons mirror the gamepad mapping:
-    ///     LMB on left mouse  → Button1Action
-    ///     LMB on right mouse → Button2Action
-    ///     MMB on either      → Button3Action
-    ///     RMB on left mouse  → LeftStickAction  (drift trigger)
-    ///     RMB on right mouse → RightStickAction (drift trigger)
+    ///     LMB on left mouse  -> Button1Action
+    ///     LMB on right mouse -> Button2Action
+    ///     MMB on either      -> Button3Action
+    ///     RMB on left mouse  -> LeftStickAction  (drift trigger)
+    ///     RMB on right mouse -> RightStickAction (drift trigger)
     /// Plus the OnlyLeft / OnlyRight / Both composites the other strategies
     /// raise from these two trigger states.
     /// </summary>
     public sealed class DualMouseInputStrategy : BaseInputStrategy
     {
-        private const float MOUSE_TO_STICK = 0.013f;   // pixels of delta → stick units
+        private const float MOUSE_TO_STICK = 0.013f;   // pixels of delta -> stick units
         private const float STICK_RECENTER_RATE = .1f;  // exponential pull toward 0 when idle
         private const float DEAD_ZONE = 0.01f;
 
@@ -107,7 +107,7 @@ namespace CosmicShore.Gameplay
         public override void ProcessInput()
         {
             // The InputController ticks MultiMouseService once per frame in
-            // SelectStrategy() — don't tick again here or we'd double-count
+            // SelectStrategy() - don't tick again here or we'd double-count
             // the Unity Input System frame delta.
             if (mice == null || mice.DeviceCount < 2) return;
 
@@ -127,7 +127,7 @@ namespace CosmicShore.Gameplay
         {
             stick += delta * MOUSE_TO_STICK;
 
-            // ease back toward center when no input — exponential decay so
+            // ease back toward center when no input - exponential decay so
             // letting go of the mouse returns to neutral
             if (delta.sqrMagnitude < 0.0001f)
                 stick = Vector2.Lerp(stick, Vector2.zero, STICK_RECENTER_RATE * Time.deltaTime);
@@ -146,7 +146,7 @@ namespace CosmicShore.Gameplay
             EdgeFire(left.MiddleButton || right.MiddleButton,
                      ref prevAnyMmb, InputEvents.Button3Action);
 
-            // Stick triggers (RMB on each mouse) — mirror gamepad shoulder semantics
+            // Stick triggers (RMB on each mouse) - mirror gamepad shoulder semantics
             bool leftActive = left.RightButton;
             bool rightActive = right.RightButton;
 

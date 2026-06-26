@@ -6,7 +6,7 @@ using System.Linq;
 namespace CosmicShore.UI
 {
     /// Attach to a chat container under your HUD Canvas (use a VerticalLayoutGroup).
-    /// New items are added at the end → visually push older items upward (chat feel).
+    /// New items are added at the end -> visually push older items upward (chat feel).
     public sealed class ToastService : MonoBehaviour
     {
         [Header("Wiring")]
@@ -82,7 +82,7 @@ namespace CosmicShore.UI
             => Enqueue(new ChatToastRequest(prefix, postfix, duration, anim, icon, accent), null);
 
         /// Postfix countdown only (prefix stays constant; postfix animates each second).
-        /// E.g., prefix = "Overcharging", from = 3, format = "in {0}" → "in 3", "in 2", "in 1"
+        /// E.g., prefix = "Overcharging", from = 3, format = "in {0}" -> "in 3", "in 2", "in 1"
         public void ShowCountdown(string prefix, int from, string postfixFormat = "in {0}",
                                   ToastAnimation anim = ToastAnimation.Pop, System.Action onDone = null,
                                   Sprite icon = null, Color? accent = null)

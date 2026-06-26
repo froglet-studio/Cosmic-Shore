@@ -7,14 +7,14 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Elemental crystal powerup: increases the collecting vessel's level for the
     /// crystal's own element (Charge / Mass / Space / Time), scaled by the crystal's
-    /// world scale — bigger crystals grant bigger boosts.
+    /// world scale - bigger crystals grant bigger boosts.
     /// </summary>
     [CreateAssetMenu(
         fileName = "SkimmerAdjustElementLevelByCrystalEffect",
         menuName = "ScriptableObjects/Impact Effects/Skimmer - Crystal/SkimmerAdjustElementLevelByCrystalEffectSO")]
     public class SkimmerAdjustElementLevelByCrystalEffectSO : SkimmerCrystalEffectSO
     {
-        [Header("Scale → Level Mapping")]
+        [Header("Scale -> Level Mapping")]
         [Tooltip("Normalized element level gained per unit of crystal world scale. " +
                  "0.1 = one integer level (one petal tick) per unit of scale.")]
         [SerializeField] float levelPerUnitScale = 0.1f;

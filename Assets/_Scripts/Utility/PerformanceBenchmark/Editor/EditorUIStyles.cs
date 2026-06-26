@@ -5,13 +5,13 @@ using UnityEngine;
 namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 {
     /// <summary>
-    /// Shared pastel styling for the Performance Benchmark window — centralizes the palette
+    /// Shared pastel styling for the Performance Benchmark window - centralizes the palette
     /// and reusable IMGUI factories (section headers, badges, stat rows, score bars) so the
     /// tabs look consistent. Styles are created lazily inside OnGUI.
     /// </summary>
     public static class EditorUIStyles
     {
-        // ── Pastel palette ──────────────────────────────
+        // -- Pastel palette ------------------------------
         public static readonly Color Mint = new(0.62f, 0.90f, 0.76f);
         public static readonly Color Sky = new(0.66f, 0.82f, 0.96f);
         public static readonly Color Lavender = new(0.78f, 0.74f, 0.95f);
@@ -50,7 +50,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
         public static GUIStyle Wrap => s_wrap ??= new GUIStyle(EditorStyles.label) { wordWrap = true };
 
-        // ── Color mappings ──────────────────────────────
+        // -- Color mappings ------------------------------
 
         public static Color ForScore(int score)
         {
@@ -78,7 +78,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             _ => Sky
         };
 
-        // ── Drawing helpers ─────────────────────────────
+        // -- Drawing helpers -----------------------------
 
         /// <summary>A tinted section header bar.</summary>
         public static void SectionHeader(string text, Color tint)

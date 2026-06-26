@@ -27,14 +27,14 @@ namespace CosmicShore.Gameplay
         public const byte IsSuperShielded = 1 << 3; // bit 3
 
         // Mask for the Burst job's early-exit check:
-        // Active (bit 0 set) AND not destroyed (bit 1 clear) → value == 0x01
+        // Active (bit 0 set) AND not destroyed (bit 1 clear) -> value == 0x01
         public const byte JobSkipMask    = IsActive | Destroyed;
         public const byte JobPassValue   = IsActive; // exactly active, not destroyed
     }
 
     /// <summary>
     /// HOT data: read by every Execute() call in the Burst spatial query job.
-    /// 16 bytes — exactly 4 prisms per 64-byte cache line, zero waste.
+    /// 16 bytes - exactly 4 prisms per 64-byte cache line, zero waste.
     ///
     /// Layout:
     ///   offset 0:  Position.x  (4B)
@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
     ///   offset 12: Flags       (1B)  bit-packed status
     ///   offset 13: _pad        (3B)  alignment to 16B
     ///
-    /// For 3000 prisms: 48 KB — fits comfortably in L2,
+    /// For 3000 prisms: 48 KB - fits comfortably in L2,
     /// and on devices with 64KB+ L1D (Snapdragon 8 Gen 2, Apple M-series), in L1.
     /// </summary>
     public struct PrismSpatialData
@@ -53,12 +53,12 @@ namespace CosmicShore.Gameplay
         public byte _pad0;      // 1B
         public byte _pad1;      // 1B
         public byte _pad2;      // 1B
-        // Total: 16B — exactly 4 per 64B cache line
+        // Total: 16B - exactly 4 per 64B cache line
     }
 
     /// <summary>
     /// COLD data: only read on the main thread for prisms that pass the spatial filter.
-    /// Typically a few dozen per frame as the AOE sphere grows — not a cache concern.
+    /// Typically a few dozen per frame as the AOE sphere grows - not a cache concern.
     ///
     /// Layout:
     ///   offset 0: Volume  (4B)
@@ -103,58 +103,58 @@ namespace CosmicShore.Gameplay
 
     /// <summary>
     /// THE canonical spatial index of all live prism mass. One registration
-    /// lifecycle, multiple query views — see Docs/SPATIAL_INDEX.md before adding
+    /// lifecycle, multiple query views - see Docs/SPATIAL_INDEX.md before adding
     /// any new spatial query against prisms (Physics.OverlapSphere / CheckBox
     /// against prisms is an anti-pattern; query this index instead).
     ///
     /// Views served:
-    ///   1. AOE damage    — Burst brute-force sphere scan over the hot array
+    ///   1. AOE damage    - Burst brute-force sphere scan over the hot array
     ///                      (ExplosionImpactor.ProcessBatchFrame).
-    ///   2. Occupancy     — bucket hash grid + reservation set. Growth systems
+    ///   2. Occupancy     - bucket hash grid + reservation set. Growth systems
     ///                      (GyroidAssembler / WallAssembler / SchwarzPAssembler)
     ///                      call TryReserve at the grow DECISION, before
-    ///                      Instantiate — this closes the race that
+    ///                      Instantiate - this closes the race that
     ///                      Physics.CheckBox could never close (prism colliders
     ///                      are disabled for the first Prism.waitTime seconds
     ///                      after spawn).
-    ///   3. Neighborhood  — QuerySphere (gather live prisms in range) and
+    ///   3. Neighborhood  - QuerySphere (gather live prisms in range) and
     ///                      IsAnyPrismWithin (boolean probe) serve fauna senses
     ///                      (LightFauna / Boid), assembler mate-finding
     ///                      (GyroidAssembler / WallAssembler) and trail passives
-    ///                      (ScoutTrailPrismScaler) — no physics broadphase, no
+    ///                      (ScoutTrailPrismScaler) - no physics broadphase, no
     ///                      per-collider GetComponent, no scratch-array
     ///                      truncation. See Docs/SPATIAL_INDEX.md.
-    ///   4. Cell density  — Register/MarkRestored file each prism into its
+    ///   4. Cell density  - Register/MarkRestored file each prism into its
     ///                      containing cell's per-domain density grids
     ///                      (Cell.AddBlock); MarkDestroyed/Unregister remove it.
     ///                      The coarse view rides the same lifecycle stream as
     ///                      the fine views, so they cannot diverge (Phase 3).
     ///
     /// Data layout (hot/cold split):
-    ///   _spatial[i] — PrismSpatialData (16B) — read by Burst job for ALL prisms
-    ///   _damage[i]  — PrismDamageData  (8B)  — read on main thread for HIT prisms only
-    ///   _prisms[i]  — Prism reference         — managed array for applying damage
-    ///   _buckets    — int3 bucket key → index — incremental, prisms are mostly static
+    ///   _spatial[i] - PrismSpatialData (16B) - read by Burst job for ALL prisms
+    ///   _damage[i]  - PrismDamageData  (8B)  - read on main thread for HIT prisms only
+    ///   _prisms[i]  - Prism reference         - managed array for applying damage
+    ///   _buckets    - int3 bucket key -> index - incremental, prisms are mostly static
     ///
     /// The Burst job scans only _spatial, keeping the working set tight.
-    /// Domain/shield/volume data in _damage is never loaded into cache during the scan —
+    /// Domain/shield/volume data in _damage is never loaded into cache during the scan -
     /// it's only touched for the small set of prisms that actually got hit.
     ///
     /// Registration lifecycle (all main-thread):
-    ///   Assembler.GetGrowthInfo()  → TryReserve(pos) BEFORE Instantiate (growth only)
-    ///   Prism.CreateBlockCoroutine → Register(prism) → stores index on Prism,
+    ///   Assembler.GetGrowthInfo()  -> TryReserve(pos) BEFORE Instantiate (growth only)
+    ///   Prism.CreateBlockCoroutine -> Register(prism) -> stores index on Prism,
     ///                                consumes the matching reservation, binds the
     ///                                containing cell's density grids
-    ///   Prism.SetupDestruction     → MarkDestroyed(index) → AOE skips, bucket
+    ///   Prism.SetupDestruction     -> MarkDestroyed(index) -> AOE skips, bucket
     ///                                freed, cell grids release the prism
-    ///   Prism.Restore              → MarkRestored(index) → re-enters AOE +
+    ///   Prism.Restore              -> MarkRestored(index) -> re-enters AOE +
     ///                                bucket + cell grids
-    ///   Prism.OnDisable/OnDestroy  → Unregister(index) → frees slot, releases
+    ///   Prism.OnDisable/OnDestroy  -> Unregister(index) -> frees slot, releases
     ///                                the cell binding
-    ///   PrismTeamManager (steal)   → ForwardDomainChangeToCell(index) re-files
+    ///   PrismTeamManager (steal)   -> ForwardDomainChangeToCell(index) re-files
     ///                                the prism in its cell's per-domain grids
-    ///   PrismStateManager          → UpdateShieldState(index, ...) on state change
-    ///   Assembler movers / fauna   → UpdatePosition(index, pos) — anything that
+    ///   PrismStateManager          -> UpdateShieldState(index, ...) on state change
+    ///   Assembler movers / fauna   -> UpdatePosition(index, pos) - anything that
     ///                                moves a registered prism (gyroid/wall bond
     ///                                steering, fauna body prisms swimming) must
     ///                                keep the stored position honest
@@ -166,8 +166,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Edge length of the occupancy hash-grid buckets. Sized to the gyroid
-        /// bond spacing (~8m: |DeltaPosition| ≈ 2.7 × separationDistance 3) so an
-        /// occupancy probe of radius ≤ half-spacing touches at most 8 buckets.
+        /// bond spacing (~8m: |DeltaPosition| ~ 2.7 x separationDistance 3) so an
+        /// occupancy probe of radius <= half-spacing touches at most 8 buckets.
         /// </summary>
         public const float BucketSizeMeters = 8f;
 
@@ -185,7 +185,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Maximum NEW prism hits to process per frame per explosion.
         /// Spreading damage across frames prevents catastrophic frame spikes
-        /// (e.g. 2000+ prisms destroyed in one frame → 426ms).
+        /// (e.g. 2000+ prisms destroyed in one frame -> 426ms).
         /// Unprocessed hits are NOT added to alreadyHit and will be
         /// re-found by the Burst spatial query on subsequent frames.
         /// </summary>
@@ -201,7 +201,7 @@ namespace CosmicShore.Gameplay
         private Prism[] _prisms;
 
         // Managed: the cell whose per-domain density grids each prism is filed in
-        // (the coarse view of this same lifecycle), or null — open space, fauna
+        // (the coarse view of this same lifecycle), or null - open space, fauna
         // bodies, slot free. Bound on Register/MarkRestored, released on
         // MarkDestroyed/Unregister.
         private Cell[] _cells;
@@ -210,14 +210,14 @@ namespace CosmicShore.Gameplay
         private readonly Stack<int> _freeList = new(256);
         private NativeList<int> _hitIndices;
 
-        // Occupancy view: bucket key → registry index, one entry per LIVE
+        // Occupancy view: bucket key -> registry index, one entry per LIVE
         // (active, not destroyed) prism. Maintained incrementally by
         // Register / MarkDestroyed / MarkRestored / Unregister / UpdatePosition.
         private NativeParallelMultiHashMap<int3, int> _buckets;
         private int _bucketEntryCount;
 
-        // Reservation view: quantized position → claim. Managed dictionary is fine
-        // here — reservations are few (bounded by spawn rate × TTL) and main-thread.
+        // Reservation view: quantized position -> claim. Managed dictionary is fine
+        // here - reservations are few (bounded by spawn rate x TTL) and main-thread.
         private struct Reservation
         {
             public Vector3 Position;
@@ -229,7 +229,7 @@ namespace CosmicShore.Gameplay
 
         // --- ProfilerMarkers ---
         // Note: the source branch (PrismAOERegistry on development) had two more
-        // markers, AOE.BurstJob.ScheduleECS and AOE.ResolveDamage.ECS — bleeding-edge
+        // markers, AOE.BurstJob.ScheduleECS and AOE.ResolveDamage.ECS - bleeding-edge
         // has no ECS companion-entity path, so they have no code to attach to.
         private static readonly ProfilerMarker s_processExplosion = new("AOE.ProcessExplosion");
         private static readonly ProfilerMarker s_burstJobSchedule = new("AOE.BurstJob.Schedule");
@@ -285,8 +285,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// True when probing every bucket in the AABB would touch more entries than a
-        /// straight scan of the slot array — wide queries (Scout open-space probes reach
-        /// 100m → 26³ ≈ 17k bucket lookups) are cheaper as one pass over the hot array.
+        /// straight scan of the slot array - wide queries (Scout open-space probes reach
+        /// 100m -> 26^3 ~ 17k bucket lookups) are cheaper as one pass over the hot array.
         /// </summary>
         private bool BucketWalkCostsMoreThanLinearScan(int3 min, int3 max)
         {
@@ -295,7 +295,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// True if any LIVE prism (active, not destroyed — reservations excluded)
+        /// True if any LIVE prism (active, not destroyed - reservations excluded)
         /// sits within <paramref name="radius"/> of <paramref name="position"/>.
         /// Bucket-accelerated for tight radii, linear hot-array scan for wide ones.
         /// No physics, no allocation.
@@ -346,7 +346,7 @@ namespace CosmicShore.Gameplay
         /// per-collider GetComponent), unbounded (no NonAlloc truncation), and
         /// allocation-free given a reused caller list.
         ///
-        /// Results are an unordered snapshot — entries can be destroyed by the
+        /// Results are an unordered snapshot - entries can be destroyed by the
         /// caller's own side effects mid-iteration (consume, steal, convert), so
         /// iterate with a null/destroyed guard, exactly as collider snapshots
         /// required. Main-thread only.
@@ -404,7 +404,7 @@ namespace CosmicShore.Gameplay
         /// Atomically checks that nothing occupies <paramref name="position"/>
         /// (no live prism, no unexpired reservation within
         /// <paramref name="clearRadius"/>) and claims it. Call at the grow
-        /// DECISION, before Instantiate — the claim is what closes the
+        /// DECISION, before Instantiate - the claim is what closes the
         /// spawn-vs-spawn race that collider-based checks can't see. The claim is
         /// consumed when the spawned prism registers at (or near) the reserved
         /// position, or lapses after <see cref="ReservationTtlSeconds"/>.
@@ -443,7 +443,7 @@ namespace CosmicShore.Gameplay
             for (int z = min.z; z <= max.z; z++)
             {
                 if (!_reservations.TryGetValue(new Vector3Int(x, y, z), out var r)) continue;
-                if (r.Expires <= now) continue; // lapsed — prune pass will collect it
+                if (r.Expires <= now) continue; // lapsed - prune pass will collect it
                 if ((r.Position - position).sqrMagnitude <= radiusSq) return true;
             }
             return false;
@@ -452,7 +452,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Called by <see cref="Register"/>: the spawned prism has materialized, so
         /// the claim that protected its site is fulfilled. Matched by proximity, not
-        /// exact key — re-parenting under a spindle round-trips the position through
+        /// exact key - re-parenting under a spindle round-trips the position through
         /// parent matrices, so the registered position can drift a few millimetres
         /// (and across a quantization boundary) from the reserved one.
         /// </summary>
@@ -492,7 +492,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Files the prism into the per-domain density grids of the cell that
-        /// spatially contains it — the COARSE view of this same registration
+        /// spatially contains it - the COARSE view of this same registration
         /// lifecycle (fauna anti-domain targeting reads the grids; the cell phase
         /// system reads LiveBlockCount). Before Phase 3 these call sites lived in
         /// Prism beside every index call; folding them in here means the fine
@@ -501,14 +501,14 @@ namespace CosmicShore.Gameplay
         ///
         /// Fauna bodies (LightFauna / Boid HealthPrisms) bind as VOLUME-ONLY mass:
         /// "volume is the spine" says ALL prisms feed the cell's volume accounting
-        /// (Cell.LiveVolume — phase, dominant domain, HUD), so they enter the
-        /// volume membership — but they must NOT enter the targeting grids or
+        /// (Cell.LiveVolume - phase, dominant domain, HUD), so they enter the
+        /// volume membership - but they must NOT enter the targeting grids or
         /// prism counts, otherwise a forager swarm reads as its own "mass
         /// concentration" and seeks itself instead of the trail/flora buildup
         /// (and herbivores would be seeded against inedible "prey"). Only
         /// HealthPrisms can be fauna bodies, so the GetComponentInParent walk is
         /// gated to that subtype to keep ordinary trail-prism registrations cheap.
-        /// (They stay in the AOE and occupancy views — they are damageable,
+        /// (They stay in the AOE and occupancy views - they are damageable,
         /// space-occupying mass.)
         ///
         /// Coexists with the flora ownership stream: HealthBlockTracker also
@@ -519,7 +519,7 @@ namespace CosmicShore.Gameplay
         private void BindCell(int index, Prism prism, Vector3 position)
         {
             // Fauna bodies are VOLUME, not environment: they feed the cell's
-            // per-domain volume sums ("volume is the spine" — all prisms count,
+            // per-domain volume sums ("volume is the spine" - all prisms count,
             // whatever their source) but stay out of the targeting grids and
             // prism counts (see the remarks above).
             bool environmentMass = !(prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null);
@@ -529,8 +529,8 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Removes the prism from its bound cell's density grids. Idempotent —
-        /// the destroyed→unregistered path calls this twice. The prism ref is
+        /// Removes the prism from its bound cell's density grids. Idempotent -
+        /// the destroyed->unregistered path calls this twice. The prism ref is
         /// passed (not read from _prisms) so Unregister can unbind before it
         /// frees the slot; Cell.RemoveBlock handles destroyed-but-non-null refs
         /// by design, so no Unity-aliveness gate here.
@@ -545,7 +545,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Copies every LIVE prism (active, not destroyed) into
         /// <paramref name="results"/> (cleared first); returns the count. One linear
-        /// pass over the managed refs — the iteration view for whole-population
+        /// pass over the managed refs - the iteration view for whole-population
         /// passes (proximity collider-LOD, telemetry). Allocation-free with a
         /// pre-sized caller list; main-thread only.
         /// </summary>
@@ -566,7 +566,7 @@ namespace CosmicShore.Gameplay
         /// Re-files a tracked prism whose domain changed (steal / ChangeTeam) in
         /// its bound cell's per-domain grids. Caller:
         /// Prism.HandleTeamChangedForCell only. Deliberately does NOT touch the
-        /// AOE cold data — wiring UpdateDomain into the damage view changes AOE
+        /// AOE cold data - wiring UpdateDomain into the damage view changes AOE
         /// friend/foe results and must be its own tested change (see
         /// Docs/SPATIAL_INDEX.md "Known gaps").
         /// </summary>
@@ -622,7 +622,7 @@ namespace CosmicShore.Gameplay
             };
 
             AddToBucket(index, position);
-            // The prism this reservation protected has materialized — fulfil it.
+            // The prism this reservation protected has materialized - fulfil it.
             ConsumeReservationNear(prism.transform.position);
             // Coarse view: file into the containing cell's density grids.
             BindCell(index, prism, (Vector3)position);
@@ -635,7 +635,7 @@ namespace CosmicShore.Gameplay
             if (!_spatial.IsCreated) return;
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
-            // Already freed (e.g. OnDisable then ResetState both fire) — don't
+            // Already freed (e.g. OnDisable then ResetState both fire) - don't
             // double-push the slot onto the free list.
             if (s.Flags == 0 && _prisms[index] == null) return;
             // Live entries hold a bucket slot; destroyed ones were already removed.
@@ -655,7 +655,7 @@ namespace CosmicShore.Gameplay
             if (index < 0 || index >= _highWaterMark) return;
             var s = _spatial[index];
             if ((s.Flags & PrismFlags.Destroyed) != 0) return; // already destroyed
-            // Destroyed mass no longer occupies space — growth may fill the site.
+            // Destroyed mass no longer occupies space - growth may fill the site.
             if ((s.Flags & PrismFlags.IsActive) != 0)
                 RemoveFromBucket(index, s.Position);
             s.Flags |= PrismFlags.Destroyed;
@@ -668,7 +668,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Re-activates a destroyed entry (trail restore mechanics). Refreshes the
-        /// stored position and re-enters the occupancy bucket — restored mass
+        /// stored position and re-enters the occupancy bucket - restored mass
         /// blocks growth and takes AOE damage again. (Before the spatial-index
         /// unification, Restore never told the registry anything, so restored
         /// prisms stayed permanently invisible to batch AOE.)
@@ -756,11 +756,11 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Registers synthetic prism data for benchmarking without requiring a Prism
-        /// MonoBehaviour. The managed _prisms[index] slot is null — ProcessExplosionFrame
+        /// MonoBehaviour. The managed _prisms[index] slot is null - ProcessExplosionFrame
         /// skips it after the spatial query, so this isolates Burst job cost from damage
         /// application cost. Maintains the live-entry-implies-bucket invariant so the
         /// occupancy view stays consistent with Unregister/MarkDestroyed. Deliberately
-        /// NOT filed into the cell density view — synthetic mass must not perturb
+        /// NOT filed into the cell density view - synthetic mass must not perturb
         /// Cell.LiveVolume / phase / fauna-targeting accounting.
         /// </summary>
         internal int RegisterSynthetic(float3 position, byte flags, float volume, int domain)
@@ -786,7 +786,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Clears all registered prisms, buckets, reservations, and cell bindings.
-        /// Used by the AOE benchmark to reset between runs — never call during
+        /// Used by the AOE benchmark to reset between runs - never call during
         /// gameplay.
         /// </summary>
         internal void ClearAll()
@@ -795,7 +795,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _highWaterMark; i++)
             {
                 // Real prisms registered before the benchmark ran are filed in
-                // their cell's density grids — release them so the coarse view
+                // their cell's density grids - release them so the coarse view
                 // doesn't keep counting mass the index dropped.
                 UnbindCell(i, _prisms[i]);
                 _prisms[i] = null;
@@ -818,7 +818,7 @@ namespace CosmicShore.Gameplay
         /// Processes one frame of AOE explosion damage.
         ///
         /// Phase 1 (Burst job): Scans _spatial array (16B/prism, 4 per cache line).
-        ///   - Checks Flags byte + distance² against all registered prisms.
+        ///   - Checks Flags byte + distance^2 against all registered prisms.
         ///   - Outputs indices of prisms within radius to _hitIndices.
         ///
         /// Phase 2 (main thread): For each hit index (typically dozens, not thousands):
@@ -827,7 +827,7 @@ namespace CosmicShore.Gameplay
         ///   - Syncs results back to registry.
         ///
         /// Returns true if the explosion should continue, false if it should be destroyed
-        /// (e.g. hit a super-shielded enemy prism — mirrors original Destroy(gameObject) behavior).
+        /// (e.g. hit a super-shielded enemy prism - mirrors original Destroy(gameObject) behavior).
         /// </summary>
         public bool ProcessExplosionFrame(
             Vector3 center,
@@ -850,7 +850,7 @@ namespace CosmicShore.Gameplay
             // --- Phase 1: Burst job over hot spatial data ---
             _hitIndices.Clear();
 
-            // Ensure NativeList capacity can hold all prisms — AddNoResize in
+            // Ensure NativeList capacity can hold all prisms - AddNoResize in
             // ParallelWriter will throw if capacity < count, killing the async loop
             // and leaving the explosion stuck at max scale.
             if (_hitIndices.Capacity < _highWaterMark)
@@ -893,7 +893,7 @@ namespace CosmicShore.Gameplay
                 if (alreadyHit.Contains(idx)) continue;
 
                 // Cap new damage per frame to spread load across frames.
-                // Don't add to alreadyHit — the Burst job will re-find these
+                // Don't add to alreadyHit - the Burst job will re-find these
                 // prisms next frame and we'll process them then.
                 if (newHitCount >= MAX_NEW_HITS_PER_FRAME)
                     continue;
@@ -904,7 +904,7 @@ namespace CosmicShore.Gameplay
                 var prism = _prisms[idx];
                 if (prism == null || prism.destroyed) continue;
 
-                // Read cold data — only for hit prisms, never pollutes the Burst job's cache
+                // Read cold data - only for hit prisms, never pollutes the Burst job's cache
                 var flags = _spatial[idx].Flags;
                 var dmg = _damage[idx];
                 int prismDomain = dmg.Domain;
@@ -938,7 +938,7 @@ namespace CosmicShore.Gameplay
 
                 // Deal damage
                 if (anonymous)
-                    prism.Damage(impactVector, Domains.Blue, "🔥GuyFawkes🔥", devastating);
+                    prism.Damage(impactVector, Domains.Blue, "GuyFawkes", devastating);
                 else
                     prism.Damage(impactVector, vesselDomain, vesselPlayerName, devastating);
 

@@ -168,7 +168,7 @@ namespace CosmicShore.Gameplay
                 OnBoostEnded?.Invoke();
             }
 
-            // Notify HUD of the multiplier change (MaxMultiplier = 0 → HUD uses its own config)
+            // Notify HUD of the multiplier change (MaxMultiplier = 0 -> HUD uses its own config)
             boostChanged?.Raise(new BoostChangedPayload
             {
                 BoostMultiplier = _status.BoostMultiplier,

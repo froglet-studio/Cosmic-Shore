@@ -59,7 +59,7 @@ namespace CosmicShore.Gameplay
 
             _charging = true;
 
-            // preview multiplier (optional), but vessel speed shouldn’t use it yet
+            // preview multiplier (optional), but vessel speed shouldn't use it yet
             var start = GetUnits();
             VesselStatus.IsChargedBoostDischarging = false;
             VesselStatus.ChargedBoostCharge = BoostMultiplierFrom(start);

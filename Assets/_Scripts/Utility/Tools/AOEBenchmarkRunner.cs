@@ -18,7 +18,7 @@ namespace CosmicShore.Utility
     /// This isolates the Burst spatial-query path: synthetic prisms have no GameObject,
     /// no collider, and a null managed slot, so the measurement excludes both PhysX and
     /// damage application. A Physics baseline can't be produced synthetically (PhysX
-    /// needs real colliders) — for the live Physics-vs-Burst A/B, use AOEBenchmarkOverlay's
+    /// needs real colliders) - for the live Physics-vs-Burst A/B, use AOEBenchmarkOverlay's
     /// mode buttons (ExplosionImpactor.ForceLegacyPhysics) during gameplay. For whole-frame
     /// stats, use the PerformanceBenchmark framework; this tool complements it with an
     /// isolated AOE-path comparison.
@@ -33,7 +33,7 @@ namespace CosmicShore.Utility
         [Tooltip("Number of synthetic prisms to register")]
         [SerializeField] private int prismCount = 3000;
 
-        [Tooltip("Explosion max radius — controls how many prisms fall within the AOE")]
+        [Tooltip("Explosion max radius - controls how many prisms fall within the AOE")]
         [SerializeField] private float explosionRadius = 50f;
 
         [Tooltip("How many frames to run each explosion test")]
@@ -76,7 +76,7 @@ namespace CosmicShore.Utility
 
             _results.Clear();
 
-            // ForceLegacyPhysics only affects live ExplosionImpactor instances —
+            // ForceLegacyPhysics only affects live ExplosionImpactor instances -
             // make sure it isn't left on from a previous overlay session, since
             // real explosions detonating mid-benchmark would skew frame timings.
             ExplosionImpactor.ForceLegacyPhysics = false;
@@ -90,12 +90,12 @@ namespace CosmicShore.Utility
 
         private async UniTask RunSingleTest(string modeName, int runNumber)
         {
-            Debug.Log($"  [{modeName}] Run {runNumber}/{runsPerMode} — registering {prismCount} prisms...");
+            Debug.Log($"  [{modeName}] Run {runNumber}/{runsPerMode} - registering {prismCount} prisms...");
 
             var index = PrismSpatialIndex.EnsureInstance();
             if (index == null || !index.IsAvailable)
             {
-                Debug.LogError("  PrismSpatialIndex unavailable — cannot run benchmark");
+                Debug.LogError("  PrismSpatialIndex unavailable - cannot run benchmark");
                 return;
             }
 
@@ -113,7 +113,7 @@ namespace CosmicShore.Utility
                     domain: (int)Domains.Jade);
             }
 
-            Debug.Log($"  [{modeName}] Run {runNumber} — registered {index.HighWaterMark} prisms, " +
+            Debug.Log($"  [{modeName}] Run {runNumber} - registered {index.HighWaterMark} prisms, " +
                       $"running {framesPerTest} explosion frames...");
 
             // Wait a frame for state to settle
@@ -145,7 +145,7 @@ namespace CosmicShore.Utility
                     radius: currentRadius,
                     speed: speed,
                     inertia: 1f,
-                    explosionDomain: Domains.Ruby,    // different from prisms (Jade) → destructive
+                    explosionDomain: Domains.Ruby,    // different from prisms (Jade) -> destructive
                     affectSelf: false,
                     destructive: true,
                     devastating: false,
@@ -183,7 +183,7 @@ namespace CosmicShore.Utility
                 FrameCount = framesPerTest
             });
 
-            Debug.Log($"  [{modeName}] Run {runNumber} — avg={totalMs / framesPerTest:F3}ms, " +
+            Debug.Log($"  [{modeName}] Run {runNumber} - avg={totalMs / framesPerTest:F3}ms, " +
                       $"total={totalMs:F1}ms, hits={totalHits}");
 
             // Cleanup
@@ -194,9 +194,9 @@ namespace CosmicShore.Utility
         private void PrintReport()
         {
             Debug.Log("\n" +
-                "╔══════════════════════════════════════════════════════════════════════════╗\n" +
-                "║                        AOE BENCHMARK REPORT                             ║\n" +
-                "╚══════════════════════════════════════════════════════════════════════════╝");
+                "+==========================================================================+\n" +
+                "|                        AOE BENCHMARK REPORT                             |\n" +
+                "+==========================================================================+");
 
             Debug.Log($"  Prisms: {prismCount}  |  Radius: {explosionRadius}  |  " +
                       $"Frames/test: {framesPerTest}  |  Runs/mode: {runsPerMode}\n");
@@ -205,8 +205,8 @@ namespace CosmicShore.Utility
                 $"  {"Mode",-16} {"Run",4} {"Avg(ms)",10} {"Min(ms)",10} {"Max(ms)",10} " +
                 $"{"Total(ms)",11} {"Hits",6} {"Frames",7}");
             Debug.Log(
-                $"  {"────────────────",-16} {"────",4} {"──────────",10} {"──────────",10} {"──────────",10} " +
-                $"{"───────────",11} {"──────",6} {"───────",7}");
+                $"  {"----------------",-16} {"----",4} {"----------",10} {"----------",10} {"----------",10} " +
+                $"{"-----------",11} {"------",6} {"-------",7}");
 
             // Group by mode for averaging
             var modeAverages = new Dictionary<string, (double sum, int count)>();
@@ -224,7 +224,7 @@ namespace CosmicShore.Utility
             }
 
             Debug.Log("");
-            Debug.Log("  ── Summary (avg across runs) ──");
+            Debug.Log("  -- Summary (avg across runs) --");
 
             double baselineMs = 0;
             foreach (var kvp in modeAverages)
@@ -233,7 +233,7 @@ namespace CosmicShore.Utility
                 if (baselineMs == 0) baselineMs = avg; // first mode is baseline
                 string speedup = baselineMs > 0 && avg > 0
                     ? $"{baselineMs / avg:F1}x"
-                    : "—";
+                    : "-";
                 Debug.Log($"  {kvp.Key,-16}  {avg,8:F3} ms/frame  (vs baseline: {speedup})");
             }
 

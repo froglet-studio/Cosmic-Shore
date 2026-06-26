@@ -3,7 +3,7 @@ using System;
 
 namespace CosmicShore.UI
 {
-    ﻿[System.Serializable]
+    [System.Serializable]
     public struct InputEventBlockPayload
     {
         public InputEvents Input;

@@ -6,9 +6,9 @@ namespace CosmicShore.Data
 {
     public class RoundStats : NetworkBehaviour, IRoundStats
     {
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
         // EVENTS
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
 
         public event Action<IRoundStats> OnAnyStatChanged;
 
@@ -51,9 +51,9 @@ namespace CosmicShore.Data
         public event Action<IRoundStats> OnButton2AbilityActiveTimeChanged;
         public event Action<IRoundStats> OnButton3AbilityActiveTimeChanged;
 
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
         // LOCAL STORAGE (single source of truth for reads)
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
 
         string _nameLocal;
         Domains _domainLocal;
@@ -78,9 +78,9 @@ namespace CosmicShore.Data
             _button2AbilityActiveTimeLocal,
             _button3AbilityActiveTimeLocal;
 
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
         // NETWORK VARIABLES
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
 
         readonly NetworkVariable<FixedString64Bytes> n_Name =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
@@ -186,9 +186,9 @@ namespace CosmicShore.Data
         readonly NetworkVariable<float> n_Button3AbilityActiveTime =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
         // HELPERS
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
 
         void RaiseSpecific(Action<IRoundStats> evt)
         {
@@ -208,12 +208,12 @@ namespace CosmicShore.Data
         /// transitions, while its subscribers (HUDs, turn monitors, scoring strategies)
         /// are scene objects. A mid-turn scene exit (pause-menu Main Menu) destroys those
         /// subscribers before their turn-end cleanup ever fires, and their teardown paths
-        /// unsubscribe by iterating GameDataSO.RoundStatsList — which ResetRuntimeData
-        /// already cleared before the old scene unloads — so dead delegates stay attached
+        /// unsubscribe by iterating GameDataSO.RoundStatsList - which ResetRuntimeData
+        /// already cleared before the old scene unloads - so dead delegates stay attached
         /// and fire into destroyed objects throughout the NEXT game. Called from
         /// Player.PrepareForNewScene / InitializeForMultiplayerMode so every scene entry
         /// starts with a clean subscriber list. The NetworkVariable OnValueChanged lambdas
-        /// wired in OnNetworkSpawn are untouched — they re-raise INTO these events.
+        /// wired in OnNetworkSpawn are untouched - they re-raise INTO these events.
         /// See Docs/ScoringSystem/BUGS.md B15.
         /// </summary>
         public void ClearEventSubscriptions()
@@ -258,14 +258,14 @@ namespace CosmicShore.Data
             OnButton3AbilityActiveTimeChanged = null;
         }
 
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
         // PROPERTIES
         //
         // Local fields are the single source of truth for reads.
         // Setters always update the local field first, then push
         // to the NetworkVariable when running on the server.
         // OnNetworkSpawn syncs local fields from replication.
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
 
         public string Name
         {
@@ -284,7 +284,7 @@ namespace CosmicShore.Data
             {
                 if (_domainLocal == value) return;
                 _domainLocal = value;
-                // Local mirror only — Player keeps this in sync on every peer from the authoritative
+                // Local mirror only - Player keeps this in sync on every peer from the authoritative
                 // Player.NetDomain (InitializeForMultiplayerMode + OnNetDomainChanged), so there is no
                 // per-RoundStats NetworkVariable to write. Notify observers (e.g. the in-game HUD) so
                 // they reconcile.
@@ -708,13 +708,13 @@ namespace CosmicShore.Data
             }
         }
 
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
         // NETWORK EVENT HOOKS
         //
         // Each callback syncs the local field from
         // the replicated NetworkVariable value, then
         // fires the corresponding game event.
-        //–––––––––––––––––––––––––––––––––––––––––
+        //-----------------------------------------
 
         public override void OnNetworkSpawn()
         {

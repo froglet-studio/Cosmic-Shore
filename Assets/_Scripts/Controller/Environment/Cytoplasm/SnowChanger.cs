@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
         float membraneRadius;
 
         [Header("Shard Density")]
-        [Tooltip("Approximate spacing between shards — lower values produce more shards")]
+        [Tooltip("Approximate spacing between shards - lower values produce more shards")]
         [SerializeField] int shardDistance = 100;
 
         [Header("Optional Fields")]
@@ -52,7 +52,7 @@ namespace CosmicShore.Gameplay
             float outerR = membraneRadius;
             float cellVolume = shardDistance * shardDistance * shardDistance;
 
-            // Uniform density throughout the full sphere (0 → membrane)
+            // Uniform density throughout the full sphere (0 -> membrane)
             float sphereVolume = (4f / 3f) * Mathf.PI * (outerR * outerR * outerR);
             int shardCount = Mathf.Max(1, Mathf.RoundToInt(sphereVolume / cellVolume));
             float outerR3 = outerR * outerR * outerR;

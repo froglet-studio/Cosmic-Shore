@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using UnityEngine.UI;
 using CosmicShore.Gameplay;
 using System.Linq;
@@ -107,7 +107,7 @@ namespace CosmicShore.UI
                 Mathf.Infinity,
                 dt);
 
-            // Apply yaw per-row; keep children’s world Z locked
+            // Apply yaw per-row; keep children's world Z locked
             for (int i = 0; i < _poolSize; i++)
             {
                 var rowParent = _pool[i, 0]?.transform?.parent as RectTransform;
@@ -128,7 +128,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Ensures pool rows/blocks exist. If explicit pixel layout is configured, uses it;
-        /// otherwise falls back to legacy world→UI math.
+        /// otherwise falls back to legacy world->UI math.
         /// </summary>
         public void EnsurePool(float scaleY = 1f)
         {
@@ -156,7 +156,7 @@ namespace CosmicShore.UI
                 rowParent.pivot = new Vector2(0.5f, 0.5f);
                 AddIgnoreLayout(rowParent.gameObject);
 
-                // Place rows top→down; we yaw rows in Tick()
+                // Place rows top->down; we yaw rows in Tick()
                 rowParent.localPosition = new Vector3(
                     0f,
                     -i * effectiveRowSpacing + (rect.height * 0.5f),

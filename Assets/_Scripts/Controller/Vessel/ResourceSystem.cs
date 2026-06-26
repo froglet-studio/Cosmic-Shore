@@ -132,7 +132,7 @@ namespace CosmicShore.Gameplay
         static readonly Element[] AllElements =
             { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
-        // Base (persistent) levels — written by crystals, the comeback system, init, etc.
+        // Base (persistent) levels - written by crystals, the comeback system, init, etc.
         Dictionary<Element, float> ElementalLevels = new();
 
         // Temporary, decaying modifiers layered on top of the base levels.
@@ -184,11 +184,11 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Standardized elemental buff/debuff. Positive <paramref name="magnitude"/> buffs the
-        /// element, negative debuffs it — the two are fully symmetric.
-        /// <para><paramref name="duration"/> &gt; 0 → temporary: applied as a modifier that decays
+        /// element, negative debuffs it - the two are fully symmetric.
+        /// <para><paramref name="duration"/> &gt; 0 -> temporary: applied as a modifier that decays
         /// linearly back to zero over <paramref name="duration"/> seconds, leaving the base level
         /// untouched so persistent progress (crystals, comeback, etc.) is preserved.</para>
-        /// <para><paramref name="duration"/> &lt;= 0 → permanent: added straight to the base level.</para>
+        /// <para><paramref name="duration"/> &lt;= 0 -> permanent: added straight to the base level.</para>
         /// </summary>
         public void ApplyElementalEffect(Element element, float magnitude, float duration)
         {

@@ -20,13 +20,13 @@ namespace CosmicShore.Gameplay
     ///   Called directly by ServerPlayerVesselInitializer.
     ///
     /// Client path (RPCs):
-    ///   InitializeAllPlayersAndVessels_ClientRpc → new client initializes ALL pairs
-    ///   InitializeNewPlayerAndVessel_ClientRpc   → existing client initializes one new pair
-    ///   ReplaceVesselForPlayer_ClientRpc         → swap: re-initialize with a new vessel
+    ///   InitializeAllPlayersAndVessels_ClientRpc -> new client initializes ALL pairs
+    ///   InitializeNewPlayerAndVessel_ClientRpc   -> existing client initializes one new pair
+    ///   ReplaceVesselForPlayer_ClientRpc         -> swap: re-initialize with a new vessel
     ///
     /// When an RPC arrives but objects haven't replicated yet, pairs are queued.
     /// OnPlayerNetworkSpawnedUlong + OnVesselNetworkSpawned SOAP events trigger
-    /// re-processing of the queue — zero WaitUntil polling.
+    /// re-processing of the queue - zero WaitUntil polling.
     /// </summary>
     public class ClientPlayerVesselInitializer : NetworkBehaviour
     {
@@ -65,7 +65,7 @@ namespace CosmicShore.Gameplay
             // Client-pull bootstrap (unbreakable join): ask the host for the current
             // roster from inside our own OnNetworkSpawn. Because this object now
             // provably exists on the client, the host's reply ClientRpc cannot be
-            // dropped for "target not spawned" — the root cause of the legacy
+            // dropped for "target not spawned" - the root cause of the legacy
             // one-shot-push hang. A bounded retry re-asks if the request or reply is
             // lost, so convergence never depends on catching a transient SOAP event.
             _localPairResolved = false;
@@ -184,7 +184,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Direct server-side vessel replacement (called by MenuServerPlayerVesselInitializer on host).
-        /// The player already has a vessel — this wires the new one in place.
+        /// The player already has a vessel - this wires the new one in place.
         /// </summary>
         public void ReplaceVesselForPlayer(IPlayer player, IVessel newVessel)
         {
@@ -229,7 +229,7 @@ namespace CosmicShore.Gameplay
         // ---------------------------------------------------------
 
         /// <summary>
-        /// Client → host request for the current player-vessel roster. The client
+        /// Client -> host request for the current player-vessel roster. The client
         /// calls this from its own OnNetworkSpawn (and on a bounded retry), so the
         /// host's reply (<see cref="InitializeAllPlayersAndVessels_ClientRpc"/>) is
         /// delivered to an object that provably exists and cannot be dropped.
@@ -348,9 +348,9 @@ namespace CosmicShore.Gameplay
         /// Netcode-replicated vessels bypass Reflex: NetworkManager instantiates the
         /// prefab directly, so every [Inject] field on the vessel's components
         /// (ActionExecutorRegistry.AudioSystem, executor AudioSystems, GameDataSO
-        /// mirrors, …) is null on non-server peers. The server/host injects at
+        /// mirrors, ...) is null on non-server peers. The server/host injects at
         /// instantiation time (ServerPlayerVesselInitializer.SpawnVesselForPlayer),
-        /// so only client-side instances need it here — before vessel.Initialize()
+        /// so only client-side instances need it here - before vessel.Initialize()
         /// so executors see their dependencies during their own Initialize.
         /// </summary>
         void InjectVesselDependencies(IVessel vessel)
@@ -363,7 +363,7 @@ namespace CosmicShore.Gameplay
 
         void InitializePair(IPlayer player, IVessel vessel)
         {
-            Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] InitializePair — Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}</color>");
+            Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] InitializePair - Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}</color>");
             InjectVesselDependencies(vessel);
             player.InitializeForMultiplayerMode(vessel);
             vessel.Initialize(player);
@@ -387,7 +387,7 @@ namespace CosmicShore.Gameplay
 
             if (player.IsLocalUser)
             {
-                // Local pair resolved — stop the client-pull retry loop and clear the splash.
+                // Local pair resolved - stop the client-pull retry loop and clear the splash.
                 _localPairResolved = true;
                 _rosterRetryCts?.Cancel();
                 Debug.Log("<color=#FFFFFF><b>[FLOW-6] [ClientVesselInit] Raising OnClientReady (local player initialized)</b></color>");
@@ -398,7 +398,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Re-initializes a player-vessel pair during a vessel swap.
         /// Unlike <see cref="InitializePair"/>, the player is already in
-        /// <see cref="GameDataSO.Players"/> and has domain/name set —
+        /// <see cref="GameDataSO.Players"/> and has domain/name set -
         /// only the vessel reference needs to change.
         /// </summary>
         void ReInitializePair(IPlayer player, IVessel newVessel)

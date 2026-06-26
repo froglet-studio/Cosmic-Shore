@@ -1,6 +1,6 @@
-# Cosmic Shore — Privacy Policy (DRAFT TEMPLATE)
+# Cosmic Shore - Privacy Policy (DRAFT TEMPLATE)
 
-> ⚠️ **DRAFT for legal review — do NOT publish as-is.** This template is tailored to
+> (!) **DRAFT for legal review - do NOT publish as-is.** This template is tailored to
 > what the game actually collects via Unity Gaming Services (UGS) as of the analytics
 > work in PR #546. Fill every `[BRACKETED]` field and have counsel finalize before it
 > is hosted and linked from the in-game consent dialog. Hosting + final wording are a
@@ -24,7 +24,7 @@ This policy covers the Cosmic Shore game on all platforms (Steam/PC, iOS, Androi
 - Analytics is **opt-in**: we collect it only if you accept the in-game consent prompt.
   You can change your mind any time in Settings, and you can request deletion.
 - We **do not sell** your personal data.
-- We **do not collect** analytics from players under 13 (see §8).
+- We **do not collect** analytics from players under 13 (see Sec 8).
 
 ## 3. What we collect
 
@@ -41,7 +41,7 @@ count, win/loss, duration), session start/end, menu navigation, activation miles
 in-game currency earned/spent, vessel unlocks, settings changes, social actions (friend
 requests, party invites, shares, favorites), progression/quest completion, and a derived
 play-style summary. Plus diagnostic events (e.g., failed cloud saves). These carry the
-anonymous player ID and gameplay parameters — **no real-world identifiers**.
+anonymous player ID and gameplay parameters - **no real-world identifiers**.
 
 **c. Saved game data (Cloud Save)**
 Your profile (display name, avatar, in-game currency balance, XP, unlocked rewards,
@@ -65,7 +65,7 @@ Records of purchases. Payment is handled by the platform (**[Steam / Apple / Goo
 we do **not** receive or store your full payment-card details.
 
 **h. Advertising (if/when ads are enabled)**
-[Describe Unity Ads data, ad identifiers, and whether ads are personalized — REMOVE this
+[Describe Unity Ads data, ad identifiers, and whether ads are personalized - REMOVE this
 section if ads are not shipped.]
 
 > We do **not** intentionally collect precise geolocation, contacts, microphone/camera
@@ -80,22 +80,22 @@ maintain security and prevent abuse.
 
 ## 5. Legal bases (EU/UK GDPR)
 
-- **Consent** — gameplay analytics and [advertising]. You may withdraw it any time.
-- **Contractual necessity** — account, cloud save, multiplayer, leaderboards, purchases
+- **Consent** - gameplay analytics and [advertising]. You may withdraw it any time.
+- **Contractual necessity** - account, cloud save, multiplayer, leaderboards, purchases
   (needed to provide the game you asked for).
-- **Legitimate interests** — security, abuse prevention, and crash diagnostics, balanced
+- **Legitimate interests** - security, abuse prevention, and crash diagnostics, balanced
   against your rights.
 
 [Counsel to confirm the basis assigned to each processing activity.]
 
 ## 6. Who we share it with (processors / sub-processors)
 
-- **Unity Technologies** — Unity Gaming Services: Analytics, Cloud Save, Authentication,
+- **Unity Technologies** - Unity Gaming Services: Analytics, Cloud Save, Authentication,
   Friends, Multiplayer/Relay/Lobby, Leaderboards[, Ads]. (Subject to Unity's data
   processing terms / DPA.)
-- **[Platform: Valve/Steam, Apple, Google]** — distribution, crash reporting, and
+- **[Platform: Valve/Steam, Apple, Google]** - distribution, crash reporting, and
   payment processing for purchases.
-- **[Any other vendor — e.g., ad network]**.
+- **[Any other vendor - e.g., ad network]**.
 
 We do **not sell** personal data and do **not share** it for cross-context behavioral
 advertising. [Adjust if ads change this.]
@@ -119,12 +119,12 @@ in a given EU country, parental consent rules there apply.]
 
 We retain account and saved-game data for as long as your account exists. Analytics data
 is retained per Unity's retention schedule [confirm]. You can request deletion at any time
-(§10).
+(Sec 10).
 
 ## 10. Your rights & choices
 
-- **Withdraw consent / opt out of analytics:** Settings → Privacy → analytics toggle.
-- **Delete your data:** Settings → Privacy → "Delete my data" (routes a deletion request
+- **Withdraw consent / opt out of analytics:** Settings -> Privacy -> analytics toggle.
+- **Delete your data:** Settings -> Privacy -> "Delete my data" (routes a deletion request
   to UGS), or contact **[PRIVACY CONTACT EMAIL]**.
 - Depending on where you live (EU/UK GDPR, California CCPA/CPRA, and others) you may have
   rights to **access, correct, delete, port, or object** to processing, and to **not be
@@ -143,7 +143,7 @@ will be surfaced in-game.
 
 ## 13. Contact
 
-**[PRIVACY CONTACT EMAIL]** · **[POSTAL ADDRESS]** · [EU/UK representative if applicable].
+**[PRIVACY CONTACT EMAIL]** * **[POSTAL ADDRESS]** * [EU/UK representative if applicable].
 
 ---
 
@@ -152,4 +152,4 @@ will be surfaced in-game.
 The data described above maps to: `Docs/Analytics/DATA_INVENTORY.md` (Cloud Save keys +
 event list), `AnalyticsServiceFacade` (the ~28 analytics events + consent gate),
 `UGSDataService` (Cloud Save), `FriendsServiceFacade` / `HostConnectionService` (social),
-`UGSStatsManager` (leaderboards), `IAPManager` (purchases — stub), `AdsSystem` (ads).
+`UGSStatsManager` (leaderboards), `IAPManager` (purchases - stub), `AdsSystem` (ads).

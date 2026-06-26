@@ -1,7 +1,7 @@
 
 namespace CosmicShore.Gameplay
 {
-    ﻿using UnityEngine;
+    using UnityEngine;
 
     [CreateAssetMenu(fileName = "PolarFlowData", menuName = "ScriptableObjects/Flow/PolarFlow", order = 30)]
     [System.Serializable] 

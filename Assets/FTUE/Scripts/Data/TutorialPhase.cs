@@ -1,7 +1,7 @@
 
 namespace CosmicShore.Core
 {
-    /// <summary>All of our FTUE �phases,� in order.</summary>
+    /// <summary>All of our FTUE "phases," in order.</summary>
     public enum TutorialPhase
     {
         Phase1_Intro,         

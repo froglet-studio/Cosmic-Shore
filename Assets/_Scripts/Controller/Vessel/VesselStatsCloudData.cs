@@ -5,7 +5,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Top-level container persisted under UGSKeys.VesselStats in Cloud Save.
-    /// Maps vessel type name → that vessel's lifetime stats.
+    /// Maps vessel type name -> that vessel's lifetime stats.
     /// </summary>
     [Serializable]
     public class VesselStatsCloudData
@@ -30,13 +30,13 @@ namespace CosmicShore.Gameplay
     [Serializable]
     public class VesselLifetimeStats
     {
-        // ── Common (all vessels) ──
+        // -- Common (all vessels) --
         public float BestDriftTime;
         public float BestBoostTime;
         public int   TotalPrismsDamaged;
         public int   GamesPlayed;
 
-        // ── Vessel-specific counters ──
+        // -- Vessel-specific counters --
         // Key = stat name (e.g. "PrismBlocksShot"), Value = lifetime total
         public Dictionary<string, int> Counters = new();
 

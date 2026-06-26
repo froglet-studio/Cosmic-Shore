@@ -1,4 +1,4 @@
-<div class="sec-eyebrow">Part I · Overview</div>
+<div class="sec-eyebrow">Part I * Overview</div>
 
 # System context
 
@@ -16,9 +16,9 @@ runs gameplay replication over a Relay-allocated connection to party peers.
 
 | Service | What we use it for |
 |---|---|
-| **Authentication** | Anonymous sign-in; a stable `PlayerId`; cached-session restore. The first thing to complete on boot — everything else waits on it. |
+| **Authentication** | Anonymous sign-in; a stable `PlayerId`; cached-session restore. The first thing to complete on boot - everything else waits on it. |
 | **Multiplayer Sessions** | The unified session API. We create two *kinds* of session from it: a lobby-only presence session and a Relay-backed party session. |
-| **Lobby** | Backs the presence session — player lists and per-player properties (how invites travel). |
+| **Lobby** | Backs the presence session - player lists and per-player properties (how invites travel). |
 | **Relay** | Allocates a relay server so clients behind NAT can connect without port-forwarding. The party session attaches Relay via `WithRelayNetwork()`. |
 | **Friends** | Persistent relationships and rich presence ("In Menu", "In Party", "In Game"). |
 
@@ -28,7 +28,7 @@ Once a party session exists, one player is the **host** (server + client) and th
 **clients**. `NetworkManager` drives connection, scene synchronization, and object replication. The
 game's `Player` and vessel objects are `NetworkBehaviour`s; their state replicates through
 `NetworkVariable`s and `ClientRpc`/`ServerRpc` calls. Importantly, the presence lobby is **lobby-only
-(no Relay)**, so it coexists with a live `NetworkManager` — a player can be discoverable in the lobby
+(no Relay)**, so it coexists with a live `NetworkManager` - a player can be discoverable in the lobby
 and connected for gameplay at the same time without the two interfering.
 
 ::: insight One client, two clocks

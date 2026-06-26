@@ -27,7 +27,7 @@ namespace CosmicShore.Utility
         private static readonly int ConvergencePointID = Shader.PropertyToID("_Location");
 
         // The live convergence target (the consuming fauna / vessel). The suction sink
-        // FOLLOWS this transform as it keeps moving — a fauna swims a long way during the
+        // FOLLOWS this transform as it keeps moving - a fauna swims a long way during the
         // ~2s implosion, so a position snapshotted at consumption time would suck the
         // prisms toward where the creature WAS, not where it is. Refreshed each frame by
         // PrismEffectsManager via RefreshConvergence(). Held as a reference (not copied to
@@ -80,7 +80,7 @@ namespace CosmicShore.Utility
 
         private void OnDisable()
         {
-            // Pool return / scene teardown may bypass CompleteEffect — never carry a target
+            // Pool return / scene teardown may bypass CompleteEffect - never carry a target
             // reference (possibly a destroyed transform) across pool reuse.
             _convergenceTransform = null;
 
@@ -198,7 +198,7 @@ namespace CosmicShore.Utility
         /// Re-read the convergence point from the live target transform. Called once per
         /// frame by PrismEffectsManager before it samples TargetPosition into the job, so
         /// the suction sink tracks the still-moving fauna. One Transform.position read per
-        /// active implosion — the per-frame _Location write to the shader already happens
+        /// active implosion - the per-frame _Location write to the shader already happens
         /// unconditionally, so this is the only marginal cost of following the target.
         /// Fake-null safe: a target destroyed mid-suction leaves TargetPosition at its last
         /// known value.
@@ -251,7 +251,7 @@ namespace CosmicShore.Utility
             callback?.Invoke(this);
 
             // Force-deactivate as a safety net. The pool callback above normally
-            // does this via OnReleaseToPool → SetActive(false). If that path failed
+            // does this via OnReleaseToPool -> SetActive(false). If that path failed
             // for any reason, the GameObject would remain active and the shader
             // animation would visibly continue / loop on the next StartImplosion
             // call against the same instance. This is a no-op when the pool ran cleanly.
@@ -265,7 +265,7 @@ namespace CosmicShore.Utility
             // longer than 2x the configured duration. We deliberately do NOT gate on
             // IsActive because the dominant failure mode is an instance whose IsActive
             // was cleared by OnDisable but whose GameObject was reactivated through
-            // the pool without StartImplosion ever running again — those leak past
+            // the pool without StartImplosion ever running again - those leak past
             // an IsActive-only check. Tracking via Time.time (set in OnEnable as a
             // backstop, refreshed in StartImplosion / StartGrow) is the only signal
             // that survives all the state-reset failure modes.

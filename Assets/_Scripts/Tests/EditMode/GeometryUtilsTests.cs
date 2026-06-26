@@ -6,7 +6,7 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Geometry Utils Tests — Validates math utility functions.
+    /// Geometry Utils Tests - Validates math utility functions.
     ///
     /// WHY THIS MATTERS:
     /// GeometryUtils provides core math for distance calculations and vector clamping
@@ -82,7 +82,7 @@ namespace CosmicShore.Tests
                 new Vector3(10, 0, 0)
             );
 
-            // Point at (5, 3, 0) — perpendicular distance to X-axis is 3.
+            // Point at (5, 3, 0) - perpendicular distance to X-axis is 3.
             float distance = Utility.GeometryUtils.DistanceFromPointToLine(
                 new Vector3(5, 3, 0), line
             );
@@ -98,7 +98,7 @@ namespace CosmicShore.Tests
                 new Vector3(10, 0, 0)
             );
 
-            // Point at origin — before the line start.
+            // Point at origin - before the line start.
             // Distance should be to the start point (5,0,0).
             float distance = Utility.GeometryUtils.DistanceFromPointToLine(
                 Vector3.zero, line
@@ -115,7 +115,7 @@ namespace CosmicShore.Tests
                 new Vector3(5, 0, 0)
             );
 
-            // Point at (10, 0, 0) — beyond the line end.
+            // Point at (10, 0, 0) - beyond the line end.
             float distance = Utility.GeometryUtils.DistanceFromPointToLine(
                 new Vector3(10, 0, 0), line
             );

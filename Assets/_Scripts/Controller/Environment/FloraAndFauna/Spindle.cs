@@ -240,7 +240,7 @@ namespace CosmicShore.Gameplay
 
             deregistered = true;
 
-            // During scene unload, only remove references — don't trigger the death
+            // During scene unload, only remove references - don't trigger the death
             // cascade (CheckForLife/CheckIfDead) which explodes prisms, accesses
             // disposed NativeArrays, and spawns new GameObjects during teardown.
             bool sceneUnloading = !gameObject.scene.isLoaded;

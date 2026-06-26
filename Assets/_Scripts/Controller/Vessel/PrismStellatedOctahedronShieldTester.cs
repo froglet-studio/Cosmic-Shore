@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
             {
                 _shield.Toggle();
                 if (logToggles)
-                    Debug.Log($"[SuperShieldTester] Space → shielded={_shield.IsShielded}");
+                    Debug.Log($"[SuperShieldTester] Space -> shielded={_shield.IsShielded}");
             }
 
             if (autoToggle)
@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
                     _timer = 0f;
                     _shield.Toggle();
                     if (logToggles)
-                        Debug.Log($"[SuperShieldTester] auto-toggled → shielded={_shield.IsShielded}");
+                        Debug.Log($"[SuperShieldTester] auto-toggled -> shielded={_shield.IsShielded}");
                 }
             }
         }

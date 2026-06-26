@@ -70,7 +70,7 @@ namespace CosmicShore.Gameplay
             //// ensure we started skimming
             //StartSkimIfNeeded(prism.ownerID);
 
-            //// choose “mature & nearest” block per your old logic
+            //// choose "mature & nearest" block per your old logic
             //// if (Time.time - prism.prismProperties.TimeCreated <= 4f) return;
             // if ((Time.time - prism.prismProperties.TimeCreated) < 0.25f) return;
             

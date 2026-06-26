@@ -15,9 +15,9 @@ namespace CosmicShore.Gameplay
         [Header("Steer Response")]
         [Tooltip("Max yaw speed (deg/sec) when fully ramped in.")]
         [SerializeField] float maxYawDegPerSec = 120f;
-        [Tooltip("Time to ramp from 0 → 1 intensity while holding.")]
+        [Tooltip("Time to ramp from 0 -> 1 intensity while holding.")]
         [SerializeField] float rampInSeconds = 0.35f;
-        [Tooltip("Time to ramp from current intensity → 0 when released.")]
+        [Tooltip("Time to ramp from current intensity -> 0 when released.")]
         [SerializeField] float rampOutSeconds = 0.25f;
 
         [Header("Optional: Speed Coupling")]

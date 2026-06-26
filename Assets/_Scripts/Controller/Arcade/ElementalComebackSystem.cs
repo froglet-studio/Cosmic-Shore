@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     /// Attach to minigame scene alongside the minigame controller. Assign a comeback profile
     /// to configure per-vessel, per-element weights.
     ///
-    /// Operates only in the 0.0–1.5 normalized range (levels 0–15). The first 5 base pips
+    /// Operates only in the 0.0-1.5 normalized range (levels 0-15). The first 5 base pips
     /// (levels -5 to 0) are reserved for the overtake impact effect and are never touched here.
     /// </summary>
     public class ElementalComebackSystem : MonoBehaviour
@@ -182,7 +182,7 @@ namespace CosmicShore.Gameplay
                     float bonusLevels = scoreDiff * weight;
                     float targetNormalized = baseline[i] + (bonusLevels / 10f);
 
-                    // Clamp to 0.0–1.5 — never touch the base pips (below 0)
+                    // Clamp to 0.0-1.5 - never touch the base pips (below 0)
                     targetNormalized = Mathf.Clamp(targetNormalized, 0f, 1.5f);
 
                     rs.SetElementLevel(element, targetNormalized);
@@ -202,7 +202,7 @@ namespace CosmicShore.Gameplay
 
                 if (debugLogging)
                     CSDebug.Log($"[ElementalComebackSystem] {player.Name} ({vesselType}): " +
-                              $"value={playerValue:F1}, leader={leaderValue:F1}, diff={scoreDiff:F1} → " +
+                              $"value={playerValue:F1}, leader={leaderValue:F1}, diff={scoreDiff:F1} -> " +
                               $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
                               $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
             }
@@ -213,14 +213,14 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < AllElements.Length; i++)
             {
                 float initialLevel = config.GetInitialLevel(AllElements[i]);
-                // Clamp initial values to 0.0–1.5 range
+                // Clamp initial values to 0.0-1.5 range
                 float normalized = Mathf.Clamp(initialLevel / 10f, 0f, 1.5f);
                 rs.SetElementLevel(AllElements[i], normalized);
             }
         }
 
         // ---------------------------------------------------------------
-        // Value reading — uses the configured ScoreDifferenceSource
+        // Value reading - uses the configured ScoreDifferenceSource
         // ---------------------------------------------------------------
         // Comeback buffs are now keyed off DOMAIN aggregates: a player on the
         // leading domain doesn't get a comeback buff even if they personally

@@ -81,7 +81,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnDestroy()
         {
-            // Safety net for destruction paths that bypass StopMonitor — detaching
+            // Safety net for destruction paths that bypass StopMonitor - detaching
             // from the persistent RoundStats must never depend on the turn ending.
             StopMonitor();
             base.OnDestroy();
@@ -103,7 +103,7 @@ namespace CosmicShore.Gameplay
         {
             // Remaining is the LOCAL PLAYER'S DOMAIN deficit (the rule owns target + sum), so
             // the HUD reflects the team objective rather than a single ship. A null local
-            // player resolves to Domains.Blue (sum 0 → full target remaining), matching the
+            // player resolves to Domains.Blue (sum 0 -> full target remaining), matching the
             // previous behavior.
             int remaining = gameData.ScoringRule.Remaining(
                 gameData, gameData.LocalPlayer?.Domain ?? Domains.Blue);

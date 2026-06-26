@@ -6,7 +6,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// <summary>
     /// Self-running benchmark for development builds. When the player is launched with the
     /// <c>-csmbench</c> command-line argument (dev build or editor only), it runs the same
-    /// warmup → sample → analyze cycle as the editor path and writes a <see cref="BenchmarkReport"/>
+    /// warmup -> sample -> analyze cycle as the editor path and writes a <see cref="BenchmarkReport"/>
     /// JSON (origin = DevBuild) to <c>persistentDataPath/PerfRuns/</c>. Pull that file off the
     /// device and import it in the editor's History tab.
     ///
@@ -62,7 +62,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             if (report != null)
             {
                 string path = report.SaveToFile(OutputFolder); // origin = DevBuild (set in PopulateEnvironment)
-                Debug.Log($"[Benchmark] Dev-build capture complete — saved to {path}");
+                Debug.Log($"[Benchmark] Dev-build capture complete - saved to {path}");
             }
             else
             {

@@ -1,12 +1,12 @@
-# Performance Benchmark Tool — Test Procedure
+# Performance Benchmark Tool - Test Procedure
 
 ## Quick Start
 
-1. **Create a config asset**: Right-click in the Project window → Create → CosmicShore → Tools → Benchmark Config
-2. **Open the tool**: Menu bar → FrogletTools → Performance Benchmark
+1. **Create a config asset**: Right-click in the Project window -> Create -> CosmicShore -> Tools -> Benchmark Config
+2. **Open the tool**: Menu bar -> FrogletTools -> Performance Benchmark
 3. **Drag the config** into the "Config" slot
 4. **Enter Play Mode** in the scene you want to measure
-5. **Click "Start Benchmark"** — results appear automatically when it finishes
+5. **Click "Start Benchmark"** - results appear automatically when it finishes
 
 Every run is saved to disk. You can compare any two runs in the History tab.
 
@@ -47,14 +47,14 @@ The editor window auto-creates a runner GameObject if none exists. If you want p
 3. Assign your `BenchmarkConfigSO`
 4. Enter Play Mode
 5. Click **Start Benchmark**
-6. Wait for the progress bar to complete (warmup → sampling)
-7. Results appear below with a health grade (A–F) and stat summary
+6. Wait for the progress bar to complete (warmup -> sampling)
+7. Results appear below with a health grade (A-F) and stat summary
 
 ### What happens during a run
 
-1. **Warmup phase** (default 3s) — the scene runs but no data is recorded. This lets shaders compile, objects spawn, and physics settle.
-2. **Sampling phase** (default 10s) — every frame is captured as a `FrameSnapshot` containing frame time, FPS, and optionally rendering/memory/physics stats.
-3. **Completion** — statistics are computed, the report is saved to JSON, and the run is indexed in the history.
+1. **Warmup phase** (default 3s) - the scene runs but no data is recorded. This lets shaders compile, objects spawn, and physics settle.
+2. **Sampling phase** (default 10s) - every frame is captured as a `FrameSnapshot` containing frame time, FPS, and optionally rendering/memory/physics stats.
+3. **Completion** - statistics are computed, the report is saved to JSON, and the run is indexed in the history.
 
 ### Stopping early
 
@@ -68,19 +68,19 @@ Click **Stop Early** during a run. Captured frames up to that point are still sa
 
 | Grade | Criteria | Meaning |
 |---|---|---|
-| **A** | Avg FPS ≥ 55, P99 frame time < 25ms, StdDev < 5ms | Excellent — smooth and stable |
-| **B** | Avg FPS ≥ 45, P99 frame time < 35ms | Good — playable with minor hitches |
-| **C** | Avg FPS ≥ 30, P99 frame time < 50ms | Acceptable — noticeable frame drops |
-| **D** | Avg FPS ≥ 20 | Poor — frequent stutters |
-| **F** | Below all thresholds | Critical — not playable |
+| **A** | Avg FPS >= 55, P99 frame time < 25ms, StdDev < 5ms | Excellent - smooth and stable |
+| **B** | Avg FPS >= 45, P99 frame time < 35ms | Good - playable with minor hitches |
+| **C** | Avg FPS >= 30, P99 frame time < 50ms | Acceptable - noticeable frame drops |
+| **D** | Avg FPS >= 20 | Poor - frequent stutters |
+| **F** | Below all thresholds | Critical - not playable |
 
 ### Key Metrics Explained
 
 | Metric | What It Means | Target |
 |---|---|---|
-| **Avg FPS** | Average frames per second | ≥ 60 for mobile |
-| **Worst 1% FPS (P1)** | FPS during the worst spike frames | ≥ 30 |
-| **Avg Frame Time** | Time per frame in milliseconds (16.7ms = 60fps) | ≤ 16.7ms |
+| **Avg FPS** | Average frames per second | >= 60 for mobile |
+| **Worst 1% FPS (P1)** | FPS during the worst spike frames | >= 30 |
+| **Avg Frame Time** | Time per frame in milliseconds (16.7ms = 60fps) | <= 16.7ms |
 | **Worst 1% Frame Time (P99)** | Frame time during the worst spikes | < 25ms |
 | **Stability (StdDev)** | How consistent frame times are. Lower = smoother | < 5ms |
 | **Draw Calls** | GPU commands per frame | Lower is better |
@@ -146,7 +146,7 @@ Click **JSON** on any entry to open the file in your system's file browser. Repo
 
 ### Typical Workflow
 
-1. Run a benchmark **before** making changes → tag it "baseline"
+1. Run a benchmark **before** making changes -> tag it "baseline"
 2. Make your optimization changes
 3. Run another benchmark
 4. Go to the **Compare** tab
@@ -161,7 +161,7 @@ Click **Baseline** on any entry to set it as the baseline, or **Current** to set
 
 - **Green rows** = improved (better than baseline)
 - **Red rows** = regressed (worse than baseline)
-- **No highlight** = unchanged (within ±2% threshold)
+- **No highlight** = unchanged (within +/-2% threshold)
 
 The summary badges show total counts: "3 Improved", "2 Unchanged", "1 Regressed".
 
@@ -176,7 +176,7 @@ The summary badges show total counts: "3 Improved", "2 Unchanged", "1 Regressed"
 
 ### Copy to Clipboard
 
-Click **Copy Text Report** to copy the full comparison as formatted ASCII text — useful for pasting into PRs, Slack, or commit messages.
+Click **Copy Text Report** to copy the full comparison as formatted ASCII text - useful for pasting into PRs, Slack, or commit messages.
 
 ---
 
@@ -210,7 +210,7 @@ Tests live in `Assets/_Scripts/Utility/PerformanceBenchmark/Tests/Editor/` under
 
 - `BenchmarkHistoryTests` create a unique temporary folder per test via `Guid` and clean up in `TearDown`
 - `BenchmarkConfigSOTests` create/destroy ScriptableObject instances in `SetUp`/`TearDown`
-- All tests are purely edit-mode — no Play Mode or scene loading required
+- All tests are purely edit-mode - no Play Mode or scene loading required
 
 ---
 

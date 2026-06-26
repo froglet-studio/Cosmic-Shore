@@ -10,7 +10,7 @@ namespace CosmicShore.UI
         [Header("View")]
         [SerializeField] private RhinoVesselHUDView view;
 
-        [Header("Rhino – Scene Refs")]
+        [Header("Rhino - Scene Refs")]
         [SerializeField] private ShieldSkimmerScaleDriver growSkimmerExecutor;
 
         [Header("Events (SOAP)")]

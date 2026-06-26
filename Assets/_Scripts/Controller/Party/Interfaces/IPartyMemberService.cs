@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // IPartyMemberService.cs
 // Contract for syncing the party member list and firing the SOAP events that
 // keep the UI (PartySlotView, PartyAreaPanel) up to date.
@@ -9,7 +9,7 @@
 //   RefreshPartyMembersAsync, ScanPresenceForJoinedPartyMembers, and
 //   AcceptInviteAsync in HostConnectionService.  Centralising it here means
 //   one place to audit and test member-list correctness.
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
@@ -23,7 +23,7 @@ namespace CosmicShore.Gameplay
     ///
     /// <para>
     /// Implementors must NOT start a NetworkManager or touch the UGS session SDK
-    /// directly — those are <see cref="INetworkTransitionService"/>'s and
+    /// directly - those are <see cref="INetworkTransitionService"/>'s and
     /// <see cref="IPartySessionService"/>'s jobs respectively.
     /// </para>
     ///
@@ -58,7 +58,7 @@ namespace CosmicShore.Gameplay
         /// The live Relay party session.  Must not be null.
         /// </param>
         /// <param name="localPlayerId">
-        /// The local player's UGS ID.  Excluded from the diff — always retained.
+        /// The local player's UGS ID.  Excluded from the diff - always retained.
         /// </param>
         IReadOnlyList<string> SyncFromSession(ISession session, string localPlayerId);
 
@@ -75,7 +75,7 @@ namespace CosmicShore.Gameplay
         /// Use when the party disbands gracefully (leave, kick all, decline).
         /// </summary>
         /// <param name="localPlayerId">
-        /// The local player's ID — retained in the list, not fired as Left.
+        /// The local player's ID - retained in the list, not fired as Left.
         /// </param>
         void ClearWithEvents(string localPlayerId);
 

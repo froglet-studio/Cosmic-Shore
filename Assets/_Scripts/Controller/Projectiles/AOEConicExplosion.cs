@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
             if (!Material)
                 Material = new Material(Vessel.VesselStatus.AOEExplosionMaterial);
 
-            // Always create a fresh container – the serialised field may
+            // Always create a fresh container - the serialised field may
             // reference the prefab's own root (self-parenting is a no-op).
             coneContainer = new GameObject("AOEContainer");
             coneContainer.transform.SetPositionAndRotation(initStruct.SpawnPosition, initStruct.SpawnRotation);

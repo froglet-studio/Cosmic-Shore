@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Toggle ability:
-    /// - First press: find the nearest Cell → get the densest region for the configured Team → redirect shards there.
+    /// - First press: find the nearest Cell -> get the densest region for the configured Team -> redirect shards there.
     /// - Second press: restore shards to their normal (crystal) behavior.
     /// </summary>
     public class ShardToggleAction : ShipAction
@@ -43,13 +43,13 @@ namespace CosmicShore.Gameplay
             {
                 var cell = cellData.Cell;
                 Vector3 highDensityPosition = cell.GetExplosionTarget(domain);
-                // CSDebug.Log($"[ShardToggleAction] MassCentroids → Cell='{cell.name}' Team={domain} Target={highDensityPosition}");
+                // CSDebug.Log($"[ShardToggleAction] MassCentroids -> Cell='{cell.name}' Team={domain} Target={highDensityPosition}");
                 shardFieldBus.BroadcastPointAtPosition(highDensityPosition);
                 _redirectActive = true;
             }
             else
             {
-                // CSDebug.Log("[ShardToggleAction] Toggled OFF → restoring shards to crystal.");
+                // CSDebug.Log("[ShardToggleAction] Toggled OFF -> restoring shards to crystal.");
                 shardFieldBus.BroadcastRestoreToCrystal();
                 _redirectActive = false;
             }

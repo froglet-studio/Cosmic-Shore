@@ -16,13 +16,13 @@ namespace CosmicShore.Editor
     ///    to default(T) instead of the pre-play-mode value.
     ///
     /// 2. Plain ScriptableObject assets (GameDataSO, CellRuntimeDataSO, etc.)
-    ///    have no reset mechanism at all — Unity persists their play-mode
+    ///    have no reset mechanism at all - Unity persists their play-mode
     ///    mutations by design.
     ///
     /// Approach:
-    ///   ExitingEditMode  → snapshot every .asset file in _SO_Assets/ into
+    ///   ExitingEditMode  -> snapshot every .asset file in _SO_Assets/ into
     ///                      SessionState (survives domain reload).
-    ///   EnteredEditMode  → schedule a deferred restore via delayCall so it
+    ///   EnteredEditMode  -> schedule a deferred restore via delayCall so it
     ///                      runs AFTER SOAP's own OnPlayModeStateChanged
     ///                      callbacks (which re-dirty the assets). Then write
     ///                      the original bytes back and force-reimport.

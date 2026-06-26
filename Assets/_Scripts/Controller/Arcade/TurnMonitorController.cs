@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
         bool _isRunning;
         bool _subscribedViaNetwork;
 
-        // ── Network lifecycle (multiplayer) ──────────────────────────────
+        // -- Network lifecycle (multiplayer) ------------------------------
 
         public override void OnNetworkSpawn()
         {
@@ -45,7 +45,7 @@ namespace CosmicShore.Gameplay
             base.OnNetworkDespawn();
         }
 
-        // ── MonoBehaviour lifecycle (singleplayer fallback) ──────────────
+        // -- MonoBehaviour lifecycle (singleplayer fallback) --------------
 
         void OnEnable()
         {
@@ -63,7 +63,7 @@ namespace CosmicShore.Gameplay
             StopMonitors();
         }
 
-        // ── Core loop ────────────────────────────────────────────────────
+        // -- Core loop ----------------------------------------------------
 
         void Update()
         {
@@ -75,13 +75,13 @@ namespace CosmicShore.Gameplay
 
             _isRunning = false;
             // If this raise throws (a subscriber in the turn-end chain failing), the end
-            // is lost permanently — _isRunning is already latched false. Log the trigger
+            // is lost permanently - _isRunning is already latched false. Log the trigger
             // first so any exception printed right after this line pinpoints the culprit.
-            Debug.Log("<color=#00CED1>[FLOW-10] [TurnMonitorController] End-of-turn condition met — raising OnMiniGameTurnEnd</color>");
+            Debug.Log("<color=#00CED1>[FLOW-10] [TurnMonitorController] End-of-turn condition met - raising OnMiniGameTurnEnd</color>");
             gameData.InvokeGameTurnConditionsMet();
         }
 
-        // ── Event handlers ───────────────────────────────────────────────
+        // -- Event handlers -----------------------------------------------
 
         void SubscribeToEvents()
         {

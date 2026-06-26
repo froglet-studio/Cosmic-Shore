@@ -14,7 +14,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         enum Tab { Collect, Sweep, History, Compare }
         [SerializeField] Tab activeTab = Tab.Collect;
 
-        // ── Shared assets (serialized so they survive the play-mode domain reload) ──
+        // -- Shared assets (serialized so they survive the play-mode domain reload) --
         [SerializeField] BenchmarkConfigSO config;
         [SerializeField] BenchmarkHintRulesSO hintRules;
         [SerializeField] GameDataSO gameData;
@@ -22,7 +22,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         // Default config shipped in the repo; auto-loaded when nothing is assigned.
         const string DefaultConfigPath = "Assets/_SO_Assets/Benchmark/BenchmarkConfig.asset";
 
-        // ── Runtime Capture tab ─────────────────────────
+        // -- Runtime Capture tab -------------------------
         PerformanceBenchmarkRunner collectRunner;
         Vector2 collectScroll;
 
@@ -45,7 +45,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         static string CollectCachePath =>
             Path.Combine(Application.persistentDataPath, "Benchmarks", "_collect_lastrun.json");
 
-        // ── Sweep tab ───────────────────────────────────
+        // -- Sweep tab -----------------------------------
         Vector2 sweepScroll;
         List<(string name, bool include)> sweepScenes;
         [SerializeField] string sweepTag = "sweep";
@@ -54,7 +54,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         BenchmarkSweepRunner activeSweep;
         readonly HashSet<int> sweepExpanded = new();
 
-        // ── Manual session (primary Sweep mode) ─────────
+        // -- Manual session (primary Sweep mode) ---------
         Vector2 sweepOuterScroll;
         PerformanceBenchmarkRunner sweepRunner;
         ManualSweepSession sweepSession;
@@ -68,13 +68,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         static string SweepCachePath =>
             Path.Combine(Application.persistentDataPath, "Benchmarks", "_sweep_lastrun.json");
 
-        // ── History tab ─────────────────────────────────
+        // -- History tab ---------------------------------
         Vector2 historyScroll;
         List<BenchmarkHistory.IndexEntry> historyEntries = new();
         string tagEditId;
         string tagEditValue = "";
 
-        // ── Compare tab ─────────────────────────────────
+        // -- Compare tab ---------------------------------
         Vector2 compareScroll;
         int baselineIndex = -1;
         int currentIndex = -1;
@@ -108,8 +108,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         const double EnrichInterval = 0.35;   // seconds between hierarchy walks (keeps the editor responsive)
         const int TopMarkersToCapture = 8;
 
-        // When off, the tool only records frame time / fps / stability — no Profiler enable,
-        // no per-spike hierarchy walks — so it barely perturbs what it measures. Turn this off
+        // When off, the tool only records frame time / fps / stability - no Profiler enable,
+        // no per-spike hierarchy walks - so it barely perturbs what it measures. Turn this off
         // for a true smoothness read; turn it on when you need the script breakdown of a spike.
         [SerializeField] bool captureSpikeBreakdowns = true;
 
@@ -205,9 +205,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             GUI.backgroundColor = prev;
         }
 
-        // ════════════════════════════════════════════════
-        // ── Collect Tab ─────────────────────────────────
-        // ════════════════════════════════════════════════
+        // ================================================
+        // -- Collect Tab ---------------------------------
+        // ================================================
 
         void DrawCollectTab()
         {
@@ -233,9 +233,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 hintRules = (BenchmarkHintRulesSO)EditorGUILayout.ObjectField("Hint Rules", hintRules, typeof(BenchmarkHintRulesSO), false);
                 gameData = (GameDataSO)EditorGUILayout.ObjectField("Game Data", gameData, typeof(GameDataSO), false);
                 captureSpikeBreakdowns = EditorGUILayout.ToggleLeft(
-                    new GUIContent("Capture spike breakdowns (Profiler — adds overhead)",
+                    new GUIContent("Capture spike breakdowns (Profiler - adds overhead)",
                         "On: each spike gets its script breakdown via the Profiler (what you need to find a culprit). " +
-                        "Off: records frame time / fps / stability only, near-zero overhead — use this for a TRUE smoothness read."),
+                        "Off: records frame time / fps / stability only, near-zero overhead - use this for a TRUE smoothness read."),
                     captureSpikeBreakdowns);
                 using (new EditorGUI.DisabledScope(!Application.isPlaying))
                     if (GUILayout.Button("Spawn Live HUD Overlay (F9 in Game view)"))
@@ -246,7 +246,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             if (!captureSpikeBreakdowns)
                 EditorGUILayout.HelpBox(
                     "Low-overhead mode: frame time / fps / stability only (no script breakdown). " +
-                    "Also CLOSE the Profiler window and turn OFF Deep Profile for a true read — they dominate editor frame time. " +
+                    "Also CLOSE the Profiler window and turn OFF Deep Profile for a true read - they dominate editor frame time. " +
                     "The real ground truth is a Development Build run standalone, not the editor.",
                     MessageType.Info);
 
@@ -278,15 +278,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             // Idle: one state-appropriate primary button.
             if (!Application.isPlaying)
             {
-                EditorGUILayout.HelpBox("Enter Play Mode, get to the scene you want to profile, then press ● Start Recording.", MessageType.Info);
-                DrawAccentButton("▶  Enter Play Mode", EditorUIStyles.Sky, 30, () => EditorApplication.isPlaying = true);
+                EditorGUILayout.HelpBox("Enter Play Mode, get to the scene you want to profile, then press * Start Recording.", MessageType.Info);
+                DrawAccentButton(">  Enter Play Mode", EditorUIStyles.Sky, 30, () => EditorApplication.isPlaying = true);
             }
             else
             {
-                DrawAccentButton("●  Start Recording", EditorUIStyles.Mint, 32, StartFreeFormInCurrentPlay);
+                DrawAccentButton("*  Start Recording", EditorUIStyles.Mint, 32, StartFreeFormInCurrentPlay);
             }
 
-            // Copy / Save / Clear — disabled until there's a recorded run.
+            // Copy / Save / Clear - disabled until there's a recorded run.
             DrawActionRow(report, hasReport);
 
             // Results (collapsible).
@@ -317,7 +317,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             {
                 var prev = GUI.backgroundColor;
                 GUI.backgroundColor = EditorUIStyles.Lavender;
-                if (GUILayout.Button("📋  Copy error log", GUILayout.Height(24)))
+                if (GUILayout.Button("  Copy error log", GUILayout.Height(24)))
                 {
                     EditorGUIUtility.systemCopyBuffer = BuildClaudeReportText(report);
                     CacheCollectReport(report);   // persist any spikes enriched after the run
@@ -330,7 +330,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             {
                 var prev = GUI.backgroundColor;
                 GUI.backgroundColor = EditorUIStyles.Mint;
-                if (GUILayout.Button(saved ? "Saved ✓" : "Save", GUILayout.Height(24)))
+                if (GUILayout.Button(saved ? "Saved [x]" : "Save", GUILayout.Height(24)))
                 {
                     string path = report.SaveToFile(GetOutputFolder());
                     BenchmarkHistory.AddToHistory(report, path, GetOutputFolder());
@@ -352,7 +352,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             EditorGUILayout.EndHorizontal();
 
             if (hasReport && !saved)
-                EditorGUILayout.LabelField("Unsaved — Save keeps it in History; Clear discards it. Re-recording also discards it.", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField("Unsaved - Save keeps it in History; Clear discards it. Re-recording also discards it.", EditorStyles.miniLabel);
         }
 
         void ClearRecent()
@@ -362,18 +362,18 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             catch { /* best-effort */ }
         }
 
-        // ── Runtime Capture: live recording + Copy error log ───────────────
+        // -- Runtime Capture: live recording + Copy error log ---------------
 
         void DrawRecordingStatus()
         {
             int spikeCount = collectRunner.Spikes?.Count ?? 0;
             var rect = EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorUIStyles.TintLastRect(rect, EditorUIStyles.Rose, 0.10f);
-            EditorGUILayout.LabelField($"● Recording — {collectRunner.FramesCaptured} frames · {spikeCount} spikes",
+            EditorGUILayout.LabelField($"* Recording - {collectRunner.FramesCaptured} frames * {spikeCount} spikes",
                 EditorStyles.boldLabel);
             EditorGUILayout.EndVertical();
 
-            DrawAccentButton("■  Stop & Analyze", EditorUIStyles.Rose, 28, () => collectRunner.StopBenchmark());
+            DrawAccentButton("*  Stop & Analyze", EditorUIStyles.Rose, 28, () => collectRunner.StopBenchmark());
 
             EditorGUILayout.Space(4);
             EditorUIStyles.SectionHeader($"Live Spikes ({spikeCount})", EditorUIStyles.Rose);
@@ -382,7 +382,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             var spikes = collectRunner.Spikes;
             if (spikeCount == 0)
             {
-                EditorGUILayout.HelpBox("No spikes yet — keep playing. Frames over the threshold get their script breakdown captured here.", MessageType.None);
+                EditorGUILayout.HelpBox("No spikes yet - keep playing. Frames over the threshold get their script breakdown captured here.", MessageType.None);
                 return;
             }
             int shown = 0;                                   // newest first
@@ -406,7 +406,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         {
             if (spikes == null || spikes.Count == 0)
             {
-                EditorGUILayout.HelpBox("No spikes captured. 🎉", MessageType.None);
+                EditorGUILayout.HelpBox("No spikes captured. ", MessageType.None);
                 return;
             }
             foreach (var spike in spikes.OrderByDescending(sp => sp.frameTimeMs).Take(spikeShowCount))
@@ -423,7 +423,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             string cpuGpu = (spike.cpuFrameTimeMs > 0.001f || spike.gpuFrameTimeMs > 0.001f)
                 ? $"    CPU {spike.cpuFrameTimeMs:F0} / GPU {spike.gpuFrameTimeMs:F0}" : "";
-            EditorGUILayout.LabelField($"⚡ Frame {spike.frameIndex}  —  {spike.frameTimeMs:F1} ms{cpuGpu}", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField($" Frame {spike.frameIndex}  -  {spike.frameTimeMs:F1} ms{cpuGpu}", EditorStyles.boldLabel);
 
             if (spike.topMarkers == null || spike.topMarkers.Count == 0)
             {
@@ -451,7 +451,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             EditorGUILayout.BeginHorizontal();
             var prevC = GUI.contentColor;
             GUI.contentColor = m.isScript ? new Color(0.60f, 0.90f, 0.68f) : new Color(0.64f, 0.66f, 0.72f);
-            GUILayout.Label((m.isScript ? "▸ " : "· ") + ShortName(m.name), EditorStyles.miniLabel);
+            GUILayout.Label((m.isScript ? "> " : "* ") + ShortName(m.name), EditorStyles.miniLabel);
             GUI.contentColor = prevC;
             GUILayout.FlexibleSpace();
             GUILayout.Label($"{m.ms:F2} ms", EditorStyles.miniLabel, GUILayout.Width(58));
@@ -471,19 +471,19 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         {
             var s = report.statistics;
             var sb = new System.Text.StringBuilder(2048);
-            sb.AppendLine($"Cosmic Shore perf capture — {report.sceneName}");
+            sb.AppendLine($"Cosmic Shore perf capture - {report.sceneName}");
             if (s != null)
             {
-                sb.AppendLine($"frames {s.totalFrames} · {s.durationSeconds:F0}s · avg {s.avgFps:F1} fps (worst1% {s.p1Fps:F1})");
-                sb.AppendLine($"frame ms: avg {s.avgFrameTimeMs:F1} · p95 {s.p95FrameTimeMs:F1} · p99 {s.p99FrameTimeMs:F1} · max {s.maxFrameTimeMs:F1} · stddev {s.stdDevFrameTimeMs:F1}");
+                sb.AppendLine($"frames {s.totalFrames} * {s.durationSeconds:F0}s * avg {s.avgFps:F1} fps (worst1% {s.p1Fps:F1})");
+                sb.AppendLine($"frame ms: avg {s.avgFrameTimeMs:F1} * p95 {s.p95FrameTimeMs:F1} * p99 {s.p99FrameTimeMs:F1} * max {s.maxFrameTimeMs:F1} * stddev {s.stdDevFrameTimeMs:F1}");
                 if (s.avgCpuFrameTimeMs > 0.001f || s.avgGpuFrameTimeMs > 0.001f)
                     sb.AppendLine($"CPU {s.avgCpuFrameTimeMs:F1} / GPU {s.avgGpuFrameTimeMs:F1} ms ({report.analysis?.boundVerdict})");
-                sb.AppendLine($"draws {s.avgDrawCalls:F0} · tris {s.avgTriangles:F0} · GC {(s.totalFrames > 0 ? (s.totalGcAllocated / (float)s.totalFrames) / 1024f : 0):F1} KB/frame");
+                sb.AppendLine($"draws {s.avgDrawCalls:F0} * tris {s.avgTriangles:F0} * GC {(s.totalFrames > 0 ? (s.totalGcAllocated / (float)s.totalFrames) / 1024f : 0):F1} KB/frame");
             }
             var spikes = report.spikes;
             if (spikes != null && spikes.Count > 0)
             {
-                sb.AppendLine("Top spikes (self-time; editor noise filtered, ▸ = script):");
+                sb.AppendLine("Top spikes (self-time; editor noise filtered, > = script):");
                 foreach (var sp in spikes.OrderByDescending(x => x.frameTimeMs).Take(12))
                     AppendSpike(sb, sp);
             }
@@ -492,7 +492,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             {
                 sb.AppendLine("Hints:");
                 foreach (var h in hints.OrderByDescending(x => (int)x.severity))
-                    sb.AppendLine($"  [{h.severity}] {h.title} — {h.finding}");
+                    sb.AppendLine($"  [{h.severity}] {h.title} - {h.finding}");
             }
             return sb.ToString();
         }
@@ -504,7 +504,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             sb.AppendLine($"  frame {s.frameIndex}: {s.frameTimeMs:F1} ms{cpuGpu}");
             if (s.topMarkers != null)
                 foreach (var m in s.topMarkers)
-                    sb.AppendLine($"      {(m.isScript ? "▸" : "·")} {ShortName(m.name)}  {m.ms:F2} ms");
+                    sb.AppendLine($"      {(m.isScript ? ">" : "*")} {ShortName(m.name)}  {m.ms:F2} ms");
         }
 
         void StartFreeFormInCurrentPlay()
@@ -513,7 +513,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             if (collectRunner == null)
                 collectRunner = new GameObject("[PerformanceBenchmarkRunner]").AddComponent<PerformanceBenchmarkRunner>();
 
-            // Only force the Profiler on when we actually want spike breakdowns — it adds
+            // Only force the Profiler on when we actually want spike breakdowns - it adds
             // overhead. In low-overhead mode we record frame time / fps / stability only.
             if (captureSpikeBreakdowns)
                 SpikeAnalyzer.SetProfilerEnabled(true);
@@ -547,7 +547,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             int score = analysis?.score ?? BenchmarkAnalysis.ComputeScore(s);
             string grade = BenchmarkGrade.Evaluate(s, out string explanation);
-            EditorUIStyles.ScoreBar(score, $"Score {score}/100   ·   Grade {grade} — {explanation}");
+            EditorUIStyles.ScoreBar(score, $"Score {score}/100   *   Grade {grade} - {explanation}");
 
             EditorGUILayout.Space(2);
             EditorGUILayout.BeginHorizontal();
@@ -576,7 +576,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 EditorUIStyles.StatRow("P99 Frame Time", $"{s.p99FrameTimeMs:F2} ms", "Worst-1% frame time.");
                 EditorUIStyles.StatRow("Stability (StdDev)", $"{s.stdDevFrameTimeMs:F2} ms", "Lower = smoother. >6ms = hitching.");
                 EditorGUILayout.LabelField($"Collector overhead: {s.collectorAllocBytesPerFrame:F1} B/frame" +
-                    (s.collectorAllocBytesPerFrame > 64f ? "  ⚠" : "  ✓"), EditorStyles.miniLabel);
+                    (s.collectorAllocBytesPerFrame > 64f ? "  (!)" : "  [x]"), EditorStyles.miniLabel);
                 EditorGUILayout.EndVertical();
             }
 
@@ -590,7 +590,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                     EditorUIStyles.StatRow("GPU Frame Time", $"{s.avgGpuFrameTimeMs:F2} ms  (max {s.maxGpuFrameTimeMs:F1})", "GPU time (0 if platform can't report it).");
                     EditorGUILayout.EndVertical();
                 }
-                else EditorGUILayout.HelpBox("CPU/GPU split unavailable — enable 'Frame Timing Stats' in Player Settings.", MessageType.None);
+                else EditorGUILayout.HelpBox("CPU/GPU split unavailable - enable 'Frame Timing Stats' in Player Settings.", MessageType.None);
             }
 
             // Rendering & memory
@@ -652,7 +652,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         {
             if (analysis == null || analysis.hints == null || analysis.hints.Count == 0)
             {
-                EditorGUILayout.HelpBox("No issues flagged. 🎉", MessageType.None);
+                EditorGUILayout.HelpBox("No issues flagged. ", MessageType.None);
                 return;
             }
 
@@ -685,11 +685,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         {
             if (FindFirstObjectByType<BenchmarkHUDOverlay>() != null)
             {
-                Debug.Log("[Benchmark] Live HUD overlay already present — press F9 in the Game view to toggle.");
+                Debug.Log("[Benchmark] Live HUD overlay already present - press F9 in the Game view to toggle.");
                 return;
             }
             new GameObject("[BenchmarkHUDOverlay]").AddComponent<BenchmarkHUDOverlay>();
-            Debug.Log("[Benchmark] Live HUD overlay spawned — press F9 in the Game view to show/hide it.");
+            Debug.Log("[Benchmark] Live HUD overlay spawned - press F9 in the Game view to show/hide it.");
         }
 
         void CreateDefaultConfig()
@@ -710,9 +710,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             Debug.Log($"[Benchmark] Created default config at {path}");
         }
 
-        // ════════════════════════════════════════════════
-        // ── Sweep Tab ───────────────────────────────────
-        // ════════════════════════════════════════════════
+        // ================================================
+        // -- Sweep Tab -----------------------------------
+        // ================================================
 
         void DrawSweepTab()
         {
@@ -745,13 +745,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             else if (!Application.isPlaying)
             {
                 EditorGUILayout.HelpBox("Enter Play Mode, get into the game, then Start Session.", MessageType.Info);
-                DrawAccentButton("▶  Enter Play Mode", EditorUIStyles.Sky, 28, () => EditorApplication.isPlaying = true);
+                DrawAccentButton(">  Enter Play Mode", EditorUIStyles.Sky, 28, () => EditorApplication.isPlaying = true);
             }
             else
             {
                 bool captureBusy = collectRunner != null && collectRunner.IsRunning;
                 using (new EditorGUI.DisabledScope(captureBusy || config == null))
-                    DrawAccentButton("●  Start Session", EditorUIStyles.Mint, 30, StartManualSweep);
+                    DrawAccentButton("*  Start Session", EditorUIStyles.Mint, 30, StartManualSweep);
                 if (captureBusy)
                     EditorGUILayout.LabelField("Stop the Runtime Capture recording first.", EditorStyles.miniLabel);
                 else if (config == null)
@@ -764,15 +764,15 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 if (hasReport) DrawSweepResultsManual(report);
             }
 
-            // ── Automatic multi-scene sweep (secondary / experimental) ──
+            // -- Automatic multi-scene sweep (secondary / experimental) --
             EditorGUILayout.Space(10);
-            foldAutomatic = EditorGUILayout.Foldout(foldAutomatic, "Automatic (multi-scene) — experimental", true, EditorStyles.foldoutHeader);
+            foldAutomatic = EditorGUILayout.Foldout(foldAutomatic, "Automatic (multi-scene) - experimental", true, EditorStyles.foldoutHeader);
             if (foldAutomatic) DrawAutomaticSweep();
 
             EditorGUILayout.EndScrollView();
         }
 
-        // ── Manual session ──────────────────────────────────────────────────
+        // -- Manual session --------------------------------------------------
 
         void DrawSweepRecording()
         {
@@ -781,12 +781,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             var rect = EditorGUILayout.BeginVertical(EditorStyles.helpBox);
             EditorUIStyles.TintLastRect(rect, errs > 0 ? EditorUIStyles.Rose : EditorUIStyles.Mint, 0.10f);
-            EditorGUILayout.LabelField($"● Session — {sweepRunner.FramesCaptured} frames · {errs} errors · {marks} marks",
+            EditorGUILayout.LabelField($"* Session - {sweepRunner.FramesCaptured} frames * {errs} errors * {marks} marks",
                 EditorStyles.boldLabel);
             EditorGUILayout.EndVertical();
 
             EditorGUILayout.BeginHorizontal();
-            DrawAccentButton("■  Stop & Save", EditorUIStyles.Rose, 26, StopManualSweep);
+            DrawAccentButton("*  Stop & Save", EditorUIStyles.Rose, 26, StopManualSweep);
             sweepMarkLabel = EditorGUILayout.TextField(sweepMarkLabel, GUILayout.Width(150));
             using (new EditorGUI.DisabledScope(sweepSession == null))
                 if (GUILayout.Button("Mark (F8)", GUILayout.Width(90)))
@@ -817,7 +817,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             using (new EditorGUI.DisabledScope(!hasReport))
             {
                 var prev = GUI.backgroundColor; GUI.backgroundColor = EditorUIStyles.Lavender;
-                if (GUILayout.Button("📋  Copy error log", GUILayout.Height(24)))
+                if (GUILayout.Button("  Copy error log", GUILayout.Height(24)))
                 {
                     EditorGUIUtility.systemCopyBuffer = BuildSweepLogText(report);
                     CacheSweepReport(report);
@@ -828,7 +828,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             using (new EditorGUI.DisabledScope(!hasReport || saved))
             {
                 var prev = GUI.backgroundColor; GUI.backgroundColor = EditorUIStyles.Mint;
-                if (GUILayout.Button(saved ? "Saved ✓" : "Save", GUILayout.Height(24)))
+                if (GUILayout.Button(saved ? "Saved [x]" : "Save", GUILayout.Height(24)))
                 {
                     string path = report.SaveToFile(GetOutputFolder());
                     BenchmarkHistory.AddToHistory(report, path, GetOutputFolder());
@@ -852,7 +852,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             int errCount = report.errors?.Count ?? 0;
             if (Section(ref foldErrors, $"Errors ({errCount})"))
             {
-                if (errCount == 0) EditorGUILayout.HelpBox("No errors captured. 🎉", MessageType.None);
+                if (errCount == 0) EditorGUILayout.HelpBox("No errors captured. ", MessageType.None);
                 else DrawErrorList(report.errors, 25);
             }
             int markCount = report.marks?.Count ?? 0;
@@ -876,7 +876,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 EditorGUILayout.LabelField($"[{e.timeSeconds:F1}s] {e.type}: {e.message}", EditorUIStyles.Wrap);
                 GUI.contentColor = prevC;
             }
-            if (start > 0) EditorGUILayout.LabelField($"   …and {start} earlier", EditorStyles.miniLabel);
+            if (start > 0) EditorGUILayout.LabelField($"   ...and {start} earlier", EditorStyles.miniLabel);
         }
 
         void DrawMarkList(IReadOnlyList<SweepMark> marks, int max)
@@ -886,19 +886,19 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             for (int i = n - 1; i >= start; i--)
             {
                 var m = marks[i];
-                EditorGUILayout.LabelField($"[{m.timeSeconds:F1}s] {m.label} — {m.fps:F0} fps", EditorStyles.miniLabel);
+                EditorGUILayout.LabelField($"[{m.timeSeconds:F1}s] {m.label} - {m.fps:F0} fps", EditorStyles.miniLabel);
             }
-            if (start > 0) EditorGUILayout.LabelField($"   …and {start} earlier", EditorStyles.miniLabel);
+            if (start > 0) EditorGUILayout.LabelField($"   ...and {start} earlier", EditorStyles.miniLabel);
         }
 
         static string BuildSweepLogText(BenchmarkReport report)
         {
             var sb = new System.Text.StringBuilder(2048);
-            sb.AppendLine($"Cosmic Shore manual session — {report.sceneName}");
+            sb.AppendLine($"Cosmic Shore manual session - {report.sceneName}");
             var s = report.statistics;
             if (s != null)
-                sb.AppendLine($"frames {s.totalFrames} · {s.durationSeconds:F0}s · avg {s.avgFps:F1} fps · " +
-                              $"p99 {s.p99FrameTimeMs:F1} ms · stddev {s.stdDevFrameTimeMs:F1} ms · GC {(s.totalFrames > 0 ? (s.totalGcAllocated / (float)s.totalFrames) / 1024f : 0):F1} KB/f");
+                sb.AppendLine($"frames {s.totalFrames} * {s.durationSeconds:F0}s * avg {s.avgFps:F1} fps * " +
+                              $"p99 {s.p99FrameTimeMs:F1} ms * stddev {s.stdDevFrameTimeMs:F1} ms * GC {(s.totalFrames > 0 ? (s.totalGcAllocated / (float)s.totalFrames) / 1024f : 0):F1} KB/f");
 
             var errs = report.errors;
             sb.AppendLine($"Errors ({errs?.Count ?? 0}):");
@@ -927,7 +927,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         void StopManualSweep()
         {
             if (sweepRunner == null) return;
-            sweepRunner.StopBenchmark();                 // FinishRun is synchronous → LastReport set
+            sweepRunner.StopBenchmark();                 // FinishRun is synchronous -> LastReport set
             if (sweepSession != null && sweepRunner.LastReport != null)
                 sweepSession.FillReport(sweepRunner.LastReport);
             ManualSweepSession.Stop();
@@ -953,11 +953,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             catch (System.Exception e) { Debug.LogWarning($"[Benchmark] Could not cache sweep run: {e.Message}"); }
         }
 
-        // ── Automatic multi-scene sweep (experimental, parked) ──────────────
+        // -- Automatic multi-scene sweep (experimental, parked) --------------
 
         void DrawAutomaticSweep()
         {
-            EditorGUILayout.HelpBox("Loads each selected scene directly and benchmarks it. Networked game scenes that need the Bootstrap → host pipeline sweep in an uninitialized state.", MessageType.None);
+            EditorGUILayout.HelpBox("Loads each selected scene directly and benchmarks it. Networked game scenes that need the Bootstrap -> host pipeline sweep in an uninitialized state.", MessageType.None);
 
             sweepTag = EditorGUILayout.TextField("Sweep Tag", sweepTag);
 
@@ -1030,7 +1030,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 {
                     var prev = GUI.backgroundColor;
                     GUI.backgroundColor = EditorUIStyles.Rose;
-                    if (GUILayout.Button($"⚠ {r.errorCount}", EditorStyles.miniButton, GUILayout.Width(50)))
+                    if (GUILayout.Button($"(!) {r.errorCount}", EditorStyles.miniButton, GUILayout.Width(50)))
                     {
                         if (!sweepExpanded.Add(i)) sweepExpanded.Remove(i);
                     }
@@ -1086,9 +1086,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             activeSweep = BenchmarkSweepRunner.StartSweep(selected, config, null, gameData, sweepTag, sweepCaptureErrors, sweepErrorsOnly);
         }
 
-        // ════════════════════════════════════════════════
-        // ── History Tab ─────────────────────────────────
-        // ════════════════════════════════════════════════
+        // ================================================
+        // -- History Tab ---------------------------------
+        // ================================================
 
         void DrawHistoryTab()
         {
@@ -1181,9 +1181,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             EditorGUILayout.Space(2);
         }
 
-        // ════════════════════════════════════════════════
-        // ── Compare Tab ─────────────────────────────────
-        // ════════════════════════════════════════════════
+        // ================================================
+        // -- Compare Tab ---------------------------------
+        // ================================================
 
         void DrawCompareTab()
         {
@@ -1193,8 +1193,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             if (historyEntries.Count < 2)
             {
                 EditorGUILayout.HelpBox(
-                    "Save at least 2 runs to compare. Typical flow: capture → tag 'baseline' → make a change → " +
-                    "capture again → compare to see what improved or regressed.", MessageType.Info);
+                    "Save at least 2 runs to compare. Typical flow: capture -> tag 'baseline' -> make a change -> " +
+                    "capture again -> compare to see what improved or regressed.", MessageType.Info);
                 return;
             }
 
@@ -1218,7 +1218,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
 
             if (comparisonResult == null) { EditorGUILayout.HelpBox("Pick a baseline and a current run.", MessageType.Info); return; }
 
-            // Cross-source guard — absolute numbers aren't comparable across Editor vs DevBuild or
+            // Cross-source guard - absolute numbers aren't comparable across Editor vs DevBuild or
             // different platforms/devices; only same-source deltas are meaningful.
             var bSrc = comparisonResult.baseline?.source;
             var cSrc = comparisonResult.current?.source;
@@ -1226,7 +1226,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             {
                 EditorGUILayout.HelpBox(
                     $"Cross-source comparison: {bSrc.origin}/{bSrc.platform} vs {cSrc.origin}/{cSrc.platform}. " +
-                    "Absolute numbers aren't comparable across sources — only same-source before/after deltas are meaningful.",
+                    "Absolute numbers aren't comparable across sources - only same-source before/after deltas are meaningful.",
                     MessageType.Warning);
             }
 
@@ -1276,7 +1276,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             comparisonText = BenchmarkComparer.FormatAsText(comparisonResult);
         }
 
-        // ── Data access ─────────────────────────────────
+        // -- Data access ---------------------------------
 
         string GetOutputFolder() =>
             config != null && !string.IsNullOrEmpty(config.OutputFolder) ? config.OutputFolder : "Benchmarks";

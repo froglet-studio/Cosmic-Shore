@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 
 using System.Collections.Generic;
 using UnityEditor;
@@ -1044,7 +1044,7 @@ namespace CosmicShore.Editor
             buttonRect.x += buttonRect.width - 20;
             buttonRect.width = 20;
 
-            if(GUI.Button(buttonRect, !toggleVariable ? "<size=12>▶</size>" : "<size=10>▼</size>", buttonStyle))
+            if(GUI.Button(buttonRect, !toggleVariable ? "<size=12>></size>" : "<size=10>v</size>", buttonStyle))
             {
                 toggleVariable = !toggleVariable;
             }
@@ -1163,7 +1163,7 @@ namespace CosmicShore.Editor
                 lastRect.x += lastRect.width - 20;
                 lastRect.width = 20;
 
-                if (GUI.Button(lastRect, isCollapsed ? "<size=12>▶</size>" : "<size=10>▼</size>", buttonStyle))
+                if (GUI.Button(lastRect, isCollapsed ? "<size=12>></size>" : "<size=10>v</size>", buttonStyle))
                 {
                     isCollapsed = !isCollapsed;
 

@@ -1,4 +1,4 @@
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 // LobbyRefreshScheduler.cs
 // Owns the refresh timer and boost state for the presence-lobby poll cycle.
 //
@@ -15,19 +15,19 @@
 // USAGE:
 //   Each MonoBehaviour.Update() tick, call ShouldFireNow(Time.unscaledDeltaTime).
 //   It accumulates the delta internally and returns true exactly once per
-//   interval — the caller is responsible for firing RefreshAsync() and for
+//   interval - the caller is responsible for firing RefreshAsync() and for
 //   all other guards (mutex, rate-limit backoff, scene check).
 //   Call Boost() to enter the fast-refresh window after invite events.
 //   Call Reset() to force the next fire to occur immediately.
 //   Call ResetDeferred(delay) to push the next fire out by a custom amount.
 //
 // LIFETIME:
-//   Pure C# — no MonoBehaviour.  Instantiated as a field on
+//   Pure C# - no MonoBehaviour.  Instantiated as a field on
 //   HostConnectionService for Phases 6-11.  Phase 12 registers it in Reflex DI.
 //
 // THREAD SAFETY:
 //   Main-thread only.
-// ─────────────────────────────────────────────────────────────────────────────
+// -----------------------------------------------------------------------------
 
 using UnityEngine;
 
@@ -44,18 +44,18 @@ namespace CosmicShore.Gameplay
     /// <see cref="Reset"/> to trigger an immediate next fire.
     /// </para>
     ///
-    /// Does NOT own the actual refresh call, rate-limit backoff, or mutex — those
+    /// Does NOT own the actual refresh call, rate-limit backoff, or mutex - those
     /// belong in <see cref="HostConnectionService"/>.
     ///
-    /// Lifetime: pure C# — no MonoBehaviour.  Created as a field on
+    /// Lifetime: pure C# - no MonoBehaviour.  Created as a field on
     /// <see cref="HostConnectionService"/>; will be DI-registered in Phase 12.
     /// Thread-safety: main-thread only.
     /// </summary>
     public sealed class LobbyRefreshScheduler
     {
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Constants
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         /// <summary>
         /// Refresh interval while in boosted mode (seconds).  UGS lobby reads are
@@ -67,41 +67,41 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// How long (seconds) a single Boost() call keeps the scheduler in boosted
         /// mode.  15s is long enough to cover a full invite round-trip including the
-        /// PENDING → real-id republish phase.
+        /// PENDING -> real-id republish phase.
         /// </summary>
         public const float BOOST_WINDOW_SECONDS = 15f;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Private state
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         private readonly float _defaultInterval;
         private float _timer;
         private float _boostedUntil;  // unscaled time; 0 = not boosted
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Construction
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         /// <summary>
         /// Creates the scheduler with a configurable default interval.
         /// </summary>
         /// <param name="defaultIntervalSeconds">
         /// Normal (non-boosted) refresh interval in seconds.
-        /// Typically 1.5s — see <see cref="HostConnectionService.refreshIntervalSeconds"/>.
+        /// Typically 1.5s - see <see cref="HostConnectionService.refreshIntervalSeconds"/>.
         /// </param>
         public LobbyRefreshScheduler(float defaultIntervalSeconds)
         {
             _defaultInterval = defaultIntervalSeconds;
         }
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Public API
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         /// <summary>
         /// True while the scheduler is in boosted mode (a recent <see cref="Boost"/>
-        /// call raised the refresh frequency).  Read for diagnostic logs only — the
+        /// call raised the refresh frequency).  Read for diagnostic logs only - the
         /// interval switch is handled automatically inside <see cref="ShouldFireNow"/>.
         /// </summary>
         public bool IsBoosted => Time.unscaledTime < _boostedUntil;
@@ -128,7 +128,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Enters boosted mode for <see cref="BOOST_WINDOW_SECONDS"/> seconds.
-        /// Safe to call repeatedly — each call extends the window from the current
+        /// Safe to call repeatedly - each call extends the window from the current
         /// moment, so closely-spaced invite events don't shorten the window.
         /// </summary>
         /// <remarks>
@@ -142,7 +142,7 @@ namespace CosmicShore.Gameplay
         public void Boost()
         {
             _boostedUntil = Time.unscaledTime + BOOST_WINDOW_SECONDS;
-            Debug.Log($"[LobbyRefreshScheduler] Boosted — fast refresh until +{BOOST_WINDOW_SECONDS:F0}s");
+            Debug.Log($"[LobbyRefreshScheduler] Boosted - fast refresh until +{BOOST_WINDOW_SECONDS:F0}s");
         }
 
         /// <summary>

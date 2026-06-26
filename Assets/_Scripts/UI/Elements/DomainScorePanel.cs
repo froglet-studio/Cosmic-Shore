@@ -33,7 +33,7 @@ namespace CosmicShore.UI
         [Header("Avatars")]
         [Tooltip("Container the small per-player avatars are parented under (HorizontalLayoutGroup expected).")]
         [SerializeField] private Transform avatarContainer;
-        [Tooltip("Prefab cloned once per teammate. A PlayerScoreEntry works (name + avatar) — its score field is left empty.")]
+        [Tooltip("Prefab cloned once per teammate. A PlayerScoreEntry works (name + avatar) - its score field is left empty.")]
         [SerializeField] private PlayerScoreEntry avatarEntryPrefab;
 
         [Header("Animation (optional)")]
@@ -71,11 +71,11 @@ namespace CosmicShore.UI
         /// Modern setup. Pulls multiple colors out of the per-domain theme
         /// palette so the panel reads as a designed info chip rather than a
         /// single flat tint:
-        ///   * background indicator → <see cref="DomainColorSet.ShipColor1"/>
+        ///   * background indicator -> <see cref="DomainColorSet.ShipColor1"/>
         ///     at <see cref="indicatorAlpha"/> (subtle, muted backdrop)
-        ///   * accent strip → <see cref="DomainColorSet.ShipColor2"/> at
+        ///   * accent strip -> <see cref="DomainColorSet.ShipColor2"/> at
         ///     <see cref="accentAlpha"/> (bright pop)
-        ///   * sum text → <see cref="DomainColorSet.BrightCrystalColor"/>
+        ///   * sum text -> <see cref="DomainColorSet.BrightCrystalColor"/>
         ///     so the number reads as the team's signature color.
         /// </summary>
         public void Setup(Domains domain, DomainColorSet colorSet, int initialSum)
@@ -84,7 +84,7 @@ namespace CosmicShore.UI
 
             if (colorSet == null)
             {
-                // Theme palette unavailable — fall back to neutral white sum and hide the accent.
+                // Theme palette unavailable - fall back to neutral white sum and hide the accent.
                 SumAnimator.SetImmediate(initialSum);
                 if (domainIndicatorImage) domainIndicatorImage.gameObject.SetActive(true);
                 if (accentImage) accentImage.gameObject.SetActive(false);

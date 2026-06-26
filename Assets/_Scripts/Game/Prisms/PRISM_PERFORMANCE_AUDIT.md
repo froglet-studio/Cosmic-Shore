@@ -50,21 +50,21 @@ When N prisms explode simultaneously, here is the frame-by-frame cost:
 
 ### Frame 0: Destruction Trigger
 For each destroyed prism:
-1. `Prism.Damage()` → `Prism.Explode()` (`Prism.cs:263-276`)
+1. `Prism.Damage()` -> `Prism.Explode()` (`Prism.cs:263-276`)
 2. `SetupDestruction()` disables collider + renderer, raises `_onTrailBlockDestroyedEventChannel` event
-3. `OnBlockImpactedEventChannel.RaiseEvent()` → PrismFactory receives it synchronously
+3. `OnBlockImpactedEventChannel.RaiseEvent()` -> PrismFactory receives it synchronously
 4. `PrismFactory.SpawnExplosion()` (`PrismFactory.cs:172-179`):
    - Gets PrismExplosion from pool (activates GameObject)
    - Sets scale, configures team colors via MaterialPropertyBlock
    - Calls `TriggerExplosion(velocity)` which starts a new UniTask
 
 **Cost for N=500 simultaneous explosions in one frame:**
-- 500 × `SetupDestruction()` calls (each disables components, raises events)
-- 500 × `PrismFactory.OnPrismSpawnedEventRaised()` synchronous calls
-- 500 × pool Get (GameObject.SetActive(true))
-- 500 × `ConfigureForTeam()` (GetPropertyBlock + SetPropertyBlock)
-- 500 × new `CancellationTokenSource` allocation
-- 500 × `UniTask.Forget()` scheduling
+- 500 x `SetupDestruction()` calls (each disables components, raises events)
+- 500 x `PrismFactory.OnPrismSpawnedEventRaised()` synchronous calls
+- 500 x pool Get (GameObject.SetActive(true))
+- 500 x `ConfigureForTeam()` (GetPropertyBlock + SetPropertyBlock)
+- 500 x new `CancellationTokenSource` allocation
+- 500 x `UniTask.Forget()` scheduling
 
 ### Frames 1-300 (5 seconds of explosion animation):
 Each active PrismExplosion runs **per-frame** (`PrismExplosion.cs:115-168`):
@@ -77,10 +77,10 @@ Each active PrismExplosion runs **per-frame** (`PrismExplosion.cs:115-168`):
 - `UniTask.Yield()` (schedules next frame)
 
 **Per frame cost for 500 active explosions:**
-- 500 × transform.position write
-- 500 × GetPropertyBlock + SetPropertyBlock (2 API calls each = 1,000)
-- 500 × UniTask continuations
-- 500 × MeshRenderer draw calls (explosion meshes are full prism geometry)
+- 500 x transform.position write
+- 500 x GetPropertyBlock + SetPropertyBlock (2 API calls each = 1,000)
+- 500 x UniTask continuations
+- 500 x MeshRenderer draw calls (explosion meshes are full prism geometry)
 
 ### Physics Aftermath
 Destroyed prisms disable their colliders, so PhysX load decreases. But if there are 2,000 total prisms and 500 explode, the remaining 1,500 colliders are still in the broad phase. PhysX broad phase scales roughly O(n log n).
@@ -114,7 +114,7 @@ struct ExplosionAnimationData {
 ```
 
 **Expected benefit**:
-- **CPU**: 60-80% reduction in explosion frame cost. Eliminates per-explosion UniTask scheduling overhead (~2-4μs each × 500 = 1-2ms saved), replaces 500 individual GetPropertyBlock/SetPropertyBlock pairs with one batched pass, and moves position/opacity math to Burst-compiled worker threads.
+- **CPU**: 60-80% reduction in explosion frame cost. Eliminates per-explosion UniTask scheduling overhead (~2-4mus each x 500 = 1-2ms saved), replaces 500 individual GetPropertyBlock/SetPropertyBlock pairs with one batched pass, and moves position/opacity math to Burst-compiled worker threads.
 - **At 500 explosions**: From ~8-12ms/frame to ~2-4ms/frame for the explosion system.
 
 ---
@@ -137,7 +137,7 @@ struct ExplosionAnimationData {
 - GPU-simulated particles, zero per-frame CPU cost after spawn
 
 **Expected benefit**:
-- **Rendering**: 500 draw calls → 1 draw call (Option A) or 0 CPU draw calls (Option B). At 500 explosions this saves ~3-6ms of render thread time.
+- **Rendering**: 500 draw calls -> 1 draw call (Option A) or 0 CPU draw calls (Option B). At 500 explosions this saves ~3-6ms of render thread time.
 - **CPU**: Eliminates all per-explosion transform updates from the render pipeline.
 - **Combined with Recommendation 1**: Explosion system goes from ~12-18ms total to ~1-3ms total.
 
@@ -325,13 +325,13 @@ Similarly, replace `CreateBlockCoroutine` with a delayed-activation manager that
 
 | # | Recommendation | Effort | CPU Savings (500 explosions) | Scaling Impact |
 |---|---|---|---|---|
-| 1 | Batch explosion VFX into Jobs manager | Medium | 6-8ms/frame | Linear → constant |
-| 2 | GPU instanced explosion rendering | Medium | 3-6ms/frame (render thread) | N draw calls → 1 |
+| 1 | Batch explosion VFX into Jobs manager | Medium | 6-8ms/frame | Linear -> constant |
+| 2 | GPU instanced explosion rendering | Medium | 3-6ms/frame (render thread) | N draw calls -> 1 |
 | 3 | Full DOTS/ECS conversion | High | 10-20ms/frame total | 10-50x capacity increase |
 | 4 | Fix material instancing leaks | Low | 5-15ms GC spikes eliminated | Removes GC pressure |
 | 5 | Cap concurrent explosion effects | Low | Up to 15ms worst-case removed | Hard performance ceiling |
 | 6 | Replace coroutines with timers | Low | 0.5-1ms/frame | Eliminates per-object alloc |
-| 7 | Spatial partitioning for collisions | Medium-High | 2-4ms/frame | O(n log n) → O(k) |
+| 7 | Spatial partitioning for collisions | Medium-High | 2-4ms/frame | O(n log n) -> O(k) |
 | 8 | Global prism budget | Low | Prevents degradation | Guarantees frame budget |
 
 ### Recommended Implementation Order
@@ -356,11 +356,11 @@ Similarly, replace `CreateBlockCoroutine` with a delayed-activation manager that
 
 Since the original audit, the following optimizations have been implemented or are in active development:
 
-- **PrismTimerManager** — centralized timer system replacing per-prism coroutines (Recommendation 6)
-- **Per-frame explosion VFX cap** — limits concurrent explosion effects (Recommendation 5)
-- **EventListenerBase GC elimination** — reduced garbage collection from event listener allocations
-- **PrismAOEData** — cache-line-aware data layout with hot/cold splitting and bit-packed flags for AOE queries
-- **Burst-compiled spatial queries** — replaces Physics-based AOE prism damage (partial implementation of Recommendation 7)
+- **PrismTimerManager** - centralized timer system replacing per-prism coroutines (Recommendation 6)
+- **Per-frame explosion VFX cap** - limits concurrent explosion effects (Recommendation 5)
+- **EventListenerBase GC elimination** - reduced garbage collection from event listener allocations
+- **PrismAOEData** - cache-line-aware data layout with hot/cold splitting and bit-packed flags for AOE queries
+- **Burst-compiled spatial queries** - replaces Physics-based AOE prism damage (partial implementation of Recommendation 7)
 
 Recommendations 1-3 (Jobs-based explosion manager, GPU instanced rendering, full DOTS conversion) remain unimplemented.
 
@@ -368,7 +368,7 @@ Recommendations 1-3 (Jobs-based explosion manager, GPU instanced rendering, full
 
 ## Appendix: Key File Locations
 
-> **Note**: File paths updated March 2026 to reflect the `_Scripts/Game/` → `_Scripts/Controller/` reorganization. This audit document remains in the vestigial `_Scripts/Game/Prisms/` directory.
+> **Note**: File paths updated March 2026 to reflect the `_Scripts/Game/` -> `_Scripts/Controller/` reorganization. This audit document remains in the vestigial `_Scripts/Game/Prisms/` directory.
 
 | File | Path | Role |
 |---|---|---|

@@ -8,15 +8,15 @@ using System.Linq;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Spawns prisms on the Clifford torus — a flat torus embedded in the 3-sphere S³,
-    /// then stereographically projected to R³.
+    /// Spawns prisms on the Clifford torus - a flat torus embedded in the 3-sphere S^3,
+    /// then stereographically projected to R^3.
     ///
     /// The Clifford torus is the set:
-    ///   { (cos u, sin u, cos v, sin v) / √2  :  u,v ∈ [0, 2π) }  ⊂  S³ ⊂ R⁴
+    ///   { (cos u, sin u, cos v, sin v) / sqrt2  :  u,v in [0, 2pi) }  subset of  S^3 subset of R^4
     ///
-    /// Unlike an ordinary torus in R³, the Clifford torus has zero intrinsic curvature —
+    /// Unlike an ordinary torus in R^3, the Clifford torus has zero intrinsic curvature -
     /// it's genuinely flat, like a sheet of paper rolled into a donut shape in 4D.
-    /// After stereographic projection it becomes a Dupin cyclide — a smooth, swoopy
+    /// After stereographic projection it becomes a Dupin cyclide - a smooth, swoopy
     /// surface perfect for carving along.
     ///
     /// This is fundamentally different from the Hopf fibration: the Hopf spawner places
@@ -72,7 +72,7 @@ namespace CosmicShore.Gameplay
                 {
                     float v = 2f * Mathf.PI * iv / vSamples;
 
-                    // Clifford torus in S³
+                    // Clifford torus in S^3
                     float x1 = invSqrt2 * Mathf.Cos(u);
                     float x2 = invSqrt2 * Mathf.Sin(u);
                     float x3 = invSqrt2 * Mathf.Cos(v);
@@ -100,7 +100,7 @@ namespace CosmicShore.Gameplay
                     points.Add(new SpawnPoint(position, rotation, blockScale));
                 }
 
-                // Color bands by v-parameter — pick domain for this row based on first valid iv
+                // Color bands by v-parameter - pick domain for this row based on first valid iv
                 // Each point in the row may have a different v, but we assign per-trail domain
                 // based on the row index iu to match the original band-per-v behavior
                 // Actually, the original colored per-block based on iv. Since we have one trail

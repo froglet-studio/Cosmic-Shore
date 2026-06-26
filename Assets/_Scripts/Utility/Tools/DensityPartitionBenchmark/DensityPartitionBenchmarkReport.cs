@@ -26,7 +26,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         public struct QueryRow
         {
             public string Scenario;
-            public ScenarioShape Shape;     // Peaked vs Diffuse — controls which median bucket
+            public ScenarioShape Shape;     // Peaked vs Diffuse - controls which median bucket
             public string Query;             // "anti-Jade", "all-domain", etc.
             public Vector3 GroundTruth;
             public float GroundTruthDensity;
@@ -41,7 +41,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         }
 
         // ------------------------------------------------------------------
-        // Top-level report: one algorithm × all scenarios.
+        // Top-level report: one algorithm x all scenarios.
         // ------------------------------------------------------------------
         public struct AlgorithmReport
         {
@@ -51,7 +51,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         }
 
         // ==================================================================
-        // Standard queries — plain struct array, no value tuples
+        // Standard queries - plain struct array, no value tuples
         // ==================================================================
 
         public struct Query
@@ -88,18 +88,18 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
             sb.AppendLine($"=== DensityPartitionBenchmark v{Version} ===");
             sb.AppendLine($"Branch: {branch}   Commit: {commitSha}   Date: {dateUtc}");
-            sb.AppendLine($"Kernel: {kernelRadiusM}m (swarm-effective consumption radius)   ProductionGrid: {gridStrideM}m x {gridCellsPerAxis}^3 = fixed ±500m box");
+            sb.AppendLine($"Kernel: {kernelRadiusM}m (swarm-effective consumption radius)   ProductionGrid: {gridStrideM}m x {gridCellsPerAxis}^3 = fixed +/-500m box");
             sb.AppendLine($"Distance units: meters.  Density units: prism count (or mass-weighted for Mass* variants).");
             sb.AppendLine($"Headline targets (on Peaked scenarios only):");
-            sb.AppendLine($"  median Δ < kernel radius (swarm covers the slop)");
+            sb.AppendLine($"  median Delta < kernel radius (swarm covers the slop)");
             sb.AppendLine($"  median mass-found > 80% (realistic ceiling for diffuse clusters)");
             sb.AppendLine($"  median recompute < 1.0ms at N=2000");
             sb.AppendLine($"Notes:");
             sb.AppendLine($"  - 'density sys=' is the algorithm's own internal score over its (possibly stale) input.");
-            sb.AppendLine($"  - 'mass=' is the corrected score — system answer rescored against the clean truth tape,");
+            sb.AppendLine($"  - 'mass=' is the corrected score - system answer rescored against the clean truth tape,");
             sb.AppendLine($"    divided by ground truth (box kernel matching the GT smoothing).");
-            sb.AppendLine($"  - Diffuse scenarios have no peak to find — diagnostic only, excluded from headline.");
-            sb.AppendLine($"  - 'gridCov' = % of the scenario's prisms inside the production grid's fixed ±500m box.");
+            sb.AppendLine($"  - Diffuse scenarios have no peak to find - diagnostic only, excluded from headline.");
+            sb.AppendLine($"  - 'gridCov' = % of the scenario's prisms inside the production grid's fixed +/-500m box.");
             sb.AppendLine($"    <100% means the SHIPPED grid silently drops the rest (cell radius is 1200m).");
             sb.AppendLine();
 
@@ -115,14 +115,14 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         }
 
         // ==================================================================
-        // Grid-coverage diagnostic — what the shipped ±500m grid can even see
+        // Grid-coverage diagnostic - what the shipped +/-500m grid can even see
         // ==================================================================
 
         static void AppendGridCoverage(StringBuilder sb, IReadOnlyDictionary<string, float> gridCoverage)
         {
-            sb.AppendLine("=== Production grid coverage (the shipped BlockDensityGrid is a fixed ±500m box) ===");
-            sb.AppendLine("Cell radius is 1200m. Any prism beyond ±500m is silently dropped by");
-            sb.AppendLine("BlockCountDensityGrid.AddBlock's bounds check — invisible to FindDensestRegion.");
+            sb.AppendLine("=== Production grid coverage (the shipped BlockDensityGrid is a fixed +/-500m box) ===");
+            sb.AppendLine("Cell radius is 1200m. Any prism beyond +/-500m is silently dropped by");
+            sb.AppendLine("BlockCountDensityGrid.AddBlock's bounds check - invisible to FindDensestRegion.");
             sb.AppendLine();
             sb.AppendLine(string.Format("{0,-40} {1,12}", "Scenario", "gridCov%"));
             // Deterministic order
@@ -148,7 +148,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 if (row.Scenario != lastScenario)
                 {
                     if (lastScenario != null) sb.AppendLine();
-                    string tag = row.Shape == ScenarioShape.Diffuse ? "  [DIFFUSE — diagnostic only]" : "";
+                    string tag = row.Shape == ScenarioShape.Diffuse ? "  [DIFFUSE - diagnostic only]" : "";
                     string cov = gridCoverage != null && gridCoverage.TryGetValue(row.Scenario, out var c)
                         ? $"  (gridCov {c:F0}%)" : "";
                     sb.AppendLine($"Scenario: {row.Scenario}{tag}{cov}");
@@ -164,7 +164,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                 string sysLabel = row.SystemEmpty ? "(EMPTY)" : Fmt(row.SystemAnswer);
                 sb.AppendLine(
                     $"  {row.Query,-12} gt={Fmt(row.GroundTruth)} sys={sysLabel} " +
-                    $"Δ={row.DistanceErrorM,7:F1}m  density gt={row.GroundTruthDensity,6:F1} " +
+                    $"Delta={row.DistanceErrorM,7:F1}m  density gt={row.GroundTruthDensity,6:F1} " +
                     $"sys={row.SystemDensity,7:F1} mass={row.MassFoundPercent,5:F0}%   " +
                     $"t={row.ElapsedMs:F2}ms");
             }
@@ -175,14 +175,14 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         }
 
         // ==================================================================
-        // Cross-algorithm summary — Peaked headline + Diffuse diagnostic
+        // Cross-algorithm summary - Peaked headline + Diffuse diagnostic
         // ==================================================================
 
         static void AppendCrossAlgorithmSummary(StringBuilder sb, IReadOnlyList<AlgorithmReport> algos)
         {
-            sb.AppendLine("=== Summary (Peaked scenarios — headline ranking) ===");
+            sb.AppendLine("=== Summary (Peaked scenarios - headline ranking) ===");
             sb.AppendLine(string.Format("{0,-40} {1,11} {2,12} {3,11} {4,11}",
-                "Algorithm", "medianΔ(m)", "medianMass%", "medianMs", "worstMs"));
+                "Algorithm", "medianDelta(m)", "medianMass%", "medianMs", "worstMs"));
 
             // Track best on each axis for the * marker
             float bestDist = float.MaxValue;
@@ -218,9 +218,9 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             sb.AppendLine();
 
             // Diffuse diagnostic section
-            sb.AppendLine("=== Summary (Diffuse scenarios — diagnostic only, no peak exists) ===");
+            sb.AppendLine("=== Summary (Diffuse scenarios - diagnostic only, no peak exists) ===");
             sb.AppendLine(string.Format("{0,-40} {1,11} {2,12} {3,11} {4,11}",
-                "Algorithm", "medianΔ(m)", "medianMass%", "medianMs", "worstMs"));
+                "Algorithm", "medianDelta(m)", "medianMass%", "medianMs", "worstMs"));
             foreach (var algo in algos)
             {
                 if (!ComputeMedians(algo.Rows, ScenarioShape.Diffuse, out var d, out var m, out var t, out var w))
@@ -236,7 +236,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         }
 
         // ==================================================================
-        // Per-scenario winners — which algorithm got closest, by scenario
+        // Per-scenario winners - which algorithm got closest, by scenario
         // ==================================================================
 
         static void AppendPerScenarioWinners(StringBuilder sb, IReadOnlyList<AlgorithmReport> algos)
@@ -253,7 +253,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
             sb.AppendLine("=== Per-scenario winners + stability (Peaked only) ===");
             sb.AppendLine(string.Format("{0,-34} {1,-36} {2,12} {3,12}",
-                "Scenario", "Winner (smallest medianΔ)", "winnerΔ(m)", "winnerStab(m)"));
+                "Scenario", "Winner (smallest medianDelta)", "winnerDelta(m)", "winnerStab(m)"));
 
             foreach (var scn in scenarios)
             {
@@ -302,12 +302,12 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             sb.AppendLine();
             sb.AppendLine("Stability = median pairwise distance between the algorithm's 4 query answers");
             sb.AppendLine("on the same scenario. A scenario with one dominant cluster should produce a low");
-            sb.AppendLine("stability number (answers cluster together). High stability + low Δ together =");
+            sb.AppendLine("stability number (answers cluster together). High stability + low Delta together =");
             sb.AppendLine("'algorithm flips between equivalent answers across queries' (TwoEqualClusters at");
             sb.AppendLine("low grid resolution is the canonical example).");
             sb.AppendLine();
             sb.AppendLine("=== Cross-algorithm stability on each Peaked scenario ===");
-            sb.AppendLine("(median pairwise distance between the 4 query answers — lower = more stable)");
+            sb.AppendLine("(median pairwise distance between the 4 query answers - lower = more stable)");
             sb.AppendLine();
 
             // Header row of algorithm names
@@ -348,13 +348,13 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
             sb.AppendLine();
             sb.AppendLine("Interpretation:");
-            sb.AppendLine("  Headline rank is medianΔ on Peaked scenarios — that's the only metric");
+            sb.AppendLine("  Headline rank is medianDelta on Peaked scenarios - that's the only metric");
             sb.AppendLine("  where 'algorithm accuracy' is meaningful. Diffuse scenarios have no peak");
             sb.AppendLine("  and exist only to surface noise-floor behavior.");
             sb.AppendLine();
             sb.AppendLine("  Use this report as the falsifiable contract for any redesign. A candidate");
             sb.AppendLine("  algorithm must beat the current production row (GridArgmax17) on at least");
-            sb.AppendLine("  one of medianΔ / medianMass% / medianMs without regressing the other two.");
+            sb.AppendLine("  one of medianDelta / medianMass% / medianMs without regressing the other two.");
         }
 
         static float PairwiseMedianDistance(List<Vector3> locs)

@@ -11,19 +11,19 @@ namespace CosmicShore.Utility
     ///
     /// Geometry (stellation of the circumscribing dual):
     ///   Given box half-extents (a, b, c) and shieldScale s (default 3):
-    ///     inscribed octahedron vertices = { (±s·a, 0, 0), (0, ±s·b, 0), (0, 0, ±s·c) }
-    ///     stellation spike tips         = { (±s·a, ±s·b, ±s·c) }   (cube corners)
+    ///     inscribed octahedron vertices = { (+/-s*a, 0, 0), (0, +/-s*b, 0), (0, 0, +/-s*c) }
+    ///     stellation spike tips         = { (+/-s*a, +/-s*b, +/-s*c) }   (cube corners)
     ///     visible surface: 24 outer triangular faces (3 lateral faces per
-    ///       tetrahedral spike × 8 spikes; the spike base coincides with the
+    ///       tetrahedral spike x 8 spikes; the spike base coincides with the
     ///       inscribed octahedron face and is hidden inside the union)
-    ///     volume:    V_super = 108·a·b·c
-    ///                V_box   = 8·a·b·c   →  ratio 13.5
-    ///                V_oct   = 36·a·b·c  →  super:oct ratio 3
+    ///     volume:    V_super = 108*a*b*c
+    ///                V_box   = 8*a*b*c   ->  ratio 13.5
+    ///                V_oct   = 36*a*b*c  ->  super:oct ratio 3
     ///
     /// Containment test: A point is inside the stellation iff it lies in
     /// either constituent tetrahedron. The two tetrahedra's face planes
     /// share the same 4 linear forms (Tet B's planes are the negations of
-    /// Tet A's), so containment reduces to 4 dot products plus min/max —
+    /// Tet A's), so containment reduces to 4 dot products plus min/max -
     /// see <see cref="ContainsPointLocal"/>. Comparable cost to a box
     /// AABB check (3 abs + 3 compares) and cheaper than a convex hull.
     /// </summary>
@@ -32,13 +32,13 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Mass ratio between the stellated octahedron super-shield and the
         /// inscribed box, assuming uniform density.
-        /// V_stellated / V_box = 108·a·b·c / 8·a·b·c = 13.5
+        /// V_stellated / V_box = 108*a*b*c / 8*a*b*c = 13.5
         /// </summary>
         public const float SUPER_SHIELD_TO_BOX_VOLUME_RATIO = 13.5f;
 
         /// <summary>
         /// Volume ratio of the stellation to its inscribed octahedron shield.
-        /// V_stellated / V_oct = 108·a·b·c / 36·a·b·c = 3
+        /// V_stellated / V_oct = 108*a*b*c / 36*a*b*c = 3
         /// </summary>
         public const float SUPER_SHIELD_TO_OCTAHEDRON_VOLUME_RATIO = 3f;
 
@@ -52,10 +52,10 @@ namespace CosmicShore.Utility
         /// </summary>
         public const float CIRCUMSCRIBING_SCALE = OctahedronMeshGenerator.CIRCUMSCRIBING_SCALE;
 
-        /// <summary>Total visible triangle count: 8 spikes × 3 lateral faces.</summary>
+        /// <summary>Total visible triangle count: 8 spikes x 3 lateral faces.</summary>
         public const int FACE_COUNT = 24;
 
-        /// <summary>Vertex count for flat shading: <see cref="FACE_COUNT"/> × 3.</summary>
+        /// <summary>Vertex count for flat shading: <see cref="FACE_COUNT"/> x 3.</summary>
         public const int VERTEX_COUNT = FACE_COUNT * 3;
 
         /// <summary>
@@ -73,7 +73,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Rewrite an existing mesh in-place. Reuses the mesh's vertex/index
-        /// buffers; cheaper than allocating a new Mesh each frame — use this
+        /// buffers; cheaper than allocating a new Mesh each frame - use this
         /// for lerp/morph animations.
         /// </summary>
         public static void PopulateMesh(Mesh mesh, Vector3 halfExtents, float shieldScale = CIRCUMSCRIBING_SCALE)
@@ -103,8 +103,8 @@ namespace CosmicShore.Utility
                 Vector3 Vz = new Vector3(0f, 0f, sz * c);           // z-axis
 
                 // Winding rule (mirrors OctahedronMeshGenerator's parity logic):
-                //   sx·sy·sz = +1 → standard winding T → Vx → Vy etc.
-                //   sx·sy·sz = -1 → flipped winding to keep outward normals
+                //   sx*sy*sz = +1 -> standard winding T -> Vx -> Vy etc.
+                //   sx*sy*sz = -1 -> flipped winding to keep outward normals
                 if (sx * sy * sz > 0)
                 {
                     AddFace(verts, norms, tris, ref vi, T, Vx, Vy);
@@ -131,11 +131,11 @@ namespace CosmicShore.Utility
         /// Rewrite an existing mesh in-place with per-face scaling. Each of
         /// the 24 triangular faces is scaled around its own centroid by
         /// <paramref name="faceScale"/>:
-        ///   0 → every face collapsed to a point at its center (invisible)
-        ///   1 → full-size stellated octahedron (identical to <see cref="PopulateMesh"/>)
+        ///   0 -> every face collapsed to a point at its center (invisible)
+        ///   1 -> full-size stellated octahedron (identical to <see cref="PopulateMesh"/>)
         ///
         /// Each vertex v_i on a face becomes:
-        ///   centroid + faceScale · (v_i − centroid)
+        ///   centroid + faceScale * (v_i - centroid)
         ///
         /// Use this for the engage morph so faces "bloom" outward from their
         /// centers rather than the whole shape growing uniformly.
@@ -161,7 +161,7 @@ namespace CosmicShore.Utility
 
             mesh.vertices = verts;
             mesh.RecalculateBounds();
-            // Normals stay correct — direction is unchanged by uniform
+            // Normals stay correct - direction is unchanged by uniform
             // per-face scaling from centroid.
         }
 
@@ -170,11 +170,11 @@ namespace CosmicShore.Utility
         /// AND translates outward along its face normal. Produces a "shield
         /// shards flying apart" effect when used during disengage.
         ///
-        ///   faceScale:  1 → full-size face, 0 → collapsed to centroid point
-        ///   faceOffset: 0 → face at original position, &gt;0 → displaced outward
+        ///   faceScale:  1 -> full-size face, 0 -> collapsed to centroid point
+        ///   faceOffset: 0 -> face at original position, &gt;0 -> displaced outward
         ///
         /// Each vertex v_i becomes:
-        ///   centroid + faceScale · (v_i − centroid) + faceOffset · faceNormal
+        ///   centroid + faceScale * (v_i - centroid) + faceOffset * faceNormal
         /// </summary>
         public static void PopulateMeshFaceShatter(Mesh mesh, Vector3 halfExtents,
             float faceScale, float faceOffset, float shieldScale = CIRCUMSCRIBING_SCALE)
@@ -219,21 +219,21 @@ namespace CosmicShore.Utility
         /// the stellated octahedron. The stellation is the union of two
         /// tetrahedra, and a point is inside the union iff it lies in either.
         ///
-        /// In normalized local coords (u, v, w) = (x·invA, y·invB, z·invC),
-        /// Tet A's 4 face planes correspond to linear forms ε·(u,v,w) where
-        /// ε ∈ { (+,+,+), (+,-,-), (-,+,-), (-,-,+) }, each constrained to ≥ -1.
+        /// In normalized local coords (u, v, w) = (x*invA, y*invB, z*invC),
+        /// Tet A's 4 face planes correspond to linear forms epsilon*(u,v,w) where
+        /// epsilon in { (+,+,+), (+,-,-), (-,+,-), (-,-,+) }, each constrained to >= -1.
         /// Tet B's planes are the negations of Tet A's, equivalent to the same
-        /// 4 forms constrained to ≤ +1. So the same 4 dot products serve both
+        /// 4 forms constrained to <= +1. So the same 4 dot products serve both
         /// containment checks:
         ///
-        ///   inside Tet A:        min(f1,f2,f3,f4) ≥ -1
-        ///   inside Tet B:        max(f1,f2,f3,f4) ≤ +1
+        ///   inside Tet A:        min(f1,f2,f3,f4) >= -1
+        ///   inside Tet B:        max(f1,f2,f3,f4) <= +1
         ///   inside super-shield: either holds
         ///
-        /// Cost: 4 linear forms + min/max + 2 compares — comparable to a box
+        /// Cost: 4 linear forms + min/max + 2 compares - comparable to a box
         /// AABB and cheaper than a full convex collision check.
         ///
-        /// Precompute the inverses once per prism and reuse — this is the
+        /// Precompute the inverses once per prism and reuse - this is the
         /// fast path for gameplay overlap checks without a MeshCollider.
         /// </summary>
         public static bool ContainsPointLocal(Vector3 localPoint, float invA, float invB, float invC)
@@ -251,7 +251,7 @@ namespace CosmicShore.Utility
             float minF = Mathf.Min(Mathf.Min(f1, f2), Mathf.Min(f3, f4));
             float maxF = Mathf.Max(Mathf.Max(f1, f2), Mathf.Max(f3, f4));
 
-            // Inside iff inside Tet A (min ≥ -1) OR inside Tet B (max ≤ +1).
+            // Inside iff inside Tet A (min >= -1) OR inside Tet B (max <= +1).
             return minF >= -1f || maxF <= 1f;
         }
 

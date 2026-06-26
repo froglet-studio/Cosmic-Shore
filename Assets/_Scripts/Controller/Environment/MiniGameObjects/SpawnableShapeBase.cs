@@ -46,7 +46,7 @@ public abstract class SpawnableShapeBase : SpawnableBase
 
     /// <summary>
     /// Returns a size multiplier that grows with intensity so prisms don't overlap.
-    /// Base output at intensity 1 = sqrt(3) ≈ 1.73x (matches old intensity 3),
+    /// Base output at intensity 1 = sqrt(3) ~ 1.73x (matches old intensity 3),
     /// then scales further. Uses square root scaling for proportional spacing.
     /// </summary>
     protected float GetIntensitySizeMultiplier()
@@ -111,7 +111,7 @@ public abstract class SpawnableShapeBase : SpawnableBase
             trails.Add(trail);
         }
 
-        // All prisms spawned — enable collision
+        // All prisms spawned - enable collision
         if (trigger)
         {
             // Recalculate radius now that all renderers exist
@@ -147,7 +147,7 @@ public abstract class SpawnableShapeBase : SpawnableBase
         sphere.isTrigger = true;
         sphere.radius = triggerRadius > 0 ? triggerRadius : 20f; // Will be recalculated after spawn
 
-        // Add collision handler — starts disabled
+        // Add collision handler - starts disabled
         var trigger = container.AddComponent<ShapeCollisionTrigger>();
         trigger.Initialize(shapeDefinition, domain);
         trigger.SetReady(false);

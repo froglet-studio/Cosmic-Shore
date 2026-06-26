@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -63,7 +63,7 @@ namespace CosmicShore.UI
             }
             else
             {
-                // prefix-only or prefix+postfix static → stick around longer (req.Duration)
+                // prefix-only or prefix+postfix static -> stick around longer (req.Duration)
                 float stay = Mathf.Max(0.5f, req.Duration <= 0f ? 4.5f : req.Duration);
                 yield return new WaitForSeconds(stay);
             }

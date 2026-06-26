@@ -17,7 +17,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// benchmark and just scans each scene briefly for errors.
     ///
     /// Caveat: scenes are loaded directly via <see cref="SceneManager.LoadSceneAsync"/>, so
-    /// networked game scenes that depend on the Bootstrap → host → spawn pipeline will be
+    /// networked game scenes that depend on the Bootstrap -> host -> spawn pipeline will be
     /// benchmarked/scanned in their uninitialized state. Self-contained scenes sweep faithfully.
     /// Each scene must be in Build Settings.
     /// </summary>
@@ -170,10 +170,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             BuildCombinedSummary();
             IsComplete = true;
             IsSweeping = false;
-            CSDebug.Log($"[BenchmarkSweep] Complete — {Results.Count} scene(s) processed.\n{CombinedSummary}");
+            CSDebug.Log($"[BenchmarkSweep] Complete - {Results.Count} scene(s) processed.\n{CombinedSummary}");
         }
 
-        // ── Error capture ───────────────────────────────
+        // -- Error capture -------------------------------
 
         void StartListening()
         {
@@ -216,7 +216,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         void BuildCombinedSummary()
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"Multi-Scene Sweep '{_sweepTag}' — {Results.Count} scene(s)" +
+            sb.AppendLine($"Multi-Scene Sweep '{_sweepTag}' - {Results.Count} scene(s)" +
                           (_errorsOnly ? " (errors-only)" : ""));
             sb.AppendLine();
 
@@ -226,7 +226,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             foreach (var r in Results)
             {
                 totalErrors += r.errorCount;
-                string err = r.errorCount > 0 ? $"  ⚠ {r.errorCount} error(s)" : "";
+                string err = r.errorCount > 0 ? $"  (!) {r.errorCount} error(s)" : "";
 
                 if (!r.loaded)
                 {

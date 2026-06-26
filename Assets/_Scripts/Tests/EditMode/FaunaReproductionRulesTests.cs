@@ -5,11 +5,11 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Tests for <see cref="FaunaReproductionRules"/> — the pure gating behind the
-    /// prey-linked population pipeline (Docs/ECOSYSTEM.md §6): reproduction converts
+    /// Tests for <see cref="FaunaReproductionRules"/> - the pure gating behind the
+    /// prey-linked population pipeline (Docs/ECOSYSTEM.md Sec 6): reproduction converts
     /// feeds into offspring (the population driver), and the periodic spawner only
     /// seeds a species back up to its floor (bootstrap + extinction recovery).
-    /// These rules ARE the Lotka–Volterra coupling; pin them.
+    /// These rules ARE the Lotka-Volterra coupling; pin them.
     /// </summary>
     [TestFixture]
     public class FaunaReproductionRulesTests
@@ -46,7 +46,7 @@ namespace CosmicShore.Tests
         [Test]
         public void ShouldBirth_AboveFeedThreshold_True()
         {
-            // Feeds carry over while the cooldown blocks — exceeding the threshold is fine.
+            // Feeds carry over while the cooldown blocks - exceeding the threshold is fine.
             Assert.IsTrue(FaunaReproductionRules.ShouldBirth(25, 10, 999f, 0f, 5, 0));
         }
 
@@ -115,7 +115,7 @@ namespace CosmicShore.Tests
         [Test]
         public void SeedSpawnCount_AboveFloor_SpawnsNothing()
         {
-            // Reproduction has grown the population past the floor — the seeder stays out.
+            // Reproduction has grown the population past the floor - the seeder stays out.
             Assert.AreEqual(0, FaunaReproductionRules.SeedSpawnCount(48, 25, 0));
         }
 

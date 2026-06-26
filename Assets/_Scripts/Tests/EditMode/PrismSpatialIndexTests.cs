@@ -46,7 +46,7 @@ namespace CosmicShore.Tests
                 if (go) Object.DestroyImmediate(go);
             _spawned.Clear();
 
-            // Dispose the persistent NativeArrays — OnDestroy doesn't run for
+            // Dispose the persistent NativeArrays - OnDestroy doesn't run for
             // regular scripts in edit mode, and leaked Persistent allocations
             // spam the console across test runs.
             typeof(PrismSpatialIndex)
@@ -69,7 +69,7 @@ namespace CosmicShore.Tests
         /// Queries pick bucket-walk vs linear-scan by comparing the probe's bucket
         /// AABB volume against the slot high-water mark, so a near-empty test index
         /// routes everything to the linear path. Registering distant padding raises
-        /// the mark enough that a tight-radius probe (radius 4 → 2³ = 8 buckets)
+        /// the mark enough that a tight-radius probe (radius 4 -> 2^3 = 8 buckets)
         /// takes the bucket walk.
         /// </summary>
         void SpawnPaddingPrisms(int count)
@@ -190,11 +190,11 @@ namespace CosmicShore.Tests
             SpawnPaddingPrisms(10); // tight radii now take the bucket walk
             SpawnRegisteredPrism(new Vector3(3f, 0f, 0f));
 
-            // Bucket-walk path (radius 4 → 8-bucket AABB ≤ slot count).
+            // Bucket-walk path (radius 4 -> 8-bucket AABB <= slot count).
             Assert.IsTrue(_index.IsAnyPrismWithin(Vector3.zero, 4f));
             Assert.IsFalse(_index.IsAnyPrismWithin(new Vector3(0f, 50f, 0f), 4f));
 
-            // Linear-scan path (radius 500 → AABB far exceeds slot count).
+            // Linear-scan path (radius 500 -> AABB far exceeds slot count).
             Assert.IsTrue(_index.IsAnyPrismWithin(Vector3.zero, 500f));
             Assert.IsFalse(_index.IsAnyPrismWithin(new Vector3(0f, 50000f, 0f), 500f));
         }
@@ -203,7 +203,7 @@ namespace CosmicShore.Tests
         public void QuerySphere_SkipsDestroyedManagedRefs()
         {
             // A prism destroyed without Unregister (no lifecycle callbacks in
-            // edit mode) leaves a fake-null managed ref — queries must skip it
+            // edit mode) leaves a fake-null managed ref - queries must skip it
             // rather than hand callers a dead object.
             var prism = SpawnRegisteredPrism(Vector3.zero);
             Object.DestroyImmediate(prism.gameObject);
@@ -255,14 +255,14 @@ namespace CosmicShore.Tests
 
             Assert.DoesNotThrow(() => _index.ForwardDomainChangeToCell(-1));
             Assert.DoesNotThrow(() => _index.ForwardDomainChangeToCell(9999));
-            // Valid slot, but no cell bound (open space) — must be a clean no-op.
+            // Valid slot, but no cell bound (open space) - must be a clean no-op.
             Assert.DoesNotThrow(() => _index.ForwardDomainChangeToCell(prism.SpatialIndexId));
         }
 
         [Test]
         public void FullLifecycle_WithNoCellsPresent_KeepsQueryViewsConsistent()
         {
-            // Register → destroy → restore → unregister, end to end, with the
+            // Register -> destroy -> restore -> unregister, end to end, with the
             // cell-view hooks firing at every step against an empty cell registry.
             var prism = SpawnRegisteredPrism(Vector3.zero);
 

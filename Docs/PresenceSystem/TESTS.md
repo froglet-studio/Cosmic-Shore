@@ -1,20 +1,20 @@
-# Presence System — Manual Test Procedures
+# Presence System - Manual Test Procedures
 
 Presence-lobby-specific MPPM scenarios. For party (Relay) gameplay
 tests see `../PartySystem/TESTS.md`. For NetDiag-specific tests see
 `../NetworkDiagnostics/TESTS.md`.
 
-> **Convention.** See `../README.md` § "MPPM test convention" for VP
+> **Convention.** See `../README.md` Sec "MPPM test convention" for VP
 > naming and NetDiag class references.
 
-## Smoke gate — run on every presence-side commit
+## Smoke gate - run on every presence-side commit
 
 ### P1. Lobby join on sign-in
 
 **Setup.** Start one VP. Sign in.
 
 **Steps.** Wait for `[PresenceLobbyService] JoinOrCreateAsync complete
-— lobby: <id>` log.
+- lobby: <id>` log.
 
 **Pass criterion.**
 - Log shows lobby id (not NULL).
@@ -44,10 +44,10 @@ in.
 
 **Pass criterion.**
 - `[PresenceLobbyService] LeaveAsync` log appears.
-- No `NetDiag: class=…` line in the leave log (if it appears,
+- No `NetDiag: class=...` line in the leave log (if it appears,
   classify and file under `BUGS.md`).
 
-## Stress gate — run on every refactor commit
+## Stress gate - run on every refactor commit
 
 ### Stress-P1. Three-VP join storm
 
@@ -74,7 +74,7 @@ VP1 signs in, signs out, signs in five times in a row.
   possible, or by counting `[PresenceLobbyService] JoinOrCreateAsync`
   vs `LeaveAsync` log pairs).
 
-## Failure-mode gate — run when investigating a bug
+## Failure-mode gate - run when investigating a bug
 
 ### P4. Offline during JoinOrCreate
 
@@ -84,8 +84,8 @@ VP1 signs in, signs out, signs in five times in a row.
 
 **Diagnostic pass.** Sign-in fails (auth catch), or
 `JoinOrCreateAsync` fails with
-`NetDiag: class=Offline | reach=NotReachable | …`. Sign-in's bounce
-path is the existing behavior — not the test target.
+`NetDiag: class=Offline | reach=NotReachable | ...`. Sign-in's bounce
+path is the existing behavior - not the test target.
 
 ### P5. Mid-game lobby leave
 
@@ -108,11 +108,11 @@ deterministically without SDK injection, so use it as a **post-hoc
 check** when a `Reconnecting` state transition appears in the log:
 
 **Check criterion.** Every `[HostConnectionService] N consecutive
-refresh errors — reconnecting to presence lobby` log line should be
+refresh errors - reconnecting to presence lobby` log line should be
 preceded by N NetDiag log lines from
 `PresenceLobbyService.JoinOrCreateAsync.catch` or
 `HostConnectionService.RefreshAsync.catch`. The classes on those lines
-should be **consistent** (e.g. all `Offline`, or all `SessionGone`) —
+should be **consistent** (e.g. all `Offline`, or all `SessionGone`) -
 inconsistency suggests the watchdog is escalating across heterogenous
 causes, which is the bug `PresenceSystem/REFACTOR.md` targets.
 
@@ -124,5 +124,5 @@ causes, which is the bug `PresenceSystem/REFACTOR.md` targets.
 | Stress-P1, Stress-P2 | Every refactor commit |
 | P4, P5, P6 | Run when investigating a specific bug; not a per-commit gate |
 
-`ARCHITECTURE.md` § "Single-writer pattern" describes the invariants
+`ARCHITECTURE.md` Sec "Single-writer pattern" describes the invariants
 these tests are protecting.

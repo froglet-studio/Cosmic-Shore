@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
     [TestFixture]
     public class ServerPlayerVesselInitializerWithAITests
     {
-        // ── BuildActiveDomains ──────────────────────────────────────────────
+        // -- BuildActiveDomains ----------------------------------------------
 
         [Test]
         public void BuildActiveDomains_DC1_ReturnsJadeOnly()
@@ -52,7 +52,7 @@ namespace CosmicShore.Gameplay
             CollectionAssert.AreEqual(new[] { Domains.Jade }, active);
         }
 
-        // ── IsActiveDomain ──────────────────────────────────────────────────
+        // -- IsActiveDomain --------------------------------------------------
 
         [Test]
         public void IsActiveDomain_DC1_OnlyJadeActive()
@@ -81,7 +81,7 @@ namespace CosmicShore.Gameplay
             Assert.IsFalse(GameDataSO.IsActiveDomain(Domains.Blue, 3));
         }
 
-        // ── GetBalancedDomain: tier 1 (lowest total) ────────────────────────
+        // -- GetBalancedDomain: tier 1 (lowest total) ------------------------
 
         [Test]
         public void GetBalancedDomain_Tier1_LowestTotal_WinsAlone()
@@ -99,12 +99,12 @@ namespace CosmicShore.Gameplay
             Assert.AreEqual(Domains.Ruby, ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totals, humans));
         }
 
-        // ── GetBalancedDomain: tier 2 (fewest humans among tied totals) ─────
+        // -- GetBalancedDomain: tier 2 (fewest humans among tied totals) -----
 
         [Test]
         public void GetBalancedDomain_Tier2_FewestHumansWins()
         {
-            // All three tied on total=1; Ruby has zero humans → Ruby wins.
+            // All three tied on total=1; Ruby has zero humans -> Ruby wins.
             var totals  = new Dictionary<Domains, int> { { Domains.Jade, 1 }, { Domains.Ruby, 1 }, { Domains.Gold, 1 } };
             var humans  = new Dictionary<Domains, int> { { Domains.Jade, 1 }, { Domains.Ruby, 0 }, { Domains.Gold, 1 } };
             Assert.AreEqual(Domains.Ruby, ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totals, humans));
@@ -114,13 +114,13 @@ namespace CosmicShore.Gameplay
         public void GetBalancedDomain_Tier2_OnlyGoldIsAISolo_ReturnsGold()
         {
             // Jade + Ruby each have 1 human; Gold has 1 AI-only. Tied totals (1,1,1).
-            // Gold has zero humans → wins tier 2.
+            // Gold has zero humans -> wins tier 2.
             var totals  = new Dictionary<Domains, int> { { Domains.Jade, 1 }, { Domains.Ruby, 1 }, { Domains.Gold, 1 } };
             var humans  = new Dictionary<Domains, int> { { Domains.Jade, 1 }, { Domains.Ruby, 1 }, { Domains.Gold, 0 } };
             Assert.AreEqual(Domains.Gold, ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totals, humans));
         }
 
-        // ── GetBalancedDomain: tier 3 (enum order, Jade > Ruby > Gold) ──────
+        // -- GetBalancedDomain: tier 3 (enum order, Jade > Ruby > Gold) ------
 
         [Test]
         public void GetBalancedDomain_Tier3_AllEqual_ReturnsJade()
@@ -139,7 +139,7 @@ namespace CosmicShore.Gameplay
             Assert.AreEqual(Domains.Ruby, ServerPlayerVesselInitializerWithAI.GetBalancedDomain(totals, humans));
         }
 
-        // ── Worked example: solo Jade host, DC=3, 3 AIs ─────────────────────
+        // -- Worked example: solo Jade host, DC=3, 3 AIs ---------------------
 
         [Test]
         public void GetBalancedDomain_SoloJadeHost_3AI_ProducesRubyGoldJade()
@@ -158,9 +158,9 @@ namespace CosmicShore.Gameplay
                 totals[d]++;
             }
 
-            // AI #1: totals {1,0,0} → Ruby (lowest total, tied with Gold; Ruby wins tier 3 by enum order).
-            // AI #2: totals {1,1,0} → Gold (lowest total).
-            // AI #3: totals {1,1,1} → fewest humans → Ruby or Gold (both have 0 humans).
+            // AI #1: totals {1,0,0} -> Ruby (lowest total, tied with Gold; Ruby wins tier 3 by enum order).
+            // AI #2: totals {1,1,0} -> Gold (lowest total).
+            // AI #3: totals {1,1,1} -> fewest humans -> Ruby or Gold (both have 0 humans).
             //         Tier 3 picks Ruby by enum order.
             CollectionAssert.AreEqual(
                 new[] { Domains.Ruby, Domains.Gold, Domains.Ruby },

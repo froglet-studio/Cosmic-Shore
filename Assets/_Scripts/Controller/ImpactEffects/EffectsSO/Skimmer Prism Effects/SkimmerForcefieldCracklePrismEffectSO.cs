@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.1f, 5f), Tooltip("Brightness / emission multiplier for the crackle.")]
         private float impactIntensity = 1.5f;
 
-        [SerializeField, Range(0.05f, 1f), Tooltip("Angular radius of the crackle spread (0 = point, 1 ≈ hemisphere).")]
+        [SerializeField, Range(0.05f, 1f), Tooltip("Angular radius of the crackle spread (0 = point, 1 ~ hemisphere).")]
         private float impactRadius = 0.25f;
 
         [Header("Optional Particle Burst")]

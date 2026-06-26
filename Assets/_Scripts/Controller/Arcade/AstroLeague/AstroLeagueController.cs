@@ -14,13 +14,13 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Astro League match director — hypersea soccer on the multiplayer domain-games stack.
+    /// Astro League match director - hypersea soccer on the multiplayer domain-games stack.
     /// Two domains (Jade defends -Z, Ruby defends +Z) slam a server-simulated billiard ball
     /// through the opposing goal portal. Runs the full match loop on top of the shared flow:
     ///
-    ///   Ready → shared 3-2-1 countdown (first kickoff count-in) → live play →
-    ///   GOAL! celebration → kickoff count-in → ... → full time →
-    ///   golden-goal overtime if tied → winner banner → SyncFinalScores → shared scoreboard.
+    ///   Ready -> shared 3-2-1 countdown (first kickoff count-in) -> live play ->
+    ///   GOAL! celebration -> kickoff count-in -> ... -> full time ->
+    ///   golden-goal overtime if tied -> winner banner -> SyncFinalScores -> shared scoreboard.
     ///
     /// Server-authoritative throughout: goal attribution (last non-defending striker),
     /// per-player GoalsScored (NetworkVariable on RoundStats), match phase, and the clock all
@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
     {
         [Header("Astro League")]
         [SerializeField] AstroLeagueSettingsSO settings;
-        [Tooltip("Drag AstroLeagueScoringRule.asset — the per-mode scoring strategy (winner, scores, results).")]
+        [Tooltip("Drag AstroLeagueScoringRule.asset - the per-mode scoring strategy (winner, scores, results).")]
         [SerializeField] ScoringRuleSO rule;
         [SerializeField] AstroLeagueBall ball;
         [SerializeField] AstroLeagueArena arena;
@@ -66,8 +66,8 @@ namespace CosmicShore.Gameplay
         protected override bool UseGolfRules => false;
         protected override bool UseSceneReloadForReplay => true;
 
-        // End-game runs through OnTurnEndedCustom → SyncFinalScores_ClientRpc (HexRace/Joust/
-        // CrystalCapture pattern); suppress the base turn→round→game flow so we don't get a
+        // End-game runs through OnTurnEndedCustom -> SyncFinalScores_ClientRpc (HexRace/Joust/
+        // CrystalCapture pattern); suppress the base turn->round->game flow so we don't get a
         // duplicate InvokeWinnerCalculated from SyncGameEnd_ClientRpc.
         protected override bool HasEndGame => false;
 
@@ -181,11 +181,11 @@ namespace CosmicShore.Gameplay
                 }
         }
 
-        // ── Match start ──────────────────────────────────────────────────────
+        // -- Match start ------------------------------------------------------
 
         protected override void SetupNewTurn()
         {
-            // Server-only in the multiplayer flow (InitializeAfterDelay → SetupNewRound).
+            // Server-only in the multiplayer flow (InitializeAfterDelay -> SetupNewRound).
             phase = MatchPhase.PreMatch;
             matchMonitor.ConfigureDuration(settings.matchDurationSeconds);
             ball.ResetToCenterServer(); // Frozen showpiece at center until the first kickoff
@@ -210,14 +210,14 @@ namespace CosmicShore.Gameplay
             AnnounceKickoffGo_ClientRpc();
         }
 
-        // ── Goal flow (server) ───────────────────────────────────────────────
+        // -- Goal flow (server) -----------------------------------------------
 
         void HandleBallStruckServer(IVessel vessel, float intensity)
         {
             var striker = FindPlayerByVessel(vessel);
             if (striker == null) return;
 
-            // Recoil the striker away from the ball so it bounces back a bit — extra anti-clip
+            // Recoil the striker away from the ball so it bounces back a bit - extra anti-clip
             // insurance on top of the ball's own ejection.
             ApplyVesselRecoil(striker, vessel, intensity);
 
@@ -231,7 +231,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Server: broadcast a backward recoil for the striking vessel. Vessels are
         /// owner-authoritative (ClientNetworkTransform), so the impulse must be applied on the
-        /// OWNING peer — the ClientRpc resolves the vessel by NetworkObjectId and only the owner
+        /// OWNING peer - the ClientRpc resolves the vessel by NetworkObjectId and only the owner
         /// applies <see cref="VesselTransformer.ModifyVelocity"/>.
         /// </summary>
         void ApplyVesselRecoil(IPlayer striker, IVessel vessel, float intensity)
@@ -265,7 +265,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Server: the ball crossed a goal line. Attribution: the goal credits the most
-        /// recent striker NOT on the defending domain — an own-goal hands the point to the
+        /// recent striker NOT on the defending domain - an own-goal hands the point to the
         /// opponent who last touched it. If no opposing vessel has ever touched the ball,
         /// nobody scores and play resets with a kickoff.
         /// </summary>
@@ -284,7 +284,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            scorer.RoundStats.GoalsScored++; // NetworkVariable — replicates to every peer
+            scorer.RoundStats.GoalsScored++; // NetworkVariable - replicates to every peer
 
             AnnounceGoal_ClientRpc(new FixedString64Bytes(scorer.Name), (int)scorer.Domain);
 
@@ -338,7 +338,7 @@ namespace CosmicShore.Gameplay
             AnnounceKickoffGo_ClientRpc();
         }
 
-        // ── Full time / overtime (server) ────────────────────────────────────
+        // -- Full time / overtime (server) ------------------------------------
 
         void HandleClockExpiredServer()
         {
@@ -405,10 +405,10 @@ namespace CosmicShore.Gameplay
                 catch (OperationCanceledException) { return; }
             }
 
-            matchMonitor.ForceEnd(); // → turn end → OnTurnEndedCustom computes + syncs final scores
+            matchMonitor.ForceEnd(); // -> turn end -> OnTurnEndedCustom computes + syncs final scores
         }
 
-        // ── Server-authoritative game end (HexRace/Joust/CrystalCapture pattern) ──
+        // -- Server-authoritative game end (HexRace/Joust/CrystalCapture pattern) --
 
         protected override void OnTurnEndedCustom()
         {
@@ -436,7 +436,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Suppress the base flow's SetupNewRound when the match just ended.
         /// HasEndGame=false causes ExecuteServerRoundEnd to call SetupNewRound instead of
-        /// ExecuteServerGameEnd — this override prevents the Ready button from reappearing.
+        /// ExecuteServerGameEnd - this override prevents the Ready button from reappearing.
         /// </summary>
         protected override void SetupNewRound()
         {
@@ -490,7 +490,7 @@ namespace CosmicShore.Gameplay
                 stat.GoalsScored = goalsScored[i];
             }
 
-            // Authoritative winner — written to gameData, consumed by EndGameControllers.
+            // Authoritative winner - written to gameData, consumed by EndGameControllers.
             // OnWinnerCalculated (below) is the "results ready" signal.
             gameData.WinnerName = winnerName.ToString();
             gameData.WinnerDomain = (Domains)winnerDomain;
@@ -502,7 +502,7 @@ namespace CosmicShore.Gameplay
             gameData.InvokeMiniGameEnd();
         }
 
-        // ── Kickoff parking (every peer parks the vessels it owns) ──────────
+        // -- Kickoff parking (every peer parks the vessels it owns) ----------
 
         /// <summary>
         /// Vessels replicate owner-authoritatively (ClientNetworkTransform), so a kickoff
@@ -539,7 +539,7 @@ namespace CosmicShore.Gameplay
                 .ToList();
             int slot = Mathf.Max(0, teammates.IndexOf(player));
 
-            // Slots fan out laterally: 0, +1, -1, +2, -2, ... — spacing scales with the arena.
+            // Slots fan out laterally: 0, +1, -1, +2, -2, ... - spacing scales with the arena.
             int offsetSteps = (slot + 1) / 2 * (slot % 2 == 0 ? 1 : -1);
             Vector3 lateral = anchor.right * (offsetSteps * settings.kickoffLateralSpacing * _currentScale);
 
@@ -551,7 +551,7 @@ namespace CosmicShore.Gameplay
             return new Pose(anchor.position + lateral, rotation);
         }
 
-        // ── AI strikers (server) ─────────────────────────────────────────────
+        // -- AI strikers (server) ---------------------------------------------
 
         void ArmStrikers()
         {
@@ -611,7 +611,7 @@ namespace CosmicShore.Gameplay
             return null;
         }
 
-        // ── Announcer ClientRpcs (play the shared AudioSystem cue on every peer) ──
+        // -- Announcer ClientRpcs (play the shared AudioSystem cue on every peer) --
 
         [ClientRpc]
         void AnnounceKickoffGo_ClientRpc() =>
@@ -647,7 +647,7 @@ namespace CosmicShore.Gameplay
             catch (OperationCanceledException) { /* teardown mid-celebration */ }
             finally
             {
-                // Restore to known constants, not captured values — the ball's hitstop can
+                // Restore to known constants, not captured values - the ball's hitstop can
                 // interleave with this window and a stale capture would re-apply its timescale.
                 Time.timeScale = 1f;
                 Time.fixedDeltaTime = baseFixedDelta;

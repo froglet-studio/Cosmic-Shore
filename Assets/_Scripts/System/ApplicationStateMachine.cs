@@ -14,17 +14,17 @@ namespace CosmicShore.Core
     /// read the current state or subscribe to <see cref="ApplicationStateData.OnStateChanged"/>.
     ///
     /// Transition callers:
-    ///   None → Bootstrapping        : AppManager.Awake()
-    ///   Bootstrapping → Authenticating : AppManager.RunBootstrapAsync() after OnBootstrapComplete
-    ///   Authenticating → MainMenu    : AuthenticationSceneController on successful auth + scene load
-    ///   MainMenu → LoadingGame       : SceneLoader.LaunchGame()
-    ///   LoadingGame → InGame         : MiniGame controller (via GameDataSO.OnSessionStarted)
-    ///   InGame → GameOver            : Scoring / turn system (via GameDataSO.OnMiniGameEnd)
-    ///   GameOver → MainMenu          : SceneLoader.ReturnToMainMenu()
-    ///   * → Paused                   : ApplicationLifecycleManager.OnAppPaused(true)
-    ///   Paused → (previous)          : ApplicationLifecycleManager.OnAppPaused(false)
-    ///   * → Disconnected             : NetworkMonitor.OnNetworkLost
-    ///   * → ShuttingDown             : ApplicationLifecycleManager.OnAppQuitting
+    ///   None -> Bootstrapping        : AppManager.Awake()
+    ///   Bootstrapping -> Authenticating : AppManager.RunBootstrapAsync() after OnBootstrapComplete
+    ///   Authenticating -> MainMenu    : AuthenticationSceneController on successful auth + scene load
+    ///   MainMenu -> LoadingGame       : SceneLoader.LaunchGame()
+    ///   LoadingGame -> InGame         : MiniGame controller (via GameDataSO.OnSessionStarted)
+    ///   InGame -> GameOver            : Scoring / turn system (via GameDataSO.OnMiniGameEnd)
+    ///   GameOver -> MainMenu          : SceneLoader.ReturnToMainMenu()
+    ///   * -> Paused                   : ApplicationLifecycleManager.OnAppPaused(true)
+    ///   Paused -> (previous)          : ApplicationLifecycleManager.OnAppPaused(false)
+    ///   * -> Disconnected             : NetworkMonitor.OnNetworkLost
+    ///   * -> ShuttingDown             : ApplicationLifecycleManager.OnAppQuitting
     /// </summary>
     public class ApplicationStateMachine
     {
@@ -108,11 +108,11 @@ namespace CosmicShore.Core
 
         void SubscribeToSOAPEvents()
         {
-            // Gameplay lifecycle: LoadingGame → InGame when session starts.
+            // Gameplay lifecycle: LoadingGame -> InGame when session starts.
             if (_gameData?.OnSessionStarted != null)
                 _gameData.OnSessionStarted.OnRaised += HandleSessionStarted;
 
-            // Gameplay lifecycle: InGame → GameOver when mini-game ends.
+            // Gameplay lifecycle: InGame -> GameOver when mini-game ends.
             if (_gameData?.OnMiniGameEnd != null)
                 _gameData.OnMiniGameEnd.OnRaised += HandleMiniGameEnd;
 
@@ -186,7 +186,7 @@ namespace CosmicShore.Core
             // Standard table-driven validation.
             if (!ValidTransitions.TryGetValue(current, out var allowed) || !allowed.Contains(newState))
             {
-                LogWarning($"Invalid transition: {current} → {newState}");
+                LogWarning($"Invalid transition: {current} -> {newState}");
                 return false;
             }
 
@@ -210,7 +210,7 @@ namespace CosmicShore.Core
             StateData.PreviousState = from;
             StateData.State = to;
 
-            Log($"{from} → {to}");
+            Log($"{from} -> {to}");
             StateData.OnStateChanged?.Raise(to);
             return true;
         }

@@ -39,28 +39,28 @@ namespace CosmicShore.Gameplay
 
         [Inject] private FriendsServiceFacade friendsService;
 
-        // Assigned in Start() — HostConnectionService is on the same persistent GO
+        // Assigned in Start() - HostConnectionService is on the same persistent GO
         // and sets its Instance in Awake(), which runs before Start().
         private IPartyStateQuery _partyQuery;
 
         private bool _initialized;
         private bool _partySubscriptionsWired;
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Unity Lifecycle
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         void Start()
         {
             // HostConnectionService.Awake() sets Instance before any Start() runs.
             _partyQuery = HostConnectionService.Instance;
 
-            // Wire party SOAP subscriptions immediately — hostConnectionData is
+            // Wire party SOAP subscriptions immediately - hostConnectionData is
             // available from the inspector-serialized field.
             WirePartySubscriptions();
 
             // UGS auth completes asynchronously AFTER Start in the normal flow, so
-            // OnSignedIn is the primary trigger — subscribe in code (same pattern as
+            // OnSignedIn is the primary trigger - subscribe in code (same pattern as
             // MultiplayerSetup). There is no inspector EventListenerNoParam for this
             // handler. The immediate call covers the already-signed-in case;
             // HandleSignedInEvent is idempotent (guarded by _initialized).
@@ -109,9 +109,9 @@ namespace CosmicShore.Gameplay
                 SetPresenceInMenu();
         }
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Public: Auth hooks (wire via SOAP EventListenerNoParam in inspector)
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         public async void HandleSignedInEvent()
         {
@@ -127,9 +127,9 @@ namespace CosmicShore.Gameplay
             friendsService?.HandleSignedOut();
         }
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Public: Presence helpers for scene transitions
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         public async void SetPresenceInMenu()
         {
@@ -200,9 +200,9 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
         // Internal
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         private async UniTask InitializeFriendsAsync()
         {

@@ -1,7 +1,7 @@
 
 namespace CosmicShore.Utility
 {
-    ﻿using System.Text.RegularExpressions;
+    using System.Text.RegularExpressions;
 
     /// <summary>
     /// Thanks GPT4

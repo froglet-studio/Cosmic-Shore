@@ -6,7 +6,7 @@ using CosmicShore.Gameplay;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// CameraSettingsSO Tests — Validates per-vessel camera configuration defaults.
+    /// CameraSettingsSO Tests - Validates per-vessel camera configuration defaults.
     ///
     /// WHY THIS MATTERS:
     /// Each vessel type has its own CameraSettingsSO asset that controls camera distance,
@@ -44,7 +44,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Default_FollowOffset_HasReasonableValues()
         {
-            // Default: (0, 10, -20) — camera behind and above the vessel.
+            // Default: (0, 10, -20) - camera behind and above the vessel.
             Assert.AreEqual(0f, _settings.followOffset.x, 0.001f);
             Assert.AreEqual(10f, _settings.followOffset.y, 0.001f);
             Assert.AreEqual(-20f, _settings.followOffset.z, 0.001f);

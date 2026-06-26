@@ -263,7 +263,7 @@ namespace CosmicShore.Gameplay
             if (renderer && materialSet)
             {
                 renderer.GetPropertyBlock(mpb);
-                // Apply basic material set — refine later if different prisms need different materials
+                // Apply basic material set - refine later if different prisms need different materials
                 mpb.SetColor(DarkColorID, colorSet.OutsideBlockColor);
                 mpb.SetColor(BrightColorID, colorSet.InsideBlockColor);
                 renderer.SetPropertyBlock(mpb);

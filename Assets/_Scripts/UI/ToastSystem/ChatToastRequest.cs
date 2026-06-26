@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 namespace CosmicShore.UI
 {
@@ -6,12 +6,12 @@ namespace CosmicShore.UI
     public readonly struct ChatToastRequest
     {
         public readonly string Prefix;             // main line
-        public readonly string Postfix;            // aux line (e.g., “in 3” / “x2 combo”)
+        public readonly string Postfix;            // aux line (e.g., "in 3" / "x2 combo")
         public readonly float Duration;            // total lifetime (ignored for countdown until it finishes)
         public readonly ToastAnimation Animation;
         public readonly Sprite Icon;               // optional
         public readonly Color? Accent;             // optional
-        public readonly int PostfixCountdownFrom;  // if > 0 → postfix countdown only
+        public readonly int PostfixCountdownFrom;  // if > 0 -> postfix countdown only
         public readonly string PostfixCountdownFormat; // e.g., "Overcharging in {0}"
 
         public ChatToastRequest(

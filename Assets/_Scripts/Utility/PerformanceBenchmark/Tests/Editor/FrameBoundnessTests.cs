@@ -52,7 +52,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
         [Test]
         public void BusyCpu_SubtractsPresentWaitFromMainThread()
         {
-            // Main thread 16 ms but 10 ms of that was waiting for present → 6 ms of work,
+            // Main thread 16 ms but 10 ms of that was waiting for present -> 6 ms of work,
             // which beats the 4 ms render thread.
             Assert.AreEqual(6f, FrameBoundness.BusyCpuMs(16.6f, 16f, 10f, 4f), 0.001f);
         }

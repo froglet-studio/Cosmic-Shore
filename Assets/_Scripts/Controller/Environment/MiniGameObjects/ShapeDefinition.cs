@@ -66,11 +66,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Par time in seconds. Used to grade performance.")]
         public float parTime = 60f;
 
-        // ── Runtime auto-generation ───────────────────────────────────────────
+        // -- Runtime auto-generation -------------------------------------------
 
         /// <summary>
         /// If waypoints is empty and autoGeneratePreset is set, generates waypoints procedurally.
-        /// Safe to call multiple times — no-ops if waypoints already exist.
+        /// Safe to call multiple times - no-ops if waypoints already exist.
         /// </summary>
         public void EnsureWaypoints()
         {
@@ -80,7 +80,7 @@ namespace CosmicShore.Gameplay
             GeneratePreset(autoGeneratePreset, autoGenerateRadius);
         }
 
-        // ── Helpers ─────────────────────────────────────────────────────────────
+        // -- Helpers -------------------------------------------------------------
 
         /// <summary>Returns whether the trail should be active while flying to waypointIndex.</summary>
         public bool IsTrailEnabledForSegment(int waypointIndex)
@@ -115,7 +115,7 @@ namespace CosmicShore.Gameplay
             return result;
         }
 
-        // ── Procedural shape generation (available at runtime) ────────────────
+        // -- Procedural shape generation (available at runtime) ----------------
 
         public void GeneratePreset(ShapePreset preset, float radius = 100f)
         {
@@ -197,14 +197,14 @@ namespace CosmicShore.Gameplay
 
         void GenerateLightning(float r)
         {
-            // Main bolt — dense zigzag from top to fork point
+            // Main bolt - dense zigzag from top to fork point
             waypoints.AddRange(new[]
             {
                 new Vector3( 0.1f  * r,  r,          0f),   // top
                 new Vector3(-0.2f  * r,  0.7f  * r,  0f),   // zag left
                 new Vector3( 0.15f * r,  0.5f  * r,  0f),   // zig right
                 new Vector3(-0.25f * r,  0.25f * r,  0f),   // zag left
-                new Vector3( 0.2f  * r,  0.05f * r,  0f),   // zig right — fork point
+                new Vector3( 0.2f  * r,  0.05f * r,  0f),   // zig right - fork point
             });
 
             // Main bolt continues down from fork
@@ -216,7 +216,7 @@ namespace CosmicShore.Gameplay
                 new Vector3( 0.05f * r, -r,          0f),   // bottom tip
             });
 
-            // Pen up — jump back to fork point for branch
+            // Pen up - jump back to fork point for branch
             trailEnabledPerSegment.AddRange(new[] { true, true, true, true, true, true, true, true, false });
 
             // Branch bolt going right
@@ -238,7 +238,7 @@ namespace CosmicShore.Gameplay
             float browY = eyeY + eyeR + r * 0.08f;
             int eyePoints = 8;
 
-            // ── Left eyebrow (arc) ──
+            // -- Left eyebrow (arc) --
             for (int i = 0; i <= 4; i++)
             {
                 float t = (float)i / 4;
@@ -248,10 +248,10 @@ namespace CosmicShore.Gameplay
                 trailEnabledPerSegment.Add(true);
             }
 
-            // Pen up → left eye
+            // Pen up -> left eye
             trailEnabledPerSegment[trailEnabledPerSegment.Count - 1] = false;
 
-            // ── Left eye (circle) ──
+            // -- Left eye (circle) --
             for (int i = 0; i <= eyePoints; i++)
             {
                 float angle = (i / (float)eyePoints) * Mathf.PI * 2f;
@@ -260,10 +260,10 @@ namespace CosmicShore.Gameplay
                 trailEnabledPerSegment.Add(true);
             }
 
-            // Pen up → right eyebrow
+            // Pen up -> right eyebrow
             trailEnabledPerSegment[trailEnabledPerSegment.Count - 1] = false;
 
-            // ── Right eyebrow (arc) ──
+            // -- Right eyebrow (arc) --
             for (int i = 0; i <= 4; i++)
             {
                 float t = (float)i / 4;
@@ -273,10 +273,10 @@ namespace CosmicShore.Gameplay
                 trailEnabledPerSegment.Add(true);
             }
 
-            // Pen up → right eye
+            // Pen up -> right eye
             trailEnabledPerSegment[trailEnabledPerSegment.Count - 1] = false;
 
-            // ── Right eye (circle) ──
+            // -- Right eye (circle) --
             for (int i = 0; i <= eyePoints; i++)
             {
                 float angle = (i / (float)eyePoints) * Mathf.PI * 2f;
@@ -285,19 +285,19 @@ namespace CosmicShore.Gameplay
                 trailEnabledPerSegment.Add(true);
             }
 
-            // Pen up → nose
+            // Pen up -> nose
             trailEnabledPerSegment[trailEnabledPerSegment.Count - 1] = false;
 
-            // ── Nose (small vertical line) ──
+            // -- Nose (small vertical line) --
             waypoints.Add(new Vector3(0f, r * 0.08f, 0f));
             trailEnabledPerSegment.Add(true);
             waypoints.Add(new Vector3(0f, -r * 0.05f, 0f));
             trailEnabledPerSegment.Add(true);
 
-            // Pen up → mouth
+            // Pen up -> mouth
             trailEnabledPerSegment[trailEnabledPerSegment.Count - 1] = false;
 
-            // ── Mouth (wide smile arc) ──
+            // -- Mouth (wide smile arc) --
             float mouthR = r * 0.5f;
             float mouthY = -r * 0.2f;
             int mouthPoints = 12;
@@ -332,7 +332,7 @@ namespace CosmicShore.Gameplay
             float girdleY = r * 0.1f;    // girdle sits slightly above center
             float crownMid = r * 0.45f;  // crown facet midpoint width
 
-            // Outline: top → right crown → girdle right → bottom point → girdle left → left crown → top
+            // Outline: top -> right crown -> girdle right -> bottom point -> girdle left -> left crown -> top
             var verts = new Vector3[]
             {
                 new(0f, r, 0f),                            // table top center
@@ -348,14 +348,14 @@ namespace CosmicShore.Gameplay
                 new(0f, r, 0f),                            // close at top
             };
 
-            // Pen up → draw the girdle line across
+            // Pen up -> draw the girdle line across
             foreach (var v in verts)
             {
                 waypoints.Add(v);
                 trailEnabledPerSegment.Add(true);
             }
 
-            // Pen up → draw horizontal girdle line
+            // Pen up -> draw horizontal girdle line
             trailEnabledPerSegment[trailEnabledPerSegment.Count - 1] = false;
             waypoints.Add(new Vector3(-girdle, girdleY, 0f));
             trailEnabledPerSegment.Add(true);

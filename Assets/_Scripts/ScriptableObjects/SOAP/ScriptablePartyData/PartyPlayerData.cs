@@ -5,7 +5,7 @@ namespace CosmicShore.ScriptableObjects
     /// <summary>
     /// Immutable snapshot of a player's identity within the party/presence system.
     /// Used as the payload for SOAP events and as the element type for ScriptableList.
-    /// Equality is by PlayerId only — optional party-state fields can update without
+    /// Equality is by PlayerId only - optional party-state fields can update without
     /// breaking list dedup.
     /// </summary>
     [System.Serializable]

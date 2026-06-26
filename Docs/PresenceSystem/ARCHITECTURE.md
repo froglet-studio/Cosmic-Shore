@@ -1,4 +1,4 @@
-# Presence System — Architecture Snapshot
+# Presence System - Architecture Snapshot
 
 The presence lobby is the **discovery layer** of the party system.
 Players use it to find each other and exchange invite payloads. It's
@@ -17,7 +17,7 @@ which delegates to `PresenceLobbyService.JoinOrCreateAsync`.
 |---|---|
 | Type | UGS Multiplayer Session, lobby-only |
 | Max players | 100 |
-| Relay transport | None — coexists safely with a NetworkManager |
+| Relay transport | None - coexists safely with a NetworkManager |
 | Session-property game mode tag | `PRESENCE_LOBBY` |
 | Discovery model | Query for existing lobby with the `PRESENCE_LOBBY` tag; if found, join; else create. Re-query after a 1500 ms settle to detect simultaneous-creation races. |
 
@@ -37,7 +37,7 @@ versa.
 Invites are encoded as **per-player properties on the presence lobby**,
 not as session properties. This is intentional:
 
-- **Per-player properties** can be written by the player themselves —
+- **Per-player properties** can be written by the player themselves -
   no host privilege needed. Any lobby member can invite any other lobby
   member.
 - **Session properties** would require the host to mediate every
@@ -48,12 +48,12 @@ not as session properties. This is intentional:
 |---|---|---|---|
 | `displayName` | Self | Everyone | UI label |
 | `avatarId` | Self | Everyone | Avatar art |
-| `partyCount` | Self | Everyone | "I'm in a party of N" — for "In Lobby N/4" badges |
+| `partyCount` | Self | Everyone | "I'm in a party of N" - for "In Lobby N/4" badges |
 | `partyMax` | Self | Everyone | The cap N is referring to |
 | `invite_target` | Sender | Recipient (via refresh-loop scan) | Player ID of the recipient |
 | `invite_data` | Sender | Recipient | Serialized `PartyInviteData` (sender's session ID + display + avatar) |
 | `accepted_invite` | Recipient | Sender (via refresh-loop scan) | "I'm coming to join your session" handshake signal |
-| `joined_party` | Recipient | Everyone | "I'm now in this party session" — for host roster reconciliation |
+| `joined_party` | Recipient | Everyone | "I'm now in this party session" - for host roster reconciliation |
 
 The full property list and write semantics live in
 `PresenceLobbyService.cs:60-72`.
@@ -69,7 +69,7 @@ property reads. Two modes:
 | **Boost** | ~2 s for 15 s | Fired by `Boost()` on invite-receive or party-state change; tightens the window for the joiner to see the next state change |
 
 Boosting on invite-receive is the reason the lobby property writes can
-cluster — see `BUGS.md` B1.
+cluster - see `BUGS.md` B1.
 
 ## Single-writer pattern
 
@@ -92,7 +92,7 @@ no-op). Called only by `HostConnectionService.RefreshAsync` when the
 consecutive-error counter exceeds the reconnect threshold (and the
 catch-guard at the top of `RefreshAsync` did not fire).
 
-**False ForceReset is the main historical failure surface** — the YS2
+**False ForceReset is the main historical failure surface** - the YS2
 bug (commit `a1a8eb9`) was an in-flight refresh that fired ForceReset
 during a successful party transition, leaving the joiner in a private
 throwaway lobby. The fix added a second catch-guard inside the catch
@@ -113,9 +113,9 @@ block (companion to the existing entry guard at the top of
 
 ## Related docs
 
-- `REFACTOR.md` — `PresenceLobbyService` refactor backlog
-- `BUGS.md` — open presence-side bugs (B1, B4, B6)
-- `TESTS.md` — presence-specific manual test procedures
-- `TODOS.md` — minor parking-lot items
-- `../PartySystem/ARCHITECTURE.md` — party (Relay) layer
-- `../NetworkDiagnostics/ARCHITECTURE.md` — NetDiag overlay used by presence catches
+- `REFACTOR.md` - `PresenceLobbyService` refactor backlog
+- `BUGS.md` - open presence-side bugs (B1, B4, B6)
+- `TESTS.md` - presence-specific manual test procedures
+- `TODOS.md` - minor parking-lot items
+- `../PartySystem/ARCHITECTURE.md` - party (Relay) layer
+- `../NetworkDiagnostics/ARCHITECTURE.md` - NetDiag overlay used by presence catches

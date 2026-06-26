@@ -4,15 +4,15 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// Generates a runtime octahedron mesh from box half-extents, using the
-    /// *circumscribing dual* of the box (vertices at ±3·halfExtent on each axis),
+    /// *circumscribing dual* of the box (vertices at +/-3*halfExtent on each axis),
     /// so the authored box collider nests inside the resulting shape.
     ///
     /// Geometry (circumscribing dual):
     ///   Given box half-extents (a, b, c):
-    ///     vertices = { (±3a, 0, 0), (0, ±3b, 0), (0, 0, ±3c) }
-    ///     inequality:   |x/(3a)| + |y/(3b)| + |z/(3c)| ≤ 1
-    ///     volume:       V_oct = (4/3) * (3a)(3b)(3c) = 36·a·b·c
-    ///     V_box = 8·a·b·c  →  mass ratio (shielded/unshielded) = 36/8 = 4.5
+    ///     vertices = { (+/-3a, 0, 0), (0, +/-3b, 0), (0, 0, +/-3c) }
+    ///     inequality:   |x/(3a)| + |y/(3b)| + |z/(3c)| <= 1
+    ///     volume:       V_oct = (4/3) * (3a)(3b)(3c) = 36*a*b*c
+    ///     V_box = 8*a*b*c  ->  mass ratio (shielded/unshielded) = 36/8 = 4.5
     ///
     /// 8 triangular faces, 6 shared vertices. For flat shading each face is
     /// expanded to its own 3 unique vertices (24 verts, 8 tris) so normals
@@ -23,7 +23,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Mass ratio between the circumscribing octahedron shield and the
         /// inscribed box, assuming uniform density.
-        /// V_oct_circum / V_box = 36·a·b·c / 8·a·b·c = 4.5
+        /// V_oct_circum / V_box = 36*a*b*c / 8*a*b*c = 4.5
         /// </summary>
         public const float SHIELD_TO_BOX_VOLUME_RATIO = 4.5f;
 
@@ -48,7 +48,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Rewrite an existing mesh in-place. Reuses the mesh's vertex/index
-        /// buffers and is cheaper than allocating a new Mesh each frame — use
+        /// buffers and is cheaper than allocating a new Mesh each frame - use
         /// this for lerp/morph animations.
         /// </summary>
         public static void PopulateMesh(Mesh mesh, Vector3 halfExtents, float shieldScale = CIRCUMSCRIBING_SCALE)
@@ -68,9 +68,9 @@ namespace CosmicShore.Utility
             Vector3 nZ = new Vector3( 0,  0, -c);
 
             // 8 triangular faces, one per octant. For octant (sx,sy,sz) the
-            // face vertices are (sx·pX, sy·pY, sz·pZ). Winding v_X → v_Y → v_Z
-            // yields an outward-pointing normal iff sx·sy·sz == +1; otherwise
-            // we swap to v_X → v_Z → v_Y to flip the normal.
+            // face vertices are (sx*pX, sy*pY, sz*pZ). Winding v_X -> v_Y -> v_Z
+            // yields an outward-pointing normal iff sx*sy*sz == +1; otherwise
+            // we swap to v_X -> v_Z -> v_Y to flip the normal.
             //
             // For flat shading each face owns its own 3 vertices (24 verts total).
             var verts = new Vector3[24];
@@ -78,12 +78,12 @@ namespace CosmicShore.Utility
             var tris  = new int[24];
 
             int vi = 0;
-            // sx·sy·sz = +1 octants: standard winding (X → Y → Z)
+            // sx*sy*sz = +1 octants: standard winding (X -> Y -> Z)
             AddFace(verts, norms, tris, ref vi, pX, pY, pZ); // (+,+,+)
             AddFace(verts, norms, tris, ref vi, pX, nY, nZ); // (+,-,-)
             AddFace(verts, norms, tris, ref vi, nX, pY, nZ); // (-,+,-)
             AddFace(verts, norms, tris, ref vi, nX, nY, pZ); // (-,-,+)
-            // sx·sy·sz = -1 octants: flipped winding (X → Z → Y)
+            // sx*sy*sz = -1 octants: flipped winding (X -> Z -> Y)
             AddFace(verts, norms, tris, ref vi, pX, pZ, nY); // (+,-,+)
             AddFace(verts, norms, tris, ref vi, pX, nZ, pY); // (+,+,-)
             AddFace(verts, norms, tris, ref vi, nX, pZ, pY); // (-,+,+)
@@ -101,11 +101,11 @@ namespace CosmicShore.Utility
         /// Rewrite an existing mesh in-place with per-face scaling. Each of
         /// the 8 triangular faces is scaled around its own centroid by
         /// <paramref name="faceScale"/>:
-        ///   0 → every face collapsed to a point at its center (invisible)
-        ///   1 → full-size octahedron (identical to <see cref="PopulateMesh"/>)
+        ///   0 -> every face collapsed to a point at its center (invisible)
+        ///   1 -> full-size octahedron (identical to <see cref="PopulateMesh"/>)
         ///
         /// Each vertex v_i on a face becomes:
-        ///   centroid + faceScale · (v_i − centroid)
+        ///   centroid + faceScale * (v_i - centroid)
         ///
         /// Use this for the engage morph so faces "bloom" outward
         /// from their centers rather than the whole shape growing uniformly.
@@ -132,7 +132,7 @@ namespace CosmicShore.Utility
 
             mesh.vertices = verts; // write back
             mesh.RecalculateBounds();
-            // Normals stay correct — direction is unchanged by uniform
+            // Normals stay correct - direction is unchanged by uniform
             // per-face scaling from centroid; only magnitude changes.
         }
 
@@ -141,11 +141,11 @@ namespace CosmicShore.Utility
         /// AND translates outward along its face normal. Produces a "shield
         /// panels flying apart" effect when used during disengage.
         ///
-        ///   faceScale:  1 → full-size face, 0 → collapsed to centroid point
-        ///   faceOffset: 0 → face at original position, &gt;0 → displaced outward
+        ///   faceScale:  1 -> full-size face, 0 -> collapsed to centroid point
+        ///   faceOffset: 0 -> face at original position, &gt;0 -> displaced outward
         ///
         /// Each vertex v_i becomes:
-        ///   centroid + faceScale · (v_i − centroid) + faceOffset · faceNormal
+        ///   centroid + faceScale * (v_i - centroid) + faceOffset * faceNormal
         /// </summary>
         public static void PopulateMeshFaceShatter(Mesh mesh, Vector3 halfExtents,
             float faceScale, float faceOffset, float shieldScale = CIRCUMSCRIBING_SCALE)
@@ -188,10 +188,10 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Branchless containment test for a point in local space relative to
         /// the circumscribing octahedron. Uses the L1-norm inequality
-        ///   |x|·invA + |y|·invB + |z|·invC ≤ 1
-        /// where invA/B/C = 1 / (shieldScale · halfExtent).
+        ///   |x|*invA + |y|*invB + |z|*invC <= 1
+        /// where invA/B/C = 1 / (shieldScale * halfExtent).
         ///
-        /// Precompute the inverses once per prism and reuse — this is the
+        /// Precompute the inverses once per prism and reuse - this is the
         /// fast path for gameplay overlap checks without a MeshCollider.
         /// </summary>
         public static bool ContainsPointLocal(Vector3 localPoint, float invA, float invB, float invC)

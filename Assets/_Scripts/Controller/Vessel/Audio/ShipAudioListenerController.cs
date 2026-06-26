@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay.Audio
     /// Problem solved:
     ///   The default <see cref="StudioListener"/> lives on the camera. 3D
     ///   spatialization (left/right panning, attenuation) is therefore
-    ///   camera-relative — a crystal to your ship's right only pans right if
+    ///   camera-relative - a crystal to your ship's right only pans right if
     ///   the camera is also facing your ship's forward direction.
     ///
     /// Solution:
@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay.Audio
     ///   <see cref="ProximityBoostAudioController"/>,
     ///   <see cref="DriftAudioController"/>) resolve the listener via
     ///   <c>FindFirstObjectByType&lt;StudioListener&gt;()</c>. Once the ship
-    ///   listener is active, those calls return this ship-mounted one — no
+    ///   listener is active, those calls return this ship-mounted one - no
     ///   changes to those controllers are needed.
     ///
     /// Offset:
@@ -60,21 +60,21 @@ namespace CosmicShore.Gameplay.Audio
         [SerializeField, Tooltip("Log activation / deactivation to the console.")]
         bool debugLog = false;
 
-        // ── Child GO that holds the FMOD + Unity listeners ──────────────────
+        // -- Child GO that holds the FMOD + Unity listeners ------------------
         GameObject _listenerGO;
         StudioListener _shipListener;
         AudioListener _shipUnityListener;
 
-        // ── Cached scene listeners that we displace ──────────────────────────
+        // -- Cached scene listeners that we displace --------------------------
         StudioListener _cameraFmodListener;
         AudioListener _cameraUnityListener;
 
-        // ── State ────────────────────────────────────────────────────────────
+        // -- State ------------------------------------------------------------
         IVesselStatus _status;
         bool _activated;
         bool _initResolved;   // true once IsLocalUser is known
 
-        // ─────────────────────────────────────────────────────────────────────
+        // ---------------------------------------------------------------------
 
         void Awake()
         {
@@ -90,7 +90,7 @@ namespace CosmicShore.Gameplay.Audio
             _shipListener = _listenerGO.AddComponent<StudioListener>();
             _shipUnityListener = _listenerGO.AddComponent<AudioListener>();
 
-            // Disabled until activation — prevents two active listeners.
+            // Disabled until activation - prevents two active listeners.
             _listenerGO.SetActive(false);
         }
 
@@ -105,7 +105,7 @@ namespace CosmicShore.Gameplay.Audio
 
             if (_status.IsLocalUser)
                 Activate();
-            // else: remote / AI — stay dormant, never activate.
+            // else: remote / AI - stay dormant, never activate.
         }
 
         void OnDestroy()
@@ -132,7 +132,7 @@ namespace CosmicShore.Gameplay.Audio
                 Activate();
         }
 
-        // ── Activation / Deactivation ─────────────────────────────────────────
+        // -- Activation / Deactivation -----------------------------------------
 
         void Activate()
         {
@@ -165,7 +165,7 @@ namespace CosmicShore.Gameplay.Audio
                           $"(restored camera listener: {(_cameraFmodListener != null ? _cameraFmodListener.gameObject.name : "none")}).");
         }
 
-        // ── Camera listener helpers ───────────────────────────────────────────
+        // -- Camera listener helpers -------------------------------------------
 
         void CacheAndDisableCameraListeners()
         {
@@ -219,10 +219,10 @@ namespace CosmicShore.Gameplay.Audio
             }
         }
 
-        // ── Public surface ────────────────────────────────────────────────────
+        // -- Public surface ----------------------------------------------------
 
         /// <summary>
-        /// The ship-mounted <see cref="StudioListener"/> — valid after
+        /// The ship-mounted <see cref="StudioListener"/> - valid after
         /// <c>Awake</c>. Active only when this is the local player's vessel.
         /// </summary>
         public StudioListener ShipListener => _shipListener;

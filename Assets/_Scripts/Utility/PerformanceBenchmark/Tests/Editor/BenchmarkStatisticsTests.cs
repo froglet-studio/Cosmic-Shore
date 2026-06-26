@@ -194,7 +194,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Tests
         [Test]
         public void Compute_RisingMemory_ProducesPositiveSlope()
         {
-            // Memory 100, 200, 300 over frame indices 0,1,2 → slope = 100 bytes/frame.
+            // Memory 100, 200, 300 over frame indices 0,1,2 -> slope = 100 bytes/frame.
             var snapshots = new List<FrameSnapshot>
             {
                 new FrameSnapshot { deltaTimeMs = 16f, fps = 60f, totalAllocatedMemory = 100 },

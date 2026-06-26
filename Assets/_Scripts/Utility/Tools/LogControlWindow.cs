@@ -14,7 +14,7 @@ namespace CosmicShore.Utility
 {
     public class LogControlWindow : EditorWindow
     {
-        // ── Prefs keys ───────────────────────────────────────────────────────
+        // -- Prefs keys -------------------------------------------------------
         const string PrefLogEnabled = "CSDebug_LogEnabled";
         const string PrefWarningsEnabled = "CSDebug_WarningsEnabled";
         const string PrefErrorsEnabled = "CSDebug_ErrorsEnabled";
@@ -22,13 +22,13 @@ namespace CosmicShore.Utility
         const string PrefBootstrapScene = "Load Main_Menu Scene";
         const int Pad = 12;
 
-        // ── State ────────────────────────────────────────────────────────────
+        // -- State ------------------------------------------------------------
         Vector2 _scrollPos;
         string _questIndexInput = "1";
         string _crystalAmountInput = "100";
         SO_VesselList _vesselList;
 
-        // ── Tab system ───────────────────────────────────────────────────────
+        // -- Tab system -------------------------------------------------------
         int _selectedTab;
 
         struct TabDef
@@ -50,7 +50,7 @@ namespace CosmicShore.Utility
             new() { Label = "UGS Data",   Color = new Color(0.75f, 0.85f, 0.60f, 1f), Draw = w => w.DrawUGSDataTab() },
         };
 
-        // ── UGS Data sub-foldouts ────────────────────────────────────────────
+        // -- UGS Data sub-foldouts --------------------------------------------
         bool _ugsProfileFoldout;
         bool _ugsStatsFoldout;
         bool _ugsVesselStatsFoldout;
@@ -62,7 +62,7 @@ namespace CosmicShore.Utility
         // EditorPrefs key for pending debug crystals (edit-mode awards applied on next play)
         const string PrefPendingCrystals = "FrogletDebug_PendingCrystals";
 
-        // ── Pastel Palette ───────────────────────────────────────────────────
+        // -- Pastel Palette ---------------------------------------------------
         static readonly Color BannerBg       = new(0.22f, 0.20f, 0.30f, 1f);
         static readonly Color AccentLavender = new(0.68f, 0.62f, 0.85f, 1f);
         static readonly Color SectionHeader  = new(0.20f, 0.19f, 0.26f, 1f);
@@ -74,7 +74,7 @@ namespace CosmicShore.Utility
         static readonly Color TabInactive    = new(0.18f, 0.17f, 0.22f, 1f);
         static readonly Color TabHover       = new(0.26f, 0.24f, 0.32f, 1f);
 
-        // ── Styles ───────────────────────────────────────────────────────────
+        // -- Styles -----------------------------------------------------------
         [NonSerialized] GUIStyle _bannerStyle;
         [NonSerialized] GUIStyle _badgeStyle;
         [NonSerialized] GUIStyle _infoStyle;
@@ -214,15 +214,15 @@ namespace CosmicShore.Utility
             _stylesBuilt = true;
         }
 
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         //  MAIN GUI
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
 
         void OnGUI()
         {
             BuildStyles();
 
-            // ── Banner ───────────────────────────────────────────────────────
+            // -- Banner -------------------------------------------------------
             var bannerRect = GUILayoutUtility.GetRect(0, 34, GUILayout.ExpandWidth(true));
             EditorGUI.DrawRect(bannerRect, BannerBg);
             GUI.Label(bannerRect, "Froglet Toolbox", _bannerStyle);
@@ -230,10 +230,10 @@ namespace CosmicShore.Utility
             var lineRect = GUILayoutUtility.GetRect(0, 1, GUILayout.ExpandWidth(true));
             EditorGUI.DrawRect(lineRect, AccentLavender * 0.6f);
 
-            // ── Tab Bar ──────────────────────────────────────────────────────
+            // -- Tab Bar ------------------------------------------------------
             DrawTabBar();
 
-            // ── Tab Content ──────────────────────────────────────────────────
+            // -- Tab Content --------------------------------------------------
             _scrollPos = EditorGUILayout.BeginScrollView(_scrollPos);
 
             // Draw a subtle tinted background for the entire content area
@@ -254,10 +254,10 @@ namespace CosmicShore.Utility
             GUILayout.Space(8);
             EditorGUILayout.EndScrollView();
 
-            // ── Footer ───────────────────────────────────────────────────────
+            // -- Footer -------------------------------------------------------
             var footerRect = GUILayoutUtility.GetRect(0, 18, GUILayout.ExpandWidth(true));
             EditorGUI.DrawRect(footerRect, FooterBg);
-            GUI.Label(footerRect, "Froglet Inc. — Cosmic Shore", _mutedLabel);
+            GUI.Label(footerRect, "Froglet Inc. - Cosmic Shore", _mutedLabel);
         }
 
         void DrawTabBar()
@@ -332,9 +332,9 @@ namespace CosmicShore.Utility
             }
         }
 
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         //  TAB: SCENES
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         void DrawScenesTab()
         {
             DrawTabTitle("Scenes", Tabs[0].Color);
@@ -344,9 +344,9 @@ namespace CosmicShore.Utility
             DrawSceneButton("PlayFab Sandbox",        "Assets/_Scenes/TestScenes/Playfab Sandbox Test/Playfab Sandbox.unity");
         }
 
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         //  TAB: TOOLS (Create, Multiplayer, Utilities)
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         void DrawToolsTab()
         {
             DrawTabTitle("Tools", Tabs[1].Color);
@@ -377,9 +377,9 @@ namespace CosmicShore.Utility
             DrawMenuItemButton("Force Re-Serialize All SOs", "FrogletTools/Legacy/Force Re-Serialize All ScriptableObjects");
         }
 
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         //  TAB: LOGGING
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         void DrawLoggingTab()
         {
             DrawTabTitle("Logging", Tabs[2].Color);
@@ -406,7 +406,7 @@ namespace CosmicShore.Utility
             DrawLogToggle("Errors",   CSDebug.ErrorsEnabled,   v => { CSDebug.ErrorsEnabled = v; SavePrefs(); });
         }
 
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         //  TAB: DENSITY (Density Partition Benchmark Runner)
         //
         //  Decoupled from the runner type at compile time via reflection so this
@@ -414,7 +414,7 @@ namespace CosmicShore.Utility
         //  is missing, deleted, or hasn't been re-imported yet. The reflection
         //  surface is tiny (one Type lookup + one method invoke + one field read)
         //  and the runner's API is part of the audit's locked-in contract.
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         const string DensityBenchmarkScenePath = "Assets/_Scenes/Game_TestDesign/DensityPartitionBenchmark.unity";
         const string DensityRunnerTypeName = "CosmicShore.Utility.Tools.DensityPartitionBenchmark.DensityPartitionBenchmarkRunner";
         const string DensityTemporalSimTypeName = "CosmicShore.Utility.Tools.DensityPartitionBenchmark.DensityPartitionTemporalSimRunner";
@@ -521,7 +521,7 @@ namespace CosmicShore.Utility
 
             GUILayout.Space(8);
 
-            // ── Temporal ecology sim ──────────────────────────────────────
+            // -- Temporal ecology sim --------------------------------------
             DrawSubSectionLabel("Temporal Ecology Sim");
             var simType = ResolveTemporalSimType();
             var sim = simType != null ? FindRunnerInOpenScenes(simType) : null;
@@ -598,11 +598,11 @@ namespace CosmicShore.Utility
             EditorGUILayout.BeginHorizontal();
             GUILayout.Space(Pad);
             EditorGUILayout.LabelField(
-                "1. Paste the report back to the prompter — it's the falsifiable correctness contract.\n" +
+                "1. Paste the report back to the prompter - it's the falsifiable correctness contract.\n" +
                 "2. The geometric benchmark grades single-query accuracy. The temporal sim runs the " +
                 "flora/fauna/phase loop over time and checks whether outer-shell mass stays bounded " +
-                "(fauna reach it) or accumulates forever (the shipped ±500m grid is blind to it).\n" +
-                "3. Runs are deterministic per seed — a textual diff surfaces real changes.",
+                "(fauna reach it) or accumulates forever (the shipped +/-500m grid is blind to it).\n" +
+                "3. Runs are deterministic per seed - a textual diff surfaces real changes.",
                 EditorStyles.wordWrappedMiniLabel);
             EditorGUILayout.EndHorizontal();
         }
@@ -614,7 +614,7 @@ namespace CosmicShore.Utility
             method?.Invoke(target, null);
         }
 
-        // ── Scene creation (Unity generates a valid .unity file) ──
+        // -- Scene creation (Unity generates a valid .unity file) --
 
         static void EnsureAndOpenBenchmarkScene()
         {
@@ -670,7 +670,7 @@ namespace CosmicShore.Utility
 
             var go = new GameObject("DensityPartitionBenchmarkRunner");
             go.AddComponent(runnerType);
-            // Also add the temporal ecology sim runner if it compiled — same
+            // Also add the temporal ecology sim runner if it compiled - same
             // GameObject, so the Density tab finds both in one scene.
             var simType = ResolveTemporalSimType();
             if (simType != null) go.AddComponent(simType);
@@ -686,7 +686,7 @@ namespace CosmicShore.Utility
             CSDebug.Log($"[FrogletToolbox] Created {DensityBenchmarkScenePath}.");
         }
 
-        // ── Reflection helpers (decouple from runner type at compile time) ──
+        // -- Reflection helpers (decouple from runner type at compile time) --
 
         /// <summary>
         /// Called when ResolveRunnerType() returns null. Prints a diagnostic showing
@@ -698,7 +698,7 @@ namespace CosmicShore.Utility
         {
             var sb = new System.Text.StringBuilder();
             sb.AppendLine($"[FrogletToolbox] Cannot find '{DensityRunnerTypeName}'.");
-            sb.AppendLine("Diagnostic — searching every loaded assembly for *DensityPartition* types:");
+            sb.AppendLine("Diagnostic - searching every loaded assembly for *DensityPartition* types:");
 
             int hits = 0;
             foreach (var asm in System.AppDomain.CurrentDomain.GetAssemblies())
@@ -725,9 +725,9 @@ namespace CosmicShore.Utility
                 sb.AppendLine("  (no DensityPartition* types in any loaded assembly)");
                 sb.AppendLine();
                 sb.AppendLine("Most likely cause: the .cs files in Assets/_Scripts/Utility/Tools/DensityPartitionBenchmark/");
-                sb.AppendLine("failed to compile. Check the Console for any other compile errors (red ⊘ icon, not yellow ⚠).");
+                sb.AppendLine("failed to compile. Check the Console for any other compile errors (red (x) icon, not yellow (!)).");
                 sb.AppendLine("If the Console is clean, try:");
-                sb.AppendLine("  1. Right-click Assets/_Scripts/Utility/Tools/DensityPartitionBenchmark → Reimport.");
+                sb.AppendLine("  1. Right-click Assets/_Scripts/Utility/Tools/DensityPartitionBenchmark -> Reimport.");
                 sb.AppendLine("  2. Assets > Refresh (Ctrl-R / Cmd-R).");
                 sb.AppendLine("  3. Close Unity and delete the Library/ScriptAssemblies folder, then reopen.");
             }
@@ -735,7 +735,7 @@ namespace CosmicShore.Utility
             {
                 sb.AppendLine();
                 sb.AppendLine($"Found {hits} DensityPartition* type(s) but expected name '{DensityRunnerTypeName}' wasn't among them.");
-                sb.AppendLine("This means the runner is loaded under a different namespace — paste the diagnostic above and I'll fix it.");
+                sb.AppendLine("This means the runner is loaded under a different namespace - paste the diagnostic above and I'll fix it.");
             }
 
             Debug.LogError(sb.ToString());
@@ -795,9 +795,9 @@ namespace CosmicShore.Utility
             method?.Invoke(runner, null);
         }
 
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         //  TAB: QUEST (Quest Debug, Non-Quest Game Modes, Intensity)
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         void DrawQuestTab()
         {
             DrawTabTitle("Quest Debug", Tabs[4].Color);
@@ -813,7 +813,7 @@ namespace CosmicShore.Utility
 
             var svc = GameModeProgressionService.Instance;
 
-            // ── Quest progression ──
+            // -- Quest progression --
             DrawSubSectionLabel("Quest Progression");
             int maxQuests = svc.QuestList?.Quests.Count ?? 1;
 
@@ -848,7 +848,7 @@ namespace CosmicShore.Utility
 
             GUILayout.Space(8);
 
-            // ── Non-Quest Game Modes ──
+            // -- Non-Quest Game Modes --
             DrawSubSectionLabel("Non-Quest Game Modes");
             var nonQuestModes = GetNonQuestModes(svc);
             foreach (var mode in nonQuestModes)
@@ -862,7 +862,7 @@ namespace CosmicShore.Utility
 
             GUILayout.Space(8);
 
-            // ── Intensity Debug ──
+            // -- Intensity Debug --
             DrawSubSectionLabel("Intensity Debug");
             var questList = svc.QuestList;
 
@@ -897,9 +897,9 @@ namespace CosmicShore.Utility
             }
         }
 
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         //  TAB: VESSELS
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         void DrawVesselsTab()
         {
             DrawTabTitle("Vessel Unlock", Tabs[5].Color);
@@ -955,9 +955,9 @@ namespace CosmicShore.Utility
             GUILayout.Label(balanceInfo, _infoStyle);
         }
 
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         //  TAB: CRYSTALS
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         void DrawCrystalsTab()
         {
             DrawTabTitle("Crystal Currency", Tabs[6].Color);
@@ -1023,9 +1023,9 @@ namespace CosmicShore.Utility
             }
         }
 
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         //  TAB: UGS DATA
-        // ═════════════════════════════════════════════════════════════════════
+        // =====================================================================
         void DrawUGSDataTab()
         {
             DrawTabTitle("UGS Data View", Tabs[7].Color);
@@ -1176,7 +1176,7 @@ namespace CosmicShore.Utility
             });
         }
 
-        // ── Drawing helpers ──────────────────────────────────────────────────
+        // -- Drawing helpers --------------------------------------------------
 
         void DrawTabTitle(string title, Color accentColor)
         {
@@ -1207,7 +1207,7 @@ namespace CosmicShore.Utility
                 : new Color(0.85f, 0.83f, 0.92f);
             _contentBoldStyle.normal.textColor = subColor;
             _contentBoldStyle.fontSize = 12;
-            GUI.Label(labelRect, "— " + title, _contentBoldStyle);
+            GUI.Label(labelRect, "- " + title, _contentBoldStyle);
             GUILayout.Space(4);
         }
 
@@ -1269,7 +1269,7 @@ namespace CosmicShore.Utility
                 .ToList();
         }
 
-        // ── UGS Data View helpers ─────────────────────────────────────────────
+        // -- UGS Data View helpers ---------------------------------------------
 
         void DrawUGSSubSection(string title, ref bool foldout, Action drawContent)
         {
@@ -1319,7 +1319,7 @@ namespace CosmicShore.Utility
             EditorGUILayout.EndHorizontal();
         }
 
-        // ── Crystal debug helpers ──────────────────────────────────────────────
+        // -- Crystal debug helpers ----------------------------------------------
 
         void AwardDebugCrystals(int amount)
         {
@@ -1382,7 +1382,7 @@ namespace CosmicShore.Utility
             return pending;
         }
 
-        // ── Prefs persistence ────────────────────────────────────────────────
+        // -- Prefs persistence ------------------------------------------------
 
         static void SavePrefs()
         {

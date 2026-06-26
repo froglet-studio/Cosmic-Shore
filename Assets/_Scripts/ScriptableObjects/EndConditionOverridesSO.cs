@@ -6,17 +6,17 @@ namespace CosmicShore.ScriptableObjects
     /// <summary>
     /// Single source of truth for the per-mode end-game counts for HexRace, Joust, and
     /// Crystal Capture (how many crystals / jousts end a turn) and for Maelstrom / Tournament
-    /// (how many placement points a domain needs to win the whole shuffle — "race to N").
+    /// (how many placement points a domain needs to win the whole shuffle - "race to N").
     ///
     /// Authored ONLY through <c>Tools &gt; Cosmic Shore &gt; End Game Conditions</c>
-    /// (the <c>EndConditionOverridesWindow</c> editor tool) — there are intentionally no
+    /// (the <c>EndConditionOverridesWindow</c> editor tool) - there are intentionally no
     /// per-scene inspector override fields anymore. The turn monitors / <c>TournamentDataSO</c>
     /// load this asset from <c>Resources/EndConditionOverrides</c> at runtime.
     ///
     /// Semantic: <b>0 = auto/default</b>, <b>&gt; 0 = explicit count</b>:
-    ///   • HexRace / Crystal Capture — 0 falls back to the track-waypoint auto-calc (then 39).
-    ///   • Joust — 0 falls back to <see cref="DefaultJoustCount"/>.
-    ///   • Maelstrom — 0 falls back to <see cref="DefaultMaelstromWinTarget"/>.
+    ///   - HexRace / Crystal Capture - 0 falls back to the track-waypoint auto-calc (then 39).
+    ///   - Joust - 0 falls back to <see cref="DefaultJoustCount"/>.
+    ///   - Maelstrom - 0 falls back to <see cref="DefaultMaelstromWinTarget"/>.
     ///
     /// Two value sets are stored: the <b>Live</b> counts (what the game actually uses at runtime)
     /// and the <b>Build baseline</b> (the values a shipping build must use, captured via the tool's
@@ -40,7 +40,7 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Maelstrom / Tournament win target used when <see cref="maelstromWinTarget"/> is 0 (auto/default).</summary>
         public const int DefaultMaelstromWinTarget = 6;
 
-        [Header("Live counts — used at runtime. 0 = auto/default (edit via Tools > Cosmic Shore > End Game Conditions)")]
+        [Header("Live counts - used at runtime. 0 = auto/default (edit via Tools > Cosmic Shore > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
 
@@ -54,7 +54,7 @@ namespace CosmicShore.ScriptableObjects
                  "(race to N). 0 = default (6).")]
         [Min(0)] public int maelstromWinTarget = 6;
 
-        [Header("Build baseline — what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
+        [Header("Build baseline - what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
         [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
         [Min(0)] public int joustCountBuild = 3;
@@ -66,7 +66,7 @@ namespace CosmicShore.ScriptableObjects
         static EndConditionOverridesSO _instance;
 
         /// <summary>
-        /// Cached runtime accessor — loads the asset from <see cref="ResourcePath"/> once.
+        /// Cached runtime accessor - loads the asset from <see cref="ResourcePath"/> once.
         /// Returns null only if the asset is missing (callers fall back to their own defaults).
         /// </summary>
         public static EndConditionOverridesSO Instance
@@ -110,7 +110,7 @@ namespace CosmicShore.ScriptableObjects
             joustCount == joustCountBuild &&
             maelstromWinTarget == maelstromWinTargetBuild;
 
-        /// <summary>Copy the Build baseline onto the Live counts (build → live) — used by the build auto-restore.</summary>
+        /// <summary>Copy the Build baseline onto the Live counts (build -> live) - used by the build auto-restore.</summary>
         public void ApplyBuildValues()
         {
             hexRaceCrystalCount = hexRaceCrystalCountBuild;
@@ -119,7 +119,7 @@ namespace CosmicShore.ScriptableObjects
             maelstromWinTarget = maelstromWinTargetBuild;
         }
 
-        /// <summary>Snapshot the current Live counts as the Build baseline (live → build) — used by "Set Build Values".</summary>
+        /// <summary>Snapshot the current Live counts as the Build baseline (live -> build) - used by "Set Build Values".</summary>
         public void CaptureBuildValues()
         {
             hexRaceCrystalCountBuild = hexRaceCrystalCount;

@@ -30,7 +30,7 @@
 //            GUI.backgroundColor = color;
 //            EditorGUILayout.BeginHorizontal("box");
 
-//            EditorGUILayout.LabelField($"{line.speakerName} � {TruncateText(line.text, 40)}", GUILayout.MaxWidth(400));
+//            EditorGUILayout.LabelField($"{line.speakerName} - {TruncateText(line.text, 40)}", GUILayout.MaxWidth(400));
 
 //            if (GUILayout.Button("X", GUILayout.Width(20)))
 //            {

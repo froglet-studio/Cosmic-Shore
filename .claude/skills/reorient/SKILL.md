@@ -1,9 +1,9 @@
 ---
 name: reorient
-description: Pull the latest bleeding-edge, re-evaluate the project state against it, and issue a verdict — continue as planned, course-correct, or hand off to a fresh session with a written handoff prompt. Use when asked to resync with bleeding-edge, sanity-check the session's direction, or when the session has run long and may be working against stale information.
+description: Pull the latest bleeding-edge, re-evaluate the project state against it, and issue a verdict - continue as planned, course-correct, or hand off to a fresh session with a written handoff prompt. Use when asked to resync with bleeding-edge, sanity-check the session's direction, or when the session has run long and may be working against stale information.
 ---
 
-# Reorient — resync with bleeding-edge and re-evaluate the session
+# Reorient - resync with bleeding-edge and re-evaluate the session
 
 You are mid-session on a working branch. Upstream (`bleeding-edge`) may have
 moved, and this session may have drifted or burned most of its context.
@@ -25,7 +25,7 @@ so nothing can be lost in the steps below.
 
 ## 2. Pull bleeding-edge
 
-- `git fetch origin bleeding-edge` — on network failure retry up to 4 times
+- `git fetch origin bleeding-edge` - on network failure retry up to 4 times
   with exponential backoff (2s, 4s, 8s, 16s).
 - New upstream commits: `git log --oneline HEAD..origin/bleeding-edge`
 - Upstream-side changes only: `git diff --stat HEAD...origin/bleeding-edge`
@@ -36,7 +36,7 @@ only context health.
 
 ## 3. Re-evaluate with the new information
 
-Investigate — do not skim:
+Investigate - do not skim:
 
 - **Docs and rules first.** If `CLAUDE.md`, anything under `Docs/`, or
   `GIT_RULES.md` changed upstream, read those diffs in full. New locked
@@ -61,7 +61,7 @@ Honestly judge whether this session has enough context left to finish well:
 - Would a fresh session with a good handoff prompt outperform continuing
   here?
 
-## 5. Verdict — pick exactly one and act on it
+## 5. Verdict - pick exactly one and act on it
 
 ### CONTINUE
 Upstream changes don't threaten the session's direction.
@@ -74,7 +74,7 @@ Upstream changes don't threaten the session's direction.
 - Report what's new upstream in one paragraph, then resume the task.
 
 ### COURSE-CORRECT
-The session's direction conflicts with new upstream reality — superseded
+The session's direction conflicts with new upstream reality - superseded
 work, contradicted design decision, duplicated effort, or a changed
 foundation.
 
@@ -85,14 +85,14 @@ foundation.
   it changes scope or there are multiple defensible corrections, present the
   options to the user (AskUserQuestion) before proceeding.
 - Never relitigate locked designs (eager per-user Relay, mass conservation,
-  etc. — see `CLAUDE.md` and `Docs/README.md`). Corrections move *toward*
+  etc. - see `CLAUDE.md` and `Docs/README.md`). Corrections move *toward*
   locked designs, never away from them.
 
 ### HANDOFF
 Context is too depleted to finish well, or the corrected task is better
 started fresh.
 
-- Commit and push everything to the session branch first — the container is
+- Commit and push everything to the session branch first - the container is
   ephemeral.
 - Skip the merge if conflict resolution would eat the remaining context;
   record it as the new session's first step instead.
@@ -106,7 +106,7 @@ started fresh.
   so the user can paste it into a new session verbatim.
 
 ### OTHER
-Anything that doesn't fit the three above — e.g., the task already fully
+Anything that doesn't fit the three above - e.g., the task already fully
 landed upstream (propose closing out), or the remote is unreachable (report
 and stop). Describe the situation and the recommended action.
 

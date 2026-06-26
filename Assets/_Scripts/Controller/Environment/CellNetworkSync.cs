@@ -68,7 +68,7 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             // Server-side mirror. Cell.Update already ran the threshold rules locally
-            // and set Cell.Phase / wrote runtime SO — we just push the result onto the
+            // and set Cell.Phase / wrote runtime SO - we just push the result onto the
             // wire so clients can reconcile.
             if (!IsServer || !IsSpawned) return;
             if (!cell) return;

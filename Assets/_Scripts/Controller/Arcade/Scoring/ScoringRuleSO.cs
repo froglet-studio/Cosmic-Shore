@@ -8,12 +8,12 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Per-mode scoring strategy expressed as a ScriptableObject. One concrete asset per mode
     /// (HexRace / Joust / Crystal Capture) is dragged onto that mode's controller, which
-    /// publishes it to <see cref="GameDataSO.ScoringRule"/>. Every shared scoring consumer —
+    /// publishes it to <see cref="GameDataSO.ScoringRule"/>. Every shared scoring consumer -
     /// the network turn monitor (end condition + remaining), and (from later commits) the HUD,
-    /// scoreboard and end-game cinematic — asks the rule instead of carrying per-mode forks.
+    /// scoreboard and end-game cinematic - asks the rule instead of carrying per-mode forks.
     ///
     /// STATELESS: these assets are shared singletons, so a rule must be a pure function of the
-    /// <see cref="GameDataSO"/> passed in — no per-game fields. The mode chooses its metric and
+    /// <see cref="GameDataSO"/> passed in - no per-game fields. The mode chooses its metric and
     /// golf/points style here; per-player formatting lives in the concrete rule (SRP).
     /// </summary>
     public abstract class ScoringRuleSO : ScriptableObject
@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
         public ScoringMetric Metric => metric;
         public bool GolfRules => golfRules;
 
-        /// <summary>The metric value for one player — what the HUD card shows.</summary>
+        /// <summary>The metric value for one player - what the HUD card shows.</summary>
         public int LiveMetric(IRoundStats stats) => ScoringMetrics.Read(stats, metric);
 
         /// <summary>Remaining metric for a domain to reach the target (0 when met or for non-target modes).</summary>
@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The winning domain at game end = the active domain with the highest metric sum.
-        /// Ties break by <see cref="GameDataSO.ActiveDomains"/> order (Jade → Ruby → Gold), so
+        /// Ties break by <see cref="GameDataSO.ActiveDomains"/> order (Jade -> Ruby -> Gold), so
         /// identical inputs resolve identically on every machine.
         /// </summary>
         public virtual Domains ResolveWinner(GameDataSO gameData)
@@ -77,7 +77,7 @@ namespace CosmicShore.Gameplay
         protected virtual int TargetCount(GameDataSO gameData) => 0;
 
         /// <summary>
-        /// Absolute gap between the winning domain's metric sum and the best losing domain's —
+        /// Absolute gap between the winning domain's metric sum and the best losing domain's -
         /// the "WON/LOST BY N" figure for the reveal.
         /// </summary>
         protected int DomainDelta(GameDataSO gameData)
