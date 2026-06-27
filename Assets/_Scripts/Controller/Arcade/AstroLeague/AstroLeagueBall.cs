@@ -718,11 +718,12 @@ namespace CosmicShore.Gameplay
             if (Vector3.Dot(rb.linearVelocity - strikerVelocity, n) >= 0f) return;
 
             float now = Time.time;
-            bool deliberate = strikerVelocity.magnitude >= settings.minimumHitSpeed
+            float strikerSpeed = strikerVelocity.magnitude; // computed once, reused inside VesselStrike
+            bool deliberate = strikerSpeed >= settings.minimumHitSpeed
                 && (!_lastStrikeTime.TryGetValue(root, out var last) || now - last >= settings.vesselStrikeCooldown);
             if (deliberate) _lastStrikeTime[root] = now;
 
-            VesselStrike(vessel, contactPoint, strikerVelocity, n, deliberate);
+            VesselStrike(vessel, contactPoint, strikerVelocity, strikerSpeed, n, deliberate);
         }
 
         /// <summary>The ball's world-space radius (collider radius × max lossy scale) — tracks intensity scaling.</summary>
@@ -767,7 +768,7 @@ namespace CosmicShore.Gameplay
         /// caller guarantees that). When <paramref name="deliberate"/> (fast hit, off cooldown) it also
         /// adds the arcade pop (hitBoostMultiplier, aim-biased), recoils the vessel, and may hitstop.
         /// </summary>
-        void VesselStrike(IVessel vessel, Vector3 contactPoint, Vector3 strikerVelocity, Vector3 n, bool deliberate)
+        void VesselStrike(IVessel vessel, Vector3 contactPoint, Vector3 strikerVelocity, float strikerSpeed, Vector3 n, bool deliberate)
         {
             // Re-color the ball to the striker's domain — every bounce counts as the last hit. The
             // per-tick prism scan picks up the new same/opposing relationship automatically next tick.
@@ -775,7 +776,6 @@ namespace CosmicShore.Gameplay
             if (n_LastHitDomain.Value != strikerDomain)
                 n_LastHitDomain.Value = strikerDomain;
 
-            float strikerSpeed = strikerVelocity.magnitude;
             Vector3 ballVel = rb.linearVelocity;
 
             // Elastic collision off the moving paddle (momentum-conserving against an infinite-mass
