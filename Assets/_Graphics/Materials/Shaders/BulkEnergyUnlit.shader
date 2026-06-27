@@ -11,7 +11,7 @@ Shader "CosmicShore/BulkEnergyUnlit"
     SubShader
     {
         Tags { "Queue"="Transparent" "RenderType"="Transparent" }
-        Blend SrcAlpha One
+        Blend SrcAlpha OneMinusSrcAlpha
         ZWrite Off
         Cull Off
 
@@ -54,10 +54,10 @@ Shader "CosmicShore/BulkEnergyUnlit"
             fixed4 frag(v2f i) : SV_Target
             {
                 float stripe = sin((i.uv.x * 31.0 + _Time.y * 5.5) * 6.2831853) * 0.5 + 0.5;
-                float glow = 1.0 + _Pulse * 0.55 + stripe * 0.22;
-                fixed4 color = lerp(_BaseColor, _EmissionColor, saturate(0.42 + _Pulse * 0.18));
+                float glow = 0.82 + _Pulse * 0.28 + stripe * 0.12;
+                fixed4 color = lerp(_BaseColor, _EmissionColor, saturate(0.28 + _Pulse * 0.12));
                 color.rgb *= glow;
-                color.a = saturate(_Alpha * _BaseColor.a * (0.72 + _Pulse * 0.16 + stripe * 0.12));
+                color.a = saturate(_Alpha * _BaseColor.a * (0.62 + _Pulse * 0.08 + stripe * 0.08));
                 return color * i.color;
             }
             ENDCG

@@ -13,6 +13,7 @@ namespace CosmicShore.Gameplay
         float _awaitingVesselLogTimer;
         bool _countdownStarted;
         bool _vesselStagedForStart;
+        bool _spawnFallbackAttempted;
 
         protected override void OnReadyClicked_()
         {
@@ -23,6 +24,7 @@ namespace CosmicShore.Gameplay
         {
             _countdownStarted = false;
             _vesselStagedForStart = false;
+            _spawnFallbackAttempted = false;
             _awaitingVesselLogTimer = 0f;
             _autoStartTimer = autoStartCountdown ? autoStartDelay : -1f;
             RaiseToggleReadyButtonEvent(!autoStartCountdown);
@@ -43,13 +45,10 @@ namespace CosmicShore.Gameplay
             if (_countdownStarted)
                 return;
 
-            if (!StageVesselForStart())
-                return;
-
             _countdownStarted = true;
             _autoStartTimer = -1f;
             RaiseToggleReadyButtonEvent(false);
-            CSDebug.Log("[BulkFilaments] Starting countdown.");
+            CSDebug.Log("[BulkFilaments] Starting countdown; vessel will stage after player activation.");
 
             if (countdownTimer != null)
             {
@@ -64,11 +63,10 @@ namespace CosmicShore.Gameplay
         bool StageVesselForStart()
         {
             if (_vesselStagedForStart)
-                return true;
+                return AcquireVessel();
 
             if (!AcquireVessel())
             {
-                _autoStartTimer = 0f;
                 LogAwaitingVessel();
                 return false;
             }
@@ -77,42 +75,114 @@ namespace CosmicShore.Gameplay
             _speed = minimumSpeed;
             UpdateVesselPose();
             UpdateLatchRig();
+            _bulkPlayer?.StartPlayer();
             _vesselStagedForStart = true;
-            CSDebug.Log("[BulkFilaments] Local vessel staged on first filament.");
+            CSDebug.Log("[BulkFilaments] Vessel staged on first filament.");
             return true;
         }
 
         bool AcquireVessel()
         {
-            if (!IsUsableLocalVessel())
+            if (!IsUsableBulkVessel(_bulkPlayer, _vessel))
             {
-                _vessel = gameData?.LocalPlayer?.Vessel;
-                if (!IsUsableLocalVessel())
+                if (!TryResolveBulkPlayer(out _bulkPlayer, out _vessel))
                 {
-                    _vessel = null;
-                    return false;
+                    TrySpawnFallbackPlayer();
+                    if (!TryResolveBulkPlayer(out _bulkPlayer, out _vessel))
+                    {
+                        _bulkPlayer = null;
+                        _vessel = null;
+                        return false;
+                    }
                 }
 
-                CSDebug.Log($"[BulkFilaments] Acquired local vessel '{_vessel.Transform.name}'.");
+                EnsureBulkPlayerRegistered();
+                CSDebug.Log($"[BulkFilaments] Acquired vessel '{_vessel.Transform.name}' for player '{_bulkPlayer.Name}'.");
             }
 
             ApplyBulkVesselOverrides();
             return true;
         }
 
-        bool IsUsableLocalVessel()
+        bool TryResolveBulkPlayer(out IPlayer player, out IVessel vessel)
         {
-            if (_vessel == null || _vessel.Transform == null || _vessel.VesselStatus == null)
+            player = null;
+            vessel = null;
+
+            if (TryUseBulkPlayer(gameData?.LocalPlayer, out player, out vessel))
+                return true;
+
+            if (gameData?.Players != null)
+            {
+                for (int i = 0; i < gameData.Players.Count; i++)
+                {
+                    if (TryUseBulkPlayer(gameData.Players[i], out player, out vessel))
+                        return true;
+                }
+            }
+
+            var scenePlayers = Object.FindObjectsByType<Player>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+            for (int i = 0; i < scenePlayers.Length; i++)
+            {
+                if (TryUseBulkPlayer(scenePlayers[i], out player, out vessel))
+                    return true;
+            }
+
+            return false;
+        }
+
+        bool TryUseBulkPlayer(IPlayer candidate, out IPlayer player, out IVessel vessel)
+        {
+            player = null;
+            vessel = null;
+
+            if (!IsUsableBulkVessel(candidate, candidate?.Vessel))
                 return false;
 
-            var localPlayer = gameData?.LocalPlayer;
-            if (localPlayer == null || !localPlayer.IsLocalUser || localPlayer.Vessel != _vessel)
+            player = candidate;
+            vessel = candidate.Vessel;
+            return true;
+        }
+
+        bool IsUsableBulkVessel(IPlayer player, IVessel vessel)
+        {
+            if (player == null || player.IsInitializedAsAI)
                 return false;
 
-            if (gameData.Players == null || !gameData.Players.Contains(localPlayer))
+            if (player is Object playerObject && !playerObject)
                 return false;
 
-            return _vessel.VesselStatus.Player == localPlayer;
+            if (vessel == null || vessel.Transform == null || vessel.VesselStatus == null)
+                return false;
+
+            if (vessel is Object vesselObject && !vesselObject)
+                return false;
+
+            IPlayer vesselPlayer = vessel.VesselStatus.Player;
+            return vesselPlayer == null || vesselPlayer == player;
+        }
+
+        void EnsureBulkPlayerRegistered()
+        {
+            if (gameData?.Players == null || _bulkPlayer == null)
+                return;
+
+            if (!gameData.Players.Contains(_bulkPlayer))
+                gameData.AddPlayer(_bulkPlayer);
+        }
+
+        void TrySpawnFallbackPlayer()
+        {
+            if (_spawnFallbackAttempted)
+                return;
+
+            _spawnFallbackAttempted = true;
+            var spawner = Object.FindFirstObjectByType<MiniGamePlayerSpawnerAdapter>(FindObjectsInactive.Include);
+            if (!spawner)
+                return;
+
+            if (spawner.EnsureLocalPlayerSpawned())
+                CSDebug.Log("[BulkFilaments] Recovered missing mini-game player spawn after countdown.");
         }
 
         void ApplyBulkVesselOverrides()
@@ -128,7 +198,7 @@ namespace CosmicShore.Gameplay
                 return;
 
             _awaitingVesselLogTimer = 2f;
-            CSDebug.Log("[BulkFilaments] Waiting for local vessel before countdown.");
+            CSDebug.Log("[BulkFilaments] Waiting for local vessel to stage Bulk run.");
         }
     }
 }

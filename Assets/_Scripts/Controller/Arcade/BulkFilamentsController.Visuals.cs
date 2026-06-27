@@ -73,13 +73,13 @@ namespace CosmicShore.Gameplay
             float beat = Mathf.Max(BeatPulse(), _waveformEnergy * 0.72f);
             float finale = FinaleIntensity01;
             float time = Time.time;
-            SetMaterialFloat(_tubeMaterial, "_Pulse", beat + finale * 0.65f);
-            SetMaterialFloat(_activeFilamentMaterial, "_Pulse", beat * 1.35f + finale);
-            SetMaterialFloat(_nextFilamentMaterial, "_Pulse", beat);
-            SetMaterialFloat(_whiteEnergyMaterial, "_Pulse", beat * 0.75f);
-            SetMaterialFloat(_crystalMaterial, "_Pulse", beat * 1.6f);
-            SetMaterialFloat(_gateMaterial, "_Pulse", beat * 2.1f + finale);
-            SetMaterialFloat(_glyphMaterial, "_Pulse", beat * 0.8f + finale * 0.45f);
+            SetMaterialFloat(_tubeMaterial, "_Pulse", beat * 0.38f + finale * 0.24f);
+            SetMaterialFloat(_activeFilamentMaterial, "_Pulse", beat * 0.82f + finale * 0.42f);
+            SetMaterialFloat(_nextFilamentMaterial, "_Pulse", beat * 0.58f);
+            SetMaterialFloat(_whiteEnergyMaterial, "_Pulse", beat * 0.42f);
+            SetMaterialFloat(_crystalMaterial, "_Pulse", beat * 0.9f);
+            SetMaterialFloat(_gateMaterial, "_Pulse", beat * 1.05f + finale * 0.36f);
+            SetMaterialFloat(_glyphMaterial, "_Pulse", beat * 0.36f + finale * 0.2f);
             for (int i = 0; i < _tubeRings.Count; i++)
             {
                 var ring = _tubeRings[i];
@@ -101,8 +101,8 @@ namespace CosmicShore.Gameplay
                 return;
 
             float pulse = Mathf.Max(BeatPulse(), _waveformEnergy * 0.65f);
-            SetMaterialFloat(_mirrorWallMaterial, "_Pulse", pulse + FinaleIntensity01);
-            SetMaterialFloat(_mirrorWallMaterial, "_Distortion", Mathf.Lerp(0.42f, 1.1f, FinaleIntensity01));
+            SetMaterialFloat(_mirrorWallMaterial, "_Pulse", pulse * 0.48f + FinaleIntensity01 * 0.36f);
+            SetMaterialFloat(_mirrorWallMaterial, "_Distortion", Mathf.Lerp(0.32f, 0.82f, FinaleIntensity01));
             RefreshMirrorProbeIfNeeded();
         }
 
@@ -145,73 +145,6 @@ namespace CosmicShore.Gameplay
             Color color = closeness <= 0.02f ? new Color(0.85f, 1f, 1f, 1f) : Color.Lerp(Color.white, ramp, Mathf.Clamp01(closeness * 1.35f));
             SetMaterialColor(_nextFilamentMaterial, color);
             return _nextFilamentMaterial;
-        }
-
-        void AnimateNanites()
-        {
-            if (_nanites.Count == 0 || _filaments.Count == 0)
-                return;
-
-            float visualRoute = Mathf.Max(0f, _naniteRouteDistance);
-            if (_isRunning)
-            {
-                float desiredTail = Mathf.Max(8f, naniteVisualTailDistance);
-                visualRoute = Mathf.Clamp(
-                    _naniteRouteDistance,
-                    PlayerRouteDistance - naniteCatchBuffer * 1.18f,
-                    PlayerRouteDistance - desiredTail);
-            }
-
-            FilamentRuntime filament = FilamentAtRouteDistance(Mathf.Max(0f, visualRoute), out float localDistance);
-            if (filament == null)
-                return;
-
-            Vector3 swarmCenter = PositionOnFilament(filament, localDistance, Time.time * 0.74f, orbitRadius + 7f);
-            for (int i = 0; i < _nanites.Count; i++)
-            {
-                if (i < _naniteRespawnTimers.Count && _naniteRespawnTimers[i] > 0f)
-                {
-                    _naniteRespawnTimers[i] = Mathf.Max(0f, _naniteRespawnTimers[i] - Time.deltaTime);
-                    if (_nanites[i].activeSelf)
-                        _nanites[i].SetActive(false);
-                    continue;
-                }
-
-                if (!_nanites[i].activeSelf)
-                    _nanites[i].SetActive(true);
-
-                float angle = (i / (float)_nanites.Count) * Mathf.PI * 2f + Time.time * (1.35f + i * 0.018f);
-                float swarmDistance = localDistance - i * 0.42f + Mathf.Sin(Time.time * 1.7f + i) * 1.8f;
-                float radius = orbitRadius + 5.2f + Mathf.Sin(Time.time * 2.1f + i) * 3.5f;
-                Vector3 position = PositionOnFilament(filament, swarmDistance, angle, radius);
-                _nanites[i].transform.position = position;
-                _nanites[i].transform.localScale = Vector3.one * (1f + BeatPulse() * 0.16f);
-                _nanites[i].transform.Rotate(180f * Time.deltaTime, 230f * Time.deltaTime, 140f * Time.deltaTime);
-                if (i == 0)
-                    swarmCenter = position;
-            }
-
-            UpdateNaniteWake(swarmCenter);
-        }
-
-        void UpdateNaniteWake(Vector3 swarmCenter)
-        {
-            if (!_naniteWakeLine || _vessel == null)
-                return;
-
-            _naniteWakeLine.gameObject.SetActive(_isRunning || _missionFinaleActive);
-            Vector3 vesselPosition = _vessel.Transform.position;
-            for (int i = 0; i < _naniteWakeLine.positionCount; i++)
-            {
-                float t = i / (float)(_naniteWakeLine.positionCount - 1);
-                Vector3 p = Vector3.Lerp(swarmCenter, vesselPosition, t);
-                Vector3 jitter = Random.onUnitSphere * Mathf.Sin(Time.time * 8f + i) * (1f - t) * 1.6f;
-                _naniteWakeLine.SetPosition(i, p + jitter);
-            }
-
-            float gap = Mathf.Max(0f, PlayerRouteDistance - _naniteRouteDistance);
-            float danger = Mathf.Clamp01((naniteCatchBuffer * 1.5f - gap) / Mathf.Max(1f, naniteCatchBuffer));
-            _naniteWakeLine.widthMultiplier = Mathf.Lerp(0.28f, 1.1f, danger + BeatPulse() * 0.2f);
         }
 
         void AnimatePulseGates()
@@ -318,36 +251,6 @@ namespace CosmicShore.Gameplay
                     glyph.Transform.localScale = new Vector3(glyph.BaseScale.x * pulse, glyph.BaseScale.y, 1f);
                 }
             }
-        }
-
-        void BurstTrailingNanites()
-        {
-            if (_nanites.Count == 0 || _vessel == null)
-                return;
-
-            Vector3 vesselPosition = _vessel.Transform.position;
-            int popped = 0;
-            for (int pass = 0; pass < _nanites.Count && popped < 3; pass++)
-            {
-                int index = (pass * 7 + _successfulTransfers) % _nanites.Count;
-                if (index < _naniteRespawnTimers.Count && _naniteRespawnTimers[index] > 0f)
-                    continue;
-
-                GameObject nanite = _nanites[index];
-                if (!nanite || !nanite.activeSelf)
-                    continue;
-
-                if (Vector3.Distance(nanite.transform.position, vesselPosition) > orbitRadius * 3.4f)
-                    continue;
-
-                SpawnNanitePop(nanite.transform.position);
-                _naniteRespawnTimers[index] = Random.Range(0.48f, 0.9f);
-                nanite.SetActive(false);
-                popped++;
-            }
-
-            if (popped > 0)
-                PlayNanitePopSound();
         }
 
         void UpdateLatchRig()

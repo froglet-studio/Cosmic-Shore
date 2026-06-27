@@ -86,22 +86,22 @@ namespace CosmicShore.Gameplay
 
         void SpawnPulseGateBurst(Vector3 center, FilamentRuntime filament)
         {
-            CreateParticleBurst("Pulse Gate Surge", center, new Color(0.1f, 0.9f, 1f, 1f), 80, 0.82f, 30f, 0.32f, 1.8f);
-            CreateParticleBurst("Pulse Gate Carbon Wake", center, new Color(0f, 0.02f, 0.06f, 0.86f), 32, 1.05f, 18f, 0.45f, 2.4f);
+            CreateParticleBurst("Pulse Gate Surge", center, new Color(1f, 0.7f, 0.18f, 0.82f), 64, 0.72f, 26f, 0.28f, 1.45f);
+            CreateParticleBurst("Pulse Gate Carbon Wake", center, new Color(0.015f, 0.006f, 0.035f, 0.82f), 34, 0.95f, 15f, 0.42f, 2.1f);
             for (int i = 0; i < 16; i++)
             {
                 float angle = i / 16f * Mathf.PI * 2f + Random.Range(-0.16f, 0.16f);
                 Vector3 start = center + (filament.Up * Mathf.Cos(angle) + filament.Side * Mathf.Sin(angle)) * orbitRadius * 0.6f;
                 Vector3 end = center + (filament.Up * Mathf.Cos(angle + 0.42f) + filament.Side * Mathf.Sin(angle + 0.42f)) * orbitRadius * 1.75f;
                 end += filament.Direction * Random.Range(-8f, 16f);
-                CreateLightningBolt(start, end, 0.38f, 2.2f, false, 0.26f);
+                CreateLightningBolt(start, end, 0.34f, 2.0f, false, 0.18f);
             }
         }
 
         void SpawnNanitePop(Vector3 center)
         {
-            CreateParticleBurst("Bulk Nanite Pop", center, new Color(0.08f, 1f, 0.76f, 1f), 44, 0.52f, 22f, 0.28f, 1.45f);
-            CreateParticleBurst("Bulk Nanite Dark Chaff", center, new Color(0f, 0.02f, 0.018f, 0.95f), 20, 0.72f, 14f, 0.42f, 1.8f);
+            CreateParticleBurst("Bulk Nanite Pop", center, new Color(1f, 0.16f, 0.12f, 0.84f), 38, 0.48f, 20f, 0.24f, 1.25f);
+            CreateParticleBurst("Bulk Nanite Dark Chaff", center, new Color(0.02f, 0f, 0.012f, 0.92f), 24, 0.72f, 13f, 0.38f, 1.65f);
             for (int i = 0; i < 9; i++)
             {
                 Vector3 end = center + Random.onUnitSphere * Random.Range(5f, 11f);
@@ -112,7 +112,8 @@ namespace CosmicShore.Gameplay
         void SpawnContactBurst(Vector3 center, Color color, float scale = 1f)
         {
             CreateParticleBurst("Bulk Contact Burst", center, color, Mathf.RoundToInt(34 * scale), 0.46f * Mathf.Sqrt(scale), 18f * scale, 0.28f, 1.5f);
-            CreateParticleBurst("Bulk Contact Dark Flecks", center, new Color(0f, 0.012f, 0.02f, 0.9f), Mathf.RoundToInt(16 * scale), 0.68f, 12f * scale, 0.34f, 1.8f);
+            CreateParticleBurst("Bulk Contact Dark Flecks", center, new Color(0.012f, 0.004f, 0.03f, 0.9f), Mathf.RoundToInt(18 * scale), 0.68f, 12f * scale, 0.34f, 1.8f);
+            SpawnCloseCameraCollisionShower(center, color, scale);
             for (int i = 0; i < Mathf.RoundToInt(4 * scale); i++)
             {
                 Vector3 end = center + Random.onUnitSphere * Random.Range(5f * scale, 13f * scale);
@@ -122,9 +123,9 @@ namespace CosmicShore.Gameplay
 
         void SpawnFinaleLaunchBurst(Vector3 center, Vector3 direction)
         {
-            CreateParticleBurst("Bulk Break Finale Plasma", center, new Color(0.18f, 1f, 0.46f, 1f), 140, 1.25f, 42f, 0.36f, 2.4f);
-            CreateParticleBurst("Bulk Break Finale Star Glass", center, new Color(0.78f, 0.95f, 1f, 0.92f), 120, 1.55f, 58f, 0.18f, 1.3f);
-            CreateParticleBurst("Bulk Break Finale Dark Shell", center, new Color(0f, 0.018f, 0.04f, 0.92f), 80, 1.8f, 34f, 0.55f, 2.6f);
+            CreateParticleBurst("Bulk Break Finale Plasma", center, new Color(0.38f, 1f, 0.48f, 0.86f), 120, 1.15f, 38f, 0.32f, 2f);
+            CreateParticleBurst("Bulk Break Finale Star Glass", center, new Color(0.9f, 0.7f, 1f, 0.82f), 112, 1.45f, 54f, 0.16f, 1.15f);
+            CreateParticleBurst("Bulk Break Finale Dark Shell", center, new Color(0.012f, 0.006f, 0.04f, 0.92f), 90, 1.8f, 34f, 0.55f, 2.6f);
             for (int i = 0; i < 28; i++)
             {
                 Vector3 spread = (direction + Random.onUnitSphere * 0.62f).normalized;
@@ -148,7 +149,7 @@ namespace CosmicShore.Gameplay
                 float arc = direction * Random.Range(0.24f, 0.58f);
                 Vector3 start = TubeWallPoint(angle, y);
                 Vector3 end = TubeWallPoint(angle + arc, y + Random.Range(tubeRadius * 0.2f, tubeRadius * 0.52f));
-                CreateLightningBolt(start, end, 0.58f, tubeRadius * 0.082f, false, 0.46f);
+                CreateLightningBolt(start, end, 0.5f, tubeRadius * 0.07f, false, 0.28f);
                 SpawnWallLightningBranches(start, end, 0.48f);
             }
         }

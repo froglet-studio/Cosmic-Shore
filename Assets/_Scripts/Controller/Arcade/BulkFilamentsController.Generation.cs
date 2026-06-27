@@ -8,17 +8,17 @@ namespace CosmicShore.Gameplay
     {
         void CreateMaterials()
         {
-            _activeFilamentMaterial = MakeMaterial("Bulk Active Filament", new Color(0.1f, 1f, 0.25f, 1f));
+            _activeFilamentMaterial = MakeMaterial("Bulk Active Filament", new Color(0.16f, 0.95f, 0.34f, 0.92f));
             _nextFilamentMaterial = MakeMaterial("Bulk Next Filament", Color.white);
-            _whiteEnergyMaterial = MakeMaterial("Bulk White Energy", new Color(0.85f, 1f, 1f, 1f));
-            _tubeMaterial = MakeMaterial("Bulk Refractive Tube", new Color(0.28f, 0.72f, 1f, 0.42f));
-            _crystalMaterial = MakeMaterial("Bulk Crystal", new Color(0.95f, 0.35f, 1f, 1f));
-            _hazardMaterial = MakeMaterial("Bulk Flora/Fauna", new Color(1f, 0.38f, 0.22f, 0.9f));
-            _naniteMaterial = MakeMaterial("Bulk Nanites", new Color(0.05f, 0.95f, 0.75f, 1f));
-            _lightningMaterial = MakeMaterial("Bulk Lightning", new Color(0.75f, 1f, 1f, 1f));
+            _whiteEnergyMaterial = MakeMaterial("Bulk White Energy", new Color(0.82f, 0.88f, 1f, 0.72f));
+            _tubeMaterial = MakeMaterial("Bulk Refractive Tube", new Color(0.08f, 0.11f, 0.24f, 0.30f));
+            _crystalMaterial = MakeMaterial("Bulk Crystal", new Color(1f, 0.42f, 0.86f, 0.9f));
+            _hazardMaterial = MakeMaterial("Bulk Flora/Fauna", new Color(1f, 0.43f, 0.16f, 0.82f));
+            _naniteMaterial = MakeMaterial("Bulk Nanites", new Color(0.9f, 0.12f, 0.18f, 0.92f));
+            _lightningMaterial = MakeMaterial("Bulk Lightning", new Color(0.92f, 0.78f, 1f, 0.76f));
             _mirrorWallMaterial = MakeMirrorWallMaterial();
-            _gateMaterial = MakeMaterial("Bulk Pulse Gate", new Color(0.25f, 0.82f, 1f, 0.9f));
-            _shardMaterial = MakeMaterial("Bulk Speed Shards", new Color(1f, 0.56f, 1f, 0.92f));
+            _gateMaterial = MakeMaterial("Bulk Pulse Gate", new Color(1f, 0.76f, 0.2f, 0.82f));
+            _shardMaterial = MakeMaterial("Bulk Speed Shards", new Color(0.78f, 0.42f, 1f, 0.78f));
             _glyphMaterial = MakeGlyphMaterial();
         }
 
@@ -51,11 +51,11 @@ namespace CosmicShore.Gameplay
                             ?? Shader.Find("Universal Render Pipeline/Unlit")
                             ?? Shader.Find("Unlit/Color");
             var material = new Material(shader) { name = "Bulk Dark Animated Glyphs" };
-            SetMaterialColor(material, new Color(0.015f, 0.035f, 0.052f, 0.88f));
+            SetMaterialColor(material, new Color(0.012f, 0.014f, 0.03f, 0.86f));
             if (material.HasProperty("_AccentColor"))
-                material.SetColor("_AccentColor", new Color(0.04f, 0.95f, 1f, 0.72f));
+                material.SetColor("_AccentColor", new Color(1f, 0.66f, 0.18f, 0.68f));
             if (material.HasProperty("_DarkColor"))
-                material.SetColor("_DarkColor", new Color(0f, 0.004f, 0.012f, 0.96f));
+                material.SetColor("_DarkColor", new Color(0f, 0.002f, 0.012f, 0.98f));
             SetMaterialFloat(material, "_Alpha", 0.84f);
             return material;
         }
@@ -66,11 +66,11 @@ namespace CosmicShore.Gameplay
                             ?? Shader.Find("Universal Render Pipeline/Unlit")
                             ?? Shader.Find("Unlit/Color");
             var material = new Material(shader) { name = "Bulk Voronoi Mirror Wall" };
-            SetMaterialColor(material, new Color(0.025f, 0.13f, 0.24f, 0.82f));
+            SetMaterialColor(material, new Color(0.018f, 0.025f, 0.075f, 0.64f));
             if (material.HasProperty("_LineColor"))
-                material.SetColor("_LineColor", new Color(0.02f, 0.92f, 1f, 1f));
-            SetMaterialFloat(material, "_Alpha", 0.82f);
-            SetMaterialFloat(material, "_MirrorStrength", 0.48f);
+                material.SetColor("_LineColor", new Color(0.5f, 0.26f, 1f, 0.78f));
+            SetMaterialFloat(material, "_Alpha", 0.62f);
+            SetMaterialFloat(material, "_MirrorStrength", 0.32f);
             return material;
         }
 
@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
             if (material.HasProperty("_EmissionColor"))
             {
                 material.EnableKeyword("_EMISSION");
-                material.SetColor("_EmissionColor", color * 1.8f);
+                material.SetColor("_EmissionColor", color * 1.08f);
             }
         }
 
@@ -243,6 +243,7 @@ namespace CosmicShore.Gameplay
                 ConfigureFilamentMotion(filament, random);
                 filament.Beam = MakeFilamentBeam(filament);
                 CreateFilamentWaveform(filament);
+                CreateFilamentSpriteOverlays(filament, random);
 
                 CreateRootFlares(filament);
                 CreateCrystals(filament);
@@ -274,30 +275,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void CreateRootFlares(FilamentRuntime filament)
-        {
-            Vector3 left = filament.Center - filament.Direction * (filament.Length * 0.5f);
-            Vector3 right = filament.Center + filament.Direction * (filament.Length * 0.5f);
-            CreateRootFlare($"{filament.Index:00} Root A", left, -filament.Direction, filament.Side, filament.Up);
-            CreateRootFlare($"{filament.Index:00} Root B", right, filament.Direction, filament.Side, filament.Up);
-        }
-
-        void CreateRootFlare(string flareName, Vector3 endpoint, Vector3 outward, Vector3 side, Vector3 up)
-        {
-            for (int i = -2; i <= 2; i++)
-            {
-                float flareWidth = Mathf.Max(0.22f, tubeRadius * 0.0015f);
-                float flareLength = Mathf.Max(8f, tubeRadius * 0.035f);
-                var line = MakeLine($"Filament {flareName} {i}", 4, flareWidth, _whiteEnergyMaterial);
-                Vector3 spread = (outward * 5f + side * i * 2.2f + up * Mathf.Abs(i) * 1.2f).normalized;
-                for (int p = 0; p < 4; p++)
-                {
-                    float t = p / 3f;
-                    line.SetPosition(p, endpoint + spread * (t * flareLength) + up * (Mathf.Sin(t * Mathf.PI) * flareLength * 0.2f));
-                }
-            }
-        }
-
         void CreateCrystals(FilamentRuntime filament)
         {
             int crystals = 2 + (filament.Index + Intensity) % 3;
@@ -323,6 +300,7 @@ namespace CosmicShore.Gameplay
                 renderer.sharedMaterial = crystalMaterial;
                 Destroy(crystal.GetComponent<Collider>());
                 CreateCrystalGlyphs(crystal.transform, hue, filament.Index, i);
+                CreateCrystalSpriteOverlay(crystal.transform, hue, filament.Index, i);
 
                 filament.Crystals.Add(new CrystalRuntime
                 {
@@ -452,6 +430,8 @@ namespace CosmicShore.Gameplay
             _latchRings.Add(MakeLine("Front Latch Ring", 49, 0.18f, _activeFilamentMaterial));
             _latchRings.Add(MakeLine("Rear Latch Ring", 49, 0.18f, _activeFilamentMaterial));
             CreateLatchRingGlyphs();
+            CreateLatchSpriteOverlays();
+            CreateTetherSpriteOverlays();
         }
 
         void CreateLatchRingGlyphs()
@@ -491,6 +471,7 @@ namespace CosmicShore.Gameplay
 
         void CreateNaniteSwarm()
         {
+            ResetNaniteMotionState();
             for (int i = 0; i < 26; i++)
             {
                 var nanite = new GameObject($"Filament Nanite {i:00}");
@@ -505,6 +486,8 @@ namespace CosmicShore.Gameplay
                 CreateNanitePart(nanite.transform, PrimitiveType.Sphere, new Vector3(0f, 0f, 0.12f * scale), Vector3.one * scale * 1.7f, _glyphMaterial ? _glyphMaterial : _naniteMaterial);
                 _nanites.Add(nanite);
                 _naniteRespawnTimers.Add(0f);
+                AddNaniteMotionSeed(i);
+                CreateNaniteSpriteOverlay(i, nanite.transform);
             }
 
             _naniteWakeLine = MakeLine("Bulk Nanite Chase Warning Trail", 18, 0.44f, _naniteMaterial);

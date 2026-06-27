@@ -9,13 +9,13 @@ namespace CosmicShore.Gameplay
     public partial class BulkFilamentsController
     {
         [Header("Bulk Camera Zoom")]
-        [SerializeField, Min(24f)] float cameraMinFollowDistance = 31f;
-        [SerializeField, Min(24f)] float cameraMaxFollowDistance = 180f;
+        [SerializeField, Min(8f)] float cameraMinFollowDistance = 11f;
+        [SerializeField, Min(24f)] float cameraMaxFollowDistance = 90f;
         [SerializeField, Min(1f)] float cameraZoomUnitsPerSecond = 92f;
 
         bool _leftLatchTriggerHeld;
         bool _rightLatchTriggerHeld;
-        float _cameraFollowDistance = 120f;
+        float _cameraFollowDistance = 52f;
 
         void UpdateCamera()
         {
@@ -26,11 +26,13 @@ namespace CosmicShore.Gameplay
 
             var filament = _filaments[Mathf.Clamp(_currentFilamentIndex, 0, _filaments.Count - 1)];
             Vector3 vesselPosition = _vessel.Transform.position;
-            Vector3 chasePosition = vesselPosition - filament.Direction * _cameraFollowDistance + filament.Up * 48f;
+            float close01 = Mathf.InverseLerp(cameraMaxFollowDistance, cameraMinFollowDistance, _cameraFollowDistance);
+            float cameraHeight = Mathf.Lerp(42f, 10f, close01);
+            Vector3 chasePosition = vesselPosition - filament.Direction * _cameraFollowDistance + filament.Up * cameraHeight;
             float gap = PlayerRouteDistance - _naniteRouteDistance;
             float naniteLook = Mathf.Clamp01((naniteCatchBuffer * 1.35f - gap) / naniteCatchBuffer);
             float pitchOffset = Mathf.Sin(_cameraLookPitch * Mathf.Deg2Rad) * 220f;
-            Vector3 lookTarget = vesselPosition + filament.Direction * 170f + Vector3.up * pitchOffset;
+            Vector3 lookTarget = vesselPosition + filament.Direction * Mathf.Lerp(170f, 92f, close01) + Vector3.up * pitchOffset;
             lookTarget -= Vector3.up * (naniteLook * 55f);
 
             float positionLerp = 4.5f;
@@ -49,7 +51,8 @@ namespace CosmicShore.Gameplay
             _mainCamera.transform.position = Vector3.Lerp(_mainCamera.transform.position, chasePosition, Time.deltaTime * positionLerp);
             Quaternion rotation = Quaternion.LookRotation(lookTarget - _mainCamera.transform.position, Vector3.up);
             _mainCamera.transform.rotation = Quaternion.Slerp(_mainCamera.transform.rotation, rotation, Time.deltaTime * 6f);
-            _mainCamera.fieldOfView = Mathf.Lerp(_mainCamera.fieldOfView, 76f + BeatPulse() * 1.8f + FinaleIntensity01 * 8f, Time.deltaTime * 3.2f);
+            float targetFov = Mathf.Lerp(74f, 86f, close01) + BeatPulse() * 1.8f + FinaleIntensity01 * 8f;
+            _mainCamera.fieldOfView = Mathf.Lerp(_mainCamera.fieldOfView, targetFov, Time.deltaTime * 3.2f);
         }
 
         void UpdateCameraZoom(float zoomInput, float dt)
@@ -90,7 +93,7 @@ namespace CosmicShore.Gameplay
 
             _mainCamera = cameraObject.AddComponent<Camera>();
             _mainCamera.clearFlags = CameraClearFlags.SolidColor;
-            _mainCamera.backgroundColor = new Color(0.005f, 0f, 0.02f, 1f);
+            _mainCamera.backgroundColor = new Color(0.006f, 0.003f, 0.018f, 1f);
             _mainCamera.fieldOfView = 76f;
             _mainCamera.nearClipPlane = 0.05f;
             _mainCamera.farClipPlane = Mathf.Max(1000f, _targetTransfers * filamentRisePerTransfer + tubeRadius * 4f);
@@ -248,7 +251,7 @@ namespace CosmicShore.Gameplay
         {
             _leftLatchTriggerHeld = false;
             _rightLatchTriggerHeld = false;
-            _cameraFollowDistance = Mathf.Clamp(92f, cameraMinFollowDistance, cameraMaxFollowDistance);
+            _cameraFollowDistance = Mathf.Clamp(52f, cameraMinFollowDistance, cameraMaxFollowDistance);
             ResetLatchTransferState();
         }
     }

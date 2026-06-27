@@ -24,10 +24,39 @@ namespace CosmicShore.Gameplay
             _gameData.OnInitializeGame.OnRaised -= InitializeGame;
         }
 
-        void InitializeGame()
+        public bool EnsureLocalPlayerSpawned()
         {
+            AddSpawnPosesToGameData();
+            if (HasHumanPlayerWithVessel())
+                return true;
+
             SpawnCustomPlayerAndAddToGameData(InitializePlayerData());
             SpawnDefaultPlayersAndAddToGameData();
+            return HasHumanPlayerWithVessel();
+        }
+
+        void InitializeGame()
+        {
+            if (HasHumanPlayerWithVessel())
+                return;
+
+            SpawnCustomPlayerAndAddToGameData(InitializePlayerData());
+            SpawnDefaultPlayersAndAddToGameData();
+        }
+
+        bool HasHumanPlayerWithVessel()
+        {
+            if (_gameData?.Players == null)
+                return false;
+
+            for (int i = 0; i < _gameData.Players.Count; i++)
+            {
+                IPlayer player = _gameData.Players[i];
+                if (player != null && !player.IsInitializedAsAI && player.Vessel != null)
+                    return true;
+            }
+
+            return false;
         }
 
         private IPlayer.InitializeData InitializePlayerData()

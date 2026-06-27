@@ -12,6 +12,9 @@ namespace CosmicShore.Gameplay
         const string LatchSurgeResourcePath = "Audio/BulkFilaments/BulkLatchSurge";
         const string PowerCrystalResourcePath = "Audio/BulkFilaments/BulkPowerCrystal";
 
+        [Header("Bulk Audio")]
+        [SerializeField, Range(0f, 1f)] float bulkMusicMaxVolume = 1f;
+
         AudioSource _sfxSource;
         AudioClip _grappleFireClip;
         AudioClip _latchSurgeClip;
@@ -47,6 +50,7 @@ namespace CosmicShore.Gameplay
             SubscribeBulkMusicSettings();
             ApplyBulkMusicVolume();
             ApplyBulkAudioMix();
+            ApplyBulkMusicVolume();
 
             if (_musicSource.clip)
             {
@@ -157,9 +161,9 @@ namespace CosmicShore.Gameplay
                 level = PlayerPrefs.GetFloat(nameof(GameSetting.PlayerPrefKeys.MusicLevel), 1f);
             }
 
-            // Match AudioSystem's legacy music source scaling so the settings
-            // slider has the same loudness curve inside Bulk Filaments.
-            _musicSource.volume = enabled ? Mathf.Clamp01(level) / 5f : 0f;
+            // Dopamine is the featured track for this mode, so keep it tied to
+            // the same slider but do not inherit AudioSystem's quiet /5 legacy cap.
+            _musicSource.volume = enabled ? Mathf.Clamp01(level) * bulkMusicMaxVolume : 0f;
             _musicSource.mute = !enabled;
         }
 

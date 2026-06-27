@@ -120,6 +120,7 @@ namespace CosmicShore.Gameplay
         AudioSource _musicSource;
         Camera _mainCamera;
         IVessel _vessel;
+        IPlayer _bulkPlayer;
 
         int _targetTransfers;
         int _currentFilamentIndex;
@@ -161,6 +162,7 @@ namespace CosmicShore.Gameplay
             : Mathf.Clamp01((_successfulTransfers + Mathf.Clamp01(_distanceOnFilament / Mathf.Max(1f, CurrentFilament.TravelLength))) / _targetTransfers);
         float FinaleIntensity01 => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(0.72f, 1f, RunProgress01));
         float CurrentMaximumSpeed => maximumSpeed + Intensity * 4f + _crystalSpeedBonus + FinaleIntensity01 * 14f;
+        IRoundStats BulkRoundStats => gameData?.LocalRoundStats ?? _bulkPlayer?.RoundStats;
 
         protected override void Start()
         {
@@ -195,7 +197,8 @@ namespace CosmicShore.Gameplay
 
             CSDebug.Log("[BulkFilaments] Countdown ended; run active.");
             StartMusic();
-            AcquireVessel();
+            if (!StageVesselForStart())
+                CSDebug.LogWarning("[BulkFilaments] Vessel was not ready after countdown; retrying during run update.", this);
         }
 
         protected override void OnResetForReplay()
@@ -212,6 +215,8 @@ namespace CosmicShore.Gameplay
             AnimateFilamentColors();
             AnimateFilamentWaveforms();
             AnimateGlyphSprites();
+            AnimateBulkSpriteOverlays();
+            AnimateBulkFauna(Time.deltaTime);
             AnimateNanites();
             AnimatePulseGates();
             UpdateTransientShards(Time.deltaTime);
@@ -224,7 +229,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            if (!_isRunning || _turnFinished || !AcquireVessel())
+            if (!_isRunning || _turnFinished || !StageVesselForStart())
                 return;
 
             float dt = Time.deltaTime;
@@ -317,11 +322,13 @@ namespace CosmicShore.Gameplay
             _runtimeRoot = new GameObject("Bulk Filaments Runtime");
 
             CreateMaterials();
+            LoadBulkSpriteSheets();
             CreateWormhole();
             CreateMirrorWall();
             CreateMirrorReflectionProbe();
             CreateFilaments();
             CreatePulseGates();
+            CreateBulkFauna();
             ResetLightningSchedule();
             EnsureMainCamera();
             SetEstablishingCameraPose();
@@ -334,6 +341,7 @@ namespace CosmicShore.Gameplay
             _isRunning = false;
             _turnFinished = false;
             _vessel = null;
+            _bulkPlayer = null;
             _filaments.Clear();
             _tubeRings.Clear();
             ResetFilamentWaveforms();
@@ -343,9 +351,12 @@ namespace CosmicShore.Gameplay
             _hazardRuntimes.Clear();
             _nanites.Clear();
             _naniteRespawnTimers.Clear();
+            ResetNaniteMotionState();
             _pulseGates.Clear();
             _transientShards.Clear();
             _glyphSprites.Clear();
+            ResetBulkSpriteOverlays();
+            ResetBulkFauna();
             _naniteWakeLine = null;
             _mirrorReflectionProbe = null;
             _missionFinaleRoot = null;
@@ -396,6 +407,18 @@ namespace CosmicShore.Gameplay
             public readonly float[] WaveWeights = new float[5];
             public LineRenderer Beam;
             public readonly List<CrystalRuntime> Crystals = new();
+            public readonly List<RootFlareRuntime> RootFlares = new();
+        }
+
+        sealed class RootFlareRuntime
+        {
+            public LineRenderer Line;
+            public FilamentRuntime Filament;
+            public float Axis01;
+            public int ForkIndex;
+            public bool IsBranch;
+            public float Width;
+            public float Length;
         }
 
         sealed class CrystalRuntime

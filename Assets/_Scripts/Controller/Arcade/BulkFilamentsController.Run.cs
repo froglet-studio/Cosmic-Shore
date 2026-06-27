@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Utility;
 using UnityEngine;
 
@@ -95,8 +96,8 @@ namespace CosmicShore.Gameplay
             _naniteRouteDistance = Mathf.Min(_naniteRouteDistance + 12f, PlayerRouteDistance - naniteRespawnSetback);
             ResetLatchTransferState();
 
-            if (gameData?.LocalRoundStats != null)
-                gameData.LocalRoundStats.Score += respawnTimePenalty;
+            if (BulkRoundStats != null)
+                BulkRoundStats.Score += respawnTimePenalty;
 
             SpawnContactBurst(_vessel?.Transform.position ?? AttachPoint(filament, _distanceOnFilament), new Color(1f, 0.32f, 0.18f, 1f), 2.2f);
             CSDebug.Log($"[BulkFilaments] Respawned after {reason}.");
@@ -327,8 +328,8 @@ namespace CosmicShore.Gameplay
                 crystal.GameObject.SetActive(false);
                 _crystalsCollected++;
                 ApplyPowerCrystalPickup(crystal.Position, crystalColor);
-                if (gameData?.LocalRoundStats != null)
-                    gameData.LocalRoundStats.CrystalsCollected = _crystalsCollected;
+                if (BulkRoundStats != null)
+                    BulkRoundStats.CrystalsCollected = _crystalsCollected;
             }
         }
 
@@ -398,7 +399,8 @@ namespace CosmicShore.Gameplay
 
         void UpdateRoundStats(bool final = false)
         {
-            if (gameData?.LocalRoundStats == null)
+            IRoundStats stats = BulkRoundStats;
+            if (stats == null)
                 return;
 
             float transferCompletion = _targetTransfers <= 0 ? 1f : Mathf.Clamp01(_successfulTransfers / (float)_targetTransfers);
@@ -406,15 +408,15 @@ namespace CosmicShore.Gameplay
             float transferCredit = _successfulTransfers * 1.35f;
             float crystalCredit = _crystalsCollected * 4.5f;
             float respawnPenalty = _respawns * respawnTimePenalty;
-            gameData.LocalRoundStats.CrystalsCollected = _crystalsCollected;
-            gameData.LocalRoundStats.Score = Mathf.Max(0.01f, _elapsedTime + missedFilamentPenalty + respawnPenalty - transferCredit - crystalCredit);
+            stats.CrystalsCollected = _crystalsCollected;
+            stats.Score = Mathf.Max(0.01f, _elapsedTime + missedFilamentPenalty + respawnPenalty - transferCredit - crystalCredit);
 
             if (final)
             {
-                gameData.LocalRoundStats.OmniCrystalsCollected = _successfulTransfers;
-                gameData.LocalRoundStats.Score = Mathf.Max(
+                stats.OmniCrystalsCollected = _successfulTransfers;
+                stats.Score = Mathf.Max(
                     0.01f,
-                    gameData.LocalRoundStats.Score - transferCompletion * targetSecondsPerTransfer * 0.75f);
+                    stats.Score - transferCompletion * targetSecondsPerTransfer * 0.75f);
             }
         }
     }

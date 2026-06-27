@@ -65,6 +65,7 @@ namespace CosmicShore.Gameplay
                     filament.Side = Vector3.right;
                 filament.Up = Vector3.Cross(filament.Direction, filament.Side).normalized;
                 UpdateFilamentBeam(filament);
+                UpdateFilamentRoots(filament);
             }
         }
 

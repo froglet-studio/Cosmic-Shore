@@ -26,7 +26,8 @@ follow the computed route and deliver information faster than rival couriers.
 - Power crystal SFX: `Resources/Audio/BulkFilaments/BulkPowerCrystal.mp3`.
 - Arcade Explore card: `OrganicRematchGames.asset` is the runtime-injected menu list.
 - Runtime-generated wormhole, filaments, live music waveform overlays, crystals,
-  latch rings, nanites, and simple HUD telemetry.
+  latch rings, animated sprite overlays, nanites, ambient fauna, and simple HUD
+  telemetry.
 
 ## Controls
 
@@ -54,7 +55,11 @@ follow the computed route and deliver information faster than rival couriers.
    speed if they hit the vessel.
 9. Live Dopamine waveform ribbons pulse over the filaments opposite the vessel's
    travel direction at 8x vessel speed.
-10. Finish after the Bulk controller's 20-30 transfer chain is completed.
+10. Sprite overlays add animated flow, flares, crackle, sparkle, root energy,
+   nanite motion, and squid-like fauna detail over the runtime geometry.
+11. Nanites chase as a swarm and can get distracted eating ambient fauna before
+   resuming pursuit.
+12. Finish after the Bulk controller's 20-30 transfer chain is completed.
 
 ## Intensity
 
@@ -73,7 +78,7 @@ Lower score is better. Crystals collected are also written to `RoundStats`.
 
 - Replace cloned Wildlife Blitz HUD/endgame references with Bulk-specific HUD/endgame
   presentation.
-- Replace runtime primitive placeholders with authored shader/sprite assets.
+- Replace remaining runtime primitive placeholders with authored shader/sprite assets.
 - Extend live Dopamine analysis from filament waveforms into authored lightning
   and fauna surge beats.
 - Add multiplayer lanes where each player gets a distinct filament chain in the same

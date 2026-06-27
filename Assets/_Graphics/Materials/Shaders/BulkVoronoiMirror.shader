@@ -31,8 +31,6 @@ Shader "CosmicShore/BulkVoronoiMirror"
             float _Pulse;
             float _MirrorStrength;
             float _Distortion;
-            UNITY_DECLARE_TEXCUBE(unity_SpecCube0);
-            float4 unity_SpecCube0_HDR;
 
             struct appdata
             {
@@ -111,15 +109,15 @@ Shader "CosmicShore/BulkVoronoiMirror"
                 half4 encodedReflection = UNITY_SAMPLE_TEXCUBE(unity_SpecCube0, reflectDir);
                 float3 probeReflection = DecodeHDR(encodedReflection, unity_SpecCube0_HDR);
 
-                float3 mirror = lerp(_BaseColor.rgb * (0.28 + darkFacet * 0.18), float3(0.36, 0.72, 0.95), reflection * _MirrorStrength * 0.62);
-                mirror = lerp(mirror, probeReflection * (0.22 + fresnel * 0.42) + _BaseColor.rgb * 0.55, _MirrorStrength * 0.24);
-                mirror += fresnel * float3(0.08, 0.35, 0.65);
+                float3 mirror = lerp(_BaseColor.rgb * (0.2 + darkFacet * 0.16), float3(0.18, 0.26, 0.46), reflection * _MirrorStrength * 0.46);
+                mirror = lerp(mirror, probeReflection * (0.14 + fresnel * 0.24) + _BaseColor.rgb * 0.5, _MirrorStrength * 0.18);
+                mirror += fresnel * float3(0.05, 0.08, 0.24);
                 float lineMask = saturate(edge + circuit * 0.5);
-                mirror = lerp(mirror, _LineColor.rgb * (1.15 + _Pulse * 0.65), lineMask);
+                mirror = lerp(mirror, _LineColor.rgb * (0.72 + _Pulse * 0.28), lineMask * 0.68);
 
                 fixed4 color;
                 color.rgb = mirror;
-                color.a = saturate(_Alpha * (0.42 + fresnel * 0.28 + lineMask * 0.72 + _Pulse * 0.08));
+                color.a = saturate(_Alpha * (0.32 + fresnel * 0.18 + lineMask * 0.48 + _Pulse * 0.04));
                 return color;
             }
             ENDCG

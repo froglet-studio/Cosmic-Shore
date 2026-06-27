@@ -25,8 +25,8 @@ filament while the tunnel collapses behind them.
 - Arcade card name: `The Bulk Filaments`.
 - Description: `Ride living energy filaments through the Bulk, timing each transfer-latch before the wormhole collapses behind you.`
 - Runtime-generated wormhole, filament chain, live music waveform filament
-  overlays, crystals, latch rings, nanite chase, HUD telemetry, music, and latch
-  sound effects.
+  overlays, sprite-sheet energy overlays, crystals, latch rings, nanite chase,
+  ambient fauna, HUD telemetry, music, and latch sound effects.
 
 ## Core Loop
 
@@ -93,6 +93,14 @@ Intensity should scale:
 - Transfer tethers should retract with a controlled underdamped feel: stretch,
   the vessel briefly gets pulled too close to the new filament, then settles back
   to the correct support length.
+- Animated sprite overlays add high-frequency visual detail inside/around the
+  filaments, latch rings, energy tethers, power crystals, filament roots, nanites,
+  and ambient fauna while keeping the underlying runtime geometry lightweight.
+- Nanites should chase as a chaotic cloud/swarm, not as an evenly spaced ring.
+- Ambient fauna should make the wormhole feel inhabited; nanites can briefly
+  attack/eat fauna before resuming the chase.
+- Close follow-camera impacts should be allowed to fly through the particle
+  shower so the player feels the vessel's speed and danger at race-camera zoom.
 
 ## Acceptance Checks
 
@@ -106,6 +114,9 @@ Intensity should scale:
 - A full run lasts roughly the song length and requires 20-30 transfers.
 - Power crystals increase speed and create pickup audio/lightning.
 - Lightning hazards occasionally reset speed if they intersect the vessel.
+- Animated sprite overlays are visible on filaments, latch rings, tethers,
+  crystals, nanites, roots, and fauna.
+- Nanites read as a swarm/cloud rather than a circular formation.
 - Transfer logs distinguish front lock, rear lock, miss, blocked rear, and expiry.
 - Result screen appears only after the route completes or a real Bulk finish
   condition fires.
