@@ -59,8 +59,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            var dirToTarget = toTarget.normalized;
-            Quaternion rotation = Quaternion.LookRotation(dirToTarget, Vector3.up);
+            Quaternion rotation = Quaternion.LookRotation(toTarget, Vector3.up); // LookRotation normalizes its forward internally
 
             var aoeGo = Instantiate(dangerHemispherePrefab, victimPos, rotation);
             var container = vesselImpactor.DIContainer;

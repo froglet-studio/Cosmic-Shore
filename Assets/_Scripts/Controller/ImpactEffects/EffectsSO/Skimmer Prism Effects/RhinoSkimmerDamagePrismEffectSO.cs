@@ -69,12 +69,12 @@ namespace CosmicShore.Gameplay
                 var prismTf = prismImpactee.Prism.prismProperties.prism.transform;
                 var cross   = Vector3.Cross(incomingDir, prismTf.forward);
                 var normal  = Quaternion.AngleAxis(15f, cross) * prismTf.forward;
-                bounceDir   = Vector3.Reflect(incomingDir, normal).normalized;
+                bounceDir   = Vector3.Reflect(incomingDir, normal); // unit in, unit normal -> unit out
             }
             else
             {
                 // Simple "go back the way you came"
-                bounceDir = (-incomingDir).normalized;
+                bounceDir = -incomingDir; // incomingDir already unit
             }
 
             float targetSpeed = Mathf.Max(speed * bounceSpeedMultiplier, minBounceSpeed);
