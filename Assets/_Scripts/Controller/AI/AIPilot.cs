@@ -344,7 +344,7 @@ namespace CosmicShore.Gameplay
             else if (VesselStatus.IsDrifting) vessel.StopShipControllerActions(InputEvents.LeftStickAction);
 
 
-            if (_distance.magnitude < float.Epsilon) // On top of the target — avoid div-by-zero
+            if (_distance.sqrMagnitude < float.Epsilon) // On top of the target — avoid div-by-zero (guards the sqrMagnitude divisor below)
             {
                 // Don't latch the previous frame's turn input (which would keep the vessel
                 // veering with nothing to steer toward). Fly a clean straight pass-through.

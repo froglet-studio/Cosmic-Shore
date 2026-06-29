@@ -1030,7 +1030,7 @@ namespace CosmicShore.Gameplay
             // across the full Skim Race track. See SenseRadius / Docs/ECOSYSTEM.md §7.2.
             float radius = SenseRadius;
             if (radius <= 0f) return false;
-            return Vector3.Distance(position, transform.position) < radius;
+            return (position - transform.position).sqrMagnitude < radius * radius;
         }
 
         public void ChangeVolume(Domains domain, float volume)

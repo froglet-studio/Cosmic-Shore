@@ -40,14 +40,12 @@ namespace CosmicShore.Gameplay
             float sign = Mathf.Sign(Vector3.Dot(cross, yawAxis));
             float signedYaw = yawDegrees * sign;
 
-            Vector3 newForward = Quaternion.AngleAxis(signedYaw, yawAxis) * victimFwd;
- 
-            newForward.Normalize();
+            Vector3 newForward = Quaternion.AngleAxis(signedYaw, yawAxis) * victimFwd; // rotation of a unit vector stays unit
 
             transformer.SpinShip(newForward);
 
             if (!(lateralSpeed > 0f)) return;
-            Vector3 lateralDir = (sign >= 0f ? victimTf.right : -victimTf.right).normalized;
+            Vector3 lateralDir = sign >= 0f ? victimTf.right : -victimTf.right; // transform.right is already unit
             transformer.ModifyVelocity(lateralDir * lateralSpeed, Time.deltaTime * accelScale);
         }
     }
