@@ -134,7 +134,7 @@ namespace CosmicShore.Gameplay
 
             stick = Vector2.ClampMagnitude(stick, 1f);
 
-            if (stick.magnitude < DEAD_ZONE)
+            if (stick.sqrMagnitude < DEAD_ZONE * DEAD_ZONE)
                 stick = Vector2.zero;
         }
 

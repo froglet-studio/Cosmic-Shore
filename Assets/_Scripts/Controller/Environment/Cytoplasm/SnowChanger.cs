@@ -90,6 +90,7 @@ namespace CosmicShore.Gameplay
             if (membraneRadius <= 0f) return;
 
             float nodeScalerOverThree = nodeScaler / 3;
+            Vector3 axisN = targetAxis.normalized; // hoisted: targetAxis is invariant across the shard loop
             for (int i = 0; i < shards.Length; i++)
             {
                 var shard = shards[i];
@@ -105,8 +106,7 @@ namespace CosmicShore.Gameplay
                 else
                 {
                     var reject = shard.transform.position -
-                                 (Vector3.Dot(shard.transform.position, targetAxis.normalized) *
-                                  targetAxis.normalized);
+                                 (Vector3.Dot(shard.transform.position, axisN) * axisN);
                     float clampedDistance = Mathf.Clamp(reject.magnitude, 0, membraneRadius);
                     normalizedDistance = clampedDistance / membraneRadius;
                     if (lookAt)

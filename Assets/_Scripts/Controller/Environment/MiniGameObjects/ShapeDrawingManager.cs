@@ -146,7 +146,7 @@ namespace CosmicShore.Gameplay
         {
             Vector3 playerPos = GetWorldPlayerStart();
             Vector3 wp0 = GetWorldWaypoint(0);
-            Vector3 lookDir = (wp0 - playerPos).normalized;
+            Vector3 lookDir = wp0 - playerPos; // LookRotation normalizes; guard the raw delta for degeneracy
             if (lookDir.sqrMagnitude < 0.001f) return Quaternion.identity;
             return Quaternion.LookRotation(lookDir, Vector3.up);
         }

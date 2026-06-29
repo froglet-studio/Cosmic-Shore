@@ -139,7 +139,7 @@ namespace CosmicShore.Gameplay
 
             var orderedPrisms = hitSet
                 .Where(p => p && p.Prism)
-                .OrderBy(p => Vector3.Distance(shipPos, p.transform.position));
+                .OrderBy(p => (shipPos - p.transform.position).sqrMagnitude); // sort key: distance order == squared-distance order
 
             foreach (var i in orderedPrisms)
             {

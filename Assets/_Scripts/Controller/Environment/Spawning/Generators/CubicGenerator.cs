@@ -24,7 +24,7 @@ namespace CosmicShore.Gameplay
                 int y = rng.Next(0, steps) * voxelSideLength;
                 int z = rng.Next(0, steps) * voxelSideLength;
                 var pos = new Vector3(x, y, z) + origin;
-                var rot = SpawnPoint.LookRotation(-pos.normalized, Vector3.up);
+                var rot = SpawnPoint.LookRotation(-pos, Vector3.up); // LookRotation normalizes internally
                 points[i] = new SpawnPoint(pos, rot);
             }
             return points;
