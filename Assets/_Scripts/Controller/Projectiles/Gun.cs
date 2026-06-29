@@ -105,9 +105,10 @@ namespace CosmicShore.Gameplay
 
                 foreach (var dir in tetrahedralVertices)
                 {
-                    var offset = dir.normalized * sideLength;
+                    var n = dir.normalized;
+                    var offset = n * sideLength;
                     FireSingle(containerTransform, speed, inheritedVelocity,
-                        projectileScale, offset, projectileTime, charge, 0, dir.normalized);
+                        projectileScale, offset, projectileTime, charge, 0, n);
                 }
             }
             else // Golden Spiral method

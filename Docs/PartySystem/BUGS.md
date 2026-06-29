@@ -12,10 +12,11 @@ Statuses: 🔴 open · 🟡 investigating · 🟢 fixed (commit) · ⚪ deferred
 | ID | Title | Confidence | Status |
 |----|-------|-----------|--------|
 | B2 | `ObjectDisposedException` (semaphore) on Play-Mode abort / fast invite-accept | ~95% | 🔴 |
-| B3 | TC4 bounce leaves 2 vessels + dead controls | ~85% | 🔴 |
+| B3 | TC4 bounce leaves 2 vessels + dead controls | Fixed-by-construction | 🟢 |
 | B5 | TC2/TC4 second joiner fails to join | Uncertain (diagnose first) | 🔴 |
 | B7 | Client pair-init runs before remote identity replicates (`InitializePair Player=` empty, vessel-type `Random`) | Verified mostly benign | ⚪ |
 | B9 | Host-return: one client's vessel stuck in autopilot drift + party domains not reset to menu (Jade) | Root-caused & fixed | 🟢 |
+| B10 | Host leaves/disconnects mid-party → client stuck (no bounce-to-solo + "Host disconnected") | Fixed & verified | 🟢 |
 
 ---
 
@@ -55,42 +56,50 @@ during fast-accept). The class will help confirm the trigger.
 
 ---
 
-## B3 — TC4: bounce leaves two vessels + broken control toggle 🔴
+## B3 — TC4: bounce leaves two vessels + broken control toggle 🟢 (fixed-by-construction)
 
-**Symptom.** VP1 has VP3 partied (ok). VP1 invites VP2; VP2 accepts but
-can't connect and bounces to its own solo lava-lamp. There, **two
-vessels** spiral on autopilot (no target crystal); tapping to take
+**Symptom (historical).** VP1 has VP3 partied (ok). VP1 invites VP2; VP2
+accepts but can't connect and bounces to its own solo lava-lamp. There,
+**two vessels** spiral on autopilot (no target crystal); tapping to take
 control yields a vessel that **stays in AI mode / won't steer**.
 
-**Root cause — two vessels (~85%).**
-`PartyInviteController.RecoverFromFailedTransitionAsync` (~`:410-437`)
-calls `LeavePartyKeepHostAsync` + reloads `Menu_Main` but does **not**
-call `gameData.DestroyPlayerAndVessel()` — unlike its sibling
-`LeavePartyAndReturnToMenuAsync` (~`:292`). Menu vessels spawn with
-`DestroyVesselWithScene = false` (`MenuServerPlayerVesselInitializer.cs:40`),
-so a vessel from the failed session survives the solo-host restart while
-`Menu_Main` reload spawns a fresh one → two vessels.
+**Original root cause — two vessels.** The bounce path
+`PartyInviteController.RecoverFromFailedTransitionAsync` reloaded
+`Menu_Main` but did **not** despawn the failed-session vessel before the
+solo-host restart — unlike its sibling `LeavePartyAndReturnToMenuAsync`.
+Menu vessels spawn `DestroyVesselWithScene = false`
+(`MenuServerPlayerVesselInitializer.cs`), so the leftover vessel survived
+the restart while the reload spawned a fresh one → two vessels (the
+dead-control half was the orphan/half-paired vessel, same mechanism as
+B3.b).
 
-**Root cause — dead controls (medium).** Likely coupled to the
-duplicate: the toggle may act on a stale `LocalPlayer`/vessel, or
-`MenuCrystalClickHandler` state (`_isInFreestyle`, `_isTransitioning`,
-`_cts`) isn't reset after the reload, and/or
-`MainMenuController.ActivateLocalPlayerAutopilot` (~`:249-267`, sets AI
-on + input paused) races the toggle. Needs confirmation.
+**Status. 🟢 Fixed-by-construction.** The same architectural refactor that
+fixed the clean-leave path (B3.b, commit `74cde70`) also rewrote the
+bounce path: `RecoverFromFailedTransitionAsync` now mirrors
+`LeavePartyAndReturnToMenuAsync` **exactly** — `gameData.DestroyPlayerAndVessel()`
+→ `gameData.ResetRuntimeData()` → `HostConnectionService.LeavePartySessionAsync()`
+→ `NetworkTransitionService.ShutdownAsync` + `ClearStaleReferences()` →
+`SceneManager.LoadSceneAsync(_sceneNames.MainMenuScene, Single)` →
+`HostConnectionService.EnsurePartySessionAsync()`. The scene is fresh
+before the solo session recreates, so the post-reload initializer spawns
+exactly one paired vessel — no orphan, controls wire normally. The
+deleted `LeavePartyKeepHostAsync` is gone; the hardcoded `"Menu_Main"`
+literal is replaced by `_sceneNames.MainMenuScene`.
 
-**Candidate approach.** Mirror the working
-`LeavePartyAndReturnToMenuAsync` cleanup in the bounce path (explicit
-despawn/`DestroyPlayerAndVessel` before solo restart); verify toggle
-state resets on the reload. Possibly add brief diagnostics to confirm
-which vessel the toggle targets.
+**Verification note.** The clean-leave path (B3.b) was MPPM-verified
+2026-06-02. The bounce path shares the **identical** decomposed sequence,
+so it is fixed-by-construction; the dedicated TC4 bounce repro
+(Phase C.2 in `MPPM_SESSION_LOG.md`) is the only outstanding confirmation.
 
-**Diagnostic upgrade.** The bounce path itself now emits a NetDiag log
-in `RecoverFromFailedTransitionAsync` — confirming the trigger class for
-the bounce.
+**Diagnostic.** The bounce path emits a NetDiag log in
+`RecoverFromFailedTransitionAsync` — classifies the trigger if it ever
+recurs.
 
-**Evidence.** `PartyInviteController.cs:~410-437` vs `~267-332` (`:292`);
-`MenuServerPlayerVesselInitializer.cs:40`; `MenuCrystalClickHandler.cs`
-(toggle + OnEnable); `MainMenuController.cs:~198-267`.
+**Evidence.** `PartyInviteController.cs` `RecoverFromFailedTransitionAsync`
+(currently ~`:424-455`) vs `LeavePartyAndReturnToMenuAsync` (~`:275-330`)
+— both call `DestroyPlayerAndVessel()` + `LeavePartySessionAsync()` +
+`LoadSceneAsync(_sceneNames.MainMenuScene)`; `MenuServerPlayerVesselInitializer.cs`
+(`DestroyVesselWithScene = false`).
 
 ### B3.b — same symptom on the CLEAN-LEAVE path (MPPM Session 1, 2026-06-02)
 
@@ -315,48 +324,32 @@ the first, returns NULL, early-returns harmlessly. It fires every cycle,
 not just buggy ones. **Hypothesis 1 (orphan vessel from spawn-vs-reload
 ordering) is the sole root cause** — fixed below.
 
-**Fix landed (single commit).** `PartyInviteController.LeavePartyAndReturnToMenuAsync`
-and `RecoverFromFailedTransitionAsync` both call
-`gameData.LocalPlayer.Vessel.DestroyVessel()` between
-`LeavePartyKeepHostAsync` (which spawns vessel 4) and the
-`LoadScene("Menu_Main")` call. `VesselController.DestroyVessel()` does
-`NetworkObject.Despawn(true)` for spawned server-owned vessels — the
-exact teardown `GameDataSO.DestroyPlayerAndVessel` already uses
-(`VesselController.cs:209-210`, `GameDataSO.cs:195`). After the
-despawn the reload proceeds with no scene-survivor: the post-reload
-initializer spawns **one** vessel (the equivalent of NetObjId 6), the
-Player's `NetVesselId` re-pairs naturally via `OnNetVesselIdChanged`,
-input controller wires to the single live vessel, AI seeks crystals
-normally.
+> **Superseded history (kept for the audit trail).** An earlier writeup of
+> this entry described a band-aid "single commit" fix — a
+> `gameData.LocalPlayer.Vessel.DestroyVessel()` call wedged between
+> `LeavePartyKeepHostAsync` and `LoadScene("Menu_Main")` — as if it had
+> landed. It had **not**: that band-aid (`3e0c5bc`) was reverted (see "Note
+> on the fix path" above) and replaced by the decomposed architectural fix
+> (`74cde70`, "Architectural fix (active)" above). The shipped code uses
+> `LeavePartySessionAsync` (not the deleted `LeavePartyKeepHostAsync`) and
+> `_sceneNames.MainMenuScene` (not the `"Menu_Main"` literal).
 
-**Why not the "reorder so reload precedes solo restart" path.** Would
-require shutting NM down as a client and using
-`UnityEngine.SceneManagement.SceneManager.LoadScene` (not Netcode's),
-which is a much larger surface area and crosses state-machine
-boundaries. The surgical despawn is the right size for the fix and
-keeps the existing flow intact.
-
-**Risk gate accepted.** Single-file +37 lines, only the leave + bounce
-paths. Despawn fires `OnNetworkDespawn` like any normal teardown
-(paths exercised every game session). `gameData?.LocalPlayer?.Vessel`
-null-guarded. If anything regresses, removing the despawn blocks
-reverts to current behavior.
-
-**Evidence (file:line).**
-- `PartyInviteController.cs:274-340` — `LeavePartyAndReturnToMenuAsync`
-  (calls `DestroyPlayerAndVessel` at `:299`, then `LeavePartyKeepHostAsync`
-  at `:312`, then `LoadScene` at `:318`).
-- `GameDataSO.cs:188` — `DestroyPlayerAndVessel` (clears `Players`,
-  destroys vessels).
-- `ServerPlayerVesselInitializer.cs:130-145` — `ConnectedClients`
-  re-kick of persistent Players after a scene load.
-- `ServerPlayerVesselInitializer.cs:188-193` — the NULL early-return.
-- `MenuServerPlayerVesselInitializer.cs:40` — `DestroyVesselWithScene=false`.
-- `MainMenuController.cs:198,249` — `HandleMenuReady` /
-  `ActivateLocalPlayerAutopilot` (fires per `OnClientReady`, twice here).
-- `MainMenuCameraController.cs:647` — secondary NRE.
-- `ExplosionHelper.cs:79` — secondary `GameDataSO` resolve failure
-  (leftover-vessel evidence).
+**Evidence (file:line — current code, drifts; re-grep before trusting).**
+- `PartyInviteController.cs` — `LeavePartyAndReturnToMenuAsync` (~`:275-330`):
+  `DestroyPlayerAndVessel()` (~`:309`) → `LeavePartySessionAsync()` (~`:315`)
+  → `LoadSceneAsync(_sceneNames.MainMenuScene)` (~`:320`) →
+  `EnsurePartySessionAsync()` (~`:324`).
+- `PartyInviteController.cs` — `RecoverFromFailedTransitionAsync` (~`:424-455`):
+  the **identical** sequence (`DestroyPlayerAndVessel()` ~`:439`,
+  `LeavePartySessionAsync()` ~`:445`, `LoadSceneAsync` ~`:450`,
+  `EnsurePartySessionAsync()` ~`:454`).
+- `GameDataSO.DestroyPlayerAndVessel` — clears `Players`, destroys vessels.
+- `ServerPlayerVesselInitializer` — `ConnectedClients` re-kick of persistent
+  Players after a scene load (the post-reload single-spawn path).
+- `MenuServerPlayerVesselInitializer` — `DestroyVesselWithScene = false`.
+- Secondary teardown noise from the original trace (now moot): the
+  `MainMenuCameraController` NRE via `OnValidate`, and the `ExplosionHelper`
+  `GameDataSO` resolve failure that was the leftover-vessel evidence.
 
 ---
 
@@ -654,7 +647,10 @@ ran **client-locally** on each machine's own vessel:
    desynced that machine's mirrors from the replicated truth
    (`../ScoringSystem/BUGS.md` B11).
 
-**Fix (commits `53294068`, `65d4da96`, `c073636e`).** The menu domain
+**Fix (verified in code; granular commits squashed into the bleeding-edge
+merge `0ea12370`, so the original `53294068` / `65d4da96` / `c073636e`
+hashes no longer resolve — the surviving host-return-together hardening is
+`f33abbb6`).** The menu domain
 reset is now **server-authoritative**: `MenuServerPlayerVesselInitializer.
 OnPlayerReadyToSpawnAsync` writes `NetDomain = menuVesselDomain` (Jade)
 for every human BEFORE the vessel spawns, on every menu entry path
@@ -666,9 +662,10 @@ deleted — client code never writes domain state. Activation is now
 exception-free and idempotent.
 
 **Related.** The same session also fixed the party-join stale
-`RoundStats` shadow (`../ScoringSystem/BUGS.md` B12, commits `52923bf8`,
-`6400eca0`) — a returning/joined client's name-keyed stat lookups
-resolved a destroyed pre-party component (frozen Jade).
+`RoundStats` shadow (`../ScoringSystem/BUGS.md` B12; its `52923bf8` /
+`6400eca0` hashes were likewise squashed into `0ea12370`) — a
+returning/joined client's name-keyed stat lookups resolved a destroyed
+pre-party component (frozen Jade).
 
 **Repro (for verification).** 1 host + 3 MPPM clients → party up in
 `Menu_Main` → host launches a domain game (e.g. Skim Race) → play to the
@@ -682,9 +679,118 @@ be re-run.
 
 ---
 
+## B10 — Host leaves/disconnects mid-party → client stuck (no bounce-to-solo) 🟢 (fixed; MPPM-verify)
+
+**Symptom (reported 2026-06-18).** Host + client(s) in multiplayer freestyle
+(Menu_Main lava lamp) — or any game mode. The host leaves mid-session or
+disconnects. The client(s) **freeze / get stuck**: no return to a working menu,
+no fresh solo host, no notice. Expected: each client cleanly exits the dead
+party and **re-starts Menu_Main as its own host** (like a fresh launch), with a
+**"Host disconnected"** notice.
+
+**Root cause (confirmed in code).** A client whose host drops gets a genuine
+per-machine `NetworkManager.OnClientDisconnectCallback`
+(`MultiplayerSetup.OnClientDisconnect`, local-client branch ~`:362`), which raised
+`gameData.InvokeOnSessionEnded()` → `SceneLoader.HandleActiveSessionEnd` (~`:302`).
+That handler's **defer-to-server guard** (`IsListening && !IsServer`, ~`:308`)
+returns early "deferring to server" — but the host/server is **gone**, so nothing
+drives the transition and the client hangs. Even when it fell through, the path
+(`ReturnToMainMenu` → `LoadSceneAsync` local fallback) **never recreated the
+client's own solo Relay host** (`EnsurePartySessionAsync`), so the client would
+land in a hostless menu (no autopilot vessel, can't invite/play). No notice either.
+
+**Why the guard exists (and why it's wrong here).** The guard stops a
+still-connected MPPM client from running `ResetAllData()` on the *shared*
+`GameDataSO` when `OnSessionEnded` (a shared SOAP event) fires spuriously. But
+`OnClientDisconnect` is a **real per-machine Netcode callback**, not a shared SOAP
+event — so host-loss must be handled at *that* source, not routed through the
+shared-SOAP-guarded SceneLoader path.
+
+**Fix (this commit).** Route host-loss from the genuine per-machine signals
+(`MultiplayerSetup.OnClientDisconnect` local branch + `OnTransportFailure`) into a
+new `PartyInviteController.HandleHostLossAsync(reason)`, which reuses the proven,
+MPPM-verified self-rescue `RecoverFromFailedTransitionAsync` (the B3.b sequence):
+destroy local player+vessel → reset → leave UGS session → **NM shutdown** → load
+`Menu_Main` locally → **`EnsurePartySessionAsync`** (recreate own solo host) — plus a
+"Host disconnected" bounce toast. Works uniformly from the lava-lamp menu AND any
+game scene (recovery always returns to Menu_Main). Idempotent via `_transitioning`
+so the `OnClientDisconnect` + `OnTransportFailure` double-fire on a hard drop runs a
+single recovery.
+
+**Does NOT affect graceful host-return.** The host's deliberate "Main Menu /
+return whole party together" (S9) keeps the Relay alive and uses a Netcode scene
+load, so clients **never receive `OnClientDisconnect`** — this fix only fires when
+the host actually leaves/drops (Relay torn down). So there's no false "Host
+disconnected" on a normal host-led return.
+
+**Notice — interim.** Uses the existing bounce **toast** ("Host disconnected").
+Because `ToastService` is a **scene-bound** MonoBehaviour (subscribes to the
+channel in `OnEnable`, no `DontDestroyOnLoad`), a toast raised *before* the
+recovery's Menu_Main reload is silently dropped (the renderer is destroyed by
+the reload, and there is no `ToastService` at all in a game scene). So
+`BounceToSoloMenuAsync` was changed to recover **first**, then raise the toast on
+the fresh menu's live `ToastService`. Once Task 0 (the SOAP confirm-popup,
+`INVITE_ENHANCEMENTS.md`) ships, upgrade the notice to a 1-button "OK" popup
+(same post-recovery timing).
+
+**Recommendation (the "better thing").** Bounce-to-solo is the right call now —
+reliable, and it reuses proven machinery. True **host migration** (promote a
+remaining client to host and keep the party alive) is the fancier alternative but a
+much larger project: Relay has no native re-host, Netcode has no native host
+migration, and it needs full game-state transfer. Tracked as the
+`../MultiplayerArchitecture/ROADMAP.md` "Host-loss resilience / migration (High)"
+item — revisit when the party core is otherwise stable.
+
+**Evidence (file:line — drifts).** `MultiplayerSetup.cs` `OnClientDisconnect`
+(~`:344-379`), `OnTransportFailure` (~`:396-431`); `SceneLoader.cs`
+`HandleActiveSessionEnd` defer-trap (~`:302-323`), `ReturnToMainMenu` (~`:190-222`),
+`LoadSceneAsync` (~`:224-257`); `PartyInviteController.cs` `HandleHostLossAsync` +
+`BounceToSoloMenuAsync` + `RecoverFromFailedTransitionAsync`.
+
+**Status. 🟢 Fixed — verified in engine (2026-06-19).** The core bounce-to-solo,
+the post-recovery notice timing, and the `joined_party` hygiene clear are all
+confirmed working: a client whose host leaves reforms as its own solo host and can
+invite + play normally. The cases below stand as the regression checklist (re-run
+the 4-VP + hard-drop variants on any change to the recovery path):
+- **Menu freestyle (2-VP):** host + client in the lava lamp; host leaves → client
+  shows "Host disconnected", returns to its OWN Menu_Main as solo host (autopilot
+  vessel spawns, can invite again). No hang.
+- **Game mode:** host + client in HexRace / Joust / etc.; host quits mid-game →
+  client bounces to solo Menu_Main with the notice + working solo host.
+- **3-4 VP:** host drops → every client bounces to its own solo menu.
+- **Regression:** host's graceful "Main Menu" return still brings the whole party
+  back together — no false "Host disconnected".
+- **Hard drop:** kill the host process (not graceful) → clients still recover
+  (covers the `OnTransportFailure` path + the double-fire idempotency).
+- **Unrestricted after recovery (key acceptance).** The recreated solo host must be
+  a *full* host, not a degraded state — verify the bounced client can then, with no
+  app restart: (a) **invite** another player and have them join (client is now the
+  host of the new party); (b) **launch every game mode** (solo + AI backfill, and a
+  2-human game after re-inviting); (c) be **seen as invitable** by others again.
+  Guaranteed by construction: `EnsurePartySessionAsync` sets `IsPartyHost = true`,
+  `PartyState.InParty`, a fresh Relay session (`IsServer = true`), and
+  `SeedLocalPlayer(clearFirst:true)`; the presence lobby is never left (separate UGS
+  WebSocket on the always-alive HCS) — i.e. the **identical end-state as the
+  deliberate "Leave Party" flow** (`LeavePartyAndReturnToMenuAsync`), where play +
+  invite already work normally.
+
+> **Hygiene (done).** `HandleHostLossAsync` now also fires
+> `HostConnectionService.ClearJoinedPartyAsync()` (exposed public) so the client's
+> own stale `joined_party` — still pointing at the dead host's session — is cleared
+> on recovery, mirroring the deliberate `LeavePartyAsync`. Fire-and-forget: the
+> presence lobby is independent of the torn-down party session / NM, so the write
+> lands; and B8 fix 1 already makes a stale value inert, so recovery never blocks on
+> it. This is a real (not just cosmetic) clear because `BuildLocalPlayerProperties`
+> only resets `joined_party` on a presence-lobby *rejoin*, which recovery does not do
+> — so without the explicit clear the stale value would persist until the next
+> join/leave.
+
+---
+
 ## How we work bugs
 
 Method: see `../README.md` § "How we work bugs". Party-side priority
-order: **B2 → B5 → B3 → B7** (B8 fixed). The presence-lobby cluster
-(B1, B4, B6) is the locked-design area and lives in
+order: **B2 → B5 → B7** (B3, B8, B9, B10 fixed; B3 is fixed-by-construction
+pending its dedicated TC4 bounce repro; B10 needs the host-loss MPPM sweep).
+The presence-lobby cluster (B1, B4, B6) is the locked-design area and lives in
 `../PresenceSystem/BUGS.md`.

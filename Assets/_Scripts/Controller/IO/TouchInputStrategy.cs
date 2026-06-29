@@ -201,7 +201,7 @@ namespace CosmicShore.Gameplay
                 ProcessCommandStickControls(position);
             }
 
-            if (Vector2.Distance(leftJoystickValue, position) < Vector2.Distance(rightJoystickValue, position))
+            if ((leftJoystickValue - position).sqrMagnitude < (rightJoystickValue - position).sqrMagnitude)
             {
                 HandleLeftStick(position);
             }
@@ -335,14 +335,15 @@ namespace CosmicShore.Gameplay
         private int GetClosestTouch(Vector2 target)
         {
             int touchIndex = 0;
-            float minDistance = float.MaxValue;
+            float minSqrDistance = float.MaxValue;
 
             for (int i = 0; i < Touch.activeTouches.Count; i++)
             {
-                float distance = Vector2.Distance(target, Touch.activeTouches[i].screenPosition);
-                if (distance < minDistance)
+                // argmin over distance == argmin over squared distance — no sqrt needed.
+                float sqrDistance = (target - Touch.activeTouches[i].screenPosition).sqrMagnitude;
+                if (sqrDistance < minSqrDistance)
                 {
-                    minDistance = distance;
+                    minSqrDistance = sqrDistance;
                     touchIndex = i;
                 }
             }

@@ -31,7 +31,7 @@ in.
 
 **Pass criterion.**
 - Both VPs' `HostConnectionDataSO.OnlinePlayers` includes the other
-  (visible via `OnlinePlayersPanel` if the UI is open, or via the
+  (visible via `FriendsListPanel`'s Online section if the UI is open, or via the
   refresh logs).
 - Both VPs are in the **same** lobby (compare lobby IDs in the
   startup logs).

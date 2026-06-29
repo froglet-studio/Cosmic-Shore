@@ -821,6 +821,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  progressionConfig: {fileID: 0}
   xpPerGame: 25
 --- !u!1 &684811273
 GameObject:
@@ -2951,6 +2952,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17a00b98fdc8fa34b8b16c2f69e79f40, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  config: {fileID: 0}
   supportProductId: com.cosmicshore.support_tier1
 --- !u!114 &2100000007
 MonoBehaviour:

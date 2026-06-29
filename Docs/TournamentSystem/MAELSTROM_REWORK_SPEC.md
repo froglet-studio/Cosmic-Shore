@@ -68,13 +68,23 @@ Per-round history survives the per-scene reset (the UI-only scene has no live `g
 ## 4. Flow / state machine (Phase 2)
 
 `TournamentController`:
-- `AdvanceToNextGame()` → `LoadTournamentScene()` (hub or summary by phase).
+- `AdvanceToNextGame()` → `LoadTournamentScene()` (hub or summary, decided at the load below).
 - `BeginNextRound()` → draw + load the next random game (called by the hub ready-up).
 - `RestartTournament()` (Play Again) → loads a **fresh lobby** (reset keeps the intensity ceiling via
   `RestartFromSummary`).
-- `HandleSceneLoaded` (Maelstrom scene): `Complete`→Summary · `Summary`→restart · active+games→**hub
-  (no reset)** · else→fresh start.
-- State machine adds `InGame → Lobby`.
+- `HandleSceneLoaded` (Maelstrom scene), evaluated in order: `Summary` phase→restart ·
+  **`IsActive && IsShuffleComplete`→Summary** (via `EnterSummary`) · active+games→**hub (no reset)** ·
+  else→fresh start.
+- State machine adds `InGame → Lobby` and `Lobby → Complete`.
+
+> **Summary-vs-hub is authoritative, not phase-driven (race-to-6 fix).** The decision keys off the
+> deterministic `TournamentDataSO.IsShuffleComplete` (folded identically on every peer), **not** the
+> transient `Complete` phase that `HandleMiniGameEnd` sets. That phase transition only lands when the
+> deciding game ends in the `InGame` phase; relying on it alone let a missed transition route the win
+> back to the hub for "one more game" (a domain hit 6 but the tournament kept going). `EnterSummary`
+> drives the machine to `Summary` from `InGame`/`Lobby`/`Complete`, so the win always surfaces as the
+> results screen. `HandleMiniGameEnd` still sets `Complete` (best-effort signal + `OnTournamentCompleted`),
+> but it is no longer the source of truth for ending the shuffle.
 
 ---
 
@@ -354,3 +364,23 @@ component, and makes the panel generic (every scene), not tournament-gated:
 **Wire:** ConnectingPanel (sibling of MiniGameHUD under GameCanvas) → `ConnectingPanelController` with
 `gameData`/`tournamentData`/`palette`, `connectingCamera` (Depth above gameplay cam, Clear Flags
 Skybox/Solid), `statusText`, `gameModeText`, `maelstromRankText`. Assign it to `MiniGameHUD.connectingPanel`.
+
+### v2.5 — summary button double-fire + standings ordering fixes
+
+Two playtest regressions in the v2 scene/UI, both now fixed (code is the single source the spec already
+mandated):
+
+- **NEXT / Play Again / Main Menu started a new game instead of advancing/ending.** All three summary
+  buttons (`readyButton` 1067315745, `playAgainButton` 1932153207, `mainMenuButton` 2009116738) had an
+  **inspector `onClick → OnHostStartPressed`** on top of the code listener `Awake()` adds — the exact
+  double-fire §6 warns about. On NEXT the first invocation ran `ShowSummaryPanel()` (which clears
+  `_active`/`_summaryMode`); the second then fell through to `BeginNextRound()` and launched a game. Play
+  Again/Main Menu were wired to the *wrong* method entirely (`OnHostStartPressed`), so they also started a
+  game. **Fix:** removed all three inspector `onClick` entries from `Maelstrom.unity` (code listeners
+  `OnReadyButtonPressed`/`OnPlayAgainPressed`/`OnMainMenuPressed` are now the only source) + a defensive
+  `if (!_active) return;` guard at the top of `OnReadyButtonPressed`.
+- **Final standings listed by per-round placement, not cumulative total.** `TournamentRoundCard.BuildPlayers`
+  rendered `record.Players` in that round's finishing order; on the deciding round (round-winner ≠ overall
+  leader) the rows read as mis-ordered against the Total Score they show. **Fix:** order the round-card rows
+  by cumulative Total Score descending (stable tiebreak by domain enum), per §6 "reorder by the overall
+  leader" — so the leading domain is always on top, consistent with the summary panel.

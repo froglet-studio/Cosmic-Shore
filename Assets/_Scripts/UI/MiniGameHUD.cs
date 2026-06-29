@@ -234,6 +234,8 @@ namespace CosmicShore.UI
                     return CreateProviderComponent<HexRaceObjectiveProvider>("ObjectiveProvider_HexRace");
                 case GameModes.MultiplayerJoust:
                     return CreateProviderComponent<JoustObjectiveProvider>("ObjectiveProvider_Joust");
+                case GameModes.AstroLeague:
+                    return CreateProviderComponent<AstroLeagueObjectiveProvider>("ObjectiveProvider_AstroLeague");
                 default:
                     return null;
             }

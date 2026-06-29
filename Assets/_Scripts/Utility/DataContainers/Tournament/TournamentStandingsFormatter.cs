@@ -29,7 +29,7 @@ namespace CosmicShore.Utility
 
             var standings = data.BuildSortedStandings();
             var sb = new StringBuilder();
-            sb.AppendLine($"{data.ModeName.ToUpperInvariant()} — first to {data.WinTarget}");
+            sb.AppendLine($"{data.ModeName.ToUpperInvariant()} — first to {data.EffectiveWinTarget}");
 
             // What's loading next (the host's random draw stamps these): mode name + its rolled intensity.
             if (!string.IsNullOrEmpty(data.NextGameName))

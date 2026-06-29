@@ -404,17 +404,60 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Terminal "bounce": surface a best-effort toast and return the player to their
-        /// own functional solo menu via <see cref="RecoverFromFailedTransitionAsync"/>.
-        /// Guarantees a failed join never ends in a permanent splash hang.
+        /// Public entry for HOST-LOSS recovery: a client whose host left/disconnected
+        /// (or whose transport failed) bounces to its OWN solo menu + host, exactly like a
+        /// failed join. Routed here from <c>MultiplayerSetup.OnClientDisconnect</c> /
+        /// <c>OnTransportFailure</c> (genuine per-machine Netcode signals) instead of the
+        /// <c>OnSessionEnded → SceneLoader.HandleActiveSessionEnd</c> path, whose
+        /// "defer to server" guard waits on the now-dead server and hangs the client.
+        /// Works from the lava-lamp menu AND any game scene (recovery always returns to
+        /// Menu_Main). Idempotent via <see cref="_transitioning"/> so the
+        /// OnClientDisconnect + OnTransportFailure double-fire on a hard host drop runs a
+        /// single recovery. See Docs/PartySystem/BUGS.md B10.
+        /// </summary>
+        public async UniTask HandleHostLossAsync(string reason)
+        {
+            if (_transitioning)
+            {
+                Debug.Log($"[PartyInviteController] HandleHostLoss ignored — already transitioning ({reason}).");
+                return;
+            }
+
+            _transitioning = true;
+            try
+            {
+                // Hygiene: clear our stale joined_party presence property (it still points at
+                // the dead host's session) so no future host sees a dangling "I'm in your
+                // party" claim — the same clear the deliberate Leave path performs.
+                // Fire-and-forget: the presence lobby is a separate UGS session that survives
+                // the recovery teardown, and B8 fix 1 already makes a stale value inert, so
+                // recovery must not block on the write. See Docs/PartySystem/BUGS.md B10.
+                HostConnectionService.Instance?.ClearJoinedPartyAsync().Forget();
+
+                await BounceToSoloMenuAsync(reason);
+            }
+            finally
+            {
+                _transitioning = false;
+            }
+        }
+
+        /// <summary>
+        /// Terminal "bounce": return the player to their own functional solo menu via
+        /// <see cref="RecoverFromFailedTransitionAsync"/>, then surface the notice toast.
+        /// Guarantees a failed join / host-loss never ends in a permanent splash hang.
         /// </summary>
         private async UniTask BounceToSoloMenuAsync(string toastMessage)
         {
             Debug.LogWarning($"[PartyInviteController] Bouncing to solo menu: {toastMessage}");
-            // Best-effort UX. May be suppressed during the scene reload that recovery
-            // performs; the no-hang guarantee does not depend on it.
-            bounceToastChannel?.ShowPrefix(toastMessage);
             await RecoverFromFailedTransitionAsync();
+            // Show the notice AFTER recovery. ToastService is a scene-bound MonoBehaviour
+            // (it subscribes to the channel in OnEnable), so it is destroyed + recreated by
+            // the Menu_Main reload — and is absent entirely in a game scene. A toast raised
+            // before recovery is therefore silently dropped (the channel event has no
+            // subscriber). Raising it here lands on the fresh menu's live ToastService.
+            // See Docs/PartySystem/BUGS.md B10.
+            bounceToastChannel?.ShowPrefix(toastMessage);
         }
 
         /// <summary>

@@ -136,9 +136,10 @@ namespace CosmicShore.Gameplay
             var currentPosition = currentBlock.transform.position;
             Vector3 blockGap = nextPosition - currentPosition;
            
-            heading = blockGap.normalized;
+            float gapMag = blockGap.magnitude; // one sqrt, reused by heading + finalLerp
+            heading = gapMag > 1e-5f ? blockGap / gapMag : Vector3.zero; // matches Vector3.normalized's 1e-5 zero-threshold
             endIndex = startIndex;
-            finalLerp = 1 - overflow / blockGap.magnitude;
+            finalLerp = 1 - overflow / gapMag;
 
             outDirection = (TrailFollowerDirection)incrementor;
 

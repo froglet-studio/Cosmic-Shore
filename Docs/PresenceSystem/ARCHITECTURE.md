@@ -77,7 +77,7 @@ cluster — see `BUGS.md` B1.
 |---|---|---|
 | Presence-lobby active session reference | `PresenceLobbyService` only | `HostConnectionService` (via `IPresenceLobbyService.ActiveLobby`) |
 | Local player's lobby properties | `LobbyPropertyWriter.SaveWithRetryAsync` (mutex-protected) | All party services that need to publish |
-| `HostConnectionDataSO.OnlinePlayers` list | `HostConnectionService.RefreshOnlinePlayersDiff` | UI components (`OnlinePlayersPanel`, `PartyAreaPanel`, `PartyArcadeView`) |
+| `HostConnectionDataSO.OnlinePlayers` list | `HostConnectionService.RefreshOnlinePlayersDiff` | UI components (`FriendsListPanel` / `OnlineInfoEntry`, `ArcadeLobbyList`) |
 | `HostConnectionDataSO.PartyMembers` list | `HostConnectionService` (member-sync paths) | UI |
 
 Anything that wants to know the presence-lobby state reads through SOAP
