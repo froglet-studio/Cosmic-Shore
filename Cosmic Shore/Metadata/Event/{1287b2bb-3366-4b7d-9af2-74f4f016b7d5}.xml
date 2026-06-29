@@ -5,7 +5,7 @@
 			<value>Track collide</value>
 		</property>
 		<property name="outputFormat">
-			<value>1</value>
+			<value>2</value>
 		</property>
 		<relationship name="folder">
 			<destination>{2bbab971-3f3e-4f99-a6e0-584fa1d58d64}</destination>
@@ -31,6 +31,9 @@
 		<relationship name="timeline">
 			<destination>{39a69ec5-ec84-43b1-8d3a-34e8141dcfdd}</destination>
 		</relationship>
+		<relationship name="banks">
+			<destination>{3b7e8e6a-defe-46c2-8201-c749ea9220ba}</destination>
+		</relationship>
 	</object>
 	<object class="EventMixer" id="{61f623dd-7d58-4249-a8f7-d04f76754851}">
 		<relationship name="masterBus">
@@ -53,7 +56,14 @@
 			<destination>{1cb7eac1-59ec-4e22-850e-31ed48adf13e}</destination>
 		</relationship>
 	</object>
-	<object class="EventAutomatableProperties" id="{49f419ba-bc50-4fef-a7f4-b42fe87ca160}" />
+	<object class="EventAutomatableProperties" id="{49f419ba-bc50-4fef-a7f4-b42fe87ca160}">
+		<property name="minimumDistance">
+			<value>0</value>
+		</property>
+		<property name="maximumDistance">
+			<value>60</value>
+		</property>
+	</object>
 	<object class="MarkerTrack" id="{da4301ad-5c46-432f-ae4a-bca3a8c64ad6}" />
 	<object class="GroupTrack" id="{047708d7-63cb-4eec-bfe3-80bdbd1b7e48}">
 		<relationship name="modules">
@@ -113,6 +123,7 @@
 	<object class="MixerBusEffectChain" id="{ede3c2c9-e3e3-4f3e-bbfd-98ca497f2cd6}">
 		<relationship name="effects">
 			<destination>{6a305a8b-61f8-45e6-89ef-cc3b91fc08d4}</destination>
+			<destination>{9d8e4a25-a4f6-4f3e-aabf-0b99b38d7585}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{6ab5fe81-3530-4ce7-9440-fa21b7f32ea7}" />
@@ -132,5 +143,13 @@
 	</object>
 	<object class="MixerBusPanner" id="{aa8ef2e0-c028-44cb-9ba7-2ca90adb4f43}" />
 	<object class="MixerBusFader" id="{6a305a8b-61f8-45e6-89ef-cc3b91fc08d4}" />
+	<object class="SpatialiserEffect" id="{9d8e4a25-a4f6-4f3e-aabf-0b99b38d7585}">
+		<property name="minimumDistance">
+			<value>0</value>
+		</property>
+		<property name="maximumDistance">
+			<value>60</value>
+		</property>
+	</object>
 	<object class="MixerBusFader" id="{96f713a7-9e62-4f0a-87f9-d8640d1ec9f5}" />
 </objects>

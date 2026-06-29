@@ -386,10 +386,16 @@ namespace CosmicShore.UI
 
         int ComputeMaxDomainCount()
         {
-            // DC <= PC, capped at the hard max. Fall back to the hard max when PC isn't
-            // set yet (ResetState leaves it 0), and never drop below the per-game minimum.
+            // DC <= PC, capped at the hard max and at the per-game MaxDomainsAllowed
+            // (modes with a fixed team shape — e.g. Astro League — pin this to 2). Fall
+            // back to the hard max when PC isn't set yet (ResetState leaves it 0), and
+            // never drop below the per-game minimum.
             int pc = config != null && config.PlayerCount > 0 ? config.PlayerCount : MaxSupportedDomains;
-            return Mathf.Max(Mathf.Min(pc, MaxSupportedDomains), MinDomainsForGame);
+            int gameMax = _selectedGame
+                ? Mathf.Clamp(_selectedGame.MaxDomainsAllowed, MinDomains, MaxSupportedDomains)
+                : MaxSupportedDomains;
+            int max = Mathf.Min(Mathf.Min(pc, MaxSupportedDomains), gameMax);
+            return Mathf.Max(max, MinDomainsForGame);
         }
 
         int ComputeDefaultDomainCount() =>

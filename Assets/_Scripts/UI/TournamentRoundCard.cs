@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -83,9 +84,19 @@ namespace CosmicShore.UI
             Clear();
             if (players == null || !playerCardPrefab || !playerCardContainer) return;
 
-            for (int i = 0; i < players.Count; i++)
+            // Order rows by cumulative Total Score, highest first, so the leading domain is always on
+            // top — matching the summary panel and the spec ("reorder by the overall leader"). Without
+            // this the rows kept the round's finishing order, so the round where the round-winner was
+            // NOT the overall leader (e.g. the deciding round) read as mis-ordered against the totals it
+            // shows. OrderByDescending/ThenBy is stable, so same-domain players keep their round rank;
+            // in the round-0 preview every total is 0, so it falls back to domain enum order.
+            var ordered = totalOf == null
+                ? players
+                : players.OrderByDescending(p => totalOf(p.Domain)).ThenBy(p => (int)p.Domain).ToList();
+
+            for (int i = 0; i < ordered.Count; i++)
             {
-                var s = players[i];
+                var s = ordered[i];
                 var card = Instantiate(playerCardPrefab, playerCardContainer);
                 string round = showRoundScore ? (s.ScoreText ?? string.Empty) : string.Empty;
                 string total = totalOf != null ? totalOf(s.Domain).ToString() : string.Empty;

@@ -15,9 +15,14 @@ Docs/
 │   │                            error-handling matrix, exit criteria
 │   ├── REFACTOR.md              active backlog + deferred items
 │   │                            + per-commit revision protocol
-│   ├── BUGS.md                  open bugs (B2, B3, B5, B7)
+│   ├── BUGS.md                  open bugs (B2, B5, B7; B3/B8/B9/B10 fixed)
 │   ├── TESTS.md                 manual procedures (S1-S8)
 │   ├── TODOS.md                 parking-lot items
+│   ├── INVITE_ENHANCEMENTS.md   planning: in-party invite guard,
+│   │                            panel-gated refresh, party-merge on accept,
+│   │                            SOAP confirm-popup
+│   ├── UI.md                    party/friends UI surface: component
+│   │                            inventory, invite UX flow, scene wiring
 │   └── MPPM_SESSION_LOG.md      chronological MPPM session journal
 │
 ├── PresenceSystem/              ← the lobby-only discovery layer

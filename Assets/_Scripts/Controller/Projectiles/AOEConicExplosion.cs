@@ -71,6 +71,7 @@ namespace CosmicShore.Gameplay
                 float elapsed = 0f;
 
                 var sphereCol = GetComponent<SphereCollider>();
+                float maxScaleMag = MaxScaleVector.magnitude; // invariant for this explosion — hoist out of the per-frame loop
 
                 while (elapsed < ExplosionDuration)
                 {
@@ -92,7 +93,7 @@ namespace CosmicShore.Gameplay
                     float opacity =
                         Mathf.Clamp(
                             (MaxScaleVector - coneContainer.transform.localScale).magnitude
-                             / MaxScaleVector.magnitude,
+                             / maxScaleMag,
                             0f,
                             1f);
 

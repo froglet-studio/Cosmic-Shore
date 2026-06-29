@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objects serializationModel="Studio.02.02.00">
+	<object class="EventFolder" id="{2d122504-4043-4e13-a28e-a1671b1ac8c9}">
+		<property name="name">
+			<value>Loops</value>
+		</property>
+		<relationship name="folder">
+			<destination>{973179a4-8803-4e6c-8ca6-89d010ec9ca1}</destination>
+		</relationship>
+	</object>
+</objects>

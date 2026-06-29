@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
                 var axis = Vector3.forward
                            + (((float)rng.NextDouble() - 0.5f) * Vector3.right)
                            + (((float)rng.NextDouble() - 0.5f) * Vector3.up);
-                var rot = Quaternion.AngleAxis((float)rng.NextDouble() * 180f, axis.normalized);
+                var rot = Quaternion.AngleAxis((float)rng.NextDouble() * 180f, axis); // AngleAxis normalizes its axis internally
 
                 points[i] = new SpawnPoint(pos, rot);
             }

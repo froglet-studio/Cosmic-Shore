@@ -3,9 +3,10 @@
 **"Maelstrom" is the player-facing display name of the existing Tournament meta-mode** (this doc folder
 keeps the legacy "Shuffle" name — the mode was renamed for players). It is **not** a separate game mode.
 The Arcade card asset `ArcadeGameTournament.asset` simply carries `DisplayName = "Maelstrom"` (rendered
-by `GameCard.GameTitle`). The code, scene (`Tournament.unity`), data (`TournamentDataSO`), enum
-(`GameModes.Tournament = 36`), controller (`TournamentController`), SO assets, and all wiring keep the
-**Tournament** name. *Maelstrom and Tournament are the same thing.*
+by `GameCard.GameTitle`). The code, data (`TournamentDataSO`), enum (`GameModes.Tournament = 36`),
+controller (`TournamentController`), SO assets, and all wiring keep the **Tournament** name — the **scene
+file** was renamed to `Maelstrom.unity` in the v2 rework (only the file name changed).
+*Maelstrom and Tournament are the same thing.*
 
 ## Renaming the mode (player-facing name) — single source of truth
 
@@ -27,7 +28,8 @@ them is risky GUID / scene / build-settings surgery (out of scope unless explici
 
 - `GameModes.Tournament = 36` (enum symbol + int)
 - `TournamentController` · `TournamentStateMachine` · `TournamentDataSO` · `TournamentSceneView` (classes/files)
-- `Tournament.unity` (scene) · `TournamentData.asset` + `_SO_Assets/Tournament/` (data assets) ·
+- `Maelstrom.unity` (scene file — already renamed once in the v2 rework; don't rename it again to change
+  the display name) · `TournamentData.asset` + `_SO_Assets/Tournament/` (data assets) ·
   the `ArcadeGameTournament.asset` *file* name (only its `DisplayName` **field** changes)
 - `IsTournamentMode` (the GameDataSO flag) · the `CosmicShore.*` namespaces
 

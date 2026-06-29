@@ -92,6 +92,8 @@ namespace CosmicShore.Core
         JoustBuffSpace = 33,
         JoustBuffTime = 34,
         TrackImpact = 35,
+        FloraCollision = 36,
+        CreatureBlockHit = 37,
     }
 
     [DefaultExecutionOrder(-1)]
@@ -266,6 +268,14 @@ namespace CosmicShore.Core
         [Header("Track Impact Event (FMOD) — wire in the inspector")]
         [SerializeField, Tooltip("Played for GameplaySFXCategory.TrackImpact — a vessel ran into the HexRace track (an indestructible, environment-owned prism) rather than a destructible player trail. Spatialized at the impact position.")]
         EventReference trackImpactEvent;
+
+        [Header("Flora Event (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.FloraCollision — a flora's health prism was destroyed (by any source). Replaces the generic BlockDestroy one-shot for flora prisms. Spatialized at the prism position.")]
+        EventReference floraCollisionEvent;
+
+        [Header("Creature Event (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.CreatureBlockHit — a creature (fauna) destroyed/consumed a non-flora block. Replaces the generic BlockDestroy one-shot for creature kills; flora blocks still play their own FloraCollision sound. Spatialized at the prism position.")]
+        EventReference creatureBlockHitEvent;
 
         [Header("Gameplay SFX Tuning")]
         [SerializeField, Range(0f, 1f), Tooltip(
@@ -738,6 +748,8 @@ namespace CosmicShore.Core
                 {GameplaySFXCategory.JoustBuffSpace, joustBuffSpaceEvent},
                 {GameplaySFXCategory.JoustBuffTime, joustBuffTimeEvent},
                 {GameplaySFXCategory.TrackImpact, trackImpactEvent},
+                {GameplaySFXCategory.FloraCollision, floraCollisionEvent},
+                {GameplaySFXCategory.CreatureBlockHit, creatureBlockHitEvent},
             };
         }
     }
