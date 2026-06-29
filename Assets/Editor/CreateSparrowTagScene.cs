@@ -11,10 +11,8 @@ namespace CosmicShore.Editor
     /// Duplicates MinigameCellularDuel, then:
     ///   1. Swaps SinglePlayerCellularDuelController → SparrowTagController
     ///   2. Sets scoring config to JoustCollisions (ship-to-ship hits)
-    ///   3. Saves the result as MinigameSparrowTag.unity
-    ///
-    /// TimeBasedTurnMonitor is already present in the source scene and is
-    /// reused as-is (default 60 s — adjust duration in the Inspector after creation).
+    ///   3. Sets TimeBasedTurnMonitor duration to 120 seconds
+    ///   4. Saves the result as MinigameSparrowTag.unity
     /// </summary>
     public static class CreateSparrowTagScene
     {
@@ -71,12 +69,25 @@ namespace CosmicShore.Editor
                 Debug.LogWarning("[SparrowTag] ScoreTracker not found — set ScoringConfig to JoustCollisions manually.");
             }
 
-            // ── 5. Save ───────────────────────────────────────────────────────
+            // ── 5. Set match duration ─────────────────────────────────────────
+            var turnMonitor = Object.FindFirstObjectByType<TimeBasedTurnMonitor>();
+            if (turnMonitor != null)
+            {
+                var so = new SerializedObject(turnMonitor);
+                so.FindProperty("duration").floatValue = 120f;
+                so.ApplyModifiedProperties();
+                Debug.Log("[SparrowTag] TimeBasedTurnMonitor.Duration → 120 s");
+            }
+            else
+            {
+                Debug.LogWarning("[SparrowTag] TimeBasedTurnMonitor not found — set Duration manually on the 'Game' GameObject.");
+            }
+
+            // ── 6. Save ───────────────────────────────────────────────────────
             EditorSceneManager.SaveScene(scene, DestScene);
             AssetDatabase.Refresh();
 
-            Debug.Log($"[SparrowTag] Scene created: {DestScene}");
-            Debug.Log("[SparrowTag] TODO: In the Inspector, set TimeBasedTurnMonitor.Duration to your desired match length (e.g. 120 seconds).");
+            Debug.Log($"[SparrowTag] Scene ready: {DestScene}");
         }
 
         static void SwapController(SinglePlayerCellularDuelController old)
