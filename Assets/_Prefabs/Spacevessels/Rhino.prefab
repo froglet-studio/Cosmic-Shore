@@ -2162,6 +2162,8 @@ GameObject:
   - component: {fileID: 2171807218592972036}
   - component: {fileID: 7965853245772039612}
   - component: {fileID: 6693358806957623137}
+  - component: {fileID: 8100000000000000081}
+  - component: {fileID: 8100000000000000083}
   m_Layer: 0
   m_Name: Rhino
   m_TagString: Player_Ship
@@ -13906,3 +13908,30 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 8469593379654306638}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &8100000000000000081
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86c6556701af9e04380698b89f691b6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  nonRigidbodyVelocity: 0
+  attenuationObject: {fileID: 0}
+--- !u!114 &8100000000000000083
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 454001d94fcc404e8eaab651b593b302, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  debugLog: 0

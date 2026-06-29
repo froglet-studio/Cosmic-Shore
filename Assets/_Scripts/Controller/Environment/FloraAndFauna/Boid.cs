@@ -273,13 +273,13 @@ namespace CosmicShore.Gameplay
                                             // devastate:false so a shielded prism that somehow
                                             // reaches here only loses its shield, never gets eaten.
                                             otherPrism.Consume(transform, embeddedHealthPrism.Domain,
-                                                embeddedHealthPrism.PlayerName + " tadpole", false);
+                                                embeddedHealthPrism.PlayerName + " tadpole", false, true);
                                             NotifyFed();
                                         }
                                         else
                                         {
                                             otherPrism.Damage(currentVelocity * embeddedHealthPrism.Volume, embeddedHealthPrism.Domain,
-                                                embeddedHealthPrism.PlayerName + " boid", true);
+                                                embeddedHealthPrism.PlayerName + " boid", true, true);
                                         }
                                     }
                                     break;

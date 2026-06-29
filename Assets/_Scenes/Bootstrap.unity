@@ -3348,6 +3348,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
+      propertyPath: floraCollisionEvent.Path
+      value: event:/SFX/Oneshots/Gameplay sfx/Creature colide
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
       propertyPath: joustBuffSpaceEvent.Path
       value: event:/SFX/Oneshots/Gameplay sfx/Space Joust friend
       objectReference: {fileID: 0}
@@ -4010,6 +4015,26 @@ PrefabInstance:
         type: 3}
       propertyPath: elementSpaceReceivedEvent.Path
       value: event:/SFX/Oneshots/Gameplay sfx/Space Joust
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: floraCollisionEvent.Guid.Data1
+      value: 521565762
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: floraCollisionEvent.Guid.Data2
+      value: 1177340277
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: floraCollisionEvent.Guid.Data3
+      value: 1735452291
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: floraCollisionEvent.Guid.Data4
+      value: -857705457
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}

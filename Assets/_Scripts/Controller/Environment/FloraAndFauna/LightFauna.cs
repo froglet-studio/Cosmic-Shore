@@ -145,7 +145,7 @@ namespace CosmicShore.Gameplay
                     .ToList();
                 for (int i = 0; i < prisms.Count; i++)
                 {
-                    if (prisms[i]) prisms[i].Consume(transform, domain, PLAYER_NAME, true);
+                    if (prisms[i]) prisms[i].Consume(transform, domain, PLAYER_NAME, true, true);
                     if (interval > 0f) yield return new WaitForSeconds(interval);
                     else yield return null;
                 }
@@ -371,7 +371,7 @@ namespace CosmicShore.Gameplay
                     // Herbivores eat opposing-domain plant/trail mass; predators never eat prisms.
                     if (diet == FaunaDiet.Herbivore && distance < consumeRadius && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
                     {
-                        otherHealthBlock.Consume(transform, domain, PLAYER_NAME, true);
+                        otherHealthBlock.Consume(transform, domain, PLAYER_NAME, true, true);
                         NotifyFed();
                     }
 
@@ -381,7 +381,7 @@ namespace CosmicShore.Gameplay
                 // Handle blocks
                 if (diet == FaunaDiet.Herbivore && prism.Domain != domain && distance < consumeRadius)
                 {
-                    prism.Consume(transform, domain, PLAYER_NAME, true);
+                    prism.Consume(transform, domain, PLAYER_NAME, true, true);
                     NotifyFed();
                 }
             }
