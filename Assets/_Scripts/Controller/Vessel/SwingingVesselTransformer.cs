@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
@@ -66,7 +67,9 @@ namespace CosmicShore.Gameplay
         [Header("Lightsaber Sweep")]
         [Tooltip("Anchored tethers destroy every prism they sweep through (except the anchors).")]
         [SerializeField] bool sweepDestroysPrisms = true;
-        [Tooltip("Max world-distance the vessel can move between sweep sub-casts. Lower = denser coverage at high speed.")]
+        [Tooltip("Blade kerf — a prism whose centre is within this distance of the taut tether line gets sliced. The blade has thickness, so it cuts everything it visually sweeps (a zero-width ray would miss prism centres it grazes).")]
+        [SerializeField] float sweepBladeRadius = 2.5f;
+        [Tooltip("Max world-distance the vessel can move between sweep sub-steps. Lower = denser coverage at high speed.")]
         [SerializeField] float sweepStepDistance = 4f;
         [Tooltip("How fast the kill-pulse on the tether visual decays.")]
         [SerializeField] float sweepPulseDecay = 4f;
@@ -157,7 +160,9 @@ namespace CosmicShore.Gameplay
         Vector3? pendingRightSpawnPos;
 
         Material sharedTetherMaterial;
-        static readonly RaycastHit[] sweepHits = new RaycastHit[32];
+        // Reused scratch for the spatial-index sweep query (allocation-free; the
+        // tick consumes it within one call, so one shared list is safe).
+        static readonly List<Prism> sweepScratch = new(128);
 
         int trailBlocksLayer = -1;
         int TrailBlocksLayer
@@ -592,46 +597,79 @@ namespace CosmicShore.Gameplay
         // ==================================================================
 
         /// <summary>
-        /// While anchored, the taut tether destroys every prism it passes
-        /// through — except the anchors themselves. The vessel's movement this
-        /// frame is sub-sampled so fast swings don't skip prisms between
-        /// frames: the tether is cast from interpolated vessel positions to
-        /// the anchor.
+        /// While anchored, the taut tether destroys every prism it sweeps
+        /// through — except the anchors themselves. Queried through
+        /// PrismSpatialIndex rather than physics raycasts: the index sees ALL
+        /// live prism mass, including freshly-laid trail whose colliders are
+        /// disabled for the first ~0.6s after spawn (a raycast would pass
+        /// through that fresh mass ghostlike — see Docs/SPATIAL_INDEX.md). One
+        /// sphere query covers the region swept this frame; each candidate is
+        /// then point-to-segment tested against the (sub-stepped) tether line,
+        /// so fast swings don't skip prisms between frames.
         /// </summary>
         void SweepTether(ref TetherState tether, Vector3 prevPos)
         {
             if (!tether.isAnchored || tether.anchor == null) return;
 
+            var index = PrismSpatialIndex.Instance;
+            if (index == null) return; // no spatial index in this scene → no registered prism mass to slice
+
             Vector3 anchorPos = tether.anchor.position;
-            float moved = Vector3.Distance(prevPos, transform.position);
+            Vector3 currStart = transform.position;
+            float moved = Vector3.Distance(prevPos, currStart);
             int steps = Mathf.Clamp(Mathf.CeilToInt(moved / Mathf.Max(sweepStepDistance, 0.5f)), 1, 4);
 
             Transform otherAnchor = (tether.anchor == leftTether.anchor) ? rightTether.anchor : leftTether.anchor;
-            int layerMask = 1 << TrailBlocksLayer;
+
+            // One query bounding the whole swept region (current tether line +
+            // the vessel's per-frame travel + blade kerf). By the triangle
+            // inequality this contains every prism within sweepBladeRadius of
+            // any sub-stepped tether line, so the per-candidate test below
+            // never misses one.
+            Vector3 mid = (currStart + anchorPos) * 0.5f;
+            float queryRadius = Vector3.Distance(currStart, anchorPos) * 0.5f + sweepBladeRadius + moved;
+            index.QuerySphere(mid, queryRadius, sweepScratch);
+            if (sweepScratch.Count == 0) return;
+
+            float bladeSq = sweepBladeRadius * sweepBladeRadius;
             bool killedSomething = false;
 
-            for (int s = 1; s <= steps; s++)
+            for (int i = 0; i < sweepScratch.Count; i++)
             {
-                Vector3 origin = Vector3.Lerp(prevPos, transform.position, (float)s / steps);
-                Vector3 toAnchor = anchorPos - origin;
-                float dist = toAnchor.magnitude;
-                if (dist < 0.01f) continue;
-                Vector3 dir = toAnchor / dist;
+                var prism = sweepScratch[i];
+                if (prism == null || prism.destroyed) continue;
 
-                int hitCount = Physics.RaycastNonAlloc(origin, dir, sweepHits, dist, layerMask);
-                for (int i = 0; i < hitCount; i++)
+                var t = prism.transform;
+                if (t == tether.anchor || t == otherAnchor) continue;
+
+                // Sliced if within the blade kerf of any sub-stepped tether line this frame.
+                Vector3 p = t.position;
+                bool sliced = false;
+                for (int s = 1; s <= steps && !sliced; s++)
                 {
-                    var t = sweepHits[i].collider.transform;
-                    if (t == tether.anchor || t == otherAnchor) continue;
-                    if (!sweepHits[i].collider.TryGetComponent<Prism>(out var prism) || prism.destroyed) continue;
-
-                    prism.Damage(lastVelocity, VesselStatus.Domain, VesselStatus.PlayerName);
-                    killedSomething = true;
+                    Vector3 origin = steps == 1 ? currStart : Vector3.Lerp(prevPos, currStart, (float)s / steps);
+                    if (PointToSegmentDistanceSq(p, origin, anchorPos) <= bladeSq)
+                        sliced = true;
                 }
+                if (!sliced) continue;
+
+                prism.Damage(lastVelocity, VesselStatus.Domain, VesselStatus.PlayerName);
+                killedSomething = true;
             }
 
             if (killedSomething)
                 tether.sweepPulse = 1f;
+        }
+
+        /// <summary>Squared distance from point p to segment [a,b].</summary>
+        static float PointToSegmentDistanceSq(Vector3 p, Vector3 a, Vector3 b)
+        {
+            Vector3 ab = b - a;
+            float abLenSq = ab.sqrMagnitude;
+            if (abLenSq < 1e-6f) return (p - a).sqrMagnitude;
+            float t = Mathf.Clamp01(Vector3.Dot(p - a, ab) / abLenSq);
+            Vector3 proj = a + t * ab;
+            return (p - proj).sqrMagnitude;
         }
 
         // ==================================================================
