@@ -41,10 +41,13 @@ Do **not** remove `HangarScreen : IScreen` or the `_lastLoadFrame` double-load g
 
 ## 2. How unlocks ACTUALLY work (the exact spec)
 
-> **Myth vs. reality:** XP does **not** unlock games. The XP track is a cosmetic
-> participation odometer (+25 XP/game, win or lose) that currently grants nothing.
-> Games unlock through a **quest chain**; vessels unlock by **spending crystals**;
-> intensity tiers unlock by **playing**. All three are independent of XP.
+> **Quest completion is the only progression currency — there is no XP.** (The XP track,
+> `ParticipationXpAwarder`, and `PlayerDataService` XP API were removed; the cloud field
+> `PlayerProfileData.xp` is left dormant.) Games unlock through a **quest chain**; vessels
+> unlock by **spending crystals**; intensity tiers unlock by **playing**.
+>
+> The active frontier of the quest chain also drives the **breadcrumb** (Call-to-Action) that
+> guides the player to the next thing to do — see `Docs/QUEST_TRACK_AND_BREADCRUMB.md`.
 
 ### 2a. Arcade game modes — quest chain
 
@@ -65,27 +68,30 @@ A mode enters `UnlockedModes` only when the player **completes the previous ques
 | 2 | GameModeQuest_Joust | JOUST | 34 | IntensityUnlocked | 4 |
 | 3 | GameModeQuest_WildlifeBlitz | WILDLIFE BLITZ | 26 | IntensityUnlocked | 4 |
 | 4 | GameModeQuest_PartyGame | PARTY GAME | 35 | Placeholder | 30 |
-| 5 | VesselHangarUnlock | VESSEL HANGAR | (feature) | Placeholder | — |
+| 5 | VesselHangarUnlock | VESSEL HANGAR | Screen (feature) | Placeholder | — |
 
-Per-quest goal type/value lives on `SO_GameModeQuestData` (`TargetType` + `TargetValue`) — already a ScriptableObject. Unlock order = the list order in `SO_GameModeQuestList`. **To change which game unlocks when, edit those assets** (no code).
+Per-quest goal type/value lives on `SO_UnlockData` (`TargetType` + `TargetValue`) — already a ScriptableObject. Unlock order = the list order in `SO_UnlockList`. **To change which game unlocks when, edit those assets** (no code). `SO_UnlockData` also carries a `FeatureKind` (GameMode/Vessel/Screen/Captain/…) and the breadcrumb fields (`CallToActionTargetID` / `CompletionUserAction` / `DependencyTargetIDs`) — see `Docs/QUEST_TRACK_AND_BREADCRUMB.md`.
 
 ### 2b. Intensity tiers (1–4)
 
 A second, finer gate. Intensities 1 & 2 are available the moment a mode unlocks (`defaultMaxIntensity`). Tiers 3 and 4 unlock by either:
 
-- **play count** — `SO_GameModeQuestData.PlaysToUnlockIntensity3 / 4` games at the previous tier, or
+- **play count** — `SO_UnlockData.PlaysToUnlockIntensity3 / 4` games at the previous tier, or
 - **stat goal** — `Intensity3StatTarget / Intensity4StatTarget` when `IntensityUnlockStatType` is set.
 
 The locked intensity buttons live in `ArcadeGameConfigureModal` (`IsIntensityUnlocked`). Unlocking tier 4 also completes the mode's quest.
 
 ### 2c. Vessels (Hangar)
 
-- **Access to the Hangar feature** is gated by the quest chain: `IsVesselHangarUnlocked()` returns true once every quest *before* the quest named `SO_ProgressionConfig.vesselHangarQuestDisplayName` ("VESSEL HANGAR") is completed.
-- **Individual vessels** are gated by **crystals**, not XP or quests. Lock state + price live on the `SO_Vessel` asset (`isLocked`, `UnlockCost`, default 100). `VesselUnlockSystem.TryPurchaseVessel` spends crystals via `PlayerDataService.TrySpendCrystals` and persists the unlock to the Hangar cloud repo.
+- **Access to the Hangar feature** is gated by the quest chain: `IsVesselHangarUnlocked()` returns true once every game-mode quest *before* the quest named `SO_ProgressionConfig.vesselHangarQuestDisplayName` ("VESSEL HANGAR") is **done** (completed or already claimed). It tests the persistent max-intensity signal, not the transient `CompletedQuests` set — a claim empties that set, so the old conjunction was unsatisfiable and the hangar never unlocked.
+- **Individual vessels** are gated by **crystals**, not quests. Lock state + price live on the `SO_Vessel` asset (`isLocked`, `UnlockCost`, default 100). `VesselUnlockSystem.TryPurchaseVessel` spends crystals via `PlayerDataService.TrySpendCrystals` and persists the unlock to the Hangar cloud repo.
 
-### 2d. XP track (cosmetic)
+### 2d. XP — removed
 
-`ParticipationXpAwarder` awards a flat `participationXpPerGame` (default 25) to the local player each game, feeding the menu XP bar via `PlayerDataService.AddXP`. The `XPTrackView` renders milestones from `SO_XPTrackData`, but **its milestone rewards grant nothing** — `PlayerDataService.UnlockReward` has no callers. If you want XP to actually grant content later, wire `SO_XPTrackReward.unlockType` / `unlockReferenceId` to a grant call; the seam exists but is unused.
+There is **no XP**. The XP track (`ParticipationXpAwarder`, `XPTrackView`, `SO_XPTrackData`,
+`SO_XPTrackReward`) and the `PlayerDataService` XP API were deleted. Quest completion is the only
+progression currency. The cloud field `PlayerProfileData.xp` remains in the schema, dormant
+(never written for progression, never read), for back-compat with existing saves.
 
 ---
 
@@ -103,14 +109,11 @@ It centralizes the values that were **previously hardcoded** in `GameModeProgres
 | `defaultMaxIntensity` | `2` | the intensity floor (`= 2`) in `GameModeProgressionData` |
 | `maxIntensity` | `4` | the `DebugSetMaxIntensity` clamp ceiling |
 | `fullIntensityModes` | `[Tournament]` | `if (mode == GameModes.Tournament) return 4` |
-| `participationXpPerGame` | `25` | `ParticipationXpAwarder.xpPerGame` |
 | `vesselHangarQuestDisplayName` | `"VESSEL HANGAR"` | the magic string in `IsVesselHangarUnlocked` |
 
-**Wiring:** assign `ProgressionConfig.asset` to:
-- `GameModeProgressionService.progressionConfig` (the DontDestroyOnLoad progression GameObject), and
-- `ParticipationXpAwarder.progressionConfig` (its scene GameObject).
-
-When **unwired**, both fall back to built-in defaults that reproduce the previous behavior exactly — so wiring is purely additive and safe to defer.
+**Wiring:** assign `ProgressionConfig.asset` to `GameModeProgressionService.progressionConfig` (the
+DontDestroyOnLoad progression GameObject). When **unwired**, it falls back to built-in defaults that
+reproduce the previous behavior exactly — so wiring is purely additive and safe to defer.
 
 > Note: the 4-tier intensity ladder (1&2 free, 3, 4) assumes `defaultMaxIntensity = 2`.
 > The cap (`maxIntensity`) and which modes ignore gating (`fullIntensityModes`) are freely
@@ -126,8 +129,9 @@ The Profile screen root exists (`screens` index 4 → `ProfileScreen`), but the 
 2. Select the **ProfileScreen** root under the Screens container.
 3. Ensure it (or its children) carry:
    - `ProfileScreen` (`Assets/_Scripts/UI/Views/ProfileScreen.cs`) — wire `displayNameText`, `avatarImage`.
-   - `XPTrackView` (`Assets/_Scripts/UI/Views/XPTrackView.cs`) — wire `xpTrackData` → `XPTrackData.asset`, the item/level prefabs, containers, slider, and XP label.
    - `EpisodeScreen` (`Assets/_Scripts/UI/Screens/EpisodeScreen.cs`) — wire `episodeList` → `EpisodeList.asset`, `cardContainer`, `episodeCardPrefab` (`EpisodePrefab.prefab`), `supportUsButton`, `episodePanel`.
+
+   (The XP track widget was removed — no XP UI to wire.)
 4. Leave `ScreenSwitcher.disabledScreens` as **{ ARK, PORT }**.
 
 (The prior content lives in `Assets/_Prefabs/MIgration_Prefabs (DELETE LATER)/` — `Screens.prefab` / `UI.prefab` — if you need a reference for how it was assembled.)

@@ -167,7 +167,7 @@ namespace CosmicShore.Core
         /// <summary>
         /// Returns true if the Vessel Hangar quest has been reached in the progression chain.
         /// The hangar quest is identified by DisplayName "VESSEL HANGAR" and is unlocked when
-        /// every quest before it in the chain is completed.
+        /// every game-mode quest before it in the chain is done (completed or already claimed).
         /// </summary>
         public bool IsVesselHangarUnlocked()
         {
@@ -186,12 +186,16 @@ namespace CosmicShore.Core
 
             if (hangarIndex < 0) return false;
 
-            // All quests before the hangar must be completed
+            // Every quest before the hangar must be DONE. Use the persistent done signal
+            // (IsUnlockObjectiveDone — a completed quest stays at max intensity) rather than the
+            // transient CompletedQuests set: ClaimQuestAndUnlockNext removes a quest from
+            // CompletedQuests the moment it is claimed to unlock the next mode, so a conjunction
+            // over CompletedQuests can never hold once the player has claimed down the chain.
             for (int i = 0; i < hangarIndex; i++)
             {
                 var quest = questList.Quests[i];
                 if (quest == null || quest.IsPlaceholder) continue;
-                if (!ProgressionData.IsQuestCompleted(quest.GameMode.ToString()))
+                if (!IsUnlockObjectiveDone(quest))
                     return false;
             }
 

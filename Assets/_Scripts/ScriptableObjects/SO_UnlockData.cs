@@ -90,7 +90,11 @@ namespace CosmicShore.ScriptableObjects
                  "unlock's objective (e.g. the game's PlayGame* card). None = no breadcrumb.")]
         public CallToActionTargetType CallToActionTargetID = CallToActionTargetType.None;
 
-        [Tooltip("The user action that dismisses this breadcrumb once performed.")]
+        [Tooltip("The user action that dismisses this breadcrumb once performed. Use None for a " +
+                 "progression-owned frontier (a multi-play quest, e.g. reach intensity 4): it stays " +
+                 "lit until the objective is met and the service retracts it on frontier advance — " +
+                 "NOT dismissed after a single play. Use a specific action (e.g. ViewHangarMenu) for " +
+                 "a one-shot 'go here' guide.")]
         public UserActionType CompletionUserAction = UserActionType.None;
 
         [Tooltip("Parent targets lit alongside the main target — the nested path to it (e.g. " +
