@@ -36,7 +36,7 @@ MonoBehaviour:
   ringTubeRadiusFraction: 0.18
   notchCenterDegrees: 0
   notchHalfWidthDegrees: 30
-  vesselRecoilSpeed: 6
+  vesselRecoilSpeed: 0
   vesselRecoilDuration: 0.12
   celebrationSeconds: 2.2
   celebrationTimeScale: 0.35

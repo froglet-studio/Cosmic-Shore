@@ -51,6 +51,22 @@ namespace CosmicShore.Gameplay
 
             Vector3 desiredPos = _followTarget.position + _followTarget.rotation * _followOffset;
             Vector3 shipDelta = _followTarget.position - _lastTargetPos;
+
+            // Teleport guard: on a kickoff park / fresh spawn the follow target jumps a long way in one
+            // frame (normal flight is only a few units/frame). Snap the camera into place instead of
+            // SmoothDamping a wild swing across the arena — that swing read as a "wonky, jittery start".
+            const float teleportStep = 50f;
+            if (shipDelta.sqrMagnitude > teleportStep * teleportStep)
+            {
+                transform.position = desiredPos;
+                if (SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var snapRot, this, logError: false))
+                    transform.rotation = snapRot;
+                _velocity = Vector3.zero;
+                _lateralDominance = 0f;
+                _lastTargetPos = _followTarget.position;
+                return;
+            }
+
             float fwd = Vector3.Dot(shipDelta, _followTarget.forward);
             float lat = Vector3.Dot(shipDelta, _followTarget.right);
 

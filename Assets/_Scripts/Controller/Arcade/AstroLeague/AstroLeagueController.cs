@@ -364,6 +364,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         void ApplyVesselRecoil(IPlayer striker, IVessel vessel, float intensity)
         {
+            // Recoil is OFF by default (vesselRecoilSpeed = 0): anti-clip is already guaranteed by the
+            // ball's own depenetration, and a persistent ball bouncing back into a vessel re-fires this
+            // every cooldown, stacking toward VesselTransformer.velocityModifierMax (100) and throwing
+            // the vessel around ("the ball imparts a force that never diminishes"). Skip the RPC entirely
+            // when disabled; dial it up only if you want a subtle "bounce off" juice.
+            if (settings.vesselRecoilSpeed <= 0f) return;
             if (vessel?.Transform == null || ball == null) return;
             ulong vesselNetId = striker.VesselNetId;
             if (vesselNetId == 0) return;
