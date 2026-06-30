@@ -19,6 +19,7 @@ namespace CosmicShore.Gameplay
 
         private Vector3 _velocity;
         private Vector3 _lastTargetPos;
+        private float _lateralDominance; // low-pass-filtered 0..1: how lateral the ship's motion is
         private CameraSettingsSO _currentSettings;
         private Coroutine _distanceLerpRoutine;
         public bool adaptiveZoomEnabled;
@@ -53,28 +54,44 @@ namespace CosmicShore.Gameplay
             float fwd = Vector3.Dot(shipDelta, _followTarget.forward);
             float lat = Vector3.Dot(shipDelta, _followTarget.right);
 
-            if (_disableRotationLerp || Mathf.Abs(lat) > Mathf.Abs(fwd))
+            // How lateral the ship's motion is (0 = pure forward, 1 = pure strafe), LOW-PASS FILTERED so
+            // it can't flip frame-to-frame. The old code hard-SNAPPED the camera when |lat| > |fwd| and
+            // SMOOTHED otherwise; on an agile, banking vessel (Manta) whose lateral ≈ forward motion that
+            // binary flipped every few frames, alternating instant vs lagged position+rotation = visible
+            // jitter. Here we blend the responsiveness CONTINUOUSLY (snappier on strafes, smoother on
+            // forward) so there is no discontinuity to stutter on.
+            float rawDominance = Mathf.Abs(lat) / (Mathf.Abs(fwd) + Mathf.Abs(lat) + 1e-4f);
+            _lateralDominance = Mathf.Lerp(_lateralDominance, rawDominance, 1f - Mathf.Exp(-10f * Time.deltaTime));
+
+            if (_disableRotationLerp)
             {
+                // Hard-attached camera (no smoothing) — consistent every frame, so it never jitters.
                 transform.position = desiredPos;
                 _velocity = Vector3.zero;
             }
             else
             {
+                // SmoothDamp stays continuous (velocity preserved); just shorten its time constant as the
+                // motion gets more lateral so the camera keeps up with strafes without ever jumping.
+                float posSmoothTime = Mathf.Lerp(_followSmoothTime, _followSmoothTime * 0.1f, _lateralDominance);
                 transform.position = Vector3.SmoothDamp(
-                    transform.position, desiredPos, ref _velocity, _followSmoothTime
+                    transform.position, desiredPos, ref _velocity, Mathf.Max(1e-4f, posSmoothTime)
                 );
             }
 
             if (!SafeLookRotation.TryGet(_followTarget.position - transform.position, _followTarget.up, out var targetRot, this, logError: false))
                 targetRot = transform.rotation;
 
-            if (_disableRotationLerp || Mathf.Abs(lat) > Mathf.Abs(fwd))
+            if (_disableRotationLerp)
             {
                 transform.rotation = targetRot;
             }
             else
             {
-                float t = 1f - Mathf.Exp(-_rotationSmoothTime * Time.deltaTime);
+                // Blend the Slerp factor from the smooth base toward instant (1) as motion gets lateral —
+                // continuous, so no snap/smooth flip. This is the main fix for the Manta rotation jitter.
+                float baseT = 1f - Mathf.Exp(-_rotationSmoothTime * Time.deltaTime);
+                float t = Mathf.Lerp(baseT, 1f, _lateralDominance);
                 transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
             }
 
