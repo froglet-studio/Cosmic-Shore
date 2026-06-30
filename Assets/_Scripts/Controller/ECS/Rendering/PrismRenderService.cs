@@ -75,6 +75,7 @@ namespace CosmicShore.ECS
         static bool _configEnabled;
         static bool _configAssetFound;
         static bool _loggedActive;
+        static bool _loggedWorldBootstrap;
 
         /// <summary>
         /// Master switch for instanced prism rendering. Resolution order:
@@ -170,6 +171,34 @@ namespace CosmicShore.ECS
             }
 
             var world = World.DefaultGameObjectInjectionWorld;
+            if (world == null || !world.IsCreated)
+            {
+                // This render path is (currently) the project's only runtime Entities
+                // usage, so if Unity's automatic world bootstrap is disabled the default
+                // world may never be created — every prism would then silently fall back
+                // to its MeshRenderer. Create it on demand instead of assuming it exists.
+                // Guarded on null so it can never double-create; Initialize() also appends
+                // the world's system groups (incl. EntitiesGraphicsSystem) to the player
+                // loop so they actually update. No subscene / scene authoring required.
+                try
+                {
+                    world = DefaultWorldInitialization.Initialize("Default World", false);
+                    if (!_loggedWorldBootstrap)
+                    {
+                        _loggedWorldBootstrap = true;
+                        Debug.Log("[PrismRenderService] No default ECS world found — bootstrapped one on demand for instanced prism rendering.");
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    if (!_loggedWorldBootstrap)
+                    {
+                        _loggedWorldBootstrap = true;
+                        Debug.LogWarning("[PrismRenderService] Could not bootstrap a default ECS world; staying on the legacy MeshRenderer path. " + e.Message);
+                    }
+                    return false;
+                }
+            }
             if (world == null || !world.IsCreated)
                 return false;
 
