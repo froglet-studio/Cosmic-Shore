@@ -41,7 +41,7 @@ namespace CosmicShore.UI
         private Image _glowImage;
         private Color _originalBgColor = Color.white;
         private GameModes _gameMode;
-        private SO_GameModeQuestData _questData;
+        private SO_UnlockData _questData;
         private QuestItemState _currentState = QuestItemState.Locked;
         private bool _initialStateSet;
         private Tween _pulseTween;
@@ -104,7 +104,7 @@ namespace CosmicShore.UI
             return t != null && t.TryGetComponent<TMP_Text>(out var tmp) ? tmp : null;
         }
 
-        public void Configure(SO_GameModeQuestData quest)
+        public void Configure(SO_UnlockData quest)
         {
             _questData = quest;
             _gameMode = quest.GameMode;

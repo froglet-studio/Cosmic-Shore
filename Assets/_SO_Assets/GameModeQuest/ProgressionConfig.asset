@@ -19,5 +19,4 @@ MonoBehaviour:
   maxIntensity: 4
   fullIntensityModes:
   - 36
-  participationXpPerGame: 25
   vesselHangarQuestDisplayName: VESSEL HANGAR

@@ -27,3 +27,9 @@ MonoBehaviour:
   Intensity4GoalDescription: Collect 25 crystals in Intensity 3
   Order: 0
   IsPlaceholder: 0
+  FeatureKind: 0
+  FeatureRef: 
+  CallToActionTargetID: 433
+  CompletionUserAction: -1
+  DependencyTargetIDs:
+  - 100

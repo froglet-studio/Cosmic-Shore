@@ -23,7 +23,5 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField] public GameplayReward IntensityTwoReward;
         [SerializeField] public GameplayReward IntensityThreeReward;
         [SerializeField] public GameplayReward IntensityFourReward;
-        
-        public SO_QuestChain SO_QuestChain;
     }
 }

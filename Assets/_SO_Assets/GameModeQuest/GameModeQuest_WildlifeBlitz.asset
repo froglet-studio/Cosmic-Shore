@@ -27,3 +27,9 @@ MonoBehaviour:
   Intensity4GoalDescription: Play Intensity 3 to unlock
   Order: 4
   IsPlaceholder: 0
+  FeatureKind: 0
+  FeatureRef: 
+  CallToActionTargetID: 427
+  CompletionUserAction: -1
+  DependencyTargetIDs:
+  - 100
