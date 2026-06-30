@@ -1088,7 +1088,17 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>Server: respawn at center — visible, frozen, zero velocity, NEUTRAL color again.</summary>
+        /// <summary>
+        /// Override where the ball resets to on kickoff (default = the authored arena center). The
+        /// central shared-goal layout spawns it off-center, in the goal's plane, so it doesn't start
+        /// sitting in the central goal. Set by the controller; only the server uses spawnPosition.
+        /// </summary>
+        public void SetSpawnPosition(Vector3 worldPosition)
+        {
+            spawnPosition = worldPosition;
+        }
+
+        /// <summary>Server: respawn at the spawn position — visible, frozen, zero velocity, NEUTRAL color again.</summary>
         public void ResetToCenterServer()
         {
             if (!IsServer) return;

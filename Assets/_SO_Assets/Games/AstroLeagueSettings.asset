@@ -21,7 +21,13 @@ MonoBehaviour:
   - 4
   - 3
   - 6
-  - 7
+  - 0
+  centralGoalByIntensity:
+  - 0
+  - 0
+  - 0
+  - 1
+  centralBallSpawnOffset: 70
   boundaryRadius: 190
   octagonBevelFraction: 0.5
   beveledBoxBevelFraction: 0.45
@@ -30,8 +36,8 @@ MonoBehaviour:
   ringTubeRadiusFraction: 0.18
   notchCenterDegrees: 0
   notchHalfWidthDegrees: 30
-  vesselRecoilSpeed: 30
-  vesselRecoilDuration: 0.2
+  vesselRecoilSpeed: 6
+  vesselRecoilDuration: 0.12
   celebrationSeconds: 2.2
   celebrationTimeScale: 0.35
   kickoffFreezeSeconds: 2.4

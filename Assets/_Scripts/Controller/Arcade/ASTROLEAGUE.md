@@ -162,15 +162,19 @@ server with billiard thinking:
   and gated on `minimumHitSpeed`, so a fast committed hit pops + recoils while continuous
   dribble contact doesn't spam. The recoil (the vessel "bouncing off" too) is the
   controller's `RecoilVessel_ClientRpc` — owner-authoritative vessels move only where
-  `IsNetworkOwner`, so it's keyed by vessel `NetworkObjectId`.
+  `IsNetworkOwner`, so it's keyed by vessel `NetworkObjectId`. **Keep `vesselRecoilSpeed`
+  SMALL** (default 6): anti-clip is already guaranteed by the ball's own depenetration, so a
+  large recoil only fights player control — it stacks toward `VesselTransformer.velocityModifierMax`
+  (100) on repeated contact and reads as the vessel being "tugged around" / "twitchy".
 - **Intensity scales the whole playfield AND picks the court shape.** The controller computes a
   scale factor that steps evenly with intensity — kept tight at **1× / 1.33× / 1.67× / 2×** for
   intensities 1-4 (`lerp(1, intensityScaleAtMax=2, (i-1)/(maxIntensityLevel-1))`) so all four courts
-  play at a similar size — and a **court shape** per intensity (`settings.boundaryShapesByIntensity`,
-  default BeveledBox / Hex / Cylinder / NotchedRing). Both are published as **NetworkVariables**
-  (`n_IntensityScale`, `n_BoundaryShape`, `n_GoalTarget`) so every peer — including a client that
+  play at a similar size — and a **court shape** + **central-goal flag** per intensity
+  (`settings.boundaryShapesByIntensity` / `centralGoalByIntensity`, default BeveledBox / Hex / Cylinder
+  / Sphere-with-central-goal). All are published as **NetworkVariables** (`n_IntensityScale`,
+  `n_BoundaryShape`, `n_CentralGoal`, `n_GoalTarget`) so every peer — including a client that
   spawns AFTER the server set them — applies the same scale + geometry (a one-shot ClientRpc used to
-  miss late joiners, leaving them with no visible arena). `AstroLeagueArena.Build(scale, shape)`
+  miss late joiners, leaving them with no visible arena). `AstroLeagueArena.Build(scale, shape, centralGoal)`
   rebuilds the stadium boundary at the scaled dimensions, `AstroLeagueBall.SetSizeScale(scale)`
   resizes the ball (visual + collider) on top of its authored base, the controller pushes the goals +
   team spawns out to the scaled goal lines, and the nucleus is morphed to the boundary (mesh for
@@ -260,21 +264,33 @@ the wall the ball hits.
 | `BeveledBox` | Rocket-League-style | Box with every edge + corner chamfered — flat faces + angled ramps that redirect instead of trap. **(default i1)** |
 | `HexagonalPrism` | Tighter 6-wall arena | Elongated hexagon cross-section extruded along the goal axis, flat caps. **(default i2)** |
 | `Cylinder` | Banks lengthwise, focuses across | Flat goal caps + curved barrel. **(default i3)** |
-| `NotchedRing` | Center choke point, lots of bounces | A central **torus ring obstacle** (axis = goal axis) inside an outer court (default Cylinder). The ball bounces off the ring's OUTSIDE; the central hole + an angular **notch** stay open as shooting lanes. **(default i4)** |
+| `Sphere` | Center-focusing — pairs with the central goal | Legacy radial reflect; the focusing that's bad for banking is GOOD for the central shared goal (it funnels the ball back through the center). **(default i4, central goal)** |
+| `NotchedRing` | Center choke point, lots of bounces | A central **torus ring obstacle** (axis = goal axis) inside an outer court (default Cylinder). The ball bounces off the ring's OUTSIDE; the central hole + an angular **notch** stay open as shooting lanes. |
 | `Box` | Pool / air-hockey — sharpest banks | 6 flat walls, 90° corners (can trap). Flat goal caps backboard missed shots. |
 | `OctagonalPrism` | "Cage" arena, varied bank angles | Box with its 4 goal-axis edges chamfered → octagon cross-section, 135° corners, flat caps. |
 | `Octahedron` | Diamond, every wall banks | 8 angled faces; very different, more chaotic. |
-| `Sphere` | Legacy center-focusing baseline | The original behavior, kept for A/B comparison. |
+
+**Central shared goal** (`centralGoalByIntensity[]`, default ON only for intensity 4). Instead of two
+end goals, the two `AstroLeagueGoal` detectors move to the **arena center**, facing OPPOSITE ways along
+the goal axis (±Z), so there is **ONE shared goal where the pass DIRECTION decides the scorer**: push
+the ball +Z (toward the Ruby cone) → Ruby scores; -Z (toward the Jade cone) → Jade scores (own-goal
+rules still apply — a team driving it the wrong way feeds the opponent). It is a **pass-through** goal
+(scores on the ball's CENTER crossing the plane within the mouth disk, no solid back wall), and the
+ball **spawns off-center** in the goal's plane (`centralBallSpawnOffset` along X) so it doesn't start
+sitting in the goal. The arena draws a back-to-back Ruby(+Z)/Jade(-Z) cone at center; the AI aims PAST
+center along its scoring direction (so it drives the ball THROUGH the disk the right way, not into an
+own goal). The central hole + sphere focusing make this read like a "core" you shoot the ball into.
 
 **Per-intensity test harness.** `AstroLeagueSettingsSO.boundaryShapesByIntensity[]` maps one shape to
-each intensity (default 1-4 = **BeveledBox / Hex / Cylinder / NotchedRing**). The server reads
-`settings.ShapeForIntensity(intensity)`, publishes it + the scale via NetworkVariables, and every
-peer's `ApplyIntensityScale(scale, shape)` rebuilds the boundary + morphs the nucleus. Re-map shapes
-freely in the inspector — it's pure data. Tunables: `octagonBevelFraction` / `beveledBoxBevelFraction`
-(chamfer depth); `boundaryRadius` (sphere only); and the **NotchedRing** ring — `notchedRingOuterShape`
-(default Cylinder), `ringMajorRadiusFraction` / `ringTubeRadiusFraction` (ring size, as fractions of
-the court cross-section radius — the central hole = major − tube must clear the ball), and
-`notchCenterDegrees` / `notchHalfWidthDegrees` (the gap). Polytope/cylinder/ring outer walls derive
+each intensity (default 1-4 = **BeveledBox / Hex / Cylinder / Sphere+central-goal**). The server reads
+`settings.ShapeForIntensity(intensity)` + `CentralGoalForIntensity(intensity)`, publishes them + the
+scale via NetworkVariables, and every peer's `ApplyIntensityScale(scale, shape, centralGoal)` rebuilds
+the boundary + morphs the nucleus + lays out the goals. Re-map freely in the inspector — pure data.
+Tunables: `octagonBevelFraction` / `beveledBoxBevelFraction` (chamfer depth); `boundaryRadius` (sphere
+only); `centralBallSpawnOffset`; and the **NotchedRing** ring — `notchedRingOuterShape` (default
+Cylinder), `ringMajorRadiusFraction` / `ringTubeRadiusFraction` (ring size, as fractions of the court
+cross-section radius — the central hole = major − tube must clear the ball), and `notchCenterDegrees` /
+`notchHalfWidthDegrees` (the gap). Polytope/cylinder/ring outer walls derive
 from the arena's `arenaLength/width/height` (the goal axis is Z, so the flat ±length/2 caps sit on the
 goal lines and "backboard" missed shots — `AstroLeagueGoal`'s plane-cross-within-the-mouth detection
 is shape-agnostic and unchanged).

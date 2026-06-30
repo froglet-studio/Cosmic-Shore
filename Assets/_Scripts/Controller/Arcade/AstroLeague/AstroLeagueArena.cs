@@ -58,6 +58,7 @@ namespace CosmicShore.Gameplay
         float _scale = 1f;
         float _L, _W, _H, _goalR, _boundaryRadius;
         AstroLeagueBoundary _boundary;
+        bool _centralGoal;
         bool _built;
 
         readonly List<GameObject> _generated = new();
@@ -73,9 +74,10 @@ namespace CosmicShore.Gameplay
         /// first. The boundary is exposed via <see cref="Boundary"/> so the controller can morph the
         /// cell nucleus to match (mesh for polytopes, radius for the sphere).
         /// </summary>
-        public void Build(float scale, AstroLeagueBoundaryShape shape)
+        public void Build(float scale, AstroLeagueBoundaryShape shape, bool centralGoal = false)
         {
             _scale = Mathf.Max(0.01f, scale);
+            _centralGoal = centralGoal;
             _L = arenaLength * _scale;
             _W = arenaWidth * _scale;
             _H = arenaHeight * _scale;
@@ -104,9 +106,20 @@ namespace CosmicShore.Gameplay
                 ringOuter, ringMajor, ringTube, notchCenter, notchHalf);
             if (ball != null) ball.SetBoundary(_boundary);
 
-            BuildGoalPortal("GoalPortal_Jade", Center + Vector3.back * (_L / 2f), Vector3.forward, JadeColor, out jadeRingMaterial);
-            BuildGoalPortal("GoalPortal_Ruby", Center + Vector3.forward * (_L / 2f), Vector3.back, RubyColor, out rubyRingMaterial);
-            BuildCenterRing();
+            if (_centralGoal)
+            {
+                // ONE shared goal at center: two back-to-back portals. Push the ball +Z (toward the Ruby
+                // cone) to score for Ruby, -Z (toward the Jade cone) to score for Jade — the rings recede
+                // outward in each scoring direction so each side reads as a portal you shoot through.
+                BuildGoalPortal("CentralGoal_Ruby", Center, Vector3.back, RubyColor, out rubyRingMaterial);
+                BuildGoalPortal("CentralGoal_Jade", Center, Vector3.forward, JadeColor, out jadeRingMaterial);
+            }
+            else
+            {
+                BuildGoalPortal("GoalPortal_Jade", Center + Vector3.back * (_L / 2f), Vector3.forward, JadeColor, out jadeRingMaterial);
+                BuildGoalPortal("GoalPortal_Ruby", Center + Vector3.forward * (_L / 2f), Vector3.back, RubyColor, out rubyRingMaterial);
+                BuildCenterRing();
+            }
             _built = true;
         }
 
@@ -187,11 +200,20 @@ namespace CosmicShore.Gameplay
         {
             if (!_built) return;
 
-            // Goal anticipation: portals flare as the ball closes in
+            // Goal anticipation: portals flare as the ball closes in. The central shared goal flares both
+            // cones off the ball's distance to center; the end goals flare off their own mouths.
             if (ball != null && !ball.IsHidden)
             {
-                FlareRing(jadeRingMaterial, JadeColor, Center + Vector3.back * (_L / 2f));
-                FlareRing(rubyRingMaterial, RubyColor, Center + Vector3.forward * (_L / 2f));
+                if (_centralGoal)
+                {
+                    FlareRing(jadeRingMaterial, JadeColor, Center);
+                    FlareRing(rubyRingMaterial, RubyColor, Center);
+                }
+                else
+                {
+                    FlareRing(jadeRingMaterial, JadeColor, Center + Vector3.back * (_L / 2f));
+                    FlareRing(rubyRingMaterial, RubyColor, Center + Vector3.forward * (_L / 2f));
+                }
             }
         }
 

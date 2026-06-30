@@ -66,11 +66,14 @@ namespace CosmicShore.Gameplay
             new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         readonly NetworkVariable<int> n_GoalTarget =
             new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        readonly NetworkVariable<bool> n_CentralGoal =
+            new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-        // Last (scale, shape) actually applied, so a re-read + an OnValueChanged don't rebuild twice.
+        // Last config actually applied, so a re-read + an OnValueChanged don't rebuild twice.
         bool _matchConfigApplied;
         float _appliedScale = -1f;
         AstroLeagueBoundaryShape _appliedShape;
+        bool _appliedCentralGoal;
 
         enum MatchPhase { PreMatch, Kickoff, Live, Celebration, Overtime, Finished }
         MatchPhase phase = MatchPhase.PreMatch;
@@ -111,6 +114,7 @@ namespace CosmicShore.Gameplay
                 n_GoalTarget.Value = settings.goalLimit;
                 n_IntensityScale.Value = ScaleForIntensity();
                 n_BoundaryShape.Value = (int)ShapeForIntensity();
+                n_CentralGoal.Value = CentralGoalForIntensity();
 
                 ball.OnStruckServer += HandleBallStruckServer;
                 matchMonitor.OnClockExpired += HandleClockExpiredServer;
@@ -122,6 +126,7 @@ namespace CosmicShore.Gameplay
             // OnValueChanged won't fire for the initial value it received with the spawn).
             n_IntensityScale.OnValueChanged += OnMatchConfigChanged;
             n_BoundaryShape.OnValueChanged += OnMatchConfigChanged;
+            n_CentralGoal.OnValueChanged += OnCentralGoalChanged;
             n_GoalTarget.OnValueChanged += OnGoalTargetChanged;
 
             gameData.GoalTargetCount = n_GoalTarget.Value;
@@ -130,23 +135,27 @@ namespace CosmicShore.Gameplay
 
         void OnMatchConfigChanged(float _, float __) => ApplyMatchConfig();
         void OnMatchConfigChanged(int _, int __) => ApplyMatchConfig();
+        void OnCentralGoalChanged(bool _, bool __) => ApplyMatchConfig();
         void OnGoalTargetChanged(int _, int v) => gameData.GoalTargetCount = v;
 
         /// <summary>
         /// Build the arena + morph the nucleus from the replicated match config, skipping a redundant
-        /// rebuild if the (scale, shape) hasn't changed since the last apply.
+        /// rebuild if the (scale, shape, central-goal) hasn't changed since the last apply.
         /// </summary>
         void ApplyMatchConfig()
         {
             float scale = n_IntensityScale.Value;
             var shape = (AstroLeagueBoundaryShape)n_BoundaryShape.Value;
-            if (_matchConfigApplied && Mathf.Approximately(scale, _appliedScale) && shape == _appliedShape)
+            bool centralGoal = n_CentralGoal.Value;
+            if (_matchConfigApplied && Mathf.Approximately(scale, _appliedScale)
+                && shape == _appliedShape && centralGoal == _appliedCentralGoal)
                 return;
 
             _matchConfigApplied = true;
             _appliedScale = scale;
             _appliedShape = shape;
-            ApplyIntensityScale(scale, shape);
+            _appliedCentralGoal = centralGoal;
+            ApplyIntensityScale(scale, shape, centralGoal);
         }
 
         /// <summary>Captures the authored (intensity-1) goal + team-spawn local positions once.</summary>
@@ -181,10 +190,20 @@ namespace CosmicShore.Gameplay
             return settings.ShapeForIntensity(intensity);
         }
 
+        /// <summary>Whether the selected intensity uses the central shared-goal layout.</summary>
+        bool CentralGoalForIntensity()
+        {
+            int intensity = gameData.SelectedIntensity != null
+                ? Mathf.Max(1, gameData.SelectedIntensity.Value)
+                : 1;
+            return settings.CentralGoalForIntensity(intensity);
+        }
+
         public override void OnNetworkDespawn()
         {
             n_IntensityScale.OnValueChanged -= OnMatchConfigChanged;
             n_BoundaryShape.OnValueChanged -= OnMatchConfigChanged;
+            n_CentralGoal.OnValueChanged -= OnCentralGoalChanged;
             n_GoalTarget.OnValueChanged -= OnGoalTargetChanged;
 
             if (IsServer)
@@ -212,12 +231,12 @@ namespace CosmicShore.Gameplay
         /// and morph the cell nucleus to the boundary geometry. Players reset to the scaled team
         /// positions on every kickoff.
         /// </summary>
-        void ApplyIntensityScale(float scale, AstroLeagueBoundaryShape shape)
+        void ApplyIntensityScale(float scale, AstroLeagueBoundaryShape shape, bool centralGoal)
         {
             _currentScale = Mathf.Max(1f, scale);
             CaptureBaseLayout();
 
-            if (arena != null) arena.Build(_currentScale, shape);
+            if (arena != null) arena.Build(_currentScale, shape, centralGoal);
             if (ball != null) ball.SetSizeScale(_currentScale);
 
             // The play boundary IS the cell nucleus: morph the visible nucleus to coincide with the
@@ -250,15 +269,36 @@ namespace CosmicShore.Gameplay
             }
 
             Vector3 arenaCenter = arena != null ? arena.Center : transform.position;
+
+            // Ball spawn: only the central shared goal overrides it — off-center in the goal's plane
+            // (along X) so the ball doesn't start sitting inside the central goal. Non-central modes keep
+            // the ball's authored center spawn.
+            if (ball != null && centralGoal)
+                ball.SetSpawnPosition(arenaCenter + Vector3.right * (settings.centralBallSpawnOffset * _currentScale));
+
             if (goals != null)
                 for (int i = 0; i < goals.Count; i++)
                 {
                     if (goals[i] == null) continue;
-                    if (i < _baseGoalLocalPos.Count)
-                        goals[i].transform.localPosition = _baseGoalLocalPos[i] * _currentScale;
-                    // Wire the ball + arena center + scale AFTER repositioning so the goal's inward
-                    // normal and mouth radius are computed from its final scaled world position.
-                    goals[i].Configure(ball, arenaCenter, _currentScale);
+                    if (centralGoal)
+                    {
+                        // ONE shared goal: both detectors at the arena center, facing OPPOSITE ways
+                        // (±Z, flipped 180° from the end goals) so the PASS DIRECTION decides which
+                        // domain scores. goals[0] (Jade) detects +Z passes → credits Ruby; goals[1]
+                        // (Ruby) detects -Z passes → credits Jade (own-goal rules still apply). The
+                        // arena draws the matching Ruby(+Z)/Jade(-Z) cones.
+                        goals[i].transform.position = arenaCenter;
+                        Vector3 normal = i == 0 ? Vector3.forward : Vector3.back;
+                        goals[i].Configure(ball, arenaCenter, _currentScale, normal, passThrough: true);
+                    }
+                    else
+                    {
+                        if (i < _baseGoalLocalPos.Count)
+                            goals[i].transform.localPosition = _baseGoalLocalPos[i] * _currentScale;
+                        // Wire the ball + arena center + scale AFTER repositioning so the goal's inward
+                        // normal and mouth radius are computed from its final scaled world position.
+                        goals[i].Configure(ball, arenaCenter, _currentScale);
+                    }
                 }
 
             if (teamSpawns != null)
@@ -675,7 +715,14 @@ namespace CosmicShore.Gameplay
             var targetGoal = GoalAttackedBy(aiPlayer.Domain);
             if (targetGoal == null) return ballPos;
 
-            Vector3 shotDir = (targetGoal.MouthCenter - ballPos).normalized;
+            // End goals: aim at the goal mouth. Central shared goal: aim PAST the center along the
+            // scoring direction (the goal's inward normal) so contact drives the ball THROUGH the
+            // central disk in the team's scoring Z direction — aiming straight at center would own-goal
+            // from the wrong side.
+            Vector3 aimPoint = _appliedCentralGoal
+                ? targetGoal.MouthCenter + targetGoal.InwardNormal * (300f * _currentScale)
+                : targetGoal.MouthCenter;
+            Vector3 shotDir = (aimPoint - ballPos).normalized;
             Vector3 approachPoint = ballPos - shotDir * settings.strikerApproachLead;
 
             Vector3 aiPos = aiPlayer.Vessel.Transform.position;

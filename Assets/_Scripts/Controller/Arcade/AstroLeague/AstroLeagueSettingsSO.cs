@@ -43,8 +43,18 @@ namespace CosmicShore.Gameplay
             AstroLeagueBoundaryShape.BeveledBox,
             AstroLeagueBoundaryShape.HexagonalPrism,
             AstroLeagueBoundaryShape.Cylinder,
-            AstroLeagueBoundaryShape.NotchedRing,
+            AstroLeagueBoundaryShape.Sphere,
         };
+
+        [Tooltip("Per-intensity 'central shared goal' toggle (index 0 = intensity 1). When ON, the two " +
+                 "goal detectors move to the arena CENTER facing opposite ways — ONE shared goal where " +
+                 "the pass DIRECTION decides which domain scores — and the ball spawns off-center. " +
+                 "Default: only intensity 4 (the Sphere). Re-map freely alongside boundaryShapesByIntensity.")]
+        public bool[] centralGoalByIntensity = { false, false, false, true };
+
+        [Tooltip("For a central-goal court: how far off the arena center (world units at intensity 1, " +
+                 "along X, in the goal's plane) the ball spawns, so it doesn't start sitting in the goal.")]
+        public float centralBallSpawnOffset = 70f;
 
         [Tooltip("Radius (at intensity 1) of the boundary ONLY when the shape is Sphere. ~190 " +
                  "circumscribes the legacy 300x200x100 court. Scales with match intensity. Polytope " +
@@ -87,13 +97,24 @@ namespace CosmicShore.Gameplay
             return boundaryShapesByIntensity[idx];
         }
 
-        [Header("Vessel Recoil (anti-clip)")]
-        [Tooltip("Backward velocity (units/sec) applied to a vessel when it strikes the ball, so it " +
-                 "bounces away and can't clip into the ball. Scaled by hit strength.")]
-        public float vesselRecoilSpeed = 30f;
+        /// <summary>Whether the intensity (1-based) uses the central shared-goal layout.</summary>
+        public bool CentralGoalForIntensity(int intensity)
+        {
+            if (centralGoalByIntensity == null || centralGoalByIntensity.Length == 0) return false;
+            int idx = Mathf.Clamp(intensity - 1, 0, centralGoalByIntensity.Length - 1);
+            return centralGoalByIntensity[idx];
+        }
+
+        [Header("Vessel Recoil (juice)")]
+        [Tooltip("Backward velocity (units/sec) added to a vessel when it strikes the ball, a subtle " +
+                 "'bounce off' juice. Kept SMALL: anti-clip is already guaranteed by the ball's own " +
+                 "depenetration (EjectBallFromVessel), so a large recoil only fights player control — " +
+                 "it stacks toward VesselTransformer.velocityModifierMax (100) on repeated dribble " +
+                 "contact and reads as the vessel being 'tugged around'. Scaled by hit strength.")]
+        public float vesselRecoilSpeed = 6f;
 
         [Tooltip("Seconds the vessel recoil impulse lasts (cosine-windowed by VesselTransformer).")]
-        public float vesselRecoilDuration = 0.2f;
+        public float vesselRecoilDuration = 0.12f;
 
         [Header("Kickoff Pacing")]
         [Tooltip("Seconds of GOAL! celebration (real time) before the ball resets")]
