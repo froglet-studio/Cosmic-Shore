@@ -32,7 +32,8 @@ namespace CosmicShore.Utility
             }
         
             velocity = velocity.sqrMagnitude < 2f ? Vector3.one * 2 : velocity;
-            while (distance.magnitude <= maxDistance)
+            float maxDistanceSqr = maxDistance * maxDistance;
+            while (distance.sqrMagnitude <= maxDistanceSqr)
             {
                 yield return null;
                 distance += velocityScale * Time.deltaTime * velocity;

@@ -280,7 +280,7 @@
   </div>
   <div class="events-grid">
     <div class="event-row"><div><span class="event-name">friend_code_generated / shared / redeemed</span><span class="st st-none">NO SYSTEM</span></div><div class="event-desc">Referral-code loop</div><div class="meta-hint">Feature to build; until then K-factor comes from friend requests + party invites</div></div>
-    <div class="event-row"><div><span class="event-name">friend_request_sent</span><span class="st st-build">BUILD</span></div><div class="event-desc">Request fired by name or playerId</div><div class="impl">FriendsServiceFacade.SendFriendRequestAsync / ByNameAsync — log: from, to, entry_point (AddFriendPanel vs OnlinePlayersPanel)</div></div>
+    <div class="event-row"><div><span class="event-name">friend_request_sent</span><span class="st st-build">BUILD</span></div><div class="event-desc">Request fired by name or playerId</div><div class="impl">FriendsServiceFacade.SendFriendRequestAsync / ByNameAsync — log: from, to, entry_point (no UI entry point currently; facade-only until an add-friend control is re-added)</div></div>
     <div class="event-row"><div><span class="event-name">friend_request_accepted</span><span class="st st-build">BUILD</span></div><div class="event-desc">Social graph edge created</div><div class="impl">FriendsServiceFacade.AcceptFriendRequestAsync</div></div>
     <div class="event-row"><div><span class="event-name">friend_request_declined</span><span class="st st-build">BUILD</span></div><div class="event-desc">Declined — track the ratio</div><div class="impl">FriendsServiceFacade.DeclineFriendRequestAsync</div></div>
   </div>

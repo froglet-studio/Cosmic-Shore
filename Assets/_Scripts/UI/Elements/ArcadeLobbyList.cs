@@ -63,6 +63,7 @@ namespace CosmicShore.UI
                     var slot = slots[i];
                     if (slot == null) continue;
                     slot.BindAddButton(OnAddSlotPressed);
+                    slot.BindKickButton(OnKickSlotPressed);
                 }
             }
 
@@ -253,7 +254,10 @@ namespace CosmicShore.UI
                 if (remoteIdx < remoteMembers.Count)
                 {
                     var member = remoteMembers[remoteIdx];
-                    slot.SetPlayer(member.PlayerId, member.DisplayName, ResolveAvatar(member.AvatarId));
+                    // Only the party host can kick, and never itself — these are remote
+                    // member slots (slot 0 is the local player), so host ⇒ kickable.
+                    slot.SetPlayer(member.PlayerId, member.DisplayName, ResolveAvatar(member.AvatarId),
+                        canKick: connectionData.IsPartyHost);
                 }
             }
         }
@@ -361,6 +365,33 @@ namespace CosmicShore.UI
                 Debug.LogWarning($"[ArcadeLobbyList] Leave party failed: {e.Message}");
                 UpdateLeaveButtonState();
             }
+        }
+
+        // A slot's ✕ was pressed. Host-only removal of that member; KickPartyMemberAsync
+        // guards host/self internally. The optimistic RemovePartyMember inside it fires
+        // OnPartyMemberKicked → PopulateSlots, so the slot re-renders either way.
+        async void OnKickSlotPressed(string playerId)
+        {
+            var service = HostConnectionService.Instance;
+            if (service == null)
+            {
+                Debug.LogWarning("[ArcadeLobbyList] HostConnectionService not available — cannot kick.");
+                PopulateSlots();
+                return;
+            }
+
+            try
+            {
+                await service.KickPartyMemberAsync(playerId);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[ArcadeLobbyList] Kick failed: {e.Message}");
+            }
+
+            // Safety net: re-render so a no-op/failed kick re-enables the ✕ that
+            // HandleKickClicked disabled optimistically.
+            PopulateSlots();
         }
 
         // ─────────────────────────────────────────────────────────────────────

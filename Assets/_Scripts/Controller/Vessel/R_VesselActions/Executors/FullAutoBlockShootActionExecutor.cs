@@ -129,7 +129,7 @@ namespace CosmicShore.Gameplay
                         var childProjectile = prism.GetComponentInChildren<Projectile>();
                         if (childProjectile)
                         {
-                            childProjectile.Velocity = m.forward.normalized * so.BlockSpeed;
+                            childProjectile.Velocity = m.forward * so.BlockSpeed; // m.forward is already unit
 
                             if (childProjectile.TryGetComponent<Collider>(out var projCol))
                                 projCol.enabled = true;
@@ -236,7 +236,7 @@ namespace CosmicShore.Gameplay
         private async UniTaskVoid MoveAndAnchorAsync(Transform block, Vector3 dir, float speed, float distance, bool reactivateCollidersAtEnd, Prism prism, Projectile childProjectile, CancellationToken token)
         {
             Vector3 start  = block.position;
-            Vector3 target = start + dir.normalized * distance;
+            Vector3 target = start + dir * distance; // dir is m.forward (already unit)
 
             try
             {

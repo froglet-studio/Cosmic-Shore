@@ -13,5 +13,6 @@ namespace CosmicShore.Data
         OmniCrystals = 1,
         ElementalCrystals = 2,
         Jousts = 3,
+        Goals = 4,
     }
 }

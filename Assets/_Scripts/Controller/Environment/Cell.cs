@@ -40,6 +40,11 @@ namespace CosmicShore.Gameplay
         GameObject membrane;
         GameObject nucleus;
 
+        // Optional target WORLD radius for the nucleus, requested by a mode (e.g. Astro League uses
+        // the nucleus as its spherical play boundary). 0 = use the prefab/multiplier size as-is.
+        // Cached so it survives the nucleus-spawn-vs-request ordering race (applied in SpawnVisuals).
+        float _pendingNucleusWorldRadius;
+
         public float NucleusRadius => nucleus ? nucleus.transform.localScale.x : 0f;
         public float MembraneRadius
         {
@@ -800,6 +805,34 @@ namespace CosmicShore.Gameplay
             if (cellConfigData.NucleusPrefab == null) return;
             nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
             nucleus.transform.localScale *= nucleusScaleMultiplier;
+            ApplyNucleusWorldRadius(); // honor any radius a mode requested before the nucleus existed
+        }
+
+        /// <summary>
+        /// Resize the nucleus marker to a target WORLD radius (mesh-agnostic, via renderer bounds, so
+        /// it works regardless of the prefab mesh's base size). Lets a mode repurpose the nucleus as
+        /// its play boundary — e.g. Astro League scales it to the arena's spherical bounce radius.
+        /// Safe to call before the nucleus spawns: the target is cached and applied in SpawnVisuals.
+        /// </summary>
+        public void SetNucleusWorldRadius(float worldRadius)
+        {
+            if (worldRadius <= 0f) return;
+            _pendingNucleusWorldRadius = worldRadius;
+            ApplyNucleusWorldRadius();
+        }
+
+        void ApplyNucleusWorldRadius()
+        {
+            if (nucleus == null || _pendingNucleusWorldRadius <= 0f) return;
+
+            var r = nucleus.GetComponentInChildren<Renderer>();
+            if (r == null) return;
+
+            Vector3 ext = r.bounds.extents;
+            float current = Mathf.Max(ext.x, Mathf.Max(ext.y, ext.z));
+            if (current < 1e-4f) return;
+
+            nucleus.transform.localScale *= _pendingNucleusWorldRadius / current;
         }
 
         void ResetVolumes()
@@ -1001,7 +1034,7 @@ namespace CosmicShore.Gameplay
             // across the full Skim Race track. See SenseRadius / Docs/ECOSYSTEM.md §7.2.
             float radius = SenseRadius;
             if (radius <= 0f) return false;
-            return Vector3.Distance(position, transform.position) < radius;
+            return (position - transform.position).sqrMagnitude < radius * radius;
         }
 
         public void ChangeVolume(Domains domain, float volume)

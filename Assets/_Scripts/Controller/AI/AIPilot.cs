@@ -110,6 +110,20 @@ namespace CosmicShore.Gameplay
         Vector3 _distance;
         bool LookingAtCrystal;
 
+        // Optional external steering hook. When set, the provider is sampled every
+        // frame and overrides crystal/player seeking entirely. Used by game modes
+        // that need bespoke AI objectives (e.g. Astro League ball striking).
+        Func<Vector3> _externalTargetProvider;
+
+        /// <summary>
+        /// Routes all steering toward positions supplied by <paramref name="provider"/>.
+        /// Pass the freshest position each call — it is sampled once per frame.
+        /// </summary>
+        public void SetExternalTargetProvider(Func<Vector3> provider) => _externalTargetProvider = provider;
+
+        /// <summary>Restores default crystal/player target seeking.</summary>
+        public void ClearExternalTargetProvider() => _externalTargetProvider = null;
+
         Dictionary<Corner, AvoidanceBehavior> CornerBehaviors;
 
         #region Avoidance Stuff
@@ -311,6 +325,11 @@ namespace CosmicShore.Gameplay
             if (seekPlayers && _targetVesselTransform != null)
                 _targetPosition = _targetVesselTransform.position;
 
+            // External steering hook (e.g. Astro League ball striking) overrides all other
+            // targeting when set — checked last so it always wins.
+            if (_externalTargetProvider != null)
+                _targetPosition = _externalTargetProvider();
+
             _distance = _targetPosition - transform.position;
             Vector3 desiredDirection = _distance.normalized;
 
@@ -325,7 +344,7 @@ namespace CosmicShore.Gameplay
             else if (VesselStatus.IsDrifting) vessel.StopShipControllerActions(InputEvents.LeftStickAction);
 
 
-            if (_distance.magnitude < float.Epsilon) // On top of the target — avoid div-by-zero
+            if (_distance.sqrMagnitude < float.Epsilon) // On top of the target — avoid div-by-zero (guards the sqrMagnitude divisor below)
             {
                 // Don't latch the previous frame's turn input (which would keep the vessel
                 // veering with nothing to steer toward). Fly a clean straight pass-through.

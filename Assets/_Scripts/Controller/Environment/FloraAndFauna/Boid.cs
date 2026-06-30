@@ -182,6 +182,13 @@ namespace CosmicShore.Gameplay
             Vector3 goalDirection = target - transform.position;
             Vector3 blockAttraction = Vector3.zero;
 
+            // Squared-distance space: every per-neighbor use of `distance` below is either a
+            // radius threshold or the inverse-square weight diff.normalized/distance — and
+            // diff.normalized/distance == (diff/|diff|)/|diff| == diff/diff.sqrMagnitude — so
+            // no per-neighbor sqrt is needed. Radii are squared once per behavior tick here.
+            float separationRadiusSqr = separationRadius * separationRadius;
+            float trailBlockInteractionRadiusSqr = trailBlockInteractionRadius * trailBlockInteractionRadius;
+
             float averageSpeed = 0.0f;
             int separatedBoidCount = 0;
 
@@ -208,24 +215,24 @@ namespace CosmicShore.Gameplay
                 Boid otherBoid = otherPrism is HealthPrism ? otherPrism.GetComponentInParent<Boid>() : null;
 
                 Vector3 diff = transform.position - otherPrism.transform.position;
-                float distance = diff.magnitude;
-                if (distance == 0) continue;
+                float sqr = diff.sqrMagnitude;
+                if (sqr == 0f) continue;
 
                 if (otherBoid)
                 {
-                    cohesion += -diff.normalized / distance;
+                    cohesion += -diff / sqr;
                     alignment += otherPrism.transform.forward;
 
-                    if (distance < separationRadius)
+                    if (sqr < separationRadiusSqr)
                     {
                         separatedBoidCount++;
-                        separation += diff.normalized / distance;
+                        separation += diff / sqr;
                         averageSpeed += currentVelocity.magnitude;
                     }
                 }
                 else
                 {
-                    blockAttraction += -diff.normalized / distance;
+                    blockAttraction += -diff / sqr;
 
                     // Drones eat OPPOSING-domain mass (combat). Foragers (tadpoles) are cleanup
                     // grazers: they eat prisms of ANY domain — so the dominant trail gets grazed
@@ -242,7 +249,7 @@ namespace CosmicShore.Gameplay
                         ? (!shielded && !isFaunaBody)
                         : embeddedHealthPrism && otherPrism.Domain != embeddedHealthPrism.Domain;
 
-                    if (distance < trailBlockInteractionRadius && embeddedHealthPrism && edible)
+                    if (sqr < trailBlockInteractionRadiusSqr && embeddedHealthPrism && edible)
                     {
                         foreach (var effect in collisionEffects)
                         {
@@ -273,13 +280,13 @@ namespace CosmicShore.Gameplay
                                             // devastate:false so a shielded prism that somehow
                                             // reaches here only loses its shield, never gets eaten.
                                             otherPrism.Consume(transform, embeddedHealthPrism.Domain,
-                                                embeddedHealthPrism.PlayerName + " tadpole", false);
+                                                embeddedHealthPrism.PlayerName + " tadpole", false, true);
                                             NotifyFed();
                                         }
                                         else
                                         {
                                             otherPrism.Damage(currentVelocity * embeddedHealthPrism.Volume, embeddedHealthPrism.Domain,
-                                                embeddedHealthPrism.PlayerName + " boid", true);
+                                                embeddedHealthPrism.PlayerName + " boid", true, true);
                                         }
                                     }
                                     break;
@@ -312,8 +319,8 @@ namespace CosmicShore.Gameplay
             float speedMult = 1f;
             if (forager && cell != null && cell.LiveBlockCount > 0)
             {
-                float distToGoal = (target - transform.position).magnitude;
-                speedMult = distToGoal > trailBlockInteractionRadius ? Mathf.Max(1f, huntSpeedMultiplier) : 1f;
+                float distToGoalSqr = (target - transform.position).sqrMagnitude;
+                speedMult = distToGoalSqr > trailBlockInteractionRadiusSqr ? Mathf.Max(1f, huntSpeedMultiplier) : 1f;
             }
             currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed * speedMult, maxSpeed * speedMult);
 

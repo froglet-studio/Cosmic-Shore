@@ -216,13 +216,14 @@ namespace CosmicShore.Gameplay
 
             foreach (var item in cellItems)
             {
-                if (item.GetComponent<Prism>() && !item.CompareTag("FaunaPrefab"))
+                if (item.TryGetComponent(out Prism prism) && !item.CompareTag("FaunaPrefab"))
                 {
-                    float distance = Vector3.Distance(position, item.transform.position);
-                    if (distance < closestDistance)
+                    // argmin over distance == argmin over squared distance — no sqrt needed.
+                    float sqrDistance = (position - item.transform.position).sqrMagnitude;
+                    if (sqrDistance < closestDistance)
                     {
-                        closestDistance = distance;
-                        closestBlock = item.GetComponent<Prism>();
+                        closestDistance = sqrDistance;
+                        closestBlock = prism;
                     }
                 }
             }

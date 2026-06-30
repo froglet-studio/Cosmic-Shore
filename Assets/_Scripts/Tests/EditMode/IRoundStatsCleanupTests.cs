@@ -50,6 +50,7 @@ namespace CosmicShore.Tests
             public event Action<IRoundStats> OnTimeCrystalValueChanged;
             public event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
             public event Action<IRoundStats> OnJoustCollisionChanged;
+            public event Action<IRoundStats> OnGoalsScoredChanged;
             public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
             public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
             public event Action<IRoundStats> OnLeftStickAbilityActiveTimeChanged;
@@ -85,6 +86,7 @@ namespace CosmicShore.Tests
             public float TimeCrystalValue { get; set; }
             public int SkimmerShipCollisions { get; set; }
             public int JoustCollisions { get; set; }
+            public int GoalsScored { get; set; }
             public float FullSpeedStraightAbilityActiveTime { get; set; }
             public float RightStickAbilityActiveTime { get; set; }
             public float LeftStickAbilityActiveTime { get; set; }
@@ -127,6 +129,7 @@ namespace CosmicShore.Tests
                 TimeCrystalValue = 4.5f,
                 SkimmerShipCollisions = 12,
                 JoustCollisions = 8,
+                GoalsScored = 3,
                 FullSpeedStraightAbilityActiveTime = 10f,
                 RightStickAbilityActiveTime = 20f,
                 LeftStickAbilityActiveTime = 15f,
@@ -193,6 +196,7 @@ namespace CosmicShore.Tests
 
             Assert.AreEqual(0, _stats.SkimmerShipCollisions);
             Assert.AreEqual(0, _stats.JoustCollisions);
+            Assert.AreEqual(0, _stats.GoalsScored);
         }
 
         [Test]
