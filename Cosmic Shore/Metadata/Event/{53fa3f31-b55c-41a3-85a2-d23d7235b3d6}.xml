@@ -57,6 +57,9 @@
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{9cc56083-0665-4706-8f8c-df80b55685c5}">
+		<property name="dopplerEnabled">
+			<value>true</value>
+		</property>
 		<property name="minimumDistance">
 			<value>0</value>
 		</property>
@@ -108,7 +111,7 @@
 	</object>
 	<object class="EventMixerGroup" id="{a1b400b1-3ab2-4a23-9f75-0865a1921412}">
 		<property name="volume">
-			<value>-7</value>
+			<value>-7.5</value>
 		</property>
 		<property name="name">
 			<value>Audio 1</value>
