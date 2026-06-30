@@ -73,6 +73,7 @@ namespace CosmicShore.ECS
         // legacy MeshRenderer path stays the baseline so a build is never broken by
         // default. Enable via the PrismRenderConfig asset or SetRuntimeOverride(true).
         static bool _configEnabled;
+        static bool _configAssetFound;
         static bool _loggedActive;
 
         /// <summary>
@@ -95,7 +96,7 @@ namespace CosmicShore.ECS
                     {
                         _configLoaded = true;
                         var config = Resources.Load<CosmicShore.ScriptableObjects.PrismRenderConfigSO>("PrismRenderConfig");
-                        if (config != null) _configEnabled = config.UseInstancedRendering;
+                        if (config != null) { _configAssetFound = true; _configEnabled = config.UseInstancedRendering; }
                     }
                     enabled = _configEnabled;
                 }
@@ -113,6 +114,31 @@ namespace CosmicShore.ECS
 
         /// <summary>Runtime A/B override (null = fall back to config). New prisms follow the new value; existing ones keep their current path until reuse.</summary>
         public static void SetRuntimeOverride(bool? enabled) => _runtimeOverride = enabled;
+
+        /// <summary>
+        /// Read-only, allocation-light diagnosis of whether the instanced path is
+        /// actually engaging — and if not, exactly which link in the chain is broken
+        /// (master toggle off / no config asset / no ECS world / no EntitiesGraphicsSystem).
+        /// Surfaced on the DiagnosticsHUD so a "still N draw calls" symptom self-explains
+        /// instead of failing silently. Does NOT create or cache the world.
+        /// </summary>
+        public static string StatusLine()
+        {
+            // Resolving Enabled also primes the config cache (_configAssetFound).
+            if (!Enabled)
+            {
+                if (_runtimeOverride.HasValue) return "OFF (runtime override = false)";
+                if (!_configAssetFound) return "OFF (no PrismRenderConfig asset in Resources)";
+                return "OFF (config: Use Instanced Rendering unchecked)";
+            }
+
+            var world = World.DefaultGameObjectInjectionWorld;
+            if (world == null || !world.IsCreated) return "OFF (no ECS world at runtime)";
+            if (world.GetExistingSystemManaged<EntitiesGraphicsSystem>() == null)
+                return "OFF (EntitiesGraphicsSystem missing — SRP/platform unsupported?)";
+
+            return $"ON · ents={LiveEntityCount}";
+        }
 
         // ------------------------------------------------------------------
         // World / registration caches

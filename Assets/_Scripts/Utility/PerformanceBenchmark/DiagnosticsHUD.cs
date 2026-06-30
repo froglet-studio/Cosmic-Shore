@@ -246,6 +246,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 Row(la, va, "Triangles", Col(White, RLong(_triangles).ToString("N0")));
                 Row(la, va, "Vertices", Col(White, RLong(_vertices).ToString("N0")));
 
+                // Instanced prism path (Entities Graphics): ON ⇒ draw calls should decouple
+                // from prism count; OFF (reason) explains why they don't. See PrismRenderService.
+                string prismPath = CosmicShore.ECS.PrismRenderService.StatusLine();
+                Row(la, va, "Prism Path", Col(prismPath.StartsWith("ON") ? Good : Warn, prismPath));
+
                 Header(la, va, "Memory");
                 float gcKB = RLong(_gcAlloc) / 1024f;
                 Row(la, va, "GC / frame", Col(gcKB > 4f ? Warn : Good, gcKB.ToString("F1") + " KB"));
