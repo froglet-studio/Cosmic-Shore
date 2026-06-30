@@ -66,9 +66,8 @@ A mode enters `UnlockedModes` only when the player **completes the previous ques
 | 0 (free) | GameModeQuest_CrystalCapture | CRYSTAL CAPTURE | 35 | IntensityUnlocked | 4 |
 | 1 | GameModeQuest_HexRace | HEX RACE | 33 | IntensityUnlocked | 4 |
 | 2 | GameModeQuest_Joust | JOUST | 34 | IntensityUnlocked | 4 |
-| 3 | GameModeQuest_WildlifeBlitz | WILDLIFE BLITZ | 26 | IntensityUnlocked | 4 |
-| 4 | GameModeQuest_PartyGame | PARTY GAME | 35 | Placeholder | 30 |
-| 5 | VesselHangarUnlock | VESSEL HANGAR | Screen (feature) | Placeholder | — |
+| 3 | GameModeQuest_PartyGame | PARTY GAME | 35 | Placeholder | 30 |
+| 4 | VesselHangarUnlock | VESSEL HANGAR | Screen (feature) | Placeholder | — |
 
 Per-quest goal type/value lives on `SO_UnlockData` (`TargetType` + `TargetValue`) — already a ScriptableObject. Unlock order = the list order in `SO_UnlockList`. **To change which game unlocks when, edit those assets** (no code). `SO_UnlockData` also carries a `FeatureKind` (GameMode/Vessel/Screen/Captain/…) and the breadcrumb fields (`CallToActionTargetID` / `CompletionUserAction` / `DependencyTargetIDs`) — see `Docs/QUEST_TRACK_AND_BREADCRUMB.md`.
 

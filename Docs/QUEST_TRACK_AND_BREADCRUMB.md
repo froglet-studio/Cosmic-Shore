@@ -112,9 +112,8 @@ is shown immediately (no re-bloom) since it persisted — it didn't "pop into ex
 | 0 | CrystalCapture (free) | GameMode 35 | Intensity 4 | PlayGameMultiplayerCrystalCapture (433) | ArcadeMenu |
 | 1 | HexRace | GameMode 33 | Intensity 4 | PlayGameHexRace (431) | ArcadeMenu |
 | 2 | Joust | GameMode 34 | Intensity 4 | PlayGameMultiplayerJoust (434) | ArcadeMenu |
-| 3 | WildlifeBlitz | GameMode 26 | Intensity 4 | PlayGameWildlifeBlitz (427) | ArcadeMenu |
-| 4 | PartyGame | GameMode (placeholder) | — | none (placeholder) | — |
-| 5 | VesselHangar | **Screen** | all prior done | HangarMenu (300), dismiss on ViewHangarMenu | — |
+| 3 | PartyGame | GameMode (placeholder) | — | none (placeholder) | — |
+| 4 | VesselHangar | **Screen** | all prior done | HangarMenu (300), dismiss on ViewHangarMenu | — |
 
 Node 5 (a `Screen`, not a mode) proves the "any feature" generalization. Its reachability is the
 project's own `IsVesselHangarUnlocked()` — fixed in this work to test the **persistent** done signal
