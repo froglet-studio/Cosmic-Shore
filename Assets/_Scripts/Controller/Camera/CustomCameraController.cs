@@ -118,10 +118,13 @@ namespace CosmicShore.Gameplay
             {
                 _shakeTimeRemaining -= Time.unscaledDeltaTime;
                 float decay = Mathf.Clamp01(_shakeTimeRemaining / _shakeDuration);
-                // Perlin-based shake for smoother motion than pure random
-                float x = (Mathf.PerlinNoise(Time.unscaledTime * 25f, 0f) - 0.5f) * 2f;
-                float y = (Mathf.PerlinNoise(0f, Time.unscaledTime * 25f) - 0.5f) * 2f;
-                float z = (Mathf.PerlinNoise(Time.unscaledTime * 25f, Time.unscaledTime * 25f) - 0.5f) * 2f;
+                // Perlin-based shake for smoother motion than pure random. ~10 Hz reads as a weighty
+                // "thud" rather than the ~25 Hz buzz that looked like high-frequency jitter.
+                const float shakeFreq = 10f;
+                float t = Time.unscaledTime * shakeFreq;
+                float x = (Mathf.PerlinNoise(t, 0f) - 0.5f) * 2f;
+                float y = (Mathf.PerlinNoise(0f, t) - 0.5f) * 2f;
+                float z = (Mathf.PerlinNoise(t, t) - 0.5f) * 2f;
                 transform.position += new Vector3(x, y, z) * (_shakeIntensity * decay);
             }
         }

@@ -89,6 +89,10 @@ namespace CosmicShore.Gameplay
         // used to size the wall-bounce juice by true impact speed (not the just-reflected value).
         Vector3 _velocityBeforePhysics;
 
+        // Server time of the last wall-bounce juice (camera shake / haptic / burst) — rate-limits it so
+        // a frictionless ball bouncing or skimming the wall can't spam the camera shake (see HandleWallBounce).
+        float _lastWallJuiceTime;
+
         // Court play boundary (the cell nucleus) — set by AstroLeagueArena.Build via SetBoundary. The
         // ball is contained by a server-side reflect off the boundary's walls (no collider) — flat
         // polytope faces BANK the ball (billiards/air-hockey), a sphere focuses it toward center. The
@@ -607,12 +611,22 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Server: a wall (or other non-prism geometry) bounce. Perfectly elastic — the solver's
-        /// reflection at bounciness 1 stands, NO decay, no prism interaction; just bounce juice.
+        /// Server: a wall bounce. Perfectly elastic (the reflection stands, no decay); just bounce juice.
+        /// Intensity is the PERPENDICULAR (into-wall) speed, NOT the full speed: a frictionless ball
+        /// skimming tangentially along a curved wall pokes through a sliver every tick, so full-speed
+        /// intensity fired the camera shake + haptic CONTINUOUSLY as the ball orbited the wall — a
+        /// persistent ~25 Hz jitter. A glancing skim now reads as ~0; only a real perpendicular slam
+        /// shakes, and a cooldown stops even repeated hard bounces from spamming.
         /// </summary>
         void HandleWallBounce(Vector3 contactPoint, Vector3 contactNormal)
         {
-            float intensity = Mathf.Clamp01(_velocityBeforePhysics.magnitude / settings.maxSpeed);
+            float perpSpeed = Mathf.Abs(Vector3.Dot(_velocityBeforePhysics, contactNormal));
+            float intensity = Mathf.Clamp01(perpSpeed / settings.maxSpeed);
+
+            if (intensity < settings.wallJuiceMinIntensity) return; // glancing skim — no juice
+            if (Time.time - _lastWallJuiceTime < settings.wallJuiceCooldown) return;
+            _lastWallJuiceTime = Time.time;
+
             WallBounce_ClientRpc(contactPoint, contactNormal, intensity);
         }
 

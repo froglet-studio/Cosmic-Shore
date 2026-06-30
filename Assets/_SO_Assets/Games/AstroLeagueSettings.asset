@@ -67,6 +67,8 @@ MonoBehaviour:
   goalShakeIntensity: 2.5
   goalShakeDuration: 0.5
   shakeFalloffRadius: 180
+  wallJuiceMinIntensity: 0.12
+  wallJuiceCooldown: 0.2
   impactFlashDuration: 0.12
   impactFlashIntensity: 14
   impactParticleBurst: 28

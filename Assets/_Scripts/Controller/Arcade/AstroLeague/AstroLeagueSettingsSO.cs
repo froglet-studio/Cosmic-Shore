@@ -225,6 +225,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("Camera shake fades with distance from the impact, reaching zero at this radius")]
         public float shakeFalloffRadius = 180f;
 
+        [Tooltip("Wall-bounce juice (camera shake / haptic / burst) only fires when the PERPENDICULAR " +
+                 "into-wall speed is at least this fraction of maxSpeed. A frictionless ball skimming " +
+                 "tangentially along a curved wall has ~0 perpendicular speed, so this stops it from " +
+                 "continuously shaking the camera (the high-frequency jitter).")]
+        [Range(0f, 1f)] public float wallJuiceMinIntensity = 0.12f;
+
+        [Tooltip("Minimum seconds between wall-bounce juice events — rate-limits the camera shake/haptic " +
+                 "so even repeated hard bounces can't spam it. Keep ≥ strikeShakeDuration so each shake " +
+                 "fully decays before the next can fire (no overlap).")]
+        public float wallJuiceCooldown = 0.2f;
+
         [Header("Juice — Flash & Particles")]
         [Tooltip("Seconds the ball emission spikes after a strike")]
         public float impactFlashDuration = 0.12f;
