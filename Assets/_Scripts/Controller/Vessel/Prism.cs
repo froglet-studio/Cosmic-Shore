@@ -219,11 +219,30 @@ namespace CosmicShore.Gameplay
         void EnsureRenderEntity()
         {
             if (PrismRenderService.IsHandleUsable(in RenderHandle)) return;
-            if (!meshRenderer || !meshFilter) return;
-            if (meshFilter.sharedMesh == null || meshRenderer.sharedMaterial == null) return;
+            if (!meshRenderer || !meshFilter) { LogEntityDiag("meshRenderer/meshFilter is null on the Prism GameObject"); return; }
+            if (meshFilter.sharedMesh == null || meshRenderer.sharedMaterial == null)
+            {
+                LogEntityDiag($"sharedMesh={(meshFilter.sharedMesh != null)} sharedMaterial={(meshRenderer.sharedMaterial != null)} at show time");
+                return;
+            }
             RenderHandle = PrismRenderService.Create(
                 meshFilter.sharedMesh, meshRenderer.sharedMaterial,
                 transform.localToWorldMatrix, gameObject.layer);
+            if (!PrismRenderService.IsHandleUsable(in RenderHandle))
+                LogEntityDiag("PrismRenderService.Create returned invalid (no ECS world / EntitiesGraphicsSystem)");
+        }
+
+        // TEMP diagnostic (rate-limited to 12 total): reports why a prism shown with the
+        // instanced path enabled stayed on the legacy MeshRenderer path. Remove once the
+        // FastGrowPrism entity-path gap is resolved. If NO lines appear while the path is ON
+        // yet prisms still render un-instanced, EnsureRenderEntity is never being reached —
+        // the show path bypasses SetRenderVisible/ApplyRenderPath.
+        static int _entityDiagLogs;
+        void LogEntityDiag(string reason)
+        {
+            if (_entityDiagLogs >= 12) return;
+            _entityDiagLogs++;
+            Debug.LogWarning($"[Prism/ECS-diag {_entityDiagLogs}/12] '{name}' stayed on legacy render path: {reason}");
         }
 
         /// <summary>Pushes the live transform to the companion entity. Called on
