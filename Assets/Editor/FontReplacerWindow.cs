@@ -43,6 +43,9 @@ namespace CosmicShore.Editor
         private Vector2 _scroll;
         private bool _showPreview = true;
 
+        private enum PreviewSource { Selection, Scene }
+        private PreviewSource _previewSource = PreviewSource.Selection;
+
         [MenuItem("Tools/Cosmic Shore/Font Replacer")]
         public static void Open()
         {
@@ -66,11 +69,23 @@ namespace CosmicShore.Editor
             window.Show();
         }
 
-        private void OnEnable() => RefreshSelection();
+        private void OnEnable()
+        {
+            RefreshSelection();
+            EditorApplication.playModeStateChanged += OnPlayModeChanged;
+        }
+
+        private void OnDisable()
+        {
+            EditorApplication.playModeStateChanged -= OnPlayModeChanged;
+        }
+
+        private void OnPlayModeChanged(PlayModeStateChange _) => Repaint();
 
         private void OnSelectionChange()
         {
             RefreshSelection();
+            _previewSource = PreviewSource.Selection; // the user just touched the hierarchy
             Repaint();
         }
 
@@ -88,6 +103,14 @@ namespace CosmicShore.Editor
                     "Optional. Font material preset to apply alongside the font (e.g. an outline/glow variant). " +
                     "Leave empty to use the target font's default material."),
                 _materialPreset, typeof(Material), false);
+
+            if (_targetFont != null && _materialPreset != null && !MaterialMatchesFont(_materialPreset, _targetFont))
+            {
+                EditorGUILayout.HelpBox(
+                    "The Material Preset's atlas doesn't match the Target Font, so it would make text " +
+                    "unreadable. It will be ignored — the font's default material is applied instead.",
+                    MessageType.Warning);
+            }
 
             EditorGUILayout.Space(6f);
             EditorGUILayout.LabelField("Filter", EditorStyles.boldLabel);
@@ -115,14 +138,24 @@ namespace CosmicShore.Editor
             _includeChildren = EditorGUILayout.ToggleLeft(
                 new GUIContent("Include children of selection",
                     "Also affect TMP text on descendants of the selected objects."), _includeChildren);
+            if (EditorGUI.EndChangeCheck())
+                RefreshSelection();
+
+            EditorGUI.BeginChangeCheck();
             _includeInactive = EditorGUILayout.ToggleLeft(
                 new GUIContent("Include inactive objects",
                     "Also affect TMP text on disabled objects."), _includeInactive);
             if (EditorGUI.EndChangeCheck())
+            {
                 RefreshSelection();
+                _sceneTargets.Clear(); // this toggle changes what a scene scan returns — force a re-Find
+            }
 
             if (_targetFont == null)
                 EditorGUILayout.HelpBox("Assign a Target Font Asset to enable replacement.", MessageType.Info);
+
+            if (EditorApplication.isPlaying)
+                EditorGUILayout.HelpBox("Font replacement is disabled during Play mode.", MessageType.Warning);
 
             DrawSelectionSection();
             DrawSceneSection();
@@ -139,7 +172,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField(
                 $"Selection: {_selectionTargets.Count} TMP text(s)   ·   matching filter: {matching}");
 
-            using (new EditorGUI.DisabledScope(_targetFont == null || matching == 0))
+            using (new EditorGUI.DisabledScope(_targetFont == null || matching == 0 || EditorApplication.isPlaying))
             {
                 if (GUILayout.Button($"Replace on Selection  ({matching})", GUILayout.Height(28f)))
                     Replace(_selectionTargets, "Selection");
@@ -167,7 +200,7 @@ namespace CosmicShore.Editor
             EditorGUILayout.LabelField(
                 $"Found in scene: {_sceneTargets.Count}   ·   matching filter: {matching}");
 
-            using (new EditorGUI.DisabledScope(_targetFont == null || matching == 0))
+            using (new EditorGUI.DisabledScope(_targetFont == null || matching == 0 || EditorApplication.isPlaying))
             {
                 if (GUILayout.Button($"Replace All in Scene  ({matching})", GUILayout.Height(28f)))
                 {
@@ -188,7 +221,14 @@ namespace CosmicShore.Editor
             _showPreview = EditorGUILayout.Foldout(_showPreview, "Preview (targets matching filter)", true);
             if (!_showPreview) return;
 
-            var pool = _selectionTargets.Count > 0 ? _selectionTargets : _sceneTargets;
+            // Explicit source toggle so the preview can never silently disagree with a Replace button's count.
+            _previewSource = (PreviewSource)GUILayout.Toolbar((int)_previewSource, new[]
+            {
+                $"Selection ({Effective(_selectionTargets).Count()})",
+                $"Scene ({Effective(_sceneTargets).Count()})",
+            });
+
+            var pool = _previewSource == PreviewSource.Scene ? _sceneTargets : _selectionTargets;
             var list = Effective(pool).ToList();
 
             _scroll = EditorGUILayout.BeginScrollView(_scroll, GUILayout.Height(150f));
@@ -252,11 +292,14 @@ namespace CosmicShore.Editor
             var mode = _includeInactive ? FindObjectsInactive.Include : FindObjectsInactive.Exclude;
             var all = FindObjectsByType<TMP_Text>(mode, FindObjectsSortMode.None);
             _sceneTargets.AddRange(all.Where(t => t != null));
+            _previewSource = PreviewSource.Scene; // the user just scanned the scene
         }
 
         private IEnumerable<TMP_Text> Effective(IEnumerable<TMP_Text> source)
         {
             var live = source.Where(t => t != null);
+            if (!_includeInactive)
+                live = live.Where(t => t.gameObject.activeInHierarchy); // honor the live toggle even on a stale scan
             return (_useSourceFilter && _sourceFilter != null)
                 ? live.Where(t => t.font == _sourceFilter)
                 : live;
@@ -275,14 +318,54 @@ namespace CosmicShore.Editor
             ShowNotification(new GUIContent("Selection has no TMP text with a font."));
         }
 
+        /// <summary>
+        /// The material to apply with the target font: the supplied preset when it belongs to the
+        /// target font's atlas, otherwise the font's own default material (a mismatched preset would
+        /// render as tofu, so it is ignored with a warning).
+        /// </summary>
+        private Material ResolveMaterial()
+        {
+            if (_materialPreset == null) return _targetFont.material;
+            if (MaterialMatchesFont(_materialPreset, _targetFont)) return _materialPreset;
+
+            Debug.LogWarning(
+                $"[FontReplacer] Material preset '{_materialPreset.name}' does not use '{_targetFont.name}' " +
+                "atlas — ignoring it and applying the font's default material to keep text readable.");
+            return _targetFont.material;
+        }
+
+        /// <summary>True if <paramref name="mat"/> samples one of <paramref name="font"/>'s atlas textures.</summary>
+        private static bool MaterialMatchesFont(Material mat, TMP_FontAsset font)
+        {
+            if (mat == null || font == null) return false;
+            if (!mat.HasProperty(ShaderUtilities.ID_MainTex)) return true; // not a TMP-style material — can't judge, don't block
+
+            var matTex = mat.GetTexture(ShaderUtilities.ID_MainTex);
+            if (matTex == null) return true;
+            if (matTex == font.atlasTexture) return true;
+
+            var atlases = font.atlasTextures;
+            if (atlases != null)
+                foreach (var a in atlases)
+                    if (a == matTex) return true;
+
+            return false;
+        }
+
         private void Replace(List<TMP_Text> pool, string label)
         {
             if (_targetFont == null) return;
 
+            if (EditorApplication.isPlaying)
+            {
+                ShowNotification(new GUIContent("Font replacement is disabled in Play mode."));
+                return;
+            }
+
             var targets = Effective(pool).ToList();
             if (targets.Count == 0) return;
 
-            var material = _materialPreset != null ? _materialPreset : _targetFont.material;
+            var material = ResolveMaterial();
 
             Undo.IncrementCurrentGroup();
             Undo.SetCurrentGroupName($"Replace TMP Font ({label})");
