@@ -10,8 +10,9 @@ namespace CosmicShore.Core
     /// <c>ActiveIndicator</c> when the breadcrumb system lights or dismisses this target.
     ///
     /// Continuity law (C3): the indicator never pops in or out. It blooms (scale-from-near-zero
-    /// + fade-in) on activate and withers (shrink + fade-out) on dismiss. Tweens use
-    /// <c>SetUpdate(true)</c> so they still play while the menu pauses time.
+    /// + fade-in) on activate and withers (shrink + fade-out) on dismiss. While active it runs a
+    /// looping glow pulse (alpha yoyo, or a subtle scale yoyo when the indicator has no
+    /// CanvasGroup). Tweens use <c>SetUpdate(true)</c> so they still play while the menu pauses time.
     /// </summary>
     public class CallToActionTarget : MonoBehaviour
     {
@@ -23,12 +24,22 @@ namespace CosmicShore.Core
         [SerializeField, Min(0f)] float fadeDuration = 0.25f;
         [SerializeField] Ease bloomEase = Ease.OutBack;
 
+        [Header("Looping glow pulse (while active)")]
+        [SerializeField] bool loopGlow = true;
+        [Tooltip("Alpha the glow dips to at the bottom of each pulse (needs a CanvasGroup on the ActiveIndicator).")]
+        [SerializeField, Range(0f, 1f)] float loopMinAlpha = 0.45f;
+        [Tooltip("Scale the glow pulses to when there is no CanvasGroup to fade.")]
+        [SerializeField, Min(1f)] float loopScale = 1.06f;
+        [Tooltip("Seconds for one half of the pulse (dim<->bright).")]
+        [SerializeField, Min(0.05f)] float loopPeriod = 0.9f;
+
         const float HiddenScale = 0.0001f;
 
         CanvasGroup _indicatorGroup;
         Vector3 _baseScale = Vector3.one;
         bool _baseScaleCached;
         Tween _tween;
+        Tween _loopTween;
 
         void Start()
         {
@@ -42,20 +53,27 @@ namespace CosmicShore.Core
 
             CallToActionSystem.Instance.RegisterCallToActionTarget(TargetID, WhenDutyCalls, WhenTheCallHasBeenAnswered);
 
-            // Reflect the current state on (re)spawn WITHOUT animating — the breadcrumb persists
-            // across scene loads, so re-entering the menu shouldn't replay the bloom.
+            // Reflect the current state on (re)spawn WITHOUT the bloom — the breadcrumb persists
+            // across scene loads, so re-entering the menu shouldn't replay the entrance — but the
+            // looping pulse does resume.
             bool active = AmIActive();
             if (ActiveIndicator != null)
             {
                 ActiveIndicator.SetActive(active);
-                if (active) ShowImmediate();
+                if (active)
+                {
+                    ShowImmediate();
+                    StartGlowLoop();
+                }
             }
         }
 
         void OnDisable()
         {
             _tween?.Kill();
+            _loopTween?.Kill();
             _tween = null;
+            _loopTween = null;
         }
 
         void CacheIndicator()
@@ -81,6 +99,7 @@ namespace CosmicShore.Core
 
             CacheIndicator();
             _tween?.Kill();
+            _loopTween?.Kill();
 
             ActiveIndicator.SetActive(true);
             ActiveIndicator.transform.localScale = _baseScale * HiddenScale;
@@ -90,6 +109,7 @@ namespace CosmicShore.Core
             seq.Append(ActiveIndicator.transform.DOScale(_baseScale, bloomDuration).SetEase(bloomEase));
             if (_indicatorGroup != null)
                 seq.Join(_indicatorGroup.DOFade(1f, bloomDuration * 0.7f));
+            seq.OnComplete(StartGlowLoop);
             _tween = seq;
         }
 
@@ -99,6 +119,7 @@ namespace CosmicShore.Core
 
             CacheIndicator();
             _tween?.Kill();
+            _loopTween?.Kill();
 
             var seq = DOTween.Sequence().SetUpdate(true);
             seq.Append(ActiveIndicator.transform.DOScale(_baseScale * HiddenScale, fadeDuration).SetEase(Ease.InBack));
@@ -106,6 +127,30 @@ namespace CosmicShore.Core
                 seq.Join(_indicatorGroup.DOFade(0f, fadeDuration));
             seq.OnComplete(ShowImmediateHidden);
             _tween = seq;
+        }
+
+        // The continuous glow pulse that runs while the indicator is lit.
+        void StartGlowLoop()
+        {
+            _loopTween?.Kill();
+            if (!loopGlow || ActiveIndicator == null) return;
+
+            if (_indicatorGroup != null)
+            {
+                _indicatorGroup.alpha = 1f;
+                _loopTween = _indicatorGroup.DOFade(loopMinAlpha, loopPeriod)
+                    .SetLoops(-1, LoopType.Yoyo)
+                    .SetEase(Ease.InOutSine)
+                    .SetUpdate(true);
+            }
+            else
+            {
+                ActiveIndicator.transform.localScale = _baseScale;
+                _loopTween = ActiveIndicator.transform.DOScale(_baseScale * loopScale, loopPeriod)
+                    .SetLoops(-1, LoopType.Yoyo)
+                    .SetEase(Ease.InOutSine)
+                    .SetUpdate(true);
+            }
         }
 
         // Restores the indicator to its rest pose, then hides the GameObject — so the next

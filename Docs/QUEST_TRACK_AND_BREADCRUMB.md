@@ -99,9 +99,12 @@ One-shot guides (e.g. the Vessel Hangar reveal) **do** use a specific `Completio
 ### Continuity (C3)
 
 `CallToActionTarget` blooms its `ActiveIndicator` (scale-from-~0 + `CanvasGroup` fade-in) on
-activate and withers it (shrink + fade-out → `SetActive(false)`) on dismiss, via DOTween with
-`SetUpdate(true)` (works while the menu pauses time). On scene re-entry an already-active breadcrumb
-is shown immediately (no re-bloom) since it persisted — it didn't "pop into existence."
+activate, runs a **looping glow pulse** (alpha yoyo, or a subtle scale yoyo when the indicator has
+no `CanvasGroup`) while active, and withers it (shrink + fade-out → `SetActive(false)`) on dismiss —
+all via DOTween with `SetUpdate(true)` (works while the menu pauses time). On scene re-entry an
+already-active breadcrumb is shown immediately (no re-bloom) but resumes the pulse, since it
+persisted — it didn't "pop into existence." The stock indicator sprite is
+`Assets/_Graphics/UI/CTA_Glow_Outline_Green.png` (green, 9-slice outline glow).
 
 ## Authored content — the live chain
 
