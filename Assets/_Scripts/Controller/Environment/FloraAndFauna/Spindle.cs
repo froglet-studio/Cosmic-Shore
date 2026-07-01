@@ -10,7 +10,17 @@ namespace CosmicShore.Gameplay
     public class Spindle : MonoBehaviour
     {
         private static readonly int PhaseOffsetID = Shader.PropertyToID("_Phase");
-        private MaterialPropertyBlock propertyBlock;
+
+        // Spindle sway is desynced with a small set of SHARED phase-variant materials chosen
+        // by world position, NOT a per-renderer MaterialPropertyBlock. A per-renderer MPB
+        // excludes the renderer from the SRP Batcher — that is why hundreds of spindles
+        // (tadpole bodies, gyroid branches) each drew as their own draw call. Every spindle
+        // that lands in the same phase bucket shares one material and batches into a single
+        // draw. Purely cosmetic (animation phase only); cached per base material so the count
+        // is bounded by the handful of distinct spindle materials.
+        const int PhaseVariantCount = 8;
+        static readonly Dictionary<Material, Material[]> PhaseVariants = new();
+        Material _phaseBaseMaterial;   // captured once so pooled reuse never layers variants-on-variants
 
         public Renderer RenderedObject;
         [SerializeField] Spindle parentSpindle;
@@ -59,19 +69,41 @@ namespace CosmicShore.Gameplay
                 yield break;
             }
 
-            propertyBlock = new MaterialPropertyBlock();
-
-            float randomOffset = Random.Range(0f, Mathf.PI * 2f);
-            RenderedObject.GetPropertyBlock(propertyBlock);
-            propertyBlock.SetFloat(PhaseOffsetID, randomOffset);
-            RenderedObject.SetPropertyBlock(propertyBlock);
-
-            originalMaterial = RenderedObject.sharedMaterial;
+            // Desync the sway via a shared phase-variant material (see PhaseVariants) so the
+            // spindle stays SRP-batchable — no per-renderer MaterialPropertyBlock. Capture the
+            // base material once so pooled reuse never layers variants-on-variants.
+            if (_phaseBaseMaterial == null) _phaseBaseMaterial = RenderedObject.sharedMaterial;
+            originalMaterial = GetPhaseVariant(_phaseBaseMaterial, transform.position);
+            RenderedObject.sharedMaterial = originalMaterial;
             condenseCoroutine = StartCoroutine(CondenseCoroutine());
 
             if (LifeForm) LifeForm.AddSpindle(this);
             parentSpindle ??= transform.parent.GetComponentInParent<Spindle>();
             if (parentSpindle) parentSpindle.AddSpindle(this);
+        }
+
+        // A shared material identical to baseMat but with a fixed _Phase, bucketed by world
+        // position: same bucket -> same material -> one SRP batch. Created lazily and cached
+        // per base material, so the total is bounded by the distinct spindle materials in play.
+        static Material GetPhaseVariant(Material baseMat, Vector3 worldPos)
+        {
+            if (baseMat == null) return null;
+
+            if (!PhaseVariants.TryGetValue(baseMat, out var variants))
+            {
+                variants = new Material[PhaseVariantCount];
+                for (int i = 0; i < PhaseVariantCount; i++)
+                {
+                    variants[i] = new Material(baseMat) { name = $"{baseMat.name}_Phase{i}" };
+                    variants[i].SetFloat(PhaseOffsetID, i / (float)PhaseVariantCount * Mathf.PI * 2f);
+                }
+                PhaseVariants[baseMat] = variants;
+            }
+
+            // Cheap position hash -> stable per-spindle bucket that scatters neighbours.
+            float h = Mathf.Sin(worldPos.x * 12.9898f + worldPos.y * 78.233f + worldPos.z * 37.719f) * 43758.5453f;
+            int idx = (int)((h - Mathf.Floor(h)) * PhaseVariantCount);
+            return variants[Mathf.Clamp(idx, 0, PhaseVariantCount - 1)];
         }
 
         public void AddHealthBlock(HealthPrism healthPrism)
@@ -127,7 +159,7 @@ namespace CosmicShore.Gameplay
 
         void RestoreOriginalMaterial()
         {
-            if (RenderedObject) RenderedObject.material = originalMaterial;
+            if (RenderedObject) RenderedObject.sharedMaterial = originalMaterial;
 
             if (!temporaryMaterial) return;
             Destroy(temporaryMaterial);
