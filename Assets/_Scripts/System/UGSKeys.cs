@@ -21,6 +21,7 @@ namespace CosmicShore.Core
         public const string PlayerSettings        = "PLAYER_SETTINGS";
         public const string Squad                 = "SQUAD_DATA";
         public const string Loadout               = "LOADOUT_DATA";
+        public const string Ftue                  = "FTUE_PROGRESS";
 
         // ── Analytics Events ──
         // Every event (and its parameters) must also be declared in the UGS

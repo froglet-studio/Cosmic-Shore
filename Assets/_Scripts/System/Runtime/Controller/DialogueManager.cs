@@ -26,6 +26,13 @@ namespace CosmicShore.Core
 
         public bool IsPlaying => _isPlaying;
 
+        /// <summary>
+        /// Raised when a dialogue set finishes playing (all lines shown and the view hidden).
+        /// Carries the set that just completed. Consumers (e.g. the FTUE dialogue node) use
+        /// this instead of polling <see cref="IsPlaying"/>.
+        /// </summary>
+        public event System.Action<DialogueSet> OnDialogueFinished;
+
         void OnEnable()
         {
             if (dialogueEventChannel != null)
@@ -109,6 +116,8 @@ namespace CosmicShore.Core
             _activeView = null;
             _currentSequence = null;
             _isPlaying = false;
+
+            OnDialogueFinished?.Invoke(set);
         }
     }
 }
