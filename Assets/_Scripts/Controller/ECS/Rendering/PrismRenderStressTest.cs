@@ -66,8 +66,10 @@ namespace CosmicShore.ECS
         {
             _world = World.DefaultGameObjectInjectionWorld;
             if (_world == null || !_world.IsCreated)
+                _world = DefaultWorldInitialization.Initialize("Default World", false);
+            if (_world == null || !_world.IsCreated)
             {
-                Debug.LogError("[PrismRenderStressTest] No default ECS world — Entities package not initialized.");
+                Debug.LogError("[PrismRenderStressTest] No default ECS world and could not bootstrap one.");
                 enabled = false;
                 return;
             }
