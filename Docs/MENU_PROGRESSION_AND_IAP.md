@@ -73,12 +73,13 @@ Per-quest goal type/value lives on `SO_UnlockData` (`TargetType` + `TargetValue`
 
 ### 2b. Intensity tiers (1–4)
 
-A second, finer gate. Intensities 1 & 2 are available the moment a mode unlocks (`defaultMaxIntensity`). Tiers 3 and 4 unlock by either:
+A second, finer gate. Intensities **1, 2 and 3** are available the moment a mode unlocks
+(`defaultMaxIntensity = 3`). Only **tier 4** is gated — it unlocks by either:
 
-- **play count** — `SO_UnlockData.PlaysToUnlockIntensity3 / 4` games at the previous tier, or
-- **stat goal** — `Intensity3StatTarget / Intensity4StatTarget` when `IntensityUnlockStatType` is set.
+- **play count** — `SO_UnlockData.PlaysToUnlockIntensity4` games at intensity 3, or
+- **stat goal** — `Intensity4StatTarget` when `IntensityUnlockStatType` is set (e.g. collect 25 crystals at intensity 3).
 
-The locked intensity buttons live in `ArcadeGameConfigureModal` (`IsIntensityUnlocked`). Unlocking tier 4 also completes the mode's quest.
+The locked intensity buttons live in `ArcadeGameConfigureModal` (`IsIntensityUnlocked`). Unlocking tier 4 also completes the mode's quest (→ Ready-to-Claim → claim unlocks the next mode).
 
 ### 2c. Vessels (Hangar)
 
@@ -105,7 +106,7 @@ It centralizes the values that were **previously hardcoded** in `GameModeProgres
 |---|---|---|
 | `alwaysUnlockedModes` | `[Tournament]` | `if (mode == GameModes.Tournament) return true` |
 | `firstQuestAlwaysUnlocked` | `true` | the `Quests[0]` "first is free" check |
-| `defaultMaxIntensity` | `2` | the intensity floor (`= 2`) in `GameModeProgressionData` |
+| `defaultMaxIntensity` | `3` | the intensity floor (1,2,3 open; only 4 gated) |
 | `maxIntensity` | `4` | the `DebugSetMaxIntensity` clamp ceiling |
 | `fullIntensityModes` | `[Tournament]` | `if (mode == GameModes.Tournament) return 4` |
 | `vesselHangarQuestDisplayName` | `"VESSEL HANGAR"` | the magic string in `IsVesselHangarUnlocked` |
@@ -114,9 +115,10 @@ It centralizes the values that were **previously hardcoded** in `GameModeProgres
 DontDestroyOnLoad progression GameObject). When **unwired**, it falls back to built-in defaults that
 reproduce the previous behavior exactly — so wiring is purely additive and safe to defer.
 
-> Note: the 4-tier intensity ladder (1&2 free, 3, 4) assumes `defaultMaxIntensity = 2`.
-> The cap (`maxIntensity`) and which modes ignore gating (`fullIntensityModes`) are freely
-> tunable; changing the floor away from 2 would need the tier state machine generalized.
+> Note: the intensity ladder now opens 1, 2 and 3 for free (`defaultMaxIntensity = 3`) and gates
+> only tier 4. The cap (`maxIntensity`) and which modes ignore gating (`fullIntensityModes`) are
+> freely tunable. The tier state machine in `RecordIntensityPlay` still contains the (now-inert)
+> intensity-2→3 branch; it simply never fires while the floor is 3.
 
 ---
 

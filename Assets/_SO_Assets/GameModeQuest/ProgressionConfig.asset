@@ -15,7 +15,7 @@ MonoBehaviour:
   alwaysUnlockedModes:
   - 36
   firstQuestAlwaysUnlocked: 1
-  defaultMaxIntensity: 2
+  defaultMaxIntensity: 3
   maxIntensity: 4
   fullIntensityModes:
   - 36

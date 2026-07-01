@@ -37,9 +37,11 @@ namespace CosmicShore.ScriptableObjects
         public bool firstQuestAlwaysUnlocked = true;
 
         [Header("Intensity")]
-        [Tooltip("Highest intensity available the moment a mode is unlocked " +
-                 "(intensity 1..N playable). Higher tiers unlock through play.")]
-        [Min(1)] public int defaultMaxIntensity = 2;
+        [Tooltip("Highest intensity available the moment a mode is unlocked (intensity 1..N " +
+                 "playable). Default 3 => intensities 1, 2 and 3 are open immediately and only " +
+                 "intensity 4 is gated: completing the intensity-3 goal unlocks 4 and finishes " +
+                 "the quest.")]
+        [Min(1)] public int defaultMaxIntensity = 3;
 
         [Tooltip("Absolute maximum intensity tier any mode can reach.")]
         [Min(1)] public int maxIntensity = 4;
