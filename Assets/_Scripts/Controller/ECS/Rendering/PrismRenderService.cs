@@ -138,7 +138,11 @@ namespace CosmicShore.ECS
             if (world.GetExistingSystemManaged<EntitiesGraphicsSystem>() == null)
                 return "OFF (EntitiesGraphicsSystem missing — SRP/platform unsupported?)";
 
-            return $"ON · ents={LiveEntityCount}";
+            // meshes/mats = distinct mesh & material assets the entities are registered under.
+            // Entities Graphics batches by (mesh × material), so this is the batching ceiling:
+            // if meshes/mats are tiny but draw calls stay ~= ents, the shader isn't instancing
+            // (needs the Hybrid-Per-Instance variant); if meshes is huge, prisms don't share a mesh.
+            return $"ON · ents={LiveEntityCount} meshes={_meshIds.Count} mats={_materialIds.Count}";
         }
 
         // ------------------------------------------------------------------
