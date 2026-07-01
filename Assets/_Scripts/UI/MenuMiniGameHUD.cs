@@ -80,6 +80,8 @@ namespace CosmicShore.UI
                 freestyleEvents.OnGameStateTransitionStart.OnRaised += HandleGameStateTransitionStart;
             if (freestyleEvents?.OnMenuStateTransitionStart)
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised += HandleMenuStateTransitionStart;
+            if (gameData?.OnPlayerPairInitialized)
+                gameData.OnPlayerPairInitialized.OnRaised += HandlePlayerPairInitialized;
         }
 
         void Start()
@@ -96,6 +98,8 @@ namespace CosmicShore.UI
                 freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleGameStateTransitionStart;
             if (freestyleEvents?.OnMenuStateTransitionStart)
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleMenuStateTransitionStart;
+            if (gameData?.OnPlayerPairInitialized)
+                gameData.OnPlayerPairInitialized.OnRaised -= HandlePlayerPairInitialized;
         }
 
         void OnDestroy()
@@ -119,6 +123,23 @@ namespace CosmicShore.UI
             _isInFreestyle = false;
             Hide();
             HideLocalVesselHUD();
+        }
+
+        /// <summary>
+        /// A player-vessel pair finished (re)initializing. On a mid-freestyle vessel swap the new
+        /// vessel's HUD is created HIDDEN (VesselController.Initialize → HideHUD) and the swap never
+        /// re-raises OnGameStateTransitionStart, so nothing else would re-show it. When the local
+        /// player's pair resolves while in freestyle, re-show the (new) HUD. Gated on freestyle so
+        /// the initial menu-state pair init is a no-op (no double-show on first freestyle entry) and
+        /// on the local player so remote swaps don't touch our HUD.
+        /// </summary>
+        void HandlePlayerPairInitialized(ulong playerNetObjId)
+        {
+            if (!_isInFreestyle) return;
+            if (gameData?.LocalPlayer == null || gameData.LocalPlayer.PlayerNetId != playerNetObjId) return;
+
+            Show();
+            ShowLocalVesselHUD();
         }
 
         void ShowLocalVesselHUD() =>

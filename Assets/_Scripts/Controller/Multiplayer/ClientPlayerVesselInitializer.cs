@@ -410,6 +410,13 @@ namespace CosmicShore.Gameplay
             // Re-stash so a later NetDomain change keeps the SWAPPED vessel in sync.
             if (player is Player p) p._vesselThemeManagerData = themeManagerData;
 
+            // Signal the (re)initialized pair exactly like InitializePair does. The new vessel's
+            // VesselHUDController was just initialized HIDDEN by VesselController.Initialize, and the
+            // swap path never re-enters freestyle, so nothing would re-show it — leaving the swapped
+            // ship with no working HUD. MenuMiniGameHUD listens for this and re-shows the local HUD
+            // while in freestyle; MainMenuController re-activates non-local swapped vessels.
+            gameData.InvokePlayerPairInitialized(player.PlayerNetId);
+
             if (player.IsLocalUser && CameraManager.Instance)
                 CameraManager.Instance.SnapPlayerCameraToTarget();
         }
