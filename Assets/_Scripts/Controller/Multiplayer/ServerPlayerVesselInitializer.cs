@@ -39,6 +39,11 @@ namespace CosmicShore.Gameplay
 
         [SerializeField] protected VesselPrefabContainer vesselPrefabContainer;
 
+        /// <summary>The vessel-prefab registry this spawner uses. Exposed read-only so display-only
+        /// consumers (e.g. the freestyle vessel-changer toy's mini models) can look up a ship prefab
+        /// without duplicating the mapping.</summary>
+        public VesselPrefabContainer VesselPrefabContainer => vesselPrefabContainer;
+
         [Header("Spawn Points")]
         [Tooltip("Scene-placed spawn transforms. If set, overrides GameDataSO.SpawnPoses on network spawn.")]
         [SerializeField] protected Transform[] playerSpawnPoints;

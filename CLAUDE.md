@@ -310,6 +310,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `NetworkDiagnostics/` | `Docs/` | NetDiag overlay: `ARCHITECTURE.md` (NetworkMonitor + `NetworkDiagnostics` helper, classification rules), `TESTS.md` (Tests A-E), `TODOS.md`. |
 | `ScoringSystem/` | `Docs/` | Scoring system (in-game score HUD + final scoreboard): `ARCHITECTURE.md` (shared data layer, event dispatch, per-mode override table, target = one unified networked scoring path), `REFACTOR.md` (sequenced backlog + ground rules: SOAP/observer/SOLID/DRY/KISS, retire `IsMultiplayerMode`), `BUGS.md`, `TESTS.md`. |
 | `TournamentSystem/` | `Docs/` | Tournament mode (`GameModes.Tournament = 36`): `ARCHITECTURE.md` — session-level meta chaining the three domain minigames (HexRace → Joust → Crystal Capture) via sequential `Single` loads; network-free standings folded from the synced `GameDataSO.Results` by the persistent `TournamentController`; host-only Continue→hub→Summary end-game flow (summary-vs-hub keyed off the authoritative `IsShuffleComplete`, race-to-6); `TournamentDataSO` data + file index. |
+| `ToySystem/` | `Docs/` | Freestyle **Toy** system (the new `Toy` fundamental): `ARCHITECTURE.md` — world-space interactive stations the local vessel flies into (no score, no end condition), placed near the Cell membrane in Menu_Main. Three toys via a shared `SwapToySetCoordinator<T>` "flip-set" (each toy is the option it switches you to; the used one flips to your previous option): Vessel Changer (mini ship models via `VesselModelBuilder`, reuses `RequestSwap` + restores freestyle control), Domain Changer (two toys tinted the domains you're not, `RequestSetDomain_ServerRpc`), and the "fly by numbers" Painting toy (`PaintingToy` + self-contained `MenuShapePainter`). `ToyboxSO` registry + deferred unlock-state hook; `ToyboxController` self-wires (Resources/default fallback); `Tools > Cosmic Shore > Setup Freestyle Toybox` authors assets + wires the scene. `BACKLOG.md` tracks per-toy follow-up (own branches) + known limitations. |
 | `ShuffleSystem/` | `Docs/` | **"Maelstrom" is the player-facing display name of Tournament mode** (the docs folder keeps the legacy "Shuffle" name) — the `ArcadeGameTournament.asset` card carries `DisplayName = "Maelstrom"`. It is **not** a separate mode: code/data/enum stay **Tournament** (`GameModes.Tournament = 36`); the scene file was renamed to `Maelstrom.unity` in the v2 rework. `ARCHITECTURE.md` is a **pointer** to `TournamentSystem/ARCHITECTURE.md`; the former Shuffle-specific behavior deltas (randomized lineup, per-domain `{2,1,0}` scoring + crystal-wallet credit, race-to-6) are now **shipped**. |
 | `CameraMigrationReview.md` | `Docs/` | Camera system migration tracking |
 | `BOOTSTRAP_AUDIT.md` | `_Scripts/System/Bootstrap/` | Bootstrap scene audit, execution order, DI registration |
@@ -1792,6 +1793,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Object pooling | `GenericPoolManager` (Unity `ObjectPool<T>` with async buffer maintenance) | `_Scripts/Utility/PoolsAndBuffers/` |
 | Player system | `Player` (NetworkBehaviour, `IPlayer`), `PlayerSpawner`, `PlayerSpawnerAdapterBase`, `MiniGamePlayerSpawnerAdapter`, `VolumeTestPlayerSpawnerAdapter` | `_Scripts/Controller/Player/` |
 | Menu navigation | `ScreenSwitcher`, `IScreen`, `ModalWindowManager`, `ProfileDisplayWidget`, `NavLink`/`NavGroup` | `_Scripts/UI/`, `_Scripts/UI/Interfaces/`, `_Scripts/UI/Elements/`, `_Scripts/UI/Modals/` |
+| Freestyle toys | `Toy` (base world-trigger; bloom, local-user + freestyle gating, re-arm), `SwapToy` + `SwapToySetCoordinator<T>` (a set of toys showing "the options you're not on", each flips to your previous option on use), `VesselChangerToySet` (mini ship models via `VesselModelBuilder`, reuses `RequestSwap` + restores freestyle control after swap), `DomainChangerToySet` (two toys tinted the domains you're not, `RequestSetDomain_ServerRpc`), `PaintingToy` + `MenuShapePainter` (self-contained fly-by-numbers), `ToyboxController` (places sets near the membrane), `ToyboxSO`/`ToyDefinitionSO` (registry + deferred unlock state), `ToyboxSetupTool` (editor) | `_Scripts/Controller/Toys/`, `_Scripts/ScriptableObjects/Toys/`, `_Scripts/Editor/` |
 | Menu screens | `HomeScreen`, `ArcadeScreen`, `StoreScreen`, `HangarScreen`, `LeaderboardsMenu`, `EpisodeScreen` | `_Scripts/UI/Screens/` |
 | UI | Elements, FX, Modals, Screens, Views + `ToastService` / `ToastChannel` | `_Scripts/UI/` |
 | Telemetry | `VesselTelemetryBootstrapper`, `VesselTelemetry` (abstract) + per-vessel subclasses, `VesselStatsCloudData` | `_Scripts/Controller/Vessel/` |
@@ -1983,6 +1985,17 @@ ones.
   cells).
 - **Vessels** — the player/AI actors whose class-specific abilities compose
   with the fundamentals above.
+- **Toys** — interactive world-space stations the player's **Vessel** flies into,
+  surfaced in the Menu_Main lava-lamp/freestyle "toybox". A toy has **no score and
+  no end condition** — something to play with indefinitely (toys are to freestyle
+  what party games are to the rest of Cosmic Shore). Added at the prompter's request;
+  it earns its place by composing with the others rather than bypassing them: the
+  vessel-changer cycles **Vessel**, the domain-changer cycles **Domain** (server-RPC,
+  never a client write), the painting/"fly by numbers" toy lays a conserved **Mass**
+  prism pattern, and toys are placed relative to the **Cell** membrane (read, not
+  duplicated). A toy imposes no decay/timer/win-lose, so it stays inside *Mass is
+  conserved* + *don't cheat emergence*. Unlock *conditions* are deferred; the toybox
+  registry + per-toy unlock state live in `ToyboxSO`. See `Docs/ToySystem/ARCHITECTURE.md`.
 
 ### Process for curating fundamentals
 
