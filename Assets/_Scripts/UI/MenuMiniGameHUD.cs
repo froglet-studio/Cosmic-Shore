@@ -6,6 +6,7 @@ using Reflex.Attributes;
 using Reflex.Core;
 using Reflex.Injectors;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
@@ -151,6 +152,18 @@ namespace CosmicShore.UI
         // ---------------------------------------------------------
         // UI
         // ---------------------------------------------------------
+
+        // While flying freestyle, the gamepad Start button returns you to the appshell —
+        // the counterpart to the on-screen Volume/Pause button, for pad players. Guarded on
+        // freestyle so it never interferes with menu navigation; ToggleTransition itself guards
+        // against re-entrancy while a transition is mid-flight.
+        void Update()
+        {
+            if (!_isInFreestyle) return;
+            var pad = Gamepad.current;
+            if (pad != null && pad.startButton.wasPressedThisFrame)
+                crystalClickHandler.ToggleTransition();
+        }
 
         void OnVolumePauseClicked()
         {
