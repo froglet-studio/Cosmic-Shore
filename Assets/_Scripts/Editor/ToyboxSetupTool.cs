@@ -17,9 +17,8 @@ namespace CosmicShore.Editor
     ///   3. adds a <see cref="ToyboxController"/> to the Menu_Main scene (on the object carrying
     ///      <c>MenuCrystalClickHandler</c>, else a new root) and points it at the toybox.
     ///
-    /// Idempotent — safe to re-run. The painting toy also needs a <see cref="FreestylePaintingDirector"/>
-    /// + a wired <c>ShapeDrawingManager</c> (the heavy shape infrastructure); that is a separate
-    /// manual step (see Docs/ToySystem/ARCHITECTURE.md) since it isn't present in Menu_Main today.
+    /// Idempotent — safe to re-run. All three toys work with no further wiring (the painting toy runs
+    /// self-contained via <see cref="MenuShapePainter"/>). See Docs/ToySystem/ARCHITECTURE.md.
     /// </summary>
     public static class ToyboxSetupTool
     {
@@ -56,8 +55,9 @@ namespace CosmicShore.Editor
                 (wiredScene
                     ? "• ToyboxController added to Menu_Main and saved.\n"
                     : "• Could not auto-add the ToyboxController — add it to the Menu_Main 'Game' object manually.\n") +
-                "\nPainting toy: also add a FreestylePaintingDirector + wired ShapeDrawingManager " +
-                "(see Docs/ToySystem/ARCHITECTURE.md). The cyclers work as-is.",
+                "\nAll three toys work as-is. The vessel changer shows mini ship models; the domain " +
+                "changer shows the two colours you're not; the painting toy runs self-contained.\n" +
+                "See Docs/ToySystem/ARCHITECTURE.md.",
                 "OK");
         }
 

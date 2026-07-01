@@ -40,51 +40,64 @@ detection. On top of that base the `Toy` class adds:
 | Role | File |
 |---|---|
 | Toy base (trigger, bloom, gating, re-arm) | `Assets/_Scripts/Controller/Toys/Toy.cs` |
+| Coordinated toy (reports activation to its set) | `Assets/_Scripts/Controller/Toys/SwapToy.cs` |
+| Shared "set + flip" coordinator (generic) | `Assets/_Scripts/Controller/Toys/SwapToySetCoordinator.cs` |
 | Shared runtime refs handed to each toy | `Assets/_Scripts/Controller/Toys/ToyContext.cs` (`ToyContext` + `ToyPlacement`) |
-| Procedural toy GameObject builder | `Assets/_Scripts/Controller/Toys/ToyFactory.cs` |
-| Vessel Changer toy | `Assets/_Scripts/Controller/Toys/VesselChangerToy.cs` |
-| Domain Changer toy | `Assets/_Scripts/Controller/Toys/DomainChangerToy.cs` |
+| Procedural body/label/collider builder | `Assets/_Scripts/Controller/Toys/ToyFactory.cs` |
+| Mini vessel model (mesh-extract from prefab) | `Assets/_Scripts/Controller/Toys/VesselModelBuilder.cs` |
+| Vessel Changer set | `Assets/_Scripts/Controller/Toys/VesselChangerToySet.cs` |
+| Domain Changer set | `Assets/_Scripts/Controller/Toys/DomainChangerToySet.cs` |
 | Painting ("fly by numbers") toy | `Assets/_Scripts/Controller/Toys/PaintingToy.cs` |
-| Painting director (revived glue) | `Assets/_Scripts/Controller/Toys/FreestylePaintingDirector.cs` |
+| Self-contained fly-by-numbers runner | `Assets/_Scripts/Controller/Toys/MenuShapePainter.cs` |
 | Placement + lifecycle | `Assets/_Scripts/Controller/Toys/ToyboxController.cs` |
 | Per-toy config (abstract) | `Assets/_Scripts/ScriptableObjects/Toys/ToyDefinitionSO.cs` |
 | Vessel/Domain/Painting configs | `Assets/_Scripts/ScriptableObjects/Toys/*ToyDefinitionSO.cs` |
 | Toybox registry + unlock state | `Assets/_Scripts/ScriptableObjects/Toys/ToyboxSO.cs` |
 | One-click editor setup | `Assets/_Scripts/Editor/ToyboxSetupTool.cs` |
 
-## The three toys
+## The "swap set" pattern (vessel + domain)
 
-### Vessel Changer (`VesselChangerToy`)
-Fly through → cycles to the next vessel class via
-`MenuServerPlayerVesselInitializer.RequestSwap(next)` — the **same** Netcode despawn/spawn/RPC
-pipeline the vessel-selection panel uses, so the change replicates to all clients. The old
-freestyle vessel-change lived in the pause menu (which now backs out to the app shell); this
-is the in-world replacement. Cycle list defaults to the full playable set (Manta…Sparrow);
-override per-asset via `vesselCycle`.
+Both the vessel and domain changers are **sets** of toys managed by a shared generic
+coordinator, `SwapToySetCoordinator<T>`. The set always shows *the options you are not
+currently on* (`universe \ {current}`), each toy visually *being* the option it will switch
+you to. Flying through a toy applies the change; the coordinator then **flips the used toy to
+the option you just left**, so the set continuously mirrors "everything except where you are
+now". Current state is polled each frame, so external changes (a panel, a menu reset) reconcile
+the same way. `SwapToy` is the per-option toy; it just reports activation and lets the
+coordinator own the option→visual mapping and the flip.
 
-### Domain Changer (`DomainChangerToy`)
-Fly through → cycles the local player's domain Jade → Ruby → Gold (within the session's
-active-domain slice, `GameDataSO.RequestedDomainCount`). Routes through the
-server-authoritative `Player.RequestSetDomain_ServerRpc` — **never** a client-local write —
-so the recolour replicates via `Player.NetDomain` (CLAUDE.md "Never write domain state from
-client code").
+### Vessel Changer (`VesselChangerToySet`)
+A **collection** of toys, each a **mini 3D model** of a ship you can switch into (every vessel
+in the collection except the one you're flying). The model is built by `VesselModelBuilder`,
+which reads mesh data straight off the ship **prefab asset** (never instantiates it, so no
+NetworkObject/VesselStatus/controllers ever run). Flying through one swaps you into that ship
+via `MenuServerPlayerVesselInitializer.RequestSwap` (the existing networked pipeline), and the
+toy flips to a mini model of the ship you just left.
 
-### Painting / Fly-by-Numbers (`PaintingToy` + `FreestylePaintingDirector`)
-Revives the existing-but-unwired shape-drawing toy. On activation the toy raises the existing
-decoupled `ShapeSignEvents.OnShapeSelected(shape, pos)`. A `FreestylePaintingDirector`
-listens and drives `ShapeDrawingManager` through its `StartShapeSequence → (preview) →
-BeginDrawing` flow — reviving the glue that the removed `SinglePlayerFreestyleController`
-(deleted in commit `2009ae54`) used to provide. Toy-faithful: **no Ready button, no
-countdown, no score gate** — after the preview cinematic the drawing simply begins, and when
-the player exits the shape the toy re-arms.
+**Lost-control fix:** the swap pipeline drops the new vessel into autopilot with input paused
+(that's why the old toy left you unable to steer). `VesselChangerToySet.RestoreControlAfterSwap`
+waits for `IsSwapping` to clear, then re-hands freestyle control — mirroring
+`MenuVesselSelectionPanelController.RestoreFreestyleAfterSwapAsync`.
 
-> The painting toy needs the heavy shape infrastructure that is **not** in Menu_Main today:
-> a `ShapeDrawingManager` (+ its `ShapeDrawingCrystalManager`, `CellRuntimeDataSO`, optional
-> `EndShapeDetailHUD`) and a `FreestylePaintingDirector` referencing the manager. All of that
-> code exists; only the scene wiring is missing (recoverable from the removed
-> `MinigameFreestyle.unity` in git history at `2009ae54^`). Until it is wired, the painting
-> toy still spawns and re-arms but its activation is a harmless no-op. The two cyclers work
-> with zero additional wiring.
+Collection defaults to a curated set (Manta, Dolphin, Rhino, Squirrel, Serpent, Sparrow) so
+the ring isn't crowded with all 11; override per-asset via `vesselCollection`.
+
+### Domain Changer (`DomainChangerToySet`)
+Two toys (in a 3-domain session), each **tinted the domain it will switch you to**
+(`ThemeManagerData.GetDomainUIColor`) and labelled with the domain name — always the two
+colours you are *not*. Flying through one requests that domain via the server-authoritative
+`Player.RequestSetDomain_ServerRpc` (**never** a client-local write — CLAUDE.md), and the toy
+flips to the colour you just left.
+
+### Painting / Fly-by-Numbers (`PaintingToy` + `MenuShapePainter`)
+Fly through → starts a self-contained painting run. `MenuShapePainter` reads a
+`ShapeDefinition`'s waypoints, draws a ghost outline + a guide line + a lit marker at the next
+point, and advances as the vessel flies near each in order — **the vessel's own trail does the
+painting**. Deliberately minimal (no Cell, no crystal manager, no scoring, no HUD) so it runs
+in the menu where none of that exists. Toy-faithful: completes when the last point is reached,
+then fades; no fail state. (The full `ShapeDrawingManager` experience — preview cinematic,
+scoring, reveal — remains available for a gameplay scene that has the ecology infra; the toy
+uses the lightweight runner so it works everywhere.)
 
 ## Placement
 
@@ -118,8 +131,9 @@ ring so they stay far apart; set a specific angle per toy to pin it.
 
 ## Adding a new toy
 
-1. Add a `Toy` subclass with the behaviour (`OnActivated(IVesselStatus localVessel)`).
-2. Add a `ToyDefinitionSO` subclass whose `CreateToy(...)` builds it via `ToyFactory`.
+1. Add a `Toy` subclass with the behaviour (`OnActivated(IVesselStatus localVessel)`), or a
+   `SwapToySetCoordinator<T>` subclass for a flip-set toy.
+2. Add a `ToyDefinitionSO` subclass whose `Spawn(...)` builds it via `ToyFactory`.
 3. Add the new definition asset to the `ToyboxSO` (or to `BuildDefaultToybox` for a built-in).
 
 No central switch — definitions are polymorphic factories, so the framework never changes.

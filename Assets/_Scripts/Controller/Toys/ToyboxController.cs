@@ -47,7 +47,6 @@ namespace CosmicShore.Gameplay
         [Inject] GameDataSO _gameData;
         [Inject] MenuFreestyleEventsContainerSO _freestyleEvents;
 
-        readonly List<Toy> _spawned = new();
         Transform _root;
         bool _placed;
         bool _freestyleActive;
@@ -126,10 +125,12 @@ namespace CosmicShore.Gameplay
                 _root.SetParent(transform, false);
             }
 
+            var initializer = FindFirstObjectByType<MenuServerPlayerVesselInitializer>();
             var context = new ToyContext
             {
                 GameData = _gameData,
-                VesselInitializer = FindFirstObjectByType<MenuServerPlayerVesselInitializer>(),
+                VesselInitializer = initializer,
+                VesselPrefabContainer = initializer ? initializer.VesselPrefabContainer : null,
                 IsFreestyleActive = () => _freestyleActive,
             };
 
@@ -152,8 +153,7 @@ namespace CosmicShore.Gameplay
                 var dir = new Vector3(Mathf.Sin(rad), 0f, Mathf.Cos(rad));
                 var placement = new ToyPlacement(center + dir * radius, center, toyBodyRadius, toyTriggerRadius);
 
-                var toy = def.CreateToy(_root, placement, context);
-                if (toy) _spawned.Add(toy);
+                def.Spawn(_root, placement, context);
             }
         }
 
@@ -198,8 +198,17 @@ namespace CosmicShore.Gameplay
         static ToyboxSO BuildDefaultToybox()
         {
             var box = ScriptableObject.CreateInstance<ToyboxSO>();
-            box.AddToy(MakeDefault<PaintingToyDefinitionSO>(
-                "painting", "Fly by Numbers", "Trace a pattern with your trail.", new Color(0.20f, 0.90f, 1.00f)));
+
+            var painting = MakeDefault<PaintingToyDefinitionSO>(
+                "painting", "Fly by Numbers", "Trace a pattern with your trail.", new Color(0.20f, 0.90f, 1.00f));
+            // Give the zero-config default a real shape so it actually paints (a star, auto-generated).
+            var star = ScriptableObject.CreateInstance<ShapeDefinition>();
+            star.shapeName = "Star";
+            star.autoGeneratePreset = ShapePreset.Star;
+            star.autoGenerateRadius = 100f;
+            painting.SetRuntimeShape(star);
+            box.AddToy(painting);
+
             box.AddToy(MakeDefault<VesselChangerToyDefinitionSO>(
                 "vessel_changer", "Vessel Changer", "Fly through to swap your ship.", new Color(1.00f, 0.85f, 0.20f)));
             box.AddToy(MakeDefault<DomainChangerToyDefinitionSO>(
@@ -217,10 +226,7 @@ namespace CosmicShore.Gameplay
 
         void ClearToys()
         {
-            for (int i = 0; i < _spawned.Count; i++)
-                if (_spawned[i]) Destroy(_spawned[i].gameObject);
-            _spawned.Clear();
-
+            // Every toy / coordinator lives under _root, so one destroy tears the whole set down.
             if (_root) Destroy(_root.gameObject);
             _root = null;
             _placed = false;

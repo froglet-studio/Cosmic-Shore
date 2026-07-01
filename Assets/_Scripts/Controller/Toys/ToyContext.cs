@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using UnityEngine;
 
@@ -17,6 +18,9 @@ namespace CosmicShore.Gameplay
 
         /// <summary>Menu vessel spawner used to request networked vessel swaps.</summary>
         public MenuServerPlayerVesselInitializer VesselInitializer;
+
+        /// <summary>Vessel-prefab registry, for building mini display models of a target vessel.</summary>
+        public VesselPrefabContainer VesselPrefabContainer;
 
         /// <summary>
         /// True only while the local player is flying freestyle (not autopilot/menu). Toys are

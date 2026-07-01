@@ -14,16 +14,17 @@ namespace CosmicShore.ScriptableObjects
     public class VesselChangerToyDefinitionSO : ToyDefinitionSO
     {
         [Header("Vessel Changer")]
-        [SerializeField, Tooltip("Vessel classes the toy cycles through, in order. Leave empty for the full playable set.")]
-        VesselClassType[] vesselCycle;
+        [SerializeField, Tooltip("Vessel classes offered as toys (each a mini model). Leave empty for a curated " +
+                                 "default set. The vessel you're currently flying is always excluded.")]
+        VesselClassType[] vesselCollection;
 
-        public override Toy CreateToy(Transform parent, ToyPlacement placement, ToyContext context)
+        public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
-            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor, DisplayName);
-            var toy = go.AddComponent<VesselChangerToy>();
-            if (vesselCycle is { Length: > 0 }) toy.SetCycle(vesselCycle);
-            toy.Initialize(this, context, placement);
-            return toy;
+            var host = new GameObject($"ToySet_{Id}");
+            host.transform.SetParent(parent, false);
+            var set = host.AddComponent<VesselChangerToySet>();
+            if (vesselCollection is { Length: > 0 }) set.SetCollection(vesselCollection);
+            set.Initialize(this, context, placement, placement.BodyRadius, placement.TriggerRadius);
         }
     }
 }

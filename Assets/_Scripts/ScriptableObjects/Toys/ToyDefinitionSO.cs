@@ -14,7 +14,7 @@ namespace CosmicShore.ScriptableObjects
     /// (the painting toy lays a conserved-mass prism pattern). Toys impose no decay, no timer,
     /// and no win/lose — consistent with "don't cheat emergence".
     ///
-    /// Subclass per toy kind and override <see cref="CreateToy"/> to build the runtime
+    /// Subclass per toy kind and override <see cref="Spawn"/> to build the runtime
     /// behaviour. Shared metadata (id, display name, unlock flag, placement, accent colour)
     /// lives here so <see cref="ToyboxSO"/> can list, gate, and place every toy uniformly.
     /// </summary>
@@ -54,11 +54,12 @@ namespace CosmicShore.ScriptableObjects
         public Color AccentColor => accentColor;
 
         /// <summary>
-        /// Build and configure the runtime <see cref="Toy"/> for this definition. Implementations
-        /// create the toy GameObject (via <see cref="ToyFactory"/>), attach the concrete Toy
-        /// component, and initialise it with <paramref name="context"/>.
+        /// Build the runtime toy(s) for this definition under <paramref name="parent"/>. A definition
+        /// may spawn a single <see cref="Toy"/> (painting) or a whole coordinated set of them
+        /// (vessel/domain changers). The <see cref="ToyboxController"/> destroys the parent on
+        /// teardown, so implementations don't need to track what they create.
         /// </summary>
-        public abstract Toy CreateToy(Transform parent, ToyPlacement placement, ToyContext context);
+        public abstract void Spawn(Transform parent, ToyPlacement placement, ToyContext context);
 
         /// <summary>
         /// Seed metadata on a runtime-synthesised definition (see <see cref="ToyboxSO"/>'s

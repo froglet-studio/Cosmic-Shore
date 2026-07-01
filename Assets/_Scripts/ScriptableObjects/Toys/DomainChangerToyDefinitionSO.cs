@@ -12,12 +12,12 @@ namespace CosmicShore.ScriptableObjects
     [CreateAssetMenu(fileName = "Toy_DomainChanger", menuName = "ScriptableObjects/Toys/Domain Changer Toy")]
     public class DomainChangerToyDefinitionSO : ToyDefinitionSO
     {
-        public override Toy CreateToy(Transform parent, ToyPlacement placement, ToyContext context)
+        public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
-            var go = ToyFactory.CreateRoot(Id, parent, placement, AccentColor, DisplayName);
-            var toy = go.AddComponent<DomainChangerToy>();
-            toy.Initialize(this, context, placement);
-            return toy;
+            var host = new GameObject($"ToySet_{Id}");
+            host.transform.SetParent(parent, false);
+            var set = host.AddComponent<DomainChangerToySet>();
+            set.Initialize(this, context, placement, placement.BodyRadius, placement.TriggerRadius);
         }
     }
 }

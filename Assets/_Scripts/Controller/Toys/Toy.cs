@@ -30,6 +30,7 @@ namespace CosmicShore.Gameplay
         Vector3 _targetScale = Vector3.one;
         bool _armed;
         bool _activating;
+        bool _blooming;
 
         /// <summary>One-line label used in logs.</summary>
         public string DisplayName => Definition ? Definition.DisplayName : name;
@@ -53,8 +54,17 @@ namespace CosmicShore.Gameplay
         /// <summary>Hook for subclasses to do extra setup after <see cref="Initialize"/>.</summary>
         protected virtual void OnInitialized() { }
 
+        /// <summary>Re-run the bloom (a scale-pop) — used to signal an in-place visual change (e.g. a flip).</summary>
+        public void Rebloom()
+        {
+            if (_blooming) return;
+            BloomIn(this.GetCancellationTokenOnDestroy()).Forget();
+        }
+
         async UniTaskVoid BloomIn(CancellationToken ct)
         {
+            _blooming = true;
+            _armed = false;
             transform.localScale = Vector3.zero;
             float elapsed = 0f;
             while (elapsed < bloomDuration)
@@ -67,6 +77,7 @@ namespace CosmicShore.Gameplay
             }
 
             transform.localScale = _targetScale;
+            _blooming = false;
             _armed = true;
         }
 
