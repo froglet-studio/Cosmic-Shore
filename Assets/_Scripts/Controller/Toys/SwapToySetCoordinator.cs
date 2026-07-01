@@ -164,6 +164,15 @@ namespace CosmicShore.Gameplay
         {
             var slot = _slots.Find(s => s.Toy == toy);
             if (slot == null) return;
+
+            // Disarm EVERY toy in the set the instant one fires. After a vessel swap the new
+            // vessel re-spawns right where you flew through (on top of these toys), and the domain
+            // change keeps you inside the cluster — so without this the neighbouring toys would
+            // chain-trigger and you could never escape. Each toy re-arms only once the vessel has
+            // flown clear of it (Toy.Update exit gate).
+            foreach (var s in _slots)
+                if (s.Toy) s.Toy.Disarm();
+
             Apply(slot.Option);
             // The domain/vessel change replicates; Update() detects the new current and flips this slot.
         }
