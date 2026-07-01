@@ -1,123 +1,33 @@
 using CosmicShore.Utility;
-using UnityEngine;
 
 namespace CosmicShore.UI
 {
     /// <summary>
     /// Static convenience API for showing toast notifications from anywhere in the codebase.
-    /// Auto-creates the ToastNotificationManager singleton if it doesn't exist in the scene.
-    /// Finds the container by searching for a GameObject named "ToastNotificationContainer".
+    ///
+    /// <para>The heavy lifting lives in <see cref="ToastNotificationManager"/>, which boots
+    /// itself before the first scene, loads its settings + SOAP channel from <c>Resources</c>,
+    /// and owns a persistent overlay canvas so toasts render in every scene. This class is a
+    /// thin, allocation-free facade over it.</para>
+    ///
+    /// <para>Main-thread only. Off-thread callers (UGS / Netcode continuations) must marshal
+    /// via <c>.AsMainThread()</c> before calling — see <c>Docs/THREADING.md</c>.</para>
     /// </summary>
     public static class ToastNotificationAPI
     {
-        private const string ChannelPath = "Channels/ToastNotificationChannel";
-        private const string SettingsPath = "ToastNotificationSettings";
-        private const string ContainerName = "ToastNotificationContainer";
-
-        private static ToastNotificationChannel _channel;
-
-        private static ToastNotificationChannel Channel =>
-            _channel != null
-                ? _channel
-                : (_channel = Resources.Load<ToastNotificationChannel>(ChannelPath));
-
-        /// <summary>
-        /// Show a toast notification with the given message.
-        /// Ensures the manager and container exist before dispatching.
-        /// </summary>
+        /// <summary>Show a toast notification with the given message.</summary>
         public static void Show(string message)
         {
-            EnsureManagerExists();
+            if (string.IsNullOrWhiteSpace(message)) return;
 
-            if (ToastNotificationManager.Instance != null)
+            var manager = ToastNotificationManager.EnsureInstance();
+            if (manager != null)
             {
-                ToastNotificationManager.Instance.Show(message);
+                manager.Show(message);
                 return;
             }
 
-            CSDebug.LogWarning(
-                $"[ToastNotificationAPI] Manager creation failed. Message dropped: {message}");
-        }
-
-        private static void EnsureManagerExists()
-        {
-            if (ToastNotificationManager.Instance != null)
-            {
-                // Manager exists but container may have been destroyed (scene change)
-                if (ToastNotificationManager.Instance.Container == null)
-                    TryAssignContainer(ToastNotificationManager.Instance);
-                return;
-            }
-
-            var go = new GameObject("ToastNotificationManager");
-            var mgr = go.AddComponent<ToastNotificationManager>();
-
-            // Wire settings from Resources
-            var settings = Resources.Load<ToastNotificationSettingsSO>(SettingsPath);
-            if (settings != null)
-            {
-                var field = typeof(ToastNotificationManager).GetField("settings",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                field?.SetValue(mgr, settings);
-            }
-
-            // Wire channel
-            var channel = Channel;
-            if (channel != null)
-            {
-                var field = typeof(ToastNotificationManager).GetField("channel",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                field?.SetValue(mgr, channel);
-
-                mgr.enabled = false;
-                mgr.enabled = true;
-            }
-
-            TryAssignContainer(mgr);
-
-            CSDebug.Log("[ToastNotificationAPI] Auto-created ToastNotificationManager.");
-        }
-
-        private static void TryAssignContainer(ToastNotificationManager mgr)
-        {
-            var rt = FindContainerIncludingInactive();
-            if (rt != null)
-            {
-                mgr.Container = rt;
-            }
-            else
-            {
-                CSDebug.LogWarning(
-                    $"[ToastNotificationAPI] No GameObject named '{ContainerName}' found in scene. " +
-                    "Toasts will not display until a container is available.");
-            }
-        }
-
-        /// <summary>
-        /// Finds the toast container by name. Unlike <see cref="GameObject.Find"/>, this also
-        /// matches inactive objects — the container commonly lives under a menu panel that is
-        /// inactive when the first toast fires, which previously caused the toast to be dropped.
-        /// </summary>
-        private static RectTransform FindContainerIncludingInactive()
-        {
-            // Fast path: an active container.
-            var activeGO = GameObject.Find(ContainerName);
-            if (activeGO != null && activeGO.TryGetComponent<RectTransform>(out var activeRT))
-                return activeRT;
-
-            // Slow path: scan all loaded RectTransforms (includes inactive scene objects).
-            var all = Resources.FindObjectsOfTypeAll<RectTransform>();
-            foreach (var candidate in all)
-            {
-                if (candidate.name != ContainerName)
-                    continue;
-
-                // Only accept live scene instances — skip prefab assets and internal/hidden objects.
-                if (candidate.gameObject.scene.IsValid() && candidate.hideFlags == HideFlags.None)
-                    return candidate;
-            }
-
-            return null;
+            CSDebug.LogWarning($"[ToastNotificationAPI] Manager unavailable. Message dropped: {message}");
         }
     }
 }

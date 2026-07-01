@@ -37,9 +37,6 @@ namespace CosmicShore.Gameplay
         [Header("SOAP Data")]
         [SerializeField] private HostConnectionDataSO connectionData;
 
-        [Tooltip("Optional. Best-effort toast shown when a join fails and the client bounces back to its own menu. May be suppressed during the scene reload.")]
-        [SerializeField] private ToastChannel bounceToastChannel;
-
         [Header("Timing")]
         [Tooltip("Max time (seconds) to wait for NetworkManager shutdown.")]
         [SerializeField] private float shutdownTimeoutSeconds = 2f;
@@ -451,13 +448,11 @@ namespace CosmicShore.Gameplay
         {
             Debug.LogWarning($"[PartyInviteController] Bouncing to solo menu: {toastMessage}");
             await RecoverFromFailedTransitionAsync();
-            // Show the notice AFTER recovery. ToastService is a scene-bound MonoBehaviour
-            // (it subscribes to the channel in OnEnable), so it is destroyed + recreated by
-            // the Menu_Main reload — and is absent entirely in a game scene. A toast raised
-            // before recovery is therefore silently dropped (the channel event has no
-            // subscriber). Raising it here lands on the fresh menu's live ToastService.
-            // See Docs/PartySystem/BUGS.md B10.
-            bounceToastChannel?.ShowPrefix(toastMessage);
+            // Show the notice AFTER recovery. ToastNotificationManager is a persistent,
+            // self-bootstrapping singleton that owns its own overlay canvas, so it survives
+            // the Menu_Main reload and renders regardless of the active scene — no scene-bound
+            // subscriber to miss. See Docs/PartySystem/BUGS.md B10.
+            ToastNotificationAPI.Show(toastMessage);
         }
 
         /// <summary>
