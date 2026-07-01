@@ -61,22 +61,36 @@ namespace CosmicShore.Gameplay
             ClearChildren(slot.BodyHolder);
 
             var container = Context.VesselPrefabContainer;
+            Color previewColor = PreviewColor();
             if (container && container.TryGetShipPrefab(slot.Option, out Transform prefab)
-                && VesselModelBuilder.TryBuild(prefab, BodyRadius, out var model))
+                && VesselModelBuilder.TryBuild(prefab, BodyRadius, previewColor, out var model))
             {
                 model.transform.SetParent(slot.BodyHolder, false);
             }
             else
             {
                 // Fallback when no prefab container / mesh is available.
-                ToyFactory.AddSphereBody(slot.BodyHolder, BodyRadius, Definition.AccentColor);
+                ToyFactory.AddSphereBody(slot.BodyHolder, BodyRadius, previewColor);
             }
 
             if (slot.Label)
             {
                 slot.Label.text = LabelFor(slot.Option);
-                slot.Label.color = Definition.AccentColor;
+                slot.Label.color = previewColor;
             }
+        }
+
+        /// <summary>
+        /// Colour the mini ships read as — the local player's domain colour (so they preview "you,
+        /// different hull"), falling back to the toy's accent when the theme/player isn't available.
+        /// </summary>
+        Color PreviewColor()
+        {
+            var gd = Context.GameData;
+            var tm = gd ? gd.ThemeManagerData : null;
+            if (tm && gd.LocalPlayer != null)
+                return tm.GetDomainUIColor(gd.LocalPlayer.Domain);
+            return Definition.AccentColor;
         }
 
         async UniTaskVoid RestoreControlAfterSwap(CancellationToken ct)

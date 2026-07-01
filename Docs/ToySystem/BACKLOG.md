@@ -18,10 +18,17 @@ limitations and verification status. Architecture: `ARCHITECTURE.md`.
 
 ## Branch: vessel-changer polish
 
-- **Mini-model materials.** `VesselModelBuilder` shows the ship prefab's *shared* materials in
-  static (bind) pose. Some hull materials are driven by a MaterialPropertyBlock at runtime
-  (domain tint), so the preview may look flat/untinted. Options: tint the model to the player's
-  domain, bake a dedicated preview material, or accept the silhouette.
+- **Mini-model materials + hull extraction (FIXED).** Previously only Rhino rendered a model:
+  `VesselModelBuilder` blindly extracted every renderer, so each vessel's **skimmer** (a builtin
+  Sphere scaled 15–60×) dominated `NormalizeToRadius` and crushed the real hull to an invisible
+  speck (Rhino is the one vessel whose skimmer has no builtin sphere). It also copied the ship's
+  hull material, which is a transparent, runtime-theme-driven shader that renders dim/invisible at
+  rest. Now the builder skips non-hull geometry (builtin-primitive skimmer bodies, and anything
+  named skimmer/trail/jet/forcefield/crackle/pip/vfx) and skips inactive/disabled renderers (e.g.
+  Manta's hidden scale-100 duplicate SMR), then paints every hull mesh with one opaque, self-lit
+  preview material tinted to the player's domain colour (`TryBuild(prefab, radius, previewColor, …)`).
+  Skinned hulls still show in authored (bind) pose — a static baked snapshot (`SkinnedMeshRenderer.BakeMesh`)
+  is a possible future refinement for exact current-pose fidelity.
 - **Scale / label tuning.** `toyBodyRadius`, label size, and the arc spacing (`anglePerToyDeg`)
   are guesses — tune in-editor.
 - **Collection.** Default is a curated 6 (Manta, Dolphin, Rhino, Squirrel, Serpent, Sparrow) via
@@ -74,5 +81,6 @@ limitations and verification status. Architecture: `ARCHITECTURE.md`.
 
 ## Known limitations (current)
 
-- Mini-ship materials render static; painting pen-up gaps not honored; no unlock persistence;
-  placement fallback needs in-editor tuning; not yet play-verified.
+- Mini-ship hulls render as static domain-tinted silhouettes (bind pose, not animated); painting
+  pen-up gaps not honored; no unlock persistence; placement fallback needs in-editor tuning; not
+  yet play-verified.
