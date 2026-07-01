@@ -159,3 +159,10 @@ rely on the runtime default toybox.)
   the "local-only freestyle toggle, network-replicated vessel behaviour" model in CLAUDE.md.
 - `IsLocalUser` ensures only your own vessel trips your toys; the freestyle gate ensures the
   autopilot lava-lamp vessel never does.
+
+## Status & follow-up
+
+The framework + three toys are in and compile-reviewed; they are **not yet play-verified in an
+editor**. Polish/improvement work (per-toy tuning, mini-model materials, painting pen-up,
+placement anchor, unlock persistence, tests) is tracked in **`BACKLOG.md`**, grouped so each area
+can be its own branch.
