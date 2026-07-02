@@ -38,6 +38,8 @@ namespace CosmicShore.Client
         GameLoop _loop;
         SkimRaceDirector _race;          // race rules — flight itself is the real ported rig
         SkimRacePilot _pilot;            // the human's rig (vessel transform, stats, resources)
+        ThemeManagerDataContainerSO _theme; // the REAL theme (rung 5): every draw color reads here
+        Camera _camera;                  // engine camera — carries the theme's authored sky color
         IInputStatus _playerStatus;      // the rig's REAL InputStatus (V7) — strategy writes here
         readonly GamepadInputStrategy _gamepadStrategy = new(); // the ported, authentic dual-stick scheme
         EngineInput.Gamepad _shimPad;
@@ -59,8 +61,13 @@ namespace CosmicShore.Client
         uint _starVao, _starVbo; int _starCount;
         uint _railVao, _railVbo; int _railCount;
         uint _ringVao, _ringVbo; int _ringCount;
-        readonly Dictionary<Element, (uint vao, int count)> _crystalMeshes = new();
+        // crystal meshes keyed by (element, lock domain): uncommitted stations keep the
+        // per-element prefab tint, team stations bake the domain's crystal material colors
+        readonly Dictionary<(Element element, Domains domain), (uint vao, int count)> _crystalMeshes = new();
+        (uint vao, int count)[] _stationMeshes;          // per-station lookup into _crystalMeshes
+        (uint vao, int count) _burstMesh;                // omni flash for claim bursts
         readonly Dictionary<Domains, (uint vao, int count)> _vesselMeshes = new();
+        (uint vao, int count) _skimRingIdle, _skimRingActive; // skimmer reach in SkimmerColor
         uint _hudVao, _hudVbo;
 
         // per-pilot trail render slots (trails live in the sim — persistent, skimmable);
@@ -84,14 +91,19 @@ namespace CosmicShore.Client
             _screenshotFrame = screenshotFrame;
         }
 
-        /// <summary>Domain palette — jade player, ruby/gold/blue rivals.</summary>
-        static (float r, float g, float b) DomainColor(Domains domain) => domain switch
+        /// <summary>
+        /// Domain UI color — the theme's single source: <see cref="SO_ColorSet.GetDomainUIColor"/>
+        /// (the domain's TrailHighlightColor), the same color GameFeedAPI colors feed
+        /// messages with. Replaces the old hardcoded DomainColor table (rung 5).
+        /// </summary>
+        Color DomainUIColor(Domains domain) => _theme.GetDomainUIColor(domain);
+
+        /// <summary>Tuple view of <see cref="DomainUIColor"/> for the GL draw helpers.</summary>
+        (float r, float g, float b) DomainColor(Domains domain)
         {
-            Domains.Jade => (0.07f, 1f, 0.62f),
-            Domains.Ruby => (1f, 0.17f, 0.32f),
-            Domains.Gold => (1f, 0.8f, 0.25f),
-            _ => (0.35f, 0.6f, 1f), // Blue — the neutral domain
-        };
+            var c = DomainUIColor(domain);
+            return (c.r, c.g, c.b);
+        }
 
         /// <summary>Element palette for crystals (the buff each station carries).</summary>
         static (float r, float g, float b) ElementColor(Element element) => element switch
@@ -146,6 +158,13 @@ namespace CosmicShore.Client
             (_loop, _race) = SkimRaceFactory.Create(_seed, _crystalTarget, _rivalCount);
             _pilot = _race.HumanPilot;
             _playerStatus = _pilot.Input; // the rig's real InputStatus — single input sink
+
+            // Rung 5: the REAL theme (ThemeManager generated the per-domain material sets
+            // at factory time). The sky is the authored EnvironmentColors.SkyColor, applied
+            // through the container's own SetBackgroundColor onto an engine camera.
+            _theme = _race.GameData.ThemeManagerData;
+            _camera = new GameObject("MainCamera").AddComponent<Camera>();
+            _theme.SetBackgroundColor(_camera);
             _gamepadStrategy.Initialize(_playerStatus);
             _gamepadStrategy.OnStrategyActivated(); // ActiveInputDevice = Gamepad → pure analog triggers
             _audio = new AudioEngine(disabled: _screenshotPath != null);
@@ -387,14 +406,54 @@ void main()
 
         void BuildCrystalMeshes()
         {
-            // one octahedron per element — stations broadcast their buff by color
-            foreach (var element in new[] { Element.Charge, Element.Mass, Element.Space, Element.Time, Element.Omni })
-                _crystalMeshes[element] = BuildCrystalMesh(ElementColor(element));
+            // One octahedron per (element, lock domain) combination on the course.
+            // Uncommitted (Blue) stations broadcast their buff in the element tint — the
+            // original's per-element prefab defaultMaterial path. TEAM stations bake the
+            // domain's crystal material pair (GetTeamCrystalMaterial → _BrightCrystalColor /
+            // _DullCrystalColor), the same material the original Crystal.ChangeDomain lerps
+            // its models to — the lock is readable before contact.
+            var crystals = _race.Crystals;
+            var track = _race.Track;
+            _stationMeshes = new (uint vao, int count)[track.Crystals.Count];
+            for (int station = 0; station < track.Crystals.Count; station++)
+            {
+                var element = track.StationElements[station];
+                var domain = crystals.KindOf(station) == StationKind.Team
+                    ? crystals.StationDomain(station)
+                    : Domains.Blue;
+                if (!_crystalMeshes.TryGetValue((element, domain), out var mesh))
+                {
+                    if (domain == Domains.Blue)
+                    {
+                        // element tint, equator lifted toward white for the hot core
+                        var (r, g, b) = ElementColor(element);
+                        var tint = new Color(r, g, b);
+                        float Lift(float c) => c + (1f - c) * 0.45f;
+                        mesh = BuildCrystalMesh(tint, new Color(Lift(r), Lift(g), Lift(b)), tint * 0.85f);
+                    }
+                    else
+                    {
+                        var (bright, dull) = SkimRaceTheme.TeamCrystalDrawColors(domain, _theme);
+                        mesh = BuildCrystalMesh(bright,
+                            Color.Lerp(dull, bright, 0.5f), Color.Lerp(dull, bright, 0.25f));
+                    }
+                    _crystalMeshes[(element, domain)] = mesh;
+                }
+                _stationMeshes[station] = mesh;
+            }
+
+            // claim-burst flash: the uncommitted omni look (white-hot)
+            {
+                var (r, g, b) = ElementColor(Element.Omni);
+                var tint = new Color(r, g, b);
+                float Lift(float c) => c + (1f - c) * 0.45f;
+                _burstMesh = BuildCrystalMesh(tint, new Color(Lift(r), Lift(g), Lift(b)), tint * 0.85f);
+            }
         }
 
-        (uint vao, int count) BuildCrystalMesh((float r, float g, float b) tint)
+        (uint vao, int count) BuildCrystalMesh(Color apex, Color equatorA, Color equatorB)
         {
-            // unit octahedron in the element tint, white-lifted equator for the hot core
+            // unit octahedron: apex/bottom carry the primary color, the equator band the pair
             var top = new Vector3(0f, 1.2f, 0f);
             var bottom = new Vector3(0f, -1.2f, 0f);
             var equator = new[]
@@ -402,19 +461,38 @@ void main()
                 new Vector3(0.9f, 0f, 0f), new Vector3(0f, 0f, 0.9f),
                 new Vector3(-0.9f, 0f, 0f), new Vector3(0f, 0f, -0.9f),
             };
-            float Lift(float c) => c + (1f - c) * 0.45f; // toward white
             var data = new List<float>();
             for (int i = 0; i < 4; i++)
             {
                 var a = equator[i];
                 var b = equator[(i + 1) % 4];
                 float warm = i % 2 == 0 ? 1f : 0.86f;
-                Push(data, top, tint.r * warm, tint.g * warm, tint.b * warm, 0.95f);
-                Push(data, a, Lift(tint.r), Lift(tint.g), Lift(tint.b), 0.8f);
-                Push(data, b, tint.r * 0.85f, tint.g * 0.85f, tint.b * 0.85f, 0.8f);
-                Push(data, bottom, tint.r * 0.8f * warm, tint.g * 0.8f * warm, tint.b * 0.8f * warm, 0.95f);
-                Push(data, b, tint.r * 0.85f, tint.g * 0.85f, tint.b * 0.85f, 0.8f);
-                Push(data, a, Lift(tint.r), Lift(tint.g), Lift(tint.b), 0.8f);
+                Push(data, top, apex.r * warm, apex.g * warm, apex.b * warm, 0.95f);
+                Push(data, a, equatorA.r, equatorA.g, equatorA.b, 0.8f);
+                Push(data, b, equatorB.r, equatorB.g, equatorB.b, 0.8f);
+                Push(data, bottom, apex.r * 0.8f * warm, apex.g * 0.8f * warm, apex.b * 0.8f * warm, 0.95f);
+                Push(data, b, equatorB.r, equatorB.g, equatorB.b, 0.8f);
+                Push(data, a, equatorA.r, equatorA.g, equatorA.b, 0.8f);
+            }
+            var (vao, _) = UploadStatic(data.ToArray());
+            return (vao, data.Count / 7);
+        }
+
+        /// <summary>
+        /// Unit circle (local XY — the vessel's transverse plane) in the theme's
+        /// SkimmerColor: the near-field skimmer's trigger reach made visible. Two bakes —
+        /// idle and skim-flare — because vertex colors are static.
+        /// </summary>
+        (uint vao, int count) BuildSkimmerRing(Color tint, float alpha)
+        {
+            var data = new List<float>();
+            const int segments = 36;
+            for (int i = 0; i < segments; i++)
+            {
+                float t0 = i / (float)segments * MathF.Tau;
+                float t1 = (i + 1) / (float)segments * MathF.Tau;
+                Push(data, new Vector3(MathF.Cos(t0), MathF.Sin(t0), 0f), tint.r, tint.g, tint.b, alpha);
+                Push(data, new Vector3(MathF.Cos(t1), MathF.Sin(t1), 0f), tint.r, tint.g, tint.b, alpha);
             }
             var (vao, _) = UploadStatic(data.ToArray());
             return (vao, data.Count / 7);
@@ -422,25 +500,34 @@ void main()
 
         void BuildVesselMeshes()
         {
-            // The Squirrel's real hull, extracted from the game's FBX and baked with
-            // flat per-face lighting in each pilot's domain palette. Dart fallback.
+            // The Squirrel's real hull, extracted from the game's FBX and baked with flat
+            // per-face lighting in the theme's ShipColor1/ShipColor2 pair (the vessel
+            // shader's _Color1/_Color2, set by ThemeManager from the domain ColorSet).
+            // Renderer interpretation: the flat-lit bake grades shadow→lit from the dimmer
+            // to the brighter of the pair, so shading stays plausible for palettes authored
+            // in either order (Jade's Color2 is the lit end; Gold's Color1 is).
             foreach (var pilot in _race.Pilots)
             {
                 var domain = pilot.Domain;
                 if (_vesselMeshes.ContainsKey(domain)) continue;
+                var shipMaterial = _theme.TeamMaterialSets[domain].ShipMaterial;
+                var color1 = shipMaterial.GetColor("_Color1");
+                var color2 = shipMaterial.GetColor("_Color2");
+                float Luminance(Color c) => 0.2126f * c.r + 0.7152f * c.g + 0.0722f * c.b;
+                var (shadow, lit) = Luminance(color1) <= Luminance(color2) ? (color1, color2) : (color2, color1);
                 try
                 {
-                    _vesselMeshes[domain] = BuildSquirrel(DomainColor(domain));
+                    _vesselMeshes[domain] = BuildSquirrel(shadow, lit);
                 }
                 catch (Exception e)
                 {
                     Console.WriteLine($"squirrel mesh unavailable ({e.Message}) — dart fallback");
-                    _vesselMeshes[domain] = BuildDart(DomainColor(domain));
+                    _vesselMeshes[domain] = BuildDart(shadow, lit);
                 }
             }
         }
 
-        (uint vao, int count) BuildSquirrel((float r, float g, float b) baseColor)
+        (uint vao, int count) BuildSquirrel(Color shadow, Color lit)
         {
             using var stream = typeof(RaceWindow).Assembly
                 .GetManifestResourceStream("CosmicShore.Client.Assets.squirrel.mesh")
@@ -465,18 +552,19 @@ void main()
                     var normal = new Vector3(nx, ny, nz);
                     float key = MathF.Max(0f, Vector3.Dot(normal, keyLight));
                     float rim = MathF.Max(0f, Vector3.Dot(normal, rimLight));
-                    float shade = 0.22f + 0.62f * key + 0.3f * rim;
-                    Push(dataList, new Vector3(px, py, pz),
-                        baseColor.r * shade, baseColor.g * shade, baseColor.b * shade, 0.95f);
+                    float shade = Mathf.Clamp01(0.62f * key + 0.3f * rim); // shadow→lit gradient position
+                    var c = Color.Lerp(shadow, lit, 0.15f + 0.85f * shade);
+                    Push(dataList, new Vector3(px, py, pz), c.r, c.g, c.b, 0.95f);
                 }
             }
             var (vao, _) = UploadStatic(dataList.ToArray());
             return (vao, triCount * 3);
         }
 
-        (uint vao, int count) BuildDart((float r, float g, float b) baseColor)
+        (uint vao, int count) BuildDart(Color shadow, Color lit)
         {
-            // dart fallback: nose, twin swept wings, tail fin — flat-shaded neon
+            // dart fallback: nose, twin swept wings, tail fin — flat-shaded in the same
+            // ShipColor1/2 shadow→lit gradient the squirrel hull bakes
             var nose = new Vector3(0f, 0f, 2.6f);
             var tail = new Vector3(0f, 0.25f, -1.4f);
             var left = new Vector3(-1.7f, -0.15f, -1.2f);
@@ -485,21 +573,21 @@ void main()
             var fin = new Vector3(0f, 1.05f, -1.5f);
 
             var data = new List<float>();
-            void Tri(Vector3 a, Vector3 b, Vector3 c, float r, float g, float bl, float al)
+            void Tri(Vector3 a, Vector3 b, Vector3 c, Color color, float al)
             {
-                Push(data, a, r, g, bl, al);
-                Push(data, b, r, g, bl, al);
-                Push(data, c, r, g, bl, al);
+                Push(data, a, color.r, color.g, color.b, al);
+                Push(data, b, color.r, color.g, color.b, al);
+                Push(data, c, color.r, color.g, color.b, al);
             }
             void Hull(Vector3 a, Vector3 b, Vector3 c, float bright, float alpha)
-                => Tri(a, b, c, baseColor.r * bright, baseColor.g * bright, baseColor.b * bright, alpha);
+                => Tri(a, b, c, Color.Lerp(shadow, lit, bright), alpha);
             Hull(nose, left, tail, 1f, 0.95f);
             Hull(nose, tail, right, 0.88f, 0.95f);
             Hull(nose, belly, left, 0.55f, 0.9f);
             Hull(nose, right, belly, 0.5f, 0.9f);
             Hull(tail, left, belly, 0.4f, 0.9f);
             Hull(tail, belly, right, 0.38f, 0.9f);
-            Tri(tail, fin, nose, baseColor.r * 0.8f + 0.2f, baseColor.g * 0.8f + 0.2f, baseColor.b * 0.8f + 0.2f, 0.75f);
+            Tri(tail, fin, nose, Color.Lerp(shadow, lit, 0.8f), 0.75f);
             var (vao, _) = UploadStatic(data.ToArray());
             return (vao, data.Count / 7);
         }
@@ -701,13 +789,13 @@ void main()
                 var model = Matrix4x4.CreateScale(pulse) * Matrix4x4.CreateRotationY(spin) *
                             Matrix4x4.CreateTranslation(crystalPos);
                 SetMvp(model * viewProjection);
-                var mesh = _crystalMeshes[track.StationElements[i]];
+                var mesh = _stationMeshes[i];
                 _gl.BindVertexArray(mesh.vao);
                 _gl.DrawArrays(PrimitiveType.Triangles, 0, (uint)mesh.count);
             }
 
             // collection bursts: expanding fading octahedra (white-hot omni flash)
-            var burstMesh = _crystalMeshes[Element.Omni];
+            var burstMesh = _burstMesh;
             foreach (var (pos, age) in _bursts)
             {
                 // bursts spawn on the camera's own path — cull when the expanding shell

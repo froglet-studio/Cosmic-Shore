@@ -806,30 +806,19 @@ namespace CosmicShore.Client
             // closed-track loop — leave trails, lap back, skim them — actually engages
             int winTarget = stations;
 
-            // ── shared data: theme + GameDataSO (vessel paint is headless-stubbed; the
-            // GL layer colors by domain itself) ───────────────────────
-            var theme = ScriptableObject.CreateInstance<ThemeManagerDataContainerSO>();
-            theme.TeamMaterialSets = new Dictionary<Domains, SO_MaterialSet>();
-            foreach (var domain in new[] { Domains.Jade, Domains.Ruby, Domains.Blue, Domains.Gold })
-            {
-                var set = ScriptableObject.CreateInstance<SO_MaterialSet>();
-                Material Mat(string role) => new((Shader)null) { name = $"{domain}-{role}" };
-                set.ShipMaterial = Mat("ship");
-                // Prism material states (engine materials are data-only property stores;
-                // the GL layer colors by domain itself). Real instances keep the prism
-                // team/state managers' verbatim material pipeline on its happy path.
-                set.BlockMaterial = Mat("block");
-                set.TransparentBlockMaterial = Mat("block-transparent");
-                set.ShieldedBlockMaterial = Mat("block-shielded");
-                set.TransparentShieldedBlockMaterial = Mat("block-shielded-transparent");
-                set.SuperShieldedBlockMaterial = Mat("block-supershielded");
-                set.TransparentSuperShieldedBlockMaterial = Mat("block-supershielded-transparent");
-                set.DangerousBlockMaterial = Mat("block-dangerous");
-                set.TransparentDangerousBlockMaterial = Mat("block-dangerous-transparent");
-                set.ExplodingBlockMaterial = Mat("block-exploding");
-                set.BlockSilhouettePrefab = new GameObject($"{domain}-silhouette");
-                theme.TeamMaterialSets[domain] = set;
-            }
+            // ── shared data: the REAL theme pipeline (rung 5) — the authored
+            // OriginalColorSetSO palette + OriginalMaterialSet base materials
+            // (SkimRaceTheme transcribes the wired Unity assets), with the verbatim
+            // ThemeManager (the single writer) generating the four per-domain material
+            // sets at Awake and handing the ColorSet to GameFeedAPI — exactly the
+            // original's startup flow. Every draw color (prisms, vessels, crystals,
+            // skimmer, sky, HUD) reads from this one container. ────────
+            var theme = SkimRaceTheme.CreateContainer();
+            var themeManagerGo = new GameObject("ThemeManager");
+            themeManagerGo.SetActive(false); // configure-before-activation
+            var themeManager = themeManagerGo.AddComponent<ThemeManager>();
+            SetPrivateField(themeManager, "_dataContainer", theme);
+            themeManagerGo.SetActive(true); // Awake: TeamMaterialSets ×4 + GameFeedAPI.ColorSet
 
             rivalCount = Math.Clamp(rivalCount, 1, 7);
 
