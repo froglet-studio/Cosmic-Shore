@@ -32,8 +32,14 @@ detection. On top of that base the `Toy` class adds:
   is on autopilot; they only activate once the player takes control
   (`ToyContext.IsFreestyleActive`).
 - **Continuity-law bloom-in** — every toy scales from zero on spawn (nothing pops in).
-- **Re-arm on exit** — a toy is *not consumed*; after the vessel leaves it re-arms, so you
-  can play with it indefinitely.
+- **Exit-gated re-arm** — a toy is *not consumed*, but it re-arms **only once the local vessel
+  has flown clear of its trigger volume** (a per-frame distance poll with `exitRadiusMultiplier`
+  hysteresis, robust to the swap's despawn/respawn which fires no `OnTriggerExit`). A swap toy
+  that flips to the option you just left also **re-grows slowly** (`regrowDuration`, default ~5s)
+  and stays inert while it does. Together these stop a toy from immediately switching you back
+  before you can escape it. And when any toy in a set fires, the coordinator disarms the **whole
+  set** (`Toy.Disarm`) so a vessel that re-spawns on top of a neighbour can't chain-trigger it.
+  `Toy` exposes `bloomDuration`, `regrowDuration`, and `exitRadiusMultiplier` as serialized knobs.
 
 ## File map
 
@@ -74,10 +80,46 @@ NetworkObject/VesselStatus/controllers ever run). Flying through one swaps you i
 via `MenuServerPlayerVesselInitializer.RequestSwap` (the existing networked pipeline), and the
 toy flips to a mini model of the ship you just left.
 
+**Mini-model rendering.** `VesselModelBuilder` extracts only the **hull**: it skips builtin-
+primitive meshes (the skimmer sphere, scaled 15–60× — it otherwise dominated `NormalizeToRadius`
+and crushed the hull to an invisible speck; this is why only Rhino, the one ship whose skimmer
+has no builtin sphere, used to render), anything named skimmer/trail/jet/forcefield/crackle/pip/
+vfx, and inactive/disabled renderers (read via `activeSelf` up the chain — `activeInHierarchy` is
+always false on a prefab asset). Each hull mesh is painted with one **opaque, self-lit preview
+material** (`TryBuild(prefab, radius, previewColor, out model)`), because the ship's real hull
+material is a transparent, runtime-theme-driven shader that renders dim/invisible at rest. The
+`previewColor` is the local player's **domain colour**, so the mini ships preview "you, a
+different hull". Vessels whose body isn't statically extractable fall back to the labelled
+tinted sphere.
+
+**Recolour on domain change.** The mini ships are tinted to your domain, but `ConfigureVisual`
+only runs on create/flip. So the set watches the local player's domain each frame
+(`SwapToySetCoordinator.OnTick` → `VesselChangerToySet`) and, on a change, re-tints **every** mini
+ship + label in place (`ForEachSlot` → `RecolorSlot`, no rebuild → instant, pop-free) so they all
+follow the domain changer, not just the one slot that flips on the next swap.
+
+**Swap continuity.** A swap is seamless — the new vessel inherits the old one's:
+- **Domain / colour** — the swap re-syncs `Player.Domain` from the authoritative `NetDomain`
+  before it repaints (`ClientPlayerVesselInitializer.ReInitializePair`), so the new hull keeps the
+  domain you chose instead of snapping back to the Jade menu default (which desynced the domain
+  changer). Domain lives per-player in `NetDomain`, so it persists across every ship change.
+- **Position + orientation** — via `newVessel.SetPose(snapshot)` (also seeds `accumulatedRotation`
+  so the rotation doesn't snap back).
+- **Speed** — `SwapVesselAsync` captures the outgoing `VesselStatus.Speed` before despawn and
+  seeds it onto the new vessel (`IVessel.SetInitialSpeed` → `VesselTransformer.SetInitialSpeed`,
+  routed through a ClientRpc like `SetPose` so a party client's own vessel inherits it too),
+  avoiding the post-`ResetForPlay` dead stop.
+
 **Lost-control fix:** the swap pipeline drops the new vessel into autopilot with input paused
 (that's why the old toy left you unable to steer). `VesselChangerToySet.RestoreControlAfterSwap`
 waits for `IsSwapping` to clear, then re-hands freestyle control — mirroring
 `MenuVesselSelectionPanelController.RestoreFreestyleAfterSwapAsync`.
+
+**HUD after swap.** `VesselController.Initialize` creates every vessel's HUD **hidden**, and the
+only menu code that shows the local HUD fires on *entering* freestyle — which a swap doesn't do.
+So `ReInitializePair` re-raises `GameDataSO.OnPlayerPairInitialized` (as the initial-spawn path
+does) and `MenuMiniGameHUD` re-shows the local HUD on that event while in freestyle (gated on
+freestyle + local player). Covers both the toy swap and the vessel-selection panel swap.
 
 Collection defaults to a curated set (Manta, Dolphin, Rhino, Squirrel, Serpent, Sparrow) so
 the ring isn't crowded with all 11; override per-asset via `vesselCollection`.
@@ -98,6 +140,25 @@ in the menu where none of that exists. Toy-faithful: completes when the last poi
 then fades; no fail state. (The full `ShapeDrawingManager` experience — preview cinematic,
 scoring, reveal — remains available for a gameplay scene that has the ecology infra; the toy
 uses the lightweight runner so it works everywhere.)
+
+## Freestyle input ownership (reaching / leaving the toybox)
+
+Toys only activate in freestyle, so who owns the gamepad matters. In the menu two readers poll
+the one pad: the **vessel** (`InputController` → `GamepadInputStrategy`, gated by
+`InputController.SetPause`) and the **appshell** (`ScreenSwitcher` screen-nav, already gated on
+`_isInFreestyle`, plus the EventSystem's UI `Navigate`/`Submit`). The EventSystem was ungated, so
+in freestyle the steering stick also drove the UI selection ring and the fire button also
+submitted the (still touch-interactable) vessel HUD.
+
+- **Enter/leave** freestyle via `MenuCrystalClickHandler.ToggleTransition` (tap the crystal to
+  enter; the on-screen Volume/Pause button *or* — new — the **gamepad Start button** to leave).
+  `MenuMiniGameHUD.Update` polls `Gamepad.current.startButton` while in freestyle and calls
+  `ToggleTransition`, so pad players hand control back to the appshell without reaching for a
+  touch button.
+- **Mutually-exclusive ownership:** in menu state the vessel input is paused (autopilot); in
+  freestyle `ScreenSwitcher.HandleEnterFreestyle` sets `EventSystem.sendNavigationEvents = false`
+  (restored on exit), so the pad flies the ship and no longer double-drives the UI. Pointer/touch
+  input is unaffected, so touch HUD buttons still work.
 
 ## Placement
 
@@ -162,7 +223,22 @@ rely on the runtime default toybox.)
 
 ## Status & follow-up
 
-The framework + three toys are in and compile-reviewed; they are **not yet play-verified in an
-editor**. Polish/improvement work (per-toy tuning, mini-model materials, painting pen-up,
-placement anchor, unlock persistence, tests) is tracked in **`BACKLOG.md`**, grouped so each area
-can be its own branch.
+The framework + three toys are in, plus the second-pass fixes above: mini-model hull rendering,
+exit-gated re-arm + slow flip re-grow, swap continuity (domain / pose / speed), recolour-on-domain,
+HUD-after-swap, and gamepad-Start / input-ownership. All are compile-reviewed against the real
+codebase but **not yet play-verified in an editor** (no Unity in the authoring environment) — an
+in-editor pass is the last step before/after merge. Remaining polish (per-toy tuning, skinned-mesh
+`BakeMesh` fidelity, painting pen-up, placement anchor, unlock persistence, tests) is tracked in
+**`BACKLOG.md`**, grouped so each area can be its own branch.
+
+### Files touched this pass (for review)
+
+| Area | Files |
+|---|---|
+| Re-arm / escape | `Controller/Toys/Toy.cs`, `Controller/Toys/SwapToySetCoordinator.cs` |
+| Mini-model rendering | `Controller/Toys/VesselModelBuilder.cs`, `Controller/Toys/VesselChangerToySet.cs` |
+| Recolour on domain change | `Controller/Toys/SwapToySetCoordinator.cs` (`OnTick`/`ForEachSlot`), `Controller/Toys/VesselChangerToySet.cs` |
+| Domain preserved on swap | `Controller/Multiplayer/ClientPlayerVesselInitializer.cs` (`ReInitializePair`) |
+| Speed inherited on swap | `Controller/Multiplayer/MenuServerPlayerVesselInitializer.cs`, `Controller/Vessel/IVessel.cs`, `Controller/Vessel/VesselController.cs`, `Controller/Vessel/VesselTransformer.cs` |
+| HUD re-show after swap | `Controller/Multiplayer/ClientPlayerVesselInitializer.cs`, `UI/MenuMiniGameHUD.cs` |
+| Gamepad Start / input ownership | `UI/MenuMiniGameHUD.cs`, `UI/ScreenSwitcher.cs` |
