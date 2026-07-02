@@ -181,6 +181,10 @@ namespace CosmicShore.Gameplay
                 Vector3 local = i < plan.CrystalPoints.Count
                     ? plan.CrystalPoints[i]
                     : plan.CrystalPoints.Count > 0 ? plan.CrystalPoints[^1] : Vector3.zero;
+                // Overflow crystals (more survivors than plan slots) fan out vertically instead
+                // of stacking co-located on the last slot.
+                if (i >= plan.CrystalPoints.Count)
+                    local += Vector3.up * 16f * (i - plan.CrystalPoints.Count + 1);
                 _crystals[i].transform.localPosition = local;
             }
         }

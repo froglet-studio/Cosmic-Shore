@@ -108,6 +108,10 @@ All shipped on the branch; see `ARCHITECTURE.md` § "Status & follow-up" for the
   fallback crystals still lack collection components; the new internal setters
   (`ImpactCollider.SetImpactor`, `ElementalCrystalImpactor.SetCollectionEffects`) make fixing
   that a three-line follow-up.
+- **Tests.** `MicroscenePatternsTests` (EditMode) locks the belt's load-bearing generator
+  guarantees: budget exactness (closed-system recycling), per-seed determinism, crystal clamp,
+  lifeform counts confined to Meadow/Menagerie, and scene-extent bounds. Run with the rest of
+  the EditMode suite after any recipe change.
 
 ## Branch: framework / cross-cutting
 

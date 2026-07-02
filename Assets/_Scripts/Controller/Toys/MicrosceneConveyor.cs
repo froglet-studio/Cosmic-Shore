@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
         public float FirstSceneDistance = 170f;
         public float LookaheadDistance = 470f;
         public float RecycleBehindDistance = 320f;
-        public float TransitionSeconds = 1.6f;
+        public float TransitionSeconds = 1.2f;
         public float CourseFollow = 0.6f;
         public int MaxCrystalsPerScene = 3;
         public bool LifeformScenes = true;
@@ -206,7 +206,10 @@ namespace CosmicShore.Gameplay
             _scenes.Add(scene);
 
             var plan = NextPlan();
-            scene.PopulateAsync(plan, NextDomain(), _rng, this.GetCancellationTokenOnDestroy()).Forget();
+            // Each arrival gets its own derived rng: async populate/recycle draws would otherwise
+            // interleave on the shared stream and break per-seed reproducibility.
+            var sceneRng = new System.Random(_rng.Next());
+            scene.PopulateAsync(plan, NextDomain(), sceneRng, this.GetCancellationTokenOnDestroy()).Forget();
             return true;
         }
 
@@ -237,7 +240,8 @@ namespace CosmicShore.Gameplay
 
             var pose = new Pose(_headAnchor, Quaternion.LookRotation(_headDir, Vector3.up));
             var plan = NextPlan();
-            candidate.RecycleAsync(plan, pose, NextDomain(), _rng, _cfg.TransitionSeconds,
+            var sceneRng = new System.Random(_rng.Next()); // see PlaceNewScene — per-arrival stream
+            candidate.RecycleAsync(plan, pose, NextDomain(), sceneRng, _cfg.TransitionSeconds,
                 this.GetCancellationTokenOnDestroy()).Forget();
             return true;
         }

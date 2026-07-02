@@ -151,7 +151,7 @@ namespace CosmicShore.Gameplay
                         : SpawnPoint.LookRotation(prev, pos, Vector3.up);
                     plan.PrismPoints.Add(new SpawnPoint(pos, rot, StrandScale(rng)));
                     prev = pos;
-                    if (r == 0 && i == perRail - 1) exit = new Vector3(bendX * 0f, bendY * 0f, pos.z);
+                    if (r == 0 && i == perRail - 1) exit = new Vector3(0f, 0f, pos.z); // tube ends on-axis
                 }
             }
             plan.CrystalPoints.Add(exit + Vector3.forward * 26f);
