@@ -67,6 +67,7 @@ namespace CosmicShore.Gameplay
 
             // Retire the previous blend's overlay instance (if any) so the material
             // array never grows past baseline+1 and the instance doesn't leak.
+            bool overlayInArray = false;
             if (OverlayMap.TryGetValue(renderer, out var previous) && previous)
             {
                 int previousIndex = mats != null ? System.Array.IndexOf(mats, previous) : -1;
@@ -75,6 +76,7 @@ namespace CosmicShore.Gameplay
                     // Reuse the previous overlay's slot in place.
                     mats[previousIndex] = overInstance;
                     renderer.materials = mats;
+                    overlayInArray = true;
                 }
                 else if (previousIndex >= 0)
                 {
@@ -88,7 +90,11 @@ namespace CosmicShore.Gameplay
                 Object.Destroy(previous);
                 OverlayMap.Remove(renderer);
             }
-            else if (addInsteadOfReplace && mats != null)
+
+            // Append covers both the fresh-renderer case and an add-mode blend that
+            // follows a replace-mode blend (previous overlay tracked but not in the
+            // array) — a plain else-if here would silently skip the overlay.
+            if (addInsteadOfReplace && !overlayInArray && mats != null)
             {
                 var withOverlay = new Material[mats.Length + 1];
                 System.Array.Copy(mats, withOverlay, mats.Length);

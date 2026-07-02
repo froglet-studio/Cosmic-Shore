@@ -43,6 +43,10 @@ namespace CosmicShore.Gameplay
             {
                 if (timer > 1.1f)
                 {
+                    // Zero the outgoing key before flipping (a value write, not
+                    // skinning) so the crystal doesn't re-enter view with both
+                    // blendshapes partially applied.
+                    crystalRenderer.SetBlendShapeWeight(currentShapeKey, 0f);
                     currentShapeKey = (currentShapeKey + 1) % 2;
                     timer = 0f;
                 }

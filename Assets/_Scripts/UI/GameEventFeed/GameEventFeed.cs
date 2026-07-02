@@ -25,9 +25,13 @@ namespace CosmicShore.UI
         [Inject] private GameDataSO gameData;
 
         // Rows recycle instead of Instantiate/Destroy per event — feed events arrive
-        // in bursts (joust hits) and each row carries a TMP object. Pooled rows live
-        // under an inactive pool root so they never count toward childCount or layout.
+        // in bursts (joust hits) and each row carries a TMP object. Live rows are
+        // tracked explicitly in _liveEntries (NOT via contentContainer.childCount:
+        // in the shipped prefabs contentContainer IS the feed's own transform, so
+        // hierarchy-based counting would see the pool root as an evictable child).
+        // Pooled rows sit under an inactive pool root, invisible to layout.
         private readonly Stack<GameFeedEntry> _entryPool = new();
+        private readonly List<GameFeedEntry> _liveEntries = new();
         private Transform _poolRoot;
 
         private Transform PoolRoot
@@ -48,6 +52,7 @@ namespace CosmicShore.UI
         private void HandleEntryReturn(GameFeedEntry entry)
         {
             if (entry == null) return;
+            _liveEntries.Remove(entry); // no-op when eviction already removed it
             entry.transform.SetParent(PoolRoot, false);
             _entryPool.Push(entry);
         }
@@ -207,21 +212,13 @@ namespace CosmicShore.UI
             if (contentContainer == null || settings == null)
                 return;
 
-            // Enforce max visible entries — recycle oldest. Release() reparents to the
-            // pool root immediately, so childCount decreases right away (no infinite
-            // loop when multiple entries spawn in the same frame).
-            while (contentContainer.childCount >= settings.maxVisibleEntries)
+            // Enforce max visible entries — recycle oldest live row. Driven by the
+            // explicit live list, never by childCount (see _liveEntries note above).
+            while (_liveEntries.Count >= settings.maxVisibleEntries)
             {
-                var oldest = contentContainer.GetChild(0);
-                if (oldest.TryGetComponent(out GameFeedEntry oldEntry))
-                {
-                    oldEntry.Release();
-                }
-                else
-                {
-                    oldest.SetParent(null);
-                    Destroy(oldest.gameObject);
-                }
+                var oldest = _liveEntries[0];
+                _liveEntries.RemoveAt(0);
+                if (oldest != null) oldest.Release();
             }
 
             GameFeedEntry entry;
@@ -253,6 +250,7 @@ namespace CosmicShore.UI
             }
 
             entry.Setup(message, color, isRichText);
+            _liveEntries.Add(entry);
 
             // Rebuild layout BEFORE animation so entry gets correct Y from VerticalLayoutGroup
             LayoutRebuilder.ForceRebuildLayoutImmediate(contentContainer);
@@ -262,21 +260,13 @@ namespace CosmicShore.UI
 
         public void ClearFeed()
         {
-            if (contentContainer == null) return;
-
-            for (int i = contentContainer.childCount - 1; i >= 0; i--)
+            // Release mutates _liveEntries via HandleEntryReturn — walk a snapshot.
+            for (int i = _liveEntries.Count - 1; i >= 0; i--)
             {
-                var child = contentContainer.GetChild(i);
-                if (child.TryGetComponent(out GameFeedEntry entry))
-                {
-                    entry.Release();
-                }
-                else
-                {
-                    child.SetParent(null);
-                    Destroy(child.gameObject);
-                }
+                var entry = _liveEntries[i];
+                if (entry != null) entry.Release();
             }
+            _liveEntries.Clear();
         }
 
         // Single source of truth — the same ColorSet the vessels and prisms use (R5).
