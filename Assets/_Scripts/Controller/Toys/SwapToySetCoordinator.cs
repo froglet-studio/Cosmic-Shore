@@ -71,6 +71,9 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (!_initialized) return;
+
+            OnTick();
+
             if (!TryGetCurrent(out var cur) || !IsValid(cur)) return;
 
             if (!_hasCurrent)
@@ -197,6 +200,19 @@ namespace CosmicShore.Gameplay
         {
             for (int i = t.childCount - 1; i >= 0; i--)
                 Destroy(t.GetChild(i).gameObject);
+        }
+
+        /// <summary>
+        /// Per-frame hook for reacting to external state that isn't the tracked "current option" —
+        /// e.g. the vessel changer recolouring all its mini ships when the player's domain changes,
+        /// not just the one slot that flips on a ship swap. Runs before the current-option reconcile.
+        /// </summary>
+        protected virtual void OnTick() { }
+
+        /// <summary>Invoke an action for every live slot (e.g. to recolour them all in place).</summary>
+        protected void ForEachSlot(System.Action<Slot> action)
+        {
+            foreach (var s in _slots) action(s);
         }
 
         // ── Abstract per-kind behaviour ─────────────────────────────────────
