@@ -19,8 +19,11 @@ namespace CosmicShore.Cli
         public int PlayerCount = 4;
         public int Seed = 42;
 
-        /// <summary>Per-leg crystal target (kept low so each leg is a quick sprint).</summary>
+        /// <summary>Per-leg crystal target for HexRace / Crystal Capture legs (kept low so each leg is a quick sprint).</summary>
         public int LegCrystalTarget = 6;
+
+        /// <summary>Per-leg joust target for Joust legs (kept low so each leg is a quick sprint).</summary>
+        public int LegJoustTarget = 3;
 
         /// <summary>Lobby-chosen intensity — the per-game ceiling X (each leg draws in [1..X]).</summary>
         public int IntensityCeiling = 2;
@@ -51,11 +54,11 @@ namespace CosmicShore.Cli
     /// Scene arc note: the port has no scene transitions yet, so each host-driven Single load is
     /// announced through the engine's <c>SceneManager.NotifySceneLoaded</c> port surface — the
     /// controller's verbatim <c>HandleSceneLoaded</c> drives lobby → game → hub → summary exactly
-    /// as on device. And because only the HexRace controller chain is ported so far, EVERY drawn
-    /// leg (Skim Race, Joust, or Crystal Capture) is simulated by the real headless
-    /// <see cref="HexRaceRound"/> — the drawn mode still exercises the real draw/repeat-avoidance/
-    /// intensity path, and its ranked <c>ScoreResult</c>s feed the real fold. Swap in the Joust /
-    /// Crystal Capture rounds when their controllers port.
+    /// as on device. Every drawn leg runs on its REAL headless harness — Skim Race →
+    /// <see cref="HexRaceRound"/>, Joust → <see cref="JoustRound"/>, Crystal Capture →
+    /// <see cref="CrystalCaptureRound"/> — so the whole shuffle chains three genuine game modes:
+    /// the draw/repeat-avoidance/intensity path picks the mode, its ranked <c>ScoreResult</c>s
+    /// feed the real fold.
     /// </summary>
     public static class TournamentRound
     {
@@ -116,29 +119,22 @@ namespace CosmicShore.Cli
 
                     SceneManager.NotifySceneLoaded(gameData.SceneName);   // party follows the Single load → InGame
 
-                    // Only the HexRace chain is ported — every leg runs the real headless HexRace
-                    // round (see the class doc). The leg seed comes off the shared seeded RNG, so
-                    // the whole session is deterministic per --seed.
+                    // Every drawn mode runs its REAL headless harness (see the class doc). The
+                    // leg seed comes off the shared seeded RNG, so the whole session is
+                    // deterministic per --seed.
                     int legSeed = Random.Range(1, int.MaxValue);
-                    var leg = HexRaceRound.Run(new HexRaceRoundOptions
-                    {
-                        PlayerCount = options.PlayerCount,
-                        Seed = legSeed,
-                        CrystalTarget = options.LegCrystalTarget,
-                    });
-                    result.EngineErrors.AddRange(leg.EngineErrors);
-                    if (!leg.Finished)
+                    var legOutcome = RunLeg(gameData.GameMode, legSeed, options);
+                    result.EngineErrors.AddRange(legOutcome.EngineErrors);
+                    if (!legOutcome.Finished)
                     {
                         Log($"  ✗ leg {legNumber} did not finish (seed {legSeed}) — aborting the shuffle.");
                         return result;
                     }
 
-                    Log($"  leg (via HexRace harness, seed {legSeed}): {leg.WinnerDomain} domain wins in {leg.FinishTime:F2}s " +
-                        $"· {leg.TotalClaims} crystals · winner '{leg.WinnerName}'");
+                    Log($"  leg ({legOutcome.HarnessName} harness, seed {legSeed}): {legOutcome.Summary}");
 
                     // The synced, ranked results land on every peer → the network-free fold.
-                    gameData.SetResults(leg.Standings.Select(s =>
-                        new ScoreResult(s.Rank, s.Name, s.Domain, s.Score, s.ScoreText, s.Secondary)));
+                    gameData.SetResults(legOutcome.Results);
                     gameData.InvokeMiniGameEnd();   // TournamentController.RecordResults + race-to-6 check
 
                     var standings = tournament.BuildSortedStandings();
@@ -171,6 +167,88 @@ namespace CosmicShore.Cli
             {
                 SceneManager.ResetSceneLoadedSubscribers();
                 NetworkManager.Singleton = null;
+            }
+        }
+
+        /// <summary>One leg's outcome, normalized across the three mode harnesses for the fold.</summary>
+        sealed class LegOutcome
+        {
+            public bool Finished;
+            public string HarnessName = "";
+            public string Summary = "";
+            public List<ScoreResult> Results = new();
+            public List<string> EngineErrors = new();
+        }
+
+        /// <summary>
+        /// Dispatches the drawn mode to its REAL headless harness: HexRace draw →
+        /// <see cref="HexRaceRound"/>, Joust draw → <see cref="JoustRound"/>, Crystal Capture
+        /// draw → <see cref="CrystalCaptureRound"/>. Each harness returns the ranked standings
+        /// its mode's controller synced (the per-peer <c>GameDataSO.Results</c> payload).
+        /// </summary>
+        static LegOutcome RunLeg(GameModes mode, int legSeed, TournamentRoundOptions options)
+        {
+            switch (mode)
+            {
+                case GameModes.MultiplayerJoust:
+                {
+                    var leg = JoustRound.Run(new JoustRoundOptions
+                    {
+                        PlayerCount = options.PlayerCount,
+                        Seed = legSeed,
+                        JoustTarget = options.LegJoustTarget,
+                    });
+                    return new LegOutcome
+                    {
+                        Finished = leg.Finished,
+                        HarnessName = "Joust",
+                        Summary = $"{leg.WinnerDomain} domain wins in {leg.FinishTime:F2}s " +
+                                  $"· {leg.TotalJousts} jousts · winner '{leg.WinnerName}'",
+                        Results = leg.Standings.Select(s =>
+                            new ScoreResult(s.Rank, s.Name, s.Domain, s.Score, s.ScoreText, s.Secondary)).ToList(),
+                        EngineErrors = leg.EngineErrors,
+                    };
+                }
+
+                case GameModes.MultiplayerCrystalCapture:
+                {
+                    var leg = CrystalCaptureRound.Run(new CrystalCaptureRoundOptions
+                    {
+                        PlayerCount = options.PlayerCount,
+                        Seed = legSeed,
+                        CrystalTarget = options.LegCrystalTarget,
+                    });
+                    return new LegOutcome
+                    {
+                        Finished = leg.Finished,
+                        HarnessName = "Crystal Capture",
+                        Summary = $"{leg.WinnerDomain} domain wins with {leg.WinnerDomainCrystals} crystals " +
+                                  $"· {leg.TotalClaims} claims · winner '{leg.WinnerName}'",
+                        Results = leg.Standings.Select(s =>
+                            new ScoreResult(s.Rank, s.Name, s.Domain, s.Score, s.ScoreText, null)).ToList(),
+                        EngineErrors = leg.EngineErrors,
+                    };
+                }
+
+                default: // GameModes.HexRace (Skim Race)
+                {
+                    var leg = HexRaceRound.Run(new HexRaceRoundOptions
+                    {
+                        PlayerCount = options.PlayerCount,
+                        Seed = legSeed,
+                        CrystalTarget = options.LegCrystalTarget,
+                    });
+                    return new LegOutcome
+                    {
+                        Finished = leg.Finished,
+                        HarnessName = "HexRace",
+                        Summary = $"{leg.WinnerDomain} domain wins in {leg.FinishTime:F2}s " +
+                                  $"· {leg.TotalClaims} crystals · winner '{leg.WinnerName}'",
+                        Results = leg.Standings.Select(s =>
+                            new ScoreResult(s.Rank, s.Name, s.Domain, s.Score, s.ScoreText, s.Secondary)).ToList(),
+                        EngineErrors = leg.EngineErrors,
+                    };
+                }
             }
         }
 

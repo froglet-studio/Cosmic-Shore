@@ -60,6 +60,8 @@ namespace CosmicShore.Cli
                 {
                     "hexrace" => RunHexRaceMode(players, seed),
                     "astroleague" => RunAstroLeagueMode(players, seed),
+                    "joust" => RunJoustMode(players, seed),
+                    "crystalcapture" => RunCrystalCaptureMode(players, seed),
                     "tournament" => RunTournamentMode(players, seed),
                     _ => UnknownMode(mode),
                 };
@@ -108,8 +110,88 @@ namespace CosmicShore.Cli
 
         static int UnknownMode(string mode)
         {
-            Console.WriteLine($"RESULT: FAIL — unknown --mode '{mode}' (supported: hexrace, astroleague, tournament).");
+            Console.WriteLine($"RESULT: FAIL — unknown --mode '{mode}' (supported: hexrace, astroleague, joust, crystalcapture, tournament).");
             return 1;
+        }
+
+        // ── [joust] Overtake jousting — headless AI-vs-AI match through the real
+        //    MiniGameControllerBase → MultiplayerDomainGamesController →
+        //    MultiplayerJoustController chain (player-seek AI, trigger-pass
+        //    vessel-vs-skimmer contacts, golf scoring: winner = elapsed time). ──
+
+        static int RunJoustMode(int players, int seed)
+        {
+            var options = new JoustRoundOptions { PlayerCount = players, Seed = seed };
+
+            Console.WriteLine("┌──────────────────────────────────────────────────────────┐");
+            Console.WriteLine("│  COSMIC SHORE — standalone port  ·  JOUST                │");
+            Console.WriteLine("│  headless overtake jousting (AI vs AI) ·  no Unity       │");
+            Console.WriteLine("└──────────────────────────────────────────────────────────┘");
+            Console.WriteLine();
+            Console.WriteLine($"[joust] players={Mathf.Clamp(options.PlayerCount, 2, 12)}, seed={options.Seed}, " +
+                              $"target={options.JoustTarget} jousts (domain-aggregated, golf rules)");
+            Console.WriteLine();
+
+            var result = JoustRound.Run(options, line => Console.WriteLine("  " + line));
+
+            Console.WriteLine();
+            foreach (var error in result.EngineErrors)
+                Console.WriteLine($"  ✗ engine error during match: {error}");
+
+            if (!result.Finished)
+            {
+                Console.WriteLine($"RESULT: FAIL — match did not finish within {result.FramesSimulated} frames.");
+                return 1;
+            }
+            if (result.EngineErrors.Count > 0)
+            {
+                Console.WriteLine($"RESULT: FAIL — match finished but {result.EngineErrors.Count} engine error(s) were logged.");
+                return 1;
+            }
+
+            Console.WriteLine($"RESULT: PASS — winner '{result.WinnerName}' ({result.WinnerDomain}) in " +
+                              $"{result.FinishTime:F2}s · {result.FramesSimulated} frames · {result.TotalJousts} jousts scored.");
+            return 0;
+        }
+
+        // ── [crystalcapture] Crystal Capture — headless AI-vs-AI round through the
+        //    real MiniGameControllerBase → MultiplayerDomainGamesController →
+        //    MultiplayerCrystalCaptureController chain (crystal-seek AI, trigger-pass
+        //    claims, points scoring: score = crystals captured). ─────────────────
+
+        static int RunCrystalCaptureMode(int players, int seed)
+        {
+            var options = new CrystalCaptureRoundOptions { PlayerCount = players, Seed = seed };
+
+            Console.WriteLine("┌──────────────────────────────────────────────────────────┐");
+            Console.WriteLine("│  COSMIC SHORE — standalone port  ·  CRYSTAL CAPTURE       │");
+            Console.WriteLine("│  headless crystal race (AI vs AI) ·  no Unity            │");
+            Console.WriteLine("└──────────────────────────────────────────────────────────┘");
+            Console.WriteLine();
+            Console.WriteLine($"[crystalcapture] players={Mathf.Clamp(options.PlayerCount, 1, 4)}, seed={options.Seed}, " +
+                              $"target={options.CrystalTarget} crystals (domain-aggregated, points)");
+            Console.WriteLine();
+
+            var result = CrystalCaptureRound.Run(options, line => Console.WriteLine("  " + line));
+
+            Console.WriteLine();
+            foreach (var error in result.EngineErrors)
+                Console.WriteLine($"  ✗ engine error during round: {error}");
+
+            if (!result.Finished)
+            {
+                Console.WriteLine($"RESULT: FAIL — round did not finish within {result.FramesSimulated} frames.");
+                return 1;
+            }
+            if (result.EngineErrors.Count > 0)
+            {
+                Console.WriteLine($"RESULT: FAIL — round finished but {result.EngineErrors.Count} engine error(s) were logged.");
+                return 1;
+            }
+
+            Console.WriteLine($"RESULT: PASS — winner '{result.WinnerName}' ({result.WinnerDomain}) with " +
+                              $"{result.WinnerDomainCrystals} domain crystals · {result.FramesSimulated} frames · {result.TotalClaims} claims.");
+            return 0;
         }
 
         // ── [tournament] Maelstrom — the session-level meta chaining the domain
