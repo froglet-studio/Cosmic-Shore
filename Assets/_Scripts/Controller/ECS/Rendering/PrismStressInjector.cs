@@ -2,25 +2,29 @@
 using CosmicShore.Gameplay;
 using CosmicShore.Utility.PerformanceBenchmark;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 namespace CosmicShore.ECS
 {
     /// <summary>
-    /// Dev-only stress injector. Press F10 in ANY scene — the Menu_Main lava-lamp, the
-    /// benchmark scene, a race — to toggle a cloud of instanced stress prisms in front of
-    /// the main camera, ON TOP of whatever the scene is already doing. This measures the
-    /// instanced render path under real game load without any scene authoring.
+    /// Dev-only stress injector, driven by the DiagnosticsHUD command console
+    /// (F7 shows the HUD; type in its input field and press Enter or Run):
     ///
-    /// The cloud borrows mesh + material from a live Prism in the scene (so it draws with
-    /// the scene's actual themed material and batches with the real trail prisms) and spawns
-    /// through PrismRenderStressTest, which publishes its numbers to the DiagnosticsHUD
-    /// (F7 toggle / F6 advanced). Auto-spawns in editor and development builds only —
-    /// compiled out of release entirely.
+    ///   prisms 50000   spawn a 50,000-entity instanced stress cloud ahead of the camera
+    ///   prisms         spawn with the default count
+    ///   prisms off     remove the cloud
+    ///
+    /// Works in ANY scene — the Menu_Main lava-lamp, the benchmark scene, a race — ON TOP
+    /// of whatever the scene is doing, measuring the instanced render path under real game
+    /// load without scene authoring. The cloud borrows mesh + material from a live Prism
+    /// (so it draws with the scene's actual themed material and batches with the real trail
+    /// prisms) and spawns through PrismRenderStressTest, which publishes its numbers to the
+    /// HUD. Auto-spawns in editor and development builds only — compiled out of release.
     /// </summary>
     public class PrismStressInjector : MonoBehaviour
     {
         const string StatsSection = "Debug";
+        const string CommandName = "prisms";
+        const string IdleHint = "off — cmd: prisms <count> | prisms off";
 
         static PrismStressInjector _instance;
 
@@ -33,8 +37,8 @@ namespace CosmicShore.ECS
             _instance = go.AddComponent<PrismStressInjector>();
         }
 
-        [SerializeField, Tooltip("Entities in the injected cloud. Editable at runtime on the [PrismStressInjector] object.")]
-        private int injectCount = 50_000;
+        [SerializeField, Tooltip("Cloud size used when 'prisms' is run without a count.")]
+        private int defaultCount = 50_000;
         [SerializeField, Tooltip("Half-extent of the spawn cube.")]
         private float spawnRadius = 600f;
         [SerializeField, Tooltip("How far in front of the main camera the cloud centers.")]
@@ -44,32 +48,28 @@ namespace CosmicShore.ECS
 
         void Start()
         {
-            DiagnosticsHUD.SetStat(StatsSection, "F10 stress", "off");
+            DiagnosticsHUD.RegisterCommand(CommandName, HandlePrismsCommand);
+            DiagnosticsHUD.SetStat(StatsSection, "stress", IdleHint);
         }
 
-        void Update()
+        string HandlePrismsCommand(string[] args)
         {
-            var kb = Keyboard.current;
-            if (kb == null || !kb[Key.F10].wasPressedThisFrame) return;
-            Toggle();
-        }
-
-        void Toggle()
-        {
-            if (_cloud != null)
+            if (args.Length > 0 && (args[0] == "off" || args[0] == "0"))
             {
-                Destroy(_cloud); // PrismRenderStressTest.OnDestroy releases entities + its HUD section
-                _cloud = null;
-                DiagnosticsHUD.SetStat(StatsSection, "F10 stress", "off");
-                return;
+                if (_cloud == null) return "no stress cloud active";
+                Despawn();
+                return "stress cloud removed";
             }
+
+            int count = defaultCount;
+            if (args.Length > 0 && (!int.TryParse(args[0], out count) || count <= 0))
+                return "usage: prisms <count> | prisms off";
 
             var (donorMesh, donorMaterial) = FindDonor();
             if (donorMesh == null || donorMaterial == null)
-            {
-                Debug.LogWarning("[PrismStressInjector] No live Prism found to borrow mesh/material from — fly and lay some trail first, then press F10 again.");
-                return;
-            }
+                return "no live prism to borrow mesh/material from — lay some trail first";
+
+            Despawn(); // replace any existing cloud
 
             var cam = Camera.main;
             Vector3 center = cam != null
@@ -79,14 +79,23 @@ namespace CosmicShore.ECS
             _cloud = new GameObject("[PrismStressCloud]");
             _cloud.transform.position = center;
             var stress = _cloud.AddComponent<PrismRenderStressTest>();
-            stress.Configure(donorMesh, donorMaterial, injectCount, spawnRadius);
+            stress.Configure(donorMesh, donorMaterial, count, spawnRadius);
 
-            DiagnosticsHUD.SetStat(StatsSection, "F10 stress", $"ON ({injectCount:N0})");
+            DiagnosticsHUD.SetStat(StatsSection, "stress", $"ON ({count:N0})");
+            return $"spawned {count:N0} instanced stress prisms";
+        }
+
+        void Despawn()
+        {
+            if (_cloud == null) return;
+            Destroy(_cloud); // PrismRenderStressTest.OnDestroy releases entities + its HUD section
+            _cloud = null;
+            DiagnosticsHUD.SetStat(StatsSection, "stress", IdleHint);
         }
 
         (Mesh mesh, Material material) FindDonor()
         {
-            // Debug tool, fired on a key press — the object scan is not a hot path.
+            // Debug tool, fired from a console command — the object scan is not a hot path.
             foreach (var prism in FindObjectsByType<Prism>(FindObjectsSortMode.None))
             {
                 if (!prism.isActiveAndEnabled) continue;
@@ -99,6 +108,7 @@ namespace CosmicShore.ECS
 
         void OnDestroy()
         {
+            DiagnosticsHUD.UnregisterCommand(CommandName);
             DiagnosticsHUD.ClearStats(StatsSection);
             if (_instance == this) _instance = null;
         }
