@@ -405,6 +405,15 @@ namespace CosmicShore.Gameplay
         {
             InjectVesselDependencies(newVessel);
             player.ChangeVessel(newVessel);
+
+            // Keep the swapped-in vessel on the player's CHOSEN domain — a vessel swap must never
+            // repaint the hull back to the Jade menu default, or desync the domain-changer toy
+            // (which reads the live Player.Domain). The new vessel paints its domain during
+            // Initialize/SetShipProperties below, reading status.Domain (= Player.Domain), which
+            // falls back to Jade if it lags the authoritative NetDomain. Re-sync the mirror from
+            // NetDomain first so both the host and the client swap paths paint the current colour.
+            if (player is Player netP) netP.SetDomain(netP.NetDomain.Value);
+
             newVessel.Initialize(player);
             ShipHelper.SetShipProperties(themeManagerData, newVessel);
             // Re-stash so a later NetDomain change keeps the SWAPPED vessel in sync.
