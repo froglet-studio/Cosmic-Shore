@@ -216,33 +216,45 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // While set, the companion entity renders this mesh (a cache-shared settled-shield
+        // octahedron) instead of meshFilter.sharedMesh. This keeps SETTLED shielded prisms
+        // on the instanced path — batched with every same-geometry shielded prism — while
+        // the GameObject renderer handles only the brief per-prism morph/shatter animations.
+        Mesh _renderMeshOverride;
+
         void EnsureRenderEntity()
         {
             if (PrismRenderService.IsHandleUsable(in RenderHandle)) return;
-            if (!meshRenderer || !meshFilter) { LogEntityDiag("meshRenderer/meshFilter is null on the Prism GameObject"); return; }
-            if (meshFilter.sharedMesh == null || meshRenderer.sharedMaterial == null)
-            {
-                LogEntityDiag($"sharedMesh={(meshFilter.sharedMesh != null)} sharedMaterial={(meshRenderer.sharedMaterial != null)} at show time");
-                return;
-            }
+            if (!meshRenderer || !meshFilter) return;
+            Mesh renderMesh = _renderMeshOverride != null ? _renderMeshOverride : meshFilter.sharedMesh;
+            if (renderMesh == null || meshRenderer.sharedMaterial == null) return;
             RenderHandle = PrismRenderService.Create(
-                meshFilter.sharedMesh, meshRenderer.sharedMaterial,
+                renderMesh, meshRenderer.sharedMaterial,
                 transform.localToWorldMatrix, gameObject.layer);
-            if (!PrismRenderService.IsHandleUsable(in RenderHandle))
-                LogEntityDiag("PrismRenderService.Create returned invalid (no ECS world / EntitiesGraphicsSystem)");
         }
 
-        // TEMP diagnostic (rate-limited to 12 total): reports why a prism shown with the
-        // instanced path enabled stayed on the legacy MeshRenderer path. Remove once the
-        // FastGrowPrism entity-path gap is resolved. If NO lines appear while the path is ON
-        // yet prisms still render un-instanced, EnsureRenderEntity is never being reached —
-        // the show path bypasses SetRenderVisible/ApplyRenderPath.
-        static int _entityDiagLogs;
-        void LogEntityDiag(string reason)
+        /// <summary>Renders the companion entity with a shared mesh (settled octahedron
+        /// shield) in place of the prism's own mesh. Pair with SetExoticVisualActive(false)
+        /// so the entity path re-engages.</summary>
+        internal void SetRenderMeshOverride(Mesh sharedMesh)
         {
-            if (_entityDiagLogs >= 12) return;
-            _entityDiagLogs++;
-            Debug.LogWarning($"[Prism/ECS-diag {_entityDiagLogs}/12] '{name}' stayed on legacy render path: {reason}");
+            _renderMeshOverride = sharedMesh;
+            if (sharedMesh != null && PrismRenderService.IsHandleUsable(in RenderHandle))
+                PrismRenderService.SetMesh(in RenderHandle, sharedMesh);
+        }
+
+        /// <summary>Returns the companion entity to the prism's own mesh (disengage /
+        /// pool reuse). Safe to call when no override is active.</summary>
+        internal void ClearRenderMeshOverride()
+        {
+            if (_renderMeshOverride == null) return;
+            _renderMeshOverride = null;
+            if (PrismRenderService.IsHandleUsable(in RenderHandle) && meshFilter != null && meshFilter.sharedMesh != null)
+            {
+                PrismRenderService.SetMesh(in RenderHandle, meshFilter.sharedMesh);
+                SyncRenderMaterial();
+                SyncRenderTransform();
+            }
         }
 
         /// <summary>Pushes the live transform to the companion entity. Called on
@@ -319,6 +331,7 @@ namespace CosmicShore.Gameplay
         {
             // [Fix] Always clean up previous state when coming from pool
             ResetState();
+            ClearRenderMeshOverride(); // pooled reuse: the entity must not keep a prior life's shield mesh
 
             PlayerName = playerName;
             blockCollider.enabled = false;
@@ -386,7 +399,11 @@ namespace CosmicShore.Gameplay
             prismProperties.prism = this;
             prismProperties.Trail = Trail;
             prismProperties.TimeCreated = Time.time;
-            gameObject.layer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
+            int defaultLayer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
+            if (defaultLayer >= 0)
+                gameObject.layer = defaultLayer;
+            else
+                Debug.LogWarning($"[Prism] '{name}' has an invalid PrismProperties.DefaultLayerName '{prismProperties.DefaultLayerName}' — keeping layer '{LayerMask.LayerToName(gameObject.layer)}'.", this);
 
             prismProperties.volume = 1f;
         }
@@ -707,7 +724,11 @@ namespace CosmicShore.Gameplay
             prismProperties.TimeCreated = Time.time;
             prismProperties.volume   = Mathf.Max(scaleAnimator ? scaleAnimator.GetCurrentVolume() : 1f, 1f);
 
-            gameObject.layer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
+            int defaultLayer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
+            if (defaultLayer >= 0)
+                gameObject.layer = defaultLayer;
+            else
+                Debug.LogWarning($"[Prism] '{name}' has an invalid PrismProperties.DefaultLayerName '{prismProperties.DefaultLayerName}' — keeping layer '{LayerMask.LayerToName(gameObject.layer)}'.", this);
             _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
                 OwnName = PlayerName,

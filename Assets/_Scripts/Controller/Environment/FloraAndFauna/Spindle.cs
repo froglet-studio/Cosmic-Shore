@@ -89,7 +89,10 @@ namespace CosmicShore.Gameplay
         {
             if (baseMat == null) return null;
 
-            if (!PhaseVariants.TryGetValue(baseMat, out var variants))
+            // variants[0] == null catches destroyed (fake-null) materials: with Enter Play
+            // Mode Options' domain reload disabled, the static dictionary survives play-mode
+            // exit while its runtime-created materials are destroyed — rebuild in that case.
+            if (!PhaseVariants.TryGetValue(baseMat, out var variants) || variants[0] == null)
             {
                 variants = new Material[PhaseVariantCount];
                 for (int i = 0; i < PhaseVariantCount; i++)

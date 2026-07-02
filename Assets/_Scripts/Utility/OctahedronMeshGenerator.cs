@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace CosmicShore.Utility
@@ -43,6 +44,39 @@ namespace CosmicShore.Utility
         {
             var mesh = new Mesh { name = "Octahedron_Shield" };
             PopulateMesh(mesh, halfExtents, shieldScale);
+            return mesh;
+        }
+
+        // Settled-shield meshes shared across prisms, keyed by quantized geometry.
+        // Half-extents come from the authored LOCAL BoxCollider size (growth animates
+        // transform.localScale, not the collider), so every prism of a prefab type
+        // resolves to ONE mesh — settled shielded prisms then share a MeshCollider
+        // cook AND batch on the instanced render path, instead of each owning a
+        // unique octahedron (the per-prism meshes behind the "different meshes with
+        // GPU instancing" draw-call storm). Entries are Unity-null-checked on fetch
+        // so a stale cache (play-mode exit with domain reload disabled destroys
+        // runtime meshes) rebuilds instead of returning destroyed meshes.
+        static readonly Dictionary<(long x, long y, long z, long s), Mesh> s_sharedShieldMeshes = new();
+
+        /// <summary>
+        /// A cache-shared full-size shield octahedron for the given geometry.
+        /// Callers must NOT destroy the returned mesh — the cache owns it for the
+        /// session.
+        /// </summary>
+        public static Mesh GetSharedShieldMesh(Vector3 halfExtents, float shieldScale = CIRCUMSCRIBING_SCALE)
+        {
+            // Quantize to 1/1024 units — far below visible precision; collapses float noise.
+            var key = ((long)Mathf.Round(halfExtents.x * 1024f),
+                       (long)Mathf.Round(halfExtents.y * 1024f),
+                       (long)Mathf.Round(halfExtents.z * 1024f),
+                       (long)Mathf.Round(shieldScale * 1024f));
+
+            if (!s_sharedShieldMeshes.TryGetValue(key, out var mesh) || mesh == null)
+            {
+                mesh = Generate(halfExtents, shieldScale);
+                mesh.name = $"Octahedron_Shield_Shared_{key.x}x{key.y}x{key.z}";
+                s_sharedShieldMeshes[key] = mesh;
+            }
             return mesh;
         }
 

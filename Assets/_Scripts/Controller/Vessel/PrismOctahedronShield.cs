@@ -130,8 +130,12 @@ namespace CosmicShore.Gameplay
             if (_meshRenderer != null)
                 _originalMaterials = _meshRenderer.sharedMaterials;
 
-            // Build the octahedron mesh once from the cached half-extents.
-            _octahedronMesh = OctahedronMeshGenerator.Generate(_halfExtents, shieldScale);
+            // Settled octahedron comes from the shared cache: half-extents are the authored
+            // LOCAL collider size, so every same-prefab shield resolves to ONE mesh — the
+            // convex MeshCollider cooks once, and settled shields batch on the instanced
+            // render path instead of each owning a unique octahedron. Cache-owned: never
+            // destroy it here.
+            _octahedronMesh = OctahedronMeshGenerator.GetSharedShieldMesh(_halfExtents, shieldScale);
             _morphMesh = new Mesh { name = "Octahedron_Shield_Morph" };
             _morphMesh.MarkDynamic();
 
@@ -155,13 +159,17 @@ namespace CosmicShore.Gameplay
                 if (_octahedronMesh != null)
                     ApplyUnshieldedPose();
                 StopShatter();
-                if (_prism != null) _prism.SetExoticVisualActive(false);
+                if (_prism != null)
+                {
+                    _prism.ClearRenderMeshOverride();
+                    _prism.SetExoticVisualActive(false);
+                }
             }
         }
 
         private void OnDestroy()
         {
-            if (_octahedronMesh != null) Destroy(_octahedronMesh);
+            // _octahedronMesh is cache-shared (other shields reference it) — not destroyed here.
             if (_morphMesh != null)      Destroy(_morphMesh);
             if (_shatterMesh != null)    Destroy(_shatterMesh);
             if (_shatterChild != null)   Destroy(_shatterChild);
@@ -266,9 +274,14 @@ namespace CosmicShore.Gameplay
             // Immediately restore box mesh + colliders so gameplay is unaffected.
             ApplyUnshieldedPose();
 
-            // Box mesh is back — return rendering to the instanced path. The
-            // shatter overlay plays on its own child renderer, independent of this.
-            if (_prism != null) _prism.SetExoticVisualActive(false);
+            // Box mesh is back — return the entity to the prism mesh and rendering to the
+            // instanced path. The shatter overlay plays on its own child renderer,
+            // independent of this.
+            if (_prism != null)
+            {
+                _prism.ClearRenderMeshOverride();
+                _prism.SetExoticVisualActive(false);
+            }
 
             if (instant || shatterDuration <= 0f)
             {
@@ -398,6 +411,16 @@ namespace CosmicShore.Gameplay
                 rb.mass = _shieldMass;
 
             ApplyMaterialOverride(shielded: true);
+
+            // The settled octahedron is SHARED geometry — hand rendering back to the
+            // companion entity so every same-size shielded prism batches into one draw.
+            // Only the engage morph (above) and the shatter overlay are per-prism-unique
+            // and need the GameObject renderer. No-op on the legacy path.
+            if (_prism != null)
+            {
+                _prism.SetRenderMeshOverride(_octahedronMesh);
+                _prism.SetExoticVisualActive(false);
+            }
         }
 
         private void ApplyUnshieldedPose()

@@ -351,6 +351,24 @@ namespace CosmicShore.ECS
             }
         }
 
+        /// <summary>
+        /// Swaps the entity's mesh (settled octahedron shield ↔ prism box) and refreshes
+        /// RenderBounds. The mesh registers once and is shared across entities, so
+        /// same-geometry shielded prisms keep batching.
+        /// </summary>
+        public static void SetMesh(in PrismRenderHandle handle, Mesh mesh)
+        {
+            if (mesh == null || !IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            var mmi = em.GetComponentData<MaterialMeshInfo>(handle.Entity);
+            mmi.MeshID = GetMeshID(mesh);
+            em.SetComponentData(handle.Entity, mmi);
+            em.SetComponentData(handle.Entity, new RenderBounds
+            {
+                Value = new AABB { Center = mesh.bounds.center, Extents = mesh.bounds.extents }
+            });
+        }
+
         /// <summary>Per-frame animated colors from MaterialStateManager's Burst job output.</summary>
         public static void SetColors(in PrismRenderHandle handle, in float4 bright, in float4 dark, in float3 spread)
         {
