@@ -106,7 +106,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Avatars")]
         [SerializeField] SO_ProfileIconList profileIconList;
-        // PORT Deviation (restore when SO_AIProfileList ports): [SerializeField] SO_AIProfileList aiProfileList;
+        [SerializeField] SO_AIProfileList aiProfileList;
 
         bool IsHost => NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
 
@@ -435,10 +435,9 @@ namespace CosmicShore.Gameplay
 
         Sprite ResolveAvatar(TournamentPlayerSnapshot s)
         {
-            // PORT Deviation (restore when SO_AIProfileList ports): the AI avatar branch —
-            // if (s.IsAI && aiProfileList != null && aiProfileList.aiProfiles != null)
-            //     foreach (var p in aiProfileList.aiProfiles)
-            //         if (p.Name == s.Name) return p.AvatarSprite;
+            if (s.IsAI && aiProfileList != null && aiProfileList.aiProfiles != null)
+                foreach (var p in aiProfileList.aiProfiles)
+                    if (p.Name == s.Name) return p.AvatarSprite;
 
             if (profileIconList != null && profileIconList.profileIcons != null)
             {
