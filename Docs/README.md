@@ -48,6 +48,15 @@ Docs/
 │   └── ARCHITECTURE.md          load model, controller brain, standings,
 │                                end-game flow, data + file index
 │
+├── VesselSystem/                ← the Vessel fundamental (player/AI ships)
+│   ├── ARCHITECTURE.md          anatomy (VesselController/VesselStatus split),
+│   │                            lifecycle, movement/input, resources/elementals,
+│   │                            trail+skimmer, networking, HUD, camera,
+│   │                            telemetry, data model, discrepancy register
+│   ├── VESSEL_CLASSES.md        per-class reference for all 11 vessel classes
+│   └── ACTIONS.md               ability system: pipeline, SO+executor
+│                                inventory, resource slots, legacy system
+│
 ├── ShuffleSystem/               ← "Shuffle" = display name of Tournament mode
 │   └── ARCHITECTURE.md          pointer to TournamentSystem + a deferred list of
 │                                planned Shuffle behavior deltas (NOT a separate mode)
@@ -82,6 +91,9 @@ session-scoped findings that benefit from a timeline view.
 | Understand the scoring system (HUD + end-game) | `ScoringSystem/ARCHITECTURE.md` |
 | See scoring-system cleanup work / open issues | `ScoringSystem/REFACTOR.md` + `ScoringSystem/BUGS.md` |
 | Understand the tournament meta-mode (chains the 3 domain games) | `TournamentSystem/ARCHITECTURE.md` |
+| Understand the vessel system (ships: lifecycle, movement, abilities) | `VesselSystem/ARCHITECTURE.md` |
+| Look up one vessel class (mechanics, HUD, bindings) | `VesselSystem/VESSEL_CLASSES.md` |
+| Find or add a vessel ability | `VesselSystem/ACTIONS.md` |
 | Find "Shuffle" (it's Tournament's card display name) | `ShuffleSystem/ARCHITECTURE.md` → `TournamentSystem/ARCHITECTURE.md` |
 | Understand the threading rules | `THREADING.md` |
 | Find a scene | `SCENES.md` |

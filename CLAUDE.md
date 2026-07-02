@@ -189,7 +189,7 @@ Assets/
 │   ├── Integrations/          # PlayFab SDK integration
 │   └── SSUScripts/            # Specialized subsystem scripts
 ├── _SO_Assets/                # ScriptableObject asset instances (48+ subdirectories)
-├── _Prefabs/                  # CORE, Cameras, Characters, Environment, Pools, Projectile, Spaceships, Trails, UI Elements
+├── _Prefabs/                  # CORE, Cameras, Characters, Environment, Pools, Projectile, Spacevessels, Trails, UI Elements
 ├── _Scenes/                   # Game scenes organized by type
 ├── _Graphics/, _Models/, _Audio/, _Animations/
 ├── FTUE/                      # First-Time User Experience / Tutorial system
@@ -311,6 +311,7 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `ScoringSystem/` | `Docs/` | Scoring system (in-game score HUD + final scoreboard): `ARCHITECTURE.md` (shared data layer, event dispatch, per-mode override table, target = one unified networked scoring path), `REFACTOR.md` (sequenced backlog + ground rules: SOAP/observer/SOLID/DRY/KISS, retire `IsMultiplayerMode`), `BUGS.md`, `TESTS.md`. |
 | `TournamentSystem/` | `Docs/` | Tournament mode (`GameModes.Tournament = 36`): `ARCHITECTURE.md` — session-level meta chaining the three domain minigames (HexRace → Joust → Crystal Capture) via sequential `Single` loads; network-free standings folded from the synced `GameDataSO.Results` by the persistent `TournamentController`; host-only Continue→hub→Summary end-game flow (summary-vs-hub keyed off the authoritative `IsShuffleComplete`, race-to-6); `TournamentDataSO` data + file index. |
 | `ToySystem/` | `Docs/` | Freestyle **Toy** system (the new `Toy` fundamental): `ARCHITECTURE.md` — world-space interactive stations the local vessel flies into (no score, no end condition), placed near the Cell membrane in Menu_Main. Three toys via a shared `SwapToySetCoordinator<T>` "flip-set" (each toy is the option it switches you to; the used one flips to your previous option): Vessel Changer (mini ship models via `VesselModelBuilder`, reuses `RequestSwap` + restores freestyle control), Domain Changer (two toys tinted the domains you're not, `RequestSetDomain_ServerRpc`), and the "fly by numbers" Painting toy (`PaintingToy` + self-contained `MenuShapePainter`). `ToyboxSO` registry + deferred unlock-state hook; `ToyboxController` self-wires (Resources/default fallback); `Tools > Cosmic Shore > Setup Freestyle Toybox` authors assets + wires the scene. `BACKLOG.md` tracks per-toy follow-up (own branches) + known limitations. |
+| `VesselSystem/` | `Docs/` | The **Vessel** fundamental (player/AI ships): `ARCHITECTURE.md` — vessel anatomy (`VesselController` NetworkBehaviour + `VesselStatus` MonoBehaviour state-hub split, `IVessel`/`IVesselStatus`), lifecycle (spawn paths, canonical `Initialize` order, swap/`ChangePlayer`), movement & input (strategy → `IInputStatus` → transformer family), action dispatch, resources & elementals, trail production + skimmer, networking (netvars, destroyWithScene matrix, domain/theme replication), HUD reparenting, camera binding, animation/audio (FMOD)/FX, telemetry→cloud stats, data model (SO_Vessel, selection channels, loadout, unlock), and a verified discrepancy/tech-debt register. `VESSEL_CLASSES.md` — per-class reference for all 11 classes (status, signature mechanics, input bindings, HUD, telemetry, AI). `ACTIONS.md` — ability system: pipeline, complete SO + executor inventory, resource-slot conventions, legacy `ShipAction` inventory. |
 | `ShuffleSystem/` | `Docs/` | **"Maelstrom" is the player-facing display name of Tournament mode** (the docs folder keeps the legacy "Shuffle" name) — the `ArcadeGameTournament.asset` card carries `DisplayName = "Maelstrom"`. It is **not** a separate mode: code/data/enum stay **Tournament** (`GameModes.Tournament = 36`); the scene file was renamed to `Maelstrom.unity` in the v2 rework. `ARCHITECTURE.md` is a **pointer** to `TournamentSystem/ARCHITECTURE.md`; the former Shuffle-specific behavior deltas (randomized lineup, per-domain `{2,1,0}` scoring + crystal-wallet credit, race-to-6) are now **shipped**. |
 | `CameraMigrationReview.md` | `Docs/` | Camera system migration tracking |
 | `BOOTSTRAP_AUDIT.md` | `_Scripts/System/Bootstrap/` | Bootstrap scene audit, execution order, DI registration |
@@ -762,7 +763,7 @@ Scene loading for multiplayer is handled by `SceneLoader` (`_Scripts/System/Scen
 
 **MPPM / connected-client guard**: `LaunchGame`, `ReturnToMainMenu`, and `HandleActiveSessionEnd` all check `if (nm.IsListening && !nm.IsServer) return` after visual setup (fade-to-black, state transition, `OnClientReady` subscription) but before `LoadSceneAsync()`. In Multiplayer Play Mode, SOAP events on the shared `GameDataSO` fire on every virtual player, so without this guard a client's `SceneLoader` would call `SceneManager.LoadScene()` locally and race the server's Netcode scene load — destroying AI NetworkObjects before they replicate. The guard lets connected clients keep the smooth visual transitions while deferring the actual scene load to the server's Netcode scene management.
 
-`VesselStatus` extends `NetworkBehaviour`. Multiplayer game modes can also run solo with AI opponents via the AI Profile system.
+On the vessel, the NetworkBehaviour is `VesselController` (owner-write `n_Speed`/`n_Course`/`n_BlockRotation` NetworkVariables); `VesselStatus` is a plain MonoBehaviour state bag on the same GameObject (see `Docs/VesselSystem/ARCHITECTURE.md`). Multiplayer game modes can also run solo with AI opponents via the AI Profile system.
 
 #### Player Spawning Architecture
 
@@ -1777,7 +1778,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 
 | System | Key Classes | Location |
 |---|---|---|
-| Vessel core | `VesselStatus` (extends `NetworkBehaviour`), `VesselTransformer`, `VesselController`, `VesselPrismController` | `_Scripts/Controller/Vessel/` |
+| Vessel core | `VesselController` (NetworkBehaviour, `IVessel`), `VesselStatus` (MonoBehaviour state hub, `IVesselStatus`), `VesselTransformer`, `VesselPrismController` — full reference: `Docs/VesselSystem/` | `_Scripts/Controller/Vessel/` |
 | Vessel actions | `VesselActionSO` (base config), `VesselActionExecutorBase`, `ActionExecutorRegistry` + 40+ action SOs | `_Scripts/Controller/Vessel/R_VesselActions/`, `VesselActions/` |
 | Prism lifecycle | `Prism`, `PrismFactory`, `Trail`, `TrailFollower` | `_Scripts/Controller/Vessel/`, `_Scripts/Controller/Prisms/` |
 | Prism performance | `PrismScaleManager`, `MaterialStateManager`, `AdaptiveAnimationManager`, `PrismStateManager`, `PrismTimerManager`, `BlockDensityGrid` | `_Scripts/Controller/Managers/` |
