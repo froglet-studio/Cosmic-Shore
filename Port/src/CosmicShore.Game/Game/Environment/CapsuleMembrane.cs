@@ -18,12 +18,6 @@ namespace CosmicShore.Game
     ///
     /// Setup: Attach to a GameObject, assign any material (SpindleMaterial works directly),
     /// then click "Bake Animation Preset" on the inspector.
-    ///
-    /// PORT NOTE: the simulation-facing surface (Radius — the Cell.MembraneRadius read —
-    /// plus the icosphere layout, placement noise, and the offline bake math) is live and
-    /// verbatim. The instanced-draw internals (Mesh/MeshFilter, Matrix4x4 TRS arrays,
-    /// RenderParams, Graphics.RenderMeshInstanced, Gizmos) are deviation-marked until the
-    /// engine mesh arc lands — headless, the membrane is a boundary, not pixels.
     /// </summary>
     public class CapsuleMembrane : MonoBehaviour
     {
@@ -38,8 +32,8 @@ namespace CosmicShore.Game
         public float Radius => radius;
 
         [Header("Capsule Shape")]
-        // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land): [Tooltip("Mesh to instance. Leave null to use Unity's built-in capsule.")]
-        // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land): [SerializeField] Mesh capsuleMesh;
+        [Tooltip("Mesh to instance. Leave null to use Unity's built-in capsule.")]
+        [SerializeField] Mesh capsuleMesh;
 
         [Tooltip("Scale of each capsule in local space (X=width, Y=height/length, Z=depth).")]
         [SerializeField] Vector3 capsuleScale = new(12f, 30f, 12f);
@@ -85,9 +79,9 @@ namespace CosmicShore.Game
         [Range(1, 30)]
         [SerializeField] int bakeFps = 5;
 
-        // PORT Deviation (mesh arc, restore when engine Mesh/Matrix4x4/RenderParams land): Matrix4x4[] matrices;
-        // PORT Deviation (mesh arc, restore when engine Mesh/Matrix4x4/RenderParams land): RenderParams renderParams;
-        // PORT Deviation (mesh arc, restore when engine Mesh/Matrix4x4/RenderParams land): Mesh meshToRender;
+        Matrix4x4[] matrices;
+        RenderParams renderParams;
+        Mesh meshToRender;
         bool playbackMode;
 
         // ---- Playback state (valid when playbackMode is true) ----
@@ -124,7 +118,7 @@ namespace CosmicShore.Game
 
         void Awake()
         {
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land): meshToRender = capsuleMesh != null ? capsuleMesh : GetBuiltinCapsuleMesh();
+            meshToRender = capsuleMesh != null ? capsuleMesh : GetBuiltinCapsuleMesh();
 
             playbackMode = animationPreset != null
                            && animationPreset.IsValid
@@ -137,7 +131,7 @@ namespace CosmicShore.Game
                 presetCount = animationPreset.CapsuleCount;
                 presetFrameCount = animationPreset.FrameCount;
                 presetLoopDuration = animationPreset.LoopDuration;
-                // PORT Deviation (mesh arc, restore when engine Mesh/Matrix4x4/RenderParams land): matrices = new Matrix4x4[presetCount];
+                matrices = new Matrix4x4[presetCount];
             }
             else
             {
@@ -149,94 +143,90 @@ namespace CosmicShore.Game
                     this);
 
                 BuildBaseData();
-                // PORT Deviation (mesh arc, restore when engine Mesh/Matrix4x4/RenderParams land): matrices = new Matrix4x4[baseDirections.Length];
+                matrices = new Matrix4x4[baseDirections.Length];
             }
 
-            // PORT Deviation (mesh arc, restore when engine Mesh/Matrix4x4/RenderParams land): renderParams = new RenderParams(membraneMaterial)
-            // PORT Deviation (mesh arc, restore when engine Mesh/Matrix4x4/RenderParams land): {
-            // PORT Deviation (mesh arc, restore when engine Mesh/Matrix4x4/RenderParams land):     worldBounds = new Bounds(transform.position, Vector3.one * (radius * 2.5f)),
-            // PORT Deviation (mesh arc, restore when engine Mesh/Matrix4x4/RenderParams land):     shadowCastingMode = ShadowCastingMode.Off,
-            // PORT Deviation (mesh arc, restore when engine Mesh/Matrix4x4/RenderParams land):     receiveShadows = false,
-            // PORT Deviation (mesh arc, restore when engine Mesh/Matrix4x4/RenderParams land):     renderingLayerMask = renderingLayerMask,
-            // PORT Deviation (mesh arc, restore when engine Mesh/Matrix4x4/RenderParams land): };
+            renderParams = new RenderParams(membraneMaterial)
+            {
+                worldBounds = new Bounds(transform.position, Vector3.one * (radius * 2.5f)),
+                shadowCastingMode = ShadowCastingMode.Off,
+                receiveShadows = false,
+                renderingLayerMask = renderingLayerMask,
+            };
 
-            // PORT Deviation (mesh arc, restore when engine Mesh/Matrix4x4/RenderParams land): UpdateMatrices();
+            UpdateMatrices();
         }
 
-        // PORT Deviation (mesh arc, restore when engine Mesh/Matrix4x4/RenderParams land): the
-        // whole per-frame instanced-draw path below is carried as commented source. Headless,
-        // the membrane's simulation surface (Radius + layout + bake math) needs no per-frame work.
-        //
-        // void Update()
-        // {
-        //     if (meshToRender == null || membraneMaterial == null) return;
-        //
-        //     UpdateMatrices();
-        //     renderParams.worldBounds = new Bounds(transform.position, Vector3.one * (radius * 2.5f));
-        //     Graphics.RenderMeshInstanced(renderParams, meshToRender, 0, matrices);
-        // }
-        //
-        // void UpdateMatrices()
-        // {
-        //     if (playbackMode) UpdateMatricesFromPreset();
-        //     else UpdateMatricesRuntime();
-        // }
-        //
-        // /// <summary>
-        // /// Cheap path: interpolate the two nearest baked keyframes and build the
-        // /// per-capsule transform matrices. No Perlin noise, no quaternion construction.
-        // /// </summary>
-        // void UpdateMatricesFromPreset()
-        // {
-        //     int count = presetCount;
-        //     int frames = presetFrameCount;
-        //     float dur = presetLoopDuration;
-        //
-        //     float fpos = dur > 0f ? Mathf.Repeat(Time.time, dur) / dur * frames : 0f;
-        //     int f0 = (int)fpos;
-        //     if (f0 >= frames) f0 = 0;
-        //     int f1 = f0 + 1;
-        //     if (f1 >= frames) f1 = 0;
-        //     float blend = fpos - Mathf.Floor(fpos);
-        //
-        //     Vector3 center = transform.position;
-        //     int baseA = f0 * count;
-        //     int baseB = f1 * count;
-        //
-        //     for (int i = 0; i < count; i++)
-        //     {
-        //         Quaternion rot = Quaternion.Lerp(presetRotations[baseA + i], presetRotations[baseB + i], blend);
-        //         matrices[i] = Matrix4x4.TRS(center + presetOffsets[i], rot, capsuleScale);
-        //     }
-        // }
-        //
-        // /// <summary>
-        // /// Fallback path: the original per-frame Perlin/quaternion/matrix computation,
-        // /// with the dead radial-noise samples and per-frame constant work removed.
-        // /// Only used when no valid baked preset is assigned.
-        // /// </summary>
-        // void UpdateMatricesRuntime()
-        // {
-        //     Vector3 center = transform.position;
-        //     float time = Time.time * pulseSpeed;
-        //     int count = baseDirections.Length;
-        //
-        //     for (int i = 0; i < count; i++)
-        //     {
-        //         Vector3 nc = noiseCoords[i];
-        //         // Sample Perlin noise at the capsule's sphere-surface coordinate + animated
-        //         // time offset. Three samples give a pseudo-3D euler wobble per capsule.
-        //         Vector3 noiseVec = new(
-        //             Mathf.PerlinNoise(nc.y + time * 0.3f, nc.z + time * 0.5f) * 2f - 1f,
-        //             Mathf.PerlinNoise(nc.z + time * 0.8f, nc.x + time * 0.2f) * 2f - 1f,
-        //             Mathf.PerlinNoise(nc.x + time * 0.6f, nc.y + time * 0.4f) * 2f - 1f);
-        //
-        //         Quaternion eulerNoise = Quaternion.Euler(noiseAmplitude * noiseVec);
-        //         Quaternion rot = Quaternion.LookRotation(
-        //             eulerNoise * baseDirections[i], eulerNoise * perpendiculars[i]);
-        //         matrices[i] = Matrix4x4.TRS(center + baseOffsets[i], rot, capsuleScale);
-        //     }
-        // }
+        void Update()
+        {
+            if (meshToRender == null || membraneMaterial == null) return;
+
+            UpdateMatrices();
+            renderParams.worldBounds = new Bounds(transform.position, Vector3.one * (radius * 2.5f));
+            Graphics.RenderMeshInstanced(renderParams, meshToRender, 0, matrices);
+        }
+
+        void UpdateMatrices()
+        {
+            if (playbackMode) UpdateMatricesFromPreset();
+            else UpdateMatricesRuntime();
+        }
+
+        /// <summary>
+        /// Cheap path: interpolate the two nearest baked keyframes and build the
+        /// per-capsule transform matrices. No Perlin noise, no quaternion construction.
+        /// </summary>
+        void UpdateMatricesFromPreset()
+        {
+            int count = presetCount;
+            int frames = presetFrameCount;
+            float dur = presetLoopDuration;
+
+            float fpos = dur > 0f ? Mathf.Repeat(Time.time, dur) / dur * frames : 0f;
+            int f0 = (int)fpos;
+            if (f0 >= frames) f0 = 0;
+            int f1 = f0 + 1;
+            if (f1 >= frames) f1 = 0;
+            float blend = fpos - Mathf.Floor(fpos);
+
+            Vector3 center = transform.position;
+            int baseA = f0 * count;
+            int baseB = f1 * count;
+
+            for (int i = 0; i < count; i++)
+            {
+                Quaternion rot = Quaternion.Lerp(presetRotations[baseA + i], presetRotations[baseB + i], blend);
+                matrices[i] = Matrix4x4.TRS(center + presetOffsets[i], rot, capsuleScale);
+            }
+        }
+
+        /// <summary>
+        /// Fallback path: the original per-frame Perlin/quaternion/matrix computation,
+        /// with the dead radial-noise samples and per-frame constant work removed.
+        /// Only used when no valid baked preset is assigned.
+        /// </summary>
+        void UpdateMatricesRuntime()
+        {
+            Vector3 center = transform.position;
+            float time = Time.time * pulseSpeed;
+            int count = baseDirections.Length;
+
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 nc = noiseCoords[i];
+                // Sample Perlin noise at the capsule's sphere-surface coordinate + animated
+                // time offset. Three samples give a pseudo-3D euler wobble per capsule.
+                Vector3 noiseVec = new(
+                    Mathf.PerlinNoise(nc.y + time * 0.3f, nc.z + time * 0.5f) * 2f - 1f,
+                    Mathf.PerlinNoise(nc.z + time * 0.8f, nc.x + time * 0.2f) * 2f - 1f,
+                    Mathf.PerlinNoise(nc.x + time * 0.6f, nc.y + time * 0.4f) * 2f - 1f);
+
+                Quaternion eulerNoise = Quaternion.Euler(noiseAmplitude * noiseVec);
+                Quaternion rot = Quaternion.LookRotation(
+                    eulerNoise * baseDirections[i], eulerNoise * perpendiculars[i]);
+                matrices[i] = Matrix4x4.TRS(center + baseOffsets[i], rot, capsuleScale);
+            }
+        }
 
         void BuildBaseData()
         {
@@ -327,14 +317,13 @@ namespace CosmicShore.Game
             target.SetBakedData(offsets, rotations, count, frameCount, loopDuration, CurrentSignature);
         }
 
-        // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land):
-        // static Mesh GetBuiltinCapsuleMesh()
-        // {
-        //     var temp = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-        //     var mesh = temp.GetComponent<MeshFilter>().sharedMesh;
-        //     DestroyImmediate(temp);
-        //     return mesh;
-        // }
+        static Mesh GetBuiltinCapsuleMesh()
+        {
+            var temp = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            var mesh = temp.GetComponent<MeshFilter>().sharedMesh;
+            DestroyImmediate(temp);
+            return mesh;
+        }
 
         // ---- Icosphere generation (matches SpawnableSpherene algorithm) ----
 
@@ -413,7 +402,7 @@ namespace CosmicShore.Game
             return index;
         }
 
-        // PORT Deviation (mesh arc, restore when engine Gizmos lands):
+        // PORT Deviation (restore when engine Gizmos lands):
         // void OnDrawGizmosSelected()
         // {
         //     Gizmos.color = Color.cyan;

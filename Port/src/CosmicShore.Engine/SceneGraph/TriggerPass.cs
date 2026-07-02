@@ -272,6 +272,13 @@ namespace CosmicShore.Engine
                         && Mathf.Abs(center.y - boxCenter.y) <= extents.y + ext.y
                         && Mathf.Abs(center.z - boxCenter.z) <= extents.z + ext.z;
                 }
+                case MeshCollider mesh:
+                {
+                    if (!TryMeshBounds(mesh, out var meshCenter, out var ext)) return false;
+                    return Mathf.Abs(center.x - meshCenter.x) <= extents.x + ext.x
+                        && Mathf.Abs(center.y - meshCenter.y) <= extents.y + ext.y
+                        && Mathf.Abs(center.z - meshCenter.z) <= extents.z + ext.z;
+                }
                 default:
                     return false;
             }
@@ -296,12 +303,25 @@ namespace CosmicShore.Engine
                         Mathf.Clamp(center.z, boxCenter.z - ext.z, boxCenter.z + ext.z));
                     return (center - closest).sqrMagnitude <= radius * radius;
                 }
+                case MeshCollider mesh:
+                {
+                    if (!TryMeshBounds(mesh, out var meshCenter, out var ext)) return false;
+                    var closest = new Vector3(
+                        Mathf.Clamp(center.x, meshCenter.x - ext.x, meshCenter.x + ext.x),
+                        Mathf.Clamp(center.y, meshCenter.y - ext.y, meshCenter.y + ext.y),
+                        Mathf.Clamp(center.z, meshCenter.z - ext.z, meshCenter.z + ext.z));
+                    return (center - closest).sqrMagnitude <= radius * radius;
+                }
                 default:
                     return false;
             }
         }
 
         // ── Overlap math ─────────────────────────────────────────────
+        //
+        // MeshColliders participate as their mesh-bounds AABB (see TryMeshBounds) — the
+        // same rotation-ignored world-AABB convention boxes use. Null-mesh colliders
+        // never overlap. Full mesh collision arrives with the physics phase.
 
         static bool Overlaps(Collider a, Collider b) => (a, b) switch
         {
@@ -309,8 +329,71 @@ namespace CosmicShore.Engine
             (SphereCollider s, BoxCollider box) => SphereBox(s, box),
             (BoxCollider box, SphereCollider s) => SphereBox(s, box),
             (BoxCollider ba, BoxCollider bb) => BoxBox(ba, bb),
+            (MeshCollider m, _) => MeshOverlaps(m, b),
+            (_, MeshCollider m) => MeshOverlaps(m, a),
             _ => false,
         };
+
+        /// <summary>MeshCollider (as its mesh-bounds AABB) vs. any other supported shape.</summary>
+        static bool MeshOverlaps(MeshCollider mesh, Collider other)
+        {
+            if (!TryMeshBounds(mesh, out var center, out var extents)) return false;
+            switch (other)
+            {
+                case SphereCollider s:
+                {
+                    Vector3 sphereCenter = s.transform.TransformPoint(s.center);
+                    float radius = WorldRadius(s);
+                    var closest = new Vector3(
+                        Mathf.Clamp(sphereCenter.x, center.x - extents.x, center.x + extents.x),
+                        Mathf.Clamp(sphereCenter.y, center.y - extents.y, center.y + extents.y),
+                        Mathf.Clamp(sphereCenter.z, center.z - extents.z, center.z + extents.z));
+                    return (sphereCenter - closest).sqrMagnitude <= radius * radius;
+                }
+                case BoxCollider box:
+                {
+                    var (boxCenter, ext) = BoxBounds(box);
+                    return AabbAabb(center, extents, boxCenter, ext);
+                }
+                case MeshCollider otherMesh:
+                {
+                    if (!TryMeshBounds(otherMesh, out var otherCenter, out var otherExtents)) return false;
+                    return AabbAabb(center, extents, otherCenter, otherExtents);
+                }
+                default:
+                    return false;
+            }
+        }
+
+        static bool AabbAabb(Vector3 centerA, Vector3 extA, Vector3 centerB, Vector3 extB)
+            => Mathf.Abs(centerA.x - centerB.x) <= extA.x + extB.x
+            && Mathf.Abs(centerA.y - centerB.y) <= extA.y + extB.y
+            && Mathf.Abs(centerA.z - centerB.z) <= extA.z + extB.z;
+
+        /// <summary>
+        /// World AABB of a mesh collider: mesh local-bounds center transformed through the
+        /// hierarchy, extents scaled by |lossyScale|; rotation ignored (phase-2 deviation,
+        /// see class doc). False when no live mesh is assigned.
+        /// </summary>
+        static bool TryMeshBounds(MeshCollider mesh, out Vector3 center, out Vector3 extents)
+        {
+            var shared = mesh.sharedMesh;
+            if (shared is null || shared.IsDestroyed)
+            {
+                center = default;
+                extents = default;
+                return false;
+            }
+
+            Bounds local = shared.bounds;
+            Vector3 s = mesh.transform.lossyScale;
+            center = mesh.transform.TransformPoint(local.center);
+            extents = new Vector3(
+                Mathf.Abs(local.extents.x * s.x),
+                Mathf.Abs(local.extents.y * s.y),
+                Mathf.Abs(local.extents.z * s.z));
+            return true;
+        }
 
         static bool SphereSphere(SphereCollider a, SphereCollider b)
         {

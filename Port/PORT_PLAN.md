@@ -319,7 +319,7 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
 | 14-ext | `PlayerDataService` (C2) stages its UGS CloudSave surface exactly like GameSetting's #14: `UGSDataService` injection, repo read/write, ready-event hooks commented with `PORT Deviation #14 (C2, restore when UGSDataService ports)` markers (7 sites); local default profile, crystal/XP math, reward unlocks, and the OnProfileChanged → GameDataSO sync are live. | Services phase owns the restore. |
 | 16 | `Directory.Build.props` adds CS0169 to NoWarn (alongside CS0649): verbatim Unity-era private fields whose only usages are commented (e.g. `InputController.vessel` until its orientation block revives) or inspector-driven fire it; the Unity compiler tolerated them. | Verbatim fields without warning noise. |
 | 17 | **Controller-chain arc scene deviations** (all marked `PORT Deviation (scene arc, …)` / `(UI shell, …)`): `MultiplayerMiniGameControllerBase` — the `SceneTransitionManager` fade field + its 2 call sites and the `nm.SceneManager.LoadScene` replay reload block are commented (no scene manager yet; everything in-scene — turn/round state machine, replay AI despawns, config sync — verbatim). `CountdownTimer` — the DOTween/Image/Sprite/beep presentation is replaced by a timing-equivalent GameTask beat loop (4 × countdownDuration unscaled → onComplete; `_seq?.Kill()` → CTS cancel parity). `CameraManager` shell grew a no-op `SnapPlayerCameraToTarget()` (Deviation #12 surface). Restore with the scene-management / UI arcs. | Smallest surface for the scene/UI gaps; the round/turn/score flow is verbatim. |
-| 18 | **AstroLeague arc**: engine gains E18 ballistic Rigidbody dynamics (linear/angular velocity + damping + `AddTorque` on a unit inertia tensor, integrated once per fixed step after the FixedUpdate phase; gravity not simulated — the HyperSea has none), data-only `PhysicsMaterial`/`Light`/`BlendMode`/material keywords+renderQueue, `FixedString32Bytes`, `NetworkManager.ConnectedClientsIds`, ISession `Deleted`/`PlayerLeaving` events, `FindAnyObjectByType`. `AstroLeagueBall` deviations (all presentation, marked): icosphere mesh swap (mesh arc), ParticleSystem aura/burst rig + haptics (presentation arc); the engine dispatches no `OnCollisionEnter/Stay`/`OnTriggerStay`, so the hull-collider strike path is carried as commented source and vessel contacts flow through the verbatim `OnTriggerEnter` path (the original's trigger-only-ship route — Serpent/Sparrow). `AstroLeagueArena`'s editor-only `OnDrawGizmos` body commented (no Gizmos). | Physics core verbatim on E18; the solver-dependent + render-side pieces restore with their phases. |
+| 18 | **AstroLeague arc**: engine gains E18 ballistic Rigidbody dynamics (linear/angular velocity + damping + `AddTorque` on a unit inertia tensor, integrated once per fixed step after the FixedUpdate phase; gravity not simulated — the HyperSea has none), data-only `PhysicsMaterial`/`Light`/`BlendMode`/material keywords+renderQueue, `FixedString32Bytes`, `NetworkManager.ConnectedClientsIds`, ISession `Deleted`/`PlayerLeaving` events, `FindAnyObjectByType`. `AstroLeagueBall` deviations (all presentation, marked): ~~icosphere mesh swap (mesh arc)~~ **mesh half CLOSED by the mesh arc** — the faceted-icosphere swap + owned-mesh destroy are live (inert in the CLI harness, whose ball GO carries no MeshFilter — the `meshFilter != null` guard is the original's); still staged: ParticleSystem aura/burst rig + haptics (presentation arc); the engine dispatches no `OnCollisionEnter/Stay`/`OnTriggerStay`, so the hull-collider strike path is carried as commented source and vessel contacts flow through the verbatim `OnTriggerEnter` path (the original's trigger-only-ship route — Serpent/Sparrow). `AstroLeagueArena`'s editor-only `OnDrawGizmos` body commented (no Gizmos). | Physics core verbatim on E18; the solver-dependent + render-side pieces restore with their phases. |
 | 19 | **Tournament (Maelstrom) arc**: engine gains the `CosmicShore.Engine.SceneManagement` surface (`SceneManager.sceneLoaded` + `LoadSceneMode`; loads are announced by harnesses via `NotifySceneLoaded` until real scene management lands — the controller's subscription + `HandleSceneLoaded` are verbatim), Netcode 2.x `[Rpc(SendTo.…)]`/`RpcParams` metadata (local-invoke), and the headless `Engine.UI.Button` shim. `TournamentSceneView` deviations (all presentation, marked): DOTween pulse/typewriter bodies no-op; round/summary card population commented (TournamentRoundCard / TournamentSummaryPlayerCard / TournamentPlayerCard / TournamentDomainScoreView are Image/CanvasGroup/DOTween prefab views — unported, restore with the UI arc); ScrollRect auto-scroll + LayoutRebuilder; SO_AIProfileList avatar branch; `NetworkManager.SpawnManager`/`LocalClient` roster/local-domain fallbacks. CLI `--mode tournament` legs are simulated by the headless `HexRaceRound` regardless of the drawn mode until the Joust / Crystal Capture controllers port (stated in the transcript). | Meta logic (fold, race-to-6, draw, phases) verbatim + tested; render-side pieces restore with their phases. |
 
 ## Iteration log
@@ -811,14 +811,73 @@ Gate BOTH configs when touching logging paths.
 
 Track infrastructure (landed alongside iteration 20): `SegmentSpawner` ported
 (the HexRace deterministic-track spawner — seeded segment placement, prism trails
-per segment, intensity-scaled spacing). One deviation: the diagnostic
+per segment, intensity-scaled spacing). ~~One deviation: the diagnostic
 super-shield block restores when `PrismStellatedOctahedronShield` ports with the
-engine Mesh/MeshFilter arc (468L shield + 270L StellatedOctahedronMeshGenerator —
-flagged as the shield arc). Engine gains the `Transform.Rotate(axis, angle)`
+engine Mesh/MeshFilter arc~~ **CLOSED by the mesh arc (below)** — the super-shield
+diagnostic block is verbatim again. Engine gains the `Transform.Rotate(axis, angle)`
 overload. This unblocked the real `HexRaceController` chain
 (MiniGameControllerBase → Multiplayer → DomainGames → HexRace, 1,112L) — **DONE**,
 see "Controller-chain + AstroLeague arc" above; replacing SkimRaceDirector with the
 real controller in the CLIENT remains a convergence-ladder follow-up.
+
+## Mesh arc (landed after the cell-ecology completion — dedicated agent arc)
+
+The engine carries REAL MESH DATA now; every `PORT Deviation (mesh arc, …)` marker in
+`src/` is restored (grep count: 0 remaining). Engine additions
+(`src/CosmicShore.Engine/`): original-contract **`Mesh`** (Rendering/Mesh.cs —
+vertices/normals/uv/colors buffers with the original copy-on-get semantics,
+triangles ↔ submeshes + `subMeshCount`/`SetTriangles` (auto-grow port convenience,
+documented), settable `bounds` + `RecalculateBounds`, smooth `RecalculateNormals`,
+`Clear`, no-op `MarkDynamic`, `indexFormat` + `Engine.Rendering.IndexFormat`);
+**`MeshFilter`** (`sharedMesh` plain ref; `mesh` instance-on-access — clones the
+shared mesh into a cached "<name> Instance" and repoints sharedMesh, the original
+contract); **`SkinnedMeshRenderer.sharedMesh` + `BakeMesh`** (headless: the bake IS
+the bind pose — deep copy); **`MeshCollider`** (`sharedMesh`/`convex`; the
+TriggerPass overlaps it as its mesh-bounds world AABB — rotation-ignored like the
+phase-2 box convention, null mesh never overlaps; participates in
+OverlapSphere/CheckBox queries too); **`GameObject.CreatePrimitive` fills real
+shared primitive meshes** (PrimitiveMeshes.cs: Cube 24-vert flat, Sphere r=0.5
+icosphere [documented deviation: icosphere not UV-sphere], Capsule r=0.5 h=2,
+Cylinder, Plane 10×10 [single quad, documented], Quad; non-sphere colliders sized
+to mesh bounds); **`Renderer.bounds` refined** — a sibling MeshFilter (or SMR
+sharedMesh) supplies real extents via an 8-corner TRS sweep, unit-cube convention
+kept when meshless; **`Matrix4x4`** (Math/Matrix4x4.cs, in `Engine.Rendering` for
+the same System.Numerics CS0104 reason as PrimitiveType — TRS/MultiplyPoint3x4/
+MultiplyVector/columns/product); **`RenderParams` + `Graphics.RenderMeshInstanced`**
+(data-only SUBMISSION RECORDER, ring-bounded at 16 so per-frame callers never grow
+memory over soaks; thread-safe); **`AnimationCurve`/`Keyframe`** (cubic Hermite,
+clamp outside keys, EaseInOut/Linear/Constant factories); **`[ContextMenu]`**
+(inert marker attribute). Ported verbatim (README substitutions only; the
+qualified-name map gains `UnityEngine.Rendering.X` → `CosmicShore.Engine.Rendering.X`
+for ShadowCastingMode/IndexFormat): `Utility/OctahedronMeshGenerator` +
+`Utility/StellatedOctahedronMeshGenerator` + `Utility/IcosphereMeshGenerator`,
+`Controller/Vessel/PrismOctahedronShield` + `PrismStellatedOctahedronShield` (the
+full engage-bloom / shatter-overlay state machines, Box ↔ convex MeshCollider swap,
+mass = ρ·8abc ↔ ρ·36abc/ρ·108abc — no presentation deviations needed: AnimationCurve
++ Mesh cover everything). **Deviations RESTORED, diff-verified vs Assets**:
+`SegmentSpawner.SuperShieldSpawnedPrisms` (the stellated super-shield diagnostic —
+file now fully verbatim), `VesselModelBuilder` (all 31 markers — the
+MeshFilter/SkinnedMeshRenderer harvest + AddMesh + pose math live; TryBuild returns
+TRUE for mesh rigs, so the vessel-changer toy shows real mini hulls when prefab
+meshes exist), `CapsuleMembrane` (all 19 draw-internal markers — Matrix4x4 TRS
+arrays, RenderParams, per-frame `Graphics.RenderMeshInstanced`, preset/fallback
+matrix paths, `GetBuiltinCapsuleMesh`; sole remaining marker is the
+`OnDrawGizmosSelected` body, re-tagged "(restore when engine Gizmos lands)"),
+`AstroLeagueBall` (icosphere mesh swap + owned-mesh destroy — part of Deviation #18,
+now closed for the mesh half; ParticleSystem/haptics halves still staged). Tests:
+`MeshArcTests.cs` (35 — Mesh buffer/submesh/bounds/normals contracts, MeshFilter
+instancing, BakeMesh, MeshCollider trigger enter/exit + spatial queries + null-mesh
+inertness, CreatePrimitive real+shared meshes, Matrix4x4 TRS vs transform math,
+Graphics recorder ring bound, AnimationCurve smoothstep shape, octahedron/stellation
+vertex+face counts + ContainsPointLocal boundary cases (face/vertex/corner exactly
+on the L1/tetrahedral surfaces) + FaceScale topology stability + shatter normals,
+icosphere subdivision counts, both shields' instant/animated engage + shatter
+overlay + OnDisable snap + IsPointInsideShield, SegmentSpawner super-shield
+integration on a real PrismRig, CapsuleMembrane fallback path submitting 42-instance
+draws of the real capsule primitive) + `ToySystemTests.VesselModelBuilderTests`
+(3 — TryBuild TRUE for MeshFilter rigs with material/shadow flags + normalize-to-
+radius scale, skinned-mesh harvest recentring, meshless rig still falls back false).
+**1302 tests green in BOTH configs (1026 + 276)**; all 5 CLI modes exit 0.
 
 Quest/action systems (landed alongside iteration 19, part 2): `QuestSystem` +
 `UserActionSystem` + `CallToActionSystem` ported verbatim — the full

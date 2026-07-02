@@ -228,11 +228,9 @@ namespace CosmicShore.Gameplay
                     prism.prismProperties.IsShielded = false;
                 prism.DeactivateShields();
 
-                // PORT Deviation (restore when PrismStellatedOctahedronShield ports with the
-                // engine Mesh/MeshFilter arc):
-                // var shield = prism.gameObject.GetComponent<PrismStellatedOctahedronShield>()
-                //              ?? prism.gameObject.AddComponent<PrismStellatedOctahedronShield>();
-                // shield.Engage(instant: superShieldEngageInstant);
+                var shield = prism.gameObject.GetComponent<PrismStellatedOctahedronShield>()
+                             ?? prism.gameObject.AddComponent<PrismStellatedOctahedronShield>();
+                shield.Engage(instant: superShieldEngageInstant);
 
                 // Mark the prism super-shielded AFTER DeactivateShields so the
                 // legacy state machine sees Normal first, then we set the

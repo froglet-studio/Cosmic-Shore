@@ -442,6 +442,23 @@ namespace CosmicShore.Engine
         public float radius = 0.5f;
     }
 
+    /// <summary>
+    /// Mesh-shaped collider (the mesh arc). Original contract: <see cref="sharedMesh"/> is
+    /// the collision mesh, <see cref="convex"/> requests a convex hull (required for
+    /// Rigidbody interaction in the original engine — data-only here).
+    ///
+    /// Overlap semantics headless: the TriggerPass treats a MeshCollider as its mesh's
+    /// LOCAL-BOUNDS AABB (bounds center transformed through the hierarchy, extents scaled
+    /// by |lossyScale|, rotation ignored — the same phase-2 convention box colliders use).
+    /// A null/destroyed mesh never overlaps anything. True per-triangle / convex-hull
+    /// collision arrives with the full physics phase.
+    /// </summary>
+    public class MeshCollider : Collider
+    {
+        public Mesh sharedMesh;
+        public bool convex;
+    }
+
     // E7/E8: Object statics that ported code calls.
     public static class ObjectUtilities
     {

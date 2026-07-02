@@ -1075,3 +1075,83 @@ public class VesselChangerEndToEndTests : IDisposable
         Assert.False(rig.Player.InputStatus.Paused);
     }
 }
+
+// ── VesselModelBuilder (mesh arc restored) ───────────────────────────────────
+//
+// The mesh-harvest path is live: TryBuild reads MeshFilter/SkinnedMeshRenderer mesh
+// data straight off a prefab rig (never instantiating gameplay components), poses each
+// piece relative to the prefab root, and normalizes the result to targetRadius.
+public class VesselModelBuilderTests : IDisposable
+{
+    readonly GameLoop loop = new();
+    public void Dispose() => loop.Dispose();
+
+    static Mesh BoxMesh(Vector3 size, string name = "hull")
+    {
+        var mesh = new Mesh
+        {
+            name = name,
+            vertices = new[] { -size * 0.5f, size * 0.5f },
+        };
+        mesh.RecalculateBounds();
+        return mesh;
+    }
+
+    [Fact]
+    public void TryBuild_ReturnsTrue_ForRigWithMeshFilters()
+    {
+        var prefab = new GameObject("VesselPrefab");
+        var hull = new GameObject("Hull");
+        hull.transform.SetParent(prefab.transform, false);
+        hull.AddComponent<MeshFilter>().sharedMesh = BoxMesh(new Vector3(4f, 1f, 8f));
+        var hullRenderer = hull.AddComponent<MeshRenderer>();
+        hullRenderer.sharedMaterials = new[] { new Material((Shader)null) { name = "HullMat" } };
+
+        Assert.True(VesselModelBuilder.TryBuild(prefab.transform, targetRadius: 5f, out var model));
+        Assert.True(model);
+
+        // One display-only child per harvested mesh, sharing the prefab's mesh + materials.
+        var piece = ToyRig.Children(model.transform).Single();
+        var filter = piece.gameObject.GetComponent<MeshFilter>();
+        Assert.Equal("hull", filter.sharedMesh.name);
+        var renderer = piece.gameObject.GetComponent<MeshRenderer>();
+        Assert.Equal("HullMat", renderer.sharedMaterials.Single().name);
+        Assert.Equal(CosmicShore.Engine.Rendering.ShadowCastingMode.Off, renderer.shadowCastingMode);
+        Assert.False(renderer.receiveShadows);
+
+        // NormalizeToRadius: largest dimension (8) scaled to targetRadius*2 (10).
+        Assert.Equal(10f / 8f, model.transform.localScale.x, 3);
+
+        // Display-only: no gameplay components ever come along.
+        Assert.False(piece.gameObject.GetComponent<Collider>());
+    }
+
+    [Fact]
+    public void TryBuild_HarvestsSkinnedMeshes_InBindPose()
+    {
+        var prefab = new GameObject("SkinnedPrefab");
+        var body = new GameObject("Body");
+        body.transform.SetParent(prefab.transform, false);
+        body.transform.localPosition = new Vector3(0f, 2f, 0f);
+        var smr = body.AddComponent<SkinnedMeshRenderer>();
+        smr.sharedMesh = BoxMesh(Vector3.one * 2f, "skinned");
+        smr.sharedMaterials = new[] { new Material((Shader)null) };
+
+        Assert.True(VesselModelBuilder.TryBuild(prefab.transform, targetRadius: 3f, out var model));
+        var piece = ToyRig.Children(model.transform).Single();
+        Assert.Equal("skinned", piece.gameObject.GetComponent<MeshFilter>().sharedMesh.name);
+
+        // Recentred: the single piece's offset collapses onto the model origin.
+        Assert.Equal(0f, piece.localPosition.magnitude, 3);
+    }
+
+    [Fact]
+    public void TryBuild_ReturnsFalse_ForRigWithoutMeshes()
+    {
+        var prefab = new GameObject("EmptyPrefab");
+        new GameObject("Child").transform.SetParent(prefab.transform, false);
+
+        Assert.False(VesselModelBuilder.TryBuild(prefab.transform, targetRadius: 5f, out var model));
+        Assert.Null(model);
+    }
+}

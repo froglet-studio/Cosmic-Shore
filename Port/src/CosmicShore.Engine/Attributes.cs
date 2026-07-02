@@ -138,4 +138,12 @@ namespace CosmicShore.Engine
     /// <summary>Keeps the annotated member through code stripping (inert marker for now).</summary>
     [AttributeUsage(AttributeTargets.All, Inherited = false)]
     public sealed class PreserveAttribute : Attribute { }
+
+    /// <summary>Surfaces a method in the component's inspector context menu (inert marker; editor tooling reads it later).</summary>
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class ContextMenuAttribute : Attribute
+    {
+        public readonly string menuItem;
+        public ContextMenuAttribute(string itemName) { menuItem = itemName; }
+    }
 }

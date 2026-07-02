@@ -42,19 +42,23 @@ namespace CosmicShore.Engine
 
         /// <summary>
         /// Original-engine contract: a GameObject named after the primitive with a
-        /// renderer and a matching collider. The headless engine carries no mesh data
-        /// (the Mesh/MeshFilter arc), so this adds the MeshRenderer + collider only:
-        /// Sphere gets a radius-0.5 SphereCollider, Cube a unit BoxCollider; the other
-        /// shapes approximate with a unit BoxCollider until real collider shapes land.
+        /// MeshFilter holding the shared built-in primitive mesh (see
+        /// <see cref="PrimitiveMeshes"/> — real mesh data since the mesh arc), a
+        /// MeshRenderer, and a matching collider. Collider shapes: Sphere gets a
+        /// radius-0.5 SphereCollider; every other shape gets a BoxCollider sized to its
+        /// mesh bounds (Cube = unit box, Capsule/Cylinder = (1, 2, 1), Plane/Quad = flat)
+        /// — box approximations until real capsule/mesh primitive colliders land.
         /// </summary>
         public static GameObject CreatePrimitive(Rendering.PrimitiveType type)
         {
             var go = new GameObject(type.ToString());
+            var mesh = PrimitiveMeshes.GetShared(type);
+            go.AddComponent<MeshFilter>().sharedMesh = mesh;
             go.AddComponent<MeshRenderer>();
             if (type == Rendering.PrimitiveType.Sphere)
                 go.AddComponent<SphereCollider>().radius = 0.5f;
             else
-                go.AddComponent<BoxCollider>().size = Vector3.one;
+                go.AddComponent<BoxCollider>().size = mesh.bounds.size;
             return go;
         }
 

@@ -21,19 +21,46 @@ namespace CosmicShore.Engine
         public bool receiveShadows = true;
 
         /// <summary>
-        /// World-space AABB. The headless engine carries no mesh data, so this assumes a
-        /// unit-cube mesh: center at the transform position, size = |lossyScale| — the same
-        /// convention the prism slabs and trigger-pass box bounds use. Renderers with real
-        /// mesh extents refine this in the content phase.
+        /// World-space AABB. With real mesh data available (the mesh arc): a sibling
+        /// <see cref="MeshFilter"/>'s shared mesh — or a <see cref="SkinnedMeshRenderer"/>'s
+        /// own <see cref="SkinnedMeshRenderer.sharedMesh"/> — provides the local bounds,
+        /// transformed through the full TRS into a world AABB (8-corner sweep, so rotation
+        /// is respected). Without a mesh this keeps the pre-mesh-arc unit-cube convention:
+        /// center at the transform position, size = |lossyScale| — the same convention the
+        /// prism slabs and trigger-pass box bounds use.
         /// </summary>
         public Bounds bounds
         {
             get
             {
+                Mesh mesh = this is SkinnedMeshRenderer skinned
+                    ? skinned.sharedMesh
+                    : GetComponent<MeshFilter>()?.sharedMesh;
+                if (mesh)
+                    return TransformedMeshBounds(mesh.bounds, transform);
+
                 Vector3 s = transform.lossyScale;
                 return new Bounds(transform.position,
                     new Vector3(Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z)));
             }
+        }
+
+        /// <summary>Local mesh bounds → world AABB via the 8 transformed corners.</summary>
+        internal static Bounds TransformedMeshBounds(Bounds local, Transform transform)
+        {
+            Vector3 c = local.center, e = local.extents;
+            Vector3 min = default, max = default;
+            for (int i = 0; i < 8; i++)
+            {
+                var corner = transform.TransformPoint(new Vector3(
+                    c.x + ((i & 1) == 0 ? -e.x : e.x),
+                    c.y + ((i & 2) == 0 ? -e.y : e.y),
+                    c.z + ((i & 4) == 0 ? -e.z : e.z)));
+                if (i == 0) { min = corner; max = corner; continue; }
+                min = Vector3.Min(min, corner);
+                max = Vector3.Max(max, corner);
+            }
+            return new Bounds((min + max) * 0.5f, max - min);
         }
 
         Material[] _materials = System.Array.Empty<Material>();
@@ -92,10 +119,25 @@ namespace CosmicShore.Engine
     {
         readonly Dictionary<int, float> _blendShapeWeights = new();
 
+        /// <summary>The skinned mesh in its authored (bind) pose. Data-only — no skinning runs headless.</summary>
+        public Mesh sharedMesh;
+
         public void SetBlendShapeWeight(int index, float value) => _blendShapeWeights[index] = value;
 
         public float GetBlendShapeWeight(int index)
             => _blendShapeWeights.TryGetValue(index, out var w) ? w : 0f;
+
+        /// <summary>
+        /// Original contract: snapshot the current deformed state into <paramref name="mesh"/>.
+        /// Headless, no skinning ever runs, so the snapshot IS the shared mesh — a deep copy
+        /// of <see cref="sharedMesh"/>'s buffers (empty if none assigned).
+        /// </summary>
+        public void BakeMesh(Mesh mesh)
+        {
+            if (mesh is null) return;
+            if (sharedMesh) sharedMesh.CopyTo(mesh);
+            else mesh.Clear();
+        }
     }
 
     /// <summary>

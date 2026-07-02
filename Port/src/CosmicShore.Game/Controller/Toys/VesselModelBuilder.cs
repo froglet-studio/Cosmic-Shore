@@ -22,23 +22,20 @@ namespace CosmicShore.Gameplay
             var root = new GameObject("VesselModel");
             bool any = false;
 
-            // The headless engine carries no mesh data yet (the Mesh/MeshFilter arc), so the
-            // mesh harvest below is deviated — TryBuild reports false and callers fall back to
-            // the procedural sphere body.
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land): foreach (var mf in prefabRoot.GetComponentsInChildren<MeshFilter>(true))
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land): {
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land):     if (!mf || !mf.sharedMesh) continue;
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land):     var mr = mf.GetComponent<MeshRenderer>();
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land):     AddMesh(root.transform, prefabRoot, mf.transform, mf.sharedMesh, mr ? mr.sharedMaterials : null);
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land):     any = true;
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land): }
+            foreach (var mf in prefabRoot.GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (!mf || !mf.sharedMesh) continue;
+                var mr = mf.GetComponent<MeshRenderer>();
+                AddMesh(root.transform, prefabRoot, mf.transform, mf.sharedMesh, mr ? mr.sharedMaterials : null);
+                any = true;
+            }
 
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land): foreach (var smr in prefabRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land): {
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land):     if (!smr || !smr.sharedMesh) continue;
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land):     AddMesh(root.transform, prefabRoot, smr.transform, smr.sharedMesh, smr.sharedMaterials);
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land):     any = true;
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land): }
+            foreach (var smr in prefabRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                if (!smr || !smr.sharedMesh) continue;
+                AddMesh(root.transform, prefabRoot, smr.transform, smr.sharedMesh, smr.sharedMaterials);
+                any = true;
+            }
 
             if (!any)
             {
@@ -51,24 +48,23 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land):
-        // PORT Deviation (mesh arc): static void AddMesh(Transform parent, Transform prefabRoot, Transform src, Mesh mesh, Material[] materials)
-        // PORT Deviation (mesh arc): {
-        // PORT Deviation (mesh arc):     var go = new GameObject(src ? src.name : "Mesh");
-        // PORT Deviation (mesh arc):     go.transform.SetParent(parent, false);
-        // PORT Deviation (mesh arc):
-        // PORT Deviation (mesh arc):     // Place this mesh at the same pose it has relative to the prefab root.
-        // PORT Deviation (mesh arc):     go.transform.localPosition = prefabRoot.InverseTransformPoint(src.position);
-        // PORT Deviation (mesh arc):     go.transform.localRotation = Quaternion.Inverse(prefabRoot.rotation) * src.rotation;
-        // PORT Deviation (mesh arc):     go.transform.localScale = RelativeLossyScale(prefabRoot.lossyScale, src.lossyScale);
-        // PORT Deviation (mesh arc):
-        // PORT Deviation (mesh arc):     var mf = go.AddComponent<MeshFilter>();
-        // PORT Deviation (mesh arc):     mf.sharedMesh = mesh;
-        // PORT Deviation (mesh arc):     var mr = go.AddComponent<MeshRenderer>();
-        // PORT Deviation (mesh arc):     if (materials is { Length: > 0 }) mr.sharedMaterials = materials;
-        // PORT Deviation (mesh arc):     mr.shadowCastingMode = CosmicShore.Engine.Rendering.ShadowCastingMode.Off;
-        // PORT Deviation (mesh arc):     mr.receiveShadows = false;
-        // PORT Deviation (mesh arc): }
+        static void AddMesh(Transform parent, Transform prefabRoot, Transform src, Mesh mesh, Material[] materials)
+        {
+            var go = new GameObject(src ? src.name : "Mesh");
+            go.transform.SetParent(parent, false);
+
+            // Place this mesh at the same pose it has relative to the prefab root.
+            go.transform.localPosition = prefabRoot.InverseTransformPoint(src.position);
+            go.transform.localRotation = Quaternion.Inverse(prefabRoot.rotation) * src.rotation;
+            go.transform.localScale = RelativeLossyScale(prefabRoot.lossyScale, src.lossyScale);
+
+            var mf = go.AddComponent<MeshFilter>();
+            mf.sharedMesh = mesh;
+            var mr = go.AddComponent<MeshRenderer>();
+            if (materials is { Length: > 0 }) mr.sharedMaterials = materials;
+            mr.shadowCastingMode = CosmicShore.Engine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = false;
+        }
 
         static Vector3 RelativeLossyScale(Vector3 rootScale, Vector3 childScale) => new(
             SafeDiv(childScale.x, rootScale.x),

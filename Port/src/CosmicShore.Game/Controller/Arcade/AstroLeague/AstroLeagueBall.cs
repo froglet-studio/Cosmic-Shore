@@ -129,8 +129,8 @@ namespace CosmicShore.Gameplay
         Light ballLight;
         TrailRenderer trail;
         Renderer ballRenderer;
-        // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land): MeshFilter meshFilter;
-        // PORT Deviation (mesh arc): Mesh _ballMesh; // generated icosphere, owned (destroyed in OnDestroy)
+        MeshFilter meshFilter;
+        Mesh _ballMesh; // generated icosphere, owned (destroyed in OnDestroy)
         MaterialPropertyBlock mpb;
         // PORT Deviation (presentation arc, restore when ParticleSystem ports): ParticleSystem auraParticles;
         // PORT Deviation (presentation arc): ParticleSystem impactParticles;
@@ -239,15 +239,14 @@ namespace CosmicShore.Gameplay
             // differently, making the spin readable instead of a uniform glowing ring. Mesh radius
             // matches the SphereCollider, so the visual hull tracks the physics hull at every
             // intensity scale (BallWorldRadius reads lossyScale).
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter + IcosphereMeshGenerator land):
-            // meshFilter = GetComponent<MeshFilter>();
-            // if (meshFilter != null)
-            // {
-            //     int subdiv = settings != null ? settings.ballMeshSubdivisions : IcosphereMeshGenerator.DefaultSubdivisions;
-            //     float meshRadius = sphereCol != null ? sphereCol.radius : 0.5f;
-            //     _ballMesh = IcosphereMeshGenerator.Generate(subdiv, meshRadius, flatShaded: true);
-            //     meshFilter.sharedMesh = _ballMesh;
-            // }
+            meshFilter = GetComponent<MeshFilter>();
+            if (meshFilter != null)
+            {
+                int subdiv = settings != null ? settings.ballMeshSubdivisions : IcosphereMeshGenerator.DefaultSubdivisions;
+                float meshRadius = sphereCol != null ? sphereCol.radius : 0.5f;
+                _ballMesh = IcosphereMeshGenerator.Generate(subdiv, meshRadius, flatShaded: true);
+                meshFilter.sharedMesh = _ballMesh;
+            }
 
             ballRenderer = GetComponent<Renderer>();
             if (ballRenderer != null)
@@ -1077,7 +1076,7 @@ namespace CosmicShore.Gameplay
         public override void OnDestroy()
         {
             base.OnDestroy();
-            // PORT Deviation (mesh arc, restore when engine Mesh/MeshFilter land): if (_ballMesh != null) Destroy(_ballMesh);
+            if (_ballMesh != null) Destroy(_ballMesh);
         }
     }
 }
