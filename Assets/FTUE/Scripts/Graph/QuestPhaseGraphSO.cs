@@ -20,6 +20,9 @@ namespace CosmicShore.Core
         [Tooltip("Display name of the phase (e.g. 'Onboarding & Crystal Capture'). Shown in the editor's phase list.")]
         public string phaseName;
 
+        [Tooltip("When off, the runner skips this phase entirely (test harness).")]
+        public bool phaseEnabled = true;
+
         [Tooltip("Designer notes: what this phase teaches/unlocks, its entry gate, anything a teammate needs to know.")]
         [TextArea(3, 10)] public string designerNotes;
 

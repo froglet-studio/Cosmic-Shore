@@ -18,6 +18,9 @@ namespace CosmicShore.Core
         [Tooltip("Stable id used as the persistence/analytics key. Defaults to the asset name. Never change after shipping.")]
         public string questId;
 
+        [Tooltip("Master switch (test harness). When off, the runner never starts this quest.")]
+        public bool questEnabled = true;
+
         [Tooltip("Designer notes for the whole quest — the progression plan, assumptions, links.")]
         [TextArea(3, 12)] public string designerNotes;
 

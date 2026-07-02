@@ -47,6 +47,9 @@ namespace CosmicShore.Core
         [Tooltip("Human-readable label shown on the node in the graph editor (authoring aid only).")]
         public string displayName;
 
+        [Tooltip("When off, the runner passes straight through this node without executing it (test harness).")]
+        public bool nodeEnabled = true;
+
         [Tooltip("Node position on the editor canvas. Runtime-irrelevant.")]
         [HideInInspector] public Vector2 graphPosition;
 

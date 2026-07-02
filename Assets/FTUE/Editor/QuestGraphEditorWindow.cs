@@ -27,8 +27,7 @@ namespace CosmicShore.Editor
         UnityEditor.Editor _nodeEditor;
 
         readonly List<QuestSO> _quests = new();
-        readonly List<QuestPhaseGraphSO> _graphs = new();
-        readonly HashSet<QuestPhaseGraphSO> _ownedGraphs = new();
+        string _questRename;
 
         // ── Canvas state ───────────────────────────────────────────────
         QuestNodeSO _dragNode;
@@ -210,9 +209,23 @@ namespace CosmicShore.Editor
 
                 var row = GUILayoutUtility.GetRect(1, 22, GUILayout.ExpandWidth(true));
                 if (isSel) EditorGUI.DrawRect(row, QuestGraphStyles.RowSelected);
-                if (GUI.Button(new Rect(row.x + 6, row.y, row.width - 6, row.height), quest.name,
+
+                bool qEnabled = GUI.Toggle(new Rect(row.x + 4, row.y + 3, 16, 16), quest.questEnabled,
+                    new GUIContent(string.Empty, "Enable/disable this quest — the runner never starts a disabled quest."));
+                if (qEnabled != quest.questEnabled)
+                {
+                    Undo.RecordObject(quest, "Toggle Quest Enabled");
+                    quest.questEnabled = qEnabled;
+                    EditorUtility.SetDirty(quest);
+                }
+
+                var prevQuestCol = GUI.color;
+                if (!quest.questEnabled) GUI.color = new Color(1f, 1f, 1f, 0.45f);
+                if (GUI.Button(new Rect(row.x + 24, row.y, row.width - 24, row.height),
+                        quest.questEnabled ? quest.name : $"{quest.name}  (off)",
                         isSel ? QuestGraphStyles.RowLabelSelected : QuestGraphStyles.RowLabel))
                     SelectQuest(quest);
+                GUI.color = prevQuestCol;
 
                 if (!isSel) continue;
 
@@ -224,11 +237,26 @@ namespace CosmicShore.Editor
                     bool phaseSel = phase != null && phase == _graph;
                     if (phaseSel) EditorGUI.DrawRect(prow, QuestGraphStyles.RowSelectedFaint);
 
+                    if (phase != null)
+                    {
+                        bool pEnabled = GUI.Toggle(new Rect(prow.x + 20, prow.y + 2, 16, 16), phase.phaseEnabled,
+                            new GUIContent(string.Empty, "Enable/disable this phase — the runner skips disabled phases."));
+                        if (pEnabled != phase.phaseEnabled)
+                        {
+                            Undo.RecordObject(phase, "Toggle Phase Enabled");
+                            phase.phaseEnabled = pEnabled;
+                            EditorUtility.SetDirty(phase);
+                        }
+                    }
+
                     string label = phase != null ? $"{i} · {phase.PhaseName}" : $"{i} · (missing)";
-                    if (GUI.Button(new Rect(prow.x + 20, prow.y, prow.width - 86, prow.height), label,
+                    var prevPhaseCol = GUI.color;
+                    if (phase != null && !phase.phaseEnabled) GUI.color = new Color(1f, 1f, 1f, 0.45f);
+                    if (GUI.Button(new Rect(prow.x + 38, prow.y, prow.width - 104, prow.height), label,
                             phaseSel ? QuestGraphStyles.RowLabelSelected : QuestGraphStyles.RowLabelSmall)
                         && phase != null)
                         SelectGraph(phase, quest);
+                    GUI.color = prevPhaseCol;
 
                     // Reorder / remove controls
                     var upR = new Rect(prow.xMax - 62, prow.y + 1, 18, 18);
@@ -250,30 +278,12 @@ namespace CosmicShore.Editor
                 GUILayout.Space(4);
             }
 
-            var standalone = _graphs.Where(g => g != null && !_ownedGraphs.Contains(g)).ToList();
-            if (standalone.Count > 0)
-            {
-                GUILayout.Space(8);
-                GUILayout.Label("STANDALONE GRAPHS", QuestGraphStyles.PanelHeader);
-                foreach (var g in standalone)
-                {
-                    var row = GUILayoutUtility.GetRect(1, 20, GUILayout.ExpandWidth(true));
-                    bool isSel = g == _graph;
-                    if (isSel) EditorGUI.DrawRect(row, QuestGraphStyles.RowSelectedFaint);
-                    if (GUI.Button(new Rect(row.x + 6, row.y, row.width - 6, row.height), g.PhaseName,
-                            isSel ? QuestGraphStyles.RowLabelSelected : QuestGraphStyles.RowLabelSmall))
-                        SelectGraph(g, null);
-                }
-            }
-
             EditorGUILayout.EndScrollView();
 
             GUILayout.FlexibleSpace();
             EditorGUILayout.BeginVertical();
             if (GUILayout.Button("+ New Quest"))
                 CreateQuestAsset();
-            if (GUILayout.Button("+ New Phase Graph"))
-                CreateGraphAsset(null);
             GUILayout.Space(6);
             EditorGUILayout.EndVertical();
             GUILayout.EndArea();
@@ -492,7 +502,16 @@ namespace CosmicShore.Editor
             if (isEntry) DrawBorder(r, QuestGraphStyles.EntryBorder, 2f);
             if (_selectedNode == n) DrawBorder(r, QuestGraphStyles.SelectionBorder, 2f);
 
-            GUI.Label(new Rect(r.x + 8, r.y + 3, r.width - 52, HeaderH - 4), card.header, QuestGraphStyles.NodeHeader);
+            bool nEnabled = GUI.Toggle(new Rect(r.x + 6, r.y + 5, 14, 14), n.nodeEnabled,
+                new GUIContent(string.Empty, "Enable/disable this node — the runner passes straight through disabled nodes."));
+            if (nEnabled != n.nodeEnabled)
+            {
+                Undo.RecordObject(n, "Toggle Node Enabled");
+                n.nodeEnabled = nEnabled;
+                EditorUtility.SetDirty(n);
+                MarkValidationDirty();
+            }
+            GUI.Label(new Rect(r.x + 24, r.y + 3, r.width - 68, HeaderH - 4), card.header, QuestGraphStyles.NodeHeader);
             if (isEntry)
                 GUI.Label(new Rect(r.xMax - 66, r.y + 5, 44, 14), "ENTRY", QuestGraphStyles.EntryBadge);
 
@@ -552,6 +571,12 @@ namespace CosmicShore.Editor
                     ShowPortMenu(n, ports[p]);
                     e.Use();
                 }
+            }
+
+            if (!n.nodeEnabled)
+            {
+                EditorGUI.DrawRect(r, new Color(0.05f, 0.05f, 0.07f, 0.45f));
+                GUI.Label(new Rect(r.xMax - 38, r.yMax - 18, 34, 16), "OFF", QuestGraphStyles.EntryBadge);
             }
 
             // Hover tooltip on the header
@@ -703,16 +728,40 @@ namespace CosmicShore.Editor
             {
                 GUILayout.Label($"QUEST — {_quest.name}", QuestGraphStyles.PanelHeader);
                 EditorGUI.BeginChangeCheck();
+                bool questOn = EditorGUILayout.ToggleLeft(
+                    new GUIContent("Quest Enabled (runner)", "Master test-harness switch — the runner never starts a disabled quest."),
+                    _quest.questEnabled);
                 string id = EditorGUILayout.TextField("Quest Id", _quest.questId);
                 string notes = EditorGUILayout.TextArea(_quest.designerNotes ?? string.Empty,
                     QuestGraphStyles.NotesArea, GUILayout.MinHeight(48));
                 if (EditorGUI.EndChangeCheck())
                 {
                     Undo.RecordObject(_quest, "Edit Quest");
+                    _quest.questEnabled = questOn;
                     _quest.questId = id;
                     _quest.designerNotes = notes;
                     EditorUtility.SetDirty(_quest);
                 }
+
+                EditorGUILayout.BeginHorizontal();
+                _questRename = EditorGUILayout.TextField(_questRename ?? _quest.name);
+                if (GUILayout.Button("Rename Asset", GUILayout.Width(94))
+                    && !string.IsNullOrWhiteSpace(_questRename) && _questRename.Trim() != _quest.name)
+                {
+                    AssetDatabase.RenameAsset(AssetDatabase.GetAssetPath(_quest), _questRename.Trim());
+                    AssetDatabase.SaveAssets();
+                    RefreshAssets();
+                    GUIUtility.ExitGUI();
+                }
+                EditorGUILayout.EndHorizontal();
+
+                if (GUILayout.Button(new GUIContent("Reset Local Progress",
+                        "Clears this quest's PlayerPrefs mirror (completion + resume cursor) so it runs again on this machine. Cloud progress resets separately via UGSDataService.")))
+                {
+                    QuestProgressStore.ResetLocal(_quest.QuestId);
+                    Debug.Log($"[Quest] Local progress for '{_quest.QuestId}' cleared.");
+                }
+
                 GUILayout.Space(8);
             }
 
@@ -720,6 +769,9 @@ namespace CosmicShore.Editor
             {
                 GUILayout.Label($"PHASE — {_graph.PhaseName}", QuestGraphStyles.PanelHeader);
                 EditorGUI.BeginChangeCheck();
+                bool phaseOn = EditorGUILayout.ToggleLeft(
+                    new GUIContent("Phase Enabled (runner)", "The runner skips disabled phases."),
+                    _graph.phaseEnabled);
                 string pname = EditorGUILayout.TextField("Phase Name", _graph.phaseName);
                 GUILayout.Label("Designer Notes", EditorStyles.miniLabel);
                 string pnotes = EditorGUILayout.TextArea(_graph.designerNotes ?? string.Empty,
@@ -727,6 +779,7 @@ namespace CosmicShore.Editor
                 if (EditorGUI.EndChangeCheck())
                 {
                     Undo.RecordObject(_graph, "Edit Phase");
+                    _graph.phaseEnabled = phaseOn;
                     _graph.phaseName = pname;
                     _graph.designerNotes = pnotes;
                     EditorUtility.SetDirty(_graph);
@@ -739,6 +792,18 @@ namespace CosmicShore.Editor
                 GUILayout.Label($"NODE — {_selectedNode.NodeTypeLabel}", QuestGraphStyles.PanelHeader);
                 if (!string.IsNullOrEmpty(_selectedNode.TypeTooltip))
                     EditorGUILayout.HelpBox(_selectedNode.TypeTooltip, MessageType.None);
+
+                EditorGUI.BeginChangeCheck();
+                bool nodeOn = EditorGUILayout.ToggleLeft(
+                    new GUIContent("Node Enabled (runner)", "The runner passes straight through disabled nodes."),
+                    _selectedNode.nodeEnabled);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(_selectedNode, "Toggle Node Enabled");
+                    _selectedNode.nodeEnabled = nodeOn;
+                    EditorUtility.SetDirty(_selectedNode);
+                    MarkValidationDirty();
+                }
 
                 EditorGUI.BeginChangeCheck();
                 string dn = EditorGUILayout.TextField("Display Name", _selectedNode.displayName);
@@ -855,6 +920,8 @@ namespace CosmicShore.Editor
 
             if (graph.entryNode == null)
                 sink.Add("Phase has no entry node.");
+            else if (!graph.entryNode.nodeEnabled)
+                sink.Add("Entry node is disabled — the runner will pass straight through it.");
 
             var reachable = new HashSet<QuestNodeSO>();
             if (graph.entryNode != null)
@@ -954,22 +1021,12 @@ namespace CosmicShore.Editor
                 if (q != null) _quests.Add(q);
             }
 
-            _graphs.Clear();
-            foreach (var guid in AssetDatabase.FindAssets("t:QuestPhaseGraphSO"))
-            {
-                var g = AssetDatabase.LoadAssetAtPath<QuestPhaseGraphSO>(AssetDatabase.GUIDToAssetPath(guid));
-                if (g != null) _graphs.Add(g);
-            }
-
-            _ownedGraphs.Clear();
-            foreach (var q in _quests)
-                foreach (var p in q.phases)
-                    if (p != null) _ownedGraphs.Add(p);
         }
 
         void SelectQuest(QuestSO quest)
         {
             _quest = quest;
+            _questRename = quest != null ? quest.name : null;
             if (quest.phases.Count > 0 && quest.phases[0] != null && (_graph == null || !quest.phases.Contains(_graph)))
                 SelectGraph(quest.phases[0], quest);
             MarkValidationDirty();
@@ -1188,6 +1245,13 @@ namespace CosmicShore.Editor
         void ShowNodeMenu(QuestNodeSO node)
         {
             var menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Enabled"), node.nodeEnabled, () =>
+            {
+                Undo.RecordObject(node, "Toggle Node Enabled");
+                node.nodeEnabled = !node.nodeEnabled;
+                EditorUtility.SetDirty(node);
+                MarkValidationDirty();
+            });
             menu.AddItem(new GUIContent("Set As Entry Node"), _graph.entryNode == node, () =>
             {
                 Undo.RecordObject(_graph, "Set Entry Node");

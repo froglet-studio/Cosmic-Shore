@@ -25,7 +25,8 @@ the whole quest.
 ## Authoring
 
 - **`FrogletTools ▸ Quest Graph Editor`** — the visual editor:
-  - **Left:** quests with their ordered phases (add / reorder ▲▼ / remove ✕) + standalone graphs.
+  - **Left:** quests with their ordered phases (add / reorder ▲▼ / remove ✕) and per-quest /
+    per-phase **enable toggles** (test harness).
   - **Canvas:** wheel = cursor-anchored zoom · middle/alt-drag = pan · **F** = frame · Delete = delete node ·
     right-click = add node · drag from an output port to connect — release on empty canvas to
     **spawn-and-connect** a new node.
@@ -76,6 +77,18 @@ P5 Finale:           CTA episodes → closing dialogue → End (quest complete)
 ```
 
 Interactive/editable reference map (browser): the "Main Quest Progression Map" artifact.
+
+## Test harness
+
+- **Quest / Phase / Node enable toggles** — checkboxes in the left panel (quest, phase), on the
+  node card header, in the right-panel inspectors, and in the node context menu. The runner
+  never starts a disabled quest, skips disabled phases, and passes straight through disabled
+  nodes (following their `next` edge) — so you can mute any beat without unwiring it.
+- **Reset Local Progress** (quest inspector) — clears the PlayerPrefs mirror so the quest runs
+  again on this machine (cloud progress resets via `UGSDataService.ResetAllDataAsync`).
+- **Rename Asset** (quest inspector) — renames the QuestSO asset in place.
+- Runner-side: `debugDisable`, `debugForceRun` (ignore completion + saved progress), and
+  `debugPhaseOverride` (run one phase graph without persistence).
 
 ## Runtime
 

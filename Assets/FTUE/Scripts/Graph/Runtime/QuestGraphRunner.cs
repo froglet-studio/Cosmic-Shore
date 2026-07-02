@@ -109,6 +109,12 @@ namespace CosmicShore.Core
                 return;
             }
 
+            if (quest != null && !quest.questEnabled && debugPhaseOverride == null)
+            {
+                Debug.Log($"[Quest] '{QuestId}' is disabled (questEnabled=false) — not running.");
+                return;
+            }
+
             bool hasQuest = quest != null && quest.phases.Count > 0;
             if (!hasQuest && debugPhaseOverride == null)
             {
@@ -173,10 +179,12 @@ namespace CosmicShore.Core
 
         void StartPhase(bool resume)
         {
-            // Skip null phase slots defensively (mis-authored quest).
-            while (_phaseIndex < quest.phases.Count && quest.phases[_phaseIndex] == null)
+            // Skip null or disabled phase slots (test harness / mis-authored quest).
+            while (_phaseIndex < quest.phases.Count
+                   && (quest.phases[_phaseIndex] == null || !quest.phases[_phaseIndex].phaseEnabled))
             {
-                Debug.LogWarning($"[Quest] Phase {_phaseIndex} of '{QuestId}' is null — skipping.");
+                Debug.Log($"[Quest] Phase {_phaseIndex} of '{QuestId}' is " +
+                          $"{(quest.phases[_phaseIndex] == null ? "null" : "disabled")} — skipping.");
                 _phaseIndex++;
             }
 
@@ -212,6 +220,15 @@ namespace CosmicShore.Core
             if (node == null)
             {
                 HandlePhaseComplete();
+                return;
+            }
+
+            if (!node.nodeEnabled)
+            {
+                Debug.Log($"[Quest] Node '{node.displayName}' disabled — passing through.");
+                _current = node;
+                _advanced = false;
+                Advance(node, QuestPorts.Next);
                 return;
             }
 
