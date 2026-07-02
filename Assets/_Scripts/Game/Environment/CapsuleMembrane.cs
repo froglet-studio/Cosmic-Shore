@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Utility;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -157,13 +158,21 @@ namespace CosmicShore.Game
             UpdateMatrices();
         }
 
+        // Split markers: matrix math (CPU, scales with capsule count) vs the instanced
+        // submit (copies the matrix array to the render thread — where a spike means
+        // render-thread sync, not this component's math).
+        static readonly ProfilerMarker s_updateMatrices = new("CapsuleMembrane.UpdateMatrices");
+        static readonly ProfilerMarker s_submit = new("CapsuleMembrane.RenderMeshInstanced");
+
         void Update()
         {
             if (meshToRender == null || membraneMaterial == null) return;
 
-            UpdateMatrices();
+            using (s_updateMatrices.Auto())
+                UpdateMatrices();
             renderParams.worldBounds = new Bounds(transform.position, Vector3.one * (radius * 2.5f));
-            Graphics.RenderMeshInstanced(renderParams, meshToRender, 0, matrices);
+            using (s_submit.Auto())
+                Graphics.RenderMeshInstanced(renderParams, meshToRender, 0, matrices);
         }
 
         void UpdateMatrices()
