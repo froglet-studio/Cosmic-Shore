@@ -14,6 +14,48 @@ namespace CosmicShore.Engine.Networking
     /// <summary>Marks a client-executed RPC. Local-invoke semantics until the transport phase.</summary>
     [AttributeUsage(AttributeTargets.Method)]
     public sealed class ClientRpcAttribute : Attribute { }
+
+    /// <summary>
+    /// Universal-RPC target set (Netcode 2.x `[Rpc(SendTo.…)]` — engine addition for the
+    /// Tournament arc: <c>TournamentLobbyNetwork.SetReadyRpc</c>). Metadata only until the
+    /// transport phase; RPCs local-invoke (Player/RoundStats precedent).
+    /// </summary>
+    public enum SendTo
+    {
+        Everyone = 0,
+        Owner = 1,
+        NotOwner = 2,
+        Server = 3,
+        NotServer = 4,
+        ClientsAndHost = 5,
+        Me = 6,
+        NotMe = 7,
+        SpecifiedInParams = 8,
+        Authority = 9,
+        NotAuthority = 10,
+    }
+
+    /// <summary>Marks a universal RPC (Netcode 2.x). Local-invoke semantics until the transport phase.</summary>
+    [AttributeUsage(AttributeTargets.Method)]
+    public sealed class RpcAttribute : Attribute
+    {
+        public SendTo Target { get; }
+        public bool RequireOwnership;
+        public RpcAttribute(SendTo target) => Target = target;
+    }
+
+    /// <summary>Receive-side metadata for a universal RPC invocation.</summary>
+    public struct RpcReceiveParams
+    {
+        /// <summary>ClientId of the sender. Local-invoke (single-process) semantics: 0 — the host.</summary>
+        public ulong SenderClientId;
+    }
+
+    /// <summary>Optional last parameter of a universal RPC (original contract: `RpcParams rpcParams = default`).</summary>
+    public struct RpcParams
+    {
+        public RpcReceiveParams Receive;
+    }
 }
 
 namespace CosmicShore.Engine

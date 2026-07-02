@@ -320,6 +320,7 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
 | 16 | `Directory.Build.props` adds CS0169 to NoWarn (alongside CS0649): verbatim Unity-era private fields whose only usages are commented (e.g. `InputController.vessel` until its orientation block revives) or inspector-driven fire it; the Unity compiler tolerated them. | Verbatim fields without warning noise. |
 | 17 | **Controller-chain arc scene deviations** (all marked `PORT Deviation (scene arc, …)` / `(UI shell, …)`): `MultiplayerMiniGameControllerBase` — the `SceneTransitionManager` fade field + its 2 call sites and the `nm.SceneManager.LoadScene` replay reload block are commented (no scene manager yet; everything in-scene — turn/round state machine, replay AI despawns, config sync — verbatim). `CountdownTimer` — the DOTween/Image/Sprite/beep presentation is replaced by a timing-equivalent GameTask beat loop (4 × countdownDuration unscaled → onComplete; `_seq?.Kill()` → CTS cancel parity). `CameraManager` shell grew a no-op `SnapPlayerCameraToTarget()` (Deviation #12 surface). Restore with the scene-management / UI arcs. | Smallest surface for the scene/UI gaps; the round/turn/score flow is verbatim. |
 | 18 | **AstroLeague arc**: engine gains E18 ballistic Rigidbody dynamics (linear/angular velocity + damping + `AddTorque` on a unit inertia tensor, integrated once per fixed step after the FixedUpdate phase; gravity not simulated — the HyperSea has none), data-only `PhysicsMaterial`/`Light`/`BlendMode`/material keywords+renderQueue, `FixedString32Bytes`, `NetworkManager.ConnectedClientsIds`, ISession `Deleted`/`PlayerLeaving` events, `FindAnyObjectByType`. `AstroLeagueBall` deviations (all presentation, marked): icosphere mesh swap (mesh arc), ParticleSystem aura/burst rig + haptics (presentation arc); the engine dispatches no `OnCollisionEnter/Stay`/`OnTriggerStay`, so the hull-collider strike path is carried as commented source and vessel contacts flow through the verbatim `OnTriggerEnter` path (the original's trigger-only-ship route — Serpent/Sparrow). `AstroLeagueArena`'s editor-only `OnDrawGizmos` body commented (no Gizmos). | Physics core verbatim on E18; the solver-dependent + render-side pieces restore with their phases. |
+| 19 | **Tournament (Maelstrom) arc**: engine gains the `CosmicShore.Engine.SceneManagement` surface (`SceneManager.sceneLoaded` + `LoadSceneMode`; loads are announced by harnesses via `NotifySceneLoaded` until real scene management lands — the controller's subscription + `HandleSceneLoaded` are verbatim), Netcode 2.x `[Rpc(SendTo.…)]`/`RpcParams` metadata (local-invoke), and the headless `Engine.UI.Button` shim. `TournamentSceneView` deviations (all presentation, marked): DOTween pulse/typewriter bodies no-op; round/summary card population commented (TournamentRoundCard / TournamentSummaryPlayerCard / TournamentPlayerCard / TournamentDomainScoreView are Image/CanvasGroup/DOTween prefab views — unported, restore with the UI arc); ScrollRect auto-scroll + LayoutRebuilder; SO_AIProfileList avatar branch; `NetworkManager.SpawnManager`/`LocalClient` roster/local-domain fallbacks. CLI `--mode tournament` legs are simulated by the headless `HexRaceRound` regardless of the drawn mode until the Joust / Crystal Capture controllers port (stated in the transcript). | Meta logic (fold, race-to-6, draw, phases) verbatim + tested; render-side pieces restore with their phases. |
 
 ## Iteration log
 
@@ -675,8 +676,13 @@ convergence ladder, and every future bleeding-edge merge reopens them:
      7 files + `AstroLeagueObjectiveProvider` + `IObjectiveProvider`): the full mode runs
      headless through the real chain — `dotnet run --project src/CosmicShore.Cli -- --mode
      astroleague [--players N] [--seed S]`. See Deviation #18 + the iteration log.
-   - **Tournament** (`Controller/Arcade/Tournament/` 4 files + TournamentSystem
-     docs + UI cards): bracket play across arcade games.
+   - **Tournament ✅ (ported, tournament arc)** (`Controller/Arcade/Tournament/` 4 files +
+     `TournamentDataSO` + `TournamentStandingsFormatter` + `DomainColorPaletteSO`): the
+     Maelstrom session meta runs headless through the real chain — `dotnet run --project
+     src/CosmicShore.Cli -- --mode tournament [--players N] [--seed S]`. See Deviation #19 +
+     the iteration log. Still open in this lane: TournamentRoundCard / TournamentPlayerCard /
+     TournamentSummaryPlayerCard / TournamentDomainScoreView (UI card prefab views) +
+     Scoreboard's tournament wallet credit.
    - SandboxBenchmarkController, Settings additions, CloudData, Privacy UI.
 
 Gap-closure definition for this /loop: drift-sync complete + toys playable in the
@@ -727,7 +733,39 @@ golden-goal path and seed purity). **1203 tests green in BOTH configs (945 + 258
 hexrace CLI + client screenshot smoke byte-identical to the pre-arc baseline
 (`frame 300, crystals [4,0,1,1] … trail 126`). Remaining chain siblings for a later
 arc: SinglePlayer*, Joust/CellularDuel/CrystalCapture/Freestyle/WildlifeBlitz
-controllers, Tournament.
+controllers (Tournament landed — see the Tournament arc below).
+
+## Tournament (Maelstrom) arc (landed after the controller-chain arc — dedicated agent arc)
+
+The session-level meta chaining the domain minigames is IN: all four
+`Controller/Arcade/Tournament/` files (`TournamentController` — the persistent
+network-free brain, `TournamentStateMachine`, `TournamentLobbyNetwork`,
+`TournamentSceneView`) + `Utility/DataContainers/Tournament/` (`TournamentDataSO`,
+`TournamentStandingsFormatter`) + `DomainColorPaletteSO` ported (fold/race-to-6/
+draw/phase logic verbatim; deviations in #19). Engine additions:
+`CosmicShore.Engine.SceneManagement` (`LoadSceneMode` + static `SceneManager` with
+the original `sceneLoaded` event; port surface `NotifySceneLoaded` /
+`ResetSceneLoadedSubscribers` until real scene transitions land), Netcode 2.x
+universal-RPC metadata (`RpcAttribute(SendTo)` / `RpcParams.Receive.SenderClientId` —
+local-invoke), and a headless `Engine.UI.Button` shim (onClick UnityEvent) beside
+the TMPro shim. New headless CLI session: `--mode tournament`
+(`src/CosmicShore.Cli/TournamentRound.cs`) drives lobby → host random draw
+(mode + intensity ∈ [1..ceiling], no immediate repeat) → headless leg → per-domain
+{2,1,0} standings fold from the synced `Results` → hub → … → race-to-6 / cap-7 →
+summary via `FormatFinal` — deterministic per seed (repeat-run transcripts
+byte-identical), exit 0. Every leg is simulated by the real headless
+`HexRaceRound` until the Joust / Crystal Capture controllers port (the drawn mode
+still exercises the real draw/repeat-avoidance path). Tests:
+`TournamentSystemTests` (17 — state-machine table incl. the Lobby→Complete
+race-to-6 route, fresh-start/ceiling capture, menu-return teardown, 3-game fold +
+cross-peer determinism from identical synced Results, race-to-6 hub/summary
+routing, game cap, the authoritative phase-independent summary decision at the
+Maelstrom load, Play-Again reset keeping the ceiling, splash-dwell window, seeded
+draw determinism + repeat avoidance, formatter (You)-tag/ordering, lobby-network
+arm/all-ready-snap/one-shot BeginNextRound) + `TournamentDataSOTests` ported
+verbatim into Tests.Ported (18 — the Unity edit-mode fold suite). **1238 tests
+green in BOTH configs (962 + 276)**; hexrace/astroleague/smoke CLI modes still
+exit 0.
 
 Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — info
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).

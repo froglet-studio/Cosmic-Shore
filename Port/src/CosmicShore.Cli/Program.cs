@@ -60,6 +60,7 @@ namespace CosmicShore.Cli
                 {
                     "hexrace" => RunHexRaceMode(players, seed),
                     "astroleague" => RunAstroLeagueMode(players, seed),
+                    "tournament" => RunTournamentMode(players, seed),
                     _ => UnknownMode(mode),
                 };
             }
@@ -107,8 +108,50 @@ namespace CosmicShore.Cli
 
         static int UnknownMode(string mode)
         {
-            Console.WriteLine($"RESULT: FAIL — unknown --mode '{mode}' (supported: hexrace, astroleague).");
+            Console.WriteLine($"RESULT: FAIL — unknown --mode '{mode}' (supported: hexrace, astroleague, tournament).");
             return 1;
+        }
+
+        // ── [tournament] Maelstrom — the session-level meta chaining the domain
+        //    minigames through the real TournamentController: lobby → random draw
+        //    (mode + intensity) → headless leg → network-free {2,1,0} standings fold
+        //    → hub → … → race-to-6 (or cap) → summary. Every leg is simulated by the
+        //    headless HexRace round until the Joust / Crystal Capture controllers
+        //    port (the draw/fold/summary path is the real Tournament system). ─────
+
+        static int RunTournamentMode(int players, int seed)
+        {
+            var options = new TournamentRoundOptions { PlayerCount = players, Seed = seed };
+
+            Console.WriteLine("┌──────────────────────────────────────────────────────────┐");
+            Console.WriteLine("│  COSMIC SHORE — standalone port  ·  MAELSTROM             │");
+            Console.WriteLine("│  headless tournament meta (AI vs AI legs) ·  no Unity     │");
+            Console.WriteLine("└──────────────────────────────────────────────────────────┘");
+            Console.WriteLine();
+            Console.WriteLine($"[tournament] players={Mathf.Clamp(options.PlayerCount, 1, 12)}, seed={options.Seed}, " +
+                              $"leg target={options.LegCrystalTarget} crystals, intensity ceiling={options.IntensityCeiling}");
+            Console.WriteLine();
+
+            var result = TournamentRound.Run(options, line => Console.WriteLine("  " + line));
+
+            Console.WriteLine();
+            foreach (var error in result.EngineErrors)
+                Console.WriteLine($"  ✗ engine error during session: {error}");
+
+            if (!result.Finished)
+            {
+                Console.WriteLine($"RESULT: FAIL — the shuffle did not reach the summary (games played: {result.GamesPlayed}).");
+                return 1;
+            }
+            if (result.EngineErrors.Count > 0)
+            {
+                Console.WriteLine($"RESULT: FAIL — shuffle finished but {result.EngineErrors.Count} engine error(s) were logged.");
+                return 1;
+            }
+
+            Console.WriteLine($"RESULT: PASS — {result.WinnerDomain} domain takes the Maelstrom with " +
+                              $"{result.WinnerPoints} placement crystals after {result.GamesPlayed} game(s).");
+            return 0;
         }
 
         // ── [astroleague] Hypersea soccer — headless AI-vs-AI match through the
