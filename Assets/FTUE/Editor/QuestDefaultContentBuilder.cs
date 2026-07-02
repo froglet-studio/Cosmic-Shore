@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using UnityEditor;
 using UnityEngine;
 
@@ -86,14 +87,14 @@ namespace CosmicShore.Editor
 
             var throttlePrompt = Add<QuestShowInstructionNode>(g, "Prompt: Throttle");
             throttlePrompt.text = "Push forward to fly at full speed!";
-            throttlePrompt.advanceOnNextPress = false;
+            throttlePrompt.haptic = HapticType.ButtonPress;
 
             var waitThrottle = Add<QuestWaitForInputNode>(g, "Wait: Full Throttle");
             waitThrottle.acceptedInputs = new List<InputEvents> { InputEvents.FullSpeedStraightAction };
 
             var steerPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Steer");
             steerPrompt.text = "Nice! Now tilt to steer left and right.";
-            steerPrompt.advanceOnNextPress = false;
+            steerPrompt.haptic = HapticType.ButtonPress;
 
             var waitSteer = Add<QuestWaitForInputNode>(g, "Wait: Steer");
             waitSteer.acceptedInputs = new List<InputEvents>
@@ -107,7 +108,7 @@ namespace CosmicShore.Editor
 
             var backPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Head Back");
             backPrompt.text = "Great flying! Head back to the menu when you're ready.";
-            backPrompt.advanceOnNextPress = true;
+            backPrompt.hideOnAdvance = false; // stays up until the player exits freestyle
 
             var exit = Add<QuestExitFreestyleNode>(g, "Wait: Return To Menu");
 
@@ -145,7 +146,8 @@ namespace CosmicShore.Editor
 
             var socialTour = Add<QuestShowInstructionNode>(g, "Social UI Tour (placeholder)");
             socialTour.text = "This is your crew hub — invite friends and fly together!";
-            socialTour.advanceOnNextPress = true;
+            socialTour.minDisplaySeconds = 4f;
+            socialTour.hideOnAdvance = true;
 
             var end = Add<QuestPhaseEndNode>(g, "Phase 0 Complete");
 

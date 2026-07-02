@@ -40,5 +40,20 @@ namespace CosmicShore.Core
         public static void OnInitializeFTUECalled()
             => InitializeFTUE?.Invoke();
 
+        /// <summary>
+        /// Fired by the QuestGraphRunner when a quest phase completes.
+        /// Carries the quest id and the completed phase index (0-based).
+        /// </summary>
+        public static event Action<string, int> OnQuestPhaseCompleted;
+        public static void RaiseQuestPhaseCompleted(string questId, int phaseIndex)
+            => OnQuestPhaseCompleted?.Invoke(questId, phaseIndex);
+
+        /// <summary>
+        /// Fired by the QuestGraphRunner when a whole quest (e.g. the FTUE) completes.
+        /// </summary>
+        public static event Action<string> OnQuestCompleted;
+        public static void RaiseQuestCompleted(string questId)
+            => OnQuestCompleted?.Invoke(questId);
+
     }
 }

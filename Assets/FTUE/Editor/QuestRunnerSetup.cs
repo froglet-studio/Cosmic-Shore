@@ -38,6 +38,7 @@ namespace CosmicShore.Editor
             AssignObject(so, "onButtonPressed", FindInputPressedEvent());
 
             AssignObject(so, "crystalHandler", Object.FindFirstObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include));
+            AssignObject(so, "instructionView", Object.FindFirstObjectByType<QuestInstructionView>(FindObjectsInactive.Include));
             AssignObject(so, "tutorialUI", Object.FindFirstObjectByType<TutorialUIView>(FindObjectsInactive.Include));
             AssignObject(so, "introAnimator", Object.FindFirstObjectByType<FTUEIntroAnimator>(FindObjectsInactive.Include));
             AssignObject(so, "dialogueManager", Object.FindFirstObjectByType<DialogueManager>(FindObjectsInactive.Include));
@@ -86,7 +87,7 @@ namespace CosmicShore.Editor
         {
             string[] required =
             {
-                "quest", "gameData", "freestyleEvents", "onButtonPressed",
+                "quest", "gameData", "freestyleEvents", "onButtonPressed", "instructionView",
                 "crystalHandler", "tutorialUI", "introAnimator", "dialogueManager", "screenSwitcher",
             };
             var missing = required

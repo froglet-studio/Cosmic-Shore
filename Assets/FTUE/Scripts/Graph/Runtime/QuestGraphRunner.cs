@@ -41,6 +41,8 @@ namespace CosmicShore.Core
 
         [Header("Scene Systems")]
         [SerializeField] MenuCrystalClickHandler crystalHandler;
+        [Tooltip("Lightweight text+haptics overlay used by ShowInstruction nodes (control teaching).")]
+        [SerializeField] QuestInstructionView instructionView;
         [SerializeField] TutorialUIView tutorialUI;
         [SerializeField] FTUEIntroAnimator introAnimator;
         [SerializeField] DialogueManager dialogueManager;
@@ -165,6 +167,7 @@ namespace CosmicShore.Core
                 FreestyleEvents = freestyleEvents,
                 OnButtonPressed = onButtonPressed,
                 CrystalHandler = crystalHandler,
+                InstructionView = instructionView,
                 TutorialUI = tutorialUI,
                 IntroAnimator = introAnimator,
                 DialogueManager = dialogueManager,
@@ -286,7 +289,9 @@ namespace CosmicShore.Core
             }
 
             Debug.Log($"[Quest] Phase {_phaseIndex} ('{_activeGraph.PhaseName}') complete.");
+            instructionView?.Hide();
             QuestProgressStore.ReportPhaseCompleted(QuestId, _phaseIndex);
+            FTUEEventManager.RaiseQuestPhaseCompleted(QuestId, _phaseIndex);
 
             _phaseIndex++;
             if (_phaseIndex >= quest.phases.Count)
@@ -303,8 +308,10 @@ namespace CosmicShore.Core
             _ctx?.RunCleanups();
             _current = null;
 
+            instructionView?.Hide();
             QuestProgressStore.MarkQuestCompleted(QuestId);
             SetBreadcrumbSuppressed(false);
+            FTUEEventManager.RaiseQuestCompleted(QuestId);
             Debug.Log($"[Quest] '{QuestId}' COMPLETE (persisted to UGS + local).");
         }
 

@@ -13,6 +13,15 @@ namespace CosmicShore.Core
         [Tooltip("Optional - Must be set if using 'TriggerAction'")]
         [SerializeField] string Label;
 
+        [Tooltip("Optional - fire the action automatically every time this object is enabled (e.g. a panel opening).")]
+        [SerializeField] bool triggerOnEnable;
+
+        void OnEnable()
+        {
+            if (triggerOnEnable && UserActionSystem.Instance != null)
+                TriggerActionType();
+        }
+
         public void TriggerAction()
         {
             UserActionSystem.Instance.CompleteAction(new UserAction(type, Value, Label));

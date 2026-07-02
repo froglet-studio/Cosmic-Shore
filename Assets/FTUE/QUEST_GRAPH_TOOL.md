@@ -107,6 +107,20 @@ per-quest records `{ Completed, CurrentPhaseIndex, CurrentNodeId, CompletedNodeI
 with a `PlayerPrefs` mirror for offline/pre-load gating. Every node advance marks the repo dirty
 (debounced save). `QuestProgressStore` is the single read/write gate.
 
+## UI contracts (drop-in components for the hand-built UI)
+
+| Component | Drop on | Drives |
+|---|---|---|
+| `QuestInstructionView` | a Menu_Main panel (CanvasGroup + TMP text) | **ShowInstruction** nodes — plain text + optional haptic pulse; prompt persists while gates hold |
+| `QuestDialoguePanelView` (`IDialogueView`) | the captain dialogue panel (portrait, TMP body, Next/Skip buttons) | **Dialogue** nodes via `DialogueViewResolver`'s MainMenu slot — typewriter, next-to-advance, skip-fast-forwards |
+| `QuestRewardRevealView` (`IDialogueView`) | the reward panel inside the profile screen (icon, title, description, rarity, Continue) | Reward-channel **Dialogue** nodes via the resolver's Reward slot — shows the set's `RewardData` |
+| `QuestToastNotifier` | any Menu_Main object | Toasts: mode unlocked, intensity tier, quest-track objective met, phase complete, quest complete (templates editable) |
+| `UserActionTrigger` (+ new `triggerOnEnable`) | the episode panel (or any panel) | Fires its `UserActionType` (e.g. `ViewEpisodeMenu`) when the panel opens — completes CTAs + gates |
+
+ShowInstruction node fields: `text`, `haptic` (NiceVibrations preset via `HapticType`),
+`minDisplaySeconds` (hold before advancing), `hideOnAdvance`. The legacy TutorialUIView
+typewriter is only a fallback when no `QuestInstructionView` is wired.
+
 ## Scene/UI wiring still needed (game-side)
 
 - `CallToActionTarget` components for the new targets: **ProfileMenu (500)**, **EpisodeMenu (600)**,

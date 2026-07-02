@@ -1,48 +1,71 @@
 using System.Collections;
+using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Shows a line of tutorial instruction text via the FTUE typewriter panel
-    /// (<see cref="TutorialUIView.ShowStep"/>). Two modes:
-    ///  • <see cref="advanceOnNextPress"/> = true  → waits for the player to tap Next, then advances.
-    ///  • <see cref="advanceOnNextPress"/> = false → shows the text and advances immediately,
-    ///    leaving it on-screen (use before a <c>WaitForInputNode</c> so the prompt stays up
-    ///    while the player performs the control).
+    /// Shows a lightweight in-game instruction (plain text + optional haptic pulse) via
+    /// <see cref="QuestInstructionView"/> — the control-teaching UI. The prompt stays on
+    /// screen while a following gate node (e.g. WaitForInput) holds the flow; the next
+    /// instruction replaces it, or set <see cref="hideOnAdvance"/> to clear it.
+    /// Falls back to the legacy TutorialUIView typewriter if no instruction view is wired.
     /// </summary>
     public class QuestShowInstructionNode : QuestNodeSO
     {
         public override QuestNodeCategory Category => QuestNodeCategory.Presentation;
-        public override string TypeTooltip => "Shows typewriter instruction text on the tutorial panel. Advance on Next press, or show-and-continue so a following Wait/gate node holds the prompt on screen.";
-        public override string EditorSummary => string.IsNullOrEmpty(text) ? "(no text)" : text;
+        public override string TypeTooltip => "Shows plain instruction text (+ optional haptic pulse) on the lightweight instruction overlay, waits Min Display Seconds, then advances. Pair with a gate node to hold the prompt until the player acts.";
+        public override string EditorSummary
+        {
+            get
+            {
+                string s = string.IsNullOrEmpty(text) ? "(no text)" : text;
+                if (minDisplaySeconds > 0f) s += $"  ·  {minDisplaySeconds:0.#}s";
+                if (haptic != HapticType.None) s += $"  ·  {haptic}";
+                return s;
+            }
+        }
 
         [TextArea(2, 5)]
-        [Tooltip("Instruction text shown in the FTUE panel.")]
+        [Tooltip("Instruction text shown on the overlay.")]
         public string text;
 
-        [Tooltip("If true, wait for the player to press Next before advancing. If false, show and advance immediately (text stays visible).")]
-        public bool advanceOnNextPress = true;
+        [Tooltip("Optional haptic pulse when the instruction appears (respects the player's haptics setting).")]
+        public HapticType haptic = HapticType.None;
+
+        [Tooltip("Hold the flow this many real-time seconds before advancing (0 = advance immediately; a following gate node keeps the prompt visible).")]
+        [Min(0f)] public float minDisplaySeconds;
+
+        [Tooltip("Hide the instruction panel when this node advances (default: leave it up for the next beat).")]
+        public bool hideOnAdvance;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {
-            if (ctx.TutorialUI == null)
+            if (ctx.InstructionView != null)
             {
-                Debug.LogError("[Quest] ShowInstructionNode: TutorialUIView not wired on runner — skipping.");
+                ctx.InstructionView.Show(text, haptic);
+            }
+            else if (ctx.TutorialUI != null)
+            {
+                // Legacy fallback: the captain typewriter panel, no next-press wait.
+                ctx.TutorialUI.ToggleFTUECanvas(true);
+                ctx.TutorialUI.ShowStep(text, null);
+                if (haptic != HapticType.None)
+                    HapticController.PlayHaptic(haptic);
+            }
+            else
+            {
+                Debug.LogError("[Quest] ShowInstructionNode: no QuestInstructionView or TutorialUIView wired — skipping.");
                 advance(QuestPorts.Next);
                 yield break;
             }
 
-            ctx.TutorialUI.ToggleFTUECanvas(true);
+            if (minDisplaySeconds > 0f)
+                yield return new WaitForSecondsRealtime(minDisplaySeconds);
 
-            if (advanceOnNextPress)
-            {
-                // ShowStep invokes onComplete when the player taps Next (or Skip).
-                ctx.TutorialUI.ShowStep(text, () => advance(QuestPorts.Next));
-                yield break;
-            }
+            if (hideOnAdvance && ctx.InstructionView != null)
+                ctx.InstructionView.Hide();
 
-            ctx.TutorialUI.ShowStep(text, null);
             advance(QuestPorts.Next);
         }
 
