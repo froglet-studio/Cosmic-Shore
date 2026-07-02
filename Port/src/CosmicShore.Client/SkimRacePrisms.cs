@@ -94,8 +94,6 @@ namespace CosmicShore.Client
             var impactCollider = go.AddComponent<ImpactCollider>();
             SkimRaceFactory.SetPrivateField(impactCollider, "impactorObject", prismImpactor);
 
-            go.AddComponent<PrismGrowthDriver>();
-
             go.SetActive(true); // Awake chain: Prism caches managers, seeds prismProperties
             _live.Add(go);
             return new PrismReturnEventData { SpawnedObject = go };
@@ -137,7 +135,6 @@ namespace CosmicShore.Client
             var impactCollider = go.AddComponent<ImpactCollider>();
             SkimRaceFactory.SetPrivateField(impactCollider, "impactorObject", prismImpactor);
 
-            go.AddComponent<PrismGrowthDriver>();
             return prism;
         }
 
@@ -156,42 +153,6 @@ namespace CosmicShore.Client
         }
     }
 
-    /// <summary>
-    /// Client-layer scale animation driver — per-prism stand-in for the unported
-    /// PrismScaleManager (Assets/_Scripts/Controller/Managers/PrismScaleManager.cs, Jobs +
-    /// Burst). Replicates the manager's exact growth math per frame: while scaling,
-    /// lerpSpeed = clamp(GrowthRate·dt, 0.05, 0.1) toward PrismScaleAnimator.TargetScale;
-    /// within the 0.01 sqr completion threshold it snaps, clears IsScaling, and calls
-    /// ExecuteOnScaleComplete() (volume bookkeeping + largest/smallest checks) — the same
-    /// completion contract the manager drives in the original.
-    /// </summary>
-    public sealed class PrismGrowthDriver : MonoBehaviour
-    {
-        const float CompletionThresholdSqr = 0.01f; // PrismScaleManager.COMPLETION_THRESHOLD_SQR
-
-        PrismScaleAnimator _animator;
-
-        void Awake() => _animator = GetComponent<PrismScaleAnimator>();
-
-        void Update()
-        {
-            if (_animator == null || !_animator.enabled || !_animator.IsScaling) return;
-
-            var current = transform.localScale;
-            var target = _animator.TargetScale;
-            if ((target - current).sqrMagnitude > CompletionThresholdSqr)
-            {
-                float lerpSpeed = Mathf.Clamp(_animator.GrowthRate * Time.deltaTime, 0.05f, 0.1f);
-                transform.localScale = Vector3.Lerp(current, target, lerpSpeed);
-            }
-            else
-            {
-                transform.localScale = target;
-                _animator.IsScaling = false;
-                _animator.ExecuteOnScaleComplete();
-            }
-        }
-    }
 
     /// <summary>
     /// Live skim-contact state for HUD glow / audio shimmer, fed exclusively by the

@@ -820,6 +820,11 @@ namespace CosmicShore.Client
             SetPrivateField(themeManager, "_dataContainer", theme);
             themeManagerGo.SetActive(true); // Awake: TeamMaterialSets ×4 + GameFeedAPI.ColorSet
 
+            // ── the REAL prism performance managers (PrismGrowthDriver retired): every
+            // PrismScaleAnimator/MaterialPropertyAnimator registers here at Initialize ──
+            new GameObject("PrismScaleManager").AddComponent<PrismScaleManager>();
+            new GameObject("MaterialStateManager").AddComponent<MaterialStateManager>();
+
             rivalCount = Math.Clamp(rivalCount, 1, 7);
 
             var gameData = ScriptableObject.CreateInstance<GameDataSO>();

@@ -433,6 +433,11 @@ namespace CosmicShore.Client
             SkimRaceFactory.SetPrivateField(themeManager, "_dataContainer", theme);
             themeManagerGo.SetActive(true);
 
+            // ── the REAL prism performance managers (PrismGrowthDriver retired): every
+            // PrismScaleAnimator/MaterialPropertyAnimator registers here at Initialize ──
+            new GameObject("PrismScaleManager").AddComponent<PrismScaleManager>();
+            new GameObject("MaterialStateManager").AddComponent<MaterialStateManager>();
+
             // ── host-mode NetworkManager (the initializer chain is networked) ──
             var nm = new GameObject("network-manager").AddComponent<NetworkManager>();
             NetworkManager.Singleton = nm;
