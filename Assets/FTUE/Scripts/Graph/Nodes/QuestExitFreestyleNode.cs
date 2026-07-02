@@ -35,6 +35,7 @@ namespace CosmicShore.Core
             // Already back in the menu — don't wait for an event that won't come.
             if (ctx.CrystalHandler != null && !ctx.CrystalHandler.IsInFreestyle)
             {
+                ctx.InstructionView?.Hide();
                 advance(QuestPorts.Next);
                 yield break;
             }
@@ -43,6 +44,7 @@ namespace CosmicShore.Core
             void OnMenuComplete()
             {
                 done = true;
+                ctx.InstructionView?.Hide(); // flight school is over — clear the overlay
                 advance(QuestPorts.Next);
             }
 
@@ -76,6 +78,7 @@ namespace CosmicShore.Core
             if (!done)
             {
                 Debug.LogWarning("[Quest] ExitFreestyleNode: forced exit did not complete in time — advancing.");
+                ctx.InstructionView?.Hide();
                 advance(QuestPorts.Next);
             }
         }

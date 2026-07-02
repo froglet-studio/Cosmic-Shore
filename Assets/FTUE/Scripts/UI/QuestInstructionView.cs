@@ -58,7 +58,9 @@ namespace CosmicShore.Core
         {
             if (panel == null && !TryGetComponent(out panel))
                 panel = gameObject.AddComponent<CanvasGroup>();
-            if (instructionText == null)
+            // Only auto-grab a text element in plain-text mode — with keyed panels, the first
+            // TMP found would be inside a panel and Show() would wrongly toggle it.
+            if (instructionText == null && panels.Count == 0)
                 instructionText = GetComponentInChildren<TMP_Text>(true);
 
             panel.alpha = 0f;
