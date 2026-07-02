@@ -51,9 +51,8 @@ namespace CosmicShore.Gameplay
 
         // During teardown every dying prism calls CancelTimers — with N timers and M
         // prisms that's an O(N*M) scan storm over state that's being discarded anyway.
+        // Set in OnDestroy below.
         bool _disposing;
-
-        void OnDestroy() => _disposing = true;
 
         /// <summary>
         /// Schedule a shield deactivation for the given PrismStateManager after a delay.
@@ -134,6 +133,7 @@ namespace CosmicShore.Gameplay
 
         private void OnDestroy()
         {
+            _disposing = true;
             activeTimers.Clear();
             completionTargets.Clear();
         }

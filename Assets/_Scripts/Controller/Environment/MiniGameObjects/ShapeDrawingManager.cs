@@ -696,17 +696,24 @@ namespace CosmicShore.Gameplay
             {
                 // Single construction (the old .material getter-after-setter pattern read
                 // back the instance just to tint it); destroyed in OnDestroy below.
-                lr.material = new Material(shader) { color = color };
+                var runtimeMaterial = new Material(shader) { color = color };
+                lr.material = runtimeMaterial;
+                s_runtimeLineMaterials.Add(runtimeMaterial);
             }
         }
+
+        // Only materials WE created — never an inspector-wired asset material, which
+        // Destroy() would refuse with "Destroying assets is not permitted".
+        static readonly List<Material> s_runtimeLineMaterials = new();
 
         void OnDestroy()
         {
             // Runtime-created line materials are owned by this manager — destroy them
             // with it instead of leaking instances until the next scene load's
             // UnloadUnusedAssets pass.
-            if (guideLine && guideLine.sharedMaterial) Destroy(guideLine.sharedMaterial);
-            if (ghostLine && ghostLine.sharedMaterial) Destroy(ghostLine.sharedMaterial);
+            for (int i = 0; i < s_runtimeLineMaterials.Count; i++)
+                if (s_runtimeLineMaterials[i]) Destroy(s_runtimeLineMaterials[i]);
+            s_runtimeLineMaterials.Clear();
         }
 
         // ── Camera Helpers ──────────────────────────────────────────────────
