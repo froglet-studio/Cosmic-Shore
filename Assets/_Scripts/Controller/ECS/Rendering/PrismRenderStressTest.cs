@@ -5,6 +5,7 @@ using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.Rendering;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility.PerformanceBenchmark;
 
 namespace CosmicShore.ECS
@@ -67,12 +68,39 @@ namespace CosmicShore.ECS
         private World _world;
         private bool _viaService;
 
-        private static readonly Color[] DomainPalette =
+        // Per-domain (bright, dark) prism colors resolved from the PROJECT's ColorSet —
+        // never hardcoded. Primary source: ThemeManagerDataContainerSO.ColorSet (loaded
+        // whenever the game booted through Bootstrap — menu, benchmark, races), the same
+        // single source ThemeManager bakes into every domain block material
+        // (_BrightColor = InsideBlockColor, _DarkColor = OutsideBlockColor). Fallback for
+        // tool scenes with no theme loaded: the assigned material's authored colors,
+        // which are themselves project-authored.
+        private (float4 bright, float4 dark)[] _palette;
+
+        static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
+        static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
+        static float4 ToF4(Color c) => new float4(c.r, c.g, c.b, c.a);
+
+        void ResolvePalette()
         {
-            new Color(0.1f, 0.9f, 0.5f), // jade-ish
-            new Color(0.9f, 0.2f, 0.3f), // ruby-ish
-            new Color(0.95f, 0.8f, 0.2f), // gold-ish
-        };
+            foreach (var container in Resources.FindObjectsOfTypeAll<ThemeManagerDataContainerSO>())
+            {
+                if (container == null || container.ColorSet == null) continue;
+                var cs = container.ColorSet;
+                _palette = new[]
+                {
+                    (ToF4(cs.JadeColors.InsideBlockColor), ToF4(cs.JadeColors.OutsideBlockColor)),
+                    (ToF4(cs.RubyColors.InsideBlockColor), ToF4(cs.RubyColors.OutsideBlockColor)),
+                    (ToF4(cs.GoldColors.InsideBlockColor), ToF4(cs.GoldColors.OutsideBlockColor)),
+                };
+                return;
+            }
+
+            Color bright = material.HasProperty(BrightColorId) ? material.GetColor(BrightColorId) : Color.white;
+            Color dark = material.HasProperty(DarkColorId) ? material.GetColor(DarkColorId) : Color.black;
+            _palette = new[] { (ToF4(bright), ToF4(dark)) };
+            Debug.Log("[PrismRenderStressTest] No theme ColorSet loaded — cloud uses the assigned material's authored colors.");
+        }
 
         /// <summary>
         /// Set the spawn parameters before Start runs — used by the runtime injector
@@ -115,6 +143,7 @@ namespace CosmicShore.ECS
             _basePositions = new NativeArray<float3>(count, Allocator.Persistent);
             _baseScales = new NativeArray<float>(count, Allocator.Persistent);
 
+            ResolvePalette();
             _viaService = useRenderService && SpawnViaService();
             if (!_viaService)
                 SpawnDirect(graphics);
@@ -154,11 +183,8 @@ namespace CosmicShore.ECS
                     return false;
                 }
 
-                var bright = DomainPalette[i % DomainPalette.Length];
-                PrismRenderService.SetColors(in _handles[i],
-                    PrismRenderService.ToFloat4(bright),
-                    new float4(0f, 0f, 0f, 1f),
-                    new float3(1f, 1f, 1f));
+                var pair = _palette[i % _palette.Length];
+                PrismRenderService.SetColors(in _handles[i], in pair.bright, in pair.dark, new float3(1f, 1f, 1f));
                 PrismRenderService.SetVisible(in _handles[i], true);
             }
             return true;
@@ -201,11 +227,9 @@ namespace CosmicShore.ECS
                     Value = float4x4.TRS(pos, rot, new float3(scale))
                 });
 
-                var bright = DomainPalette[i % DomainPalette.Length];
-                em.SetComponentData(_entities[i], new PrismBrightColorOverride
-                {
-                    Value = new float4(bright.r, bright.g, bright.b, 1f)
-                });
+                var pair = _palette[i % _palette.Length];
+                em.SetComponentData(_entities[i], new PrismBrightColorOverride { Value = pair.bright });
+                em.SetComponentData(_entities[i], new PrismDarkColorOverride { Value = pair.dark });
             }
         }
 
@@ -245,11 +269,11 @@ namespace CosmicShore.ECS
                 int idx = churnStart + i;
                 if (idx >= count) break;
                 float pulse = 0.5f + 0.5f * math.sin(t * 3f + idx * 0.37f);
-                var baseColor = DomainPalette[idx % DomainPalette.Length];
-                var color = new float4(baseColor.r * pulse, baseColor.g * pulse, baseColor.b * pulse, 1f);
+                var pair = _palette[idx % _palette.Length];
+                var color = new float4(pair.bright.x * pulse, pair.bright.y * pulse, pair.bright.z * pulse, pair.bright.w);
 
                 if (_viaService)
-                    PrismRenderService.SetColors(in _handles[idx], in color, new float4(0f, 0f, 0f, 1f), new float3(1f, 1f, 1f));
+                    PrismRenderService.SetColors(in _handles[idx], in color, in pair.dark, new float3(1f, 1f, 1f));
                 else
                     _world.EntityManager.SetComponentData(_entities[idx], new PrismBrightColorOverride { Value = color });
             }
