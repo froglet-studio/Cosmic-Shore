@@ -24,9 +24,22 @@
 >   overlay tracking (fixes one-material-instance-leak-per-blend + array growth on
 >   pooled prisms), shared MPB, cached shader IDs; `SkimmerOverchargeCollect` cached
 >   layer mask + in-place sort.
-> - **OPEN:** A1 (prism ECS/instancing), A2 (AOE explosion pooling + batched
->   grow + projectile movement manager), B1 full shader-driven crystal animation, B4
->   (fauna scheduler — gated on ecology scaling).
+> - **DONE — A2 partial (batch 3):** per-block AOE grow tasks DELETED — the blocks'
+>   built-in Burst growth (PrismScaleAnimator → PrismScaleManager) was already
+>   running and the "fallback growers" fought it as a second writer (72 tasks per
+>   SkyBurst, 144 per danger hemisphere); found+fixed the underlying pooling bug
+>   that motivated the fallback (`Prism.Initialize` now re-syncs
+>   `scaleAnimator.GrowthRate`, which `Awake` only copied once at pool creation);
+>   `Projectile` per-shot linked-CTS pair replaced with plain CTS + OnDestroy
+>   cancellation.
+> - **OPEN:** A1 (prism ECS/instancing); A2 remainder — pooling `AOEExplosion`
+>   instances (Instantiate + reflection-DI + Destroy per detonation) is deferred
+>   deliberately: subclass `PerformResetCleanup` semantics and the
+>   cancelled-frozen-explosion state (prism exclusion left applied by design) make
+>   reset-correctness unverifiable without in-editor testing — do it with the
+>   editor open; full SoA projectile movement manager (optional after the CTS
+>   fix); B1 full shader-driven crystal animation; B4 (fauna scheduler — gated on
+>   ecology scaling).
 
 **What this is.** A codebase-wide review answering: *which systems would produce the most
 performance gain if completely refactored?* Six subsystem audits (ecosystem, vessel core, UI,

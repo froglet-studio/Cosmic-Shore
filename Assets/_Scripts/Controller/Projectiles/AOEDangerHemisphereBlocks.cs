@@ -251,22 +251,13 @@ namespace CosmicShore.Gameplay
             var tr = prism.transform;
             if (!tr) return;
 
+            // Restart the prism's built-in growth from zero (PrismScaleAnimator →
+            // Burst-batched PrismScaleManager) instead of driving a per-block
+            // frame-yielding grow loop here — the wired config spawns 144 blocks
+            // per detonation, i.e. 144 concurrent tasks fighting the built-in
+            // grower for the same transforms.
             tr.localScale = Vector3.zero;
-            await GrowToScale(tr, targetScale, growthRate);
-        }
-
-        private static async UniTask GrowToScale(Transform tr, Vector3 target, float rate)
-        {
-            rate = Mathf.Max(1e-5f, rate);
-
-            while (tr && (tr.localScale - target).sqrMagnitude > 0.0001f)
-            {
-                tr.localScale = Vector3.MoveTowards(tr.localScale, target, rate);
-                await UniTask.Yield();
-            }
-
-            if (tr)
-                tr.localScale = target;
+            prism.ChangeSize();
         }
     }
 }

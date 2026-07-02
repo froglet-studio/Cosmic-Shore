@@ -7,7 +7,6 @@ using Cysharp.Threading.Tasks;
 using UnityEngine;
 using CosmicShore.ScriptableObjects;
 using Random = UnityEngine.Random;
-using System.Linq;
 
 namespace CosmicShore.Gameplay
 {
@@ -174,15 +173,14 @@ namespace CosmicShore.Gameplay
             if (shielded)
                 prism.prismProperties.IsShielded = true;
 
-            // Start at zero scale
+            // Start at zero scale — Initialize's built-in growth (PrismScaleAnimator →
+            // Burst-batched PrismScaleManager) animates to TargetScale at growthRate.
+            // The old per-block "fallback grower" UniTask fought that path (two writers
+            // on the same transform) and cost one frame-yielding task per block —
+            // 72 per SkyBurst detonation.
             prism.transform.localScale = Vector3.zero;
-
-            // built-in growth (if Prism supports it)
             prism.TargetScale = targetScale;
             prism.growthRate  = growthRate;
-
-            // fallback grower in case Prism doesn't auto grow
-            GrowToScale(prism.transform, targetScale, growthRate).Forget();
 
             prism.Initialize(Vessel?.VesselStatus?.PlayerName ?? "UnknownPlayer");
 
@@ -192,22 +190,5 @@ namespace CosmicShore.Gameplay
             return prism;
         }
 
-        // ----------------------------------------------------------------------
-        // Block growth without coroutine
-        // ----------------------------------------------------------------------
-
-        private static async UniTaskVoid GrowToScale(Transform tr, Vector3 target, float rate)
-        {
-            rate = Mathf.Max(1e-5f, rate);
-
-            while (tr && (tr.localScale - target).sqrMagnitude > 0.0001f)
-            {
-                tr.localScale = Vector3.MoveTowards(tr.localScale, target, rate);
-                await UniTask.Yield();
-            }
-
-            if (tr)
-                tr.localScale = target;
-        }
     }
 }

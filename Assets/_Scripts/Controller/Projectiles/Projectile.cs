@@ -83,10 +83,14 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /*private void OnDestroy()
+        private void OnDestroy()
         {
-            CSDebug.LogError("Projectile destroyed! Should not happen! Should return to pool!");
-        }*/
+            // Pooled projectiles should return to the factory, not be destroyed — but
+            // when one IS destroyed (scene teardown, missing-factory fallback) this
+            // cancels the in-flight move loop. It replaces the per-launch linked
+            // destroy-token, which cost an extra CTS + registration per shot.
+            Stop();
+        }
 
         #region Initialization
         public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge, bool detachOnLaunch = false)
@@ -141,8 +145,9 @@ namespace CosmicShore.Gameplay
 
             Stop(); // Stop any running movement before starting a new one
 
-            _moveCts = CancellationTokenSource.CreateLinkedTokenSource(
-                this.GetCancellationTokenOnDestroy());
+            // Plain CTS — destroy-cancellation is handled by OnDestroy -> Stop(), so
+            // the linked-token pair (2 allocs + registration) per shot is unnecessary.
+            _moveCts = new CancellationTokenSource();
             MoveProjectileAsync(projectileTime, _moveCts.Token).Forget();
         }
 

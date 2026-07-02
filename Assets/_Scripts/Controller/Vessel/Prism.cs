@@ -171,6 +171,10 @@ namespace CosmicShore.Gameplay
                 authoredTargetScale = transform.localScale;
 
             scaleAnimator.Initialize();
+            // Re-sync the growth rate: Awake copied it once at pool creation, so a
+            // spawn path that assigns prism.growthRate before Initialize (the AOE
+            // block spawners) was silently ignored on pooled reuse.
+            scaleAnimator.GrowthRate = growthRate;
             scaleAnimator.SetTargetScale(authoredTargetScale);
             StartCoroutine(CreateBlockCoroutine(authoredTargetScale));
 
