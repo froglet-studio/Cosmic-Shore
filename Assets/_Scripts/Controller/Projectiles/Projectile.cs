@@ -73,13 +73,28 @@ namespace CosmicShore.Gameplay
             _pooledParent = transform.parent;
         }
 
+        // Spike opacity rides a MaterialPropertyBlock: the old .material getter cloned
+        // one material instance per pooled spike (never destroyed) purely to write
+        // _Opacity — the shared team material stays shared now.
+        static readonly int s_opacityId = Shader.PropertyToID("_Opacity");
+        MaterialPropertyBlock _spikeMpb;
+
+        void SetSpikeOpacity(float opacity)
+        {
+            if (!meshRenderer) return;
+            _spikeMpb ??= new MaterialPropertyBlock();
+            meshRenderer.GetPropertyBlock(_spikeMpb);
+            _spikeMpb.SetFloat(s_opacityId, opacity);
+            meshRenderer.SetPropertyBlock(_spikeMpb);
+        }
+
         private void Start()
         {
             if (spike)
             {
                 meshRenderer = GetComponent<MeshRenderer>();
-                meshRenderer.material = _themeManagerData.GetTeamSpikeMaterial(OwnDomain);
-                meshRenderer.material.SetFloat("_Opacity", 0.5f);
+                meshRenderer.sharedMaterial = _themeManagerData.GetTeamSpikeMaterial(OwnDomain);
+                SetSpikeOpacity(0.5f);
             }
         }
 
@@ -140,7 +155,7 @@ namespace CosmicShore.Gameplay
             if (spike)
             {
                 transform.localScale = new Vector3(0.4f, 0.4f, 2f);
-                meshRenderer.material.SetFloat("_Opacity", 0.5f);
+                SetSpikeOpacity(0.5f);
             }
 
             Stop(); // Stop any running movement before starting a new one
@@ -178,8 +193,6 @@ namespace CosmicShore.Gameplay
             float elapsedTime = 0f;
             var t = transform; // cache
             var useSpike = spike && meshRenderer;
-            var mat = useSpike ? meshRenderer.material : null;
-
             try
             {
                 while (elapsedTime < projectileTime && !token.IsCancellationRequested)
@@ -192,7 +205,7 @@ namespace CosmicShore.Gameplay
                     {
                         float percentRemaining = elapsedTime / projectileTime;
                         if (percentRemaining > 0.9f)
-                            mat.SetFloat("_Opacity", 1f - Mathf.Pow(percentRemaining, 4f));
+                            SetSpikeOpacity(1f - Mathf.Pow(percentRemaining, 4f));
                     }
 
                     elapsedTime += deltaTime;

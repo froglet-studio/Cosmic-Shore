@@ -694,9 +694,19 @@ namespace CosmicShore.Gameplay
                       ?? Shader.Find("Universal Render Pipeline/Unlit");
             if (shader)
             {
-                lr.material = new Material(shader);
-                lr.material.color = color;
+                // Single construction (the old .material getter-after-setter pattern read
+                // back the instance just to tint it); destroyed in OnDestroy below.
+                lr.material = new Material(shader) { color = color };
             }
+        }
+
+        void OnDestroy()
+        {
+            // Runtime-created line materials are owned by this manager — destroy them
+            // with it instead of leaking instances until the next scene load's
+            // UnloadUnusedAssets pass.
+            if (guideLine && guideLine.sharedMaterial) Destroy(guideLine.sharedMaterial);
+            if (ghostLine && ghostLine.sharedMaterial) Destroy(ghostLine.sharedMaterial);
         }
 
         // ── Camera Helpers ──────────────────────────────────────────────────

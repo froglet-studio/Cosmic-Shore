@@ -108,7 +108,9 @@ namespace CosmicShore.UI
                     snapPosition,
                     contentPanelTransform.localPosition.z);
 
-                Canvas.ForceUpdateCanvases();
+                // Targeted rebuild: ForceUpdateCanvases re-laid-out EVERY canvas in the
+                // scene just to settle this one content panel after a snap.
+                UnityEngine.UI.LayoutRebuilder.ForceRebuildLayoutImmediate(contentPanelTransform);
                 checkForSnap = false;
             }
         }

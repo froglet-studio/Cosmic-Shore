@@ -126,8 +126,20 @@ namespace CosmicShore.Gameplay
             if (octahedronShield != null) octahedronShield.Engage();
 
             SyncAOERegistryShieldState();
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
+
+            // Coalesce: an AOE shielding N prisms ran this per prism — N identical
+            // sounds stacked in one frame. One activate SFX per frame is perceptually
+            // identical (concept extracted from claude/optimize-shield-effect-CgpSK;
+            // the per-prism octahedron visual is untouched).
+            if (Time.frameCount != s_lastShieldActivateSfxFrame)
+            {
+                s_lastShieldActivateSfxFrame = Time.frameCount;
+                AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
+            }
         }
+
+        static int s_lastShieldActivateSfxFrame = -1;
+        static int s_lastShieldDeactivateSfxFrame = -1;
 
         private void ApplyNormalState()
         {
@@ -146,8 +158,11 @@ namespace CosmicShore.Gameplay
 
             SyncAOERegistryShieldState();
 
-            if (wasShielded)
+            if (wasShielded && Time.frameCount != s_lastShieldDeactivateSfxFrame)
+            {
+                s_lastShieldDeactivateSfxFrame = Time.frameCount;
                 AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldDeactivate);
+            }
         }
 
         private void SyncAOERegistryShieldState()

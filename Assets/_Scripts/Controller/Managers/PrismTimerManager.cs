@@ -49,6 +49,12 @@ namespace CosmicShore.Gameplay
         private readonly List<TimerEntry> activeTimers = new(64);
         private readonly List<PrismStateManager> completionTargets = new(16);
 
+        // During teardown every dying prism calls CancelTimers — with N timers and M
+        // prisms that's an O(N*M) scan storm over state that's being discarded anyway.
+        bool _disposing;
+
+        void OnDestroy() => _disposing = true;
+
         /// <summary>
         /// Schedule a shield deactivation for the given PrismStateManager after a delay.
         /// Cancels any existing timer for the same target first.
@@ -74,11 +80,17 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void CancelTimers(PrismStateManager target)
         {
+            if (_disposing) return;
+
             for (int i = activeTimers.Count - 1; i >= 0; i--)
             {
                 if (activeTimers[i].Target == target)
                 {
-                    activeTimers.RemoveAt(i);
+                    // Swap-remove: timer order is irrelevant (Update fires everything
+                    // due regardless of position) and RemoveAt shifts the whole tail.
+                    int last = activeTimers.Count - 1;
+                    activeTimers[i] = activeTimers[last];
+                    activeTimers.RemoveAt(last);
                 }
             }
         }

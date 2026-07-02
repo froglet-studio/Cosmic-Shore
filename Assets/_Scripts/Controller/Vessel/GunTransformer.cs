@@ -15,17 +15,21 @@ namespace CosmicShore.Gameplay
 
         IInputStatus InputStatus => (shipInstance as IVesselStatus).InputStatus;
 
+        // Cached: GetComponentsInChildren allocates a fresh array per call, and Update
+        // was calling it every frame. Gun children don't change at runtime.
+        Transform[] _children;
+
         void Start()
         {
-            var children = GetComponentsInChildren<Transform>();
-            constant = 2 * Mathf.PI / (children.Length - 1); // -1 because this is in list;
+            _children = GetComponentsInChildren<Transform>();
+            constant = 2 * Mathf.PI / (_children.Length - 1); // -1 because this is in list;
             InputStatus.RightClampedPosition.SqrMagnitude();
         }
 
         void Update()
         {
             var i = 0;
-            foreach (var child in GetComponentsInChildren<Transform>())
+            foreach (var child in _children)
             {
                 if (child == transform)
                     continue;

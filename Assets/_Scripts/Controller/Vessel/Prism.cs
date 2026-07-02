@@ -1,6 +1,5 @@
 using System;
 using UnityEngine;
-using System.Collections;
 using CosmicShore.Core;
 using CosmicShore.Utility;
 using CosmicShore.Gameplay;
@@ -176,7 +175,11 @@ namespace CosmicShore.Gameplay
             // block spawners) was silently ignored on pooled reuse.
             scaleAnimator.GrowthRate = growthRate;
             scaleAnimator.SetTargetScale(authoredTargetScale);
-            StartCoroutine(CreateBlockCoroutine(authoredTargetScale));
+
+            // Deferred activation via the centralized queue instead of a per-prism
+            // coroutine — mass spawns used to schedule thousands of WaitForSeconds
+            // timers that all resumed on the same frame (a multi-second stall).
+            PrismActivationQueue.EnsureInstance().Enqueue(this, authoredTargetScale, waitTime);
 
             if (prismProperties.IsShielded) ActivateShield();
             if (prismProperties.IsDangerous) MakeDangerous();
@@ -184,6 +187,11 @@ namespace CosmicShore.Gameplay
 
         private void ResetState()
         {
+            // Cancel any pending deferred activation — a pooled prism re-initialized
+            // (or cleared) inside the spawn window must not activate later with stale
+            // parameters.
+            PrismActivationQueue.Instance?.Cancel(this);
+
             // Unregister from the spatial index — drops the AOE entry, the
             // occupancy bucket, AND the previous cell's density-grid binding.
             // Pool-reuse safety: a prism re-initialized without going through
@@ -223,27 +231,37 @@ namespace CosmicShore.Gameplay
             OnReturnToPool?.Invoke(this);
         }
 
+        // LayerMask.NameToLayer hashes the layer-name string on every call; the default
+        // layer is constant per prism, and this runs on every initialize/register of a
+        // pooled prism.
+        int _defaultLayerId = -1;
+        int DefaultLayerId => _defaultLayerId >= 0
+            ? _defaultLayerId
+            : _defaultLayerId = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
+
         private void InitializePrismProperties()
         {
             if (prismProperties == null) return;
- 
+
             prismProperties.position = transform.position;
             prismProperties.prism = this;
             prismProperties.Trail = Trail;
             prismProperties.TimeCreated = Time.time;
-            gameObject.layer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
+            gameObject.layer = DefaultLayerId;
 
             prismProperties.volume = 1f;
         }
 
-        private IEnumerator CreateBlockCoroutine(Vector3 authoredTargetScale)
+        /// <summary>
+        /// Called by <see cref="PrismActivationQueue"/> when this prism's spawn delay
+        /// elapses. Body is the former CreateBlockCoroutine post-yield logic.
+        /// </summary>
+        internal void ExecuteDeferredActivation(Vector3 authoredTargetScale)
         {
-            yield return new WaitForSeconds(waitTime);
-
             // Destroyed before creation completed (e.g. AOE within waitTime of spawn) —
             // don't resurrect the renderer/collider or register a dead prism with the
             // AOE registry and cell grids.
-            if (destroyed) yield break;
+            if (destroyed) return;
 
             meshRenderer.enabled = true;
             blockCollider.enabled = true;
@@ -511,7 +529,7 @@ namespace CosmicShore.Gameplay
             prismProperties.TimeCreated = Time.time;
             prismProperties.volume   = Mathf.Max(scaleAnimator ? scaleAnimator.GetCurrentVolume() : 1f, 1f);
 
-            gameObject.layer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
+            gameObject.layer = DefaultLayerId;
             _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
                 OwnName = PlayerName,

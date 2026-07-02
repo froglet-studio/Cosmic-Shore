@@ -50,6 +50,12 @@ namespace CosmicShore.UI
 
         private readonly List<QuestItemCard> _cards = new();
         private readonly List<CanvasGroup> _descriptionLabels = new();
+        // Parallax caches: GetComponent per card per LateUpdate allocated nothing but
+        // walked components every frame; and the content-moved gate below stops the
+        // whole pass (scale/alpha writes = canvas dirtying) while the track is idle.
+        private readonly Dictionary<QuestItemCard, (RectTransform rect, CanvasGroup cg)> _parallaxCache = new();
+        private float _lastParallaxContentX = float.NaN;
+        private int _parallaxSettleFrames;
         private Tween _sliderTween;
         private Tween _ghostSliderTween;
         private Tween _descFadeTween;
@@ -90,7 +96,20 @@ namespace CosmicShore.UI
         {
             if (scrollRect == null || _cards.Count == 0) return;
 
-            UpdateParallax();
+            // Run parallax only while the content is actually moving (drag, momentum,
+            // snap, claim choreography) plus a couple of settle frames — not every frame
+            // the screen is idle.
+            float contentX = scrollRect.content ? scrollRect.content.anchoredPosition.x : 0f;
+            bool contentMoved = contentX != _lastParallaxContentX;
+            _lastParallaxContentX = contentX;
+            if (contentMoved || _isSnapping || _isPlayingClaimSequence)
+                _parallaxSettleFrames = 2;
+
+            if (_parallaxSettleFrames > 0)
+            {
+                _parallaxSettleFrames--;
+                UpdateParallax();
+            }
 
             if (_isSnapping) return;
 
@@ -589,15 +608,22 @@ namespace CosmicShore.UI
                 var card = _cards[i];
                 if (card == null || card.IsAnimating) continue;
 
-                var cardRect = card.GetComponent<RectTransform>();
+                if (!_parallaxCache.TryGetValue(card, out var cached))
+                {
+                    cached = (card.GetComponent<RectTransform>(),
+                              card.TryGetComponent<CanvasGroup>(out var group) ? group : null);
+                    _parallaxCache[card] = cached;
+                }
+
+                var cardRect = cached.rect;
                 Vector3 cardCenter = cardRect.TransformPoint(cardRect.rect.center);
                 float distance = Mathf.Abs(cardCenter.x - viewportCenter.x);
                 float t = Mathf.Clamp01(distance / parallaxFalloff);
 
                 card.transform.localScale = Vector3.one * Mathf.Lerp(1f, minCardScale, t);
 
-                if (card.TryGetComponent<CanvasGroup>(out var cg))
-                    cg.alpha = Mathf.Lerp(1f, minCardAlpha, t);
+                if (cached.cg)
+                    cached.cg.alpha = Mathf.Lerp(1f, minCardAlpha, t);
             }
         }
 
@@ -608,6 +634,8 @@ namespace CosmicShore.UI
             foreach (var card in _cards)
                 if (card != null) Destroy(card.gameObject);
             _cards.Clear();
+            _parallaxCache.Clear();
+            _lastParallaxContentX = float.NaN;
         }
 
         void KillAllTweens()

@@ -110,19 +110,47 @@ namespace CosmicShore.UI
         void PopulateGrid()
         {
             _gridCards.Clear();
-            for (int i = gridContainer.childCount - 1; i >= 0; i--)
-                Destroy(gridContainer.GetChild(i).gameObject);
 
             // Sort: unlocked vessels first, then locked
             var sorted = Ships.OrderBy(s => s.IsLocked ? 1 : 0).ToList();
 
+            // Reuse existing card instances — the old destroy-all + instantiate-all
+            // rebuilt every card GameObject (and re-ran layout) on each grid refresh.
+            int childCount = gridContainer.childCount;
+            int childIndex = 0;
             foreach (var ship in sorted)
             {
-                var card = Instantiate(gridCardPrefab, gridContainer);
+                HangarVesselGridCard card = null;
+                while (childIndex < childCount && card == null)
+                {
+                    var child = gridContainer.GetChild(childIndex);
+                    childIndex++;
+                    if (child.TryGetComponent(out HangarVesselGridCard existing))
+                    {
+                        card = existing;
+                        card.gameObject.SetActive(true);
+                    }
+                    else
+                    {
+                        Destroy(child.gameObject); // stray non-card child from an older layout
+                    }
+                }
+
+                if (card == null)
+                    card = Instantiate(gridCardPrefab, gridContainer);
+
                 card.name = $"GridCard_{ship.Name}";
                 card.Configure(ship, this);
                 card.SetNameVisible(_namesVisible);
                 _gridCards.Add(card);
+            }
+
+            // Park leftover cards beyond the roster for the next refresh.
+            for (int i = childIndex; i < childCount; i++)
+            {
+                var child = gridContainer.GetChild(i);
+                if (child.TryGetComponent(out HangarVesselGridCard _))
+                    child.gameObject.SetActive(false);
             }
         }
 
@@ -245,22 +273,46 @@ namespace CosmicShore.UI
                 return;
             }
 
-            for (var i = 0; i < ShipSelectionContainer.childCount; i++)
-            {
-                var child = ShipSelectionContainer.GetChild(i);
-                child.gameObject.SetActive(false);
-                Destroy(child.gameObject);
-            }
-
+            // Reuse existing nav-link instances — the old destroy-all + instantiate-all
+            // rebuilt the whole list on every population.
+            int childCount = ShipSelectionContainer.childCount;
+            int childIndex = 0;
             for (var i = 0; i < Ships.Count; i++)
             {
                 var ship = Ships[i];
-                CSDebug.Log($"Populating Vessel Select List: {ship.Name}");
-                var shipSelectCard = Instantiate(ShipSelectCardPrefab, ShipSelectionContainer.transform);
-                shipSelectCard.name = shipSelectCard.name.Replace("(Clone)", "");
+
+                HangarShipSelectNavLink shipSelectCard = null;
+                while (childIndex < childCount && shipSelectCard == null)
+                {
+                    var child = ShipSelectionContainer.GetChild(childIndex);
+                    childIndex++;
+                    if (child.TryGetComponent(out HangarShipSelectNavLink existing))
+                    {
+                        shipSelectCard = existing;
+                        child.gameObject.SetActive(true);
+                    }
+                    else
+                    {
+                        Destroy(child.gameObject); // stray non-card child from an older layout
+                    }
+                }
+
+                if (shipSelectCard == null)
+                {
+                    shipSelectCard = Instantiate(ShipSelectCardPrefab, ShipSelectionContainer.transform);
+                    shipSelectCard.name = shipSelectCard.name.Replace("(Clone)", "");
+                }
+
                 shipSelectCard.AssignShipClass(ship);
                 shipSelectCard.AssignIndex(i);
                 shipSelectCard.HangarMenu = this;
+            }
+
+            for (int i = childIndex; i < childCount; i++)
+            {
+                var child = ShipSelectionContainer.GetChild(i);
+                if (child.TryGetComponent(out HangarShipSelectNavLink _))
+                    child.gameObject.SetActive(false);
             }
 
             if (ShipSelectionScrollView)

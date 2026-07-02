@@ -59,11 +59,17 @@ namespace CosmicShore.Gameplay
             jetMaterial.SetFloat("_MachDiamondIntensity", machDiamondIntensity);
             jetMaterial.SetFloat("_HeatDistortion", heatDistortionIntensity);
 
-            // Update color gradient
-            Gradient gradientCopy = new Gradient();
-            gradientCopy.SetKeys(jetColorGradient.colorKeys, jetColorGradient.alphaKeys);
-            jetMain.startColor = gradientCopy;
+            // Update color gradient — reuse one copy; UpdateJetProperties runs every
+            // frame and a fresh Gradient (plus key arrays) per call was steady GC churn.
+            if (_gradientCopy == null)
+            {
+                _gradientCopy = new Gradient();
+                _gradientCopy.SetKeys(jetColorGradient.colorKeys, jetColorGradient.alphaKeys);
+            }
+            jetMain.startColor = _gradientCopy;
         }
+
+        Gradient _gradientCopy;
 
         public void SetJetPower(float power)
         {

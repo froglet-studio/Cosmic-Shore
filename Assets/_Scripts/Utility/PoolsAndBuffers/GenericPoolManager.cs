@@ -22,6 +22,10 @@ namespace CosmicShore.Utility
         [SerializeField] private float maxInstantiateRate = 20f;
         [SerializeField] private float baseInstantiateRate = 5f;
         [SerializeField] private int maxAddsPerFrame = 4;
+        [Tooltip("Instances instantiated synchronously in Awake. The rest of the buffer " +
+                 "fills via the async maintenance loop, so scene loads don't stall on a " +
+                 "full-buffer Instantiate burst (7 prism pools × buffer 20+ was a visible hitch).")]
+        [SerializeField] private int maxSyncPrewarm = 8;
 
         // [Optimization] Track active objects to avoid FindObjectsOfType during Reset
         private readonly HashSet<T> _activeObjects = new HashSet<T>();
@@ -43,7 +47,14 @@ namespace CosmicShore.Utility
             );
 
             if (defaultCapacity > 0)
-                Prewarm(Mathf.Max(defaultCapacity, bufferSizeTarget));
+            {
+                // Cap the synchronous prewarm; the async maintenance loop (below) tops the
+                // buffer up to bufferSizeTarget across subsequent frames. Only defer when
+                // maintenance is actually enabled — otherwise nothing would fill the rest.
+                int target = Mathf.Max(defaultCapacity, bufferSizeTarget);
+                bool canDefer = enableBufferMaintenance && maxSyncPrewarm > 0;
+                Prewarm(canDefer ? Mathf.Min(target, maxSyncPrewarm) : target);
+            }
 
             if (enableBufferMaintenance)
             {

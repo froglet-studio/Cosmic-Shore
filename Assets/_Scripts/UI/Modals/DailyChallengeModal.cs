@@ -40,6 +40,10 @@ namespace CosmicShore.UI
             TicketBalance.text = CatalogManager.Instance.GetDailyChallengeTicketBalance().ToString();
         }
 
+        // The countdown only changes once per second — formatting a fresh string (and
+        // rebuilding the TMP mesh) every frame was pure churn while the modal was open.
+        int _lastDisplayedSeconds = -1;
+
         void Update()
         {
             if (GameMode == GameModes.Random)
@@ -51,7 +55,11 @@ namespace CosmicShore.UI
 
             if (secondsUntilMidnight > 0)
             {
-                TimeSpan timespan = TimeSpan.FromSeconds(secondsUntilMidnight);
+                int wholeSeconds = (int)secondsUntilMidnight;
+                if (wholeSeconds == _lastDisplayedSeconds) return;
+                _lastDisplayedSeconds = wholeSeconds;
+
+                TimeSpan timespan = TimeSpan.FromSeconds(wholeSeconds);
                 TimeRemaining.text = string.Format("Time left: {0:D2}:{1:D2}:{2:D2}",
                                 timespan.Hours,
                                 timespan.Minutes,

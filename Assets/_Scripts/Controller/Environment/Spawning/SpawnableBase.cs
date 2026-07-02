@@ -95,7 +95,12 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public SpawnTrailData[] GetTrailData()
         {
-            int hash = GetParameterHash();
+            // The base fields fold into the cache key here so every subclass is covered:
+            // most GetParameterHash overrides omit intensityLevel/domain (some hash only
+            // seed, SpawnableBatman hashed nothing else), so an intensity change (joust
+            // level 1 -> 2) could serve stale cached trail data. Subclasses that still
+            // hash seed/domain redundantly stay correct — omission was the bug.
+            int hash = System.HashCode.Combine(GetParameterHash(), intensityLevel, domain, seed);
             if (_cacheValid && _cachedTrails != null && hash == _cachedHash)
                 return _cachedTrails;
 

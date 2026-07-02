@@ -103,6 +103,12 @@ namespace CosmicShore.Gameplay
         float _maxDistance = 50f;
         float _maxDistanceSquared;
 
+        // Cached waits — one AI seek/ability coroutine ticks for the whole match, and up
+        // to 11 backfill AI run at once; a fresh WaitForSeconds per tick is pure GC churn.
+        WaitForSeconds _waitPlayerSeek;
+        WaitForSeconds _waitPlayerReacquire;
+        static readonly WaitForSeconds s_waitAbilityStart = new WaitForSeconds(3);
+
         Vector3 _targetPosition;
         // Live opponent the AI is chasing in player-seek (Joust) mode. Chosen by the
         // UpdatePlayerTarget coroutine; Update() reads its current position every frame.
@@ -215,8 +221,7 @@ namespace CosmicShore.Gameplay
             while (AutoPilotEnabled)
             {
                 SelectClosestOpponent();
-                yield return new WaitForSeconds(
-                    _targetVesselTransform != null ? playerSeekUpdateInterval : playerReacquireInterval);
+                yield return _targetVesselTransform != null ? _waitPlayerSeek : _waitPlayerReacquire;
             }
         }
 
@@ -270,6 +275,8 @@ namespace CosmicShore.Gameplay
                 ability.Ability = inst;
             }
 
+            _waitPlayerSeek = new WaitForSeconds(playerSeekUpdateInterval);
+            _waitPlayerReacquire = new WaitForSeconds(playerReacquireInterval);
             _maxDistanceSquared = _maxDistance * _maxDistance;
             aggressiveness = defaultAggressiveness;
             throttle = defaultThrottle;
@@ -387,15 +394,19 @@ namespace CosmicShore.Gameplay
             throttle += throttleIncrease * Time.deltaTime;
         }
         
-        IEnumerator UseAbilityCoroutine(AIAbility action) 
+        IEnumerator UseAbilityCoroutine(AIAbility action)
         {
-            yield return new WaitForSeconds(3);
+            yield return s_waitAbilityStart;
+            // Duration/cooldown are constant per ability — allocate the waits once per
+            // coroutine instead of twice per use cycle.
+            var waitDuration = new WaitForSeconds(action.Duration);
+            var waitCooldown = new WaitForSeconds(action.Cooldown);
             while (AutoPilotEnabled)
             {
                 action.Ability.StartAction(actionExecutorRegistry, VesselStatus);
-                yield return new WaitForSeconds(action.Duration);
+                yield return waitDuration;
                 action.Ability.StopAction(actionExecutorRegistry, VesselStatus);
-                yield return new WaitForSeconds(action.Cooldown);
+                yield return waitCooldown;
             }
         }
         

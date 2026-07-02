@@ -69,12 +69,15 @@ superseded/dangerous branch refs deleted.** Everything below is the evidence and
 Measure every wave with the PerformanceBenchmark suite (baseline → change → Compare —
 the ledger's methodology). One wave per PR; don't batch unrelated waves.
 
-### Wave 0 — clean merges, no editor gate (can land today)
-1. **Cherry-pick `81746e28b`** (planck: super-shield 8 faces + tests) onto bleeding-edge.
-2. **Merge `beautiful-feynman`** (PERFORMANCE.md ledger) — clean.
-3. **Merge `tender-pasteur`** (benchmark schema v2) — clean; do this *before* Wave-1
-   verification so captures carry the thread/physics breakdown.
-4. **Cherry-pick `eb146ee63`** (maxwell: fauna net-sync design doc), refresh its §1.
+### Wave 0 — clean merges, no editor gate — ✅ DONE (consolidated onto this branch)
+All four items were cherry-picked onto `performance-refactoring-review-rciwzl` (July 2),
+including the feynman↔rciwzl audit-doc reconciliation. Landing this branch lands Wave 0;
+the source branches (`optimistic-planck`, `beautiful-feynman`, `tender-pasteur`,
+`optimistic-maxwell`) become deletable once it merges.
+1. ~~Cherry-pick `81746e28b`~~ (planck: super-shield 8 faces + tests) — on this branch.
+2. ~~Merge `beautiful-feynman`~~ (PERFORMANCE.md ledger) — on this branch, conflict resolved.
+3. ~~Merge `tender-pasteur`~~ (benchmark schema v2) — on this branch.
+4. ~~Cherry-pick `eb146ee63`~~ (maxwell: fauna net-sync doc) — on this branch, §1 flagged stale.
 
 ### Wave 1 — zen-volta (the decisive win) — needs the editor
 5. Run zen-volta's own verification protocol (`Docs/PRISM_ECS_MIGRATION.md` §5 steps
@@ -103,20 +106,24 @@ the ledger's methodology). One wave per PR; don't batch unrelated waves.
      zen-volta's `Entity` name-clash rename motive).
    `Cell.cs` / `Prism.cs` auto-merge (verified disjoint hunks).
 
-### Wave 3 — extraction sweep (small re-ports; one PR, benchmark-proven)
-10. WDr9T `b7f2f8814` remainder: `GenericPoolManager` sync-prewarm cap,
-    `GunTransformer` component caching, `AIPilot` cached waits.
-11. **`PrismActivationQueue`** (from CEoJM, or the flora-pooling branch's copy) —
-    re-shaped onto `PrismTimerManager`; validate with the stress scene. The
-    highest-value single extraction (measured 1.9s stall on mass spawn).
-12. Spawnable cache-key fix (latent stale-cache bug — arguably a correctness fix).
-13. Small fixes: `ShapeDrawingManager` LR material leak, `Projectile` MPB,
-    `ParametricJetEffect` gradient reuse, `Prism` cached layer id,
-    `PrismTimerManager` `_disposing` + swap-remove.
-14. Menu UI sweep: DailyChallengeModal 1Hz, QuestTrackView caching + idle gate,
-    InfiniteScroll targeted rebuild, HangarScreen card reuse.
-15. Shield **SFX** coalescing per wave origin (concept from CgpSK; visual stays
-    octahedron).
+### Wave 3 — extraction sweep — ✅ DONE (implemented on this branch, July 2)
+All items 10–15 are implemented on `performance-refactoring-review-rciwzl`:
+10. ✅ WDr9T remainder (pool sync-prewarm cap — maintenance-gated; `GunTransformer`
+    child caching; `AIPilot` cached waits incl. the dual seek/reacquire intervals and
+    per-ability duration/cooldown waits).
+11. ✅ `PrismActivationQueue` — standalone `Singleton` beside `PrismTimerManager`
+    (same centralized pattern), 200 activations/frame cap, swap-remove `Cancel` wired
+    into `Prism.ResetState`; the destroyed-guard + spatial-index registration moved
+    intact into `Prism.ExecuteDeferredActivation`. **Benchmark validation still owed**
+    (stress scene / mass-spawn capture — see checklist).
+12. ✅ Spawnable cache-key fix — implemented at the base (`SpawnableBase.GetTrailData`
+    folds intensity/domain/seed into every subclass key; redundant subclass hashes
+    left as-is deliberately: omission was the bug, duplication is harmless).
+13. ✅ All five small fixes.
+14. ✅ Menu UI sweep (all four).
+15. ✅ Shield SFX coalescing — implemented as one-activate/one-deactivate SFX per
+    frame in `PrismStateManager` (frame-stamp dedup) rather than threading a wave
+    origin through the AOE pipeline; same audible result for same-frame waves.
 
 ### Wave 4 — flora pooling port (ecology protocol; after Waves 1–2)
 16. Port `SpindlePoolManager` + `HealthPrismPoolManager` + pooled `LifeForm`/`Flora`

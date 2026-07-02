@@ -32,6 +32,20 @@
 >   `scaleAnimator.GrowthRate`, which `Awake` only copied once at pool creation);
 >   `Projectile` per-shot linked-CTS pair replaced with plain CTS + OnDestroy
 >   cancellation.
+> - **DONE — Wave 3 extraction sweep** (re-ported from the unmerged branches per
+>   `Docs/PERF_BRANCH_MERGE_PLAN.md`): `PrismActivationQueue` (per-prism spawn
+>   coroutine herd → bounded 200/frame central queue; source branch profiled a
+>   1.9s / 10.1MB stall at 49,856 same-frame resumes); `SpawnableBase` cache key
+>   now folds intensity/domain/seed (stale-trail-data bug); `GenericPoolManager`
+>   sync-prewarm cap (scene-load hitch); `AIPilot`/`GunTransformer` per-tick and
+>   per-frame alloc fixes; `Projectile` spike opacity → MPB (was one cloned
+>   material per pooled spike); `ParametricJetEffect` per-frame Gradient alloc;
+>   `Prism` cached layer id; `PrismTimerManager` disposal guard + swap-remove;
+>   shield SFX frame-coalescing (N stacked sounds per AOE wave → 1);
+>   menu UI sweep (DailyChallengeModal 1Hz, QuestTrackView parallax idle gate +
+>   component cache, InfiniteScroll targeted rebuild, HangarScreen card reuse).
+>   Also consolidated by cherry-pick: super-shield 24→8-face mesh (+tests),
+>   benchmark schema v2, `Docs/PERFORMANCE.md` ledger, fauna net-sync plan.
 > - **OPEN:** A1 (prism ECS/instancing); A2 remainder — pooling `AOEExplosion`
 >   instances (Instantiate + reflection-DI + Destroy per detonation) is deferred
 >   deliberately: subclass `PerformResetCleanup` semantics and the
