@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Data;
-// PORT Deviation (V12, restore when CapsuleMembrane ports): using CosmicShore.Game;
-// (CapsuleMembrane is the only type this file uses from the CosmicShore.Game namespace,
-// and that namespace does not exist in the port yet — the directive would not compile.)
+using CosmicShore.Game;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using CosmicShore.Engine.Injection;
@@ -53,8 +51,8 @@ namespace CosmicShore.Gameplay
             get
             {
                 if (!membrane) return 0f;
-                // PORT Deviation (V12, restore when CapsuleMembrane ports): if (membrane.TryGetComponent<CapsuleMembrane>(out var cm))
-                // PORT Deviation (V12, restore when CapsuleMembrane ports):     return cm.Radius;
+                if (membrane.TryGetComponent<CapsuleMembrane>(out var cm))
+                    return cm.Radius;
                 return membrane.transform.localScale.x;
             }
         }
@@ -105,7 +103,7 @@ namespace CosmicShore.Gameplay
         float _nextVolumeRecomputeAt = float.NegativeInfinity;
         const float VolumeRecomputeIntervalSeconds = 0.25f;
         static readonly List<Prism> s_deadMassScratch = new(32);
-        // PORT Deviation (V12, restore when SnowChanger ports): SnowChanger spawnedCytoplasm;
+        SnowChanger spawnedCytoplasm;
 
         // ---------------------------------------------------------------------
         // Static spatial registry. Pooled prefab-spawned objects (trail prisms)
@@ -338,12 +336,9 @@ namespace CosmicShore.Gameplay
         {
             get
             {
-                // PORT Deviation (V12, restore when SpawnProfileSO ports): var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
-                // PORT Deviation (V12, restore when SpawnProfileSO ports): if (!profile) return 0f;
-                // PORT Deviation (V12, restore when SpawnProfileSO ports): return Mathf.Max(0.05f, profile.BaseFaunaSpawnTime);
-                // (CellConfigDataSO.SpawnProfile is deviated out with it — until then this is
-                // the original's "no profile is wired" path.)
-                return 0f;
+                var profile = cellConfigData ? cellConfigData.SpawnProfile : null;
+                if (!profile) return 0f;
+                return Mathf.Max(0.05f, profile.BaseFaunaSpawnTime);
             }
         }
 
@@ -503,9 +498,9 @@ namespace CosmicShore.Gameplay
             return t.IsAllZero ? CellPhaseThresholds.Default : t.WithDerivedVolumeScale();
         }
 
-        // PORT Deviation (V12, restore when IntensityWiseLifeSpawner ports): readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
-        // PORT Deviation (V12, restore when RandomLifeSpawner ports): readonly ICellLifeSpawner randomSpawner = new RandomLifeSpawner();
-        // PORT Deviation (V12, restore when ICellLifeSpawner ports): ICellLifeSpawner activeSpawner;
+        readonly ICellLifeSpawner intensitySpawner = new IntensityWiseLifeSpawner();
+        readonly ICellLifeSpawner randomSpawner = new RandomLifeSpawner();
+        ICellLifeSpawner activeSpawner;
         bool postInitilized = false;
 
         void OnEnable()
@@ -567,11 +562,11 @@ namespace CosmicShore.Gameplay
                     runtime.OnResetForReplay.OnRaised -= ResetCell;
             }
 
-            // PORT Deviation (V12, restore when SnowChanger ports): if (spawnedCytoplasm)
-            // PORT Deviation (V12, restore when SnowChanger ports): {
-            // PORT Deviation (V12, restore when SnowChanger ports):     Destroy(spawnedCytoplasm.gameObject);
-            // PORT Deviation (V12, restore when SnowChanger ports):     spawnedCytoplasm = null;
-            // PORT Deviation (V12, restore when SnowChanger ports): }
+            if (spawnedCytoplasm)
+            {
+                Destroy(spawnedCytoplasm.gameObject);
+                spawnedCytoplasm = null;
+            }
 
             StopSpawner();
             runtime?.ResetRuntimeData();
@@ -593,11 +588,11 @@ namespace CosmicShore.Gameplay
             liveFauna.Clear();
             phase = CellPhase.Calm;
 
-            // PORT Deviation (V12, restore when SnowChanger ports): if (spawnedCytoplasm)
-            // PORT Deviation (V12, restore when SnowChanger ports): {
-            // PORT Deviation (V12, restore when SnowChanger ports):     Destroy(spawnedCytoplasm.gameObject);
-            // PORT Deviation (V12, restore when SnowChanger ports):     spawnedCytoplasm = null;
-            // PORT Deviation (V12, restore when SnowChanger ports): }
+            if (spawnedCytoplasm)
+            {
+                Destroy(spawnedCytoplasm.gameObject);
+                spawnedCytoplasm = null;
+            }
 
             StopSpawner();
             AssignConfig();
@@ -847,39 +842,40 @@ namespace CosmicShore.Gameplay
         void ApplyModifiers()
         {
             var cfg = cellConfigData;
-            // PORT Deviation (V12, restore when CellModifier ports): if (!cfg || cfg.CellModifiers == null) return;
-            // PORT Deviation (V12, restore when CellModifier ports): foreach (var modifier in cfg.CellModifiers)
-            // PORT Deviation (V12, restore when CellModifier ports):     modifier.Apply(this);
-            // (CellConfigDataSO.CellModifiers is deviated out with it.)
-            if (!cfg) return;
+            if (!cfg || cfg.CellModifiers == null) return;
+
+            foreach (var modifier in cfg.CellModifiers)
+                modifier.Apply(this);
         }
 
         void SpawnCytoplasm()
         {
-            // PORT Deviation (V12, restore when SnowChanger ports): if (!cellConfigData || cellConfigData.CytoplasmPrefab == null) return;
-            // PORT Deviation (V12, restore when SnowChanger ports): spawnedCytoplasm = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
-            // PORT Deviation (V12, restore when SnowChanger ports): spawnedCytoplasm.SetOrigin(transform.position);
-            // PORT Deviation (V12, restore when SnowChanger ports): spawnedCytoplasm.Initialize();
-            // (CellConfigDataSO.CytoplasmPrefab is deviated out with it.)
+            if (!cellConfigData || cellConfigData.CytoplasmPrefab == null) return;
+
+            spawnedCytoplasm = Instantiate(cellConfigData.CytoplasmPrefab, transform.position, Quaternion.identity);
+            spawnedCytoplasm.SetOrigin(transform.position);
+            spawnedCytoplasm.Initialize();
         }
 
         void StartSpawnerForMode()
         {
             StopSpawner();
 
-            // PORT Deviation (V12, restore when ICellLifeSpawner ports): activeSpawner = cellTypeChoiceOptions == CellTypeChoiceOptions.IntensityWise
-            // PORT Deviation (V12, restore when ICellLifeSpawner ports):     ? intensitySpawner
-            // PORT Deviation (V12, restore when ICellLifeSpawner ports):     : randomSpawner;
-            // PORT Deviation (V12, restore when ICellLifeSpawner ports): activeSpawner.Start(this, cellConfigData, runtime, gameData);
-            // PORT Deviation (V12, restore when ICellLifeSpawner ports): CSDebug.Log($"<color=green>[Cell {ID}] Spawner started: {activeSpawner.GetType().Name}</color>");
+            activeSpawner = cellTypeChoiceOptions == CellTypeChoiceOptions.IntensityWise
+                ? intensitySpawner
+                : randomSpawner;
+
+            activeSpawner.Start(this, cellConfigData, runtime, gameData);
+
+            CSDebug.Log($"<color=green>[Cell {ID}] Spawner started: {activeSpawner.GetType().Name}</color>");
         }
 
         void StopSpawner()
         {
-            // PORT Deviation (V12, restore when ICellLifeSpawner ports): if (activeSpawner == null) return;
-            // PORT Deviation (V12, restore when ICellLifeSpawner ports): activeSpawner.Stop(this);
-            // PORT Deviation (V12, restore when ICellLifeSpawner ports): activeSpawner = null;
-            // PORT Deviation (V12, restore when ICellLifeSpawner ports): CSDebug.Log($"<color=yellow>[Cell {ID}] Spawner stopped</color>");
+            if (activeSpawner == null) return;
+            activeSpawner.Stop(this);
+            activeSpawner = null;
+            CSDebug.Log($"<color=yellow>[Cell {ID}] Spawner stopped</color>");
         }
 
         internal Transform GetCrystalTransform()

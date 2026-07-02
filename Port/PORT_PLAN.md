@@ -882,6 +882,36 @@ rigidbodies; satisfies [RequireComponent] so authored setup ports verbatim).
 5 tests. These shapes are the Phase-2 shape-drawing content (lava-lamp
 freestyle) and general track decoration for the client.
 
+Ecosystem groundwork part 4 — cell-ecology completion (V12 families CLOSED):
+`SpawnProfileSO` + `FloraConfigurationSO` (engine gains the inert `MinMaxAttribute`
+shim for the original's `Unity.Entities.UI.MinMax`), the full spawner chain
+(`ICellLifeSpawner` + `CellLifeSpawnerBase` + `RandomLifeSpawner` +
+`IntensityWiseLifeSpawner`), `CellModifier` + `ExtraOmniCrystals`, `SnowChanger`
+(cytoplasm — fully live headless, shards are plain GameObjects), and
+`CapsuleMembrane` + `CapsuleMembraneAnimationSO`
+(`src/CosmicShore.Game/Game/Environment/`, mirrors `_Scripts/Game/Environment/`) —
+all verbatim modulo the README substitutions. **All 41 deviation markers of these
+families restored** (36 in `Cell.cs` — spawner fields/StartSpawnerForMode/
+StopSpawner, SpawnProfile in CurrentFaunaSpawnPeriod, ApplyModifiers,
+SpawnCytoplasm + both cytoplasm destroys, CapsuleMembrane in MembraneRadius, the
+`using CosmicShore.Game` directive; 5 in `CellConfigDataSO.cs` —
+CytoplasmPrefab/CellModifiers/SpawnProfile) — a Cell now runs FULLY ALIVE
+headless: crystal-triggered post-init → modifiers → cytoplasm → real spawner
+seeding flora + fauna. CapsuleMembrane's simulation surface (Radius — the
+Cell.MembraneRadius read — icosphere layout, placement noise, offline bake math)
+is live; only the instanced-draw internals carry 19 new
+`PORT Deviation (mesh arc, …)` markers (Mesh/MeshFilter/Matrix4x4/RenderParams/
+Graphics/Gizmos — same staging as VesselModelBuilder). New `CellEcologyTests` (8)
+exercise the restored paths end-to-end AND freeze the locked invariants
+(Docs/ECOSYSTEM.md): a 2-sim-minute soak proving a seeded population NEVER
+shrinks without an active force (no imposed death), starvation → wither → the
+ONE elemental crystal reparented to the cell (mass conserved, LifeFormCrystal
+fast path), fauna seeding in the ONE controlling color + flora never Blue (no
+domain asymmetry), and the phase ladder still climbing on LiveVolume with a live
+spawner attached. Test-only finding, preserved as-is: `Cell.UpdateCellStats`
+writes `LifeFormsInCell` onto a COPY (CellStats is a struct) — verbatim upstream
+quirk, worth fixing upstream.
+
 Ecosystem groundwork part 3 (landed alongside iteration 18):
 `Physics.OverlapSphereNonAlloc` implemented against the TriggerPass collider
 registry (trigger + non-trigger, deterministic registration order, capacity

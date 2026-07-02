@@ -15,13 +15,13 @@ namespace CosmicShore.Utility
 
         [Header("Visual Properties")] public GameObject MembranePrefab;
         public GameObject NucleusPrefab;
-        // PORT Deviation (V11, restore when SnowChanger ports): public SnowChanger CytoplasmPrefab;
+        public SnowChanger CytoplasmPrefab;
 
-        // PORT Deviation (V11, restore when CellModifier ports): [Header("Mechanical Properties")]
-        // PORT Deviation (V11, restore when CellModifier ports): public List<CellModifier> CellModifiers = new();
+        [Header("Mechanical Properties")]
+        public List<CellModifier> CellModifiers = new();
 
-        // PORT Deviation (V11, restore when SpawnProfileSO ports): [Header("Spawn Profiles")]
-        // PORT Deviation (V11, restore when SpawnProfileSO ports): public SpawnProfileSO SpawnProfile;
+        [Header("Spawn Profiles")]
+        public SpawnProfileSO SpawnProfile;
 
         [Header("Sensing")]
         [Tooltip("Optional override for the cell's mass-SENSING radius — prism registration " +

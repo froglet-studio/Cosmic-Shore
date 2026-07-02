@@ -37,6 +37,19 @@ namespace CosmicShore.Engine
         public MinAttribute(float min) { this.min = min; }
     }
 
+    /// <summary>
+    /// Inspector slider metadata mirroring Unity.Entities.UI's MinMaxAttribute
+    /// (used by FloraConfigurationSO.SpawnProbability). Inert at runtime, like
+    /// the rest of this file.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Field)]
+    public sealed class MinMaxAttribute : Attribute
+    {
+        public readonly float min;
+        public readonly float max;
+        public MinMaxAttribute(float min, float max) { this.min = min; this.max = max; }
+    }
+
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class TextAreaAttribute : Attribute
     {
