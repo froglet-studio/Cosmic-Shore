@@ -38,6 +38,15 @@ namespace CosmicShore.Client
         public int TotalSpawned => _spawnCount;
         public int LiveCount => _live.Count;
 
+        /// <summary>
+        /// Every trail prism spawned this session (entries go fake-null only when an
+        /// ACTIVE force — fauna consumption or the race-restart wipe — destroys one).
+        /// The freestyle renderer/diag iterate this instead of a per-vessel TrailList so
+        /// prisms laid by a swapped-away vessel keep rendering: mass is conserved, the
+        /// prismscape outlives its maker.
+        /// </summary>
+        public IReadOnlyList<GameObject> Live => _live;
+
         public SkimRacePrismFactory(ThemeManagerDataContainerSO theme)
         {
             _theme = theme;
@@ -90,6 +99,46 @@ namespace CosmicShore.Client
             go.SetActive(true); // Awake chain: Prism caches managers, seeds prismProperties
             _live.Add(go);
             return new PrismReturnEventData { SpawnedObject = go };
+        }
+
+        /// <summary>
+        /// Assembles the same V15 prism GameObject family as <see cref="HandleSpawn"/> but
+        /// with a <see cref="HealthPrism"/> in the Prism slot — the building block of flora
+        /// leaves and fauna bodies (freestyle ecology templates). The caller owns the
+        /// GameObject (usually an inactive prefab-shelf template whose clones the REAL
+        /// lifeform code Instantiates); nothing is added to the live-trail list.
+        /// </summary>
+        public HealthPrism AddHealthPrismComponents(GameObject go, ThemeManagerDataContainerSO theme)
+        {
+            go.AddComponent<MeshRenderer>();
+            go.AddComponent<BoxCollider>();
+
+            var materialAnimator = go.AddComponent<MaterialPropertyAnimator>();
+            SkimRaceFactory.SetPrivateField(materialAnimator, "_themeManagerData", theme);
+
+            var scaleAnimator = go.AddComponent<PrismScaleAnimator>();
+            SkimRaceFactory.SetPrivateField(scaleAnimator, "onPrismVolumeModified", _onVolumeModified);
+
+            var teamManager = go.AddComponent<PrismTeamManager>();
+            SkimRaceFactory.SetPrivateField(teamManager, "_themeManagerData", theme);
+            SkimRaceFactory.SetPrivateField(teamManager, "onPrismStolen", _onStolen);
+
+            var stateManager = go.AddComponent<PrismStateManager>();
+            SkimRaceFactory.SetPrivateField(stateManager, "_themeManagerData", theme);
+
+            var prism = go.AddComponent<HealthPrism>();
+            prism.prismProperties = new PrismProperties();
+            SkimRaceFactory.SetPrivateField(prism, "_onTrailBlockCreatedEventChannel", _onCreated);
+            SkimRaceFactory.SetPrivateField(prism, "_onTrailBlockDestroyedEventChannel", _onDestroyed);
+            SkimRaceFactory.SetPrivateField(prism, "_onTrailBlockRestoredEventChannel", _onRestored);
+            SkimRaceFactory.SetPrivateField(prism, "OnBlockImpactedEventChannel", _onBlockImpacted);
+
+            var prismImpactor = go.AddComponent<PrismImpactor>();
+            var impactCollider = go.AddComponent<ImpactCollider>();
+            SkimRaceFactory.SetPrivateField(impactCollider, "impactorObject", prismImpactor);
+
+            go.AddComponent<PrismGrowthDriver>();
+            return prism;
         }
 
         /// <summary>

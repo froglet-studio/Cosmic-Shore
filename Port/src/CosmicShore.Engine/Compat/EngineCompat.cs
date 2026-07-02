@@ -475,6 +475,26 @@ namespace CosmicShore.Engine
         /// </summary>
         public static T InstantiateObject<T>(T original) where T : Object
         {
+            var clone = InstantiateDeferred(original, out var pendingActivation);
+            pendingActivation?.SetActive(true);
+            return clone;
+        }
+
+        /// <summary>
+        /// Original-contract clone with DEFERRED activation. The clone tree is built fully
+        /// deactivated so no Awake/OnEnable can observe a half-copied object — the original
+        /// engine initializes the ENTIRE clone (hierarchy + serialized data) before any
+        /// lifecycle hook runs, whereas the previous per-component AddComponent path fired
+        /// hooks before <see cref="CopyFields"/>, so an ACTIVE template's clone saw default
+        /// fields in Awake/OnEnable. When the source root was activeSelf,
+        /// <paramref name="pendingActivation"/> returns the still-inactive clone root — the
+        /// caller activates it AFTER applying any pose/parent arguments, matching the
+        /// original Instantiate(position, rotation) contract where Awake already sees the
+        /// final placement. Null when the source was inactive (nothing to activate).
+        /// </summary>
+        internal static T InstantiateDeferred<T>(T original, out GameObject pendingActivation) where T : Object
+        {
+            pendingActivation = null;
             switch (original)
             {
                 case ScriptableObject so:
@@ -484,10 +504,15 @@ namespace CosmicShore.Engine
                     return clone as T;
                 }
                 case GameObject go:
-                    return CloneGameObject(go) as T;
+                {
+                    var clone = CloneGameObject(go);
+                    if (go.activeSelf) pendingActivation = clone;
+                    return clone as T;
+                }
                 case Component component:
                 {
                     var cloned = CloneGameObject(component.gameObject);
+                    if (component.gameObject.activeSelf) pendingActivation = cloned;
                     return cloned.GetComponent(component.GetType()) as T;
                 }
                 default:
@@ -522,7 +547,16 @@ namespace CosmicShore.Engine
 
         static GameObject CloneHierarchy(GameObject source, Dictionary<object, object> map, bool isRoot)
         {
+            // EVERY node is built deactivated (original contract: no lifecycle hook may
+            // run until the whole clone — components, children, serialized fields — is in
+            // place; a child built as a free-standing active root would Awake at
+            // AddComponent time and then have its cached state clobbered by CopyFields).
+            // Children restore their authored activeSelf under their (still-inactive)
+            // parent below; the ROOT stays inactive — InstantiateDeferred reports an
+            // originally-active root back to the caller for activation after pose/parent
+            // placement, so Awake sees the final placement like the original engine.
             var clone = new GameObject(isRoot ? source.name + "(Clone)" : source.name);
+            clone.SetActive(false);
             map[source] = clone;
             map[source.transform] = clone.transform;
 
@@ -531,7 +565,6 @@ namespace CosmicShore.Engine
             clone.transform.localPosition = source.transform.localPosition;
             clone.transform.localRotation = source.transform.localRotation;
             clone.transform.localScale = source.transform.localScale;
-            if (!source.activeSelf) clone.SetActive(false);
 
             foreach (var component in source.Components)
             {
@@ -545,6 +578,10 @@ namespace CosmicShore.Engine
             {
                 var childClone = CloneHierarchy(child.gameObject, map, isRoot: false);
                 childClone.transform.SetParent(clone.transform, worldPositionStays: false);
+                // Restore authored activeSelf AFTER parenting: the parent chain contains
+                // this (inactive) node, so no hooks can fire yet — the subtree goes live
+                // in one pass when the root is finally activated.
+                if (child.gameObject.activeSelf) childClone.SetActive(true);
             }
             return clone;
         }
@@ -657,6 +694,16 @@ namespace CosmicShore.Engine
                                                  && dictionaryType.GetGenericTypeDefinition() == typeof(Dictionary<,>):
                     return CloneDictionaryValue(dictionary, dictionaryType, map, depth);
 
+                // HashSet<T> — same container rule as Array/List/Dictionary: the original
+                // engine never shares a mutable container instance between a template and
+                // its clone. A shared runtime set leaks one clone's state into every
+                // sibling (found via BranchingFlora.activeBranches: every flora clone grew
+                // — and dropped its guaranteed initial leaf — on ONE shared trunk set, so
+                // two of three flora were born leafless and failsafe-died).
+                case IEnumerable when value.GetType() is { IsGenericType: true } setType
+                                      && setType.GetGenericTypeDefinition() == typeof(HashSet<>):
+                    return CloneHashSetValue((IEnumerable)value, setType, map, depth);
+
                 default:
                     if (!IsInlinePlainClass(value.GetType()))
                         return value;
@@ -696,6 +743,27 @@ namespace CosmicShore.Engine
                 object key = RemapValue(entry.Key, map, depth);
                 object value = entry.Value is null ? null : RemapValue(entry.Value, map, depth);
                 copy.Add(key, value);
+            }
+            return copy;
+        }
+
+        static object CloneHashSetValue(IEnumerable set, Type setType, Dictionary<object, object> map, int depth)
+        {
+            // Fresh container carrying the source's comparer; elements rerun through the
+            // same value rules as array/list elements (value-type elements are kept as-is,
+            // matching the List<T> path's shallow value copy).
+            Type elementType = setType.GetGenericArguments()[0];
+            object comparer = setType.GetProperty("Comparer")!.GetValue(set);
+            object copy = Activator.CreateInstance(setType, new[] { comparer });
+            MethodInfo add = setType.GetMethod("Add")!;
+
+            bool remapElements = !elementType.IsValueType && elementType != typeof(string);
+            foreach (var element in set)
+            {
+                object item = element is not null && remapElements
+                    ? RemapValue(element, map, depth)
+                    : element;
+                add.Invoke(copy, new[] { item });
             }
             return copy;
         }

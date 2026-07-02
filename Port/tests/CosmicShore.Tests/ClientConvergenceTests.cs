@@ -1,12 +1,17 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Client;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Engine;
 using CosmicShore.Engine.Networking;
+using CosmicShore.Engine.Services;
+using CosmicShore.Engine.UI;
 using CosmicShore.Gameplay;
 using CosmicShore.UI;
 using CosmicShore.Utility;
+using Object = CosmicShore.Engine.Object;
 
 namespace CosmicShore.Tests;
 
@@ -861,6 +866,320 @@ public class ClientConvergenceTests : IDisposable
             int totalPrisms = 0;
             foreach (var pilot in director.Pilots) totalPrisms += pilot.TrailPrisms.Count;
             Assert.True(totalPrisms > 100, $"expected a substantial prismscape, got {totalPrisms}");
+        }
+        finally
+        {
+            Teardown(loop, director);
+        }
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FREESTYLE (lava-lamp) MODE — the client's Menu_Main counterpart, window-free:
+//   • the local vessel spawns through the REAL initializer chain
+//     (Player.OnNetworkSpawn → NetcodeHooks → ServerPlayerVesselInitializer →
+//     ClientPlayerVesselInitializer.InitializePair →
+//     MenuServerPlayerVesselInitializer.ActivateAutopilot) — autopilot default ON,
+//   • ONE living Cell wired the standard way (CellConfigDataSO + SpawnProfileSO +
+//     CapsuleMembrane + SnowChanger cytoplasm) seeds flora + fauna through the
+//     REAL spawner — the Cell owns the environment,
+//   • the REAL ToyboxController places the painting / vessel-changer /
+//     domain-changer toys on the membrane ring, gated on the freestyle events,
+//   • domain changes flow through Player.RequestSetDomain_ServerRpc (server-write
+//     NetDomain → Domain mirror — the theme reads the live mirror),
+//   • conserved mass: no trail caps, no TTLs, no cullers — the soak proves that
+//     with every active force removed, populations never change at all.
+// ─────────────────────────────────────────────────────────────────────────────
+
+public class FreestyleConvergenceTests : IDisposable
+{
+    public FreestyleConvergenceTests()
+    {
+        ClearProcessGlobals();
+    }
+
+    public void Dispose()
+    {
+        ClearProcessGlobals();
+    }
+
+    static void ClearProcessGlobals()
+    {
+        typeof(PlayerDataService).GetProperty("Instance")!.SetValue(null, null);
+        typeof(AudioSystem).GetProperty("Instance")!.SetValue(null, null);
+        typeof(Singleton<PrismTimerManager>).GetProperty("Instance")!.SetValue(null, null);
+        typeof(Singleton<PrismSpatialIndex>).GetProperty("Instance")!.SetValue(null, null);
+        AuthenticationService.Reset();
+        NetworkManager.Singleton = null;
+    }
+
+    /// <summary>Freestyle wind-down: director Shutdown (spawn loops, cell coroutines,
+    /// initializer CTS, AI) + destroy-queue flush before the loop goes away.</summary>
+    static void Teardown(GameLoop loop, FreestyleDirector director)
+    {
+        director.Shutdown();
+        loop.Tick(1f / 60f);
+        loop.Dispose();
+    }
+
+    static void RunSeconds(GameLoop loop, float seconds, float dt = 1f / 30f)
+    {
+        int frames = (int)MathF.Ceiling(seconds / dt) + 1;
+        for (int i = 0; i < frames; i++) loop.Tick(dt);
+    }
+
+    /// <summary>Direct children of a transform (Transform is non-generic IEnumerable).</summary>
+    static List<Transform> Children(Transform t)
+    {
+        var list = new List<Transform>();
+        foreach (Transform child in t) list.Add(child);
+        return list;
+    }
+
+    static string LabelText(Transform toyRoot) =>
+        toyRoot.gameObject.GetComponentInChildren<TMP_Text>(includeInactive: true)?.text;
+
+    /// <summary>Park the local vessel exactly on a world position (contact under test).</summary>
+    static void Park(FreestyleDirector director, Vector3 position)
+    {
+        var status = director.VesselStatus;
+        status.IsStationary = true;
+        director.LocalPlayer.Vessel.SetPose(new Pose
+        {
+            position = position,
+            rotation = Quaternion.identity,
+        });
+    }
+
+    // ── (a) the factory builds the whole scene on the real systems ──────────
+
+    [Fact]
+    public void Factory_BuildsFreestyleScene_WithLiveCellAndInitializerChainVessel()
+    {
+        var (loop, director) = FreestyleFactory.Create(seed: 7);
+        try
+        {
+            // Run the networked spawn chain (pre/postSpawnDelay ≈ 400ms) + ecology seeding.
+            RunSeconds(loop, 4f);
+
+            // The vessel arrived through the REAL initializer chain.
+            var player = Assert.IsType<Player>(director.LocalPlayer);
+            var vessel = Assert.IsType<VesselController>(player.Vessel);
+            Assert.Equal(VesselClassType.Squirrel, vessel.VesselStatus.VesselType);
+            Assert.True(vessel.IsSpawned);
+            Assert.Equal(vessel.NetworkObjectId, player.NetVesselId.Value);
+            Assert.Same(player, director.GameData.LocalPlayer);
+
+            // Menu semantics: autopilot ON (the lava lamp), domain reset to Jade
+            // server-side, input paused (the window is the single input driver).
+            Assert.True(vessel.VesselStatus.AutoPilotEnabled);
+            Assert.True(director.AutopilotEnabled);
+            Assert.False(director.IsFreestyle);
+            Assert.Equal(Domains.Jade, player.NetDomain.Value);
+            Assert.Equal(Domains.Jade, director.CurrentDomain);
+            Assert.True(player.InputStatus.Paused);
+
+            // The living Cell: membrane read, cytoplasm shards, seeded flora + fauna.
+            Assert.NotNull(director.Cell);
+            Assert.True(director.Cell.MembraneRadius > 100f);
+            Assert.True(director.FloraCount >= 1, $"expected seeded flora, got {director.FloraCount}");
+            Assert.True(director.FaunaCount >= 1, $"expected seeded fauna, got {director.FaunaCount}");
+            Assert.True(director.LifeFormPrismCount >= 1, "lifeforms should carry HealthPrism bodies");
+            var cytoplasm = Object.FindFirstObjectByType<SnowChanger>();
+            Assert.True(cytoplasm, "cytoplasm SnowChanger should be spawned");
+
+            // No domain asymmetry: the whole seeded batch wears the cell's ONE controlling
+            // color at seed time — never a mix, never Blue. (ControllingDomain is a LIVE
+            // read that can flip as flora/trail mass lands after seeding, so assert batch
+            // uniformity rather than equality against the current read.)
+            Assert.NotEmpty(director.Cell.LiveFauna);
+            var batchDomain = director.Cell.LiveFauna[0].Domain;
+            Assert.NotEqual(Domains.Blue, batchDomain);
+            foreach (var fauna in director.Cell.LiveFauna)
+                Assert.Equal(batchDomain, fauna.Domain);
+
+            // The toybox placed the three built-in toys on the membrane ring.
+            var toyboxRoot = Children(director.Toybox.transform).Single(t => t.name == "FreestyleToybox");
+            var names = Children(toyboxRoot).Select(t => t.name).ToArray();
+            Assert.Equal(3, names.Length);
+            Assert.Contains("Toy_painting", names);
+            Assert.Contains("ToySet_vessel_changer", names);
+            Assert.Contains("ToySet_domain_changer", names);
+            Assert.True(director.CountToys() >= 3);
+
+            // The autopilot vessel lays REAL prisms — the lava-lamp trail.
+            Assert.True(director.TrailPrismCount > 0, "autopilot should lay real trail prisms");
+        }
+        finally
+        {
+            Teardown(loop, director);
+        }
+    }
+
+    // ── (b) the autopilot ↔ freestyle toggle swaps control ──────────────────
+
+    [Fact]
+    public void AutopilotToggle_SwapsControl_AndRaisesTheFreestyleEvents()
+    {
+        var (loop, director) = FreestyleFactory.Create(seed: 7);
+        try
+        {
+            RunSeconds(loop, 2f);
+            Assert.True(director.AutopilotEnabled);
+
+            int enterCount = 0, exitCount = 0;
+            director.FreestyleEvents.OnGameStateTransitionStart.OnRaised += () => enterCount++;
+            director.FreestyleEvents.OnMenuStateTransitionStart.OnRaised += () => exitCount++;
+
+            // Take the stick: AI off, freestyle events raised (ToyboxController arms on these).
+            director.ToggleControl();
+            Assert.True(director.IsFreestyle);
+            Assert.False(director.AutopilotEnabled);
+            Assert.Equal(1, enterCount);
+            Assert.Equal(0, exitCount);
+
+            // The rig's InputController stays paused — the window drives the ported
+            // input strategy itself (single input driver, SkimRace precedent).
+            loop.Tick(1f / 30f);
+            Assert.True(director.LocalPlayer.InputStatus.Paused);
+
+            // Hand it back: AI on, menu events raised.
+            director.ToggleControl();
+            Assert.False(director.IsFreestyle);
+            Assert.True(director.AutopilotEnabled);
+            Assert.Equal(1, enterCount);
+            Assert.Equal(1, exitCount);
+        }
+        finally
+        {
+            Teardown(loop, director);
+        }
+    }
+
+    // ── (c) domain-toy flythrough changes the pilot's domain ────────────────
+
+    [Fact]
+    public void DomainToyFlythrough_ChangesPilotDomain_AndThemeTintSource()
+    {
+        var (loop, director) = FreestyleFactory.Create(seed: 7);
+        try
+        {
+            RunSeconds(loop, 4f); // spawn chain + toy placement + blooms (1.2s) complete
+
+            var player = (Player)director.LocalPlayer;
+            Assert.Equal(Domains.Jade, player.Domain);
+
+            var toyboxRoot = Children(director.Toybox.transform).Single(t => t.name == "FreestyleToybox");
+            var domainHost = Children(toyboxRoot).Single(t => t.name == "ToySet_domain_changer");
+
+            // The flip-set shows the two domains you are NOT: Ruby + Gold, never Jade.
+            var slots = Children(domainHost);
+            Assert.Equal(2, slots.Count);
+            var labels = slots.Select(LabelText).ToArray();
+            Assert.Contains("Ruby", labels);
+            Assert.Contains("Gold", labels);
+            Assert.DoesNotContain("Jade", labels);
+            var rubyRoot = slots.Single(r => LabelText(r) == "Ruby");
+
+            // Autopilot lava-lamp: toys are visible but INERT — a drift-through does nothing.
+            Park(director, rubyRoot.position);
+            RunSeconds(loop, 0.5f);
+            Assert.Equal(Domains.Jade, player.Domain);
+
+            // Take control, leave, re-arm, fly back through the Ruby toy.
+            Park(director, Vector3.zero);
+            director.ToggleControl();
+            RunSeconds(loop, 1f); // re-arm window
+            Park(director, rubyRoot.position);
+            RunSeconds(loop, 0.3f);
+
+            // Server-authoritative write landed on NetDomain and mirrored into
+            // Player.Domain — the LIVE mirror the theme tint reads.
+            Assert.Equal(Domains.Ruby, player.NetDomain.Value);
+            Assert.Equal(Domains.Ruby, player.Domain);
+            Assert.Equal(Domains.Ruby, director.CurrentDomain);
+
+            // The hull tint source follows: the theme resolves the NEW domain's colors.
+            var theme = director.GameData.ThemeManagerData;
+            Assert.NotEqual(theme.GetDomainUIColor(Domains.Jade), theme.GetDomainUIColor(director.CurrentDomain));
+            Assert.NotNull(theme.TeamMaterialSets[director.CurrentDomain].ShipMaterial);
+
+            // The used toy flipped in place to the domain you just left (set = universe \ current).
+            RunSeconds(loop, 0.2f);
+            Assert.Equal("Jade", LabelText(rubyRoot));
+            var after = Children(domainHost).Select(LabelText).ToArray();
+            Assert.Contains("Jade", after);
+            Assert.Contains("Gold", after);
+            Assert.DoesNotContain("Ruby", after);
+        }
+        finally
+        {
+            Teardown(loop, director);
+        }
+    }
+
+    // ── (d) 2-sim-minute soak: populations move ONLY through active forces ──
+
+    [Fact]
+    public void FreestyleSoak_TwoSimMinutes_PopulationsMoveOnlyThroughActiveForces()
+    {
+        // Remove every active force: fauna never starve, cannot move, and cannot eat
+        // (consume radius 0 — an immobile fauna could otherwise still graze a leaf that
+        // seeded within its reach, which IS an active force and legitimately kills the
+        // flora). With no consumption, no predation, no ability, and no imposed clock,
+        // NOTHING may leave the world for the whole soak.
+        var tuning = new FreestyleTuning
+        {
+            FaunaStarvationSeconds = 0f,
+            FaunaMinSpeed = 0f,
+            FaunaMaxSpeed = 0f,
+            FaunaConsumeRadius = 0f,
+        };
+        var (loop, director) = FreestyleFactory.Create(seed: 11, tuning);
+        try
+        {
+            RunSeconds(loop, 6f); // seed the ecology + let the autopilot lay some trail
+
+            int faunaBefore = director.FaunaCount;
+            int floraBefore = director.FloraCount;
+            int trailBefore = director.TrailPrismCount;
+            Assert.True(faunaBefore >= 1, "soak needs a seeded fauna population");
+            Assert.True(floraBefore >= 1, "soak needs seeded flora");
+            Assert.True(trailBefore > 0, "soak needs a laid trail");
+            var seededFauna = new List<Fauna>(director.Cell.LiveFauna);
+            var seededTrail = new List<GameObject>();
+            foreach (var go in director.PrismFactory.Live)
+                if (go) seededTrail.Add(go);
+
+            // Freeze production too (the spawner may keep seeding/planting — allowed,
+            // but the CONSERVATION assertions below are about removal, so stop the
+            // vessel's spawn loop to make the trail side exact).
+            director.VesselStatus.VesselPrismController.StopSpawn();
+            loop.Tick(1f / 30f);
+            int trailFrozen = director.TrailPrismCount;
+
+            // Two simulated minutes of pure time.
+            RunSeconds(loop, 120f, dt: 0.1f);
+
+            // No imposed death: every seeded fauna is still alive, the count never fell.
+            Assert.True(director.FaunaCount >= faunaBefore,
+                $"fauna shrank with no active force: {faunaBefore} → {director.FaunaCount}");
+            foreach (var fauna in seededFauna)
+                Assert.True(fauna, "a seeded fauna vanished with no active force — imposed-death regression");
+
+            // Flora only grow (their growth coroutines add prisms; nothing eats them).
+            Assert.True(director.FloraCount >= floraBefore,
+                $"flora shrank with no active force: {floraBefore} → {director.FloraCount}");
+
+            // Conserved mass: every trail prism survives untouched — no aging, no decay,
+            // no culler, anywhere. (The menu trail cap is a cheat; there is no cap.)
+            Assert.Equal(trailFrozen, director.TrailPrismCount);
+            foreach (var go in seededTrail)
+            {
+                Assert.True(go, "a trail prism GameObject vanished without an active force");
+                var prism = go.GetComponent<Prism>();
+                Assert.False(prism.destroyed, "a trail prism was destroyed without an active force");
+            }
         }
         finally
         {

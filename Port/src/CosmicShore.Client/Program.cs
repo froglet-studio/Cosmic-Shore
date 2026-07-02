@@ -3,18 +3,26 @@ using System;
 namespace CosmicShore.Client
 {
     /// <summary>
-    /// SkimRace — Cosmic Shore port, playable slice.
+    /// Cosmic Shore port — playable client.
     ///
-    ///   SkimRace [--seed N] [--crystals N] [--rivals N] [--screenshot out.png [--frames N]]
+    ///   [--mode race|freestyle] [--seed N] [--crystals N] [--rivals N]
+    ///   [--screenshot out.png [--frames N]]
     ///
-    /// Controls: WASD / arrows steer · Space boost · Shift drift · R restart · Esc quit.
-    /// Rules: closed circuit, persistent skimmable trails, energy raises top speed;
-    /// elemental crystals respawn — first to the target wins, time is the score.
+    /// RACE (default): SkimRace — closed circuit, persistent skimmable trails, energy
+    /// raises top speed; elemental crystals respawn — first to the target wins, time is
+    /// the score. Controls: WASD/arrows steer · Space boost · Shift drift · R restart.
+    ///
+    /// FREESTYLE: the lava lamp — one living Cell (flora, fauna, cytoplasm motes,
+    /// membrane), your vessel on autopilot until you take the stick, and the toybox on
+    /// the membrane ring (vessel changer, domain changer, fly-by-numbers painting).
+    /// No score, no end condition. Controls: Tab / gamepad Y toggles autopilot ↔ flying
+    /// · WASD/arrows steer · Space boost · Shift drift · Esc quit.
     /// </summary>
     static class Program
     {
         static int Main(string[] args)
         {
+            string mode = "race";
             int seed = 42;
             int crystals = 30;
             int rivals = 3;
@@ -25,6 +33,7 @@ namespace CosmicShore.Client
             {
                 switch (args[i])
                 {
+                    case "--mode" when i + 1 < args.Length: mode = args[++i].ToLowerInvariant(); break;
                     case "--seed" when i + 1 < args.Length: int.TryParse(args[++i], out seed); break;
                     case "--crystals" when i + 1 < args.Length: int.TryParse(args[++i], out crystals); break;
                     case "--rivals" when i + 1 < args.Length: int.TryParse(args[++i], out rivals); break;
@@ -33,11 +42,18 @@ namespace CosmicShore.Client
                 }
             }
 
-            Console.WriteLine($"SkimRace — seed {seed}, crystal target {crystals}, rivals {rivals}");
-            Console.WriteLine("WASD/arrows steer · Space boost · Shift drift · R restart · Esc quit");
-
             try
             {
+                if (mode == "freestyle")
+                {
+                    Console.WriteLine($"Freestyle — seed {seed}");
+                    Console.WriteLine("Tab (or gamepad Y) toggles autopilot/flying · WASD/arrows steer · Space boost · Shift drift · Esc quit");
+                    new FreestyleWindow(seed, screenshot, screenshotFrame).Run();
+                    return 0;
+                }
+
+                Console.WriteLine($"SkimRace — seed {seed}, crystal target {crystals}, rivals {rivals}");
+                Console.WriteLine("WASD/arrows steer · Space boost · Shift drift · R restart · Esc quit");
                 new RaceWindow(seed, crystals, rivals, screenshot, screenshotFrame).Run();
                 return 0;
             }

@@ -80,10 +80,11 @@ namespace CosmicShore.Engine
         public static T Instantiate<T>(T original) where T : Object
             => ObjectUtilities.InstantiateObject(original);
 
-        /// <summary>Clone and place at a world pose in one step (cell visuals and spawners use this shape).</summary>
+        /// <summary>Clone and place at a world pose in one step (cell visuals and spawners use this shape).
+        /// Activation is deferred until after placement (original contract: Awake sees the final pose).</summary>
         public static T Instantiate<T>(T original, Vector3 position, Quaternion rotation) where T : Object
         {
-            var clone = ObjectUtilities.InstantiateObject(original);
+            var clone = ObjectUtilities.InstantiateDeferred(original, out var pendingActivation);
             var transform = clone switch
             {
                 GameObject go => go.transform,
@@ -95,27 +96,34 @@ namespace CosmicShore.Engine
                 transform.position = position;
                 transform.rotation = rotation;
             }
+            pendingActivation?.SetActive(true);
             return clone;
         }
 
         /// <summary>Clone, place at a world pose, and parent in one step (original engine's 4-arg shape).</summary>
         public static T Instantiate<T>(T original, Vector3 position, Quaternion rotation, Transform parent) where T : Object
         {
-            var clone = Instantiate(original, position, rotation);
+            var clone = ObjectUtilities.InstantiateDeferred(original, out var pendingActivation);
             var transform = clone switch
             {
                 GameObject go => go.transform,
                 Component component => component.transform,
                 _ => null,
             };
-            transform?.SetParent(parent, worldPositionStays: true);
+            if (transform is not null)
+            {
+                transform.position = position;
+                transform.rotation = rotation;
+                transform.SetParent(parent, worldPositionStays: true);
+            }
+            pendingActivation?.SetActive(true);
             return clone;
         }
 
         /// <summary>Clone and parent in one step (pool managers and spawners use this shape).</summary>
         public static T Instantiate<T>(T original, Transform parent, bool instantiateInWorldSpace = false) where T : Object
         {
-            var clone = ObjectUtilities.InstantiateObject(original);
+            var clone = ObjectUtilities.InstantiateDeferred(original, out var pendingActivation);
             var transform = clone switch
             {
                 GameObject go => go.transform,
@@ -123,6 +131,7 @@ namespace CosmicShore.Engine
                 _ => null,
             };
             transform?.SetParent(parent, instantiateInWorldSpace);
+            pendingActivation?.SetActive(true);
             return clone;
         }
 

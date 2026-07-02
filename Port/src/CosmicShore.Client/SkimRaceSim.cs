@@ -1090,7 +1090,7 @@ namespace CosmicShore.Client
         /// player rig's InputStatus share the race's button channels. The E16 clone remap
         /// makes Instantiate prefab-faithful.
         /// </summary>
-        static GameObject BuildVesselPrefab(string name, VesselClassType vesselType, GameDataSO gameData,
+        internal static GameObject BuildVesselPrefab(string name, VesselClassType vesselType, GameDataSO gameData,
             CellRuntimeDataSO courseData, SkimRacePrismFactory prismFactory,
             SkimmerImpactorDataContainerSO skimmerImpactorContainer,
             ScriptableEventInputEvents onButtonPressed, ScriptableEventInputEvents onButtonReleased)
