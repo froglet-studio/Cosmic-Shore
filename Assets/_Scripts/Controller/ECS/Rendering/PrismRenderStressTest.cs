@@ -5,40 +5,51 @@ using Unity.Rendering;
 using Unity.Transforms;
 using UnityEngine;
 using UnityEngine.Rendering;
+using CosmicShore.Utility.PerformanceBenchmark;
 
 namespace CosmicShore.ECS
 {
     /// <summary>
-    /// Max-prism rendering stress harness. Spawns N pure render entities (no
-    /// GameObjects, no colliders, no MonoBehaviours) sharing one mesh+material
-    /// with per-instance color overrides — the end-state representation of bulk
-    /// prism mass. Use it in any scene with a camera to measure the instanced
-    /// rendering ceiling on target hardware (drop on an empty GameObject, set
-    /// the mesh/material from a prism prefab, hit play).
+    /// Max-prism rendering stress harness. Spawns N render entities (no GameObjects,
+    /// no colliders, no MonoBehaviours) sharing one mesh+material with per-instance
+    /// color overrides — the end-state representation of bulk prism mass.
     ///
-    /// In-editor verification:
-    ///  1. Game view + Stats panel (or the Performance Benchmark tool):
-    ///     SetPass/draw calls stay in the tens regardless of Count.
-    ///  2. Entities Hierarchy window shows Count entities.
-    ///  3. With 100k static entities a mid PC should hold well above 60 fps;
-    ///     raise Count until it doesn't — that is the rendering ceiling.
-    ///  4. movingFraction / colorChurnFraction exercise the hybrid write path
-    ///     (main-thread SetComponentData), modelling growth animation and
-    ///     theme-change load at scale.
+    /// Two spawn modes:
+    ///  • useRenderService = true (default): every entity goes through PrismRenderService
+    ///    (Create / SetVisible / SetColors / SetTransform) — the SAME bridge the game's
+    ///    prisms use. The DiagnosticsHUD "Prism Path" line (ents/meshes/mats) then reflects
+    ///    the population, and the service's own per-call overhead is part of the measurement.
+    ///  • useRenderService = false: raw EntityManager spawn (prototype + mass Instantiate) —
+    ///    the theoretical ECS ceiling with zero bridge overhead, for A/B comparison.
+    ///
+    /// Live numbers are published to the DiagnosticsHUD (F7 toggle / F6 advanced) via
+    /// DiagnosticsHUD.SetStat — this component draws no overlay of its own.
+    ///
+    /// In-editor verification: Draw Calls / SetPass on the HUD stay in the tens regardless
+    /// of Count; Entities Hierarchy shows Count entities; raise Count until fps breaks to
+    /// find the rendering ceiling on target hardware.
     /// </summary>
     public class PrismRenderStressTest : MonoBehaviour
     {
+        const string StatsSection = "Stress Test";
+
         [Header("Population")]
-        [Tooltip("Number of pure render entities to spawn.")]
+        [Tooltip("Number of render entities to spawn.")]
         [SerializeField] private int count = 100_000;
         [Tooltip("Mesh to instance — assign the prism mesh from a prism prefab.")]
         [SerializeField] private Mesh mesh;
-        [Tooltip("Material to instance — assign a prism material (UnstablePrismGraph-based).")]
+        [Tooltip("Material to instance — assign a prism material (BlockGraph-based).")]
         [SerializeField] private Material material;
         [Tooltip("Half-extent of the spawn cube around this transform.")]
         [SerializeField] private float spawnRadius = 600f;
         [Tooltip("Uniform scale range for spawned instances.")]
         [SerializeField] private Vector2 scaleRange = new Vector2(0.5f, 3f);
+
+        [Header("Path")]
+        [Tooltip("Spawn through PrismRenderService — the game's actual render bridge — so the " +
+                 "HUD's Prism Path ents/meshes/mats reflect the population. Off = raw " +
+                 "EntityManager spawn for the zero-overhead theoretical ceiling.")]
+        [SerializeField] private bool useRenderService = true;
 
         [Header("Churn (models growth + theme animation at scale)")]
         [Tooltip("Fraction of entities whose transform is rewritten every frame (growth/movers).")]
@@ -46,14 +57,15 @@ namespace CosmicShore.ECS
         [Tooltip("Fraction of entities whose colors are rewritten every frame (theme/state animation).")]
         [Range(0f, 1f)][SerializeField] private float colorChurnFraction = 0.02f;
 
-        [Header("Overlay")]
-        [SerializeField] private bool showOverlay = true;
-
+        // Direct mode
         private NativeArray<Entity> _entities;
+        // Service mode
+        private PrismRenderHandle[] _handles;
+
         private NativeArray<float3> _basePositions;
         private NativeArray<float> _baseScales;
         private World _world;
-        private float _smoothedDt;
+        private bool _viaService;
 
         private static readonly Color[] DomainPalette =
         {
@@ -61,6 +73,18 @@ namespace CosmicShore.ECS
             new Color(0.9f, 0.2f, 0.3f), // ruby-ish
             new Color(0.95f, 0.8f, 0.2f), // gold-ish
         };
+
+        /// <summary>
+        /// Set the spawn parameters before Start runs — used by the runtime injector
+        /// (AddComponent + Configure in the same frame; Start executes later that frame).
+        /// </summary>
+        public void Configure(Mesh sharedMesh, Material sharedMaterial, int entityCount, float radius)
+        {
+            mesh = sharedMesh;
+            material = sharedMaterial;
+            count = entityCount;
+            spawnRadius = radius;
+        }
 
         void Start()
         {
@@ -80,7 +104,6 @@ namespace CosmicShore.ECS
                 return;
             }
 
-            var em = _world.EntityManager;
             var graphics = _world.GetExistingSystemManaged<EntitiesGraphicsSystem>();
             if (graphics == null)
             {
@@ -89,10 +112,65 @@ namespace CosmicShore.ECS
                 return;
             }
 
+            _basePositions = new NativeArray<float3>(count, Allocator.Persistent);
+            _baseScales = new NativeArray<float>(count, Allocator.Persistent);
+
+            _viaService = useRenderService && SpawnViaService();
+            if (!_viaService)
+                SpawnDirect(graphics);
+
+            DiagnosticsHUD.SetStat(StatsSection, "Entities", count.ToString("N0"));
+            DiagnosticsHUD.SetStat(StatsSection, "Mode", _viaService ? "render service" : "direct ECS");
+            DiagnosticsHUD.SetStat(StatsSection, "Moving / f", ((int)(count * movingFraction)).ToString("N0"));
+            DiagnosticsHUD.SetStat(StatsSection, "Recolor / f", ((int)(count * colorChurnFraction)).ToString("N0"));
+
+            Debug.Log($"[PrismRenderStressTest] Spawned {count} render entities via " +
+                      $"{(_viaService ? "PrismRenderService (game bridge)" : "raw EntityManager")} — 1 mesh, 1 material, per-instance colors.");
+        }
+
+        /// <summary>Spawns through the game's render bridge. False when the service can't create
+        /// (master toggle off / no graphics system) — caller falls back to the direct path.</summary>
+        bool SpawnViaService()
+        {
+            _handles = new PrismRenderHandle[count];
+
+            var random = new Unity.Mathematics.Random(0x5EED5EED);
+            float3 origin = transform.position;
+            for (int i = 0; i < count; i++)
+            {
+                float3 pos = origin + random.NextFloat3(-spawnRadius, spawnRadius);
+                float scale = random.NextFloat(scaleRange.x, scaleRange.y);
+                quaternion rot = random.NextQuaternionRotation();
+                _basePositions[i] = pos;
+                _baseScales[i] = scale;
+
+                var matrix = Matrix4x4.TRS(pos, rot, new Vector3(scale, scale, scale));
+                _handles[i] = PrismRenderService.Create(mesh, material, in matrix, gameObject.layer);
+
+                if (i == 0 && !PrismRenderService.IsHandleUsable(in _handles[0]))
+                {
+                    Debug.LogWarning("[PrismRenderStressTest] PrismRenderService unavailable (toggle off or no ECS graphics) — falling back to direct EntityManager spawn.");
+                    _handles = null;
+                    return false;
+                }
+
+                var bright = DomainPalette[i % DomainPalette.Length];
+                PrismRenderService.SetColors(in _handles[i],
+                    PrismRenderService.ToFloat4(bright),
+                    new float4(0f, 0f, 0f, 1f),
+                    new float3(1f, 1f, 1f));
+                PrismRenderService.SetVisible(in _handles[i], true);
+            }
+            return true;
+        }
+
+        /// <summary>Raw prototype + mass Instantiate — the zero-bridge-overhead ceiling.</summary>
+        void SpawnDirect(EntitiesGraphicsSystem graphics)
+        {
+            var em = _world.EntityManager;
             var meshId = graphics.RegisterMesh(mesh);
             var materialId = graphics.RegisterMaterial(material);
 
-            // Prototype entity carrying the full render archetype, then mass-instantiate.
             var desc = new RenderMeshDescription(ShadowCastingMode.Off, receiveShadows: false);
             var prototype = em.CreateEntity();
             RenderMeshUtility.AddComponents(prototype, em, in desc, new MaterialMeshInfo(materialId, meshId));
@@ -107,9 +185,6 @@ namespace CosmicShore.ECS
             _entities = new NativeArray<Entity>(count, Allocator.Persistent);
             em.Instantiate(prototype, _entities);
             em.DestroyEntity(prototype);
-
-            _basePositions = new NativeArray<float3>(count, Allocator.Persistent);
-            _baseScales = new NativeArray<float>(count, Allocator.Persistent);
 
             var random = new Unity.Mathematics.Random(0x5EED5EED);
             float3 origin = transform.position;
@@ -132,16 +207,14 @@ namespace CosmicShore.ECS
                     Value = new float4(bright.r, bright.g, bright.b, 1f)
                 });
             }
-
-            Debug.Log($"[PrismRenderStressTest] Spawned {count} render entities (1 mesh, 1 material, per-instance colors).");
         }
 
         void Update()
         {
-            _smoothedDt = Mathf.Lerp(_smoothedDt <= 0f ? Time.unscaledDeltaTime : _smoothedDt, Time.unscaledDeltaTime, 0.05f);
-            if (_world == null || !_world.IsCreated || !_entities.IsCreated) return;
+            if (_world == null || !_world.IsCreated) return;
+            if (!_viaService && !_entities.IsCreated) return;
+            if (_viaService && _handles == null) return;
 
-            var em = _world.EntityManager;
             float t = Time.time;
 
             int movingCount = (int)(count * movingFraction);
@@ -150,10 +223,19 @@ namespace CosmicShore.ECS
                 float phase = t + i * 0.61f;
                 float3 pos = _basePositions[i] + new float3(0f, math.sin(phase) * 5f, 0f);
                 float scale = _baseScales[i] * (1f + 0.25f * math.sin(phase * 2f));
-                em.SetComponentData(_entities[i], new LocalToWorld
+
+                if (_viaService)
                 {
-                    Value = float4x4.TRS(pos, quaternion.identity, new float3(scale))
-                });
+                    var matrix = Matrix4x4.TRS(pos, Quaternion.identity, new Vector3(scale, scale, scale));
+                    PrismRenderService.SetTransform(in _handles[i], in matrix);
+                }
+                else
+                {
+                    _world.EntityManager.SetComponentData(_entities[i], new LocalToWorld
+                    {
+                        Value = float4x4.TRS(pos, quaternion.identity, new float3(scale))
+                    });
+                }
             }
 
             int churnStart = movingCount;
@@ -164,23 +246,25 @@ namespace CosmicShore.ECS
                 if (idx >= count) break;
                 float pulse = 0.5f + 0.5f * math.sin(t * 3f + idx * 0.37f);
                 var baseColor = DomainPalette[idx % DomainPalette.Length];
-                em.SetComponentData(_entities[idx], new PrismBrightColorOverride
-                {
-                    Value = new float4(baseColor.r * pulse, baseColor.g * pulse, baseColor.b * pulse, 1f)
-                });
-            }
-        }
+                var color = new float4(baseColor.r * pulse, baseColor.g * pulse, baseColor.b * pulse, 1f);
 
-        void OnGUI()
-        {
-            if (!showOverlay) return;
-            float fps = _smoothedDt > 0f ? 1f / _smoothedDt : 0f;
-            GUI.Label(new Rect(10, 10, 640, 22),
-                $"[PrismRenderStressTest] entities={count}  moving={(int)(count * movingFraction)}  colorChurn={(int)(count * colorChurnFraction)}  fps={fps:F1}");
+                if (_viaService)
+                    PrismRenderService.SetColors(in _handles[idx], in color, new float4(0f, 0f, 0f, 1f), new float3(1f, 1f, 1f));
+                else
+                    _world.EntityManager.SetComponentData(_entities[idx], new PrismBrightColorOverride { Value = color });
+            }
         }
 
         void OnDestroy()
         {
+            DiagnosticsHUD.ClearStats(StatsSection);
+
+            if (_handles != null)
+            {
+                for (int i = 0; i < _handles.Length; i++)
+                    PrismRenderService.Destroy(ref _handles[i]);
+                _handles = null;
+            }
             if (_world != null && _world.IsCreated && _entities.IsCreated)
                 _world.EntityManager.DestroyEntity(_entities);
             if (_entities.IsCreated) _entities.Dispose();

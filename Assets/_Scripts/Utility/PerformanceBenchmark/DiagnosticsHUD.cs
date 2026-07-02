@@ -35,6 +35,46 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// </summary>
     public class DiagnosticsHUD : MonoBehaviour
     {
+        // ── external stats API ────────────────────────────────────────────
+        // Any system (stress harness, perf probes, debug injectors) publishes rows here
+        // instead of drawing its own OnGUI overlay — one diagnostics surface. Sections
+        // render in registration order below the core rows, in simple AND advanced view.
+        // The methods exist in all builds but no-op outside editor/dev (the HUD itself
+        // only exists there).
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        static readonly List<string> s_statSectionOrder = new();
+        static readonly Dictionary<string, List<KeyValuePair<string, string>>> s_customStats = new();
+#endif
+
+        /// <summary>Adds or updates one row under a titled section of the diagnostics overlay.</summary>
+        public static void SetStat(string section, string label, string value)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (!s_customStats.TryGetValue(section, out var rows))
+            {
+                rows = new List<KeyValuePair<string, string>>();
+                s_customStats[section] = rows;
+                s_statSectionOrder.Add(section);
+            }
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (rows[i].Key != label) continue;
+                rows[i] = new KeyValuePair<string, string>(label, value);
+                return;
+            }
+            rows.Add(new KeyValuePair<string, string>(label, value));
+#endif
+        }
+
+        /// <summary>Removes an entire section published via <see cref="SetStat"/> (call from the owner's OnDestroy).</summary>
+        public static void ClearStats(string section)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            s_customStats.Remove(section);
+            s_statSectionOrder.Remove(section);
+#endif
+        }
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         static DiagnosticsHUD _instance;
 
@@ -229,6 +269,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             Row(la, va, "CPU (busy)", MsValue(busyCpuMs));
             Row(la, va, "GPU", MsValue(_smGpuMs));
             Row(la, va, "Bound", BoundValue(busyCpuMs));
+
+            // External sections published via SetStat (stress harness, probes, injectors).
+            foreach (var section in s_statSectionOrder)
+            {
+                Header(la, va, section);
+                foreach (var row in s_customStats[section])
+                    Row(la, va, row.Key, Col(White, row.Value));
+            }
 
             if (_advanced)
             {

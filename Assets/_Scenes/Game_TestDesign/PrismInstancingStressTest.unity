@@ -343,4 +343,4 @@ MonoBehaviour:
   scaleRange: {x: 0.5, y: 3}
   movingFraction: 0.02
   colorChurnFraction: 0.02
-  showOverlay: 1
+  useRenderService: 1
