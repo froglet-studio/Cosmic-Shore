@@ -3,7 +3,6 @@ using UnityEngine;
 using CosmicShore.Gameplay;
 using CosmicShore.Data;
 using CosmicShore.Utility;
-using System.Linq;
 namespace CosmicShore.Gameplay
 {
     [CreateAssetMenu(
@@ -30,6 +29,11 @@ namespace CosmicShore.Gameplay
 
         private const int MinBlocksRequired = 3;
 
+        // Execute fires per skimmer trigger-enter — many times per second in dense
+        // trail. The look-ahead result is consumed synchronously within Execute, so a
+        // shared scratch buffer replaces a fresh trail-walk list per impact.
+        static readonly List<Prism> s_lookAheadScratch = new();
+
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
             var skimmer = impactor.Skimmer;
@@ -38,11 +42,10 @@ namespace CosmicShore.Gameplay
 
             if (prism == null || prism.Trail == null) return;
 
-            var nextPrisms = FindNextBlocks(prism, ship.Speed * LookAheadTime);
-            //var idx = prism.prismProperties.Index;
-            //var nextBlocks = prism.Trail.LookAhead(idx, -backStep, TrailFollowerDirection.Forward, lookAhead);
+            var nextPrisms = s_lookAheadScratch;
+            FindNextBlocks(prism, nextPrisms, ship.Speed * LookAheadTime);
 
-            if (nextPrisms == null || nextPrisms.Count < MinBlocksRequired) return;
+            if (nextPrisms.Count < MinBlocksRequired) return;
 
             var xform = skimmer.transform;
 
@@ -93,18 +96,19 @@ namespace CosmicShore.Gameplay
             ship.VesselTransformer.GentleSpinShip(targetForward, targetUp, alignSpeed);
         }
 
-        List<Prism> FindNextBlocks(Prism minMatureBlock, float distance = 100f)
+        void FindNextBlocks(Prism minMatureBlock, List<Prism> results, float distance = 100f)
         {
-            if (minMatureBlock.Trail == null) return new List<Prism> { minMatureBlock };
+            results.Clear();
+            if (minMatureBlock.Trail == null)
+            {
+                results.Add(minMatureBlock);
+                return;
+            }
             var minIndex = minMatureBlock.prismProperties.Index;
-            List<Prism> nextBlocks;
-            if (direction < 0 && minIndex > 0)
-                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Backward, distance);
-            else if (direction > 0 && minIndex < minMatureBlock.Trail.TrailList.Count - 1)
-                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Forward, distance);
-            else
-                nextBlocks = minMatureBlock.Trail.LookAhead(minIndex, 0, TrailFollowerDirection.Forward, distance);
-            return nextBlocks;
+            var lookDirection = direction < 0 && minIndex > 0
+                ? TrailFollowerDirection.Backward
+                : TrailFollowerDirection.Forward;
+            minMatureBlock.Trail.LookAhead(minIndex, 0, lookDirection, distance, results);
         }
     }
 }

@@ -97,6 +97,8 @@ namespace CosmicShore.Gameplay
             transform.localScale = Vector3.one * _appliedScale;
         }
 
+        readonly List<Prism> _nextBlocksScratch = new();
+
         void MakeBoosters(Prism prism)
         {
             const int markerCount = 5;
@@ -105,7 +107,8 @@ namespace CosmicShore.Gameplay
             if (Time.time - _boosterTimer < cooldown) return;
             _boosterTimer = Time.time;
 
-            var nextBlocks = FindNextBlocks(prism, markerCount * markerDistance);
+            var nextBlocks = _nextBlocksScratch;
+            FindNextBlocks(prism, nextBlocks, markerCount * markerDistance);
             if (nextBlocks.Count == 0) return;
 
             // last element
@@ -120,20 +123,20 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        List<Prism> FindNextBlocks(Prism block, float distance = 100f)
+        void FindNextBlocks(Prism block, List<Prism> results, float distance = 100f)
         {
+            results.Clear();
             if (block == null || block.Trail == null)
-                return new List<Prism> { block };
+            {
+                if (block) results.Add(block);
+                return;
+            }
 
             int idx = block.prismProperties.Index;
-            var forward = TrailFollowerDirection.Forward;
-            var backward = TrailFollowerDirection.Backward;
 
             // simple: prefer forward unless at start and direction negative; adjust if you track direction elsewhere
-            if (idx > 0)
-                return block.Trail.LookAhead(idx, 0, forward, distance);
-
-            return block.Trail.LookAhead(idx, 0, backward, distance);
+            var direction = idx > 0 ? TrailFollowerDirection.Forward : TrailFollowerDirection.Backward;
+            block.Trail.LookAhead(idx, 0, direction, distance, results);
         }
 
         public static float ComputeGaussian(float x, float b, float c)
@@ -154,6 +157,15 @@ namespace CosmicShore.Gameplay
 
             var markers = new List<NudgeShard>();
 
+            // One trail walk per circle, shared by every marker — NudgeShard only reads
+            // its Prisms list. This was previously recomputed PER SEGMENT: up to 360
+            // GetComponent<Prism> calls and 360 fresh trail-walk lists per circle. The
+            // list must be a fresh instance per circle (markers retain it for 8s and
+            // batches can overlap), not a reused scratch buffer.
+            var circlePrisms = new List<Prism>();
+            FindNextBlocks(blockTransform.GetComponent<Prism>(), circlePrisms,
+                markerDistance * VesselStatus.ResourceSystem.Resources[0].CurrentAmount);
+
             for (int i = -segments / 2; i < segments / 2; i++)
             {
                 float angle = i * anglePerSegment;
@@ -161,15 +173,15 @@ namespace CosmicShore.Gameplay
                                    + Mathf.Sin(angle + (Mathf.PI / 2)) * blockTransform.up) * radius;
 
                 Vector3 worldPos = blockTransform.position + localPos;
- 
-                
+
+
                 if (!SafeLookRotation.TryGet(blockTransform.forward, localPos, out var rotation, blockTransform))
                     continue;
 
                 var marker = nudgeShardPoolManager?.Get(worldPos, rotation, nudgeShardPoolManager.transform);
 
                 if (!marker) break;
-                
+
                 if (!shardPositions.Add(marker.transform.position))
                 {
                     nudgeShardPoolManager?.Release(marker);
@@ -177,8 +189,7 @@ namespace CosmicShore.Gameplay
                 }
 
                 marker.transform.localScale = blockTransform.localScale / 2f;
-                marker.Prisms =
-                    FindNextBlocks(blockTransform.GetComponent<Prism>(), markerDistance * VesselStatus.ResourceSystem.Resources[0].CurrentAmount);
+                marker.Prisms = circlePrisms;
 
                 markers.Add(marker);
             }

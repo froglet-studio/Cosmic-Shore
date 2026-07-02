@@ -2,7 +2,6 @@ using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-using System.Linq;
 
 namespace CosmicShore.UI
 {
@@ -14,11 +13,43 @@ namespace CosmicShore.UI
         private CanvasGroup _canvasGroup;
         private RectTransform _rect;
         private Sequence _seq;
+        private bool _released;
+
+        /// <summary>
+        /// Set by GameEventFeed: rows recycle back to its pool instead of being
+        /// destroyed — feed events arrive in bursts (joust hits) and each row is a
+        /// TMP object that is expensive to rebuild per event.
+        /// </summary>
+        public System.Action<GameFeedEntry> ReturnToPool;
 
         private void Awake()
         {
             _canvasGroup = GetComponent<CanvasGroup>();
             _rect = GetComponent<RectTransform>();
+        }
+
+        /// <summary>Re-arm a pooled row before reuse.</summary>
+        public void ResetForReuse() => _released = false;
+
+        /// <summary>Kill any running animation and return this row to the pool (or destroy when unpooled).</summary>
+        public void Release()
+        {
+            if (_released) return;
+            _released = true;
+
+            KillTween();
+
+            if (ReturnToPool != null)
+                ReturnToPool(this);
+            else
+                Destroy(gameObject);
+        }
+
+        private void KillTween()
+        {
+            if (_seq != null && _seq.IsActive())
+                _seq.Kill();
+            _seq = null;
         }
 
         public void Setup(string message, Color color, bool isRichText = false)
@@ -65,20 +96,12 @@ namespace CosmicShore.UI
             // OUT: fade out
             _seq.Append(_canvasGroup.DOFade(0f, settings.fadeOutDuration));
 
-            _seq.OnComplete(() =>
-            {
-                if (gameObject != null)
-                    Destroy(gameObject);
-            });
+            _seq.OnComplete(Release);
         }
 
         private void OnDestroy()
         {
-            if (_seq != null && _seq.IsActive())
-            {
-                _seq.Kill();
-                _seq = null;
-            }
+            KillTween();
         }
 
         /// <summary>

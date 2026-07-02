@@ -57,6 +57,20 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public List<Prism> LookAhead(int index, float lerp, TrailFollowerDirection direction, float distance)
         {
+            var lookAheadBlocks = new List<Prism>();
+            LookAhead(index, lerp, direction, distance, lookAheadBlocks);
+            return lookAheadBlocks;
+        }
+
+        /// <summary>
+        /// Allocation-free LookAhead: clears and fills the caller-owned list. Prefer this
+        /// in per-impact paths (skimmer trigger-enters fire many times per second in
+        /// dense trail).
+        /// </summary>
+        public void LookAhead(int index, float lerp, TrailFollowerDirection direction, float distance, List<Prism> results)
+        {
+            results.Clear();
+
             var incrementor = (int)direction;
             var distanceTravelled = 0f;
             var trailListCount = TrailList.Count;
@@ -68,13 +82,13 @@ namespace CosmicShore.Gameplay
             (nextIndex, incrementor) = IndexSafetyCheck(nextIndex, incrementor, trailListCount);
             var nextBlock = TrailList[nextIndex];
 
-            var lookAheadBlocks = new List<Prism> { currentBlock };
+            results.Add(currentBlock);
             var distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position) * (1 - lerp);
 
             while (distanceTravelled < distance)
             {
                 distanceTravelled += distanceToNextBlock;
-                lookAheadBlocks.Add(nextBlock);
+                results.Add(nextBlock);
 
                 index += incrementor;
                 (index, incrementor) = IndexSafetyCheck(index, incrementor, trailListCount);
@@ -86,8 +100,6 @@ namespace CosmicShore.Gameplay
 
                 distanceToNextBlock = Vector3.Magnitude(nextBlock.transform.position - currentBlock.transform.position);
             }
-
-            return lookAheadBlocks;
         }
         
         /// <summary>

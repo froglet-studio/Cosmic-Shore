@@ -14,9 +14,18 @@
 >   (`SpaceCrystalAnimator` visibility gating + `CrystalSpace.prefab`
 >   `UpdateWhenOffscreen: 0` — **verify in editor**: culling pop risk if baked bounds
 >   are tight; full shader-driven conversion still open).
-> - **OPEN:** A1 (prism ECS/instancing), A2 (AOE pooling + batched grow + projectile
->   manager), GameEventFeed pooling, `Trail.LookAhead` non-alloc overload, `Branch`
->   IEquatable, `WallAssembler` candidate cap, `MaterialBlendUtility` pooling, B4
+> - **DONE — Phase 2/3 batch 2:** `Trail.LookAhead` non-alloc overload (+ Skimmer and
+>   SkimmerAlign callers on scratch buffers; `Skimmer.DrawCircle` computes one shared
+>   prism list per circle instead of per segment); `Branch` IEquatable + HashSet→List
+>   in AssembledFlora/BranchingFlora (kills reflection-boxing + the `ElementAt` O(n²));
+>   `WallAssembler` mate-candidate cap (32 — bounds the 1 Hz sweep AND the
+>   conversion blast radius; Gyroid precedent); `GameEventFeed` row pooling
+>   (recycle instead of Instantiate/Destroy per event); `MaterialBlendUtility`
+>   overlay tracking (fixes one-material-instance-leak-per-blend + array growth on
+>   pooled prisms), shared MPB, cached shader IDs; `SkimmerOverchargeCollect` cached
+>   layer mask + in-place sort.
+> - **OPEN:** A1 (prism ECS/instancing), A2 (AOE explosion pooling + batched
+>   grow + projectile movement manager), B1 full shader-driven crystal animation, B4
 >   (fauna scheduler — gated on ecology scaling).
 
 **What this is.** A codebase-wide review answering: *which systems would produce the most

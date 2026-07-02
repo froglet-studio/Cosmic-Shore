@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using System.Linq;
 
 namespace CosmicShore.Gameplay
 {
@@ -12,6 +11,17 @@ namespace CosmicShore.Gameplay
     public static class MaterialBlendUtility
     {
         private static readonly Dictionary<Renderer, Coroutine> BlendMap = new();
+
+        // The overlay material instance created per blend. Tracked so a repeat
+        // BeginBlend on the same renderer (pooled prisms re-entering danger mode)
+        // destroys/replaces the previous instance instead of leaking it — the old
+        // path appended one fresh instance to the renderer's material array per
+        // call and never destroyed any of them.
+        private static readonly Dictionary<Renderer, Material> OverlayMap = new();
+
+        private static readonly MaterialPropertyBlock SharedMpb = new();
+        private static readonly int ColorID = Shader.PropertyToID("_Color");
+        private static readonly int EmissionColorID = Shader.PropertyToID("_EmissionColor");
 
         // Runner component used to host coroutines without scene dependencies
         private sealed class BlendRunner : MonoBehaviour { }
@@ -41,7 +51,7 @@ namespace CosmicShore.Gameplay
             {
                 var runner = renderer.GetComponent<BlendRunner>();
                 if (runner) runner.StopCoroutine(co);
-                BlendMap[renderer] = null;
+                BlendMap.Remove(renderer);
             }
 
             var runnerHost = GetRunner(renderer);
@@ -55,14 +65,38 @@ namespace CosmicShore.Gameplay
 
             var overInstance = new Material(overMat);
 
-            // add if desired
-            if (addInsteadOfReplace)
+            // Retire the previous blend's overlay instance (if any) so the material
+            // array never grows past baseline+1 and the instance doesn't leak.
+            if (OverlayMap.TryGetValue(renderer, out var previous) && previous)
             {
-                var list = new List<Material>(mats);
-                if (!list.Contains(overInstance))
-                    list.Add(overInstance);
-                renderer.materials = list.ToArray();
+                int previousIndex = mats != null ? System.Array.IndexOf(mats, previous) : -1;
+                if (previousIndex >= 0 && addInsteadOfReplace)
+                {
+                    // Reuse the previous overlay's slot in place.
+                    mats[previousIndex] = overInstance;
+                    renderer.materials = mats;
+                }
+                else if (previousIndex >= 0)
+                {
+                    // Overlay no longer wanted — rebuild the array without it.
+                    var trimmed = new Material[mats.Length - 1];
+                    for (int i = 0, j = 0; i < mats.Length; i++)
+                        if (i != previousIndex)
+                            trimmed[j++] = mats[i];
+                    renderer.materials = trimmed;
+                }
+                Object.Destroy(previous);
+                OverlayMap.Remove(renderer);
             }
+            else if (addInsteadOfReplace && mats != null)
+            {
+                var withOverlay = new Material[mats.Length + 1];
+                System.Array.Copy(mats, withOverlay, mats.Length);
+                withOverlay[mats.Length] = overInstance;
+                renderer.materials = withOverlay;
+            }
+
+            OverlayMap[renderer] = overInstance;
 
             var coroutine = runnerHost.StartCoroutine(
                 BlendRoutine(renderer, baseMat, overInstance, duration));
@@ -79,17 +113,13 @@ namespace CosmicShore.Gameplay
             bool sameShader = fromMat.shader == toMat.shader;
             var workMat = renderer.materials[0];
 
-            // property block fallback
-            var mpb = new MaterialPropertyBlock();
-            int colorID = Shader.PropertyToID("_Color");
-            int emisID = Shader.PropertyToID("_EmissionColor");
-            bool hasColor = fromMat.HasProperty(colorID) && toMat.HasProperty(colorID);
-            bool hasEmis = fromMat.HasProperty(emisID) && toMat.HasProperty(emisID);
+            bool hasColor = fromMat.HasProperty(ColorID) && toMat.HasProperty(ColorID);
+            bool hasEmis = fromMat.HasProperty(EmissionColorID) && toMat.HasProperty(EmissionColorID);
 
-            Color fromColor = hasColor ? fromMat.GetColor(colorID) : Color.white;
-            Color toColor   = hasColor ? toMat.GetColor(colorID)   : Color.white;
-            Color fromEmis  = hasEmis  ? fromMat.GetColor(emisID)  : Color.black;
-            Color toEmis    = hasEmis  ? toMat.GetColor(emisID)    : Color.black;
+            Color fromColor = hasColor ? fromMat.GetColor(ColorID) : Color.white;
+            Color toColor   = hasColor ? toMat.GetColor(ColorID)   : Color.white;
+            Color fromEmis  = hasEmis  ? fromMat.GetColor(EmissionColorID)  : Color.black;
+            Color toEmis    = hasEmis  ? toMat.GetColor(EmissionColorID)    : Color.black;
 
             while (t < duration)
             {
@@ -101,10 +131,12 @@ namespace CosmicShore.Gameplay
                 }
                 else
                 {
-                    renderer.GetPropertyBlock(mpb);
-                    if (hasColor) mpb.SetColor(colorID, Color.Lerp(fromColor, toColor, a));
-                    if (hasEmis)  mpb.SetColor(emisID,  Color.Lerp(fromEmis,  toEmis,  a));
-                    renderer.SetPropertyBlock(mpb);
+                    // Shared MPB: each iteration is a full read-modify-write on this
+                    // renderer, so concurrent blends on other renderers can't interfere.
+                    renderer.GetPropertyBlock(SharedMpb);
+                    if (hasColor) SharedMpb.SetColor(ColorID, Color.Lerp(fromColor, toColor, a));
+                    if (hasEmis)  SharedMpb.SetColor(EmissionColorID,  Color.Lerp(fromEmis,  toEmis,  a));
+                    renderer.SetPropertyBlock(SharedMpb);
                 }
 
                 t += Time.deltaTime;
@@ -118,17 +150,18 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                renderer.GetPropertyBlock(mpb);
-                if (hasColor) mpb.SetColor(colorID, toColor);
-                if (hasEmis)  mpb.SetColor(emisID,  toEmis);
-                renderer.SetPropertyBlock(mpb);
+                renderer.GetPropertyBlock(SharedMpb);
+                if (hasColor) SharedMpb.SetColor(ColorID, toColor);
+                if (hasEmis)  SharedMpb.SetColor(EmissionColorID,  toEmis);
+                renderer.SetPropertyBlock(SharedMpb);
             }
 
-            BlendMap[renderer] = null;
+            BlendMap.Remove(renderer);
         }
 
         /// <summary>
-        /// Clears property blocks and stops any active blend on this renderer.
+        /// Clears property blocks, stops any active blend, and retires the overlay
+        /// material instance on this renderer.
         /// </summary>
         public static void ResetBlend(Renderer renderer)
         {
@@ -138,11 +171,30 @@ namespace CosmicShore.Gameplay
             {
                 var runner = renderer.GetComponent<BlendRunner>();
                 if (runner) runner.StopCoroutine(co);
-                BlendMap[renderer] = null;
+                BlendMap.Remove(renderer);
             }
 
-            var mpb = new MaterialPropertyBlock();
-            renderer.SetPropertyBlock(mpb);
+            if (OverlayMap.TryGetValue(renderer, out var overlay))
+            {
+                if (overlay)
+                {
+                    var mats = renderer.materials;
+                    int overlayIndex = mats != null ? System.Array.IndexOf(mats, overlay) : -1;
+                    if (overlayIndex >= 0)
+                    {
+                        var trimmed = new Material[mats.Length - 1];
+                        for (int i = 0, j = 0; i < mats.Length; i++)
+                            if (i != overlayIndex)
+                                trimmed[j++] = mats[i];
+                        renderer.materials = trimmed;
+                    }
+                    Object.Destroy(overlay);
+                }
+                OverlayMap.Remove(renderer);
+            }
+
+            SharedMpb.Clear();
+            renderer.SetPropertyBlock(SharedMpb);
         }
     }
 }

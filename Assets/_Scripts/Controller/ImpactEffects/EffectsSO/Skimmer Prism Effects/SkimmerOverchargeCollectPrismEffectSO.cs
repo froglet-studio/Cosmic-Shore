@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Gameplay;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -113,12 +112,17 @@ namespace CosmicShore.Gameplay
             BlowUpPrismsOverTime(impactor, hitSet, status).Forget();
         }
 
+        // Cached: LayerMask.GetMask hashes the layer-name string on every call, and this
+        // runs once per prism in a recursive destruction chain.
+        static int s_trailBlocksMask = -1;
+        static int TrailBlocksMask => s_trailBlocksMask != -1 ? s_trailBlocksMask : s_trailBlocksMask = LayerMask.GetMask("TrailBlocks");
+
         void RecursiveRaycastDestruction(Prism prism, IVesselStatus status)
         {
             var shipPos = status.ShipTransform.position;
             var dir = shipPos - prism.transform.position;
             var damage = dir * explosionSpeed; //TODO: use mult
-            if (Physics.Raycast(prism.transform.position, dir, out var hitInfo, dir.magnitude, LayerMask.GetMask("TrailBlocks")))
+            if (Physics.Raycast(prism.transform.position, dir, out var hitInfo, dir.magnitude, TrailBlocksMask))
             {
                 Prism hitPrism;
                 if (hitInfo.collider.gameObject.TryGetComponent<Prism>(out hitPrism))
@@ -137,9 +141,15 @@ namespace CosmicShore.Gameplay
             var shipPos = status.ShipTransform ? status.ShipTransform.position : impactor.transform.position;
             var speed   = Mathf.Max(minBlastSpeed, status.Speed);
 
-            var orderedPrisms = hitSet
-                .Where(p => p && p.Prism)
-                .OrderBy(p => (shipPos - p.transform.position).sqrMagnitude); // sort key: distance order == squared-distance order
+            // In-place sort instead of a Where/OrderBy chain; sort key: distance
+            // order == squared-distance order.
+            var orderedPrisms = new List<PrismImpactor>(hitSet.Count);
+            foreach (var p in hitSet)
+                if (p && p.Prism)
+                    orderedPrisms.Add(p);
+            orderedPrisms.Sort((a, b) =>
+                (shipPos - a.transform.position).sqrMagnitude.CompareTo(
+                (shipPos - b.transform.position).sqrMagnitude));
 
             foreach (var i in orderedPrisms)
             {

@@ -24,6 +24,34 @@ namespace CosmicShore.UI
         [Header("Data")]
         [Inject] private GameDataSO gameData;
 
+        // Rows recycle instead of Instantiate/Destroy per event — feed events arrive
+        // in bursts (joust hits) and each row carries a TMP object. Pooled rows live
+        // under an inactive pool root so they never count toward childCount or layout.
+        private readonly Stack<GameFeedEntry> _entryPool = new();
+        private Transform _poolRoot;
+
+        private Transform PoolRoot
+        {
+            get
+            {
+                if (_poolRoot == null)
+                {
+                    var go = new GameObject("EntryPool", typeof(RectTransform));
+                    go.SetActive(false);
+                    go.transform.SetParent(transform, false);
+                    _poolRoot = go.transform;
+                }
+                return _poolRoot;
+            }
+        }
+
+        private void HandleEntryReturn(GameFeedEntry entry)
+        {
+            if (entry == null) return;
+            entry.transform.SetParent(PoolRoot, false);
+            _entryPool.Push(entry);
+        }
+
         private void Awake()
         {
             // Disable the Image component for transparent background
@@ -179,20 +207,35 @@ namespace CosmicShore.UI
             if (contentContainer == null || settings == null)
                 return;
 
-            // Enforce max visible entries — destroy oldest.
-            // Detach from parent first so childCount decreases immediately,
-            // preventing an infinite loop when multiple entries spawn in the same frame.
+            // Enforce max visible entries — recycle oldest. Release() reparents to the
+            // pool root immediately, so childCount decreases right away (no infinite
+            // loop when multiple entries spawn in the same frame).
             while (contentContainer.childCount >= settings.maxVisibleEntries)
             {
                 var oldest = contentContainer.GetChild(0);
-                oldest.SetParent(null);
-                Destroy(oldest.gameObject);
+                if (oldest.TryGetComponent(out GameFeedEntry oldEntry))
+                {
+                    oldEntry.Release();
+                }
+                else
+                {
+                    oldest.SetParent(null);
+                    Destroy(oldest.gameObject);
+                }
             }
 
             GameFeedEntry entry;
-            if (entryPrefab != null)
+            if (_entryPool.Count > 0)
+            {
+                entry = _entryPool.Pop();
+                entry.transform.SetParent(contentContainer, false);
+                entry.transform.SetAsLastSibling();
+                entry.ResetForReuse();
+            }
+            else if (entryPrefab != null)
             {
                 entry = Instantiate(entryPrefab, contentContainer);
+                entry.ReturnToPool = HandleEntryReturn;
 
                 // Ensure prefab entries have a LayoutElement so the
                 // VerticalLayoutGroup can size them correctly
@@ -206,6 +249,7 @@ namespace CosmicShore.UI
             else
             {
                 entry = GameFeedEntry.CreateEntry(contentContainer);
+                entry.ReturnToPool = HandleEntryReturn;
             }
 
             entry.Setup(message, color, isRichText);
@@ -223,8 +267,15 @@ namespace CosmicShore.UI
             for (int i = contentContainer.childCount - 1; i >= 0; i--)
             {
                 var child = contentContainer.GetChild(i);
-                child.SetParent(null);
-                Destroy(child.gameObject);
+                if (child.TryGetComponent(out GameFeedEntry entry))
+                {
+                    entry.Release();
+                }
+                else
+                {
+                    child.SetParent(null);
+                    Destroy(child.gameObject);
+                }
             }
         }
 

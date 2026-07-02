@@ -1,6 +1,5 @@
 
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -23,7 +22,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class AssembledFlora : Flora
     {
-        struct Branch
+        struct Branch : System.IEquatable<Branch>
         {
             public GameObject gameObject;
             public int depth;
@@ -35,6 +34,16 @@ namespace CosmicShore.Gameplay
                 depth = 0;
                 assembler = healthPrism.GetComponent<Assembler>();
             }
+
+            // Without IEquatable, every List/HashSet operation on this struct fell back
+            // to reflection-based ValueType.Equals, boxing the struct (and its two
+            // managed refs) per comparison — in the per-growPeriod Grow loop.
+            public bool Equals(Branch other) =>
+                gameObject == other.gameObject && depth == other.depth && assembler == other.assembler;
+
+            public override bool Equals(object obj) => obj is Branch other && Equals(other);
+
+            public override int GetHashCode() => gameObject ? gameObject.GetInstanceID() : 0;
         }
         
         /// <summary>
@@ -53,7 +62,13 @@ namespace CosmicShore.Gameplay
                  "lets a grazed flora 'reawaken' instead of sitting as a dead fragment.")]
         [SerializeField] int reseedBranchCount = 3;
 
-        HashSet<Branch> activeBranches = new HashSet<Branch>();
+        // List, not HashSet: the Grow loop needs indexed access (the old
+        // HashSet.ElementAt(i) re-enumerated i elements per iteration — an accidental
+        // O(n²) with a LINQ enumerator alloc each step). Entries are unique by
+        // construction (each wraps a freshly instantiated prism / distinct survivor).
+        readonly List<Branch> activeBranches = new List<Branch>();
+        readonly List<Branch> newBranchesScratch = new List<Branch>();
+        readonly List<Branch> branchesToRemoveScratch = new List<Branch>();
 
         Assembler assembler;
 
@@ -117,14 +132,16 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            List<Branch> newBranches = new List<Branch>();
-            List<Branch> branchesToRemove = new List<Branch>();
+            var newBranches = newBranchesScratch;
+            var branchesToRemove = branchesToRemoveScratch;
+            newBranches.Clear();
+            branchesToRemove.Clear();
 
             float itemsSpawned = 0;
             int skippedItems = 0;
             for (int i = 0; i < activeBranches.Count && itemsSpawned < itemsPerGrow; i++)
             {
-                Branch branch = activeBranches.ElementAt(i);
+                Branch branch = activeBranches[i];
 
                 if (!branch.assembler || branch.depth >= maxDepth)
                 {
@@ -188,7 +205,7 @@ namespace CosmicShore.Gameplay
                 activeBranches.Remove(branch);
             }
 
-            activeBranches.UnionWith(newBranches);
+            activeBranches.AddRange(newBranches);
             GrowCrystal();
         }
 
@@ -243,8 +260,12 @@ namespace CosmicShore.Gameplay
         public override void RemoveSpindle(Spindle spindle)
         {
             base.RemoveSpindle(spindle);
-            Branch result = activeBranches.FirstOrDefault(item => item.gameObject == spindle.gameObject);
-            activeBranches.Remove(result);
+            for (int i = 0; i < activeBranches.Count; i++)
+            {
+                if (activeBranches[i].gameObject != spindle.gameObject) continue;
+                activeBranches.RemoveAt(i);
+                return;
+            }
         }
 
         public override void Plant()

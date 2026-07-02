@@ -62,6 +62,7 @@ namespace CosmicShore.Gameplay
         float separationDistance = 2f;
         [SerializeField] int colliderTheshold = 25;
         [SerializeField] float radius = 40f;
+        const int MaxMateCandidates = 32;
         bool isStopped = true;
 
         // Mate candidates come from PrismSpatialIndex.QuerySphere; this scratch is
@@ -401,7 +402,12 @@ namespace CosmicShore.Gameplay
                 ? spatialIndex.QuerySphere(bondSite, radius, s_mateScratch)
                 : 0;
             if (prismCount < colliderTheshold) return new BondMate { Mate = null };
-            for (int i = 0; i < prismCount; i++)
+            // Bound the per-search work AND the conversion blast radius: dense trail can
+            // put hundreds of prisms in a 40u radius, and every candidate lacking a
+            // WallAssembler gets converted (resized + AddComponent) below — per 1 Hz
+            // search, per chain front. Gyroid caps candidates at 10 for the same reason.
+            int candidateCount = Mathf.Min(prismCount, MaxMateCandidates);
+            for (int i = 0; i < candidateCount; i++)
             {
                 var trailBlock = s_mateScratch[i];
                 if (trailBlock == null || trailBlock.destroyed) continue;

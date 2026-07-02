@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using UnityEngine;
@@ -32,17 +31,29 @@ namespace CosmicShore.Gameplay
         [SerializeField] float branchingScaleFactor = 14f;
         public Vector3 goal;
 
-        HashSet<Branch> activeBranches = new HashSet<Branch>();
+        // List, not HashSet: avoids boxed reflection-Equals on the struct (no
+        // IEquatable before) and LINQ enumerator allocs in the per-growPeriod loop.
+        // Entries are unique by construction (each wraps a fresh Instantiate).
+        readonly List<Branch> activeBranches = new List<Branch>();
+        readonly List<Branch> newBranchesScratch = new List<Branch>();
+        readonly List<Branch> branchesToRemoveScratch = new List<Branch>();
 
         [SerializeField] float plantRadius = 75f;
         [SerializeField] float noLeafFailsafeSeconds = 8f;
         [SerializeField] bool guaranteeInitialLeaf = true;
 
         Coroutine noLeafFailsafeRoutine;
-        struct Branch
+        struct Branch : System.IEquatable<Branch>
         {
             public GameObject gameObject;
             public int depth;
+
+            public bool Equals(Branch other) =>
+                gameObject == other.gameObject && depth == other.depth;
+
+            public override bool Equals(object obj) => obj is Branch other && Equals(other);
+
+            public override int GetHashCode() => gameObject ? gameObject.GetInstanceID() : 0;
         }
 
         public override void Initialize(Cell cell)
@@ -67,7 +78,7 @@ namespace CosmicShore.Gameplay
             if (activeBranches.Count == 0) return;
 
             // pick any trunk
-            var trunk = activeBranches.First();
+            var trunk = activeBranches[0];
 
             var go = Instantiate(
                 healthPrism,
@@ -136,8 +147,10 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            List<Branch> newBranches = new List<Branch>();
-            List<Branch> branchesToRemove = new List<Branch>();
+            var newBranches = newBranchesScratch;
+            var branchesToRemove = branchesToRemoveScratch;
+            newBranches.Clear();
+            branchesToRemove.Clear();
             foreach (Branch branch in activeBranches)
             {
                 if (Random.value < growthChance && branch.depth < maxDepth)
@@ -190,7 +203,7 @@ namespace CosmicShore.Gameplay
                 activeBranches.Remove(branch);
             }
 
-            activeBranches.UnionWith(newBranches);
+            activeBranches.AddRange(newBranches);
         }
 
         public override void Plant()
