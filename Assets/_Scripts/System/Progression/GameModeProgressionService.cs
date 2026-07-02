@@ -246,6 +246,25 @@ namespace CosmicShore.Core
         }
 
         /// <summary>
+        /// Unlocks a mode directly (Quest Graph–driven source-of-truth write). Marks it
+        /// unlocked, opens the default intensity range, records analytics, refreshes
+        /// listeners + breadcrumb, and saves. No-op if already unlocked.
+        /// </summary>
+        public void UnlockMode(GameModes mode)
+        {
+            string modeName = mode.ToString();
+            if (ProgressionData.IsUnlocked(modeName)) return;
+
+            ProgressionData.MarkUnlocked(modeName);
+            ProgressionData.EnsureIntensityInitialized(modeName, Config.defaultMaxIntensity);
+            _analytics?.RecordModeUnlocked(mode);
+            CSDebug.Log($"[GameModeProgressionService] Quest-graph unlock: {mode}");
+
+            RaiseProgressionChanged();
+            SaveImmediateAsync();
+        }
+
+        /// <summary>
         /// Manually reports a stat for quest evaluation.
         /// Called by game-mode-specific score trackers at game end.
         /// </summary>
@@ -770,6 +789,23 @@ namespace CosmicShore.Core
         // here / do this" hints. Quest completion is the only progression currency (C1).
 
         CallToAction _activeBreadcrumb;
+        bool _breadcrumbSuppressed;
+
+        /// <summary>
+        /// While true the service retracts and stops driving the frontier breadcrumb — the
+        /// QuestGraphRunner owns guidance for the duration of a running quest and restores
+        /// this to false on quest completion (and on its own teardown).
+        /// </summary>
+        public bool BreadcrumbSuppressed
+        {
+            get => _breadcrumbSuppressed;
+            set
+            {
+                if (_breadcrumbSuppressed == value) return;
+                _breadcrumbSuppressed = value;
+                RefreshActiveBreadcrumb();
+            }
+        }
 
         /// <summary>
         /// Fires OnProgressionChanged and re-evaluates the active-frontier breadcrumb. This is the
@@ -791,6 +827,17 @@ namespace CosmicShore.Core
         {
             var cta = CallToActionSystem.Instance;
             if (cta == null) return; // CTA system not alive yet; a later progression change re-lights.
+
+            // A running quest graph owns guidance — retract ours and stand down until released.
+            if (_breadcrumbSuppressed)
+            {
+                if (_activeBreadcrumb != null)
+                {
+                    cta.RemoveCallToAction(_activeBreadcrumb);
+                    _activeBreadcrumb = null;
+                }
+                return;
+            }
 
             var frontier = GetActiveFrontierUnlock();
             var desiredTarget = frontier != null && frontier.HasBreadcrumb

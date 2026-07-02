@@ -1,0 +1,104 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+namespace CosmicShore.Core
+{
+    /// <summary>
+    /// Visual/behavioral grouping of quest nodes. Drives node header colors and the
+    /// legend in the Quest Graph editor — keep the meanings stable so designers can
+    /// read a graph at a glance.
+    /// </summary>
+    public enum QuestNodeCategory
+    {
+        /// <summary>Pacing and cinematics: intro/outro, fixed waits.</summary>
+        Flow = 0,
+        /// <summary>Player-facing words: instruction text and dialogue sets.</summary>
+        Presentation = 1,
+        /// <summary>Acts on gameplay/menu state: freestyle control, navigation, mode locking.</summary>
+        Gameplay = 2,
+        /// <summary>Waits for the player or the game to do something.</summary>
+        Gate = 3,
+        /// <summary>CTA breadcrumbs — "go here, do this".</summary>
+        Guidance = 4,
+        /// <summary>Writes progression state (unlocks).</summary>
+        Progression = 5,
+        /// <summary>Ends a phase or the whole quest.</summary>
+        Terminal = 6,
+    }
+
+    /// <summary>
+    /// Base ScriptableObject for every node in a quest phase graph.
+    ///
+    /// Each concrete node is its own SO subclass carrying typed authoring fields and
+    /// its own <see cref="Execute"/> behaviour — a polymorphic-SO design (mirrors the
+    /// project's Effect / Scoring-rule SOs). Nodes are stored as sub-assets of the
+    /// owning <see cref="QuestPhaseGraphSO"/>.
+    ///
+    /// A node is asset config only — it must hold NO per-run mutable state. All runtime
+    /// state lives in the coroutine's locals and the passed-in <see cref="QuestRuntimeContext"/>,
+    /// so the same asset can be re-run safely.
+    /// </summary>
+    public abstract class QuestNodeSO : ScriptableObject
+    {
+        [Tooltip("Stable identifier used to wire edges and record UGS progress. Assigned once on creation — never reuse or hand-edit.")]
+        [HideInInspector] public string nodeId;
+
+        [Tooltip("Human-readable label shown on the node in the graph editor (authoring aid only).")]
+        public string displayName;
+
+        [Tooltip("Node position on the editor canvas. Runtime-irrelevant.")]
+        [HideInInspector] public Vector2 graphPosition;
+
+        [Tooltip("Outgoing edges keyed by port name. Managed by the graph editor's port drag, not hand-edited.")]
+        [HideInInspector] [SerializeField] private List<QuestEdge> outputs = new();
+
+        /// <summary>Outgoing edges of this node.</summary>
+        public List<QuestEdge> Outputs => outputs;
+
+        /// <summary>Short type label for the editor header (e.g. "EnterFreestyle").</summary>
+        public virtual string NodeTypeLabel => GetType().Name.Replace("Quest", string.Empty).Replace("Node", string.Empty);
+
+        /// <summary>Visual/behavioral category — drives the node's header color + the editor legend.</summary>
+        public virtual QuestNodeCategory Category => QuestNodeCategory.Flow;
+
+        /// <summary>One-paragraph explanation of what this node does, shown as a hover tooltip in the editor.</summary>
+        public virtual string TypeTooltip => string.Empty;
+
+        /// <summary>Short live summary of the node's authored fields, shown on the card body in the editor.</summary>
+        public virtual string EditorSummary => string.Empty;
+
+        /// <summary>
+        /// The output ports this node can advance through. Linear nodes emit only
+        /// <see cref="QuestPorts.Next"/>; override to expose branch ports, or return an
+        /// empty list for terminal nodes.
+        /// </summary>
+        public virtual IReadOnlyList<string> OutputPorts => QuestPorts.NextOnly;
+
+        /// <summary>
+        /// Run this node. Do the node's work (drive a runtime system, wait for a signal),
+        /// then call <paramref name="advance"/> exactly once with the chosen output port
+        /// (usually <see cref="QuestPorts.Next"/>). The coroutine ending does NOT advance —
+        /// only calling <paramref name="advance"/> does — so event-driven nodes may subscribe,
+        /// register cleanup via <see cref="QuestRuntimeContext.AddCleanup"/>, and yield break.
+        /// Terminal nodes call <see cref="QuestRuntimeContext.CompletePhase"/> /
+        /// <see cref="QuestRuntimeContext.CompleteQuest"/> instead of advancing.
+        /// </summary>
+        public abstract IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance);
+
+        /// <summary>
+        /// Author-time validation. Append human-readable problems to <paramref name="errors"/>
+        /// (missing references, unreachable targets). Called by the graph editor, never at runtime.
+        /// </summary>
+        public virtual void Validate(QuestPhaseGraphSO graph, List<string> errors) { }
+
+        /// <summary>Resolve the edge for a given output port, or null for a dead end.</summary>
+        public QuestEdge EdgeForPort(string port)
+        {
+            foreach (var e in outputs)
+                if (e != null && e.portName == port)
+                    return e;
+            return null;
+        }
+    }
+}

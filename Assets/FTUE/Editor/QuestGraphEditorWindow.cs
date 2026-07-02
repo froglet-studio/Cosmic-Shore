@@ -1,0 +1,1413 @@
+#if !LINUX_BUILD
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using CosmicShore.Core;
+using UnityEditor;
+using UnityEngine;
+
+namespace CosmicShore.Editor
+{
+    /// <summary>
+    /// Quest Graph Editor — node/flowchart authoring for <see cref="QuestSO"/> quests and
+    /// their <see cref="QuestPhaseGraphSO"/> phases (FrogletTools ▸ Quest Graph Editor).
+    ///
+    /// Built on IMGUI to match the project's editor tooling, tuned for a Shader-Graph feel:
+    /// wheel zoom anchored at the cursor, middle/alt drag panning, content-sized node cards,
+    /// category-colored headers with a legend, hover tooltips, drag-to-connect ports (release
+    /// on empty canvas to spawn-and-connect), and cached asset/validation state so the window
+    /// never hits the AssetDatabase or re-validates per frame.
+    /// </summary>
+    public class QuestGraphEditorWindow : EditorWindow
+    {
+        // ── Selection / assets ─────────────────────────────────────────
+        QuestSO _quest;
+        QuestPhaseGraphSO _graph;
+        QuestNodeSO _selectedNode;
+        UnityEditor.Editor _nodeEditor;
+
+        readonly List<QuestSO> _quests = new();
+        readonly List<QuestPhaseGraphSO> _graphs = new();
+        readonly HashSet<QuestPhaseGraphSO> _ownedGraphs = new();
+
+        // ── Canvas state ───────────────────────────────────────────────
+        QuestNodeSO _dragNode;
+        Vector2 _dragGrab;
+        QuestNodeSO _linkFrom;
+        string _linkPort;
+        bool _linkDrag;
+        Vector2 _linkMouse;
+
+        QuestNodeSO _hoverNode;
+        string _tooltip;
+        Vector2 _tooltipWinPos;
+        Rect _canvasRect;
+
+        // ── Caches ─────────────────────────────────────────────────────
+        struct NodeCard { public int hash; public Vector2 size; public string header; public string title; public string summary; }
+        readonly Dictionary<QuestNodeSO, NodeCard> _cards = new();
+        readonly List<string> _validation = new();
+        bool _validationDirty = true;
+
+        Vector2 _leftScroll, _rightScroll;
+        bool _showLegend = true;
+
+        // ── Constants ──────────────────────────────────────────────────
+        const float ToolbarH = 24f;
+        const float LeftW = 234f;
+        const float RightW = 340f;
+        const float HeaderH = 24f;
+        const float PortR = 6f;
+        const float MinZoom = 0.35f;
+        const float MaxZoom = 1.75f;
+
+        const string RootFolder = "Assets/FTUE/DataContainer";
+        const string QuestsFolder = RootFolder + "/Quests";
+        const string PhasesFolder = RootFolder + "/Phases";
+
+        float Zoom
+        {
+            get => _graph != null ? Mathf.Clamp(_graph.canvasZoom <= 0f ? 1f : _graph.canvasZoom, MinZoom, MaxZoom) : 1f;
+            set { if (_graph != null) _graph.canvasZoom = Mathf.Clamp(value, MinZoom, MaxZoom); }
+        }
+
+        [MenuItem("FrogletTools/Quest Graph Editor")]
+        public static void Open() => GetWindow<QuestGraphEditorWindow>("Quest Graph Editor");
+
+        void OnEnable()
+        {
+            wantsMouseMove = true;
+            RefreshAssets();
+            Undo.undoRedoPerformed += OnUndoRedo;
+        }
+
+        void OnDisable()
+        {
+            Undo.undoRedoPerformed -= OnUndoRedo;
+            if (_nodeEditor != null) DestroyImmediate(_nodeEditor);
+        }
+
+        void OnFocus() { RefreshAssets(); MarkValidationDirty(); }
+        void OnProjectChange() { RefreshAssets(); MarkValidationDirty(); Repaint(); }
+        void OnUndoRedo() { _cards.Clear(); MarkValidationDirty(); Repaint(); }
+
+        void MarkValidationDirty() => _validationDirty = true;
+
+        // ════════════════════════════════════════════════════════════════
+        // OnGUI
+        // ════════════════════════════════════════════════════════════════
+
+        void OnGUI()
+        {
+            QuestGraphStyles.Ensure();
+            var e = Event.current;
+
+            var toolbarRect = new Rect(0, 0, position.width, ToolbarH);
+            var leftRect = new Rect(0, ToolbarH, LeftW, position.height - ToolbarH);
+            var rightRect = new Rect(position.width - RightW, ToolbarH, RightW, position.height - ToolbarH);
+            _canvasRect = new Rect(LeftW, ToolbarH, position.width - LeftW - RightW, position.height - ToolbarH);
+
+            HandleKeyboard(e);
+
+            // Canvas first (its zoom group can over-clip at low zoom; panels drawn after cover any spill).
+            DrawCanvas(_canvasRect, e);
+
+            DrawToolbar(toolbarRect);
+            DrawLeftPanel(leftRect);
+            DrawRightPanel(rightRect);
+            DrawOverlays();
+        }
+
+        void HandleKeyboard(Event e)
+        {
+            if (e.type != EventType.KeyDown || EditorGUIUtility.editingTextField) return;
+
+            if (e.keyCode == KeyCode.F && _graph != null)
+            {
+                FrameContent();
+                e.Use();
+            }
+            else if ((e.keyCode == KeyCode.Delete || e.keyCode == KeyCode.Backspace) && _selectedNode != null)
+            {
+                DeleteNode(_selectedNode);
+                e.Use();
+                GUIUtility.ExitGUI();
+            }
+            else if (e.keyCode == KeyCode.Escape && _linkFrom != null)
+            {
+                _linkFrom = null;
+                _linkDrag = false;
+                e.Use();
+                Repaint();
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // Toolbar
+        // ════════════════════════════════════════════════════════════════
+
+        void DrawToolbar(Rect rect)
+        {
+            EditorGUI.DrawRect(rect, QuestGraphStyles.ToolbarBg);
+
+            GUILayout.BeginArea(rect);
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.Space(6);
+
+            string crumb = _quest != null && _graph != null
+                ? $"{_quest.name}  ▸  Phase {_quest.phases.IndexOf(_graph)} · {_graph.PhaseName}"
+                : _graph != null ? _graph.PhaseName
+                : _quest != null ? _quest.name
+                : "Select or create a quest";
+            GUILayout.Label(crumb, QuestGraphStyles.Breadcrumb, GUILayout.MinWidth(120));
+
+            GUILayout.Space(10);
+            using (new EditorGUI.DisabledScope(_graph == null))
+            {
+                if (GUILayout.Button("+ Add Node", EditorStyles.toolbarButton, GUILayout.Width(84)))
+                    ShowCreateNodeMenu(ScreenCenterWorld(), null, null);
+                if (GUILayout.Button("Frame (F)", EditorStyles.toolbarButton, GUILayout.Width(72)))
+                    FrameContent();
+            }
+
+            _showLegend = GUILayout.Toggle(_showLegend, "Legend", EditorStyles.toolbarButton, GUILayout.Width(58));
+
+            GUILayout.FlexibleSpace();
+
+            using (new EditorGUI.DisabledScope(_graph == null))
+            {
+                if (GUILayout.Button($"{Mathf.RoundToInt(Zoom * 100)}%", EditorStyles.toolbarButton, GUILayout.Width(52)))
+                {
+                    Zoom = 1f;
+                    Repaint();
+                }
+            }
+
+            if (GUILayout.Button("Save", EditorStyles.toolbarButton, GUILayout.Width(56)))
+                SaveAll();
+
+            GUILayout.Space(6);
+            EditorGUILayout.EndHorizontal();
+            GUILayout.EndArea();
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // Left panel — quests, phases, standalone graphs
+        // ════════════════════════════════════════════════════════════════
+
+        void DrawLeftPanel(Rect rect)
+        {
+            EditorGUI.DrawRect(rect, QuestGraphStyles.PanelBg);
+            GUILayout.BeginArea(rect);
+            _leftScroll = EditorGUILayout.BeginScrollView(_leftScroll);
+            GUILayout.Space(6);
+
+            GUILayout.Label("QUESTS", QuestGraphStyles.PanelHeader);
+            foreach (var quest in _quests)
+            {
+                if (quest == null) continue;
+                bool isSel = quest == _quest;
+
+                var row = GUILayoutUtility.GetRect(1, 22, GUILayout.ExpandWidth(true));
+                if (isSel) EditorGUI.DrawRect(row, QuestGraphStyles.RowSelected);
+                if (GUI.Button(new Rect(row.x + 6, row.y, row.width - 6, row.height), quest.name,
+                        isSel ? QuestGraphStyles.RowLabelSelected : QuestGraphStyles.RowLabel))
+                    SelectQuest(quest);
+
+                if (!isSel) continue;
+
+                // Phases of the selected quest
+                for (int i = 0; i < quest.phases.Count; i++)
+                {
+                    var phase = quest.phases[i];
+                    var prow = GUILayoutUtility.GetRect(1, 20, GUILayout.ExpandWidth(true));
+                    bool phaseSel = phase != null && phase == _graph;
+                    if (phaseSel) EditorGUI.DrawRect(prow, QuestGraphStyles.RowSelectedFaint);
+
+                    string label = phase != null ? $"{i} · {phase.PhaseName}" : $"{i} · (missing)";
+                    if (GUI.Button(new Rect(prow.x + 20, prow.y, prow.width - 86, prow.height), label,
+                            phaseSel ? QuestGraphStyles.RowLabelSelected : QuestGraphStyles.RowLabelSmall)
+                        && phase != null)
+                        SelectGraph(phase, quest);
+
+                    // Reorder / remove controls
+                    var upR = new Rect(prow.xMax - 62, prow.y + 1, 18, 18);
+                    var dnR = new Rect(prow.xMax - 43, prow.y + 1, 18, 18);
+                    var rmR = new Rect(prow.xMax - 22, prow.y + 1, 18, 18);
+                    using (new EditorGUI.DisabledScope(i == 0))
+                        if (GUI.Button(upR, "▲", QuestGraphStyles.MiniButton)) { MovePhase(quest, i, -1); GUIUtility.ExitGUI(); }
+                    using (new EditorGUI.DisabledScope(i == quest.phases.Count - 1))
+                        if (GUI.Button(dnR, "▼", QuestGraphStyles.MiniButton)) { MovePhase(quest, i, +1); GUIUtility.ExitGUI(); }
+                    if (GUI.Button(rmR, "✕", QuestGraphStyles.MiniButtonDanger)) { RemovePhase(quest, i); GUIUtility.ExitGUI(); }
+                }
+
+                GUILayout.Space(2);
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(20);
+                if (GUILayout.Button("+ Add Phase", QuestGraphStyles.MiniWide, GUILayout.Width(110)))
+                    AddPhase(quest);
+                EditorGUILayout.EndHorizontal();
+                GUILayout.Space(4);
+            }
+
+            var standalone = _graphs.Where(g => g != null && !_ownedGraphs.Contains(g)).ToList();
+            if (standalone.Count > 0)
+            {
+                GUILayout.Space(8);
+                GUILayout.Label("STANDALONE GRAPHS", QuestGraphStyles.PanelHeader);
+                foreach (var g in standalone)
+                {
+                    var row = GUILayoutUtility.GetRect(1, 20, GUILayout.ExpandWidth(true));
+                    bool isSel = g == _graph;
+                    if (isSel) EditorGUI.DrawRect(row, QuestGraphStyles.RowSelectedFaint);
+                    if (GUI.Button(new Rect(row.x + 6, row.y, row.width - 6, row.height), g.PhaseName,
+                            isSel ? QuestGraphStyles.RowLabelSelected : QuestGraphStyles.RowLabelSmall))
+                        SelectGraph(g, null);
+                }
+            }
+
+            EditorGUILayout.EndScrollView();
+
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.BeginVertical();
+            if (GUILayout.Button("+ New Quest"))
+                CreateQuestAsset();
+            if (GUILayout.Button("+ New Phase Graph"))
+                CreateGraphAsset(null);
+            GUILayout.Space(6);
+            EditorGUILayout.EndVertical();
+            GUILayout.EndArea();
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // Canvas
+        // ════════════════════════════════════════════════════════════════
+
+        void DrawCanvas(Rect rect, Event e)
+        {
+            EditorGUI.DrawRect(rect, QuestGraphStyles.CanvasBg);
+
+            if (_graph == null)
+            {
+                GUI.Label(new Rect(rect.x + 24, rect.y + 20, rect.width - 48, 60),
+                    "Select a quest phase on the left — or create a quest and add its first phase.",
+                    QuestGraphStyles.CanvasHint);
+                return;
+            }
+
+            bool mouseInCanvas = rect.Contains(e.mousePosition);
+
+            // Cursor-anchored wheel zoom (handled in window space, before the zoom group).
+            if (e.type == EventType.ScrollWheel && mouseInCanvas)
+            {
+                float oldZoom = Zoom;
+                float newZoom = Mathf.Clamp(oldZoom * (e.delta.y > 0 ? 0.92f : 1.087f), MinZoom, MaxZoom);
+                if (!Mathf.Approximately(oldZoom, newZoom))
+                {
+                    Vector2 worldUnderMouse = (e.mousePosition - rect.position) / oldZoom - _graph.canvasScroll;
+                    Zoom = newZoom;
+                    _graph.canvasScroll = (e.mousePosition - rect.position) / newZoom - worldUnderMouse;
+                    EditorUtility.SetDirty(_graph);
+                }
+                e.Use();
+                Repaint();
+                return;
+            }
+
+            _hoverNode = null;
+            _tooltip = null;
+
+            QuestZoomArea.Begin(Zoom, rect);
+            try
+            {
+                Vector2 viewSize = rect.size / Zoom;
+                DrawGrid(viewSize);
+                DrawEdges();
+                DrawLinkPreview(e);
+                DrawNodes(e, mouseInCanvas);
+                HandleCanvasEvents(viewSize, e, mouseInCanvas);
+            }
+            finally
+            {
+                QuestZoomArea.End(position);
+            }
+
+            if (e.type == EventType.MouseMove && mouseInCanvas)
+                Repaint();
+        }
+
+        void DrawGrid(Vector2 viewSize)
+        {
+            var scroll = _graph.canvasScroll;
+            DrawGridLines(viewSize, scroll, 20f, QuestGraphStyles.GridMinor);
+            DrawGridLines(viewSize, scroll, 100f, QuestGraphStyles.GridMajor);
+        }
+
+        static void DrawGridLines(Vector2 viewSize, Vector2 scroll, float spacing, Color color)
+        {
+            Handles.color = color;
+            float offX = scroll.x % spacing;
+            float offY = scroll.y % spacing;
+            for (float x = offX; x < viewSize.x; x += spacing)
+                Handles.DrawLine(new Vector3(x, 0), new Vector3(x, viewSize.y));
+            for (float y = offY; y < viewSize.y; y += spacing)
+                Handles.DrawLine(new Vector3(0, y), new Vector3(viewSize.x, y));
+            Handles.color = Color.white;
+        }
+
+        // ── Node cards ─────────────────────────────────────────────────
+
+        NodeCard GetCard(QuestNodeSO n)
+        {
+            string header = n.NodeTypeLabel;
+            string title = n.displayName ?? string.Empty;
+            string summary = n.EditorSummary ?? string.Empty;
+            int hash = header.GetHashCode();
+            unchecked
+            {
+                hash = hash * 31 + title.GetHashCode();
+                hash = hash * 31 + summary.GetHashCode();
+                hash = hash * 31 + n.OutputPorts.Count;
+            }
+
+            if (_cards.TryGetValue(n, out var card) && card.hash == hash)
+                return card;
+
+            float width = Mathf.Clamp(QuestGraphStyles.NodeHeader.CalcSize(new GUIContent(header)).x + 62f, 200f, 320f);
+            float bodyW = width - 22f;
+            float h = HeaderH + 7f;
+            bool titleShown = !string.IsNullOrEmpty(title) && title != header;
+            if (titleShown)
+                h += QuestGraphStyles.NodeTitle.CalcHeight(new GUIContent(title), bodyW);
+            if (!string.IsNullOrEmpty(summary))
+                h += QuestGraphStyles.NodeSummary.CalcHeight(new GUIContent(summary), bodyW) + 2f;
+
+            int ports = n.OutputPorts.Count;
+            h += ports > 1 ? ports * 17f + 5f : 9f;
+            h = Mathf.Max(h, 54f);
+
+            card = new NodeCard { hash = hash, size = new Vector2(width, h), header = header, title = titleShown ? title : null, summary = summary };
+            _cards[n] = card;
+            return card;
+        }
+
+        Rect NodeRect(QuestNodeSO n) => new(n.graphPosition + _graph.canvasScroll, GetCard(n).size);
+
+        Vector2 InPortCenter(QuestNodeSO n)
+        {
+            var r = NodeRect(n);
+            return new Vector2(r.x, r.y + HeaderH * 0.5f);
+        }
+
+        Vector2 OutPortCenter(QuestNodeSO n, int portIndex)
+        {
+            var r = NodeRect(n);
+            int count = n.OutputPorts.Count;
+            if (count <= 1)
+                return new Vector2(r.xMax, r.y + r.height * 0.55f);
+            float bottom = r.yMax - 8f;
+            float step = 17f;
+            float first = bottom - (count - 1) * step;
+            return new Vector2(r.xMax, first + portIndex * step);
+        }
+
+        // ── Edges ──────────────────────────────────────────────────────
+
+        void DrawEdges()
+        {
+            foreach (var n in _graph.nodes)
+            {
+                if (n == null) continue;
+                var ports = n.OutputPorts;
+                for (int p = 0; p < ports.Count; p++)
+                {
+                    var edge = n.EdgeForPort(ports[p]);
+                    if (edge == null) continue;
+                    var target = _graph.FindNode(edge.targetNodeId);
+                    if (target == null) continue;
+
+                    var col = QuestGraphStyles.CategoryColor(n.Category);
+                    col.a = n == _selectedNode || target == _selectedNode ? 1f : 0.75f;
+                    DrawBezier(OutPortCenter(n, p), InPortCenter(target), col,
+                        n == _selectedNode || target == _selectedNode ? 4f : 3f);
+                }
+            }
+        }
+
+        void DrawLinkPreview(Event e)
+        {
+            if (_linkFrom == null) return;
+
+            int idx = IndexOfPort(_linkFrom, _linkPort);
+            Vector2 from = OutPortCenter(_linkFrom, idx);
+            Vector2 to = _linkDrag || e.isMouse ? e.mousePosition : _linkMouse;
+            _linkMouse = to;
+            DrawBezier(from, to, QuestGraphStyles.LinkPreview, 3f);
+            Repaint();
+        }
+
+        static int IndexOfPort(QuestNodeSO n, string port)
+        {
+            var ports = n.OutputPorts;
+            for (int i = 0; i < ports.Count; i++)
+                if (ports[i] == port) return i;
+            return 0;
+        }
+
+        static void DrawBezier(Vector2 from, Vector2 to, Color color, float width)
+        {
+            float tangent = Mathf.Clamp(Mathf.Abs(to.x - from.x) * 0.5f, 30f, 90f);
+            Handles.DrawBezier(from, to,
+                from + Vector2.right * tangent, to + Vector2.left * tangent,
+                color, null, width);
+        }
+
+        // ── Nodes ──────────────────────────────────────────────────────
+
+        void DrawNodes(Event e, bool mouseInCanvas)
+        {
+            foreach (var n in _graph.nodes)
+            {
+                if (n == null) continue;
+                DrawNode(n, e, mouseInCanvas);
+            }
+        }
+
+        void DrawNode(QuestNodeSO n, Event e, bool mouseInCanvas)
+        {
+            var card = GetCard(n);
+            var r = NodeRect(n);
+            bool hovered = mouseInCanvas && r.Contains(e.mousePosition);
+            if (hovered) _hoverNode = n;
+
+            // Shadow + body + header
+            EditorGUI.DrawRect(new Rect(r.x + 3, r.y + 3, r.width, r.height), QuestGraphStyles.NodeShadow);
+            EditorGUI.DrawRect(r, hovered ? QuestGraphStyles.NodeBodyHover : QuestGraphStyles.NodeBody);
+            var headerRect = new Rect(r.x, r.y, r.width, HeaderH);
+            var catColor = QuestGraphStyles.CategoryColor(n.Category);
+            EditorGUI.DrawRect(headerRect, catColor);
+            EditorGUI.DrawRect(new Rect(r.x, r.y, 3f, r.height), catColor); // accent rail
+
+            bool isEntry = _graph.entryNode == n;
+            if (isEntry) DrawBorder(r, QuestGraphStyles.EntryBorder, 2f);
+            if (_selectedNode == n) DrawBorder(r, QuestGraphStyles.SelectionBorder, 2f);
+
+            GUI.Label(new Rect(r.x + 8, r.y + 3, r.width - 52, HeaderH - 4), card.header, QuestGraphStyles.NodeHeader);
+            if (isEntry)
+                GUI.Label(new Rect(r.xMax - 66, r.y + 5, 44, 14), "ENTRY", QuestGraphStyles.EntryBadge);
+
+            // Body text
+            float y = r.y + HeaderH + 4f;
+            float bodyW = r.width - 22f;
+            if (card.title != null)
+            {
+                float th = QuestGraphStyles.NodeTitle.CalcHeight(new GUIContent(card.title), bodyW);
+                GUI.Label(new Rect(r.x + 12, y, bodyW, th), card.title, QuestGraphStyles.NodeTitle);
+                y += th;
+            }
+            if (!string.IsNullOrEmpty(card.summary))
+            {
+                float sh = QuestGraphStyles.NodeSummary.CalcHeight(new GUIContent(card.summary), bodyW);
+                GUI.Label(new Rect(r.x + 12, y + 1, bodyW, sh), card.summary, QuestGraphStyles.NodeSummary);
+            }
+
+            // Delete button
+            var delRect = new Rect(r.xMax - 20, r.y + 3, 17, 17);
+            if (GUI.Button(delRect, "✕", QuestGraphStyles.NodeDelete))
+            {
+                DeleteNode(n);
+                GUIUtility.ExitGUI();
+            }
+
+            // Ports
+            var inCenter = InPortCenter(n);
+            bool inHover = mouseInCanvas && Vector2.Distance(e.mousePosition, inCenter) <= PortR + 4f;
+            DrawPort(inCenter, QuestGraphStyles.PortIn, inHover || (_linkFrom != null && hovered));
+
+            var ports = n.OutputPorts;
+            for (int p = 0; p < ports.Count; p++)
+            {
+                var c = OutPortCenter(n, p);
+                bool armed = _linkFrom == n && _linkPort == ports[p];
+                bool pHover = mouseInCanvas && Vector2.Distance(e.mousePosition, c) <= PortR + 4f;
+                DrawPort(c, armed ? QuestGraphStyles.PortArmed : catColor, pHover || armed);
+
+                if (ports.Count > 1)
+                    GUI.Label(new Rect(c.x - 72, c.y - 8, 64, 16), ports[p], QuestGraphStyles.PortLabel);
+
+                if (pHover)
+                    SetTooltip(c + new Vector2(10, 8), ports.Count > 1 ? $"Port '{ports[p]}' — drag to connect" : "Drag to connect");
+
+                if (!mouseInCanvas) continue;
+
+                if (e.type == EventType.MouseDown && e.button == 0 && pHover)
+                {
+                    _linkFrom = n;
+                    _linkPort = ports[p];
+                    _linkDrag = true;
+                    e.Use();
+                }
+                else if (e.type == EventType.MouseDown && e.button == 1 && pHover)
+                {
+                    ShowPortMenu(n, ports[p]);
+                    e.Use();
+                }
+            }
+
+            // Hover tooltip on the header
+            if (hovered && headerRect.Contains(e.mousePosition) && !string.IsNullOrEmpty(n.TypeTooltip))
+                SetTooltip(new Vector2(r.x, r.yMax + 6), n.TypeTooltip);
+
+            if (!mouseInCanvas) return;
+
+            // Node-body interactions
+            if (e.type == EventType.MouseDown && e.button == 0 && hovered)
+            {
+                if (_linkFrom != null && _linkFrom != n)
+                {
+                    ConnectLink(n);
+                    e.Use();
+                }
+                else if (!delRect.Contains(e.mousePosition))
+                {
+                    SelectNode(n);
+                    _dragNode = n;
+                    _dragGrab = e.mousePosition - (Vector2)r.position;
+                    Undo.RecordObject(n, "Move Quest Node");
+                    e.Use();
+                }
+            }
+            else if (e.type == EventType.MouseDown && e.button == 1 && hovered)
+            {
+                ShowNodeMenu(n);
+                e.Use();
+            }
+            else if (e.type == EventType.MouseDrag && _dragNode == n && e.button == 0)
+            {
+                n.graphPosition = e.mousePosition - _dragGrab - _graph.canvasScroll;
+                EditorUtility.SetDirty(n);
+                e.Use();
+                Repaint();
+            }
+        }
+
+        static void DrawPort(Vector2 center, Color color, bool emphasized)
+        {
+            float radius = emphasized ? PortR + 2f : PortR;
+            Handles.color = QuestGraphStyles.PortRim;
+            Handles.DrawSolidDisc(center, Vector3.forward, radius + 1.5f);
+            Handles.color = color;
+            Handles.DrawSolidDisc(center, Vector3.forward, radius);
+            Handles.color = Color.white;
+        }
+
+        static void DrawBorder(Rect r, Color color, float t)
+        {
+            EditorGUI.DrawRect(new Rect(r.x - t, r.y - t, r.width + t * 2, t), color);
+            EditorGUI.DrawRect(new Rect(r.x - t, r.yMax, r.width + t * 2, t), color);
+            EditorGUI.DrawRect(new Rect(r.x - t, r.y, t, r.height), color);
+            EditorGUI.DrawRect(new Rect(r.xMax, r.y, t, r.height), color);
+        }
+
+        void SetTooltip(Vector2 canvasLocalPos, string text)
+        {
+            _tooltip = text;
+            _tooltipWinPos = _canvasRect.position + canvasLocalPos * Zoom;
+        }
+
+        // ── Canvas-level events ────────────────────────────────────────
+
+        void HandleCanvasEvents(Vector2 viewSize, Event e, bool mouseInCanvas)
+        {
+            if (!mouseInCanvas) return;
+
+            switch (e.type)
+            {
+                case EventType.MouseUp when e.button == 0 && _linkFrom != null && _linkDrag:
+                    // Released over a node? DrawNode's MouseDown path handles click-connect;
+                    // for drag-release we resolve here.
+                    var overNode = NodeUnderMouse(e.mousePosition);
+                    if (overNode != null && overNode != _linkFrom)
+                    {
+                        ConnectLink(overNode);
+                    }
+                    else if (overNode == null)
+                    {
+                        float dragDist = Vector2.Distance(OutPortCenter(_linkFrom, IndexOfPort(_linkFrom, _linkPort)), e.mousePosition);
+                        if (dragDist > 24f)
+                            ShowCreateNodeMenu(e.mousePosition - _graph.canvasScroll, _linkFrom, _linkPort); // spawn-and-connect
+                        else
+                            _linkDrag = false; // small release: stay armed for click-click connecting
+                    }
+                    e.Use();
+                    Repaint();
+                    break;
+
+                case EventType.MouseDown when e.button == 0:
+                    if (_linkFrom != null) { _linkFrom = null; _linkDrag = false; }
+                    else SelectNode(null);
+                    e.Use();
+                    Repaint();
+                    break;
+
+                case EventType.MouseDown when e.button == 1:
+                    ShowCreateNodeMenu(e.mousePosition - _graph.canvasScroll, null, null);
+                    e.Use();
+                    break;
+
+                case EventType.MouseDrag when e.button == 2 || (e.button == 0 && e.alt):
+                    _graph.canvasScroll += e.delta;
+                    EditorUtility.SetDirty(_graph);
+                    e.Use();
+                    Repaint();
+                    break;
+
+                case EventType.MouseUp:
+                    _dragNode = null;
+                    break;
+            }
+        }
+
+        QuestNodeSO NodeUnderMouse(Vector2 mouse)
+        {
+            for (int i = _graph.nodes.Count - 1; i >= 0; i--)
+            {
+                var n = _graph.nodes[i];
+                if (n != null && NodeRect(n).Contains(mouse))
+                    return n;
+            }
+            return null;
+        }
+
+        void ConnectLink(QuestNodeSO target)
+        {
+            SetEdge(_linkFrom, _linkPort, target.nodeId);
+            _linkFrom = null;
+            _linkDrag = false;
+        }
+
+        Vector2 ScreenCenterWorld() =>
+            _graph != null ? _canvasRect.size * 0.5f / Zoom - _graph.canvasScroll : Vector2.zero;
+
+        // ════════════════════════════════════════════════════════════════
+        // Right panel — quest / phase / node inspectors + validation
+        // ════════════════════════════════════════════════════════════════
+
+        void DrawRightPanel(Rect rect)
+        {
+            EditorGUI.DrawRect(rect, QuestGraphStyles.PanelBg);
+            GUILayout.BeginArea(new Rect(rect.x + 6, rect.y + 4, rect.width - 12, rect.height - 8));
+            _rightScroll = EditorGUILayout.BeginScrollView(_rightScroll);
+
+            if (_quest != null)
+            {
+                GUILayout.Label($"QUEST — {_quest.name}", QuestGraphStyles.PanelHeader);
+                EditorGUI.BeginChangeCheck();
+                string id = EditorGUILayout.TextField("Quest Id", _quest.questId);
+                string notes = EditorGUILayout.TextArea(_quest.designerNotes ?? string.Empty,
+                    QuestGraphStyles.NotesArea, GUILayout.MinHeight(48));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(_quest, "Edit Quest");
+                    _quest.questId = id;
+                    _quest.designerNotes = notes;
+                    EditorUtility.SetDirty(_quest);
+                }
+                GUILayout.Space(8);
+            }
+
+            if (_graph != null)
+            {
+                GUILayout.Label($"PHASE — {_graph.PhaseName}", QuestGraphStyles.PanelHeader);
+                EditorGUI.BeginChangeCheck();
+                string pname = EditorGUILayout.TextField("Phase Name", _graph.phaseName);
+                GUILayout.Label("Designer Notes", EditorStyles.miniLabel);
+                string pnotes = EditorGUILayout.TextArea(_graph.designerNotes ?? string.Empty,
+                    QuestGraphStyles.NotesArea, GUILayout.MinHeight(60));
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(_graph, "Edit Phase");
+                    _graph.phaseName = pname;
+                    _graph.designerNotes = pnotes;
+                    EditorUtility.SetDirty(_graph);
+                }
+                GUILayout.Space(8);
+            }
+
+            if (_selectedNode != null)
+            {
+                GUILayout.Label($"NODE — {_selectedNode.NodeTypeLabel}", QuestGraphStyles.PanelHeader);
+                if (!string.IsNullOrEmpty(_selectedNode.TypeTooltip))
+                    EditorGUILayout.HelpBox(_selectedNode.TypeTooltip, MessageType.None);
+
+                EditorGUI.BeginChangeCheck();
+                string dn = EditorGUILayout.TextField("Display Name", _selectedNode.displayName);
+                if (EditorGUI.EndChangeCheck())
+                {
+                    Undo.RecordObject(_selectedNode, "Edit Node Name");
+                    _selectedNode.displayName = dn;
+                    EditorUtility.SetDirty(_selectedNode);
+                }
+
+                using (new EditorGUI.DisabledScope(_graph == null || _graph.entryNode == _selectedNode))
+                {
+                    if (GUILayout.Button(_graph != null && _graph.entryNode == _selectedNode ? "Entry Node ✓" : "Set As Entry Node"))
+                    {
+                        Undo.RecordObject(_graph, "Set Entry Node");
+                        _graph.entryNode = _selectedNode;
+                        EditorUtility.SetDirty(_graph);
+                        MarkValidationDirty();
+                    }
+                }
+
+                GUILayout.Space(4);
+                GUILayout.Label("Fields", EditorStyles.boldLabel);
+                if (_nodeEditor == null || _nodeEditor.target != _selectedNode)
+                {
+                    if (_nodeEditor != null) DestroyImmediate(_nodeEditor);
+                    _nodeEditor = UnityEditor.Editor.CreateEditor(_selectedNode);
+                }
+                EditorGUI.BeginChangeCheck();
+                _nodeEditor.OnInspectorGUI();
+                if (EditorGUI.EndChangeCheck())
+                    MarkValidationDirty();
+
+                GUILayout.Space(6);
+                DrawConnections();
+                GUILayout.Space(8);
+            }
+            else if (_graph != null)
+            {
+                EditorGUILayout.HelpBox(
+                    "Canvas controls:\n• Drag a node to move it\n• Drag from an output port to connect (release on empty canvas to spawn-and-connect)\n• Wheel = zoom · Middle/Alt-drag = pan · F = frame\n• Right-click canvas to add a node",
+                    MessageType.Info);
+                GUILayout.Space(8);
+            }
+
+            DrawValidation();
+            EditorGUILayout.EndScrollView();
+            GUILayout.EndArea();
+        }
+
+        void DrawConnections()
+        {
+            GUILayout.Label("Connections", EditorStyles.boldLabel);
+
+            var others = _graph.nodes.Where(n => n != null && n != _selectedNode).ToList();
+            var labels = new string[others.Count + 1];
+            labels[0] = "(end of flow)";
+            for (int i = 0; i < others.Count; i++)
+                labels[i + 1] = NodeLabel(others[i]);
+
+            foreach (var port in _selectedNode.OutputPorts)
+            {
+                var edge = _selectedNode.EdgeForPort(port);
+                int current = 0;
+                if (edge != null && !string.IsNullOrEmpty(edge.targetNodeId))
+                {
+                    int idx = others.FindIndex(n => n.nodeId == edge.targetNodeId);
+                    current = idx >= 0 ? idx + 1 : 0;
+                }
+
+                EditorGUI.BeginChangeCheck();
+                int picked = EditorGUILayout.Popup(port, current, labels);
+                if (EditorGUI.EndChangeCheck())
+                    SetEdge(_selectedNode, port, picked == 0 ? null : others[picked - 1].nodeId);
+            }
+
+            if (_selectedNode.OutputPorts.Count == 0)
+                GUILayout.Label("Terminal node — no outputs.", EditorStyles.miniLabel);
+        }
+
+        void DrawValidation()
+        {
+            if (_graph == null && _quest == null) return;
+
+            if (_validationDirty)
+            {
+                _validation.Clear();
+                ValidateQuest(_quest, _validation);
+                ValidateGraph(_graph, _validation);
+                _validationDirty = false;
+            }
+
+            GUILayout.Label("Validation", QuestGraphStyles.PanelHeader);
+            if (_validation.Count == 0)
+                EditorGUILayout.HelpBox("No problems found.", MessageType.Info);
+            else
+                foreach (var v in _validation)
+                    EditorGUILayout.HelpBox(v, MessageType.Warning);
+        }
+
+        static void ValidateQuest(QuestSO quest, List<string> sink)
+        {
+            if (quest == null) return;
+            if (quest.phases.Count == 0)
+                sink.Add("Quest has no phases.");
+            for (int i = 0; i < quest.phases.Count; i++)
+                if (quest.phases[i] == null)
+                    sink.Add($"Quest phase slot {i} is empty.");
+        }
+
+        void ValidateGraph(QuestPhaseGraphSO graph, List<string> sink)
+        {
+            if (graph == null) return;
+
+            if (graph.entryNode == null)
+                sink.Add("Phase has no entry node.");
+
+            var reachable = new HashSet<QuestNodeSO>();
+            if (graph.entryNode != null)
+            {
+                var stack = new Stack<QuestNodeSO>();
+                stack.Push(graph.entryNode);
+                while (stack.Count > 0)
+                {
+                    var n = stack.Pop();
+                    if (n == null || !reachable.Add(n)) continue;
+                    foreach (var edge in n.Outputs)
+                    {
+                        var t = graph.FindNode(edge.targetNodeId);
+                        if (t != null) stack.Push(t);
+                    }
+                }
+            }
+
+            bool hasTerminal = false;
+            foreach (var n in graph.nodes)
+            {
+                if (n == null) continue;
+                if (graph.entryNode != null && !reachable.Contains(n))
+                    sink.Add($"'{NodeLabel(n)}' is unreachable from the entry node.");
+                foreach (var edge in n.Outputs)
+                    if (!string.IsNullOrEmpty(edge.targetNodeId) && graph.FindNode(edge.targetNodeId) == null)
+                        sink.Add($"'{NodeLabel(n)}' has an edge to a missing node.");
+                if (n is QuestPhaseEndNode || n is QuestEndNode)
+                    hasTerminal = true;
+                n.Validate(graph, sink);
+            }
+
+            if (!hasTerminal && graph.nodes.Count > 0)
+                sink.Add("Phase has no Phase End (or Quest End) node — it will auto-advance on a dead end.");
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // Overlays — legend + tooltip (window space, crisp at any zoom)
+        // ════════════════════════════════════════════════════════════════
+
+        void DrawOverlays()
+        {
+            if (_showLegend && _graph != null)
+                DrawLegend();
+
+            if (!string.IsNullOrEmpty(_tooltip))
+            {
+                var content = new GUIContent(_tooltip);
+                float w = Mathf.Min(300f, QuestGraphStyles.Tooltip.CalcSize(content).x + 4f);
+                float h = QuestGraphStyles.Tooltip.CalcHeight(content, w);
+                var pos = _tooltipWinPos;
+                pos.x = Mathf.Min(pos.x, position.width - RightW - w - 8f);
+                pos.y = Mathf.Min(pos.y, position.height - h - 8f);
+                var r = new Rect(pos, new Vector2(w, h));
+                EditorGUI.DrawRect(new Rect(r.x - 5, r.y - 4, r.width + 10, r.height + 8), QuestGraphStyles.TooltipBg);
+                GUI.Label(r, content, QuestGraphStyles.Tooltip);
+            }
+        }
+
+        static readonly (QuestNodeCategory cat, string label)[] LegendEntries =
+        {
+            (QuestNodeCategory.Flow, "Flow — pacing & cinematics"),
+            (QuestNodeCategory.Presentation, "Presentation — instructions & dialogue"),
+            (QuestNodeCategory.Gameplay, "Gameplay — control, navigation, locking"),
+            (QuestNodeCategory.Gate, "Gate — waits for player / game"),
+            (QuestNodeCategory.Guidance, "Guidance — CTA breadcrumbs"),
+            (QuestNodeCategory.Progression, "Progression — unlock writes"),
+            (QuestNodeCategory.Terminal, "Terminal — phase / quest end"),
+        };
+
+        void DrawLegend()
+        {
+            const float lineH = 17f;
+            float w = 250f;
+            float h = LegendEntries.Length * lineH + 26f;
+            var r = new Rect(_canvasRect.x + 10, _canvasRect.yMax - h - 10, w, h);
+            EditorGUI.DrawRect(r, QuestGraphStyles.LegendBg);
+            GUI.Label(new Rect(r.x + 8, r.y + 4, w - 16, 16), "NODE COLORS", QuestGraphStyles.LegendHeader);
+            for (int i = 0; i < LegendEntries.Length; i++)
+            {
+                float y = r.y + 22f + i * lineH;
+                EditorGUI.DrawRect(new Rect(r.x + 8, y + 3, 10, 10), QuestGraphStyles.CategoryColor(LegendEntries[i].cat));
+                GUI.Label(new Rect(r.x + 24, y, w - 30, lineH), LegendEntries[i].label, QuestGraphStyles.LegendLabel);
+            }
+        }
+
+        // ════════════════════════════════════════════════════════════════
+        // Selection / asset ops
+        // ════════════════════════════════════════════════════════════════
+
+        void RefreshAssets()
+        {
+            _quests.Clear();
+            foreach (var guid in AssetDatabase.FindAssets("t:QuestSO"))
+            {
+                var q = AssetDatabase.LoadAssetAtPath<QuestSO>(AssetDatabase.GUIDToAssetPath(guid));
+                if (q != null) _quests.Add(q);
+            }
+
+            _graphs.Clear();
+            foreach (var guid in AssetDatabase.FindAssets("t:QuestPhaseGraphSO"))
+            {
+                var g = AssetDatabase.LoadAssetAtPath<QuestPhaseGraphSO>(AssetDatabase.GUIDToAssetPath(guid));
+                if (g != null) _graphs.Add(g);
+            }
+
+            _ownedGraphs.Clear();
+            foreach (var q in _quests)
+                foreach (var p in q.phases)
+                    if (p != null) _ownedGraphs.Add(p);
+        }
+
+        void SelectQuest(QuestSO quest)
+        {
+            _quest = quest;
+            if (quest.phases.Count > 0 && quest.phases[0] != null && (_graph == null || !quest.phases.Contains(_graph)))
+                SelectGraph(quest.phases[0], quest);
+            MarkValidationDirty();
+            Repaint();
+        }
+
+        void SelectGraph(QuestPhaseGraphSO graph, QuestSO owner)
+        {
+            _graph = graph;
+            if (owner != null) _quest = owner;
+            SelectNode(null);
+            _linkFrom = null;
+            _cards.Clear();
+            MarkValidationDirty();
+            Repaint();
+        }
+
+        void SelectNode(QuestNodeSO node) => _selectedNode = node;
+
+        static void EnsureFolder(string parent, string child)
+        {
+            if (!AssetDatabase.IsValidFolder($"{parent}/{child}"))
+                AssetDatabase.CreateFolder(parent, child);
+        }
+
+        static void EnsureDefaultFolders()
+        {
+            EnsureFolder("Assets/FTUE", "DataContainer");
+            EnsureFolder(RootFolder, "Quests");
+            EnsureFolder(RootFolder, "Phases");
+        }
+
+        void CreateQuestAsset()
+        {
+            EnsureDefaultFolders();
+            string path = AssetDatabase.GenerateUniqueAssetPath($"{QuestsFolder}/Quest_New.asset");
+            var quest = CreateInstance<QuestSO>();
+            quest.questId = System.IO.Path.GetFileNameWithoutExtension(path);
+            AssetDatabase.CreateAsset(quest, path);
+            AssetDatabase.SaveAssets();
+            RefreshAssets();
+            SelectQuest(quest);
+        }
+
+        QuestPhaseGraphSO CreateGraphAsset(string baseName)
+        {
+            EnsureDefaultFolders();
+            string path = AssetDatabase.GenerateUniqueAssetPath($"{PhasesFolder}/{baseName ?? "QuestPhase_New"}.asset");
+            var graph = CreateInstance<QuestPhaseGraphSO>();
+            graph.graphId = System.IO.Path.GetFileNameWithoutExtension(path);
+            graph.phaseName = graph.graphId;
+            AssetDatabase.CreateAsset(graph, path);
+            AssetDatabase.SaveAssets();
+            RefreshAssets();
+            SelectGraph(graph, null);
+            return graph;
+        }
+
+        void AddPhase(QuestSO quest)
+        {
+            var graph = CreateGraphAsset($"{quest.name}_Phase_{quest.phases.Count}");
+            Undo.RecordObject(quest, "Add Quest Phase");
+            quest.phases.Add(graph);
+            EditorUtility.SetDirty(quest);
+            AssetDatabase.SaveAssets();
+            RefreshAssets();
+            SelectGraph(graph, quest);
+        }
+
+        void MovePhase(QuestSO quest, int index, int dir)
+        {
+            int to = index + dir;
+            if (to < 0 || to >= quest.phases.Count) return;
+            Undo.RecordObject(quest, "Reorder Quest Phases");
+            (quest.phases[index], quest.phases[to]) = (quest.phases[to], quest.phases[index]);
+            EditorUtility.SetDirty(quest);
+            MarkValidationDirty();
+        }
+
+        void RemovePhase(QuestSO quest, int index)
+        {
+            var phase = quest.phases[index];
+            string phaseName = phase != null ? phase.PhaseName : "(missing)";
+            int choice = EditorUtility.DisplayDialogComplex("Remove Phase",
+                $"Remove phase {index} ('{phaseName}') from '{quest.name}'?",
+                "Remove From Quest", "Cancel", "Remove + Delete Asset");
+            if (choice == 1) return;
+
+            Undo.RecordObject(quest, "Remove Quest Phase");
+            quest.phases.RemoveAt(index);
+            EditorUtility.SetDirty(quest);
+
+            if (choice == 2 && phase != null)
+            {
+                if (_graph == phase) SelectGraph(null, quest);
+                AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(phase));
+            }
+
+            AssetDatabase.SaveAssets();
+            RefreshAssets();
+            MarkValidationDirty();
+        }
+
+        // ── Node ops ───────────────────────────────────────────────────
+
+        void ShowCreateNodeMenu(Vector2 worldPos, QuestNodeSO connectFrom, string connectPort)
+        {
+            var menu = new GenericMenu();
+            var types = TypeCache.GetTypesDerivedFrom<QuestNodeSO>()
+                .Where(t => !t.IsAbstract)
+                .Select(t => (type: t, label: MenuLabelFor(t)))
+                .OrderBy(x => x.label);
+
+            foreach (var (type, label) in types)
+                menu.AddItem(new GUIContent(label), false, () => CreateNode(type, worldPos, connectFrom, connectPort));
+            menu.ShowAsContext();
+
+            if (connectFrom != null)
+            {
+                // Consume the armed link either way; the callback rewires it if a type is picked.
+                _linkFrom = null;
+                _linkDrag = false;
+            }
+        }
+
+        static string MenuLabelFor(Type t)
+        {
+            var probe = (QuestNodeSO)CreateInstance(t);
+            string label = $"{probe.Category}/{SpaceCamelCase(probe.NodeTypeLabel)}";
+            DestroyImmediate(probe);
+            return label;
+        }
+
+        static string SpaceCamelCase(string s)
+        {
+            var sb = new System.Text.StringBuilder(s.Length + 6);
+            for (int i = 0; i < s.Length; i++)
+            {
+                if (i > 0 && char.IsUpper(s[i]) && !char.IsUpper(s[i - 1]))
+                    sb.Append(' ');
+                sb.Append(s[i]);
+            }
+            return sb.ToString();
+        }
+
+        void CreateNode(Type type, Vector2 worldPos, QuestNodeSO connectFrom, string connectPort)
+        {
+            if (_graph == null) return;
+
+            var node = (QuestNodeSO)CreateInstance(type);
+            node.nodeId = Guid.NewGuid().ToString("N");
+            node.name = type.Name;
+            node.displayName = SpaceCamelCase(node.NodeTypeLabel);
+            node.graphPosition = worldPos;
+
+            Undo.RegisterCreatedObjectUndo(node, "Create Quest Node");
+            AssetDatabase.AddObjectToAsset(node, _graph);
+            Undo.RecordObject(_graph, "Create Quest Node");
+            _graph.nodes.Add(node);
+            if (_graph.entryNode == null)
+                _graph.entryNode = node;
+
+            if (connectFrom != null)
+                SetEdge(connectFrom, connectPort, node.nodeId);
+
+            EditorUtility.SetDirty(_graph);
+            AssetDatabase.SaveAssets();
+            SelectNode(node);
+            MarkValidationDirty();
+            Repaint();
+        }
+
+        void DeleteNode(QuestNodeSO node)
+        {
+            Undo.RecordObject(_graph, "Delete Quest Node");
+            foreach (var n in _graph.nodes)
+                if (n != null)
+                    n.Outputs.RemoveAll(edge => edge.targetNodeId == node.nodeId);
+
+            _graph.nodes.Remove(node);
+            if (_graph.entryNode == node)
+                _graph.entryNode = _graph.nodes.FirstOrDefault(n => n != null);
+            if (_selectedNode == node)
+                SelectNode(null);
+            _cards.Remove(node);
+
+            AssetDatabase.RemoveObjectFromAsset(node);
+            DestroyImmediate(node, true);
+
+            EditorUtility.SetDirty(_graph);
+            AssetDatabase.SaveAssets();
+            MarkValidationDirty();
+            Repaint();
+        }
+
+        void SetEdge(QuestNodeSO from, string port, string targetNodeId)
+        {
+            Undo.RecordObject(from, "Connect Quest Nodes");
+            var edge = from.EdgeForPort(port);
+            if (string.IsNullOrEmpty(targetNodeId))
+            {
+                if (edge != null) from.Outputs.Remove(edge);
+            }
+            else if (edge != null)
+            {
+                edge.targetNodeId = targetNodeId;
+            }
+            else
+            {
+                from.Outputs.Add(new QuestEdge(port, targetNodeId));
+            }
+            EditorUtility.SetDirty(from);
+            MarkValidationDirty();
+        }
+
+        void ShowNodeMenu(QuestNodeSO node)
+        {
+            var menu = new GenericMenu();
+            menu.AddItem(new GUIContent("Set As Entry Node"), _graph.entryNode == node, () =>
+            {
+                Undo.RecordObject(_graph, "Set Entry Node");
+                _graph.entryNode = node;
+                EditorUtility.SetDirty(_graph);
+                MarkValidationDirty();
+            });
+            menu.AddItem(new GUIContent("Disconnect All Outputs"), false, () =>
+            {
+                Undo.RecordObject(node, "Disconnect Node");
+                node.Outputs.Clear();
+                EditorUtility.SetDirty(node);
+                MarkValidationDirty();
+            });
+            menu.AddSeparator(string.Empty);
+            menu.AddItem(new GUIContent("Delete Node"), false, () => DeleteNode(node));
+            menu.ShowAsContext();
+        }
+
+        void ShowPortMenu(QuestNodeSO node, string port)
+        {
+            var menu = new GenericMenu();
+            menu.AddItem(new GUIContent($"Disconnect '{port}'"), false, () => SetEdge(node, port, null));
+            menu.ShowAsContext();
+        }
+
+        void FrameContent()
+        {
+            if (_graph == null || _graph.nodes.Count == 0) return;
+
+            Vector2 min = new(float.MaxValue, float.MaxValue);
+            Vector2 max = new(float.MinValue, float.MinValue);
+            foreach (var n in _graph.nodes)
+            {
+                if (n == null) continue;
+                var size = GetCard(n).size;
+                min = Vector2.Min(min, n.graphPosition);
+                max = Vector2.Max(max, n.graphPosition + size);
+            }
+
+            Vector2 bounds = max - min;
+            float fitZoom = Mathf.Min((_canvasRect.width - 60f) / Mathf.Max(bounds.x, 1f),
+                                      (_canvasRect.height - 60f) / Mathf.Max(bounds.y, 1f));
+            Zoom = Mathf.Clamp(fitZoom, MinZoom, 1f);
+            _graph.canvasScroll = (_canvasRect.size / Zoom - bounds) * 0.5f - min;
+            EditorUtility.SetDirty(_graph);
+            Repaint();
+        }
+
+        void SaveAll()
+        {
+            if (_quest != null) EditorUtility.SetDirty(_quest);
+            if (_graph != null)
+            {
+                EditorUtility.SetDirty(_graph);
+                foreach (var n in _graph.nodes)
+                    if (n != null) EditorUtility.SetDirty(n);
+            }
+            AssetDatabase.SaveAssets();
+        }
+
+        static string NodeLabel(QuestNodeSO n) =>
+            string.IsNullOrEmpty(n.displayName) ? n.NodeTypeLabel : $"{n.displayName} ({n.NodeTypeLabel})";
+    }
+
+    /// <summary>
+    /// The classic IMGUI zoom-area: suspends the window's implicit group, applies a scale
+    /// matrix pivoted at the canvas origin, and restores everything on End. Mouse positions
+    /// read inside the area are automatically in canvas-local (unzoomed) coordinates.
+    /// </summary>
+    static class QuestZoomArea
+    {
+        const float TabHeight = 21f;
+        static Matrix4x4 _prevMatrix;
+
+        public static void Begin(float zoom, Rect screenRect)
+        {
+            GUI.EndGroup();
+
+            var clipped = new Rect(screenRect.x, screenRect.y + TabHeight,
+                screenRect.width / zoom, screenRect.height / zoom);
+            GUI.BeginGroup(clipped);
+
+            _prevMatrix = GUI.matrix;
+            var pivot = new Vector2(clipped.x, clipped.y);
+            var translation = Matrix4x4.TRS(pivot, Quaternion.identity, Vector3.one);
+            var scale = Matrix4x4.Scale(new Vector3(zoom, zoom, 1f));
+            GUI.matrix = translation * scale * translation.inverse * GUI.matrix;
+        }
+
+        public static void End(Rect windowPosition)
+        {
+            GUI.matrix = _prevMatrix;
+            GUI.EndGroup();
+            GUI.BeginGroup(new Rect(0f, TabHeight, windowPosition.width, windowPosition.height));
+        }
+    }
+
+    /// <summary>Cached styles + palette for the Quest Graph editor (no per-frame GUIStyle allocation).</summary>
+    static class QuestGraphStyles
+    {
+        static bool _ready;
+
+        public static Color ToolbarBg, PanelBg, CanvasBg, GridMinor, GridMajor;
+        public static Color NodeBody, NodeBodyHover, NodeShadow, PortIn, PortRim, PortArmed;
+        public static Color EntryBorder, SelectionBorder, LinkPreview, LegendBg, TooltipBg;
+        public static Color RowSelected, RowSelectedFaint;
+
+        public static GUIStyle Breadcrumb, PanelHeader, RowLabel, RowLabelSelected, RowLabelSmall;
+        public static GUIStyle MiniButton, MiniButtonDanger, MiniWide;
+        public static GUIStyle NodeHeader, NodeTitle, NodeSummary, NodeDelete, EntryBadge, PortLabel;
+        public static GUIStyle CanvasHint, LegendHeader, LegendLabel, Tooltip, NotesArea;
+
+        public static void Ensure()
+        {
+            if (_ready) return;
+            _ready = true;
+
+            ToolbarBg = new Color(0.13f, 0.14f, 0.18f);
+            PanelBg = new Color(0.16f, 0.17f, 0.21f);
+            CanvasBg = new Color(0.082f, 0.09f, 0.11f);
+            GridMinor = new Color(1f, 1f, 1f, 0.028f);
+            GridMajor = new Color(1f, 1f, 1f, 0.055f);
+            NodeBody = new Color(0.155f, 0.165f, 0.205f, 0.98f);
+            NodeBodyHover = new Color(0.195f, 0.21f, 0.26f, 0.99f);
+            NodeShadow = new Color(0f, 0f, 0f, 0.28f);
+            PortIn = new Color(0.75f, 0.82f, 0.95f);
+            PortRim = new Color(0.06f, 0.065f, 0.08f);
+            PortArmed = new Color(1f, 0.84f, 0.35f);
+            EntryBorder = new Color(0.28f, 0.85f, 0.45f);
+            SelectionBorder = new Color(1f, 0.8f, 0.3f);
+            LinkPreview = new Color(1f, 0.84f, 0.35f, 0.95f);
+            LegendBg = new Color(0.1f, 0.11f, 0.14f, 0.94f);
+            TooltipBg = new Color(0.08f, 0.09f, 0.115f, 0.97f);
+            RowSelected = new Color(0.25f, 0.32f, 0.52f, 0.85f);
+            RowSelectedFaint = new Color(0.25f, 0.32f, 0.52f, 0.45f);
+
+            Breadcrumb = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
+            PanelHeader = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 10,
+                normal = { textColor = new Color(0.62f, 0.67f, 0.78f) },
+            };
+            RowLabel = new GUIStyle(EditorStyles.label) { fontSize = 12 };
+            RowLabelSelected = new GUIStyle(EditorStyles.boldLabel) { fontSize = 12 };
+            RowLabelSmall = new GUIStyle(EditorStyles.label) { fontSize = 11 };
+            MiniButton = new GUIStyle(EditorStyles.miniButton) { fontSize = 8, padding = new RectOffset(1, 1, 1, 1) };
+            MiniButtonDanger = new GUIStyle(MiniButton) { normal = { textColor = new Color(0.95f, 0.45f, 0.45f) } };
+            MiniWide = new GUIStyle(EditorStyles.miniButton) { fontSize = 10 };
+
+            NodeHeader = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 12,
+                normal = { textColor = Color.white },
+                clipping = TextClipping.Clip,
+            };
+            NodeTitle = new GUIStyle(EditorStyles.label)
+            {
+                fontSize = 11,
+                wordWrap = true,
+                normal = { textColor = new Color(0.9f, 0.92f, 0.96f) },
+            };
+            NodeSummary = new GUIStyle(EditorStyles.label)
+            {
+                fontSize = 10,
+                wordWrap = true,
+                normal = { textColor = new Color(0.6f, 0.66f, 0.76f) },
+            };
+            NodeDelete = new GUIStyle(EditorStyles.label)
+            {
+                fontSize = 10,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(1f, 1f, 1f, 0.55f) },
+                hover = { textColor = new Color(1f, 0.5f, 0.5f) },
+            };
+            EntryBadge = new GUIStyle(EditorStyles.miniBoldLabel)
+            {
+                fontSize = 9,
+                normal = { textColor = new Color(0.85f, 1f, 0.9f) },
+            };
+            PortLabel = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontSize = 9,
+                alignment = TextAnchor.MiddleRight,
+                normal = { textColor = new Color(0.65f, 0.72f, 0.85f) },
+            };
+            CanvasHint = new GUIStyle(EditorStyles.wordWrappedLabel)
+            {
+                fontSize = 13,
+                normal = { textColor = new Color(0.55f, 0.6f, 0.7f) },
+            };
+            LegendHeader = new GUIStyle(EditorStyles.miniBoldLabel)
+            {
+                fontSize = 9,
+                normal = { textColor = new Color(0.6f, 0.66f, 0.78f) },
+            };
+            LegendLabel = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontSize = 10,
+                normal = { textColor = new Color(0.78f, 0.82f, 0.9f) },
+            };
+            Tooltip = new GUIStyle(EditorStyles.wordWrappedMiniLabel)
+            {
+                fontSize = 10,
+                normal = { textColor = new Color(0.88f, 0.9f, 0.95f) },
+            };
+            NotesArea = new GUIStyle(EditorStyles.textArea) { wordWrap = true, fontSize = 11 };
+        }
+
+        public static Color CategoryColor(QuestNodeCategory cat) => cat switch
+        {
+            QuestNodeCategory.Flow => new Color(0.35f, 0.41f, 0.78f),
+            QuestNodeCategory.Presentation => new Color(0.16f, 0.62f, 0.56f),
+            QuestNodeCategory.Gameplay => new Color(0.56f, 0.34f, 0.72f),
+            QuestNodeCategory.Gate => new Color(0.24f, 0.49f, 0.8f),
+            QuestNodeCategory.Guidance => new Color(0.76f, 0.62f, 0.19f),
+            QuestNodeCategory.Progression => new Color(0.82f, 0.49f, 0.18f),
+            QuestNodeCategory.Terminal => new Color(0.24f, 0.62f, 0.32f),
+            _ => new Color(0.4f, 0.4f, 0.45f),
+        };
+    }
+}
+#endif
