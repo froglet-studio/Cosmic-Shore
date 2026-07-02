@@ -381,6 +381,12 @@ namespace CosmicShore.Gameplay
             CachedVolume = v > 0f ? v : Mathf.Max(prismProperties?.volume ?? 0f, 0f);
         }
 
+        // Growth Methods
+        // NOTE: restored here — the volume-cache cherry-pick (1c2022288) dropped this
+        // line, breaking Boid.cs's otherPrism.Grow()/embeddedHealthPrism.Grow() calls
+        // (CS1061). zen-volta hit and fixed the identical regression on its own lineage.
+        public void Grow(float amount = 1) => scaleAnimator.Grow(amount);
+
         // Collision Handling
         protected void OnTriggerEnter(Collider other)
         {
