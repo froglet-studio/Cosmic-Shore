@@ -1,11 +1,14 @@
+using System;
 using System.Collections.Generic;
 using CosmicShore.Engine;
 using Object = CosmicShore.Engine.Object;
 
 namespace CosmicShore.Tests;
 
-public class SceneModelTests
+public class SceneModelTests : IDisposable
 {
+    public void Dispose() => Time.fixedDeltaTime = 0.02f; // engine default — don't leak 1/60 to later classes
+
     class LifecycleProbe : MonoBehaviour
     {
         public static List<string> Log;
@@ -37,7 +40,7 @@ public class SceneModelTests
         go.AddComponent<LifecycleProbe>();
         Assert.Equal(new[] { "Awake", "OnEnable" }, LifecycleProbe.Log);
 
-        Time.fixedDeltaTime = 1f / 60f;
+        Time.fixedDeltaTime = 1f / 60f; // restored to the 0.02 default in Dispose
         loop.Tick(1f / 60f);
         Assert.Equal(new[] { "Awake", "OnEnable", "Start", "FixedUpdate", "Update", "LateUpdate" }, LifecycleProbe.Log);
 

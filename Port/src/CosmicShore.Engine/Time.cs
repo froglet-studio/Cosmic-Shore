@@ -21,6 +21,13 @@ namespace CosmicShore.Engine
         /// </summary>
         public static double timeAsDouble => time;
         public static float unscaledTime { get; private set; }
+
+        /// <summary>
+        /// Wall-clock seconds since startup in the original engine. Backed by the
+        /// harness-driven unscaled clock here so headless runs stay deterministic
+        /// (readers: AdaptiveAnimationManager's frame-interval throttle).
+        /// </summary>
+        public static float realtimeSinceStartup => unscaledTime;
         public static float fixedDeltaTime { get; set; } = 0.02f;
         public static float timeScale { get; set; } = 1f;
         public static int frameCount { get; private set; }

@@ -39,11 +39,11 @@ namespace CosmicShore.Gameplay
                     isAnimating = value;
                     if (isAnimating)
                     {
-                        // PORT Deviation (V14, restore when MaterialStateManager ports): MaterialStateManager.Instance?.OnAnimatorStartAnimating(this);
+                        MaterialStateManager.Instance?.OnAnimatorStartAnimating(this);
                     }
                     else
                     {
-                        // PORT Deviation (V14, restore when MaterialStateManager ports): MaterialStateManager.Instance?.OnAnimatorStopAnimating(this);
+                        MaterialStateManager.Instance?.OnAnimatorStopAnimating(this);
                     }
                 }
             }
@@ -82,11 +82,11 @@ namespace CosmicShore.Gameplay
 
         private void TryRegisterWithManager()
         {
-            // PORT Deviation (V14, restore when MaterialStateManager ports): if (MaterialStateManager.Instance != null && !isRegistered)
-            // PORT Deviation (V14, restore when MaterialStateManager ports): {
-            // PORT Deviation (V14, restore when MaterialStateManager ports):     MaterialStateManager.Instance.RegisterAnimator(this);
-            // PORT Deviation (V14, restore when MaterialStateManager ports):     isRegistered = true;
-            // PORT Deviation (V14, restore when MaterialStateManager ports): }
+            if (MaterialStateManager.Instance != null && !isRegistered)
+            {
+                MaterialStateManager.Instance.RegisterAnimator(this);
+                isRegistered = true;
+            }
         }
 
         private void OnEnable()
@@ -96,11 +96,11 @@ namespace CosmicShore.Gameplay
 
         private void OnDisable()
         {
-            // PORT Deviation (V14, restore when MaterialStateManager ports): if (MaterialStateManager.Instance != null && isRegistered)
-            // PORT Deviation (V14, restore when MaterialStateManager ports): {
-            // PORT Deviation (V14, restore when MaterialStateManager ports):     MaterialStateManager.Instance.UnregisterAnimator(this);
-            // PORT Deviation (V14, restore when MaterialStateManager ports):     isRegistered = false;
-            // PORT Deviation (V14, restore when MaterialStateManager ports): }
+            if (MaterialStateManager.Instance != null && isRegistered)
+            {
+                MaterialStateManager.Instance.UnregisterAnimator(this);
+                isRegistered = false;
+            }
         }
 
         private bool ValidateMaterials()
@@ -203,11 +203,11 @@ namespace CosmicShore.Gameplay
 
         private void OnDestroy()
         {
-            // PORT Deviation (V14, restore when MaterialStateManager ports): if (MaterialStateManager.Instance != null && isRegistered)
-            // PORT Deviation (V14, restore when MaterialStateManager ports): {
-            // PORT Deviation (V14, restore when MaterialStateManager ports):     MaterialStateManager.Instance.UnregisterAnimator(this);
-            // PORT Deviation (V14, restore when MaterialStateManager ports):     isRegistered = false;
-            // PORT Deviation (V14, restore when MaterialStateManager ports): }
+            if (MaterialStateManager.Instance != null && isRegistered)
+            {
+                MaterialStateManager.Instance.UnregisterAnimator(this);
+                isRegistered = false;
+            }
             OnAnimationComplete = null;
         }
     }

@@ -13,8 +13,9 @@ namespace CosmicShore.Tests;
 // shield deactivation), PrismTeamManager team/domain bookkeeping, PrismScaleAnimator
 // scale math. V15 restored the Prism-keyed deviations, so prismProperties writes and
 // the conserved-mass volume record are now live (asserted below via PrismTestRig).
-// Octahedron engage/disengage and PrismScaleManager registration remain staged
-// (PrismOctahedronShield / PrismScaleManager not yet ported) and are not asserted here.
+// The manager arc restored the PrismScaleManager / MaterialStateManager registration
+// deviations — manager-batched animation itself is covered in PrismManagerArcTests;
+// Octahedron engage/disengage remains staged (PrismOctahedronShield not yet ported).
 public class PrismManagerTests
 {
     const BindingFlags Priv = BindingFlags.Instance | BindingFlags.NonPublic;
@@ -31,6 +32,12 @@ public class PrismManagerTests
             .GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!
             .SetValue(null, null);
         typeof(Singleton<PrismSpatialIndex>)
+            .GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!
+            .SetValue(null, null);
+        typeof(Singleton<PrismScaleManager>)
+            .GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!
+            .SetValue(null, null);
+        typeof(Singleton<MaterialStateManager>)
             .GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!
             .SetValue(null, null);
     }
@@ -428,6 +435,9 @@ public class PrismManagerTests
     public void Initialize_RegistersOnce_AndOnDisableUnregisters()
     {
         using var loop = new GameLoop();
+        // Manager arc: registration goes through the real PrismScaleManager now —
+        // Initialize() early-returns (upstream contract) when no manager instance exists.
+        new GameObject("scaleManager").AddComponent<PrismScaleManager>();
         var (anim, go) = MakeAnimator();
 
         anim.Initialize();
@@ -438,5 +448,26 @@ public class PrismManagerTests
 
         go.SetActive(false); // OnDisable clears registration
         Assert.False(IsRegistered(anim));
+    }
+
+    [Fact]
+    public void Initialize_WithoutManager_StaysUnregistered_AndPrismStillWorks()
+    {
+        using var loop = new GameLoop();
+        var (anim, go) = MakeAnimator();
+
+        anim.Initialize(); // upstream graceful path: no PrismScaleManager.Instance → no-op
+
+        Assert.False(IsRegistered(anim));
+
+        // The animator still functions standalone: targets clamp, growth arms, and
+        // disabling/destroying without a manager neither throws nor unregisters.
+        anim.SetTargetScale(new Vector3(3f, 3f, 3f));
+        anim.BeginGrowthAnimation();
+        Assert.True(anim.IsScaling);
+
+        loop.Tick(0.02f); // nothing drives the scale without a manager — no exception
+        Assert.Equal(Vector3.zero, go.transform.localScale);
+        Assert.True(anim.IsScaling);
     }
 }

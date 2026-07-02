@@ -6,8 +6,10 @@ using CosmicShore.Engine.Tasks;
 
 namespace CosmicShore.Tests;
 
-public class GameLoopTests
+public class GameLoopTests : IDisposable
 {
+    public void Dispose() => Time.fixedDeltaTime = 0.02f; // engine default — don't leak 1/60 to later classes
+
     class FixedCounter : MonoBehaviour
     {
         public int FixedUpdates;
@@ -23,7 +25,7 @@ public class GameLoopTests
     public void FixedUpdate_AccumulatorProducesCorrectStepCount()
     {
         using var loop = new GameLoop();
-        Time.fixedDeltaTime = 1f / 60f;
+        Time.fixedDeltaTime = 1f / 60f; // restored to the 0.02 default in Dispose
         var go = new GameObject("fixed");
         var counter = go.AddComponent<FixedCounter>();
 
@@ -37,7 +39,7 @@ public class GameLoopTests
     public void TimeScale_Zero_SuspendsFixedAndScaledTime()
     {
         using var loop = new GameLoop();
-        Time.fixedDeltaTime = 1f / 60f;
+        Time.fixedDeltaTime = 1f / 60f; // restored to the 0.02 default in Dispose
         var go = new GameObject("paused");
         var counter = go.AddComponent<FixedCounter>();
 

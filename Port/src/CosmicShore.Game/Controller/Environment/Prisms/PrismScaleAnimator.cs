@@ -38,8 +38,8 @@ namespace CosmicShore.Gameplay
                 if (isScaling.Equals(value)) return;
                 isScaling = value;
 
-                // PORT Deviation (V13, restore when PrismScaleManager ports): if (isScaling) PrismScaleManager.Instance?.OnBlockStartScaling(this);
-                // PORT Deviation (V13, restore when PrismScaleManager ports): else PrismScaleManager.Instance?.OnBlockStopScaling(this);
+                if (isScaling) PrismScaleManager.Instance?.OnBlockStartScaling(this);
+                else PrismScaleManager.Instance?.OnBlockStopScaling(this);
             }
         }
 
@@ -67,16 +67,15 @@ namespace CosmicShore.Gameplay
         public void Initialize()
         {
             if (isRegistered) return;
-            // PORT Deviation (V13, restore when PrismScaleManager ports): if (!PrismScaleManager.Instance) return;
-            // PORT Deviation (V13, restore when PrismScaleManager ports): PrismScaleManager.Instance.RegisterAnimator(this);
+            if (!PrismScaleManager.Instance) return;
+            PrismScaleManager.Instance.RegisterAnimator(this);
             isRegistered = true;
         }
 
         private void OnDisable()
         {
-            // PORT Deviation (V13, restore when PrismScaleManager ports): if (PrismScaleManager.Instance == null || !isRegistered) return;
-            if (!isRegistered) return;
-            // PORT Deviation (V13, restore when PrismScaleManager ports): PrismScaleManager.Instance.UnregisterAnimator(this);
+            if (PrismScaleManager.Instance == null || !isRegistered) return;
+            PrismScaleManager.Instance.UnregisterAnimator(this);
             isRegistered = false;
         }
 
@@ -165,9 +164,8 @@ namespace CosmicShore.Gameplay
 
         private void OnDestroy()
         {
-            // PORT Deviation (V13, restore when PrismScaleManager ports): if (!PrismScaleManager.Instance || !isRegistered) return;
-            if (!isRegistered) return;
-            // PORT Deviation (V13, restore when PrismScaleManager ports): PrismScaleManager.Instance.UnregisterAnimator(this);
+            if (!PrismScaleManager.Instance || !isRegistered) return;
+            PrismScaleManager.Instance.UnregisterAnimator(this);
             isRegistered = false;
         }
     }
