@@ -156,6 +156,13 @@ namespace CosmicShore.Gameplay
                 block.transform.localPosition = point.Position;
                 block.transform.localRotation = point.Rotation;
 
+                // Zero the scale so EVERY re-posed prism blooms from zero, uniformly. ResetState
+                // only zeroes the eaten (disabled-animator) prisms; without this the surviving
+                // prisms would keep their old grown scale and MORPH old→new instead of blooming,
+                // an inconsistent transition (continuity law: nothing pops). Matches the
+                // first-population path in PopulateAsync.
+                block.transform.localScale = Vector3.zero;
+
                 // Full re-initialize for EVERY prism (not just eaten ones): ResetState
                 // unregisters and CreateBlockCoroutine re-registers at the new position, which
                 // re-files the cell's per-domain density grids — UpdatePosition alone never
@@ -172,9 +179,23 @@ namespace CosmicShore.Gameplay
             }
 
             // Surviving crystals ride the belt to fresh plan slots (their value was stamped at
-            // full scale when first minted); collected ones are replaced post-bloom.
+            // full scale when first minted); destroyed OR mid-collection ones drop out so
+            // TopUpCrystals mints replacements. A crystal the player just skimmed is flying to
+            // the vessel on its own — detach it from the container so the suction doesn't scale
+            // it mid-flight, and stop treating it as a belt resident.
             for (int i = _crystals.Count - 1; i >= 0; i--)
-                if (!_crystals[i]) _crystals.RemoveAt(i);
+            {
+                var crystal = _crystals[i];
+                if (!crystal)
+                {
+                    _crystals.RemoveAt(i);
+                }
+                else if (crystal.TryGetComponent(out ElementalCrystalImpactor impactor) && impactor.HasBeenCollected)
+                {
+                    crystal.transform.SetParent(null, worldPositionStays: true);
+                    _crystals.RemoveAt(i);
+                }
+            }
 
             for (int i = 0; i < _crystals.Count; i++)
             {

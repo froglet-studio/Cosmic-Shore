@@ -282,13 +282,16 @@ rely on the runtime default toybox.)
 
 ## Status & follow-up
 
-The framework + three toys are in, plus the second-pass fixes above: mini-model hull rendering,
+The framework + **four toys** are in (Vessel Changer, Domain Changer, Painting, and the Wanderway
+microscene conveyor), plus the vessel-changer second-pass fixes above: mini-model hull rendering,
 exit-gated re-arm + slow flip re-grow, swap continuity (domain / pose / speed), recolour-on-domain,
-HUD-after-swap, and gamepad-Start / input-ownership. All are compile-reviewed against the real
-codebase but **not yet play-verified in an editor** (no Unity in the authoring environment) — an
-in-editor pass is the last step before/after merge. Remaining polish (per-toy tuning, skinned-mesh
-`BakeMesh` fidelity, painting pen-up, placement anchor, unlock persistence, tests) is tracked in
-**`BACKLOG.md`**, grouped so each area can be its own branch.
+HUD-after-swap, and gamepad-Start / input-ownership. The conveyor has been through two adversarial
+review passes (compile, logic, ecology invariants, game-feel, assets, docs). All are
+compile-reviewed against the real codebase but **not yet play-verified in an editor** (no Unity in
+the authoring environment) — an in-editor pass is the last step before/after merge. Remaining polish
+(per-toy tuning, skinned-mesh `BakeMesh` fidelity, painting pen-up, placement anchor, conveyor
+recipe/pacing tuning + audio, unlock persistence, tests) is tracked in **`BACKLOG.md`**, grouped so
+each area can be its own branch.
 
 ### Files touched this pass (for review)
 

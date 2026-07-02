@@ -83,6 +83,18 @@ All shipped on the branch; see `ARCHITECTURE.md` § "Status & follow-up" for the
 
 ## Branch: conveyor ("Wanderway") polish
 
+**Reviewed (two adversarial passes — compile, logic, ecology invariants, game-feel, assets, docs).**
+Confirmed fixes shipped: (a) `Prism.ResetState` re-arms the scale animator that `SetupDestruction`
+disabled, so a fauna-eaten prism re-minted on recycle grows in from zero and weighs volume again (a
+latent gap the conveyor was first to exercise); (b) recycle now zeroes every prism's scale so
+survivors bloom from zero uniformly instead of morphing; (c) a crystal skimmed mid-flight-to-vessel
+is detached from the container and dropped from the belt so it isn't repositioned/scaled and the
+slot tops up; (d) per-arrival derived RNG streams keep recycling deterministic under async
+interleaving. Invariant audits passed clean (open-space belt mass is `poolSize`-bounded and
+collider-LOD'd — valid bounded accumulation, not a leak; lifeforms released only into the containing
+cell with all canonical gates; no bare-`Destroy` of visible prisms/crystals on toggle-off or
+teardown). Everything below is remaining polish / not-yet-play-verified.
+
 - **In-editor verification (second pass — post play-test rework).** Enter freestyle in
   Menu_Main, fly through the Wanderway toy. Confirm: (1) the toy flips bright + relabels
   "flowing — fly through to stop", and a second pass turns the flow off (label flips back);
@@ -99,9 +111,9 @@ All shipped on the branch; see `ARCHITECTURE.md` § "Status & follow-up" for the
   `sceneSpacing` / `recycleBehindDistance` are the low-speed floors; `sceneRadius` + per-recipe
   radii vs. vessel + skimmer size; `transitionSeconds` (suction/bloom read); `poolSize` /
   `prismBudgetPerScene` (density vs. perf); `courseFollow` (how tightly the belt shadows you).
-- **Recipe art pass.** The eight `MicroscenePatterns` recipes are procedural first drafts —
-  tune counts/radii per recipe, and consider authored recipes (a `MicrosceneRecipeSO`) if
-  designers want hand-built set pieces in the shuffle bag.
+- **Recipe art pass.** The 16 `MicroscenePatterns` recipes are procedural (each re-rolls its own
+  radii/counts/twists/bends per arrival) — tune ranges per recipe, and consider authored recipes
+  (a `MicrosceneRecipeSO`) if designers want hand-built set pieces in the shuffle bag.
 - **Belt audio/VFX.** Suction/bloom currently rides scale only; a whoosh SFX
   (`AudioSystem` gameplay SFX) + a faint particle draw toward the anchor would sell the
   conveyor. Consider a soft chime as a new scene finishes blooming.

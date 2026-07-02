@@ -22,6 +22,13 @@ namespace CosmicShore.Gameplay
         public static event Action<string> OnCrystalCollected;
 
         /// <summary>
+        /// True once a skimmer has collected this crystal (it is now flying to the vessel and will
+        /// self-destroy). Runtime owners — e.g. the conveyor toy's microscenes — read this so they
+        /// stop managing a departing crystal as a live resident.
+        /// </summary>
+        public bool HasBeenCollected => _hasBeenCollected;
+
+        /// <summary>
         /// Wires collection effects on a runtime-added impactor (lifeform prefabs author these as
         /// inspector overrides; runtime spawns — e.g. the conveyor toy's pickups — cannot).
         /// </summary>
