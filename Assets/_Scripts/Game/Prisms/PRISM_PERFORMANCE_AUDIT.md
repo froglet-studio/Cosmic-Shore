@@ -356,13 +356,16 @@ Similarly, replace `CreateBlockCoroutine` with a delayed-activation manager that
 
 Since the original audit, the following optimizations have been implemented or are in active development:
 
+- **PrismEffectsManager** — centralized Jobs+Burst explosion/implosion animation manager; `PrismExplosion`/`PrismImplosion` now only register state and the manager batch-applies via a shared MaterialPropertyBlock (Recommendation 1)
 - **PrismTimerManager** — centralized timer system replacing per-prism coroutines (Recommendation 6)
 - **Per-frame explosion VFX cap** — limits concurrent explosion effects (Recommendation 5)
+- **MaterialPropertyAnimator sharedMaterial migration** — the material-clone paths cited in Recommendation 4 now use `sharedMaterial` (the per-prism instancing leak is resolved)
 - **EventListenerBase GC elimination** — reduced garbage collection from event listener allocations
 - **PrismAOEData** — cache-line-aware data layout with hot/cold splitting and bit-packed flags for AOE queries
 - **Burst-compiled spatial queries** — replaces Physics-based AOE prism damage (partial implementation of Recommendation 7)
+- **PrismColliderLodManager** — proximity-based collider culling (partial implementation of Recommendation 7)
 
-Recommendations 1-3 (Jobs-based explosion manager, GPU instanced rendering, full DOTS conversion) remain unimplemented.
+Recommendations 2 (GPU instanced explosion rendering), 3 (full DOTS conversion), and the collider-replacement remainder of 7 remain unimplemented — see `Docs/PERFORMANCE_REFACTOR_REVIEW.md` (July 2026) for the verified codebase-wide follow-up.
 
 ---
 
