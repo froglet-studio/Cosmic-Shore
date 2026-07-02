@@ -254,6 +254,38 @@ namespace CosmicShore.ECS
         static readonly int SpreadId = Shader.PropertyToID("_Spread");
 
         // ------------------------------------------------------------------
+        // Color space
+        // ------------------------------------------------------------------
+        // DOTS-instanced per-instance data uploads to the GPU verbatim, while the legacy
+        // path's colors went through Unity's color-space handling (per-renderer
+        // MaterialPropertyBlock / material property upload). In a Linear color-space
+        // project the legacy prisms therefore rendered the sRGB→linear CONVERTED values;
+        // writing the same authored numbers raw reads brighter — most visibly on the dark
+        // 'outside' color. Convert at this single write boundary so both paths render
+        // identically. Runtime-overridable (the 'prismcolors' console command) for
+        // in-editor A/B verification; affects colors written after the call.
+
+        static bool? _linearizeOverride;
+        static readonly bool IsLinearColorSpace = QualitySettings.activeColorSpace == ColorSpace.Linear;
+
+        static bool LinearizeColors => _linearizeOverride ?? IsLinearColorSpace;
+
+        /// <summary>Debug A/B hook: true = convert authored colors sRGB→linear at the
+        /// entity write boundary (the default in Linear projects), false = write raw,
+        /// null = automatic.</summary>
+        public static void SetColorConversionOverride(bool? linearize) => _linearizeOverride = linearize;
+
+        /// <summary>
+        /// Applies the same color-space transform the legacy render path's property
+        /// upload applied. Used internally by every color-writing API; call it yourself
+        /// only when writing override components directly (stress-harness direct mode).
+        /// </summary>
+        public static float4 ApplyColorSpace(in float4 c) =>
+            LinearizeColors
+                ? new float4(Mathf.GammaToLinearSpace(c.x), Mathf.GammaToLinearSpace(c.y), Mathf.GammaToLinearSpace(c.z), c.w)
+                : c;
+
+        // ------------------------------------------------------------------
         // API
         // ------------------------------------------------------------------
 
@@ -369,13 +401,15 @@ namespace CosmicShore.ECS
             });
         }
 
-        /// <summary>Per-frame animated colors from MaterialStateManager's Burst job output.</summary>
+        /// <summary>Per-frame animated colors from MaterialStateManager's Burst job output.
+        /// Inputs are authored-space values (the same numbers the legacy MPB received);
+        /// the color-space transform is applied here.</summary>
         public static void SetColors(in PrismRenderHandle handle, in float4 bright, in float4 dark, in float3 spread)
         {
             if (!IsUsable(in handle)) return;
             var em = _world.EntityManager;
-            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = bright });
-            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = dark });
+            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = ApplyColorSpace(in bright) });
+            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = ApplyColorSpace(in dark) });
             em.SetComponentData(handle.Entity, new PrismSpreadOverride { Value = spread });
         }
 
@@ -385,8 +419,8 @@ namespace CosmicShore.ECS
         {
             if (!IsUsable(in handle)) return;
             var em = _world.EntityManager;
-            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = bright });
-            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = dark });
+            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = ApplyColorSpace(in bright) });
+            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = ApplyColorSpace(in dark) });
         }
 
         /// <summary>Per-frame explosion shader params from PrismEffectsManager's Burst job output.</summary>
@@ -438,7 +472,7 @@ namespace CosmicShore.ECS
             if (material.HasProperty(propertyId))
             {
                 Color c = material.GetColor(propertyId);
-                return new float4(c.r, c.g, c.b, c.a);
+                return ApplyColorSpace(new float4(c.r, c.g, c.b, c.a));
             }
             return new float4(1f, 1f, 1f, 1f);
         }

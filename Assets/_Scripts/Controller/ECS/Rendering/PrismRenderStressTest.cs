@@ -228,8 +228,10 @@ namespace CosmicShore.ECS
                 });
 
                 var pair = _palette[i % _palette.Length];
-                em.SetComponentData(_entities[i], new PrismBrightColorOverride { Value = pair.bright });
-                em.SetComponentData(_entities[i], new PrismDarkColorOverride { Value = pair.dark });
+                // Direct mode bypasses the service, so apply the same color-space
+                // transform its color APIs apply (legacy-path parity).
+                em.SetComponentData(_entities[i], new PrismBrightColorOverride { Value = PrismRenderService.ApplyColorSpace(in pair.bright) });
+                em.SetComponentData(_entities[i], new PrismDarkColorOverride { Value = PrismRenderService.ApplyColorSpace(in pair.dark) });
             }
         }
 
@@ -275,7 +277,8 @@ namespace CosmicShore.ECS
                 if (_viaService)
                     PrismRenderService.SetColors(in _handles[idx], in color, in pair.dark, new float3(1f, 1f, 1f));
                 else
-                    _world.EntityManager.SetComponentData(_entities[idx], new PrismBrightColorOverride { Value = color });
+                    _world.EntityManager.SetComponentData(_entities[idx],
+                        new PrismBrightColorOverride { Value = PrismRenderService.ApplyColorSpace(in color) });
             }
         }
 

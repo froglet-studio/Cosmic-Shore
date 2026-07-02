@@ -49,7 +49,31 @@ namespace CosmicShore.ECS
         void Start()
         {
             DiagnosticsHUD.RegisterCommand(CommandName, HandlePrismsCommand);
+            DiagnosticsHUD.RegisterCommand("prismcolors", HandlePrismColorsCommand);
             DiagnosticsHUD.SetStat(StatsSection, "stress", IdleHint);
+        }
+
+        // A/B hook for the instanced-path color-space fix: 'prismcolors raw' reproduces
+        // the too-bright pre-fix look, 'linear' forces the converted look, 'auto' returns
+        // to the project default. Affects colors written AFTER the command (new trail /
+        // re-spawned cloud / next theme animation), not already-written ones.
+        string HandlePrismColorsCommand(string[] args)
+        {
+            if (args.Length == 0) return "usage: prismcolors linear | raw | auto";
+            switch (args[0].ToLowerInvariant())
+            {
+                case "linear":
+                    PrismRenderService.SetColorConversionOverride(true);
+                    return "instanced colors: sRGB→linear conversion ON (affects new writes)";
+                case "raw":
+                    PrismRenderService.SetColorConversionOverride(false);
+                    return "instanced colors: RAW/unconverted (affects new writes)";
+                case "auto":
+                    PrismRenderService.SetColorConversionOverride(null);
+                    return "instanced colors: automatic (Linear project ⇒ convert)";
+                default:
+                    return "usage: prismcolors linear | raw | auto";
+            }
         }
 
         string HandlePrismsCommand(string[] args)
@@ -109,6 +133,7 @@ namespace CosmicShore.ECS
         void OnDestroy()
         {
             DiagnosticsHUD.UnregisterCommand(CommandName);
+            DiagnosticsHUD.UnregisterCommand("prismcolors");
             DiagnosticsHUD.ClearStats(StatsSection);
             if (_instance == this) _instance = null;
         }
