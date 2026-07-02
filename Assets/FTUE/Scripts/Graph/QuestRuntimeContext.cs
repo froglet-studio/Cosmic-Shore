@@ -28,6 +28,7 @@ namespace CosmicShore.Core
         public GameDataSO GameData;
         public MenuFreestyleEventsContainerSO FreestyleEvents;
         public ScriptableEventInputEvents OnButtonPressed;
+        public ScriptableEventBoostChanged OnSkimBoost;
 
         // ── Scene systems ──
         public MenuCrystalClickHandler CrystalHandler;

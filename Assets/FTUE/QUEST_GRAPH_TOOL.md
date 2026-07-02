@@ -52,12 +52,14 @@ the whole quest.
 | Gameplay | **EnterFreestyle** | Forces the menu vessel into player control |
 | Gameplay | **Navigate** | Force-navigates a screen / the arcade modal |
 | Gameplay | **LockModes** | Locks all game cards except the tutorial game |
-| Gate | **ExitFreestyle** | Waits for return-to-menu ("press back") |
+| Gate | **ExitFreestyle** | Passive: waits for return-to-menu. `forceExit`: drives the return itself — pair with a WaitForInput gate ("press B") so exit happens only on the taught action |
 | Gate | **WaitForInput** | Waits for accepted control inputs (single press) |
 | Gate | **WaitForGameLaunch / WaitForGamePlayed** | Game launched / finished — Played supports mode + min-intensity filters |
 | Gate | **WaitForIntensity** | Mode reaches an intensity tier (the progression gate) |
 | Gate | **WaitForModeUnlocked** | Mode becomes unlocked — i.e. the player **claims** it on the quest track |
 | Gate | **WaitForUserAction** | Generic `UserActionType` gate (e.g. `UnlockVessel` from the hangar UI) |
+| Gate | **WaitForDrift** | Local vessel `IsDrifting` (LT+RT) sustained for a hold time; success haptic |
+| Gate | **WaitForSkim** | Counts prisms skimmed via the skim-boost SOAP channel (local vessel, boost-increase filtered); live "n / target" counter on the instruction view; per-skim + completion haptics |
 | Guidance | **HighlightCTA** | Lights a CTA breadcrumb (+ dependency path) and waits for its completion action |
 | Progression | **UnlockMode** | Direct unlock write via `GameModeProgressionService.UnlockMode` |
 | Terminal | **PhaseEnd / End** | Ends the phase / completes the quest |
@@ -118,8 +120,14 @@ with a `PlayerPrefs` mirror for offline/pre-load gating. Every node advance mark
 | `UserActionTrigger` (+ new `triggerOnEnable`) | the episode panel (or any panel) | Fires its `UserActionType` (e.g. `ViewEpisodeMenu`) when the panel opens — completes CTAs + gates |
 
 ShowInstruction node fields: `text`, `haptic` (NiceVibrations preset via `HapticType`),
-`minDisplaySeconds` (hold before advancing), `hideOnAdvance`. The legacy TutorialUIView
-typewriter is only a fallback when no `QuestInstructionView` is wired.
+`panelKey` (a hand-built CanvasGroup panel registered on `QuestInstructionView` — icons + text,
+animatable), `minDisplaySeconds`, `hideOnAdvance`. The legacy TutorialUIView typewriter is only
+a fallback when no `QuestInstructionView` is wired. Gate nodes (WaitForInput / WaitForDrift /
+WaitForSkim) pulse a configurable `successHaptic` when the player performs the correct action.
+
+Control icon sprites (white, tintable, animatable parts) live at
+`Assets/_Graphics/UI/ControlIcons/`: Thumbstick_Base/Cap, Arrow_Chevron, Thumbsticks_Outward/
+Inward, Thumbstick_Look, Trigger_LT/RT, Button_B.
 
 ## Scene/UI wiring still needed (game-side)
 

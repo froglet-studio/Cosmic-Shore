@@ -76,41 +76,67 @@ namespace CosmicShore.Editor
         static QuestPhaseGraphSO BuildPhase0()
         {
             var g = NewPhase(0, "Onboarding & Crystal Capture",
-                "Entry: first launch. Teaches controls in freestyle, launching Crystal Capture at " +
-                "intensity 2, the profile/maps screen + the intensity-4 rule, then CC at intensity 3, " +
-                "then basic social UI (friends invite — placeholder instruction until that panel has a " +
-                "CTA target). Intensity selection is enforced by UI (locked stepper), verified here by " +
-                "the WaitGamePlayed intensity filter.");
+                "Entry: first launch. FLIGHT SCHOOL — forced into freestyle, then: thumbsticks OUTWARD " +
+                "= speed up, INWARD = slow down, movement stick = look around, LT+RT = drift, skim 10 " +
+                "prisms (live counter; skims also boost), press B to exit — the exit happens ONLY on B, " +
+                "never forced. Every correct action pulses a success haptic; every completed step is " +
+                "recorded to UGS. Instruction beats reference keyed UI panels on QuestInstructionView " +
+                "(speed_up, slow_down, look_around, drift, skim, exit_freestyle) — build each as a " +
+                "CanvasGroup with the ControlIcons sprites. Then: Crystal Capture at intensity 2, " +
+                "profile/maps tour + the intensity-4 rule, CC at intensity 3, social UI tour.");
 
             var intro = Add<QuestPlayIntroNode>(g, "Intro Cinematic");
-            var enter = Add<QuestEnterFreestyleNode>(g, "Enter Freestyle");
+            var enter = Add<QuestEnterFreestyleNode>(g, "Enter Freestyle (forced into flight)");
 
-            var throttlePrompt = Add<QuestShowInstructionNode>(g, "Prompt: Throttle");
-            throttlePrompt.text = "Push forward to fly at full speed!";
-            throttlePrompt.haptic = HapticType.ButtonPress;
+            var speedUpPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Speed Up");
+            speedUpPrompt.text = "Pull both thumbsticks OUTWARD to speed up!";
+            speedUpPrompt.panelKey = "speed_up";
+            speedUpPrompt.haptic = HapticType.ButtonPress;
 
-            var waitThrottle = Add<QuestWaitForInputNode>(g, "Wait: Full Throttle");
-            waitThrottle.acceptedInputs = new List<InputEvents> { InputEvents.FullSpeedStraightAction };
+            var waitSpeedUp = Add<QuestWaitForInputNode>(g, "Wait: Full Speed");
+            waitSpeedUp.acceptedInputs = new List<InputEvents> { InputEvents.FullSpeedStraightAction };
 
-            var steerPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Steer");
-            steerPrompt.text = "Nice! Now tilt to steer left and right.";
-            steerPrompt.haptic = HapticType.ButtonPress;
+            var slowDownPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Slow Down");
+            slowDownPrompt.text = "Pull both thumbsticks INWARD to slow down.";
+            slowDownPrompt.panelKey = "slow_down";
 
-            var waitSteer = Add<QuestWaitForInputNode>(g, "Wait: Steer");
-            waitSteer.acceptedInputs = new List<InputEvents>
+            var waitSlowDown = Add<QuestWaitForInputNode>(g, "Wait: Minimum Speed");
+            waitSlowDown.acceptedInputs = new List<InputEvents> { InputEvents.MinimumSpeedStraightAction };
+
+            var lookPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Look Around");
+            lookPrompt.text = "Use the movement thumbstick to look around.";
+            lookPrompt.panelKey = "look_around";
+
+            var waitLook = Add<QuestWaitForInputNode>(g, "Wait: Look Around");
+            waitLook.acceptedInputs = new List<InputEvents>
             {
                 InputEvents.LeftStickAction, InputEvents.RightStickAction,
                 InputEvents.OnlyLeftStickAction, InputEvents.OnlyRightStickAction,
                 InputEvents.BothSticksAction,
             };
 
-            var captain = Add<QuestDialogueNode>(g, "Captain Welcome (assign DialogueSet)");
+            var driftPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Drift");
+            driftPrompt.text = "Squeeze LT + RT together to drift!";
+            driftPrompt.panelKey = "drift";
 
-            var backPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Head Back");
-            backPrompt.text = "Great flying! Head back to the menu when you're ready.";
-            backPrompt.hideOnAdvance = false; // stays up until the player exits freestyle
+            var waitDrift = Add<QuestWaitForDriftNode>(g, "Wait: Drift");
 
-            var exit = Add<QuestExitFreestyleNode>(g, "Wait: Return To Menu");
+            var skimPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Skim");
+            skimPrompt.text = "Skim close over prisms to charge your boost — skim 10!";
+            skimPrompt.panelKey = "skim";
+
+            var waitSkim = Add<QuestWaitForSkimNode>(g, "Wait: Skim 10 Prisms");
+            waitSkim.targetSkims = 10;
+
+            var exitPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Exit Freestyle");
+            exitPrompt.text = "Press B to head back to the menu.";
+            exitPrompt.panelKey = "exit_freestyle";
+
+            var waitB = Add<QuestWaitForInputNode>(g, "Wait: B Pressed");
+            waitB.acceptedInputs = new List<InputEvents> { InputEvents.Button3Action };
+
+            var exit = Add<QuestExitFreestyleNode>(g, "Force Exit Freestyle");
+            exit.forceExit = true;
 
             var ctaArcade = Add<QuestHighlightCTANode>(g, "CTA: Arcade");
             ctaArcade.target = CallToActionTargetType.ArcadeMenu;
@@ -151,8 +177,10 @@ namespace CosmicShore.Editor
 
             var end = Add<QuestPhaseEndNode>(g, "Phase 0 Complete");
 
-            Chain(g, intro, enter, throttlePrompt, waitThrottle, steerPrompt, waitSteer, captain,
-                backPrompt, exit, ctaArcade, lockModes, ctaCC2, playedCC2, ctaProfile, mapsDialogue,
+            Chain(g, intro, enter,
+                speedUpPrompt, waitSpeedUp, slowDownPrompt, waitSlowDown, lookPrompt, waitLook,
+                driftPrompt, waitDrift, skimPrompt, waitSkim, exitPrompt, waitB, exit,
+                ctaArcade, lockModes, ctaCC2, playedCC2, ctaProfile, mapsDialogue,
                 ctaCC3, playedCC3, socialTour, end);
             return Finish(g, intro);
         }

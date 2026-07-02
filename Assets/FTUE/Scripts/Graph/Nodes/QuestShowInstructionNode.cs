@@ -19,7 +19,7 @@ namespace CosmicShore.Core
         {
             get
             {
-                string s = string.IsNullOrEmpty(text) ? "(no text)" : text;
+                string s = !string.IsNullOrEmpty(panelKey) ? $"[panel: {panelKey}]  {text}" : (string.IsNullOrEmpty(text) ? "(no text)" : text);
                 if (minDisplaySeconds > 0f) s += $"  ·  {minDisplaySeconds:0.#}s";
                 if (haptic != HapticType.None) s += $"  ·  {haptic}";
                 return s;
@@ -33,6 +33,9 @@ namespace CosmicShore.Core
         [Tooltip("Optional haptic pulse when the instruction appears (respects the player's haptics setting).")]
         public HapticType haptic = HapticType.None;
 
+        [Tooltip("Optional key of a hand-built instruction panel registered on QuestInstructionView (icons + text as a CanvasGroup). Empty = plain text mode.")]
+        public string panelKey;
+
         [Tooltip("Hold the flow this many real-time seconds before advancing (0 = advance immediately; a following gate node keeps the prompt visible).")]
         [Min(0f)] public float minDisplaySeconds;
 
@@ -43,7 +46,7 @@ namespace CosmicShore.Core
         {
             if (ctx.InstructionView != null)
             {
-                ctx.InstructionView.Show(text, haptic);
+                ctx.InstructionView.Show(text, haptic, panelKey);
             }
             else if (ctx.TutorialUI != null)
             {

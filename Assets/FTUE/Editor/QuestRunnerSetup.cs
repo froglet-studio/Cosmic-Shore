@@ -36,6 +36,7 @@ namespace CosmicShore.Editor
             AssignObject(so, "gameData", FindAsset<GameDataSO>());
             AssignObject(so, "freestyleEvents", FindAsset<MenuFreestyleEventsContainerSO>());
             AssignObject(so, "onButtonPressed", FindInputPressedEvent());
+            AssignObject(so, "skimBoostEvent", FindAsset<ScriptableEventBoostChanged>());
 
             AssignObject(so, "crystalHandler", Object.FindFirstObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include));
             AssignObject(so, "instructionView", Object.FindFirstObjectByType<QuestInstructionView>(FindObjectsInactive.Include));
@@ -87,7 +88,7 @@ namespace CosmicShore.Editor
         {
             string[] required =
             {
-                "quest", "gameData", "freestyleEvents", "onButtonPressed", "instructionView",
+                "quest", "gameData", "freestyleEvents", "onButtonPressed", "skimBoostEvent", "instructionView",
                 "crystalHandler", "tutorialUI", "introAnimator", "dialogueManager", "screenSwitcher",
             };
             var missing = required

@@ -39,6 +39,9 @@ namespace CosmicShore.Core
         [Tooltip("The SAME ScriptableEventInputEvents asset the vessel's InputStatus raises on button press.")]
         [SerializeField] ScriptableEventInputEvents onButtonPressed;
 
+        [Tooltip("The shared skim-boost channel (ScriptableEventBoostChanged) raised per skimmed prism — used by WaitForSkim gates.")]
+        [SerializeField] ScriptableEventBoostChanged skimBoostEvent;
+
         [Header("Scene Systems")]
         [SerializeField] MenuCrystalClickHandler crystalHandler;
         [Tooltip("Lightweight text+haptics overlay used by ShowInstruction nodes (control teaching).")]
@@ -166,6 +169,7 @@ namespace CosmicShore.Core
                 GameData = gameData,
                 FreestyleEvents = freestyleEvents,
                 OnButtonPressed = onButtonPressed,
+                OnSkimBoost = skimBoostEvent,
                 CrystalHandler = crystalHandler,
                 InstructionView = instructionView,
                 TutorialUI = tutorialUI,

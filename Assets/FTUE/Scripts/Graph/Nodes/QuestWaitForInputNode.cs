@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -22,6 +23,9 @@ namespace CosmicShore.Core
         [Tooltip("Control inputs that satisfy this step. Empty = any input completes it.")]
         public List<InputEvents> acceptedInputs = new();
 
+        [Tooltip("Haptic pulse when the player performs the correct input.")]
+        public HapticType successHaptic = HapticType.ButtonPress;
+
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {
             if (ctx.OnButtonPressed == null)
@@ -34,7 +38,11 @@ namespace CosmicShore.Core
             void OnPressed(InputEvents pressed)
             {
                 if (acceptedInputs == null || acceptedInputs.Count == 0 || acceptedInputs.Contains(pressed))
+                {
+                    if (successHaptic != HapticType.None)
+                        HapticController.PlayHaptic(successHaptic);
                     advance(QuestPorts.Next);
+                }
             }
 
             ctx.OnButtonPressed.OnRaised += OnPressed;
