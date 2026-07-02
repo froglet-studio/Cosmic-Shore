@@ -10,8 +10,11 @@ namespace CosmicShore.Engine
     /// </summary>
     public abstract class ScriptableObject : Object
     {
-        public static T CreateInstance<T>() where T : ScriptableObject, new()
-            => new T { name = typeof(T).Name };
+        // No new() constraint — the original engine's CreateInstance<T> accepts any
+        // concrete ScriptableObject type argument (ported generic factories constrain
+        // only to an abstract base, e.g. ToyboxController.MakeDefault<T : ToyDefinitionSO>).
+        public static T CreateInstance<T>() where T : ScriptableObject
+            => (T)CreateInstance(typeof(T));
 
         public static ScriptableObject CreateInstance(Type type)
         {

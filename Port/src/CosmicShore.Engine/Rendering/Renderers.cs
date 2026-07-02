@@ -14,6 +14,12 @@ namespace CosmicShore.Engine
     {
         public bool enabled = true;
 
+        /// <summary>Shadow casting mode (original default: On). Data-only until a render backend reads it.</summary>
+        public Rendering.ShadowCastingMode shadowCastingMode = Rendering.ShadowCastingMode.On;
+
+        /// <summary>Whether this renderer receives shadows (original default: true). Data-only.</summary>
+        public bool receiveShadows = true;
+
         /// <summary>
         /// World-space AABB. The headless engine carries no mesh data, so this assumes a
         /// unit-cube mesh: center at the transform position, size = |lossyScale| — the same
@@ -90,6 +96,61 @@ namespace CosmicShore.Engine
 
         public float GetBlendShapeWeight(int index)
             => _blendShapeWeights.TryGetValue(index, out var w) ? w : 0f;
+    }
+
+    /// <summary>
+    /// Polyline renderer (original LineRenderer contract, data-only). Holds the point
+    /// buffer, widths, endpoint colors, and cap/corner tessellation counts that ported
+    /// code writes; a render backend draws from the same state later.
+    /// </summary>
+    public class LineRenderer : Renderer
+    {
+        public bool useWorldSpace = true;
+        public float startWidth = 1f;
+        public float endWidth = 1f;
+        public Color startColor = Color.white;
+        public Color endColor = Color.white;
+        public int numCapVertices;
+        public int numCornerVertices;
+
+        Vector3[] _positions = System.Array.Empty<Vector3>();
+
+        /// <summary>
+        /// Number of line points. Resizing preserves existing points; new slots are
+        /// zero-initialized (original contract).
+        /// </summary>
+        public int positionCount
+        {
+            get => _positions.Length;
+            set
+            {
+                int count = value < 0 ? 0 : value;
+                if (count == _positions.Length) return;
+                var next = new Vector3[count];
+                System.Array.Copy(_positions, next, System.Math.Min(_positions.Length, count));
+                _positions = next;
+            }
+        }
+
+        public void SetPosition(int index, Vector3 position) => _positions[index] = position;
+
+        public Vector3 GetPosition(int index) => _positions[index];
+
+        /// <summary>Copies min(positions.Length, positionCount) points — does not resize (original contract).</summary>
+        public void SetPositions(Vector3[] positions)
+        {
+            if (positions == null) return;
+            System.Array.Copy(positions, _positions, System.Math.Min(positions.Length, _positions.Length));
+        }
+
+        /// <summary>Copies up to <paramref name="positions"/>.Length points out; returns the count copied.</summary>
+        public int GetPositions(Vector3[] positions)
+        {
+            if (positions == null) return 0;
+            int n = System.Math.Min(positions.Length, _positions.Length);
+            System.Array.Copy(_positions, positions, n);
+            return n;
+        }
     }
 
     public class TrailRenderer : Renderer

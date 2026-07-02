@@ -640,6 +640,14 @@ bleeding-edge merged INTO this branch at 842c825c (325 commits, merge-base moved
 29b5f422 → c833c580). The port now chases a LIVE game. Two standing lanes join the
 convergence ladder, and every future bleeding-edge merge reopens them:
 
+0. **TOYS ✅ (ported, iteration 21)** — all 11 Controller/Toys + 5 SO files verbatim
+   (menu-swap arc + mesh arc + UI-shell deviations marked; domain changer works
+   end-to-end through the real RequestSetDomain RPC today). Engine gains
+   LineRenderer, GameObject.CreatePrimitive, ShadowCastingMode, the TMPro
+   data-shim (`using TMPro;` → `using CosmicShore.Engine.UI;` — README updated),
+   and CreateInstance<T> without the non-original new() constraint. 21 tests.
+   Client integration notes live in the toys agent report (ToyboxController needs
+   _gameData/_freestyleEvents + freestyle transition events in the client scene).
 1. **DRIFT-SYNC** — 57 already-ported files changed upstream (full list:
    `Port/docs/DRIFT_2026-06-13.txt`). Ported copies must be re-verbatimed against
    the new merge-base: for each file apply `git diff 29b5f422..c833c580 -- <unity

@@ -56,6 +56,8 @@ same member names — except for these mechanical using-directive substitutions:
 | `using Reflex.Attributes;` / `using Reflex.Core;` / `using Reflex.Injectors;` | `using CosmicShore.Engine.Injection;` |
 | `using Unity.Services.Authentication;` / `using Unity.Services.Core;` | `using CosmicShore.Engine.Services;` |
 | `using Cysharp.Threading.Tasks;` | (phase 1: first-party async — see PORT_PLAN) |
+| `using TMPro;` | `using CosmicShore.Engine.UI;` (data-only TMP shim; frozen TMP numeric values) |
+| `using UnityEngine.Serialization;` | (delete the line — `FormerlySerializedAs` lives in `CosmicShore.Engine`) |
 
 Every ported enum's numeric values are frozen by tests in
 `tests/CosmicShore.Tests/EnumFreezeTests.cs` — these values are wire format, save
