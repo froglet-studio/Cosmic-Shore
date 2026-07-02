@@ -1,6 +1,9 @@
 # Networked Fauna Sync — Lava-Lamp (Menu_Main) Plan
 
-**Status: PLAN — not yet implemented.** This document is the design + sequenced
+**Status: PLAN — not yet implemented.** *(Extraction note, July 2026: this plan was
+authored June 12 on `claude/optimistic-maxwell-uet05g`, before the late-June ecology rework —
+its §1 "current state" claims predate Burst density-grid fauna queries, the 3-phase ladder,
+and fauna reproduction. Treat §1 as historical; re-verify current state before implementing.)* This document is the design + sequenced
 backlog for making the lava-lamp fauna (tadpoles, brittlestars, sharks) one
 shared, synced population across all party members in Menu_Main, instead of a
 divergent per-client simulation. It resolves caveat #4 of
