@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
         private Prism prism;
         private MaterialPropertyAnimator materialAnimator;
         private PrismTeamManager teamManager;
-        // PORT Deviation (V13, restore when PrismOctahedronShield ports): private PrismOctahedronShield octahedronShield; // auto-added in Awake so every prism gets the octahedron on shield
+        private PrismOctahedronShield octahedronShield; // auto-added in Awake so every prism gets the octahedron on shield
 
         public BlockState CurrentState { get; private set; } = BlockState.Normal;
 
@@ -37,9 +37,9 @@ namespace CosmicShore.Gameplay
             // it; otherwise we add one at runtime so existing prefabs don't
             // need to be touched individually. The component's Awake resolves
             // BoxCollider / MeshFilter / Rigidbody from the same GameObject.
-            // PORT Deviation (V13, restore when PrismOctahedronShield ports): octahedronShield = GetComponent<PrismOctahedronShield>();
-            // PORT Deviation (V13, restore when PrismOctahedronShield ports): if (octahedronShield == null)
-            // PORT Deviation (V13, restore when PrismOctahedronShield ports):     octahedronShield = gameObject.AddComponent<PrismOctahedronShield>();
+            octahedronShield = GetComponent<PrismOctahedronShield>();
+            if (octahedronShield == null)
+                octahedronShield = gameObject.AddComponent<PrismOctahedronShield>();
         }
 
         public void MakeDangerous()
@@ -83,7 +83,7 @@ namespace CosmicShore.Gameplay
 
             // Opt-in octahedron shield visual/collider swap. Prisms without
             // this component keep the legacy material-only supershield.
-            // PORT Deviation (V13, restore when PrismOctahedronShield ports): if (octahedronShield != null) octahedronShield.Engage();
+            if (octahedronShield != null) octahedronShield.Engage();
 
             SyncAOERegistryShieldState();
         }
@@ -123,7 +123,7 @@ namespace CosmicShore.Gameplay
 
             // Engage the octahedron visual/collider swap for the regular
             // shield state too, matching super shield behavior.
-            // PORT Deviation (V13, restore when PrismOctahedronShield ports): if (octahedronShield != null) octahedronShield.Engage();
+            if (octahedronShield != null) octahedronShield.Engage();
 
             SyncAOERegistryShieldState();
             AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.ShieldActivate);
@@ -142,7 +142,7 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.IsSuperShielded = false;
             CurrentState = BlockState.Normal;
 
-            // PORT Deviation (V13, restore when PrismOctahedronShield ports): if (octahedronShield != null) octahedronShield.Disengage();
+            if (octahedronShield != null) octahedronShield.Disengage();
 
             SyncAOERegistryShieldState();
 
