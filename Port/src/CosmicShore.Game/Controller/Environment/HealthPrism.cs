@@ -1,4 +1,5 @@
 using System;
+using CosmicShore.Core;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using CosmicShore.Engine;
@@ -12,6 +13,11 @@ namespace CosmicShore.Gameplay
 
         [Header("Optional Components")]
         [SerializeField] Spindle spindle;
+
+        // Flora health prisms get a dedicated destruction sound; fauna (and any other
+        // lifeform) health prisms keep the generic BlockDestroy one-shot.
+        protected override GameplaySFXCategory DestructionSFX =>
+            LifeForm is Flora ? GameplaySFXCategory.FloraCollision : base.DestructionSFX;
 
         public override void Initialize(string playerName = DEFAULT_PLAYER_NAME)
         {

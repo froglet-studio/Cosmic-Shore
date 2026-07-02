@@ -12,7 +12,7 @@ namespace CosmicShore.Tests;
 // V15: Prism lifecycle (pool initialize → deferred creation → damage/consume →
 // restore), conserved-mass volume bookkeeping (Docs/ECOSYSTEM.md: a prism is only
 // ever removed or resized by an ACTIVE force — nothing here exercises or expects
-// decay), and PrismAOERegistry spatial queries over the managed-array port
+// decay), and PrismSpatialIndex spatial queries over the managed-array port
 // (register/unregister free-list, flag-packed skip logic, radius math, per-frame
 // damage application). Cell density-grid registration stays staged (Cell V12).
 public class PrismTests
@@ -25,7 +25,7 @@ public class PrismTests
         typeof(Singleton<PrismTimerManager>)
             .GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!
             .SetValue(null, null);
-        typeof(Singleton<PrismAOERegistry>)
+        typeof(Singleton<PrismSpatialIndex>)
             .GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!
             .SetValue(null, null);
         typeof(AudioSystem)
@@ -75,8 +75,8 @@ public class PrismTests
         Assert.True(renderer.enabled);
         Assert.Equal("P1", Assert.Single(created).OwnName);
         // Creation auto-registers with the (auto-created) AOE registry.
-        Assert.NotNull(PrismAOERegistry.Instance);
-        Assert.True(PrismAOERegistry.Instance.IsAvailable);
+        Assert.NotNull(PrismSpatialIndex.Instance);
+        Assert.True(PrismSpatialIndex.Instance.IsAvailable);
     }
 
     [Fact]
@@ -237,13 +237,13 @@ public class PrismTests
         Assert.Equal(7f, Assert.Single(volumeEvents).Volume);
     }
 
-    // ── PrismAOERegistry: registration ───────────────────────────────────────
+    // ── PrismSpatialIndex: registration ───────────────────────────────────────
 
     [Fact]
     public void Register_AssignsSequentialIndices_AndUnregisterRecyclesViaFreeList()
     {
         using var loop = new GameLoop();
-        var registry = PrismAOERegistry.EnsureInstance();
+        var registry = PrismSpatialIndex.EnsureInstance();
         Assert.True(registry.IsAvailable);
 
         var a = PrismTestRig.Create("a").Prism;
@@ -257,13 +257,13 @@ public class PrismTests
         Assert.Equal(0, registry.Register(c)); // freed slot reused before the high-water mark grows
     }
 
-    // ── PrismAOERegistry: spatial query + damage application ────────────────
+    // ── PrismSpatialIndex: spatial query + damage application ────────────────
 
     [Fact]
     public void ProcessExplosionFrame_DamagesEnemiesInsideRadiusOnly()
     {
         using var loop = new GameLoop();
-        var registry = PrismAOERegistry.EnsureInstance();
+        var registry = PrismSpatialIndex.EnsureInstance();
 
         var insideRig = PrismTestRig.Create("inside");
         insideRig.GameObject.transform.position = new Vector3(0f, 0f, 9.9f);
@@ -294,7 +294,7 @@ public class PrismTests
     public void ProcessExplosionFrame_AlreadyHitPrisms_AreNotHitTwice()
     {
         using var loop = new GameLoop();
-        var registry = PrismAOERegistry.EnsureInstance();
+        var registry = PrismSpatialIndex.EnsureInstance();
         var rig = PrismTestRig.Create();
         registry.Register(rig.Prism);
         var destroyed = Capture(rig.DestroyedEvent);
@@ -315,7 +315,7 @@ public class PrismTests
     {
         using var loop = new GameLoop();
         MakeAudio();
-        var registry = PrismAOERegistry.EnsureInstance();
+        var registry = PrismSpatialIndex.EnsureInstance();
         var rig = PrismTestRig.Create();
         rig.Prism.Domain = Domains.Jade;
         registry.Register(rig.Prism);
@@ -335,7 +335,7 @@ public class PrismTests
     public void ProcessExplosionFrame_SuperShieldedPrism_StopsTheExplosion()
     {
         using var loop = new GameLoop();
-        var registry = PrismAOERegistry.EnsureInstance();
+        var registry = PrismSpatialIndex.EnsureInstance();
         var rig = PrismTestRig.Create();
         rig.Prism.Domain = Domains.Ruby;
         rig.StateManager.ActivateSuperShield(); // flags captured at Register time
@@ -355,7 +355,7 @@ public class PrismTests
     public void MarkDestroyed_MakesTheSpatialScanSkipTheSlot()
     {
         using var loop = new GameLoop();
-        var registry = PrismAOERegistry.EnsureInstance();
+        var registry = PrismSpatialIndex.EnsureInstance();
         var rig = PrismTestRig.Create();
         rig.Prism.Domain = Domains.Ruby;
         int idx = registry.Register(rig.Prism);

@@ -321,7 +321,9 @@ namespace CosmicShore.Cli
             Check(joins == 2 && leaves == 1 && roster.Count == 1, "party roster list events + PlayerId equality");
 
             // Cell phase walk (ported CellPhaseRules + default thresholds): climb with the
-            // prism count, hold inside the hysteresis band, multi-step descent in one call.
+            // prism VOLUME (the spine — count is only the Frenzy perf backstop since the
+            // bleeding-edge volume rework), hold inside the hysteresis band, multi-step
+            // descent in one call. Default derives volume thresholds = count × 16.
             var thresholds = Utility.CellPhaseThresholds.Default;
             var phase = CellPhase.Calm;
             var walk = new (int count, CellPhase expected)[]
@@ -335,7 +337,8 @@ namespace CosmicShore.Cli
             bool phasesOk = true;
             foreach (var (count, expected) in walk)
             {
-                phase = Utility.CellPhaseRules.Compute(count, phase, in thresholds);
+                float volume = count * Utility.CellPhaseThresholds.NominalPrismVolume;
+                phase = Utility.CellPhaseRules.Compute(volume, count, phase, in thresholds);
                 Print($"  prisms={count,5} → {phase}");
                 phasesOk &= phase == expected;
             }

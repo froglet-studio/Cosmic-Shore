@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using CosmicShore.Engine;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 using Object = CosmicShore.Engine.Object;
 
 namespace CosmicShore.Tests;
@@ -17,6 +18,16 @@ public class AssemblerFamilyTests : IDisposable
 {
     readonly GameLoop loop = new();
     readonly List<GameObject> spawned = new();
+
+    public AssemblerFamilyTests()
+    {
+        // Upstream (c833c580) moved gyroid/wall occupancy + mate scans onto
+        // PrismSpatialIndex — a process-global Singleton whose TryReserve claims
+        // would otherwise leak between tests (every rig sits at the origin).
+        typeof(Singleton<PrismSpatialIndex>)
+            .GetProperty("Instance", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!
+            .SetValue(null, null);
+    }
 
     public void Dispose()
     {
@@ -42,14 +53,19 @@ public class AssemblerFamilyTests : IDisposable
         return assembler;
     }
 
-    GameObject MakeBlocker(Vector3 position, Vector3 size)
+    /// <summary>
+    /// Occupies a growth site with REGISTERED prism mass. Since the upstream
+    /// spatial-index rework (c833c580), gyroid/wall occupancy probes go through
+    /// PrismSpatialIndex.TryReserve — physics colliders are invisible to them by
+    /// design (colliders are disabled through the 0.6s spawn window), so a blocker
+    /// must be index-registered mass, exactly like live prisms in the game.
+    /// </summary>
+    Prism MakeBlocker(Vector3 position)
     {
-        var go = new GameObject($"blocker@{position}");
-        spawned.Add(go);
-        go.transform.position = position;
-        var collider = go.AddComponent<BoxCollider>();
-        collider.size = size;
-        return go;
+        var rig = PrismTestRig.CreatePrismAt(position, $"blocker@{position}");
+        spawned.Add(rig.gameObject);
+        PrismSpatialIndex.EnsureInstance().Register(rig);
+        return rig;
     }
 
     static void AssertVector3Equal(Vector3 expected, Vector3 actual, float tolerance = 1e-3f)
@@ -134,9 +150,9 @@ public class AssemblerFamilyTests : IDisposable
         var assembler = CreateAssemblerOnPrism<GyroidAssembler>();
         assembler.depth = 5;
 
-        // Occupy the TopRight bond site with foreign geometry — the real CheckBox probe
-        // must reject it and growth must fall through to TopLeft.
-        MakeBlocker(assembler.CalculateGlobalBondSite(CornerSiteType.TopRight), new Vector3(2f, 2f, 2f));
+        // Occupy the TopRight bond site with registered prism mass — the TryReserve
+        // occupancy probe must reject it and growth must fall through to TopLeft.
+        MakeBlocker(assembler.CalculateGlobalBondSite(CornerSiteType.TopRight));
 
         var info = assembler.GetGrowthInfo();
 
@@ -226,7 +242,7 @@ public class AssemblerFamilyTests : IDisposable
         var wall = CreateAssemblerOnPrism<WallAssembler>("wall-blocked");
         wall.Depth = 3;
 
-        MakeBlocker(new Vector3(3f, 0f, 0f), new Vector3(2f, 2f, 2f));   // occupy the Right site
+        MakeBlocker(new Vector3(3f, 0f, 0f));   // occupy the Right site with registered mass
 
         var info = wall.GetGrowthInfo();
 

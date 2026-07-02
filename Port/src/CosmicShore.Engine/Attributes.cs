@@ -102,6 +102,10 @@ namespace CosmicShore.Engine
         public RequireComponentAttribute(Type requiredComponent) { m_Type0 = requiredComponent; }
     }
 
+    /// <summary>Forbids adding the same component twice to one GameObject (inert marker; editor tooling enforces it later).</summary>
+    [AttributeUsage(AttributeTargets.Class, Inherited = false)]
+    public sealed class DisallowMultipleComponent : Attribute { }
+
     /// <summary>Hides a serialized field from inspector tooling (inert marker).</summary>
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class HideInInspectorAttribute : Attribute { }

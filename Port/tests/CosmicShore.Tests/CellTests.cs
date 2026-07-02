@@ -85,6 +85,13 @@ public class CellTests : IDisposable
         {
             RestlessEnter = 3, RestlessExit = 2,
             FrenzyEnter = 5, FrenzyExit = 4,
+            // Volume is the spine since the upstream volume rework (c833c580): the phase
+            // ladder climbs on LiveVolume; counts are only the Frenzy perf backstop. Rig
+            // prisms are unit-scale (volume 1 each), so author explicit volume thresholds
+            // matching the counts 1:1 — the same authoring rule modes with low-volume
+            // prisms use (else WithDerivedVolumeScale ×16 puts the ladder out of reach).
+            RestlessEnterVolume = 3f, RestlessExitVolume = 2f,
+            FrenzyEnterVolume = 5f, FrenzyExitVolume = 4f,
         };
         return config;
     }
@@ -305,18 +312,26 @@ public class CellTests : IDisposable
     }
 
     [Fact]
-    public void DominantDomain_TieBreaksJadeFirst_AndOpposingBlockCountExcludesOwnMass()
+    public void DominantDomain_TieBreaksJadeFirst_AndOpposingVolumeExcludesOwnMass()
     {
+        // Upstream volume rework (bleeding-edge merge c833c580): "volume is the spine" —
+        // OpposingBlockCount (prism-count prey signal) was replaced by OpposingVolume
+        // (live env volume not of the domain), and DominantDomain now reads the cadenced
+        // per-domain volume sums instead of add/remove-driven counts.
         var cell = MakeInitializedCell(out _, out _);
         Assert.False(cell.FaunaSpawningEnabled); // no mass yet
 
-        cell.AddBlock(MakePrism(Domains.Ruby, new Vector3(75f, 0f, 0f)));
-        cell.AddBlock(MakePrism(Domains.Jade, new Vector3(0f, 75f, 0f)));
+        var ruby = MakePrism(Domains.Ruby, new Vector3(75f, 0f, 0f));
+        var jade = MakePrism(Domains.Jade, new Vector3(0f, 75f, 0f));
+        cell.AddBlock(ruby);
+        cell.AddBlock(jade);
+        loop.Tick(0.3f); // step past the 0.25s live-volume recompute cadence
 
-        Assert.Equal(Domains.Jade, cell.DominantDomain); // 1-1 tie → fixed order
-        Assert.Equal(1, cell.OpposingBlockCount(Domains.Jade));
-        Assert.Equal(1, cell.OpposingBlockCount(Domains.Ruby));
-        Assert.Equal(2, cell.OpposingBlockCount(Domains.Gold));
+        Assert.True(ruby.CurrentVolume > 0f); // volume accounting needs live mass
+        Assert.Equal(Domains.Jade, cell.DominantDomain); // equal-volume tie → fixed order
+        Assert.Equal(ruby.CurrentVolume, cell.OpposingVolume(Domains.Jade), 3);
+        Assert.Equal(jade.CurrentVolume, cell.OpposingVolume(Domains.Ruby), 3);
+        Assert.Equal(ruby.CurrentVolume + jade.CurrentVolume, cell.OpposingVolume(Domains.Gold), 3);
         Assert.True(cell.FaunaSpawningEnabled);
     }
 
@@ -507,8 +522,11 @@ public class CellTests : IDisposable
         gameData.RoundStatsList.Add(new RoundStats { Name = "leader", Domain = Domains.Gold, VolumeRemaining = 5f });
         Assert.Equal(Domains.Gold, cell.ControllingDomain);
 
-        // (a) live dominant domain outranks everything.
+        // (a) live dominant domain outranks everything. DominantDomain is volume-keyed
+        // since the upstream volume rework (c833c580) and recomputes on a 0.25s cadence —
+        // tick past it so the freshly added mass is visible.
         cell.AddBlock(MakePrism(Domains.Jade, new Vector3(75f, 0f, 0f)));
+        loop.Tick(0.3f);
         Assert.Equal(Domains.Jade, cell.ControllingDomain);
     }
 

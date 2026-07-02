@@ -23,6 +23,15 @@ public class BoidChainTests : IDisposable
     readonly GameLoop loop = new();
     readonly List<GameObject> spawned = new();
 
+    public BoidChainTests()
+    {
+        // Upstream (c833c580) moved fauna senses onto PrismSpatialIndex — a process-global
+        // Singleton whose reservations/registrations would otherwise leak between tests.
+        typeof(Singleton<PrismSpatialIndex>)
+            .GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!
+            .SetValue(null, null);
+    }
+
     public void Dispose()
     {
         foreach (var go in spawned)
@@ -115,13 +124,20 @@ public class BoidChainTests : IDisposable
         return boid;
     }
 
-    /// <summary>Full prism rig placed and team-assigned — the boid's prey/neighbor mass.</summary>
+    /// <summary>
+    /// Full prism rig placed and team-assigned — the boid's prey/neighbor mass.
+    /// Registered with PrismSpatialIndex: since the upstream spatial-index rework
+    /// (c833c580) boids sense prisms through QuerySphere, not physics colliders, so
+    /// unregistered mass is invisible to them (the game path registers in
+    /// Prism.CreateBlockCoroutine after the 0.6s spawn window).
+    /// </summary>
     Prism CreatePrey(Domains domain, Vector3 position, string name = "prey")
     {
         var rig = PrismTestRig.Create(name);
         spawned.Add(rig.GameObject);
         rig.GameObject.transform.position = position;
         rig.TeamManager.SetInitialTeam(domain);
+        PrismSpatialIndex.EnsureInstance().Register(rig.Prism);
         return rig.Prism;
     }
 

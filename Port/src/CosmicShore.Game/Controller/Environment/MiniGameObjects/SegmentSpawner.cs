@@ -237,7 +237,7 @@ namespace CosmicShore.Gameplay
                 // Mark the prism super-shielded AFTER DeactivateShields so the
                 // legacy state machine sees Normal first, then we set the
                 // canonical flag that Prism.Damage / Prism.Consume /
-                // PrismAOERegistry gate on for invulnerability.
+                // PrismSpatialIndex gate on for invulnerability.
                 if (prism.prismProperties != null)
                     prism.prismProperties.IsSuperShielded = true;
                 shielded++;

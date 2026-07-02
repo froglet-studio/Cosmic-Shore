@@ -12,5 +12,9 @@ namespace CosmicShore.UI
         public int crystalBalance;
         public int xp;
         public List<string> unlockedRewardIds = new();
+
+        // Unix epoch milliseconds (UTC) of first profile creation on this account.
+        // Set once; used for install-relative cohorting / retention analysis.
+        public long firstSeenUtc;
     }
 }

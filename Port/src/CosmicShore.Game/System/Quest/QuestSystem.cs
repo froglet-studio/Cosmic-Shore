@@ -2,6 +2,7 @@ using CosmicShore.Utility;
 using System.Collections.Generic;
 using CosmicShore.Core;
 using CosmicShore.Data;
+using CosmicShore.Engine.Injection;
 using CosmicShore.Engine;
 using System.Linq;
 
@@ -11,6 +12,8 @@ namespace CosmicShore.Core
     {
         [SerializeField] Quest TestQuest;
         [SerializeField] Quest TestQuest2;
+        // PORT Deviation (drift-sync, restore when AnalyticsServiceFacade ports — UGS Analytics, services phase):
+        // [Inject] AnalyticsServiceFacade _analytics;
         Dictionary<string, List<Quest>> ActiveQuests = new();
         List<Quest> CompletedQuests = new();
 
@@ -36,6 +39,7 @@ namespace CosmicShore.Core
             quest.RewardGranted = true;
 
             quest.CompleteQuest();
+            // PORT Deviation (drift-sync, restore with AnalyticsServiceFacade): _analytics?.RecordQuestCompleted(quest.Title, quest.ShardValue);
 
             RemoveQuest(quest);
             CompletedQuests.Add(quest);

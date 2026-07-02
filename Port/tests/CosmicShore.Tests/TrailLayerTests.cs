@@ -158,25 +158,11 @@ public class TrailLayerTests
         Assert.Equal(-1, trail.GetBlockIndex(null));
     }
 
-    [Fact]
-    public void Trail_RemoveOldest_ReturnsFrontAndReindexes()
-    {
-        using var loop = new GameLoop();
-        var trail = MakeTrail(isLoop: false, 0f, 10f, 20f);
-        var first = trail.TrailList[0];
-        var second = trail.TrailList[1];
-
-        var removed = trail.RemoveOldest();
-
-        Assert.Same(first, removed);
-        Assert.Equal(2, trail.TrailList.Count);
-        Assert.Equal(0, trail.GetBlockIndex(second));
-        Assert.Equal(-1, trail.GetBlockIndex(first));
-
-        trail.RemoveOldest();
-        trail.RemoveOldest();
-        Assert.Null(trail.RemoveOldest()); // empty trail
-    }
+    // Trail_RemoveOldest_ReturnsFrontAndReindexes removed: upstream reverted the
+    // menu trail cap (Trail.RemoveOldest + VesselPrismController.maxTrailBlocks) as a
+    // mass-conservation cheat — "no context in which trail caps, prism TTLs, or idle
+    // cullers are acceptable" (bleeding-edge merge c833c580; see CLAUDE.md
+    // "the menu trail cap is a cheat" and Docs/ECOSYSTEM.md §0).
 
     [Fact]
     public void Trail_Clear_EmptiesTrail()

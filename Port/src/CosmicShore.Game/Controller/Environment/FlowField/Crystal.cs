@@ -92,6 +92,25 @@ namespace CosmicShore.Gameplay
             // }
         }
 
+        public void ActivateCrystal()
+        {
+            transform.parent = cellData.Cell.transform;
+            gameObject.GetComponent<SphereCollider>().enabled = true;
+            enabled = true;
+
+            // PORT Deviation (rung 3, restore with the full Crystal port — the body
+            // swaps each crystalModels entry to its inactiveMaterial and lerps back to
+            // the defaultMaterial; render-side, the headless shell has no models):
+            // for (int i = 0; i < crystalModels.Count; i++)
+            // {
+            //     var modelData = crystalModels[i];
+            //     var model = modelData.model;
+            //
+            //     model.GetComponent<Renderer>().material = modelData.inactiveMaterial;
+            //     StartCoroutine(LerpCrystalMaterialCoroutine(model, modelData.defaultMaterial));
+            // }
+        }
+
         public void MoveToNewPos(Vector3 newPos)
         {
             transform.SetPositionAndRotation(newPos, Quaternion.identity);

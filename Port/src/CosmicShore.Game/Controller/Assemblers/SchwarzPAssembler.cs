@@ -103,12 +103,6 @@ namespace CosmicShore.Gameplay
         [Tooltip("World-space size of one full period of the surface — the tunnel-to-tunnel repeat.")]
         [SerializeField] float periodScale = 60f;
 
-        [Tooltip("Overlap probe size as a fraction of the prism's TargetScale. Must stay below " +
-                 "0.5 or the probe at a neighbor site reaches back into this prism and blocks " +
-                 "all growth.")]
-        [Range(0.1f, 0.49f)]
-        [SerializeField] float overlapProbeScale = 0.45f;
-
         const int NewtonIterations = 6;
         const float SurfaceTolerance = 1e-3f;
         const int SiteCount = 4;    // ahead, right, left, behind
@@ -191,12 +185,19 @@ namespace CosmicShore.Gameplay
                     frame.ToWorldDirection(childNormal),
                     frame.ToWorldDirection(childHeading));
 
-                // Probe with TargetScale (the authored size — localScale is still animating
-                // from zero on young prisms), shrunk so the probe at a neighbor site never
-                // reaches back into this tile. Catches foreign geometry the lattice registry
-                // can't know about: vessel trails, other floras, environment prisms.
-                Vector3 probeHalfExtents = Prism.TargetScale * overlapProbeScale;
-                if (Physics.CheckBox(worldPosition, probeHalfExtents, worldRotation))
+                // World-space occupancy via PrismSpatialIndex.TryReserve — catches foreign
+                // geometry the param-space lattice registry can't know about (vessel
+                // trails, other floras, environment prisms). The frame registry above
+                // stays as this flora's own lattice bookkeeping; the spatial index is
+                // the cross-structure authority. Replaces Physics.CheckBox, which was
+                // structurally blind to prisms inside their 0.6s disabled-collider spawn
+                // window (Prism.waitTime) — see Docs/SPATIAL_INDEX.md. clearRadius is
+                // 0.4× the lattice step: below half-spacing so neighbor sites are never
+                // blocked, above any drift so a same-site duplicate always is.
+                float clearRadius = Mathf.Max(2f, 0.4f * (worldPosition - transform.position).magnitude);
+                var spatialIndex = PrismSpatialIndex.EnsureInstance();
+                if (spatialIndex != null && spatialIndex.IsAvailable &&
+                    !spatialIndex.TryReserve(worldPosition, clearRadius))
                     continue;
 
                 frame.Reserve(childParam, this);    // upgraded to Settle by the child's Program

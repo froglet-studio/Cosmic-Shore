@@ -22,12 +22,13 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Which stat to use when calculating who is ahead/behind.
         /// HexRace tracks elapsed time as Score (same for everyone) so use CrystalsCollected.
-        /// CrystalCapture uses Score directly.
+        /// CrystalCapture uses Score directly. AstroLeague uses GoalsScored.
         /// </summary>
         public enum ScoreDifferenceSource
         {
             Score,
             CrystalsCollected,
+            Goals,
         }
 
         [Header("Config")]
@@ -259,6 +260,8 @@ namespace CosmicShore.Gameplay
             {
                 case ScoreDifferenceSource.CrystalsCollected:
                     return gameData.SumCrystalsCollectedByDomain(domain);
+                case ScoreDifferenceSource.Goals:
+                    return ScoringMetrics.SumByDomain(gameData, ScoringMetric.Goals, domain);
                 case ScoreDifferenceSource.Score:
                     float sum = 0f;
                     var list = gameData.RoundStatsList;
@@ -278,6 +281,7 @@ namespace CosmicShore.Gameplay
             return differenceSource switch
             {
                 ScoreDifferenceSource.CrystalsCollected => true,
+                ScoreDifferenceSource.Goals => true,
                 ScoreDifferenceSource.Score => !useGolfRules,
                 _ => !useGolfRules
             };

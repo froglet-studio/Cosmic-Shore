@@ -195,6 +195,27 @@ namespace CosmicShore.Engine
         }
 
         /// <summary>
+        /// Layer-masked non-alloc sphere query — backs
+        /// <see cref="Physics.OverlapSphereNonAlloc(Vector3, float, Collider[], int)"/>.
+        /// Same contract as the unmasked variant plus the original engine's layer
+        /// filter: a collider qualifies when the bit for its GameObject's layer is
+        /// set in <paramref name="layerMask"/>.
+        /// </summary>
+        internal int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results, int layerMask)
+        {
+            int count = 0;
+            foreach (var collider in _colliders)
+            {
+                if (count >= results.Length) break;
+                if (!collider.isActiveAndEnabled) continue;
+                if ((layerMask & (1 << collider.gameObject.layer)) == 0) continue;
+                if (!SphereOverlapsCollider(position, radius, collider)) continue;
+                results[count++] = collider;
+            }
+            return count;
+        }
+
+        /// <summary>
         /// Allocating sphere query with layer filtering — backs
         /// <see cref="Physics.OverlapSphere(Vector3, float, int)"/>. Same contract as
         /// the non-alloc variant (registration order, trigger AND non-trigger,

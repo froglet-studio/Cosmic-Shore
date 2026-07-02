@@ -30,7 +30,7 @@ public class SkimmerLayerTests
         typeof(AudioSystem)
             .GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!
             .SetValue(null, null);
-        typeof(Singleton<PrismAOERegistry>)
+        typeof(Singleton<PrismSpatialIndex>)
             .GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!
             .SetValue(null, null);
 

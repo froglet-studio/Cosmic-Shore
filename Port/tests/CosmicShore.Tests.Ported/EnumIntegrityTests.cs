@@ -135,9 +135,10 @@ namespace CosmicShore.Tests
         public void GameModes_HasExpectedMemberCount()
         {
             var values = Enum.GetValues(typeof(GameModes));
-            // Port note: the Unity original asserts 33 — stale (the enum has 35
-            // members; latent red test upstream, no CI there).
-            Assert.AreEqual(35, values.Length,
+            // Port note: the Unity original asserts 33 — stale (latent red test
+            // upstream, no CI there). Actual count after the bleeding-edge merge
+            // c833c580: 36 (Freestyle=7 retired; Tournament=36 + AstroLeague=37 added).
+            Assert.AreEqual(36, values.Length,
                 "GameModes member count changed. Update tests if a game mode was added/removed.");
         }
 

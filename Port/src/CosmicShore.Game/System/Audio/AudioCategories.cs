@@ -55,5 +55,12 @@ namespace CosmicShore.Core
         ComebackMass = 28,
         ComebackSpace = 29,
         ComebackTime = 30,
+        JoustBuffCharge = 31,
+        JoustBuffMass = 32,
+        JoustBuffSpace = 33,
+        JoustBuffTime = 34,
+        TrackImpact = 35,
+        FloraCollision = 36,
+        CreatureBlockHit = 37,
     }
 }

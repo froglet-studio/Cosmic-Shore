@@ -63,7 +63,7 @@ public class ClientConvergenceTests : IDisposable
         // Prism spawning auto-creates these Singleton<T> statics, which survive
         // GameLoop disposal (same reset as PrismTests/SkimmerLayerTests).
         typeof(Singleton<PrismTimerManager>).GetProperty("Instance")!.SetValue(null, null);
-        typeof(Singleton<PrismAOERegistry>).GetProperty("Instance")!.SetValue(null, null);
+        typeof(Singleton<PrismSpatialIndex>).GetProperty("Instance")!.SetValue(null, null);
         NetworkManager.Singleton = null;
     }
 

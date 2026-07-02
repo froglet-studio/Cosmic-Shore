@@ -648,7 +648,18 @@ convergence ladder, and every future bleeding-edge merge reopens them:
    and CreateInstance<T> without the non-original new() constraint. 21 tests.
    Client integration notes live in the toys agent report (ToyboxController needs
    _gameData/_freestyleEvents + freestyle transition events in the client scene).
-1. **DRIFT-SYNC** — 57 already-ported files changed upstream (full list:
+1. **DRIFT-SYNC ✅ (complete, iteration 21)** — 57/57 resolved (45 verbatim, 11
+   with carried deviations, 1 deleted-upstream). Headliners: PrismAOERegistry →
+   `PrismSpatialIndex` (upstream 1,003-line rewrite: bucket occupancy grid,
+   TryReserve, QuerySphere), Cell volume-is-the-spine (LiveVolume/OpposingVolume,
+   Calm/Restless/Frenzy), RoundStats B10 (n_Domain retired) + GoalsScored +
+   ClearEventSubscriptions, fauna index-served senses + sealed Die→crystal drop,
+   upstream's own revert of the menu trail cap. New deps ported:
+   PrismColliderLodManager, EndConditionOverridesSO, LifeFormCrystal,
+   ElementalCrystalSetSO. Engine: Mathf.PerlinNoise, layer-masked
+   OverlapSphereNonAlloc, DisallowMultipleComponent, Crystal.ActivateCrystal.
+   Per-line markers in Port/docs/DRIFT_2026-06-13.txt. Was: 57 already-ported
+   files changed upstream (full list:
    `Port/docs/DRIFT_2026-06-13.txt`). Ported copies must be re-verbatimed against
    the new merge-base: for each file apply `git diff 29b5f422..c833c580 -- <unity
    file>` onto the ported copy with the mechanical substitutions. Load-bearing

@@ -465,24 +465,12 @@ public class VesselActionLayerTests
         rig.Controller.StopSpawn();
     }
 
-    [Fact]
-    public void TrailCap_RecyclesOldestBlocksBackToPool()
-    {
-        using var loop = new GameLoop();
-        var rig = MakeSpawner();
-        rig.Controller.SetMaxTrailBlocks(2);
-
-        rig.Controller.StartSpawn();
-        Run(loop, 120); // ≥ 4 spawns at 0.4s wavelength delay
-
-        Assert.True(rig.Spawned.Count >= 4);
-        Assert.True(rig.Controller.Trail.TrailList.Count <= 2);
-        Assert.Equal(rig.Spawned.Count - rig.Controller.Trail.TrailList.Count, rig.Recycled.Count);
-        // Oldest-first recycling: the first spawned block was the first recycled.
-        Assert.Same(rig.Spawned[0], rig.Recycled[0]);
-
-        rig.Controller.StopSpawn();
-    }
+    // TrailCap_RecyclesOldestBlocksBackToPool removed: upstream reverted the menu
+    // trail cap (VesselPrismController.maxTrailBlocks / SetMaxTrailBlocks /
+    // EnforceTrailCap and Trail.RemoveOldest) as a mass-conservation cheat —
+    // "no context in which trail caps, prism TTLs, or idle cullers are acceptable"
+    // (bleeding-edge merge c833c580; see CLAUDE.md "the menu trail cap is a cheat"
+    // and Docs/ECOSYSTEM.md §0). Trails are unbounded again by design.
 
     [Fact]
     public void DangerMode_FlagsBlocks_AssignsMaterial_AndRaisesStaticEvent()

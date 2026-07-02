@@ -176,6 +176,13 @@ namespace CosmicShore.Engine
         public static int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results)
             => GameLoop.Current?.Triggers.OverlapSphereNonAlloc(position, radius, results) ?? 0;
 
+        /// <summary>
+        /// Layer-masked non-alloc variant (original-engine contract): a collider
+        /// qualifies when the bit for its GameObject's layer is set in the mask.
+        /// </summary>
+        public static int OverlapSphereNonAlloc(Vector3 position, float radius, Collider[] results, int layerMask)
+            => GameLoop.Current?.Triggers.OverlapSphereNonAlloc(position, radius, results, layerMask) ?? 0;
+
         /// <summary>All layers — the original engine's default mask for overlap queries.</summary>
         public const int AllLayers = ~0;
 

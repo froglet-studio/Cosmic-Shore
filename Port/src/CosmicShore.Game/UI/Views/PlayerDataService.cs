@@ -27,6 +27,8 @@ namespace CosmicShore.UI
 
         // PORT Deviation #14 (C2, restore when UGSDataService ports — CloudSave repo, services phase):
         // [Inject] UGSDataService _ugsDataService;
+        // PORT Deviation (drift-sync, restore when AnalyticsServiceFacade ports — UGS Analytics, services phase):
+        // [Inject] AnalyticsServiceFacade _analytics;
 
         public PlayerProfileData CurrentProfile { get; private set; }
         public bool              IsInitialized  { get; private set; }
@@ -89,6 +91,13 @@ namespace CosmicShore.UI
             // _ugsDataService.OnInitialized -= HandleDataServiceReady;
 
             MergeCloudProfile();
+
+            // Stamp account-creation time once for cohorting (cross-session, cloud-persisted).
+            if (CurrentProfile != null && CurrentProfile.firstSeenUtc == 0)
+            {
+                CurrentProfile.firstSeenUtc = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+                SyncCurrentProfileToRepo();
+            }
 
             ApplyPendingDebugCrystals();
 
@@ -200,6 +209,7 @@ namespace CosmicShore.UI
             // repoData.crystalBalance = CurrentProfile.crystalBalance;
             // repoData.xp = CurrentProfile.xp;
             // repoData.unlockedRewardIds = CurrentProfile.unlockedRewardIds;
+            // repoData.firstSeenUtc = CurrentProfile.firstSeenUtc;
             //
             // ds.ProfileRepo.MarkDirty();
         }
@@ -207,6 +217,29 @@ namespace CosmicShore.UI
         void ScheduleSave()
         {
             SyncCurrentProfileToRepo();
+        }
+
+        /// <summary>
+        /// Pushes the profile to UGS Cloud Save immediately (in addition to the debounced save),
+        /// so deliberate user actions like changing the avatar persist right away rather than
+        /// after the ~1.5s debounce. Mirrors GameModeProgressionService.SaveImmediateAsync.
+        /// </summary>
+        void SaveProfileImmediateAsync()
+        {
+            // PORT Deviation #14 (C2, whole body — UGS CloudSave repo, services phase; the
+            // original is `async void` awaiting repo.SaveAsync()):
+            // var repo = _ugsDataService?.ProfileRepo;
+            // if (repo == null) return;
+            //
+            // try
+            // {
+            //     await repo.SaveAsync();
+            // }
+            // catch (Exception e)
+            // {
+            //     CSDebug.LogWarning($"[PlayerDataService] Immediate profile save failed: {e.Message}. " +
+            //                        "Falling back to the debounced save.");
+            // }
         }
 
         // ----------------- Public API -----------------
@@ -217,8 +250,12 @@ namespace CosmicShore.UI
                 return;
 
             CurrentProfile.avatarId = avatarId;
+            // OnProfileChanged drives the menu UI (ProfileScreen/widgets), gameData.LocalPlayerAvatarId,
+            // and the local Player's NetAvatarId (Player.HandleProfileLoadedAfterSpawn → replicates
+            // the new avatar to every peer in-game).
             OnProfileChanged?.Invoke(CurrentProfile);
             ScheduleSave();
+            SaveProfileImmediateAsync(); // persist the avatar to UGS now, not just on debounce
         }
 
         public void SetDisplayName(string displayName)
@@ -288,7 +325,7 @@ namespace CosmicShore.UI
             return CurrentProfile.xp;
         }
 
-        public int AddCrystals(int amount)
+        public int AddCrystals(int amount, string source = null)
         {
             if (CurrentProfile == null || amount <= 0) return GetCrystalBalance();
 
@@ -296,19 +333,25 @@ namespace CosmicShore.UI
             ScheduleSave();
             OnCrystalBalanceChanged?.Invoke(CurrentProfile.crystalBalance);
             OnProfileChanged?.Invoke(CurrentProfile);
+            // PORT Deviation (drift-sync, restore with AnalyticsServiceFacade): _analytics?.RecordCrystalsEarned(amount, source, CurrentProfile.crystalBalance);
             CSDebug.Log($"[PlayerDataService] Added {amount} crystals. Balance: {CurrentProfile.crystalBalance}");
             return CurrentProfile.crystalBalance;
         }
 
-        public bool TrySpendCrystals(int amount)
+        public bool TrySpendCrystals(int amount, string source = null)
         {
             if (CurrentProfile == null || amount <= 0) return false;
-            if (CurrentProfile.crystalBalance < amount) return false;
+            if (CurrentProfile.crystalBalance < amount)
+            {
+                // PORT Deviation (drift-sync, restore with AnalyticsServiceFacade): _analytics?.RecordCrystalSpendBlocked(amount, source, CurrentProfile.crystalBalance);
+                return false;
+            }
 
             CurrentProfile.crystalBalance -= amount;
             ScheduleSave();
             OnCrystalBalanceChanged?.Invoke(CurrentProfile.crystalBalance);
             OnProfileChanged?.Invoke(CurrentProfile);
+            // PORT Deviation (drift-sync, restore with AnalyticsServiceFacade): _analytics?.RecordCrystalsSpent(amount, source, CurrentProfile.crystalBalance);
             CSDebug.Log($"[PlayerDataService] Spent {amount} crystals. Balance: {CurrentProfile.crystalBalance}");
             return true;
         }

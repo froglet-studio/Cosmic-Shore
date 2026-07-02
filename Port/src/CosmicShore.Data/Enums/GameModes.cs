@@ -11,7 +11,9 @@ namespace CosmicShore.Data
         ShootingGallery = 4,
         BlockBandit = 5,
         RiskyDriftness = 6,
-        Freestyle = 7,
+        // 7 (Freestyle) retired: the standalone arcade Freestyle game was removed.
+        // Freestyle now refers to the Menu_Main lava-lamp experience (see CLAUDE.md,
+        // "Lava-Lamp Mode"). Do not reuse ID 7.
         CellularDuel = 8,
         DashNGrab = 9,
         CellularBrawl = 10,
@@ -39,5 +41,12 @@ namespace CosmicShore.Data
         HexRace = 33,
         MultiplayerJoust = 34,
         MultiplayerCrystalCapture = 35,
+        // Tournament (36): session-level meta that chains the domain minigames
+        // (HexRace, Joust, CrystalCapture) into one tournament. See
+        // Docs/TournamentSystem/ARCHITECTURE.md. (7 and 31 stay reserved.)
+        Tournament = 36,
+        // AstroLeague (37): hypersea soccer domain minigame. See
+        // _Scripts/Controller/Arcade/ASTROLEAGUE.md.
+        AstroLeague = 37,
     }
 }

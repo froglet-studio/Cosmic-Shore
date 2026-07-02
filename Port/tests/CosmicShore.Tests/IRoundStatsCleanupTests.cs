@@ -49,6 +49,7 @@ public class IRoundStatsCleanupTests
         public event Action<IRoundStats> OnTimeCrystalValueChanged;
         public event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
         public event Action<IRoundStats> OnJoustCollisionChanged;
+        public event Action<IRoundStats> OnGoalsScoredChanged;
         public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
         public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
         public event Action<IRoundStats> OnLeftStickAbilityActiveTimeChanged;
@@ -84,6 +85,7 @@ public class IRoundStatsCleanupTests
         public float TimeCrystalValue { get; set; }
         public int SkimmerShipCollisions { get; set; }
         public int JoustCollisions { get; set; }
+        public int GoalsScored { get; set; }
         public float FullSpeedStraightAbilityActiveTime { get; set; }
         public float RightStickAbilityActiveTime { get; set; }
         public float LeftStickAbilityActiveTime { get; set; }
@@ -125,6 +127,7 @@ public class IRoundStatsCleanupTests
             TimeCrystalValue = 4.5f,
             SkimmerShipCollisions = 12,
             JoustCollisions = 8,
+            GoalsScored = 4, // AstroLeague goal stat added upstream (bleeding-edge merge c833c580)
             FullSpeedStraightAbilityActiveTime = 10f,
             RightStickAbilityActiveTime = 20f,
             LeftStickAbilityActiveTime = 15f,
@@ -191,6 +194,7 @@ public class IRoundStatsCleanupTests
 
         Assert.Equal(0, _stats.SkimmerShipCollisions);
         Assert.Equal(0, _stats.JoustCollisions);
+        Assert.Equal(0, _stats.GoalsScored);
     }
 
     [Fact]

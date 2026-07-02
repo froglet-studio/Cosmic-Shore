@@ -43,7 +43,9 @@ public class EnumFreezeTests
     [InlineData(GameModes.ShootingGallery, 4)]
     [InlineData(GameModes.BlockBandit, 5)]
     [InlineData(GameModes.RiskyDriftness, 6)]
-    [InlineData(GameModes.Freestyle, 7)]
+    // GameModes.Freestyle (7) retired upstream (bleeding-edge merge c833c580): the
+    // standalone arcade Freestyle game was removed — freestyle now lives in Menu_Main
+    // as the lava lamp. ID 7 stays reserved (see GameModes_Id7_IsIntentionallySkipped).
     [InlineData(GameModes.CellularDuel, 8)]
     [InlineData(GameModes.DashNGrab, 9)]
     [InlineData(GameModes.CellularBrawl, 10)]
@@ -71,12 +73,21 @@ public class EnumFreezeTests
     [InlineData(GameModes.HexRace, 33)]
     [InlineData(GameModes.MultiplayerJoust, 34)]
     [InlineData(GameModes.MultiplayerCrystalCapture, 35)]
+    // Tournament (36) + AstroLeague (37) added upstream (bleeding-edge merge c833c580).
+    [InlineData(GameModes.Tournament, 36)]
+    [InlineData(GameModes.AstroLeague, 37)]
     public void GameModes_Values_Frozen(GameModes mode, int expected)
         => Assert.Equal(expected, (int)mode);
 
     [Fact]
     public void GameModes_Id31_IsIntentionallySkipped()
         => Assert.False(Enum.IsDefined(typeof(GameModes), 31));
+
+    [Fact]
+    public void GameModes_Id7_IsIntentionallySkipped()
+        // 7 was the retired standalone arcade Freestyle game (removed upstream,
+        // bleeding-edge merge c833c580). Do not reuse the ID.
+        => Assert.False(Enum.IsDefined(typeof(GameModes), 7));
 
     [Theory]
     [InlineData(Element.None, 0)]

@@ -72,6 +72,20 @@ namespace CosmicShore.Utility
         public bool IsMultiplayerMode;
 
         /// <summary>
+        /// True while a Tournament session is in progress (set by
+        /// <see cref="CosmicShore.Gameplay.TournamentController"/> at tournament start,
+        /// cleared on tournament end / exit). A peer of the other game-context flags
+        /// above. Read by the <see cref="CosmicShore.UI.Scoreboard"/> to swap the
+        /// per-game lobby buttons for the tournament Continue flow, and synced to
+        /// clients via <see cref="CosmicShore.Gameplay.MultiplayerMiniGameControllerBase"/>'s
+        /// config RPC so every peer in a minigame scene knows it is inside a tournament.
+        /// Like the other context flags it is NOT reset by <see cref="ResetRuntimeData"/>
+        /// (it must survive the per-game scene loads); it is cleared in
+        /// <see cref="ResetAllData"/> as a quit/session-end safety net.
+        /// </summary>
+        public bool IsTournamentMode;
+
+        /// <summary>
         /// Number of AI players to backfill in multiplayer when not enough
         /// human players are present.
         /// A value of 0 means no AI backfill (all human or solo-mode AI logic applies).
@@ -184,6 +198,17 @@ namespace CosmicShore.Utility
         /// <see cref="ResetRuntimeDataForReplay"/>.
         /// </summary>
         [NonSerialized] public int JoustTargetCount;
+
+        /// <summary>
+        /// The resolved goal target for the current Astro League session — the per-domain
+        /// goal sum that triggers the mercy-rule finish. Published by
+        /// <see cref="AstroLeagueController"/> in OnNetworkSpawn on the server and synced to
+        /// clients via its match-config ClientRpc (a settings constant, identical across
+        /// clients). Read by <see cref="AstroLeagueScoringRuleSO"/> for the end condition and
+        /// the "remaining" readout. Reset in <see cref="ResetRuntimeData"/> and
+        /// <see cref="ResetRuntimeDataForReplay"/>.
+        /// </summary>
+        [NonSerialized] public int GoalTargetCount;
 
         /// <summary>
         /// The active scoring strategy for the current mode, published by the mode's controller
@@ -333,6 +358,7 @@ namespace CosmicShore.Utility
             Results.Clear();
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
+            GoalTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
             // Note: RequestedAIBackfillCount and RequestedDomainCount are intentionally
             // NOT reset here. They are pre-launch config values set by
@@ -342,21 +368,26 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Narrower reset used by PartyInviteController.AcceptInviteAsync after the
-        /// client's NetworkManager shuts down. The client's own Player/Vessel
-        /// NetworkObjects have already been despawned by the shutdown, but
-        /// Player.OnNetworkDespawn only removes from Players — it leaves LocalPlayer
-        /// and Vessels pointing at destroyed objects. Clearing these SOAP references
-        /// prevents ClientPlayerVesselInitializer.ReRegisterPersistentPlayers() and
-        /// AddPlayer() from racing against ghosts after the host-driven Menu_Main
-        /// reload. Does NOT touch round/turn/stats state (unlike ResetRuntimeData)
-        /// because the menu accept flow never entered a game round.
+        /// Narrower reset used by the party-join transition (NetworkTransitionService.
+        /// ClearStaleReferences) after the client's local NetworkManager shuts down.
+        /// The shutdown despawned the client's own Player/Vessel NetworkObjects, but
+        /// the lists keep managed references to the destroyed components — including
+        /// the menu session's RoundStats entries (the menu populates RoundStatsList
+        /// via AddPlayer exactly like a game does). A destroyed RoundStats keeps its
+        /// managed Name, so it wins AddPlayer's name-keyed dedup and SHADOWS the live
+        /// component for every name-keyed consumer on this client (ready-feed color,
+        /// final-score sync, per-domain sums) — frozen at the pre-party state (Jade).
+        /// Clear the roster lists; the party session's pair-init re-adds live entries.
+        /// Round/turn counters are NOT touched (no game round was entered).
         /// </summary>
         public void ResetRuntimeDataForPartyJoin()
         {
             Players.Clear();
             Vessels.Clear();
+            RoundStatsList.Clear();
+            DomainStatsList.Clear();
             LocalPlayer = null;
+            LocalRoundStats = null;
         }
 
         void ResetRuntimeDataForReplay()
@@ -371,6 +402,7 @@ namespace CosmicShore.Utility
             Results.Clear();
             CrystalTargetCount = 0;
             JoustTargetCount = 0;
+            GoalTargetCount = 0;
             System.Array.Clear(_domainMetricSums, 0, _domainMetricSums.Length);
         }
 
@@ -404,6 +436,8 @@ namespace CosmicShore.Utility
             SelectedPlayerCount.Value = 1;
             SelectedIntensity.Value = 1;
             RequestedAIBackfillCount = 0;
+            RequestedDomainCount = 3;
+            IsTournamentMode = false;
 
             IsReplayReload = false;
 

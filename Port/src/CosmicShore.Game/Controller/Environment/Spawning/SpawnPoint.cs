@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
             Vector3 forward = to - from;
             if (forward.sqrMagnitude < 0.0001f)
                 return Quaternion.identity;
-            return Quaternion.LookRotation(forward.normalized, up);
+            return Quaternion.LookRotation(forward, up); // LookRotation normalizes its forward internally
         }
 
         /// <summary>
@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
         {
             if (forward.sqrMagnitude < 0.0001f)
                 return Quaternion.identity;
-            return Quaternion.LookRotation(forward.normalized, up);
+            return Quaternion.LookRotation(forward, up); // LookRotation normalizes its forward internally
         }
     }
 }

@@ -4,6 +4,7 @@ using CosmicShore.Engine.Networking;
 using CosmicShore.Engine;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 namespace CosmicShore.Gameplay
 {
     [RequireComponent(typeof(IVessel))]
@@ -11,6 +12,7 @@ namespace CosmicShore.Gameplay
     public class VesselImpactor : ImpactorBase
     {
         [Inject] AudioSystem audioSystem;
+        [Inject] GameDataSO gameData;
         [SerializeField] VesselImpactorDataContainerSO vesselImpactorDataContainerSO;
         [SerializeField] NetworkVesselImpactor networkVesselImpactor;
 
@@ -30,7 +32,18 @@ namespace CosmicShore.Gameplay
             {
                 case PrismImpactor prismImpactee:
                     if (!DoesEffectExist(vesselImpactorDataContainerSO.VesselPrismEffects)) return;
-                    audioSystem?.PlayGameplaySFX(GameplaySFXCategory.VesselImpact, transform.position);
+                    // HexRace's track is built from indestructible, environment-owned prisms
+                    // (no player name) rather than destructible player trails. Hitting the
+                    // track gets its own SFX in HexRace; every other prism collision (and all
+                    // other modes) keeps the standard VesselImpact sound.
+                    bool isTrackImpact =
+                        gameData != null
+                        && gameData.GameMode == GameModes.HexRace
+                        && prismImpactee.Prism != null
+                        && prismImpactee.Prism.IsEnvironmentOwned;
+                    audioSystem?.PlayGameplaySFX(
+                        isTrackImpact ? GameplaySFXCategory.TrackImpact : GameplaySFXCategory.VesselImpact,
+                        transform.position);
                     foreach (var effect in vesselImpactorDataContainerSO.VesselPrismEffects)
                         effect.Execute(this, prismImpactee);
                     break;
