@@ -631,6 +631,35 @@ the next rung.
 6. Onward: cells/fauna ambience, more vessel classes, game modes — always through
    the real systems.
 
+## REORIENTATION 2 — TRACK BLEEDING-EDGE (prompter, 2026-06-13)
+
+> "pull latest from bleeding-edge … /loop until this has closed a massive number
+> of gaps between what it is like to play on bleeding edge with this port"
+
+bleeding-edge merged INTO this branch at 842c825c (325 commits, merge-base moved
+29b5f422 → c833c580). The port now chases a LIVE game. Two standing lanes join the
+convergence ladder, and every future bleeding-edge merge reopens them:
+
+1. **DRIFT-SYNC** — 57 already-ported files changed upstream (full list:
+   `Port/docs/DRIFT_2026-06-13.txt`). Ported copies must be re-verbatimed against
+   the new merge-base: for each file apply `git diff 29b5f422..c833c580 -- <unity
+   file>` onto the ported copy with the mechanical substitutions. Load-bearing
+   first: VesselTransformer, VesselStatus, VesselPrismController, Prism, Trail,
+   AIPilot, Cell, GameDataSO, RoundStats, scoring/monitors, Boid/Fauna family.
+2. **NEW SYSTEMS** — shipped on bleeding-edge, absent from the port:
+   - **Toys** (`Controller/Toys` 11 files + `ScriptableObjects/Toys` 5): freestyle
+     toy system (domain/vessel changer flip-sets, mini ship models, painting toy) —
+     player-facing in the lava-lamp/freestyle flow.
+   - **AstroLeague** (`Controller/Arcade/AstroLeague/` 7 files + ASTROLEAGUE.md):
+     new ball-game arcade mode (arena, ball, goal, match monitor, scoring rule).
+   - **Tournament** (`Controller/Arcade/Tournament/` 4 files + TournamentSystem
+     docs + UI cards): bracket play across arcade games.
+   - SandboxBenchmarkController, Settings additions, CloudData, Privacy UI.
+
+Gap-closure definition for this /loop: drift-sync complete + toys playable in the
+client + AstroLeague headless round running + remaining ladder rungs (5: real look,
+6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
+
 ## NEXT UP (iteration 20)
 
 1. **Rung 5**: real look — instantiate a ThemeManager with a wired
