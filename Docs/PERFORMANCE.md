@@ -169,6 +169,19 @@ A benchmark-driven redesign of "where is the enemy mass?" for fauna seeking. Pha
 | Audio optimization | `a7f426af` |
 | Uncap frame rate (`BootstrapConfig` targetFrameRate −1, vSync off) | `67fffa78` |
 
+### 3.4b July 2026 verified-review batches
+
+The July 2026 codebase-wide review (`Docs/PERFORMANCE_REFACTOR_REVIEW.md`) landed four
+fix batches plus a Wave-3 extraction sweep re-porting the still-open wins from nine
+unmerged optimization branches (`Docs/PERF_BRANCH_MERGE_PLAN.md` has the full audit).
+Highlights: `PrismActivationQueue` (spawn-coroutine thundering herd → bounded central
+queue), O(1) trail indexing, single turn-monitor driver, allocation-free `GameDataSO`
+lookups, Spindle/Crystal material-clone elimination + leak fixes, `DomainVolumeIndicator`
+sub-canvas isolation, `GameEventFeed` row pooling, spawnable cache-key correctness fix,
+shield-SFX frame coalescing, super-shield 24→8-face mesh, and a menu-UI sweep. This
+substantially addresses §5-E (per-frame managed allocations) for the audited paths —
+re-profile before chasing more.
+
 ### 3.5 Measurement infrastructure (meta-performance)
 
 The whole `Assets/_Scripts/Utility/PerformanceBenchmark/` suite is itself a large
