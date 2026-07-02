@@ -36,7 +36,7 @@ namespace CosmicShore.Gameplay
                  "polytope walls BANK the ball (billiards/air-hockey/Rocket-League feel); Sphere focuses " +
                  "it toward center (the legacy baseline); NotchedRing adds a central ring choke point. " +
                  "The cell NUCLEUS is morphed to this shape so the wall you see is the wall the ball " +
-                 "hits. Default 1-4: BeveledBox, Hex, Cylinder, NotchedRing — re-map freely. Falls back " +
+                 "hits. Default 1-4: BeveledBox, Hex, Cylinder, Sphere (central goal) — re-map freely. Falls back " +
                  "to the last entry above maxIntensityLevel.")]
         public AstroLeagueBoundaryShape[] boundaryShapesByIntensity =
         {

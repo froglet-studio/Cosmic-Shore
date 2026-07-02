@@ -162,10 +162,13 @@ server with billiard thinking:
   and gated on `minimumHitSpeed`, so a fast committed hit pops + recoils while continuous
   dribble contact doesn't spam. The recoil (the vessel "bouncing off" too) is the
   controller's `RecoilVessel_ClientRpc` — owner-authoritative vessels move only where
-  `IsNetworkOwner`, so it's keyed by vessel `NetworkObjectId`. **Keep `vesselRecoilSpeed`
-  SMALL** (default 6): anti-clip is already guaranteed by the ball's own depenetration, so a
-  large recoil only fights player control — it stacks toward `VesselTransformer.velocityModifierMax`
-  (100) on repeated contact and reads as the vessel being "tugged around" / "twitchy".
+  `IsNetworkOwner`, so it's keyed by vessel `NetworkObjectId`. **`vesselRecoilSpeed` DEFAULTS
+  TO 0 (OFF)**: anti-clip is already guaranteed by the ball's own depenetration, so any recoil
+  only fights player control — a frictionless ball that keeps bouncing back into a vessel
+  re-fires it every cooldown, stacking toward `VesselTransformer.velocityModifierMax` (100) and
+  throwing the vessel back "like crazy" (the reported runaway-throwback feel). Dial it up only
+  for a deliberate subtle bounce; `AstroLeagueController.ApplyVesselRecoil` early-outs entirely
+  when it's ≤ 0.
 - **Intensity scales the whole playfield AND picks the court shape.** The controller computes a
   scale factor that steps evenly with intensity — kept tight at **1× / 1.33× / 1.67× / 2×** for
   intensities 1-4 (`lerp(1, intensityScaleAtMax=2, (i-1)/(maxIntensityLevel-1))`) so all four courts
@@ -314,6 +317,35 @@ destroyed with the scene and re-initialized fresh via `OnNetworkSpawn`.
 | `CustomCameraController.Shake` | `_Scripts/Controller/Camera/CustomCameraController.cs` |
 | `SO_ArcadeGame.Min/MaxDomainsAllowed` (+ modal DC bounds) | `_Scripts/ScriptableObjects/SO_ArcadeGame.cs`, `_Scripts/UI/Modals/ArcadeGameConfigureModal.cs` |
 | `ScoreDifferenceSource.Goals` | `_Scripts/Controller/Arcade/ElementalComebackSystem.cs` |
+
+## Vessel-Feel Fixes (cross-cutting — why the non-AstroLeague files are in this branch)
+
+Playtesting Astro League with agile vessels (Manta, Rhino) surfaced three feel bugs that were
+**not** AstroLeague-specific — they live in shared systems, so the fixes ship in shared files. A
+merge reviewer will see these three files in the diff; here's why:
+
+- **`CustomCameraController.cs` — Manta follow-cam jitter.** The gameplay follow-cam previously
+  *hard-snapped* position+rotation when the ship's lateral motion exceeded its forward motion and
+  *SmoothDamped* otherwise. On a banking vessel whose lateral ≈ forward speed, that binary flipped
+  every few frames → alternating instant/lagged transform = visible high-frequency jitter,
+  independent of Astro League. Replaced with a **continuous low-pass blend** of the responsiveness
+  (`_lateralDominance`, snappier on strafes, smoother on forward — no discontinuity to stutter on),
+  plus a **teleport guard** (a fresh spawn / kickoff park jumps the follow target far in one frame;
+  snap into place instead of SmoothDamping a wild swing — the "wonky, jittery start"), and a
+  **softer ~10 Hz Perlin** camera shake (was ~25 Hz random, which read as buzz).
+- **`AstroLeagueBall.cs` — continuous wall-bounce shake after touching the ball.** A frictionless
+  ball skimming tangentially along a curved wall bounces every tick with ~0 perpendicular speed, so
+  the old wall-juice fired camera shake continuously (the "high-frequency jitter persists after I
+  collide with the ball"). `HandleWallBounce` now gates on the **perpendicular** into-wall speed
+  (`wallJuiceMinIntensity`) and a **cooldown** (`wallJuiceCooldown` ≥ `strikeShakeDuration`), so only
+  genuine banks juice.
+- **`VesselChangeSpeedByPrismEffectSO.cs` — hard-brake on your own shielded prism.** The volume-scaled
+  slow effect fired on a vessel's *own* trail, which is normally harmless (own trail isn't collidable)
+  — but the Astro League ball *shields* friendly trail, making it collidable, so flying into a large
+  own prism hard-braked the pilot and oscillating at its edge stuttered. The effect now **skips
+  same-domain non-danger prisms** (danger prisms stay friendly-fire per locked design). This is a
+  general impact-effect correctness fix; Astro League's shield-your-own-trail rule just made it
+  reproducible.
 
 ## Assets
 
