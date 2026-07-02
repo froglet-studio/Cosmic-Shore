@@ -37,8 +37,9 @@ namespace CosmicShore.ScriptableObjects
         [Header("Conveyor — belt")]
         [SerializeField, Min(2), Tooltip("Scenes in the pool. The belt creates this many, then recycles — " +
                                          "this bounds the toy's total mass and collider footprint " +
-                                         "(poolSize × prismBudget prism colliders).")]
-        int poolSize = 6;
+                                         "(poolSize × prismBudget prism colliders). Keep a few above " +
+                                         "Ahead Target Scenes so passed scenes have slack before reclaim.")]
+        int poolSize = 10;
 
         [SerializeField, Min(6), Tooltip("Prisms per scene. Every recipe is fitted to exactly this count so " +
                                          "recycled scenes can re-pose the same prism stock into any arrangement.")]
@@ -47,19 +48,26 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(20f), Tooltip("Lateral radius of one scene, world units.")]
         float sceneRadius = 55f;
 
-        [SerializeField, Min(50f), Tooltip("Spacing between consecutive scene anchors along the belt.")]
+        [SerializeField, Min(50f), Tooltip("Minimum spacing between consecutive scene anchors. At speed the " +
+                                           "effective spacing stretches to speed × Min Scene Interval.")]
         float sceneSpacing = 220f;
 
-        [SerializeField, Min(30f), Tooltip("How far ahead of the vessel the first scene appears on activation.")]
+        [SerializeField, Min(30f), Tooltip("Minimum distance ahead of the vessel for the first scene on " +
+                                           "activation (stretches with speed so it isn't instantly passed).")]
         float firstSceneDistance = 170f;
 
-        [SerializeField, Min(100f), Tooltip("The belt keeps at least this much populated world ahead of the " +
-                                            "player (~2 scenes at default spacing; Squirrel cruise 30-60 u/s).")]
-        float lookaheadDistance = 470f;
+        [SerializeField, Range(3, 10), Tooltip("The field of structures the belt keeps ahead of you at all " +
+                                               "times, in scenes. Lookahead distance = this × effective spacing.")]
+        int aheadTargetScenes = 7;
 
-        [SerializeField, Min(100f), Tooltip("A scene is only reclaimed for the belt head once it has fallen " +
-                                            "at least this far from the player.")]
-        float recycleBehindDistance = 320f;
+        [SerializeField, Min(0.5f), Tooltip("Seconds of flight between scenes at speed — the faster you fly, " +
+                                            "the wider scenes space out so the stream stays readable. " +
+                                            "Effective spacing = max(Scene Spacing, speed × this).")]
+        float minSceneIntervalSeconds = 2f;
+
+        [SerializeField, Min(100f), Tooltip("Minimum distance behind you before a passed scene clears " +
+                                            "(suctions up for the belt head). Stretches with speed.")]
+        float recycleBehindDistance = 250f;
 
         [SerializeField, Min(0.2f), Tooltip("Seconds for each half of the recycle transport (suction out, " +
                                             "bloom back in) — the visible continuity-law transition. Also bounds " +
@@ -90,7 +98,8 @@ namespace CosmicShore.ScriptableObjects
             SceneRadius = sceneRadius,
             SceneSpacing = sceneSpacing,
             FirstSceneDistance = firstSceneDistance,
-            LookaheadDistance = lookaheadDistance,
+            AheadTargetScenes = aheadTargetScenes,
+            MinSceneIntervalSeconds = minSceneIntervalSeconds,
             RecycleBehindDistance = recycleBehindDistance,
             TransitionSeconds = transitionSeconds,
             CourseFollow = courseFollow,

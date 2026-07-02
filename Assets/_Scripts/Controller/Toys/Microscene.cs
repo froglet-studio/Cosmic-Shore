@@ -246,10 +246,13 @@ namespace CosmicShore.Gameplay
         {
             if (plan.FloraCount <= 0 && plan.FaunaCount <= 0) return;
 
+            // Strictly the CONTAINING cell: the belt roams anywhere, and a lifeform released
+            // outside a cell's sense radius would be a degraded citizen (no goals, no phase
+            // participation). Open-space scenes simply stay prisms + crystals; the living
+            // recipes light back up whenever the ride passes through a cell.
             var cell = Cell.FindCellContaining(transform.position);
-            if (!cell) cell = Cell.FindNearestActiveCell(transform.position); // Unity-null-safe, no ??
             var profile = cell ? cell.Config?.SpawnProfile : null;
-            if (!cell || profile == null) return; // no living ecosystem here — scenes stay prisms + crystals
+            if (!cell || profile == null) return;
 
             if (cell.FloraPlantingEnabled && profile.SupportedFloras is { Count: > 0 })
             {

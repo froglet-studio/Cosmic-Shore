@@ -83,19 +83,20 @@ All shipped on the branch; see `ARCHITECTURE.md` § "Status & follow-up" for the
 
 ## Branch: conveyor ("Wanderway") polish
 
-- **In-editor verification (first pass).** Enter freestyle in Menu_Main, fly through the
-  Wanderway toy (green sphere at 60° on the ring). Confirm: (1) the first scene grows in
-  ~170u ahead along your course, then scene after scene as you fly; (2) after 6 scenes exist,
-  flying on makes the farthest-behind scene visibly *shrink to a point* and re-bloom ahead in a
-  different arrangement/colour; (3) crystals fade in and are collectible by skimming (element
-  bars tick up); (4) meadow/menagerie scenes seed flora and 1-2 fauna near the scene (fauna in
-  the controlling colour) — fauna later graze belt prisms and wither to crystals when starved;
-  (5) exiting freestyle freezes the belt in place, re-entering + re-flying the toy resumes it;
-  (6) the autopilot lava-lamp vessel never trips the toy. Watch the `EcosystemPerfProbe`
-  `[ECOSIM]` line — belt steady-state should add ~250 prisms / ~4k volume and stay well under
-  the collider target.
-- **Tuning dials** (all on `Toy_Conveyor.asset`): `sceneSpacing` / `lookaheadDistance` vs.
-  Squirrel cruise (30-60 u/s, boost bursts to ~300); `sceneRadius` + per-recipe ring/tunnel
+- **In-editor verification (second pass — post play-test rework).** Enter freestyle in
+  Menu_Main, fly through the Wanderway toy. Confirm: (1) the toy flips bright + relabels
+  "flowing — fly through to stop", and a second pass turns the flow off (label flips back);
+  (2) a field of ~7 scenes builds ahead and holds at ANY speed — cruise, full throttle, boost —
+  with spacing visibly stretching as you speed up; (3) the belt follows you OUT of the cell and
+  keeps streaming in open space (prisms + crystals; no flora/fauna out there), and living
+  scenes return when you fly back through the cell; (4) passed scenes clear (suction) at the
+  same rhythm new ones arrive; (5) recipes vary strongly — same recipe should land with
+  different radii/twists/counts each time; (6) crystals fade in and are skimmable; menagerie
+  fauna spawn in the controlling colour and graze; (7) the autopilot lava-lamp vessel never
+  trips the toy. Watch the `[ECOSIM]` line — belt steady-state adds ~420 prisms max.
+- **Tuning dials** (all on `Toy_Conveyor.asset`): `aheadTargetScenes` (field depth, 3-10) +
+  `minSceneIntervalSeconds` (seconds of flight between scenes at speed) are the pacing pair;
+  `sceneSpacing` / `recycleBehindDistance` are the low-speed floors; `sceneRadius` + per-recipe
   radii vs. vessel + skimmer size; `transitionSeconds` (suction/bloom read); `poolSize` /
   `prismBudgetPerScene` (density vs. perf); `courseFollow` (how tightly the belt shadows you).
 - **Recipe art pass.** The eight `MicroscenePatterns` recipes are procedural first drafts —

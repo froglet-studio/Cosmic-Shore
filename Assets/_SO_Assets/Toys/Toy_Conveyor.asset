@@ -23,13 +23,14 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
   maxCrystalsPerScene: 3
   lifeformScenes: 1
-  poolSize: 6
+  poolSize: 10
   prismBudgetPerScene: 42
   sceneRadius: 55
   sceneSpacing: 220
   firstSceneDistance: 170
-  lookaheadDistance: 470
-  recycleBehindDistance: 320
+  aheadTargetScenes: 7
+  minSceneIntervalSeconds: 2
+  recycleBehindDistance: 250
   transitionSeconds: 1.2
   courseFollow: 0.6
   seed: 0

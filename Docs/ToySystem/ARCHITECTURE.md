@@ -138,14 +138,21 @@ flips to the colour you just left.
 
 ### Wanderway / Microscene Conveyor (`ConveyorToy` + `MicrosceneConveyor` + `Microscene`)
 
-Fly through → a belt of **microscenes** (prism gate runs, helix weaves, tunnels, slaloms,
-starbursts, orchards, meadows, menageries) blooms in ahead of your flight path, scene after
-scene — open-world exploring crossed with an infinite runner. Once `poolSize` scenes exist the
-belt becomes a **closed system**: the scene farthest behind you is *suctioned* to a point,
-relocated ahead, re-posed into a fresh recipe (shuffle-bag, never the same twice in a row) with
-new domain colour and orientation, and *bloomed* back out — the conveyor. No score, no end
-condition; every belt advance is driven by the player's own motion (no timers). Exiting
-freestyle just makes the belt dormant — its scenes stay in the world.
+Fly through → the belt switches **ON** (the toy flips bright + relabels "flowing — fly through
+to stop"; another pass switches it off) and a field of **microscenes** blooms in ahead of your
+flight path, scene after scene — open-world exploring crossed with an infinite runner. Sixteen
+recipes (gate runs, helix weaves, tunnels, slaloms, starbursts, orchards, meadows, menageries,
+polygon gates, serpent ribbons, colonnades, orbitals, canyons, lattices, comet tails, spiral
+ramps), each re-rolling its own radii/counts/twists/bends on every arrival, so the same recipe
+never lands the same way twice. The belt **follows you anywhere at any speed**: effective
+spacing = `max(sceneSpacing, speed × minSceneIntervalSeconds)` and lookahead =
+`aheadTargetScenes × spacing`, so there is always a field of ~7 structures ahead, and passed
+scenes clear (suction) at the same rate new ones arrive — spawn frequency IS the clear
+frequency, because the pool is finite and **closed**: the scene farthest behind is *suctioned*
+to a point, relocated ahead, re-posed into a fresh recipe with new domain colour, and *bloomed*
+back out. No score, no end condition; every belt advance is driven by the player's own motion
+(no timers). Exiting freestyle makes the belt dormant; toggling it off stops the flow — either
+way its scenes stay in the world.
 
 **Ecosystem invariants (this toy is ecology-adjacent — all hold by construction):**
 
@@ -165,13 +172,16 @@ freestyle just makes the belt dormant — its scenes stay in the world.
 - *No domain asymmetry* — fauna spawn in `Cell.ControllingDomain`; flora in a random playable
   domain; prism scenes cycle the active playable domains evenly.
 - *Volume is the spine / collider budget* — belt mass is bounded at
-  `poolSize × prismBudgetPerScene` prisms (default 6 × 42 = 252 BoxColliders + ≤3 crystal
-  triggers per scene + 1 toy trigger, well under the ~1,500/cell target); scenes stay inside the
-  cell's sense radius (the belt path bends back inside) so all mass registers honestly; distant
-  scenes are collider-LOD-culled by `PrismColliderLodManager` automatically. The conveyor adds
-  **zero physics queries** — placement is pure arithmetic.
+  `poolSize × prismBudgetPerScene` prisms (default 10 × 42 = 420 BoxColliders + ≤3 crystal
+  triggers per scene + 1 toy trigger, well under the ~1,500/cell target); distant scenes are
+  collider-LOD-culled by `PrismColliderLodManager` automatically. The belt roams freely — mass
+  laid inside a cell registers with that cell's volume/grids as usual; mass laid in open space
+  is ordinary registered prism mass with no cell binding (same as any open-space track). The
+  conveyor adds **zero physics queries** — placement is pure arithmetic.
 - *Cell owns the environment* — no parallel spawner/boundary/population: lifeforms come from the
-  cell's own `SpawnProfileSO` configs and respect `FloraPlantingEnabled` + `MaxLivePopulation`.
+  cell's own `SpawnProfileSO` configs, respect `FloraPlantingEnabled` + `MaxLivePopulation` +
+  the prey floor, and are released only when the scene sits INSIDE a live cell
+  (`Cell.FindCellContaining`) — open-space scenes are prisms + crystals only.
 
 Crystals are the four elemental pickups (`ElementalCrystalSetSO`, Resources-loaded), made
 skimmable at runtime via the internal setters added to `ImpactCollider` /

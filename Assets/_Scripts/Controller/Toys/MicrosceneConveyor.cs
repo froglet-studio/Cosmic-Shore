@@ -12,13 +12,14 @@ namespace CosmicShore.Gameplay
     {
         public Prism PrismPrefab;
         public SkimmerCrystalEffectSO[] CrystalEffects;
-        public int PoolSize = 6;
+        public int PoolSize = 10;
         public int PrismBudget = 42;
         public float SceneRadius = 55f;
         public float SceneSpacing = 220f;
         public float FirstSceneDistance = 170f;
-        public float LookaheadDistance = 470f;
-        public float RecycleBehindDistance = 320f;
+        public int AheadTargetScenes = 7;
+        public float MinSceneIntervalSeconds = 2f;
+        public float RecycleBehindDistance = 250f;
         public float TransitionSeconds = 1.2f;
         public float CourseFollow = 0.6f;
         public int MaxCrystalsPerScene = 3;
@@ -27,27 +28,30 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// The freestyle conveyor-belt runner: keeps a chain of <see cref="Microscene"/>s blooming in
+    /// The freestyle conveyor-belt runner: keeps a field of <see cref="Microscene"/>s blooming in
     /// ahead of the local player's flight path — open-world exploring crossed with an infinite
-    /// runner. Scenes arrive one after another until the pool is populated; from then on the belt
-    /// is a CLOSED SYSTEM — the scene farthest behind is suctioned up, re-arranged from the
-    /// shuffled recipe pool with fresh domain/rotation variation, and bloomed back in ahead, so
-    /// the ride never repeats obviously and never creates or removes mass (fauna grazing on belt
-    /// prisms is the only sink, and it's the food web's own active force).
+    /// runner. The belt follows the player ANYWHERE (fast, far, odd deviations included): spacing
+    /// and lookahead scale with current speed so there is always a field of scenes ahead, and the
+    /// scene farthest behind clears (suctions up) as new ones arrive — spawn frequency IS the
+    /// clear frequency, because the pool is finite and closed: the same prisms are endlessly
+    /// re-arranged, never created or destroyed (fauna grazing on belt prisms is the only sink,
+    /// and it's the food web's own active force). Living recipes (meadow/menagerie) release their
+    /// flora/fauna only while the scene sits inside a live <see cref="Cell"/>; out in open space
+    /// the belt is pure prisms + crystals.
     ///
     /// Toy-faithful: no score, no end condition, no timers — every belt advance is driven by the
-    /// player's own motion. Exiting freestyle just makes the belt dormant; its scenes remain part
-    /// of the world (conserved mass, living citizens) until the toybox tears down with the scene.
+    /// player's own motion. The Wanderway toy toggles the belt on/off; exiting freestyle just
+    /// makes it dormant. Either way its scenes remain part of the world until the toybox tears
+    /// down with the scene.
     /// </summary>
     public class MicrosceneConveyor : MonoBehaviour
     {
         const float TickSeconds = 0.25f;
 
-        // Two arrivals may transition at once: with one, belt throughput tops out around
-        // full-throttle speed and a boost burst permanently outruns the belt; with two it
-        // comfortably covers throttle + elemental Time buffs while bursts just trigger a
-        // re-anchor catch-up.
-        const int MaxConcurrentArrivals = 2;
+        // Three arrivals may transition at once: the belt must outpace full throttle + elemental
+        // Time buffs (~150 u/s), and at high speed the speed-scaled spacing stretches so each
+        // arrival buys more distance. Boost bursts beyond that just trigger a re-anchor catch-up.
+        const int MaxConcurrentArrivals = 3;
 
         ConveyorConfig _cfg;
         IVesselStatus _vessel;
@@ -62,12 +66,10 @@ namespace CosmicShore.Gameplay
         System.Random _rng;
         Vector3 _headAnchor;
         Vector3 _headDir = Vector3.forward;
-        Vector3 _boundsCenter;
-        float _boundsRadius;
-        float _anchorRadius; // bounds minus scene extent, so edge-scene CONTENT stays inside too
         float _nextTickAt;
         bool _running;
 
+        /// <summary>True while the belt is flowing (the Wanderway toy toggles this).</summary>
         public bool IsRunning => _running;
 
         public void Begin(ConveyorConfig cfg, IVesselStatus vessel, Func<bool> isFreestyleActive, GameDataSO gameData)
@@ -78,22 +80,27 @@ namespace CosmicShore.Gameplay
             _gameData = gameData;
             _rng = cfg.Seed != 0 ? new System.Random(cfg.Seed) : new System.Random(Environment.TickCount);
 
-            ResolveBounds(vessel.Transform.position);
             ReanchorAhead();
             _running = true;
         }
 
-        /// <summary>Re-entry pass through the toy (or after a vessel swap): keep the belt, follow the new vessel.</summary>
+        /// <summary>Re-entry pass through the toy (or after a vessel swap): keep the field, resume the flow.</summary>
         public void Resume(IVesselStatus vessel)
         {
             _vessel = vessel;
-            if (!_running) _running = true;
+            _running = true;
 
-            // If the player wandered far from the whole belt, restart the chain ahead of them —
+            // If the player wandered far from the whole field, restart the chain ahead of them —
             // the abandoned scenes recycle naturally as the farthest-behind candidates.
-            if (NearestSceneDistance(vessel.Transform.position) > _cfg.LookaheadDistance * 1.5f)
+            if (NearestSceneDistance(vessel.Transform.position) > _cfg.SceneSpacing * _cfg.AheadTargetScenes)
                 ReanchorAhead();
         }
+
+        /// <summary>
+        /// Stop the flow (fly through the toy again to restart). Existing scenes stay in the
+        /// world — they are conserved mass and released citizens, not toy props to vanish.
+        /// </summary>
+        public void StopBelt() => _running = false;
 
         void Update()
         {
@@ -104,32 +111,41 @@ namespace CosmicShore.Gameplay
             // Dormant while the player is back in the menu / lava lamp — the belt's scenes stay
             // in the world (conserved mass, released citizens), it just stops advancing.
             if (_isFreestyleActive != null && !_isFreestyleActive()) return;
-            if (!TryGetVessel(out Vector3 playerPos, out Vector3 course)) return;
+            if (!TryGetVessel(out Vector3 playerPos, out Vector3 course, out float speed)) return;
             if (BusySceneCount() >= MaxConcurrentArrivals) return;
 
+            // Speed-scaled belt geometry: at cruise the base spacing rules; the faster you fly,
+            // the wider the spacing and the deeper the lookahead, so the field ahead holds
+            // AheadTargetScenes structures and arrivals stay comfortably ahead of you.
+            float effSpacing = Mathf.Max(_cfg.SceneSpacing, speed * _cfg.MinSceneIntervalSeconds);
+            float lookahead = _cfg.AheadTargetScenes * effSpacing;
+            float recycleBehind = Mathf.Max(_cfg.RecycleBehindDistance, effSpacing * 0.9f);
+
             float frontier = FrontierProgress(playerPos, course);
-            if (frontier >= _cfg.LookaheadDistance) return; // enough world ahead already
+            if (frontier >= lookahead) return; // enough world ahead already
 
             // If the recorded head fell behind the player (sharp turn, long wander, re-entry),
             // restart the chain from the player's own path instead of extending a stale line.
-            if (Vector3.Dot(_headAnchor - playerPos, course) < _cfg.FirstSceneDistance * 0.4f)
+            if (Vector3.Dot(_headAnchor - playerPos, course) < FirstDistance(speed) * 0.4f)
                 ReanchorAhead();
 
             bool placed = _scenes.Count < _cfg.PoolSize
                 ? PlaceNewScene()
-                : RecycleFarthestScene(playerPos, course);
+                : RecycleFarthestScene(playerPos, course, recycleBehind, lookahead);
 
             if (placed)
-                AdvanceHead(playerPos, course); // step the head to where the NEXT scene will arrive
+                AdvanceHead(course, effSpacing); // step the head to where the NEXT scene will arrive
         }
 
         // ── Belt geometry ────────────────────────────────────────────────────
 
+        float FirstDistance(float speed) => Mathf.Max(_cfg.FirstSceneDistance, speed * 1.2f);
+
         void ReanchorAhead()
         {
-            if (!TryGetVessel(out Vector3 pos, out Vector3 course)) return;
+            if (!TryGetVessel(out Vector3 pos, out Vector3 course, out float speed)) return;
             _headDir = course;
-            _headAnchor = ClampToBounds(pos + course * _cfg.FirstSceneDistance);
+            _headAnchor = pos + course * FirstDistance(speed);
         }
 
         /// <summary>How far ahead (along the course) the front-most scene sits. Negative = all behind.</summary>
@@ -144,56 +160,17 @@ namespace CosmicShore.Gameplay
             return best == float.MinValue ? 0f : best;
         }
 
-        void AdvanceHead(Vector3 playerPos, Vector3 course)
+        void AdvanceHead(Vector3 course, float effSpacing)
         {
-            // Follow the player's course with a little organic wander…
+            // Follow the player's course with a little organic wander — the belt goes wherever
+            // they point it, including far outside the cell (open-space scenes are just prisms +
+            // crystals; the living recipes re-engage whenever the path re-enters a cell).
             Vector3 dir = Vector3.Slerp(_headDir, course, _cfg.CourseFollow);
             dir += new Vector3(Jitter(0.18f), Jitter(0.22f), Jitter(0.18f));
             dir = dir.sqrMagnitude > 0.001f ? dir.normalized : course;
 
-            Vector3 candidate = _headAnchor + dir * _cfg.SceneSpacing;
-
-            // …but bend back inside the play bounds so belt mass stays inside the cell's sense
-            // radius (mass outside is invisible to the ecosystem) and the run arcs through the
-            // world instead of leaving it.
-            Vector3 fromCenter = candidate - _boundsCenter;
-            if (fromCenter.magnitude > _anchorRadius * 0.85f)
-            {
-                Vector3 inward = (_boundsCenter - _headAnchor).normalized;
-                dir = Vector3.Slerp(dir, inward, Mathf.InverseLerp(_anchorRadius * 0.85f, _anchorRadius * 1.15f, fromCenter.magnitude));
-                dir = dir.normalized;
-                candidate = _headAnchor + dir * _cfg.SceneSpacing;
-            }
-
-            _headAnchor = ClampToBounds(candidate);
+            _headAnchor += dir * effSpacing;
             _headDir = dir;
-        }
-
-        Vector3 ClampToBounds(Vector3 position)
-        {
-            Vector3 offset = position - _boundsCenter;
-            return offset.magnitude <= _anchorRadius ? position : _boundsCenter + offset.normalized * _anchorRadius;
-        }
-
-        void ResolveBounds(Vector3 near)
-        {
-            var cell = Cell.FindCellContaining(near);
-            if (!cell) cell = Cell.FindNearestActiveCell(near); // Unity-null-safe fallback, no ??
-            if (cell && cell.SenseRadius > 10f)
-            {
-                _boundsCenter = cell.transform.position;
-                _boundsRadius = cell.SenseRadius * 0.85f;
-            }
-            else
-            {
-                _boundsCenter = Vector3.zero;
-                _boundsRadius = 420f; // matches the toybox's no-membrane fallback play space
-            }
-
-            // Anchors are clamped tighter than the raw bounds by the scene's own reach (content
-            // extends ~1.1 × radius along the flight axis, crystals a bit past that), so even an
-            // edge scene's farthest prism still registers inside the cell's sense radius.
-            _anchorRadius = Mathf.Max(60f, _boundsRadius - (_cfg.SceneRadius * 1.1f + 30f));
         }
 
         // ── Scene arrivals ───────────────────────────────────────────────────
@@ -213,13 +190,13 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        bool RecycleFarthestScene(Vector3 playerPos, Vector3 course)
+        bool RecycleFarthestScene(Vector3 playerPos, Vector3 course, float recycleBehind, float lookahead)
         {
             // Only scenes genuinely out of the ride are reclaimable: BEHIND the player's course
             // and beyond the recycle distance, or so far away they're an abandoned chain. A pure
             // farthest-by-distance pick would suction fully visible destinations right on the
             // player's flight line after a course reversal.
-            float abandonedDistance = Mathf.Max(_cfg.LookaheadDistance * 2f, _cfg.RecycleBehindDistance * 2f);
+            float abandonedDistance = Mathf.Max(lookahead * 2f, recycleBehind * 2f);
 
             Microscene candidate = null;
             float farthest = 0f;
@@ -228,7 +205,7 @@ namespace CosmicShore.Gameplay
                 if (!scene || scene.Busy) continue;
                 float dist = Vector3.Distance(scene.Anchor, playerPos);
                 bool behind = Vector3.Dot(scene.Anchor - playerPos, course) < 0f;
-                bool eligible = (behind && dist > _cfg.RecycleBehindDistance) || dist > abandonedDistance;
+                bool eligible = (behind && dist > recycleBehind) || dist > abandonedDistance;
                 if (eligible && dist > farthest)
                 {
                     farthest = dist;
@@ -252,8 +229,9 @@ namespace CosmicShore.Gameplay
         {
             if (_recipeBag.Count == 0)
             {
-                int recipes = _cfg.LifeformScenes ? MicroscenePatterns.RecipeCount : MicroscenePatterns.RecipeCount - 2;
-                for (int i = 0; i < recipes; i++) _recipeBag.Add(i);
+                for (int i = 0; i < MicroscenePatterns.RecipeCount; i++)
+                    if (_cfg.LifeformScenes || !MicroscenePatterns.IsLifeformRecipe(i))
+                        _recipeBag.Add(i);
                 for (int i = _recipeBag.Count - 1; i > 0; i--)
                 {
                     int j = _rng.Next(i + 1);
@@ -291,10 +269,11 @@ namespace CosmicShore.Gameplay
 
         // ── Plumbing ─────────────────────────────────────────────────────────
 
-        bool TryGetVessel(out Vector3 position, out Vector3 course)
+        bool TryGetVessel(out Vector3 position, out Vector3 course, out float speed)
         {
             position = default;
             course = default;
+            speed = 0f;
 
             // A vessel swap (Vessel Changer toy / selection panel) destroys the pinned vessel —
             // re-acquire the live local one so the belt follows the new ship instead of
@@ -305,6 +284,7 @@ namespace CosmicShore.Gameplay
 
             position = _vessel.Transform.position;
             course = _vessel.Course.sqrMagnitude > 0.01f ? _vessel.Course.normalized : _vessel.Transform.forward;
+            speed = Mathf.Max(0f, _vessel.Speed);
             return true;
         }
 
