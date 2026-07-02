@@ -1,5 +1,5 @@
 using CosmicShore.Data;
-// PORT Deviation (UI shell, restore when TMPro shim lands): using TMPro;
+using CosmicShore.Engine.UI;
 using CosmicShore.Engine;
 
 namespace CosmicShore.Gameplay
@@ -15,8 +15,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] ShapeDefinition shapeDefinition;
 
         [Header("Display")]
-        // PORT Deviation (UI shell, restore when TMPro shim lands): [SerializeField] TMP_Text nameLabel;
-        // PORT Deviation (UI shell, restore when TMPro shim lands): [SerializeField] TMP_Text descriptionLabel;
+        [SerializeField] TMP_Text nameLabel;
+        [SerializeField] TMP_Text descriptionLabel;
 
         bool _triggered;
 
@@ -62,9 +62,8 @@ namespace CosmicShore.Gameplay
         void ApplyDisplayData()
         {
             if (shapeDefinition == null) return;
-            // PORT Deviation (UI shell, restore when TMPro shim lands):
-            // if (nameLabel)        nameLabel.text        = shapeDefinition.shapeName;
-            // if (descriptionLabel) descriptionLabel.text  = shapeDefinition.description;
+            if (nameLabel)        nameLabel.text        = shapeDefinition.shapeName;
+            if (descriptionLabel) descriptionLabel.text  = shapeDefinition.description;
         }
     }
 
