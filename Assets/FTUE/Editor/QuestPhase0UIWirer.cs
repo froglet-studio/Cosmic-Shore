@@ -170,22 +170,7 @@ namespace CosmicShore.Editor
 
             so.ApplyModifiedProperties();
             EditorUtility.SetDirty(view);
-
-            // Plug into the resolver's MainMenu override so Dialogue nodes use this panel.
-            var resolver = Object.FindFirstObjectByType<DialogueViewResolver>(FindObjectsInactive.Include);
-            if (resolver != null)
-            {
-                var rso = new SerializedObject(resolver);
-                rso.FindProperty("mainMenuOverride").objectReferenceValue = view;
-                rso.ApplyModifiedProperties();
-                EditorUtility.SetDirty(resolver);
-                Debug.Log("[Quest] Wirer: DialogueViewResolver.mainMenuOverride → DialogueSetUI panel.");
-            }
-            else
-            {
-                Debug.LogWarning("[Quest] Wirer: no DialogueViewResolver in the scene — is the DialogueManager set up in Menu_Main? " +
-                                 "Dialogue nodes need DialogueManager + DialogueViewResolver + DialogueSetLibrary.");
-            }
+            Debug.Log("[Quest] Wirer: DialogueSetUI panel ready — Dialogue nodes drive it directly (lines authored on the node; no dialogue system).");
         }
 
         // ── Toast notifier ─────────────────────────────────────────────

@@ -36,8 +36,9 @@ namespace CosmicShore.Editor
                 "THE Main Quest (FTUE). Phase pattern after onboarding: gate on the previous mode's " +
                 "intensity-4 milestone → guide to the profile screen → player CLAIMS the next mode " +
                 "(unlocks to intensity 3) → reward dialogue → guide back to the arcade → play it.\n\n" +
-                "Reference map: see QUEST_GRAPH_TOOL.md. Dialogue nodes need DialogueSets assigned. " +
-                "New CTA targets (ProfileMenu / EpisodeMenu / PlayGameMaelstrom) and user actions " +
+                "Reference map: see QUEST_GRAPH_TOOL.md. Dialogue lines are authored ON the nodes " +
+                "(no DialogueSet assets — the panel is driven directly). New CTA targets " +
+                "(ProfileMenu / EpisodeMenu / PlayGameMaelstrom) and user actions " +
                 "(ViewProfileMenu / ViewEpisodeMenu / UnlockVessel) need scene UI wiring.";
             string questPath = AssetDatabase.GenerateUniqueAssetPath($"{QuestsFolder}/MainQuest.asset");
             AssetDatabase.CreateAsset(quest, questPath);
@@ -158,7 +159,12 @@ namespace CosmicShore.Editor
             ctaProfile.target = CallToActionTargetType.ProfileMenu;
             ctaProfile.completionAction = UserActionType.ViewProfileMenu;
 
-            var mapsDialogue = Add<QuestDialogueNode>(g, "Maps Tour + Intensity-4 Rule (assign DialogueSet)");
+            var mapsDialogue = Add<QuestDialogueNode>(g, "Maps Tour + Intensity-4 Rule");
+            mapsDialogue.lines = new List<string>
+            {
+                "This is your profile — every game mode and its intensity tiers live here.",
+                "Tiers 1 to 3 are open right away. Reach INTENSITY 4 in a mode to unlock the next one on your quest track!",
+            };
 
             var ctaCC3 = Add<QuestHighlightCTANode>(g, "CTA: Play CC (Intensity 3)");
             ctaCC3.target = CallToActionTargetType.PlayGameMultiplayerCrystalCapture;
@@ -202,12 +208,21 @@ namespace CosmicShore.Editor
             ctaProfile.target = CallToActionTargetType.ProfileMenu;
             ctaProfile.completionAction = UserActionType.ViewProfileMenu;
 
-            var explain = Add<QuestDialogueNode>(g, "Profile Explainer (assign DialogueSet)");
+            var explain = Add<QuestDialogueNode>(g, "Profile Explainer");
+            explain.lines = new List<string>
+            {
+                "Your quest track has something ready — the next game mode is waiting.",
+                "Claim it, then show me what you've got out there!",
+            };
 
             var claim = Add<QuestWaitForModeUnlockedNode>(g, $"Wait: Claim {claimMode}");
             claim.mode = claimMode;
 
-            var reward = Add<QuestDialogueNode>(g, "Reward Reveal (assign Reward DialogueSet)");
+            var reward = Add<QuestDialogueNode>(g, "Reward Reveal");
+            reward.lines = new List<string>
+            {
+                $"{claimMode} is yours, pilot! Intensities 1–3 are open — dive in.",
+            };
 
             var ctaPlay = Add<QuestHighlightCTANode>(g, $"CTA: Play {claimMode}");
             ctaPlay.target = playCta;
@@ -235,12 +250,21 @@ namespace CosmicShore.Editor
             ctaHangar.target = CallToActionTargetType.HangarMenu;
             ctaHangar.completionAction = UserActionType.ViewHangarMenu;
 
-            var tour = Add<QuestDialogueNode>(g, "Vessel Unlock Tour (assign DialogueSet)");
+            var tour = Add<QuestDialogueNode>(g, "Vessel Unlock Tour");
+            tour.lines = new List<string>
+            {
+                "Welcome to the hangar — every vessel flies a different way.",
+                "Unlock a new one with the crystals you've earned!",
+            };
 
             var unlocked = Add<QuestWaitForUserActionNode>(g, "Wait: Vessel Unlocked");
             unlocked.action = UserActionType.UnlockVessel;
 
-            var reward = Add<QuestDialogueNode>(g, "Vessel Reward Reveal (assign Reward DialogueSet)");
+            var reward = Add<QuestDialogueNode>(g, "Vessel Reward Reveal");
+            reward.lines = new List<string>
+            {
+                "A fine ship! She'll serve you well out there.",
+            };
 
             var end = Add<QuestPhaseEndNode>(g, "Phase 4 Complete");
 
@@ -258,7 +282,12 @@ namespace CosmicShore.Editor
             ctaEpisodes.target = CallToActionTargetType.EpisodeMenu;
             ctaEpisodes.completionAction = UserActionType.ViewEpisodeMenu;
 
-            var finale = Add<QuestDialogueNode>(g, "Finale Dialogue (assign DialogueSet)");
+            var finale = Add<QuestDialogueNode>(g, "Finale Dialogue");
+            finale.lines = new List<string>
+            {
+                "One more thing — the Episodes hold new game modes you can pick up anytime.",
+                "That's everything, pilot. The HyperSea is yours!",
+            };
 
             var end = Add<QuestEndNode>(g, "FTUE Complete");
 

@@ -48,7 +48,11 @@ namespace CosmicShore.Core
         [SerializeField] QuestInstructionView instructionView;
         [SerializeField] TutorialUIView tutorialUI;
         [SerializeField] FTUEIntroAnimator introAnimator;
-        [SerializeField] DialogueManager dialogueManager;
+        [Tooltip("Scene instance of the dialogue panel (DialogueSetUI). Dialogue nodes drive it directly — no dialogue system.")]
+        [SerializeField] QuestDialoguePanelView dialoguePanel;
+        [Tooltip("Optional prefab fallback: instantiated under Dialogue Panel Parent on first use when no scene instance is set.")]
+        [SerializeField] QuestDialoguePanelView dialoguePanelPrefab;
+        [SerializeField] Transform dialoguePanelParent;
         [SerializeField] ScreenSwitcher screenSwitcher;
         [Tooltip("Arcade game cards, used by LockModes nodes.")]
         [SerializeField] List<CallToActionTarget> gameCards = new();
@@ -174,7 +178,9 @@ namespace CosmicShore.Core
                 InstructionView = instructionView,
                 TutorialUI = tutorialUI,
                 IntroAnimator = introAnimator,
-                DialogueManager = dialogueManager,
+                DialoguePanel = dialoguePanel,
+                DialoguePanelPrefab = dialoguePanelPrefab,
+                DialoguePanelParent = dialoguePanelParent,
                 ScreenSwitcher = screenSwitcher,
                 GameCards = gameCards,
                 CompletePhase = HandlePhaseComplete,

@@ -42,7 +42,7 @@ namespace CosmicShore.Editor
             AssignObject(so, "instructionView", Object.FindFirstObjectByType<QuestInstructionView>(FindObjectsInactive.Include));
             AssignObject(so, "tutorialUI", Object.FindFirstObjectByType<TutorialUIView>(FindObjectsInactive.Include));
             AssignObject(so, "introAnimator", Object.FindFirstObjectByType<FTUEIntroAnimator>(FindObjectsInactive.Include));
-            AssignObject(so, "dialogueManager", Object.FindFirstObjectByType<DialogueManager>(FindObjectsInactive.Include));
+            AssignObject(so, "dialoguePanel", Object.FindFirstObjectByType<QuestDialoguePanelView>(FindObjectsInactive.Include));
             AssignObject(so, "screenSwitcher", Object.FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include));
 
             AssignGameCards(so);
@@ -89,7 +89,7 @@ namespace CosmicShore.Editor
             string[] required =
             {
                 "quest", "gameData", "freestyleEvents", "onButtonPressed", "skimBoostEvent", "instructionView",
-                "crystalHandler", "tutorialUI", "introAnimator", "dialogueManager", "screenSwitcher",
+                "crystalHandler", "tutorialUI", "introAnimator", "dialoguePanel", "screenSwitcher",
             };
             var missing = required
                 .Select(so.FindProperty)

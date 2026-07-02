@@ -35,9 +35,30 @@ namespace CosmicShore.Core
         public QuestInstructionView InstructionView;
         public TutorialUIView TutorialUI;
         public FTUEIntroAnimator IntroAnimator;
-        public DialogueManager DialogueManager;
         public ScreenSwitcher ScreenSwitcher;
         public IReadOnlyList<CallToActionTarget> GameCards;
+
+        // ── Dialogue panel (self-contained; no dialogue system) ──
+        /// <summary>Scene instance of the dialogue panel (preferred when set).</summary>
+        public QuestDialoguePanelView DialoguePanel;
+        /// <summary>Prefab fallback — instantiated lazily under <see cref="DialoguePanelParent"/> on first use.</summary>
+        public QuestDialoguePanelView DialoguePanelPrefab;
+        public Transform DialoguePanelParent;
+
+        /// <summary>The panel Dialogue nodes drive: the scene instance, or a lazily-instantiated prefab copy.</summary>
+        public QuestDialoguePanelView GetOrCreateDialoguePanel()
+        {
+            if (DialoguePanel != null)
+                return DialoguePanel;
+
+            if (DialoguePanelPrefab != null)
+            {
+                DialoguePanel = UnityEngine.Object.Instantiate(DialoguePanelPrefab, DialoguePanelParent);
+                Debug.Log("[Quest] Dialogue panel instantiated from prefab.");
+            }
+
+            return DialoguePanel;
+        }
 
         // ── Flow-control hooks (implemented by the runner) ──
         /// <summary>End the CURRENT PHASE and advance the quest to the next phase graph.</summary>

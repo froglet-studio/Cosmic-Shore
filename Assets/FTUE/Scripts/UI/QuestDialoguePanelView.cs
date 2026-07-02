@@ -8,12 +8,15 @@ namespace CosmicShore.Core
 {
     /// <summary>
     /// Menu dialogue panel: one captain portrait + animated (typewriter) text with
-    /// Next / Skip buttons. Implements <see cref="IDialogueView"/> so the existing
-    /// DialogueManager drives it — wire it into DialogueViewResolver's MainMenu channel
-    /// (or swap it in for the current view) and every Dialogue node just works.
+    /// Next / Skip buttons.
+    ///
+    /// Primary entry point is <see cref="PlayLines"/> — the quest graph's Dialogue nodes
+    /// drive the panel directly with lines authored on the node (no dialogue system).
+    /// The <see cref="IDialogueView"/> implementation is kept so the panel can ALSO serve
+    /// the legacy DialogueManager pipeline if ever wired there.
     ///
     /// Next while typing = complete the line instantly; Next after = advance.
-    /// Skip = fast-forward the rest of the set (each remaining line completes instantly).
+    /// Skip = fast-forward the rest (remaining lines complete instantly).
     /// </summary>
     public class QuestDialoguePanelView : MonoBehaviour, IDialogueView
     {
@@ -40,6 +43,14 @@ namespace CosmicShore.Core
         bool _lineFullyShown;
         bool _skipRequested;
 
+        Sprite _defaultPortrait;
+        System.Collections.Generic.IReadOnlyList<string> _playLines;
+        int _playIndex;
+        Action _playCompletion;
+
+        /// <summary>True while a PlayLines sequence is running.</summary>
+        public bool IsPlaying { get; private set; }
+
         void Awake()
         {
             if (panel == null && !TryGetComponent(out panel))
@@ -48,7 +59,91 @@ namespace CosmicShore.Core
             if (nextButton != null) nextButton.onClick.AddListener(OnNextPressed);
             if (skipButton != null) skipButton.onClick.AddListener(OnSkipPressed);
 
+            if (captainImage != null)
+                _defaultPortrait = captainImage.sprite;
+
             SetVisible(false, instant: true);
+        }
+
+        // ── Direct API (quest graph — no dialogue system) ─────────────
+
+        /// <summary>
+        /// Show the panel and step through <paramref name="lines"/> with the Next button;
+        /// hides itself after the last line and invokes <paramref name="onComplete"/>.
+        /// </summary>
+        public void PlayLines(string speaker, Sprite portrait,
+            System.Collections.Generic.IReadOnlyList<string> lines, Action onComplete)
+        {
+            if (lines == null || lines.Count == 0)
+            {
+                onComplete?.Invoke();
+                return;
+            }
+
+            _skipRequested = false;
+            IsPlaying = true;
+            _playLines = lines;
+            _playIndex = 0;
+            _playCompletion = onComplete;
+
+            if (speakerNameText != null)
+                speakerNameText.text = speaker;
+
+            if (captainImage != null)
+            {
+                captainImage.sprite = portrait != null ? portrait : _defaultPortrait;
+                captainImage.enabled = captainImage.sprite != null;
+            }
+
+            SetVisible(true);
+            ShowPlayLine();
+        }
+
+        /// <summary>Abort a running PlayLines sequence (no completion callback) and hide.</summary>
+        public void CancelIfPlaying()
+        {
+            if (!IsPlaying) return;
+
+            IsPlaying = false;
+            _playLines = null;
+            _playCompletion = null;
+            _onLineComplete = null;
+            if (_typing != null) StopCoroutine(_typing);
+            SetVisible(false);
+        }
+
+        void ShowPlayLine()
+        {
+            _fullLine = _playLines[_playIndex] ?? string.Empty;
+            _lineFullyShown = false;
+            _onLineComplete = OnPlayLineComplete;
+
+            if (_typing != null) StopCoroutine(_typing);
+
+            if (_skipRequested)
+            {
+                CompleteLineText();
+                AdvanceLine();
+                return;
+            }
+
+            _typing = StartCoroutine(Typewriter());
+        }
+
+        void OnPlayLineComplete()
+        {
+            _playIndex++;
+            if (_skipRequested || _playLines == null || _playIndex >= _playLines.Count)
+            {
+                var completion = _playCompletion;
+                IsPlaying = false;
+                _playLines = null;
+                _playCompletion = null;
+                SetVisible(false, onDone: completion);
+                return;
+            }
+
+            ShowPlayLine();
         }
 
         // ── IDialogueView ──────────────────────────────────────────────

@@ -48,7 +48,7 @@ the whole quest.
 | Flow | **PlayIntro / PlayOutro** | Captain cinematic in/out |
 | Flow | **Wait** | Fixed real-time delay |
 | Presentation | **ShowInstruction** | Typewriter text; wait-for-Next or show-and-continue |
-| Presentation | **Dialogue** | Plays a `DialogueSet` (any channel incl. **Reward**); advances on `OnDialogueFinished` |
+| Presentation | **Dialogue** | Shows the dialogue panel with lines authored ON the node (speaker, optional portrait override) — self-contained, no DialogueSet/DialogueManager |
 | Gameplay | **EnterFreestyle** | Forces the menu vessel into player control |
 | Gameplay | **Navigate** | Force-navigates a screen / the arcade modal |
 | Gameplay | **LockModes** | Locks all game cards except the tutorial game |
@@ -114,7 +114,7 @@ with a `PlayerPrefs` mirror for offline/pre-load gating. Every node advance mark
 | Component | Drop on | Drives |
 |---|---|---|
 | `QuestInstructionView` | a Menu_Main panel (CanvasGroup + TMP text) | **ShowInstruction** nodes — plain text + optional haptic pulse; prompt persists while gates hold |
-| `QuestDialoguePanelView` (`IDialogueView`) | the captain dialogue panel (portrait, TMP body, Next/Skip buttons) | **Dialogue** nodes via `DialogueViewResolver`'s MainMenu slot — typewriter, next-to-advance, skip-fast-forwards |
+| `QuestDialoguePanelView` | the captain dialogue panel (portrait, TMP body, Next/Skip buttons) | **Dialogue** nodes drive it directly via `PlayLines` (lines authored on the node) — typewriter, next-to-advance, skip-fast-forwards. Scene instance preferred; runner can instantiate a prefab fallback |
 | `QuestRewardRevealView` (`IDialogueView`) | the reward panel inside the profile screen (icon, title, description, rarity, Continue) | Reward-channel **Dialogue** nodes via the resolver's Reward slot — shows the set's `RewardData` |
 | `QuestToastNotifier` | any Menu_Main object | Toasts: mode unlocked, intensity tier, quest-track objective met, phase complete, quest complete (templates editable) |
 | `UserActionTrigger` (+ new `triggerOnEnable`) | the episode panel (or any panel) | Fires its `UserActionType` (e.g. `ViewEpisodeMenu`) when the panel opens — completes CTAs + gates |
@@ -136,7 +136,6 @@ Inward, Thumbstick_Look, Trigger_LT/RT, Button_B.
 - `ScreenSwitcher` now fires `ViewProfileMenu` on Profile navigation; the episodes screen and the
   hangar's vessel-unlock flow must fire `ViewEpisodeMenu` / `UnlockVessel` (use `UserActionTrigger`
   or `UserActionSystem.Instance.CompleteAction`).
-- DialogueSets for the Dialogue nodes (incl. Reward-channel sets for unlock reveals).
 - UI-side intensity locking for the "play at intensity N" beats (the graph verifies via the
   WaitGamePlayed filter).
 
