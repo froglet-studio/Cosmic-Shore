@@ -66,10 +66,10 @@ namespace CosmicShore.Utility
         public static Mesh GetSharedShieldMesh(Vector3 halfExtents, float shieldScale = CIRCUMSCRIBING_SCALE)
         {
             // Quantize to 1/1024 units — far below visible precision; collapses float noise.
-            var key = ((long)Mathf.Round(halfExtents.x * 1024f),
-                       (long)Mathf.Round(halfExtents.y * 1024f),
-                       (long)Mathf.Round(halfExtents.z * 1024f),
-                       (long)Mathf.Round(shieldScale * 1024f));
+            var key = (x: (long)Mathf.Round(halfExtents.x * 1024f),
+                       y: (long)Mathf.Round(halfExtents.y * 1024f),
+                       z: (long)Mathf.Round(halfExtents.z * 1024f),
+                       s: (long)Mathf.Round(shieldScale * 1024f));
 
             if (!s_sharedShieldMeshes.TryGetValue(key, out var mesh) || mesh == null)
             {
