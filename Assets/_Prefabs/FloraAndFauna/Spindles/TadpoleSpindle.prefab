@@ -67,6 +67,8 @@ MeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -88,9 +90,11 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
 --- !u!65 &516044589407691252
 BoxCollider:
@@ -125,21 +129,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2f76793d2a031124f900d060d1bbb2bb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  FossilBlock: {fileID: 5776304996075792891, guid: bd8a259abee95ec4895562e6bb8aae76,
-    type: 3}
-  TrailBlockProperties:
+  prismProperties:
     position: {x: 0, y: 0, z: 0}
     volume: 0
     speedDebuffAmount: 0
-    trailBlock: {fileID: 1764503489717778941}
+    prism: {fileID: 0}
     Index: 0
+    Trail:
+      TrailRenderer: {fileID: 0}
     IsShielded: 0
     IsSuperShielded: 0
     IsDangerous: 0
     IsTransparent: 0
     TimeCreated: 0
+    DefaultLayerName: TrailBlocks
   ParticleEffect: {fileID: 3706253519474275301, guid: 2d5ef26f11cfb824fa85b6f5cd632c79,
     type: 3}
+  Trail:
+    TrailRenderer: {fileID: 0}
   GrowthVector: {x: 0, y: 2, z: 0}
   growthRate: 0.01
   waitTime: 0.6
@@ -148,16 +155,13 @@ MonoBehaviour:
   IsSmallest: 0
   IsLargest: 0
   ownerID: 
-  gameplaySFXEvent: {fileID: 11400000, guid: cc4af89f4e504b6f80cc04722a4a0071,
-    type: 2}
   _onTrailBlockCreatedEventChannel: {fileID: 11400000, guid: 16a217b09d3cd9b4db8ade3243ae0ec5,
     type: 2}
   _onTrailBlockDestroyedEventChannel: {fileID: 11400000, guid: 79d8ff44d13a7fe4e9a24efbf3e2744d,
     type: 2}
   _onTrailBlockRestoredEventChannel: {fileID: 11400000, guid: b5c1a6869a63cbf469f649a5c0b811fc,
     type: 2}
-  _onFlockSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
-    type: 2}
+  OnBlockImpactedEventChannel: {fileID: 0}
   LifeForm: {fileID: 0}
   spindle: {fileID: 7614264898891808108}
 --- !u!114 &520716064556743480
@@ -189,6 +193,8 @@ MonoBehaviour:
     type: 2}
   minScale: {x: 0.5, y: 0.5, z: 0.5}
   maxScale: {x: 10, y: 10, z: 10}
+  usePrefabScaleAsDefaultTarget: 0
+  authoredTargetScale: {x: 0, y: 0, z: 0}
 --- !u!114 &1725768667685633054
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -226,6 +232,7 @@ GameObject:
   m_Component:
   - component: {fileID: 4897651091342273877}
   - component: {fileID: 7614264898891808108}
+  - component: {fileID: -6330896111675949634}
   m_Layer: 0
   m_Name: TadpoleSpindle
   m_TagString: Untagged
@@ -266,6 +273,38 @@ MonoBehaviour:
   parentSpindle: {fileID: 0}
   LifeForm: {fileID: 0}
   retainSpindle: 0
+  permanentWither: 1
+--- !u!114 &-6330896111675949634
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5753173635696888826}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioEventEmitter
+  CollisionTag: 
+  EventReference:
+    Guid:
+      Data1: -1682941303
+      Data2: 1206138040
+      Data3: 1630483380
+      Data4: 1839503978
+    Path: event:/SFX/Loops/Charge tadpole
+  Event: 
+  EventPlayTrigger: 1
+  EventStopTrigger: 2
+  AllowFadeout: 1
+  TriggerOnce: 0
+  Preload: 0
+  NonRigidbodyVelocity: 0
+  Params: []
+  OverrideAttenuation: 0
+  OverrideMinDistance: 0
+  OverrideMaxDistance: 200
 --- !u!1 &7561298438515828241
 GameObject:
   m_ObjectHideFlags: 0
@@ -327,6 +366,8 @@ MeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -348,7 +389,9 @@ MeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}

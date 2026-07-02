@@ -40,40 +40,9 @@ namespace CosmicShore.Gameplay
         {
             TrailList.Clear();
             trailBlockIndices.Clear();
-
+            
             // [Fix] Clear visual trail when logical trail clears
             if (TrailRenderer) TrailRenderer.Clear();
-        }
-
-        /// <summary>
-        /// Removes and returns the oldest block (front of the trail), keeping every
-        /// remaining block's index consistent in both <see cref="trailBlockIndices"/>
-        /// and <c>prismProperties.Index</c> so index consumers (skimmer align,
-        /// trail followers, viewers) stay correct. Returns null if empty.
-        ///
-        /// Used by capped trails (the Menu_Main lava-lamp autopilot) to recycle the
-        /// oldest prism back to the pool so trail geometry/colliders stay bounded.
-        /// Allocation-free.
-        /// </summary>
-        public Prism RemoveOldest()
-        {
-            if (TrailList.Count == 0) return null;
-
-            var oldest = TrailList[0];
-            TrailList.RemoveAt(0);
-            if (oldest) trailBlockIndices.Remove(oldest);
-
-            // Reindex remaining blocks (they all shifted down by one).
-            for (int i = 0; i < TrailList.Count; i++)
-            {
-                var block = TrailList[i];
-                if (!block) continue;
-                trailBlockIndices[block] = (ushort)i;
-                if (block.prismProperties != null)
-                    block.prismProperties.Index = (ushort)i;
-            }
-
-            return oldest;
         }
 
         public int GetBlockIndex(Prism block)
@@ -167,9 +136,10 @@ namespace CosmicShore.Gameplay
             var currentPosition = currentBlock.transform.position;
             Vector3 blockGap = nextPosition - currentPosition;
            
-            heading = blockGap.normalized;
+            float gapMag = blockGap.magnitude; // one sqrt, reused by heading + finalLerp
+            heading = gapMag > 1e-5f ? blockGap / gapMag : Vector3.zero; // matches Vector3.normalized's 1e-5 zero-threshold
             endIndex = startIndex;
-            finalLerp = 1 - overflow / blockGap.magnitude;
+            finalLerp = 1 - overflow / gapMag;
 
             outDirection = (TrailFollowerDirection)incrementor;
 

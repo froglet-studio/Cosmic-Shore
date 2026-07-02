@@ -131,17 +131,20 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
+                // Randomly skip grow sites BEFORE GetGrowthInfo: a successful
+                // GetGrowthInfo claims the site in the PrismSpatialIndex, and a
+                // skipped-after-claim site would hold its reservation until TTL,
+                // blocking siblings from growing there in the meantime.
+                if (skippedItems < randomItems && Random.value < 0.5f)
+                {
+                    skippedItems++;
+                    continue;
+                }
+
                 var growthInfo = branch.assembler.GetGrowthInfo();
                 if (!growthInfo.CanGrow)
                 {
                     branchesToRemove.Add(branch);
-                    continue;
-                }
-
-                // Randomly skip viable grow sites
-                if (skippedItems < randomItems && Random.value < 0.5f)
-                {
-                    skippedItems++;
                     continue;
                 }
 

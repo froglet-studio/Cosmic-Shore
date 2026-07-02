@@ -22,6 +22,13 @@ namespace CosmicShore.UI
     /// raised when the user taps the retry button. Listeners (e.g.
     /// <c>HostConnectionService</c>) decide what to do.
     ///
+    /// All references are inspector-wired in Bootstrap.unity — there is no
+    /// runtime discovery or repair. This component's scene wiring was lost
+    /// once via a script-GUID break, leaving the authored retry button
+    /// orphaned-active on every splash (B10 in Docs/PartySystem/BUGS.md), so
+    /// missing wiring now fails loud via <see cref="ReportMissingWiring"/>
+    /// instead of silently degrading.
+    ///
     /// Visibility of the surface as a whole is owned by the splash
     /// <c>CanvasGroup</c> on the parent Bootstrap canvas (managed by
     /// <c>SceneTransitionManager</c>). This panel does not touch it — when
@@ -43,6 +50,8 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
+            ReportMissingWiring();
+
             if (inboundRequestEvent != null)
                 inboundRequestEvent.OnRaised += HandleRequest;
 
@@ -61,6 +70,24 @@ namespace CosmicShore.UI
                 retryButton.onClick.RemoveListener(HandleRetryClicked);
         }
 
+        /// <summary>
+        /// Fail loud on missing inspector wiring (project policy): an unwired
+        /// reference means the boot/retry surface silently stops working — see
+        /// B10 in Docs/PartySystem/BUGS.md for the orphaned-retry-button
+        /// incident this guards against.
+        /// </summary>
+        void ReportMissingWiring()
+        {
+            if (statusText == null)
+                Debug.LogError("[BootStatusPanel] statusText is not wired in the inspector.", this);
+            if (retryButton == null)
+                Debug.LogError("[BootStatusPanel] retryButton is not wired in the inspector.", this);
+            if (inboundRequestEvent == null)
+                Debug.LogError("[BootStatusPanel] inboundRequestEvent is not wired in the inspector.", this);
+            if (outboundRetryEvent == null)
+                Debug.LogError("[BootStatusPanel] outboundRetryEvent is not wired in the inspector.", this);
+        }
+
         private void HandleRequest(BootStatusRequest req) => Apply(req);
 
         private void Apply(BootStatusRequest req)
@@ -71,6 +98,8 @@ namespace CosmicShore.UI
             if (retryButton != null)
             {
                 bool wantRetry = req.Mode == BootStatusMode.Retry;
+                if (wantRetry)
+                    Debug.Log($"[BootStatusPanel] Retry surface shown — \"{req.Text}\"");
                 retryButton.gameObject.SetActive(wantRetry);
                 retryButton.interactable = wantRetry;
             }

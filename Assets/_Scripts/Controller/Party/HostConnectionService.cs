@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
         private const string ACCEPTED_INVITE_KEY     = "accepted_invite";
         private const string PENDING_SESSION_ID      = "PENDING";
 
-        private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 30f;
+        private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 10f;
         private const int   MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
         private const float FORCE_REFRESH_COOLDOWN_SECONDS   = 0.5f;
         private const int   PROFILE_INIT_TIMEOUT_MS          = 5000;
@@ -313,7 +313,7 @@ namespace CosmicShore.Gameplay
             // All [Inject] fields (services + gameData) are populated before Start.
             // UGS auth completes asynchronously AFTER Start in the normal flow, so
             // OnSignedIn is the PRIMARY init trigger — subscribe in code, the same
-            // pattern used by MultiplayerSetup / UGSDataService / UnityAnalytics.
+            // pattern used by MultiplayerSetup / UGSDataService / AnalyticsServiceFacade.
             // There is no inspector EventListenerNoParam for this handler.
             // HandleSignedInEvent is idempotent — the immediate call (for the
             // already-signed-in case) and the event collapse through
@@ -595,6 +595,17 @@ namespace CosmicShore.Gameplay
                 _lobbyMutex.Release();
             }
         }
+
+        /// <summary>
+        /// Host-initiated cancel of an outgoing invite (the ✕ on a "Pending Invite" row). Reuses
+        /// the same clear path as the auto-timeout / join-detected clears: removes the invite from
+        /// the tracker, re-publishes <c>invite_payloads</c> WITHOUT that line (so the recipient's
+        /// invite / popup / Requests row disappear), and fires <see cref="OutgoingInviteCleared"/>
+        /// so the host's row reverts to the invitee's online status (re-invitable). No-op if no
+        /// outgoing invite is pending for the target.
+        /// </summary>
+        public UniTask CancelInviteAsync(string targetPlayerId)
+            => ClearOutgoingInviteIfPresentAsync(targetPlayerId, "user-cancel");
 
         public async UniTask AcceptInviteAsync(PartyInviteData invite)
         {
@@ -1372,7 +1383,8 @@ namespace CosmicShore.Gameplay
 
         private async UniTask RefreshPartyMembersAsync(bool bypassGraceGate = false)
         {
-            if (_partySessionService.ActiveSession == null) return;
+            var tickSession = _partySessionService.ActiveSession;
+            if (tickSession == null) return;
             if (connectionData.PartyMembers == null) return;
 
             // Grace period: a freshly-provisioned session can transiently fail
@@ -1388,6 +1400,28 @@ namespace CosmicShore.Gameplay
             try { await _partySessionService.RefreshAsync(); }
             catch (Exception e)
             {
+                // [stale-tick] The session this tick was polling is no longer the
+                // active session — AcceptInviteAsync left it and joined the
+                // inviter's (or a recovery swapped it) while we were awaiting.
+                // Its errors — typically SessionDeleted / NotInLobby from our own
+                // deliberate leave — describe the OLD session, not the current
+                // one. Falling through to the [definite] branch would
+                // ClearSession() the just-joined ref, raise a spurious
+                // OnHostConnectionLost (the boot-status panel then shows
+                // "Connection lost. Tap retry." over the join splash), and start
+                // a solo-session recreation that races the join.
+                if (!ReferenceEquals(tickSession, _partySessionService.ActiveSession))
+                    return;
+
+                // [transition] Companion to the RefreshAsync outer-catch guard:
+                // while PartyInviteController is mid-transition the session refs
+                // are owned by the accept/leave flow, so any error landing here
+                // is teardown noise. Covers the interleaving the stale-tick check
+                // misses — the error lands a beat before ActiveSession is
+                // reassigned, so the refs still compare equal.
+                if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
+                    return;
+
                 // Error-handling matrix — see Docs/PartySystem/ARCHITECTURE.md.
                 //
                 // [benign] LobbyPatcher stale-index ArgumentOutOfRangeException —
@@ -1630,7 +1664,17 @@ namespace CosmicShore.Gameplay
                 "PublishJoinedParty");
         }
 
-        private async UniTask ClearJoinedPartyAsync()
+        /// <summary>
+        /// Clears our own <c>joined_party</c> presence property (sets it empty) — called when
+        /// departing a party: by the deliberate <see cref="LeavePartyAsync"/> (awaited, bounded)
+        /// and by host-loss recovery (<c>PartyInviteController.HandleHostLossAsync</c>,
+        /// fire-and-forget). Hygiene so no future host sees a dangling "I'm in your party"
+        /// claim; B8 fix 1 already makes a stale value inert, so it is best-effort. The presence
+        /// lobby is independent of the party session / NM, so this write still lands during a
+        /// host-loss teardown. <see cref="LobbyPropertyWriter.WriteAsync"/> swallows its own
+        /// exceptions (can only be slow, never throw).
+        /// </summary>
+        public async UniTask ClearJoinedPartyAsync()
         {
             var lobby = _lobbyService.ActiveLobby;
             if (lobby == null) return;

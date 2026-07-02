@@ -1,4 +1,5 @@
 // NetworkCrystalCollisionTurnMonitor.cs
+using System.Collections.Generic;
 using CosmicShore.Data;
 using Unity.Netcode;
 using UnityEngine;
@@ -15,6 +16,13 @@ namespace CosmicShore.Gameplay
     public class NetworkCrystalCollisionTurnMonitor : CrystalCollisionTurnMonitor
     {
         private readonly NetworkVariable<int> _netCrystalCollisions = new NetworkVariable<int>(0);
+
+        // Stats this monitor actually subscribed to. Unsubscription must run off THIS
+        // list, never gameData.RoundStatsList: on a mid-turn scene exit, SceneLoader's
+        // ResetRuntimeData clears the roster BEFORE the old scene's objects are
+        // destroyed, so a list-based unsubscribe loop detaches nothing and the handler
+        // leaks onto the persistent human RoundStats (Docs/ScoringSystem/BUGS.md B15).
+        readonly List<IRoundStats> _subscribedStats = new();
 
         void OnEnable()
         {
@@ -46,8 +54,9 @@ namespace CosmicShore.Gameplay
             // wires the local player; teammates' collections would otherwise stay invisible.
             foreach (var stats in gameData.RoundStatsList)
             {
-                if (stats == null) continue;
+                if (stats == null || _subscribedStats.Contains(stats)) continue;
                 stats.OnCrystalsCollectedChanged += OnAnyCrystalChanged;
+                _subscribedStats.Add(stats);
             }
 
             if (!IsServer) return;
@@ -61,12 +70,21 @@ namespace CosmicShore.Gameplay
 
         public override void StopMonitor()
         {
-            foreach (var stats in gameData.RoundStatsList)
+            foreach (var stats in _subscribedStats)
             {
                 if (stats == null) continue;
                 stats.OnCrystalsCollectedChanged -= OnAnyCrystalChanged;
             }
+            _subscribedStats.Clear();
             base.StopMonitor();
+        }
+
+        public override void OnDestroy()
+        {
+            // Safety net for destruction paths that bypass StopMonitor — detaching
+            // from the persistent RoundStats must never depend on the turn ending.
+            StopMonitor();
+            base.OnDestroy();
         }
 
         void OnAnyCrystalChanged(IRoundStats _) => UpdateCrystalsRemainingUI();

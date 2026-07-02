@@ -11,7 +11,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4b7ca52a950d1494aa1184cdc7700c3d, type: 3}
   m_Name: SoapSettings
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: Obvious.Soap.Editor::Obvious.Soap.Editor.SoapSettings
   VariableDisplayMode: 0
   NamingOnCreationMode: 0
   ReferencesRefreshMode: 0

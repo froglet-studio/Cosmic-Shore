@@ -8537,7 +8537,8 @@ GameObject:
   - component: {fileID: 5363059078414614678}
   - component: {fileID: -6368199322473003075}
   - component: {fileID: 7219854176267508625}
-  - component: {fileID: 7687382462138633726}
+  - component: {fileID: 8100000000000000081}
+  - component: {fileID: 8100000000000000083}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -8574,10 +8575,10 @@ Rigidbody:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6417075533431866457}
-  serializedVersion: 4
+  serializedVersion: 5
   m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0
+  m_LinearDamping: 0
+  m_AngularDamping: 0
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -8852,6 +8853,7 @@ MonoBehaviour:
   drift: 0
   seekPlayers: 0
   playerSeekUpdateInterval: 0.5
+  playerReacquireInterval: 0.1
   abilities: []
   OnCellItemsUpdated: {fileID: 11400000, guid: 0da8a5ebddfaa83418cecd539efd19dd, type: 2}
   actionExecutorRegistry: {fileID: 9105512684531825410}
@@ -9069,7 +9071,6 @@ MonoBehaviour:
   boostBaseMultiplier: {fileID: 11400000, guid: 0e852851d79640f47ab61340406a5a5c,
     type: 2}
   boostMaxMultiplier: {fileID: 11400000, guid: 10388f8ccaeb8b44f9c950ed00af3fbb, type: 2}
-  domainColors: {fileID: 11400000, guid: d202844a3d86d1240bae99b182e573d3, type: 2}
   joustFlashDuration: 1
   shieldFlashDuration: 1
 --- !u!114 &8755860699239805343
@@ -9240,20 +9241,6 @@ MonoBehaviour:
   baseVolumeMultiplier: 1
   restrictToVesselClass: 1
   targetVesselClass: 6
-  debugLog: 0
---- !u!114 &7687382462138633726
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a3b21628e47594eaba8394e46e6128ae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  localOffset: {x: 0, y: 0, z: 0}
   debugLog: 0
 --- !u!1 &6514516964945388952
 GameObject:
@@ -14534,7 +14521,7 @@ PrefabInstance:
     - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
       propertyPath: centerFillAmount
-      value: 0.7
+      value: 0.3
       objectReference: {fileID: 0}
     - target: {fileID: 1958240267839501300, guid: 6540c78597c2dcc468123b270169fc44,
         type: 3}
@@ -15280,3 +15267,30 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 8546359282292252367}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &8100000000000000081
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86c6556701af9e04380698b89f691b6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  nonRigidbodyVelocity: 0
+  attenuationObject: {fileID: 0}
+--- !u!114 &8100000000000000083
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 454001d94fcc404e8eaab651b593b302, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  debugLog: 0

@@ -280,7 +280,7 @@ namespace CosmicShore.Core
             if (_fadeCanvasGroup == null) return;
             _fadeCanvasGroup.alpha = alpha;
             _fadeCanvasGroup.blocksRaycasts = alpha > 0.01f;
-            _fadeCanvasGroup.interactable = false;
+            _fadeCanvasGroup.interactable = alpha > 0.01f;
         }
 
         #endregion
@@ -293,12 +293,13 @@ namespace CosmicShore.Core
 
             _fadeCanvasGroup.alpha = from;
             _fadeCanvasGroup.blocksRaycasts = true;
-            _fadeCanvasGroup.interactable = false;
+            _fadeCanvasGroup.interactable = true;
 
             if (_fadeDuration <= 0f)
             {
                 _fadeCanvasGroup.alpha = to;
                 _fadeCanvasGroup.blocksRaycasts = to > 0.01f;
+                _fadeCanvasGroup.interactable = to > 0.01f;
                 return;
             }
 
@@ -313,6 +314,7 @@ namespace CosmicShore.Core
 
             _fadeCanvasGroup.alpha = to;
             _fadeCanvasGroup.blocksRaycasts = to > 0.01f;
+            _fadeCanvasGroup.interactable = to > 0.01f;
         }
 
         #endregion
@@ -336,9 +338,14 @@ namespace CosmicShore.Core
                 _fadeCanvas = canvas;
             }
 
+            // interactable mirrors blocksRaycasts everywhere this group is driven:
+            // the adopted splash hosts the BootStatusPanel retry button, which must
+            // be tappable while the overlay is visible. The only Selectable under
+            // either overlay variant is that button, and BootStatusPanel keeps it
+            // inactive outside of BootStatusMode.Retry.
             _fadeCanvasGroup.alpha = 1f;
             _fadeCanvasGroup.blocksRaycasts = true;
-            _fadeCanvasGroup.interactable = false;
+            _fadeCanvasGroup.interactable = true;
         }
 
         void CreateFadeOverlay()

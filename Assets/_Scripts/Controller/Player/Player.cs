@@ -149,6 +149,15 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public void InitializeForMultiplayerMode(IVessel vessel)
         {
+            // Client-side counterpart of PrepareForNewScene's stale-subscriber purge:
+            // PrepareForNewScene only runs on the server, but every peer's scene
+            // objects subscribed to this persistent component locally. Pair-init runs
+            // exactly once per player per scene, before any of the new scene's
+            // subscribers attach (HUD / monitors / scoring all subscribe at turn
+            // start, and AddPlayer raises OnPlayerAdded after this method).
+            if (RoundStats is RoundStats statsComponent)
+                statsComponent.ClearEventSubscriptions();
+
             IsInitializedAsAI = NetIsAI.Value;
             Domain = NetDomain.Value;
             Name = NetName.Value.ToString();
@@ -316,6 +325,14 @@ namespace CosmicShore.Gameplay
             Vessel = null;
             IsActive = false;
             VesselNetId = 0;
+
+            // Sever stale per-stats event subscriptions left by the previous scene
+            // BEFORE Cleanup() writes zeros — otherwise the zeroing setters raise
+            // into destroyed subscribers (a mid-turn exit skips their turn-end
+            // cleanup, and their teardown unsubscribes via RoundStatsList, which
+            // ResetRuntimeData already cleared). See Docs/ScoringSystem/BUGS.md B15.
+            if (RoundStats is RoundStats statsComponent)
+                statsComponent.ClearEventSubscriptions();
 
             // Reset gameplay stats from previous game.
             // Cleanup() zeroes all stats via property setters, which also

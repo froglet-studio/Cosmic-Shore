@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
         public bool IsHead;
         public bool IsTail;
 
-        protected override void Die(string killerName = "")
+        protected override void OnDeath(string killerName = "")
         {
             if (!IsHead && !IsTail)
             {

@@ -18,8 +18,10 @@ namespace CosmicShore.Core
     /// </summary>
     public interface ICloudDataWriter
     {
+        /// <summary>Whether there are unsaved changes pending (failed or not-yet-flushed).</summary>
+        bool IsDirty { get; }
         void MarkDirty();
-        Task SaveAsync(CancellationToken ct = default);
+        Task<bool> SaveAsync(CancellationToken ct = default);
     }
 
     /// <summary>

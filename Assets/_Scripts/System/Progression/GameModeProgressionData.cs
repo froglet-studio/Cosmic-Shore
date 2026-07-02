@@ -89,9 +89,9 @@ namespace CosmicShore.Core
         /// Returns the highest intensity level the player can play for this mode.
         /// Defaults to 2 (intensity 1 and 2 available when a mode is first unlocked).
         /// </summary>
-        public int GetMaxUnlockedIntensity(string modeName)
+        public int GetMaxUnlockedIntensity(string modeName, int defaultMax = 2)
         {
-            return MaxUnlockedIntensity.TryGetValue(modeName, out var val) ? val : 2;
+            return MaxUnlockedIntensity.TryGetValue(modeName, out var val) ? val : defaultMax;
         }
 
         public void SetMaxUnlockedIntensity(string modeName, int value)
@@ -121,10 +121,10 @@ namespace CosmicShore.Core
         /// <summary>
         /// Ensures the intensity tracking is initialized for a mode (sets default max to 2 if missing).
         /// </summary>
-        public void EnsureIntensityInitialized(string modeName)
+        public void EnsureIntensityInitialized(string modeName, int defaultMax = 2)
         {
             if (!MaxUnlockedIntensity.ContainsKey(modeName))
-                MaxUnlockedIntensity[modeName] = 2;
+                MaxUnlockedIntensity[modeName] = defaultMax;
         }
     }
 }

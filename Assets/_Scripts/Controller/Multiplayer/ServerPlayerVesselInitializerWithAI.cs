@@ -38,6 +38,12 @@ namespace CosmicShore.Gameplay
         [Tooltip("Optional AI profile list for assigning unique names to AI opponents.")]
         [SerializeField] SO_AIProfileList aiProfileList;
 
+        // Tournament standings are keyed by player name, but AI Player NetworkObjects are
+        // destroyed and re-spawned every minigame scene — so the AI roster must stay stable
+        // across the lineup. The names are seeded once (first game) into TournamentDataSO and
+        // reused for every subsequent game.
+        [Inject] TournamentDataSO tournamentData;
+
         protected override void OnNetworkSpawn()
         {
             if (!NetworkManager.Singleton.IsServer)
@@ -133,6 +139,16 @@ namespace CosmicShore.Gameplay
             if (aiProfileList != null)
                 profiles = aiProfileList.PickRandom(aiCount);
 
+            // Tournament: seed the AI roster once (first game) and reuse it for every later
+            // game, so name-keyed bot standings attribute correctly across the lineup. The
+            // names match profile names, so downstream avatar resolution still works.
+            bool tournament = gameData.IsTournamentMode && tournamentData != null;
+            if (tournament && tournamentData.TournamentAINames.Count == 0 && profiles != null)
+            {
+                for (int p = 0; p < profiles.Count; p++)
+                    tournamentData.TournamentAINames.Add(profiles[p].Name);
+            }
+
             for (int i = 0; i < aiCount; i++)
             {
                 var aiPlayerNO = Instantiate(aiPlayerPrefab);
@@ -156,9 +172,11 @@ namespace CosmicShore.Gameplay
                 if (aiVesselType is VesselClassType.Any or VesselClassType.Random)
                     aiVesselType = PickAIVesselType();
 
-                var aiName = profiles != null && i < profiles.Count
-                    ? profiles[i].Name
-                    : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
+                var aiName = tournament && i < tournamentData.TournamentAINames.Count
+                    ? tournamentData.TournamentAINames[i]
+                    : profiles != null && i < profiles.Count
+                        ? profiles[i].Name
+                        : hasTemplate ? aiInitializeDatas[i].PlayerName : $"AI {i + 1}";
 
                 var aiDomain = GetBalancedDomain(totalCounts, humanCounts);
                 totalCounts[aiDomain]++;

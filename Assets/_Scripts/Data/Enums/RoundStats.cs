@@ -41,6 +41,7 @@ namespace CosmicShore.Data
 
         public event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
         public event Action<IRoundStats> OnJoustCollisionChanged;
+        public event Action<IRoundStats> OnGoalsScoredChanged;
 
         public event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
         public event Action<IRoundStats> OnRightStickAbilityActiveTimeChanged;
@@ -66,7 +67,7 @@ namespace CosmicShore.Data
 
         int _crystalsCollectedLocal, _omniCrystalsCollectedLocal, _elementalCrystalsCollectedLocal;
         float _chargeCrystalValueLocal, _massCrystalValueLocal, _spaceCrystalValueLocal, _timeCrystalValueLocal;
-        int _skimmerShipCollisionsLocal, _joustCollisionsLocal;
+        int _skimmerShipCollisionsLocal, _joustCollisionsLocal, _goalsScoredLocal;
 
         float _fullSpeedStraightAbilityActiveTimeLocal,
             _rightStickAbilityActiveTimeLocal,
@@ -161,6 +162,9 @@ namespace CosmicShore.Data
         readonly NetworkVariable<int> n_JoustCollisions =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
+        readonly NetworkVariable<int> n_GoalsScored =
+            new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
+
         readonly NetworkVariable<float> n_FullSpeedStraightAbilityActiveTime =
             new(readPerm: NetworkVariableReadPermission.Everyone, writePerm: NetworkVariableWritePermission.Server);
 
@@ -197,6 +201,62 @@ namespace CosmicShore.Data
         /// without needing access to the private event backing field.
         /// </summary>
         public void InvokeOnJoustCollisionChanged() => RaiseSpecific(OnJoustCollisionChanged);
+
+        /// <summary>
+        /// Severs every external C# event subscription on this stats component.
+        /// RoundStats lives on the persistent Player NetworkObject and survives scene
+        /// transitions, while its subscribers (HUDs, turn monitors, scoring strategies)
+        /// are scene objects. A mid-turn scene exit (pause-menu Main Menu) destroys those
+        /// subscribers before their turn-end cleanup ever fires, and their teardown paths
+        /// unsubscribe by iterating GameDataSO.RoundStatsList — which ResetRuntimeData
+        /// already cleared before the old scene unloads — so dead delegates stay attached
+        /// and fire into destroyed objects throughout the NEXT game. Called from
+        /// Player.PrepareForNewScene / InitializeForMultiplayerMode so every scene entry
+        /// starts with a clean subscriber list. The NetworkVariable OnValueChanged lambdas
+        /// wired in OnNetworkSpawn are untouched — they re-raise INTO these events.
+        /// See Docs/ScoringSystem/BUGS.md B15.
+        /// </summary>
+        public void ClearEventSubscriptions()
+        {
+            OnAnyStatChanged = null;
+            OnScoreChanged = null;
+
+            OnBlocksCreatedChanged = null;
+            OnBlocksDestroyedChanged = null;
+            OnBlocksRestoredChanged = null;
+            OnPrismsStolenChanged = null;
+            OnPrismsRemainingChanged = null;
+            OnFriendlyPrismsDestroyedChanged = null;
+            OnHostilePrismsDestroyedChanged = null;
+
+            OnVolumeCreatedChanged = null;
+            OnTotalVolumeDestroyedChanged = null;
+            OnFriendlyVolumeDestroyedChanged = null;
+            OnHostileVolumeDestroyedChanged = null;
+            OnVolumeRestoredChanged = null;
+            OnVolumeStolenChanged = null;
+            OnVolumeRemainingChanged = null;
+
+            OnCrystalsCollectedChanged = null;
+            OnOmniCrystalsCollectedChanged = null;
+            OnElementalCrystalsCollectedChanged = null;
+
+            OnChargeCrystalValueChanged = null;
+            OnMassCrystalValueChanged = null;
+            OnSpaceCrystalValueChanged = null;
+            OnTimeCrystalValueChanged = null;
+
+            OnSkimmerShipCollisionsChanged = null;
+            OnJoustCollisionChanged = null;
+
+            OnFullSpeedStraightAbilityActiveTimeChanged = null;
+            OnRightStickAbilityActiveTimeChanged = null;
+            OnLeftStickAbilityActiveTimeChanged = null;
+            OnFlipAbilityActiveTimeChanged = null;
+            OnButton1AbilityActiveTimeChanged = null;
+            OnButton2AbilityActiveTimeChanged = null;
+            OnButton3AbilityActiveTimeChanged = null;
+        }
 
         //–––––––––––––––––––––––––––––––––––––––––
         // PROPERTIES
@@ -545,6 +605,18 @@ namespace CosmicShore.Data
             }
         }
 
+        public int GoalsScored
+        {
+            get => _goalsScoredLocal;
+            set
+            {
+                _goalsScoredLocal = value;
+                if (IsSpawned && IsServer) n_GoalsScored.Value = value;
+
+                RaiseSpecific(OnGoalsScoredChanged);
+            }
+        }
+
         public float FullSpeedStraightAbilityActiveTime
         {
             get => _fullSpeedStraightAbilityActiveTimeLocal;
@@ -676,6 +748,7 @@ namespace CosmicShore.Data
 
             _skimmerShipCollisionsLocal = n_SkimmerShipCollisions.Value;
             _joustCollisionsLocal       = n_JoustCollisions.Value;
+            _goalsScoredLocal           = n_GoalsScored.Value;
 
             _fullSpeedStraightAbilityActiveTimeLocal = n_FullSpeedStraightAbilityActiveTime.Value;
             _rightStickAbilityActiveTimeLocal        = n_RightStickAbilityActiveTime.Value;
@@ -840,6 +913,15 @@ namespace CosmicShore.Data
                 // only clients need the replication-driven event.
                 if (!IsServer)
                     RaiseSpecific(OnJoustCollisionChanged);
+            };
+
+            n_GoalsScored.OnValueChanged += (_, v) =>
+            {
+                _goalsScoredLocal = v;
+                // Server already raised OnGoalsScoredChanged from the setter;
+                // only clients need the replication-driven event.
+                if (!IsServer)
+                    RaiseSpecific(OnGoalsScoredChanged);
             };
 
             n_FullSpeedStraightAbilityActiveTime.OnValueChanged += (_, v) =>

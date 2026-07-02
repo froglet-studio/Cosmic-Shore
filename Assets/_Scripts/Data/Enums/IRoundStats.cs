@@ -42,6 +42,7 @@ namespace CosmicShore.Data
         // Misc events
         event Action<IRoundStats> OnSkimmerShipCollisionsChanged;
         event Action<IRoundStats> OnJoustCollisionChanged;
+        event Action<IRoundStats> OnGoalsScoredChanged;
 
         // Ability time events
         event Action<IRoundStats> OnFullSpeedStraightAbilityActiveTimeChanged;
@@ -92,6 +93,7 @@ namespace CosmicShore.Data
         // Other stats
         int SkimmerShipCollisions { get; set; }
         int JoustCollisions { get; set; }
+        int GoalsScored { get; set; }
 
         // Ability active times
         float FullSpeedStraightAbilityActiveTime { get; set; }
@@ -137,6 +139,7 @@ namespace CosmicShore.Data
 
             SkimmerShipCollisions = 0;
             JoustCollisions = 0;
+            GoalsScored = 0;
 
             FullSpeedStraightAbilityActiveTime = 0f;
             RightStickAbilityActiveTime = 0f;

@@ -39,6 +39,25 @@ active force a reason or ability to consume that mass (tune fauna diet/reach/
 spawning, or vessel abilities) — **never** to add decay. See CLAUDE.md → "Mass"
 fundamental and "Don't cheat emergence."
 
+**Universality — this invariant has no exempt contexts.** The HyperSea has one
+rule set and everything follows it: game scenes, Menu_Main's lava-lamp/freestyle,
+tools and test scenes. There is **no "cosmetic," "menu-only," or "perf special
+case" exemption** — the menu autopilot vessel *is* the freestyle gameplay vessel
+(lava lamp == freestyle; see CLAUDE.md → "Lava-Lamp Mode"), so any removal
+mechanism attached to it is gameplay decay.
+
+> **Rejected cheat (reverted): the menu trail cap.** Commit `64d8f0c8` added a
+> per-trail ring-buffer cap (`VesselPrismController.maxTrailBlocks` +
+> `Trail.RemoveOldest`) that silently recycled the oldest trail prism on every
+> new spawn, set to 200 on the Menu_Main vessel to bound idle-time prism growth.
+> It was rationalized as cosmetic and "gameplay unaffected" — but the cap
+> followed the player into freestyle flight as an age-based trail limit, the
+> exact passive-removal cheat this section rejects. Reverted. If menu-idle
+> accumulation is a perf problem, use the universal systems: **fauna cleanup**
+> (cleanup is one of the fauna's many jobs — foragers consume trail mass through
+> the food web, §6–§7) or **pause/throttle the spawner** while idling (not creating
+> mass is allowed; aging it out is not).
+
 **Growth-side cheats — all retired.** Two artificial throttles used to fake the
 homeostasis the food web is meant to produce, both now gone:
 
@@ -289,8 +308,10 @@ from breathing. Three ways to add the negative feedback, smallest→most emergen
 the emergent north star and the seam the predator/herbivore split plugs into.
 
 **Implemented:**
-- `Cell.OpposingBlockCount(domain)` = live prisms not of `domain` — the prey signal.
-- **Production pauses** when `OpposingBlockCount(controllingColor) < FaunaFoodFloor`
+- `Cell.OpposingVolume(domain)` = live ENVIRONMENT volume not of `domain` — the prey
+  signal (volume is the spine; fauna bodies are excluded — they aren't edible prey).
+- **Production pauses** when `OpposingVolume(controllingColor) < FaunaFoodFloor × 16`
+  (the floor is authored in nominal prisms, converted by `NominalPrismVolume`)
   (`SpawnProfileSO`, default 5): the timer keeps ticking but no population spawns.
 - **Starvation cull** on `Fauna`/`LightFauna`: a creature that hasn't consumed a
   prism in `starvationSeconds` (default 30, `Fauna` field) despawns; `NotifyFed()`
@@ -428,7 +449,7 @@ foragers, which is counterproductive to that scene's trail-cleanup perf goal.
   phase-based density goal (roams plausibly, then starves). Herbivores still swarm
   opposing-mass density.
 - **Spawn gating (by diet):** `RandomLifeSpawner` seeds a herbivore species when
-  `OpposingBlockCount >= FaunaFoodFloor` (prism prey) and a predator species when
+  `OpposingVolume >= FaunaFoodFloor × 16` (prism prey, in volume) and a predator species when
   `GetLiveHerbivoreCount() >= FaunaFoodFloor` (real food, not the old prism-mass
   proxy) — so sharks never churn-spawn-and-starve in a cell with mass but no
   herbivores. `FaunaFoodFloor` doubles as both floors (N prisms / N herbivores);
@@ -528,7 +549,7 @@ cleared.
    population N, `ControllingDomain`; `CurrentFaunaSpawnPeriod` simplified to base
    period. (`IntensityWiseLifeSpawner` left as-is — it is STILL USED by the
    WildlifeBlitz + Tournament scenes via `cellTypeChoiceOptions: 1`; do NOT delete.)
-3. ✅ §6 bound = option C: `OpposingBlockCount` prey signal + `FaunaFoodFloor`
+3. ✅ §6 bound = option C: opposing-mass prey signal (now `OpposingVolume`) + `FaunaFoodFloor`
    production gate + `starvationSeconds` despawn. Config on `SpawnProfileSO` /
    `FaunaConfigurationSO` / `Fauna`.
 4. ⏳ Validate in Menu_Main: Jade fauna appear when Jade controls; populations

@@ -718,6 +718,8 @@ GameObject:
   m_Component:
   - component: {fileID: 340238951869932971}
   - component: {fileID: 5351160486092638538}
+  - component: {fileID: 3277169259363784715}
+  - component: {fileID: 6628507382079219069}
   m_Layer: 0
   m_Name: MassSharkFauna
   m_TagString: Untagged
@@ -754,24 +756,82 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9117ee7c8d6921843b1da29d1d1a8d33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
   cellData: {fileID: 11400000, guid: 8d4e8398eedc76c4dadb8604f89b9e1b, type: 2}
-  healthPrism: {fileID: 6313579230210663873, guid: 1488a2ac58b2b4c43b14f84206bd9195,
-    type: 3}
-  spindle: {fileID: 0}
-  healthBlocksForMaturity: 1
-  minHealthBlocks: 0
-  shieldPeriod: 0
   domain: 0
+  goalUpdateInterval: 5
+  goalUpdateIntervalByAggression:
+  - 1
+  - 0.55
+  - 0.25
+  goalOrbitRadius: 60
+  Goal: {x: 0, y: 0, z: 0}
   diet: 1
-  onLifeFormCreated: {fileID: 11400000, guid: 0ec64678e3c91034faed17b6e66ded9d, type: 2}
-  onLifeFormDestroyed: {fileID: 11400000, guid: af79f31492a261e49826374c21ee2234,
-    type: 2}
-  autoInitialize: 1
-  Population: {fileID: 1594903950002975183, guid: 764892b0728c1f64ba0d13077691c15b,
-    type: 3}
+  predationImmunitySeconds: 6
+  starvationSeconds: 45
   data: {fileID: 11400000, guid: 5f3927d8b054d1240bbf798a389b9007, type: 2}
   Phase: 0
+--- !u!114 &3277169259363784715
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2988268804875292915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioEventEmitter
+  CollisionTag: 
+  EventReference:
+    Guid:
+      Data1: 446321805
+      Data2: 1310995050
+      Data3: -799342166
+      Data4: 520963135
+    Path: event:/SFX/Loops/Mass shark
+  Event: 
+  EventPlayTrigger: 1
+  EventStopTrigger: 2
+  AllowFadeout: 1
+  TriggerOnce: 0
+  Preload: 0
+  NonRigidbodyVelocity: 0
+  Params: []
+  OverrideAttenuation: 0
+  OverrideMinDistance: 0
+  OverrideMaxDistance: 200
+--- !u!114 &6628507382079219069
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2988268804875292915}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioEventEmitter
+  CollisionTag: 
+  EventReference:
+    Guid:
+      Data1: -2144686006
+      Data2: 1203677490
+      Data3: 1188687745
+      Data4: -1802949205
+    Path: event:/SFX/Oneshots/Gameplay sfx/massshark spawn
+  Event: 
+  EventPlayTrigger: 1
+  EventStopTrigger: 0
+  AllowFadeout: 1
+  TriggerOnce: 0
+  Preload: 0
+  NonRigidbodyVelocity: 0
+  Params: []
+  OverrideAttenuation: 0
+  OverrideMinDistance: 0
+  OverrideMaxDistance: 200
 --- !u!1 &3561311450035280578
 GameObject:
   m_ObjectHideFlags: 0
@@ -1186,7 +1246,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RenderedObject: {fileID: 4931713767661456478}
   parentSpindle: {fileID: 0}
-  LifeForm: {fileID: 5351160486092638538}
+  LifeForm: {fileID: 0}
   retainSpindle: 0
   permanentWither: 1
 --- !u!1 &4404527662190514381
@@ -1483,7 +1543,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RenderedObject: {fileID: 2443664578066746117}
   parentSpindle: {fileID: 0}
-  LifeForm: {fileID: 5351160486092638538}
+  LifeForm: {fileID: 0}
   retainSpindle: 0
   permanentWither: 1
 --- !u!1 &5980138776295548165
@@ -1532,7 +1592,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   RenderedObject: {fileID: 5793232977924061616}
   parentSpindle: {fileID: 0}
-  LifeForm: {fileID: 5351160486092638538}
+  LifeForm: {fileID: 0}
   retainSpindle: 0
   permanentWither: 1
 --- !u!1 &6485504098594869449
@@ -1587,6 +1647,8 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -1608,9 +1670,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -2128,6 +2192,8 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -2149,9 +2215,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -2261,6 +2329,8 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -2282,9 +2352,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -2402,7 +2474,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6474806432604849291, guid: 4a31e01f8b69a584ca245a1687beb4c2,
         type: 3}
       propertyPath: usePrefabScaleAsDefaultTarget
@@ -2506,7 +2578,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6474806432604849291, guid: aad956930fb933f4b82b992b1bc2b773,
         type: 3}
       propertyPath: usePrefabScaleAsDefaultTarget
@@ -2610,7 +2682,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6474806432604849291, guid: aad956930fb933f4b82b992b1bc2b773,
         type: 3}
       propertyPath: usePrefabScaleAsDefaultTarget
@@ -2719,7 +2791,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6474806432604849291, guid: 4a31e01f8b69a584ca245a1687beb4c2,
         type: 3}
       propertyPath: usePrefabScaleAsDefaultTarget
@@ -2828,7 +2900,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6474806432604849291, guid: 4a31e01f8b69a584ca245a1687beb4c2,
         type: 3}
       propertyPath: usePrefabScaleAsDefaultTarget
@@ -2932,7 +3004,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6474806432604849291, guid: aad956930fb933f4b82b992b1bc2b773,
         type: 3}
       propertyPath: usePrefabScaleAsDefaultTarget
@@ -3197,6 +3269,8 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -3218,9 +3292,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -3299,6 +3375,8 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -3320,9 +3398,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -3401,6 +3481,8 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -3422,9 +3504,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -3503,6 +3587,8 @@ SkinnedMeshRenderer:
   m_RayTracingAccelStructBuildFlagsOverride: 0
   m_RayTracingAccelStructBuildFlags: 1
   m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
@@ -3524,9 +3610,11 @@ SkinnedMeshRenderer:
   m_AutoUVMaxDistance: 0.5
   m_AutoUVMaxAngle: 89
   m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
+  m_MaskInteraction: 0
   serializedVersion: 2
   m_Quality: 0
   m_UpdateWhenOffscreen: 0
@@ -3671,7 +3759,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6313579230210663873, guid: 4a31e01f8b69a584ca245a1687beb4c2,
         type: 3}
       propertyPath: m_Enabled
@@ -3802,7 +3890,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6474806432604849291, guid: 4a31e01f8b69a584ca245a1687beb4c2,
         type: 3}
       propertyPath: usePrefabScaleAsDefaultTarget
@@ -3906,7 +3994,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6474806432604849291, guid: aad956930fb933f4b82b992b1bc2b773,
         type: 3}
       propertyPath: usePrefabScaleAsDefaultTarget
@@ -4010,7 +4098,7 @@ PrefabInstance:
         type: 3}
       propertyPath: LifeForm
       value: 
-      objectReference: {fileID: 5351160486092638538}
+      objectReference: {fileID: 0}
     - target: {fileID: 6474806432604849291, guid: aad956930fb933f4b82b992b1bc2b773,
         type: 3}
       propertyPath: usePrefabScaleAsDefaultTarget

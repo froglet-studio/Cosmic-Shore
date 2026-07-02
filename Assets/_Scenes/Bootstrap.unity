@@ -278,6 +278,7 @@ MonoBehaviour:
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -414,7 +415,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &203003805
 RectTransform:
   m_ObjectHideFlags: 0
@@ -820,6 +821,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  progressionConfig: {fileID: 0}
   xpPerGame: 25
 --- !u!1 &684811273
 GameObject:
@@ -976,7 +978,6 @@ MonoBehaviour:
   m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
   m_RequiresDepthTexture: 0
   m_RequiresColorTexture: 0
-  m_Version: 2
   m_TaaSettings:
     m_Quality: 3
     m_FrameInfluence: 0.1
@@ -984,6 +985,7 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
 --- !u!20 &760981919
 Camera:
   m_ObjectHideFlags: 0
@@ -1156,9 +1158,14 @@ MonoBehaviour:
   m_GameObject: {fileID: 820208339}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 923a1692e687af44daf6f67a2ef2ccb3, type: 3}
+  m_Script: {fileID: 11500000, guid: d9f5c531885ef6f4ba7346c2fed6a897, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  statusText: {fileID: 1713505288}
+  retryButton: {fileID: 203003806}
+  inboundRequestEvent: {fileID: 11400000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2e84b,
+    type: 2}
+  outboundRetryEvent: {fileID: 11400000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2e95c, type: 2}
 --- !u!114 &820208347
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1174,6 +1181,7 @@ MonoBehaviour:
   authData: {fileID: 11400000, guid: 875bcedfcf3335047b416297732cba15, type: 2}
   connectionData: {fileID: 11400000, guid: 69a7bf449c11416dac2d81ebd3ff61f5, type: 2}
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
+  tournamentData: {fileID: 11400000, guid: f1738a31735a43a196f1b3a711c91947, type: 2}
   requestEvent: {fileID: 11400000, guid: 8a2f3b41c9e7456db1d8f9c0a1b2e84b, type: 2}
   labelConnecting: "Connecting\u2026"
   labelJoiningLobby: "Joining lobby\u2026"
@@ -1389,7 +1397,6 @@ MonoBehaviour:
   m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
   m_RequiresDepthTexture: 0
   m_RequiresColorTexture: 0
-  m_Version: 2
   m_TaaSettings:
     m_Quality: 3
     m_FrameInfluence: 0.1
@@ -1397,6 +1404,7 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
 --- !u!20 &859930262
 Camera:
   m_ObjectHideFlags: 0
@@ -1683,6 +1691,7 @@ GameObject:
   - component: {fileID: 989920295}
   - component: {fileID: 989920297}
   - component: {fileID: 989920299}
+  - component: {fileID: 989920300}
   m_Layer: 0
   m_Name: Camera
   m_TagString: MainCamera
@@ -1792,7 +1801,6 @@ MonoBehaviour:
   m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
   m_RequiresDepthTexture: 0
   m_RequiresColorTexture: 0
-  m_Version: 2
   m_TaaSettings:
     m_Quality: 3
     m_FrameInfluence: 0.1
@@ -1800,6 +1808,7 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
 --- !u!114 &989920299
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1832,6 +1841,14 @@ MonoBehaviour:
       m_PostInfinity: 2
       m_RotationOrder: 4
   CustomBlends: {fileID: 0}
+--- !u!81 &989920300
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 989920293}
+  m_Enabled: 0
 --- !u!1 &1127734313
 GameObject:
   m_ObjectHideFlags: 0
@@ -2244,11 +2261,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 1866429628}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 1, y: 0}
-  m_AnchorMax: {x: 1, y: 0}
-  m_AnchoredPosition: {x: -75, y: 75}
-  m_SizeDelta: {x: 800, y: 75}
-  m_Pivot: {x: 1, y: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 800, y: 800}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1713505287
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2291,16 +2308,16 @@ MonoBehaviour:
       m_Calls: []
   m_text: LOADING
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053, type: 2}
-  m_sharedMaterial: {fileID: 3995749905058258831, guid: 6ab8eca0e6e2b7c4a8a495d9afae2053,
+  m_fontAsset: {fileID: 11400000, guid: ae09a1f94d095454cad81f41060edbf5, type: 2}
+  m_sharedMaterial: {fileID: -5360740250317253410, guid: ae09a1f94d095454cad81f41060edbf5,
     type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4288453788
-  m_fontColor: {r: 0.6132076, g: 0.6132076, b: 0.6132076, a: 1}
+    rgba: 4284153920
+  m_fontColor: {r: 0.2514531, g: 0, b: 0.3584906, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -2317,17 +2334,18 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 67.8
+  m_fontSize: 70
   m_fontSizeBase: 14
   m_fontWeight: 400
   m_enableAutoSizing: 1
-  m_fontSizeMin: 18
-  m_fontSizeMax: 67.8
-  m_fontStyle: 2
+  m_fontSizeMin: 10
+  m_fontSizeMax: 70
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
   m_characterSpacing: 0
+  m_characterHorizontalScale: 1
   m_wordSpacing: 0
   m_lineSpacing: 0
   m_lineSpacingMax: 0
@@ -2724,7 +2742,6 @@ MonoBehaviour:
   m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
   m_RequiresDepthTexture: 0
   m_RequiresColorTexture: 0
-  m_Version: 2
   m_TaaSettings:
     m_Quality: 3
     m_FrameInfluence: 0.1
@@ -2732,6 +2749,7 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
 --- !u!20 &2074583005
 Camera:
   m_ObjectHideFlags: 0
@@ -2943,6 +2961,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 17a00b98fdc8fa34b8b16c2f69e79f40, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  config: {fileID: 0}
   supportProductId: com.cosmicshore.support_tier1
 --- !u!114 &2100000007
 MonoBehaviour:
@@ -2976,6 +2995,45 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
+      propertyPath: so_songs.Array.size
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
+      propertyPath: 'so_songs.Array.data[0]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 80e0bd86ad3004044887cdee79937d89,
+        type: 2}
+    - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
+      propertyPath: 'so_songs.Array.data[1]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 4e08bd425a0357a4cb2913dcb1c22370,
+        type: 2}
+    - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
+      propertyPath: 'so_songs.Array.data[2]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 23e5ea5c5d2b9cb4699185ebd9ea651b,
+        type: 2}
+    - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
+      propertyPath: 'so_songs.Array.data[3]'
+      value: 
+      objectReference: {fileID: 11400000, guid: bb2c516f233054b479a5327beb6427b0,
+        type: 2}
+    - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
+      propertyPath: 'so_songs.Array.data[4]'
+      value: 
+      objectReference: {fileID: 11400000, guid: bd7cffa3846cdd047b46c58cef6eb164,
+        type: 2}
+    - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
+      propertyPath: 'so_songs.Array.data[5]'
+      value: 
+      objectReference: {fileID: 11400000, guid: 1f7ebca9281b9244ba31143be2de7799,
+        type: 2}
+    - target: {fileID: 1452114705, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
+      propertyPath: 'so_songs.Array.data[6]'
+      value: 
+      objectReference: {fileID: 11400000, guid: bb2c516f233054b479a5327beb6427b0,
+        type: 2}
     - target: {fileID: 4302996649166915022, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
       propertyPath: m_Name
@@ -3163,6 +3221,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
+      propertyPath: trackImpactEvent.Path
+      value: event:/SFX/Oneshots/Gameplay sfx/track collide
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
       propertyPath: blockDestroyEvent.Path
       value: event:/SFX/Oneshots/Gameplay sfx/Block Destroy Clip
       objectReference: {fileID: 0}
@@ -3288,6 +3351,16 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
+      propertyPath: joustBuffMassEvent.Path
+      value: event:/SFX/Oneshots/Gameplay sfx/mass joust friend
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffTimeEvent.Path
+      value: event:/SFX/Oneshots/Gameplay sfx/time Joust friend
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
       propertyPath: joustReceivedEvent.Path
       value: event:/SFX/Oneshots/Gameplay sfx/Mass joust
       objectReference: {fileID: 0}
@@ -3320,6 +3393,16 @@ PrefabInstance:
         type: 3}
       propertyPath: crystalCollectEvent.Path
       value: event:/SFX/Oneshots/Gameplay sfx/Crystal Collect
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: floraCollisionEvent.Path
+      value: event:/SFX/Oneshots/Gameplay sfx/Creature colide
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffSpaceEvent.Path
+      value: event:/SFX/Oneshots/Gameplay sfx/Space Joust friend
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
@@ -3430,6 +3513,11 @@ PrefabInstance:
         type: 3}
       propertyPath: explosionEvent.Guid.Data4
       value: 816552414
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffChargeEvent.Path
+      value: event:/SFX/Oneshots/Gameplay sfx/Charge Joust friend 2
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
@@ -3663,6 +3751,26 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
+      propertyPath: trackImpactEvent.Guid.Data1
+      value: 310883003
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: trackImpactEvent.Guid.Data2
+      value: 1266496358
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: trackImpactEvent.Guid.Data3
+      value: -193662310
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: trackImpactEvent.Guid.Data4
+      value: -709421328
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
       propertyPath: blockDestroyEvent.Guid.Data1
       value: 1232779908
       objectReference: {fileID: 0}
@@ -3853,6 +3961,46 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
+      propertyPath: joustBuffMassEvent.Guid.Data1
+      value: -277175845
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffMassEvent.Guid.Data2
+      value: 1092391051
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffMassEvent.Guid.Data3
+      value: -1698941761
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffMassEvent.Guid.Data4
+      value: 1504926044
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffTimeEvent.Guid.Data1
+      value: 480965569
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffTimeEvent.Guid.Data2
+      value: 1110862034
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffTimeEvent.Guid.Data3
+      value: -563982461
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffTimeEvent.Guid.Data4
+      value: 57143245
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
       propertyPath: joustReceivedEvent.Guid.Data1
       value: 1935444665
       objectReference: {fileID: 0}
@@ -3918,6 +4066,46 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
+      propertyPath: floraCollisionEvent.Guid.Data1
+      value: 521565762
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: floraCollisionEvent.Guid.Data2
+      value: 1177340277
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: floraCollisionEvent.Guid.Data3
+      value: 1735452291
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: floraCollisionEvent.Guid.Data4
+      value: -857705457
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffSpaceEvent.Guid.Data1
+      value: 2118813290
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffSpaceEvent.Guid.Data2
+      value: 1222676418
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffSpaceEvent.Guid.Data3
+      value: 1472184977
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffSpaceEvent.Guid.Data4
+      value: 1179725894
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
       propertyPath: shieldActivateEvent.Guid.Data1
       value: -922617308
       objectReference: {fileID: 0}
@@ -3940,6 +4128,26 @@ PrefabInstance:
         type: 3}
       propertyPath: elementChargeReceivedEvent.Path
       value: event:/SFX/Oneshots/Gameplay sfx/Charge Joust
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffChargeEvent.Guid.Data1
+      value: -1398882830
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffChargeEvent.Guid.Data2
+      value: 1289502030
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffChargeEvent.Guid.Data3
+      value: 283721915
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: joustBuffChargeEvent.Guid.Data4
+      value: 322228205
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
@@ -4069,6 +4277,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 3100000004}
+    - targetCorrespondingSourceObject: {fileID: 4302996649166915022, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3100000008}
   m_SourcePrefab: {fileID: 100100000, guid: 9426870f37f271d4daf180ef32c4d10f, type: 3}
 --- !u!1 &3100000002 stripped
 GameObject:
@@ -4100,6 +4312,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 583638035e4a15c42b2fa9de5d6213fa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!81 &3100000008
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3100000002}
+  m_Enabled: 1
 --- !u!1001 &4400000001
 PrefabInstance:
   m_ObjectHideFlags: 0
