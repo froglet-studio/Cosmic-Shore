@@ -6,22 +6,52 @@ limitations and verification status. Architecture: `ARCHITECTURE.md`.
 
 ## Verification status
 
-- **Compile-reviewed** against the real codebase twice (all external APIs, the generic
+- **Compile-reviewed** against the real codebase (all external APIs, the generic
   `SwapToySetCoordinator<T>`, `VesselModelBuilder`, null-safety, internal access, no dangling
-  refs) — clean.
+  refs) — clean. Includes the second-pass fixes below.
 - **Not yet play-verified in-editor** (no Unity in the authoring environment). First in-editor
   pass should confirm: toys bloom in and sit where the lava-lamp vessel flies; local-user +
-  freestyle gating (autopilot never trips them); the three behaviours below.
+  freestyle gating (autopilot never trips them); all six vessels render as mini models; a swap
+  keeps your domain colour + inherits pose/speed and shows the new HUD; the vessel-changer ships
+  recolour when you use the domain changer; gamepad Start exits freestyle and the pad stops
+  double-driving the UI; and a swap toy can't switch you back before you fly clear.
 - Assets authored by `Tools > Cosmic Shore > Setup Freestyle Toybox` are committed
   (`Resources/Toybox.asset`, `_SO_Assets/Toys/Toy_*.asset`) and `ToyboxController` is wired into
   `Menu_Main`; GUID references verified consistent.
 
+## Resolved this pass (second branch, `claude/vessel-changer-toy-updates-*`)
+
+All shipped on the branch; see `ARCHITECTURE.md` § "Status & follow-up" for the file table.
+
+- **Only Rhino rendered a mini model → all six render.** Skimmer-sphere bounds pollution + the
+  transparent hull material. `VesselModelBuilder` now hull-filters and paints an opaque, domain-
+  tinted preview material.
+- **Swap toys switched you back before you could escape.** `Toy` re-arms only after the vessel
+  flies clear (distance poll + hysteresis), the flipped toy re-grows slowly, and the coordinator
+  disarms the whole set on activation.
+- **Swap reset your hull to Jade / desynced the domain changer.** `ReInitializePair` re-syncs
+  `Player.Domain` from `NetDomain` before repainting; domain now persists per-player across swaps.
+- **New ship started from a dead stop.** It now inherits the previous ship's speed
+  (`SetInitialSpeed`) alongside pose.
+- **Swapped-in ship had no working HUD.** `ReInitializePair` re-raises `OnPlayerPairInitialized`;
+  `MenuMiniGameHUD` re-shows the local HUD in freestyle.
+- **Vessel HUD buttons fought the appshell; no pad exit.** EventSystem `sendNavigationEvents` off
+  in freestyle; gamepad **Start** exits to the appshell.
+- **Mini ships only recoloured on flip.** They now recolour in place on any domain change.
+
 ## Branch: vessel-changer polish
 
-- **Mini-model materials.** `VesselModelBuilder` shows the ship prefab's *shared* materials in
-  static (bind) pose. Some hull materials are driven by a MaterialPropertyBlock at runtime
-  (domain tint), so the preview may look flat/untinted. Options: tint the model to the player's
-  domain, bake a dedicated preview material, or accept the silhouette.
+- **Mini-model materials + hull extraction (FIXED).** Previously only Rhino rendered a model:
+  `VesselModelBuilder` blindly extracted every renderer, so each vessel's **skimmer** (a builtin
+  Sphere scaled 15–60×) dominated `NormalizeToRadius` and crushed the real hull to an invisible
+  speck (Rhino is the one vessel whose skimmer has no builtin sphere). It also copied the ship's
+  hull material, which is a transparent, runtime-theme-driven shader that renders dim/invisible at
+  rest. Now the builder skips non-hull geometry (builtin-primitive skimmer bodies, and anything
+  named skimmer/trail/jet/forcefield/crackle/pip/vfx) and skips inactive/disabled renderers (e.g.
+  Manta's hidden scale-100 duplicate SMR), then paints every hull mesh with one opaque, self-lit
+  preview material tinted to the player's domain colour (`TryBuild(prefab, radius, previewColor, …)`).
+  Skinned hulls still show in authored (bind) pose — a static baked snapshot (`SkinnedMeshRenderer.BakeMesh`)
+  is a possible future refinement for exact current-pose fidelity.
 - **Scale / label tuning.** `toyBodyRadius`, label size, and the arc spacing (`anglePerToyDeg`)
   are guesses — tune in-editor.
 - **Collection.** Default is a curated 6 (Manta, Dolphin, Rhino, Squirrel, Serpent, Sparrow) via
@@ -74,5 +104,10 @@ limitations and verification status. Architecture: `ARCHITECTURE.md`.
 
 ## Known limitations (current)
 
-- Mini-ship materials render static; painting pen-up gaps not honored; no unlock persistence;
-  placement fallback needs in-editor tuning; not yet play-verified.
+- Mini-ship hulls render as static domain-tinted silhouettes (bind pose, not animated — a
+  `SkinnedMeshRenderer.BakeMesh` snapshot would give exact current-pose fidelity); painting
+  pen-up gaps not honored; no unlock persistence; placement fallback needs in-editor tuning; toy
+  scale/label/spacing still guessed; not yet play-verified. Speed inheritance seeds the smoothed
+  cruise speed then eases to the current throttle target — with input paused during the post-swap
+  autopilot window it will drift toward `MinimumSpeed`; fine for the seamless-handoff goal, tune
+  if a longer hold is wanted.
