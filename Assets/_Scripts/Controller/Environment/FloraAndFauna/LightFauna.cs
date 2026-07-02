@@ -145,7 +145,7 @@ namespace CosmicShore.Gameplay
                     .ToList();
                 for (int i = 0; i < prisms.Count; i++)
                 {
-                    if (prisms[i]) prisms[i].Consume(transform, domain, PLAYER_NAME, true);
+                    if (prisms[i]) prisms[i].Consume(transform, domain, PLAYER_NAME, true, true);
                     if (interval > 0f) yield return new WaitForSeconds(interval);
                     else yield return null;
                 }
@@ -279,6 +279,13 @@ namespace CosmicShore.Gameplay
             float separationRadius = Mathf.Max(0f, data.separationRadius);
             float consumeRadius = Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier();
 
+            // Squared-distance space for the neighbor loops below: every `distance` use is a
+            // radius threshold or the inverse-square weight diff.normalized/distance
+            // (== diff/diff.sqrMagnitude), so no per-neighbor sqrt is needed. Both radii are
+            // loop-invariant here, squared once.
+            float separationRadiusSqr = separationRadius * separationRadius;
+            float consumeRadiusSqr = consumeRadius * consumeRadius;
+
             // Aggression 2 drops friendly avoidance (same-domain ships, fauna, and
             // health prisms stop contributing to separation). Cross-domain entities
             // still push us away so we don't clip through enemy mass.
@@ -300,13 +307,13 @@ namespace CosmicShore.Gameplay
                 if (!collider.TryGetComponent(out IVesselStatus vessel)) continue;
 
                 Vector3 diff = transform.position - collider.transform.position;
-                float distance = diff.magnitude;
-                if (distance <= 0f) continue;
+                float sqr = diff.sqrMagnitude;
+                if (sqr <= 0f) continue;
 
                 neighborCount++;
                 // Level 2: skip separation from same-domain ships.
                 if (!(dropFriendlyAvoidance && vessel.Domain == domain))
-                    separation -= diff.normalized / distance;
+                    separation -= diff / sqr;
             }
 
             // --- Prism populations via the spatial index -------------------------
@@ -324,8 +331,8 @@ namespace CosmicShore.Gameplay
                 if (!prism || prism.destroyed) continue;
 
                 Vector3 diff = transform.position - prism.transform.position;
-                float distance = diff.magnitude;
-                if (distance <= 0f) continue;
+                float sqr = diff.sqrMagnitude;
+                if (sqr <= 0f) continue;
 
                 // Predator diet: hunt herbivore fauna. Another creature's body shows up
                 // here as its child HealthPrisms, so walk up to the owning Fauna (only
@@ -344,12 +351,12 @@ namespace CosmicShore.Gameplay
                     if (prey && prey != this && prey.Diet == FaunaDiet.Herbivore)
                     {
                         neighborCount++;
-                        if (distance < separationRadius)
-                            separation += diff.normalized / distance;
+                        if (sqr < separationRadiusSqr)
+                            separation += diff / sqr;
 
                         // Predated() respects the prey's post-spawn immunity window and
                         // returns false if the prey couldn't be eaten — only feed on a real kill.
-                        if (prey.IsAlivePrey && distance < consumeRadius && prey.Predated(PLAYER_NAME))
+                        if (prey.IsAlivePrey && sqr < consumeRadiusSqr && prey.Predated(PLAYER_NAME))
                             NotifyFed();
                         continue;
                     }
@@ -365,13 +372,13 @@ namespace CosmicShore.Gameplay
 
                     bool sameDomain = otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain == domain;
 
-                    if (distance < separationRadius && !(dropFriendlyAvoidance && sameDomain))
-                        separation += diff.normalized / distance;
+                    if (sqr < separationRadiusSqr && !(dropFriendlyAvoidance && sameDomain))
+                        separation += diff / sqr;
 
                     // Herbivores eat opposing-domain plant/trail mass; predators never eat prisms.
-                    if (diet == FaunaDiet.Herbivore && distance < consumeRadius && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
+                    if (diet == FaunaDiet.Herbivore && sqr < consumeRadiusSqr && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
                     {
-                        otherHealthBlock.Consume(transform, domain, PLAYER_NAME, true);
+                        otherHealthBlock.Consume(transform, domain, PLAYER_NAME, true, true);
                         NotifyFed();
                     }
 
@@ -379,9 +386,9 @@ namespace CosmicShore.Gameplay
                 }
 
                 // Handle blocks
-                if (diet == FaunaDiet.Herbivore && prism.Domain != domain && distance < consumeRadius)
+                if (diet == FaunaDiet.Herbivore && prism.Domain != domain && sqr < consumeRadiusSqr)
                 {
-                    prism.Consume(transform, domain, PLAYER_NAME, true);
+                    prism.Consume(transform, domain, PLAYER_NAME, true, true);
                     NotifyFed();
                 }
             }

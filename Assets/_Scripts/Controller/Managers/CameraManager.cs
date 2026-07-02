@@ -1,3 +1,5 @@
+using CosmicShore.Core;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Obvious.Soap;
@@ -58,12 +60,47 @@ namespace CosmicShore.Gameplay
         {
             _onReturnToMainMenu.OnRaised += OnEnteredMainMenu;
             _onInitializePlayerCamera.OnRaised += SetupGamePlayCameras;
+
+            // Keep FOV + post-process AA on the managed cameras in sync with the settings panel,
+            // live. The cameras are children of this manager (not spawned with the vessel), so this
+            // is the spawn-proof place to apply — no per-camera scene reference needed.
+            DisplayGraphicsSettings.OnFieldOfViewChanged += HandleCameraGraphicsChanged;
+            DisplayGraphicsSettings.OnAnySettingChanged += HandleCameraGraphicsChanged;
         }
 
         void OnDisable()
         {
             _onReturnToMainMenu.OnRaised -= OnEnteredMainMenu;
             _onInitializePlayerCamera.OnRaised -= SetupGamePlayCameras;
+
+            DisplayGraphicsSettings.OnFieldOfViewChanged -= HandleCameraGraphicsChanged;
+            DisplayGraphicsSettings.OnAnySettingChanged -= HandleCameraGraphicsChanged;
+        }
+
+        void HandleCameraGraphicsChanged(float _) => ApplyCameraGraphicsSettings();
+        void HandleCameraGraphicsChanged(GraphicsSettingsData _) => ApplyCameraGraphicsSettings();
+
+        /// <summary>
+        /// Pushes the saved Field-of-View and post-process AA (FXAA/SMAA/TAA) onto every managed
+        /// camera. MSAA is global on the URP asset (handled by <see cref="DisplayGraphicsSettings"/>),
+        /// so this only sets FOV + the per-camera post-AA mode. Null-safe and called on every camera
+        /// setup, so a vessel that spawns later still gets the right look.
+        /// </summary>
+        public void ApplyCameraGraphicsSettings()
+        {
+            var s = DisplayGraphicsSettings.Instance;
+            if (s == null) return;
+            var d = s.Current;
+            ApplyToCamera((_playerCamera as CustomCameraController)?.Camera, d);
+            ApplyToCamera((_deathCamera as CustomCameraController)?.Camera, d);
+            ApplyToCamera(endCamera != null ? endCamera.Camera : null, d);
+        }
+
+        static void ApplyToCamera(Camera cam, GraphicsSettingsData d)
+        {
+            if (cam == null) return;
+            if (!cam.orthographic) cam.fieldOfView = d.FieldOfView;
+            GraphicsSettingsApplier.ApplyCameraAntiAliasing(cam, d.AntiAliasing);
         }
 
         void Start()
@@ -130,6 +167,8 @@ namespace CosmicShore.Gameplay
             // stale end-game or transition state from the previous session.
             if (_playerCamera is CustomCameraController pcc)
                 pcc.SnapToTarget();
+
+            ApplyCameraGraphicsSettings();
         }
 
         /// <summary>
@@ -147,6 +186,7 @@ namespace CosmicShore.Gameplay
 
             endCamera.SnapToTarget();
             SetEndCameraActive();
+            ApplyCameraGraphicsSettings();
             _themeManagerData.SetBackgroundColor(Camera.main);
         }
 

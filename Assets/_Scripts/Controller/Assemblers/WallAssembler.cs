@@ -425,7 +425,7 @@ namespace CosmicShore.Gameplay
 
                 if (IsMate(mateComponent) && mateComponent != this)
                 {
-                    if (Vector3.Distance(transform.position, mateComponent.transform.position) < snapDistance
+                    if ((transform.position - mateComponent.transform.position).sqrMagnitude < snapDistance * snapDistance
                         && mateComponent.Prism.prismProperties.TimeCreated >
                         Prism.prismProperties.TimeCreated)
                     {

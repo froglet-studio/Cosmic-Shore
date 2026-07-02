@@ -501,7 +501,7 @@ public class VesselTransformer : MonoBehaviour
                     accumulatedVelocity += ((Mathf.Cos(modifier.elapsedTime * Mathf.PI / modifier.duration) / 2) + 1) * modifier.initialValue;
             }
 
-            velocityShift = Mathf.Min(accumulatedVelocity.magnitude, velocityModifierMax) * accumulatedVelocity.normalized;
+            velocityShift = Vector3.ClampMagnitude(accumulatedVelocity, velocityModifierMax);
 
             var sqrMag = velocityShift.sqrMagnitude;
 

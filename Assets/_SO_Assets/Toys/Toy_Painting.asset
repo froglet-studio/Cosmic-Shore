@@ -1,0 +1,21 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f71e846852b26bbf0e53645a8aa7d5a4, type: 3}
+  m_Name: Toy_Painting
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PaintingToyDefinitionSO
+  id: painting
+  displayName: Fly by Numbers
+  description: Trace a pattern with your trail.
+  unlockedByDefault: 1
+  placementAngleDegrees: 0
+  accentColor: {r: 0.2, g: 0.9, b: 1, a: 1}
+  shape: {fileID: 11400000, guid: bf2a451ba14d3fe49a2bd5c4d23ee336, type: 2}
