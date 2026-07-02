@@ -60,11 +60,14 @@
 		<property name="dopplerEnabled">
 			<value>true</value>
 		</property>
+		<property name="dopplerScale">
+			<value>235</value>
+		</property>
 		<property name="minimumDistance">
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>200</value>
+			<value>250</value>
 		</property>
 	</object>
 	<object class="MarkerTrack" id="{3a862043-e046-4e3f-91d7-8dd184a3d928}" />
@@ -110,6 +113,9 @@
 		</relationship>
 	</object>
 	<object class="EventMixerGroup" id="{deb3be99-2ff9-45ec-8b93-1e23fad419f8}">
+		<property name="volume">
+			<value>7.5</value>
+		</property>
 		<property name="name">
 			<value>Audio 1</value>
 		</property>
@@ -140,6 +146,7 @@
 	<object class="MixerBusEffectChain" id="{1cb8d5b5-e4f1-405f-ad8e-595dfdf04b1f}">
 		<relationship name="effects">
 			<destination>{c54473df-0679-4a8e-b7e8-e5a00b844dd8}</destination>
+			<destination>{d6ca1c82-611c-4961-91c1-ea1e219aa9d6}</destination>
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{7c138d6b-2359-41e4-a2c1-0e84d33ff9e3}" />
@@ -152,6 +159,35 @@
 	</object>
 	<object class="MixerBusPanner" id="{5254d3f2-dd5a-45ab-aef8-c7c0b7923284}" />
 	<object class="MixerBusFader" id="{c54473df-0679-4a8e-b7e8-e5a00b844dd8}" />
+	<object class="MultibandEqEffect" id="{d6ca1c82-611c-4961-91c1-ea1e219aa9d6}">
+		<property name="filterTypeA">
+			<value>0</value>
+		</property>
+		<property name="filterTypeC">
+			<value>8</value>
+		</property>
+		<property name="filterTypeD">
+			<value>11</value>
+		</property>
+		<property name="frequencyA">
+			<value>21999.9902</value>
+		</property>
+		<property name="frequencyC">
+			<value>1003.89966</value>
+		</property>
+		<property name="frequencyD">
+			<value>116.379707</value>
+		</property>
+		<property name="qualityA">
+			<value>0.999781132</value>
+		</property>
+		<property name="qualityD">
+			<value>0.910125613</value>
+		</property>
+		<property name="gainC">
+			<value>11.7984829</value>
+		</property>
+	</object>
 	<object class="MixerBusFader" id="{0a7ae587-450d-4edb-be31-a5502df5806f}" />
 	<object class="SpatialiserEffect" id="{6d1d537d-b736-433a-a2cf-ae537f1e9353}">
 		<property name="distanceRolloffType">
@@ -161,7 +197,7 @@
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>200</value>
+			<value>250</value>
 		</property>
 		<property name="userStereoSeparation">
 			<value>15.0041313</value>
