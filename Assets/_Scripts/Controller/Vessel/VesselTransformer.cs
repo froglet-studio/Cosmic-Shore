@@ -205,6 +205,14 @@ public class VesselTransformer : MonoBehaviour
             accumulatedRotation = pose.rotation;
         }
 
+        /// <summary>
+        /// Seed the smoothed cruise speed so a freshly-spawned vessel continues at an inherited
+        /// velocity instead of the post-<see cref="ResetTransformer"/> dead stop (speed = 0). Used
+        /// by the menu vessel swap so the new ship keeps the previous ship's speed; MoveShip then
+        /// eases from here toward the current throttle target as normal.
+        /// </summary>
+        public void SetInitialSpeed(float initialSpeed) => speed = initialSpeed;
+
         public void FlatSpinShip(float YAngle)
         {
             accumulatedRotation = Quaternion.AngleAxis(180, transform.up) * accumulatedRotation;
