@@ -61,19 +61,19 @@
 			<value>true</value>
 		</property>
 		<property name="dopplerScale">
-			<value>125</value>
+			<value>335</value>
 		</property>
 		<property name="minimumDistance">
-			<value>0</value>
+			<value>0.900000036</value>
 		</property>
 		<property name="maximumDistance">
-			<value>200</value>
+			<value>250</value>
 		</property>
 	</object>
 	<object class="MarkerTrack" id="{067bd1d3-45d6-47ed-b7aa-f84dedb5b7ce}" />
 	<object class="GroupTrack" id="{12d8c698-70a4-49f1-bbc4-9c267477a4c5}">
 		<relationship name="modules">
-			<destination>{e845bfe8-a7cf-4a9b-85f9-f23a11145fd3}</destination>
+			<destination>{e0aebcfb-ead7-4d1c-b682-bbc47053f1da}</destination>
 		</relationship>
 		<relationship name="mixerGroup">
 			<destination>{a0aabd34-c0c0-4fab-9f3e-4bec1c003bae}</destination>
@@ -81,7 +81,7 @@
 	</object>
 	<object class="Timeline" id="{e88bb037-53ab-476f-9719-a86de29b5a80}">
 		<relationship name="modules">
-			<destination>{e845bfe8-a7cf-4a9b-85f9-f23a11145fd3}</destination>
+			<destination>{e0aebcfb-ead7-4d1c-b682-bbc47053f1da}</destination>
 		</relationship>
 		<relationship name="markers">
 			<destination>{b44112e5-e4dd-4204-918b-c6553ceca903}</destination>
@@ -104,17 +104,17 @@
 		</relationship>
 	</object>
 	<object class="MixerBusPanner" id="{e021f487-b986-4e56-ab90-c8c390151eb2}" />
-	<object class="SingleSound" id="{e845bfe8-a7cf-4a9b-85f9-f23a11145fd3}">
+	<object class="SingleSound" id="{e0aebcfb-ead7-4d1c-b682-bbc47053f1da}">
 		<property name="length">
-			<value>14</value>
+			<value>16</value>
 		</property>
 		<relationship name="audioFile">
-			<destination>{b77effdd-b5fa-41fe-8da5-5882ef4a49a8}</destination>
+			<destination>{e3c14025-05ae-45f7-9f91-0119f6495220}</destination>
 		</relationship>
 	</object>
 	<object class="EventMixerGroup" id="{a0aabd34-c0c0-4fab-9f3e-4bec1c003bae}">
 		<property name="volume">
-			<value>-1</value>
+			<value>3.5</value>
 		</property>
 		<property name="name">
 			<value>Audio 1</value>
@@ -134,7 +134,7 @@
 			<value>0</value>
 		</property>
 		<property name="length">
-			<value>14</value>
+			<value>16</value>
 		</property>
 		<relationship name="timeline">
 			<destination>{e88bb037-53ab-476f-9719-a86de29b5a80}</destination>
@@ -163,10 +163,10 @@
 			<value>1</value>
 		</property>
 		<property name="minimumDistance">
-			<value>0</value>
+			<value>0.900000036</value>
 		</property>
 		<property name="maximumDistance">
-			<value>200</value>
+			<value>250</value>
 		</property>
 	</object>
 	<object class="MixerBusFader" id="{ee36c253-3e60-4e13-afb6-788f0b36b8b2}" />
