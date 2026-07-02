@@ -95,6 +95,13 @@ the source branches (`optimistic-planck`, `beautiful-feynman`, `tender-pasteur`,
 8. Delete `kind-turing` (contained).
 
 ### Wave 2 — this branch (rciwzl)
+> **Update (July 2):** zen-volta's volume-cache commit (`1c2022288`) was pulled forward
+> onto this branch after a live profiler capture showed its target
+> (`Cell.EnsureVolumeFresh`'s O(all-prisms) lossyScale walk, surfacing as 15.64ms under
+> `DomainVolumeIndicator.Update`) as the single largest main-thread cost. The Checkpoint
+> A/C hooks were dropped in adaptation; when zen-volta merges, those hunks are
+> content-identical and should auto-resolve, with its extra hooks layering on top.
+
 9. Rebase/merge `performance-refactoring-review-rciwzl` onto post-zen-volta
    bleeding-edge. Two hand-resolves:
    - **`Spindle.cs` union** (both wins): keep zen-volta's 8 shared phase-variant
