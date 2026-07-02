@@ -69,6 +69,13 @@ namespace CosmicShore.Engine
         public static T FindFirstObjectByType<T>() where T : class
             => GameLoop.Current?.Scene.FindObjectOfType<T>(includeInactive: true);
 
+        /// <summary>
+        /// Original API: "any" relaxes the ordering guarantee of "first". The headless
+        /// scene walk is deterministic anyway, so both resolve identically here.
+        /// </summary>
+        public static T FindAnyObjectByType<T>() where T : class
+            => FindFirstObjectByType<T>();
+
         /// <summary>Clone an asset or object graph (see ObjectUtilities for semantics).</summary>
         public static T Instantiate<T>(T original) where T : Object
             => ObjectUtilities.InstantiateObject(original);

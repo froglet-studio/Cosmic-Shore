@@ -24,5 +24,14 @@ namespace CosmicShore.Engine.Networking
         /// harness / future network driver; defaults to an unstarted clock (0).
         /// </summary>
         public NetworkTime ServerTime { get; set; }
+
+        /// <summary>
+        /// Connected client ids (engine addition for the controller-chain arc:
+        /// MultiplayerDomainGamesController counts humans by <c>ConnectedClientsIds.Count</c>
+        /// and solo-session gates check <c>Count &lt;= 1</c>). Defaults to the single host
+        /// client (id 0) — the single-process host-mode the rest of this stand-in models.
+        /// The session/transport phase maintains it from real connections.
+        /// </summary>
+        public System.Collections.Generic.List<ulong> ConnectedClientsIds { get; } = new() { 0 };
     }
 }

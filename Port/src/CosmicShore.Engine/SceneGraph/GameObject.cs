@@ -109,6 +109,8 @@ namespace CosmicShore.Engine
             _components.Add(component);
             if (component is Collider collider)
                 GameLoop.Current.Triggers.Register(collider); // trigger-pass registry (creation order)
+            if (component is Rigidbody rigidbody)
+                GameLoop.Current.RegisterRigidbody(rigidbody); // E18 dynamics registry (creation order)
             if (component is MonoBehaviour mb)
             {
                 mb.sequence = GameLoop.Current.NextSequence();

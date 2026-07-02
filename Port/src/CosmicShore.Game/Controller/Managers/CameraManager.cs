@@ -20,5 +20,12 @@ namespace CosmicShore.Gameplay
         private ICameraController _activeController;
 
         public ICameraController GetActiveController() => _activeController;
+
+        /// <summary>
+        /// Shell surface for the controller-chain arc: the original re-snaps the player's
+        /// Cinemachine camera to its follow target after ResetPlayers teleports the vessel
+        /// (MultiplayerMiniGameControllerBase.ResetForReplay_ClientRpc). No-op headless.
+        /// </summary>
+        public void SnapPlayerCameraToTarget() { }
     }
 }

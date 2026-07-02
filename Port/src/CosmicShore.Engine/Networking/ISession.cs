@@ -24,5 +24,14 @@ namespace CosmicShore.Engine.Networking
 
         /// <summary>Number of players currently in the session.</summary>
         int PlayerCount { get; }
+
+        /// <summary>
+        /// Raised when the session is deleted (UGS surface subset — the controller-chain
+        /// arc's MultiplayerMiniGameControllerBase subscribes to unhook its handlers).
+        /// </summary>
+        event System.Action Deleted;
+
+        /// <summary>Raised with the leaving player's client id string (UGS surface subset).</summary>
+        event System.Action<string> PlayerLeaving;
     }
 }

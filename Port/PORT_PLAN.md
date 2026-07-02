@@ -318,6 +318,8 @@ Next: V8 (VesselTransformer + member restore), rival balance from prompter feedb
 | 11 | `AudioSystem` type-preserving shell (`Instance`, two `PlayGameplaySFX` overloads; bodies no-op) — pulled forward from V15 to V6 because `ActionExecutorRegistry` needs the type. Real port with the phase-5 audio backend. | Keeps ActionExecutorRegistry verbatim. |
 | 14-ext | `PlayerDataService` (C2) stages its UGS CloudSave surface exactly like GameSetting's #14: `UGSDataService` injection, repo read/write, ready-event hooks commented with `PORT Deviation #14 (C2, restore when UGSDataService ports)` markers (7 sites); local default profile, crystal/XP math, reward unlocks, and the OnProfileChanged → GameDataSO sync are live. | Services phase owns the restore. |
 | 16 | `Directory.Build.props` adds CS0169 to NoWarn (alongside CS0649): verbatim Unity-era private fields whose only usages are commented (e.g. `InputController.vessel` until its orientation block revives) or inspector-driven fire it; the Unity compiler tolerated them. | Verbatim fields without warning noise. |
+| 17 | **Controller-chain arc scene deviations** (all marked `PORT Deviation (scene arc, …)` / `(UI shell, …)`): `MultiplayerMiniGameControllerBase` — the `SceneTransitionManager` fade field + its 2 call sites and the `nm.SceneManager.LoadScene` replay reload block are commented (no scene manager yet; everything in-scene — turn/round state machine, replay AI despawns, config sync — verbatim). `CountdownTimer` — the DOTween/Image/Sprite/beep presentation is replaced by a timing-equivalent GameTask beat loop (4 × countdownDuration unscaled → onComplete; `_seq?.Kill()` → CTS cancel parity). `CameraManager` shell grew a no-op `SnapPlayerCameraToTarget()` (Deviation #12 surface). Restore with the scene-management / UI arcs. | Smallest surface for the scene/UI gaps; the round/turn/score flow is verbatim. |
+| 18 | **AstroLeague arc**: engine gains E18 ballistic Rigidbody dynamics (linear/angular velocity + damping + `AddTorque` on a unit inertia tensor, integrated once per fixed step after the FixedUpdate phase; gravity not simulated — the HyperSea has none), data-only `PhysicsMaterial`/`Light`/`BlendMode`/material keywords+renderQueue, `FixedString32Bytes`, `NetworkManager.ConnectedClientsIds`, ISession `Deleted`/`PlayerLeaving` events, `FindAnyObjectByType`. `AstroLeagueBall` deviations (all presentation, marked): icosphere mesh swap (mesh arc), ParticleSystem aura/burst rig + haptics (presentation arc); the engine dispatches no `OnCollisionEnter/Stay`/`OnTriggerStay`, so the hull-collider strike path is carried as commented source and vessel contacts flow through the verbatim `OnTriggerEnter` path (the original's trigger-only-ship route — Serpent/Sparrow). `AstroLeagueArena`'s editor-only `OnDrawGizmos` body commented (no Gizmos). | Physics core verbatim on E18; the solver-dependent + render-side pieces restore with their phases. |
 
 ## Iteration log
 
@@ -669,8 +671,10 @@ convergence ladder, and every future bleeding-edge merge reopens them:
    - **Toys** (`Controller/Toys` 11 files + `ScriptableObjects/Toys` 5): freestyle
      toy system (domain/vessel changer flip-sets, mini ship models, painting toy) —
      player-facing in the lava-lamp/freestyle flow.
-   - **AstroLeague** (`Controller/Arcade/AstroLeague/` 7 files + ASTROLEAGUE.md):
-     new ball-game arcade mode (arena, ball, goal, match monitor, scoring rule).
+   - **AstroLeague ✅ (ported, controller-chain iteration)** (`Controller/Arcade/AstroLeague/`
+     7 files + `AstroLeagueObjectiveProvider` + `IObjectiveProvider`): the full mode runs
+     headless through the real chain — `dotnet run --project src/CosmicShore.Cli -- --mode
+     astroleague [--players N] [--seed S]`. See Deviation #18 + the iteration log.
    - **Tournament** (`Controller/Arcade/Tournament/` 4 files + TournamentSystem
      docs + UI cards): bracket play across arcade games.
    - SandboxBenchmarkController, Settings additions, CloudData, Privacy UI.
@@ -693,6 +697,38 @@ client + AstroLeague headless round running + remaining ladder rungs (5: real lo
    AIPilot-driven boost intent when balance work resumes.
 4. Update this file, commit, push.
 
+## Controller-chain + AstroLeague arc (landed after iteration 21 — dedicated agent arc)
+
+The real game-controller chain is IN (the arc flagged by the SegmentSpawner note
+below): `MiniGameControllerBase` → `MultiplayerMiniGameControllerBase` →
+`MultiplayerDomainGamesController` → `HexRaceController` ported verbatim to
+`src/CosmicShore.Game/Controller/Arcade/` (RPCs local-invoke per the Player/RoundStats
+precedent; GameTask mappings; scene-reload/fade surfaces deviation-marked — Deviation
+#17), plus `CountdownTimer` (timing-equivalent headless beat loop). **AstroLeague** is
+IN on top of it (all 7 `AstroLeague/` files + `AstroLeagueObjectiveProvider` +
+`UI/Interfaces/IObjectiveProvider`; ball physics verbatim on new engine E18 rigidbody
+dynamics; presentation deviations marked — Deviation #18). New headless CLI round:
+`--mode astroleague` (`src/CosmicShore.Cli/AstroLeagueRound.cs`) drives the WHOLE match
+through the real chain — ready → 3-2-1 countdown → kickoff parking → trigger-pass
+vessel strikes → goal-plane detection → RoundStats.GoalsScored → celebration/kickoff
+loops → mercy / full-time / golden-goal → `SyncFinalScores` → ranked
+`GameDataSO.Results` — deterministic per seed, exit 0 (seed sweep 1/2/3/7/42/99/2026
+and players 2/4/6 all PASS at the harness tuning: `settings.maxSpeed=100→35` for
+AI-catchable play, mouth 60, boundary 170). Engine additions: E18 Rigidbody
+integration step in `GameLoop.RunFixedSteps`, `PhysicsMaterial`, `Light`, `BlendMode`,
+material keywords/renderQueue, `FixedString32Bytes`,
+`NetworkManager.ConnectedClientsIds`, ISession events, `FindAnyObjectByType`.
+Tests: `MiniGameControllerChainTests` (template-method rounds→turns→end via
+GameDataSO turn events; countdown beats; HexRace domain-aggregated winner + golf
+sentinels + ranked Results + race-over latch) and `AstroLeagueTests` (scoring-rule
+mercy/points/results/reveal; match-monitor clock/pause/OT/ForceEnd; ball seeded
+bit-identical trace + boundary containment; full-match integration incl. the
+golden-goal path and seed purity). **1203 tests green in BOTH configs (945 + 258)**;
+hexrace CLI + client screenshot smoke byte-identical to the pre-arc baseline
+(`frame 300, crystals [4,0,1,1] … trail 126`). Remaining chain siblings for a later
+arc: SinglePlayer*, Joust/CellularDuel/CrystalCapture/Freestyle/WildlifeBlitz
+controllers, Tournament.
+
 Note (test config): `CSDebug.Log/LogFormat` are `[Conditional("DEBUG")]` — info
 logs strip out of Release. DebugExtensionsTests asserts per-config (`#if DEBUG`).
 Gate BOTH configs when touching logging paths.
@@ -703,9 +739,10 @@ per segment, intensity-scaled spacing). One deviation: the diagnostic
 super-shield block restores when `PrismStellatedOctahedronShield` ports with the
 engine Mesh/MeshFilter arc (468L shield + 270L StellatedOctahedronMeshGenerator —
 flagged as the shield arc). Engine gains the `Transform.Rotate(axis, angle)`
-overload. This unblocks the real `HexRaceController` chain
-(MiniGameControllerBase → Multiplayer → DomainGames → HexRace, 1,112L) — the
-next dedicated agent arc for replacing SkimRaceDirector with the real controller.
+overload. This unblocked the real `HexRaceController` chain
+(MiniGameControllerBase → Multiplayer → DomainGames → HexRace, 1,112L) — **DONE**,
+see "Controller-chain + AstroLeague arc" above; replacing SkimRaceDirector with the
+real controller in the CLIENT remains a convergence-ladder follow-up.
 
 Quest/action systems (landed alongside iteration 19, part 2): `QuestSystem` +
 `UserActionSystem` + `CallToActionSystem` ported verbatim — the full

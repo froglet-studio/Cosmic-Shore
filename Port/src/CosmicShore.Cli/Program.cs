@@ -59,6 +59,7 @@ namespace CosmicShore.Cli
                 exitCode = mode switch
                 {
                     "hexrace" => RunHexRaceMode(players, seed),
+                    "astroleague" => RunAstroLeagueMode(players, seed),
                     _ => UnknownMode(mode),
                 };
             }
@@ -106,8 +107,49 @@ namespace CosmicShore.Cli
 
         static int UnknownMode(string mode)
         {
-            Console.WriteLine($"RESULT: FAIL — unknown --mode '{mode}' (supported: hexrace).");
+            Console.WriteLine($"RESULT: FAIL — unknown --mode '{mode}' (supported: hexrace, astroleague).");
             return 1;
+        }
+
+        // ── [astroleague] Hypersea soccer — headless AI-vs-AI match through the
+        //    real MiniGameControllerBase → MultiplayerDomainGamesController →
+        //    AstroLeagueController chain (server-simulated ball, goal-plane detection,
+        //    mercy rule / full time / golden goal). ─────────────────────────────
+
+        static int RunAstroLeagueMode(int players, int seed)
+        {
+            var options = new AstroLeagueRoundOptions { PlayerCount = players, Seed = seed };
+
+            Console.WriteLine("┌──────────────────────────────────────────────────────────┐");
+            Console.WriteLine("│  COSMIC SHORE — standalone port  ·  ASTRO LEAGUE          │");
+            Console.WriteLine("│  headless hypersea soccer (AI vs AI) ·  no Unity          │");
+            Console.WriteLine("└──────────────────────────────────────────────────────────┘");
+            Console.WriteLine();
+            Console.WriteLine($"[astroleague] players={Mathf.Clamp(options.PlayerCount, 2, 6)}, seed={options.Seed}, " +
+                              $"goal limit={options.GoalLimit} (mercy), clock={options.MatchDurationSeconds:0}s (golden goal on tie)");
+            Console.WriteLine();
+
+            var result = AstroLeagueRound.Run(options, line => Console.WriteLine("  " + line));
+
+            Console.WriteLine();
+            foreach (var error in result.EngineErrors)
+                Console.WriteLine($"  ✗ engine error during match: {error}");
+
+            if (!result.Finished)
+            {
+                Console.WriteLine($"RESULT: FAIL — match did not finish within {result.FramesSimulated} frames.");
+                return 1;
+            }
+            if (result.EngineErrors.Count > 0)
+            {
+                Console.WriteLine($"RESULT: FAIL — match finished but {result.EngineErrors.Count} engine error(s) were logged.");
+                return 1;
+            }
+
+            Console.WriteLine($"RESULT: PASS — {result.WinnerDomain} wins Jade {result.JadeGoals}–{result.RubyGoals} Ruby" +
+                              $"{(result.WentToOvertime ? " (golden goal)" : "")} · top scorer '{result.WinnerName}' · " +
+                              $"{result.FramesSimulated} frames · {result.TotalStrikes} strikes.");
+            return 0;
         }
 
         static int RunHexRaceMode(int players, int seed)

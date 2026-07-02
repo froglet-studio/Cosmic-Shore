@@ -62,6 +62,8 @@ namespace CosmicShore.Engine
             foreach (var kv in source._floats) _floats[kv.Key] = kv.Value;
             foreach (var kv in source._vectors) _vectors[kv.Key] = kv.Value;
             foreach (var kv in source._ints) _ints[kv.Key] = kv.Value;
+            foreach (var keyword in source._keywords) _keywords.Add(keyword);
+            renderQueue = source.renderQueue;
         }
 
         public Color color
@@ -87,6 +89,17 @@ namespace CosmicShore.Engine
 
         public void SetInt(string propertyName, int value) => _ints[Shader.PropertyToID(propertyName)] = value;
         public int GetInt(string propertyName) => _ints.TryGetValue(Shader.PropertyToID(propertyName), out var v) ? v : 0;
+
+        // ── Keywords + render queue (E18 — data-only, read by a future backend) ──
+
+        readonly HashSet<string> _keywords = new();
+
+        /// <summary>Render queue (original default 2000/Geometry; transparency setup code writes 3000+).</summary>
+        public int renderQueue = 2000;
+
+        public void EnableKeyword(string keyword) => _keywords.Add(keyword);
+        public void DisableKeyword(string keyword) => _keywords.Remove(keyword);
+        public bool IsKeywordEnabled(string keyword) => _keywords.Contains(keyword);
 
         public bool HasProperty(string propertyName) => HasProperty(Shader.PropertyToID(propertyName));
         public bool HasProperty(int nameID)

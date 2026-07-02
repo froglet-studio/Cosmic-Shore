@@ -211,23 +211,172 @@ namespace CosmicShore.Engine
             => CheckBox(center, halfExtents);
     }
 
+    /// <summary>Original-engine force application modes (UnityEngine.ForceMode). Values frozen.</summary>
+    public enum ForceMode { Force = 0, Impulse = 1, VelocityChange = 2, Acceleration = 5 }
+
+    /// <summary>Original-engine rigidbody interpolation modes. Data-only headless (no render frames to interpolate between).</summary>
+    public enum RigidbodyInterpolation { None = 0, Interpolate = 1, Extrapolate = 2 }
+
+    /// <summary>Original-engine collision detection modes. Data-only headless (the trigger pass is exact per fixed step).</summary>
+    public enum CollisionDetectionMode { Discrete = 0, Continuous = 1, ContinuousDynamic = 2, ContinuousSpeculative = 3 }
+
+    /// <summary>Original-engine physic-material combine modes. Values frozen.</summary>
+    public enum PhysicsMaterialCombine { Average = 0, Multiply = 1, Minimum = 2, Maximum = 3 }
+
     /// <summary>
-    /// Kinematic placeholder. The port's trigger physics needs no rigidbodies (see
-    /// TriggerPass); fields hold authored values so [RequireComponent(typeof(Rigidbody))]
-    /// components and their setup code port verbatim. Dynamics arrive with the full
-    /// physics phase.
+    /// Original-engine PhysicsMaterial (contact restitution/friction data). Data-only:
+    /// the headless engine resolves no contact pairs, so combine modes and friction are
+    /// carried for the authored setup code (e.g. AstroLeagueBall.Awake) to port verbatim.
+    /// </summary>
+    public class PhysicsMaterial : Object
+    {
+        public float bounciness;
+        public float dynamicFriction = 0.6f;
+        public float staticFriction = 0.6f;
+        public PhysicsMaterialCombine bounceCombine = PhysicsMaterialCombine.Average;
+        public PhysicsMaterialCombine frictionCombine = PhysicsMaterialCombine.Average;
+
+        public PhysicsMaterial() { }
+        public PhysicsMaterial(string name) { this.name = name; }
+    }
+
+    /// <summary>
+    /// Rigidbody with minimal ballistic dynamics (E18 — the Astro League ball arc).
+    /// Non-kinematic bodies integrate once per fixed step, AFTER the FixedUpdate phase
+    /// (matching the original engine's "callbacks, then simulation" order inside the
+    /// physics step — see <see cref="GameLoop.RunFixedSteps"/>):
+    ///
+    ///   • linear:  damping (PhysX-style <c>v *= max(0, 1 − damping·dt)</c>), then
+    ///     <c>transform.position += linearVelocity · dt</c>. No gravity is simulated —
+    ///     the HyperSea has none (every ported dynamic body sets useGravity = false);
+    ///     the flag is carried as data only.
+    ///   • angular: damping, clamp to <see cref="maxAngularVelocity"/>, then rotate about
+    ///     the world-space angular-velocity axis (radians/sec, original convention).
+    ///
+    /// Contact RESOLUTION stays out of scope: the headless engine has no solver, so
+    /// OnCollisionEnter/Stay never fire (ported code's trigger paths carry vessel
+    /// contacts — see TriggerPass) and interpenetration is prevented by gameplay-side
+    /// depenetration (e.g. AstroLeagueBall.EjectBallFromVessel), never by the engine.
+    /// AddTorque uses a unit inertia tensor (the original engine's no-collider default);
+    /// spin magnitudes are gameplay-cosmetic and clamped by <see cref="maxAngularVelocity"/>.
+    /// Kinematic bodies keep the old placeholder behavior (pure data).
     /// </summary>
     public class Rigidbody : Component
     {
-        public bool isKinematic = true;
+        public bool isKinematic;
         public bool useGravity;
         public float mass = 1f;
         public Vector3 velocity;
+
+        /// <summary>Linear velocity in world units/sec (the original's linearVelocity alias of velocity).</summary>
+        public Vector3 linearVelocity
+        {
+            get => velocity;
+            set => velocity = value;
+        }
+
+        /// <summary>Angular velocity in radians/sec about world axes.</summary>
+        public Vector3 angularVelocity;
+
+        public float linearDamping;
+        public float angularDamping = 0.05f;
+        public float maxAngularVelocity = 7f;
+
+        public RigidbodyInterpolation interpolation = RigidbodyInterpolation.None;
+        public CollisionDetectionMode collisionDetectionMode = CollisionDetectionMode.Discrete;
+
+        /// <summary>Local-space center of mass (default: the transform origin).</summary>
+        public Vector3 centerOfMass;
+
+        public Vector3 worldCenterOfMass => transform.TransformPoint(centerOfMass);
+
+        /// <summary>
+        /// Physics-authoritative position. The headless engine has no deferred physics
+        /// transform buffer, so reads/writes go straight to the transform (documented
+        /// deviation from the original's end-of-step sync — observable order is identical
+        /// at the fixed-step granularity ported code samples at).
+        /// </summary>
+        public Vector3 position
+        {
+            get => transform.position;
+            set => transform.position = value;
+        }
+
+        public Quaternion rotation
+        {
+            get => transform.rotation;
+            set => transform.rotation = value;
+        }
+
+        public void AddTorque(Vector3 torque, ForceMode mode = ForceMode.Force)
+        {
+            // Unit inertia tensor (the original engine's no-collider default, I = (1,1,1)):
+            // Δω = τ for the instantaneous modes, τ·dt for the continuous ones.
+            angularVelocity += mode switch
+            {
+                ForceMode.Impulse or ForceMode.VelocityChange => torque,
+                _ => torque * Time.fixedDeltaTime,
+            };
+            ClampAngular();
+        }
+
+        public void AddForce(Vector3 force, ForceMode mode = ForceMode.Force)
+        {
+            velocity += mode switch
+            {
+                ForceMode.Impulse => force / Mathf.Max(0.0001f, mass),
+                ForceMode.VelocityChange => force,
+                ForceMode.Acceleration => force * Time.fixedDeltaTime,
+                _ => force * Time.fixedDeltaTime / Mathf.Max(0.0001f, mass),
+            };
+        }
+
+        internal void Integrate(float dt)
+        {
+            if (isKinematic) return;
+
+            if (linearDamping > 0f) velocity *= Mathf.Max(0f, 1f - linearDamping * dt);
+            if (angularDamping > 0f) angularVelocity *= Mathf.Max(0f, 1f - angularDamping * dt);
+            ClampAngular();
+
+            if (velocity.sqrMagnitude > 0f)
+                transform.position += velocity * dt;
+
+            float w = angularVelocity.magnitude;
+            if (w > 1e-6f)
+                transform.rotation = Quaternion.AngleAxis(w * Mathf.Rad2Deg * dt, angularVelocity / w) * transform.rotation;
+        }
+
+        void ClampAngular()
+        {
+            float w = angularVelocity.magnitude;
+            if (w > maxAngularVelocity && w > 0f)
+                angularVelocity *= maxAngularVelocity / w;
+        }
+
+        internal override void DestroyComponentNow()
+        {
+            GameLoop.Current?.UnregisterRigidbody(this);
+            base.DestroyComponentNow();
+        }
     }
 
     public class Collider : Behaviour
     {
         public bool isTrigger;
+
+        /// <summary>Per-collider contact material (data-only headless — see <see cref="PhysicsMaterial"/>).</summary>
+        public PhysicsMaterial material;
+
+        /// <summary>
+        /// Layers this collider never collides with. Data-only in the headless engine:
+        /// the trigger pass ignores it (the ported call sites — e.g. the Astro League
+        /// ball excluding TrailBlocks — pair a NON-trigger collider with other
+        /// non-triggers, which the pass already skips entirely). Gains effect with the
+        /// full physics phase.
+        /// </summary>
+        public LayerMask excludeLayers;
+
         public virtual Vector3 ClosestPoint(Vector3 position) => transform.position;
 
         internal override void DestroyComponentNow()

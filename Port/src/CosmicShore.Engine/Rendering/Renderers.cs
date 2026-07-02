@@ -160,6 +160,14 @@ namespace CosmicShore.Engine
         public float startWidth;
         public float endWidth;
 
+        // Data-only trail shape/tint knobs (E18 — the Astro League ball's speed-reactive
+        // trail sets them); a render backend reads them in the presentation phase.
+        public int numCapVertices;
+        public float minVertexDistance = 0.1f;
+        public bool generateLightingData;
+        public Color startColor = Color.white;
+        public Color endColor = Color.white;
+
         Gradient _colorGradient = new();
 
         /// <summary>
@@ -174,5 +182,37 @@ namespace CosmicShore.Engine
         }
 
         public void Clear() { }
+    }
+
+    /// <summary>Original-engine light types (UnityEngine.LightType, values frozen). Data-only headless.</summary>
+    public enum LightType
+    {
+        Spot = 0,
+        Directional = 1,
+        Point = 2,
+        Area = 3,
+    }
+
+    /// <summary>Original-engine shadow options (UnityEngine.LightShadows, values frozen). Data-only headless.</summary>
+    public enum LightShadows
+    {
+        None = 0,
+        Hard = 1,
+        Soft = 2,
+    }
+
+    /// <summary>
+    /// Data-only Light component (E18 — the renderer-stub family): holds the authored
+    /// type/color/range/intensity so lighting setup code (e.g. the Astro League ball's
+    /// speed-reactive point light) ports verbatim. A render backend interprets it in
+    /// the presentation phase.
+    /// </summary>
+    public class Light : Behaviour
+    {
+        public LightType type = LightType.Spot;
+        public Color color = Color.white;
+        public float range = 10f;
+        public float intensity = 1f;
+        public LightShadows shadows = LightShadows.None;
     }
 }

@@ -32,6 +32,18 @@ namespace CosmicShore.Engine
         /// <summary>Phase-2 trigger physics: collider registry + per-frame enter/exit dispatch.</summary>
         public TriggerPass Triggers { get; } = new();
 
+        // E18: dynamic rigidbodies, integrated once per fixed step after the FixedUpdate
+        // phase (the original engine's "callbacks, then simulation" order). Registration
+        // order = creation order (deterministic, same convention as the trigger pass).
+        readonly List<Rigidbody> _rigidbodies = new();
+
+        internal void RegisterRigidbody(Rigidbody rb)
+        {
+            if (!_rigidbodies.Contains(rb)) _rigidbodies.Add(rb);
+        }
+
+        internal void UnregisterRigidbody(Rigidbody rb) => _rigidbodies.Remove(rb);
+
         int _loopThreadId = -1;
         public bool IsOnLoopThread => Environment.CurrentManagedThreadId == _loopThreadId;
 
@@ -144,8 +156,30 @@ namespace CosmicShore.Engine
             {
                 _fixedAccumulator -= Time.fixedDeltaTime;
                 Time.EnterFixedPhase();
-                try { RunPhase(static mb => mb.HasFixedUpdate, static mb => mb.RunFixedUpdate()); }
+                try
+                {
+                    RunPhase(static mb => mb.HasFixedUpdate, static mb => mb.RunFixedUpdate());
+                    IntegrateRigidbodies(Time.fixedDeltaTime);
+                }
                 finally { Time.ExitFixedPhase(); }
+            }
+        }
+
+        /// <summary>
+        /// E18: ballistic integration of non-kinematic rigidbodies, once per fixed step
+        /// after the FixedUpdate callbacks — the original engine's physics-simulation
+        /// slot inside the step. Snapshot iteration: callbacks/destroys during
+        /// integration affect the NEXT step.
+        /// </summary>
+        void IntegrateRigidbodies(float dt)
+        {
+            if (_rigidbodies.Count == 0) return;
+            var bodies = _rigidbodies.ToArray();
+            foreach (var rb in bodies)
+            {
+                if (rb.destroyedFlag || rb.gameObject is null || rb.gameObject.IsDestroyed || !rb.gameObject.activeInHierarchy)
+                    continue;
+                rb.Integrate(dt);
             }
         }
 
