@@ -28,8 +28,25 @@ namespace CosmicShore.Engine.Networking
         /// </summary>
         public ulong NetworkObjectId { get; private set; }
 
-        /// <summary>Handle exposing <c>Despawn(bool destroy)</c> + the id (E12).</summary>
-        public NetworkObject NetworkObject => _networkObject ??= new NetworkObject(this);
+        /// <summary>
+        /// The object-level <see cref="Networking.NetworkObject"/> component (E12 handle →
+        /// full component in the vessel-initializer arc): resolves the authored NetworkObject
+        /// on this GameObject, lazily adding one for behaviours spawned directly — preserving
+        /// the handle contract (<c>NetworkObject.Despawn(true)</c> despawns + destroys).
+        /// </summary>
+        public NetworkObject NetworkObject
+        {
+            get
+            {
+                if (_networkObject == null)
+                {
+                    _networkObject = GetComponent<NetworkObject>();
+                    if (_networkObject == null)
+                        _networkObject = gameObject.AddComponent<NetworkObject>();
+                }
+                return _networkObject;
+            }
+        }
 
         public virtual void OnNetworkSpawn() { }
         public virtual void OnNetworkDespawn() { }
@@ -45,12 +62,23 @@ namespace CosmicShore.Engine.Networking
 
         /// <summary>Bring this behaviour into the networked world. Defaults model single-process host-mode.</summary>
         public void Spawn(bool isServer = true, bool isClient = true, bool isOwner = true, ulong ownerClientId = 0)
+            => SpawnWithId(AllocateObjectId(), isServer, isClient, isOwner, ownerClientId);
+
+        /// <summary>Allocates a fresh replication id (shared source for behaviours and whole-object spawns).</summary>
+        internal static ulong AllocateObjectId() => ++_nextNetworkObjectId;
+
+        /// <summary>
+        /// Spawn carrying an externally-allocated id. <see cref="NetworkObject.SpawnWithOwnership"/>
+        /// uses this to give every behaviour of one object the SAME id — the original engine's
+        /// object-level id contract (a behaviour's NetworkObjectId is its object's id).
+        /// </summary>
+        internal void SpawnWithId(ulong networkObjectId, bool isServer, bool isClient, bool isOwner, ulong ownerClientId)
         {
             IsServer = isServer;
             IsClient = isClient;
             IsOwner = isOwner;
             OwnerClientId = ownerClientId;
-            NetworkObjectId = ++_nextNetworkObjectId;
+            NetworkObjectId = networkObjectId;
             IsSpawned = true;
             OnNetworkSpawn();
         }

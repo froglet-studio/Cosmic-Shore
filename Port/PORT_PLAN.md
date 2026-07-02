@@ -643,9 +643,11 @@ bleeding-edge merged INTO this branch at 842c825c (325 commits, merge-base moved
 29b5f422 → c833c580). The port now chases a LIVE game. Two standing lanes join the
 convergence ladder, and every future bleeding-edge merge reopens them:
 
-0. **TOYS ✅ (ported, iteration 21)** — all 11 Controller/Toys + 5 SO files verbatim
-   (menu-swap arc + mesh arc + UI-shell deviations marked; domain changer works
-   end-to-end through the real RequestSetDomain RPC today). Engine gains
+0. **TOYS ✅ (ported, iteration 21; menu-swap deviations CLOSED by the
+   vessel-initializer arc — see below)** — all 11 Controller/Toys + 5 SO files
+   verbatim (mesh arc + UI-shell deviations still marked; domain changer AND
+   vessel changer now work end-to-end — RequestSetDomain RPC + the real
+   MenuServerPlayerVesselInitializer.RequestSwap). Engine gains
    LineRenderer, GameObject.CreatePrimitive, ShadowCastingMode, the TMPro
    data-shim (`using TMPro;` → `using CosmicShore.Engine.UI;` — README updated),
    and CreateInstance<T> without the non-original new() constraint. 21 tests.
@@ -702,6 +704,42 @@ client + AstroLeague headless round running + remaining ladder rungs (5: real lo
    drive the SkimRace boost rule), so their energy bars sit full — consider an
    AIPilot-driven boost intent when balance work resumes.
 4. Update this file, commit, push.
+
+## Vessel-initializer (menu-swap) arc (landed after the controller-chain arc — dedicated agent arc)
+
+The networked player→vessel spawn/swap chain is IN: `ServerPlayerVesselInitializer`
++ `ClientPlayerVesselInitializer` + `MenuServerPlayerVesselInitializer` ported
+verbatim to `src/CosmicShore.Game/Controller/Multiplayer/` (GameTask mappings;
+RPCs local-invoke per the Player/RoundStats precedent — targeted ClientRpc fan-outs
+iterate the empty `ConnectedClientsList` in single-process host-mode; no UGS
+surface in these files, so no services-phase deviations), plus `NetcodeHooks`
+(`Utility/Network/`, verbatim). Engine grew the original-contract **NetworkObject
+component** (authored on prefab roots; `SpawnWithOwnership`/`Spawn`/`Despawn` fan
+out to every NetworkBehaviour on the object+children, all sharing ONE object id —
+`NetworkBehaviour.SpawnWithId` — so id round-trips like `NetVesselId` →
+`TryGetVesselByNetworkObjectId` resolve regardless of component order; the E12
+per-behaviour handle property now lazily resolves/adds the component, same
+Despawn(destroy) contract), `NetworkManager.LocalClientId` / `ConnectedClients` /
+`ConnectedClientsList` / `SpawnManager` (+ `NetworkClient`, `NetworkSpawnManager`),
+and the RPC params structs (`ClientRpcParams`/`ClientRpcSendParams`/
+`ServerRpcParams`/`ServerRpcReceiveParams`). **All 10 toy menu-swap deviations
+restored** (ToyContext.VesselInitializer, ToyboxController context wiring,
+VesselChangerToySet.Apply → `RequestSwap` + swap-wait loop): the vessel-changer
+toy works end-to-end headless — fly into the toy → RequestSwap → despawn/spawn/
+ReInitializePair → toy flips to the class you left → freestyle control restored.
+Tests: `VesselInitializerChainTests` (NetworkObject component contract; host
+spawn chain incl. server-side menu domain reset + autopilot; RequestSwap swap +
+pose snapshot + registry rewire; same-class no-op) and
+`ToySystemTests.VesselChangerEndToEndTests` (the full toy→swap→restore loop on
+the real chain). Test-rig note: calling `RequestSwap` (or anything that reaches
+`VesselPrismController.StartSpawn`) DIRECTLY from test code starts the spawn-loop
+async-void on xunit's AsyncTestSyncContext — stop the loops before the test
+method returns (the C4/C6 trap; the runner waits ahead of Dispose). **1212 tests
+green in BOTH configs (954 + 258)**; client screenshot smoke byte-identical to
+the pre-arc baseline (`frame 300, crystals [4,0,1,1] … trail 126`). Remaining for
+a later arc: `ServerPlayerVesselInitializerWithAI` (game-scene AI backfill),
+`MenuCrystalClickHandler`, `MultiplayerSetup`/`DomainAssigner`, and wiring the
+menu-swap chain into the playable client scene.
 
 ## Controller-chain + AstroLeague arc (landed after iteration 21 — dedicated agent arc)
 

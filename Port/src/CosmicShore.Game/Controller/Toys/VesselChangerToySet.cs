@@ -51,9 +51,9 @@ namespace CosmicShore.Gameplay
 
         protected override void Apply(VesselClassType target)
         {
-            // PORT Deviation (menu-swap arc, restore when MenuServerPlayerVesselInitializer ports): var init = Context.VesselInitializer;
-            // PORT Deviation (menu-swap arc, restore when MenuServerPlayerVesselInitializer ports): if (!init || init.IsSwapping) return;
-            // PORT Deviation (menu-swap arc, restore when MenuServerPlayerVesselInitializer ports): init.RequestSwap(target);
+            var init = Context.VesselInitializer;
+            if (!init || init.IsSwapping) return;
+            init.RequestSwap(target);
             RestoreControlAfterSwap(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
@@ -84,9 +84,9 @@ namespace CosmicShore.Gameplay
         {
             await GameTask.Delay(RestoreDelayMs / 1000f, unscaledTime: true, cancellationToken: ct);
 
-            // PORT Deviation (menu-swap arc, restore when MenuServerPlayerVesselInitializer ports): var init = Context.VesselInitializer;
-            // PORT Deviation (menu-swap arc, restore when MenuServerPlayerVesselInitializer ports): for (int i = 0; i < 20 && init && init.IsSwapping; i++)
-            // PORT Deviation (menu-swap arc, restore when MenuServerPlayerVesselInitializer ports):     await UniTask.Delay(100, ignoreTimeScale: true, cancellationToken: ct);
+            var init = Context.VesselInitializer;
+            for (int i = 0; i < 20 && init && init.IsSwapping; i++)
+                await GameTask.Delay(100 / 1000f, unscaledTime: true, cancellationToken: ct);
 
             // Only hand control back if the player is still flying freestyle.
             if (Context.IsFreestyleActive != null && !Context.IsFreestyleActive()) return;

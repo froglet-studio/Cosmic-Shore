@@ -125,12 +125,12 @@ namespace CosmicShore.Gameplay
                 _root.SetParent(transform, false);
             }
 
-            // PORT Deviation (menu-swap arc, restore when MenuServerPlayerVesselInitializer ports): var initializer = FindFirstObjectByType<MenuServerPlayerVesselInitializer>();
+            var initializer = FindFirstObjectByType<MenuServerPlayerVesselInitializer>();
             var context = new ToyContext
             {
                 GameData = _gameData,
-                // PORT Deviation (menu-swap arc, restore when MenuServerPlayerVesselInitializer ports): VesselInitializer = initializer,
-                // PORT Deviation (menu-swap arc, restore when MenuServerPlayerVesselInitializer ports): VesselPrefabContainer = initializer ? initializer.VesselPrefabContainer : null,
+                VesselInitializer = initializer,
+                VesselPrefabContainer = initializer ? initializer.VesselPrefabContainer : null,
                 IsFreestyleActive = () => _freestyleActive,
             };
 

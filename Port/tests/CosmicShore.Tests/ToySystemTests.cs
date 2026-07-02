@@ -24,8 +24,8 @@ namespace CosmicShore.Tests;
 // bloom-in + local-user/freestyle gating + re-arm), SwapToy +
 // SwapToySetCoordinator<T> flip-sets (set = universe \ {current}; the used toy
 // flips to the option you just left), DomainChangerToySet (server-authoritative
-// Player.RequestSetDomain_ServerRpc), VesselChangerToySet (swap execution is the
-// menu-swap-arc deviation; reconcile/flip is live), PaintingToy + MenuShapePainter
+// Player.RequestSetDomain_ServerRpc), VesselChangerToySet (reconcile/flip + the
+// real MenuServerPlayerVesselInitializer.RequestSwap), PaintingToy + MenuShapePainter
 // (fly-by-numbers; the vessel's own trail paints — the runner never creates or
 // destroys mass), ToyboxSO (registry + unlock state), ToyboxController (membrane
 // ring placement with fallback).
@@ -196,9 +196,11 @@ static class ToyRig
         return (go, status, stub, player);
     }
 
-    public static ToyContext MakeContext(GameDataSO gameData, Func<bool> freestyle = null) => new()
+    public static ToyContext MakeContext(GameDataSO gameData, Func<bool> freestyle = null,
+        MenuServerPlayerVesselInitializer initializer = null) => new()
     {
         GameData = gameData,
+        VesselInitializer = initializer,
         IsFreestyleActive = freestyle ?? (() => true),
     };
 
@@ -538,8 +540,10 @@ public class DomainChangerToySetTests : IDisposable
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Vessel changer — flip-set reconcile + control restore (swap execution is the
-// menu-swap-arc deviation; see VesselChangerToySet.Apply)
+// Vessel changer — flip-set reconcile + control restore. The rig carries an
+// inert (unspawned) real MenuServerPlayerVesselInitializer so Apply's verbatim
+// initializer gate passes; the full swap execution runs in
+// VesselChangerEndToEndTests below on the real spawn chain.
 // ─────────────────────────────────────────────────────────────────────────────
 
 public class VesselChangerToySetTests : IDisposable
@@ -564,13 +568,20 @@ public class VesselChangerToySetTests : IDisposable
         Track(vesselGo);
         ToyRig.SetLocalPlayer(gameData, player);
 
+        // Inert real initializer (never network-spawned, IsSwapping=false): Apply's
+        // gate passes; RequestSwap early-outs on the non-networked stub player.
+        var initGo = Track(new GameObject("menu-initializer"));
+        initGo.AddComponent<NetcodeHooks>();
+        var initializer = initGo.AddComponent<MenuServerPlayerVesselInitializer>();
+        ToyRig.Set(initializer, "gameData", gameData);
+
         var definition = ScriptableObject.CreateInstance<VesselChangerToyDefinitionSO>();
         ToyRig.Set(definition, "vesselCollection",
             new[] { VesselClassType.Manta, VesselClassType.Dolphin, VesselClassType.Rhino });
 
         var setParent = Track(new GameObject("toys"));
         var placement = new ToyPlacement(new Vector3(0f, 0f, 300f), Vector3.zero, 20f, 40f);
-        definition.Spawn(setParent.transform, placement, ToyRig.MakeContext(gameData, freestyle));
+        definition.Spawn(setParent.transform, placement, ToyRig.MakeContext(gameData, freestyle, initializer));
         var host = ToyRig.Children(setParent.transform).Single();
         return (host, status, stub, player, vesselGo, gameData);
     }
@@ -632,7 +643,7 @@ public class VesselChangerToySetTests : IDisposable
         ToyRig.RunSeconds(loop, 1.5f); // bloom → armed
 
         vesselGo.transform.position = dolphinRoot.position;
-        loop.Tick(0.1f); // activation (swap request itself is the menu-swap-arc deviation)
+        loop.Tick(0.1f); // activation (the stub player early-outs RequestSwap; restore still runs)
 
         Assert.True(player.Input.InputStatus.Paused);
         Assert.DoesNotContain(false, stub.AIPilotToggles);
@@ -954,5 +965,113 @@ public class ToyboxControllerTests : IDisposable
         Object.Destroy(controller.gameObject);
         loop.Tick(0.1f); // destroy queue flush
         Assert.False((bool)root.gameObject);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Vessel changer — END TO END on the real menu-swap chain (MenuSwapRig, see
+// VesselInitializerChainTests.cs): the REAL spawn pipeline builds the local
+// player's vessel, OnClientReady places the toybox (whose controller discovers
+// the scene's MenuServerPlayerVesselInitializer), the vessel flies into a toy →
+// RequestSwap → the vessel class changes through despawn/spawn/ReInitializePair
+// → the used toy flips to the class you left → freestyle control is restored.
+// ─────────────────────────────────────────────────────────────────────────────
+
+public class VesselChangerEndToEndTests : IDisposable
+{
+    readonly GameLoop loop = new();
+    MenuSwapRig.Rig rig;
+
+    public void Dispose()
+    {
+        if (rig != null) MenuSwapRig.Teardown(rig);
+        loop.Dispose();
+    }
+
+    static MenuFreestyleEventsContainerSO MakeFreestyleEvents()
+    {
+        var container = ScriptableObject.CreateInstance<MenuFreestyleEventsContainerSO>();
+        container.OnGameStateTransitionStart = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+        container.OnGameStateTransitionEnd = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+        container.OnMenuStateTransitionStart = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+        container.OnMenuStateTransitionEnd = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
+        return container;
+    }
+
+    [Fact]
+    public void FlyIntoVesselChangerToy_SwapsVesselClass_FlipsToy_AndRestoresControl()
+    {
+        rig = MenuSwapRig.Build();
+
+        // Toybox carrying only the vessel changer, wired the scene way.
+        var box = ScriptableObject.CreateInstance<ToyboxSO>();
+        var changer = ScriptableObject.CreateInstance<VesselChangerToyDefinitionSO>();
+        ToyRig.Set(changer, "vesselCollection",
+            new[] { VesselClassType.Manta, VesselClassType.Dolphin, VesselClassType.Rhino });
+        box.AddToy(changer);
+
+        var freestyleEvents = MakeFreestyleEvents();
+        var controllerGo = new GameObject("toybox-controller");
+        var toybox = controllerGo.AddComponent<ToyboxController>();
+        ToyRig.Set(toybox, "_gameData", rig.GameData);
+        ToyRig.Set(toybox, "_freestyleEvents", freestyleEvents);
+        ToyRig.Set(toybox, "toybox", box);
+        loop.Tick(0.05f); // Start → subscribe (before the chain raises OnClientReady)
+
+        // The REAL spawn chain: Player → initializer → vessel → pair-init → OnClientReady
+        // → the toybox places its toys, discovering the scene's menu initializer.
+        MenuSwapRig.SpawnChain(rig);
+        MenuSwapRig.RunSeconds(loop, 1.0f);
+
+        var vessel = Assert.IsType<VesselController>(rig.Player.Vessel);
+        Assert.Equal(VesselClassType.Manta, vessel.VesselStatus.VesselType);
+        var oldGo = vessel.gameObject;
+
+        var root = ToyRig.Children(toybox.transform).Single(t => t.name == "FreestyleToybox");
+        var host = ToyRig.Children(root).Single(); // ToySet_<id>
+
+        // The flip-set shows the ships you are NOT flying (Manta excluded).
+        var toyRoots = ToyRig.Children(host);
+        Assert.Equal(2, toyRoots.Count);
+        var labels = toyRoots.Select(ToyRig.LabelText).ToArray();
+        Assert.Contains("Dolphin", labels);
+        Assert.Contains("Rhino", labels);
+        Assert.DoesNotContain("Manta", labels);
+        var dolphinRoot = toyRoots.Single(r => ToyRig.LabelText(r) == "Dolphin");
+
+        // Player takes control (freestyle); toys finish blooming → armed.
+        freestyleEvents.OnGameStateTransitionStart.Raise();
+        MenuSwapRig.RunSeconds(loop, 1.5f);
+
+        // Prefab semantics keep the clone inactive; the harness activates it into the
+        // scene (its hull collider must be live for the toy's trigger pass).
+        oldGo.SetActive(true);
+
+        // Fly into the Dolphin toy → Toy trigger → Apply → RequestSwap(Dolphin).
+        vessel.transform.position = dolphinRoot.position;
+        loop.Tick(0.05f);
+
+        // Swap (~200 ms) + RestoreControlAfterSwap (600 ms unscaled) run to completion.
+        MenuSwapRig.RunSeconds(loop, 1.5f);
+
+        // The vessel class changed through the REAL despawn/spawn/ReInitializePair chain.
+        var newVessel = Assert.IsType<VesselController>(rig.Player.Vessel);
+        Assert.NotSame(vessel, newVessel);
+        Assert.Equal(VesselClassType.Dolphin, newVessel.VesselStatus.VesselType);
+        Assert.Same(rig.Player, newVessel.VesselStatus.Player);
+        Assert.Equal(newVessel.NetworkObjectId, rig.Player.NetVesselId.Value);
+        Assert.True(oldGo == null); // old vessel despawned + destroyed (fake-null)
+        Assert.False(rig.Menu.IsSwapping);
+
+        // The used toy flipped in place to the ship you just left.
+        Assert.Equal("Manta", ToyRig.LabelText(dolphinRoot));
+        var after = ToyRig.Children(host).Select(ToyRig.LabelText).ToArray();
+        Assert.Contains("Manta", after);
+        Assert.Contains("Rhino", after);
+        Assert.DoesNotContain("Dolphin", after);
+
+        // Freestyle control restored on the swapped vessel: autopilot off, input live.
+        Assert.False(newVessel.VesselStatus.AutoPilotEnabled);
+        Assert.False(rig.Player.InputStatus.Paused);
     }
 }

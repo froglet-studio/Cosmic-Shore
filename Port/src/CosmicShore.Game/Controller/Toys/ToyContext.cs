@@ -16,9 +16,8 @@ namespace CosmicShore.Gameplay
         /// <summary>Shared game state (local player, domains, etc.).</summary>
         public GameDataSO GameData;
 
-        // PORT Deviation (menu-swap arc, restore when MenuServerPlayerVesselInitializer ports):
-        // PORT Deviation (menu-swap arc): /// <summary>Menu vessel spawner used to request networked vessel swaps.</summary>
-        // PORT Deviation (menu-swap arc): public MenuServerPlayerVesselInitializer VesselInitializer;
+        /// <summary>Menu vessel spawner used to request networked vessel swaps.</summary>
+        public MenuServerPlayerVesselInitializer VesselInitializer;
 
         /// <summary>Vessel-prefab registry, for building mini display models of a target vessel.</summary>
         public VesselPrefabContainer VesselPrefabContainer;
