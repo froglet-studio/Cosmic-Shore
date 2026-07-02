@@ -37,21 +37,10 @@ namespace CosmicShore.Gameplay
             _ = RunLoopAsync(_cts.Token);
         }
 
-        private void Update()
-        {
-            if (!isRunning) 
-                return;
-            if (!CheckForEndOfTurn()) return; // <-- REMOVE the 'return' on the next line
-            OnTurnEnded();
-            StopMonitor(); // Stop the async loop
-            // // End-of-turn check
-            // if (CheckForEndOfTurn())  // <-- REMOVE the 'return' on the next line
-            // {
-            //     OnTurnEnded();
-            //     StopMonitor(); // Stop the async loop
-            // }
-            // Pause(); // exits loop on next iteration
-        }
+        // End-of-turn evaluation is driven solely by TurnMonitorController.Update —
+        // it is the only path that raises InvokeGameTurnConditionsMet, and its
+        // OnMiniGameTurnEnd subscription stops all monitors. A second per-monitor
+        // Update here would evaluate every CheckForEndOfTurn twice per frame.
 
         /// <summary>Stops the monitor loop (safe to call multiple times).</summary>
         public virtual void StopMonitor()

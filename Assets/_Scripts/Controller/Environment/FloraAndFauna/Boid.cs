@@ -157,9 +157,14 @@ namespace CosmicShore.Gameplay
                 }
 
                 CalculateBehavior();
-                yield return new WaitForSeconds(behaviorUpdateRate);
+                // behaviorUpdateRate is constant per instance — allocate the wait once
+                // instead of one WaitForSeconds per tick per boid.
+                _behaviorWait ??= new WaitForSeconds(behaviorUpdateRate);
+                yield return _behaviorWait;
             }
         }
+
+        WaitForSeconds _behaviorWait;
 
         void CalculateBehavior()
         {

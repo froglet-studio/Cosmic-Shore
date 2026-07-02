@@ -259,7 +259,7 @@ namespace CosmicShore.Gameplay
 
             // Add to trail & initialize
             trail.Add(prism);
-            prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
+            prism.prismProperties.Index = (ushort)trail.GetBlockIndex(prism);
             prism.Initialize(vesselStatus.PlayerName);
 
             // Events

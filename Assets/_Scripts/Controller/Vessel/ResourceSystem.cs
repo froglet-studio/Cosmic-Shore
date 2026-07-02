@@ -37,6 +37,8 @@ namespace CosmicShore.Gameplay
             yield return StartCoroutine(GainResourcesCoroutine());
         }
 
+        static readonly WaitForSeconds s_gainTick = new WaitForSeconds(1);
+
         IEnumerator GainResourcesCoroutine()
         {
             while (true)
@@ -49,7 +51,7 @@ namespace CosmicShore.Gameplay
                     if (!Mathf.Approximately(prev, r.CurrentAmount))
                         EmitResourceChanged(i);
                 }
-                yield return new WaitForSeconds(1);
+                yield return s_gainTick;
             }
         }
 
@@ -59,10 +61,13 @@ namespace CosmicShore.Gameplay
 
             if (ElementalLevels.Count > 0)
             {
+#if UNITY_EDITOR
+                // Inspector test harness — editor-only diagnostic overrides.
                 if (ChargeTestHarness != 0) ElementalLevels[Element.Charge] = ChargeTestHarness;
                 if (MassTestHarness   != 0) ElementalLevels[Element.Mass]   = MassTestHarness;
                 if (SpaceTestHarness  != 0) ElementalLevels[Element.Space]  = SpaceTestHarness;
                 if (TimeTestHarness   != 0) ElementalLevels[Element.Time]   = TimeTestHarness;
+#endif
 
                 ChargeLevel = GetEffectiveLevel(Element.Charge);
                 MassLevel   = GetEffectiveLevel(Element.Mass);

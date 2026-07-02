@@ -1,5 +1,24 @@
 # Performance Refactor Review — Verified Candidates (July 2026)
 
+> **Execution status (updated as fixes land on this branch):**
+> - **DONE — Phase 1:** dead-code purge (`CurrentScore`, `CellControlTurnMonitor`,
+>   `BoidSimulationController` + metas); D1 (`GetBlockIndex`), D2 (single turn-monitor
+>   driver + de-LINQ), D3 (allocation-free `GameDataSO` lookups — loop form; the
+>   dictionary variant deferred), D4 (`Cell` static domain arrays), D8 (HexRace score
+>   throttle 10 Hz), D10 (`ResourceSystem` editor guards + cached gain tick), D11 (Boid
+>   cached wait), D12 (`VesselController` change-checked writes + honest benchmark
+>   counter), D13 (`LightFauna` wither de-LINQ).
+> - **DONE — Phase 2:** B3 (`DomainVolumeIndicator` sub-canvas + invisible-gauge gate +
+>   ring quantization); B2 (`Spindle` MPB death animation — clone path deleted;
+>   `Crystal` double-clone + per-collection leak fixed); B1 partial
+>   (`SpaceCrystalAnimator` visibility gating + `CrystalSpace.prefab`
+>   `UpdateWhenOffscreen: 0` — **verify in editor**: culling pop risk if baked bounds
+>   are tight; full shader-driven conversion still open).
+> - **OPEN:** A1 (prism ECS/instancing), A2 (AOE pooling + batched grow + projectile
+>   manager), GameEventFeed pooling, `Trail.LookAhead` non-alloc overload, `Branch`
+>   IEquatable, `WallAssembler` candidate cap, `MaterialBlendUtility` pooling, B4
+>   (fauna scheduler — gated on ecology scaling).
+
 **What this is.** A codebase-wide review answering: *which systems would produce the most
 performance gain if completely refactored?* Six subsystem audits (ecosystem, vessel core, UI,
 projectiles/FX/assemblers, AI/arcade, codebase-wide anti-pattern sweep) produced 18 candidate

@@ -98,6 +98,13 @@ namespace CosmicShore.UI
 
         void Update()
         {
+            // Invisible gauges must not dirty the canvas: menu-mode "hide" is
+            // CanvasGroup-alpha-only (the GameObject stays active), so without this
+            // gate the ring sweep keeps rebuilding batches behind an invisible HUD
+            // during all normal menu browsing.
+            if (hexGraphic && hexGraphic.canvasRenderer.GetInheritedAlpha() <= 0.001f)
+                return;
+
             if (Time.unscaledTime >= _nextSampleAt)
             {
                 _nextSampleAt = Time.unscaledTime + sampleIntervalSeconds;
@@ -116,7 +123,12 @@ namespace CosmicShore.UI
 
             // The pause button already owns an Image graphic, and two Graphics can't
             // share a GameObject — so the gauge lives on a full-rect child.
-            var go = new GameObject("DomainVolumeHex (auto)", typeof(RectTransform));
+            //
+            // Sub-canvas isolation (the ObjectiveIndicator.CreateRuntime pattern): the
+            // ring sweep dirties this graphic continuously, and without a dedicated
+            // Canvas every rebuild re-batches the whole parent canvas — the shared
+            // game HUD, or in Menu_Main the ENTIRE menu UI canvas.
+            var go = new GameObject("DomainVolumeHex (auto)", typeof(RectTransform), typeof(Canvas));
             var rt = (RectTransform)go.transform;
             rt.SetParent(transform, false);
             rt.anchorMin = Vector2.zero;
@@ -125,6 +137,9 @@ namespace CosmicShore.UI
             rt.offsetMax = Vector2.zero;
             rt.localRotation = Quaternion.identity;
             rt.localScale = Vector3.one;
+
+            // Inherit the parent's sort order — the gauge draws where the button sits.
+            go.GetComponent<Canvas>().overrideSorting = false;
 
             hexGraphic = go.AddComponent<DomainVolumeHexGraphic>();
             hexGraphic.raycastTarget = false; // never intercept the button click
@@ -251,7 +266,12 @@ namespace CosmicShore.UI
             // Spawn-cycle fraction is read LIVE each frame (cheap Time.time math)
             // so the ring sweeps smoothly between the 0.25s volume samples. Use the
             // cached cell to avoid re-running cell resolution every frame.
+            // Quantized to 1/128ths (2 steps per ring segment): the raw fraction
+            // advances every frame, and unquantized it defeats SetState's epsilon —
+            // a mesh rebuild nearly every frame on short spawn periods. Quantized,
+            // rebuild cadence is capped at 128/period Hz (~11 Hz on the menu cell).
             float cycle = _cachedCell ? _cachedCell.FaunaSpawnCycleFraction : _spawnCycle;
+            cycle = Mathf.Round(cycle * 128f) * (1f / 128f);
             // SetState rebuilds the mesh only on a meaningful delta.
             hexGraphic.SetState(_jadeNow, _rubyNow, _goldNow, jadeC, rubyC, goldC, _dominant, cycle,
                                 _hasThresholds ? _thresholdFracs : null);

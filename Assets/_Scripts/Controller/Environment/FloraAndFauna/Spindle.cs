@@ -10,6 +10,7 @@ namespace CosmicShore.Gameplay
     public class Spindle : MonoBehaviour
     {
         private static readonly int PhaseOffsetID = Shader.PropertyToID("_Phase");
+        private static readonly int DeathAnimationID = Shader.PropertyToID("_DeathAnimation");
         private MaterialPropertyBlock propertyBlock;
 
         public Renderer RenderedObject;
@@ -20,8 +21,6 @@ namespace CosmicShore.Gameplay
         HashSet<HealthPrism> healthBlocks = new HashSet<HealthPrism>();
         HashSet<Spindle> spindles = new HashSet<Spindle>();
 
-        Material originalMaterial;
-        Material temporaryMaterial;
         Coroutine condenseCoroutine;
 
         bool deregistered;
@@ -59,14 +58,13 @@ namespace CosmicShore.Gameplay
                 yield break;
             }
 
-            propertyBlock = new MaterialPropertyBlock();
+            EnsurePropertyBlock();
 
             float randomOffset = Random.Range(0f, Mathf.PI * 2f);
             RenderedObject.GetPropertyBlock(propertyBlock);
             propertyBlock.SetFloat(PhaseOffsetID, randomOffset);
             RenderedObject.SetPropertyBlock(propertyBlock);
 
-            originalMaterial = RenderedObject.sharedMaterial;
             condenseCoroutine = StartCoroutine(CondenseCoroutine());
 
             if (LifeForm) LifeForm.AddSpindle(this);
@@ -125,19 +123,22 @@ namespace CosmicShore.Gameplay
                 StartCoroutine(EvaporateCoroutine());
         }
 
-        void RestoreOriginalMaterial()
-        {
-            if (RenderedObject) RenderedObject.material = originalMaterial;
+        // The condense/evaporate animation drives _DeathAnimation through the SAME
+        // MaterialPropertyBlock as _Phase — no material clone. The old clone path
+        // (new Material per spindle Start/wither) allocated one material and broke
+        // one batch slot per spindle per animation window, and leaked the condense
+        // clone when a spindle died mid-condense; spindle count ≈ prism count in
+        // flora-dense cells, and LifeForm.Die withers every spindle in one frame.
 
-            if (!temporaryMaterial) return;
-            Destroy(temporaryMaterial);
-            temporaryMaterial = null;
-        }
+        void EnsurePropertyBlock() => propertyBlock ??= new MaterialPropertyBlock();
 
-        void UseTemporaryMaterial()
+        void SetDeathAnimation(float value)
         {
-            temporaryMaterial = new Material(originalMaterial);
-            if (RenderedObject) RenderedObject.material = temporaryMaterial;
+            if (!RenderedObject) return;
+            EnsurePropertyBlock();
+            RenderedObject.GetPropertyBlock(propertyBlock);
+            propertyBlock.SetFloat(DeathAnimationID, value);
+            RenderedObject.SetPropertyBlock(propertyBlock);
         }
 
         IEnumerator EvaporateCoroutine()
@@ -148,21 +149,19 @@ namespace CosmicShore.Gameplay
                 condenseCoroutine = null;
             }
 
-            UseTemporaryMaterial();
-
             float deathAnimation = 0f;
             float animationSpeed = 1f;
             while (deathAnimation < 1f)
             {
                 yield return null;
 
-                if (!temporaryMaterial) yield break;
+                if (!RenderedObject) yield break;
 
-                temporaryMaterial.SetFloat("_DeathAnimation", deathAnimation);
+                SetDeathAnimation(deathAnimation);
                 deathAnimation += Time.deltaTime * animationSpeed;
             }
 
-            RestoreOriginalMaterial();
+            SetDeathAnimation(0f); // rest value for pooled/retained reuse
             if (RenderedObject) RenderedObject.enabled = false;
 
             DisableSpindle();
@@ -181,20 +180,17 @@ namespace CosmicShore.Gameplay
         {
             if (isPermanentlyWithered) yield break;
 
-            UseTemporaryMaterial();
-
             float deathAnimation = 1f;
             float animationSpeed = 1f;
             while (deathAnimation > 0f)
             {
                 if (isPermanentlyWithered) yield break;
-                temporaryMaterial.SetFloat("_DeathAnimation", deathAnimation);
+                SetDeathAnimation(deathAnimation);
                 deathAnimation -= Time.deltaTime * animationSpeed;
                 yield return null;
             }
 
-            temporaryMaterial.SetFloat("_DeathAnimation", 0);
-            RestoreOriginalMaterial();
+            SetDeathAnimation(0f);
         }
 
         public void ForceWither()
@@ -214,7 +210,7 @@ namespace CosmicShore.Gameplay
 
         void DisableSpindle()
         {
-            RestoreOriginalMaterial();
+            SetDeathAnimation(0f); // rest value — nothing to restore, sharedMaterial was never swapped
 
             if (!gameObject.scene.isLoaded) return;
 

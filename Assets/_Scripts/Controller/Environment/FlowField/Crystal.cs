@@ -47,7 +47,6 @@ namespace CosmicShore.Gameplay
         
         public List<CrystalModelData> CrystalModels => crystalModels;
         
-        Material tempMaterial;
         public CrystalManager CrystalManager { get; protected set; }
         public bool IsExploding { get; private set; }
 
@@ -172,9 +171,6 @@ namespace CosmicShore.Gameplay
                 var spentCrystal = Instantiate(SpentCrystalPrefab);
                 spentCrystal.transform.SetPositionAndRotation(transform.position, transform.rotation);
                 spentCrystal.transform.localScale = transform.lossyScale;
-                
-                tempMaterial = new Material(modelData.explodingMaterial);
-                spentCrystal.GetComponent<Renderer>().material = tempMaterial;
 
                 if (crystalProperties.Element == Element.Space && modelData.spaceCrystalAnimator != null)
                 {
@@ -182,8 +178,24 @@ namespace CosmicShore.Gameplay
                     var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
                     spentAnimator.timer = thisAnimator.timer;
                 }
-                spentCrystal.GetComponent<Impact>()?.HandleImpact(
-                    explodeParams.Course * explodeParams.Speed, tempMaterial, explodeParams.PlayerName.ToString());
+
+                // Impact's coroutine mutates the material per frame and takes ownership
+                // (Destroy(material) at the end) — clone only when Impact exists. Without
+                // Impact nothing animates the material, so share it: the old path leaked
+                // one clone per model per collection (single field, overwritten, never
+                // destroyed on the no-Impact path).
+                var renderer = spentCrystal.GetComponent<Renderer>();
+                if (spentCrystal.TryGetComponent(out Impact impact))
+                {
+                    var explodingInstance = new Material(modelData.explodingMaterial);
+                    renderer.material = explodingInstance;
+                    impact.HandleImpact(
+                        explodeParams.Course * explodeParams.Speed, explodingInstance, explodeParams.PlayerName.ToString());
+                }
+                else
+                {
+                    renderer.sharedMaterial = modelData.explodingMaterial;
+                }
             }
             
             PlayExplosionAudio();
@@ -244,7 +256,9 @@ namespace CosmicShore.Gameplay
             if (renderer == null)
                 yield break;
 
-            Material tempMaterial = new Material(renderer.material);
+            // sharedMaterial: the .material GETTER instantiates a per-renderer clone that
+            // nothing ever destroyed — one leaked material per domain-change lerp.
+            Material tempMaterial = new Material(renderer.sharedMaterial);
             renderer.material = tempMaterial;
 
             // Detect which color property names the source and target shaders use.

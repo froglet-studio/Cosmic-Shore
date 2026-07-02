@@ -1,6 +1,5 @@
 // Cell.cs
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.Game;
 using CosmicShore.Gameplay;
@@ -168,6 +167,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public int LiveBlockCount => trackedBlocks.Count;
 
+        // Hoisted: AddBlock/RemoveBlock run for every prism register/unregister (via
+        // PrismSpatialIndex.BindCell) and DominantDomain runs on every phase tick —
+        // a method-body array initializer would allocate on each call.
+        static readonly Domains[] s_dominanceOrder = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+        static readonly Domains[] s_playableDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
+        static readonly Domains[] s_hostileCandidates = { Domains.Ruby, Domains.Gold, Domains.Blue, Domains.Jade };
+
         /// <summary>
         /// Live leader by per-domain prism VOLUME — "volume is the spine" (locked
         /// invariant): every prism's mass counts, whether trail, flora, or fauna
@@ -183,8 +189,7 @@ namespace CosmicShore.Gameplay
                 EnsureVolumeFresh();
                 Domains leader = Domains.Blue;
                 float leaderVolume = 0f;
-                Domains[] order = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
-                foreach (var d in order)
+                foreach (var d in s_dominanceOrder)
                 {
                     if (!liveVolumeByDomain.TryGetValue(d, out float v)) continue;
                     if (v > leaderVolume)
@@ -779,9 +784,8 @@ namespace CosmicShore.Gameplay
             foreach (var existing in countGrids.Values)
                 existing?.Dispose();
 
-            Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
             countGrids.Clear();
-            foreach (Domains t in teams)
+            foreach (Domains t in s_playableDomains)
                 countGrids[t] = new BlockCountDensityGrid(t, cellCenter, worldDiameter);
 
             // Blue-keyed grid accumulates every block regardless of domain so
@@ -915,8 +919,7 @@ namespace CosmicShore.Gameplay
 
             if (block)
             {
-                Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-                foreach (var t in teams)
+                foreach (var t in s_playableDomains)
                     if (t != registeredDomain) countGrids[t].AddBlock(block);
 
                 if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
@@ -939,8 +942,7 @@ namespace CosmicShore.Gameplay
 
             if (block)
             {
-                Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-                foreach (Domains t in teams)
+                foreach (Domains t in s_playableDomains)
                     if (t != registeredDomain) countGrids[t].RemoveBlock(block);
 
                 if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
@@ -1048,8 +1050,9 @@ namespace CosmicShore.Gameplay
         internal Domains GetHostileDomainToLocalLegacy()
         {
             var local = gameData.LocalRoundStats?.Domain ?? Domains.Jade;
-            var candidates = new[] { Domains.Ruby, Domains.Gold, Domains.Blue, Domains.Jade };
-            return candidates.First(d => d != local);
+            foreach (var d in s_hostileCandidates)
+                if (d != local) return d;
+            return Domains.Ruby; // unreachable — candidates always contain a non-local domain
         }
     }
 }

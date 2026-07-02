@@ -35,6 +35,20 @@ namespace CosmicShore.Gameplay
 
             timer += Time.deltaTime * cycleSpeed;
 
+            // Every living Space lifeform carries one of these (plus 4 per Mass lifeform)
+            // — dozens of concurrent skinned meshes in ecology scenes. Keep the cycle
+            // phase advancing but skip the blendshape write while camera-culled, so
+            // off-screen crystals don't drive skinning.
+            if (!crystalRenderer.isVisible)
+            {
+                if (timer > 1.1f)
+                {
+                    currentShapeKey = (currentShapeKey + 1) % 2;
+                    timer = 0f;
+                }
+                return;
+            }
+
             if (timer <= 1f)
             {
                 float value = timer; // 0..1

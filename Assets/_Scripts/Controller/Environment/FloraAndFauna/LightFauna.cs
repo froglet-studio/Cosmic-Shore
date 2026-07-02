@@ -3,7 +3,6 @@ using System.Collections;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
-using System.Linq;
 
 namespace CosmicShore.Gameplay
 {
@@ -118,20 +117,32 @@ namespace CosmicShore.Gameplay
         IEnumerator WitherCoroutine()
         {
             float interval = data && data.witherRingInterval > 0f ? data.witherRingInterval : 0.25f;
+            // Frenzy die-offs wither many fauna in the same frame — sort in place and
+            // reuse one WaitForSeconds per death instead of LINQ chains + per-ring allocs.
+            var wait = interval > 0f ? new WaitForSeconds(interval) : null;
+            var center = transform.position;
 
-            var spindles = GetComponentsInChildren<Spindle>(true)
-                .Where(s => s)
-                .OrderByDescending(s => (s.transform.position - transform.position).sqrMagnitude)
-                .ToList();
+            var spindles = GetComponentsInChildren<Spindle>(true);
+            int validSpindles = 0;
+            for (int i = 0; i < spindles.Length; i++)
+                if (spindles[i]) validSpindles++;
 
-            if (spindles.Count > 0)
+            if (validSpindles > 0)
             {
+                // Destroyed entries sort to the end (distance -1), behind every live spindle.
+                System.Array.Sort(spindles, (a, b) =>
+                {
+                    float da = a ? (a.transform.position - center).sqrMagnitude : -1f;
+                    float db = b ? (b.transform.position - center).sqrMagnitude : -1f;
+                    return db.CompareTo(da);
+                });
+
                 // Outer rings first: by the time an inner ring's turn comes its children are
                 // already gone, so ForceWither just collapses that ring.
-                for (int i = 0; i < spindles.Count; i++)
+                for (int i = 0; i < validSpindles; i++)
                 {
                     if (spindles[i]) spindles[i].ForceWither();
-                    if (interval > 0f) yield return new WaitForSeconds(interval);
+                    if (wait != null) yield return wait;
                     else yield return null;
                 }
             }
@@ -139,14 +150,22 @@ namespace CosmicShore.Gameplay
             {
                 // No spindle structure (e.g. a single-prism body) — suction the body prisms
                 // inward toward the centre so the body still leaves continuously, not instantly.
-                var prisms = GetComponentsInChildren<HealthPrism>(true)
-                    .Where(p => p)
-                    .OrderByDescending(p => (p.transform.position - transform.position).sqrMagnitude)
-                    .ToList();
-                for (int i = 0; i < prisms.Count; i++)
+                var prisms = GetComponentsInChildren<HealthPrism>(true);
+                int validPrisms = 0;
+                for (int i = 0; i < prisms.Length; i++)
+                    if (prisms[i]) validPrisms++;
+
+                System.Array.Sort(prisms, (a, b) =>
+                {
+                    float da = a ? (a.transform.position - center).sqrMagnitude : -1f;
+                    float db = b ? (b.transform.position - center).sqrMagnitude : -1f;
+                    return db.CompareTo(da);
+                });
+
+                for (int i = 0; i < validPrisms; i++)
                 {
                     if (prisms[i]) prisms[i].Consume(transform, domain, PLAYER_NAME, true, true);
-                    if (interval > 0f) yield return new WaitForSeconds(interval);
+                    if (wait != null) yield return wait;
                     else yield return null;
                 }
             }

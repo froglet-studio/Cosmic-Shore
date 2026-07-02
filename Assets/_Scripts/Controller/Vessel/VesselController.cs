@@ -80,12 +80,29 @@ namespace CosmicShore.Gameplay
                 return;
 
             // Per-frame owner→server kinematic replication — the hottest netcode write path.
+            // NGO's Value setter early-outs on equal values and serializes dirty vars only
+            // at tick boundaries; the change-checks here exist so the benchmark counts
+            // ACTUAL dirties instead of unconditionally reporting 3 per render frame.
             using (CosmicShore.Utility.PerformanceBenchmark.NetMarkers.Serialize.Auto())
             {
-                n_Speed.Value = VesselStatus.Speed;
-                n_Course.Value = VesselStatus.Course;
-                n_BlockRotation.Value = VesselStatus.blockRotation;
-                CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountNetVarDirty(3);
+                int dirty = 0;
+                if (n_Speed.Value != VesselStatus.Speed)
+                {
+                    n_Speed.Value = VesselStatus.Speed;
+                    dirty++;
+                }
+                if (n_Course.Value != VesselStatus.Course)
+                {
+                    n_Course.Value = VesselStatus.Course;
+                    dirty++;
+                }
+                if (n_BlockRotation.Value != VesselStatus.blockRotation)
+                {
+                    n_BlockRotation.Value = VesselStatus.blockRotation;
+                    dirty++;
+                }
+                if (dirty > 0)
+                    CosmicShore.Utility.PerformanceBenchmark.NetMarkers.CountNetVarDirty(dirty);
             }
         }
 

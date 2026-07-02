@@ -23,7 +23,14 @@ namespace CosmicShore.Gameplay
 
         [Inject] UGSStatsManager ugsStatsManager;
 
+        // Score is display/replication state, not simulation state — writing it every
+        // frame dirties the n_Score NetworkVariable per frame on the host for a value
+        // the HUD only needs a few times a second. 10 Hz keeps the readout smooth;
+        // HandleGameEnd writes the authoritative final score unconditionally.
+        const float ScoreWriteInterval = 0.1f;
+
         private float _elapsedRaceTime;
+        private float _nextScoreWriteTime;
         private IVesselStatus _observedVessel;
         private VesselTelemetry _vesselTelemetry;
         private bool _isTracking;
@@ -78,6 +85,8 @@ namespace CosmicShore.Gameplay
         {
             if (!_isTracking || _observedVessel == null) return;
             _elapsedRaceTime += Time.deltaTime;
+            if (Time.time < _nextScoreWriteTime) return;
+            _nextScoreWriteTime = Time.time + ScoreWriteInterval;
             if (gameData.LocalRoundStats != null)
                 gameData.LocalRoundStats.Score = _elapsedRaceTime;
         }

@@ -663,9 +663,13 @@ namespace CosmicShore.Utility
 
         public (Domains Team, float Volume) GetControllingTeamStatsBasedOnVolumeRemaining()
         {
-            var top = RoundStatsList
-                .OrderByDescending(rs => rs.VolumeRemaining)
-                .FirstOrDefault();
+            IRoundStats top = null;
+            for (int i = 0; i < RoundStatsList.Count; i++)
+            {
+                var rs = RoundStatsList[i];
+                if (top == null || rs.VolumeRemaining > top.VolumeRemaining)
+                    top = rs;
+            }
 
             return top is null ? (Domains.Jade, 0f) : (top.Domain, top.VolumeRemaining);
         }
@@ -692,7 +696,13 @@ namespace CosmicShore.Utility
             return roundStats != null;
         }
 
-        public float GetTotalVolume() => RoundStatsList.Sum(stats => stats.VolumeRemaining);
+        public float GetTotalVolume()
+        {
+            float total = 0f;
+            for (int i = 0; i < RoundStatsList.Count; i++)
+                total += RoundStatsList[i].VolumeRemaining;
+            return total;
+        }
 
         public Vector4 GetTeamVolumes()
         {
@@ -873,11 +883,24 @@ namespace CosmicShore.Utility
         // -----------------------------------------------------------------------------------------
         // Helpers (private)
 
-        IRoundStats FindByTeam(Domains domain) =>
-            RoundStatsList.FirstOrDefault(rs => rs.Domain == domain);
+        // Allocation-free (no LINQ closure/enumerator): FindByName runs 1-2x per prism
+        // created/destroyed/stolen via StatsManager — hundreds of calls in one frame
+        // during AOE bursts.
+        IRoundStats FindByTeam(Domains domain)
+        {
+            for (int i = 0; i < RoundStatsList.Count; i++)
+                if (RoundStatsList[i].Domain == domain)
+                    return RoundStatsList[i];
+            return null;
+        }
 
-        IRoundStats FindByName(string name) =>
-            RoundStatsList.FirstOrDefault(rs => rs.Name == name);
+        IRoundStats FindByName(string name)
+        {
+            for (int i = 0; i < RoundStatsList.Count; i++)
+                if (RoundStatsList[i].Name == name)
+                    return RoundStatsList[i];
+            return null;
+        }
 
         float VolumeOf(Domains domain) =>
             FindByTeam(domain)?.VolumeRemaining ?? 0f;
