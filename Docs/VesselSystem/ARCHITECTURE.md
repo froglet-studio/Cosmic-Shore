@@ -107,8 +107,9 @@ None=0, Charge=1, Mass=2, Space=3, Time=4, Omni=5
 ```
 
 `ShipActions` (`Data/Enums/VesselActions.cs`, `Boost=1 … ExplosiveAcorn=20`) is
-**vestigial** — referenced only by `EnumIntegrityTests`; action bindings are
-keyed by `InputEvents`.
+**vestigial** — referenced only by `EnumIntegrityTests` and an unused
+`ShowIfAttribute` constructor/property; action bindings are keyed by
+`InputEvents`.
 
 ---
 
@@ -244,7 +245,7 @@ engaged (both physical mice LMB held; Escape disengages) → keyboard.
 `InputStatus` (`Controller/IO/InputStatus.cs`) is a **NetworkBehaviour** on the
 Player: every property is dual-backed (local field when not spawned; owner-write
 NetworkVariable when spawned) — remote players' raw input state replicates
-(25 NetworkVariables).
+(26 NetworkVariables).
 
 Strategies (`Controller/IO/`): `GamepadInputStrategy` (triggers = analog drift;
 south/east/west = Button1/2/3), `TouchInputStrategy` (two virtual thumb sticks,
@@ -302,8 +303,9 @@ with Friendly/Hostile/Destroyed terrain speeds; ping-pongs at non-loop trail
 ends), `BlockscapeFollower` (crawls a single prism's surface, rolls across box
 edges), `DriftJet` (Squirrel jet visual pointing along `Course` while
 drifting), `GunTransformer` (Falcon/Shrike turret ring — aims child guns by
-right-stick angle; not a VesselTransformer), `BoidController` (Grizzly/Termite
-drone spawner), `SlowShipViewer` (LineRenderer to explosion-debuffed victims).
+right-stick angle; not a VesselTransformer), `BoidController` (Termite drone
+spawner — Termite.prefab is the only prefab carrying it), `SlowShipViewer`
+(LineRenderer to explosion-debuffed victims).
 
 ---
 
@@ -326,8 +328,9 @@ that hold all runtime state.
   skimmer / danger-prism effects), raising `ScriptableEventInputEventBlock`
   payloads the HUD visualizes.
 - Executors mass-reset on SOAP `OnMiniGameTurnEnd`.
-- The legacy MonoBehaviour `ShipAction` system (`VesselActions/`) survives only
-  on unfinished vessels (Urchin, Grizzly, Termite, Falcon, Shrike).
+- The legacy MonoBehaviour `ShipAction` system (`VesselActions/`) survives on
+  the unfinished vessels (Urchin, Grizzly, Termite, Falcon, Shrike) plus one
+  straggler on Squirrel (`ToggleAlignAction`).
 
 ---
 
@@ -411,7 +414,9 @@ tube). Each prism: scale from `BaseScale × X/Y/ZScaler`, rotation =
 `PrismEventChannelWithReturnSO` → `PrismFactory` (per-vessel pools:
 `PrismType.{Dolphin, Serpent, Sparrow, Manta, Squirrel, Rhino}`), then
 `ChangeTeam(Domain)`, `ownerID = PlayerName`, `waitTime` (collider/renderer
-disabled window ≈ 0.6 s or until clear of the skimmer), `trail.Add(prism)`,
+disabled window: the per-vessel serialized `defaultWaitTime` — code default
+0.5 s, authored 0.2–3 s across prefabs — or the time to clear the skimmer),
+`trail.Add(prism)`,
 `Initialize`. Events `OnBlockCreated(xShift, wavelength, sx, sy, sz)` +
 `OnBlockSpawned(Prism)` feed the silhouette.
 
@@ -478,7 +483,7 @@ Position/rotation sync is per-prefab:
 |---|---|
 | Sparrow, Squirrel | `ClientNetworkTransform` (`Utility/Network/ClientNetworkTransform.cs`, owner-authoritative) |
 | Manta, Dolphin, Rhino, Serpent | package `NetworkTransform` (server-authoritative) |
-| Falcon, Shrike, Termite, Urchin | none |
+| Falcon, Shrike, Termite, Urchin, Grizzly | none |
 
 Ability execution replicates via the action handler's ServerRpc→ClientRpc
 replay (§4). Crystal impact effects replicate via `NetworkVesselImpactor`

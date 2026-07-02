@@ -18,9 +18,11 @@ Paths repo-relative under `Assets/_Scripts/` unless noted.
   MonoBehaviours that hold all runtime state. All 6 playable vessels (Manta,
   Dolphin, Rhino, Squirrel, Serpent, Sparrow) use this path.
 - **LEGACY — `VesselActions/`** (stateful MonoBehaviour `ShipAction`
-  subclasses on the prefab): still compiled, but remains only on unfinished
+  subclasses on the prefab): still compiled; remains on the unfinished
   vessels — Urchin (`FireGunAction` etc.), Grizzly, Termite (drones),
-  Falcon/Shrike (`BoostAction`, `FullAutoAction`).
+  Falcon/Shrike (`BoostAction`, `FullAutoAction`) — plus one straggler on
+  Squirrel (`ToggleAlignAction`, alongside its R_ `ToggleAlignActionSO`
+  asset).
 - The `ShipActions` enum (`Data/Enums/VesselActions.cs`) is **vestigial** —
   bindings are keyed by `InputEvents`, and only `EnumIntegrityTests` reads it.
 - `ResourceEvents` (`AboveThreeQuartersAmmo`, `AboveHalfAmmo`) wiring exists on
@@ -132,7 +134,7 @@ actions.
 | `FireGunActionExecutor` | hidden `[MuzzleWorldAnchor]`; ammo gate; `[Inject] AudioSystem` | `OnAmmoChanged(float)`, static `OnShotFired(name)` (telemetry) |
 | `FullAutoActionExecutor` | `1/firingRate` loop at PreLateUpdate; ammo per volley | static `OnVolleyFired(name)` |
 | `FullAutoBlockShootActionExecutor` | `BlockProjectileFactory.GetBlock` → `ChangeTeam` → `MoveAndAnchorAsync`; colliders off in flight | static `OnBlockShot(name)` (telemetry) |
-| `GrowSkimmerActionExecutor` / `GrowTrailActionExecutor` | implement `IScaleProvider` (feed zoom actions) | `OnScaleChanged(cur,min,max)` |
+| `GrowSkimmerActionExecutor` / `GrowTrailActionExecutor` | implement `IScaleProvider` (MinScale/CurrentScale, polled by zoom executors) | `OnScaleChanged(cur,min,max)` on GrowSkimmer only (GrowTrail exposes no event) |
 | `OverheatingActionExecutor` | heat gated off while `IsTranslationRestricted`; danger mode via `VesselPrismController.EnableDangerMode` | `OnHeatBuildStarted/OnOverheated/OnHeatDecayStarted/Completed`, `Heat01` (Sparrow HUD) |
 | `SeedAssemblerActionExecutor` | takes latest trail prism (private `Trail2` via reflection fallback); `ApplyShield`; `EnsureAssembler` | `OnSeedStarted/OnBondingBegan/OnSeedStopped` |
 | `ToggleTranslationModeActionExecutor` | per-frame dedup; authority check (offline OR server OR owner); raises `stationaryModeChanged` | — |
@@ -159,13 +161,16 @@ Still on prefabs: `FireGunAction` (Urchin), `FireBarrageAction`,
 (Termite); `BoostAction`, `FullAutoAction`, `ToggleGyroAction`
 (Falcon/Shrike); `ToggleAlignAction` (Squirrel).
 
-Superseded predecessors kept in-tree (R_ equivalents exist): `ApplyRotationAction`,
-`ChangeRotationSpeedAction`, `ChargeBoostAction`, `CloakSeedWallAction`,
-`ConsumeBoostAction`, `DeployTeamCrystalAction`, `DisableTrailAction`,
+Superseded predecessors kept in-tree (most have direct R_ equivalents):
+`ApplyRotationAction`, `ChargeBoostAction`, `CloakSeedWallAction`,
+`ConsumeBoostAction`, `DeployTeamCrystalAction`,
 `DriftAction` (fixed ×1.5, no analog path), `DriftTrailAction`,
 `GrowActionBase`/`GrowSkimmerAction`/`GrowTrailAction`, `OverheatingAction`,
-`SeedWallAction`, `ShardToggleAction`, `StopGunsAction`,
-`ToggleStationaryModeAction`, `ZoomOutAction`. Helpers/dead:
+`SeedWallAction`, `ShardToggleAction`, `ToggleStationaryModeAction`,
+`ZoomOutAction`. No one-to-one R_ counterpart: `StopGunsAction` (only writer
+of `GunsActive` outside VesselStatus), `ChangeRotationSpeedAction`;
+`DisableTrailAction`'s StopSpawn/StartSpawn behavior is only functionally
+subsumed by `ToggleTranslationModeActionExecutor`. Helpers/dead:
 `ElementalFloatBinder` (dead — targets renamed property),
 `AssembledArchBurstAction` (TODO-delete), `SeedAssemblerConfigurator`,
 `SeedAssemblerMono` (stub), `SyncActionWrapper`,

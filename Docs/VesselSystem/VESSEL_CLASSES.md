@@ -22,7 +22,7 @@ Squirrel=6, Serpent=7, Termite=8, Falcon=9, Shrike=10, Sparrow=11
 | **Dolphin** | 2 | Modern (R_) | Feature-complete playable | Charge boost, drift, team-crystal deploy, shard toggle | ✅ Dolphin | Default (bootstrapped) | Dual-stick | ✅ (legacy schema) |
 | **Rhino** | 3 | Modern (R_) | Feature-complete playable | Shield skimmer (grow/ram), trail growth, danger-prism debuffs | ✅ Rhino | Default (bootstrapped) | Dual-stick | ✅ Fixed + adaptive zoom |
 | **Urchin** | 4 | **Legacy** | Playable (AI in progress) | Trail attach/ride, surface crawl, gun barrages, ghost cloak | — | — | GunVesselTransformer | ❌ null |
-| **Grizzly** | 5 | **Legacy** | Playable (AI in progress) | Charged gun, turret mode, drones | — | — | Single-stick | ❌ null |
+| **Grizzly** | 5 | **Legacy** | Playable (AI in progress) | Charged gun, turret mode | — | — | Single-stick | ❌ null |
 | **Squirrel** | 6 | Modern (R_) | Racing/drift — vaporwave arcade racer | **Analog drift**, skim-boost economy, twin-rail tube trail | ✅ Squirrel | **SquirrelVesselTelemetry** | Dual-stick (+DriftJet) | ✅ (legacy schema) |
 | **Serpent** | 7 | Modern (R_) | Playable with dedicated HUD | Boost magazine, seed wall, **cloak + seed**, stationary wall mode | ✅ Serpent | Default (bootstrapped) | Single-stick | ✅ Fixed |
 | **Termite** | 8 | **Legacy** | Planned | Command-cursor movement, drone/boid swarm | — | — | CommandVesselTransformer | ❌ null |
@@ -40,10 +40,12 @@ Common modern-vessel component stack: `VesselStatus`, `VesselController`,
 `R_VesselActionHandler`, `R_VesselElementStatsHandler` (class
 `R_ShipElementStatsHandler`), `ActionExecutorRegistry`, `ResourceSystem`,
 `VesselPrismController` (Sparrow: `SparrowPrismController`), `Skimmer`,
-`SilhouetteController`+`SilhouetteView`, `VesselCameraCustomizer`,
-`VesselCustomization`, `NetcodeHooks`, `NetworkVesselClientCache`,
-`VesselImpactor`+`NetworkVesselImpactor`+`ImpactCollider`, `AIPilot`, `Pip`,
-`ShipStudioListenerGate`, telemetry (bootstrapper or concrete).
+`SilhouetteController` (+`SilhouetteView` — Serpent carries the controller
+without the view), `VesselCameraCustomizer`, `VesselCustomization`,
+`NetcodeHooks`, `NetworkVesselClientCache`,
+`VesselImpactor`+`NetworkVesselImpactor`+`ImpactCollider`, `AIPilot`,
+`ShipStudioListenerGate`, telemetry (bootstrapper or concrete). `Pip`
+(picture-in-picture camera) is authored only on Manta, Serpent, and Squirrel.
 
 Network transform sync: Sparrow/Squirrel = `ClientNetworkTransform`
 (owner-authoritative); Manta/Dolphin/Rhino/Serpent = package `NetworkTransform`;
@@ -61,9 +63,10 @@ Input event IDs referenced below: `0=FullSpeedStraight, 1=RightStick,
   (hold-to-yaw with ramp in/out, speed coupling), 13 → `BoostAction`.
 - **Signature — skimmer overcharge** (`SkimmerOverchargeCollectPrismEffectSO`):
   skimming own-domain prisms shields them; skimming enemy prisms accumulates
-  unique hits (blend to overcharged material) toward `maxBlockHits=30` → HUD
-  3-2-1 countdown → `ConfirmOvercharge` chain-devastates the collected prisms
-  outward (raycast along `TrailBlocks`, 0.1 s stagger) → 5 s cooldown.
+  unique hits (blend to overcharged material) toward `maxBlockHits` (authored
+  200 on the wired asset; script default 30) → HUD 3-2-1 countdown →
+  `ConfirmOvercharge` chain-devastates the collected prisms outward (raycast
+  along `TrailBlocks`, 0.1 s stagger) → 5 s cooldown.
 - **HUD** (`MantaVesselHUDController`/`MantaVesselHUDView`): prism-hit count +
   radial fill (yellow at max), overcharge countdown + "OVERCHARGED!" toasts.
   Controller filters the SO's global events by its own `SkimmerImpactor`.
@@ -78,8 +81,9 @@ Input event IDs referenced below: `0=FullSpeedStraight, 1=RightStick,
   `ChargeBoostAction`, `DriftTrailAction`, `ShardToggleAction`],
   1 (RightStick) → `DeployTeamCrystalAction`.
 - **Signature — charge boost** (`ChargeBoostActionSO`): hold to fill resource
-  slot 1 (2 s to full), release to discharge as a boost multiplier (max 2×)
-  over 2 s; 1 s recharge cooldown.
+  slot 1 (authored 4 s to full; script default 2 s), release to discharge as a
+  boost multiplier (max 2×) over 2 s; authored 4 s recharge cooldown (script
+  default 1 s).
 - **Team crystal deploy** (`DeployTeamCrystalActionSO`): press = ghost crystal
   held ahead of the vessel; release = detach + activate as an own-domain
   crystal.
@@ -100,7 +104,8 @@ Input event IDs referenced below: `0=FullSpeedStraight, 1=RightStick,
   `GrowTrailAction`] — boost + trail growth while flying full-speed-straight.
 - **Signature — shield skimmer**: `ShieldSkimmerScaleDriver` scales the skimmer
   with the shield resource (slot 0) per `ShieldSkimmerScaleConfigSO` (base 30 →
-  max 120; crystal pickup pins at max for 5 s); `GrowSkimmerActionExecutor` /
+  max 120; crystal pickup pins at max — authored 9 s, script default 5 s);
+  `GrowSkimmerActionExecutor` /
   `ZoomOutActionExecutor` on the prefab. Ramming:
   `RhinoSkimmerDamagePrismEffectSO` — damages prisms (inertia 70); bounces off
   super-shielded prisms.
@@ -138,8 +143,9 @@ Input event IDs referenced below: `0=FullSpeedStraight, 1=RightStick,
 
 - **Kit**: `ChargedFireGunAction` (charge energy while held),
   `DetonateProjectilesAction`, `SpinAroundAction`, `ToggleTurretModeAction`
-  (stationary + doubled resource gain), `BoidController` drones. `Gun`,
-  `SingleStickVesselTransformer`.
+  (stationary + doubled resource gain). `Gun`,
+  `SingleStickVesselTransformer`. (No drones — the drone/boid stack lives on
+  Termite only.)
 - **Animation**: `BufoAnimation` ("Bufo" = Grizzly's legacy codename; portrait
   mode remaps axes). No dedicated HUD/telemetry/camera asset/prism pool.
 
@@ -190,15 +196,17 @@ The drift racer and the menu lava-lamp default vessel
   `ToggleStationaryModeAction` (Serpent mode), 1 (RightStick) →
   `CloakSeedWallAction`.
 - **Boost magazine** (`ConsumeBoostActionSO`/Executor): up to 4 stacking boost
-  pips, each lasting 4 s; multiplier is currently **hardcoded `4^stacks`**
-  (SO's `boostMultiplier` ignored); auto-reload when empty.
+  pips, each lasting 3 s (authored; script default 4 s); multiplier is
+  currently **hardcoded `4^stacks`** (SO's `boostMultiplier` ignored);
+  auto-reload when empty.
 - **Seed wall** (`SeedWallActionSO` → `SeedAssemblerActionExecutor`): takes the
   latest trail prism, super-shields it, attaches a `WallAssembler`
   (`AssemblerKind.Gyroid` currently also maps to WallAssembler), starts
   bonding; cost = `MaxAmount / 3` from resource slot 0.
 - **Cloak** (`CloakSeedWallActionSO` — file lives in `UI/View/`): seeds a wall,
   bakes a "SerpentGhost" mesh, fades the hull + cloaks all trail prisms for a
-  20 s cooldown window (blocks spawned during cloak stay hidden until it ends).
+  15 s cooldown window (authored; script default 20 s — blocks spawned during
+  cloak stay hidden until it ends).
 - **Stationary wall mode** (`ToggleTranslationModeActionSO.Mode.Serpent`):
   restricts translation, stops the trail spawner, and seeds + bonds a wall
   while parked; toggling off resumes the spawner.
@@ -222,7 +230,8 @@ The drift racer and the menu lava-lamp default vessel
 - Legacy mono `BoostAction` + `FullAutoAction`, `ToggleGyroAction`, `Gun`,
   `GunTransformer` — a turret ring of gun children orbiting the ship axis,
   aimed by right-stick angle, focus distance scaling with stick deflection.
-- Shrike additionally carries a `WallAssembler` + `SeedAssemblerConfigurator`.
+- Both carry a `SeedAssemblerConfigurator`; Shrike additionally carries a
+  `WallAssembler`.
 - No SO_Class assets, HUD, telemetry, camera settings, or prism pools. Prefabs
   reference two transformer scripts (base + single-stick) — verify in-editor
   which is active before building on them.
@@ -239,10 +248,11 @@ The shooter. AI vessel-pick fallback class.
   6 (Button1) → `ToggleStationaryModeAction` (Sparrow mode).
 - **Guns**: only playable vessel hosting a `Gun` + `ProjectileFactory` +
   `BlockProjectileFactory` (+ pool managers). Full-auto volleys from
-  `muzzles[]` (ammo slot 0, 0.03/volley); skyburst missile per press
-  (`OnAmmoChanged` → HUD missile icons); stationary mode fires **prism
-  blocks** (`PrismType.Sparrow`, 20×2×6 scale, anchor at 90-100 units) —
-  conserved mass, not projectiles.
+  `muzzles[]` (ammo slot 0; authored `ammoCost=0` — free volleys today; script
+  default 0.03); skyburst missile per press (`OnAmmoChanged` → HUD missile
+  icons); stationary mode fires **prism blocks** (`PrismType.Sparrow`;
+  authored blockScale (0.8, 0.5, 5), anchor at 90-120 units — script defaults
+  (20, 2, 6) / 90-100) — conserved mass, not projectiles.
 - **Signature — overheat** (`OverheatingActionSO` wrapping `BoostAction`):
   boost builds heat in resource slot 1; at max →
   `VesselPrismController.EnableDangerMode` — the trail becomes **dangerous to
