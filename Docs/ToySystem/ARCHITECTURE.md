@@ -13,8 +13,9 @@ composes with the existing fundamentals rather than working around them:
 |---|---|
 | **Vessel** | the Vessel Changer toy cycles the player's ship via the existing networked swap |
 | **Domain** | the Domain Changer toy cycles the player's team colour via the server RPC |
-| **Prisms / Mass** | the Painting toy lays a *conserved-mass* prism pattern (no caps/TTLs) |
-| **Cells** | toys are placed relative to the Cell membrane (read, never duplicated) |
+| **Prisms / Mass** | the Painting toy lays a *conserved-mass* prism pattern (no caps/TTLs); the Wanderway conveyor transports a fixed stock of conserved prisms |
+| **Cells** | toys are placed relative to the Cell membrane (read, never duplicated); Wanderway lifeforms spawn *into* the cell as ordinary citizens |
+| **Flora & Fauna / Crystals** | Wanderway meadow/menagerie scenes release flora/fauna through the canonical cell spawn sequences and lay skimmable elemental crystals |
 
 A toy imposes no decay, no timer, and no win/lose — consistent with *Mass is conserved*
 and *don't cheat emergence*.
@@ -55,6 +56,10 @@ detection. On top of that base the `Toy` class adds:
 | Domain Changer set | `Assets/_Scripts/Controller/Toys/DomainChangerToySet.cs` |
 | Painting ("fly by numbers") toy | `Assets/_Scripts/Controller/Toys/PaintingToy.cs` |
 | Self-contained fly-by-numbers runner | `Assets/_Scripts/Controller/Toys/MenuShapePainter.cs` |
+| Conveyor ("Wanderway") toy | `Assets/_Scripts/Controller/Toys/ConveyorToy.cs` |
+| Conveyor belt runner | `Assets/_Scripts/Controller/Toys/MicrosceneConveyor.cs` |
+| One conveyor scene (lay/transport/re-arrange) | `Assets/_Scripts/Controller/Toys/Microscene.cs` |
+| Microscene recipe generators (pure) | `Assets/_Scripts/Controller/Toys/MicroscenePatterns.cs` |
 | Placement + lifecycle | `Assets/_Scripts/Controller/Toys/ToyboxController.cs` |
 | Per-toy config (abstract) | `Assets/_Scripts/ScriptableObjects/Toys/ToyDefinitionSO.cs` |
 | Vessel/Domain/Painting configs | `Assets/_Scripts/ScriptableObjects/Toys/*ToyDefinitionSO.cs` |
@@ -131,6 +136,48 @@ colours you are *not*. Flying through one requests that domain via the server-au
 `Player.RequestSetDomain_ServerRpc` (**never** a client-local write — CLAUDE.md), and the toy
 flips to the colour you just left.
 
+### Wanderway / Microscene Conveyor (`ConveyorToy` + `MicrosceneConveyor` + `Microscene`)
+
+Fly through → a belt of **microscenes** (prism gate runs, helix weaves, tunnels, slaloms,
+starbursts, orchards, meadows, menageries) blooms in ahead of your flight path, scene after
+scene — open-world exploring crossed with an infinite runner. Once `poolSize` scenes exist the
+belt becomes a **closed system**: the scene farthest behind you is *suctioned* to a point,
+relocated ahead, re-posed into a fresh recipe (shuffle-bag, never the same twice in a row) with
+new domain colour and orientation, and *bloomed* back out — the conveyor. No score, no end
+condition; every belt advance is driven by the player's own motion (no timers). Exiting
+freestyle just makes the belt dormant — its scenes stay in the world.
+
+**Ecosystem invariants (this toy is ecology-adjacent — all hold by construction):**
+
+- *Continuity of existence* — prisms grow in via their own `PrismScaleAnimator`; crystals
+  `FadeIn`; recycling is suction-out → bloom-in (both sanctioned transitions). Nothing pops.
+- *Mass conservation / no passive removal* — the belt never destroys a prism; recycling
+  **transports the same prism instances** (movers contract: `Prism.NotifyPositionChanged`).
+  The only sink is fauna grazing belt prisms (an active force); grazed slots are re-minted
+  through the sanctioned pool-reuse lifecycle (`Prism.Initialize`), which is creation. Player
+  trails through scenes are never touched. This is *not* the rejected "recycle the oldest prism"
+  budget cheat: nothing is removed, the belt's total stock is fixed, and only toy-owned
+  exhibit content rides the belt.
+- *No imposed death* — lifeforms are **released, not owned**: meadow/menagerie scenes spawn
+  flora/fauna into the host `Cell` via the canonical sequences (`Initialize(cell)`,
+  `AssignLineage`, `RegisterSpawnedObject`) and never track, move, or despawn them. They live
+  and die by the food web only.
+- *No domain asymmetry* — fauna spawn in `Cell.ControllingDomain`; flora in a random playable
+  domain; prism scenes cycle the active playable domains evenly.
+- *Volume is the spine / collider budget* — belt mass is bounded at
+  `poolSize × prismBudgetPerScene` prisms (default 6 × 42 = 252 BoxColliders + ≤3 crystal
+  triggers per scene + 1 toy trigger, well under the ~1,500/cell target); scenes stay inside the
+  cell's sense radius (the belt path bends back inside) so all mass registers honestly; distant
+  scenes are collider-LOD-culled by `PrismColliderLodManager` automatically. The conveyor adds
+  **zero physics queries** — placement is pure arithmetic.
+- *Cell owns the environment* — no parallel spawner/boundary/population: lifeforms come from the
+  cell's own `SpawnProfileSO` configs and respect `FloraPlantingEnabled` + `MaxLivePopulation`.
+
+Crystals are the four elemental pickups (`ElementalCrystalSetSO`, Resources-loaded), made
+skimmable at runtime via the internal setters added to `ImpactCollider` /
+`ElementalCrystalImpactor` (the runtime mirror of the components lifeform prefabs author in the
+inspector). Content is local-only, like every toy (party guests don't see your belt).
+
 ### Painting / Fly-by-Numbers (`PaintingToy` + `MenuShapePainter`)
 Fly through → starts a self-contained painting run. `MenuShapePainter` reads a
 `ShapeDefinition`'s waypoints, draws a ghost outline + a guide line + a lit marker at the next
@@ -203,7 +250,9 @@ No central switch — definitions are polymorphic factories, so the framework ne
 
 Run **Tools → Cosmic Shore → Setup Freestyle Toybox**. It:
 
-1. authors the three toy definition assets under `Assets/_SO_Assets/Toys/`,
+1. authors the four toy definition assets under `Assets/_SO_Assets/Toys/` (the conveyor's
+   prism prefab + crystal effect are auto-wired: `SpawnablePrism.prefab` +
+   `SkimmerAdjustElementLevelByCrystalEffect.asset`),
 2. creates `Assets/Resources/Toybox.asset` and registers them, and
 3. adds a `ToyboxController` to Menu_Main (on the `MenuCrystalClickHandler` object) pointing
    at the toybox.

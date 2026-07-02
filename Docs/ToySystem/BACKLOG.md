@@ -1,6 +1,6 @@
 # Toy System — Backlog & Known Limitations
 
-The core toy system + the three toys are in. This tracks the polish/improvement
+The core toy system + the four toys are in. This tracks the polish/improvement
 work, grouped so each group can be its own follow-up branch, plus current known
 limitations and verification status. Architecture: `ARCHITECTURE.md`.
 
@@ -80,6 +80,34 @@ All shipped on the branch; see `ARCHITECTURE.md` § "Status & follow-up" for the
 - **Full experience (optional).** For a gameplay scene that has the ecology infra, the original
   `ShapeDrawingManager` (preview cinematic, scoring, reveal, `EndShapeDetailHUD`) can drive the
   toy instead of `MenuShapePainter`. The menu uses the lightweight runner so it works with no Cell.
+
+## Branch: conveyor ("Wanderway") polish
+
+- **In-editor verification (first pass).** Enter freestyle in Menu_Main, fly through the
+  Wanderway toy (green sphere at 60° on the ring). Confirm: (1) the first scene grows in
+  ~170u ahead along your course, then scene after scene as you fly; (2) after 6 scenes exist,
+  flying on makes the farthest-behind scene visibly *shrink to a point* and re-bloom ahead in a
+  different arrangement/colour; (3) crystals fade in and are collectible by skimming (element
+  bars tick up); (4) meadow/menagerie scenes seed flora and 1-2 fauna near the scene (fauna in
+  the controlling colour) — fauna later graze belt prisms and wither to crystals when starved;
+  (5) exiting freestyle freezes the belt in place, re-entering + re-flying the toy resumes it;
+  (6) the autopilot lava-lamp vessel never trips the toy. Watch the `EcosystemPerfProbe`
+  `[ECOSIM]` line — belt steady-state should add ~250 prisms / ~4k volume and stay well under
+  the collider target.
+- **Tuning dials** (all on `Toy_Conveyor.asset`): `sceneSpacing` / `lookaheadDistance` vs.
+  Squirrel cruise (30-60 u/s, boost bursts to ~300); `sceneRadius` + per-recipe ring/tunnel
+  radii vs. vessel + skimmer size; `transitionSeconds` (suction/bloom read); `poolSize` /
+  `prismBudgetPerScene` (density vs. perf); `courseFollow` (how tightly the belt shadows you).
+- **Recipe art pass.** The eight `MicroscenePatterns` recipes are procedural first drafts —
+  tune counts/radii per recipe, and consider authored recipes (a `MicrosceneRecipeSO`) if
+  designers want hand-built set pieces in the shuffle bag.
+- **Belt audio/VFX.** Suction/bloom currently rides scale only; a whoosh SFX
+  (`AudioSystem` gameplay SFX) + a faint particle draw toward the anchor would sell the
+  conveyor. Consider a soft chime as a new scene finishes blooming.
+- **Elemental-crystal collectibility gap (pre-existing).** `LifeFormCrystal`'s runtime-provisioned
+  fallback crystals still lack collection components; the new internal setters
+  (`ImpactCollider.SetImpactor`, `ElementalCrystalImpactor.SetCollectionEffects`) make fixing
+  that a three-line follow-up.
 
 ## Branch: framework / cross-cutting
 

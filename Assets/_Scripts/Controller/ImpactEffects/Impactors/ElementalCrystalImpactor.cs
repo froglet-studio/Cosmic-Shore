@@ -20,6 +20,12 @@ namespace CosmicShore.Gameplay
         bool isImpacting;
         private bool _hasBeenCollected;
         public static event Action<string> OnCrystalCollected;
+
+        /// <summary>
+        /// Wires collection effects on a runtime-added impactor (lifeform prefabs author these as
+        /// inspector overrides; runtime spawns — e.g. the conveyor toy's pickups — cannot).
+        /// </summary>
+        internal void SetCollectionEffects(SkimmerCrystalEffectSO[] effects) => elementalCrystalShipEffects = effects;
         
         void OnEnable() 
         {
