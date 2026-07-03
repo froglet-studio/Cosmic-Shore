@@ -16,11 +16,11 @@ namespace CosmicShore.Gameplay
 
         void Start()
         {
-            foreach (var child in GetComponentsInChildren<Transform>())
-            {
-                if (child == transform) continue;
+            var vessel = shipInstance as IVesselStatus;
 
-                var vessel = shipInstance as IVesselStatus;
+            for (int i = 0; i < transform.childCount; i++)
+            {
+                var child = transform.GetChild(i);
                 Vector3 direction = (child.position - vessel.Transform.position).normalized;
                 child.position = vessel.Transform.position + direction * radius;
             }
@@ -33,10 +33,9 @@ namespace CosmicShore.Gameplay
             Vector3 targetFocus = new Vector3(0, 0, 300f * rightStick.sqrMagnitude + 70f);
             gunFocus.localPosition = Vector3.Lerp(gunFocus.localPosition, targetFocus, Time.deltaTime * speed);
 
-            foreach (var child in GetComponentsInChildren<Transform>())
+            for (int i = 0; i < transform.childCount; i++)
             {
-                if (child == transform) continue;
-
+                var child = transform.GetChild(i);
                 child.RotateAround(pivotObject.transform.position, pivotObject.transform.forward, rotationSpeed * Time.deltaTime);
                 child.LookAt(gunFocus);
             }
