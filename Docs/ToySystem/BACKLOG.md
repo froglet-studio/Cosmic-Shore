@@ -1,6 +1,6 @@
 # Toy System — Backlog & Known Limitations
 
-The core toy system + the three toys are in. This tracks the polish/improvement
+The core toy system + the four toys are in. This tracks the polish/improvement
 work, grouped so each group can be its own follow-up branch, plus current known
 limitations and verification status. Architecture: `ARCHITECTURE.md`.
 
@@ -80,6 +80,51 @@ All shipped on the branch; see `ARCHITECTURE.md` § "Status & follow-up" for the
 - **Full experience (optional).** For a gameplay scene that has the ecology infra, the original
   `ShapeDrawingManager` (preview cinematic, scoring, reveal, `EndShapeDetailHUD`) can drive the
   toy instead of `MenuShapePainter`. The menu uses the lightweight runner so it works with no Cell.
+
+## Branch: conveyor ("Wanderway") polish
+
+**Reviewed (two adversarial passes — compile, logic, ecology invariants, game-feel, assets, docs).**
+Confirmed fixes shipped: (a) `Prism.ResetState` re-arms the scale animator that `SetupDestruction`
+disabled, so a fauna-eaten prism re-minted on recycle grows in from zero and weighs volume again (a
+latent gap the conveyor was first to exercise); (b) recycle now zeroes every prism's scale so
+survivors bloom from zero uniformly instead of morphing; (c) a crystal skimmed mid-flight-to-vessel
+is detached from the container and dropped from the belt so it isn't repositioned/scaled and the
+slot tops up; (d) per-arrival derived RNG streams keep recycling deterministic under async
+interleaving. Invariant audits passed clean (open-space belt mass is `poolSize`-bounded and
+collider-LOD'd — valid bounded accumulation, not a leak; lifeforms released only into the containing
+cell with all canonical gates; no bare-`Destroy` of visible prisms/crystals on toggle-off or
+teardown). Everything below is remaining polish / not-yet-play-verified.
+
+- **In-editor verification (second pass — post play-test rework).** Enter freestyle in
+  Menu_Main, fly through the Wanderway toy. Confirm: (1) the toy flips bright + relabels
+  "flowing — fly through to stop", and a second pass turns the flow off (label flips back);
+  (2) a field of ~7 scenes builds ahead and holds at ANY speed — cruise, full throttle, boost —
+  with spacing visibly stretching as you speed up; (3) the belt follows you OUT of the cell and
+  keeps streaming in open space (prisms + crystals; no flora/fauna out there), and living
+  scenes return when you fly back through the cell; (4) passed scenes clear (suction) at the
+  same rhythm new ones arrive; (5) recipes vary strongly — same recipe should land with
+  different radii/twists/counts each time; (6) crystals fade in and are skimmable; menagerie
+  fauna spawn in the controlling colour and graze; (7) the autopilot lava-lamp vessel never
+  trips the toy. Watch the `[ECOSIM]` line — belt steady-state adds ~420 prisms max.
+- **Tuning dials** (all on `Toy_Conveyor.asset`): `aheadTargetScenes` (field depth, 3-10) +
+  `minSceneIntervalSeconds` (seconds of flight between scenes at speed) are the pacing pair;
+  `sceneSpacing` / `recycleBehindDistance` are the low-speed floors; `sceneRadius` + per-recipe
+  radii vs. vessel + skimmer size; `transitionSeconds` (suction/bloom read); `poolSize` /
+  `prismBudgetPerScene` (density vs. perf); `courseFollow` (how tightly the belt shadows you).
+- **Recipe art pass.** The 16 `MicroscenePatterns` recipes are procedural (each re-rolls its own
+  radii/counts/twists/bends per arrival) — tune ranges per recipe, and consider authored recipes
+  (a `MicrosceneRecipeSO`) if designers want hand-built set pieces in the shuffle bag.
+- **Belt audio/VFX.** Suction/bloom currently rides scale only; a whoosh SFX
+  (`AudioSystem` gameplay SFX) + a faint particle draw toward the anchor would sell the
+  conveyor. Consider a soft chime as a new scene finishes blooming.
+- **Elemental-crystal collectibility gap (pre-existing).** `LifeFormCrystal`'s runtime-provisioned
+  fallback crystals still lack collection components; the new internal setters
+  (`ImpactCollider.SetImpactor`, `ElementalCrystalImpactor.SetCollectionEffects`) make fixing
+  that a three-line follow-up.
+- **Tests.** `MicroscenePatternsTests` (EditMode) locks the belt's load-bearing generator
+  guarantees: budget exactness (closed-system recycling), per-seed determinism, crystal clamp,
+  lifeform counts confined to Meadow/Menagerie, and scene-extent bounds. Run with the rest of
+  the EditMode suite after any recipe change.
 
 ## Branch: framework / cross-cutting
 
