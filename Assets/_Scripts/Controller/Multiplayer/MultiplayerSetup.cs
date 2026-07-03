@@ -81,6 +81,11 @@ namespace CosmicShore.Gameplay
         {
             EnsureHostStarted();
 
+            // Offline stripped build: EnsureHostStarted already brought up a plain local host.
+            // Never run the UGS session query/create path below (it calls MultiplayerService).
+            if (PerfStrip.OfflineMode)
+                return;
+
             if (gameData.IsMultiplayerMode)
             {
                 // DestroyPlayerAndVessel() was removed here because it races with
@@ -162,6 +167,14 @@ namespace CosmicShore.Gameplay
                     }
                 }
 #endif
+
+                // Offline stripped build: no UGS/Relay. The ConnectionApproval + disconnect +
+                // transport-failure callbacks are wired above — that is all we do here. The local
+                // host itself is started later by AuthenticationSceneController (Auth-scene timing,
+                // matching the normal Relay host bring-up) so the non-networked Bootstrap->Auth
+                // scene load never happens while a host is already running.
+                if (PerfStrip.OfflineMode)
+                    return;
 
                 // Host startup is delegated to HostConnectionService which creates a
                 // Relay-backed party session (via CreateSessionAsync + WithRelayNetwork).

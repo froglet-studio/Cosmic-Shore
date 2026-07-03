@@ -64,6 +64,16 @@ namespace CosmicShore.UI
         {
             OnProfileChanged += SyncProfileToGameData;
 
+            // Offline stripped build: no UGS CloudSave. Mark ready immediately with the local
+            // default profile so the auth flow doesn't wait on a cloud load that never happens
+            // and the menu/profile UI still renders.
+            if (CosmicShore.Utility.PerfStrip.OfflineMode)
+            {
+                IsInitialized = true;
+                OnProfileChanged?.Invoke(CurrentProfile);
+                return;
+            }
+
             if (_ugsDataService == null)
             {
                 // DI failed to supply the cloud data service (e.g. instantiated outside a

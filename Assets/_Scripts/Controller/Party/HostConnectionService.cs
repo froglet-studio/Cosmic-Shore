@@ -422,6 +422,11 @@ namespace CosmicShore.Gameplay
 
         public async void HandleSignedInEvent()
         {
+            // Offline stripped build: no UGS. Skip the presence lobby + Relay party-session init
+            // entirely — the local NetworkManager host is started by MultiplayerSetup instead, and
+            // Update()'s refresh loop is already gated. This is what keeps the boot off UGS.
+            if (CosmicShore.Utility.PerfStrip.OfflineMode) return;
+
             if (!IsAuthSignedInAndHasId()) return;
             await EnsureInitializedAsync();
         }

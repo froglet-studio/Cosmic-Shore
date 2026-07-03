@@ -214,6 +214,9 @@ namespace CosmicShore.Core
 
         void HandleSignedIn()
         {
+            // Offline stripped build: no UGS Analytics backend — skip collection.
+            if (CosmicShore.Utility.PerfStrip.OfflineMode) return;
+
             _signedIn = true;
             TryWireUiActions();
             StartCollectionIfReady();

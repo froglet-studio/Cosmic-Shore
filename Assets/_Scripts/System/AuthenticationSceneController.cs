@@ -439,6 +439,17 @@ namespace CosmicShore.Core
             string menuScene = _sceneNames != null ? _sceneNames.MainMenuScene : "Menu_Main";
             float timeout = Mathf.Max(networkHostTimeout, 15f);
 
+            // Offline stripped build: no Relay/UGS. Start a plain local host here — this Auth-scene
+            // timing matches the normal Relay host bring-up, so WaitForRelayReadyAsync's IsListening
+            // fast-path resolves immediately and Menu_Main loads via NM. MultiplayerSetup already
+            // wired the ConnectionApproval callbacks that spawn the host Player.
+            if (CosmicShore.Utility.PerfStrip.OfflineMode
+                && NetworkManager.Singleton != null && !NetworkManager.Singleton.IsListening)
+            {
+                CSDebug.Log("[AuthScene] Offline mode — starting local host (no Relay).");
+                NetworkManager.Singleton.StartHost();
+            }
+
             for (int attempt = 1; attempt <= maxAttempts && !networkReady; attempt++)
             {
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(ct);

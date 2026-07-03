@@ -43,5 +43,15 @@ namespace CosmicShore.Utility
         /// only the periodic refresh + friends are gated, so the Squirrel still spawns.
         /// </summary>
         public static bool DisableSocialNetworking => Enabled;
+
+        /// <summary>
+        /// Full <b>offline boot</b>: never touch Unity Gaming Services. This build has no UGS
+        /// project configured, so <c>UnityServices.InitializeAsync()</c> / anonymous sign-in /
+        /// the Relay host bring-up all throw and crash the app on launch. In offline mode we skip
+        /// UGS entirely — sign in locally, skip presence lobby / Relay / CloudSave / Analytics —
+        /// and start a plain local <c>NetworkManager.StartHost()</c> (no Relay transport) so the
+        /// existing menu vessel-spawn pipeline and the conveyor toy run with no backend.
+        /// </summary>
+        public static bool OfflineMode => Enabled;
     }
 }

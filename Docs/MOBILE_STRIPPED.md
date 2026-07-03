@@ -66,6 +66,27 @@ the cheat." The conveyor's own conserved-mass stock is untouched. There is **no 
 Menu_Main**, so the conveyor's flora/fauna recipes never fire there — it carries prisms + crystals
 only, which is already the cheaper path.
 
+## Offline boot (no UGS) — required for builds without a Unity Gaming Services project
+
+This build has **no UGS project configured**, so the normal boot (which calls
+`UnityServices.InitializeAsync()`, signs in anonymously, and brings the NetworkManager host up as a
+UGS **Relay** session) throws and crashes on launch. `PerfStrip.OfflineMode` (= `Enabled`) makes the
+boot never touch UGS:
+
+- **Auth** (`AuthenticationServiceFacade`) signs in *locally* (synthetic player id) and raises
+  `OnSignedIn` — no `UnityServices`/`AuthenticationService`.
+- **Host** (`MultiplayerSetup` wires the Netcode callbacks; `AuthenticationSceneController` then calls
+  a plain `NetworkManager.StartHost()`) — a **local host, no Relay**. `IsListening` goes true, so the
+  existing menu vessel-spawn pipeline runs unchanged and the Squirrel spawns.
+- **CloudSave / Analytics / presence lobby / friends / party** (`UGSDataService`,
+  `AnalyticsServiceFacade`, `HostConnectionService`, `FriendsInitializer`) all early-return offline.
+- `PlayerDataService` marks itself ready with the local default profile so the flow doesn't wait on a
+  cloud load.
+
+The local host is started at **Auth-scene** timing (not Bootstrap) to match the normal Relay bring-up,
+so the non-networked Bootstrap→Auth scene load never races a running host. To restore full UGS
+behaviour (on a build that has a UGS project), set `PerfStrip.Enabled = false`.
+
 ## Tuning dials (if 60 fps isn't held, cut here first)
 
 1. **Conveyor budget** — `Toy_Conveyor.asset`: lower `prismBudgetPerScene` (≥6) and/or `poolSize`

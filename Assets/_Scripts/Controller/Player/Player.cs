@@ -227,7 +227,12 @@ namespace CosmicShore.Gameplay
                 }
                 else
                 {
-                    NetName.Value = StripPlayerNameSuffix(AuthenticationService.Instance.PlayerName);
+                    // Offline / no-UGS builds have no AuthenticationService.Instance — fall back to
+                    // a default name instead of NRE-ing (which would abort the host Player spawn).
+                    var ugsName = AuthenticationService.Instance?.PlayerName;
+                    NetName.Value = string.IsNullOrEmpty(ugsName)
+                        ? "Player"
+                        : StripPlayerNameSuffix(ugsName);
                 }
 
                 // If profile wasn't ready when we spawned, subscribe so NetName updates

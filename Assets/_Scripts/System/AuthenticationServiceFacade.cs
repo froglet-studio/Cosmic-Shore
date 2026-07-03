@@ -49,6 +49,15 @@ namespace CosmicShore.Core
 
             _startupAttempted = true;
 
+            // Offline stripped build: this APK has no UGS project, so UnityServices.InitializeAsync()
+            // would throw and crash the boot. Sign in locally instead — this raises OnSignedIn so the
+            // rest of the pipeline (local host, menu load, Squirrel spawn) proceeds with no backend.
+            if (PerfStrip.OfflineMode)
+            {
+                SignInOffline();
+                return;
+            }
+
             try
             {
                 await EnsureInitializedAsync();
@@ -66,6 +75,13 @@ namespace CosmicShore.Core
         /// </summary>
         public Task EnsureInitializedAsync()
         {
+            // Offline stripped build: never initialize Unity Services.
+            if (PerfStrip.OfflineMode)
+            {
+                authenticationData.State = AuthenticationData.AuthState.Ready;
+                return Task.CompletedTask;
+            }
+
             if (authenticationData.State == AuthenticationData.AuthState.Ready ||
                 authenticationData.State == AuthenticationData.AuthState.SignedIn)
                 return Task.CompletedTask;
@@ -96,6 +112,8 @@ namespace CosmicShore.Core
         /// </summary>
         public async Task EnsureSignedInAnonymouslyAsync()
         {
+            if (PerfStrip.OfflineMode) { SignInOffline(); return; }
+
             await EnsureInitializedAsync();
 
             if (AuthenticationService.Instance == null)
@@ -131,6 +149,8 @@ namespace CosmicShore.Core
         /// </summary>
         public async Task<bool> TrySignInCachedAsync()
         {
+            if (PerfStrip.OfflineMode) { SignInOffline(); return true; }
+
             await EnsureInitializedAsync();
 
             if (AuthenticationService.Instance == null)
@@ -285,6 +305,25 @@ namespace CosmicShore.Core
 
             Log($"Sign-in failed: {e}");
             authenticationData.OnSignInFailed?.Raise();
+        }
+
+        /// <summary>
+        /// Offline sign-in for the stripped build (no UGS). Mirrors <see cref="OnSignInSuccess"/>
+        /// but with a synthetic local player id and no dependency on <c>AuthenticationService.Instance</c>.
+        /// Sets the SignedIn state and raises OnSignedIn so the boot pipeline proceeds with no backend.
+        /// </summary>
+        void SignInOffline()
+        {
+            if (_successNotified && authenticationData.State == AuthenticationData.AuthState.SignedIn)
+                return;
+            _successNotified = true;
+
+            authenticationData.State = AuthenticationData.AuthState.SignedIn;
+            authenticationData.IsSignedIn = true;
+            authenticationData.PlayerId = "offline-local-player";
+
+            Log("[Offline] Signed in offline — UGS bypassed.");
+            authenticationData.OnSignedIn?.Raise();
         }
 
         void OnSignInFailed(string reason)

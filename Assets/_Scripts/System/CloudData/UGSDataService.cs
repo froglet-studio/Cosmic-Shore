@@ -118,6 +118,9 @@ namespace CosmicShore.Core
 
         async void HandleSignedIn()
         {
+            // Offline stripped build: no UGS CloudSave backend — skip cloud init, run on local data.
+            if (CosmicShore.Utility.PerfStrip.OfflineMode) return;
+
             try
             {
                 if (!IsInitialized)
