@@ -22,14 +22,33 @@ MonoBehaviour:
     type: 3}
   crystalCollectionEffects:
   - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
+  omniCrystalPrefab: {fileID: 0}
   maxCrystalsPerScene: 1
+  palette:
+    MonoWeight: 6
+    BandedWeight: 2.2
+    AccentWeight: 1.6
+    NeutralVeinWeight: 1.1
+    AccentChance: 0.22
+    BlueVeinChance: 0.14
+    AllPlainWeight: 10
+    DangerAccentWeight: 2.6
+    ShieldAccentWeight: 1.1
+    LandmarkWeight: 0.5
+    MaxDanger: 8
+    MaxShielded: 3
+    MaxSuperShielded: 1
+    ScaleMoodChance: 0.45
+    ScaleMoodMin: 0.7
+    ScaleMoodMax: 1.6
+    OmniCrystalChance: 0.16
   lifeformScenes: 1
-  poolSize: 7
+  poolSize: 8
   prismBudgetPerScene: 100
   sceneRadius: 80
   sceneSpacing: 170
   firstSceneDistance: 170
-  aheadTargetScenes: 5
+  aheadTargetScenes: 4
   minSceneIntervalSeconds: 2
   recycleBehindDistance: 170
   transitionSeconds: 1.2
