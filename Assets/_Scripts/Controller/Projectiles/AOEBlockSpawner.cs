@@ -33,6 +33,13 @@ namespace CosmicShore.Gameplay
                 }
 
                 await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
+
+                // Spawn-only explosion: the children are pooled and pool-parented, so
+                // nothing under this spawner persists. Match the base contract
+                // (AOEExplosion.ExplodeAsync destroys the spawner when done) instead of
+                // leaking one spawner root per detonation — the menu leaked one per
+                // crystal pickup for the session.
+                if (this) Destroy(gameObject);
             }
             catch (OperationCanceledException) { }
         }

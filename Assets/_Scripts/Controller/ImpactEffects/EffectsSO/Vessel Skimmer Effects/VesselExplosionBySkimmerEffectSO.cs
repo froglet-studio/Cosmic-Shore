@@ -37,7 +37,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("Minimum time between explosions from the same vessel hitting a skimmer.")]
         [SerializeField] private float _explosionCooldown = 0.15f;
 
-        private static readonly Dictionary<VesselImpactor, float> _lastExplosionTimeByImpactor
+        // Keyed by instance ID (not the impactor reference) so destroyed vessel
+        // impactors are never retained by this static dictionary across scene loads.
+        private static readonly Dictionary<int, float> _lastExplosionTimeByImpactor
             = new();
 
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
@@ -66,13 +68,14 @@ namespace CosmicShore.Gameplay
                 return;
 
             var now = Time.time;
-            if (_lastExplosionTimeByImpactor.TryGetValue(impacteeVesselImpactor, out var lastTime))
+            int impacteeId = impacteeVesselImpactor.GetInstanceID();
+            if (_lastExplosionTimeByImpactor.TryGetValue(impacteeId, out var lastTime))
             {
                 if (now - lastTime < _explosionCooldown)
                     return;
             }
 
-            _lastExplosionTimeByImpactor[impacteeVesselImpactor] = now;
+            _lastExplosionTimeByImpactor[impacteeId] = now;
 
             ExplosionHelper.CreateExplosion(
                 _aoePrefabs,

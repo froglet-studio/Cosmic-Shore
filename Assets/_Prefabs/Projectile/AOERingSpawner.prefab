@@ -76,7 +76,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   domain: 3
   intenstyLevel: 1
-  prism: {fileID: 4563009547826722997, guid: 5e0149b915fc095448e82496cd02dde8, type: 3}
+  _prismSpawnEvent: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db, type: 2}
   ringCount: 1
   prismsPerRing: 8
   ringRadius: 8.2

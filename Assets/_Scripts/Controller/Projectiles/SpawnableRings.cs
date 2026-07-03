@@ -1,4 +1,6 @@
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -6,7 +8,10 @@ namespace CosmicShore.Gameplay
     public class SpawnableRings : SpawnableBase
     {
         [Header("Ring Configuration")]
-        [SerializeField] Prism prism;
+        [Tooltip("Prism spawn channel → PrismFactory → the FastGrowPrism pool. Ring prisms are " +
+                 "pooled (no Instantiate in the impact frame) and pool-parented in world space, " +
+                 "so the spawner can be destroyed freely without touching them.")]
+        [SerializeField] PrismEventChannelWithReturnSO _prismSpawnEvent;
         [SerializeField] int ringCount = 3;
         [SerializeField] int prismsPerRing = 8;
         [SerializeField] float ringRadius = 20f;
@@ -27,26 +32,33 @@ namespace CosmicShore.Gameplay
                 System.HashCode.Combine(ringSpacing, prismScale, prismAngle, isDangerous, isShielded));
         }
 
+        // Monotonic per-Spawn salt so ring prisms from different detonations never
+        // share ownerIDs (the old container-name IDs collided across pickups).
+        static int s_spawnSerial;
+
         public override GameObject Spawn(int intensity = 1)
         {
+            if (_prismSpawnEvent == null)
+            {
+                CSDebug.LogError("[SpawnableRings] Prism spawn event channel is not assigned.");
+                return gameObject;
+            }
+
             intensityLevel = intensity;
             prismAngle = intensity * 0.3f;
             trails.Clear();
 
-            GameObject container = new GameObject($"Rings_{name}");
-            container.transform.SetParent(transform, false);
-            container.transform.SetPositionAndRotation(transform.position, transform.rotation);
-
+            int spawnSerial = ++s_spawnSerial;
             for (int ringIndex = 0; ringIndex < ringCount; ringIndex++)
             {
                 Vector3 ringCenter = transform.position + transform.forward * (ringIndex * ringSpacing + initialOffset);
-                CreateRing(container, ringIndex, ringCenter);
+                CreateRing(ringIndex, ringCenter, spawnSerial);
             }
 
-            return container;
+            return gameObject;
         }
 
-        void CreateRing(GameObject container, int ringIndex, Vector3 ringCenter)
+        void CreateRing(int ringIndex, Vector3 ringCenter, int spawnSerial)
         {
             Trail trail = new Trail();
             trails.Add(trail);
@@ -72,20 +84,34 @@ namespace CosmicShore.Gameplay
                 // Offset center back from the tip so the tip stays pinned
                 Vector3 adjustedPosition = tipPosition - lookDirection * halfLength;
 
-                string ownerId = $"{container.name}::R{ringIndex}::P{i}";
-
-                var block = Instantiate(prism, container.transform);
-                block.ChangeTeam(domain);
-                block.ownerID = ownerId;
-
                 Quaternion rotation = Quaternion.LookRotation(lookDirection, transform.up);
-                block.transform.SetPositionAndRotation(adjustedPosition, rotation);
 
+                var ret = _prismSpawnEvent.RaiseEvent(new PrismEventData
+                {
+                    ownDomain     = domain,
+                    Rotation      = rotation,
+                    SpawnPosition = adjustedPosition,
+                    Scale         = prismScale,
+                    Velocity      = Vector3.zero,
+                    PrismType     = PrismType.FastGrow,
+                });
+                if (!ret.SpawnedObject) continue; // pool drained a dead entry — skip this slot
+
+                var block = ret.SpawnedObject.GetComponent<Prism>();
+                if (!block) continue;
+
+                block.ChangeTeam(domain);
+                block.ownerID = $"Rings::{spawnSerial}::R{ringIndex}::P{i}";
                 block.TargetScale = prismScale;
                 block.Trail = trail;
 
-                if (isDangerous) block.MakeDangerous();
-                if (isShielded) block.ActivateShield();
+                // Pooled reuse: prismProperties flags persist across pool lives and
+                // Initialize re-engages from them — write BOTH ways so a prior life's
+                // shield/danger state can never leak into this one, and the shield
+                // engages exactly once (inside Initialize) instead of the old
+                // pre-Initialize call that double-engaged.
+                block.prismProperties.IsShielded = isShielded;
+                block.prismProperties.IsDangerous = isDangerous;
 
                 block.Initialize();
                 trail.Add(block);
