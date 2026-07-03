@@ -48,6 +48,15 @@ namespace CosmicShore.Gameplay
         /// <summary>World anchor of the scene (its container position).</summary>
         public Vector3 Anchor => transform.position;
 
+        /// <summary>
+        /// The destination a recycle is transporting this scene to, set the instant
+        /// <see cref="RecycleAsync"/> begins and cleared when it completes. During the ~2×
+        /// transition the container is still visually suctioning at its OLD <see cref="Anchor"/>,
+        /// but it has already CLAIMED this slot — the conveyor reads this so it neither double-fills
+        /// the slot nor measures a stale reach while the bloom is in flight. Null when settled.
+        /// </summary>
+        public Vector3? PendingAnchor { get; private set; }
+
         /// <summary>The direction the scene is flown through (+z of the container).</summary>
         public Vector3 Forward => transform.forward;
 
@@ -105,6 +114,7 @@ namespace CosmicShore.Gameplay
             float transitionSeconds, CancellationToken ct)
         {
             Busy = true;
+            PendingAnchor = pose.position; // claim the destination slot up-front (see PendingAnchor)
             try
             {
                 await AnimateScaleAsync(1f, SuctionScale, transitionSeconds, ct);
@@ -124,6 +134,7 @@ namespace CosmicShore.Gameplay
             }
             finally
             {
+                PendingAnchor = null;
                 Busy = false;
             }
         }
