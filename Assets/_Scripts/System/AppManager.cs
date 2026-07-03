@@ -130,6 +130,7 @@ namespace CosmicShore.Core
 
         void Awake()
         {
+            CosmicShore.Utility.BootTrace.Mark("AppManager.Awake");
             // Guard against re-entry (e.g., scene reload in editor).
             if (_hasBootstrapped)
             {
@@ -145,14 +146,17 @@ namespace CosmicShore.Core
 
         void Start()
         {
+            CosmicShore.Utility.BootTrace.Mark("AppManager.Start");
             applicationStateMachine?.TransitionTo(ApplicationState.Bootstrapping);
 
             ConfigureGameData();
             StartNetworkMonitor();
             StartAuthentication();
+            CosmicShore.Utility.BootTrace.Mark("AppManager.Start:authKicked");
 
             _cts = new CancellationTokenSource();
             RunBootstrapAsync(_cts.Token).Forget();
+            CosmicShore.Utility.BootTrace.Mark("AppManager.Start:done");
         }
 
         void OnDestroy()

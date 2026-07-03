@@ -53,5 +53,13 @@ namespace CosmicShore.Utility
         /// existing menu vessel-spawn pipeline and the conveyor toy run with no backend.
         /// </summary>
         public static bool OfflineMode => Enabled;
+
+        /// <summary>
+        /// Show the on-screen <see cref="BootTrace"/> overlay. For the untethered mobile workflow
+        /// (no adb/logcat): checkpoints + errors are persisted to a file and the PREVIOUS run is
+        /// rendered on screen so a crash-looping app shows where it died last launch — screenshot
+        /// it to report. Works in Release builds too (not gated on DEVELOPMENT_BUILD).
+        /// </summary>
+        public static bool ShowBootTrace => Enabled;
     }
 }

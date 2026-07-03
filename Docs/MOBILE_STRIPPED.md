@@ -87,6 +87,27 @@ The local host is started at **Auth-scene** timing (not Bootstrap) to match the 
 so the non-networked Bootstrap→Auth scene load never races a running host. To restore full UGS
 behaviour (on a build that has a UGS project), set `PerfStrip.Enabled = false`.
 
+## On-device boot tracer (no PC / adb needed)
+
+`BootTrace` (`Assets/_Scripts/Utility/BootTrace.cs`, gated on `PerfStrip.ShowBootTrace`) diagnoses
+crash-on-launch when you can't attach a debugger:
+
+- It records boot **checkpoints** + captured errors to a file and, on the **next** launch, renders
+  the **previous** run on screen. Because a crash-looping app is reopened, you see where it died last
+  time even though that run crashed.
+- **To use:** launch the app (it crashes) → **reopen it** → a yellow `LAST RUN GOT TO: <checkpoint>`
+  line + a `SHOW BOOT LOG` panel appear. **Screenshot it.** The last checkpoint (and any red error
+  text) says exactly which stage died.
+- Checkpoint spine: `SubsystemRegistration → AfterAssembliesLoaded → BeforeSplashScreen →
+  BeforeSceneLoad → AfterSceneLoad → AppManager.Awake → AppManager.Start[:authKicked/:done] →
+  AudioSystem.Awake → Auth:preStartHost → Auth:postStartHost(listening=…) → Menu:Ready (SUCCESS)`.
+  E.g. stuck at `AudioSystem.Awake` ⇒ audio/FMOD; stuck at `Auth:preStartHost` ⇒ the local host;
+  reaches `Menu:Ready` ⇒ boot succeeded.
+- **If NO overlay ever appears** (even after reopening): the crash is *before the first rendered
+  frame* — a native crash (graphics or a plugin's static init), which no on-screen tool can show.
+  The same trace is also at `Android/data/<package>/files/cs_boottrace.txt` (openable with a Files
+  app). Turn the whole thing off with `PerfStrip.ShowBootTrace`/`Enabled = false`.
+
 ## Tuning dials (if 60 fps isn't held, cut here first)
 
 1. **Conveyor budget** — `Toy_Conveyor.asset`: lower `prismBudgetPerScene` (≥6) and/or `poolSize`

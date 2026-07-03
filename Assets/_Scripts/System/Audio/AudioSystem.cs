@@ -359,6 +359,7 @@ namespace CosmicShore.Core
 
         void Awake()
         {
+            CosmicShore.Utility.BootTrace.Mark("AudioSystem.Awake");
             if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);

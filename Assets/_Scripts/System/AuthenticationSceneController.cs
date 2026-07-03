@@ -447,7 +447,17 @@ namespace CosmicShore.Core
                 && NetworkManager.Singleton != null && !NetworkManager.Singleton.IsListening)
             {
                 CSDebug.Log("[AuthScene] Offline mode — starting local host (no Relay).");
+                CosmicShore.Utility.BootTrace.Mark("Auth:preStartHost");
                 NetworkManager.Singleton.StartHost();
+                CosmicShore.Utility.BootTrace.Mark(
+                    $"Auth:postStartHost listening={NetworkManager.Singleton.IsListening}");
+            }
+            else
+            {
+                CosmicShore.Utility.BootTrace.Mark(
+                    $"Auth:LoadMenu offline={CosmicShore.Utility.PerfStrip.OfflineMode} " +
+                    $"nm={(NetworkManager.Singleton != null)} " +
+                    $"listening={(NetworkManager.Singleton != null && NetworkManager.Singleton.IsListening)}");
             }
 
             for (int attempt = 1; attempt <= maxAttempts && !networkReady; attempt++)
