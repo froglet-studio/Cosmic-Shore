@@ -48,6 +48,8 @@ EditorBuildSettings:
     path: Assets/_Scenes/Multiplayer Scenes/Tournament.unity
     guid: 6e01e0c4ea227cd4a968f0ac405f06b9
   m_configObjects:
+    com.unity.adaptivePerformance.basic.provider_settings: {fileID: 11400000, guid: d81858d78bc481248ad644af4fc19343,
+      type: 2}
     com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 274754c57f99f5144be86c9d1014705b,
       type: 2}
     com.unity.adaptiveperformance.samsung.android.provider_settings: {fileID: 11400000,
