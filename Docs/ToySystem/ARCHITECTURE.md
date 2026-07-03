@@ -146,13 +146,23 @@ polygon gates, serpent ribbons, colonnades, orbitals, canyons, lattices, comet t
 ramps), each re-rolling its own radii/counts/twists/bends on every arrival, so the same recipe
 never lands the same way twice. The belt **follows you anywhere at any speed**: effective
 spacing = `max(sceneSpacing, speed × minSceneIntervalSeconds)` and lookahead =
-`aheadTargetScenes × spacing`, so there is always a field of ~7 structures ahead, and passed
-scenes clear (suction) at the same rate new ones arrive — spawn frequency IS the clear
-frequency, because the pool is finite and **closed**: the scene farthest behind is *suctioned*
-to a point, relocated ahead, re-posed into a fresh recipe with new domain colour, and *bloomed*
-back out. No score, no end condition; every belt advance is driven by the player's own motion
-(no timers). Exiting freestyle makes the belt dormant; toggling it off stops the flow — either
-way its scenes stay in the world.
+`aheadTargetScenes × spacing`, so there is always a field of ~7 structures ahead.
+
+**Placement is a live-course field, not a connected ribbon.** Each scene lands directly on the
+player's *current* flight line — `position + course × distanceAhead`, scattered up to
+`sceneRadius × pathSpread` laterally so the field has width — with no running "head" the scenes
+chain off. The field's reach is measured *along the current course inside a flight corridor*
+(`FrontierProgress`), so the moment the player changes direction the old scenes fall off-corridor,
+the measured reach collapses, and fresh scenes drop straight into the **new** path from
+`firstSceneDistance` outward. Structures appear in front of you shortly after any turn, regardless
+of where the belt was pointing — the ribbon does not have to stay connected. Passed scenes and the
+now-lateral leftovers of a turn clear (suction) as new ones arrive — spawn frequency IS the clear
+frequency, because the pool is finite and **closed**: a reclaimable scene (off the flight corridor,
+or dropped far behind) is *suctioned* to a point, relocated onto the new path ahead, re-posed into a
+fresh recipe with new domain colour, and *bloomed* back out. Scenes still in the corridor ahead
+(what you're flying toward) are never reclaimed. No score, no end condition; every belt advance is
+driven by the player's own motion (no timers). Exiting freestyle makes the belt dormant; toggling it
+off stops the flow — either way its scenes stay in the world.
 
 **Ecosystem invariants (this toy is ecology-adjacent — all hold by construction):**
 
