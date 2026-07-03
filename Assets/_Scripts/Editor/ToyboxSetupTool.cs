@@ -91,10 +91,21 @@ namespace CosmicShore.Editor
                 SetColor(so, "accentColor", accent);
                 SetBool(so, "unlockedByDefault", true);
                 SetFloat(so, "placementAngleDegrees", angleDeg);
-                extra?.Invoke(so);
                 so.ApplyModifiedProperties();
                 EditorUtility.SetDirty(asset);
             }
+
+            // Always fill any UNSET content references (each 'extra' assignment guards for unset), so
+            // re-running the tool wires newly-added fields — e.g. the conveyor's omniCrystalPrefab —
+            // onto an already-authored asset without clobbering user customisations.
+            if (extra != null)
+            {
+                var so = new SerializedObject(asset);
+                extra.Invoke(so);
+                if (so.ApplyModifiedProperties())
+                    EditorUtility.SetDirty(asset);
+            }
+
             return asset;
         }
 
