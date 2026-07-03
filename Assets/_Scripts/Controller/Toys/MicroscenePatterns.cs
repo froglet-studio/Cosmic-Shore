@@ -91,7 +91,7 @@ namespace CosmicShore.Gameplay
 
             FitToBudget(plan, rng, prismBudget, radius);
             ClampCrystals(plan, rng, maxCrystals);
-            Finalize(plan, rng, palette);
+            ApplyTheming(plan, rng, palette);
             return plan;
         }
 
@@ -691,7 +691,7 @@ namespace CosmicShore.Gameplay
         /// Blue veins), a sparse capped prism-kind scheme (mostly plain), a per-scene scale mood, and
         /// a mostly-elemental/occasionally-omni crystal mix. Deterministic per rng.
         /// </summary>
-        static void Finalize(MicroscenePlan plan, System.Random rng, MicroscenePalette pal)
+        static void ApplyTheming(MicroscenePlan plan, System.Random rng, MicroscenePalette pal)
         {
             pal ??= MicroscenePalette.Default;
             var domains = pal.PlayableDomains is { Length: > 0 } ? pal.PlayableDomains : DefaultDomains;

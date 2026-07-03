@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
     ///     knows nothing about domain, kind, or crystal type — only shape — so the hand-tuned
     ///     flyability of each recipe stays untouched by theming.
     ///   • THEMED OUTPUT (<see cref="Prisms"/> / <see cref="Crystals"/>) — produced by
-    ///     <c>MicroscenePatterns.Finalize</c> from a <see cref="MicroscenePalette"/>: per-prism
+    ///     <c>MicroscenePatterns.ApplyTheming</c> from a <see cref="MicroscenePalette"/>: per-prism
     ///     domain (incl. neutral Blue) + <see cref="PrismKind"/> (plain / danger / shielded /
     ///     supershielded) under a coherent per-scene style, a per-scene scale mood, and a
     ///     mostly-elemental / occasionally-omni crystal mix. The conveyor consumes THESE.

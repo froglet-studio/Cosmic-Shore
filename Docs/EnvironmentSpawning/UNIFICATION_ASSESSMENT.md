@@ -83,7 +83,7 @@ gain).
 ## What was implemented (diversity expansion, built on the unified substrate)
 
 Themed separately from geometry so the recipes stay pure shape (`MicroscenePlan` now carries a
-geometry layer + a themed `Prisms`/`Crystals` layer; `MicroscenePatterns.Finalize` applies theming
+geometry layer + a themed `Prisms`/`Crystals` layer; `MicroscenePatterns.ApplyTheming` applies theming
 from a `MicroscenePalette`, config-authored on `ConveyorToyDefinitionSO`):
 
 - **Bigger recipe library** — 16 → **28 recipes** (archway, vortex with an open convergence +

@@ -152,7 +152,7 @@ speed**: effective spacing = `max(sceneSpacing, speed × minSceneIntervalSeconds
 `aheadTargetScenes × spacing`, so there is always a field of ~7 structures ahead.
 
 **Geometry vs. theming (why it stays fresh, not chaotic).** A recipe produces pure *shape* only;
-`MicroscenePatterns.Finalize` then themes each scene from a config-authored `MicroscenePalette`
+`MicroscenePatterns.ApplyTheming` then themes each scene from a config-authored `MicroscenePalette`
 (`ConveyorToyDefinitionSO`): a **per-scene domain scheme** (mono / banded-by-structure / accented /
 neutral-veined-with-Blue — weighted so most scenes read one coherent colour, never per-prism
 confetti; domains read live each draw so the Domain Changer toy takes effect), a sparse **prism-kind
