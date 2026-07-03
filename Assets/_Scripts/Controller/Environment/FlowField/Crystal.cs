@@ -46,8 +46,7 @@ namespace CosmicShore.Gameplay
         #endregion
         
         public List<CrystalModelData> CrystalModels => crystalModels;
-        
-        Material tempMaterial;
+
         public CrystalManager CrystalManager { get; protected set; }
         public bool IsExploding { get; private set; }
 
@@ -164,28 +163,33 @@ namespace CosmicShore.Gameplay
             
             IsExploding = true;
             WaitForImpact().Forget();
-            
+
+            var playerName = explodeParams.PlayerName.ToString();
             foreach (var modelData in crystalModels)
             {
                 var model = modelData.model;
 
-                var spentCrystal = Instantiate(SpentCrystalPrefab);
-                spentCrystal.transform.SetPositionAndRotation(transform.position, transform.rotation);
-                spentCrystal.transform.localScale = transform.lossyScale;
-                
-                tempMaterial = new Material(modelData.explodingMaterial);
-                spentCrystal.GetComponent<Renderer>().material = tempMaterial;
+                // Pooled husk checkout — no Instantiate or material clone in the
+                // pickup frame. Impact animates its shader state per-renderer via
+                // MaterialPropertyBlock over the shared exploding material.
+                var impact = SpentCrystalPoolManager.GetPooledOrInstantiate(
+                    SpentCrystalPrefab, transform.position, transform.rotation);
+                if (!impact) continue;
+
+                impact.transform.localScale = transform.lossyScale;
 
                 if (crystalProperties.Element == Element.Space && modelData.spaceCrystalAnimator != null)
                 {
-                    var spentAnimator = spentCrystal.GetComponent<SpaceCrystalAnimator>();
+                    var spentAnimator = impact.GetComponent<SpaceCrystalAnimator>();
                     var thisAnimator = model.GetComponent<SpaceCrystalAnimator>();
-                    spentAnimator.timer = thisAnimator.timer;
+                    if (spentAnimator && thisAnimator)
+                        spentAnimator.timer = thisAnimator.timer;
                 }
-                spentCrystal.GetComponent<Impact>()?.HandleImpact(
-                    explodeParams.Course * explodeParams.Speed, tempMaterial, explodeParams.PlayerName.ToString());
+
+                impact.HandleImpact(
+                    explodeParams.Course * explodeParams.Speed, modelData.explodingMaterial, playerName);
             }
-            
+
             PlayExplosionAudio();
         }
 
