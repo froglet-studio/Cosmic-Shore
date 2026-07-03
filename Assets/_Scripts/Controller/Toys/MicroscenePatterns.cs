@@ -1,32 +1,24 @@
 using System.Collections.Generic;
+using CosmicShore.Data;
 using UnityEngine;
+using static CosmicShore.Gameplay.PrismGeometry;
 
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The plan for one microscene on the freestyle conveyor: an authored-feeling arrangement of
-    /// prism spawn points (local space, +z = flight direction), elemental-crystal pickup points,
-    /// and a count of lifeforms to release into the host <see cref="Cell"/> at the scene site.
-    /// Plans are produced by <see cref="MicroscenePatterns"/> from an instance-local
-    /// <see cref="System.Random"/>, so generation is deterministic per seed and safe to run
-    /// incrementally (never touches the global UnityEngine.Random).
-    /// </summary>
-    public sealed class MicroscenePlan
-    {
-        public string RecipeName;
-        public readonly List<SpawnPoint> PrismPoints = new();
-        public readonly List<Vector3> CrystalPoints = new();
-        public int FloraCount;
-        public int FaunaCount;
-    }
-
-    /// <summary>
-    /// Pure generators for the conveyor's microscene recipes — each one a small flyable set piece
-    /// tuned for a Squirrel run. Every recipe re-rolls its own parameters (radii, counts, twists,
-    /// bends, phases) on EVERY plan, so the same recipe never lands the same way twice, and every
-    /// recipe emits exactly <c>prismBudget</c> prism points so a recycled scene can re-pose its
-    /// fixed stock of prisms into any recipe without creating or destroying mass (the conveyor is
-    /// a closed system: same prisms, new arrangement).
+    /// Pure generators for the conveyor's microscene recipes — each a small flyable set piece tuned
+    /// for a Squirrel run. Every recipe re-rolls its own parameters (radii, counts, twists, bends,
+    /// phases) on EVERY plan, so the same recipe never lands the same way twice, and every recipe is
+    /// fitted to exactly <c>prismBudget</c> prism points so a recycled scene can re-pose its fixed
+    /// stock of prisms into any recipe without creating or destroying mass (the conveyor is a closed
+    /// system: same prisms, new arrangement).
+    ///
+    /// Geometry is produced through the shared <see cref="PrismGeometry"/> vocabulary (helices,
+    /// hoops, tubes, arches, vortices, corridors, lattices, torus rings, fans, scatters, wave
+    /// sheets…). The recipe knows ONLY shape; <see cref="Finalize"/> then themes each scene from a
+    /// <see cref="MicroscenePalette"/> — per-prism domain (incl. neutral Blue), prism kind
+    /// (plain / danger / shielded / supershielded), a scale mood, and the elemental/omni crystal
+    /// mix — so most scenes read coherent with occasional spice, never chaotic confetti.
     ///
     /// Prism sizing follows the shipped structures (HexRace ribbon 10×1×3, ring gates ~1.8×1.8×7.5,
     /// helix strands 1×1×5): the LONG axis runs along the structure's own path, so sparse counts
@@ -34,12 +26,14 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public static class MicroscenePatterns
     {
-        public const int RecipeCount = 16;
+        public const int RecipeCount = 28;
 
         static readonly string[] Names =
         {
             "Gate Run", "Helix Weave", "Tunnel", "Slalom", "Starburst", "Orchard", "Meadow", "Menagerie",
             "Polygon Gates", "Serpent Ribbon", "Colonnade", "Orbitals", "Canyon", "Lattice", "Comet Tail", "Spiral Ramp",
+            "Archway", "Vortex", "Slot Corridor", "Cube Field", "Torus Gate", "Pillar Hall", "Turbine", "Asteroid Field",
+            "Rolling Plains", "Grove", "Aviary", "Preserve",
         };
 
         public static string RecipeName(int recipe) => Names[Mathf.Abs(recipe) % RecipeCount];
@@ -48,14 +42,17 @@ namespace CosmicShore.Gameplay
         public static bool IsLifeformRecipe(int recipe)
         {
             int r = Mathf.Abs(recipe) % RecipeCount;
-            return r == 6 || r == 7; // Meadow, Menagerie
+            // Meadow, Menagerie, Rolling Plains, Grove, Aviary, Preserve.
+            return r == 6 || r == 7 || r == 24 || r == 25 || r == 26 || r == 27;
         }
 
         /// <summary>
         /// Build the plan for one microscene. <paramref name="radius"/> bounds the lateral extent;
         /// the scene runs roughly 2.2 × radius along +z so it reads as a place you fly THROUGH.
+        /// <paramref name="palette"/> drives theming (domain/kind/scale/crystal mix); null = defaults.
         /// </summary>
-        public static MicroscenePlan Plan(int recipe, System.Random rng, int prismBudget, float radius, int maxCrystals)
+        public static MicroscenePlan Plan(int recipe, System.Random rng, int prismBudget, float radius, int maxCrystals,
+            MicroscenePalette palette = null)
         {
             var plan = new MicroscenePlan { RecipeName = RecipeName(recipe) };
             float length = radius * 2.2f;
@@ -78,10 +75,23 @@ namespace CosmicShore.Gameplay
                 case 13: Lattice(plan, rng, prismBudget, radius, length); break;
                 case 14: CometTail(plan, rng, prismBudget, radius, length); break;
                 case 15: SpiralRamp(plan, rng, prismBudget, radius, length); break;
+                case 16: Archway(plan, rng, prismBudget, radius, length); break;
+                case 17: Vortex(plan, rng, prismBudget, radius, length); break;
+                case 18: SlotCorridor(plan, rng, prismBudget, radius, length); break;
+                case 19: CubeField(plan, rng, prismBudget, radius, length); break;
+                case 20: TorusGate(plan, rng, prismBudget, radius, length); break;
+                case 21: PillarHall(plan, rng, prismBudget, radius, length); break;
+                case 22: Turbine(plan, rng, prismBudget, radius); break;
+                case 23: AsteroidField(plan, rng, prismBudget, radius, length); break;
+                case 24: RollingPlains(plan, rng, prismBudget, radius, length); break;
+                case 25: Grove(plan, rng, prismBudget, radius, length); break;
+                case 26: Aviary(plan, rng, prismBudget, radius, length); break;
+                case 27: Preserve(plan, rng, prismBudget, radius, length); break;
             }
 
             FitToBudget(plan, rng, prismBudget, radius);
             ClampCrystals(plan, rng, maxCrystals);
+            Finalize(plan, rng, palette);
             return plan;
         }
 
@@ -104,7 +114,7 @@ namespace CosmicShore.Gameplay
                 float gateRadius = Range(rng, 13f, 28f);
                 Quaternion tilt = Quaternion.Euler(Range(rng, -22f, 22f), Range(rng, -22f, 22f), 0f);
 
-                AddHoop(plan, new Vector3(wander.x, wander.y, z), tilt, gateRadius, perGate, rng);
+                AddHoop(plan.PrismPoints, new Vector3(wander.x, wander.y, z), tilt, gateRadius, perGate, rng);
                 if (g == gates - 1)
                     plan.CrystalPoints.Add(new Vector3(wander.x, wander.y, z + 24f));
             }
@@ -280,7 +290,7 @@ namespace CosmicShore.Gameplay
                 plan.PrismPoints.Add(new SpawnPoint(new Vector3(x, y, z), rot, PlateScale(rng, 0.85f)));
             }
             plan.CrystalPoints.Add(new Vector3(0f, 0f, Range(rng, -0.2f, 0.2f) * length));
-            plan.FloraCount = 1 + rng.Next(2);
+            plan.FloraCount = 1 + rng.Next(3);
         }
 
         /// <summary>Loose prey clumps with wildlife released into the cell to hunt them.</summary>
@@ -303,10 +313,10 @@ namespace CosmicShore.Gameplay
                 }
             }
             plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 16f));
-            plan.FaunaCount = 1 + rng.Next(2);
+            plan.FaunaCount = 1 + rng.Next(3);
         }
 
-        // ── New eight ────────────────────────────────────────────────────────
+        // ── The second eight ─────────────────────────────────────────────────
 
         /// <summary>Angular k-gon gates (triangles / diamonds / pentagons) rotating gate to gate.</summary>
         static void PolygonGates(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
@@ -415,7 +425,7 @@ namespace CosmicShore.Gameplay
             {
                 float ringRadius = radius * reach * ((r + 1f) / rings);
                 var tilt = Quaternion.Euler(Range(rng, 0f, 180f), Range(rng, 0f, 180f), Range(rng, 0f, 180f));
-                AddHoop(plan, Vector3.zero, tilt, ringRadius, perRing, rng);
+                AddHoop(plan.PrismPoints, Vector3.zero, tilt, ringRadius, perRing, rng);
             }
             plan.CrystalPoints.Add(Vector3.zero);
         }
@@ -523,51 +533,128 @@ namespace CosmicShore.Gameplay
             plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 20f));
         }
 
-        // ── Helpers ──────────────────────────────────────────────────────────
+        // ── The new twelve (broader primitive vocabulary + more living scenes) ──
 
-        /// <summary>
-        /// A prism hoop: long axes chained around the circumference (the shipped ring-gate look)
-        /// so the gate reads as a continuous hoop rather than dotted tiles.
-        /// </summary>
-        static void AddHoop(MicroscenePlan plan, Vector3 center, Quaternion tilt, float ringRadius, int count, System.Random rng)
+        /// <summary>A run of arches to fly UNDER, crystal past the last one.</summary>
+        static void Archway(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
-            for (int i = 0; i < count; i++)
+            int arches = Mathf.Clamp(budget / RangeInt(rng, 7, 12), 3, 6);
+            int perArch = budget / arches;
+            for (int a = 0; a < arches; a++)
             {
-                float angle = i / (float)count * Mathf.PI * 2f;
-                Vector3 radial = tilt * new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f);
-                Vector3 tangent = tilt * new Vector3(-Mathf.Sin(angle), Mathf.Cos(angle), 0f);
-                var rot = Quaternion.LookRotation(tangent, radial);
-                plan.PrismPoints.Add(new SpawnPoint(center + radial * ringRadius, rot, StrandScale(rng)));
+                float z = Mathf.Lerp(-length * 0.5f, length * 0.5f, arches > 1 ? a / (float)(arches - 1) : 0.5f);
+                float r = Range(rng, 16f, 30f);
+                AddArch(plan.PrismPoints, new Vector3(Range(rng, -0.2f, 0.2f) * radius, -radius * 0.1f, z), r, perArch,
+                    Range(rng, 150f, 200f), rng);
             }
+            plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 18f));
         }
 
-        /// <summary>Elongated strand segment (~1.7×1.7×6.5) — long axis is local +z (helix/ring/spoke).</summary>
-        static Vector3 StrandScale(System.Random rng, float bias = 1f)
+        /// <summary>Converging arms with an OPEN convergence mouth + an inviting crystal to skim into.</summary>
+        static void Vortex(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
-            float j = Range(rng, 0.85f, 1.25f) * bias;
-            return new Vector3(1.7f * j, 1.7f * j, 6.5f * j);
+            int arms = RangeInt(rng, 3, 6);
+            int perArm = Mathf.Max(3, budget / arms);
+            AddVortex(plan.PrismPoints, arms, perArm, radius * Range(rng, 0.5f, 0.75f), length, Range(rng, 0.6f, 1.6f), rng);
+            plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.4f)); // at the open mouth
         }
 
-        /// <summary>Broad wall plate (~5.5×5.5×1.2) for fins and ground panels.</summary>
-        static Vector3 PlateScale(System.Random rng, float bias = 1f)
+        /// <summary>Two parallel plate walls with gaps — a slot to roll and slip through.</summary>
+        static void SlotCorridor(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
-            float j = Range(rng, 0.85f, 1.3f) * bias;
-            return new Vector3(5.5f * j, 5.5f * j, 1.2f);
+            float halfGap = Range(rng, 0.12f, 0.22f) * radius;
+            float wallHeight = Range(rng, 0.3f, 0.6f) * radius;
+            int steps = Mathf.Max(4, budget / 2);
+            AddCorridor(plan.PrismPoints, halfGap, wallHeight, length, steps, Range(rng, 4f, 7f), rng);
+            plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 16f));
         }
 
-        /// <summary>Tall trunk segment — long axis is local +y.</summary>
-        static Vector3 TrunkScale(System.Random rng)
+        /// <summary>A 3D cubic lattice with gaps to pick a line through, crystal at the core.</summary>
+        static void CubeField(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
-            float j = Range(rng, 0.85f, 1.2f);
-            return new Vector3(1.8f * j, 6.5f * j, 1.8f * j);
+            int n = Mathf.Clamp(Mathf.RoundToInt(Mathf.Pow(budget * 1.6f, 1f / 3f)), 2, 5);
+            float spacing = Range(rng, 10f, 16f);
+            int nz = Mathf.Max(n, Mathf.RoundToInt(length / spacing * 0.5f));
+            AddGrid3D(plan.PrismPoints, n, n, nz, spacing, Range(rng, 0.55f, 0.8f), rng);
+            plan.CrystalPoints.Add(Vector3.zero);
         }
 
-        /// <summary>Nominal-ish chunk (4×4×1 ≈ the 16-volume leaf) with organic jitter — scatter/canopy.</summary>
-        static Vector3 ChunkScale(System.Random rng, float bias = 1f)
+        /// <summary>One to three big torus rings to fly through the doughnut hole of.</summary>
+        static void TorusGate(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
-            float j = Range(rng, 0.8f, 1.35f) * bias;
-            return new Vector3(4f * j, 4f * j, 1f);
+            int rings = RangeInt(rng, 1, 3);
+            int per = Mathf.Max(8, budget / Mathf.Max(1, rings));
+            for (int r = 0; r < rings; r++)
+            {
+                float z = rings > 1 ? Mathf.Lerp(-length * 0.3f, length * 0.3f, r / (float)(rings - 1)) : 0f;
+                var tilt = Quaternion.Euler(Range(rng, -20f, 20f), Range(rng, -20f, 20f), 0f);
+                AddTorusRing(plan.PrismPoints, new Vector3(0f, 0f, z), tilt, radius * Range(rng, 0.5f, 0.7f),
+                    Range(rng, 5f, 10f), per, rng);
+            }
+            plan.CrystalPoints.Add(Vector3.zero);
         }
+
+        /// <summary>A hall of pillars to fly between, crystal past the far end.</summary>
+        static void PillarHall(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
+        {
+            int cols = Mathf.Clamp(budget / RangeInt(rng, 4, 7), 4, 10);
+            int per = Mathf.Max(2, budget / cols);
+            AddPillars(plan.PrismPoints, cols, per, radius * Range(rng, 0.5f, 0.8f), length, Range(rng, 6f, 8f), rng);
+            plan.CrystalPoints.Add(new Vector3(0f, radius * 0.1f, length * 0.5f + 16f));
+        }
+
+        /// <summary>Radial blades fanning off the axis — a turbine to weave, crystal at the hub.</summary>
+        static void Turbine(MicroscenePlan plan, System.Random rng, int budget, float radius)
+        {
+            int blades = RangeInt(rng, 4, 9);
+            int per = Mathf.Max(3, budget / blades);
+            AddFan(plan.PrismPoints, blades, per, radius * Range(rng, 0.6f, 0.85f), Range(rng, 0.3f, 1.2f), rng);
+            plan.CrystalPoints.Add(Vector3.zero);
+        }
+
+        /// <summary>A loose asteroid field to slalom, crystal drifting in it.</summary>
+        static void AsteroidField(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
+        {
+            AddScatter(plan.PrismPoints, budget, radius, length, rng);
+            plan.CrystalPoints.Add(new Vector3(Range(rng, -0.2f, 0.2f) * radius, 0f, Range(rng, -0.2f, 0.2f) * length));
+        }
+
+        /// <summary>An open rolling floor to skim along — flora seeded into the cell.</summary>
+        static void RollingPlains(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
+        {
+            int nx = Mathf.Clamp(Mathf.RoundToInt(Mathf.Sqrt(budget)), 3, 8);
+            int nz = Mathf.Max(2, budget / Mathf.Max(1, nx));
+            AddWaveSheet(plan.PrismPoints, nx, nz, radius, length, Range(rng, 0.05f, 0.14f) * radius, rng);
+            plan.CrystalPoints.Add(new Vector3(0f, 0f, Range(rng, -0.2f, 0.2f) * length));
+            plan.FloraCount = 2 + rng.Next(3);
+        }
+
+        /// <summary>A grove of trees with flora seeded into the cell.</summary>
+        static void Grove(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
+        {
+            Orchard(plan, rng, budget, radius, length); // reuse the tree geometry
+            plan.FloraCount = 1 + rng.Next(2);
+        }
+
+        /// <summary>A prey field with wildlife released into the cell to hunt it.</summary>
+        static void Aviary(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
+        {
+            AddScatter(plan.PrismPoints, budget, radius, length, rng);
+            plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 16f));
+            plan.FaunaCount = 2 + rng.Next(3);
+        }
+
+        /// <summary>An open preserve — a rolling floor with BOTH flora and fauna released into the cell.</summary>
+        static void Preserve(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
+        {
+            int nx = Mathf.Clamp(Mathf.RoundToInt(Mathf.Sqrt(budget)), 3, 7);
+            AddWaveSheet(plan.PrismPoints, nx, Mathf.Max(2, budget / 6), radius, length, Range(rng, 0.05f, 0.12f) * radius, rng);
+            plan.CrystalPoints.Add(new Vector3(0f, 0f, Range(rng, -0.2f, 0.2f) * length));
+            plan.FloraCount = 1 + rng.Next(2);
+            plan.FaunaCount = 1 + rng.Next(2);
+        }
+
+        // ── Budget fitting (geometry) ────────────────────────────────────────
 
         /// <summary>
         /// Recipes must emit exactly <paramref name="budget"/> prism points so the conveyor can
@@ -591,21 +678,145 @@ namespace CosmicShore.Gameplay
                 plan.CrystalPoints.RemoveAt(rng.Next(plan.CrystalPoints.Count));
         }
 
-        static float Range(System.Random rng, float min, float max) => (float)(rng.NextDouble() * (max - min) + min);
+        // ── Theming (domain + kind + scale mood + crystal mix) ───────────────
 
-        /// <summary>Uniform integer in [minInclusive, maxExclusive).</summary>
-        static int RangeInt(System.Random rng, int minInclusive, int maxExclusive) => rng.Next(minInclusive, maxExclusive);
+        enum DomainScheme { Mono = 0, Banded = 1, Accent = 2, NeutralVein = 3 }
+        enum KindScheme { AllPlain = 0, DangerAccent = 1, ShieldAccent = 2, Landmark = 3 }
 
-        static Vector3 OnUnitSphere(System.Random rng)
+        static readonly Domains[] DefaultDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
+
+        /// <summary>
+        /// Turn the recipe's pure geometry into themed <see cref="MicroscenePlan.Prisms"/> /
+        /// <see cref="MicroscenePlan.Crystals"/>: a coherent per-scene domain scheme (incl. neutral
+        /// Blue veins), a sparse capped prism-kind scheme (mostly plain), a per-scene scale mood, and
+        /// a mostly-elemental/occasionally-omni crystal mix. Deterministic per rng.
+        /// </summary>
+        static void Finalize(MicroscenePlan plan, System.Random rng, MicroscenePalette pal)
         {
-            // Polar pick — good enough distribution for scenery.
-            float z = Range(rng, -1f, 1f);
-            float a = Range(rng, 0f, Mathf.PI * 2f);
-            float r = Mathf.Sqrt(Mathf.Max(0f, 1f - z * z));
-            return new Vector3(r * Mathf.Cos(a), r * Mathf.Sin(a), z);
+            pal ??= MicroscenePalette.Default;
+            var domains = pal.PlayableDomains is { Length: > 0 } ? pal.PlayableDomains : DefaultDomains;
+
+            float mood = rng.NextDouble() < pal.ScaleMoodChance ? Range(rng, pal.ScaleMoodMin, pal.ScaleMoodMax) : 1f;
+
+            int n = plan.PrismPoints.Count;
+            var domainOf = AssignDomains(n, rng, pal, domains);
+            var kindOf = AssignKinds(n, rng, pal);
+
+            plan.Prisms.Clear();
+            for (int i = 0; i < n; i++)
+            {
+                var p = plan.PrismPoints[i];
+                var scaled = new SpawnPoint(p.Position, p.Rotation, p.Scale * mood);
+                plan.Prisms.Add(new PrismLay(scaled, domainOf[i], kindOf[i]));
+            }
+
+            plan.Crystals.Clear();
+            foreach (var pos in plan.CrystalPoints)
+            {
+                var kind = rng.NextDouble() < pal.OmniCrystalChance ? CrystalKind.Omni : CrystalKind.Elemental;
+                plan.Crystals.Add(new CrystalDrop(pos, kind));
+            }
         }
 
-        static Vector3 InsideUnitSphere(System.Random rng) =>
-            OnUnitSphere(rng) * Mathf.Pow(Range(rng, 0f, 1f), 1f / 3f);
+        static Domains[] AssignDomains(int count, System.Random rng, MicroscenePalette pal, Domains[] domains)
+        {
+            var result = new Domains[count];
+            if (count == 0) return result;
+
+            var scheme = (DomainScheme)WeightedIndex(rng, pal.MonoWeight, pal.BandedWeight, pal.AccentWeight, pal.NeutralVeinWeight);
+            switch (scheme)
+            {
+                case DomainScheme.Banded:
+                {
+                    // Contiguous bands — structures tend to be contiguous runs in the point list,
+                    // so a band ≈ a structure, keeping the colouring coherent rather than confetti.
+                    int bands = Mathf.Clamp(domains.Length, 2, 3);
+                    for (int i = 0; i < count; i++)
+                    {
+                        int band = Mathf.Min(bands - 1, i * bands / count);
+                        result[i] = domains[band % domains.Length];
+                    }
+                    break;
+                }
+                case DomainScheme.Accent:
+                {
+                    var baseDomain = domains[rng.Next(domains.Length)];
+                    var accent = PickOther(rng, domains, baseDomain);
+                    for (int i = 0; i < count; i++)
+                        result[i] = rng.NextDouble() < pal.AccentChance ? accent : baseDomain;
+                    break;
+                }
+                case DomainScheme.NeutralVein:
+                {
+                    var baseDomain = domains[rng.Next(domains.Length)];
+                    for (int i = 0; i < count; i++)
+                        result[i] = rng.NextDouble() < pal.BlueVeinChance ? Domains.Blue : baseDomain;
+                    break;
+                }
+                default: // Mono
+                {
+                    var only = domains[rng.Next(domains.Length)];
+                    for (int i = 0; i < count; i++) result[i] = only;
+                    break;
+                }
+            }
+            return result;
+        }
+
+        static PrismKind[] AssignKinds(int count, System.Random rng, MicroscenePalette pal)
+        {
+            var kinds = new PrismKind[count]; // default Plain
+            if (count == 0) return kinds;
+
+            var scheme = (KindScheme)WeightedIndex(rng, pal.AllPlainWeight, pal.DangerAccentWeight, pal.ShieldAccentWeight, pal.LandmarkWeight);
+            switch (scheme)
+            {
+                case KindScheme.DangerAccent:
+                    Sprinkle(kinds, rng, PrismKind.Danger, Mathf.Min(pal.MaxDanger, Mathf.Max(1, count / 8)));
+                    break;
+                case KindScheme.ShieldAccent:
+                    Sprinkle(kinds, rng, PrismKind.Shielded, Mathf.Min(pal.MaxShielded, Mathf.Max(1, count / 16)));
+                    break;
+                case KindScheme.Landmark:
+                    Sprinkle(kinds, rng, PrismKind.SuperShielded, Mathf.Min(pal.MaxSuperShielded, 1));
+                    Sprinkle(kinds, rng, PrismKind.Shielded, Mathf.Min(pal.MaxShielded, Mathf.Max(1, count / 20)));
+                    break;
+                // AllPlain: leave every prism plain.
+            }
+            return kinds;
+        }
+
+        static void Sprinkle(PrismKind[] kinds, System.Random rng, PrismKind kind, int n)
+        {
+            int placed = 0, guard = 0, cap = kinds.Length * 4;
+            while (placed < n && guard++ < cap)
+            {
+                int idx = rng.Next(kinds.Length);
+                if (kinds[idx] != PrismKind.Plain) continue;
+                kinds[idx] = kind;
+                placed++;
+            }
+        }
+
+        static Domains PickOther(System.Random rng, Domains[] domains, Domains not)
+        {
+            if (domains.Length <= 1) return not;
+            for (int guard = 0; guard < 8; guard++)
+            {
+                var pick = domains[rng.Next(domains.Length)];
+                if (pick != not) return pick;
+            }
+            return not;
+        }
+
+        static int WeightedIndex(System.Random rng, float w0, float w1, float w2, float w3)
+        {
+            float total = Mathf.Max(0.0001f, w0 + w1 + w2 + w3);
+            float roll = (float)(rng.NextDouble() * total);
+            if ((roll -= w0) < 0f) return 0;
+            if ((roll -= w1) < 0f) return 1;
+            if ((roll -= w2) < 0f) return 2;
+            return 3;
+        }
     }
 }

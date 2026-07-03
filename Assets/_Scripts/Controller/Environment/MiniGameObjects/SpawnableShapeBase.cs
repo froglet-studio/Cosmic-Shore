@@ -86,27 +86,14 @@ public abstract class SpawnableShapeBase : SpawnableBase
         {
             var prismPrefab = GetPrismPrefab();
             if (prismPrefab == null) continue;
+            if (!container) yield break; // Container was destroyed
 
             var trail = new Trail(td.IsLoop);
-            var actualDomain = td.Domain;
 
-            for (int i = 0; i < td.Points.Length; i++)
-            {
-                if (!container) yield break; // Container was destroyed
-
-                var point = td.Points[i];
-                var block = Instantiate(prismPrefab, container.transform);
-                block.ChangeTeam(actualDomain);
-                block.ownerID = $"{container.name}::{i}";
-                block.transform.localPosition = point.Position;
-                block.transform.localRotation = point.Rotation;
-                block.TargetScale = point.Scale;
-                block.Trail = trail;
-                block.Initialize();
-                trail.Add(block);
-
-                yield return new WaitForSeconds(spawnInterval);
-            }
+            // Shared canonical gradual reveal (one prism every spawnInterval seconds), bailing if
+            // the container is destroyed mid-spawn — same sequence the other builders use.
+            yield return PrismTrailBuilder.LayGradual(prismPrefab, td.Points, td.Domain,
+                container.transform, trail, container.name, spawnInterval);
 
             trails.Add(trail);
         }

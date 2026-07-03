@@ -119,6 +119,14 @@ namespace CosmicShore.Editor
                 if (prism) prismProp.objectReferenceValue = prism;
             }
 
+            // Omni crystal prefab: the body-collected jackpot pickup (fuel + speed buff).
+            var omniProp = so.FindProperty("omniCrystalPrefab");
+            if (omniProp != null && !omniProp.objectReferenceValue)
+            {
+                var omni = AssetDatabase.LoadAssetAtPath<Crystal>("Assets/_Prefabs/Environment/Crystal.prefab");
+                if (omni) omniProp.objectReferenceValue = omni;
+            }
+
             // Crystal-side collection effect: the standard element-level powerup.
             var effectsProp = so.FindProperty("crystalCollectionEffects");
             if (effectsProp != null && effectsProp.arraySize == 0)

@@ -27,8 +27,20 @@ namespace CosmicShore.ScriptableObjects
                                  "The skimmer's own authored crystal effects fire regardless.")]
         SkimmerCrystalEffectSO[] crystalCollectionEffects;
 
-        [SerializeField, Min(0), Tooltip("Most elemental-crystal pickups a single scene can hold.")]
+        [SerializeField, Tooltip("Omni crystal prefab — the body-collected jackpot (fuel + speed buff, " +
+                                 "any domain), the richer/rarer reward in the mix. Assets/_Prefabs/" +
+                                 "Environment/Crystal.prefab. Optional: unwired → omni slots fall back to " +
+                                 "elemental pickups.")]
+        Crystal omniCrystalPrefab;
+
+        [SerializeField, Min(0), Tooltip("Most crystal pickups a single scene can hold.")]
         int maxCrystalsPerScene = 3;
+
+        [SerializeField, Tooltip("Theming palette — per-scene domain distribution (incl. neutral Blue), " +
+                                 "prism-kind accents (danger / shielded / supershielded), scale mood, and " +
+                                 "the elemental/omni crystal mix. Weighted toward coherent scenes with " +
+                                 "occasional spice, never chaotic confetti.")]
+        MicroscenePalette palette = new();
 
         [SerializeField, Tooltip("Include the living recipes (Meadow flora / Menagerie fauna, released into " +
                                  "the host cell as ordinary citizens). Ignored gracefully when the scene has " +
@@ -96,7 +108,9 @@ namespace CosmicShore.ScriptableObjects
         ConveyorConfig BuildConfig() => new()
         {
             PrismPrefab = prismPrefab,
+            OmniCrystalPrefab = omniCrystalPrefab,
             CrystalEffects = crystalCollectionEffects,
+            Palette = palette ?? new MicroscenePalette(),
             PoolSize = poolSize,
             PrismBudget = prismBudgetPerScene,
             SceneRadius = sceneRadius,
