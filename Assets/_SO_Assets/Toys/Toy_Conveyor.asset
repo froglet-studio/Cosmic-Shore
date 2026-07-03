@@ -33,5 +33,5 @@ MonoBehaviour:
   minSceneIntervalSeconds: 2
   recycleBehindDistance: 170
   transitionSeconds: 1.2
-  pathSpread: 1
+  turnBreakDegrees: 55
   seed: 0

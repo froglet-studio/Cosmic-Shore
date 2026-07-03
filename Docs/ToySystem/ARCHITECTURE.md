@@ -148,21 +148,33 @@ never lands the same way twice. The belt **follows you anywhere at any speed**: 
 spacing = `max(sceneSpacing, speed × minSceneIntervalSeconds)` and lookahead =
 `aheadTargetScenes × spacing`, so there is always a field of ~7 structures ahead.
 
-**Placement is a live-course field, not a connected ribbon.** Each scene lands directly on the
-player's *current* flight line — `position + course × distanceAhead`, scattered up to
-`sceneRadius × pathSpread` laterally so the field has width — with no running "head" the scenes
-chain off. The field's reach is measured *along the current course inside a flight corridor*
-(`FrontierProgress`), so the moment the player changes direction the old scenes fall off-corridor,
-the measured reach collapses, and fresh scenes drop straight into the **new** path from
-`firstSceneDistance` outward. Structures appear in front of you shortly after any turn, regardless
-of where the belt was pointing — the ribbon does not have to stay connected. Passed scenes and the
-now-lateral leftovers of a turn clear (suction) as new ones arrive — spawn frequency IS the clear
-frequency, because the pool is finite and **closed**: a reclaimable scene (off the flight corridor,
-or dropped far behind) is *suctioned* to a point, relocated onto the new path ahead, re-posed into a
-fresh recipe with new domain colour, and *bloomed* back out. Scenes still in the corridor ahead
-(what you're flying toward) are never reclaimed. No score, no end condition; every belt advance is
-driven by the player's own motion (no timers). Exiting freestyle makes the belt dormant; toggling it
-off stops the flow — either way its scenes stay in the world.
+**Placement is a connected ribbon that can break and re-lay.** Every scene sits *on* the flight
+line — never scattered laterally (no orthogonal "sphere in front of you"). Each tick the belt scans
+a **forward cone** (half-angle `turnBreakDegrees`, default 55°) around the live course and does one
+of two things:
+
+- **Near-fill** — if nothing lies just ahead on the current heading (start-up, or a turn just
+  ejected the near scenes out of the cone), it drops a scene directly ahead at `firstSceneDistance`,
+  so a structure appears in front of you right after any turn.
+- **Extend** — otherwise it chains the next scene off the *actual frontmost scene* along the current
+  course (`tip + course × spacing`). Chaining off **real mass** (not a free-floating "head") keeps the
+  ribbon connected and lets it **bend** with gentle/moderate turns without ever drifting into a
+  parallel path far to the side — the drift that made the old head-chained belt lay a distant
+  shadow ribbon on any deviation.
+
+A **sharp turn** drops the whole old ribbon out of the cone: its measured reach collapses, near-fill
+re-lays straight down the **new** heading from `firstSceneDistance` outward, and the now-lateral
+leftovers become the farthest-first recycle candidates that rebuild ahead — so the ribbon *breaks and
+restarts in front of you* on a hard turn while staying a continuous ribbon through gentler ones.
+Passed scenes and a turn's leftovers clear (suction) as new ones arrive — spawn frequency IS the
+clear frequency, because the pool is finite and **closed**: a reclaimable scene (off the flight cone,
+or dropped far behind) is *suctioned* to a point, relocated onto the ribbon ahead, re-posed into a
+fresh recipe with new domain colour, and *bloomed* back out. Scenes still in the cone ahead (what
+you're flying toward) are never reclaimed, and a scene mid-recycle **claims its destination slot
+immediately** (`Microscene.PendingAnchor`) so a rebuild never piles several arrivals onto one point
+while the blooms are in flight. No score, no end condition; every belt advance is driven by the
+player's own motion (no timers). Exiting freestyle makes the belt dormant; toggling it off stops the
+flow — either way its scenes stay in the world.
 
 **Ecosystem invariants (this toy is ecology-adjacent — all hold by construction):**
 
