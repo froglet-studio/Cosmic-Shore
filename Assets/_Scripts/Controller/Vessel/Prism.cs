@@ -31,6 +31,10 @@ namespace CosmicShore.Gameplay
         [Header("Prism Status")] 
         public bool destroyed;
         public bool devastated;
+
+        // Set transiently by Damage/Consume right before destruction so the destruction
+        // SFX can tell a creature (fauna) kill from a generic block destroy. Reset on pool reuse.
+        bool _destroyedByCreature;
         public bool IsSmallest;
         public bool IsLargest;
         
@@ -67,6 +71,16 @@ namespace CosmicShore.Gameplay
 
         string _playerName;
         public string PlayerName { get; internal set; }
+
+        /// <summary>
+        /// True for environment/structure prisms (e.g. the HexRace track, spawnable shapes)
+        /// that are not laid by a player vessel. These keep the default owner because they
+        /// are spawned via <see cref="SpawnableBase.SpawnPrismTrail"/> with no player name,
+        /// and they survive vessel contact (no destructible player trail). Player-laid trail
+        /// prisms carry the owning vessel's player name instead.
+        /// </summary>
+        public bool IsEnvironmentOwned =>
+            string.IsNullOrEmpty(PlayerName) || PlayerName == DEFAULT_PLAYER_NAME;
 
         // Component references
         private MaterialPropertyAnimator materialAnimator;
@@ -179,10 +193,22 @@ namespace CosmicShore.Gameplay
 
             destroyed = false;
             devastated = false;
+            _destroyedByCreature = false; // pool reuse: clear stale creature-kill flag
             _lodCulled = false; // pool reuse: Initialize owns the collider again
             IsSmallest = false;
             IsLargest = false;
-            
+
+            // SetupDestruction disables the scale animator (destroyed mass must stop scaling and
+            // weighing). Re-arm it on pool-reuse creation so the re-minted prism grows in from
+            // zero (continuity law) and GetCurrentVolume tracks again (volume is the spine).
+            // Gated on !enabled so fresh spawns and never-destroyed pooled reuse are untouched;
+            // Restore() never routes through here and keeps its bookkept-volume fallback.
+            if (scaleAnimator && !scaleAnimator.enabled)
+            {
+                scaleAnimator.enabled = true;
+                transform.localScale = Vector3.zero;
+            }
+
             // Clear trail renderer to prevent visual artifacts across the map
             if (Trail != null && Trail.TrailRenderer != null)
             {
@@ -367,11 +393,34 @@ namespace CosmicShore.Gameplay
             return null;
         }
 
+        /// <summary>
+        /// The gameplay SFX category played when this prism is destroyed (exploded or imploded).
+        /// Defaults to <see cref="GameplaySFXCategory.BlockDestroy"/>; subclasses override to
+        /// substitute a dedicated sound (e.g. flora health prisms play FloraCollision).
+        /// </summary>
+        protected virtual GameplaySFXCategory DestructionSFX => GameplaySFXCategory.BlockDestroy;
+
+        /// <summary>
+        /// Plays the destruction one-shot for this prism. Uses <see cref="DestructionSFX"/>
+        /// (BlockDestroy, or a subclass's specialized sound such as flora's FloraCollision),
+        /// but substitutes CreatureBlockHit when a creature (fauna) caused the destruction AND
+        /// the prism would otherwise play the generic BlockDestroy. This makes specialized
+        /// sounds (flora) win over the creature sound, while plain blocks eaten by creatures
+        /// get the creature sound.
+        /// </summary>
+        void PlayDestructionSFX()
+        {
+            var sfx = DestructionSFX;
+            if (_destroyedByCreature && sfx == GameplaySFXCategory.BlockDestroy)
+                sfx = GameplaySFXCategory.CreatureBlockHit;
+            AudioSystem.Instance?.PlayGameplaySFX(sfx, transform.position);
+        }
+
         // Explosion Methods
         protected virtual void Explode(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
         {
             SetupDestruction(domain, playerName, devastate);
-            AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy, transform.position);
+            PlayDestructionSFX();
 
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
@@ -388,7 +437,7 @@ namespace CosmicShore.Gameplay
         protected virtual void Implode(Transform targetTransform, Domains domain, string playerName, bool devastate = false)
         {
             SetupDestruction(domain, playerName, devastate);
-            AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.BlockDestroy, transform.position);
+            PlayDestructionSFX();
 
             var returnData = OnBlockImpactedEventChannel.RaiseEvent(new PrismEventData
             {
@@ -412,7 +461,7 @@ namespace CosmicShore.Gameplay
         // accumulating "garbage" the user observes (fauna swarm-eat trail blocks → 64-128
         // concurrent implosions). Once destroyed, hits become no-ops until Restore /
         // ResetState clears the flag.
-        public void Damage(Vector3 impactVector, Domains domain, string playerName, bool devastate = false)
+        public void Damage(Vector3 impactVector, Domains domain, string playerName, bool devastate = false, bool byCreature = false)
         {
             if (destroyed) return;
             // Super-shielded prisms are fully invulnerable. No damage source
@@ -423,17 +472,23 @@ namespace CosmicShore.Gameplay
             if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
             else
+            {
+                _destroyedByCreature = byCreature;
                 Explode(impactVector, domain, playerName, devastate);
+            }
         }
 
-        public void Consume(Transform target, Domains domain, string playerName, bool devastate = false)
+        public void Consume(Transform target, Domains domain, string playerName, bool devastate = false, bool byCreature = false)
         {
             if (destroyed) return;
             if (prismProperties.IsSuperShielded) return;
             if (prismProperties.IsShielded && !devastate)
                 DeactivateShields();
             else
+            {
+                _destroyedByCreature = byCreature;
                 Implode(target, domain, playerName, devastate);
+            }
         }
 
         // State Management Methods

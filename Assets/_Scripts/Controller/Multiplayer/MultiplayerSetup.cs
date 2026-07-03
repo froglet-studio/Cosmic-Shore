@@ -361,8 +361,16 @@ namespace CosmicShore.Gameplay
 
             if (clientId == networkManager.LocalClientId)
             {
-                CSDebug.Log("[MultiplayerSetup] Disconnected from host. Returning to menu.");
-                gameData.InvokeOnSessionEnded();
+                CSDebug.Log("[MultiplayerSetup] Host left/disconnected — bouncing to solo menu.");
+                // Host-loss recovery: re-establish our OWN solo host in Menu_Main (works
+                // from the lava-lamp menu AND any game scene). Routed through the proven
+                // self-rescue instead of gameData.InvokeOnSessionEnded() →
+                // SceneLoader.HandleActiveSessionEnd, whose defer-to-server guard hangs the
+                // client when the server is gone. See Docs/PartySystem/BUGS.md B10.
+                if (PartyInviteController.Instance != null)
+                    PartyInviteController.Instance.HandleHostLossAsync("Host disconnected").Forget();
+                else
+                    gameData.InvokeOnSessionEnded(); // fallback: legacy path
             }
         }
 
@@ -397,7 +405,19 @@ namespace CosmicShore.Gameplay
         {
             try
             {
-                CSDebug.LogWarning("[Net] Transport failure. Recreating session/join…");
+                CSDebug.LogWarning("[Net] Transport failure — bouncing to solo menu.");
+
+                // Same self-rescue as host-loss: tear down, shut down NM, reload Menu_Main,
+                // and recreate our OWN solo host (EnsurePartySessionAsync). The legacy path
+                // below shut NM down but never recreated the solo session, leaving a hostless
+                // menu. See Docs/PartySystem/BUGS.md B10.
+                if (PartyInviteController.Instance != null)
+                {
+                    await PartyInviteController.Instance.HandleHostLossAsync("Connection lost");
+                    return;
+                }
+
+                // Fallback (PartyInviteController unavailable): legacy teardown.
                 if (gameData.ActiveSession != null)
                 {
                     if (gameData.ActiveSession.IsHost)

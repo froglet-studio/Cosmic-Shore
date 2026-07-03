@@ -15,9 +15,14 @@ Docs/
 │   │                            error-handling matrix, exit criteria
 │   ├── REFACTOR.md              active backlog + deferred items
 │   │                            + per-commit revision protocol
-│   ├── BUGS.md                  open bugs (B2, B3, B5, B7)
+│   ├── BUGS.md                  open bugs (B2, B5, B7; B3/B8/B9/B10 fixed)
 │   ├── TESTS.md                 manual procedures (S1-S8)
 │   ├── TODOS.md                 parking-lot items
+│   ├── INVITE_ENHANCEMENTS.md   planning: in-party invite guard,
+│   │                            panel-gated refresh, party-merge on accept,
+│   │                            SOAP confirm-popup
+│   ├── UI.md                    party/friends UI surface: component
+│   │                            inventory, invite UX flow, scene wiring
 │   └── MPPM_SESSION_LOG.md      chronological MPPM session journal
 │
 ├── PresenceSystem/              ← the lobby-only discovery layer
@@ -42,6 +47,10 @@ Docs/
 ├── TournamentSystem/            ← session-level meta chaining the 3 domain games
 │   └── ARCHITECTURE.md          load model, controller brain, standings,
 │                                end-game flow, data + file index
+│
+├── ShuffleSystem/               ← "Shuffle" = display name of Tournament mode
+│   └── ARCHITECTURE.md          pointer to TournamentSystem + a deferred list of
+│                                planned Shuffle behavior deltas (NOT a separate mode)
 │
 ├── THREADING.md                 main-thread affinity rules
 │                                (.AsMainThread() contract, MainThreadDispatcher)
@@ -73,6 +82,7 @@ session-scoped findings that benefit from a timeline view.
 | Understand the scoring system (HUD + end-game) | `ScoringSystem/ARCHITECTURE.md` |
 | See scoring-system cleanup work / open issues | `ScoringSystem/REFACTOR.md` + `ScoringSystem/BUGS.md` |
 | Understand the tournament meta-mode (chains the 3 domain games) | `TournamentSystem/ARCHITECTURE.md` |
+| Find "Shuffle" (it's Tournament's card display name) | `ShuffleSystem/ARCHITECTURE.md` → `TournamentSystem/ARCHITECTURE.md` |
 | Understand the threading rules | `THREADING.md` |
 | Find a scene | `SCENES.md` |
 

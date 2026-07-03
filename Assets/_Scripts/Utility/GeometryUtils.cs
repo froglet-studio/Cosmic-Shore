@@ -14,8 +14,9 @@ namespace CosmicShore.Utility
             public LineData(Vector3 start, Vector3 end)
             {
                 Start = start;
-                Direction = (end - start).normalized;
-                Magnitude = Vector3.Distance(start, end);
+                Vector3 delta = end - start;
+                Magnitude = delta.magnitude;
+                Direction = Magnitude > 1e-5f ? delta / Magnitude : Vector3.zero; // one sqrt; 1e-5 matches Vector3.normalized's kEpsilon zero-threshold exactly
             }
         }
 

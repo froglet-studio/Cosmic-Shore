@@ -23,6 +23,13 @@ namespace CosmicShore.Gameplay
             t.BeginDrift(Mult, driftDamping, isSharpDrifting);
             vesselStatus.IsDrifting = true;
 
+            // Drift HUD events are a shared global SOAP channel with no vessel identity,
+            // and the action pipeline replays StartAction on every peer. Raise only for
+            // the locally-owned vessel so a remote owner's drift can't drive this client's
+            // HUD (sole consumer is the local-only Squirrel HUD). Physics/SFX above still
+            // run on all peers for replication.
+            if (!vesselStatus.IsLocalUser) return;
+
             if (isSharpDrifting)
                 OnDoubleDriftingStarted.Raise();
             else
@@ -35,6 +42,9 @@ namespace CosmicShore.Gameplay
             var t = vesselStatus.VesselTransformer;
             t.EndDrift(isSharpDrifting);
             vesselStatus.IsDrifting = t.IsDriftActive;
+
+            // See StartAction — only the local owner raises the drift HUD event.
+            if (!vesselStatus.IsLocalUser) return;
             OnDriftEnded.Raise();
         }
     }

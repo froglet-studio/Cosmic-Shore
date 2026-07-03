@@ -127,7 +127,8 @@ public class VesselTransformer : MonoBehaviour
             {
                 BoostMultiplier = VesselStatus.BoostMultiplier,
                 MaxMultiplier = MaxBoostMultiplier,
-                SourceDomain = Domains.Blue
+                SourceDomain = Domains.Blue,
+                VesselStatus = VesselStatus
             });
         }
 
@@ -203,6 +204,14 @@ public class VesselTransformer : MonoBehaviour
             transform.SetPositionAndRotation(pose.position, pose.rotation);
             accumulatedRotation = pose.rotation;
         }
+
+        /// <summary>
+        /// Seed the smoothed cruise speed so a freshly-spawned vessel continues at an inherited
+        /// velocity instead of the post-<see cref="ResetTransformer"/> dead stop (speed = 0). Used
+        /// by the menu vessel swap so the new ship keeps the previous ship's speed; MoveShip then
+        /// eases from here toward the current throttle target as normal.
+        /// </summary>
+        public void SetInitialSpeed(float initialSpeed) => speed = initialSpeed;
 
         public void FlatSpinShip(float YAngle)
         {
@@ -500,7 +509,7 @@ public class VesselTransformer : MonoBehaviour
                     accumulatedVelocity += ((Mathf.Cos(modifier.elapsedTime * Mathf.PI / modifier.duration) / 2) + 1) * modifier.initialValue;
             }
 
-            velocityShift = Mathf.Min(accumulatedVelocity.magnitude, velocityModifierMax) * accumulatedVelocity.normalized;
+            velocityShift = Vector3.ClampMagnitude(accumulatedVelocity, velocityModifierMax);
 
             var sqrMag = velocityShift.sqrMagnitude;
 

@@ -5,7 +5,7 @@ flowchart TB
   classDef svc fill:#eef4fc,stroke:#3f5e8f,color:#13213f,stroke-width:1.1px;
   classDef sdk fill:#e8eef9,stroke:#26406e,color:#13213f,stroke-width:1.1px;
 
-  L1["UI — PartyArcadeView · OnlinePlayersPanel · FriendsPanel · PartyInviteNotificationPanel"]:::ui
+  L1["UI — ArcadeLobbyList · FriendsListPanel · OnlineInfoEntry · PartyInviteNotificationPanel"]:::ui
   L2["SOAP channels — HostConnectionDataSO · FriendsDataSO  (single-writer, multi-reader)"]:::soap
   L3["Orchestration — HostConnectionService · PartyInviteController · PartyStateMachine"]:::orch
   L4["Services — PresenceLobby · PartySession · Invite · PartyMember · NetworkTransition · AcceptanceSignal · LobbyPropertyWriter · LobbyRefreshScheduler"]:::svc

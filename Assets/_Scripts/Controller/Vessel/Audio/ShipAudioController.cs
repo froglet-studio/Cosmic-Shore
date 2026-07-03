@@ -1014,7 +1014,7 @@ namespace CosmicShore.Gameplay.Audio
                 float.IsNaN(angleDeg) || float.IsInfinity(angleDeg))
                 return Vector3.zero;
 
-            Vector3 angVelWorld = axisWorld.normalized * (angleDeg / dt);
+            Vector3 angVelWorld = axisWorld * (angleDeg / dt); // ToAngleAxis already returns a unit axis
             return transform.InverseTransformDirection(angVelWorld);
         }
 

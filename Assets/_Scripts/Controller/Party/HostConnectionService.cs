@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
         private const string ACCEPTED_INVITE_KEY     = "accepted_invite";
         private const string PENDING_SESSION_ID      = "PENDING";
 
-        private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 30f;
+        private const float OUTGOING_INVITE_TIMEOUT_SECONDS  = 10f;
         private const int   MAX_REFRESH_ERRORS_BEFORE_RECONNECT = 3;
         private const float FORCE_REFRESH_COOLDOWN_SECONDS   = 0.5f;
         private const int   PROFILE_INIT_TIMEOUT_MS          = 5000;
@@ -595,6 +595,17 @@ namespace CosmicShore.Gameplay
                 _lobbyMutex.Release();
             }
         }
+
+        /// <summary>
+        /// Host-initiated cancel of an outgoing invite (the ✕ on a "Pending Invite" row). Reuses
+        /// the same clear path as the auto-timeout / join-detected clears: removes the invite from
+        /// the tracker, re-publishes <c>invite_payloads</c> WITHOUT that line (so the recipient's
+        /// invite / popup / Requests row disappear), and fires <see cref="OutgoingInviteCleared"/>
+        /// so the host's row reverts to the invitee's online status (re-invitable). No-op if no
+        /// outgoing invite is pending for the target.
+        /// </summary>
+        public UniTask CancelInviteAsync(string targetPlayerId)
+            => ClearOutgoingInviteIfPresentAsync(targetPlayerId, "user-cancel");
 
         public async UniTask AcceptInviteAsync(PartyInviteData invite)
         {
@@ -1653,7 +1664,17 @@ namespace CosmicShore.Gameplay
                 "PublishJoinedParty");
         }
 
-        private async UniTask ClearJoinedPartyAsync()
+        /// <summary>
+        /// Clears our own <c>joined_party</c> presence property (sets it empty) — called when
+        /// departing a party: by the deliberate <see cref="LeavePartyAsync"/> (awaited, bounded)
+        /// and by host-loss recovery (<c>PartyInviteController.HandleHostLossAsync</c>,
+        /// fire-and-forget). Hygiene so no future host sees a dangling "I'm in your party"
+        /// claim; B8 fix 1 already makes a stale value inert, so it is best-effort. The presence
+        /// lobby is independent of the party session / NM, so this write still lands during a
+        /// host-loss teardown. <see cref="LobbyPropertyWriter.WriteAsync"/> swallows its own
+        /// exceptions (can only be slow, never throw).
+        /// </summary>
+        public async UniTask ClearJoinedPartyAsync()
         {
             var lobby = _lobbyService.ActiveLobby;
             if (lobby == null) return;

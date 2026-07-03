@@ -831,7 +831,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameData: {fileID: 11400000, guid: b35f33752bb10a44cb5033b5670f50aa, type: 2}
-  preScoreboardDelay: 0
+  messageSet: {fileID: 11400000, guid: bff676d191bb410b8aa4876943a2123d, type: 2}
+  toastCanvasGroup: {fileID: 8436388073985014462}
+  gameOverCounterText: {fileID: 8549829074479965766}
+  revealDuration: 3
+  toastInDuration: 0.45
+  toastOutDuration: 0.35
+  toastPunchScale: 1.15
+  randomizeVesselBehavior: 1
+  vesselBehavior: 0
 --- !u!1 &3768692066821719114
 GameObject:
   m_ObjectHideFlags: 0

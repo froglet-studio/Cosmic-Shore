@@ -49,7 +49,8 @@ namespace CosmicShore.Gameplay
             {
                 BoostMultiplier = status.BoostMultiplier,
                 MaxMultiplier = maxMult,
-                SourceDomain = prismImpactee.OwnDomain
+                SourceDomain = prismImpactee.OwnDomain,
+                VesselStatus = status
             });
         }
     }

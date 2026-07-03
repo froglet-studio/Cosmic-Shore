@@ -206,6 +206,27 @@ namespace CosmicShore.UI
             SyncCurrentProfileToRepo();
         }
 
+        /// <summary>
+        /// Pushes the profile to UGS Cloud Save immediately (in addition to the debounced save),
+        /// so deliberate user actions like changing the avatar persist right away rather than
+        /// after the ~1.5s debounce. Mirrors GameModeProgressionService.SaveImmediateAsync.
+        /// </summary>
+        async void SaveProfileImmediateAsync()
+        {
+            var repo = _ugsDataService?.ProfileRepo;
+            if (repo == null) return;
+
+            try
+            {
+                await repo.SaveAsync();
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[PlayerDataService] Immediate profile save failed: {e.Message}. " +
+                                   "Falling back to the debounced save.");
+            }
+        }
+
         // ----------------- Public API -----------------
 
         public void SetAvatarId(int avatarId)
@@ -214,8 +235,12 @@ namespace CosmicShore.UI
                 return;
 
             CurrentProfile.avatarId = avatarId;
+            // OnProfileChanged drives the menu UI (ProfileScreen/widgets), gameData.LocalPlayerAvatarId,
+            // and the local Player's NetAvatarId (Player.HandleProfileLoadedAfterSpawn → replicates
+            // the new avatar to every peer in-game).
             OnProfileChanged?.Invoke(CurrentProfile);
             ScheduleSave();
+            SaveProfileImmediateAsync(); // persist the avatar to UGS now, not just on debounce
         }
 
         public void SetDisplayName(string displayName)

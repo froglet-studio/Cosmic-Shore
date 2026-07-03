@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7b167240349c40deb9fcb9e71d585d28, type: 3}
+  m_Name: EndGameMessageSet
+  m_EditorClassIdentifier:
+  winnerMessages:
+  - ABSOLUTELY CRACKED
+  - STANDING ON BUSINESS
+  - BUILT DIFFERENT
+  - CERTIFIED W
+  - MAIN CHARACTER ENERGY
+  - GOATED WITH THE SAUCE
+  - YOU ATE THAT UP
+  - SHEEESH!
+  - CLUTCHED IT
+  - BAG SECURED
+  - DIFFERENT BREED
+  - TOOK THE DUB
+  - THAT WAS...WOW!
+  loserMessages:
+  - ABSOLUTELY BOTTLED IT
+  - BETTER LUCK NEXT TIME
+  - CAUGHT IN 4K
+  - TOOK THE L
+  - IT'S GIVING DEFEAT
+  - SKILL ISSUE
+  - WOMP WOMP
+  - RATIO'D
+  - GET COOKED
+  - DOWN BAD
+  - FUMBLED THE BAG
+  - NOT BEATING THE ALLEGATIONS
+  - GG GO NEXT

@@ -1,3 +1,4 @@
+using CosmicShore.ScriptableObjects; // SO_ProgressionConfig
 using CosmicShore.UI;        // PlayerDataService
 using CosmicShore.Utility;   // GameDataSO, CSDebug
 using UnityEngine;
@@ -14,10 +15,18 @@ namespace CosmicShore.Core
         [Header("Game Data")]
         [SerializeField] private GameDataSO gameData;
 
+        [Header("Progression Config")]
+        [Tooltip("Optional. When set, its participationXpPerGame overrides the local xpPerGame " +
+                 "below so the award is tuned in one shared place.")]
+        [SerializeField] private SO_ProgressionConfig progressionConfig;
+
         [Header("XP Reward")]
         [Tooltip("Participation XP awarded to the local player every game (win or lose). " +
-                 "Feeds the menu XP progress bar via PlayerDataService.AddXP. Set 0 to disable.")]
+                 "Feeds the menu XP progress bar via PlayerDataService.AddXP. Set 0 to disable. " +
+                 "Ignored when a Progression Config is assigned above.")]
         [SerializeField] private int xpPerGame = 25;
+
+        int XpPerGame => progressionConfig != null ? progressionConfig.participationXpPerGame : xpPerGame;
 
         bool _awardedThisGame;
 
@@ -39,13 +48,14 @@ namespace CosmicShore.Core
 
         void AwardParticipationXp()
         {
-            if (_awardedThisGame || xpPerGame <= 0) return;
+            int award = XpPerGame;
+            if (_awardedThisGame || award <= 0) return;
             var service = PlayerDataService.Instance;
             if (service == null) return;
 
             _awardedThisGame = true;
-            int total = service.AddXP(xpPerGame);
-            CSDebug.Log($"[ParticipationXp] Awarded {xpPerGame} XP. Total: {total}");
+            int total = service.AddXP(award);
+            CSDebug.Log($"[ParticipationXp] Awarded {award} XP. Total: {total}");
         }
     }
 }

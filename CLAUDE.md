@@ -45,6 +45,19 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
 - **Collider budget is a hard gate.** No ecology feature ships without stating its active-collider
   impact; respect the per-cell budget (collider-LOD by phase + Burst density-grid fauna queries,
   not `Physics.OverlapSphere`). See `Docs/ECOSYSTEM_MASTERPLAN.md §4`.
+- **The Cell owns the environment — minigames don't build parallel systems.** When a mode needs
+  ecology, wire the standard **Cell** (`CellConfigDataSO` + `SpawnProfileSO`) and configure it; do
+  **not** ship a mode-local duplicate of something the Cell already owns. The Cell's `MembranePrefab`
+  is the playfield-boundary read, its `CytoplasmPrefab` (a `SnowChanger`) is the drifting
+  atmosphere/motes, its `NucleusPrefab` is the core marker, its `SpawnProfile` is the population, and
+  its `PhaseThresholds` are the phase/aggression ladder — a bespoke arena edge cage, plankton
+  particle system, per-mode spawner, or mode-local culler is the same class of mistake as cheating
+  emergence. A mode owns only its **gameplay-bearing** structure (physics walls a ball must bounce
+  off, goal portals, a midfield ring). Tune the ladder in **volume** — modes whose vessel lays
+  low-volume prisms (Squirrel trail ≈ 3.1 vol each, ~⅕ the nominal 16) must author explicit
+  `*EnterVolume`/`*ExitVolume` (else the ×16 count-derivation sets the ladder ~5× too high and fauna
+  never hunt) and lower `SpawnProfile.FaunaFoodFloor` so herbivores seed against the thinner prey.
+  Full table + rationale: `Docs/ECOSYSTEM_MASTERPLAN.md §5.1`.
 
 **Protocol:** (1) restate which invariants the change touches + confirm none are violated;
 (2) confirm at genuine forks (AskUserQuestion); (3) implement surgically, config-driven; (4) state
@@ -233,6 +246,7 @@ All in `Assets/_Scenes/Singleplayer Scenes/`.
 | `MinigameDuelForCellMultiplayer_Gameplay` | `MultiplayerCellularDuel (29)` | `MultiplayerCellularDuelController` |
 | `MinigameJoust_Gameplay` | `MultiplayerJoust (34)` | `MultiplayerJoustController` |
 | `MinigameWildlifeBlitzMultuplayerCoOp` | `MultiplayerWildlifeBlitzGame (32)` | `MultiplayerWildlifeBlitzMiniGame` |
+| `MinigameAstroLeague` | `AstroLeague (36)` | `AstroLeagueController` |
 | `ArcadeGameMultiplayer2v2CoOpVsAI` | `Multiplayer2v2CoOpVsAI (30)` | Domain games variant |
 
 All in `Assets/_Scenes/Multiplayer Scenes/`.
@@ -245,7 +259,7 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 
 #### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
 
-35 game modes with explicit numeric IDs (highest is `Tournament(36)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
+37 game modes with explicit numeric IDs (highest is `AstroLeague(37)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer (a standalone domain minigame, see `_Scripts/Controller/Arcade/ASTROLEAGUE.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
 
 Many single-player modes (1-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail.
 
@@ -271,7 +285,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── HexRaceController              — crystal race, deterministic track, golf scoring
         ├── MultiplayerJoustController      — collision tracking, golf scoring
         ├── MultiplayerCellularDuelController — vessel ownership swap between rounds
-        └── MultiplayerCrystalCaptureController — minimal (1 round, 1 turn)
+        ├── MultiplayerCrystalCaptureController — minimal (1 round, 1 turn)
+        └── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
 ```
 
 #### Game Launch Pipeline
@@ -294,12 +309,15 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
 | `PresenceSystem/` | `Docs/` | Presence-lobby (discovery) layer: `ARCHITECTURE.md`, `REFACTOR.md`, `BUGS.md`, `TESTS.md`, `TODOS.md`. Lobby-only UGS session, coexists with NetworkManager. |
 | `NetworkDiagnostics/` | `Docs/` | NetDiag overlay: `ARCHITECTURE.md` (NetworkMonitor + `NetworkDiagnostics` helper, classification rules), `TESTS.md` (Tests A-E), `TODOS.md`. |
 | `ScoringSystem/` | `Docs/` | Scoring system (in-game score HUD + final scoreboard): `ARCHITECTURE.md` (shared data layer, event dispatch, per-mode override table, target = one unified networked scoring path), `REFACTOR.md` (sequenced backlog + ground rules: SOAP/observer/SOLID/DRY/KISS, retire `IsMultiplayerMode`), `BUGS.md`, `TESTS.md`. |
-| `TournamentSystem/` | `Docs/` | Tournament mode (`GameModes.Tournament = 36`): `ARCHITECTURE.md` — session-level meta chaining the three domain minigames (HexRace → Joust → Crystal Capture) via sequential `Single` loads; network-free standings folded from the synced `GameDataSO.Results` by the persistent `TournamentController`; host-only Continue→Summary end-game flow; `TournamentDataSO` data + file index. |
+| `TournamentSystem/` | `Docs/` | Tournament mode (`GameModes.Tournament = 36`): `ARCHITECTURE.md` — session-level meta chaining the three domain minigames (HexRace → Joust → Crystal Capture) via sequential `Single` loads; network-free standings folded from the synced `GameDataSO.Results` by the persistent `TournamentController`; host-only Continue→hub→Summary end-game flow (summary-vs-hub keyed off the authoritative `IsShuffleComplete`, race-to-6); `TournamentDataSO` data + file index. |
+| `ToySystem/` | `Docs/` | Freestyle **Toy** system (the new `Toy` fundamental): `ARCHITECTURE.md` — world-space interactive stations the local vessel flies into (no score, no end condition), placed near the Cell membrane in Menu_Main. Four toys: three via a shared `SwapToySetCoordinator<T>` "flip-set" (each toy is the option it switches you to; the used one flips to your previous option) — Vessel Changer (mini ship models via `VesselModelBuilder`, reuses `RequestSwap` + restores freestyle control), Domain Changer (two toys tinted the domains you're not, `RequestSetDomain_ServerRpc`), and the "fly by numbers" Painting toy (`PaintingToy` + self-contained `MenuShapePainter`) — plus the **Wanderway microscene conveyor** (`ConveyorToy` + `MicrosceneConveyor` + `Microscene` + `MicroscenePatterns`): an on/off toggle toy that streams a speed-scaled field of ~7 procedurally-varied microscenes (16 recipes: gate runs, tunnels, orchards, meadows, menageries, …) ahead of your flight path anywhere you fly, recycling the scene farthest behind into a fresh arrangement ahead — a *closed* system that transports a fixed stock of conserved prisms (suction-out → bloom-in), lays skimmable elemental crystals, and releases flora/fauna into the containing cell as ordinary citizens. `ToyboxSO` registry + deferred unlock-state hook; `ToyboxController` self-wires (Resources/default fallback); `Tools > Cosmic Shore > Setup Freestyle Toybox` authors assets + wires the scene. **Second pass (shipped):** `VesselModelBuilder` hull-filters the skimmer sphere + paints an opaque domain-tinted preview material (all six ships render, not just Rhino); `Toy` re-arms only after the vessel flies clear + the flipped toy re-grows slowly (can't switch you back before you escape); a vessel swap keeps your domain (`ReInitializePair` re-syncs `Player.Domain` from `NetDomain` before repaint) and inherits pose + speed (`IVessel.SetInitialSpeed`) and re-shows the HUD (`OnPlayerPairInitialized`); mini ships recolour on any domain change (`SwapToySetCoordinator.OnTick`); gamepad **Start** exits freestyle and `EventSystem.sendNavigationEvents` is off in freestyle so the pad stops double-driving the UI. `BACKLOG.md` tracks per-toy follow-up (own branches) + known limitations. |
+| `ShuffleSystem/` | `Docs/` | **"Maelstrom" is the player-facing display name of Tournament mode** (the docs folder keeps the legacy "Shuffle" name) — the `ArcadeGameTournament.asset` card carries `DisplayName = "Maelstrom"`. It is **not** a separate mode: code/data/enum stay **Tournament** (`GameModes.Tournament = 36`); the scene file was renamed to `Maelstrom.unity` in the v2 rework. `ARCHITECTURE.md` is a **pointer** to `TournamentSystem/ARCHITECTURE.md`; the former Shuffle-specific behavior deltas (randomized lineup, per-domain `{2,1,0}` scoring + crystal-wallet credit, race-to-6) are now **shipped**. |
 | `CameraMigrationReview.md` | `Docs/` | Camera system migration tracking |
 | `BOOTSTRAP_AUDIT.md` | `_Scripts/System/Bootstrap/` | Bootstrap scene audit, execution order, DI registration |
 | `HEXRACE.md` | `_Scripts/Controller/Arcade/` | HexRace game mode technical reference |
 | `CRYSTAL_CAPTURE.md` | `_Scripts/Controller/Arcade/` | Crystal Capture game mode technical reference |
 | `JOUST.md` | `_Scripts/Controller/Arcade/` | Joust game mode technical reference |
+| `ASTROLEAGUE.md` | `_Scripts/Controller/Arcade/` | Astro League game mode technical reference |
 | `PRISM_PERFORMANCE_AUDIT.md` | `_Scripts/Game/Prisms/` | Prism system performance analysis (vestigial location) |
 | `UNIT_TESTING_GUIDE.md` | `_Scripts/Tests/` | Unit testing guidelines and inventory |
 | `BENCHMARK_TOOL.md` | `_Scripts/Utility/PerformanceBenchmark/` | Performance Benchmark tool guide (tabs, score/hints, sweep, customization) |
@@ -734,7 +752,7 @@ The game uses Unity Netcode for GameObjects (`com.unity.netcode.gameobjects` 2.5
 - `ServerPlayerVesselInitializer` — core server-side vessel spawner. Listens for `OnPlayerNetworkSpawnedUlong` SOAP events, waits for NetworkVariables to sync (`preSpawnDelayMs`), spawns the vessel prefab via `VesselPrefabContainer`, injects DI with `GameObjectInjector.InjectRecursive()`, then delegates initialization to `ClientPlayerVesselInitializer`. Tracks processed players by `NetworkObjectId` (not `OwnerClientId`, since AI shares the host's). Uses `NetcodeHooks` (not direct `NetworkBehaviour` inheritance) for spawn/despawn hooks. `ProcessPreExistingPlayers()` catches host Player objects spawned before the initializer loaded. The spawner never shuts down the NetworkManager on despawn — under the eager-Relay design the network/Relay persists across all scene transitions and is torn down only by explicit party-leave (`PartyInviteController`) or transport failure (`MultiplayerSetup.OnTransportFailure`).
 - `ClientPlayerVesselInitializer` — common player-vessel pair initialization (extends `NetworkBehaviour`). Server path: called directly by `ServerPlayerVesselInitializer`. Client path: receives RPCs (`InitializeAllPlayersAndVessels_ClientRpc` for new clients, `InitializeNewPlayerAndVessel_ClientRpc` for existing clients). Queues pending `(playerNetId, vesselNetId)` pairs when RPCs arrive before objects replicate — resolved reactively via `OnPlayerNetworkSpawnedUlong` + `OnVesselNetworkSpawned` SOAP events (zero `WaitUntil` polling). `InitializePair()` calls `player.InitializeForMultiplayerMode(vessel)`, `vessel.Initialize(player)`, `ShipHelper.SetShipProperties()`, `gameData.AddPlayer()`, and fires `gameData.InvokeClientReady()` for the local user.
 - `ServerPlayerVesselInitializerWithAI` — extends `ServerPlayerVesselInitializer`. Spawns server-owned AI players **before** `base.OnNetworkSpawn()` subscribes to events, so AI spawn events are harmlessly missed. Marks all AI players in `_processedPlayers` so the base class skips them. Picks AI vessel type from `SO_GameList` captains (falls back to Sparrow). Configures `AIPilot` with game-mode-aware seeking and skill level. **AI players and vessels are spawned with `destroyWithScene: false`** so they survive the client's end-of-frame scene-transition cleanup — without this the client's scene-load message batches with the AI spawn messages on the same network tick and the client destroys the just-spawned AI NetworkObjects (surfacing as `[Invalid Destroy]` errors on the host and invisible AI on clients). Human vessels are unaffected because `ServerPlayerVesselInitializer` delays spawn by `preSpawnDelayMs` (200 ms), pushing them into a later tick. Because AI no longer gets scene-unload cleanup for free, `MultiplayerMiniGameControllerBase.ExecuteSceneReloadReplay()` explicitly despawns all AI players and vessels before the scene reload; the existing cleanup paths (`SceneLoader.ClearPlayerVesselReferences` for Game→Menu, `NetworkManager.Shutdown` on disconnect) already explicit-despawn AI, so AI does not leak into Menu_Main.
-- `MenuServerPlayerVesselInitializer` — extends `ServerPlayerVesselInitializer`. Overrides `OnPlayerReadyToSpawnAsync()` to first reset the player's domain server-side (`NetDomain.Value = menuVesselDomain`, Jade — the ONLY menu domain reset, before vessel spawn so the hull paints Jade at init; replicates to all peers, covering fresh entry, party join, and host-return), then call `base`, then `ActivateAutopilot()`: `player.StartPlayer()`, `Vessel.ToggleAIPilot(true)`, `InputController.SetPause(true)`, `CameraManager.SetupEndCameraFollow(vessel.CameraFollowTarget)`. Game data configuration (vessel class, player count, intensity) is handled by `MainMenuController` — this class only handles the network spawn chain, the menu domain reset, and autopilot activation.
+- `MenuServerPlayerVesselInitializer` — extends `ServerPlayerVesselInitializer`. Overrides `OnPlayerReadyToSpawnAsync()` to first reset the player's domain server-side (`NetDomain.Value = menuVesselDomain`, Jade — the ONLY menu domain reset, before vessel spawn so the hull paints Jade at init; replicates to all peers, covering fresh entry, party join, and host-return), then call `base`, then `ActivateAutopilot()`: `player.StartPlayer()`, `Vessel.ToggleAIPilot(true)`, `InputController.SetPause(true)`, `CameraManager.SetupEndCameraFollow(vessel.CameraFollowTarget)`. Game data configuration (vessel class, player count, intensity) is handled by `MainMenuController` — this class only handles the network spawn chain, the menu domain reset, and autopilot activation. The Jade reset is on the **player-spawn** path (`OnPlayerReadyToSpawnAsync`) only; a runtime **vessel swap** (`RequestSwap` → `SwapVesselAsync`) does **not** touch domain — it despawns/respawns the vessel and the new hull keeps the player's current `NetDomain` (`ReInitializePair` re-syncs `Player.Domain` from `NetDomain` before repaint so it can't fall back to Jade / desync the domain-changer toy), and inherits the outgoing vessel's pose (`SetPose`) and speed (`SetInitialSpeed`, captured before despawn) for a seamless swap.
 - `MenuCrystalClickHandler` — toggles between menu mode (Cinemachine crystal camera + autopilot) and gameplay mode (Cinemachine follows vessel + player control) on Menu_Main. Tap crystal → fade out menu UI, disable autopilot, enable player input, retarget Cinemachine vCam to vessel follow target. Center tap → restore autopilot and menu UI.
 - `MultiplayerSetup` — bridges authentication → Netcode host lifecycle. `EnsureHostStarted()` registers Netcode callbacks and calls `nm.StartHost()` exactly once (guarded by `_hostStartInProgress` flag). For multiplayer games: shuts down local host, queries/creates/joins UGS Multiplayer sessions with Relay transport, handles race conditions on session joins. Session properties: `gameMode` (String1), `maxPlayers` (String2). Connection approval auto-creates player objects.
 - `NetworkStatsManager` — network health monitoring via `NetworkMonitorData` SOAP type
@@ -920,35 +938,10 @@ Location: `_Scripts/ScriptableObjects/SOAP/ScriptablePartyData/`
 
 #### Invite Flow
 
-```
-Sender presses "+" on empty party slot
-  ├─ PartyAreaPanel.OnAddSlotPressed() / PartyArcadeView.OnAddSlotPressed()
-  ├─ PartyInviteController.TransitionToPartyHostAsync() [if first invite]
-  │   ├─ CleanUpCurrentSession() — despawn menu vessels
-  │   ├─ ShutdownNetworkManagerAsync() — shutdown local host
-  │   ├─ HostConnectionService.CreatePartySessionPublicAsync() — Relay party session
-  │   └─ Load Menu_Main as network scene
-  ├─ OnlinePlayersPanel.Show() — display all online players
-  └─ User clicks "+" on a player entry
-      └─ HostConnectionService.SendInviteAsync(targetPlayerId)
-          ├─ Sets own player properties: invite_target, invite_data
-          └─ OnInviteSent SOAP event
-
-Recipient's refresh loop detects invite
-  ├─ HostConnectionService.RefreshAsync() [every 3s]
-  │   └─ Scans all lobby players' properties for invite_target matching local ID
-  ├─ OnInviteReceived SOAP event raised
-  ├─ PartyInviteNotificationPanel shows Accept/Decline
-  └─ User presses Accept
-      └─ PartyInviteController.AcceptInviteAsync(invite)
-          ├─ CleanUpCurrentSession()
-          ├─ ShutdownNetworkManagerAsync() — shutdown local host
-          ├─ HostConnectionService.AcceptInviteAsync() — join party session via Relay
-          ├─ WaitForClientConnectionAsync() — poll nm.IsConnectedClient
-          ├─ WaitForSceneLoadAsync() — wait for Menu_Main scene sync
-          ├─ OnPartyJoinCompleted SOAP event
-          └─ Host's MenuServerPlayerVesselInitializer spawns vessel + autopilot
-```
+The UI-level click → send → detect → accept flow, plus the `invite_payloads`
+per-property format, lives in **`Docs/PartySystem/UI.md`** (UI surface); the
+service/SOAP happy path is in **`Docs/PartySystem/ARCHITECTURE.md`** § "SOAP
+event flow — invite happy path".
 
 #### Multiplayer Freestyle Flight in Menu_Main
 
@@ -1016,18 +1009,17 @@ Each client has its own Cinemachine camera following its own vessel. No network 
 
 #### UI Components
 
-| Component | File | Purpose |
-|---|---|---|
-| `PartyAreaPanel` | `_Scripts/UI/Elements/` | 3-slot party panel for Home screen |
-| `PartyArcadeView` | `_Scripts/UI/Views/` | 4-slot party panel for Arcade screen with friends button |
-| `PartySlotView` | `_Scripts/UI/Views/` | Single slot: occupied (avatar + name) or empty ("+" button) |
-| `OnlinePlayersPanel` | `_Scripts/UI/Views/` | Modal listing all online players with invite + add friend buttons |
-| `OnlinePlayerEntry` | `_Scripts/UI/Views/` | Individual row in online players panel |
-| `FriendsPanel` | `_Scripts/UI/Views/` | Tabbed panel: friends list, requests, add friend |
-| `FriendEntryView` | `_Scripts/UI/Views/` | Friend row with online status, invite, remove buttons |
-| `FriendRequestEntryView` | `_Scripts/UI/Views/` | Request row: incoming (accept/decline) or outgoing (cancel) |
-| `AddFriendPanel` | `_Scripts/UI/Views/` | Text input for friend requests by name |
-| `PartyInviteNotificationPanel` | `_Scripts/UI/Screens/` | Invite popup with accept/decline + auto-decline timeout |
+Party/social UI lives in `_Scripts/UI/Elements/`
+(`PartyInviteNotificationPanel` is in `_Scripts/UI/Screens/`):
+`ArcadeLobbyList` (4-slot party panel; host-only per-slot kick ✕) + `FriendInfoSlot`
+(one slot), `FriendsListPanel` (combined Online + Requests, no tabs),
+`OnlineInfoEntry` (online row: an Invite button when invitable + a ✕ that cancels a
+pending outgoing invite or — host only — kicks an in-party member; "IN YOUR PARTY N/M"
+for party members; Invite/cancel/kick share an anti-spam cooldown),
+`RequestInfoEntry` (Accept/Decline — friend-request + party-invite),
+and `PartyInviteNotificationPanel` (the
+bottom-left **global invite popup** in Menu_Main — avatar + name + Accept/Decline,
+3s auto-hide, latest-wins). Full inventory + behaviour: **`Docs/PartySystem/UI.md`**.
 
 #### SO Assets
 
@@ -1055,19 +1047,11 @@ Run `Tools > Cosmic Shore > Create Party Prefabs` in Unity Editor to generate mi
 
 #### Scene Setup Checklist (Menu_Main)
 
-1. **Persistent GameObjects** (in Bootstrap scene, `DontDestroyOnLoad`):
-   - `HostConnectionService` + `PartyInviteController` + `FriendsInitializer` on same GameObject
-   - Wire `HostConnectionDataSO`, `AuthenticationDataVariable` in inspector
-2. **AppManager** (Bootstrap scene):
-   - Assign `HostConnectionData.asset` to `hostConnectionData` field
-3. **Menu_Main scene UI**:
-   - `PartyAreaPanel` or `PartyArcadeView` as child of Home/Arcade screen
-   - `OnlinePlayersPanel`, `FriendsPanel`, `PartyInviteNotificationPanel` as children of party area (start inactive)
-   - Wire `HostConnectionData.asset` into all party UI components
-   - Wire `FriendsData.asset` into `FriendsPanel` and `PartyArcadeView`
-   - Wire `OnlinePlayerEntry` prefab into `OnlinePlayersPanel.playerEntryPrefab`
-   - Wire `FriendEntryView` prefab into `FriendsPanel.friendEntryPrefab`
-   - Wire `FriendRequestEntryView` prefab into `FriendsPanel.friendRequestEntryPrefab`
+Persistent services (`HostConnectionService` + `PartyInviteController` +
+`FriendsInitializer`) live on one Bootstrap `DontDestroyOnLoad` GameObject;
+`AppManager` holds `HostConnectionData.asset`. The full Menu_Main UI wiring
+checklist (panels, row prefabs, SO references) is in
+**`Docs/PartySystem/UI.md`** § "Scene wiring checklist".
 
 #### Party System Patterns to Follow
 
@@ -1130,9 +1114,9 @@ FriendsDataSO (ScriptableObject asset)
   │   └─ BlockedPlayers        (ScriptableListFriendData)
   │
   └─ Events:
-      ├─ OnFriendAdded         ──► FriendsPanel refreshes friend list
-      ├─ OnFriendRemoved       ──► FriendsPanel refreshes friend list
-      ├─ OnFriendRequestReceived ──► FriendsPanel shows request tab badge
+      ├─ OnFriendAdded         ──► FriendsListPanel refreshes friend list
+      ├─ OnFriendRemoved       ──► FriendsListPanel refreshes friend list
+      ├─ OnFriendRequestReceived ──► FriendsListPanel spawns the new request row
       └─ OnFriendsServiceReady ──► (subscribers know the service is usable)
 ```
 
@@ -1199,16 +1183,14 @@ The facade (`_Scripts/System/FriendsServiceFacade.cs`) exposes these operations.
 | Enter game scene | `Busy` | `"In Game"` (scene name, vessel class, party session ID) |
 | App shutdown / `OnDestroy` | `Offline` | — |
 
-Friends see presence updates via UGS SDK's `PresenceUpdated` event → `FriendsServiceFacade.OnPresenceUpdated()` → `SyncAllRelationships()` → `FriendData.Availability` updated in SOAP lists → `FriendEntryView` updates online status indicator color.
+Friends see presence updates via UGS SDK's `PresenceUpdated` event → `FriendsServiceFacade.OnPresenceUpdated()` → `SyncAllRelationships()` → `FriendData.Availability` updated in SOAP lists → `OnlineInfoEntry` rows update their online status indicator color.
 
 #### Friend UI Components
 
-| Component | File | Purpose |
-|---|---|---|
-| `FriendsPanel` | `_Scripts/UI/Views/FriendsPanel.cs` | Tabbed panel with 3 tabs: Friends List, Requests (incoming + outgoing), Add Friend. Reads `FriendsDataSO` SOAP lists. |
-| `FriendEntryView` | `_Scripts/UI/Views/FriendEntryView.cs` | Single friend row: display name, online status color indicator, [Invite to Party] button (→ `HostConnectionService.SendInviteAsync`), [Remove] button (→ `FriendsServiceFacade.RemoveFriendAsync`). |
-| `FriendRequestEntryView` | `_Scripts/UI/Views/FriendRequestEntryView.cs` | Single request row: incoming shows [Accept]/[Decline], outgoing shows [Cancel]. Delegates to `FriendsServiceFacade`. |
-| `AddFriendPanel` | `_Scripts/UI/Views/AddFriendPanel.cs` | Text input + [Send] button. Uses `[Inject] FriendsServiceFacade` to call `SendFriendRequestByNameAsync`. |
+The friends UI shares the party UI family (`FriendsListPanel` combined Online +
+Requests, `RequestInfoEntry`) — inventory +
+behaviour in **`Docs/PartySystem/UI.md`**. File locations are in the Key Files
+table below.
 
 #### Friend System Key Files
 
@@ -1222,68 +1204,30 @@ Friends see presence updates via UGS SDK's `PresenceUpdated` event → `FriendsS
 | SOAP event channel | `ScriptableEventFriendData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
 | SOAP reactive list | `ScriptableListFriendData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
 | SOAP MonoBehaviour listener | `EventListenerFriendData.cs` | `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
-| Tabbed friends panel UI | `FriendsPanel.cs` | `_Scripts/UI/Views/` |
-| Friend row UI | `FriendEntryView.cs` | `_Scripts/UI/Views/` |
-| Friend request row UI | `FriendRequestEntryView.cs` | `_Scripts/UI/Views/` |
-| Add friend input UI | `AddFriendPanel.cs` | `_Scripts/UI/Views/` |
+| Combined friends/online panel UI | `FriendsListPanel.cs` | `_Scripts/UI/Elements/` |
+| Online row UI (invite / cancel / kick) | `OnlineInfoEntry.cs` | `_Scripts/UI/Elements/` |
+| Request row UI (friend request + party invite) | `RequestInfoEntry.cs` | `_Scripts/UI/Elements/` |
 | SO asset instance | `FriendsData.asset` | `_SO_Assets/Friends Data/` |
 
-#### Add Friend Entry Points
+#### Friend Requests (no UI entry point today)
 
-There are **two distinct ways** a player can send a friend request. Both ultimately call `FriendsServiceFacade` — the single writer — but they use different SDK methods depending on whether the caller has a player ID or only a display name.
-
-| Entry Point | Input | Facade Method | UI Location |
-|---|---|---|---|
-| `AddFriendPanel` | Player name (text input) | `SendFriendRequestByNameAsync(name)` | FriendsPanel → "Add Friend" tab |
-| `OnlinePlayerEntry.addFriendButton` | Player ID (from presence lobby) | `SendFriendRequestAsync(playerId)` | OnlinePlayersPanel → per-row "+" button |
-
-**User navigation paths to reach "Add Friend":**
-
-```
-Path A — Friends Panel (by name):
-  PartyArcadeView.friendsButton → FriendsPanel.Show()
-    → Tab 2 ("Add Friend") → AddFriendPanel
-    → User types name → [Send] → FriendsServiceFacade.SendFriendRequestByNameAsync()
-    → Success: green feedback text "Request sent to 'Name'!"
-    → Failure: red feedback text with error message
-
-Path B — Online Players Panel (by ID):
-  PartyArcadeView "+" slot / PartyAreaPanel "+" slot → OnlinePlayersPanel.Show()
-    → Per-row [+] addFriendButton → OnlinePlayersPanel.OnAddFriendClicked()
-    → FriendsServiceFacade.SendFriendRequestAsync(playerId)
-    → Button disabled + friendRequestSentIndicator shown
-    → (addFriendButton hidden if already friends — checked via FriendsServiceFacade.IsFriend())
-```
-
-**`AddFriendPanel` behavior** (`_Scripts/UI/Views/AddFriendPanel.cs`):
-- Send button disabled until input is non-empty (`OnInputChanged` validates)
-- Button disabled during async request (re-enabled in `finally`)
-- Feedback text color: green (0.2, 0.9, 0.3) for success, red (0.9, 0.3, 0.3) for errors
-- Input field cleared on success, preserved on failure
-- Catches `FriendsServiceException` specifically for SDK errors
-
-**`OnlinePlayerEntry.addFriendButton` behavior** (`_Scripts/UI/Views/OnlinePlayerEntry.cs`):
-- Visibility controlled by `OnlinePlayersPanel.SpawnEntry()`: hidden if `friendsService` is null or player is already a friend
-- On press: button disabled + `friendRequestSentIndicator` shown (no undo)
-- Callback (`_onAddFriend`) set by `OnlinePlayersPanel` → calls `FriendsServiceFacade.SendFriendRequestAsync(playerId)`
-
-**Friend request vs. party invite** — these are separate systems:
-
-| Action | System | Persistence | SDK |
-|---|---|---|---|
-| Add Friend | `FriendsServiceFacade` → UGS Friends SDK | Persistent relationship (survives sessions) | `FriendsService.AddFriendAsync` / `AddFriendByNameAsync` |
-| Invite to Party | `HostConnectionService` → UGS Sessions SDK | Ephemeral (session-scoped, lobby player properties) | Session player properties: `invite_target`, `invite_data` |
-
-Both actions can appear on the same UI row: `OnlinePlayerEntry` has both `inviteButton` (party invite) and `addFriendButton` (friend request). `FriendEntryView` has `inviteButton` (party invite) but no add-friend button (they're already friends).
+The by-name `AddFriendPanel` and the confirmed-friend row `FriendInfoEntry` were
+retired, so there is currently **no UI control to send a friend request** —
+`FriendsListPanel` renders only the Online + Requests sections. The single-writer
+facade methods remain for re-introducing one: `FriendsServiceFacade.SendFriendRequestByNameAsync(name)`
+(by name) and `.SendFriendRequestAsync(playerId)` (by ID). Incoming requests still
+arrive as `RequestInfoEntry` rows (Accept/Decline). Friend-request (persistent UGS
+relationship) and party-invite (ephemeral session property) stay separate systems.
+Detail: **`Docs/PartySystem/UI.md`** § "Friend requests vs. party invites".
 
 #### Friend System Patterns to Follow
 
 - **Single writer**: Only `FriendsServiceFacade` writes to `FriendsDataSO`. UI components read via SOAP lists and events — they never call UGS SDK directly.
 - **Sync after mutate**: Every facade method that changes relationship state calls `SyncAllRelationships()` after the SDK call to keep SOAP lists in sync.
-- **Event-driven UI**: `FriendsPanel` and entry views subscribe to SOAP list events (`OnItemAdded`, `OnItemRemoved`, `OnCleared`) for reactive updates. No polling.
+- **Event-driven UI**: `FriendsListPanel` and entry views subscribe to SOAP list events (`OnItemAdded`, `OnItemRemoved`, `OnCleared`) for reactive updates. No polling.
 - **Presence via FriendsInitializer**: Scene transition presence is managed by `FriendsInitializer` — do not set presence from other MonoBehaviours.
 - **DI access**: UI components access `FriendsServiceFacade` via `[Inject]`, not by finding it in the scene.
-- **Bridge between Party and Friends**: `FriendEntryView`'s invite button calls `HostConnectionService.SendInviteAsync()` — the friend system feeds into the party system for social gameplay.
+- **Bridge between Party and Friends**: the online row (`OnlineInfoEntry`) invite button calls `HostConnectionService.SendInviteAsync()` — the friend system feeds into the party system for social gameplay.
 
 ### Player Count & AI Backfill Pipeline
 
@@ -1612,6 +1556,8 @@ Game UI [RectTransform, CanvasGroup]                    ← already in freestyle
 
 `MenuMiniGameHUD` (`_Scripts/UI/MenuMiniGameHUD.cs`) is a slim alternative to the full `MiniGameHUD` for menu freestyle mode. It provides the Volume/Pause icon button that opens the `MenuVesselSelectionPanelController` panel, vessel HUD reparenting via the `onShipHUDInitialized` SOAP event, and runtime PauseMenu prefab instantiation. The button is visible when Game UI fades in during freestyle, hidden when returning to menu. The full `MiniGameHUD` can replace this when Phase 2/3 features (shape drawing, scoring) are needed.
 
+**Freestyle input ownership + HUD-after-swap (do not regress).** The menu ("appshell") and the vessel both poll the one gamepad, so ownership must be exclusive: in freestyle `ScreenSwitcher.HandleEnterFreestyle` sets `EventSystem.sendNavigationEvents = false` (restored on exit) so the pad flies the ship and no longer double-drives the UI selection ring / Submit on the still-touch-interactable vessel HUD (`ScreenSwitcher.Update` screen-nav was already gated on `_isInFreestyle`; the vessel is paused in menu state). `MenuMiniGameHUD.Update` polls **gamepad Start** while in freestyle → `MenuCrystalClickHandler.ToggleTransition()`, the pad counterpart to the on-screen Volume/Pause exit. On a runtime **vessel swap**, `VesselController.Initialize` creates the new HUD hidden and the swap never re-enters freestyle, so `ClientPlayerVesselInitializer.ReInitializePair` re-raises `GameDataSO.OnPlayerPairInitialized` and `MenuMiniGameHUD` re-shows the local HUD (gated on freestyle + local player) — the `onShipHUDInitialized`/`ShipHUD` reparent path is dead for menu vessels (no `ShipHUD` on the vessel prefabs). See `Docs/ToySystem/ARCHITECTURE.md`.
+
 #### Phase 1: Core Freestyle HUD (target hierarchy)
 
 ```
@@ -1849,6 +1795,7 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Object pooling | `GenericPoolManager` (Unity `ObjectPool<T>` with async buffer maintenance) | `_Scripts/Utility/PoolsAndBuffers/` |
 | Player system | `Player` (NetworkBehaviour, `IPlayer`), `PlayerSpawner`, `PlayerSpawnerAdapterBase`, `MiniGamePlayerSpawnerAdapter`, `VolumeTestPlayerSpawnerAdapter` | `_Scripts/Controller/Player/` |
 | Menu navigation | `ScreenSwitcher`, `IScreen`, `ModalWindowManager`, `ProfileDisplayWidget`, `NavLink`/`NavGroup` | `_Scripts/UI/`, `_Scripts/UI/Interfaces/`, `_Scripts/UI/Elements/`, `_Scripts/UI/Modals/` |
+| Freestyle toys | `Toy` (base world-trigger; bloom, local-user + freestyle gating, exit-gated re-arm), `SwapToy` + `SwapToySetCoordinator<T>` (a set of toys showing "the options you're not on", each flips to your previous option on use), `VesselChangerToySet` (mini ship models via `VesselModelBuilder`, reuses `RequestSwap` + restores freestyle control after swap), `DomainChangerToySet` (two toys tinted the domains you're not, `RequestSetDomain_ServerRpc`), `PaintingToy` + `MenuShapePainter` (self-contained fly-by-numbers), `ConveyorToy` + `MicrosceneConveyor` + `Microscene` + `MicroscenePatterns` (Wanderway: on/off toggle streaming a speed-scaled field of 16 procedurally-varied microscenes ahead of the vessel — a closed conveyor of conserved prisms + skimmable crystals + cell-released lifeforms), `ToyboxController` (places sets near the membrane), `ToyboxSO`/`ToyDefinitionSO` (registry + deferred unlock state), `ToyboxSetupTool` (editor) | `_Scripts/Controller/Toys/`, `_Scripts/ScriptableObjects/Toys/`, `_Scripts/Editor/` |
 | Menu screens | `HomeScreen`, `ArcadeScreen`, `StoreScreen`, `HangarScreen`, `LeaderboardsMenu`, `EpisodeScreen` | `_Scripts/UI/Screens/` |
 | UI | Elements, FX, Modals, Screens, Views + `ToastService` / `ToastChannel` | `_Scripts/UI/` |
 | Telemetry | `VesselTelemetryBootstrapper`, `VesselTelemetry` (abstract) + per-vessel subclasses, `VesselStatsCloudData` | `_Scripts/Controller/Vessel/` |
@@ -1859,12 +1806,12 @@ All game code lives under `CosmicShore.*` with 8 primary namespaces:
 | Scene management | `SceneLoader` (MonoBehaviour, DontDestroyOnLoad in Bootstrap, game launch + restart + return-to-menu, SOAP code subscriptions), `SceneNameListSO` (centralized scene names, DI-registered) | `_Scripts/System/`, `_Scripts/Utility/DataContainers/` |
 | Authentication | `AuthenticationServiceFacade` (facade/writer), `AuthenticationController` (MonoBehaviour adapter), `AuthenticationSceneController` (scene UI), `SplashToAuthFlow` (splash routing), `AuthenticationData` / `AuthenticationDataVariable` (SOAP state) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Friends | `FriendsServiceFacade` (facade/single-writer for UGS Friends SDK), `FriendsInitializer` (MonoBehaviour bridge + presence), `FriendsDataSO` (SOAP container: 4 lists + 4 events), `FriendData`/`FriendPresenceActivity` (SOAP data types) | `_Scripts/System/`, `_Scripts/Controller/Party/`, `_Scripts/Utility/DataContainers/`, `_Scripts/ScriptableObjects/SOAP/ScriptableFriendData/` |
-| Friends UI | `FriendsPanel` (tabbed: list + requests + add), `FriendEntryView` (friend row with invite/remove), `FriendRequestEntryView` (accept/decline/cancel), `AddFriendPanel` (name input) | `_Scripts/UI/Views/` |
+| Friends UI | `FriendsListPanel` (combined Online + Requests, no tabs), `OnlineInfoEntry` (online row = invite/cancel/kick button), `RequestInfoEntry` (accept/decline; friend-request + party-invite) | `_Scripts/UI/Elements/` |
 | Player data | `PlayerDataService` (cloud profile, XP, rewards), `PlayerProfileData` | `_Scripts/UI/Views/` |
 | Network monitoring | `NetworkMonitor` (polling), `NetworkMonitorData` / `NetworkMonitorDataVariable` (SOAP events) | `_Scripts/System/`, `_Scripts/ScriptableObjects/SOAP/ScriptableAuthenticationData/` |
 | Multiplayer | `MultiplayerSetup` (NetworkManager lifecycle + UGS sessions), `ServerPlayerVesselInitializer` (base spawner), `ClientPlayerVesselInitializer` (pair initializer + RPCs), `ServerPlayerVesselInitializerWithAI` (AI pre-spawner), `MenuServerPlayerVesselInitializer` (menu autopilot), `MenuCrystalClickHandler` (play-from-menu), `DomainAssigner` (team pool) | `_Scripts/Controller/Multiplayer/` |
 | Party / Invite | `HostConnectionService` (presence lobby + party sessions, single-writer to `HostConnectionDataSO`), `PartyInviteController` (Netcode host↔client transitions), `FriendsInitializer` (Friends service bridge) | `_Scripts/Controller/Party/` |
-| Party UI | `PartyAreaPanel` (3-slot), `PartyArcadeView` (4-slot), `PartySlotView`, `OnlinePlayersPanel`, `OnlinePlayerEntry`, `FriendsPanel`, `FriendEntryView`, `AddFriendPanel`, `PartyInviteNotificationPanel` | `_Scripts/UI/Views/`, `_Scripts/UI/Elements/`, `_Scripts/UI/Screens/` |
+| Party UI | `ArcadeLobbyList` (4-slot party panel; per-slot kick ✕ for host) + `FriendInfoSlot` (single slot), `FriendsListPanel` (Online + Requests), `OnlineInfoEntry` (online row = invite button; "IN YOUR PARTY" + cancel-✕/kick states), `RequestInfoEntry` (accept/decline), `PartyInviteNotificationPanel` (bottom-left global invite popup) | `_Scripts/UI/Elements/` (`PartyInviteNotificationPanel` in `_Scripts/UI/Screens/`) |
 | Menu scene controller | `MainMenuController` (sub-state machine: None→Initializing→Ready→LaunchingGame), `MainMenuState` enum | `_Scripts/System/`, `_Scripts/Data/Enums/` |
 | Audio | `AudioSystem` (DI singleton), `ScriptableEventGameplaySFX` / `EventListenerGameplaySFX` (decoupled gameplay SFX via SOAP) | `_Scripts/System/Audio/`, `_Scripts/ScriptableObjects/SOAP/ScriptableGameplaySFX/` |
 | App systems | Favorites, LoadOut, Quest, Rewind, Squads, UserAction, UserJourney, Xp, Ads, IAP, DailyChallenge, TrainingGameProgress | `_Scripts/System/` |
@@ -2040,6 +1987,21 @@ ones.
   cells).
 - **Vessels** — the player/AI actors whose class-specific abilities compose
   with the fundamentals above.
+- **Toys** — interactive world-space stations the player's **Vessel** flies into,
+  surfaced in the Menu_Main lava-lamp/freestyle "toybox". A toy has **no score and
+  no end condition** — something to play with indefinitely (toys are to freestyle
+  what party games are to the rest of Cosmic Shore). Added at the prompter's request;
+  it earns its place by composing with the others rather than bypassing them: the
+  vessel-changer cycles **Vessel**, the domain-changer cycles **Domain** (server-RPC,
+  never a client write), the painting/"fly by numbers" toy lays a conserved **Mass**
+  prism pattern, and the **Wanderway conveyor** streams **Prisms/Mass** (a fixed stock
+  it *transports* — suction-out → bloom-in — never creates or destroys), **Crystals**
+  (skimmable elemental pickups), and **Flora & Fauna** (released into the containing
+  **Cell** as ordinary citizens) into an endless field ahead of the vessel. Toys are
+  placed relative to the **Cell** membrane (read, not duplicated). A toy imposes no
+  decay/timer/win-lose, so it stays inside *Mass is conserved* + *don't cheat
+  emergence*. Unlock *conditions* are deferred; the toybox registry + per-toy unlock
+  state live in `ToyboxSO`. See `Docs/ToySystem/ARCHITECTURE.md`.
 
 ### Process for curating fundamentals
 

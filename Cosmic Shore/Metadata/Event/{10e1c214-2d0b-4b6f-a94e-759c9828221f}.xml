@@ -123,7 +123,7 @@
 	</object>
 	<object class="EventMixerMaster" id="{bbe509be-b22f-4029-aff9-6bbbbdea66e5}">
 		<property name="volume">
-			<value>-8</value>
+			<value>10</value>
 		</property>
 		<relationship name="effectChain">
 			<destination>{1a226eaa-0603-47cd-a2c0-3e1fff6f7829}</destination>
@@ -174,7 +174,6 @@
 		<property name="length">
 			<value>7.3164697193500743</value>
 		</property>
-		<property name="name" />
 		<property name="pitch">
 			<value>-2</value>
 		</property>
@@ -214,7 +213,6 @@
 		<property name="length">
 			<value>0.75</value>
 		</property>
-		<property name="name" />
 		<relationship name="fadeOutCurve">
 			<destination>{19d9ae10-ff24-40e4-ad99-17b1260f1329}</destination>
 		</relationship>
