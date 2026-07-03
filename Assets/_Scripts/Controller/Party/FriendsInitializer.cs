@@ -115,6 +115,12 @@ namespace CosmicShore.Gameplay
 
         public async void HandleSignedInEvent()
         {
+            // Android stripped-performance branch: skip UGS Friends init + presence writes entirely.
+            // Nothing in the vessel-spawn or conveyor path reads friends; the presence helpers below
+            // all no-op while the service is uninitialized, so this cleanly disables the whole
+            // subsystem without touching the Relay host bring-up.
+            if (CosmicShore.Utility.PerfStrip.DisableSocialNetworking) return;
+
             if (_initialized) return;
             if (!IsAuthSignedIn()) return;
 

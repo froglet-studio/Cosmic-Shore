@@ -17,37 +17,37 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/_Scenes/Tools/MattsRecording Studio.unity
     guid: 24dd4d7af8c78a14199bc0ab37b17d37
-  - enabled: 1
+  - enabled: 0
     path: Assets/_Scenes/Singleplayer Scenes/MinigameWildlifeBlitz.unity
     guid: d5418cffe1da8b840bcc2e1a92a7b1db
-  - enabled: 1
+  - enabled: 0
     path: Assets/_Scenes/Singleplayer Scenes/MinigameCellularDuel.unity
     guid: a0793cb7cf4069b44ba82acfddb04f11
   - enabled: 0
     path: Assets/_Scenes/Tools/PhotoBooth.unity
     guid: 88bd9d59331396d44be56d5b782632ee
-  - enabled: 1
+  - enabled: 0
     path: Assets/_Scenes/Multiplayer Scenes/MinigameFreestyleMultiplayer_Gameplay.unity
     guid: c67622dbae06f9742936918633dc1f10
-  - enabled: 1
+  - enabled: 0
     path: Assets/_Scenes/Multiplayer Scenes/MinigameDuelForCellMultiplayer_Gameplay.unity
     guid: 1a4008204ec60f0449e6434e03c6db67
-  - enabled: 1
+  - enabled: 0
     path: Assets/_Scenes/Multiplayer Scenes/ArcadeGameMultiplayer2v2CoOpVsAI.unity
     guid: a596bbcaeca9b07498a4875cacea431c
-  - enabled: 1
+  - enabled: 0
     path: Assets/_Scenes/Multiplayer Scenes/MinigameHexRace.unity
     guid: 4793d5ff09048ed409980d836ad4f2a2
-  - enabled: 1
+  - enabled: 0
     path: Assets/_Scenes/Multiplayer Scenes/MinigameJoust_Gameplay.unity
     guid: 0bac4466932e424478d8d413a6096e06
-  - enabled: 1
+  - enabled: 0
     path: Assets/_Scenes/Multiplayer Scenes/MinigameCrystalCaptureMultiplayer_Gameplay.unity
     guid: afd466f7acf11f448a75b084e3045691
-  - enabled: 1
+  - enabled: 0
     path: Assets/_Scenes/Multiplayer Scenes/Maelstrom.unity
     guid: 6e01e0c4ea227cd4a968f0ac405f06b9
-  - enabled: 1
+  - enabled: 0
     path: Assets/_Scenes/Multiplayer Scenes/MinigameAstroLeague.unity
     guid: 2f6080b2b178466fb72dc1ae26796b07
   m_configObjects:

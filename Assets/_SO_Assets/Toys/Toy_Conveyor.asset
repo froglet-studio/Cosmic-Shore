@@ -24,12 +24,12 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
   maxCrystalsPerScene: 1
   lifeformScenes: 1
-  poolSize: 7
-  prismBudgetPerScene: 100
+  poolSize: 5
+  prismBudgetPerScene: 40
   sceneRadius: 80
   sceneSpacing: 170
   firstSceneDistance: 170
-  aheadTargetScenes: 5
+  aheadTargetScenes: 3
   minSceneIntervalSeconds: 2
   recycleBehindDistance: 170
   transitionSeconds: 1.2

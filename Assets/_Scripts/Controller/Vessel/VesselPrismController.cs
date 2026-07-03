@@ -97,12 +97,22 @@ namespace CosmicShore.Gameplay
 
         public void StartSpawn()
         {
+            // Android stripped-performance branch: vessels lay NO continuous trail. Gating here (the
+            // single start point) covers every caller — including the skimmer-cooldown effect that
+            // re-calls StartSpawn — so no trail prism is ever created. Skimming is unaffected (it
+            // skims other prisms — the conveyor's — not the vessel's own trail). See PerfStrip.
+            if (PerfStrip.TrailsDisabled)
+            {
+                spawnerEnabled = false;
+                return;
+            }
+
             if (cts != null)
                 StopSpawn();
-            
+
             cts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
             spawnerEnabled = true;
-            
+
             _ = SpawnLoopAsync(cts.Token);
         }
         

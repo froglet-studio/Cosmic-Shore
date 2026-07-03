@@ -332,6 +332,13 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            // Android stripped-performance branch: skip the periodic UGS presence refresh + invite
+            // housekeeping. This is a UGS read + main-thread marshal every ~1.5s that only feeds the
+            // online-players / invite UI — pure overhead in solo freestyle, and a recurring GC/hitch
+            // source. The Relay host the vessel-spawn pipeline needs is created in the Start init
+            // chain (EnsurePartySessionAsync), NOT here, so gating Update never blocks the Squirrel.
+            if (CosmicShore.Utility.PerfStrip.DisableSocialNetworking) return;
+
             if (!IsInPresenceLobby) return;
             if (_lobbyMutex.CurrentCount == 0) return;                   // someone is already inside the mutex
             if (Time.unscaledTime < _rateLimitBackoffUntil) return;
