@@ -25,6 +25,13 @@ A self-contained Editor build script ships on this branch:
 The script forces the Android target, builds an **APK** (not AAB), and builds only the enabled
 scenes (the 3 boot scenes below).
 
+> **Tip — verify 60 fps on device:** a **Development** build auto-spawns the on-screen
+> `DiagnosticsHUD` overlay (FPS, frame time, CPU/GPU bound verdict). Prefer the Development build
+> (or `FrogletTools ▸ Build ▸ Android APK (Development)`) for perf testing; it's fully stripped from
+> Release builds. (A Release build previously failed to compile this file — a pre-existing
+> split-`#if` bug where `using UnityEngine;` was guarded but the class declaration wasn't; now the
+> whole file is guarded so it compiles in every configuration.)
+
 ## How to reach the conveyor on device
 
 1. App boots: **Bootstrap → Authentication → Menu_Main**. The autopilot Squirrel drifts in the

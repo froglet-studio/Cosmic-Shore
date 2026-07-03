@@ -12,7 +12,6 @@ using UnityEngine.Profiling;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
-#endif
 
 namespace CosmicShore.Utility.PerformanceBenchmark
 {
@@ -35,7 +34,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// </summary>
     public class DiagnosticsHUD : MonoBehaviour
     {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
         static DiagnosticsHUD _instance;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -682,6 +680,6 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             public double rttMs;
             public List<DiagSpike> spikes;
         }
-#endif
     }
 }
+#endif
