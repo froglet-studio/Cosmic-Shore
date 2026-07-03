@@ -17,20 +17,21 @@ MonoBehaviour:
   description: Fly through to summon an endless trail of little worlds.
   unlockedByDefault: 1
   placementAngleDegrees: 60
-  accentColor: {r: 0.35, g: 1, b: 0.55, a: 1}
-  prismPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9, type: 3}
+  accentColor: {r: 0.11635202, g: 0.22510868, b: 1, a: 1}
+  prismPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9,
+    type: 3}
   crystalCollectionEffects:
   - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
-  maxCrystalsPerScene: 3
+  maxCrystalsPerScene: 1
   lifeformScenes: 1
-  poolSize: 10
-  prismBudgetPerScene: 42
-  sceneRadius: 55
-  sceneSpacing: 220
+  poolSize: 7
+  prismBudgetPerScene: 100
+  sceneRadius: 80
+  sceneSpacing: 170
   firstSceneDistance: 170
-  aheadTargetScenes: 7
+  aheadTargetScenes: 5
   minSceneIntervalSeconds: 2
-  recycleBehindDistance: 250
+  recycleBehindDistance: 170
   transitionSeconds: 1.2
-  courseFollow: 0.6
+  courseFollow: 1
   seed: 0

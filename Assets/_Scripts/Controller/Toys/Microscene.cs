@@ -238,7 +238,7 @@ namespace CosmicShore.Gameplay
             // MULTIPLY the prefab's authored scale (the elemental prefabs ship at root scale 10 —
             // assigning would shrink the pickup and its trigger 10×). Sized before Start():
             // crystalValue and the element-level gain both read lossyScale.
-            crystal.transform.localScale *= (float)(rng.NextDouble() * 0.7 + 0.9);
+            crystal.transform.localScale *= (float)(rng.NextDouble() * 0.2 + 0.1);
             crystal.enabled = true;
             crystal.gameObject.SetActive(true);
 
