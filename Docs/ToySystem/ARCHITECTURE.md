@@ -140,13 +140,30 @@ flips to the colour you just left.
 
 Fly through → the belt switches **ON** (the toy flips bright + relabels "flowing — fly through
 to stop"; another pass switches it off) and a field of **microscenes** blooms in ahead of your
-flight path, scene after scene — open-world exploring crossed with an infinite runner. Sixteen
-recipes (gate runs, helix weaves, tunnels, slaloms, starbursts, orchards, meadows, menageries,
-polygon gates, serpent ribbons, colonnades, orbitals, canyons, lattices, comet tails, spiral
-ramps), each re-rolling its own radii/counts/twists/bends on every arrival, so the same recipe
-never lands the same way twice. The belt **follows you anywhere at any speed**: effective
-spacing = `max(sceneSpacing, speed × minSceneIntervalSeconds)` and lookahead =
+flight path, scene after scene — open-world exploring crossed with an infinite runner. **28
+recipes** built from a shared geometry vocabulary (`PrismGeometry`): gate runs, helix weaves,
+tunnels, slaloms, starbursts, orchards, meadows, menageries, polygon gates, serpent ribbons,
+colonnades, orbitals, canyons, lattices, comet tails, spiral ramps, archways, vortices (converging
+lines with an open convergence + an inviting crystal), slot corridors (parallel plates with gaps to
+roll through), cube fields, torus gates, pillar halls, turbines, asteroid fields, and living
+plains / groves / aviaries / preserves — each re-rolling its own radii/counts/twists/bends on every
+arrival, so the same recipe never lands the same way twice. The belt **follows you anywhere at any
+speed**: effective spacing = `max(sceneSpacing, speed × minSceneIntervalSeconds)` and lookahead =
 `aheadTargetScenes × spacing`, so there is always a field of ~7 structures ahead.
+
+**Geometry vs. theming (why it stays fresh, not chaotic).** A recipe produces pure *shape* only;
+`MicroscenePatterns.ApplyTheming` then themes each scene from a config-authored `MicroscenePalette`
+(`ConveyorToyDefinitionSO`): a **per-scene domain scheme** (mono / banded-by-structure / accented /
+neutral-veined-with-Blue — weighted so most scenes read one coherent colour, never per-prism
+confetti; domains read live each draw so the Domain Changer toy takes effect), a sparse **prism-kind
+scheme** (mostly plain, with occasional **danger** prisms — the Squirrel danger-skim risk/reward —
+and rarer **shielded** / **supershielded** accents, capped for the collider budget), a per-scene
+**scale mood** (grand vs. delicate), and a **crystal mix** (mostly elemental skims, occasional
+**omni** jackpots — body-collected fuel + speed buff). "Infinitely fresh" is the cross-product of
+recipe × domain-scheme × kind-scheme × scale-mood × per-arrival geometry roll; coherence comes from
+theming per *scene*, not per prism. Prism lay-down goes through the shared `PrismTrailBuilder` (the
+one canonical Instantiate→…→Initialize primitive, also used by the Spawnable environment system).
+See `Docs/EnvironmentSpawning/UNIFICATION_ASSESSMENT.md`.
 
 **Placement is a connected ribbon that can break and re-lay.** Every scene sits *on* the flight
 line — never scattered laterally (no orthogonal "sphere in front of you"). Each tick the belt scans
@@ -192,11 +209,17 @@ flow — either way its scenes stay in the world.
   `AssignLineage`, `RegisterSpawnedObject`) and never track, move, or despawn them. They live
   and die by the food web only.
 - *No domain asymmetry* — fauna spawn in `Cell.ControllingDomain`; flora in a random playable
-  domain; prism scenes cycle the active playable domains evenly.
+  domain (both via the canonical `CellLifeSpawnerBase` spawn path the cell's own spawner uses).
+  Multi-domain colouring applies only to *prisms* (neutral mass), distributed per-scene by a
+  coherent domain scheme (incl. optional neutral-Blue veins) — not a per-domain spawn bias.
 - *Volume is the spine / collider budget* — belt mass is bounded at
   `poolSize × prismBudgetPerScene` prisms (default 10 × 42 = 420 BoxColliders + ≤3 crystal
   triggers per scene + 1 toy trigger, well under the ~1,500/cell target); distant scenes are
-  collider-LOD-culled by `PrismColliderLodManager` automatically. The belt roams freely — mass
+  collider-LOD-culled by `PrismColliderLodManager` automatically. **Shielded / supershielded**
+  prisms swap their BoxCollider for an always-on convex MeshCollider that LOD can't reclaim, so the
+  palette caps them (`MaxShielded = 3`, `MaxSuperShielded = 1` per scene, low scheme weights) —
+  worst case ≈ 40 MeshColliders across a full pool, realistic steady state a handful. Danger prisms
+  keep the cheap cullable BoxCollider. The belt roams freely — mass
   laid inside a cell registers with that cell's volume/grids as usual; mass laid in open space
   is ordinary registered prism mass with no cell binding (same as any open-space track). The
   conveyor adds **zero physics queries** — placement is pure arithmetic.

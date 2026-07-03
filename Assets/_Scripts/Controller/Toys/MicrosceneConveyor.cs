@@ -11,7 +11,9 @@ namespace CosmicShore.Gameplay
     public sealed class ConveyorConfig
     {
         public Prism PrismPrefab;
+        public Crystal OmniCrystalPrefab;
         public SkimmerCrystalEffectSO[] CrystalEffects;
+        public MicroscenePalette Palette = new();
         public int PoolSize = 10;
         public int PrismBudget = 42;
         public float SceneRadius = 55f;
@@ -82,8 +84,7 @@ namespace CosmicShore.Gameplay
 
         readonly List<Microscene> _scenes = new();
         readonly List<int> _recipeBag = new();
-        readonly List<Domains> _domainCycle = new();
-        int _domainIndex;
+        readonly List<Domains> _domainList = new();
 
         System.Random _rng;
         float _nextTickAt;
@@ -213,7 +214,7 @@ namespace CosmicShore.Gameplay
         void PlaceNewScene(Pose pose)
         {
             var scene = Microscene.Create(transform, _scenes.Count.ToString());
-            scene.Configure(_cfg.PrismPrefab, _cfg.CrystalEffects);
+            scene.Configure(_cfg.PrismPrefab, _cfg.OmniCrystalPrefab, _cfg.CrystalEffects);
             scene.transform.SetPositionAndRotation(pose.position, pose.rotation);
             _scenes.Add(scene);
 
@@ -221,7 +222,7 @@ namespace CosmicShore.Gameplay
             // Each arrival gets its own derived rng: async populate/recycle draws would otherwise
             // interleave on the shared stream and break per-seed reproducibility.
             var sceneRng = new System.Random(_rng.Next());
-            scene.PopulateAsync(plan, NextDomain(), sceneRng, this.GetCancellationTokenOnDestroy()).Forget();
+            scene.PopulateAsync(plan, sceneRng, this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         bool RecycleFarthestScene(Vector3 playerPos, Vector3 course, float recycleBehind, float lookahead,
@@ -269,7 +270,7 @@ namespace CosmicShore.Gameplay
 
             var plan = NextPlan();
             var sceneRng = new System.Random(_rng.Next()); // see PlaceNewScene — per-arrival stream
-            candidate.RecycleAsync(plan, pose, NextDomain(), sceneRng, _cfg.TransitionSeconds,
+            candidate.RecycleAsync(plan, pose, sceneRng, _cfg.TransitionSeconds,
                 this.GetCancellationTokenOnDestroy()).Forget();
             return true;
         }
@@ -292,30 +293,32 @@ namespace CosmicShore.Gameplay
 
             int recipe = _recipeBag[^1];
             _recipeBag.RemoveAt(_recipeBag.Count - 1);
-            return MicroscenePatterns.Plan(recipe, _rng, _cfg.PrismBudget, _cfg.SceneRadius, _cfg.MaxCrystalsPerScene);
+
+            // Read the live player domains on EVERY draw — never snapshot domain at creation time
+            // (CLAUDE.md ▸ Team Domains): the Domain Changer toy can re-pick mid-freestyle and the
+            // belt should start colouring scenes from the new set immediately. The palette then
+            // distributes them per-prism under a coherent per-scene scheme.
+            _cfg.Palette.PlayableDomains = LivePlayableDomains();
+            return MicroscenePatterns.Plan(recipe, _rng, _cfg.PrismBudget, _cfg.SceneRadius, _cfg.MaxCrystalsPerScene, _cfg.Palette);
         }
 
-        /// <summary>
-        /// Read the live player domains on EVERY draw — never snapshot domain at creation time
-        /// (CLAUDE.md ▸ Team Domains): the Domain Changer toy can re-pick mid-freestyle and the
-        /// belt should start colouring scenes from the new set immediately.
-        /// </summary>
-        Domains NextDomain()
+        /// <summary>The live, distinct playable domains in the session (falls back to all three).</summary>
+        Domains[] LivePlayableDomains()
         {
-            _domainCycle.Clear();
+            _domainList.Clear();
             if (_gameData?.Players != null)
                 foreach (var player in _gameData.Players)
-                    if (player != null && player.Domain != Domains.Blue && !_domainCycle.Contains(player.Domain))
-                        _domainCycle.Add(player.Domain);
+                    if (player != null && player.Domain != Domains.Blue && !_domainList.Contains(player.Domain))
+                        _domainList.Add(player.Domain);
 
-            if (_domainCycle.Count == 0)
+            if (_domainList.Count == 0)
             {
-                _domainCycle.Add(Domains.Jade);
-                _domainCycle.Add(Domains.Ruby);
-                _domainCycle.Add(Domains.Gold);
+                _domainList.Add(Domains.Jade);
+                _domainList.Add(Domains.Ruby);
+                _domainList.Add(Domains.Gold);
             }
 
-            return _domainCycle[_domainIndex++ % _domainCycle.Count];
+            return _domainList.ToArray();
         }
 
         // ── Plumbing ─────────────────────────────────────────────────────────

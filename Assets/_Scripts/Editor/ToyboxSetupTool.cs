@@ -91,10 +91,21 @@ namespace CosmicShore.Editor
                 SetColor(so, "accentColor", accent);
                 SetBool(so, "unlockedByDefault", true);
                 SetFloat(so, "placementAngleDegrees", angleDeg);
-                extra?.Invoke(so);
                 so.ApplyModifiedProperties();
                 EditorUtility.SetDirty(asset);
             }
+
+            // Always fill any UNSET content references (each 'extra' assignment guards for unset), so
+            // re-running the tool wires newly-added fields — e.g. the conveyor's omniCrystalPrefab —
+            // onto an already-authored asset without clobbering user customisations.
+            if (extra != null)
+            {
+                var so = new SerializedObject(asset);
+                extra.Invoke(so);
+                if (so.ApplyModifiedProperties())
+                    EditorUtility.SetDirty(asset);
+            }
+
             return asset;
         }
 
@@ -117,6 +128,14 @@ namespace CosmicShore.Editor
             {
                 var prism = AssetDatabase.LoadAssetAtPath<Prism>("Assets/_Prefabs/Trails/SpawnablePrism.prefab");
                 if (prism) prismProp.objectReferenceValue = prism;
+            }
+
+            // Omni crystal prefab: the body-collected jackpot pickup (fuel + speed buff).
+            var omniProp = so.FindProperty("omniCrystalPrefab");
+            if (omniProp != null && !omniProp.objectReferenceValue)
+            {
+                var omni = AssetDatabase.LoadAssetAtPath<Crystal>("Assets/_Prefabs/Environment/Crystal.prefab");
+                if (omni) omniProp.objectReferenceValue = omni;
             }
 
             // Crystal-side collection effect: the standard element-level powerup.
