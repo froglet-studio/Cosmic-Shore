@@ -110,7 +110,8 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   `minSceneIntervalSeconds` (seconds of flight between scenes at speed) are the pacing pair;
   `sceneSpacing` / `recycleBehindDistance` are the low-speed floors; `sceneRadius` + per-recipe
   radii vs. vessel + skimmer size; `transitionSeconds` (suction/bloom read); `poolSize` /
-  `prismBudgetPerScene` (density vs. perf); `courseFollow` (how tightly the belt shadows you).
+  `prismBudgetPerScene` (density vs. perf); `pathSpread` (lateral scatter of scenes around your
+  flight line, as a fraction of `sceneRadius` — 0 = single file, 1 = up to a full radius off-axis).
 - **Recipe art pass.** The 16 `MicroscenePatterns` recipes are procedural (each re-rolls its own
   radii/counts/twists/bends per arrival) — tune ranges per recipe, and consider authored recipes
   (a `MicrosceneRecipeSO`) if designers want hand-built set pieces in the shuffle bag.

@@ -1,5 +1,6 @@
 using CosmicShore.Gameplay;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -74,9 +75,12 @@ namespace CosmicShore.ScriptableObjects
                                             "belt throughput: a full recycle holds its slot for 2× this.")]
         float transitionSeconds = 1.2f;
 
-        [SerializeField, Range(0f, 1f), Tooltip("How strongly the belt bends toward the player's current " +
-                                                "course when extending (0 = straight line, 1 = shadow the player).")]
-        float courseFollow = 0.6f;
+        [SerializeField, Range(0f, 1f), FormerlySerializedAs("courseFollow"),
+         Tooltip("Lateral scatter of scenes around the player's flight line, as a fraction of Scene " +
+                 "Radius (0 = dead-centre single file, 1 = up to a full scene radius off-axis). Scenes " +
+                 "always land directly ahead on the current course — this only widens the field so it " +
+                 "reads as a field, not a line.")]
+        float pathSpread = 0.6f;
 
         [SerializeField, Tooltip("Deterministic seed for recipes/variation. 0 = fresh ride every session.")]
         int seed;
@@ -102,7 +106,7 @@ namespace CosmicShore.ScriptableObjects
             MinSceneIntervalSeconds = minSceneIntervalSeconds,
             RecycleBehindDistance = recycleBehindDistance,
             TransitionSeconds = transitionSeconds,
-            CourseFollow = courseFollow,
+            PathSpread = pathSpread,
             MaxCrystalsPerScene = maxCrystalsPerScene,
             LifeformScenes = lifeformScenes,
             Seed = seed,
