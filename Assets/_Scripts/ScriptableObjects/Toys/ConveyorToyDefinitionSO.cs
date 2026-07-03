@@ -1,6 +1,5 @@
 using CosmicShore.Gameplay;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 namespace CosmicShore.ScriptableObjects
 {
@@ -75,12 +74,13 @@ namespace CosmicShore.ScriptableObjects
                                             "belt throughput: a full recycle holds its slot for 2× this.")]
         float transitionSeconds = 1.2f;
 
-        [SerializeField, Range(0f, 1f), FormerlySerializedAs("courseFollow"),
-         Tooltip("Lateral scatter of scenes around the player's flight line, as a fraction of Scene " +
-                 "Radius (0 = dead-centre single file, 1 = up to a full scene radius off-axis). Scenes " +
-                 "always land directly ahead on the current course — this only widens the field so it " +
-                 "reads as a field, not a line.")]
-        float pathSpread = 0.6f;
+        [SerializeField, Range(20f, 80f),
+         Tooltip("How sharp a turn re-lays the ribbon straight ahead, in degrees. Scenes farther " +
+                 "off your live heading than this stop counting as 'ahead', so the belt keeps a " +
+                 "connected ribbon that BENDS with gentler turns but BREAKS and re-lays directly in " +
+                 "front of you once you turn past this angle. Lower = the ribbon snaps to your new " +
+                 "heading sooner; higher = it follows longer curves before re-laying.")]
+        float turnBreakDegrees = 55f;
 
         [SerializeField, Tooltip("Deterministic seed for recipes/variation. 0 = fresh ride every session.")]
         int seed;
@@ -106,7 +106,7 @@ namespace CosmicShore.ScriptableObjects
             MinSceneIntervalSeconds = minSceneIntervalSeconds,
             RecycleBehindDistance = recycleBehindDistance,
             TransitionSeconds = transitionSeconds,
-            PathSpread = pathSpread,
+            TurnBreakDegrees = turnBreakDegrees,
             MaxCrystalsPerScene = maxCrystalsPerScene,
             LifeformScenes = lifeformScenes,
             Seed = seed,
