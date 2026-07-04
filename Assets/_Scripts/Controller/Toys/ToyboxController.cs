@@ -199,15 +199,10 @@ namespace CosmicShore.Gameplay
         {
             var box = ScriptableObject.CreateInstance<ToyboxSO>();
 
-            var painting = MakeDefault<PaintingToyDefinitionSO>(
-                "painting", "Fly by Numbers", "Trace a pattern with your trail.", new Color(0.20f, 0.90f, 1.00f));
-            // Give the zero-config default a real shape so it actually paints (a star, auto-generated).
-            var star = ScriptableObject.CreateInstance<ShapeDefinition>();
-            star.shapeName = "Star";
-            star.autoGeneratePreset = ShapePreset.Star;
-            star.autoGenerateRadius = 100f;
-            painting.SetRuntimeShape(star);
-            box.AddToy(painting);
+            // The painting toy needs no shape wiring — with no paintings authored it resolves its
+            // built-in default gallery (Star → Rainbow → Saturn → Taj Mahal).
+            box.AddToy(MakeDefault<PaintingToyDefinitionSO>(
+                "painting", "Fly by Numbers", "Paint monuments with your trail.", new Color(0.20f, 0.90f, 1.00f)));
 
             box.AddToy(MakeDefault<VesselChangerToyDefinitionSO>(
                 "vessel_changer", "Vessel Changer", "Fly through to swap your ship.", new Color(1.00f, 0.85f, 0.20f)));

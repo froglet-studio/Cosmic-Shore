@@ -38,18 +38,33 @@ limitations and verification status. Architecture: `ARCHITECTURE.md`.
 
 ## Branch: painting ("fly by numbers") polish
 
-- **Orientation.** The shape currently billboards to face the vessel at activation
-  (`PaintingToy` builds `rot` from vessel→origin). Validate it reads well; consider laying it
-  flat or aligning to the flight path. `shapeScale` / `originForwardOffset` / `reachThreshold`
-  are on the painting definition — tune.
-- **Pen-up/down.** `ShapeDefinition.trailEnabledPerSegment` (smiley eyes, lightning gaps) is
-  **not** honored because `VesselPrismController.spawnerEnabled` is private. Expose a public
-  trail-spawn toggle to support gaps.
-- **Feedback.** Add marker-collect VFX + a completion flourish. Optionally offer multiple shapes
-  (a selector, or several painting toys).
-- **Full experience (optional).** For a gameplay scene that has the ecology infra, the original
-  `ShapeDrawingManager` (preview cinematic, scoring, reveal, `EndShapeDetailHUD`) can drive the
-  toy instead of `MenuShapePainter`. The menu uses the lightweight runner so it works with no Cell.
+Shipped in the fly-by-numbers enhancement: multi-stroke multi-domain paintings
+(`PaintingDefinitionSO` + `PaintingPresetLibrary`: Star / Rainbow / Saturn / **Taj Mahal**),
+world-anchored upright monuments, per-stroke domain start gates
+(`RequestSetDomain_ServerRpc`), pen-up between strokes
+(`VesselPrismController.SetSpawnerPaused` — the previously-missing public toggle), adaptive
+reach on fine detail, bench/resume via the station, cross-session stroke progress
+(`PaintingProgressStore`), completion celebration, and a per-station progress label.
+`MenuShapePainter` (single-stroke, billboarded, one colour) was removed. Remaining polish:
+
+- **In-editor tuning pass.** Gallery fan spacing (`anglePerToyDeg`), `paintingClearance`,
+  preset sizes vs. the lava-lamp play area, gate ring radius, ghost alphas, celebration
+  timing — all first-guess values.
+- **Cross-session prisms.** Progress persists but painted prisms live only as long as the
+  scene; after a restart the done strokes render as dim "memory" ghosts. If restoring the
+  prisms themselves is ever wanted, that is a mass-law design conversation (re-blooming saved
+  mass), not a quick fix.
+- **Party-client colour lag.** On a party client, the gate's domain pick takes an RTT to
+  replicate, so the first prism or two of a stroke can carry the previous colour.
+- **Feedback juice.** Waypoint-collect VFX, gate-pass SFX/haptics (AudioSystem gameplay SFX +
+  NiceVibrations — the framework-wide audio item below), a subtle beam from station to its
+  monument so ownership reads at a glance.
+- **More paintings.** The preset library composes easily (arcs/rects/circles/meridians) —
+  candidates: Great Wave, rocket, pagoda, Colosseum. Any `ShapeDefinition` already converts
+  via `sourceShape` (pen-up gaps become strokes, now honored).
+- **Full experience (optional).** For a gameplay scene with ecology infra, the original
+  `ShapeDrawingManager` (preview cinematic, scoring, reveal, `EndShapeDetailHUD`) remains a
+  separate, score-bearing mode — the toy stays scoreless by design.
 
 ## Branch: framework / cross-cutting
 
@@ -74,5 +89,7 @@ limitations and verification status. Architecture: `ARCHITECTURE.md`.
 
 ## Known limitations (current)
 
-- Mini-ship materials render static; painting pen-up gaps not honored; no unlock persistence;
-  placement fallback needs in-editor tuning; not yet play-verified.
+- Mini-ship materials render static; no unlock persistence; placement fallback needs
+  in-editor tuning; painting prisms don't persist across sessions (progress does; done
+  strokes show as dim ghosts); party clients may paint a prism or two in the old colour
+  right after a gate (RTT); not yet play-verified.

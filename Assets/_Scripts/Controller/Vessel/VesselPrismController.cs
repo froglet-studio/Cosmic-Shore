@@ -122,6 +122,26 @@ namespace CosmicShore.Gameplay
             cts = null;
         }
 
+        /// <summary>
+        /// Pen-up / pen-down for systems that sculpt with the trail (e.g. the fly-by-numbers
+        /// painting toy): pauses block creation WITHOUT tearing down the spawn loop, so resuming
+        /// is instant (no <see cref="startDelay"/>). If the loop was fully stopped via
+        /// <see cref="StopSpawn"/>, resuming falls back to <see cref="StartSpawn"/>.
+        /// </summary>
+        public void SetSpawnerPaused(bool paused)
+        {
+            if (paused)
+            {
+                spawnerEnabled = false;
+                return;
+            }
+
+            if (cts == null)
+                StartSpawn();
+            else
+                spawnerEnabled = true;
+        }
+
         public void ToggleBlockWaitTime(bool extended)
         {
             waitTime = extended ? defaultWaitTime * 3f : defaultWaitTime;

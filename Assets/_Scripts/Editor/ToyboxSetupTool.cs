@@ -23,6 +23,7 @@ namespace CosmicShore.Editor
     public static class ToyboxSetupTool
     {
         const string ToysFolder = "Assets/_SO_Assets/Toys";
+        const string PaintingsFolder = "Assets/_SO_Assets/Toys/Paintings";
         const string ResourcesFolder = "Assets/Resources";
         const string ToyboxAssetPath = "Assets/Resources/Toybox.asset";
         const string MenuScenePath = "Assets/_Scenes/Menu_Main.unity";
@@ -30,9 +31,11 @@ namespace CosmicShore.Editor
         [MenuItem("Tools/Cosmic Shore/Setup Freestyle Toybox")]
         static void SetupToybox()
         {
+            var gallery = CreatePaintingGallery();
             var painting = LoadOrCreateToy<PaintingToyDefinitionSO>(
-                "Toy_Painting", "painting", "Fly by Numbers", "Trace a pattern with your trail.",
-                new Color(0.20f, 0.90f, 1.00f), 0f, AssignDefaultShape);
+                "Toy_Painting", "painting", "Fly by Numbers", "Paint monuments with your trail.",
+                new Color(0.20f, 0.90f, 1.00f), 0f);
+            AssignPaintings(painting, gallery); // always — migrates pre-gallery Toy_Painting assets too
             var vessel = LoadOrCreateToy<VesselChangerToyDefinitionSO>(
                 "Toy_VesselChanger", "vessel_changer", "Vessel Changer", "Fly through to swap your ship.",
                 new Color(1.00f, 0.85f, 0.20f), 120f);
@@ -51,12 +54,13 @@ namespace CosmicShore.Editor
             EditorUtility.DisplayDialog("Setup Freestyle Toybox",
                 "Toybox ready with 3 toys (Fly by Numbers, Vessel Changer, Domain Changer).\n\n" +
                 $"• Toy assets:  {ToysFolder}/\n" +
+                $"• Paintings:   {PaintingsFolder}/ (Star, Rainbow, Saturn, Taj Mahal)\n" +
                 $"• Toybox:      {ToyboxAssetPath}\n" +
                 (wiredScene
                     ? "• ToyboxController added to Menu_Main and saved.\n"
                     : "• Could not auto-add the ToyboxController — add it to the Menu_Main 'Game' object manually.\n") +
-                "\nAll three toys work as-is. The vessel changer shows mini ship models; the domain " +
-                "changer shows the two colours you're not; the painting toy runs self-contained.\n" +
+                "\nAll three toys work as-is. The painting toy spawns one station per painting: " +
+                "multi-stroke, multi-domain fly-by-numbers with start gates that recolour your trail.\n" +
                 "See Docs/ToySystem/ARCHITECTURE.md.",
                 "OK");
         }
@@ -94,15 +98,68 @@ namespace CosmicShore.Editor
             return asset;
         }
 
-        static void AssignDefaultShape(SerializedObject so)
-        {
-            var shapeProp = so.FindProperty("shape");
-            if (shapeProp == null || shapeProp.objectReferenceValue) return;
+        // ── Painting gallery assets ──────────────────────────────────────────
 
-            string[] guids = AssetDatabase.FindAssets("t:ShapeDefinition");
-            if (guids.Length == 0) return;
-            var shape = AssetDatabase.LoadAssetAtPath<Object>(AssetDatabase.GUIDToAssetPath(guids[0]));
-            if (shape) shapeProp.objectReferenceValue = shape;
+        static List<PaintingDefinitionSO> CreatePaintingGallery()
+        {
+            EnsureFolder(PaintingsFolder);
+            return new List<PaintingDefinitionSO>
+            {
+                LoadOrCreatePainting("Painting_Star", "painting_star", "Star",
+                    "One clean stroke — a warm-up canvas.", PaintingPreset.Star, 420f, 30f),
+                LoadOrCreatePainting("Painting_Rainbow", "painting_rainbow", "Rainbow",
+                    "Three bands, three colours — ride the gates.", PaintingPreset.Rainbow, 700f, 30f),
+                LoadOrCreatePainting("Painting_Saturn", "painting_saturn", "Saturn",
+                    "A planet and its rings, flown in true 3D.", PaintingPreset.Saturn, 800f, 30f),
+                LoadOrCreatePainting("Painting_TajMahal", "painting_taj_mahal", "Taj Mahal",
+                    "The monument. Fifty-five strokes, three colours, hours of flying.",
+                    PaintingPreset.TajMahal, 1100f, 26f),
+            };
+        }
+
+        static PaintingDefinitionSO LoadOrCreatePainting(string fileName, string id, string displayName,
+            string description, PaintingPreset preset, float size, float reachThreshold)
+        {
+            string path = $"{PaintingsFolder}/{fileName}.asset";
+            var asset = AssetDatabase.LoadAssetAtPath<PaintingDefinitionSO>(path);
+            if (asset) return asset;
+
+            asset = ScriptableObject.CreateInstance<PaintingDefinitionSO>();
+            AssetDatabase.CreateAsset(asset, path);
+
+            var so = new SerializedObject(asset);
+            SetString(so, "paintingId", id);
+            SetString(so, "displayName", displayName);
+            SetString(so, "description", description);
+            SetInt(so, "preset", (int)preset);
+            SetFloat(so, "presetSize", size);
+            SetFloat(so, "reachThreshold", reachThreshold);
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(asset);
+            return asset;
+        }
+
+        static void AssignPaintings(PaintingToyDefinitionSO toy, IReadOnlyList<PaintingDefinitionSO> gallery)
+        {
+            var so = new SerializedObject(toy);
+            var list = so.FindProperty("paintings");
+            if (list == null) return;
+
+            var existing = new HashSet<Object>();
+            for (int i = 0; i < list.arraySize; i++)
+                existing.Add(list.GetArrayElementAtIndex(i).objectReferenceValue);
+
+            foreach (var painting in gallery)
+            {
+                if (!painting || existing.Contains(painting)) continue;
+                int idx = list.arraySize;
+                list.arraySize = idx + 1;
+                list.GetArrayElementAtIndex(idx).objectReferenceValue = painting;
+                existing.Add(painting);
+            }
+
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(toy);
         }
 
         // ── Toybox asset ─────────────────────────────────────────────────────
@@ -225,6 +282,12 @@ namespace CosmicShore.Editor
         {
             var p = so.FindProperty(field);
             if (p != null) p.floatValue = value;
+        }
+
+        static void SetInt(SerializedObject so, string field, int value)
+        {
+            var p = so.FindProperty(field);
+            if (p != null) p.intValue = value;
         }
 
         static void SetColor(SerializedObject so, string field, Color value)
