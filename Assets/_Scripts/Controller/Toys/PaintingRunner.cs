@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -23,37 +24,50 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class PaintingRunner : MonoBehaviour
     {
-        enum RunPhase { AwaitingGate, Painting, Celebrating }
-        enum GhostStyle { Pending, Active, Done }
+        enum RunPhase { AwaitingGate = 0, Painting = 1, Celebrating = 2 }
+        enum GhostStyle { Pending = 0, Active = 1, Done = 2 }
 
         /// <summary>Raised on stroke completion, bench toggles, and celebration — drives the toy's label.</summary>
         public event Action ProgressChanged;
 
+        /// <summary>Raised once, just before the runner destroys itself after the celebration.</summary>
+        public event Action Finished;
+
         const float BloomSeconds = 1.4f;
         const float GateDespawnSeconds = 0.45f;
         const float MarkerPulseHz = 1.4f;
+
+        /// <summary>Everything the runner knows about one stroke — one array, no index juggling.</summary>
+        class StrokeInfo
+        {
+            public Vector3[] Points;      // world space
+            public string Name;
+            public Domains Domain;
+            public float Reach;           // adaptive advance distance
+            public Color BaseColor;       // resolved once at Begin — no per-frame theme lookups
+            public LineRenderer Ghost;
+            public GhostStyle Style;
+        }
 
         ToyContext _context;
         ToyDefinitionSO _toyDefinition;
         PaintingDefinitionSO _painting;
         Quaternion _rotation;
 
-        Vector3[][] _strokes;          // world-space points per stroke
-        string[] _strokeNames;
-        Domains[] _strokeDomains;
-        float[] _strokeReach;          // adaptive per-stroke advance distance
-
-        LineRenderer[] _ghosts;
-        GhostStyle[] _ghostStyles;
-        float _bloom;                  // 0→1 on begin; falls back to 0 during the farewell fade
+        StrokeInfo[] _strokes;
+        float _bloom;                  // 0→1 on begin; swells then falls to 0 during the farewell fade
 
         int _strokeIndex;              // == strokes completed while AwaitingGate
         int _pointIndex;
         RunPhase _phase;
         bool _benched;
+        bool _wasEngaged;
 
         GameObject _gate;
+        bool _gateBenchEasing;
         GameObject _marker;
+        Renderer _markerRenderer;
+        bool _markerHiding;
         LineRenderer _guide;
         float _markerBaseRadius;
 
@@ -67,6 +81,8 @@ namespace CosmicShore.Gameplay
         public int StrokesCompleted => Mathf.Min(_strokeIndex, StrokeCount);
         public int StrokeCount => _strokes?.Length ?? 0;
 
+        StrokeInfo CurrentStroke => _strokes[_strokeIndex];
+
         /// <summary>
         /// Build the painting at a world anchor and start (or resume) the run.
         /// <paramref name="resumeFromStroke"/> strokes are shown as already done.
@@ -79,44 +95,38 @@ namespace CosmicShore.Gameplay
             _context = context;
             _rotation = rotation;
 
-            // Resolve + filter (a stroke needs at least a line to fly).
+            // PaintingDefinitionSO.Strokes is already filtered to drawable strokes — using it
+            // verbatim keeps this count identical to the one PaintingToy and the progress store see.
             var source = painting.Strokes;
-            var strokes = new List<Vector3[]>();
-            var names = new List<string>();
-            var domains = new List<Domains>();
-            foreach (var s in source)
+            _strokes = new StrokeInfo[source.Count];
+            for (int i = 0; i < source.Count; i++)
             {
-                if (s?.points == null || s.points.Count < 2) continue;
+                var s = source[i];
                 var world = new Vector3[s.points.Count];
-                for (int i = 0; i < s.points.Count; i++)
-                    world[i] = origin + rotation * s.points[i];
-                strokes.Add(world);
-                names.Add(string.IsNullOrEmpty(s.name) ? $"Stroke {strokes.Count}" : s.name);
-                domains.Add(s.domain);
-            }
+                for (int p = 0; p < s.points.Count; p++)
+                    world[p] = origin + rotation * s.points[p];
 
-            _strokes = strokes.ToArray();
-            _strokeNames = names.ToArray();
-            _strokeDomains = domains.ToArray();
+                // Per-stroke reach: tighten on fine detail so a tight balcony ring can't be
+                // cleared from its centre, keep the authored threshold on broad strokes.
+                float minSeg = float.MaxValue;
+                for (int p = 1; p < world.Length; p++)
+                    minSeg = Mathf.Min(minSeg, Vector3.Distance(world[p - 1], world[p]));
+
+                _strokes[i] = new StrokeInfo
+                {
+                    Points = world,
+                    Name = string.IsNullOrEmpty(s.name) ? $"Stroke {i + 1}" : s.name,
+                    Domain = s.domain,
+                    Reach = Mathf.Clamp(minSeg * 0.7f, 4f, _painting.ReachThreshold),
+                    BaseColor = ToyFactory.DomainAccentColor(context, s.domain),
+                };
+            }
 
             if (_strokes.Length == 0)
             {
-                CosmicShore.Utility.CSDebug.LogWarning(
-                    $"[PaintingRunner] '{painting.DisplayName}' has no drawable strokes.");
+                CSDebug.LogWarning($"[PaintingRunner] '{painting.DisplayName}' has no drawable strokes.");
                 Destroy(gameObject);
                 return;
-            }
-
-            // Per-stroke reach: tighten on fine detail so a tight balcony ring can't be cleared
-            // from its centre, keep the authored threshold on broad strokes.
-            _strokeReach = new float[_strokes.Length];
-            for (int i = 0; i < _strokes.Length; i++)
-            {
-                float minSeg = float.MaxValue;
-                var pts = _strokes[i];
-                for (int p = 1; p < pts.Length; p++)
-                    minSeg = Mathf.Min(minSeg, Vector3.Distance(pts[p - 1], pts[p]));
-                _strokeReach[i] = Mathf.Clamp(minSeg * 0.7f, 6f, _painting.ReachThreshold);
             }
 
             // Studio zone: pen-up between strokes applies only inside this sphere.
@@ -126,20 +136,19 @@ namespace CosmicShore.Gameplay
             _zoneSqrRadius = zoneRadius * zoneRadius;
 
             // Ghost blueprint: one line per stroke, tinted its domain.
-            _ghosts = new LineRenderer[_strokes.Length];
-            _ghostStyles = new GhostStyle[_strokes.Length];
             _strokeIndex = Mathf.Clamp(resumeFromStroke, 0, _strokes.Length - 1);
             if (resumeFromStroke >= _strokes.Length) _strokeIndex = 0; // stale "complete" state — fresh canvas
             for (int i = 0; i < _strokes.Length; i++)
             {
-                _ghosts[i] = MakeLine($"Ghost_{i}", transform, 1f, true);
-                _ghosts[i].positionCount = _strokes[i].Length;
-                _ghosts[i].SetPositions(_strokes[i]);
-                _ghostStyles[i] = i < _strokeIndex ? GhostStyle.Done : GhostStyle.Pending;
+                var ghost = ToyFactory.CreateLine($"Ghost_{i}", transform, 1f, true);
+                ghost.positionCount = _strokes[i].Points.Length;
+                ghost.SetPositions(_strokes[i].Points);
+                _strokes[i].Ghost = ghost;
+                _strokes[i].Style = i < _strokeIndex ? GhostStyle.Done : GhostStyle.Pending;
             }
-            _ghostStyles[_strokeIndex] = GhostStyle.Active;
+            _strokes[_strokeIndex].Style = GhostStyle.Active;
 
-            _guide = MakeLine("Guide", transform, 0.9f, true);
+            _guide = ToyFactory.CreateLine("Guide", transform, 0.9f, true);
             _guide.positionCount = 2;
             _guide.enabled = false;
 
@@ -160,7 +169,17 @@ namespace CosmicShore.Gameplay
         {
             if (_phase == RunPhase.Celebrating || _benched == benched) return;
             _benched = benched;
-            if (!benched) BenchOtherRunners();
+            if (benched)
+            {
+                // Release the pen NOW — waiting for this runner's next Update could clobber a
+                // pause another runner (the new brush holder) sets in the meantime.
+                RestorePen();
+                _gateBenchEasing = true;
+            }
+            else
+            {
+                BenchOtherRunners();
+            }
             ProgressChanged?.Invoke();
         }
 
@@ -177,6 +196,8 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            EaseTransitions();
+
             if (_phase == RunPhase.Celebrating || _strokes == null) return;
 
             var vessel = ResolveVessel();
@@ -187,8 +208,11 @@ namespace CosmicShore.Gameplay
 
             ApplyPen(vessel, engaged);
 
-            if (_gate && _gate.activeSelf == _benched)
-                _gate.SetActive(!_benched);
+            // Re-engaging mid-stroke (back from a bench, a menu trip, or a detour through the
+            // Domain Changer) re-asserts the stroke's colour — the gate only fired once.
+            if (engaged && !_wasEngaged && _phase == RunPhase.Painting)
+                RequestStrokeDomain(CurrentStroke.Domain);
+            _wasEngaged = engaged;
 
             if (!engaged)
             {
@@ -204,6 +228,36 @@ namespace CosmicShore.Gameplay
             PulseMarker();
         }
 
+        /// <summary>
+        /// Continuity-law eases that must run even while benched/disengaged: the gate shrinks
+        /// away and regrows on bench toggles, and the marker shrinks out instead of blinking off.
+        /// </summary>
+        void EaseTransitions()
+        {
+            if (_gate && _gateBenchEasing)
+            {
+                var t = _gate.transform;
+                Vector3 target = _benched ? Vector3.zero : Vector3.one;
+                t.localScale = Vector3.Lerp(t.localScale, target, Time.deltaTime * 7f);
+                if (!_benched && (t.localScale - target).sqrMagnitude < 1e-4f)
+                {
+                    t.localScale = target;
+                    _gateBenchEasing = false;
+                }
+            }
+
+            if (_markerHiding && _marker && _marker.activeSelf)
+            {
+                var t = _marker.transform;
+                t.localScale = Vector3.Lerp(t.localScale, Vector3.zero, Time.deltaTime * 9f);
+                if (t.localScale.x < 0.05f)
+                {
+                    _marker.SetActive(false);
+                    _markerHiding = false;
+                }
+            }
+        }
+
         void OnDestroy()
         {
             // The one hard rule: never leave the player's trail spawner paused behind us.
@@ -215,40 +269,36 @@ namespace CosmicShore.Gameplay
         void UpdateAwaitingGate(Vector3 shipPos)
         {
             if (!_gate) return;
-            if (_guide)
-            {
-                _guide.enabled = true;
-                Color c = DomainColor(_strokeDomains[_strokeIndex]);
-                SetLineColor(_guide, new Color(c.r, c.g, c.b, 0.35f));
-                _guide.SetPosition(0, shipPos);
-                _guide.SetPosition(1, _gate.transform.position);
-            }
+            DrawGuide(shipPos, _gate.transform.position, 0.35f);
         }
 
         void UpdatePainting(Vector3 shipPos)
         {
-            var pts = _strokes[_strokeIndex];
-            Vector3 target = pts[_pointIndex];
-            float reach = _strokeReach[_strokeIndex];
+            var stroke = CurrentStroke;
+            Vector3 target = stroke.Points[_pointIndex];
 
-            if (_guide)
-            {
-                _guide.enabled = true;
-                Color c = DomainColor(_strokeDomains[_strokeIndex]);
-                SetLineColor(_guide, new Color(c.r, c.g, c.b, 0.6f));
-                _guide.SetPosition(0, shipPos);
-                _guide.SetPosition(1, target);
-            }
+            DrawGuide(shipPos, target, 0.6f);
 
-            if ((shipPos - target).sqrMagnitude > reach * reach) return;
+            if ((shipPos - target).sqrMagnitude > stroke.Reach * stroke.Reach) return;
 
             _pointIndex++;
-            if (_pointIndex >= pts.Length)
+            if (_pointIndex >= stroke.Points.Length)
             {
                 CompleteStroke();
                 return;
             }
-            MoveMarker(pts[_pointIndex], DomainColor(_strokeDomains[_strokeIndex]), reach);
+            MoveMarker(stroke.Points[_pointIndex], stroke.BaseColor, stroke.Reach);
+        }
+
+        void DrawGuide(Vector3 from, Vector3 to, float alpha)
+        {
+            if (!_guide) return;
+            _guide.enabled = true;
+            Color c = CurrentStroke.BaseColor;
+            c.a = alpha;
+            _guide.startColor = _guide.endColor = c;
+            _guide.SetPosition(0, from);
+            _guide.SetPosition(1, to);
         }
 
         void CompleteStroke()
@@ -292,39 +342,36 @@ namespace CosmicShore.Gameplay
         {
             DespawnGate();
 
-            var pts = _strokes[strokeIndex];
-            Vector3 pos = pts[0];
-            Vector3 dir = pts.Length > 1 && (pts[1] - pts[0]).sqrMagnitude > 1e-4f
-                ? (pts[1] - pts[0]).normalized
+            var stroke = _strokes[strokeIndex];
+            Vector3 pos = stroke.Points[0];
+            Vector3 dir = (stroke.Points[1] - stroke.Points[0]).sqrMagnitude > 1e-4f
+                ? (stroke.Points[1] - stroke.Points[0]).normalized
                 : _rotation * Vector3.forward;
 
-            Color c = DomainColor(_strokeDomains[strokeIndex]);
-            float ringRadius = Mathf.Clamp(_strokeReach[strokeIndex] * 1.2f, 14f, 36f);
+            float ringRadius = Mathf.Clamp(stroke.Reach * 1.2f, 14f, 36f);
 
-            var root = ToyFactory.CreateBareRoot($"Gate_{_strokeNames[strokeIndex]}", transform,
-                pos, pos + dir, ringRadius);
-            AddRing(root.transform, ringRadius, c);
-            ToyFactory.AddLabel(root.transform, GateLabel(strokeIndex), c, ringRadius * 1.5f);
+            var root = ToyFactory.CreateBareRoot($"Gate_{stroke.Name}", transform, pos, pos + dir, ringRadius);
+            AddRing(root.transform, ringRadius, stroke.BaseColor);
+            ToyFactory.AddLabel(root.transform, $"{strokeIndex + 1}/{_strokes.Length}  {stroke.Name}",
+                stroke.BaseColor, ringRadius * 1.5f);
 
             var toy = root.AddComponent<SwapToy>();
             toy.Activated += OnGateActivated;
             toy.Initialize(_toyDefinition, _context, default);
             _gate = root;
+            _gateBenchEasing = _benched; // spawned while benched → start hidden-bound
         }
-
-        string GateLabel(int strokeIndex)
-            => $"{strokeIndex + 1}/{_strokes.Length}  {_strokeNames[strokeIndex]}";
 
         void OnGateActivated(SwapToy toy)
         {
             if (_phase != RunPhase.AwaitingGate || _benched) return;
 
-            RequestStrokeDomain(_strokeDomains[_strokeIndex]);
+            var stroke = CurrentStroke;
+            RequestStrokeDomain(stroke.Domain);
 
             _phase = RunPhase.Painting;
-            var pts = _strokes[_strokeIndex];
             _pointIndex = 1; // the gate sits on point 0 — flying it consumes the stroke's start
-            MoveMarker(pts[_pointIndex], DomainColor(_strokeDomains[_strokeIndex]), _strokeReach[_strokeIndex]);
+            MoveMarker(stroke.Points[_pointIndex], stroke.BaseColor, stroke.Reach);
 
             var gate = _gate;
             _gate = null;
@@ -380,24 +427,24 @@ namespace CosmicShore.Gameplay
 
         void SetGhostStyle(int index, GhostStyle style)
         {
-            _ghostStyles[index] = style;
-            ApplyGhostStyle(index);
+            _strokes[index].Style = style;
+            ApplyGhostStyle(_strokes[index]);
         }
 
         void ApplyAllGhostStyles()
         {
-            for (int i = 0; i < _ghosts.Length; i++)
-                ApplyGhostStyle(i);
+            for (int i = 0; i < _strokes.Length; i++)
+                ApplyGhostStyle(_strokes[i]);
         }
 
-        void ApplyGhostStyle(int index)
+        void ApplyGhostStyle(StrokeInfo stroke)
         {
-            var lr = _ghosts[index];
+            var lr = stroke.Ghost;
             if (!lr) return;
 
-            Color c = DomainColor(_strokeDomains[index]);
+            Color c = stroke.BaseColor;
             float width;
-            switch (_ghostStyles[index])
+            switch (stroke.Style)
             {
                 case GhostStyle.Active:
                     c.a = 0.55f;
@@ -415,7 +462,7 @@ namespace CosmicShore.Gameplay
             }
 
             c.a *= _bloom;
-            SetLineColor(lr, c);
+            lr.startColor = lr.endColor = c;
             lr.startWidth = lr.endWidth = width;
         }
 
@@ -426,27 +473,26 @@ namespace CosmicShore.Gameplay
             {
                 _marker = new GameObject("NextPoint");
                 _marker.transform.SetParent(transform, false);
-                ToyFactory.AddSphereBody(_marker.transform, 0.5f, color);
+                var body = ToyFactory.AddSphereBody(_marker.transform, 0.5f, color);
+                _markerRenderer = body.GetComponent<MeshRenderer>();
             }
-            else
+            else if (_markerRenderer && _markerRenderer.sharedMaterial)
             {
-                var renderer = _marker.GetComponentInChildren<MeshRenderer>();
-                if (renderer && renderer.sharedMaterial) renderer.sharedMaterial.color = color;
+                // AddSphereBody gives the marker its own material instance, so this tint is private.
+                _markerRenderer.sharedMaterial.color = color;
             }
 
+            _markerHiding = false;
             _marker.SetActive(true);
             _marker.transform.position = pos;
             _marker.transform.localScale = Vector3.zero; // pop back up in PulseMarker — nothing snaps
         }
 
-        void HideMarker()
-        {
-            if (_marker) _marker.SetActive(false);
-        }
+        void HideMarker() => _markerHiding = true; // EaseTransitions shrinks it out — nothing blinks off
 
         void PulseMarker()
         {
-            if (!_marker || !_marker.activeSelf) return;
+            if (!_marker || !_marker.activeSelf || _markerHiding) return;
             float pulse = 1f + 0.22f * Mathf.Sin(Time.time * MarkerPulseHz * Mathf.PI * 2f);
             float target = _markerBaseRadius * 2f * pulse;
             float current = _marker.transform.localScale.x;
@@ -459,19 +505,6 @@ namespace CosmicShore.Gameplay
             var vs = _context?.GameData?.LocalPlayer?.Vessel?.VesselStatus;
             if (vs == null || (vs is UnityEngine.Object o && !o)) return null;
             return vs;
-        }
-
-        Color DomainColor(Domains d)
-        {
-            var tm = _context?.GameData ? _context.GameData.ThemeManagerData : null;
-            if (tm) return tm.GetDomainUIColor(d);
-            return d switch
-            {
-                Domains.Jade => new Color(0.15f, 0.95f, 0.55f),
-                Domains.Ruby => new Color(1.00f, 0.20f, 0.45f),
-                Domains.Gold => new Color(1.00f, 0.80f, 0.15f),
-                _ => Color.gray,
-            };
         }
 
         // ── Async transitions (continuity law: nothing pops in or out) ──────
@@ -516,6 +549,7 @@ namespace CosmicShore.Gameplay
                 await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
 
+            Finished?.Invoke();
             if (this) Destroy(gameObject);
         }
 
@@ -535,36 +569,10 @@ namespace CosmicShore.Gameplay
             if (go) Destroy(go);
         }
 
-        // ── Line building ────────────────────────────────────────────────────
-
-        static LineRenderer MakeLine(string name, Transform parent, float width, bool worldSpace)
-        {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            var lr = go.AddComponent<LineRenderer>();
-            lr.useWorldSpace = worldSpace;
-            lr.positionCount = 0;
-            lr.startWidth = lr.endWidth = width;
-            lr.numCapVertices = 4;
-            lr.numCornerVertices = 4;
-            lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            lr.receiveShadows = false;
-            var shader = Shader.Find("Sprites/Default") ?? Shader.Find("Universal Render Pipeline/Unlit");
-            if (shader) lr.material = new Material(shader);
-            return lr;
-        }
-
-        static void SetLineColor(LineRenderer lr, Color c)
-        {
-            // Vertex colours only — Sprites/Default multiplies vertex × material tint, so also
-            // setting the material colour would square the alpha and wash the ghosts out.
-            lr.startColor = lr.endColor = c;
-        }
-
         /// <summary>A flat ring in the local XY plane — the gate the vessel flies through.</summary>
         static void AddRing(Transform parent, float radius, Color color)
         {
-            var lr = MakeLine("Ring", parent, 2.2f, false);
+            var lr = ToyFactory.CreateLine("Ring", parent, 2.2f, false);
             const int segs = 28;
             lr.loop = true;
             lr.positionCount = segs;
@@ -573,7 +581,7 @@ namespace CosmicShore.Gameplay
                 float a = i / (float)segs * Mathf.PI * 2f;
                 lr.SetPosition(i, new Vector3(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius, 0f));
             }
-            SetLineColor(lr, color);
+            lr.startColor = lr.endColor = color;
 
             // A soft hub so the gate reads at distance.
             var hub = ToyFactory.AddSphereBody(parent, radius * 0.16f, color);

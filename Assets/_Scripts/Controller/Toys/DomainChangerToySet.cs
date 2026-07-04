@@ -51,17 +51,6 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        Color DomainColor(Domains d)
-        {
-            var tm = Context.GameData ? Context.GameData.ThemeManagerData : null;
-            if (tm) return tm.GetDomainUIColor(d);
-            return d switch
-            {
-                Domains.Jade => new Color(0.15f, 0.95f, 0.55f),
-                Domains.Ruby => new Color(1.00f, 0.20f, 0.45f),
-                Domains.Gold => new Color(1.00f, 0.80f, 0.15f),
-                _ => Color.gray,
-            };
-        }
+        Color DomainColor(Domains d) => ToyFactory.DomainAccentColor(Context, d);
     }
 }

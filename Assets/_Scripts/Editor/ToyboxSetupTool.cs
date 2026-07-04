@@ -17,8 +17,9 @@ namespace CosmicShore.Editor
     ///   3. adds a <see cref="ToyboxController"/> to the Menu_Main scene (on the object carrying
     ///      <c>MenuCrystalClickHandler</c>, else a new root) and points it at the toybox.
     ///
-    /// Idempotent — safe to re-run. All three toys work with no further wiring (the painting toy runs
-    /// self-contained via <see cref="MenuShapePainter"/>). See Docs/ToySystem/ARCHITECTURE.md.
+    /// Idempotent — safe to re-run. All three toys work with no further wiring (the painting toy
+    /// spawns one <see cref="PaintingToy"/> station per painting, each driving a multi-stroke
+    /// <see cref="PaintingRunner"/>). See Docs/ToySystem/ARCHITECTURE.md.
     /// </summary>
     public static class ToyboxSetupTool
     {
@@ -68,7 +69,7 @@ namespace CosmicShore.Editor
         // ── Toy definition assets ────────────────────────────────────────────
 
         static T LoadOrCreateToy<T>(string fileName, string id, string displayName, string description,
-            Color accent, float angleDeg, System.Action<SerializedObject> extra = null) where T : ToyDefinitionSO
+            Color accent, float angleDeg) where T : ToyDefinitionSO
         {
             EnsureFolder(ToysFolder);
             string path = $"{ToysFolder}/{fileName}.asset";
@@ -91,7 +92,6 @@ namespace CosmicShore.Editor
                 SetColor(so, "accentColor", accent);
                 SetBool(so, "unlockedByDefault", true);
                 SetFloat(so, "placementAngleDegrees", angleDeg);
-                extra?.Invoke(so);
                 so.ApplyModifiedProperties();
                 EditorUtility.SetDirty(asset);
             }
@@ -103,18 +103,12 @@ namespace CosmicShore.Editor
         static List<PaintingDefinitionSO> CreatePaintingGallery()
         {
             EnsureFolder(PaintingsFolder);
-            return new List<PaintingDefinitionSO>
-            {
-                LoadOrCreatePainting("Painting_Star", "painting_star", "Star",
-                    "One clean stroke — a warm-up canvas.", PaintingPreset.Star, 420f, 30f),
-                LoadOrCreatePainting("Painting_Rainbow", "painting_rainbow", "Rainbow",
-                    "Three bands, three colours — ride the gates.", PaintingPreset.Rainbow, 700f, 30f),
-                LoadOrCreatePainting("Painting_Saturn", "painting_saturn", "Saturn",
-                    "A planet and its rings, flown in true 3D.", PaintingPreset.Saturn, 800f, 30f),
-                LoadOrCreatePainting("Painting_TajMahal", "painting_taj_mahal", "Taj Mahal",
-                    "The monument. Fifty-five strokes, three colours, hours of flying.",
-                    PaintingPreset.TajMahal, 1100f, 26f),
-            };
+            // One source of truth: the runtime catalog on PaintingToyDefinitionSO.
+            var gallery = new List<PaintingDefinitionSO>();
+            foreach (var spec in PaintingToyDefinitionSO.DefaultGalleryCatalog)
+                gallery.Add(LoadOrCreatePainting($"Painting_{spec.Name.Replace(" ", "")}",
+                    spec.Id, spec.Name, spec.Description, spec.Preset, spec.Size, spec.Reach));
+            return gallery;
         }
 
         static PaintingDefinitionSO LoadOrCreatePainting(string fileName, string id, string displayName,

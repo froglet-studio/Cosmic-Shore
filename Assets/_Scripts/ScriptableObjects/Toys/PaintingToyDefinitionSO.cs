@@ -89,6 +89,46 @@ namespace CosmicShore.ScriptableObjects
             return BuildDefaultGallery();
         }
 
+        /// <summary>One entry of the default gallery — shared by the runtime fallback and the editor setup tool.</summary>
+        public readonly struct DefaultPaintingSpec
+        {
+            public readonly string Id;
+            public readonly string Name;
+            public readonly string Description;
+            public readonly PaintingPreset Preset;
+            public readonly float Size;
+            public readonly float Reach;
+
+            public DefaultPaintingSpec(string id, string name, string description,
+                PaintingPreset preset, float size, float reach)
+            {
+                Id = id;
+                Name = name;
+                Description = description;
+                Preset = preset;
+                Size = size;
+                Reach = reach;
+            }
+        }
+
+        /// <summary>
+        /// THE default gallery spec — the single source of truth consumed by both the runtime
+        /// fallback (<see cref="BuildDefaultGallery"/>) and the editor asset authoring
+        /// (ToyboxSetupTool), so tuning a size/reach here cannot silently diverge the two.
+        /// </summary>
+        public static readonly DefaultPaintingSpec[] DefaultGalleryCatalog =
+        {
+            new("painting_star", "Star", "One clean stroke — a warm-up canvas.",
+                PaintingPreset.Star, 420f, 30f),
+            new("painting_rainbow", "Rainbow", "Three bands, three colours — ride the gates.",
+                PaintingPreset.Rainbow, 700f, 30f),
+            new("painting_saturn", "Saturn", "A planet and its rings, flown in true 3D.",
+                PaintingPreset.Saturn, 800f, 30f),
+            new("painting_taj_mahal", "Taj Mahal",
+                "The monument. Fifty-five strokes, three colours, hours of flying.",
+                PaintingPreset.TajMahal, 1100f, 26f),
+        };
+
         /// <summary>
         /// Code-built default gallery so the toy delivers the full ladder — big simple shape up to
         /// the Taj Mahal — before any painting assets are authored (the editor setup tool authors
@@ -96,26 +136,14 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         static List<PaintingDefinitionSO> BuildDefaultGallery()
         {
-            return new List<PaintingDefinitionSO>
+            var gallery = new List<PaintingDefinitionSO>(DefaultGalleryCatalog.Length);
+            foreach (var spec in DefaultGalleryCatalog)
             {
-                MakeRuntimePainting("painting_star", "Star", "One clean stroke — a warm-up canvas.",
-                    PaintingPreset.Star, 420f, 30f),
-                MakeRuntimePainting("painting_rainbow", "Rainbow", "Three bands, three colours — ride the gates.",
-                    PaintingPreset.Rainbow, 700f, 30f),
-                MakeRuntimePainting("painting_saturn", "Saturn", "A planet and its rings, flown in true 3D.",
-                    PaintingPreset.Saturn, 800f, 30f),
-                MakeRuntimePainting("painting_taj_mahal", "Taj Mahal",
-                    "The monument. Fifty-five strokes, three colours, hours of flying.",
-                    PaintingPreset.TajMahal, 1100f, 26f),
-            };
-        }
-
-        static PaintingDefinitionSO MakeRuntimePainting(string id, string paintingName, string description,
-            PaintingPreset preset, float size, float reach)
-        {
-            var p = ScriptableObject.CreateInstance<PaintingDefinitionSO>();
-            p.SetRuntimeData(id, paintingName, description, preset, size, reach);
-            return p;
+                var p = ScriptableObject.CreateInstance<PaintingDefinitionSO>();
+                p.SetRuntimeData(spec.Id, spec.Name, spec.Description, spec.Preset, spec.Size, spec.Reach);
+                gallery.Add(p);
+            }
+            return gallery;
         }
     }
 }

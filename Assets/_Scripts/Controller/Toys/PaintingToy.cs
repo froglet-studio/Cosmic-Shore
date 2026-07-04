@@ -22,7 +22,6 @@ namespace CosmicShore.Gameplay
         TMP_Text _label;
 
         PaintingRunner _runner;
-        bool _labelShowsLiveRun;
 
         public void Configure(PaintingDefinitionSO painting, Vector3 anchorPosition, Quaternion anchorRotation,
             TMP_Text label)
@@ -67,15 +66,16 @@ namespace CosmicShore.Gameplay
             go.transform.SetParent(transform.parent, false);
             _runner = go.AddComponent<PaintingRunner>();
             _runner.ProgressChanged += RefreshLabel;
+            _runner.Finished += HandleRunnerFinished;
             _runner.Begin(_painting, Definition, Context, _anchorPosition, _anchorRotation, resume);
             RefreshLabel();
         }
 
-        void Update()
+        void HandleRunnerFinished()
         {
-            // The runner destroys itself after the completion celebration — notice and re-label.
-            if (!_runner && _label && _painting != null && _labelShowsLiveRun)
-                RefreshLabel();
+            // The runner destroys itself right after this — drop it and re-label from the store.
+            _runner = null;
+            RefreshLabel();
         }
 
         void RefreshLabel()
@@ -87,7 +87,6 @@ namespace CosmicShore.Gameplay
 
             if (_runner)
             {
-                _labelShowsLiveRun = true;
                 int pct = Mathf.RoundToInt(100f * _runner.StrokesCompleted / Mathf.Max(1, _runner.StrokeCount));
                 _label.text = _runner.IsCelebrating
                     ? $"{_painting.DisplayName}\nMASTERPIECE"
@@ -97,7 +96,6 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            _labelShowsLiveRun = false;
             int done = PaintingProgressStore.GetStrokesCompleted(_painting.PaintingId, total);
             int times = PaintingProgressStore.GetTimesCompleted(_painting.PaintingId);
             if (done >= total)

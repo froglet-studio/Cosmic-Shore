@@ -48,6 +48,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Spawner Control")]
         [SerializeField] bool spawnerEnabled = true;
+        bool trailPenUp; // painting pen-up — independent of spawnerEnabled (see SetSpawnerPaused)
         float waitTime;
         [SerializeField] float startDelay = 2.1f;
 
@@ -124,23 +125,13 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Pen-up / pen-down for systems that sculpt with the trail (e.g. the fly-by-numbers
-        /// painting toy): pauses block creation WITHOUT tearing down the spawn loop, so resuming
-        /// is instant (no <see cref="startDelay"/>). If the loop was fully stopped via
-        /// <see cref="StopSpawn"/>, resuming falls back to <see cref="StartSpawn"/>.
+        /// painting toy). Deliberately an INDEPENDENT axis from <see cref="spawnerEnabled"/> /
+        /// <see cref="StopSpawn"/>/<see cref="StartSpawn"/> (which gameplay vessel actions own):
+        /// pen-up only gates block creation, so it never resurrects a spawn loop an ability
+        /// stopped, an ability's StartSpawn never overrides a held pen, and pen-down resumes
+        /// instantly (no <see cref="startDelay"/>) when the loop is alive.
         /// </summary>
-        public void SetSpawnerPaused(bool paused)
-        {
-            if (paused)
-            {
-                spawnerEnabled = false;
-                return;
-            }
-
-            if (cts == null)
-                StartSpawn();
-            else
-                spawnerEnabled = true;
-        }
+        public void SetSpawnerPaused(bool paused) => trailPenUp = paused;
 
         public void ToggleBlockWaitTime(bool extended)
         {
@@ -171,7 +162,7 @@ namespace CosmicShore.Gameplay
 
             while (!ct.IsCancellationRequested)
             {
-                if (spawnerEnabled && !vesselStatus.IsAttached && vesselStatus.Speed > 3f)
+                if (spawnerEnabled && !trailPenUp && !vesselStatus.IsAttached && vesselStatus.Speed > 3f)
                 {
                     if (Mathf.Approximately(Gap, 0f))
                     {

@@ -62,6 +62,14 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
 - **More paintings.** The preset library composes easily (arcs/rects/circles/meridians) —
   candidates: Great Wave, rocket, pagoda, Colosseum. Any `ShapeDefinition` already converts
   via `sourceShape` (pen-up gaps become strokes, now honored).
+- **Reviewed and deliberately deferred** (from the enhancement's review pass): coalesce the
+  per-stroke synchronous progress save (`DataAccessor` full-dict JSON write at each stroke
+  boundary — human-paced, tiny file, but a debounce would remove any mobile-flash hitch);
+  replace `PaintingRunner.BenchOtherRunners`'s `FindObjectsByType` scan with a static
+  registry (runs only on activation — rare); extract the ring fan-layout math shared with
+  `SwapToySetCoordinator.Layout` into one helper; unify the LineRenderer config duplicated
+  by `ShapeDrawingManager.ConfigureLineRenderer` with `ToyFactory.CreateLine` (touches the
+  shape-drawing system, so it belongs in its own change).
 - **Full experience (optional).** For a gameplay scene with ecology infra, the original
   `ShapeDrawingManager` (preview cinematic, scoring, reveal, `EndShapeDetailHUD`) remains a
   separate, score-bearing mode — the toy stays scoreless by design.

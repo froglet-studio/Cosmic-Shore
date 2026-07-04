@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using TMPro;
 using UnityEngine;
 
@@ -65,6 +66,61 @@ namespace CosmicShore.Gameplay
             }
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
+        }
+
+        static Material s_lineMaterial;
+
+        /// <summary>
+        /// One shared vertex-coloured material for every toy LineRenderer (ghost blueprints,
+        /// guides, gate rings) — per-line tint comes from startColor/endColor, so dozens of
+        /// lines don't each need a Shader.Find + Material allocation.
+        /// </summary>
+        static Material LineMaterial
+        {
+            get
+            {
+                if (!s_lineMaterial)
+                {
+                    var shader = Shader.Find("Sprites/Default")
+                              ?? Shader.Find("Universal Render Pipeline/Unlit");
+                    if (shader) s_lineMaterial = new Material(shader);
+                }
+                return s_lineMaterial;
+            }
+        }
+
+        /// <summary>A configured LineRenderer child (shared material; tint via vertex colours only).</summary>
+        public static LineRenderer CreateLine(string name, Transform parent, float width, bool worldSpace)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            var lr = go.AddComponent<LineRenderer>();
+            lr.useWorldSpace = worldSpace;
+            lr.positionCount = 0;
+            lr.startWidth = lr.endWidth = width;
+            lr.numCapVertices = 4;
+            lr.numCornerVertices = 4;
+            lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            lr.receiveShadows = false;
+            if (LineMaterial) lr.sharedMaterial = LineMaterial;
+            return lr;
+        }
+
+        /// <summary>
+        /// The one domain→accent-colour read for toys: the live theme's trail-highlight colour,
+        /// with a fixed fallback palette when no theme data is wired.
+        /// </summary>
+        public static Color DomainAccentColor(ToyContext context, Domains domain)
+        {
+            var themeData = context?.GameData ? context.GameData.ThemeManagerData : null;
+            if (themeData) return themeData.GetDomainUIColor(domain);
+            return domain switch
+            {
+                Domains.Jade => new Color(0.15f, 0.95f, 0.55f),
+                Domains.Ruby => new Color(1.00f, 0.20f, 0.45f),
+                Domains.Gold => new Color(1.00f, 0.80f, 0.15f),
+                _ => Color.gray,
+            };
         }
 
         /// <summary>Adds a world-space TMP label above the body. Returns the text so callers can recolor/retext it.</summary>

@@ -97,7 +97,12 @@ namespace CosmicShore.ScriptableObjects
         public string Description => description;
         public float ReachThreshold => Mathf.Max(4f, reachThreshold);
 
-        /// <summary>The painting's strokes (authored, converted, or generated). Never null; may be empty.</summary>
+        /// <summary>
+        /// The painting's DRAWABLE strokes (authored, converted, or generated; degenerate
+        /// &lt;2-point strokes filtered out). Every consumer — toy labels, the runner, the
+        /// progress store's totals — must use this list so stroke counts always agree.
+        /// Never null; may be empty.
+        /// </summary>
         public IReadOnlyList<PaintingStroke> Strokes
         {
             get
@@ -127,14 +132,34 @@ namespace CosmicShore.ScriptableObjects
         {
             if (_resolved != null) return;
 
+            List<PaintingStroke> source;
             if (strokes != null && strokes.Count > 0)
-                _resolved = strokes;
+                source = strokes;
             else if (sourceShape)
-                _resolved = PaintingPresetLibrary.FromShape(sourceShape, sourceShapeDomain, sourceShapeScale);
+                source = PaintingPresetLibrary.FromShape(sourceShape, sourceShapeDomain, sourceShapeScale);
             else if (preset != PaintingPreset.None)
-                _resolved = PaintingPresetLibrary.Generate(preset, presetSize);
+                source = PaintingPresetLibrary.Generate(preset, presetSize);
             else
-                _resolved = new List<PaintingStroke>();
+                source = new List<PaintingStroke>();
+
+            // Filter to drawable strokes ONCE, here — if writer (runner) and readers (toy label,
+            // progress store) filtered independently, their totals could disagree and the
+            // total-mismatch guard in PaintingProgressStore would silently reset progress.
+            bool allDrawable = true;
+            foreach (var s in source)
+                if (s?.points == null || s.points.Count < 2) { allDrawable = false; break; }
+
+            if (allDrawable)
+            {
+                _resolved = source;
+            }
+            else
+            {
+                _resolved = new List<PaintingStroke>(source.Count);
+                foreach (var s in source)
+                    if (s?.points != null && s.points.Count >= 2)
+                        _resolved.Add(s);
+            }
         }
 
         /// <summary>
