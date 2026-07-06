@@ -102,7 +102,23 @@ namespace CosmicShore.Gameplay
         float liveEnvVolumeTotal;
         float _nextVolumeRecomputeAt = float.NegativeInfinity;
         const float VolumeRecomputeIntervalSeconds = 0.25f;
-        static readonly List<Prism> s_deadMassScratch = new(32);
+
+        // ---- Sliced volume recompute state ----
+        // A recompute pass snapshots massTracked, sums a bounded number of prisms
+        // per frame into fixed-slot staging accumulators (Jade/Ruby/Gold/Blue — the
+        // per-prism Dictionary ops were a large constant of the old single-frame
+        // pass), and publishes atomically at pass end. Readers keep the previously
+        // published sums while a pass runs.
+        const int VolumeSlicePrismsPerFrame = 8000;
+        static readonly Domains[] s_volumeDomainSlots = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
+        readonly float[] _stageVolumeByDomain = new float[4];
+        readonly float[] _stageEnvVolumeByDomain = new float[4];
+        float _stageVolumeTotal;
+        float _stageEnvVolumeTotal;
+        readonly List<Prism> _volumePassScratch = new(4096);
+        readonly List<Prism> _deadMassScratch = new(32);
+        int _volumePassCursor = -1;   // >= 0 ⇒ a pass is in progress
+        int _lastVolumeSliceFrame = -1;
         SnowChanger spawnedCytoplasm;
 
         // ---------------------------------------------------------------------
@@ -200,25 +216,62 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------
         //  Live volume — the spine. Recomputed from live prism state on a short
         //  cadence (growth animates continuously, so event-driven deltas would
-        //  drift); O(massTracked) per recompute, a few times a second at most.
+        //  drift). The recompute runs as budgeted SLICES across frames — the old
+        //  single-frame O(massTracked) pass was a reader-triggered frame spike at
+        //  high prism counts (whoever read volume on a stale tick paid ~5ms) —
+        //  and publishes atomically at pass end. Readers keep the previously
+        //  published sums during a pass: staleness is bounded by the interval
+        //  plus a few slice frames, inside the tolerance the cadence already
+        //  declares. Reader-driven, one slice per frame at most.
         // ------------------------------------------------------------------
 
         void EnsureVolumeFresh()
         {
-            if (Time.time < _nextVolumeRecomputeAt) return;
+            if (_volumePassCursor < 0)
+            {
+                if (Time.time < _nextVolumeRecomputeAt) return;
+                BeginVolumePass();
+            }
+
+            if (_lastVolumeSliceFrame == Time.frameCount) return;
+            _lastVolumeSliceFrame = Time.frameCount;
+            AdvanceVolumePass();
+        }
+
+        void BeginVolumePass()
+        {
             _nextVolumeRecomputeAt = Time.time + VolumeRecomputeIntervalSeconds;
 
-            liveVolumeByDomain.Clear();
-            liveEnvVolumeByDomain.Clear();
-            liveVolumeTotal = 0f;
-            liveEnvVolumeTotal = 0f;
-            s_deadMassScratch.Clear();
-
+            // Snapshot the tracked set: HashSet enumeration breaks on mutation, and
+            // Add/RemoveBlock keep running while the pass spans frames. Prisms added
+            // after the snapshot are summed by the next pass; prisms destroyed
+            // mid-pass read CachedVolume 0 and drop out — the same point-in-time
+            // semantics the single-frame pass had.
+            _volumePassScratch.Clear();
             foreach (var prism in massTracked)
+                _volumePassScratch.Add(prism);
+
+            for (int i = 0; i < 4; i++)
             {
+                _stageVolumeByDomain[i] = 0f;
+                _stageEnvVolumeByDomain[i] = 0f;
+            }
+            _stageVolumeTotal = 0f;
+            _stageEnvVolumeTotal = 0f;
+            _deadMassScratch.Clear();
+            _volumePassCursor = 0;
+        }
+
+        void AdvanceVolumePass()
+        {
+            int end = Mathf.Min(_volumePassScratch.Count, _volumePassCursor + VolumeSlicePrismsPerFrame);
+            for (int i = _volumePassCursor; i < end; i++)
+            {
+                var prism = _volumePassScratch[i];
+
                 // Destroyed-but-untracked refs (scene teardown paths that skipped
                 // RemoveBlock) are collected here instead of leaking forever.
-                if (!prism) { s_deadMassScratch.Add(prism); continue; }
+                if (!prism) { _deadMassScratch.Add(prism); continue; }
 
                 // Cached world-volume (Prism.CachedVolume) — identical to CurrentVolume
                 // but refreshed only when the prism's scale changes, so this whole-
@@ -227,21 +280,62 @@ namespace CosmicShore.Gameplay
                 float v = prism.CachedVolume;
                 if (v <= 0f) continue; // destroyed / not yet grown
 
-                var domain = prism.Domain; // LIVE domain — steals re-attribute next tick
-                liveVolumeByDomain.TryGetValue(domain, out float dv);
-                liveVolumeByDomain[domain] = dv + v;
-                liveVolumeTotal += v;
+                int slot = DomainSlot(prism.Domain); // LIVE domain — steals re-attribute next pass
+                _stageVolumeByDomain[slot] += v;
+                _stageVolumeTotal += v;
 
                 if (trackedBlocks.ContainsKey(prism))
                 {
-                    liveEnvVolumeByDomain.TryGetValue(domain, out float ev);
-                    liveEnvVolumeByDomain[domain] = ev + v;
-                    liveEnvVolumeTotal += v;
+                    _stageEnvVolumeByDomain[slot] += v;
+                    _stageEnvVolumeTotal += v;
                 }
             }
 
-            foreach (var dead in s_deadMassScratch)
+            _volumePassCursor = end;
+            if (_volumePassCursor < _volumePassScratch.Count) return; // more slices to go
+
+            // Pass complete — publish atomically and collect the dead refs.
+            liveVolumeByDomain.Clear();
+            liveEnvVolumeByDomain.Clear();
+            for (int i = 0; i < 4; i++)
+            {
+                liveVolumeByDomain[s_volumeDomainSlots[i]] = _stageVolumeByDomain[i];
+                liveEnvVolumeByDomain[s_volumeDomainSlots[i]] = _stageEnvVolumeByDomain[i];
+            }
+            liveVolumeTotal = _stageVolumeTotal;
+            liveEnvVolumeTotal = _stageEnvVolumeTotal;
+
+            foreach (var dead in _deadMassScratch)
                 massTracked.Remove(dead);
+            _deadMassScratch.Clear();
+
+            _volumePassCursor = -1;
+            _volumePassScratch.Clear(); // release refs promptly
+        }
+
+        static int DomainSlot(Domains domain) => domain switch
+        {
+            Domains.Jade => 0,
+            Domains.Ruby => 1,
+            Domains.Gold => 2,
+            _ => 3, // Blue — the "no team" sentinel bucket
+        };
+
+        /// <summary>
+        /// Drops all volume accounting — published sums, any in-progress pass, and
+        /// the recompute timer — so a cleared cell reads as empty immediately
+        /// instead of publishing a pre-reset snapshot a few frames later.
+        /// </summary>
+        void ResetVolumeAccounting()
+        {
+            _nextVolumeRecomputeAt = float.NegativeInfinity; // resum on next read
+            _volumePassCursor = -1;
+            _volumePassScratch.Clear();
+            _deadMassScratch.Clear();
+            liveVolumeByDomain.Clear();
+            liveEnvVolumeByDomain.Clear();
+            liveVolumeTotal = 0f;
+            liveEnvVolumeTotal = 0f;
         }
 
         /// <summary>
@@ -587,7 +681,7 @@ namespace CosmicShore.Gameplay
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
             massTracked.Clear();
-            _nextVolumeRecomputeAt = float.NegativeInfinity; // resum on next read
+            ResetVolumeAccounting();
             liveFaunaCounts.Clear();
             liveFauna.Clear();
             phase = CellPhase.Calm;
@@ -703,7 +797,7 @@ namespace CosmicShore.Gameplay
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
             massTracked.Clear();
-            _nextVolumeRecomputeAt = float.NegativeInfinity; // resum on next read
+            ResetVolumeAccounting();
             liveFaunaCounts.Clear();
             liveFauna.Clear();
             phase = CellPhase.Calm;
