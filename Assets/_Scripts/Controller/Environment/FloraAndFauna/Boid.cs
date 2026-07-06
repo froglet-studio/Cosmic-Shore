@@ -68,6 +68,11 @@ namespace CosmicShore.Gameplay
 
         HealthPrism embeddedHealthPrism;
 
+        // Attribution strings for Consume/Damage, cached once — the inline
+        // concat was per-eaten-prism garbage during grazing bursts.
+        string _consumerName;
+        string _damagerName;
+
         public BoidManager BoidManager { get; set; }
         public BoidController BoidController { get; set; }
 
@@ -100,6 +105,9 @@ namespace CosmicShore.Gameplay
                 hp.ChangeTeam(domain);
                 hp.Initialize("tadpole");
             }
+
+            _consumerName = embeddedHealthPrism.PlayerName + " tadpole";
+            _damagerName = embeddedHealthPrism.PlayerName + " boid";
 
             // Locked invariant: every lifeform carries one elemental crystal it drops as
             // a powerup on death (mass conserved). EnsureElementalCrystal uses the prefab's
@@ -157,7 +165,11 @@ namespace CosmicShore.Gameplay
                 }
 
                 CalculateBehavior();
-                yield return new WaitForSeconds(behaviorUpdateRate);
+                // Jitter the cadence ±10% so boids spawned in the same burst drift
+                // out of phase instead of ticking (and paying their consume
+                // cascades) in the same frame forever — a phase-locked swarm lands
+                // several full behavior ticks on one frame at a regular beat.
+                yield return new WaitForSeconds(behaviorUpdateRate * Random.Range(0.9f, 1.1f));
             }
         }
 
@@ -211,8 +223,13 @@ namespace CosmicShore.Gameplay
                 // Ignore our own body prism (if present)
                 if (blockCollider && otherPrism.gameObject == blockCollider.gameObject) continue;
 
-                // Only HealthPrisms can be fauna bodies — plain prisms skip the parent walk.
-                Boid otherBoid = otherPrism is HealthPrism ? otherPrism.GetComponentInParent<Boid>() : null;
+                // Only HealthPrisms can be fauna bodies. Resolve the owner ONCE per
+                // neighbor via the stamped HealthPrism.OwnerFauna (a field read; the
+                // walk-and-backfill fallback covers species that never stamp) — the
+                // old per-neighbor GetComponentInParent<Boid> + <Fauna> walks were
+                // the bulk of this method's self-time in a swarm.
+                Fauna ownerFauna = otherPrism is HealthPrism bodyPrism ? bodyPrism.ResolveOwnerFauna() : null;
+                Boid otherBoid = ownerFauna as Boid;
 
                 Vector3 diff = transform.position - otherPrism.transform.position;
                 float sqr = diff.sqrMagnitude;
@@ -240,11 +257,11 @@ namespace CosmicShore.Gameplay
                     //   - shielded prisms (protected structure like the Skim Race track), or
                     //   - other fauna's BODY prisms (brittlestar/shark bodies are HealthPrisms but
                     //     not Boids, so they reach this branch; herbivores eating fauna is the
-                    //     predator's job, not a forager's). GetComponentInParent<Fauna> catches
-                    //     any fauna body; this prism's own boid was already excluded above.
+                    //     predator's job, not a forager's). The resolved OwnerFauna catches any
+                    //     fauna body; this prism's own boid was already excluded above.
                     var pp = otherPrism.prismProperties;
                     bool shielded = pp != null && (pp.IsShielded || pp.IsSuperShielded);
-                    bool isFaunaBody = otherPrism is HealthPrism && otherPrism.GetComponentInParent<Fauna>() != null;
+                    bool isFaunaBody = ownerFauna != null;
                     bool edible = forager
                         ? (!shielded && !isFaunaBody)
                         : embeddedHealthPrism && otherPrism.Domain != embeddedHealthPrism.Domain;
@@ -280,13 +297,13 @@ namespace CosmicShore.Gameplay
                                             // devastate:false so a shielded prism that somehow
                                             // reaches here only loses its shield, never gets eaten.
                                             otherPrism.Consume(transform, embeddedHealthPrism.Domain,
-                                                embeddedHealthPrism.PlayerName + " tadpole", false, true);
+                                                _consumerName, false, true);
                                             NotifyFed();
                                         }
                                         else
                                         {
                                             otherPrism.Damage(currentVelocity * embeddedHealthPrism.Volume, embeddedHealthPrism.Domain,
-                                                embeddedHealthPrism.PlayerName + " boid", true, true);
+                                                _damagerName, true, true);
                                         }
                                     }
                                     break;

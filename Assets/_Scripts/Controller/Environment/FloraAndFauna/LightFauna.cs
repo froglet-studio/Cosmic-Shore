@@ -345,9 +345,12 @@ namespace CosmicShore.Gameplay
                 // are neighbors, not prey, so predators don't cannibalize. Predation
                 // ignores domain — it is a diet relationship, not a team fight — so
                 // predators always have prey even in a single-domain cell.
-                if (diet == FaunaDiet.Predator && prism is HealthPrism)
+                if (diet == FaunaDiet.Predator && prism is HealthPrism preyBody)
                 {
-                    var prey = prism.GetComponentInParent<Fauna>();
+                    // Stamped owner (field read) instead of a GetComponentInParent walk
+                    // per neighbor per tick; the walk-and-backfill fallback preserves
+                    // the nearest-Fauna-ancestor semantics for unstamped species.
+                    var prey = preyBody.ResolveOwnerFauna();
                     if (prey && prey != this && prey.Diet == FaunaDiet.Herbivore)
                     {
                         neighborCount++;

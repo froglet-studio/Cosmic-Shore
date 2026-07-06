@@ -530,7 +530,7 @@ namespace CosmicShore.Gameplay
             // per-domain volume sums ("volume is the spine" — all prisms count,
             // whatever their source) but stay out of the targeting grids and
             // prism counts (see the remarks above).
-            bool environmentMass = !(prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null);
+            bool environmentMass = !(prism is HealthPrism bodyPrism && bodyPrism.ResolveOwnerFauna() != null);
             var cell = Cell.FindCellContaining(position);
             _cells[index] = cell;
             if (cell) cell.AddBlock(prism, environmentMass);
