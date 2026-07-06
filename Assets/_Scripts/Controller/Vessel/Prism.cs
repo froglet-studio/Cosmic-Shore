@@ -472,6 +472,13 @@ namespace CosmicShore.Gameplay
         bool _colliderBeforeLodCull;
 
         /// <summary>
+        /// Id of the last collider-LOD sweep that saw this prism near a focus.
+        /// Written/read by <c>PrismColliderLodManager</c> ONLY — an O(1) stamp that
+        /// replaced the manager's HashSet bookkeeping for near/far transitions.
+        /// </summary>
+        internal int LodNearSweepStamp;
+
+        /// <summary>
         /// Called by <c>PrismColliderLodManager</c> ONLY. Culls/restores this prism's
         /// collider by vessel/projectile proximity. Idempotent; destruction and the
         /// spawn window own the collider outright (a culled prism that gets destroyed
