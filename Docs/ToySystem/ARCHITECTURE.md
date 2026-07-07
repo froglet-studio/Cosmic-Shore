@@ -52,6 +52,8 @@ detection. On top of that base the `Toy` class adds:
 | Painting data (strokes + domains) | `Assets/_Scripts/ScriptableObjects/Toys/PaintingDefinitionSO.cs` |
 | Preset generators (Star…Taj Mahal) | `Assets/_Scripts/Controller/Toys/PaintingPresetLibrary.cs` |
 | Painting progress persistence | `Assets/_Scripts/Controller/Toys/PaintingProgressStore.cs` |
+| Drawing state (per-prism pose/domain) | `Assets/_Scripts/Controller/Toys/PaintingPrismStore.cs` |
+| Web share export (inline-WebGL viewer) | `Assets/_Scripts/Controller/Toys/PaintingShareExporter.cs` |
 | Placement + lifecycle | `Assets/_Scripts/Controller/Toys/ToyboxController.cs` |
 | Per-toy config (abstract) | `Assets/_Scripts/ScriptableObjects/Toys/ToyDefinitionSO.cs` |
 | Vessel/Domain/Painting configs | `Assets/_Scripts/ScriptableObjects/Toys/*ToyDefinitionSO.cs` |
@@ -140,6 +142,57 @@ How a run plays:
 (The full `ShapeDrawingManager` experience — preview cinematic, scoring, reveal — remains
 available for gameplay scenes; any existing `ShapeDefinition` can also become a painting via
 `PaintingDefinitionSO.sourceShape`, which splits pen-up gaps into strokes.)
+
+#### Shape language — one vocabulary of interactables
+
+Toys teach each other by recycling shapes (mindshare recycling): every interactable that does
+the same *kind* of thing wears the same form, in the domain's **prism material** (the exact
+shader the painted trail wears — `ToyFactory.DomainPrismMaterial` →
+`ThemeManagerDataContainerSO.GetTeamBlockMaterial`).
+
+| Shape | Meaning | Where |
+|---|---|---|
+| **Cone** (apex = "this way next") | *turns / keeps your trail ON* | stroke-gate hubs, every intermediate stroke point (apex points at the stroke's next point), and the **Domain Changer** bodies (apex points the way you fly through) |
+| **Jack** (three rods through a centre) | *turns your trail OFF* | each stroke's final point (reaching it ends the stroke and pens up) |
+| **Ring** (fly-through portal) | *crossing commits a choice* | stroke start gates, the SHARE/REPAINT completion gates |
+
+The domain changer and the painting gates deliberately share the cone so meeting either one
+first sets up expectations for the other. Builders live in `ToyFactory` (`AddConeBody`,
+`AddJackBody`, `AddRingBody`).
+
+#### Authoring rule — order strokes by decreasing radius of curvature
+
+Strokes are flown in author order, so **sequence them from the broadest curvature to the
+tightest**: long straight/broad strokes first (pool outlines, plinth rectangles), fine detail
+last (balcony rings, crescents). The painting then doubles as its own difficulty ramp — the
+player warms up on sweeping lines and earns the precision work — and the adaptive per-stroke
+reach (which tightens on short segments) ramps with them. The Taj Mahal preset is the
+reference: pools → plinth → body → arches → dome → chhatris → minaret balconies. Batch
+domains at meaningful architectural boundaries within that ordering (see
+`PaintingPresetLibrary`).
+
+#### Drawing state — the painting survives everything
+
+Progress is not just a stroke counter: while a stroke is painted, every prism laid inside the
+studio zone is recorded (painting-local **position, orientation, size, domain**, prism type)
+via `VesselPrismController.OnBlockSpawned` and committed per completed stroke to
+`PaintingPrismStore` (one `DataAccessor` JSON file per painting). That makes the run robust to
+everything between strokes: **swap vessels** (capture re-resolves the controller), **switch to
+another painting** (runs bench each other), or **leave for a whole game mode / quit** — on
+return, the completed strokes' prisms are *regrown* through the normal `PrismFactory` channel
+(pooled spawn, grow-in animation, streamed over frames so a monument reads as growing back,
+never popping). Restored prisms are ordinary conserved mass. Abandoned mid-stroke prisms are
+deliberately not persisted — an unfinished stroke re-flies fresh.
+
+#### Sharing — the masterpiece leaves the game
+
+Finishing a painting offers two fly-through choice gates at the station: **REPAINT** (clears
+progress + drawing state, fresh canvas) and **SHARE** — `PaintingShareExporter` writes a
+single self-contained HTML file (inline WebGL, zero external dependencies) that reconstructs
+the painting from its saved prisms with drag/pinch orbit, zoom, and a gentle auto-spin, then
+hands it to the platform share sheet via the NativeShare plugin. Paintings finished before
+drawing-state capture existed fall back to boxes laid along the stroke polylines, so share
+always works.
 
 ## Placement
 

@@ -52,6 +52,7 @@ namespace CosmicShore.Gameplay
         ToyContext _context;
         ToyDefinitionSO _toyDefinition;
         PaintingDefinitionSO _painting;
+        Vector3 _origin;
         Quaternion _rotation;
 
         StrokeInfo[] _strokes;
@@ -66,7 +67,9 @@ namespace CosmicShore.Gameplay
         GameObject _gate;
         bool _gateBenchEasing;
         GameObject _marker;
-        Renderer _markerRenderer;
+        GameObject _markerCone;
+        GameObject _markerJack;
+        int _markerStrokeIndex = -1;
         bool _markerHiding;
         LineRenderer _guide;
         float _markerBaseRadius;
@@ -75,6 +78,8 @@ namespace CosmicShore.Gameplay
         float _zoneSqrRadius;
 
         VesselPrismController _pennedController;
+        VesselPrismController _captureController;   // OnBlockSpawned source while painting a stroke
+        readonly Trail _restoredTrail = new();       // groups prisms re-grown from a saved painting
 
         public bool IsCelebrating => _phase == RunPhase.Celebrating;
         public bool IsBenched => _benched;
@@ -93,6 +98,7 @@ namespace CosmicShore.Gameplay
             _painting = painting;
             _toyDefinition = toyDefinition;
             _context = context;
+            _origin = origin;
             _rotation = rotation;
 
             // PaintingDefinitionSO.Strokes is already filtered to drawable strokes — using it
@@ -160,6 +166,12 @@ namespace CosmicShore.Gameplay
             ApplyAllGhostStyles();
             BenchOtherRunners(); // a fresh run takes the brush
             BloomIn(this.GetCancellationTokenOnDestroy()).Forget();
+
+            // Coming back from another session / game mode: the completed strokes' prisms were
+            // saved as drawing state — regrow them so the monument physically resumes, not just
+            // the counter. (In-session resumes bench/unbench the same runner, so no duplicates.)
+            if (_strokeIndex > 0 && PaintingPrismStore.HasPrisms(_painting.PaintingId))
+                RestorePrismsAsync(this.GetCancellationTokenOnDestroy()).Forget();
         }
 
         /// <summary>Put the brush down / pick it back up (the toy toggles this on re-activation).</summary>
@@ -207,6 +219,7 @@ namespace CosmicShore.Gameplay
             bool engaged = vessel != null && freestyle && inZone && !_benched;
 
             ApplyPen(vessel, engaged);
+            ApplyCapture(vessel, engaged);
 
             // Re-engaging mid-stroke (back from a bench, a menu trip, or a detour through the
             // Domain Changer) re-asserts the stroke's colour — the gate only fired once.
@@ -262,6 +275,9 @@ namespace CosmicShore.Gameplay
         {
             // The one hard rule: never leave the player's trail spawner paused behind us.
             RestorePen();
+            StopCapture();
+            // A stroke abandoned mid-flight is re-flown fresh next time — drop its buffer.
+            if (_painting) PaintingPrismStore.DiscardPending(_painting.PaintingId);
         }
 
         // ── Phase updates ────────────────────────────────────────────────────
@@ -287,7 +303,7 @@ namespace CosmicShore.Gameplay
                 CompleteStroke();
                 return;
             }
-            MoveMarker(stroke.Points[_pointIndex], stroke.BaseColor, stroke.Reach);
+            MoveMarker(_strokeIndex, _pointIndex);
         }
 
         void DrawGuide(Vector3 from, Vector3 to, float alpha)
@@ -304,6 +320,9 @@ namespace CosmicShore.Gameplay
         void CompleteStroke()
         {
             SetGhostStyle(_strokeIndex, GhostStyle.Done);
+            // Persist the stroke's prisms as drawing state (position/orientation/size/domain) —
+            // this is what regrows on return and what the share exporter reconstructs.
+            PaintingPrismStore.CommitStroke(_painting.PaintingId, _strokeIndex);
             _strokeIndex++;
             PaintingProgressStore.SetStrokesCompleted(_painting.PaintingId, _strokeIndex, _strokes.Length);
 
@@ -327,6 +346,7 @@ namespace CosmicShore.Gameplay
             _phase = RunPhase.Celebrating;
             _benched = false;
             RestorePen();
+            StopCapture();
             DespawnGate();
             HideMarker();
             if (_guide) _guide.enabled = false;
@@ -351,7 +371,8 @@ namespace CosmicShore.Gameplay
             float ringRadius = Mathf.Clamp(stroke.Reach * 1.2f, 14f, 36f);
 
             var root = ToyFactory.CreateBareRoot($"Gate_{stroke.Name}", transform, pos, pos + dir, ringRadius);
-            AddRing(root.transform, ringRadius, stroke.BaseColor);
+            AddRing(root.transform, ringRadius, stroke.BaseColor,
+                ToyFactory.DomainPrismMaterial(_context, stroke.Domain));
             ToyFactory.AddLabel(root.transform, $"{strokeIndex + 1}/{_strokes.Length}  {stroke.Name}",
                 stroke.BaseColor, ringRadius * 1.5f);
 
@@ -371,17 +392,17 @@ namespace CosmicShore.Gameplay
 
             _phase = RunPhase.Painting;
             _pointIndex = 1; // the gate sits on point 0 — flying it consumes the stroke's start
-            MoveMarker(stroke.Points[_pointIndex], stroke.BaseColor, stroke.Reach);
+            MoveMarker(_strokeIndex, _pointIndex);
 
             var gate = _gate;
             _gate = null;
-            if (gate) ScaleOutAndDestroy(gate, GateDespawnSeconds, this.GetCancellationTokenOnDestroy()).Forget();
+            if (gate) ToyFactory.ScaleOutAndDestroy(gate, GateDespawnSeconds).Forget();
         }
 
         void DespawnGate()
         {
             if (!_gate) return;
-            ScaleOutAndDestroy(_gate, GateDespawnSeconds, this.GetCancellationTokenOnDestroy()).Forget();
+            ToyFactory.ScaleOutAndDestroy(_gate, GateDespawnSeconds).Forget();
             _gate = null;
         }
 
@@ -421,6 +442,110 @@ namespace CosmicShore.Gameplay
         {
             if (_pennedController) _pennedController.SetSpawnerPaused(false);
             _pennedController = null;
+        }
+
+        // ── Drawing-state capture & restore ──────────────────────────────────
+
+        /// <summary>
+        /// While a stroke is being painted, listen to the vessel's block-spawn event and record
+        /// every prism laid inside the studio zone as painting-local drawing state. Follows the
+        /// vessel across mid-stroke ship swaps (the controller reference is re-resolved).
+        /// </summary>
+        void ApplyCapture(IVesselStatus vessel, bool engaged)
+        {
+            var desired = engaged && _phase == RunPhase.Painting && vessel != null
+                ? vessel.VesselPrismController
+                : null;
+
+            if (ReferenceEquals(_captureController, desired)) return;
+
+            StopCapture();
+            _captureController = desired;
+            if (_captureController) _captureController.OnBlockSpawned += HandleBlockSpawned;
+        }
+
+        void StopCapture()
+        {
+            if (_captureController) _captureController.OnBlockSpawned -= HandleBlockSpawned;
+            _captureController = null;
+        }
+
+        void HandleBlockSpawned(Prism prism)
+        {
+            if (!prism || _phase != RunPhase.Painting || !_captureController) return;
+
+            Vector3 worldPos = prism.transform.position;
+            if ((worldPos - _zoneCenter).sqrMagnitude > _zoneSqrRadius) return; // strays aren't artwork
+
+            var lp = _context?.GameData ? _context.GameData.LocalPlayer : null;
+            Domains domain = lp?.Domain ?? CurrentStroke.Domain;
+
+            var inverse = Quaternion.Inverse(_rotation);
+            PaintingPrismStore.RecordPrism(_painting.PaintingId, PaintingPrismRecord.From(
+                inverse * (worldPos - _origin),
+                inverse * prism.transform.rotation,
+                prism.TargetScale,
+                domain,
+                _captureController.SpawnPrismType));
+        }
+
+        /// <summary>
+        /// Regrow the saved prisms of every completed stroke through the normal prism factory
+        /// (pooled, grow-in animation — nothing pops), streamed over frames so a monument-sized
+        /// restore reads as the painting growing back rather than a hitch.
+        /// </summary>
+        async UniTaskVoid RestorePrismsAsync(CancellationToken ct)
+        {
+            var records = PaintingPrismStore.GetPrisms(_painting.PaintingId, _strokeIndex);
+            if (records.Count == 0) return;
+
+            // Wait for a local vessel — its controller carries the factory channel + owner name.
+            VesselPrismController controller = null;
+            for (int tries = 0; tries < 100 && controller == null; tries++)
+            {
+                var vessel = ResolveVessel();
+                controller = vessel?.VesselPrismController;
+                if (controller == null)
+                    await UniTask.Delay(100, ignoreTimeScale: true, cancellationToken: ct);
+            }
+            if (controller == null || !controller.PrismSpawnChannel) return;
+
+            var channel = controller.PrismSpawnChannel;
+            string owner = ResolveVessel()?.PlayerName ?? "Painter";
+            int perFrame = Mathf.Max(6, records.Count / 150);
+
+            for (int i = 0; i < records.Count; i++)
+            {
+                SpawnRestoredPrism(channel, records[i], owner);
+                if ((i + 1) % perFrame == 0)
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
+        }
+
+        void SpawnRestoredPrism(PrismEventChannelWithReturnSO channel, PaintingPrismRecord record, string owner)
+        {
+            Vector3 pos = _origin + _rotation * record.Position;
+            Quaternion rot = _rotation * record.Rotation;
+            var domain = (Domains)record.domain;
+
+            var ret = channel.RaiseEvent(new PrismEventData
+            {
+                ownDomain = domain,
+                Rotation = rot,
+                SpawnPosition = pos,
+                Scale = record.Scale,
+                PrismType = (PrismType)record.prismType,
+            });
+            if (ret.SpawnedObject == null || !ret.SpawnedObject.TryGetComponent(out Prism prism)) return;
+
+            // Mirror VesselPrismController.CreateBlock's post-spawn setup.
+            prism.TargetScale = record.Scale;
+            prism.ownerID = owner;
+            prism.ChangeTeam(domain);
+            prism.waitTime = 0.6f;
+            _restoredTrail.Add(prism);
+            prism.prismProperties.Index = (ushort)(_restoredTrail.TrailList.Count - 1);
+            prism.Initialize(owner);
         }
 
         // ── Visuals ──────────────────────────────────────────────────────────
@@ -466,20 +591,46 @@ namespace CosmicShore.Gameplay
             lr.startWidth = lr.endWidth = width;
         }
 
-        void MoveMarker(Vector3 pos, Color color, float reach)
+        /// <summary>
+        /// Shared trail-toy shape language: intermediate points are CONES whose apex points at the
+        /// stroke's next point ("this way next" — the same shape the domain changer wears, since
+        /// both change your trail); each stroke's FINAL point — the one that turns the trail off —
+        /// is a JACK. Both wear the stroke domain's prism material.
+        /// </summary>
+        void MoveMarker(int strokeIndex, int pointIndex)
         {
-            _markerBaseRadius = Mathf.Max(3.5f, reach * 0.35f);
+            var stroke = _strokes[strokeIndex];
+            Vector3 pos = stroke.Points[pointIndex];
+            bool isStrokeEnd = pointIndex == stroke.Points.Length - 1;
+            _markerBaseRadius = Mathf.Max(3.5f, stroke.Reach * 0.35f);
+
             if (!_marker)
             {
                 _marker = new GameObject("NextPoint");
                 _marker.transform.SetParent(transform, false);
-                var body = ToyFactory.AddSphereBody(_marker.transform, 0.5f, color);
-                _markerRenderer = body.GetComponent<MeshRenderer>();
             }
-            else if (_markerRenderer && _markerRenderer.sharedMaterial)
+            if (_markerStrokeIndex != strokeIndex || !_markerCone || !_markerJack)
             {
-                // AddSphereBody gives the marker its own material instance, so this tint is private.
-                _markerRenderer.sharedMaterial.color = color;
+                _markerStrokeIndex = strokeIndex;
+                for (int i = _marker.transform.childCount - 1; i >= 0; i--)
+                    Destroy(_marker.transform.GetChild(i).gameObject);
+                var prismMat = ToyFactory.DomainPrismMaterial(_context, stroke.Domain);
+                _markerCone = ToyFactory.AddConeBody(_marker.transform, 0.45f, 1.25f, stroke.BaseColor, prismMat);
+                _markerJack = ToyFactory.AddJackBody(_marker.transform, 0.55f, stroke.BaseColor, prismMat);
+            }
+            _markerCone.SetActive(!isStrokeEnd);
+            _markerJack.SetActive(isStrokeEnd);
+
+            if (isStrokeEnd)
+            {
+                _marker.transform.rotation = _rotation; // jacks are omnidirectional — sit square to the painting
+            }
+            else
+            {
+                Vector3 toNext = stroke.Points[pointIndex + 1] - pos;
+                _marker.transform.rotation = toNext.sqrMagnitude > 1e-4f
+                    ? Quaternion.LookRotation(toNext.normalized, Vector3.up)
+                    : _rotation;
             }
 
             _markerHiding = false;
@@ -553,24 +704,12 @@ namespace CosmicShore.Gameplay
             if (this) Destroy(gameObject);
         }
 
-        static async UniTaskVoid ScaleOutAndDestroy(GameObject go, float seconds, CancellationToken ct)
-        {
-            if (!go) return;
-            Vector3 start = go.transform.localScale;
-            float elapsed = 0f;
-            while (elapsed < seconds)
-            {
-                if (!go) return;
-                elapsed += Time.unscaledDeltaTime;
-                go.transform.localScale = Vector3.LerpUnclamped(start, Vector3.zero,
-                    Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(elapsed / seconds)));
-                await UniTask.Yield(PlayerLoopTiming.Update, ct);
-            }
-            if (go) Destroy(go);
-        }
-
-        /// <summary>A flat ring in the local XY plane — the gate the vessel flies through.</summary>
-        static void AddRing(Transform parent, float radius, Color color)
+        /// <summary>
+        /// A flat ring in the local XY plane — the gate the vessel flies through — with a cone hub
+        /// pointing along local +Z (the flight direction into the stroke): the shared "this turns
+        /// your trail on" shape, in the stroke domain's prism material.
+        /// </summary>
+        static void AddRing(Transform parent, float radius, Color color, Material prismMaterial)
         {
             var lr = ToyFactory.CreateLine("Ring", parent, 2.2f, false);
             const int segs = 28;
@@ -583,8 +722,7 @@ namespace CosmicShore.Gameplay
             }
             lr.startColor = lr.endColor = color;
 
-            // A soft hub so the gate reads at distance.
-            var hub = ToyFactory.AddSphereBody(parent, radius * 0.16f, color);
+            var hub = ToyFactory.AddConeBody(parent, radius * 0.22f, radius * 0.66f, color, prismMaterial);
             hub.name = "Hub";
         }
     }

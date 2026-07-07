@@ -43,7 +43,11 @@ namespace CosmicShore.Gameplay
         {
             ClearChildren(slot.BodyHolder);
             Color c = DomainColor(slot.Option);
-            ToyFactory.AddSphereBody(slot.BodyHolder, BodyRadius, c);
+            // Shared trail-changer shape language: a cone in the domain's PRISM material, apex
+            // pointing the way you fly through (local +Z faces the ring centre) — the same shape
+            // the painting toy's stroke gates wear, so each teaches the other.
+            ToyFactory.AddConeBody(slot.BodyHolder, BodyRadius * 0.95f, BodyRadius * 2.6f, c,
+                ToyFactory.DomainPrismMaterial(Context, slot.Option));
             if (slot.Label)
             {
                 slot.Label.text = LabelFor(slot.Option);

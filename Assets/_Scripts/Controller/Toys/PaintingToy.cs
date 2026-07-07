@@ -1,4 +1,5 @@
 using CosmicShore.ScriptableObjects;
+using Cysharp.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 
@@ -7,21 +8,29 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// One "fly by numbers" painting station. Its label shows the painting's name and live progress;
     /// flying through it starts (or resumes) the painting's <see cref="PaintingRunner"/> at a fixed
-    /// world anchor — a monument-in-progress you can leave and come back to, in this session or the
-    /// next. Re-flying the toy while a run is active benches/resumes it ("put the brush down");
-    /// flying it after a masterpiece is finished clears the canvas for a repaint.
+    /// world anchor — a monument-in-progress you can leave and come back to (across vessel swaps,
+    /// other paintings, other game modes, and sessions — the saved drawing state regrows). Re-flying
+    /// the toy while a run is active benches/resumes it ("put the brush down"); once a masterpiece
+    /// is finished it offers two fly-through choice gates: SHARE (export the web reconstruction to
+    /// the platform share sheet) or REPAINT (clear the canvas and start fresh).
     ///
     /// Toy-faithful: no score, no timer, no fail state — progress is the only readout, and the
     /// painted trail is conserved mass like any other.
     /// </summary>
     public class PaintingToy : Toy
     {
+        const float ChoiceGateRadius = 24f;
+        const float ChoiceDespawnSeconds = 0.45f;
+        static readonly Color ShareColor = new(0.30f, 0.85f, 1.00f);
+
         PaintingDefinitionSO _painting;
         Vector3 _anchorPosition;
         Quaternion _anchorRotation;
         TMP_Text _label;
 
         PaintingRunner _runner;
+        GameObject _shareGate;
+        GameObject _repaintGate;
 
         public void Configure(PaintingDefinitionSO painting, Vector3 anchorPosition, Quaternion anchorRotation,
             TMP_Text label)
@@ -57,17 +66,26 @@ namespace CosmicShore.Gameplay
             int resume = PaintingProgressStore.GetStrokesCompleted(_painting.PaintingId, total);
             if (resume >= total)
             {
-                // Finished masterpiece — this pass clears the canvas for a fresh painting.
-                PaintingProgressStore.ResetProgress(_painting.PaintingId);
-                resume = 0;
+                // Finished masterpiece — offer the choice gates instead of acting immediately.
+                if (!_shareGate && !_repaintGate)
+                    SpawnCompletionChoices();
+                RefreshLabel();
+                return;
             }
+
+            StartRun(resume);
+        }
+
+        void StartRun(int resumeFromStroke)
+        {
+            DespawnChoices();
 
             var go = new GameObject($"PaintingRunner_{_painting.PaintingId}");
             go.transform.SetParent(transform.parent, false);
             _runner = go.AddComponent<PaintingRunner>();
             _runner.ProgressChanged += RefreshLabel;
             _runner.Finished += HandleRunnerFinished;
-            _runner.Begin(_painting, Definition, Context, _anchorPosition, _anchorRotation, resume);
+            _runner.Begin(_painting, Definition, Context, _anchorPosition, _anchorRotation, resumeFromStroke);
             RefreshLabel();
         }
 
@@ -77,6 +95,68 @@ namespace CosmicShore.Gameplay
             _runner = null;
             RefreshLabel();
         }
+
+        void Update()
+        {
+            // The choice gates are a freestyle offer — fold them away when the player returns to
+            // the menu, so the lava lamp never drifts through a stale SHARE/REPAINT pair.
+            if ((_shareGate || _repaintGate)
+                && Context?.IsFreestyleActive != null && !Context.IsFreestyleActive())
+                DespawnChoices();
+        }
+
+        // ── Completion choices (share / repaint) ─────────────────────────────
+
+        void SpawnCompletionChoices()
+        {
+            Vector3 forward = transform.forward;
+            Vector3 tangent = Vector3.Cross(Vector3.up, forward);
+            if (tangent.sqrMagnitude < 1e-4f) tangent = Vector3.right;
+            tangent.Normalize();
+
+            float spacing = ChoiceGateRadius * 2.6f;
+            _shareGate = SpawnChoiceGate("SHARE", transform.position + tangent * spacing, ShareColor, HandleShareChosen);
+            _repaintGate = SpawnChoiceGate("REPAINT", transform.position - tangent * spacing,
+                Definition ? Definition.AccentColor : Color.white, HandleRepaintChosen);
+        }
+
+        GameObject SpawnChoiceGate(string text, Vector3 position, Color color, System.Action onChosen)
+        {
+            var root = ToyFactory.CreateBareRoot($"Choice_{text}", transform.parent,
+                position, position + transform.forward, ChoiceGateRadius);
+            ToyFactory.AddRingBody(root.transform, ChoiceGateRadius, color);
+            ToyFactory.AddSphereBody(root.transform, ChoiceGateRadius * 0.16f, color);
+            ToyFactory.AddLabel(root.transform, text, color, ChoiceGateRadius * 1.5f);
+
+            var toy = root.AddComponent<SwapToy>();
+            toy.Activated += _ => onChosen();
+            toy.Initialize(Definition, Context, default);
+            return root;
+        }
+
+        void HandleShareChosen()
+        {
+            // Gates stay up — the player can share again, or go on to repaint.
+            if (PaintingShareExporter.TryExport(_painting, Context, out string path))
+                PaintingShareExporter.Share(path, _painting.DisplayName);
+        }
+
+        void HandleRepaintChosen()
+        {
+            PaintingProgressStore.ResetProgress(_painting.PaintingId);
+            PaintingPrismStore.Clear(_painting.PaintingId);
+            StartRun(0);
+        }
+
+        void DespawnChoices()
+        {
+            if (_shareGate) ToyFactory.ScaleOutAndDestroy(_shareGate, ChoiceDespawnSeconds).Forget();
+            if (_repaintGate) ToyFactory.ScaleOutAndDestroy(_repaintGate, ChoiceDespawnSeconds).Forget();
+            _shareGate = null;
+            _repaintGate = null;
+        }
+
+        // ── Label ────────────────────────────────────────────────────────────
 
         void RefreshLabel()
         {
@@ -99,7 +179,9 @@ namespace CosmicShore.Gameplay
             int done = PaintingProgressStore.GetStrokesCompleted(_painting.PaintingId, total);
             int times = PaintingProgressStore.GetTimesCompleted(_painting.PaintingId);
             if (done >= total)
-                _label.text = $"{_painting.DisplayName}\nCOMPLETE — fly through to repaint";
+                _label.text = _shareGate || _repaintGate
+                    ? $"{_painting.DisplayName}\nSHARE it or REPAINT?"
+                    : $"{_painting.DisplayName}\nCOMPLETE — fly through for options";
             else if (done > 0)
                 _label.text = $"{_painting.DisplayName}\nresume {Mathf.RoundToInt(100f * done / total)}%";
             else

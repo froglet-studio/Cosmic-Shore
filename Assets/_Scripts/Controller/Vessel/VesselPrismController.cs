@@ -73,6 +73,10 @@ namespace CosmicShore.Gameplay
         bool     _dangerAppend;  
 
         // Properties
+        /// <summary>The prism type this vessel lays (read by the painting toy's capture/restore).</summary>
+        public PrismType SpawnPrismType => prismType;
+        /// <summary>The factory channel this vessel spawns through (read by the painting toy's restore).</summary>
+        public PrismEventChannelWithReturnSO PrismSpawnChannel => _onPrismSpawnedEventChannel;
         public float MinWaveLength => minWavelength;
         public ushort TrailLength => (ushort)Trail.TrailList.Count;
         public float TrailZScale => BaseScale.z; // <- from BaseScale now

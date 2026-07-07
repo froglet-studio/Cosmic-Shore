@@ -13,6 +13,11 @@ namespace CosmicShore.Gameplay
     /// facing +Z (the toy ring / the approaching player). Strokes are ordered bottom-up in build
     /// order, and batched by domain where it reads well so the player switches colour at meaningful
     /// architectural boundaries rather than at random.
+    ///
+    /// AUTHORING RULE — order strokes by DECREASING radius of curvature: long straight / broad
+    /// strokes first (pools, plinths), tight detail last (balcony rings, crescents). The painting
+    /// then doubles as its own difficulty ramp, and the runner's adaptive reach (tighter on short
+    /// segments) ramps with it. See Docs/ToySystem/ARCHITECTURE.md § "Authoring rule".
     /// </summary>
     public static class PaintingPresetLibrary
     {

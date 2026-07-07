@@ -50,10 +50,14 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
 - **In-editor tuning pass.** Gallery fan spacing (`anglePerToyDeg`), `paintingClearance`,
   preset sizes vs. the lava-lamp play area, gate ring radius, ghost alphas, celebration
   timing — all first-guess values.
-- **Cross-session prisms.** Progress persists but painted prisms live only as long as the
-  scene; after a restart the done strokes render as dim "memory" ghosts. If restoring the
-  prisms themselves is ever wanted, that is a mass-law design conversation (re-blooming saved
-  mass), not a quick fix.
+- **Cross-session prisms — RESOLVED.** The drawing state (per-prism pose/size/domain) is now
+  saved per completed stroke (`PaintingPrismStore`) and regrown through the normal
+  `PrismFactory` channel on return — across vessel swaps, other paintings, game modes, and
+  sessions. Prompter-approved re-blooming of saved mass; restored prisms are ordinary
+  conserved mass thereafter.
+- **Share viewer polish.** The exported HTML viewer is dependency-free WebGL with orbit +
+  auto-spin; candidates: a share-card PNG thumbnail alongside the HTML, prism bloom-in replay
+  of the build order, background starfield matching the HyperSea.
 - **Party-client colour lag.** On a party client, the gate's domain pick takes an RTT to
   replicate, so the first prism or two of a stroke can carry the previous colour.
 - **Feedback juice.** Waypoint-collect VFX, gate-pass SFX/haptics (AudioSystem gameplay SFX +
@@ -98,6 +102,6 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
 ## Known limitations (current)
 
 - Mini-ship materials render static; no unlock persistence; placement fallback needs
-  in-editor tuning; painting prisms don't persist across sessions (progress does; done
-  strokes show as dim ghosts); party clients may paint a prism or two in the old colour
-  right after a gate (RTT); not yet play-verified.
+  in-editor tuning; party clients may paint a prism or two in the old colour right after a
+  gate (RTT); the share sheet requires a NativeShare-supported platform (elsewhere the
+  exported HTML path is logged); not yet play-verified.

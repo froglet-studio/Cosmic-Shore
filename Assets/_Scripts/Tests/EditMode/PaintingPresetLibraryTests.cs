@@ -172,6 +172,50 @@ namespace CosmicShore.Tests
             Assert.AreEqual(Vector3.zero, PaintingPresetLibrary.ComputeBounds(new List<PaintingStroke>()).size);
             Assert.AreEqual(Vector3.zero, PaintingPresetLibrary.ComputeBounds(null).size);
         }
+
+        [Test]
+        public void ShareExporter_BuildsSelfContainedViewer()
+        {
+            var records = new List<PaintingPrismRecord>
+            {
+                PaintingPrismRecord.From(new Vector3(1f, 2f, 3f), Quaternion.identity,
+                    new Vector3(4f, 5f, 6f), Domains.Gold, PrismType.Squirrel),
+                PaintingPrismRecord.From(Vector3.zero, Quaternion.Euler(0f, 45f, 0f),
+                    Vector3.one, Domains.Jade, PrismType.Interactive),
+            };
+
+            string html = PaintingShareExporter.BuildHtml("Taj & Test <Monument>", records,
+                new Color(0f, 1f, 0.5f), new Color(1f, 0f, 0.3f), new Color(1f, 0.8f, 0f));
+
+            StringAssert.Contains("<canvas", html, "viewer needs a canvas");
+            StringAssert.Contains("webgl", html, "viewer renders with WebGL");
+            StringAssert.Contains("Taj &amp; Test &lt;Monument&gt;", html, "title must be HTML-escaped");
+            Assert.IsFalse(html.Contains("__DATA__"), "data token must be substituted");
+            Assert.IsFalse(html.Contains("__TITLE__"), "title token must be substituted");
+            Assert.IsFalse(html.Contains("__PALETTE__"), "palette token must be substituted");
+            Assert.IsFalse(html.Contains("src="), "viewer must not reference external scripts");
+        }
+
+        [Test]
+        public void ShareExporter_FallbackFromStrokes_CoversEverySegment()
+        {
+            var def = ScriptableObject.CreateInstance<PaintingDefinitionSO>();
+            try
+            {
+                def.SetRuntimeData("test_rainbow", "Rainbow", "", PaintingPreset.Rainbow, 700f, 30f);
+                def.EnsureStrokes();
+
+                int expectedSegments = 0;
+                foreach (var s in def.Strokes) expectedSegments += s.points.Count - 1;
+
+                var records = PaintingShareExporter.FallbackFromStrokes(def);
+                Assert.AreEqual(expectedSegments, records.Count);
+            }
+            finally
+            {
+                Object.DestroyImmediate(def);
+            }
+        }
     }
 }
 #endif
