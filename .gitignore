@@ -75,6 +75,9 @@ sysinfo.txt
 
 # Builds
 *.apk
+# ...except the .NET port's committed progress builds (Port/dist channel) — the
+# `*.apk` rule above is for Unity build output, not these.
+!Port/dist/*.apk
 *.unitypackage
 [Cc]urrentBuild*.txt
 

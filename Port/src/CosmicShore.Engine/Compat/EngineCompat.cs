@@ -95,6 +95,7 @@ namespace CosmicShore.Engine
         public static bool isPlaying = true;
         public static bool isMobilePlatform => platform is RuntimePlatform.Android or RuntimePlatform.IPhonePlayer;
         public static RuntimePlatform platform =
+            OperatingSystem.IsAndroid() ? RuntimePlatform.Android :
             OperatingSystem.IsWindows() ? RuntimePlatform.WindowsPlayer :
             OperatingSystem.IsMacOS() ? RuntimePlatform.OSXPlayer : RuntimePlatform.LinuxPlayer;
         public static int targetFrameRate = -1;

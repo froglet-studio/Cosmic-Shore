@@ -36,9 +36,12 @@ The prompter tests progress without prompting the loop. Contract:
 1. **Green branch invariant.** Every push to `claude/quirky-cannon-sk8a02` has
    `cd Port && dotnet build && dotnet test` green. The branch is always safe to pull.
    This includes **buildable from a fresh clone**: `git ls-files Port | grep -c 'csproj$'`
-   must equal 7 — the root Unity `.gitignore` (`*.csproj`/`*.sln`) silently excluded
+   must equal 8 — the root Unity `.gitignore` (`*.csproj`/`*.sln`) silently excluded
    every project file until 2026-06-11 (negations added), which shipped a branch whose
-   source couldn't build on the prompter's machine.
+   source couldn't build on the prompter's machine. (The 8th is the Android head,
+   `src/CosmicShore.Client.Android` — deliberately NOT in the slnx so plain
+   `dotnet build`/`dotnet test` stay green without the android workload; see README
+   § "Android build".)
 2. **Runnable harness: `CosmicShore.Cli`** (`src/CosmicShore.Cli`, lands iteration 2).
    One command to exercise the current port on any machine with the .NET 10 SDK:
    `cd Port && dotnet run --project src/CosmicShore.Cli`. It grows with the port:
@@ -88,6 +91,7 @@ The prompter tests progress without prompting the loop. Contract:
 | `port-m2` | First full headless game-mode round (AI vs AI) | `cd Port && dotnet run --project src/CosmicShore.Cli -- --mode hexrace --players 4 --seed 42` | ✅ 2026-06-12 (commit `dc2eb876`) |
 | `port-m3` | First rendered frame (PNG artifact in chat + repo) | pull + open artifact | ⬜ |
 | `port-m4` | First interactive desktop build | `… -- --render` | ⬜ |
+| `port-m5` | First Android build, no Unity — APK head (SDL view + GLES 3.0 + real TouchInputStrategy) | `adb install Port/dist/CosmicShore-Android.apk` (build: README § "Android build") | ✅ 2026-07-07 (branch `claude/android-build-no-unity-gh65ai`) |
 
 ## HARD RULE (prompter, 2026-06-11): never merge OUT of this branch
 

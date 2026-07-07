@@ -4,12 +4,17 @@ using System.Numerics;
 using CosmicShore.Engine;
 using Silk.NET.Input;
 using Silk.NET.Maths;
+#if GLES
+using Silk.NET.OpenGLES;   // Android head — same generated API surface as Silk.NET.OpenGL
+#else
 using Silk.NET.OpenGL;
+#endif
 using Silk.NET.Windowing;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using EngineInput = CosmicShore.Engine.InputSystem;
+using EngineTouch = CosmicShore.Engine.InputSystem.EnhancedTouch.Touch;
 using Vector3 = CosmicShore.Engine.Vector3;
 using Quaternion = CosmicShore.Engine.Quaternion;
 using Vector2 = CosmicShore.Engine.Vector2;
@@ -31,7 +36,7 @@ namespace CosmicShore.Client
         readonly string _screenshotPath;
         readonly int _screenshotFrame;
 
-        IWindow _window;
+        IView _window; // IWindow on desktop; the SDL view on the Android head
         GL _gl;
         IInputContext _inputContext;
 
@@ -42,6 +47,9 @@ namespace CosmicShore.Client
         Camera _camera;                  // engine camera — carries the theme's authored sky color
         IInputStatus _playerStatus;      // the rig's REAL InputStatus (V7) — strategy writes here
         readonly GamepadInputStrategy _gamepadStrategy = new(); // the ported, authentic dual-stick scheme
+        // Mobile: the game's REAL dual-thumb touch scheme, fed by the host's EnhancedTouch backend
+        readonly TouchInputStrategy _touchStrategy = Application.isMobilePlatform ? new TouchInputStrategy() : null;
+        bool _touchDriving;
         EngineInput.Gamepad _shimPad;
         bool _prevA, _prevStart;
         bool _prevKbSpace, _prevKbShift; // keyboard fallback edges → real SOAP button events
@@ -124,7 +132,13 @@ namespace CosmicShore.Client
                 VSync = true,
             };
             Console.WriteLine("[1/4] creating window (GLFW)...");
-            _window = Window.Create(options);
+            Run(Window.Create(options));
+        }
+
+        /// <summary>Runs on a caller-provided surface — the Android head passes its SDL view.</summary>
+        public void Run(IView view)
+        {
+            _window = view;
             _window.Load += OnLoad;
             _window.Update += OnUpdate;
             _window.Render += OnRender;
@@ -167,6 +181,7 @@ namespace CosmicShore.Client
             _theme.SetBackgroundColor(_camera);
             _gamepadStrategy.Initialize(_playerStatus);
             _gamepadStrategy.OnStrategyActivated(); // ActiveInputDevice = Gamepad → pure analog triggers
+            _touchStrategy?.Initialize(_playerStatus); // sizes thumbsticks from Screen.dpi — host set it pre-Load
             _audio = new AudioEngine(disabled: _screenshotPath != null);
             _race.OnCrystalClaimed += (_, pos, byHuman) => { _bursts.Add((pos, 0f)); _audio.CrystalChime(player: byHuman); };
 
@@ -201,7 +216,9 @@ namespace CosmicShore.Client
             _gl.Enable(EnableCap.Blend);
             _gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One); // additive neon
             _gl.Enable(EnableCap.DepthTest);
-            _gl.Enable(EnableCap.ProgramPointSize);
+#if !GLES
+            _gl.Enable(EnableCap.ProgramPointSize); // ES 3.0: gl_PointSize is always on
+#endif
 
             _camPos = _pilot.Transform.position - new Vector3(0f, -2.5f, 9f);
             Console.WriteLine("[4/4] ready — racing. (If the game window isn't visible now, check the taskbar.)");
@@ -273,14 +290,26 @@ void main()
     frag = vec4(c, 1.0);
 }";
 
+        /// <summary>
+        /// Shaders are authored once in GLSL 330 core; the GLES head (Android) compiles
+        /// the same sources as GLSL ES 300 — mechanically retargeted here (ES requires an
+        /// explicit default float precision; the rest of the dialect used is identical).
+        /// </summary>
+        static string PlatformShader(string src) =>
+#if GLES
+            src.Replace("#version 330 core", "#version 300 es\nprecision highp float;");
+#else
+            src;
+#endif
+
         uint CompileProgram(string vertexSrc, string fragmentSrc)
         {
             uint vs = _gl.CreateShader(ShaderType.VertexShader);
-            _gl.ShaderSource(vs, vertexSrc);
+            _gl.ShaderSource(vs, PlatformShader(vertexSrc));
             _gl.CompileShader(vs);
             CheckShader(vs, "vertex");
             uint fs = _gl.CreateShader(ShaderType.FragmentShader);
-            _gl.ShaderSource(fs, fragmentSrc);
+            _gl.ShaderSource(fs, PlatformShader(fragmentSrc));
             _gl.CompileShader(fs);
             CheckShader(fs, "fragment");
 
@@ -620,7 +649,43 @@ void main()
         {
             bool finished = _race.State == RaceState.Finished;
             var silkPad = _inputContext.Gamepads.Count > 0 ? _inputContext.Gamepads[0] : null;
-            if (silkPad != null && silkPad.Thumbsticks.Count >= 2)
+            bool padPresent = silkPad != null && silkPad.Thumbsticks.Count >= 2;
+
+            // Touch (mobile): the REAL TouchInputStrategy consumes the EnhancedTouch shim
+            // the Android host pumps each frame. Fingers on glass take the rig; once
+            // driving, zero-touch frames still ProcessInput so ResetInput straightens the
+            // vessel and finger-lift drift transitions fire. A connected pad reclaims the
+            // rig only after all fingers lift.
+            bool touchActive = _touchStrategy != null && EngineTouch.activeTouches.Count > 0;
+            if (touchActive && !_touchDriving)
+            {
+                _touchStrategy.OnStrategyActivated(); // ActiveInputDevice = Touch
+                _touchDriving = true;
+            }
+            else if (!touchActive && _touchDriving && padPresent)
+            {
+                _touchStrategy.ProcessInput(); // one zero-touch pass releases drift state
+                _gamepadStrategy.OnStrategyActivated();
+                _touchDriving = false;
+            }
+            if (_touchDriving)
+            {
+                if (finished)
+                {
+                    // tap on the finish screen = rematch (mirrors the A-button path)
+                    for (int i = 0; i < EngineTouch.activeTouches.Count; i++)
+                        if (EngineTouch.activeTouches[i].phase == EngineInput.TouchPhase.Began)
+                        {
+                            _race.RestartRace();
+                            break;
+                        }
+                    return; // victory lap: the real AIPilot owns the rig
+                }
+                _touchStrategy.ProcessInput(); // authentic dual-thumb scheme → InputStatus
+                return;
+            }
+
+            if (padPresent)
             {
                 _shimPad ??= EngineInput.Gamepad.current = new EngineInput.Gamepad();
 

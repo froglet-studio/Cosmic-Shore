@@ -8,9 +8,14 @@ using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Silk.NET.Input;
 using Silk.NET.Maths;
+#if GLES
+using Silk.NET.OpenGLES;   // Android head — same generated API surface as Silk.NET.OpenGL
+#else
 using Silk.NET.OpenGL;
+#endif
 using Silk.NET.Windowing;
 using EngineInput = CosmicShore.Engine.InputSystem;
+using EngineTouch = CosmicShore.Engine.InputSystem.EnhancedTouch.Touch;
 using EngineObject = CosmicShore.Engine.Object;
 using Quaternion = CosmicShore.Engine.Quaternion;
 using Vector2 = CosmicShore.Engine.Vector2;
@@ -36,7 +41,7 @@ namespace CosmicShore.Client
         readonly string _screenshotPath;
         readonly int _screenshotFrame;
 
-        IWindow _window;
+        IView _window; // IWindow on desktop; the SDL view on the Android head
         GL _gl;
         IInputContext _inputContext;
 
@@ -45,6 +50,10 @@ namespace CosmicShore.Client
         ThemeManagerDataContainerSO _theme;
         IInputStatus _playerStatus;                      // wired once the chain spawns the vessel
         readonly GamepadInputStrategy _gamepadStrategy = new();
+        // Mobile: the game's REAL dual-thumb touch scheme, fed by the host's EnhancedTouch backend
+        readonly TouchInputStrategy _touchStrategy = Application.isMobilePlatform ? new TouchInputStrategy() : null;
+        bool _touchDriving;
+        bool _prevTriple; // three-finger tap = Tab (lava lamp ↔ freestyle)
         bool _strategyInitialized;
         EngineInput.Gamepad _shimPad;
         bool _prevA, _prevY;
@@ -93,7 +102,13 @@ namespace CosmicShore.Client
                 VSync = true,
             };
             Console.WriteLine("[1/4] creating window (GLFW)...");
-            _window = Window.Create(options);
+            Run(Window.Create(options));
+        }
+
+        /// <summary>Runs on a caller-provided surface — the Android head passes its SDL view.</summary>
+        public void Run(IView view)
+        {
+            _window = view;
             _window.Load += OnLoad;
             _window.Update += OnUpdate;
             _window.Render += OnRender;
@@ -143,7 +158,9 @@ namespace CosmicShore.Client
             _gl.Enable(EnableCap.Blend);
             _gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.One); // additive neon
             _gl.Enable(EnableCap.DepthTest);
-            _gl.Enable(EnableCap.ProgramPointSize);
+#if !GLES
+            _gl.Enable(EnableCap.ProgramPointSize); // ES 3.0: gl_PointSize is always on
+#endif
 
             _camPos = new Vector3(0f, 40f, -520f);
             Console.WriteLine("[4/4] ready — lava lamp. Tab (or gamepad Y) to take the stick.");
@@ -215,15 +232,27 @@ void main()
     frag = vec4(c, 1.0);
 }";
 
+        /// <summary>
+        /// Shaders are authored once in GLSL 330 core; the GLES head (Android) compiles
+        /// the same sources as GLSL ES 300 — mechanically retargeted here (ES requires an
+        /// explicit default float precision; the rest of the dialect used is identical).
+        /// </summary>
+        static string PlatformShader(string src) =>
+#if GLES
+            src.Replace("#version 330 core", "#version 300 es\nprecision highp float;");
+#else
+            src;
+#endif
+
         uint CompileProgram(string vertexSrc, string fragmentSrc)
         {
             uint vs = _gl.CreateShader(ShaderType.VertexShader);
-            _gl.ShaderSource(vs, vertexSrc);
+            _gl.ShaderSource(vs, PlatformShader(vertexSrc));
             _gl.CompileShader(vs);
             _gl.GetShader(vs, ShaderParameterName.CompileStatus, out int okV);
             if (okV == 0) throw new InvalidOperationException($"vertex: {_gl.GetShaderInfoLog(vs)}");
             uint fs = _gl.CreateShader(ShaderType.FragmentShader);
-            _gl.ShaderSource(fs, fragmentSrc);
+            _gl.ShaderSource(fs, PlatformShader(fragmentSrc));
             _gl.CompileShader(fs);
             _gl.GetShader(fs, ShaderParameterName.CompileStatus, out int okF);
             if (okF == 0) throw new InvalidOperationException($"fragment: {_gl.GetShaderInfoLog(fs)}");
@@ -467,11 +496,40 @@ void main()
                 _playerStatus = player.InputStatus;
                 _gamepadStrategy.Initialize(_playerStatus);
                 _gamepadStrategy.OnStrategyActivated();
+                _touchStrategy?.Initialize(_playerStatus); // sizes thumbsticks from Screen.dpi — host set it pre-Load
                 _strategyInitialized = true;
             }
 
             var silkPad = _inputContext.Gamepads.Count > 0 ? _inputContext.Gamepads[0] : null;
-            if (silkPad != null && silkPad.Thumbsticks.Count >= 2)
+            bool padPresent = silkPad != null && silkPad.Thumbsticks.Count >= 2;
+
+            // Touch (mobile): same seam as the race window — the REAL TouchInputStrategy
+            // reads the EnhancedTouch shim the Android host pumps. Three fingers down
+            // together = Tab (take/release the stick); in the lava lamp the AIPilot owns
+            // the rig so touches only feed the toggle.
+            bool touchActive = _touchStrategy != null && EngineTouch.activeTouches.Count > 0;
+            if (touchActive && !_touchDriving)
+            {
+                _touchStrategy.OnStrategyActivated(); // ActiveInputDevice = Touch
+                _touchDriving = true;
+            }
+            else if (!touchActive && _touchDriving && padPresent)
+            {
+                _touchStrategy.ProcessInput(); // one zero-touch pass releases drift state
+                _gamepadStrategy.OnStrategyActivated();
+                _touchDriving = false;
+            }
+            if (_touchDriving)
+            {
+                bool triple = EngineTouch.activeTouches.Count >= 3;
+                if (triple && !_prevTriple) _director.ToggleControl();
+                _prevTriple = triple;
+                if (!_director.IsFreestyle) return; // AIPilot owns the rig in the lava lamp
+                _touchStrategy.ProcessInput();      // authentic dual-thumb scheme → InputStatus
+                return;
+            }
+
+            if (padPresent)
             {
                 _shimPad ??= EngineInput.Gamepad.current = new EngineInput.Gamepad();
                 _shimPad.leftStick.value = new Vector2(silkPad.Thumbsticks[0].X, -silkPad.Thumbsticks[0].Y);

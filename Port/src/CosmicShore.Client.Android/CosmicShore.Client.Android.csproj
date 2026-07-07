@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Overrides Directory.Build.props' net10.0 — this head is the Android APK. -->
+    <TargetFramework>net10.0-android</TargetFramework>
+    <SupportedOSPlatformVersion>24.0</SupportedOSPlatformVersion>
+    <OutputType>Exe</OutputType>
+    <ApplicationId>studio.froglet.cosmicshore.port</ApplicationId>
+    <ApplicationVersion>1</ApplicationVersion>
+    <ApplicationDisplayVersion>0.2.0-port</ApplicationDisplayVersion>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- The shared window classes compile against Silk.NET.OpenGLES under this symbol
+         (see PlatformShader / the #if GLES using swap in RaceWindow/FreestyleWindow). -->
+    <DefineConstants>$(DefineConstants);GLES</DefineConstants>
+    <!-- Progress builds sideload as APKs (Release default would be .aab). -->
+    <AndroidPackageFormats>apk</AndroidPackageFormats>
+    <!-- Ported engine/game code leans on reflection (SOAP, DI injectors) — never trim.
+         AOT requires trimming, so it goes with it (CoreCLR JIT carries the sim fine). -->
+    <AndroidLinkMode>None</AndroidLinkMode>
+    <PublishTrimmed>false</PublishTrimmed>
+    <RunAOTCompilation>false</RunAOTCompilation>
+    <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
+    <!-- Debug builds must run standalone off-IDE (no fast-deployment host). -->
+    <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />
+    <ProjectReference Include="../CosmicShore.Data/CosmicShore.Data.csproj" />
+    <ProjectReference Include="../CosmicShore.Game/CosmicShore.Game.csproj" />
+  </ItemGroup>
+
+  <!-- The desktop client's sources compile here verbatim under GLES; only the desktop
+       entry point (Program.cs — GLFW window bootstrap + CLI parsing) stays behind.
+       MainActivity is this head's entry point. -->
+  <ItemGroup>
+    <Compile Include="../CosmicShore.Client/*.cs" Exclude="../CosmicShore.Client/Program.cs" LinkBase="Shared" />
+    <!-- Loaded via GetManifestResourceStream("CosmicShore.Client.Assets.squirrel.mesh") —
+         pinned so this head's default namespace can't drift the manifest name. -->
+    <EmbeddedResource Include="../CosmicShore.Client/Assets/squirrel.mesh" LogicalName="CosmicShore.Client.Assets.squirrel.mesh" />
+  </ItemGroup>
+
+  <!-- NuGet RID fallback (android-arm64 → linux-arm64) drags Ultz.Native.SDL's glibc
+       libSDL2-2.0.so into the APK. Bionic can't load it, and the real SDL2 ships in the
+       Silk aar (libSDL2.so, loaded by the Java SDLActivity; the C# bindings' only load
+       candidate is that same soname, so both sides share one SDL instance). Drop it. -->
+  <Target Name="DropGlibcSdlNative" AfterTargets="ResolvePackageAssets">
+    <ItemGroup>
+      <NativeCopyLocalItems Remove="@(NativeCopyLocalItems)"
+          Condition="'%(Filename)%(Extension)' == 'libSDL2-2.0.so'" />
+    </ItemGroup>
+  </Target>
+
+  <ItemGroup>
+    <!-- Silk.NET.Windowing.Sdl's net6.0-android lib carries SilkActivity + the SDL2
+         natives (arm64-v8a et al) in its bundled .aar — no separate Android package
+         exists past 2.10; the Android head folded into the main SDL packages. -->
+    <PackageReference Include="Silk.NET.Windowing.Sdl" Version="2.22.0" />
+    <PackageReference Include="Silk.NET.Input" Version="2.22.0" />
+    <PackageReference Include="Silk.NET.Input.Sdl" Version="2.22.0" />
+    <PackageReference Include="Silk.NET.SDL" Version="2.22.0" />
+    <PackageReference Include="Silk.NET.OpenGLES" Version="2.22.0" />
+    <PackageReference Include="Silk.NET.OpenAL" Version="2.22.0" />
+    <PackageReference Include="Silk.NET.Maths" Version="2.22.0" />
+  </ItemGroup>
+
+</Project>

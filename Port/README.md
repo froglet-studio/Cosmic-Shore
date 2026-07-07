@@ -22,6 +22,48 @@ dotnet build
 dotnet test
 ```
 
+## Android build (no Unity)
+
+`src/CosmicShore.Client.Android` wraps the same `RaceWindow`/`FreestyleWindow`
+presentation hosts in an Android APK: Silk.NET's SDL view (`SilkActivity`; the SDL2
+natives ship inside the Silk aar) + a GLES 3.0 context (`GLES` define swaps the GL
+namespace; `PlatformShader` retargets the GLSL 330 sources to ES 300), and an
+`SdlTouchBackend` that pumps SDL finger state into the engine's EnhancedTouch
+shim — so the ported, authentic `TouchInputStrategy` (the game's real dual-thumb
+mobile scheme) drives the rig. Bluetooth gamepads use the same ported
+`GamepadInputStrategy` as desktop.
+
+The project is deliberately **not** in `CosmicShore.slnx`: plain
+`dotnet build`/`dotnet test` must stay green on machines without the Android
+toolchain. Build it explicitly:
+
+```bash
+dotnet workload install android              # once per SDK
+export JAVA_HOME=<jdk-17-or-newer>           # JDK 21 verified
+# once: provision the Android SDK (downloads platform + build-tools; USER must be set)
+dotnet build src/CosmicShore.Client.Android -t:InstallAndroidDependencies \
+    -p:AndroidSdkDirectory=/opt/android-sdk -p:AcceptAndroidSDKLicenses=True \
+    "-p:JavaSdkDirectory=$JAVA_HOME"
+# then: the APK (debug-signed, sideload-ready; latest copy committed at dist/CosmicShore-Android.apk)
+dotnet build src/CosmicShore.Client.Android -c Release \
+    -p:AndroidSdkDirectory=/opt/android-sdk "-p:JavaSdkDirectory=$JAVA_HOME"
+adb install src/CosmicShore.Client.Android/bin/Release/net10.0-android/studio.froglet.cosmicshore.port-Signed.apk
+```
+
+Default mode is the SkimRace; launch extras pick mode/config:
+
+```bash
+adb shell am start -n studio.froglet.cosmicshore.port/.MainActivity \
+    -e mode freestyle -e seed 7
+```
+
+Touch: thumbs on glass fly (the real scheme — drift comes from finger-lift
+transitions, exactly as on the Unity mobile build); tap the finish screen to
+rematch; three fingers down in freestyle = Tab (take/release the stick). Audio
+is silent on device for now — OpenAL-soft ships no Android native and
+`AudioEngine` is fail-safe by design. No trimming/AOT (the engine's reflective
+lifecycle discovery forbids it — same rule as the desktop publishes).
+
 ## Layout
 
 ```
@@ -34,7 +76,8 @@ Port/
 │   ├── CosmicShore.Data/        # ported Data layer (verbatim from Assets/_Scripts/Data)
 │   ├── CosmicShore.Game/        # ported game code (mirrors Assets/_Scripts structure)
 │   ├── CosmicShore.Cli/         # headless smoke/sim harness (engine boot, SOAP, sims)
-│   └── CosmicShore.Client/      # playable SkimRace window (Silk.NET, sprint builds)
+│   ├── CosmicShore.Client/      # playable SkimRace/Freestyle window (Silk.NET, sprint builds)
+│   └── CosmicShore.Client.Android/ # Android APK head (SDL view + GLES 3.0) — NOT in slnx, see below
 ├── dist/                        # playable progress-build zips (see play-latest.bat)
 ├── artifacts/                   # curated headless render verifications
 └── tests/
