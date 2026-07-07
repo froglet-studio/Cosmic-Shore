@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: SO_Class_Spider
   m_EditorClassIdentifier:
   Class: 12
-  Name: Spider
-  Description: Swing between prisms like a web-slinger. Latch onto nearby structures
-    to build momentum, then release to fling yourself forward at high speed.
+  Name: Gibbon
+  Description: Swing between prisms like a gibbon through the canopy. Latch onto
+    nearby structures to build momentum, then release to fling yourself forward at
+    high speed.
   IconActive: {fileID: 0}
   IconInactive: {fileID: 0}
   PreviewImage: {fileID: 0}

@@ -21,10 +21,13 @@ namespace CosmicShore.Gameplay
     {
         // Curated default so the ring isn't crowded with all 11 ships. Override per-asset via the
         // definition's collection. The current vessel is always excluded from the visible set.
+        // Gibbon (internal name "Spider", enum value 12) is included so the swing vessel is
+        // reachable from freestyle for playtesting.
         static readonly VesselClassType[] DefaultCollection =
         {
             VesselClassType.Manta, VesselClassType.Dolphin, VesselClassType.Rhino,
             VesselClassType.Squirrel, VesselClassType.Serpent, VesselClassType.Sparrow,
+            VesselClassType.Gibbon,
         };
 
         const int RestoreDelayMs = 600;
