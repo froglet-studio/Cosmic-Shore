@@ -20,6 +20,12 @@
     <PublishTrimmed>false</PublishTrimmed>
     <RunAOTCompilation>false</RunAOTCompilation>
     <AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+    <!-- Device-verified 2026-07-07: with LLVM marshal methods on (the Release default)
+         the generated JCWs carry no Runtime.register static block, but libxamarin-app.so
+         exported NO Java_* symbols either — every Java→managed callback died at startup
+         ("No implementation found for void crc…SilkActivity.n_loadLibraries()").
+         Classic dynamic registration is the battle-tested path; keep this off. -->
+    <AndroidEnableMarshalMethods>false</AndroidEnableMarshalMethods>
     <RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
     <!-- Debug builds must run standalone off-IDE (no fast-deployment host). -->
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
