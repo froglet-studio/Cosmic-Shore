@@ -34,11 +34,13 @@ namespace CosmicShore.Gameplay
     ///       overshot launch always has a way back to the prismscape.
     ///
     /// Controls:
-    ///   Each stick's X positions that side's cursor on the horizontal screen
-    ///   axis through the vessel: inward = at vessel, outward = screen edge.
-    ///   Pulling a trigger fires that side's tether from the cursor, straight
-    ///   into the scene along the camera ray. Hit a prism → anchor. Max range
-    ///   → spawn an anchor prism and latch on.
+    ///   Each stick positions that side's cursor in screen space: X slides it
+    ///   along the horizontal axis through the vessel (inward = at vessel,
+    ///   outward = side edge), Y slides it vertically toward the top/bottom edge
+    ///   — so you aim in a full 2D cone, not just left/right. Pulling a trigger
+    ///   fires that side's tether from the cursor, straight into the scene along
+    ///   the camera ray. Hit a prism → anchor. Max range → spawn an anchor prism
+    ///   and latch on.
     ///
     ///   One anchor:  vessel is constrained to the anchor sphere. Forward is
     ///   projected onto the tangent plane; course lerps toward it (drift feel).
@@ -60,14 +62,22 @@ namespace CosmicShore.Gameplay
         [Header("Tether")]
         [SerializeField] float tetherSpeed = 300f;
         [SerializeField] float maxTetherLength = 150f;
-        [SerializeField] float tetherRadius = 0.08f;
+        [Tooltip("Base world-radius of the tether capsule. Thick enough to read as a 3D rod with shading, not a hairline.")]
+        [SerializeField] float tetherRadius = 0.14f;
+        [Tooltip("Optional lit material override. Left empty, a shaded HDR-cyan URP/Lit material is built at runtime so the beam catches scene light (depth) and blooms.")]
         [SerializeField] Material tetherMaterial;
         [Tooltip("Seconds the tether takes to retract to the arm on release. Continuity-of-existence law: a player-visible beam must never instant-pop out. The ignite already grows from zero; this animates the retract.")]
         [SerializeField] float tetherRetractDuration = 0.15f;
 
         [Header("Spinneret Arms")]
         [Tooltip("Visual thickness of the arm capsule.")]
-        [SerializeField] float armRadius = 0.04f;
+        [SerializeField] float armRadius = 0.07f;
+
+        [Header("Aiming")]
+        [Tooltip("Stick Y also steers the cursor vertically (toward the top/bottom screen edge), not just horizontally along the vessel's screen axis — so you can fire tethers up and down. 0 = horizontal-only aiming (legacy).")]
+        [SerializeField] float verticalAimGain = 1f;
+        [Tooltip("Flip if pushing the stick up aims the cursor down — stick Y sign varies by input device.")]
+        [SerializeField] bool invertVerticalAim = false;
 
         [Header("Course Lerp")]
         [Tooltip("How fast the tethered course catches up to the projected forward (drift feel).")]
@@ -84,10 +94,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] float minCircleRadius = 1f;
 
         [Header("Dissipation & Air Control")]
-        [Tooltip("Quadratic drag while anchored, units 1/meters (≈ 1/braking-length-scale). Dual-anchor: dL/dt = −k·v·L (quadratic-in-v drag expressed on the persistent L). Single-anchor: dv/dt = −k·v². Terminal velocity EMERGES where pump injection balances this — no hard clamp, no throttle. At 0.002, drag removes ~30%/s at v=150. 0 = frictionless (runaway).")]
-        [SerializeField] float swingDragK = 0.002f;
-        [Tooltip("Quadratic drag in free flight, units 1/meters: dv/dt = −k·v². Coasts a hard launch down gracefully (1/v − 1/v₀ = k·t ⇒ 150→75 in ~4s at 0.0017). MinimumSpeed still floors movement, so the vessel can never strand. 0 = release speed kept forever.")]
-        [SerializeField] float freeFlightDragK = 0.0017f;
+        [Tooltip("Quadratic drag while anchored, units 1/meters (≈ 1/braking-length-scale). Dual-anchor: dL/dt = −k·v·L (quadratic-in-v drag expressed on the persistent L). Single-anchor: dv/dt = −k·v². Terminal velocity EMERGES where pump injection balances this — no hard clamp, no throttle. Lower = higher top speed; at 0.0012 drag removes ~18%/s at v=150. 0 = frictionless (runaway).")]
+        [SerializeField] float swingDragK = 0.0012f;
+        [Tooltip("Quadratic drag in free flight, units 1/meters: dv/dt = −k·v². Coasts a hard launch down gracefully; lower = keeps speed longer (150→100 in ~5s at 0.001). MinimumSpeed still floors movement, so the vessel can never strand. 0 = release speed kept forever.")]
+        [SerializeField] float freeFlightDragK = 0.001f;
         [Tooltip("Negative work done on L when the circle EXPANDS (sticks relaxed inward), exactly mirroring the pump injection term. Spread the sticks to pump up, relax them to bleed down — the symmetric, skill-based brake. Start equal to pumpGain.")]
         [SerializeField] float reversePumpBleed = 0.5f;
         [Tooltip("Degrees/second the free-flight course steers toward the vessel's nose. Constant-rate (RotateTowards, not Slerp) so steering authority is predictable at any speed — this is the 'way back' after overshooting every prism. 0 = ballistic (soft-lock risk).")]
@@ -289,15 +299,39 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            var shader = Shader.Find("Universal Render Pipeline/Unlit")
-                      ?? Shader.Find("Unlit/Color");
+            // LIT, not Unlit: an unlit tube renders as a flat silhouette with no
+            // depth cue — you can't tell where in space the beam is. URP/Lit gives
+            // the capsule a real shaded gradient + a glossy specular streak down
+            // its length (high smoothness), so it reads as a 3D rod; the HDR
+            // emission still blooms for the lightsaber glow. Base colour is kept
+            // dim so the shading isn't blown out to a flat white by the emission.
+            var shader = Shader.Find("Universal Render Pipeline/Lit");
+            bool lit = shader != null;
+            if (!lit)
+                shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
             if (shader == null) return;
 
             sharedTetherMaterial = new Material(shader);
-            // HDR cyan — blooms under URP post-processing for the lightsaber read
-            var hot = new Color(0f, 2f, 2f, 1f);
-            sharedTetherMaterial.color = hot;
-            sharedTetherMaterial.SetColor("_BaseColor", hot);
+
+            if (lit)
+            {
+                var baseColor = new Color(0f, 0.35f, 0.4f, 1f); // dim so shading shows
+                var emission = new Color(0f, 1.6f, 1.8f, 1f);   // HDR cyan glow (blooms)
+                sharedTetherMaterial.color = baseColor;
+                sharedTetherMaterial.SetColor("_BaseColor", baseColor);
+                sharedTetherMaterial.SetFloat("_Metallic", 0f);
+                sharedTetherMaterial.SetFloat("_Smoothness", 0.85f); // glossy → 3D specular streak
+                sharedTetherMaterial.EnableKeyword("_EMISSION");
+                sharedTetherMaterial.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive;
+                sharedTetherMaterial.SetColor("_EmissionColor", emission);
+            }
+            else
+            {
+                // Unlit fallback (older pipelines) — HDR cyan, flat but visible.
+                var hot = new Color(0f, 2f, 2f, 1f);
+                sharedTetherMaterial.color = hot;
+                sharedTetherMaterial.SetColor("_BaseColor", hot);
+            }
         }
 
         void CreateTetherCapsule(string childName, ref TetherState tether)
@@ -370,7 +404,7 @@ namespace CosmicShore.Gameplay
         }
 
         // ==================================================================
-        //  CURSOR POSITIONING (per-stick, horizontal screen axis)
+        //  CURSOR POSITIONING (per-stick, screen-space: X = horizontal, Y = vertical)
         // ==================================================================
 
         CustomCameraController GetCameraController()
@@ -412,26 +446,56 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// World-space cursor position for a given side, pinned to the
-        /// horizontal screen axis through the vessel. The matching stick's X
-        /// slides it between the vessel (inward) and the screen edge (outward).
+        /// Per-stick vertical travel toward the top (+) or bottom (−) screen
+        /// edge, in [−1,1], from the matching stick's Y. verticalAimGain scales
+        /// the reach (0 = horizontal-only); invertVerticalAim flips it for
+        /// devices whose stick-up reports negative Y.
+        /// </summary>
+        float GetCursorVertical(bool left)
+        {
+            if (InputStatus == null) return 0f;
+            float stickY = left
+                ? InputStatus.EasedLeftJoystickPosition.y
+                : InputStatus.EasedRightJoystickPosition.y;
+            if (invertVerticalAim) stickY = -stickY;
+            return Mathf.Clamp(stickY * verticalAimGain, -1f, 1f);
+        }
+
+        /// <summary>
+        /// World-space cursor position for a given side, expressed entirely in
+        /// screen space (world-space depth-plane math drifted and was ripped out
+        /// twice). Stick X slides the cursor along the horizontal screen axis
+        /// between the vessel (inward) and the side edge (outward); stick Y
+        /// slides it vertically toward the top/bottom edge. ScreenToWorldPoint at
+        /// the vessel's own depth turns that 2D screen point back into the world.
         /// </summary>
         Vector3 GetCursorWorldPosition(bool left)
         {
             var cam = GetGameplayCamera();
-            float travel = GetCursorTravel(left);
+            float travelX = GetCursorTravel(left);
+            float travelY = GetCursorVertical(left);
 
             if (cam == null)
-                return transform.position + (left ? -transform.right : transform.right) * (20f * travel);
+                return FallbackCursor(left, travelX, travelY);
 
             Vector3 vesselScreen = cam.WorldToScreenPoint(transform.position);
             if (vesselScreen.z <= 0f) // vessel behind camera — projection is garbage
-                return transform.position + (left ? -transform.right : transform.right) * (20f * travel);
+                return FallbackCursor(left, travelX, travelY);
 
             float edgeX = left ? 0f : Screen.width;
-            float cursorX = Mathf.Lerp(vesselScreen.x, edgeX, travel);
-            return cam.ScreenToWorldPoint(new Vector3(cursorX, vesselScreen.y, vesselScreen.z));
+            float cursorX = Mathf.Lerp(vesselScreen.x, edgeX, travelX);
+
+            float edgeY = travelY >= 0f ? Screen.height : 0f;
+            float cursorY = Mathf.Lerp(vesselScreen.y, edgeY, Mathf.Abs(travelY));
+
+            return cam.ScreenToWorldPoint(new Vector3(cursorX, cursorY, vesselScreen.z));
         }
+
+        /// <summary>No-camera fallback: nudge along the vessel's own right/up axes.</summary>
+        Vector3 FallbackCursor(bool left, float travelX, float travelY)
+            => transform.position
+             + (left ? -transform.right : transform.right) * (20f * travelX)
+             + transform.up * (20f * travelY);
 
         /// <summary>
         /// Spinneret arm tip position and the aim target. The tether fires
