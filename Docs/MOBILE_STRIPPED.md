@@ -113,7 +113,35 @@ Fix:
 Note: Development builds (`AndroidMinifyDebug: 0`) never minified, so only Release builds crashed
 this way. All the tested builds were Release builds from the Build Profile window.
 
-## Audio (FMOD) disabled — earlier crash-on-launch suspect (kept stripped)
+## Audio RESTORED (+ skim/prism/crystal SFX & haptics)
+
+The FMOD bank-load strip below is **reverted** (`FMODStudioSettings.asset` is byte-identical to
+bleeding-edge again): the launch crash it guarded against turned out to be the R8/WorkManager
+ContentProvider crash, not bank loading. Audio works everywhere; the committed StreamingAssets
+banks were refreshed from `Cosmic Shore/Build/Desktop` (includes the "ui sounds" update).
+
+Feedback wiring fixed in the same pass:
+
+- **Haptics were dead game-wide** (also on bleeding-edge): `HapticController` was never placed in
+  any scene, so its `GameSetting` reference stayed null and every haptic call silently no-oped.
+  It now resolves settings lazily via the `GameSetting` persistent singleton — no scene placement
+  needed — and `PlayConstant` honors the haptics-strength slider like presets do. The already-
+  authored Squirrel haptics now fire: **skim** (Success preset, per prism entered), **prism hit**
+  (HeavyImpact), **crystal** (MediumImpact). Editor is a structural no-op (native path is
+  device-only) — feel them on the phone.
+- **Skim SFX had a stale event path**: the Squirrel's skim tick pointed at `event:/SFX/Skim`, but
+  the bank event is `event:/SFX/Oneshots/Gameplay sfx/Skim` and FMOD resolves by Path — fixed on
+  the prefab. Prism-hit (`Vessel impact`/`Track collide`) and crystal-collect (`Crystal Collect` +
+  the four elemental receive events) were already wired and exist in the banks.
+- **Elemental-crystal haptics**: the conveyor lays *elemental* crystals, which route to the
+  per-element effect lists on `SquirrelImpactorDataContainer` — those were empty, so
+  `VesselHapticsByCrystalEffect` (MediumImpact) is now wired into all four. Also repaired the
+  stale serialization on the shared `VesselHapticsByPrismEffect.asset` (other vessels deserialized
+  it as `None`).
+- If per-prism skim haptics feel spammy on dense trails, add a cooldown field to
+  `SkimmerHapticsByPrismEffectSO` (anti-spam belongs in the SO config).
+
+## ~~Audio (FMOD) disabled~~ — earlier crash-on-launch suspect (REVERTED, see above)
 
 The pre-first-frame crash ("keeps stopping", no overlay) was **FMOD loading its banks at startup**.
 FMOD is the live audio engine; the `AudioSystem` in the Bootstrap scene forces FMOD to initialize

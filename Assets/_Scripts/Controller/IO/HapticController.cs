@@ -26,7 +26,21 @@ namespace CosmicShore.Gameplay
         [Inject] GameSetting injectedGameSetting;
         static GameSetting s_gameSetting;
 
-        void Awake() => s_gameSetting = injectedGameSetting;
+        // NOTE: injection lands AFTER Awake (project DI rule), so this assignment was always null
+        // when the component was scene-placed — and in practice the component was never placed in
+        // any scene at all, which made every haptic in the game a silent no-op. Settings therefore
+        // resolves lazily through the GameSetting persistent singleton (set in its Awake in
+        // Bootstrap), with the injected reference as a bonus when a scene instance exists.
+        void Start() => s_gameSetting = injectedGameSetting ? injectedGameSetting : s_gameSetting;
+
+        static GameSetting Settings
+        {
+            get
+            {
+                if (s_gameSetting == null) s_gameSetting = GameSetting.Instance;
+                return s_gameSetting;
+            }
+        }
 
         /// <summary>
         /// Play Haptic
@@ -35,10 +49,11 @@ namespace CosmicShore.Gameplay
         /// <param name="type">Haptic type</param>
         public static void PlayHaptic(HapticType type)
         {
-            if (s_gameSetting == null || !s_gameSetting.HapticsEnabled || s_gameSetting.HapticsLevel == 0)
+            var settings = Settings;
+            if (settings == null || !settings.HapticsEnabled || settings.HapticsLevel == 0)
                 return;
 
-            Lofelt.NiceVibrations.HapticController.outputLevel = s_gameSetting.HapticsLevel;
+            Lofelt.NiceVibrations.HapticController.outputLevel = settings.HapticsLevel;
 
             var pattern = GetPatternForHapticType(type);
 
@@ -47,8 +62,12 @@ namespace CosmicShore.Gameplay
 
         public static void PlayConstant(float amplitude, float frequency, float duration)
         {
-            if (s_gameSetting == null || !s_gameSetting.HapticsEnabled)
+            var settings = Settings;
+            if (settings == null || !settings.HapticsEnabled || settings.HapticsLevel == 0)
                 return;
+            // Honor the strength slider for continuous rumbles too (PlayPreset already does via
+            // outputLevel above).
+            Lofelt.NiceVibrations.HapticController.outputLevel = settings.HapticsLevel;
             HapticPatterns.PlayConstant(amplitude, frequency, duration);
         }
 

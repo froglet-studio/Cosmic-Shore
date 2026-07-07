@@ -9219,7 +9219,7 @@ MonoBehaviour:
       Data2: 1078581788
       Data3: 1171656846
       Data4: 200696093
-    Path: event:/SFX/Skim
+    Path: event:/SFX/Oneshots/Gameplay sfx/Skim
   attachTickEventToShip: 1
   boostLoopEvent:
     Guid:
