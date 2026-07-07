@@ -1,3 +1,5 @@
+using System;
+using CosmicShore.Engine;
 using CosmicShore.Engine.Collections;
 using CosmicShore.Engine.Networking;
 
@@ -119,5 +121,111 @@ public class FixedString64BytesTests
         FixedString64Bytes fixedStr = default;
         Assert.Equal(string.Empty, fixedStr.ToString());
         Assert.True(fixedStr.IsEmpty);
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// NetworkManager Netcode callback surface (transport arc) — StartHost approval,
+// Shutdown teardown, and the transport-driver notify entry points.
+// ─────────────────────────────────────────────────────────────────────────────
+
+public class NetworkManagerCallbackTests : IDisposable
+{
+    readonly GameLoop loop = new(nameof(NetworkManagerCallbackTests));
+
+    public void Dispose()
+    {
+        NetworkManager.Singleton = null;
+        loop.Dispose();
+    }
+
+    NetworkManager MakeOffline()
+    {
+        var nm = new GameObject("nm").AddComponent<NetworkManager>();
+        nm.IsServer = false;
+        nm.IsClient = false;
+        nm.IsListening = false;
+        nm.ConnectedClientsIds.Clear();
+        return nm;
+    }
+
+    [Fact]
+    public void StartHost_RunsLocalClientThroughApproval_AndListens()
+    {
+        var nm = MakeOffline();
+        ulong approvedId = ulong.MaxValue;
+        nm.ConnectionApprovalCallback += (request, response) =>
+        {
+            approvedId = request.ClientNetworkId;
+            response.Approved = true;
+            response.CreatePlayerObject = true;
+        };
+
+        Assert.True(nm.StartHost());
+        Assert.Equal(0UL, approvedId);        // the host's own client id
+        Assert.True(nm.IsListening);
+        Assert.True(nm.IsHost);
+        Assert.Contains(0UL, nm.ConnectedClientsIds);
+    }
+
+    [Fact]
+    public void StartHost_RejectedApproval_DoesNotStart()
+    {
+        var nm = MakeOffline();
+        nm.ConnectionApprovalCallback += (request, response) => response.Approved = false;
+
+        Assert.False(nm.StartHost());
+        Assert.False(nm.IsListening);
+        Assert.False(nm.IsHost);
+    }
+
+    [Fact]
+    public void StartHost_WithoutApprovalCallback_StartsByDefault()
+    {
+        var nm = MakeOffline();
+        Assert.True(nm.StartHost());
+        Assert.True(nm.IsListening);
+    }
+
+    [Fact]
+    public void StartHost_WhenAlreadyListening_ReturnsFalse()
+    {
+        var nm = MakeOffline();
+        Assert.True(nm.StartHost());
+        Assert.False(nm.StartHost());
+    }
+
+    [Fact]
+    public void Shutdown_StopsListening_ClearsClientTables_Synchronously()
+    {
+        var nm = MakeOffline();
+        nm.StartHost();
+        nm.ConnectedClients[0] = new NetworkClient { ClientId = 0 };
+        nm.ConnectedClientsList.Add(nm.ConnectedClients[0]);
+
+        nm.Shutdown();
+
+        // The original's `await WaitUntil(() => !IsListening)` completes on first check.
+        Assert.False(nm.IsListening);
+        Assert.False(nm.IsServer);
+        Assert.False(nm.IsClient);
+        Assert.Empty(nm.ConnectedClients);
+        Assert.Empty(nm.ConnectedClientsList);
+        Assert.Empty(nm.ConnectedClientsIds);
+    }
+
+    [Fact]
+    public void NotifyEntryPoints_RaiseTheNetcodeCallbacks()
+    {
+        var nm = MakeOffline();
+        ulong dropped = 0; int failures = 0;
+        nm.OnClientDisconnectCallback += id => dropped = id;
+        nm.OnTransportFailure += () => failures++;
+
+        nm.NotifyClientDisconnect(7);
+        nm.NotifyTransportFailure();
+
+        Assert.Equal(7UL, dropped);
+        Assert.Equal(1, failures);
     }
 }

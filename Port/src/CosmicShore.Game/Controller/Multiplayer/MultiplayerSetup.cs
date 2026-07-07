@@ -3,13 +3,13 @@
 // (`async UniTaskVoid` → `async Task` + `.Forget()`; `async UniTask` → `async Task`;
 // `UniTask.Delay(ms)` → `GameTask.Delay(ms)`; `UniTask.WaitUntil` → `GameTask.WaitUntil`).
 //
-// NetworkManager HOST LIFECYCLE is live: the EnsureHostStarted once-guard, NetworkManager
-// caching/re-cache, Singleton null check, IsListening skip, and the try/finally flag release
-// all run verbatim. The engine NetworkManager (Networking/NetworkManager.cs) does not yet
-// expose the Netcode callback surface — ConnectionApprovalCallback / OnClientDisconnectCallback /
-// OnTransportFailure — nor Shutdown(); those hookups + the approval-request types are carried as
-// marked deviations (transport phase). The handler bodies OnClientDisconnect / OnTransportFailure
-// stay live so the transport phase only re-wires events.
+// NetworkManager HOST LIFECYCLE is FULLY live (transport-phase deviations restored
+// 2026-07-07): the EnsureHostStarted once-guard, NetworkManager caching/re-cache, Singleton
+// null check, IsListening skip, the try/finally flag release, the Netcode callback wiring
+// (ConnectionApprovalCallback / OnClientDisconnectCallback / OnTransportFailure — the engine
+// NetworkManager grew the full callback surface + Shutdown()/StartHost() + the approval
+// request/response types), OnConnectionApprovalCallback, and both Shutdown() sites all run
+// verbatim.
 //
 // UGS Multiplayer/Relay session surface (MultiplayerService.Instance, Create/Join/Query sessions,
 // SessionOptions.WithRelayNetwork, Player/SessionProperty, ISessionInfo, SessionException) has no
@@ -90,10 +90,9 @@ namespace CosmicShore.Gameplay
 
             if (networkManager != null)
             {
-                // PORT Deviation (transport phase, restore when NetworkManager Netcode callbacks port):
-                // networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
-                // networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
-                // networkManager.OnTransportFailure         -= OnTransportFailure;
+                networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
+                networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
+                networkManager.OnTransportFailure         -= OnTransportFailure;
             }
         }
 
@@ -155,17 +154,15 @@ namespace CosmicShore.Gameplay
                 {
                     if (networkManager != null)
                     {
-                        // PORT Deviation (transport phase, restore when NetworkManager Netcode callbacks port):
-                        // networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
-                        // networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
-                        // networkManager.OnTransportFailure         -= OnTransportFailure;
+                        networkManager.ConnectionApprovalCallback -= OnConnectionApprovalCallback;
+                        networkManager.OnClientDisconnectCallback -= OnClientDisconnect;
+                        networkManager.OnTransportFailure         -= OnTransportFailure;
                     }
 
                     networkManager = nm;
-                    // PORT Deviation (transport phase, restore when NetworkManager Netcode callbacks port):
-                    // nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
-                    // nm.OnClientDisconnectCallback += OnClientDisconnect;
-                    // nm.OnTransportFailure         += OnTransportFailure;
+                    nm.ConnectionApprovalCallback += OnConnectionApprovalCallback;
+                    nm.OnClientDisconnectCallback += OnClientDisconnect;
+                    nm.OnTransportFailure         += OnTransportFailure;
                     Debug.Log("<color=#00FFFF>[FLOW-1] [MultiplayerSetup] Wired Netcode callbacks to NetworkManager</color>");
                 }
 
@@ -221,12 +218,11 @@ namespace CosmicShore.Gameplay
 
             // Shutdown the local host before creating a Relay-based multiplayer session.
             // This is the single intentional transition from local to Relay transport.
-            // PORT Deviation (transport phase, restore when NetworkManager.Shutdown ports):
-            // if (networkManager != null && networkManager.IsListening)
-            // {
-            //     networkManager.Shutdown();
-            //     await GameTask.WaitUntil(() => !networkManager.IsListening);
-            // }
+            if (networkManager != null && networkManager.IsListening)
+            {
+                networkManager.Shutdown();
+                await GameTask.WaitUntil(() => !networkManager.IsListening);
+            }
 
             // PORT Deviation (services phase, MultiplayerService query/join/create — restore when UGS services port):
             // // Query sessions for this game mode & player count
@@ -369,16 +365,15 @@ namespace CosmicShore.Gameplay
         // NGO Connection Hooks
         // --------------------------
 
-        // PORT Deviation (transport phase, restore when NetworkManager.ConnectionApprovalRequest/Response port):
-        // private void OnConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request,
-        //                                           NetworkManager.ConnectionApprovalResponse response)
-        // {
-        //     response.Approved           = true;
-        //     response.CreatePlayerObject = true;
-        //     response.Position           = Vector3.zero;
-        //     response.Rotation           = Quaternion.identity;
-        //     response.PlayerPrefabHash   = null;
-        // }
+        private void OnConnectionApprovalCallback(NetworkManager.ConnectionApprovalRequest request,
+                                                  NetworkManager.ConnectionApprovalResponse response)
+        {
+            response.Approved           = true;
+            response.CreatePlayerObject = true;
+            response.Position           = Vector3.zero;
+            response.Rotation           = Quaternion.identity;
+            response.PlayerPrefabHash   = null;
+        }
 
         private void OnClientDisconnect(ulong clientId)
         {
@@ -477,9 +472,8 @@ namespace CosmicShore.Gameplay
                     gameData.ActiveSession = null;
                 }
 
-                // PORT Deviation (transport phase, restore when NetworkManager.Shutdown ports):
-                // if (networkManager != null)
-                //     networkManager.Shutdown();
+                if (networkManager != null)
+                    networkManager.Shutdown();
 
                 await GameTask.Delay(500);
                 gameData.InvokeOnSessionEnded();

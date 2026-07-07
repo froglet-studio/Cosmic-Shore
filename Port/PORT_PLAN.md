@@ -691,23 +691,40 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the initializer-remainder arc, 2026-07-07)
+## NEXT UP (after the transport-callback arc, 2026-07-07)
 
-1. **Engine NetworkManager callback surface**: `ConnectionApprovalCallback` /
-   `OnClientDisconnectCallback` / `OnTransportFailure` + `StartHost()` /
-   `Shutdown()` and the `ConnectionApprovalRequest/Response` types — the engine
-   NetworkManager exposes none of these, so `MultiplayerSetup`'s host lifecycle
-   carries its callback wiring as transport-phase deviations. Connection
-   approval is core-logic (auto-creates player objects) and is the priority gap
-   for making the host lifecycle fully live.
-2. **`MainMenuController` (Menu_Main scene-controller arc)**: 4 ported
+1. **`MainMenuController` (Menu_Main scene-controller arc)**: 4 ported
    `MenuFreestyleToggleTests` methods are carried as deviations pending it; the
    client's `FreestyleDirector` currently plays its role.
-3. **Track bleeding-edge**: merge upstream again next iteration; every merge
+2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey with the
    `git diff <old-sync> origin/bleeding-edge -- Assets/_Scripts` ∩ ported-files
    intersection; record in `docs/DRIFT_<date>.txt` per the 2026-07-07 precedent).
-4. Update this file, commit, push.
+3. Update this file, commit, push.
+
+### Transport-callback arc ✅ (2026-07-07)
+
+The engine NetworkManager grew the full Netcode callback surface —
+`ConnectionApprovalCallback` (public delegate field, as in Netcode) +
+`ConnectionApprovalRequest`/`ConnectionApprovalResponse` (nested, Netcode 2.x
+field set), `OnClientDisconnectCallback` / `OnTransportFailure` events with
+`NotifyClientDisconnect`/`NotifyTransportFailure` transport-driver entry
+points, `StartHost()` (runs the local client through approval — a rejection
+aborts the start, matching Netcode host self-approval), and `Shutdown()`
+(synchronous: stops listening, drops role flags, clears client tables — the
+original's `WaitUntil(!IsListening)` completes on first check). ALL six
+transport-phase deviation blocks in `MultiplayerSetup` are RESTORED — callback
+wiring/unwiring (3 sites), `OnConnectionApprovalCallback` (approve +
+auto-create player objects), and both `Shutdown()` sites — making the host
+lifecycle fully live end-to-end. Tests: `NetworkManagerCallbackTests` (6:
+approval flow incl. rejection, listening guard, teardown, notify entry
+points) + `MultiplayerSetupTests` (3: wiring, double-wire guard, and the
+REAL transport-failure handler tearing down session + manager + raising
+OnSessionEnded after its 500 ms delay on the ticked loop). Still deviations
+in `MultiplayerSetup`: the UGS Multiplayer session surface (services phase)
+and the HostConnectionService/PartyInviteController self-rescue branches
+(party system). **1368 tests green in BOTH configs (1060 + 308)**; all 5 CLI
+modes exit 0; both client diags byte-identical.
 
 ### Initializer-remainder arc ✅ (2026-07-07)
 

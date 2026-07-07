@@ -66,6 +66,93 @@ namespace CosmicShore.Engine.Networking
         /// <see cref="NetworkObject.SpawnWithOwnership"/> while a Singleton is assigned.
         /// </summary>
         public NetworkSpawnManager SpawnManager { get; set; } = new();
+
+        // ── Netcode callback surface (engine addition for the transport arc:
+        // MultiplayerSetup wires these in EnsureHostStarted; a future transport driver
+        // raises the events for real remote connections) ─────────────────────────────
+
+        /// <summary>
+        /// Original-contract connection-approval hook (a public delegate FIELD in Netcode,
+        /// not an event — call sites use += / -=). When set, <see cref="StartHost"/> runs the
+        /// local (host) client through it, honoring <see cref="ConnectionApprovalResponse.Approved"/>;
+        /// the transport phase runs every remote connection through it.
+        /// </summary>
+        public System.Action<ConnectionApprovalRequest, ConnectionApprovalResponse> ConnectionApprovalCallback;
+
+        /// <summary>Raised per disconnected client id. Single-process host-mode never raises it —
+        /// the transport phase does (hard drops beat the graceful UGS PlayerLeaving).</summary>
+        public event System.Action<ulong> OnClientDisconnectCallback;
+
+        /// <summary>Raised when the underlying transport fails. Single-process host-mode never
+        /// raises it — the transport phase does.</summary>
+        public event System.Action OnTransportFailure;
+
+        /// <summary>Transport-driver entry points for the events above (the engine's stand-in for
+        /// Netcode's internal raise paths; harnesses/tests may call them directly).</summary>
+        public void NotifyClientDisconnect(ulong clientId) => OnClientDisconnectCallback?.Invoke(clientId);
+        public void NotifyTransportFailure() => OnTransportFailure?.Invoke();
+
+        /// <summary>
+        /// Original-contract host start (single-process host-mode). Runs the local client
+        /// (id 0) through <see cref="ConnectionApprovalCallback"/> when one is wired — a
+        /// rejection aborts the start, matching Netcode's host self-approval — then flips
+        /// the role flags listening. Returns false when already listening or rejected.
+        /// </summary>
+        public bool StartHost()
+        {
+            if (IsListening) return false;
+
+            if (ConnectionApprovalCallback != null)
+            {
+                var request = new ConnectionApprovalRequest { ClientNetworkId = 0, Payload = System.Array.Empty<byte>() };
+                var response = new ConnectionApprovalResponse();
+                ConnectionApprovalCallback(request, response);
+                if (!response.Approved) return false;
+            }
+
+            IsServer = true;
+            IsClient = true;
+            IsListening = true;
+            LocalClientId = 0;
+            if (!ConnectedClientsIds.Contains(0)) ConnectedClientsIds.Add(0);
+            return true;
+        }
+
+        /// <summary>
+        /// Original-contract shutdown: stops listening, drops the role flags, and clears the
+        /// client tables ("no networking active"). Synchronous — the original's
+        /// <c>WaitUntil(() =&gt; !IsListening)</c> completes on its first check. Raises no
+        /// callbacks (Netcode's local-notification sweep arrives with the transport phase).
+        /// </summary>
+        public void Shutdown()
+        {
+            IsListening = false;
+            IsServer = false;
+            IsClient = false;
+            ConnectedClients.Clear();
+            ConnectedClientsList.Clear();
+            ConnectedClientsIds.Clear();
+        }
+
+        /// <summary>Original-contract approval request (nested in NetworkManager, as in Netcode).</summary>
+        public class ConnectionApprovalRequest
+        {
+            public ulong ClientNetworkId;
+            public byte[] Payload;
+        }
+
+        /// <summary>Original-contract approval response. Field set + defaults per Netcode 2.x —
+        /// approval callbacks assign these; the (future) transport honors them.</summary>
+        public class ConnectionApprovalResponse
+        {
+            public bool Approved;
+            public bool CreatePlayerObject;
+            public uint? PlayerPrefabHash;
+            public Vector3? Position;
+            public Quaternion? Rotation;
+            public bool Pending;
+            public string Reason;
+        }
     }
 
     /// <summary>
