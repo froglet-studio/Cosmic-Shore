@@ -67,8 +67,10 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
   candidates: Great Wave, rocket, pagoda, Colosseum. Any `ShapeDefinition` already converts
   via `sourceShape` (pen-up gaps become strokes, now honored).
 - **Reviewed and deliberately deferred** (from the enhancement's review pass): coalesce the
-  per-stroke synchronous progress save (`DataAccessor` full-dict JSON write at each stroke
-  boundary — human-paced, tiny file, but a debounce would remove any mobile-flash hitch);
+  per-stroke synchronous saves (`DataAccessor` full-file JSON writes at each stroke boundary —
+  both the small progress file and the growing `PaintingPrismStore` drawing-state file; the
+  writes are human-paced but a debounce/off-thread write would remove any mobile-flash hitch,
+  and the prism file could persist per-stroke deltas instead of the whole accumulation);
   replace `PaintingRunner.BenchOtherRunners`'s `FindObjectsByType` scan with a static
   registry (runs only on activation — rare); extract the ring fan-layout math shared with
   `SwapToySetCoordinator.Layout` into one helper; unify the LineRenderer config duplicated

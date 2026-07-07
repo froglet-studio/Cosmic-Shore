@@ -472,8 +472,13 @@ namespace CosmicShore.Gameplay
             Vector3 worldPos = prism.transform.position;
             if ((worldPos - _zoneCenter).sqrMagnitude > _zoneSqrRadius) return; // strays aren't artwork
 
-            var lp = _context?.GameData ? _context.GameData.LocalPlayer : null;
-            Domains domain = lp?.Domain ?? CurrentStroke.Domain;
+            // Record the stroke's INTENDED domain (when the session allows it): the pick RPC takes
+            // a round trip, so recording the live player domain would bake a wrong-colour seam at
+            // every stroke start into the saved state / regrown monument / shared reconstruction.
+            var gameData = _context?.GameData;
+            Domains domain = CurrentStroke.Domain;
+            if (gameData && !GameDataSO.IsActiveDomain(domain, gameData.RequestedDomainCount))
+                domain = gameData.LocalPlayer?.Domain ?? domain; // pick was rejected — record reality
 
             var inverse = Quaternion.Inverse(_rotation);
             PaintingPrismStore.RecordPrism(_painting.PaintingId, PaintingPrismRecord.From(
@@ -509,19 +514,24 @@ namespace CosmicShore.Gameplay
             string owner = ResolveVessel()?.PlayerName ?? "Painter";
             int perFrame = Mathf.Max(6, records.Count / 150);
 
+            int missing = 0;
             for (int i = 0; i < records.Count; i++)
             {
-                SpawnRestoredPrism(channel, records[i], owner);
+                if (!TrySpawnRestoredPrism(channel, records[i], owner)) missing++;
                 if ((i + 1) % perFrame == 0)
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
+            if (missing > 0)
+                CSDebug.LogWarning($"[PaintingRunner] Regrew {records.Count - missing}/{records.Count} " +
+                                   $"prisms of '{_painting.DisplayName}' — a recorded prism pool is unavailable.");
         }
 
-        void SpawnRestoredPrism(PrismEventChannelWithReturnSO channel, PaintingPrismRecord record, string owner)
+        bool TrySpawnRestoredPrism(PrismEventChannelWithReturnSO channel, PaintingPrismRecord record, string owner)
         {
             Vector3 pos = _origin + _rotation * record.Position;
             Quaternion rot = _rotation * record.Rotation;
             var domain = (Domains)record.domain;
+            var prismType = (PrismType)record.prismType;
 
             var ret = channel.RaiseEvent(new PrismEventData
             {
@@ -529,9 +539,20 @@ namespace CosmicShore.Gameplay
                 Rotation = rot,
                 SpawnPosition = pos,
                 Scale = record.Scale,
-                PrismType = (PrismType)record.prismType,
+                PrismType = prismType,
             });
-            if (ret.SpawnedObject == null || !ret.SpawnedObject.TryGetComponent(out Prism prism)) return;
+            // A scene whose factory lacks the recorded pool returns null — regrow as the generic
+            // Interactive prism rather than leaving holes in the monument.
+            if (ret.SpawnedObject == null && prismType != PrismType.Interactive)
+                ret = channel.RaiseEvent(new PrismEventData
+                {
+                    ownDomain = domain,
+                    Rotation = rot,
+                    SpawnPosition = pos,
+                    Scale = record.Scale,
+                    PrismType = PrismType.Interactive,
+                });
+            if (ret.SpawnedObject == null || !ret.SpawnedObject.TryGetComponent(out Prism prism)) return false;
 
             // Mirror VesselPrismController.CreateBlock's post-spawn setup.
             prism.TargetScale = record.Scale;
@@ -541,6 +562,7 @@ namespace CosmicShore.Gameplay
             _restoredTrail.Add(prism);
             prism.prismProperties.Index = (ushort)(_restoredTrail.TrailList.Count - 1);
             prism.Initialize(owner);
+            return true;
         }
 
         // ── Visuals ──────────────────────────────────────────────────────────

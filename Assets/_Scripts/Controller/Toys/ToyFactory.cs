@@ -230,23 +230,36 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Sprites/Default");
-                if (shader) renderer.sharedMaterial = new Material(shader) { color = accent };
+                var mat = AccentMaterial(accent); // cached per colour — rebuilds don't orphan Materials
+                if (mat) renderer.sharedMaterial = mat;
             }
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
         }
 
+        // One material per accent colour, shared by every tinted body. Toys rebuild visuals on
+        // flips / stroke changes — per-body materials would orphan a Material each rebuild
+        // (UnityEngine.Objects are never GC'd). Nothing mutates these after creation.
+        static readonly System.Collections.Generic.Dictionary<int, Material> s_accentMaterials = new();
+
+        static Material AccentMaterial(Color accent)
+        {
+            Color32 c = accent;
+            int key = (c.r << 24) | (c.g << 16) | (c.b << 8) | c.a;
+            if (s_accentMaterials.TryGetValue(key, out var mat) && mat) return mat;
+
+            var shader = Shader.Find("Universal Render Pipeline/Unlit")
+                      ?? Shader.Find("Sprites/Default");
+            mat = shader ? new Material(shader) { color = accent } : null;
+            s_accentMaterials[key] = mat;
+            return mat;
+        }
+
         static void Tint(GameObject body, Color accent)
         {
             if (!body.TryGetComponent(out MeshRenderer renderer)) return;
-            var shader = Shader.Find("Universal Render Pipeline/Unlit")
-                      ?? Shader.Find("Sprites/Default");
-            if (shader)
-            {
-                var mat = new Material(shader) { color = accent };
-                renderer.sharedMaterial = mat; // unique per toy, intentional — not renderer.material clone-on-read
-            }
+            var mat = AccentMaterial(accent);
+            if (mat) renderer.sharedMaterial = mat;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             renderer.receiveShadows = false;
         }
