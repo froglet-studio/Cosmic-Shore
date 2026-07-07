@@ -17,6 +17,8 @@ namespace CosmicShore.Utility
     public static class PerfStripRuntime
     {
         static readonly Color DeepSpace = new(0.012f, 0.008f, 0.035f, 1f);
+        static Material _bakedSkybox;
+        static bool _bakedSkyboxLookedUp;
         static bool _hooked;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -31,11 +33,20 @@ namespace CosmicShore.Utility
 
         static void Apply()
         {
-            RenderSettings.skybox = null;
+            // Prefer the pre-baked static cubemap of the HyperSea sky (one texture sample per
+            // pixel — bake it once via FrogletTools > Bake Static HyperSea Skybox). Without it,
+            // fall back to no skybox + solid deep-space clear.
+            if (!_bakedSkyboxLookedUp)
+            {
+                _bakedSkyboxLookedUp = true;
+                _bakedSkybox = Resources.Load<Material>("StaticHyperSeaSkybox");
+            }
+
+            RenderSettings.skybox = _bakedSkybox; // null when unbaked → solid clear below
 
             foreach (var cam in Camera.allCameras)
             {
-                cam.clearFlags = CameraClearFlags.SolidColor;
+                cam.clearFlags = _bakedSkybox ? CameraClearFlags.Skybox : CameraClearFlags.SolidColor;
                 cam.backgroundColor = DeepSpace;
 
                 // The scene camera has renderPostProcessing=1 but every volume override is neutral

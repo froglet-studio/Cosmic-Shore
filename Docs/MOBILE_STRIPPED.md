@@ -191,6 +191,39 @@ changes (was every frame at rest, fanning out HUD + audio listeners).
 FMOD RuntimeManager tick (~0.3–1ms, banks don't load anyway); netcode netvar writes per frame
 (solo host, nothing sent).
 
+## Conveyor mode (cell power-down + breadcrumb trail home)
+
+While the Wanderway belt flows (all PerfStrip-gated, in `ConveyorToy`):
+
+- **The menu Cell powers down** (`SetActive(false)` — membrane/nucleus stop rendering and ticking)
+  and powers back on when the belt stops. A direct perf win while flying the belt.
+- **The vessel lays a breadcrumb trail home**, capped at **300 prisms**
+  (`PerfStrip.ConveyorBreadcrumbMaxPrisms`; cap explicitly authorized by the design owner for this
+  branch). Past the cap the OLDEST prism is consumed via the sanctioned `Prism.Consume` path — a
+  visible implode into the toy switch (continuity honored, never a silent despawn).
+- **The toy switch rides the trail's tail** (`ConveyorToy.Tick`, 4Hz): follow your own trail
+  backward and you always reach the switch. Toggling it stops the belt, stops the trail (what's
+  laid stays — conserved), re-lights the cell, and re-homes the toy beside it (regrow bloom).
+
+## Bleeding-edge conveyor parity (merged 2026-07-07)
+
+`origin/bleeding-edge` was merged in: the Wanderway now has the **hybrid ribbon path** (bends with
+gentle turns, breaks + re-lays on sharp ones), the **unified spawning primitives**
+(`PrismTrailBuilder`/`PrismGeometry`/`PrismKinds`), **palette theming + expanded recipe diversity**,
+and bleeding-edge's density — `poolSize 8 × prismBudget 100` (800 belt prisms), `aheadTargetScenes 4`.
+The strip's smoothing was re-applied onto the new code: populate lays **1 prism/frame** under
+PerfStrip, re-poses are amortized (5/frame while suctioned), `MaxConcurrentArrivals = 2`.
+If 800 + ≤300 breadcrumb prisms proves too heavy on device, `prismBudgetPerScene` is still dial #1.
+
+## Static skybox (bake once in the editor)
+
+Run **FrogletTools ▸ Bake Static HyperSea Skybox** once (and after any skybox shader change): it
+renders the procedural HyperSea sky into a 512px/face cubemap and saves a `Skybox/Cubemap` material
+at `Assets/Resources/StaticHyperSeaSkybox.mat`. `PerfStripRuntime` picks it up automatically —
+the full vaporwave sky at **one texture sample per pixel**. Until it's baked (or if the bake fails
+on this pipeline — the tool logs a Reflection-Probe fallback recipe), the build uses the solid
+deep-space clear.
+
 ## Tuning dials (if 60 fps isn't held, cut here first)
 
 1. **Conveyor budget** — `Toy_Conveyor.asset`: lower `prismBudgetPerScene` (≥6) and/or `poolSize`
