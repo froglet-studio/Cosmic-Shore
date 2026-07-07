@@ -526,6 +526,10 @@ void main()
                 _prevTriple = triple;
                 if (!_director.IsFreestyle) return; // AIPilot owns the rig in the lava lamp
                 _touchStrategy.ProcessInput();      // authentic dual-thumb scheme → InputStatus
+                // Prompter preference (2026-07-07, on-device feedback): inverted yaw +
+                // roll on touch — RaceWindow/gamepad parity, applied post-strategy.
+                _playerStatus.XSum = -_playerStatus.XSum;
+                _playerStatus.YDiff = -_playerStatus.YDiff;
                 return;
             }
 

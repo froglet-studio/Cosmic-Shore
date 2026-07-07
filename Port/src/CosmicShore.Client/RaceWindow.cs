@@ -682,6 +682,11 @@ void main()
                     return; // victory lap: the real AIPilot owns the rig
                 }
                 _touchStrategy.ProcessInput(); // authentic dual-thumb scheme → InputStatus
+                // Prompter preference (2026-07-07, on-device feedback): inverted yaw +
+                // roll on touch — the same post-strategy sense flip the gamepad path
+                // applies below, so the ported strategy's wire semantics stay authentic.
+                _playerStatus.XSum = -_playerStatus.XSum;
+                _playerStatus.YDiff = -_playerStatus.YDiff;
                 return;
             }
 
