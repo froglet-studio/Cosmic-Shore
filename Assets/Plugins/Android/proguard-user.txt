@@ -1,0 +1,14 @@
+# Keep rules for the stripped-performance Android branch.
+#
+# R8 minification is currently DISABLED (AndroidMinifyRelease: 0) because it was the
+# root cause of the crash-on-launch: androidx.work (WorkManager, pulled in transitively
+# by Unity Ads) locates its Room-generated WorkDatabase_Impl class via reflection at
+# app start, R8 stripped/renamed it, and the androidx.startup.InitializationProvider
+# threw before a single line of Unity code ran ("Cosmic Shore keeps stopping").
+#
+# These rules exist as defense-in-depth: if anyone re-enables Minify (Release) later,
+# they keep the reflection-located classes alive so the app still boots.
+-keep class androidx.work.** { *; }
+-keep class androidx.room.** { *; }
+-keep class androidx.startup.** { *; }
+-keep class androidx.lifecycle.** { *; }

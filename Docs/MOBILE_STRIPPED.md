@@ -87,7 +87,33 @@ The local host is started at **Auth-scene** timing (not Bootstrap) to match the 
 so the non-networked Bootstrap→Auth scene load never races a running host. To restore full UGS
 behaviour (on a build that has a UGS project), set `PerfStrip.Enabled = false`.
 
-## Audio (FMOD) disabled — was the crash-on-launch
+## ROOT CAUSE of the crash-on-launch: R8 minification stripped WorkManager
+
+The definitive logcat (captured via `adb logcat -b crash -d`) showed the app dying in
+`handleBindApplication` — **before any Unity code runs**:
+
+```
+Unable to get provider androidx.startup.InitializationProvider:
+Failed to create an instance of androidx.work.impl.WorkDatabase
+```
+
+Chain: **Unity Ads** (the project's only external Android dependency) transitively bundles
+**androidx.work (WorkManager)** → WorkManager's Room database locates its generated
+`WorkDatabase_Impl` class **via reflection** at app start → `AndroidMinifyRelease: 1` ran **R8**
+with no keep rules, which stripped/renamed that class → the ContentProvider threw on every launch.
+This killed the process before Unity initialized, which is why no on-screen tool, boot trace, or
+game-code fix could ever see or affect it.
+
+Fix:
+- `AndroidMinifyRelease: 1 → 0` (R8 off — nothing is stripped/renamed; the guaranteed fix).
+- `useCustomProguardFile: 1` + `Assets/Plugins/Android/proguard-user.txt` with
+  `-keep` rules for `androidx.work/room/startup/lifecycle` — inert while minify is off, but makes
+  it safe if anyone re-enables minification later.
+
+Note: Development builds (`AndroidMinifyDebug: 0`) never minified, so only Release builds crashed
+this way. All the tested builds were Release builds from the Build Profile window.
+
+## Audio (FMOD) disabled — earlier crash-on-launch suspect (kept stripped)
 
 The pre-first-frame crash ("keeps stopping", no overlay) was **FMOD loading its banks at startup**.
 FMOD is the live audio engine; the `AudioSystem` in the Bootstrap scene forces FMOD to initialize
