@@ -122,16 +122,10 @@ namespace CosmicShore.Gameplay
 
         GameObject SpawnChoiceGate(string text, Vector3 position, Color color, System.Action onChosen)
         {
-            var root = ToyFactory.CreateBareRoot($"Choice_{text}", transform.parent,
-                position, position + transform.forward, ChoiceGateRadius);
-            ToyFactory.AddRingBody(root.transform, ChoiceGateRadius, color);
-            ToyFactory.AddSphereBody(root.transform, ChoiceGateRadius * 0.16f, color);
-            ToyFactory.AddLabel(root.transform, text, color, ChoiceGateRadius * 1.5f);
-
-            var toy = root.AddComponent<SwapToy>();
-            toy.Activated += _ => onChosen();
-            toy.Initialize(Definition, Context, default);
-            return root;
+            // Choice gates keep a neutral sphere hub — crossing commits a choice, not a trail state,
+            // so they must not wear the trail-changer cone.
+            return ToyFactory.CreateGate($"Choice_{text}", transform.parent, position, transform.forward,
+                ChoiceGateRadius, color, text, hubIsCone: false, null, Definition, Context, _ => onChosen());
         }
 
         void HandleShareChosen()

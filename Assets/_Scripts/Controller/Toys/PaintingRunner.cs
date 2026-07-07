@@ -370,16 +370,11 @@ namespace CosmicShore.Gameplay
 
             float ringRadius = Mathf.Clamp(stroke.Reach * 1.2f, 14f, 36f);
 
-            var root = ToyFactory.CreateBareRoot($"Gate_{stroke.Name}", transform, pos, pos + dir, ringRadius);
-            AddRing(root.transform, ringRadius, stroke.BaseColor,
-                ToyFactory.DomainPrismMaterial(_context, stroke.Domain));
-            ToyFactory.AddLabel(root.transform, $"{strokeIndex + 1}/{_strokes.Length}  {stroke.Name}",
-                stroke.BaseColor, ringRadius * 1.5f);
-
-            var toy = root.AddComponent<SwapToy>();
-            toy.Activated += OnGateActivated;
-            toy.Initialize(_toyDefinition, _context, default);
-            _gate = root;
+            // Trail-ON gate: cone hub in the stroke domain's prism material (shared shape language).
+            _gate = ToyFactory.CreateGate($"Gate_{stroke.Name}", transform, pos, dir, ringRadius,
+                stroke.BaseColor, $"{strokeIndex + 1}/{_strokes.Length}  {stroke.Name}",
+                hubIsCone: true, ToyFactory.DomainPrismMaterial(_context, stroke.Domain),
+                _toyDefinition, _context, OnGateActivated);
             _gateBenchEasing = _benched; // spawned while benched → start hidden-bound
         }
 
@@ -704,26 +699,5 @@ namespace CosmicShore.Gameplay
             if (this) Destroy(gameObject);
         }
 
-        /// <summary>
-        /// A flat ring in the local XY plane — the gate the vessel flies through — with a cone hub
-        /// pointing along local +Z (the flight direction into the stroke): the shared "this turns
-        /// your trail on" shape, in the stroke domain's prism material.
-        /// </summary>
-        static void AddRing(Transform parent, float radius, Color color, Material prismMaterial)
-        {
-            var lr = ToyFactory.CreateLine("Ring", parent, 2.2f, false);
-            const int segs = 28;
-            lr.loop = true;
-            lr.positionCount = segs;
-            for (int i = 0; i < segs; i++)
-            {
-                float a = i / (float)segs * Mathf.PI * 2f;
-                lr.SetPosition(i, new Vector3(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius, 0f));
-            }
-            lr.startColor = lr.endColor = color;
-
-            var hub = ToyFactory.AddConeBody(parent, radius * 0.22f, radius * 0.66f, color, prismMaterial);
-            hub.name = "Hub";
-        }
     }
 }

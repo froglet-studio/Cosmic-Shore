@@ -39,7 +39,18 @@ namespace CosmicShore.Gameplay
 
             string safeId = SanitizeFileName(painting.PaintingId);
             filePath = Path.Combine(Application.persistentDataPath, $"{safeId}_masterpiece.html");
-            File.WriteAllText(filePath, html);
+            try
+            {
+                File.WriteAllText(filePath, html);
+            }
+            catch (Exception e)
+            {
+                // Full disk / sandboxed path — fail the share quietly rather than throwing out of
+                // the gate's trigger callback.
+                CSDebug.LogWarning($"[PaintingShareExporter] Could not write reconstruction: {e.Message}");
+                filePath = null;
+                return false;
+            }
             CSDebug.Log($"[PaintingShareExporter] Wrote {records.Count}-prism reconstruction to {filePath}");
             return true;
         }

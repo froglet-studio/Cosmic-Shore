@@ -162,6 +162,33 @@ namespace CosmicShore.Gameplay
             return lr;
         }
 
+        /// <summary>
+        /// A fly-through gate: trigger root facing <paramref name="flightDirection"/>, ring, hub,
+        /// label, and a <see cref="SwapToy"/> that raises <paramref name="onActivated"/> (inheriting
+        /// the standard bloom-in + local-user + freestyle gating + re-arm). Shape vocabulary: pass
+        /// <paramref name="hubPrismMaterial"/> (or just true-ish intent via <paramref name="hubIsCone"/>)
+        /// for gates that turn the trail ON — the hub becomes the shared trail-changer cone; choice
+        /// gates keep a neutral sphere hub, because crossing them commits a choice, not a trail state.
+        /// </summary>
+        public static GameObject CreateGate(string gateName, Transform parent, Vector3 position,
+            Vector3 flightDirection, float ringRadius, Color color, string label,
+            bool hubIsCone, Material hubPrismMaterial, ToyDefinitionSO definition, ToyContext context,
+            System.Action<SwapToy> onActivated)
+        {
+            var root = CreateBareRoot(gateName, parent, position, position + flightDirection, ringRadius);
+            AddRingBody(root.transform, ringRadius, color);
+            if (hubIsCone)
+                AddConeBody(root.transform, ringRadius * 0.22f, ringRadius * 0.66f, color, hubPrismMaterial);
+            else
+                AddSphereBody(root.transform, ringRadius * 0.16f, color);
+            AddLabel(root.transform, label, color, ringRadius * 1.5f);
+
+            var toy = root.AddComponent<SwapToy>();
+            if (onActivated != null) toy.Activated += onActivated;
+            toy.Initialize(definition, context, default);
+            return root;
+        }
+
         /// <summary>Continuity-law teardown: shrink to zero over <paramref name="seconds"/>, then destroy.</summary>
         public static async UniTaskVoid ScaleOutAndDestroy(GameObject go, float seconds)
         {
