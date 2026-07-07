@@ -1119,6 +1119,66 @@ public class FreestyleConvergenceTests : IDisposable
         }
     }
 
+    // ── (c2) Wanderway flythrough streams microscenes of REAL conserved prisms ──
+
+    [Fact]
+    public void ConveyorFlythrough_StreamsMicroscenes_OfRealConservedPrisms()
+    {
+        var (loop, director) = FreestyleFactory.Create(seed: 7);
+        try
+        {
+            RunSeconds(loop, 4f); // spawn chain + toy placement + blooms complete
+
+            var toyboxRoot = Children(director.Toybox.transform).Single(t => t.name == "FreestyleToybox");
+            var conveyorRoot = Children(toyboxRoot).Single(t => t.name == "Toy_conveyor");
+            var toy = conveyorRoot.gameObject.GetComponent<ConveyorToy>();
+            Assert.NotNull(toy);
+
+            // Take control, wait out the exit-gated arm, fly through the conveyor toy.
+            director.ToggleControl();
+            RunSeconds(loop, 1f);
+            Park(director, conveyorRoot.position);
+            RunSeconds(loop, 0.3f);
+
+            // The belt spawned as a SIBLING of the toy (never scaled by the toy's bloom).
+            var beltRoot = Children(toyboxRoot).Single(t => t.name == "MicrosceneConveyor");
+            var belt = beltRoot.gameObject.GetComponent<MicrosceneConveyor>();
+            Assert.True(belt.IsRunning);
+
+            // Move off the toy so it can re-arm, and let the field bloom in ahead.
+            Park(director, Vector3.zero);
+            RunSeconds(loop, 8f);
+
+            // The client wired a REAL prism prefab (FreestyleFactory.WireConveyorPrismPrefab →
+            // ConveyorToyDefinitionSO.SetRuntimePrismPrefab), so the scenes carry the V15 prism
+            // family — plain environment Prism, exact type (never HealthPrism), with the full
+            // conserved-mass component rig — not the crystals-only degraded fallback.
+            var laid = beltRoot.gameObject.GetComponentsInChildren<Prism>(includeInactive: true);
+            Assert.True(laid.Length > 0, "the belt should have laid real prisms ahead of the vessel");
+            foreach (var prism in laid)
+            {
+                Assert.IsType<Prism>(prism);
+                Assert.True(prism.gameObject.GetComponent<BoxCollider>(), "conveyor prisms carry colliders");
+            }
+            var scenes = beltRoot.gameObject.GetComponentsInChildren<Microscene>(includeInactive: true);
+            Assert.True(scenes.Length >= 1, "at least one microscene should be live");
+
+            // Second pass toggles the flow OFF — the belt stops but every laid prism STAYS
+            // (conserved mass and released citizens are not toy props to vanish).
+            RunSeconds(loop, 6f); // slow 5s regrow + exit-gated re-arm after the flip
+            int laidBefore = beltRoot.gameObject.GetComponentsInChildren<Prism>(includeInactive: true).Length;
+            Park(director, conveyorRoot.position);
+            RunSeconds(loop, 0.3f);
+            Assert.False(belt.IsRunning);
+            int laidAfter = beltRoot.gameObject.GetComponentsInChildren<Prism>(includeInactive: true).Length;
+            Assert.Equal(laidBefore, laidAfter);
+        }
+        finally
+        {
+            Teardown(loop, director);
+        }
+    }
+
     // ── (d) 2-sim-minute soak: populations move ONLY through active forces ──
 
     [Fact]

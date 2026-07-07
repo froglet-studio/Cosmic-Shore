@@ -100,6 +100,46 @@ namespace CosmicShore.Client
         }
 
         /// <summary>
+        /// Assembles the same V15 prism GameObject family as <see cref="HandleSpawn"/> onto a
+        /// caller-owned GameObject — a plain environment <see cref="Prism"/> template (the
+        /// port's stand-in for the SpawnablePrism prefab asset). Used as the Wanderway
+        /// conveyor's prism prefab: <c>PrismTrailBuilder.LayOne</c> Instantiates clones of it,
+        /// so the belt transports REAL conserved prisms (grazeable, breakable, team-changeable).
+        /// Nothing is added to the live-trail list — clones are environment-owned.
+        /// </summary>
+        public Prism AddPrismComponents(GameObject go, ThemeManagerDataContainerSO theme)
+        {
+            go.AddComponent<MeshRenderer>();
+            go.AddComponent<BoxCollider>();
+
+            var materialAnimator = go.AddComponent<MaterialPropertyAnimator>();
+            SkimRaceFactory.SetPrivateField(materialAnimator, "_themeManagerData", theme);
+
+            var scaleAnimator = go.AddComponent<PrismScaleAnimator>();
+            SkimRaceFactory.SetPrivateField(scaleAnimator, "onPrismVolumeModified", _onVolumeModified);
+
+            var teamManager = go.AddComponent<PrismTeamManager>();
+            SkimRaceFactory.SetPrivateField(teamManager, "_themeManagerData", theme);
+            SkimRaceFactory.SetPrivateField(teamManager, "onPrismStolen", _onStolen);
+
+            var stateManager = go.AddComponent<PrismStateManager>();
+            SkimRaceFactory.SetPrivateField(stateManager, "_themeManagerData", theme);
+
+            var prism = go.AddComponent<Prism>();
+            prism.prismProperties = new PrismProperties();
+            SkimRaceFactory.SetPrivateField(prism, "_onTrailBlockCreatedEventChannel", _onCreated);
+            SkimRaceFactory.SetPrivateField(prism, "_onTrailBlockDestroyedEventChannel", _onDestroyed);
+            SkimRaceFactory.SetPrivateField(prism, "_onTrailBlockRestoredEventChannel", _onRestored);
+            SkimRaceFactory.SetPrivateField(prism, "OnBlockImpactedEventChannel", _onBlockImpacted);
+
+            var prismImpactor = go.AddComponent<PrismImpactor>();
+            var impactCollider = go.AddComponent<ImpactCollider>();
+            SkimRaceFactory.SetPrivateField(impactCollider, "impactorObject", prismImpactor);
+
+            return prism;
+        }
+
+        /// <summary>
         /// Assembles the same V15 prism GameObject family as <see cref="HandleSpawn"/> but
         /// with a <see cref="HealthPrism"/> in the Prism slot — the building block of flora
         /// leaves and fauna bodies (freestyle ecology templates). The caller owns the

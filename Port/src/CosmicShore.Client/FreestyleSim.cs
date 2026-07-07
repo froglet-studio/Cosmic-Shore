@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using CosmicShore.Core;
 using CosmicShore.Data;
 using CosmicShore.Engine;
@@ -553,11 +554,16 @@ namespace CosmicShore.Client
             SkimRaceFactory.SetPrivateField(inputStatus, "_onButtonPressed", onButtonPressed);
             SkimRaceFactory.SetPrivateField(inputStatus, "_onButtonReleased", onButtonReleased);
 
-            // ── the REAL toybox (self-wires its default painting/vessel/domain toys and
-            // places them on the membrane ring at OnClientReady) ──
+            // ── the REAL toybox (self-wires its default painting/vessel/domain/conveyor toys
+            // and places them on the membrane ring at OnClientReady). The zero-config default
+            // is pre-built here so the Wanderway conveyor's prism prefab — an asset reference
+            // the code-built fallback can't supply — can be wired from a client-built template
+            // via the definition's SetRuntimePrismPrefab hook: the belt then transports REAL
+            // conserved prisms instead of degrading to crystals + lifeforms only. ──
             var toyboxGo = new GameObject("toybox-controller");
             var toybox = toyboxGo.AddComponent<ToyboxController>();
             container.InjectGameObject(toyboxGo); // [Inject] GameDataSO + MenuFreestyleEventsContainerSO
+            WireConveyorPrismPrefab(toybox, prismFactory, theme, prefabShelf);
 
             // ── the director ──
             var directorGo = new GameObject("FreestyleDirector");
@@ -678,6 +684,36 @@ namespace CosmicShore.Client
             var go = new GameObject(name);
             go.transform.SetParent(parentShelfOrBody.transform, false);
             return factory.AddHealthPrismComponents(go, theme);
+        }
+
+        /// <summary>
+        /// Pre-resolves the controller's zero-config default toybox (the same code-built
+        /// synthesis it would run at OnClientReady — invoked here via reflection so the
+        /// verbatim ToyboxController stays untouched) and wires a client-built plain-Prism
+        /// template into the Wanderway conveyor definition through its upstream
+        /// SetRuntimePrismPrefab hook. Without this the fallback definition has no prism
+        /// prefab and the belt's scenes degrade to crystals + lifeforms only.
+        /// </summary>
+        static void WireConveyorPrismPrefab(ToyboxController controller,
+            SkimRacePrismFactory prismFactory, ThemeManagerDataContainerSO theme, GameObject prefabShelf)
+        {
+            var box = (ToyboxSO)typeof(ToyboxController)
+                .GetMethod("BuildDefaultToybox", BindingFlags.Static | BindingFlags.NonPublic)!
+                .Invoke(null, null);
+
+            foreach (var def in box.Toys)
+            {
+                if (def is not ConveyorToyDefinitionSO conveyorDef) continue;
+                var template = new GameObject("conveyor-prism-prefab");
+                template.transform.SetParent(prefabShelf.transform, false);
+                var prism = prismFactory.AddPrismComponents(template, theme);
+                typeof(ConveyorToyDefinitionSO)
+                    .GetMethod("SetRuntimePrismPrefab", BindingFlags.Instance | BindingFlags.NonPublic)!
+                    .Invoke(conveyorDef, new object[] { prism });
+                break;
+            }
+
+            SkimRaceFactory.SetPrivateField(controller, "toybox", box);
         }
 
         static Flora BuildFloraPrefab(CellRuntimeDataSO runtime, Container container,

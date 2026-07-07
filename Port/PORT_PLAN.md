@@ -691,23 +691,34 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after drift-sync 2026-07-07)
+## NEXT UP (after Wanderway client content, 2026-07-07)
 
-1. **Wanderway content in the client**: the conveyor toy is live in the default
-   toybox (freestyle diag toys 8 → 9) but the code-built fallback definition has
-   no prism prefab, so its microscenes degrade to crystals + lifeforms. Wire a
-   client-built prism prefab into the fallback `ConveyorToyDefinitionSO` (the
-   client already builds prisms in code) so Wanderway transports real conserved
-   prisms; re-baseline the freestyle diag with the toy toggled on.
-2. **Vessel-initializer remainder** (from the menu-swap arc): port
+1. **Vessel-initializer remainder** (from the menu-swap arc): port
    `ServerPlayerVesselInitializerWithAI` (game-scene AI backfill),
    `MenuCrystalClickHandler`, `MultiplayerSetup` / `DomainAssigner`, and wire the
    menu-swap chain into the playable client scene.
-3. **Track bleeding-edge**: merge upstream again next iteration; every merge
+2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey with the
    `git diff <old-sync> origin/bleeding-edge -- Assets/_Scripts` ∩ ported-files
    intersection; record in `docs/DRIFT_<date>.txt` per the 2026-07-07 precedent).
-4. Update this file, commit, push.
+3. Update this file, commit, push.
+
+### Wanderway client content ✅ (2026-07-07, second pass)
+
+The freestyle client now feeds the conveyor REAL conserved prisms:
+`SkimRacePrismFactory.AddPrismComponents` builds the plain environment Prism
+template (V15 family, caller-owned, mirror of the HealthPrism builder), and
+`FreestyleFactory.WireConveyorPrismPrefab` pre-resolves the controller's
+zero-config default toybox (reflection — the verbatim `ToyboxController` stays
+untouched) and wires the template through the upstream
+`ConveyorToyDefinitionSO.SetRuntimePrismPrefab` hook. End-to-end proof:
+`ConveyorFlythrough_StreamsMicroscenes_OfRealConservedPrisms` (fly through
+Toy_conveyor in the real freestyle scene → belt spawns as a toybox-root
+sibling → scenes bloom with plain-`Prism` clones carrying colliders → second
+pass stops the flow with every laid prism conserved). **1335 tests green in
+BOTH configs (1051 + 284)**; all 5 CLI modes exit 0; both client diags
+byte-identical (conveyor correctly inert on the autopilot lava-lamp — it only
+flows in freestyle).
 
 ### Rung-5 leftovers (optional polish, from iteration 20)
 
