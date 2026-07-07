@@ -13,7 +13,25 @@ namespace CosmicShore.Gameplay
     ///   The spider has NO throttle. Speed is purely displacement-based.
     ///   Dual-tether pumping (angular momentum conservation + pump energy
     ///   injection) is the only way to gain speed. Single tether redirects
-    ///   momentum without changing it. Free flight coasts.
+    ///   momentum. Free flight coasts.
+    ///
+    /// Dissipation (the other half of a real swing):
+    ///   In space there is no gravity arc or air to bound the pendulum, so
+    ///   the dissipation is restored explicitly — one physical story, four
+    ///   mechanisms, each dialable to zero:
+    ///     - Quadratic drag while anchored (swingDragK) acts on L, so a
+    ///       terminal velocity EMERGES where pump injection balances drag —
+    ///       no hard clamp, no throttle.
+    ///     - The same quadratic drag in free flight (freeFlightDragK)
+    ///       coasts a hard launch back down to a driftable speed;
+    ///       MinimumSpeed floors it so the vessel can never strand.
+    ///     - Reverse-pump bleed (reversePumpBleed): expanding the circle
+    ///       does negative work, exactly mirroring the injection term.
+    ///       Spread the sticks to pump up, relax them to bleed down — the
+    ///       symmetric, discoverable, skill-based brake.
+    ///     - Air control (airControlDegPerSec): in free flight the coast
+    ///       course steers toward the nose at a constant rate, so an
+    ///       overshot launch always has a way back to the prismscape.
     ///
     /// Controls:
     ///   Each stick's X positions that side's cursor on the horizontal screen
@@ -24,7 +42,8 @@ namespace CosmicShore.Gameplay
     ///
     ///   One anchor:  vessel is constrained to the anchor sphere. Forward is
     ///   projected onto the tangent plane; course lerps toward it (drift feel).
-    ///   Speed is preserved — single tether only redirects.
+    ///   A single tether redirects momentum and bleeds it under swing drag —
+    ///   it never adds speed.
     ///
     ///   Two anchors: vessel rides the intersection circle of both tether
     ///   spheres. XDiff (the spread of both sticks) sets the target circle
@@ -64,6 +83,20 @@ namespace CosmicShore.Gameplay
         [Tooltip("Minimum circle radius — caps the 1/r speed spike near the axis.")]
         [SerializeField] float minCircleRadius = 1f;
 
+        [Header("Dissipation & Air Control")]
+        [Tooltip("Quadratic drag while anchored, units 1/meters (≈ 1/braking-length-scale). Dual-anchor: dL/dt = −k·v·L (quadratic-in-v drag expressed on the persistent L). Single-anchor: dv/dt = −k·v². Terminal velocity EMERGES where pump injection balances this — no hard clamp, no throttle. At 0.002, drag removes ~30%/s at v=150. 0 = frictionless (runaway).")]
+        [SerializeField] float swingDragK = 0.002f;
+        [Tooltip("Quadratic drag in free flight, units 1/meters: dv/dt = −k·v². Coasts a hard launch down gracefully (1/v − 1/v₀ = k·t ⇒ 150→75 in ~4s at 0.0017). MinimumSpeed still floors movement, so the vessel can never strand. 0 = release speed kept forever.")]
+        [SerializeField] float freeFlightDragK = 0.0017f;
+        [Tooltip("Negative work done on L when the circle EXPANDS (sticks relaxed inward), exactly mirroring the pump injection term. Spread the sticks to pump up, relax them to bleed down — the symmetric, skill-based brake. Start equal to pumpGain.")]
+        [SerializeField] float reversePumpBleed = 0.5f;
+        [Tooltip("Degrees/second the free-flight course steers toward the vessel's nose. Constant-rate (RotateTowards, not Slerp) so steering authority is predictable at any speed — this is the 'way back' after overshooting every prism. 0 = ballistic (soft-lock risk).")]
+        [SerializeField] float airControlDegPerSec = 45f;
+        [Tooltip("Constant per-second fractional bleed of L while dual-anchored: L *= (1 − damp·dt). Guarantees pumping plateaus even if swingDragK is tuned near zero. 0 = off (default).")]
+        [SerializeField] float swingDamp = 0f;
+        [Tooltip("Extra tether range earned by speed: range = maxTetherLength · (1 + scale · speed/speedThicknessRef), so a fast launch can still find an anchor. 0 = off (default).")]
+        [SerializeField] float rangeSpeedScale = 0f;
+
         [Header("Lightsaber Sweep")]
         [Tooltip("Anchored tethers destroy every prism they sweep through (except the anchors).")]
         [SerializeField] bool sweepDestroysPrisms = true;
@@ -77,8 +110,18 @@ namespace CosmicShore.Gameplay
         [Header("Speed Feel")]
         [Tooltip("Tether visual thickens up to this multiplier as speed rises (lightsaber heat).")]
         [SerializeField] float speedThicknessBoost = 1.5f;
-        [Tooltip("Speed at which the thickness boost saturates.")]
-        [SerializeField] float speedThicknessRef = 80f;
+        [Tooltip("Speed at which the thickness boost saturates. Align to the tuned terminal velocity (hard-pump peak target ≈ 120–180) so 'white hot' means 'as fast as this vessel goes'. Also normalizes release-shake scaling and the rangeSpeedScale bonus.")]
+        [SerializeField] float speedThicknessRef = 150f;
+
+        [Header("Juice")]
+        [Tooltip("Camera-shake intensity on tether release, scaled by speed/speedThicknessRef — a hard slingshot kicks, a gentle detach whispers. Local player only. 0 = off.")]
+        [SerializeField] float releaseShakeIntensity = 0.8f;
+        [Tooltip("Seconds the release shake decays over.")]
+        [SerializeField] float releaseShakeDuration = 0.25f;
+        [Tooltip("Camera-shake tick when the lightsaber sweep slices at least one prism this frame. Local player only. 0 = off.")]
+        [SerializeField] float sweepKillShakeIntensity = 0.2f;
+        [Tooltip("Seconds the sweep-kill tick decays over.")]
+        [SerializeField] float sweepKillShakeDuration = 0.1f;
 
         [Header("Anchor Prism")]
         [SerializeField] Vector3 anchorPrismScale = new(6f, 6f, 6f);
@@ -86,7 +129,7 @@ namespace CosmicShore.Gameplay
 
         // ---- Internal types ----
 
-        enum SwingState { FreeFlight, SingleAnchor, DualAnchor }
+        public enum SwingState { FreeFlight, SingleAnchor, DualAnchor }
 
         struct TetherState
         {
@@ -96,6 +139,7 @@ namespace CosmicShore.Gameplay
             public Transform anchor;
             public float ropeLength;
             public float extension;
+            public float maxRange;
             public Vector3 fireOrigin;
             public Vector3 fireDirection;
             public Transform capsule;
@@ -111,6 +155,22 @@ namespace CosmicShore.Gameplay
 
         /// <summary>True when the vessel is attached to at least one anchor.</summary>
         public bool IsSwinging => currentState != SwingState.FreeFlight;
+
+        /// <summary>Current swing state — read-only, for HUD/telemetry.</summary>
+        public SwingState State => currentState;
+
+        /// <summary>Persistent displacement-earned speed (m/s) — the momentum the vessel carries between states.</summary>
+        public float CurrentSpeed => speed;
+
+        /// <summary>Signed angular momentum L = ω·h² (per unit mass). Stale outside DualAnchor.</summary>
+        public float AngularMomentum => angularMomentum;
+
+        /// <summary>Current dual-anchor circle radius h (meters). Stale outside DualAnchor.</summary>
+        public float CircleRadius => currentH;
+
+        /// <summary>Zero-alloc state name for the debug telemetry readout.</summary>
+        public string StateName => StateNames[(int)currentState];
+        static readonly string[] StateNames = { "FreeFlight", "SingleAnchor", "DualAnchor" };
 
         /// <summary>Called by SwingActionSO.StartAction — enables swing mode.</summary>
         public void StartSwing() { }
@@ -311,13 +371,27 @@ namespace CosmicShore.Gameplay
         //  CURSOR POSITIONING (per-stick, horizontal screen axis)
         // ==================================================================
 
-        Camera GetGameplayCamera()
+        CustomCameraController GetCameraController()
         {
             var controller = CameraManager.Instance != null ? CameraManager.Instance.GetActiveController() : null;
-            if (controller is CustomCameraController ccc && ccc.Camera != null)
+            return controller as CustomCameraController;
+        }
+
+        Camera GetGameplayCamera()
+        {
+            var ccc = GetCameraController();
+            if (ccc != null && ccc.Camera != null)
                 return ccc.Camera;
             return Camera.main;
         }
+
+        /// <summary>
+        /// Tether range including the speed-earned bonus: a hard launch can
+        /// reach anchors a parked spider can't. rangeSpeedScale=0 (default)
+        /// keeps the base maxTetherLength.
+        /// </summary>
+        float EffectiveTetherRange =>
+            maxTetherLength * (1f + rangeSpeedScale * speed / Mathf.Max(speedThicknessRef, 1f));
 
         /// <summary>
         /// Per-stick travel toward the screen edge, in [0,1].
@@ -365,17 +439,18 @@ namespace CosmicShore.Gameplay
         (Vector3 tipPos, Vector3 aimTarget) GetSpinneretAim(bool left)
         {
             Vector3 tip = GetCursorWorldPosition(left);
+            float range = EffectiveTetherRange;
 
             var cam = GetGameplayCamera();
             if (cam == null)
-                return (tip, tip + transform.forward * maxTetherLength);
+                return (tip, tip + transform.forward * range);
 
             Vector3 fireDir = (tip - cam.transform.position).normalized;
 
             int layerMask = 1 << TrailBlocksLayer;
-            if (Physics.Raycast(tip, fireDir, out var hit, maxTetherLength, layerMask))
+            if (Physics.Raycast(tip, fireDir, out var hit, range, layerMask))
                 return (tip, hit.point);
-            return (tip, tip + fireDir * maxTetherLength);
+            return (tip, tip + fireDir * range);
         }
 
         /// <summary>
@@ -408,6 +483,7 @@ namespace CosmicShore.Gameplay
             tether.isFiring = true;
             tether.isRetracting = false; // re-fire cancels any in-flight retract
             tether.extension = 0f;
+            tether.maxRange = EffectiveTetherRange; // snapshot — one fire, one range
             tether.fireOrigin = tipPosition;
             Vector3 dir = aimTarget - tipPosition;
             tether.fireDirection = dir.sqrMagnitude > 0.001f ? dir.normalized : transform.forward;
@@ -505,6 +581,7 @@ namespace CosmicShore.Gameplay
                         speed = lastVelocity.magnitude;
                     }
                     VesselStatus.Course = freeFlightCourse;
+                    PlayReleaseShake();
                     break;
 
                 case SwingState.SingleAnchor:
@@ -542,9 +619,9 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            if (tether.extension >= maxTetherLength)
+            if (tether.extension >= tether.maxRange)
             {
-                Vector3 spawnPos = tether.fireOrigin + tether.fireDirection * maxTetherLength;
+                Vector3 spawnPos = tether.fireOrigin + tether.fireDirection * tether.maxRange;
                 tether.isFiring = false;
                 tether.capsuleRenderer.enabled = false;
 
@@ -658,7 +735,18 @@ namespace CosmicShore.Gameplay
             }
 
             if (killedSomething)
+            {
                 tether.sweepPulse = 1f;
+
+                // Kill tick — a slice should be felt, not just seen. Shake's
+                // stronger-wins rule keeps simultaneous dual-tether kills sane.
+                if (sweepKillShakeIntensity > 0f && IsLocalHumanVessel)
+                {
+                    var cameraController = GetCameraController();
+                    if (cameraController != null)
+                        cameraController.Shake(sweepKillShakeIntensity, sweepKillShakeDuration);
+                }
+            }
         }
 
         /// <summary>Squared distance from point p to segment [a,b].</summary>
@@ -771,6 +859,23 @@ namespace CosmicShore.Gameplay
         {
             if (VesselStatus == null) return;
 
+            float dt = Time.deltaTime;
+
+            // Quadratic drag — a hard launch coasts down gracefully instead
+            // of keeping its release speed forever (1/v − 1/v₀ = k·t, so
+            // 150→75 in ~4s at k=0.0017). The MinimumSpeed floor below still
+            // guarantees the vessel can never strand.
+            speed = Mathf.Max(0f, speed - freeFlightDragK * speed * speed * dt);
+
+            // Air control — steer the coast course toward the nose at a
+            // constant rate (RotateTowards, not Slerp, so authority doesn't
+            // fade with angle). This is the way back after overshooting
+            // every prism in range.
+            if (airControlDegPerSec > 0f)
+                freeFlightCourse = Vector3.RotateTowards(
+                    freeFlightCourse, transform.forward,
+                    airControlDegPerSec * Mathf.Deg2Rad * dt, 0f);
+
             // MinimumSpeed is a stranding floor, not a throttle — tune to 0
             // on the prefab to disable. Boost pickups still apply.
             float effectiveSpeed = Mathf.Max(speed, MinimumSpeed) * throttleMultiplier;
@@ -782,11 +887,11 @@ namespace CosmicShore.Gameplay
             VesselStatus.Speed = effectiveSpeed;
             VesselStatus.Course = freeFlightCourse;
 
-            transform.position += (effectiveSpeed * freeFlightCourse + velocityShift) * Time.deltaTime;
+            transform.position += (effectiveSpeed * freeFlightCourse + velocityShift) * dt;
             lastVelocity = effectiveSpeed * freeFlightCourse;
         }
 
-        // ---- Single anchor: preserve speed, redirect on the sphere ----
+        // ---- Single anchor: redirect on the sphere, bleed under drag ----
 
         void SingleAnchorMove()
         {
@@ -824,7 +929,11 @@ namespace CosmicShore.Gameplay
             else
                 sphereCourse = projForward;
 
-            // Speed preserved — floored so a stalled spider can still swing out
+            // Quadratic drag while anchored (dv/dt = −k·v²) — a single-tether
+            // redirect is no longer a lossless momentum store; carry the arc,
+            // don't park in it. Floored so a stalled spider can still swing out.
+            speed = Mathf.Max(0f, speed - swingDragK * speed * speed * Time.deltaTime);
+
             float effectiveSpeed = Mathf.Max(speed, MinimumSpeed) * throttleMultiplier;
             if (VesselStatus.IsBoosting) effectiveSpeed *= VesselStatus.BoostMultiplier;
             if (VesselStatus.IsChargedBoostDischarging) effectiveSpeed *= VesselStatus.ChargedBoostCharge;
@@ -845,14 +954,18 @@ namespace CosmicShore.Gameplay
 
             VesselStatus.Speed = lastVelocity.magnitude;
             VesselStatus.Course = sphereCourse;
-            // speed field intentionally untouched — single tether never changes it
+            // speed field only decays (swing drag above) — a single tether
+            // redirects momentum and bleeds it, never adds to it
         }
 
-        // ---- Dual anchor: angular momentum conservation + pump injection ----
+        // ---- Dual anchor: momentum conservation + pump ± dissipation ----
         //
         // L = ω·h² is conserved. Shrinking radius → ω ∝ 1/h² → v ∝ 1/h.
         // Active contraction injects energy: L += pumpGain · |dh/dt| · |ω|.
-        // Each pump cycle ratchets L upward. Release at short radius to fly.
+        // Expansion does the mirror-image negative work (reversePumpBleed),
+        // and quadratic drag (swingDragK) bleeds L continuously, so speed
+        // plateaus at an EMERGENT terminal velocity instead of running away.
+        // Pump toward the plateau, release at short radius to fly.
 
         void DualAnchorMove()
         {
@@ -901,6 +1014,27 @@ namespace CosmicShore.Gameplay
 
                 angularMomentum += sign * pumpGain * contractionRate * Mathf.Max(absOmega, 0.1f) * dt;
             }
+            else if (dH > 0f && dt > 0.0001f)
+            {
+                // Reverse-pump bleed: expansion does negative work, exactly
+                // mirroring the injection term above. Spread the sticks to
+                // pump up, relax them to bleed down — the skill-based brake.
+                float expansionRate = dH / dt;
+                float absOmega = Mathf.Abs(circleAngularVelocity);
+                angularMomentum = Mathf.MoveTowards(angularMomentum, 0f,
+                    reversePumpBleed * expansionRate * Mathf.Max(absOmega, 0.1f) * dt);
+            }
+
+            // Quadratic drag on L (dL/dt = −k·v·L with v = |ω|·h) — the
+            // emergent speed cap: terminal velocity sits where the pump
+            // injection above balances this bleed. No hard clamp anywhere.
+            float vNow = Mathf.Abs(circleAngularVelocity) * h;
+            angularMomentum *= Mathf.Max(0f, 1f - swingDragK * vNow * dt);
+
+            // Constant damping floor (0 = off): guarantees pumping plateaus
+            // even if the quadratic drag is tuned near zero.
+            if (swingDamp > 0f)
+                angularMomentum *= Mathf.Max(0f, 1f - swingDamp * dt);
 
             // Conservation: ω = L / h²
             circleAngularVelocity = angularMomentum / (h * h);
@@ -945,6 +1079,26 @@ namespace CosmicShore.Gameplay
         // ==================================================================
 
         bool LeftIsActiveAnchor() => leftTether.isAnchored && leftTether.triggerHeld;
+
+        /// <summary>Juice gate: only the local human's spider shakes the local camera.</summary>
+        bool IsLocalHumanVessel =>
+            VesselStatus is { IsLocalUser: true, IsInitializedAsAI: false };
+
+        /// <summary>
+        /// Camera kick on release, scaled by launch speed — a max-speed
+        /// slingshot lands a real hit, a gentle detach barely registers.
+        /// </summary>
+        void PlayReleaseShake()
+        {
+            if (releaseShakeIntensity <= 0f || !IsLocalHumanVessel) return;
+
+            float speedT = Mathf.Clamp01(speed / Mathf.Max(speedThicknessRef, 1f));
+            if (speedT < 0.05f) return;
+
+            var cameraController = GetCameraController();
+            if (cameraController != null)
+                cameraController.Shake(releaseShakeIntensity * speedT, releaseShakeDuration);
+        }
 
         void InitSphereCourseFromCurrentState()
         {

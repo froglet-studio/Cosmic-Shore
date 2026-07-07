@@ -33,6 +33,14 @@ namespace CosmicShore.UI
             if (!IsHudAllowed || !view || _swinger == null) return;
 
             view.SetSwinging(_swinger.IsSwinging);
+
+            // Zero-alloc args; the view early-outs (and hides the text) when
+            // its showDebugTelemetry toggle is off, so no per-frame gate here.
+            view.SetTelemetry(
+                _swinger.CurrentSpeed,
+                _swinger.AngularMomentum,
+                _swinger.CircleRadius,
+                _swinger.StateName);
         }
     }
 }
