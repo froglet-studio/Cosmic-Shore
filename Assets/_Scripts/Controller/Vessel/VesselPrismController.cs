@@ -55,6 +55,31 @@ namespace CosmicShore.Gameplay
         public Trail Trail = new Trail();
         readonly Trail Trail2 = new Trail();
 
+        // ── Conveyor breadcrumb (stripped-performance branch) ────────────────
+        // While the Wanderway belt runs, the trail acts as a capped breadcrumb back to the toy
+        // switch: FIFO of live prisms, oldest consumed (implode toward the switch) past the cap.
+        readonly Queue<Prism> _breadcrumb = new();
+
+        /// <summary>The toy switch the breadcrumb leads back to; consumed prisms implode into it.</summary>
+        public Transform BreadcrumbAnchor { get; set; }
+
+        /// <summary>World position of the breadcrumb's tail (the oldest live prism), if any.</summary>
+        public bool TryGetBreadcrumbTail(out Vector3 position)
+        {
+            while (_breadcrumb.Count > 0)
+            {
+                var oldest = _breadcrumb.Peek();
+                if (oldest && !oldest.destroyed)
+                {
+                    position = oldest.transform.position;
+                    return true;
+                }
+                _breadcrumb.Dequeue(); // destroyed by other forces — drop the stale entry
+            }
+            position = default;
+            return false;
+        }
+
         protected IVesselStatus vesselStatus;
 
         // Scaling helpers
@@ -271,6 +296,24 @@ namespace CosmicShore.Gameplay
             trail.Add(prism);
             prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
             prism.Initialize(vesselStatus.PlayerName);
+
+            // Breadcrumb cap (stripped branch, conveyor mode only): past the cap the OLDEST prism
+            // is consumed via the sanctioned Prism.Consume path — a visible implode toward the toy
+            // switch riding the tail (continuity law honored; never a silent despawn). Cap
+            // explicitly authorized by the design owner for this branch.
+            if (PerfStrip.ConveyorBreadcrumbActive)
+            {
+                _breadcrumb.Enqueue(prism);
+                while (_breadcrumb.Count > PerfStrip.ConveyorBreadcrumbMaxPrisms)
+                {
+                    var oldest = _breadcrumb.Dequeue();
+                    if (oldest && !oldest.destroyed)
+                        oldest.Consume(
+                            BreadcrumbAnchor ? BreadcrumbAnchor : oldest.transform,
+                            vesselStatus.Domain,
+                            vesselStatus.PlayerName);
+                }
+            }
 
             // Events
             OnBlockCreated?.Invoke(xShift, wavelength, scale.x, scale.y, scale.z);

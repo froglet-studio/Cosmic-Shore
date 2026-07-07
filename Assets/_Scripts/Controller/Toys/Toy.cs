@@ -117,10 +117,16 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            Tick(); // runs every frame regardless of arm state (the re-arm check below early-outs)
+
             if (_armed || _blooming || _activating) return;
             if (LocalVesselOutsideTrigger())
                 _armed = true;
         }
+
+        /// <summary>Per-frame hook for subclasses that need one (e.g. the conveyor toy riding the
+        /// breadcrumb trail's tail). Called before the base re-arm logic, every frame.</summary>
+        protected virtual void Tick() { }
 
         void OnTriggerEnter(Collider other)
         {

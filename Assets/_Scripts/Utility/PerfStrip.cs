@@ -29,8 +29,25 @@ namespace CosmicShore.Utility
         /// </summary>
         public static bool Enabled = true;
 
-        /// <summary>Stop vessels laying their continuous prism trail (the biggest per-frame win).</summary>
-        public static bool TrailsDisabled => Enabled;
+        /// <summary>
+        /// Stop vessels laying their continuous prism trail (the biggest per-frame win) — EXCEPT
+        /// while the conveyor breadcrumb is active (see <see cref="ConveyorBreadcrumbActive"/>).
+        /// </summary>
+        public static bool TrailsDisabled => Enabled && !ConveyorBreadcrumbActive;
+
+        /// <summary>
+        /// While the Wanderway belt runs, the local vessel lays a <b>breadcrumb trail</b> capped at
+        /// <see cref="ConveyorBreadcrumbMaxPrisms"/>: the oldest prism suctions into the toy switch
+        /// (which rides the trail's tail), so the player can always follow their own trail back to
+        /// the switch that stops the belt and brings the cell back. Set by ConveyorToy only.
+        /// The cap was explicitly authorized by the design owner for this branch (2026-07-07) —
+        /// removal happens via the sanctioned Prism.Consume (implode-toward-target) path, never a
+        /// silent despawn, so the continuity law's visible-transition requirement is met.
+        /// </summary>
+        public static bool ConveyorBreadcrumbActive;
+
+        /// <summary>Breadcrumb trail length cap, in prisms (~300 per design direction).</summary>
+        public const int ConveyorBreadcrumbMaxPrisms = 300;
 
         /// <summary>Show only the conveyor toy in the freestyle toybox; skip the other three.</summary>
         public static bool ConveyorOnlyToybox => Enabled;

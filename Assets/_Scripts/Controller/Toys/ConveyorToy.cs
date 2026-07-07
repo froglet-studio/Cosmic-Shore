@@ -22,6 +22,13 @@ namespace CosmicShore.Gameplay
         MeshRenderer _body;
         Color _accent = Color.white;
 
+        // ── Stripped-branch conveyor mode (breadcrumb + cell power-down) ─────
+        Vector3 _homePosition;
+        Quaternion _homeRotation;
+        Cell _dimmedCell;
+        VesselPrismController _breadcrumbSource;
+        float _nextTailFollow;
+
         public void Configure(ConveyorConfig cfg) => _cfg = cfg;
 
         protected override void OnInitialized()
@@ -29,6 +36,9 @@ namespace CosmicShore.Gameplay
             _label = GetComponentInChildren<TMP_Text>(true);
             _body = GetComponentInChildren<MeshRenderer>(true);
             if (Definition) _accent = Definition.AccentColor;
+
+            _homePosition = transform.position;
+            _homeRotation = transform.rotation;
 
             // Show the "off" affordance from the start so the first pass reads as a switch.
             if (_label)
@@ -49,6 +59,7 @@ namespace CosmicShore.Gameplay
             if (_conveyor && _conveyor.IsRunning)
             {
                 _conveyor.StopBelt();
+                ExitConveyorMode();
                 ShowState(on: false);
                 return;
             }
@@ -56,6 +67,7 @@ namespace CosmicShore.Gameplay
             if (_conveyor)
             {
                 _conveyor.Resume(localVessel);
+                EnterConveyorMode(localVessel);
                 ShowState(on: true);
                 return;
             }
@@ -72,7 +84,78 @@ namespace CosmicShore.Gameplay
             go.transform.SetParent(transform.parent, false);
             _conveyor = go.AddComponent<MicrosceneConveyor>();
             _conveyor.Begin(_cfg, localVessel, Context?.IsFreestyleActive, Context?.GameData);
+            EnterConveyorMode(localVessel);
             ShowState(on: true);
+        }
+
+        /// <summary>
+        /// Stripped-branch conveyor mode: while the belt flows, (a) the menu Cell powers down
+        /// (membrane/nucleus stop rendering + ticking — a further perf win; restored on stop) and
+        /// (b) the local vessel lays a capped <b>breadcrumb trail</b> whose tail this toy rides —
+        /// the player can always follow their own trail back to the switch. Both explicitly
+        /// requested design; the cell SetActive toggle is scoped to this mode only.
+        /// </summary>
+        void EnterConveyorMode(IVesselStatus localVessel)
+        {
+            if (!CosmicShore.Utility.PerfStrip.Enabled) return;
+
+            // Cell off (nearest active cell — Menu_Main has exactly one). Keep the reference:
+            // an inactive cell leaves the ActiveCells registry, so it can't be re-found later.
+            if (!_dimmedCell)
+            {
+                var cell = Cell.FindNearestActiveCell(transform.position);
+                if (cell)
+                {
+                    _dimmedCell = cell;
+                    cell.gameObject.SetActive(false);
+                }
+            }
+
+            // Breadcrumb on: the vessel's own (otherwise strip-disabled) trail becomes the way home.
+            CosmicShore.Utility.PerfStrip.ConveyorBreadcrumbActive = true;
+            _breadcrumbSource = localVessel.VesselPrismController;
+            if (_breadcrumbSource)
+            {
+                _breadcrumbSource.BreadcrumbAnchor = transform;
+                _breadcrumbSource.StartSpawn();
+            }
+        }
+
+        /// <summary>Belt stopped: trail stops extending (what's laid stays — conserved), the toy
+        /// returns to its home placement by the cell, and the cell powers back on.</summary>
+        void ExitConveyorMode()
+        {
+            if (!CosmicShore.Utility.PerfStrip.Enabled) return;
+
+            CosmicShore.Utility.PerfStrip.ConveyorBreadcrumbActive = false;
+            if (_breadcrumbSource)
+            {
+                _breadcrumbSource.StopSpawn();
+                _breadcrumbSource.BreadcrumbAnchor = null;
+                _breadcrumbSource = null;
+            }
+
+            if (_dimmedCell)
+            {
+                _dimmedCell.gameObject.SetActive(true);
+                _dimmedCell = null;
+            }
+
+            // Home to the cell it just re-lit; the regrow bloom covers the move (continuity), and
+            // the exit-gated re-arm means it cannot re-fire until the vessel flies clear.
+            transform.SetPositionAndRotation(_homePosition, _homeRotation);
+        }
+
+        /// <summary>Ride the breadcrumb's tail while the belt flows (throttled to 4Hz — the tail
+        /// only moves when the cap consumes a prism). The toy IS the way home.</summary>
+        protected override void Tick()
+        {
+            if (_conveyor == null || !_conveyor.IsRunning || _breadcrumbSource == null) return;
+            if (Time.unscaledTime < _nextTailFollow) return;
+            _nextTailFollow = Time.unscaledTime + 0.25f;
+
+            if (_breadcrumbSource.TryGetBreadcrumbTail(out var tail))
+                transform.position = tail;
         }
 
         /// <summary>
@@ -85,7 +168,7 @@ namespace CosmicShore.Gameplay
         {
             if (_label)
                 _label.text = on
-                    ? $"{DisplayName}\n<size=60%>flowing — fly through to stop</size>"
+                    ? $"{DisplayName}\n<size=60%>flowing — follow your trail back here to stop</size>"
                     : $"{DisplayName}\n<size=60%>fly through to start</size>";
 
             if (_body && _body.sharedMaterial)
