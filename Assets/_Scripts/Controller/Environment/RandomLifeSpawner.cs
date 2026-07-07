@@ -136,7 +136,6 @@ namespace CosmicShore.Gameplay
             // herbivore volume check, and read directly as N herbivores for a
             // predator. (Docs/ECOSYSTEM.md §6-§7.)
             bool isPredator = faunaCfg.FaunaPrefab && faunaCfg.FaunaPrefab.Diet == FaunaDiet.Predator;
-            float herbivoreVolumeFloor = spawnProfile.FaunaFoodFloor * CellPhaseThresholds.NominalPrismVolume;
 
             while (true)
             {
@@ -148,9 +147,8 @@ namespace CosmicShore.Gameplay
                     Mathf.Max(1, faunaCfg.PopulationSize),
                     faunaCfg.MaxLivePopulation);
 
-                bool preyAvailable = isPredator
-                    ? host.GetLiveHerbivoreCount() >= spawnProfile.FaunaFoodFloor
-                    : host.OpposingVolume(color) >= herbivoreVolumeFloor;
+                bool preyAvailable = FaunaReproductionRules.PreyAvailable(
+                    isPredator, host.GetLiveHerbivoreCount(), host.OpposingVolume(color), spawnProfile.FaunaFoodFloor);
 
                 if (deficit > 0 && preyAvailable)
                     SpawnFaunaPopulation(host, runtime, faunaCfg, color, deficit);

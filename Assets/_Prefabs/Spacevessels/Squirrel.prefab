@@ -8537,7 +8537,8 @@ GameObject:
   - component: {fileID: 5363059078414614678}
   - component: {fileID: -6368199322473003075}
   - component: {fileID: 7219854176267508625}
-  - component: {fileID: 7687382462138633726}
+  - component: {fileID: 8100000000000000081}
+  - component: {fileID: 8100000000000000083}
   m_Layer: 0
   m_Name: Squirrel
   m_TagString: Player_Ship
@@ -9240,20 +9241,6 @@ MonoBehaviour:
   baseVolumeMultiplier: 1
   restrictToVesselClass: 1
   targetVesselClass: 6
-  debugLog: 0
---- !u!114 &7687382462138633726
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6417075533431866457}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a3b21628e47594eaba8394e46e6128ae, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  localOffset: {x: 0, y: 0, z: 0}
   debugLog: 0
 --- !u!1 &6514516964945388952
 GameObject:
@@ -15280,3 +15267,30 @@ Transform:
     type: 3}
   m_PrefabInstance: {fileID: 8546359282292252367}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &8100000000000000081
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 86c6556701af9e04380698b89f691b6e, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  nonRigidbodyVelocity: 0
+  attenuationObject: {fileID: 0}
+--- !u!114 &8100000000000000083
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6417075533431866457}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 454001d94fcc404e8eaab651b593b302, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  debugLog: 0
