@@ -35,7 +35,6 @@ namespace CosmicShore.Gameplay
 
         const float BloomSeconds = 1.4f;
         const float GateDespawnSeconds = 0.45f;
-        const float MarkerPulseHz = 1.4f;
 
         /// <summary>Everything the runner knows about one stroke — one array, no index juggling.</summary>
         class StrokeInfo
@@ -238,7 +237,7 @@ namespace CosmicShore.Gameplay
             else
                 UpdateAwaitingGate(shipPos);
 
-            PulseMarker();
+            SettleMarker();
         }
 
         /// <summary>
@@ -653,18 +652,20 @@ namespace CosmicShore.Gameplay
             _markerHiding = false;
             _marker.SetActive(true);
             _marker.transform.position = pos;
-            _marker.transform.localScale = Vector3.zero; // pop back up in PulseMarker — nothing snaps
+            _marker.transform.localScale = Vector3.zero; // SettleMarker grows it back in — nothing snaps
         }
 
         void HideMarker() => _markerHiding = true; // EaseTransitions shrinks it out — nothing blinks off
 
-        void PulseMarker()
+        void SettleMarker()
         {
             if (!_marker || !_marker.activeSelf || _markerHiding) return;
-            float pulse = 1f + 0.22f * Mathf.Sin(Time.time * MarkerPulseHz * Mathf.PI * 2f);
-            float target = _markerBaseRadius * 2f * pulse;
+            // No pulsing: the marker grows in once (from the zero MoveMarker sets) and holds its
+            // size — the idle life comes from the body's slow ToyIdleSpin, matching the calm
+            // motion language of the game's other pickups.
+            float target = _markerBaseRadius * 2f;
             float current = _marker.transform.localScale.x;
-            // Ease toward the pulsing size — doubles as the grow-in after MoveMarker zeroes it.
+            if (Mathf.Abs(current - target) < 0.01f) return;
             _marker.transform.localScale = Vector3.one * Mathf.Lerp(current, target, Time.deltaTime * 8f);
         }
 

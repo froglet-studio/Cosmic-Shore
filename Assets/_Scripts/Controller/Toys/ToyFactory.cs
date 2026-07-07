@@ -66,33 +66,44 @@ namespace CosmicShore.Gameplay
 
         static Mesh s_coneMesh;
 
-        /// <summary>Unit cone: base circle (radius 0.5) at z=-0.5, apex at z=+0.5. Scale to size.</summary>
+        /// <summary>
+        /// Unit crystal spike: a SIX-sided, FLAT-SHADED cone (base radius 0.5 at z=-0.5, apex at
+        /// z=+0.5). Hexagonal facets with hard edges echo the game's crystals — under the prism
+        /// material each facet catches the light separately as the body slowly spins, instead of
+        /// reading as a smooth traffic cone.
+        /// </summary>
         static Mesh ConeMesh
         {
             get
             {
                 if (s_coneMesh) return s_coneMesh;
 
-                const int segs = 20;
-                var verts = new Vector3[segs + 2];
-                verts[0] = new Vector3(0f, 0f, 0.5f);   // apex
-                verts[1] = new Vector3(0f, 0f, -0.5f);  // base centre
+                const int segs = 6;
+                var apex = new Vector3(0f, 0f, 0.5f);
+                var baseCenter = new Vector3(0f, 0f, -0.5f);
+                var ring = new Vector3[segs];
                 for (int i = 0; i < segs; i++)
                 {
                     float a = i / (float)segs * Mathf.PI * 2f;
-                    verts[2 + i] = new Vector3(Mathf.Cos(a) * 0.5f, Mathf.Sin(a) * 0.5f, -0.5f);
+                    ring[i] = new Vector3(Mathf.Cos(a) * 0.5f, Mathf.Sin(a) * 0.5f, -0.5f);
                 }
 
+                // Flat shading needs unshared vertices — every triangle owns its three.
+                var verts = new Vector3[segs * 6];
                 var tris = new int[segs * 6];
+                int v = 0;
                 for (int i = 0; i < segs; i++)
                 {
-                    int a = 2 + i, b = 2 + (i + 1) % segs;
-                    int t = i * 6;
-                    tris[t] = 0; tris[t + 1] = a; tris[t + 2] = b;      // side
-                    tris[t + 3] = 1; tris[t + 4] = b; tris[t + 5] = a;  // base cap
+                    int j = (i + 1) % segs;
+                    verts[v] = apex; tris[v] = v; v++;          // side facet
+                    verts[v] = ring[i]; tris[v] = v; v++;
+                    verts[v] = ring[j]; tris[v] = v; v++;
+                    verts[v] = baseCenter; tris[v] = v; v++;    // base facet
+                    verts[v] = ring[j]; tris[v] = v; v++;
+                    verts[v] = ring[i]; tris[v] = v; v++;
                 }
 
-                s_coneMesh = new Mesh { name = "ToyCone", vertices = verts, triangles = tris };
+                s_coneMesh = new Mesh { name = "ToyCrystalSpike", vertices = verts, triangles = tris };
                 s_coneMesh.RecalculateNormals();
                 s_coneMesh.RecalculateBounds();
                 return s_coneMesh;
@@ -114,6 +125,9 @@ namespace CosmicShore.Gameplay
             filter.sharedMesh = ConeMesh;
             var renderer = body.AddComponent<MeshRenderer>();
             ApplyBodyMaterial(renderer, accent, prismMaterial);
+
+            // Slow spin about the pointing axis — the facets glint as they turn.
+            body.AddComponent<ToyIdleSpin>().Configure(Vector3.forward, 45f);
             return body;
         }
 
@@ -144,6 +158,9 @@ namespace CosmicShore.Gameplay
                 if (rod.TryGetComponent(out MeshRenderer rodRenderer))
                     ApplyBodyMaterial(rodRenderer, accent, prismMaterial);
             }
+
+            // A lazy tumble — omnidirectional, like the old toy rolling to rest.
+            body.AddComponent<ToyIdleSpin>().Configure(new Vector3(0.35f, 1f, 0.2f).normalized, 22f);
             return body;
         }
 

@@ -55,9 +55,17 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        /// <summary>Open the platform share sheet for an exported reconstruction.</summary>
+        /// <summary>
+        /// Hand an exported reconstruction to the platform share sheet (mobile). The editor and
+        /// desktop have no share sheet (NativeShare just logs there), so they open the viewer in
+        /// the default browser instead — flying the SHARE gate always visibly does something.
+        /// </summary>
         public static void Share(string filePath, string paintingName)
         {
+#if UNITY_EDITOR || UNITY_STANDALONE
+            Application.OpenURL("file:///" + filePath.Replace('\\', '/'));
+            CSDebug.Log($"[PaintingShareExporter] Opened reconstruction in browser: {filePath}");
+#else
             try
             {
                 new NativeShare()
@@ -69,10 +77,10 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                // Desktop/editor targets without a share sheet still produced the file — say where.
                 CSDebug.LogWarning($"[PaintingShareExporter] Share sheet unavailable ({e.Message}). " +
                                    $"Reconstruction saved at: {filePath}");
             }
+#endif
         }
 
         /// <summary>

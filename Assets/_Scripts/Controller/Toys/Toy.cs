@@ -92,6 +92,18 @@ namespace CosmicShore.Gameplay
 
             _armed = false;
             _activating = true;
+            ActivateDeferred(vessel).Forget();
+        }
+
+        /// <summary>
+        /// Toy effects run on the next Update tick, NOT inside the physics trigger callback:
+        /// they reach deep (domain RPC → vessel re-theme → HUD pool rebuilds, networked vessel
+        /// swaps), and a swath of engine APIs (DestroyImmediate among them) is illegal during
+        /// physics/animation/render callbacks. One frame of deferral is imperceptible.
+        /// </summary>
+        async UniTaskVoid ActivateDeferred(IVesselStatus vessel)
+        {
+            await UniTask.Yield(PlayerLoopTiming.Update, this.GetCancellationTokenOnDestroy());
             try { OnActivated(vessel); }
             finally { _activating = false; }
         }

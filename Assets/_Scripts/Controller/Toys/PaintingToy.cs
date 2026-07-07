@@ -131,8 +131,12 @@ namespace CosmicShore.Gameplay
         void HandleShareChosen()
         {
             // Gates stay up — the player can share again, or go on to repaint.
-            if (PaintingShareExporter.TryExport(_painting, Context, out string path))
-                PaintingShareExporter.Share(path, _painting.DisplayName);
+            if (!PaintingShareExporter.TryExport(_painting, Context, out string path)) return;
+            PaintingShareExporter.Share(path, _painting.DisplayName);
+
+            // In-world acknowledgment: the gate scale-pops so the pass visibly registered.
+            if (_shareGate && _shareGate.TryGetComponent(out SwapToy gateToy))
+                gateToy.Rebloom();
         }
 
         void HandleRepaintChosen()

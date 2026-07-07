@@ -127,9 +127,11 @@ How a run plays:
   the zone, exiting freestyle, benching, or destroying the runner ALWAYS restores it. Pausing
   the spawner is the sanctioned mass-law lever ("not creating mass is allowed; aging it out is
   not") — the painted trail itself is conserved mass, no caps/TTLs.
-- **Guide + marker.** A guide line runs from the vessel to the next point; a pulsing marker
-  sits on it. The advance threshold tightens automatically on fine-detail strokes (minaret
-  balconies) so tight loops must actually be flown.
+- **Guide + marker.** A guide line runs from the vessel to the next point; the marker on it is
+  a faceted crystal spike (flat-shaded, six-sided, in the stroke domain's prism material) that
+  slowly spins about its pointing axis — no pulsing; the calm idle motion (`ToyIdleSpin`)
+  matches the game's other pickups. The advance threshold tightens automatically on
+  fine-detail strokes (minaret balconies) so tight loops must actually be flown.
 - **Progress, pause, resume.** Progress is stroke-granular. Re-flying the station benches /
   resumes the run ("put the brush down"); progress also persists across sessions
   (`PaintingProgressStore`, the FavoriteSystem `DataAccessor` JSON pattern — completed strokes
