@@ -71,6 +71,9 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             if (!_initialized) return;
+
+            OnTick();
+
             if (!TryGetCurrent(out var cur) || !IsValid(cur)) return;
 
             if (!_hasCurrent)
@@ -164,6 +167,15 @@ namespace CosmicShore.Gameplay
         {
             var slot = _slots.Find(s => s.Toy == toy);
             if (slot == null) return;
+
+            // Disarm EVERY toy in the set the instant one fires. After a vessel swap the new
+            // vessel re-spawns right where you flew through (on top of these toys), and the domain
+            // change keeps you inside the cluster — so without this the neighbouring toys would
+            // chain-trigger and you could never escape. Each toy re-arms only once the vessel has
+            // flown clear of it (Toy.Update exit gate).
+            foreach (var s in _slots)
+                if (s.Toy) s.Toy.Disarm();
+
             Apply(slot.Option);
             // The domain/vessel change replicates; Update() detects the new current and flips this slot.
         }
@@ -188,6 +200,19 @@ namespace CosmicShore.Gameplay
         {
             for (int i = t.childCount - 1; i >= 0; i--)
                 Destroy(t.GetChild(i).gameObject);
+        }
+
+        /// <summary>
+        /// Per-frame hook for reacting to external state that isn't the tracked "current option" —
+        /// e.g. the vessel changer recolouring all its mini ships when the player's domain changes,
+        /// not just the one slot that flips on a ship swap. Runs before the current-option reconcile.
+        /// </summary>
+        protected virtual void OnTick() { }
+
+        /// <summary>Invoke an action for every live slot (e.g. to recolour them all in place).</summary>
+        protected void ForEachSlot(System.Action<Slot> action)
+        {
+            foreach (var s in _slots) action(s);
         }
 
         // ── Abstract per-kind behaviour ─────────────────────────────────────

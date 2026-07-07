@@ -88,6 +88,7 @@ class ToyStubVessel : MonoBehaviour, IVessel
     public void DestroyVessel() { }
     public void ResetForPlay() { }
     public void SetPose(Pose pose) { }
+    public void SetInitialSpeed(float initialSpeed) { }
     public void ChangePlayer(IPlayer player) { }
     public void ModifyThrottle(float amount, float duration) { }
     public void AddSlowedShipTransformToGameData() { }
@@ -340,7 +341,8 @@ public class ToyBaseTests : IDisposable
     {
         var gameData = ToyRig.MakeGameData();
         var (toy, root) = MakeToy(new Vector3(0f, 0f, 300f), ToyRig.MakeContext(gameData));
-        var (vesselGo, _, _, _) = ToyRig.MakeVessel(Vector3.zero);
+        var (vesselGo, _, _, localPlayer) = ToyRig.MakeVessel(Vector3.zero);
+        ToyRig.SetLocalPlayer(gameData, localPlayer); // exit-gated re-arm reads GameData.LocalPlayer.Vessel
         Track(vesselGo);
 
         // Continuity law: the toy starts at scale zero the moment it is initialized.
@@ -387,7 +389,8 @@ public class ToyBaseTests : IDisposable
         var gameData = ToyRig.MakeGameData();
         bool freestyle = false;
         var (toy, root) = MakeToy(new Vector3(0f, 0f, 300f), ToyRig.MakeContext(gameData, () => freestyle));
-        var (vesselGo, _, _, _) = ToyRig.MakeVessel(Vector3.zero);
+        var (vesselGo, _, _, localPlayer) = ToyRig.MakeVessel(Vector3.zero);
+        ToyRig.SetLocalPlayer(gameData, localPlayer); // exit-gated re-arm reads GameData.LocalPlayer.Vessel
         Track(vesselGo);
 
         ToyRig.RunSeconds(loop, 1.5f); // bloom
@@ -411,7 +414,8 @@ public class ToyBaseTests : IDisposable
     {
         var gameData = ToyRig.MakeGameData();
         var (toy, root) = MakeToy(new Vector3(0f, 0f, 300f), ToyRig.MakeContext(gameData));
-        var (vesselGo, _, _, _) = ToyRig.MakeVessel(Vector3.zero);
+        var (vesselGo, _, _, localPlayer) = ToyRig.MakeVessel(Vector3.zero);
+        ToyRig.SetLocalPlayer(gameData, localPlayer); // exit-gated re-arm reads GameData.LocalPlayer.Vessel
         Track(vesselGo);
 
         ToyRig.RunSeconds(loop, 1.5f); // bloom
@@ -468,9 +472,12 @@ public class DomainChangerToySetTests : IDisposable
         var (player, gameData) = SpawnLocalHumanPlayer();
 
         // Vessel that trips toys resolves locality through the REAL spawned Player.
-        var (vesselGo, status, _, _) = ToyRig.MakeVessel(Vector3.zero);
+        var (vesselGo, status, stub, _) = ToyRig.MakeVessel(Vector3.zero);
         Track(vesselGo);
         status.Player = player;
+        // Exit-gated re-arm reads GameData.LocalPlayer.Vessel.Transform to confirm the
+        // vessel has flown clear — wire the stub vessel onto the real Player.
+        typeof(Player).GetProperty("Vessel")!.SetValue(player, stub);
 
         var definition = ScriptableObject.CreateInstance<DomainChangerToyDefinitionSO>();
         var setParent = Track(new GameObject("toys"));
@@ -687,7 +694,8 @@ public class PaintingToyTests : IDisposable
     public void FlyByNumbers_GuidesThroughEveryWaypointInOrder_ThenCompletesAndFades()
     {
         var gameData = ToyRig.MakeGameData();
-        var (vesselGo, _, _, _) = ToyRig.MakeVessel(Vector3.zero);
+        var (vesselGo, _, _, localPlayer) = ToyRig.MakeVessel(Vector3.zero);
+        ToyRig.SetLocalPlayer(gameData, localPlayer); // exit-gated re-arm reads GameData.LocalPlayer.Vessel
         Track(vesselGo);
 
         var definition = ScriptableObject.CreateInstance<PaintingToyDefinitionSO>();
@@ -749,7 +757,8 @@ public class PaintingToyTests : IDisposable
     public void SecondPassDuringActiveRun_DoesNotStartASecondPainter()
     {
         var gameData = ToyRig.MakeGameData();
-        var (vesselGo, _, _, _) = ToyRig.MakeVessel(Vector3.zero);
+        var (vesselGo, _, _, localPlayer) = ToyRig.MakeVessel(Vector3.zero);
+        ToyRig.SetLocalPlayer(gameData, localPlayer); // exit-gated re-arm reads GameData.LocalPlayer.Vessel
         Track(vesselGo);
 
         var definition = ScriptableObject.CreateInstance<PaintingToyDefinitionSO>();
@@ -934,7 +943,7 @@ public class ToyboxControllerTests : IDisposable
     }
 
     [Fact]
-    public void ZeroConfig_SynthesisesDefaultToybox_WithTheThreeBuiltInToys()
+    public void ZeroConfig_SynthesisesDefaultToybox_WithTheFourBuiltInToys()
     {
         var (controller, gameData) = MakeController(box: null);
         loop.Tick(0.1f);
@@ -942,10 +951,11 @@ public class ToyboxControllerTests : IDisposable
 
         var root = ToyRig.Children(controller.transform).Single(t => t.name == "FreestyleToybox");
         var names = ToyRig.Children(root).Select(t => t.name).ToArray();
-        Assert.Equal(3, names.Length);
+        Assert.Equal(4, names.Length);
         Assert.Contains("Toy_painting", names);            // fly-by-numbers (with a star shape)
         Assert.Contains("ToySet_vessel_changer", names);   // coordinated flip-set
         Assert.Contains("ToySet_domain_changer", names);   // coordinated flip-set
+        Assert.Contains("Toy_conveyor", names);            // Wanderway microscene conveyor
 
         ToyRig.RunSeconds(loop, 1.5f); // complete the bloom started outside a Tick (async-void trap)
     }
@@ -1107,15 +1117,16 @@ public class VesselModelBuilderTests : IDisposable
         var hullRenderer = hull.AddComponent<MeshRenderer>();
         hullRenderer.sharedMaterials = new[] { new Material((Shader)null) { name = "HullMat" } };
 
-        Assert.True(VesselModelBuilder.TryBuild(prefab.transform, targetRadius: 5f, out var model));
+        Assert.True(VesselModelBuilder.TryBuild(prefab.transform, targetRadius: 5f, new Color(0.2f, 0.8f, 0.3f), out var model));
         Assert.True(model);
 
-        // One display-only child per harvested mesh, sharing the prefab's mesh + materials.
+        // One display-only child per harvested mesh, sharing the prefab's mesh; materials
+        // are replaced by the opaque domain-tinted preview material (upstream drift).
         var piece = ToyRig.Children(model.transform).Single();
         var filter = piece.gameObject.GetComponent<MeshFilter>();
         Assert.Equal("hull", filter.sharedMesh.name);
         var renderer = piece.gameObject.GetComponent<MeshRenderer>();
-        Assert.Equal("HullMat", renderer.sharedMaterials.Single().name);
+        Assert.Equal(new Color(0.2f, 0.8f, 0.3f), renderer.sharedMaterials.Single().color);
         Assert.Equal(CosmicShore.Engine.Rendering.ShadowCastingMode.Off, renderer.shadowCastingMode);
         Assert.False(renderer.receiveShadows);
 
@@ -1137,7 +1148,7 @@ public class VesselModelBuilderTests : IDisposable
         smr.sharedMesh = BoxMesh(Vector3.one * 2f, "skinned");
         smr.sharedMaterials = new[] { new Material((Shader)null) };
 
-        Assert.True(VesselModelBuilder.TryBuild(prefab.transform, targetRadius: 3f, out var model));
+        Assert.True(VesselModelBuilder.TryBuild(prefab.transform, targetRadius: 3f, Color.white, out var model));
         var piece = ToyRig.Children(model.transform).Single();
         Assert.Equal("skinned", piece.gameObject.GetComponent<MeshFilter>().sharedMesh.name);
 
@@ -1151,7 +1162,7 @@ public class VesselModelBuilderTests : IDisposable
         var prefab = new GameObject("EmptyPrefab");
         new GameObject("Child").transform.SetParent(prefab.transform, false);
 
-        Assert.False(VesselModelBuilder.TryBuild(prefab.transform, targetRadius: 5f, out var model));
+        Assert.False(VesselModelBuilder.TryBuild(prefab.transform, targetRadius: 5f, Color.white, out var model));
         Assert.Null(model);
     }
 }

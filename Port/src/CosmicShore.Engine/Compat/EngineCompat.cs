@@ -421,6 +421,14 @@ namespace CosmicShore.Engine
 
         public virtual Vector3 ClosestPoint(Vector3 position) => transform.position;
 
+        /// <summary>
+        /// World-space AABB of this collider (original contract). Phase-2 convention —
+        /// rotation ignored: center transformed through the hierarchy, extents scaled by
+        /// |lossyScale| (the same AABB the <see cref="TriggerPass"/> overlaps with). The
+        /// base collider reports a degenerate point at the transform position.
+        /// </summary>
+        public virtual Bounds bounds => new Bounds(transform.position, Vector3.zero);
+
         internal override void DestroyComponentNow()
         {
             // Leave the trigger-pass registry; pairs still tracking this collider fire
@@ -434,12 +442,35 @@ namespace CosmicShore.Engine
     {
         public Vector3 center = Vector3.zero;
         public Vector3 size = Vector3.one;
+
+        public override Bounds bounds
+        {
+            get
+            {
+                Vector3 s = transform.lossyScale;
+                var worldSize = new Vector3(
+                    Mathf.Abs(size.x * s.x),
+                    Mathf.Abs(size.y * s.y),
+                    Mathf.Abs(size.z * s.z));
+                return new Bounds(transform.TransformPoint(center), worldSize);
+            }
+        }
     }
 
     public class SphereCollider : Collider
     {
         public Vector3 center = Vector3.zero;
         public float radius = 0.5f;
+
+        public override Bounds bounds
+        {
+            get
+            {
+                Vector3 s = transform.lossyScale;
+                float r = radius * Mathf.Max(Mathf.Abs(s.x), Mathf.Max(Mathf.Abs(s.y), Mathf.Abs(s.z)));
+                return new Bounds(transform.TransformPoint(center), new Vector3(r * 2f, r * 2f, r * 2f));
+            }
+        }
     }
 
     /// <summary>
@@ -457,6 +488,22 @@ namespace CosmicShore.Engine
     {
         public Mesh sharedMesh;
         public bool convex;
+
+        public override Bounds bounds
+        {
+            get
+            {
+                var shared = sharedMesh;
+                if (shared is null || shared.IsDestroyed) return new Bounds(transform.position, Vector3.zero);
+                Bounds local = shared.bounds;
+                Vector3 s = transform.lossyScale;
+                var worldSize = new Vector3(
+                    Mathf.Abs(local.extents.x * s.x) * 2f,
+                    Mathf.Abs(local.extents.y * s.y) * 2f,
+                    Mathf.Abs(local.extents.z * s.z) * 2f);
+                return new Bounds(transform.TransformPoint(local.center), worldSize);
+            }
+        }
     }
 
     // E7/E8: Object statics that ported code calls.

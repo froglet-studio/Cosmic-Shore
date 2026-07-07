@@ -197,6 +197,17 @@ namespace CosmicShore.Gameplay
             IsSmallest = false;
             IsLargest = false;
 
+            // SetupDestruction disables the scale animator (destroyed mass must stop scaling and
+            // weighing). Re-arm it on pool-reuse creation so the re-minted prism grows in from
+            // zero (continuity law) and GetCurrentVolume tracks again (volume is the spine).
+            // Gated on !enabled so fresh spawns and never-destroyed pooled reuse are untouched;
+            // Restore() never routes through here and keeps its bookkept-volume fallback.
+            if (scaleAnimator && !scaleAnimator.enabled)
+            {
+                scaleAnimator.enabled = true;
+                transform.localScale = Vector3.zero;
+            }
+
             // Clear trail renderer to prevent visual artifacts across the map
             if (Trail != null && Trail.TrailRenderer != null)
             {

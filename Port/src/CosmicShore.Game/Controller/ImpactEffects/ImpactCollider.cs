@@ -12,5 +12,12 @@ namespace CosmicShore.Gameplay
         private Object impactorObject;
 
         public IImpactor Impactor => impactorObject as IImpactor;
+
+        /// <summary>
+        /// Wires the impactor on a runtime-built collider (prefab instances author this in the
+        /// inspector; runtime spawns — e.g. the conveyor toy's elemental-crystal pickups — have
+        /// no serialized state to author). Mirrors the ToyDefinitionSO.SetRuntimeMetadata pattern.
+        /// </summary>
+        internal void SetImpactor(Object impactor) => impactorObject = impactor;
     }
 }

@@ -138,6 +138,14 @@ public class EnumFreezeTests
         => Assert.Equal(expected, (int)level);
 
     [Theory]
+    [InlineData(PrismKind.Plain, 0)]
+    [InlineData(PrismKind.Danger, 1)]
+    [InlineData(PrismKind.Shielded, 2)]
+    [InlineData(PrismKind.SuperShielded, 3)]
+    public void PrismKind_Values_Frozen(PrismKind kind, int expected)
+        => Assert.Equal(expected, (int)kind);
+
+    [Theory]
     [InlineData(FaunaDiet.Herbivore, 0)]
     [InlineData(FaunaDiet.Predator, 1)]
     public void FaunaDiet_Values_Frozen(FaunaDiet diet, int expected)

@@ -240,19 +240,9 @@ namespace CosmicShore.Gameplay
             var trail = new Trail(isLoop);
             var actualDomain = trailDomain ?? domain;
 
-            for (int i = 0; i < points.Length; i++)
-            {
-                var point = points[i];
-                var block = Instantiate(prismPrefab, container.transform);
-                block.ChangeTeam(actualDomain);
-                block.ownerID = $"{container.name}::{i}";
-                block.transform.localPosition = point.Position;
-                block.transform.localRotation = point.Rotation;
-                block.TargetScale = point.Scale;
-                block.Trail = trail;
-                block.Initialize();
-                trail.Add(block);
-            }
+            // Shared canonical lay-down (Instantiate → ChangeTeam → pose → TargetScale → Trail →
+            // Initialize → trail.Add). Plain kind, so any baked prefab shield/danger is preserved.
+            PrismTrailBuilder.LaySync(prismPrefab, points, actualDomain, container.transform, trail, container.name);
 
             trails.Add(trail);
         }

@@ -213,6 +213,12 @@ namespace CosmicShore.Gameplay
                 "vessel_changer", "Vessel Changer", "Fly through to swap your ship.", new Color(1.00f, 0.85f, 0.20f)));
             box.AddToy(MakeDefault<DomainChangerToyDefinitionSO>(
                 "domain_changer", "Domain Changer", "Fly through to change your team colour.", new Color(0.85f, 0.30f, 0.90f)));
+            // The conveyor's prism prefab is an asset reference the code-built fallback can't
+            // supply — its scenes degrade to crystals + lifeforms until the authored asset
+            // (Tools > Cosmic Shore > Setup Freestyle Toybox) wires one.
+            box.AddToy(MakeDefault<ConveyorToyDefinitionSO>(
+                "conveyor", "Wanderway", "Fly through to summon an endless trail of little worlds.",
+                new Color(0.35f, 1.00f, 0.55f)));
             return box;
         }
 

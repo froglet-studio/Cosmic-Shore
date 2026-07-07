@@ -998,14 +998,15 @@ public class FreestyleConvergenceTests : IDisposable
             foreach (var fauna in director.Cell.LiveFauna)
                 Assert.Equal(batchDomain, fauna.Domain);
 
-            // The toybox placed the three built-in toys on the membrane ring.
+            // The toybox placed the four built-in toys on the membrane ring.
             var toyboxRoot = Children(director.Toybox.transform).Single(t => t.name == "FreestyleToybox");
             var names = Children(toyboxRoot).Select(t => t.name).ToArray();
-            Assert.Equal(3, names.Length);
+            Assert.Equal(4, names.Length);
             Assert.Contains("Toy_painting", names);
             Assert.Contains("ToySet_vessel_changer", names);
             Assert.Contains("ToySet_domain_changer", names);
-            Assert.True(director.CountToys() >= 3);
+            Assert.Contains("Toy_conveyor", names);
+            Assert.True(director.CountToys() >= 4);
 
             // The autopilot vessel lays REAL prisms — the lava-lamp trail.
             Assert.True(director.TrailPrismCount > 0, "autopilot should lay real trail prisms");

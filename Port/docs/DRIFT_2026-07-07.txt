@@ -1,0 +1,81 @@
+Drift-sync record — 2026-07-07
+bleeding-edge merged INTO claude/quirky-cannon-sk8a02 (42 commits, 87fdbc6b -> c18af492).
+Headline upstream changes: microscene/environment-spawning unification + Wanderway
+conveyor content expansion (PRs #576-#580), elemental drain (#579), AstroLeague court
+boundaries, menu vessel-swap speed inheritance, exit-gated toy re-arm.
+
+RE-VERBATIMED (28 ported files, upstream diff applied with sanctioned substitutions):
+  Controller/Arcade/AstroLeague/AstroLeagueArena.cs       — shaped court + optional central shared goal
+  Controller/Arcade/AstroLeague/AstroLeagueBall.cs        — boundary object containment, wall-juice rate limit, SetSpawnPosition
+  Controller/Arcade/AstroLeague/AstroLeagueController.cs  — match-config NetworkVariables, court-per-intensity, nucleus morph via BuildVisualMesh
+  Controller/Arcade/AstroLeague/AstroLeagueGoal.cs        — InwardNormal, pass-through central goal
+  Controller/Arcade/AstroLeague/AstroLeagueSettingsSO.cs  — per-intensity court shapes, ring/notch tuning, recoil juice
+  Controller/Camera/CustomCameraController.cs
+  Controller/Environment/Cell.cs                          — SetNucleusMesh (court-shaped nucleus)
+  Controller/Environment/CellLifeSpawnerBase.cs
+  Controller/Environment/FlowField/Crystal.cs
+  Controller/Environment/MiniGameObjects/SpawnableShapeBase.cs
+  Controller/Environment/RandomLifeSpawner.cs
+  Controller/Environment/Spawning/SpawnableBase.cs
+  Controller/ImpactEffects/ImpactCollider.cs
+  Controller/ImpactEffects/Impactors/ElementalCrystalImpactor.cs
+  Controller/ImpactEffects/Impactors/OmniCrystalImpactor.cs
+  Controller/Multiplayer/ClientPlayerVesselInitializer.cs
+  Controller/Multiplayer/MenuServerPlayerVesselInitializer.cs — swap inherits pose + speed
+  Controller/Toys/SwapToySetCoordinator.cs                — set-wide Disarm on fire, recolour on domain tick
+  Controller/Toys/Toy.cs                                  — exit-gated re-arm (arm in Update once the local
+                                                            vessel is beyond triggerRadius×1.35), slow 5s regrow
+  Controller/Toys/ToyboxController.cs                     — default toybox now synthesises FOUR toys (+ conveyor)
+  Controller/Toys/VesselChangerToySet.cs                  — domain-tinted mini-ship previews
+  Controller/Toys/VesselModelBuilder.cs                   — hull-only harvest + opaque preview material
+  Controller/Vessel/IVessel.cs                            — SetInitialSpeed
+  Controller/Vessel/Prism.cs                              — scale-animator re-arm in ResetState (pool reuse)
+  Controller/Vessel/ResourceSystem.cs                     — elemental drain: RecoverBaseLevels back to resting band
+  Controller/Vessel/VesselController.cs                   — SetInitialSpeed RPC group
+  Controller/Vessel/VesselTransformer.cs                  — SetInitialSpeed seeds smoothed cruise speed
+  Utility/DataContainers/FaunaReproductionRules.cs        — PreyAvailable prey-linked production gate
+
+NEW PORTS (14 files, verbatim):
+  Data/Enums/PrismKind.cs                                 — Plain/Danger/Shielded/SuperShielded (frozen: EnumFreezeTests)
+  Controller/Environment/Spawning/PrismGeometry.cs        — shared prism-slab geometry helpers
+  Controller/Environment/Spawning/PrismKinds.cs           — kind-themed spawn helpers
+  Controller/Environment/Spawning/PrismTrailBuilder.cs    — unified trail-laying used by spawners + microscenes
+  Controller/Toys/ConveyorToy.cs                          — Wanderway on/off toggle toy
+  Controller/Toys/Microscene.cs                           — one recycled little world (conserved prism stock)
+  Controller/Toys/MicrosceneConveyor.cs                   — speed-scaled streaming field ahead of the vessel
+  Controller/Toys/MicroscenePalette.cs
+  Controller/Toys/MicroscenePatterns.cs                   — 16 recipes (gate runs, tunnels, orchards, ...)
+  Controller/Toys/MicroscenePlan.cs                       — CrystalKind/CrystalDrop/plan model
+  ScriptableObjects/Toys/ConveyorToyDefinitionSO.cs
+  Controller/Arcade/AstroLeague/AstroLeagueBoundary.cs    — court shapes: convex polytopes/sphere/cylinder/notched ring + visual cage mesh
+  Controller/ImpactEffects/EffectsSO/Vessel Prism Effects/VesselChangeSpeedByPrismEffectSO.cs
+  tests/CosmicShore.Tests.Ported/MicroscenePatternsTests.cs — upstream's own EditMode tests, verbatim (NUnit)
+
+NOT PORTED (marked lanes, unchanged policy):
+  UI/MenuMiniGameHUD.cs, UI/ScreenSwitcher.cs             — UI-shell arc
+  Editor/ToyboxSetupTool.cs                               — editor tooling (phase 7)
+
+ENGINE ADDITIONS (original contract):
+  Vector3.Normalize(Vector3) static                       — used by AstroLeagueBoundary.BuildTangent
+  Collider.bounds (virtual) + Box/Sphere/Mesh overrides   — world AABB, same rotation-ignored |lossyScale|
+                                                            convention as the TriggerPass (used by Toy trigger radius)
+
+NEW DEVIATION MARKERS (drift 2026-07-07):
+  VesselModelBuilder.BuildPreviewMaterial                 — MaterialGlobalIlluminationFlags (render backend)
+  Microscene                                              — FadeIn presentation call (render/effects arc)
+
+TEST ADAPTATIONS (port-authored tests following upstream contract changes):
+  EnumFreezeTests                                         — +PrismKind_Values_Frozen
+  ToySystemTests                                          — exit-gated re-arm needs GameData.LocalPlayer.Vessel wired
+                                                            (5 rigs); preview-material assertions; default toybox 3->4
+  ClientConvergenceTests                                  — freestyle factory expects 4 built-in toys incl. Toy_conveyor
+  AstroLeagueTests                                        — SetBoundary(sphere AstroLeagueBoundary); golden-goal seed
+                                                            re-swept 3->2 (court boundaries changed trajectories)
+  5 IVessel test doubles                                  — SetInitialSpeed no-op
+
+GATE: 1050 + 284 = 1334 tests green both configs (was 1046 + 276). All 5 CLI modes exit 0.
+Client diags: race @1200 byte-identical (crystals [6,1,4,1], trail 786); freestyle @300
+identical except toys 8 -> 9 — the Wanderway conveyor joining the default toybox ring
+(flora 3, fauna 3, prisms 39 unchanged). The conveyor's prism prefab is an asset reference
+the code-built fallback can't supply — its scenes degrade to crystals + lifeforms until the
+authored asset wires one (noted in ToyboxController.BuildDefaultToybox).

@@ -57,6 +57,7 @@ namespace CosmicShore.Gameplay
         void DestroyVessel();
         void ResetForPlay();
         void SetPose(Pose pose);
+        void SetInitialSpeed(float initialSpeed);
         void ChangePlayer(IPlayer player);
         void ModifyThrottle(float amount, float duration);
         void AddSlowedShipTransformToGameData();

@@ -102,11 +102,15 @@ namespace CosmicShore.Gameplay
         // used to size the wall-bounce juice by true impact speed (not the just-reflected value).
         Vector3 _velocityBeforePhysics;
 
-        // Spherical play boundary (the cell nucleus) — set by AstroLeagueArena.Build via SetBoundary.
-        // The ball is contained by a server-side radial reflect off the inner surface (no collider),
-        // which replaced the six BoxCollider walls. radius <= 0 means "not set yet" (uncontained).
-        Vector3 _boundaryCenter;
-        float _boundaryRadius;
+        // Server time of the last wall-bounce juice (camera shake / haptic / burst) — rate-limits it so
+        // a frictionless ball bouncing or skimming the wall can't spam the camera shake (see HandleWallBounce).
+        float _lastWallJuiceTime;
+
+        // Court play boundary (the cell nucleus) — set by AstroLeagueArena.Build via SetBoundary. The
+        // ball is contained by a server-side reflect off the boundary's walls (no collider) — flat
+        // polytope faces BANK the ball (billiards/air-hockey), a sphere focuses it toward center. The
+        // shape is chosen per intensity. null means "not set yet" (frozen showpiece pre-kickoff).
+        AstroLeagueBoundary _boundary;
 
         // Server-side velocity estimates for transform-driven vessels (root → last pos + velocity)
         readonly Dictionary<Transform, Vector3> _vesselLastPos = new();
@@ -560,52 +564,55 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Server: a wall (or other non-prism geometry) bounce. Perfectly elastic — the solver's
-        /// reflection at bounciness 1 stands, NO decay, no prism interaction; just bounce juice.
+        /// Server: a wall bounce. Perfectly elastic (the reflection stands, no decay); just bounce juice.
+        /// Intensity is the PERPENDICULAR (into-wall) speed, NOT the full speed: a frictionless ball
+        /// skimming tangentially along a curved wall pokes through a sliver every tick, so full-speed
+        /// intensity fired the camera shake + haptic CONTINUOUSLY as the ball orbited the wall — a
+        /// persistent ~25 Hz jitter. A glancing skim now reads as ~0; only a real perpendicular slam
+        /// shakes, and a cooldown stops even repeated hard bounces from spamming.
         /// </summary>
         void HandleWallBounce(Vector3 contactPoint, Vector3 contactNormal)
         {
-            float intensity = Mathf.Clamp01(_velocityBeforePhysics.magnitude / settings.maxSpeed);
+            float perpSpeed = Mathf.Abs(Vector3.Dot(_velocityBeforePhysics, contactNormal));
+            float intensity = Mathf.Clamp01(perpSpeed / settings.maxSpeed);
+
+            if (intensity < settings.wallJuiceMinIntensity) return; // glancing skim — no juice
+            if (Time.time - _lastWallJuiceTime < settings.wallJuiceCooldown) return;
+            _lastWallJuiceTime = Time.time;
+
             WallBounce_ClientRpc(contactPoint, contactNormal, intensity);
         }
 
         /// <summary>
-        /// Set the spherical play boundary (the cell nucleus). Called by <c>AstroLeagueArena.Build</c>
-        /// once the intensity scale is known. The ball bounces off the inner surface (see
-        /// <see cref="ContainWithinBoundary"/>); this replaced the six BoxCollider arena walls.
+        /// Set the court play boundary (the cell nucleus). Called by <c>AstroLeagueArena.Build</c> once
+        /// the intensity scale + shape are known. The ball bounces off its walls (see
+        /// <see cref="ContainWithinBoundary"/>); a box/prism BANKS the ball off flat faces, a sphere
+        /// focuses it. This replaced the six BoxCollider arena walls (and now the single sphere too).
         /// </summary>
-        public void SetBoundary(Vector3 center, float radius)
+        public void SetBoundary(AstroLeagueBoundary boundary)
         {
-            _boundaryCenter = center;
-            _boundaryRadius = Mathf.Max(0f, radius);
+            _boundary = boundary;
         }
 
         /// <summary>
-        /// Server: keep the ball inside the spherical nucleus by reflecting its velocity off the inner
-        /// surface and clamping its position — the radial equivalent of the old perfectly-elastic wall
-        /// bounce (no collider, no decay). Runs once per server tick after the speed cap.
+        /// Server: keep the ball inside the court by reflecting its velocity off the boundary walls and
+        /// clamping its position (no collider, no decay) — flat polytope faces preserve the wall-parallel
+        /// component (the bank), curved shapes reflect radially. Runs once per server tick after the
+        /// speed cap. Fires the shared wall juice at the contact point on a real bounce.
         /// </summary>
         void ContainWithinBoundary()
         {
-            if (_boundaryRadius <= 0f) return; // not configured yet (frozen showpiece pre-kickoff)
+            if (_boundary == null) return; // not configured yet (frozen showpiece pre-kickoff)
 
-            Vector3 fromCenter = rb.position - _boundaryCenter;
-            float maxDist = _boundaryRadius - BallWorldRadius(); // ball SURFACE kisses the wall
-            if (maxDist <= 0f) return;
+            Vector3 pos = rb.position;
+            Vector3 vel = rb.linearVelocity;
+            if (!_boundary.Contain(ref pos, ref vel, BallWorldRadius(), settings.ballBounciness,
+                    out Vector3 contactPoint, out Vector3 contactNormal))
+                return;
 
-            float dist = fromCenter.magnitude;
-            if (dist <= maxDist || dist < 1e-4f) return; // still inside
-
-            Vector3 outward = fromCenter / dist;        // points from center toward the ball
-            Vector3 surfaceNormal = -outward;           // inward wall normal at the contact point
-
-            // Reflect only the outward-bound component (don't double-bounce a ball already turning in).
-            if (Vector3.Dot(rb.linearVelocity, outward) > 0f)
-                rb.linearVelocity = Vector3.Reflect(rb.linearVelocity, surfaceNormal) * settings.ballBounciness;
-
-            // Depenetrate: clamp the center back onto the boundary, then fire the shared wall juice.
-            rb.position = _boundaryCenter + outward * maxDist;
-            HandleWallBounce(_boundaryCenter + outward * _boundaryRadius, surfaceNormal);
+            rb.position = pos;
+            rb.linearVelocity = vel;
+            HandleWallBounce(contactPoint, contactNormal);
         }
 
         /// <summary>
@@ -1053,7 +1060,17 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>Server: respawn at center — visible, frozen, zero velocity, NEUTRAL color again.</summary>
+        /// <summary>
+        /// Override where the ball resets to on kickoff (default = the authored arena center). The
+        /// central shared-goal layout spawns it off-center, in the goal's plane, so it doesn't start
+        /// sitting in the central goal. Set by the controller; only the server uses spawnPosition.
+        /// </summary>
+        public void SetSpawnPosition(Vector3 worldPosition)
+        {
+            spawnPosition = worldPosition;
+        }
+
+        /// <summary>Server: respawn at the spawn position — visible, frozen, zero velocity, NEUTRAL color again.</summary>
         public void ResetToCenterServer()
         {
             if (!IsServer) return;

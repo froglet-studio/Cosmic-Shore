@@ -231,7 +231,8 @@ public class AstroLeagueTests
         var trace = new List<Vector3>();
         try
         {
-            ball.SetBoundary(Vector3.zero, 120f);
+            ball.SetBoundary(new AstroLeagueBoundary(
+                AstroLeagueBoundaryShape.Sphere, Vector3.zero, new Vector3(120f, 120f, 120f), 120f));
             ball.SetFrozenServer(false);
             rb.linearVelocity = new Vector3(37f, 11f, 53f);
             rb.angularVelocity = new Vector3(0.5f, 2f, -1f);
@@ -282,7 +283,8 @@ public class AstroLeagueTests
         var ball = MakeBall(settings, out var rb);
         try
         {
-            ball.SetBoundary(Vector3.zero, 120f);
+            ball.SetBoundary(new AstroLeagueBoundary(
+                AstroLeagueBoundaryShape.Sphere, Vector3.zero, new Vector3(120f, 120f, 120f), 120f));
             // Frozen (kickoff count-in): kinematic — velocity writes don't move it.
             Assert.True(ball.IsFrozen);
             rb.linearVelocity = new Vector3(50f, 0f, 0f);
@@ -338,10 +340,11 @@ public class AstroLeagueTests
     [Fact]
     public void Match_TiedRegulation_GoesToGoldenGoal_AndSuddenDeathDecidesIt()
     {
-        // Seed chosen for a scoreless regulation (validated sweep) — full time ties 0–0,
-        // the monitor reports expiry, the controller enters overtime, and the first
-        // overtime goal ends the match immediately (sudden death).
-        var result = RunMatch(players: 4, seed: 3);
+        // Seed chosen for a tied regulation (validated sweep; re-swept 2026-07-07 after the
+        // court-boundary drift changed ball trajectories) — full time ties, the monitor
+        // reports expiry, the controller enters overtime, and the first overtime goal ends
+        // the match immediately (sudden death).
+        var result = RunMatch(players: 4, seed: 2);
 
         Assert.True(result.Finished);
         Assert.Empty(result.EngineErrors);

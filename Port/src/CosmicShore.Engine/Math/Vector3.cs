@@ -68,6 +68,12 @@ namespace CosmicShore.Engine
             else { x = 0f; y = 0f; z = 0f; }
         }
 
+        public static Vector3 Normalize(Vector3 value)
+        {
+            float mag = value.magnitude;
+            return mag > 1E-05f ? value / mag : zero;
+        }
+
         public void Set(float newX, float newY, float newZ) { x = newX; y = newY; z = newZ; }
 
         public static float Dot(Vector3 a, Vector3 b) => a.x * b.x + a.y * b.y + a.z * b.z;

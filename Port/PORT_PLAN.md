@@ -691,19 +691,30 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (iteration 20)
+## NEXT UP (after drift-sync 2026-07-07)
 
-1. **Rung 5**: real look — instantiate a ThemeManager with a wired
-   ThemeManagerDataContainerSO at client startup (rung-5 groundwork below),
-   SO_ColorSet domain palettes + SO_MaterialSet-driven prism/vessel draw colors
-   (GetTeam*Material per domain replacing the GL layer's hardcoded DomainColor).
-2. Team-crystal renderer polish (optional): team stations currently draw with
-   their element tint only — consider a domain-colored ring/tint so the lock is
-   readable before contact.
-3. AI boost (optional balance): rivals never boost (the real AIPilot doesn't
-   drive the SkimRace boost rule), so their energy bars sit full — consider an
-   AIPilot-driven boost intent when balance work resumes.
+1. **Wanderway content in the client**: the conveyor toy is live in the default
+   toybox (freestyle diag toys 8 → 9) but the code-built fallback definition has
+   no prism prefab, so its microscenes degrade to crystals + lifeforms. Wire a
+   client-built prism prefab into the fallback `ConveyorToyDefinitionSO` (the
+   client already builds prisms in code) so Wanderway transports real conserved
+   prisms; re-baseline the freestyle diag with the toy toggled on.
+2. **Vessel-initializer remainder** (from the menu-swap arc): port
+   `ServerPlayerVesselInitializerWithAI` (game-scene AI backfill),
+   `MenuCrystalClickHandler`, `MultiplayerSetup` / `DomainAssigner`, and wire the
+   menu-swap chain into the playable client scene.
+3. **Track bleeding-edge**: merge upstream again next iteration; every merge
+   reopens the drift-sync lane (survey with the
+   `git diff <old-sync> origin/bleeding-edge -- Assets/_Scripts` ∩ ported-files
+   intersection; record in `docs/DRIFT_<date>.txt` per the 2026-07-07 precedent).
 4. Update this file, commit, push.
+
+### Rung-5 leftovers (optional polish, from iteration 20)
+
+- Team-crystal renderer polish: domain-colored ring/tint so the lock is readable
+  before contact.
+- AI boost balance: rivals never boost (the real AIPilot doesn't drive the
+  SkimRace boost rule), so their energy bars sit full.
 
 ## Vessel-initializer (menu-swap) arc (landed after the controller-chain arc — dedicated agent arc)
 
@@ -1033,6 +1044,28 @@ deferred with the UI-shell deviations). Engine `Resources` gained the path-keyed
 needs. When rung 5 lands in the client: instantiate a ThemeManager with a wired
 container at startup and read `GetTeam*Material` per domain for prism/vessel draw
 colors.
+
+## Drift-sync 2026-07-07 — bleeding-edge c18af492 merged in (takeover iteration)
+
+bleeding-edge merged INTO this branch (42 commits, 87fdbc6b → c18af492: microscene/
+environment-spawning unification + Wanderway content PRs #576-#580, elemental drain,
+AstroLeague court boundaries, exit-gated toy re-arm). Full record:
+`Port/docs/DRIFT_2026-07-07.txt`. **28 ported files re-verbatimed** (headliners:
+ResourceSystem elemental drain, Toy exit-gated re-arm + 5s regrow, ToyboxController
+four-toy default, VesselModelBuilder hull-filter + preview material, AstroLeague
+court system, Prism pool-reuse scale-animator re-arm, IVessel/VesselController/
+VesselTransformer SetInitialSpeed, FaunaReproductionRules PreyAvailable) and
+**14 new files ported** (the whole microscene/conveyor family + spawning helpers +
+PrismKind + AstroLeagueBoundary + VesselChangeSpeedByPrismEffectSO + upstream's own
+MicroscenePatternsTests). Engine grew `Vector3.Normalize(Vector3)` and
+`Collider.bounds` (Box/Sphere/Mesh overrides on the TriggerPass rotation-ignored
+AABB convention). New drift deviations: VesselModelBuilder
+MaterialGlobalIlluminationFlags, Microscene FadeIn (both render-arc). Golden-goal
+seed re-swept 3 → 2 (court boundaries changed ball trajectories — CLI sweep
+validated seeds 2/4/5/7/8 reach overtime). **1334 tests green in BOTH configs
+(1050 + 284)**; all 5 CLI modes exit 0; race diag byte-identical
+(crystals [6,1,4,1], trail 786); freestyle diag identical except toys 8 → 9 —
+the Wanderway conveyor joining the default toybox ring.
 
 ## Loop protocol (every iteration)
 

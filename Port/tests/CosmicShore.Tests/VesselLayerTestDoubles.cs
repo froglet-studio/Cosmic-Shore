@@ -218,6 +218,7 @@ internal static class PrismTestRig
         public void DestroyVessel() { }
         public void ResetForPlay() { }
         public void SetPose(Pose pose) { }
+        public void SetInitialSpeed(float initialSpeed) { }
         public void ChangePlayer(IPlayer player) { }
         public void ModifyThrottle(float amount, float duration) { }
         public void AddSlowedShipTransformToGameData() => SlowedAdds++;

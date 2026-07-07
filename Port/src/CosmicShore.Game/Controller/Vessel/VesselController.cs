@@ -337,6 +337,21 @@ namespace CosmicShore.Gameplay
 
         void SetPose_Local(Pose pose) => VesselStatus.VesselTransformer.SetPose(pose);
 
+        // Route to the owner (like SetPose) so a party client's own swapped vessel also inherits
+        // the previous ship's speed, not just the host's.
+        public void SetInitialSpeed(float initialSpeed)
+        {
+            if (IsSpawned)
+                SetInitialSpeed_ClientRpc(initialSpeed);
+            else
+                SetInitialSpeed_Local(initialSpeed);
+        }
+
+        [ClientRpc]
+        void SetInitialSpeed_ClientRpc(float initialSpeed) => SetInitialSpeed_Local(initialSpeed);
+
+        void SetInitialSpeed_Local(float initialSpeed) => VesselStatus.VesselTransformer.SetInitialSpeed(initialSpeed);
+
         void OnSpeedChanged(float previousValue, float newValue) => VesselStatus.Speed = newValue;
         void OnCourseChanged(Vector3 previousValue, Vector3 newValue) => VesselStatus.Course = newValue;
         void OnBlockRotationChanged(Quaternion previousValue, Quaternion newValue) => VesselStatus.blockRotation = newValue;

@@ -149,6 +149,7 @@ class C5Vessel : IVessel
     public void DestroyVessel() => DestroyVesselCalls++;
     public void ResetForPlay() => ResetForPlayCalls++;
     public void SetPose(Pose pose) { }
+    public void SetInitialSpeed(float initialSpeed) { }
     public void ChangePlayer(IPlayer player) => Status.Player = player;
     public void ModifyThrottle(float amount, float duration) { }
     public void AddSlowedShipTransformToGameData() { }
