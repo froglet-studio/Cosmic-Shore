@@ -408,6 +408,17 @@ namespace CosmicShore.Gameplay
             prismProperties.volume = 1f;
         }
 
+        // Creation-completion budget. Simultaneous spawns (a pooled ring detonation,
+        // a flora regrow wave, a trail burst) all sleep the same waitTime, so their
+        // creation ticks land phase-locked on one frame — N inline SOAP raises,
+        // spatial-index registrations, and render activations at once (the
+        // CreateBlockCoroutine ×12 profiler burst). At most this many prisms finish
+        // creation per frame; the rest retry next frame. On top of the 0.6s spawn
+        // window the extra frames are invisible, and nothing is ever skipped.
+        const int MaxCreationCompletionsPerFrame = 6;
+        static int s_creationCompletionsThisFrame;
+        static int s_creationBudgetFrame = -1;
+
         private IEnumerator CreateBlockCoroutine(Vector3 authoredTargetScale)
         {
             yield return new WaitForSeconds(waitTime);
@@ -416,6 +427,21 @@ namespace CosmicShore.Gameplay
             // don't resurrect the renderer/collider or register a dead prism with the
             // AOE registry and cell grids.
             if (destroyed) yield break;
+
+            while (true)
+            {
+                if (s_creationBudgetFrame != Time.frameCount)
+                {
+                    s_creationBudgetFrame = Time.frameCount;
+                    s_creationCompletionsThisFrame = 0;
+                }
+                if (s_creationCompletionsThisFrame < MaxCreationCompletionsPerFrame)
+                    break;
+
+                yield return null;
+                if (destroyed) yield break; // killed while waiting for budget
+            }
+            s_creationCompletionsThisFrame++;
 
             SetRenderVisible(true);
             blockCollider.enabled = true;
