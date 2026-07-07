@@ -1,6 +1,7 @@
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Core
@@ -13,6 +14,10 @@ namespace CosmicShore.Core
     /// </summary>
     public class QuestToastNotifier : MonoBehaviour
     {
+        [Header("Output")]
+        [Tooltip("TEMP until the toast UI exists: route messages to CSDebug.Log instead of the toast system. Untick once the toast UI is in the scene.")]
+        [SerializeField] bool logInsteadOfToast = true;
+
         [Header("Toggles")]
         [SerializeField] bool showModeUnlocked = true;
         [SerializeField] bool showIntensityUnlocked = true;
@@ -76,7 +81,7 @@ namespace CosmicShore.Core
             if (_knownUnlockedCount >= 0 && count > _knownUnlockedCount && showModeUnlocked
                 && data.UnlockedModes.Count > 0)
             {
-                ToastNotificationAPI.Show(string.Format(modeUnlockedTemplate,
+                Notify(string.Format(modeUnlockedTemplate,
                     data.UnlockedModes[data.UnlockedModes.Count - 1]));
             }
             _knownUnlockedCount = count;
@@ -85,13 +90,21 @@ namespace CosmicShore.Core
         void HandleQuestTrackCompleted(SO_UnlockData quest)
         {
             if (!showQuestTrackCompleted || quest == null) return;
-            ToastNotificationAPI.Show(string.Format(questTrackCompletedTemplate, quest.DisplayName));
+            Notify(string.Format(questTrackCompletedTemplate, quest.DisplayName));
         }
 
         void HandleIntensityUnlocked(GameModes mode, int tier)
         {
             if (!showIntensityUnlocked) return;
-            ToastNotificationAPI.Show(string.Format(intensityUnlockedTemplate, mode, tier));
+            Notify(string.Format(intensityUnlockedTemplate, mode, tier));
+        }
+
+        void Notify(string message)
+        {
+            if (logInsteadOfToast)
+                CSDebug.Log($"[Quest][TOAST] {message}");
+            else
+                ToastNotificationAPI.Show(message);
         }
 
         // ── Quest graph runner ─────────────────────────────────────────
@@ -99,13 +112,13 @@ namespace CosmicShore.Core
         void HandlePhaseCompleted(string questId, int phaseIndex)
         {
             if (!showPhaseCompleted) return;
-            ToastNotificationAPI.Show(string.Format(phaseCompletedTemplate, phaseIndex + 1));
+            Notify(string.Format(phaseCompletedTemplate, phaseIndex + 1));
         }
 
         void HandleQuestCompleted(string questId)
         {
             if (!showQuestCompleted) return;
-            ToastNotificationAPI.Show(questCompletedTemplate);
+            Notify(questCompletedTemplate);
         }
     }
 }

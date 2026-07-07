@@ -87,37 +87,8 @@ namespace CosmicShore.Editor
                 Debug.LogWarning($"[Quest] Wirer: only {keyIndex}/{PanelKeys.Length} instruction sets found — " +
                                  $"missing keys: {string.Join(", ", PanelKeys.Skip(keyIndex))}.");
 
-            // Starter skim counter if none assigned (restyle/move freely).
-            if (so.FindProperty("progressText").objectReferenceValue == null)
-            {
-                var existing = root.transform.Find("ProgressText");
-                TMP_Text progress;
-                if (existing != null && existing.TryGetComponent(out TMP_Text found))
-                {
-                    progress = found;
-                }
-                else
-                {
-                    var go = new GameObject("ProgressText", typeof(RectTransform));
-                    Undo.RegisterCreatedObjectUndo(go, "Create ProgressText");
-                    go.transform.SetParent(root.transform, false);
-                    var rt = (RectTransform)go.transform;
-                    rt.anchorMin = new Vector2(0.5f, 0f);
-                    rt.anchorMax = new Vector2(0.5f, 0f);
-                    rt.pivot = new Vector2(0.5f, 0f);
-                    rt.anchoredPosition = new Vector2(0f, 140f);
-                    rt.sizeDelta = new Vector2(360f, 80f);
-
-                    var tmp = go.AddComponent<TextMeshProUGUI>();
-                    tmp.text = "0 / 10";
-                    tmp.fontSize = 48f;
-                    tmp.alignment = TextAlignmentOptions.Center;
-                    tmp.raycastTarget = false;
-                    progress = tmp;
-                    Debug.Log("[Quest] Wirer: created a starter 'ProgressText' (skim counter) under InGameInstructionSet — restyle/reposition it.");
-                }
-                so.FindProperty("progressText").objectReferenceValue = progress;
-            }
+            // Skim counter is OPT-IN: assign any TMP to 'Progress Text' on the view if you
+            // want the live "3 / 10" readout — the skim gate works fine without it.
 
             so.ApplyModifiedProperties();
             EditorUtility.SetDirty(view);

@@ -89,7 +89,7 @@ namespace CosmicShore.Editor
             string[] required =
             {
                 "quest", "gameData", "freestyleEvents", "onButtonPressed", "skimBoostEvent", "instructionView",
-                "crystalHandler", "tutorialUI", "introAnimator", "dialoguePanel", "screenSwitcher",
+                "crystalHandler", "dialoguePanel", "screenSwitcher",
             };
             var missing = required
                 .Select(so.FindProperty)
