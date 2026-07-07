@@ -1,6 +1,7 @@
 #if !LINUX_BUILD
 using System.Linq;
 using CosmicShore.Core;
+using CosmicShore.UI;
 using TMPro;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -35,6 +36,7 @@ namespace CosmicShore.Editor
             QuestRunnerSetup.SetupRunner(); // resolves runner refs incl. the new instruction view
             WireToastNotifier();
             WireTrainingHiddenGroups();
+            WireNavButtons();
 
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
             Debug.Log("[Quest] Phase 0 UI wiring complete — review the mapping logs above, then SAVE THE SCENE.");
@@ -156,7 +158,12 @@ namespace CosmicShore.Editor
             }
         }
 
-        // ── Training-hidden UI (vessel HUD off during flight school) ───
+        // ── Training-hidden UI ─────────────────────────────────────────
+        //
+        // The vessel HUD is hidden at runtime through its own controller
+        // (VesselHUDController.HideHUD) — no group wiring needed. This step only
+        // REMOVES the legacy 'Game UI' entry an older wirer added: hiding all of
+        // Game UI also hid the volume/pause button, which is now the taught exit.
 
         static void WireTrainingHiddenGroups()
         {
@@ -165,23 +172,70 @@ namespace CosmicShore.Editor
 
             var so = new SerializedObject(runner);
             var prop = so.FindProperty("hideDuringFlightTraining");
-            if (prop == null || prop.arraySize > 0) return; // don't clobber a manual wiring
+            if (prop == null) return;
 
-            var gameUi = FindSceneObject("Game UI");
-            if (gameUi == null)
+            for (int i = prop.arraySize - 1; i >= 0; i--)
             {
-                Debug.LogWarning("[Quest] Wirer: no 'Game UI' object found — assign Hide During Flight Training on the runner manually (the vessel HUD group).");
+                var element = prop.GetArrayElementAtIndex(i);
+                if (element.objectReferenceValue is CanvasGroup group && group.gameObject.name == "Game UI")
+                {
+                    prop.DeleteArrayElementAtIndex(i);
+                    Debug.Log("[Quest] Wirer: removed 'Game UI' from Hide During Flight Training — it would hide the " +
+                              "volume button (the taught exit). The vessel HUD hides via its own controller now.");
+                }
+            }
+
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(runner);
+        }
+
+        // ── Footer nav buttons (LockNavigation nodes) ──────────────────
+
+        static void WireNavButtons()
+        {
+            var runner = Object.FindFirstObjectByType<QuestGraphRunner>(FindObjectsInactive.Include);
+            var switcher = Object.FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include);
+            if (runner == null || switcher == null)
+            {
+                Debug.LogWarning("[Quest] Wirer: runner or ScreenSwitcher missing — nav buttons not wired.");
                 return;
             }
 
-            var group = gameUi.GetComponent<CanvasGroup>();
-            if (group == null) group = Undo.AddComponent<CanvasGroup>(gameUi);
+            Button arcade = null;
+            var lockable = new System.Collections.Generic.List<Button>();
 
-            prop.arraySize = 1;
-            prop.GetArrayElementAtIndex(0).objectReferenceValue = group;
+            foreach (var btn in Object.FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                for (int i = 0; i < btn.onClick.GetPersistentEventCount(); i++)
+                {
+                    if (btn.onClick.GetPersistentTarget(i) is not ScreenSwitcher) continue;
+
+                    string method = btn.onClick.GetPersistentMethodName(i);
+                    if (string.IsNullOrEmpty(method) || !method.StartsWith("OnClick") || !method.EndsWith("Nav"))
+                        continue;
+
+                    if (method == "OnClickArkNav" || method == "OnClickArcadeNav")
+                        arcade = btn;
+                    else
+                        lockable.Add(btn);
+                    break;
+                }
+            }
+
+            var so = new SerializedObject(runner);
+            so.FindProperty("arcadeNavButton").objectReferenceValue = arcade;
+            var listProp = so.FindProperty("lockableNavButtons");
+            listProp.arraySize = lockable.Count;
+            for (int i = 0; i < lockable.Count; i++)
+                listProp.GetArrayElementAtIndex(i).objectReferenceValue = lockable[i];
             so.ApplyModifiedProperties();
             EditorUtility.SetDirty(runner);
-            Debug.Log("[Quest] Wirer: 'Game UI' (vessel HUD) will be hidden during flight training.");
+
+            if (arcade == null)
+                Debug.LogWarning("[Quest] Wirer: no Arcade nav button found (OnClickArkNav/OnClickArcadeNav) — " +
+                                 "assign Arcade Nav Button on the runner manually or LockNavigation will lock everything.");
+            Debug.Log($"[Quest] Wirer: nav buttons — arcade: {(arcade != null ? arcade.name : "NOT FOUND")}, " +
+                      $"lockable: {lockable.Count} ({string.Join(", ", lockable.ConvertAll(b => b.name))}).");
         }
 
         // ── Helpers ────────────────────────────────────────────────────

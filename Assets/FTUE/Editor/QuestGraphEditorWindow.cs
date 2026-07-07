@@ -763,20 +763,18 @@ namespace CosmicShore.Editor
                 }
                 EditorGUILayout.EndHorizontal();
 
-                if (GUILayout.Button(new GUIContent("Reset Player Progress (Local + Cloud)",
-                        "Clears this quest's PlayerPrefs mirror always. In PLAY MODE (signed in) it also deletes the UGS cloud record and resets game-mode progression (unlocks + intensity plays) so the FTUE runs truly fresh.")))
+                if (GUILayout.Button(new GUIContent("Reset ALL Player Progress (Local + Cloud)",
+                        "Clears this quest's PlayerPrefs mirror always. In PLAY MODE (signed in) it wipes EVERYTHING gameplay-side: the quest's UGS cloud record, game-mode progression (mode unlocks + intensity tiers + play counts), all vessel unlocks (hangar cloud record), and any quest arcade constraints. The Froglet Toolbox reads this state live, so its toggles reflect the reset immediately — and you can still manually re-unlock modes/intensities/vessels there.")))
                 {
-                    QuestProgressStore.ResetLocal(_quest.QuestId);
                     if (Application.isPlaying)
                     {
-                        bool cloud = QuestProgressStore.ResetCloud(_quest.QuestId);
-                        var progression = GameModeProgressionService.Instance;
-                        if (progression != null) progression.ResetAllProgress();
-                        Debug.Log($"[Quest] '{_quest.QuestId}' reset — local ✓, cloud {(cloud ? "✓" : "✗ (repo not loaded)")}, progression {(progression != null ? "✓" : "✗")}.");
+                        bool cloud = QuestProgressStore.ResetAllGameplayProgress(_quest.QuestId);
+                        Debug.Log($"[Quest] '{_quest.QuestId}' FULL reset — local ✓, quest+progression+vessels cloud {(cloud ? "✓" : "✗ (repos not loaded / not signed in)")}.");
                     }
                     else
                     {
-                        Debug.Log($"[Quest] '{_quest.QuestId}' local mirror cleared. Enter PLAY MODE (signed in) and press again to also clear the UGS cloud record + mode progression.");
+                        QuestProgressStore.ResetLocal(_quest.QuestId);
+                        Debug.Log($"[Quest] '{_quest.QuestId}' local mirror cleared. Enter PLAY MODE (signed in) and press again for the full backend reset (progression, intensities, vessels).");
                     }
                 }
 

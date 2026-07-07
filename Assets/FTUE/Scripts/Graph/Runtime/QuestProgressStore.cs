@@ -123,5 +123,35 @@ namespace CosmicShore.Core
             _ = repo.SaveAsync();
             return true;
         }
+
+        /// <summary>
+        /// FULL gameplay-progress wipe for FTUE testing (Play mode, signed in): this quest's
+        /// local + cloud record, game-mode progression (unlocks + intensity tiers + play counts),
+        /// every vessel unlock (SO state + hangar cloud record), and any active quest-graph
+        /// arcade constraints. The Froglet Toolbox reads all of this live, so its toggles show
+        /// the locked state immediately — and can still manually re-unlock anything afterwards.
+        /// Returns true when the cloud-side reset ran (repos loaded).
+        /// </summary>
+        public static bool ResetAllGameplayProgress(string questId)
+        {
+            ResetLocal(questId);
+            QuestArcadeConstraints.Clear();
+
+            bool cloud = ResetCloud(questId);
+
+            var progression = GameModeProgressionService.Instance;
+            if (progression != null) progression.ResetAllProgress();
+            else cloud = false;
+
+            var vesselList = Resources.FindObjectsOfTypeAll<SO_VesselList>();
+            VesselUnlockSystem.ResetAllUnlocks(vesselList != null && vesselList.Length > 0 ? vesselList[0] : null);
+
+            // Vessel reset only marks the hangar repo dirty — flush so it lands in the backend now.
+            var ds = UGSDataService.Instance;
+            if (ds != null) _ = ds.FlushAllAsync();
+            else cloud = false;
+
+            return cloud;
+        }
     }
 }

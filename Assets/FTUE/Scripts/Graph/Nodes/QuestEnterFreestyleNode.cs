@@ -33,7 +33,7 @@ namespace CosmicShore.Core
             // Already there — nothing to do.
             if (ctx.CrystalHandler.IsInFreestyle)
             {
-                ctx.HideTrainingGroups();
+                ctx.BeginFlightTraining();
                 advance(QuestPorts.Next);
                 yield break;
             }
@@ -42,7 +42,7 @@ namespace CosmicShore.Core
             void OnEnterComplete()
             {
                 done = true;
-                ctx.HideTrainingGroups(); // vessel HUD etc. stay hidden for flight training
+                ctx.BeginFlightTraining(); // HUD off, action buttons gated — flight school is live
                 advance(QuestPorts.Next);
             }
 
@@ -75,7 +75,7 @@ namespace CosmicShore.Core
             if (!done)
             {
                 Debug.LogWarning("[Quest] EnterFreestyleNode: transition did not complete in time — advancing.");
-                ctx.HideTrainingGroups();
+                ctx.BeginFlightTraining();
                 advance(QuestPorts.Next);
             }
         }

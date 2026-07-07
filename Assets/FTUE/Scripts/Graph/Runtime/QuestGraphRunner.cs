@@ -55,8 +55,14 @@ namespace CosmicShore.Core
         [Tooltip("Arcade game cards, used by LockModes nodes.")]
         [SerializeField] List<CallToActionTarget> gameCards = new();
 
-        [Tooltip("UI groups hidden during flight training (e.g. the Game UI / vessel HUD). Hidden when EnterFreestyle completes; the freestyle toggle restores them naturally on later entries.")]
+        [Tooltip("EXTRA UI groups hidden during flight training. The vessel HUD is hidden automatically through its own controller — do NOT add 'Game UI' here (that would also hide the volume button, which is the taught exit).")]
         [SerializeField] List<CanvasGroup> hideDuringFlightTraining = new();
+
+        [Tooltip("All footer nav buttons LockNavigation nodes may disable (store/home/port/hangar/profile...). Auto-wired by the Phase 0 wirer from the ScreenSwitcher's OnClick*Nav handlers.")]
+        [SerializeField] List<UnityEngine.UI.Button> lockableNavButtons = new();
+
+        [Tooltip("The nav button that stays clickable while navigation is locked — the Arcade button.")]
+        [SerializeField] UnityEngine.UI.Button arcadeNavButton;
 
         [Header("Gating (Debug)")]
         [Tooltip("Never run the quest (hard off switch for this scene).")]
@@ -102,6 +108,11 @@ namespace CosmicShore.Core
 
             StopAllCoroutines();
             _ctx?.RunCleanups();
+            _ctx?.EndFlightTraining();
+            _ctx?.SetNavLocked(false);
+            // NOTE: QuestArcadeConstraints are NOT cleared here — they must survive the
+            // Menu → game → Menu scene round-trip. They clear via an authored Clear node,
+            // quest completion, or the editor's progress reset.
             SetBreadcrumbSuppressed(false);
         }
 
@@ -183,9 +194,22 @@ namespace CosmicShore.Core
                 ScreenSwitcher = screenSwitcher,
                 GameCards = gameCards,
                 TrainingHiddenGroups = hideDuringFlightTraining,
+                NavButtons = lockableNavButtons,
+                AllowedNavButton = arcadeNavButton,
                 CompletePhase = HandlePhaseComplete,
                 CompleteQuest = HandleQuestComplete,
             };
+        }
+
+        /// <summary>
+        /// While flight training is active, keep the extra hidden groups at alpha 0 — the
+        /// freestyle toggle's own fade can finish AFTER the transition-end event and would
+        /// otherwise re-show them (the bug that left the HUD visible during training).
+        /// </summary>
+        void LateUpdate()
+        {
+            if (_ctx == null || !_ctx.FlightTrainingActive) return;
+            _ctx.HideTrainingGroups();
         }
 
         // ── Phase sequencing ───────────────────────────────────────────
@@ -327,6 +351,9 @@ namespace CosmicShore.Core
         void HandleQuestComplete()
         {
             _ctx?.RunCleanups();
+            _ctx?.EndFlightTraining();
+            _ctx?.SetNavLocked(false);
+            QuestArcadeConstraints.Clear();
             _current = null;
 
             instructionView?.Hide();

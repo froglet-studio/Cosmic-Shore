@@ -102,8 +102,10 @@ namespace CosmicShore.UI
                 gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
                 gameCard.ExploreView = this;
 
-                // Check if this game mode is unlocked via the quest progression system
-                bool isLocked = progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode);
+                // Locked when the quest progression hasn't unlocked the mode, or the running
+                // quest graph has funneled the arcade down to one tutorial mode.
+                bool isLocked = (progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode))
+                                || QuestArcadeConstraints.IsModeBlocked(game.Mode);
                 gameCard.SetLocked(isLocked);
 
                 if (!isLocked)

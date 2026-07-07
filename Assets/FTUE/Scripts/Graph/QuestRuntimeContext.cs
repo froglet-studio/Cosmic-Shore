@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
@@ -36,11 +37,67 @@ namespace CosmicShore.Core
         public ScreenSwitcher ScreenSwitcher;
         public IReadOnlyList<CallToActionTarget> GameCards;
 
-        /// <summary>UI groups (e.g. the vessel HUD / Game UI) hidden while flight training runs.</summary>
+        /// <summary>Extra UI groups hidden while flight training runs (designer-authored; the
+        /// vessel HUD itself is hidden through its own controller, not this list).</summary>
         public IReadOnlyList<CanvasGroup> TrainingHiddenGroups;
 
-        /// <summary>Hide the training-hidden groups (EnterFreestyle calls this once its blend completes).
-        /// No restore needed: MenuCrystalClickHandler re-fades these groups on the next freestyle toggle.</summary>
+        /// <summary>All footer nav buttons the quest may lock (everything except the allowed one).</summary>
+        public IReadOnlyList<UnityEngine.UI.Button> NavButtons;
+
+        /// <summary>The nav button that stays interactable while the nav is locked (the Arcade button).</summary>
+        public UnityEngine.UI.Button AllowedNavButton;
+
+        /// <summary>The vessel action buttons disabled during flight training (sticks + triggers stay live).</summary>
+        static readonly InputEvents[] TrainingSuppressedButtons =
+            { InputEvents.Button1Action, InputEvents.Button2Action, InputEvents.Button3Action, InputEvents.FlipAction };
+
+        /// <summary>True between <see cref="BeginFlightTraining"/> and <see cref="EndFlightTraining"/> —
+        /// the runner keeps the training-hidden groups forced to alpha 0 while this holds (so a late
+        /// freestyle fade can't re-show them).</summary>
+        public bool FlightTrainingActive { get; private set; }
+
+        /// <summary>
+        /// Flight school starts: hide the local vessel HUD (through its own controller — the same
+        /// channel MenuMiniGameHUD uses), suppress the action buttons (A/X/B/flip) so only the
+        /// taught controls do anything, and zero any extra authored groups. The volume/pause
+        /// button stays visible — it IS the taught exit.
+        /// </summary>
+        public void BeginFlightTraining()
+        {
+            FlightTrainingActive = true;
+
+            GameData?.LocalPlayer?.Vessel?.VesselStatus?.VesselHUDController?.HideHUD();
+            SetTrainingButtonsSuppressed(true);
+            HideTrainingGroups();
+        }
+
+        /// <summary>
+        /// Flight school ends (player exited via the volume button, or the quest tears down):
+        /// release the button suppression. No HUD restore needed — the freestyle exit hides the
+        /// HUD anyway, and the next manual freestyle entry re-shows it (MenuMiniGameHUD).
+        /// </summary>
+        public void EndFlightTraining()
+        {
+            if (!FlightTrainingActive) return;
+            FlightTrainingActive = false;
+            SetTrainingButtonsSuppressed(false);
+        }
+
+        void SetTrainingButtonsSuppressed(bool on)
+        {
+            var vesselTransform = GameData?.LocalPlayer?.Vessel?.Transform;
+            var handler = vesselTransform != null ? vesselTransform.GetComponent<R_VesselActionHandler>() : null;
+            if (handler == null)
+            {
+                Debug.LogWarning("[Quest] Flight training: no R_VesselActionHandler on the local vessel — action buttons not gated.");
+                return;
+            }
+
+            foreach (var ie in TrainingSuppressedButtons)
+                handler.SetInputSuppressed(ie, on);
+        }
+
+        /// <summary>Zero the extra training-hidden groups (also enforced per-frame by the runner while training is active).</summary>
         public void HideTrainingGroups()
         {
             if (TrainingHiddenGroups == null) return;
@@ -50,6 +107,26 @@ namespace CosmicShore.Core
                 group.alpha = 0f;
                 group.blocksRaycasts = false;
                 group.interactable = false;
+            }
+        }
+
+        /// <summary>
+        /// Lock the footer nav down to <see cref="AllowedNavButton"/> (or restore everything).
+        /// Scene-state only — the runner always unlocks on teardown.
+        /// </summary>
+        public void SetNavLocked(bool locked)
+        {
+            if (NavButtons == null || NavButtons.Count == 0)
+            {
+                if (locked)
+                    Debug.LogWarning("[Quest] LockNavigation: no nav buttons wired on the runner — nothing to lock.");
+                return;
+            }
+
+            foreach (var btn in NavButtons)
+            {
+                if (btn == null) continue;
+                btn.interactable = !locked || btn == AllowedNavButton;
             }
         }
 

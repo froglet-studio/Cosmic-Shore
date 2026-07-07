@@ -80,13 +80,16 @@ namespace CosmicShore.Editor
                 "Entry: first launch. FIRST BEAT = the camera transitions from the menu orbit to the " +
                 "player vessel (the same blend as entering freestyle manually) as soon as the menu is " +
                 "ready; instructions only appear after the blend completes. FLIGHT SCHOOL — thumbsticks OUTWARD " +
-                "= speed up, INWARD = slow down, movement stick = look around, LT+RT = drift, skim 10 " +
-                "prisms (live counter; skims also boost), press B to exit — the exit happens ONLY on B, " +
-                "never forced. Every correct action pulses a success haptic; every completed step is " +
-                "recorded to UGS. Instruction beats reference keyed UI panels on QuestInstructionView " +
-                "(speed_up, slow_down, look_around, drift, skim, exit_freestyle) — build each as a " +
-                "CanvasGroup with the ControlIcons sprites. Then: Crystal Capture at intensity 2, " +
-                "profile/maps tour + the intensity-4 rule, CC at intensity 3, social UI tour.");
+                "= speed up, INWARD = slow down, movement stick = look around, LT then RT = drift both ways, " +
+                "skim 10 prisms (live counter; skims also boost), then tap the VOLUME button to exit — the " +
+                "exit happens ONLY on the player's tap, never forced. During training the vessel HUD is " +
+                "hidden and the action buttons (A/X/B/flip) are suppressed; every correct action pulses a " +
+                "success haptic and every completed step is recorded to UGS. Instruction beats reference " +
+                "keyed UI panels on QuestInstructionView (speed_up, slow_down, look_around, drift, skim, " +
+                "exit_freestyle) — node text OVERWRITES the panel's TMP text. After exit: nav locks to the " +
+                "Arcade button + captain dialogue, the arcade funnels to Crystal Capture @ intensity 2 " +
+                "(max players, 3 domains), then profile/maps tour + the intensity-4 rule, CC @ intensity 3, " +
+                "funnel cleared, social UI tour.");
 
             var enter = Add<QuestEnterFreestyleNode>(g, "Camera → Player Vessel (enter freestyle)");
 
@@ -131,22 +134,33 @@ namespace CosmicShore.Editor
             var waitSkim = Add<QuestWaitForSkimNode>(g, "Wait: Skim 10 Prisms");
             waitSkim.targetSkims = 10;
 
-            var exitPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Exit Freestyle");
-            exitPrompt.text = "Press B to head back to the menu.";
+            var exitPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Exit Via Volume Button");
+            exitPrompt.text = "Training complete! Tap the VOLUME button to head back to the menu.";
             exitPrompt.panelKey = "exit_freestyle";
 
-            var waitB = Add<QuestWaitForInputNode>(g, "Wait: B Pressed");
-            waitB.acceptedInputs = new List<InputEvents> { InputEvents.Button3Action };
+            // Passive: the volume/pause button IS the exit (it calls ToggleTransition) —
+            // the node just waits for the menu blend to complete. Never forced.
+            var exit = Add<QuestExitFreestyleNode>(g, "Wait: Player Taps Volume Button");
+            exit.forceExit = false;
 
-            var exit = Add<QuestExitFreestyleNode>(g, "Force Exit Freestyle");
-            exit.forceExit = true;
+            var lockNav = Add<QuestLockNavigationNode>(g, "Lock Nav → Arcade Only");
+
+            var arcadeDialogue = Add<QuestDialogueNode>(g, "Dialogue: Go To The Arcade");
+            arcadeDialogue.lines = new List<string>
+            {
+                "Nicely flown, pilot — you've got the basics down.",
+                "Tap the ARCADE button below. Your first real match is waiting!",
+            };
+
+            var constraintsCC2 = Add<QuestSetArcadeConstraintsNode>(g, "Arcade Funnel: CC @ Intensity 2");
+            constraintsCC2.allowedMode = GameModes.MultiplayerCrystalCapture;
+            constraintsCC2.forcedIntensity = 2;
+            constraintsCC2.forceMaxPlayers = true;
+            constraintsCC2.forcedDomainCount = 3;
 
             var ctaArcade = Add<QuestHighlightCTANode>(g, "CTA: Arcade");
             ctaArcade.target = CallToActionTargetType.ArcadeMenu;
             ctaArcade.completionAction = UserActionType.ViewArcadeMenu;
-
-            var lockModes = Add<QuestLockModesNode>(g, "Lock To Crystal Capture");
-            lockModes.tutorialGame = CallToActionTargetType.PlayGameMultiplayerCrystalCapture;
 
             var ctaCC2 = Add<QuestHighlightCTANode>(g, "CTA: Play CC (Intensity 2)");
             ctaCC2.target = CallToActionTargetType.PlayGameMultiplayerCrystalCapture;
@@ -156,6 +170,9 @@ namespace CosmicShore.Editor
             playedCC2.filterByMode = true;
             playedCC2.expectedMode = GameModes.MultiplayerCrystalCapture;
             playedCC2.minIntensity = 2;
+
+            var unlockNav = Add<QuestLockNavigationNode>(g, "Unlock Nav Buttons");
+            unlockNav.unlock = true;
 
             var ctaProfile = Add<QuestHighlightCTANode>(g, "CTA: Profile Screen");
             ctaProfile.target = CallToActionTargetType.ProfileMenu;
@@ -168,6 +185,12 @@ namespace CosmicShore.Editor
                 "Tiers 1 to 3 are open right away. Reach INTENSITY 4 in a mode to unlock the next one on your quest track!",
             };
 
+            var constraintsCC3 = Add<QuestSetArcadeConstraintsNode>(g, "Arcade Funnel: CC @ Intensity 3");
+            constraintsCC3.allowedMode = GameModes.MultiplayerCrystalCapture;
+            constraintsCC3.forcedIntensity = 3;
+            constraintsCC3.forceMaxPlayers = true;
+            constraintsCC3.forcedDomainCount = 3;
+
             var ctaCC3 = Add<QuestHighlightCTANode>(g, "CTA: Play CC (Intensity 3)");
             ctaCC3.target = CallToActionTargetType.PlayGameMultiplayerCrystalCapture;
             ctaCC3.completionAction = UserActionType.PlayGame;
@@ -178,6 +201,9 @@ namespace CosmicShore.Editor
             playedCC3.expectedMode = GameModes.MultiplayerCrystalCapture;
             playedCC3.minIntensity = 3;
 
+            var clearFunnel = Add<QuestSetArcadeConstraintsNode>(g, "Clear Arcade Funnel");
+            clearFunnel.clearConstraints = true;
+
             var socialTour = Add<QuestShowInstructionNode>(g, "Social UI Tour (placeholder)");
             socialTour.text = "This is your crew hub — invite friends and fly together!";
             socialTour.minDisplaySeconds = 4f;
@@ -187,9 +213,10 @@ namespace CosmicShore.Editor
 
             Chain(g, enter,
                 speedUpPrompt, waitSpeedUp, slowDownPrompt, waitSlowDown, lookPrompt, waitLook,
-                driftPrompt, waitDrift, skimPrompt, waitSkim, exitPrompt, waitB, exit,
-                ctaArcade, lockModes, ctaCC2, playedCC2, ctaProfile, mapsDialogue,
-                ctaCC3, playedCC3, socialTour, end);
+                driftPrompt, waitDrift, skimPrompt, waitSkim, exitPrompt, exit,
+                lockNav, arcadeDialogue, constraintsCC2, ctaArcade, ctaCC2, playedCC2,
+                unlockNav, ctaProfile, mapsDialogue, constraintsCC3, ctaCC3, playedCC3,
+                clearFunnel, socialTour, end);
 
             // Pacing: breathing room between beats (editable per arrow in the editor).
             SetDelay(enter, 1.5f);

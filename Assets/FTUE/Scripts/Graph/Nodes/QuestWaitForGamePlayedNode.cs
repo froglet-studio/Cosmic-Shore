@@ -40,6 +40,24 @@ namespace CosmicShore.Core
                 yield break;
             }
 
+            // Resume path: the game END happens in the game scene, but this runner lives in
+            // Menu_Main — the OnMiniGameEnd raise is long gone by the time the menu reloads and
+            // the quest resumes on this node. The progression service (DontDestroyOnLoad) heard
+            // it and recorded the play, so consult its per-intensity play counts first.
+            if (filterByMode && GameModeProgressionService.Instance != null)
+            {
+                var svc = GameModeProgressionService.Instance;
+                for (int intensity = Mathf.Max(1, minIntensity); intensity <= 4; intensity++)
+                {
+                    if (svc.GetIntensityPlayCount(expectedMode, intensity) > 0)
+                    {
+                        Debug.Log($"[Quest] WaitForGamePlayedNode: {expectedMode} already played @ intensity {intensity} — advancing (resume).");
+                        advance(QuestPorts.Next);
+                        yield break;
+                    }
+                }
+            }
+
             void OnEnd()
             {
                 if (filterByMode && ctx.GameData.GameMode != expectedMode)

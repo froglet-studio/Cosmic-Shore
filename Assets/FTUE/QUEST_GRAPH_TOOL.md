@@ -50,8 +50,10 @@ the whole quest.
 | Presentation | **Dialogue** | Shows the dialogue panel with lines authored ON the node (speaker, optional portrait override) — self-contained, no DialogueSet/DialogueManager |
 | Gameplay | **EnterFreestyle** | Forces the menu vessel into player control |
 | Gameplay | **Navigate** | Force-navigates a screen / the arcade modal |
-| Gameplay | **LockModes** | Locks all game cards except the tutorial game |
-| Gate | **ExitFreestyle** | Passive: waits for return-to-menu. `forceExit`: drives the return itself — pair with a WaitForInput gate ("press B") so exit happens only on the taught action |
+| Gameplay | **LockModes** | Locks all game cards except the tutorial game (one-shot; prefer SetArcadeConstraints — it survives card-grid repopulation and scene reloads) |
+| Gameplay | **SetArcadeConstraints** | Funnels the arcade: one clickable game card, one selectable intensity, player count defaulted to max, domain count defaulted (e.g. 3). Static — survives the Menu→game→Menu round-trip; author a Clear node when the funnel ends |
+| Gameplay | **LockNavigation** | Disables every footer nav button except the Arcade button (or unlocks all). Buttons auto-wired by the Phase 0 wirer; always restored on quest teardown |
+| Gate | **ExitFreestyle** | Passive: waits for the player's own return-to-menu (the volume/pause button calls ToggleTransition — it IS the taught exit). `forceExit`: drives the return itself |
 | Gate | **WaitForInput** | Waits for accepted control inputs (single press) |
 | Gate | **WaitForGameLaunch / WaitForGamePlayed** | Game launched / finished — Played supports mode + min-intensity filters |
 | Gate | **WaitForIntensity** | Mode reaches an intensity tier (the progression gate) |
@@ -66,10 +68,12 @@ the whole quest.
 ## The Main Quest (default content = the design map)
 
 ```
-P0 Onboarding & Crystal Capture: camera → player vessel (enter freestyle on menu ready, entry
-   node) → speed up / slow down / look around / drift / skim×10 (counter) → press B → forced exit
-   → CTA arcade → lock to CC → play CC@2 → CTA profile → maps/intensity-4 dialogue
-   → play CC@3 → social-UI tour → PhaseEnd
+P0 Onboarding & Crystal Capture: camera → player vessel (enter freestyle on menu ready; vessel
+   HUD hidden + A/X/B suppressed) → speed up / slow down / look around / drift L+R / skim×10
+   (counter) → tap VOLUME button (passive exit — never forced) → nav locked to Arcade + dialogue
+   → arcade funnel (CC only, intensity 2, max players, 3 domains) → play CC@2 → nav unlocked
+   → CTA profile → maps/intensity-4 dialogue → funnel intensity 3 → play CC@3 → funnel cleared
+   → social-UI tour → PhaseEnd
 P1 Unlock HexRace:  WaitIntensity(CC,4) → CTA profile → explainer → WaitModeUnlocked(HexRace)=claim
    → reward dialogue → CTA play HexRace → played → PhaseEnd
 P2 Unlock Joust:     same pattern (HexRace→Joust)
