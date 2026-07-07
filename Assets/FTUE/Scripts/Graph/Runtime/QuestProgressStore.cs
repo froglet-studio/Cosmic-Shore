@@ -99,13 +99,29 @@ namespace CosmicShore.Core
             repo.MarkDirty();
         }
 
-        /// <summary>Clears the LOCAL mirror only (debug/testing — cloud reset goes through UGSDataService).</summary>
+        /// <summary>Clears the LOCAL mirror only.</summary>
         public static void ResetLocal(string questId)
         {
             PlayerPrefs.DeleteKey(CompletedKey(questId));
             PlayerPrefs.DeleteKey(PhaseKey(questId));
             PlayerPrefs.DeleteKey(NodeKey(questId));
             PlayerPrefs.Save();
+        }
+
+        /// <summary>
+        /// Removes this quest's CLOUD record and saves immediately. Requires Play mode with a
+        /// signed-in session (the repo must be loaded). Returns true if a record was removed
+        /// or the cloud slate was already clean.
+        /// </summary>
+        public static bool ResetCloud(string questId)
+        {
+            var repo = Repo;
+            if (repo == null || !repo.IsLoaded || repo.Data == null)
+                return false;
+
+            repo.Data.Quests?.Remove(questId);
+            _ = repo.SaveAsync();
+            return true;
         }
     }
 }

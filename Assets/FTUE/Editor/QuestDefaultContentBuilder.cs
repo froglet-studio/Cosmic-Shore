@@ -118,10 +118,11 @@ namespace CosmicShore.Editor
             };
 
             var driftPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Drift");
-            driftPrompt.text = "Squeeze LT + RT together to drift!";
+            driftPrompt.text = "Drift LEFT with LT, then RIGHT with RT!";
             driftPrompt.panelKey = "drift";
 
-            var waitDrift = Add<QuestWaitForDriftNode>(g, "Wait: Drift");
+            var waitDrift = Add<QuestWaitForDriftNode>(g, "Wait: Drift Both Ways");
+            waitDrift.requireBothDirections = true;
 
             var skimPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Skim");
             skimPrompt.text = "Skim close over prisms to charge your boost — skim 10!";
@@ -189,6 +190,19 @@ namespace CosmicShore.Editor
                 driftPrompt, waitDrift, skimPrompt, waitSkim, exitPrompt, waitB, exit,
                 ctaArcade, lockModes, ctaCC2, playedCC2, ctaProfile, mapsDialogue,
                 ctaCC3, playedCC3, socialTour, end);
+
+            // Pacing: breathing room between beats (editable per arrow in the editor).
+            SetDelay(enter, 1.5f);
+            SetDelay(waitSpeedUp, 0.8f);
+            SetDelay(waitSlowDown, 0.8f);
+            SetDelay(waitLook, 0.8f);
+            SetDelay(waitDrift, 0.8f);
+            SetDelay(waitSkim, 1f);
+            SetDelay(exit, 1f);
+            SetDelay(playedCC2, 1f);
+            SetDelay(mapsDialogue, 0.5f);
+            SetDelay(playedCC3, 1f);
+
             return Finish(g, enter);
         }
 
@@ -237,6 +251,10 @@ namespace CosmicShore.Editor
             var end = Add<QuestPhaseEndNode>(g, $"Phase {index} Complete");
 
             Chain(g, gate, ctaProfile, explain, claim, reward, ctaPlay, played, end);
+            SetDelay(gate, 1f);
+            SetDelay(claim, 0.5f);
+            SetDelay(reward, 0.5f);
+            SetDelay(played, 1f);
             return Finish(g, gate);
         }
 
@@ -337,6 +355,14 @@ namespace CosmicShore.Editor
         {
             for (int i = 0; i < order.Length - 1; i++)
                 order[i].Outputs.Add(new QuestEdge(QuestPorts.Next, order[i + 1].nodeId));
+        }
+
+        /// <summary>Set the pacing delay on a node's 'next' edge (no-op if unwired).</summary>
+        static void SetDelay(QuestNodeSO from, float seconds)
+        {
+            var edge = from.EdgeForPort(QuestPorts.Next);
+            if (edge != null)
+                edge.delaySeconds = seconds;
         }
 
         static QuestPhaseGraphSO Finish(QuestPhaseGraphSO graph, QuestNodeSO entry)

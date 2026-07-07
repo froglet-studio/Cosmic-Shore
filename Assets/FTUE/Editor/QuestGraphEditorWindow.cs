@@ -438,8 +438,16 @@ namespace CosmicShore.Editor
 
                     var col = QuestGraphStyles.CategoryColor(n.Category);
                     col.a = n == _selectedNode || target == _selectedNode ? 1f : 0.75f;
-                    DrawBezier(OutPortCenter(n, p), InPortCenter(target), col,
-                        n == _selectedNode || target == _selectedNode ? 4f : 3f);
+                    Vector2 edgeFrom = OutPortCenter(n, p);
+                    Vector2 edgeTo = InPortCenter(target);
+                    DrawBezier(edgeFrom, edgeTo, col, n == _selectedNode || target == _selectedNode ? 4f : 3f);
+
+                    if (edge.delaySeconds > 0f)
+                    {
+                        Vector2 mid = (edgeFrom + edgeTo) * 0.5f;
+                        GUI.Label(new Rect(mid.x - 26, mid.y - 16, 52, 14),
+                            $"⏱ {edge.delaySeconds:0.#}s", QuestGraphStyles.EdgeLabel);
+                    }
                 }
             }
         }
@@ -755,11 +763,21 @@ namespace CosmicShore.Editor
                 }
                 EditorGUILayout.EndHorizontal();
 
-                if (GUILayout.Button(new GUIContent("Reset Local Progress",
-                        "Clears this quest's PlayerPrefs mirror (completion + resume cursor) so it runs again on this machine. Cloud progress resets separately via UGSDataService.")))
+                if (GUILayout.Button(new GUIContent("Reset Player Progress (Local + Cloud)",
+                        "Clears this quest's PlayerPrefs mirror always. In PLAY MODE (signed in) it also deletes the UGS cloud record and resets game-mode progression (unlocks + intensity plays) so the FTUE runs truly fresh.")))
                 {
                     QuestProgressStore.ResetLocal(_quest.QuestId);
-                    Debug.Log($"[Quest] Local progress for '{_quest.QuestId}' cleared.");
+                    if (Application.isPlaying)
+                    {
+                        bool cloud = QuestProgressStore.ResetCloud(_quest.QuestId);
+                        var progression = GameModeProgressionService.Instance;
+                        if (progression != null) progression.ResetAllProgress();
+                        Debug.Log($"[Quest] '{_quest.QuestId}' reset — local ✓, cloud {(cloud ? "✓" : "✗ (repo not loaded)")}, progression {(progression != null ? "✓" : "✗")}.");
+                    }
+                    else
+                    {
+                        Debug.Log($"[Quest] '{_quest.QuestId}' local mirror cleared. Enter PLAY MODE (signed in) and press again to also clear the UGS cloud record + mode progression.");
+                    }
                 }
 
                 GUILayout.Space(8);
@@ -878,6 +896,20 @@ namespace CosmicShore.Editor
                 int picked = EditorGUILayout.Popup(port, current, labels);
                 if (EditorGUI.EndChangeCheck())
                     SetEdge(_selectedNode, port, picked == 0 ? null : others[picked - 1].nodeId);
+
+                if (edge != null && !string.IsNullOrEmpty(edge.targetNodeId))
+                {
+                    EditorGUI.BeginChangeCheck();
+                    float delay = EditorGUILayout.FloatField(
+                        new GUIContent("    ↳ Delay (s)", "Real-time pause before the next node runs — pacing between beats."),
+                        edge.delaySeconds);
+                    if (EditorGUI.EndChangeCheck())
+                    {
+                        Undo.RecordObject(_selectedNode, "Edit Edge Delay");
+                        edge.delaySeconds = Mathf.Max(0f, delay);
+                        EditorUtility.SetDirty(_selectedNode);
+                    }
+                }
             }
 
             if (_selectedNode.OutputPorts.Count == 0)
@@ -1363,7 +1395,7 @@ namespace CosmicShore.Editor
         public static GUIStyle Breadcrumb, PanelHeader, RowLabel, RowLabelSelected, RowLabelSmall;
         public static GUIStyle MiniButton, MiniButtonDanger, MiniWide;
         public static GUIStyle NodeHeader, NodeTitle, NodeSummary, NodeDelete, EntryBadge, PortLabel;
-        public static GUIStyle CanvasHint, LegendHeader, LegendLabel, Tooltip, NotesArea;
+        public static GUIStyle CanvasHint, LegendHeader, LegendLabel, Tooltip, NotesArea, EdgeLabel;
 
         public static void Ensure()
         {
@@ -1459,6 +1491,12 @@ namespace CosmicShore.Editor
                 normal = { textColor = new Color(0.88f, 0.9f, 0.95f) },
             };
             NotesArea = new GUIStyle(EditorStyles.textArea) { wordWrap = true, fontSize = 11 };
+            EdgeLabel = new GUIStyle(EditorStyles.miniLabel)
+            {
+                fontSize = 9,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.55f, 0.75f, 1f) },
+            };
         }
 
         public static Color CategoryColor(QuestNodeCategory cat) => cat switch

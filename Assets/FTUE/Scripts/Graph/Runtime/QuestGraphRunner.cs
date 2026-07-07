@@ -55,6 +55,9 @@ namespace CosmicShore.Core
         [Tooltip("Arcade game cards, used by LockModes nodes.")]
         [SerializeField] List<CallToActionTarget> gameCards = new();
 
+        [Tooltip("UI groups hidden during flight training (e.g. the Game UI / vessel HUD). Hidden when EnterFreestyle completes; the freestyle toggle restores them naturally on later entries.")]
+        [SerializeField] List<CanvasGroup> hideDuringFlightTraining = new();
+
         [Header("Gating (Debug)")]
         [Tooltip("Never run the quest (hard off switch for this scene).")]
         [SerializeField] bool debugDisable;
@@ -179,6 +182,7 @@ namespace CosmicShore.Core
                 DialoguePanelParent = dialoguePanelParent,
                 ScreenSwitcher = screenSwitcher,
                 GameCards = gameCards,
+                TrainingHiddenGroups = hideDuringFlightTraining,
                 CompletePhase = HandlePhaseComplete,
                 CompleteQuest = HandleQuestComplete,
             };
@@ -271,13 +275,24 @@ namespace CosmicShore.Core
 
             if (next != null)
             {
-                RunNode(next);
+                float delay = edge != null ? edge.delaySeconds : 0f;
+                if (delay > 0f)
+                    StartCoroutine(RunNodeAfterDelay(next, delay));
+                else
+                    RunNode(next);
             }
             else
             {
                 Debug.LogWarning($"[Quest] Node '{from.displayName}' dead-ends without a Phase End — advancing phase anyway.");
                 HandlePhaseComplete();
             }
+        }
+
+        IEnumerator RunNodeAfterDelay(QuestNodeSO next, float delay)
+        {
+            yield return new WaitForSecondsRealtime(delay);
+            if (!_stopped)
+                RunNode(next);
         }
 
         // ── Completion ─────────────────────────────────────────────────

@@ -36,6 +36,23 @@ namespace CosmicShore.Core
         public ScreenSwitcher ScreenSwitcher;
         public IReadOnlyList<CallToActionTarget> GameCards;
 
+        /// <summary>UI groups (e.g. the vessel HUD / Game UI) hidden while flight training runs.</summary>
+        public IReadOnlyList<CanvasGroup> TrainingHiddenGroups;
+
+        /// <summary>Hide the training-hidden groups (EnterFreestyle calls this once its blend completes).
+        /// No restore needed: MenuCrystalClickHandler re-fades these groups on the next freestyle toggle.</summary>
+        public void HideTrainingGroups()
+        {
+            if (TrainingHiddenGroups == null) return;
+            foreach (var group in TrainingHiddenGroups)
+            {
+                if (group == null) continue;
+                group.alpha = 0f;
+                group.blocksRaycasts = false;
+                group.interactable = false;
+            }
+        }
+
         // ── Dialogue panel (self-contained; no dialogue system) ──
         /// <summary>Scene instance of the dialogue panel (preferred when set).</summary>
         public QuestDialoguePanelView DialoguePanel;

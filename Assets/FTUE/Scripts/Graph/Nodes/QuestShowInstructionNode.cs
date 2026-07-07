@@ -32,7 +32,7 @@ namespace CosmicShore.Core
         [Tooltip("Optional haptic pulse when the instruction appears (respects the player's haptics setting).")]
         public HapticType haptic = HapticType.None;
 
-        [Tooltip("Optional key of a hand-built instruction panel registered on QuestInstructionView (icons + text as a CanvasGroup). Empty = plain text mode.")]
+        [Tooltip("Optional key of a hand-built instruction panel registered on QuestInstructionView (icons + text as a CanvasGroup). Empty = plain text mode. The Text above OVERWRITES the panel's own TMP text — scene text is only a placeholder.")]
         public string panelKey;
 
         [Tooltip("Hold the flow this many real-time seconds before advancing (0 = advance immediately; a following gate node keeps the prompt visible).")]

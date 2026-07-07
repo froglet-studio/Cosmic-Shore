@@ -34,6 +34,7 @@ namespace CosmicShore.Editor
             WireDialoguePanel();
             QuestRunnerSetup.SetupRunner(); // resolves runner refs incl. the new instruction view
             WireToastNotifier();
+            WireTrainingHiddenGroups();
 
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
             Debug.Log("[Quest] Phase 0 UI wiring complete — review the mapping logs above, then SAVE THE SCENE.");
@@ -153,6 +154,34 @@ namespace CosmicShore.Editor
                 Undo.AddComponent<QuestToastNotifier>(runner.gameObject);
                 Debug.Log("[Quest] Wirer: QuestToastNotifier added to the Quest Runner.");
             }
+        }
+
+        // ── Training-hidden UI (vessel HUD off during flight school) ───
+
+        static void WireTrainingHiddenGroups()
+        {
+            var runner = Object.FindFirstObjectByType<QuestGraphRunner>(FindObjectsInactive.Include);
+            if (runner == null) return;
+
+            var so = new SerializedObject(runner);
+            var prop = so.FindProperty("hideDuringFlightTraining");
+            if (prop == null || prop.arraySize > 0) return; // don't clobber a manual wiring
+
+            var gameUi = FindSceneObject("Game UI");
+            if (gameUi == null)
+            {
+                Debug.LogWarning("[Quest] Wirer: no 'Game UI' object found — assign Hide During Flight Training on the runner manually (the vessel HUD group).");
+                return;
+            }
+
+            var group = gameUi.GetComponent<CanvasGroup>();
+            if (group == null) group = Undo.AddComponent<CanvasGroup>(gameUi);
+
+            prop.arraySize = 1;
+            prop.GetArrayElementAtIndex(0).objectReferenceValue = group;
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(runner);
+            Debug.Log("[Quest] Wirer: 'Game UI' (vessel HUD) will be hidden during flight training.");
         }
 
         // ── Helpers ────────────────────────────────────────────────────

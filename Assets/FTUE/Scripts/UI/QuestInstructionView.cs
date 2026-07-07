@@ -16,7 +16,9 @@ namespace CosmicShore.Core
     ///  • Text mode — this script sets <see cref="instructionText"/> directly.
     ///  • Panel mode — you build one CanvasGroup per instruction (text + thumbstick/trigger
     ///    icons, animatable) and register it in <see cref="panels"/> with a key; nodes
-    ///    reference the key and this script cross-toggles the groups.
+    ///    reference the key and this script cross-toggles the groups. The node's authored
+    ///    text OVERWRITES the panel's TMP text — the scene text is only a design-time
+    ///    placeholder, the graph is the source of truth.
     ///
     /// Also hosts the optional progress counter ("3/10") used by counting gates
     /// (e.g. WaitForSkim).
@@ -69,12 +71,14 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Show an instruction. When <paramref name="panelKey"/> matches a registered panel,
-        /// that panel is enabled (others disabled); otherwise the plain text element is used.
+        /// that panel is enabled (others disabled) and the node's authored text OVERWRITES the
+        /// panel's own TMP text (the scene text is just a placeholder — the graph is the source
+        /// of truth); otherwise the plain text element is used.
         /// Optionally pulses haptics (respects the player's haptics setting).
         /// </summary>
         public void Show(string text, HapticType haptic = HapticType.None, string panelKey = null)
         {
-            bool usedPanel = ActivatePanel(panelKey);
+            bool usedPanel = ActivatePanel(panelKey, text);
 
             if (instructionText != null)
             {
@@ -115,7 +119,7 @@ namespace CosmicShore.Core
             FadeTo(0f);
         }
 
-        bool ActivatePanel(string key)
+        bool ActivatePanel(string key, string text)
         {
             bool found = false;
             foreach (var entry in panels)
@@ -127,8 +131,12 @@ namespace CosmicShore.Core
                 if (match)
                 {
                     found = true;
-                    // Counting gates concatenate onto this panel's own text.
+                    // The graph node's text is authoritative: overwrite whatever placeholder
+                    // the hand-built panel carries in the scene. Counting gates then append
+                    // to this base. Empty node text keeps the scene text.
                     _activeText = entry.group.GetComponentInChildren<TMP_Text>(true);
+                    if (_activeText != null && !string.IsNullOrEmpty(text))
+                        _activeText.text = text;
                     _activeBaseText = _activeText != null ? _activeText.text : null;
                 }
             }

@@ -18,6 +18,9 @@ namespace CosmicShore.Core
         /// <summary>The <see cref="QuestNodeSO.nodeId"/> of the destination node (empty = dead end / end of flow).</summary>
         public string targetNodeId;
 
+        /// <summary>Real-time seconds to wait before the target node runs (pacing between beats).</summary>
+        [UnityEngine.Min(0f)] public float delaySeconds;
+
         public QuestEdge() { }
 
         public QuestEdge(string portName, string targetNodeId)
