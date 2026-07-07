@@ -385,8 +385,8 @@ MonoBehaviour:
   sourceBankPathUnformatted: 
   BankRefreshCooldown: 5
   ShowBankRefreshWindow: 0
-  AutomaticEventLoading: 0
-  BankLoadType: 2
+  AutomaticEventLoading: 1
+  BankLoadType: 0
   AutomaticSampleLoading: 0
   EncryptionKey: 
   ImportType: 0
