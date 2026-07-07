@@ -386,24 +386,27 @@ real `EcosystemPerfProbe` gyroid observations.
 
 ---
 
-## 7. Predator / herbivore split — IMPLEMENTED + wired (3 species)
+## 7. Predator / herbivore split — IMPLEMENTED + wired (4 species)
 
 The diet split is in code (`FaunaDiet` enum + `Fauna.diet` + `LightFauna`
 consume branch + `Fauna.Predated`) **and wired into the Blob (menu) test cell**
-with the team's three real species:
+with the team's real species:
 
 | Species | Prefab | Component | Diet | Role |
 |---|---|---|---|---|
 | **Tadpole** | `MassTadPoleFauna` | `Boid` (`forager: 1`) | Herbivore | flocking forager swarm |
 | **Brittlestar** | `MassBrittlestarFauna` | `LightFauna` | Herbivore | grazer |
 | **Shark** | `MassSharkFauna` | `LightFauna` | **Predator** (`diet: 1`) | apex; eats *both* herbivores |
+| **Swordfish** | `MassSwordfishFauna` | `LightFauna` | **Predator** (`diet: 1`) | **flagship apex** — holds the Blob (menu) apex slot at the shark's tuned numbers; fastest fauna (30/45 vs shark 25/35); DangerBlock bill |
 
-All three are **spawnable** by the cell config (`SpawnProfileSO.SupportedFaunas`,
-via `RandomLifeSpawner`). Two herbivore species + one predator. **The shark is
-wired into the Blob (menu) profile** at apex-tier numbers (seed floor 2, cap 3,
-births on 3 kills) — safe now that spawn immunity gives co-spawned herbivores a
-dispersal window. It stays **out of Skim Race** deliberately: predators remove
-foragers, which is counterproductive to that scene's trail-cleanup perf goal.
+All four are **spawnable** by the cell config (`SpawnProfileSO.SupportedFaunas`,
+via `RandomLifeSpawner`). Two herbivore species + two predators — but a profile
+runs ONE apex at a time: **the swordfish flagship holds the Blob (menu) apex
+slot** at the shark's tuned apex numbers (seed floor 1, cap 2, births on 6
+kills) — safe now that spawn immunity gives co-spawned herbivores a dispersal
+window. The shark stays authored for other biomes. Predators stay **out of Skim
+Race** deliberately: they remove foragers, which is counterproductive to that
+scene's trail-cleanup perf goal.
 
 > **The live spawn path is the cell config — NOT the scene-placed populations.**
 > The `MassTadpolePopulation` / `MassBrittlestarPopulation` etc. objects in scenes
@@ -486,14 +489,16 @@ The food web is wired into two scenes to test the ecosystem's ability to manage
 The goal here is **flying through sizable gyroids**, so the food web is tuned to
 **TAME, not devour** (see §6.2): a small 3-tier presence — tadpole forager (seed
 floor 4, cap 6, slow births @20 feeds) + brittlestar (floor 3, cap 5, @16) +
-**shark** (floor 1, cap 2, @6 kills). Summed herbivore cap (11) is held **below
+the **swordfish flagship** (floor 1, cap 2, @6 kills — it took the shark's apex
+slot at the shark's exact tuned numbers, so the taming balance is unchanged).
+Summed herbivore cap (11) is held **below
 the flora's food-supported count** so the fauna cannot out-graze flora growth —
 the gyroids grow to `FrenzyEnter` (1200) and **hold** there (breathing in the
 ~950–1200 band), with the fauna trimming the edges. A bigger or faster-breeding
 swarm flips it to *devouring* (gyroids stripped, boom/bust) — exactly the
 over-grazing the perf-cut numbers first caused. The tadpole grazes any unshielded
 non-fauna mass (incl. the dominant gyroid), the brittlestar grazes opposing mass,
-the shark eats both herbivores. Caps are also **performance-bounded** (§12: each
+the swordfish eats both herbivores. Caps are also **performance-bounded** (§12: each
 fauna's per-tick `OverlapSphere` is a top frame cost). Levers: per-species
 `MaxLivePopulation` (the taming dial, §6.2) + reproduction knobs (§6.1),
 `FrenzyEnter` (gyroid size, perf-capped), `starvationSeconds` / `consumeRadius`.
@@ -507,16 +512,19 @@ leave an excess of **trail-prism obstacles**; the forager swarm grazes them →
 fewer prisms → better perf; foragers self-limit (starve) once the obstacles are
 cleared.
 
-> **Shark status: IN the Blob (menu) profile, OUT of Skim Race.** The original
-> "only sharks" wipe (predators eating every herbivore at co-spawn, before the
-> swarm dispersed) is covered by spawn immunity
-> (`Fauna.predationImmunitySeconds`, default 6s, stamped in `Awake`; `Predated`
-> refuses during the window), so the menu now runs the full apex tier at low
-> numbers (seed floor 2, cap 3). Skim Race stays predator-free deliberately —
-> predators remove foragers, which is counterproductive to that scene's
-> trail-cleanup perf goal. If the menu sharks still overgraze in practice, lower
-> their `MaxLivePopulation`/`PopulationSize` or raise `FeedsPerOffspring` before
-> considering removal.
+> **Apex status: the SWORDFISH flagship holds the Blob (menu) apex slot; the shark
+> is OUT of Blob and OUT of Skim Race.** The swordfish (`MassSwordfishFauna`, built
+> by `Tools ▸ Cosmic Shore ▸ Build Swordfish Flagship Fauna` from `SwordFish_A.fbx`)
+> replaced the shark 1:1 in `Blob Cell Spawn Profile` — same apex numbers (seed
+> floor 1, cap 2, births @6 kills), so predator pressure and the taming balance are
+> unchanged; the shark assets stay authored for other biomes. The original "only
+> sharks" wipe (predators eating every herbivore at co-spawn, before the swarm
+> dispersed) is covered by spawn immunity (`Fauna.predationImmunitySeconds`,
+> default 6s, stamped in `Awake`; `Predated` refuses during the window). Skim Race
+> stays predator-free deliberately — predators remove foragers, which is
+> counterproductive to that scene's trail-cleanup perf goal. If the menu apex still
+> overgrazes in practice, lower its `MaxLivePopulation`/`PopulationSize` or raise
+> `FeedsPerOffspring` before considering removal.
 
 > **Other caveats to validate in-editor (I can't run Unity):**
 > 2. **Sense coverage (addressed — tune `SenseRadiusOverride`).** Registration +
@@ -582,6 +590,7 @@ cleared.
 | Spawn tuning (seed period/floor, food floor) + per-species reproduction knobs | `SpawnProfileSO.cs`, `FaunaConfigurationSO.cs` |
 | Aggression enum + tier behaviors | `Assets/_Scripts/Data/Enums/CellAggressionLevel.cs` |
 | Indicator (hex gauge + spawn ring, no numbers) | `Assets/_Scripts/UI/DomainVolumeIndicator.cs` |
+| Flagship swordfish builder (assembles `MassSwordfishFauna` from `SwordFish_A.fbx`, authors its SOs, wires the Blob apex slot) | `Assets/_Scripts/Editor/SwordfishFaunaSetupTool.cs` (`Tools ▸ Cosmic Shore ▸ Build Swordfish Flagship Fauna`) |
 | Headless perf+ecology tuner (no Unity) | `Tools/ecosim/ecosim.py` (+ `calibration.csv`, `README.md`) — see §12 |
 | In-Unity perf probe (emits calibration samples) | `Assets/_Scripts/Controller/Environment/EcosystemPerfProbe.cs` |
 
@@ -652,7 +661,7 @@ with the others.
    (`FeedsPerOffspring` etc. on `FaunaConfigurationSO`); the spawner is demoted to
    a *seeder* that only tops a species up to its seed floor. Population is a true
    function of the food web; `FaunaReproductionRules` + edit-mode tests pin the
-   gating. The 3-tier Blob web (flora → tadpole/brittlestar → shark) is authored.
+   gating. The 3-tier Blob web (flora → tadpole/brittlestar → swordfish) is authored.
 
 4. **Elemental integration** — *ties the ecology to gameplay.*
    Flora/fauna express their effects through **Elementals** (Charge/Mass/Space/
@@ -704,7 +713,7 @@ exact recipe. As of the 3-phase collapse, standing up a biome is fully data-driv
 
 **Recipe for a brand-new biome (zero code):**
 1. Author the creature/flora **prefabs** (or reuse Tadpole / Brittlestar / Shark /
-   the gyroid floras), each carrying its own diet + starvation + radii.
+   Swordfish / the gyroid floras), each carrying its own diet + starvation + radii.
 2. Create one `FaunaConfigurationSO` per fauna species and one
    `FloraConfigurationSO` per flora species, pointing at the prefabs.
 3. Create a `SpawnProfileSO` listing those configs + the cadence/floor knobs.
