@@ -39,8 +39,8 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Debug-only readout of the swing physics state. String formatting
-        /// allocates, which is acceptable here: the call is gated behind
-        /// <see cref="ShowDebugTelemetry"/> and exists purely for tuning.
+        /// allocates, which is acceptable here: it only runs while the
+        /// <see cref="showDebugTelemetry"/> tuning toggle is on.
         /// </summary>
         public void SetTelemetry(float speed, float angularMomentum, float circleRadius, string state)
         {

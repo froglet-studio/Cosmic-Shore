@@ -118,6 +118,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] float releaseShakeIntensity = 0.8f;
         [Tooltip("Seconds the release shake decays over.")]
         [SerializeField] float releaseShakeDuration = 0.25f;
+        [Tooltip("Noise gate: releases below this fraction of speedThicknessRef don't shake at all.")]
+        [SerializeField] float releaseShakeSpeedFloor = 0.05f;
         [Tooltip("Camera-shake tick when the lightsaber sweep slices at least one prism this frame. Local player only. 0 = off.")]
         [SerializeField] float sweepKillShakeIntensity = 0.2f;
         [Tooltip("Seconds the sweep-kill tick decays over.")]
@@ -129,7 +131,7 @@ namespace CosmicShore.Gameplay
 
         // ---- Internal types ----
 
-        public enum SwingState { FreeFlight, SingleAnchor, DualAnchor }
+        public enum SwingState { FreeFlight = 0, SingleAnchor = 1, DualAnchor = 2 }
 
         struct TetherState
         {
@@ -576,10 +578,15 @@ namespace CosmicShore.Gameplay
             {
                 case SwingState.FreeFlight:
                     if (lastVelocity.sqrMagnitude > 0.01f)
-                    {
                         freeFlightCourse = lastVelocity.normalized;
-                        speed = lastVelocity.magnitude;
-                    }
+                    // The persistent speed field is deliberately NOT re-baked
+                    // from lastVelocity: both anchored states already keep it
+                    // honest (dual: |ω|·h, single: drag-decayed carry-in),
+                    // while lastVelocity carries transient OUTPUT multipliers
+                    // (boost, throttle mods, the MinimumSpeed floor). Baking
+                    // those in turned every boosted anchor-release cycle into
+                    // a permanent ×BoostMultiplier speed gain, compounding
+                    // exponentially — the loophole around all the drag above.
                     VesselStatus.Course = freeFlightCourse;
                     PlayReleaseShake();
                     break;
@@ -1014,15 +1021,17 @@ namespace CosmicShore.Gameplay
 
                 angularMomentum += sign * pumpGain * contractionRate * Mathf.Max(absOmega, 0.1f) * dt;
             }
-            else if (dH > 0f && dt > 0.0001f)
+            else if (dH > 0f && dt > 0.0001f && reversePumpBleed > 0f)
             {
-                // Reverse-pump bleed: expansion does negative work, exactly
-                // mirroring the injection term above. Spread the sticks to
-                // pump up, relax them to bleed down — the skill-based brake.
-                float expansionRate = dH / dt;
-                float absOmega = Mathf.Abs(circleAngularVelocity);
-                angularMomentum = Mathf.MoveTowards(angularMomentum, 0f,
-                    reversePumpBleed * expansionRate * Mathf.Max(absOmega, 0.1f) * dt);
+                // Reverse-pump bleed: expansion does negative work, mirroring
+                // the injection term above. Spread the sticks to pump up,
+                // relax them to bleed down — the skill-based brake. Integrated
+                // in closed form (dL/L = −bleed·dh/h² ⇒ L ×= e^(−bleed·(1/h₀−1/h₁)))
+                // so the result is framerate-independent: a left-endpoint ω
+                // sample over-drains badly when a hitch frame delivers the
+                // whole expansion at once (it floored L to zero where the
+                // exact integral keeps ~79%).
+                angularMomentum *= Mathf.Exp(-reversePumpBleed * (1f / oldH - 1f / currentH));
             }
 
             // Quadratic drag on L (dL/dt = −k·v·L with v = |ω|·h) — the
@@ -1060,18 +1069,20 @@ namespace CosmicShore.Gameplay
 
             circleAngle += circleAngularVelocity * dt;
 
-            Vector3 prevPos = transform.position;
             transform.position = center + h * (Mathf.Cos(circleAngle) * u + Mathf.Sin(circleAngle) * v);
-
-            Vector3 displacement = transform.position - prevPos;
-            lastVelocity = dt > 0.0001f ? displacement / dt : Vector3.zero;
-            speed = lastVelocity.magnitude;
 
             Vector3 tangent = (-Mathf.Sin(circleAngle) * u + Mathf.Cos(circleAngle) * v).normalized;
             if (circleAngularVelocity < 0f) tangent = -tangent;
 
+            // True tangential speed |ω|·h, NOT the per-frame chord. The chord
+            // aliases at high ω·dt (v·sin(ωdt/2)/(ωdt/2)) — identical swings
+            // released at wildly different speeds depending on framerate
+            // (a 30fps hard-pump launched at ~25% of a 144fps one).
+            speed = Mathf.Abs(circleAngularVelocity) * h;
+            lastVelocity = speed * tangent;
+
             VesselStatus.Speed = speed;
-            VesselStatus.Course = displacement.sqrMagnitude > 0.001f ? displacement.normalized : tangent;
+            VesselStatus.Course = tangent;
         }
 
         // ==================================================================
@@ -1093,7 +1104,7 @@ namespace CosmicShore.Gameplay
             if (releaseShakeIntensity <= 0f || !IsLocalHumanVessel) return;
 
             float speedT = Mathf.Clamp01(speed / Mathf.Max(speedThicknessRef, 1f));
-            if (speedT < 0.05f) return;
+            if (speedT < releaseShakeSpeedFloor) return;
 
             var cameraController = GetCameraController();
             if (cameraController != null)
@@ -1158,7 +1169,18 @@ namespace CosmicShore.Gameplay
 
             Vector3 tangent = (-Mathf.Sin(circleAngle) * u + Mathf.Cos(circleAngle) * v).normalized;
             float h = currentH;
-            circleAngularVelocity = Vector3.Dot(lastVelocity, tangent) / h;
+
+            // Seed ω from the persistent momentum along the tangent —
+            // direction from the actual motion, magnitude from the honest
+            // speed field. lastVelocity's magnitude carries transient output
+            // multipliers (boost, MinimumSpeed floor); letting those convert
+            // into swing momentum at anchor time compounds across
+            // boost-anchor-release cycles. Boost repositions in free flight;
+            // it never buys L.
+            Vector3 velDir = lastVelocity.sqrMagnitude > 0.0001f
+                ? lastVelocity.normalized
+                : transform.forward;
+            circleAngularVelocity = speed * Vector3.Dot(velDir, tangent) / h;
 
             angularMomentum = circleAngularVelocity * h * h;
         }
