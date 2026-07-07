@@ -187,7 +187,6 @@ namespace CosmicShore.Core
 
         void HandleMenuReady()
         {
-            CosmicShore.Utility.BootTrace.Mark("Menu:Ready (SUCCESS — vessel spawned, menu interactive)");
             TransitionTo(MainMenuState.Ready);
             ActivateLocalPlayerAutopilot();
             _analytics?.RecordMenuReady();

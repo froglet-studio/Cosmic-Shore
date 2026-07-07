@@ -77,7 +77,11 @@ namespace CosmicShore.Gameplay
 
                 if (_prismPrefab)
                 {
-                    const int perFrame = 6;
+                    // 2/frame on the stripped mobile build: each Instantiate (GameObject + collider
+                    // + Prism init + spatial-index register) costs ~0.5-2ms on an old phone, so 6/frame
+                    // was a visible 3-12ms hitch during every populate. At 2/frame a 40-prism scene
+                    // takes ~20 frames (~0.2s) to lay — invisible inside the bloom-in.
+                    int perFrame = CosmicShore.Utility.PerfStrip.Enabled ? 2 : 6;
                     for (int i = 0; i < plan.PrismPoints.Count; i++)
                     {
                         var point = plan.PrismPoints[i];
@@ -343,6 +347,7 @@ namespace CosmicShore.Gameplay
         async UniTask AnimateScaleAsync(float from, float to, float seconds, CancellationToken ct)
         {
             float elapsed = 0f;
+            int frame = 0;
             seconds = Mathf.Max(0.05f, seconds);
             while (elapsed < seconds)
             {
@@ -350,7 +355,13 @@ namespace CosmicShore.Gameplay
                 float t = Mathf.Clamp01(elapsed / seconds);
                 float eased = t * t * (3f - 2f * t); // smoothstep, matching Toy.BloomIn
                 transform.localScale = Vector3.one * Mathf.LerpUnclamped(from, to, eased);
-                NotifyPrismPositions();
+
+                // Stripped mobile build: intermediate notifies every 3rd frame is plenty — the
+                // spatial index only rebuckets on 8m boundary crossings, and RecycleAsync issues
+                // an exact NotifyPrismPositions after the animation settles.
+                if (!CosmicShore.Utility.PerfStrip.Enabled || (frame++ % 3) == 0)
+                    NotifyPrismPositions();
+
                 await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
             transform.localScale = Vector3.one * to;
