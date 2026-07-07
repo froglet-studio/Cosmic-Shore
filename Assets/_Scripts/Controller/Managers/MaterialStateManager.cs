@@ -1,5 +1,6 @@
 using UnityEngine;
 using Unity.Mathematics;
+using Unity.Profiling;
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -9,6 +10,10 @@ namespace CosmicShore.Gameplay
 {
     public class MaterialStateManager : AdaptiveAnimationManager<MaterialStateManager, MaterialPropertyAnimator, MaterialAnimationData>
     {
+        // The profiler collapses every AdaptiveAnimationManager instance into one
+        // generic Update row — this marker attributes this manager's share.
+        static readonly ProfilerMarker s_processMarker = new("MaterialStateManager.Process");
+
         // Animators that finished this frame — callbacks run after the pass since
         // they may start/stop other animators.
         private readonly List<MaterialPropertyAnimator> completedAnimators =
@@ -40,6 +45,8 @@ namespace CosmicShore.Gameplay
 
         protected override void ProcessAnimationFrame(float deltaTime)
         {
+            using var _ = s_processMarker.Auto();
+
             // Update our stable index list — the snapshot also makes activeAnimators
             // safe to mutate (stale-prune here, completion callbacks below).
             activeAnimatorsList.Clear();
@@ -71,8 +78,10 @@ namespace CosmicShore.Gameplay
                 animator.AnimationProgress = progress;
 
                 float t = math.smoothstep(0f, 1f, progress);
-                var brightColor = math.lerp(ToFloat4(animator.StartBrightColor), ToFloat4(animator.TargetBrightColor), t);
-                var darkColor = math.lerp(ToFloat4(animator.StartDarkColor), ToFloat4(animator.TargetDarkColor), t);
+                // Endpoint float4s are cached on the animator at (re)target time —
+                // no per-frame Color property reads or conversions here.
+                var brightColor = math.lerp(animator.StartBright4, animator.TargetBright4, t);
+                var darkColor = math.lerp(animator.StartDark4, animator.TargetDark4, t);
                 var spread = math.lerp(animator.StartSpread, animator.TargetSpread, t);
 
                 var bright = ToColor(brightColor);
@@ -131,7 +140,6 @@ namespace CosmicShore.Gameplay
             completedAnimators.Clear();
         }
 
-        private static float4 ToFloat4(Color color) => new float4(color.r, color.g, color.b, color.a);
         private static Color ToColor(float4 f4) => new Color(f4.x, f4.y, f4.z, f4.w);
     }
 

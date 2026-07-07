@@ -26,6 +26,15 @@ namespace CosmicShore.Gameplay
         public Vector3 StartSpread { get; private set; }
         public Vector3 TargetSpread { get; private set; }
 
+        // float4 mirrors of the color endpoints, converted ONCE when the animation
+        // is (re)targeted — MaterialStateManager lerps these every animated frame,
+        // and the old per-frame property-read + Color→float4 conversions (8 per
+        // animator per frame) were pure constant overhead in its fused pass.
+        internal Unity.Mathematics.float4 StartBright4 { get; private set; }
+        internal Unity.Mathematics.float4 TargetBright4 { get; private set; }
+        internal Unity.Mathematics.float4 StartDark4 { get; private set; }
+        internal Unity.Mathematics.float4 TargetDark4 { get; private set; }
+
         // Last colors actually displayed, written by MaterialStateManager each
         // animated frame. This is the interruption start-state for BOTH render
         // paths — the entity path has no MaterialPropertyBlock to read back from.
@@ -186,6 +195,12 @@ namespace CosmicShore.Gameplay
             TargetBrightColor = transparentMaterial.GetColor(BrightColorId);
             TargetDarkColor = transparentMaterial.GetColor(DarkColorId);
             TargetSpread = transparentMaterial.GetVector(SpreadId);
+
+            // One-time conversions for the manager's per-frame lerp.
+            StartBright4 = new Unity.Mathematics.float4(StartBrightColor.r, StartBrightColor.g, StartBrightColor.b, StartBrightColor.a);
+            TargetBright4 = new Unity.Mathematics.float4(TargetBrightColor.r, TargetBrightColor.g, TargetBrightColor.b, TargetBrightColor.a);
+            StartDark4 = new Unity.Mathematics.float4(StartDarkColor.r, StartDarkColor.g, StartDarkColor.b, StartDarkColor.a);
+            TargetDark4 = new Unity.Mathematics.float4(TargetDarkColor.r, TargetDarkColor.g, TargetDarkColor.b, TargetDarkColor.a);
 
             Duration = duration;
             AnimationProgress = 0f;

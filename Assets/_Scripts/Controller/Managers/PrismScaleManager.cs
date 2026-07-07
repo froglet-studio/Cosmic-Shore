@@ -1,11 +1,16 @@
 using UnityEngine;
 using Unity.Mathematics;
+using Unity.Profiling;
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
 namespace CosmicShore.Gameplay
 {
     public class PrismScaleManager : AdaptiveAnimationManager<PrismScaleManager, PrismScaleAnimator, ScaleAnimationData>
     {
+        // The profiler collapses every AdaptiveAnimationManager instance into one
+        // generic Update row — this marker attributes this manager's share.
+        static readonly ProfilerMarker s_processMarker = new("PrismScaleManager.Process");
+
         // This is a squared distance threshold check (since we use lengthsq)
         private const float COMPLETION_THRESHOLD_SQR = 0.01f;
 
@@ -20,6 +25,8 @@ namespace CosmicShore.Gameplay
 
         protected override void ProcessAnimationFrame(float deltaTime)
         {
+            using var _ = s_processMarker.Auto();
+
             // Refresh stable list — the snapshot also makes activeAnimators safe to
             // mutate (stale-prune here, completion callbacks below).
             activeAnimatorsList.Clear();
