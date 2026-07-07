@@ -11,7 +11,9 @@ namespace CosmicShore.Gameplay
     public sealed class ConveyorConfig
     {
         public Prism PrismPrefab;
+        public Crystal OmniCrystalPrefab;
         public SkimmerCrystalEffectSO[] CrystalEffects;
+        public MicroscenePalette Palette = new();
         public int PoolSize = 10;
         public int PrismBudget = 42;
         public float SceneRadius = 55f;
@@ -21,7 +23,7 @@ namespace CosmicShore.Gameplay
         public float MinSceneIntervalSeconds = 2f;
         public float RecycleBehindDistance = 250f;
         public float TransitionSeconds = 1.2f;
-        public float PathSpread = 0.6f;
+        public float TurnBreakDegrees = 55f;
         public int MaxCrystalsPerScene = 3;
         public bool LifeformScenes = true;
         public int Seed;
@@ -39,13 +41,22 @@ namespace CosmicShore.Gameplay
     /// flora/fauna only while the scene sits inside a live <see cref="Cell"/>; out in open space
     /// the belt is pure prisms + crystals.
     ///
-    /// Placement is NOT a connected ribbon. Each scene lands directly on the player's LIVE flight
-    /// line (position + course), scattered a little laterally so the field has width — there is no
-    /// running "head" the scenes chain off. The field's reach is measured along the current course
-    /// inside a flight corridor, so the instant the player changes direction the old field falls
-    /// off-corridor, its reach collapses, and fresh scenes drop straight into the NEW path; the
-    /// now-lateral leftovers become the recycle candidates that rebuild ahead. Structures appear in
-    /// front of the player shortly after any turn, regardless of where the belt was pointing.
+    /// Placement is a CONNECTED ribbon that can break and re-lay. Every scene sits on the flight
+    /// line — never scattered laterally (no orthogonal "sphere in front of you"). The belt reads a
+    /// forward cone (half-angle <see cref="ConveyorConfig.TurnBreakDegrees"/>) around the live
+    /// course each tick and does one of two things:
+    ///   • NEAR-FILL — if nothing lies just ahead on the current heading (start-up, or a turn just
+    ///     ejected the near scenes out of the cone), it drops a scene directly ahead at
+    ///     firstSceneDistance, so a structure appears in front of the player right after any turn.
+    ///   • EXTEND — otherwise it chains the next scene off the ACTUAL frontmost scene along the
+    ///     current course (tip + course × spacing). Chaining off real mass (not a free-floating
+    ///     "head") keeps the ribbon connected and lets it BEND with gentle/moderate turns without
+    ///     ever drifting into a parallel path far to the side.
+    /// A sharp turn drops the whole old ribbon out of the cone: its reach collapses, near-fill
+    /// re-lays straight down the NEW heading, and the now-lateral leftovers become the
+    /// farthest-first recycle candidates that rebuild ahead. A scene mid-recycle claims its
+    /// destination slot immediately (<see cref="Microscene.PendingAnchor"/>) so the rebuild never
+    /// piles several scenes onto the same point while the blooms are in flight.
     ///
     /// Toy-faithful: no score, no end condition, no timers — every belt advance is driven by the
     /// player's own motion. The Wanderway toy toggles the belt on/off; exiting freestyle just
@@ -62,6 +73,11 @@ namespace CosmicShore.Gameplay
         // more distance. Boost bursts beyond that just fill in over the next few ticks.
         const int MaxConcurrentArrivals = 2;
 
+        // A near hole opens (and the belt drops a fresh scene straight ahead) once the nearest scene
+        // on the flight line sits farther than firstDistance + this × spacing — big enough that a
+        // just-placed near scene doesn't immediately re-trigger, small enough that a real gap fills.
+        const float NearHoleSpacingFactor = 0.5f;
+
         ConveyorConfig _cfg;
         IVesselStatus _vessel;
         Func<bool> _isFreestyleActive;
@@ -69,8 +85,7 @@ namespace CosmicShore.Gameplay
 
         readonly List<Microscene> _scenes = new();
         readonly List<int> _recipeBag = new();
-        readonly List<Domains> _domainCycle = new();
-        int _domainIndex;
+        readonly List<Domains> _domainList = new();
 
         System.Random _rng;
         float _nextTickAt;
@@ -87,16 +102,17 @@ namespace CosmicShore.Gameplay
             _gameData = gameData;
             _rng = cfg.Seed != 0 ? new System.Random(cfg.Seed) : new System.Random(Environment.TickCount);
 
-            // No head to seed — the first Update tick places directly ahead of the live vessel.
+            // Nothing to seed — the first Update tick sees an empty cone and near-fills a scene
+            // directly ahead of the live vessel.
             _running = true;
         }
 
         /// <summary>Re-entry pass through the toy (or after a vessel swap): keep the field, resume the flow.</summary>
         public void Resume(IVesselStatus vessel)
         {
-            // Re-acquire the (possibly swapped) vessel; Update rebuilds the field directly ahead of
-            // wherever the player now is, so nothing else needs restarting — abandoned scenes
-            // recycle naturally as off-corridor candidates.
+            // Re-acquire the (possibly swapped) vessel; the next Update near-fills the ribbon directly
+            // ahead of wherever the player now is, and any scenes left behind recycle naturally as
+            // off-cone candidates. Nothing else needs restarting.
             _vessel = vessel;
             _running = true;
         }
@@ -125,77 +141,81 @@ namespace CosmicShore.Gameplay
             float effSpacing = Mathf.Max(_cfg.SceneSpacing, speed * _cfg.MinSceneIntervalSeconds);
             float lookahead = _cfg.AheadTargetScenes * effSpacing;
             float recycleBehind = Mathf.Max(_cfg.RecycleBehindDistance, effSpacing * 0.9f);
+            float firstDist = FirstDistance(speed);
+            float leadCos = LeadCos;
 
-            // Half-width of the flight corridor: the band around the player's course that counts as
-            // "the path directly ahead." Wider than the placement scatter (so fresh scenes register
-            // as in-corridor), far narrower than the spacing (so a turn clearly ejects the old
-            // field out of the corridor). Everything outside it is a leftover, not part of the ride.
-            float scatter = _cfg.SceneRadius * _cfg.PathSpread;
-            float corridor = _cfg.SceneRadius * 2f + scatter;
+            // One scan of the field along the LIVE flight cone: the nearest scene ahead (near-field
+            // health) and the frontmost connected scene (the ribbon's tip + how deep it reaches).
+            // Only scenes inside the cone count — a turn ejects the old ribbon out of it, so both
+            // collapse and the belt re-lays straight down the new heading. Effective anchors count a
+            // recycling scene's CLAIMED slot so a rebuild never piles arrivals onto one point.
+            Microscene tip = null;
+            float nearestAhead = float.MaxValue;
+            float frontier = 0f;
+            foreach (var scene in _scenes)
+            {
+                if (!scene) continue;
+                Vector3 rel = EffectiveAnchor(scene) - playerPos;
+                float along = Vector3.Dot(rel, course);
+                if (along <= 0f) continue;                              // behind me
+                if (Vector3.Dot(rel.normalized, course) < leadCos) continue; // off the flight cone
+                if (along < nearestAhead) nearestAhead = along;
+                if (along > frontier) { frontier = along; tip = scene; }
+            }
 
-            // How far the field already reaches straight ahead of the player, measured ONLY over
-            // scenes inside the corridor. After a direction change the old scenes are off-corridor,
-            // so this collapses and fresh scenes fill the new path from FirstDistance outward.
-            float frontier = FrontierProgress(playerPos, course, corridor);
-            if (frontier >= lookahead) return; // enough world ahead already
+            bool nearFill = tip == null || nearestAhead > firstDist + effSpacing * NearHoleSpacingFactor;
+            Vector3 target;
+            if (nearFill)
+            {
+                // NEAR-FILL: nothing on the flight line just ahead (start-up, or a turn just ejected
+                // the near scenes) — drop a scene directly ahead on the live course so a structure
+                // appears in front of the player. No lateral scatter: it lands on the line.
+                target = playerPos + course * firstDist;
+            }
+            else if (frontier < lookahead)
+            {
+                // EXTEND: chain the next scene off the ACTUAL frontmost scene along the current
+                // course. Chaining off real mass (not a free-floating head) keeps the ribbon
+                // connected and lets it bend with the turn instead of drifting to a parallel path.
+                target = EffectiveAnchor(tip) + course * effSpacing;
+            }
+            else
+            {
+                return; // a full ribbon already reaches ahead on this heading
+            }
 
-            float nextDist = frontier <= 0.01f
-                ? FirstDistance(speed)
-                : Mathf.Max(FirstDistance(speed), frontier + effSpacing);
-            Pose pose = PoseAhead(playerPos, course, nextDist, scatter);
+            Pose pose = new(target, Quaternion.LookRotation(course, UpFor(course)));
 
             if (_scenes.Count < _cfg.PoolSize)
                 PlaceNewScene(pose);
             else
-                RecycleFarthestScene(playerPos, course, recycleBehind, corridor, pose);
+                RecycleFarthestScene(playerPos, course, recycleBehind, lookahead, leadCos, pose, nearFill);
         }
 
         // ── Belt geometry ────────────────────────────────────────────────────
 
         float FirstDistance(float speed) => Mathf.Max(_cfg.FirstSceneDistance, speed * 1.2f);
 
-        /// <summary>
-        /// How far ahead the field reaches along the current course, counting only scenes inside
-        /// the flight corridor. Scenes behind, or laterally off the flight line (a turn's
-        /// leftovers), don't extend the path — so 0 means "nothing in front of me on this heading."
-        /// </summary>
-        float FrontierProgress(Vector3 playerPos, Vector3 course, float corridor)
-        {
-            float best = 0f;
-            foreach (var scene in _scenes)
-            {
-                if (!scene) continue;
-                Vector3 rel = scene.Anchor - playerPos;
-                float along = Vector3.Dot(rel, course);
-                if (along <= 0f) continue;                          // behind — not ahead of me
-                if (Vector3.Distance(rel, course * along) > corridor) continue; // off to the side
-                if (along > best) best = along;
-            }
-            return best;
-        }
+        /// <summary>Cosine of the forward-cone half-angle: scenes farther off the live course than
+        /// this don't count as "ahead," so a turn past it re-lays the ribbon straight down the new
+        /// heading (config-driven so designers tune how sharp a turn breaks the ribbon).</summary>
+        float LeadCos => Mathf.Cos(Mathf.Clamp(_cfg.TurnBreakDegrees, 5f, 89f) * Mathf.Deg2Rad);
 
-        /// <summary>
-        /// A pose <paramref name="distanceAhead"/> down the player's live flight line, scattered up
-        /// to <paramref name="scatter"/> laterally so the field reads as a field (not a single-file
-        /// line), and oriented so the scene's +z runs along the course — you fly straight into it.
-        /// </summary>
-        Pose PoseAhead(Vector3 playerPos, Vector3 course, float distanceAhead, float scatter)
-        {
-            Vector3 up = Mathf.Abs(Vector3.Dot(course, Vector3.up)) > 0.95f ? Vector3.right : Vector3.up;
-            Vector3 right = Vector3.Cross(up, course).normalized;
-            up = Vector3.Cross(course, right).normalized;
+        /// <summary>A scene's slot for placement decisions: its in-flight recycle destination if it
+        /// has claimed one, else its settled anchor (see <see cref="Microscene.PendingAnchor"/>).</summary>
+        static Vector3 EffectiveAnchor(Microscene scene) => scene.PendingAnchor ?? scene.Anchor;
 
-            Vector3 lateral = (right * Jitter(1f) + up * Jitter(1f)) * scatter;
-            Vector3 pos = playerPos + course * distanceAhead + lateral;
-            return new Pose(pos, Quaternion.LookRotation(course, up));
-        }
+        /// <summary>A stable up-vector for orienting a scene along the course, avoiding the
+        /// LookRotation degeneracy when the player is flying near-vertically.</summary>
+        static Vector3 UpFor(Vector3 course) =>
+            Mathf.Abs(Vector3.Dot(course, Vector3.up)) > 0.95f ? Vector3.right : Vector3.up;
 
         // ── Scene arrivals ───────────────────────────────────────────────────
 
         void PlaceNewScene(Pose pose)
         {
             var scene = Microscene.Create(transform, _scenes.Count.ToString());
-            scene.Configure(_cfg.PrismPrefab, _cfg.CrystalEffects);
+            scene.Configure(_cfg.PrismPrefab, _cfg.OmniCrystalPrefab, _cfg.CrystalEffects);
             scene.transform.SetPositionAndRotation(pose.position, pose.rotation);
             _scenes.Add(scene);
 
@@ -203,16 +223,31 @@ namespace CosmicShore.Gameplay
             // Each arrival gets its own derived rng: async populate/recycle draws would otherwise
             // interleave on the shared stream and break per-seed reproducibility.
             var sceneRng = new System.Random(_rng.Next());
-            scene.PopulateAsync(plan, NextDomain(), sceneRng, this.GetCancellationTokenOnDestroy()).Forget();
+            scene.PopulateAsync(plan, sceneRng, this.GetCancellationTokenOnDestroy()).Forget();
         }
 
-        bool RecycleFarthestScene(Vector3 playerPos, Vector3 course, float recycleBehind, float corridor, Pose pose)
+        bool RecycleFarthestScene(Vector3 playerPos, Vector3 course, float recycleBehind, float lookahead,
+            float leadCos, Pose pose, bool nearFill)
         {
-            // Reclaimable = NOT part of the ride the player is flying into. A scene stays protected
-            // while it is near the flight line (inside the corridor) and not yet far behind — i.e.
-            // something the player is heading toward or just passed. Everything else — scenes left
-            // off to the side by a course change, or dropped far behind — is fair game, farthest
-            // first, so the most-abandoned mass rebuilds the new path ahead.
+            // Pass 1: reclaim only mass genuinely out of the ride — protect the ribbon ahead (in the
+            // flight cone, what the player is flying toward) and just-passed scenes. This is the
+            // steady-state path for every normal flight; a turn's now-lateral leftovers and
+            // dropped-behind scenes rebuild ahead, farthest first.
+            if (TryRecycleFarthest(playerPos, course, recycleBehind, lookahead, leadCos, pose,
+                    protectRibbonAhead: true))
+                return true;
+
+            // Pass 2 (near-fill only): the near field is empty AND nothing off-cone/behind is
+            // reclaimable (e.g. the whole belt bunched far ahead while the player is near-stationary).
+            // Steal the farthest in-cone scene to fill the hole — a surplus far structure is worth
+            // less than one directly in front. EXTEND never steals the ribbon it is flying toward.
+            return nearFill && TryRecycleFarthest(playerPos, course, recycleBehind, lookahead, leadCos,
+                pose, protectRibbonAhead: false);
+        }
+
+        bool TryRecycleFarthest(Vector3 playerPos, Vector3 course, float recycleBehind, float lookahead,
+            float leadCos, Pose pose, bool protectRibbonAhead)
+        {
             Microscene candidate = null;
             float farthest = 0f;
             foreach (var scene in _scenes)
@@ -220,11 +255,12 @@ namespace CosmicShore.Gameplay
                 if (!scene || scene.Busy) continue;
                 Vector3 rel = scene.Anchor - playerPos;
                 float along = Vector3.Dot(rel, course);
-                float perp = Vector3.Distance(rel, course * along);
                 float dist = rel.magnitude;
 
-                bool onCorridorAhead = perp <= corridor && along > -recycleBehind;
-                if (onCorridorAhead) continue; // still part of the ride — leave it be
+                bool aheadInCone = protectRibbonAhead && along > 0f
+                                   && Vector3.Dot(rel.normalized, course) >= leadCos && along <= lookahead * 1.5f;
+                bool justPassed = along <= 0f && along > -recycleBehind;
+                if (aheadInCone || justPassed) continue; // still part of the ride — leave it be
                 if (dist <= farthest) continue;
 
                 farthest = dist;
@@ -235,7 +271,7 @@ namespace CosmicShore.Gameplay
 
             var plan = NextPlan();
             var sceneRng = new System.Random(_rng.Next()); // see PlaceNewScene — per-arrival stream
-            candidate.RecycleAsync(plan, pose, NextDomain(), sceneRng, _cfg.TransitionSeconds,
+            candidate.RecycleAsync(plan, pose, sceneRng, _cfg.TransitionSeconds,
                 this.GetCancellationTokenOnDestroy()).Forget();
             return true;
         }
@@ -258,30 +294,32 @@ namespace CosmicShore.Gameplay
 
             int recipe = _recipeBag[^1];
             _recipeBag.RemoveAt(_recipeBag.Count - 1);
-            return MicroscenePatterns.Plan(recipe, _rng, _cfg.PrismBudget, _cfg.SceneRadius, _cfg.MaxCrystalsPerScene);
+
+            // Read the live player domains on EVERY draw — never snapshot domain at creation time
+            // (CLAUDE.md ▸ Team Domains): the Domain Changer toy can re-pick mid-freestyle and the
+            // belt should start colouring scenes from the new set immediately. The palette then
+            // distributes them per-prism under a coherent per-scene scheme.
+            _cfg.Palette.PlayableDomains = LivePlayableDomains();
+            return MicroscenePatterns.Plan(recipe, _rng, _cfg.PrismBudget, _cfg.SceneRadius, _cfg.MaxCrystalsPerScene, _cfg.Palette);
         }
 
-        /// <summary>
-        /// Read the live player domains on EVERY draw — never snapshot domain at creation time
-        /// (CLAUDE.md ▸ Team Domains): the Domain Changer toy can re-pick mid-freestyle and the
-        /// belt should start colouring scenes from the new set immediately.
-        /// </summary>
-        Domains NextDomain()
+        /// <summary>The live, distinct playable domains in the session (falls back to all three).</summary>
+        Domains[] LivePlayableDomains()
         {
-            _domainCycle.Clear();
+            _domainList.Clear();
             if (_gameData?.Players != null)
                 foreach (var player in _gameData.Players)
-                    if (player != null && player.Domain != Domains.Blue && !_domainCycle.Contains(player.Domain))
-                        _domainCycle.Add(player.Domain);
+                    if (player != null && player.Domain != Domains.Blue && !_domainList.Contains(player.Domain))
+                        _domainList.Add(player.Domain);
 
-            if (_domainCycle.Count == 0)
+            if (_domainList.Count == 0)
             {
-                _domainCycle.Add(Domains.Jade);
-                _domainCycle.Add(Domains.Ruby);
-                _domainCycle.Add(Domains.Gold);
+                _domainList.Add(Domains.Jade);
+                _domainList.Add(Domains.Ruby);
+                _domainList.Add(Domains.Gold);
             }
 
-            return _domainCycle[_domainIndex++ % _domainCycle.Count];
+            return _domainList.ToArray();
         }
 
         // ── Plumbing ─────────────────────────────────────────────────────────
@@ -312,7 +350,5 @@ namespace CosmicShore.Gameplay
                 if (scene && scene.Busy) busy++;
             return busy;
         }
-
-        float Jitter(float magnitude) => (float)(_rng.NextDouble() * 2 - 1) * magnitude;
     }
 }
