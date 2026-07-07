@@ -77,7 +77,9 @@ namespace CosmicShore.Editor
         static QuestPhaseGraphSO BuildPhase0()
         {
             var g = NewPhase(0, "Onboarding & Crystal Capture",
-                "Entry: first launch. FLIGHT SCHOOL — forced into freestyle, then: thumbsticks OUTWARD " +
+                "Entry: first launch. FIRST BEAT = the camera transitions from the menu orbit to the " +
+                "player vessel (the same blend as entering freestyle manually) as soon as the menu is " +
+                "ready; instructions only appear after the blend completes. FLIGHT SCHOOL — thumbsticks OUTWARD " +
                 "= speed up, INWARD = slow down, movement stick = look around, LT+RT = drift, skim 10 " +
                 "prisms (live counter; skims also boost), press B to exit — the exit happens ONLY on B, " +
                 "never forced. Every correct action pulses a success haptic; every completed step is " +
@@ -86,8 +88,7 @@ namespace CosmicShore.Editor
                 "CanvasGroup with the ControlIcons sprites. Then: Crystal Capture at intensity 2, " +
                 "profile/maps tour + the intensity-4 rule, CC at intensity 3, social UI tour.");
 
-            var intro = Add<QuestPlayIntroNode>(g, "Intro Cinematic");
-            var enter = Add<QuestEnterFreestyleNode>(g, "Enter Freestyle (forced into flight)");
+            var enter = Add<QuestEnterFreestyleNode>(g, "Camera → Player Vessel (enter freestyle)");
 
             var speedUpPrompt = Add<QuestShowInstructionNode>(g, "Prompt: Speed Up");
             speedUpPrompt.text = "Pull both thumbsticks OUTWARD to speed up!";
@@ -183,12 +184,12 @@ namespace CosmicShore.Editor
 
             var end = Add<QuestPhaseEndNode>(g, "Phase 0 Complete");
 
-            Chain(g, intro, enter,
+            Chain(g, enter,
                 speedUpPrompt, waitSpeedUp, slowDownPrompt, waitSlowDown, lookPrompt, waitLook,
                 driftPrompt, waitDrift, skimPrompt, waitSkim, exitPrompt, waitB, exit,
                 ctaArcade, lockModes, ctaCC2, playedCC2, ctaProfile, mapsDialogue,
                 ctaCC3, playedCC3, socialTour, end);
-            return Finish(g, intro);
+            return Finish(g, enter);
         }
 
         static QuestPhaseGraphSO BuildUnlockPhase(int index, string phaseName,

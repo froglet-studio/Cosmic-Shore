@@ -67,8 +67,9 @@ the whole quest.
 ## The Main Quest (default content = the design map)
 
 ```
-P0 Onboarding & Crystal Capture: intro → freestyle controls (throttle, steer) → captain dialogue
-   → back to menu → CTA arcade → lock to CC → play CC@2 → CTA profile → maps/intensity-4 dialogue
+P0 Onboarding & Crystal Capture: camera → player vessel (enter freestyle on menu ready, entry
+   node) → speed up / slow down / look around / drift / skim×10 (counter) → press B → forced exit
+   → CTA arcade → lock to CC → play CC@2 → CTA profile → maps/intensity-4 dialogue
    → play CC@3 → social-UI tour → PhaseEnd
 P1 Unlock HexRace:  WaitIntensity(CC,4) → CTA profile → explainer → WaitModeUnlocked(HexRace)=claim
    → reward dialogue → CTA play HexRace → played → PhaseEnd
