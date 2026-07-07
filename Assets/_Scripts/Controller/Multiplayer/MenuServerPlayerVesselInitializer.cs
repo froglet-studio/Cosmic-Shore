@@ -163,6 +163,11 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // Inherit the outgoing ship's velocity so the swap is seamless — the new vessel
+            // continues at the same speed instead of the post-init dead stop (position + orientation
+            // are inherited via SetPose below). Captured before despawn while the old vessel is valid.
+            float snapshotSpeed = oldVessel.VesselStatus.Speed;
+
             // 2. Despawn old vessel
             DespawnVessel(oldVessel);
 
@@ -184,6 +189,7 @@ namespace CosmicShore.Gameplay
             // 4. Re-initialize on host
             clientPlayerVesselInitializer.ReplaceVesselForPlayer(player, newVessel);
             newVessel.SetPose(snapshotPose);
+            newVessel.SetInitialSpeed(snapshotSpeed);
             ActivateAutopilot(player);
 
             // 5. Wait for replication, then notify all non-host clients

@@ -56,7 +56,10 @@ namespace CosmicShore.Gameplay
             return c;
         }
 
-        protected void RegisterSpawned(Cell host, GameObject go)
+        // public static so non-subclass consumers (e.g. the freestyle microscene conveyor releasing
+        // lifeforms into the cell) reuse the ONE canonical spawn sequence instead of duplicating it.
+        // No instance state is touched; unqualified subclass calls still bind to these.
+        public static void RegisterSpawned(Cell host, GameObject go)
         {
             if (!host || !go) return;
             host.RegisterSpawnedObject(go);
@@ -67,7 +70,7 @@ namespace CosmicShore.Gameplay
         // Principles) says all three domains seed flora and fauna spawn in the
         // controlling color — no spawner may bias against any domain.
 
-        protected Domains PickRandomDomain(Domains? excluded)
+        public static Domains PickRandomDomain(Domains? excluded)
         {
             // Playable domains only — never Blue, the "no team" sentinel. A Blue
             // lifeform's prisms count as opposing mass for EVERY anti-domain query
@@ -122,7 +125,7 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        protected Flora SpawnFlora(Cell host, Flora floraPrefab, Domains? excludedDomain)
+        public static Flora SpawnFlora(Cell host, Flora floraPrefab, Domains? excludedDomain)
         {
             if (!host || !floraPrefab) return null;
 
@@ -156,7 +159,7 @@ namespace CosmicShore.Gameplay
         /// instead of rolling randomly. Used by the regulated fauna spawn loop so new
         /// fauna track the live leader rather than producing inconsistent domain mixes.
         /// </summary>
-        protected Fauna SpawnFaunaWithDomain(Cell host, Fauna faunaPrefab, Vector3 goal, Domains domain, Vector3? spawnPosition = null)
+        public static Fauna SpawnFaunaWithDomain(Cell host, Fauna faunaPrefab, Vector3 goal, Domains domain, Vector3? spawnPosition = null)
         {
             if (!host || !faunaPrefab) return null;
 

@@ -9,22 +9,21 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 0}
+  m_Script: {fileID: 11500000, guid: 93dc722293f3481da99005aee78dfe74, type: 3}
   m_Name: Toy_Conveyor
-  m_EditorClassIdentifier: Assembly-CSharp:CosmicShore.ScriptableObjects:ConveyorToyDefinitionSO
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.ConveyorToyDefinitionSO
   id: conveyor
   displayName: Wanderway
   description: Fly through to summon an endless trail of little worlds.
   unlockedByDefault: 1
   placementAngleDegrees: 60
-  accentColor: {r: 0.35, g: 1, b: 0.55, a: 1}
+  accentColor: {r: 0.11635202, g: 0.22510868, b: 1, a: 1}
   prismPrefab: {fileID: 4563009547826722997, guid: ed9defc56162b4b4588e61c20984b6d9,
     type: 3}
   crystalCollectionEffects:
   - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
-  omniCrystalPrefab: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811,
-    type: 3}
-  maxCrystalsPerScene: 3
+  omniCrystalPrefab: {fileID: 0}
+  maxCrystalsPerScene: 1
   palette:
     MonoWeight: 6
     BandedWeight: 2.2
@@ -44,14 +43,14 @@ MonoBehaviour:
     ScaleMoodMax: 1.6
     OmniCrystalChance: 0.16
   lifeformScenes: 1
-  poolSize: 10
-  prismBudgetPerScene: 42
-  sceneRadius: 55
-  sceneSpacing: 220
+  poolSize: 8
+  prismBudgetPerScene: 100
+  sceneRadius: 80
+  sceneSpacing: 170
   firstSceneDistance: 170
-  aheadTargetScenes: 7
+  aheadTargetScenes: 4
   minSceneIntervalSeconds: 2
-  recycleBehindDistance: 250
+  recycleBehindDistance: 170
   transitionSeconds: 1.2
   turnBreakDegrees: 55
   seed: 0

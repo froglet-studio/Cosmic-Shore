@@ -13,8 +13,9 @@ composes with the existing fundamentals rather than working around them:
 |---|---|
 | **Vessel** | the Vessel Changer toy cycles the player's ship via the existing networked swap |
 | **Domain** | the Domain Changer toy cycles the player's team colour via the server RPC |
-| **Prisms / Mass** | the Painting toy lays a *conserved-mass* prism pattern (no caps/TTLs) |
-| **Cells** | toys are placed relative to the Cell membrane (read, never duplicated) |
+| **Prisms / Mass** | the Painting toy lays a *conserved-mass* prism pattern (no caps/TTLs); the Wanderway conveyor transports a fixed stock of conserved prisms |
+| **Cells** | toys are placed relative to the Cell membrane (read, never duplicated); Wanderway lifeforms spawn *into* the cell as ordinary citizens |
+| **Flora & Fauna / Crystals** | Wanderway meadow/menagerie scenes release flora/fauna through the canonical cell spawn sequences and lay skimmable elemental crystals |
 
 A toy imposes no decay, no timer, and no win/lose — consistent with *Mass is conserved*
 and *don't cheat emergence*.
@@ -32,8 +33,14 @@ detection. On top of that base the `Toy` class adds:
   is on autopilot; they only activate once the player takes control
   (`ToyContext.IsFreestyleActive`).
 - **Continuity-law bloom-in** — every toy scales from zero on spawn (nothing pops in).
-- **Re-arm on exit** — a toy is *not consumed*; after the vessel leaves it re-arms, so you
-  can play with it indefinitely.
+- **Exit-gated re-arm** — a toy is *not consumed*, but it re-arms **only once the local vessel
+  has flown clear of its trigger volume** (a per-frame distance poll with `exitRadiusMultiplier`
+  hysteresis, robust to the swap's despawn/respawn which fires no `OnTriggerExit`). A swap toy
+  that flips to the option you just left also **re-grows slowly** (`regrowDuration`, default ~5s)
+  and stays inert while it does. Together these stop a toy from immediately switching you back
+  before you can escape it. And when any toy in a set fires, the coordinator disarms the **whole
+  set** (`Toy.Disarm`) so a vessel that re-spawns on top of a neighbour can't chain-trigger it.
+  `Toy` exposes `bloomDuration`, `regrowDuration`, and `exitRadiusMultiplier` as serialized knobs.
 
 ## File map
 
@@ -54,6 +61,11 @@ detection. On top of that base the `Toy` class adds:
 | Painting progress persistence | `Assets/_Scripts/Controller/Toys/PaintingProgressStore.cs` |
 | Drawing state (per-prism pose/domain) | `Assets/_Scripts/Controller/Toys/PaintingPrismStore.cs` |
 | Web share export (inline-WebGL viewer) | `Assets/_Scripts/Controller/Toys/PaintingShareExporter.cs` |
+| Idle spin for toy bodies | `Assets/_Scripts/Controller/Toys/ToyIdleSpin.cs` |
+| Conveyor ("Wanderway") toy | `Assets/_Scripts/Controller/Toys/ConveyorToy.cs` |
+| Conveyor belt runner | `Assets/_Scripts/Controller/Toys/MicrosceneConveyor.cs` |
+| One conveyor scene (lay/transport/re-arrange) | `Assets/_Scripts/Controller/Toys/Microscene.cs` |
+| Microscene recipe generators (pure) | `Assets/_Scripts/Controller/Toys/MicroscenePatterns.cs` |
 | Placement + lifecycle | `Assets/_Scripts/Controller/Toys/ToyboxController.cs` |
 | Per-toy config (abstract) | `Assets/_Scripts/ScriptableObjects/Toys/ToyDefinitionSO.cs` |
 | Vessel/Domain/Painting configs | `Assets/_Scripts/ScriptableObjects/Toys/*ToyDefinitionSO.cs` |
@@ -79,10 +91,46 @@ NetworkObject/VesselStatus/controllers ever run). Flying through one swaps you i
 via `MenuServerPlayerVesselInitializer.RequestSwap` (the existing networked pipeline), and the
 toy flips to a mini model of the ship you just left.
 
+**Mini-model rendering.** `VesselModelBuilder` extracts only the **hull**: it skips builtin-
+primitive meshes (the skimmer sphere, scaled 15–60× — it otherwise dominated `NormalizeToRadius`
+and crushed the hull to an invisible speck; this is why only Rhino, the one ship whose skimmer
+has no builtin sphere, used to render), anything named skimmer/trail/jet/forcefield/crackle/pip/
+vfx, and inactive/disabled renderers (read via `activeSelf` up the chain — `activeInHierarchy` is
+always false on a prefab asset). Each hull mesh is painted with one **opaque, self-lit preview
+material** (`TryBuild(prefab, radius, previewColor, out model)`), because the ship's real hull
+material is a transparent, runtime-theme-driven shader that renders dim/invisible at rest. The
+`previewColor` is the local player's **domain colour**, so the mini ships preview "you, a
+different hull". Vessels whose body isn't statically extractable fall back to the labelled
+tinted sphere.
+
+**Recolour on domain change.** The mini ships are tinted to your domain, but `ConfigureVisual`
+only runs on create/flip. So the set watches the local player's domain each frame
+(`SwapToySetCoordinator.OnTick` → `VesselChangerToySet`) and, on a change, re-tints **every** mini
+ship + label in place (`ForEachSlot` → `RecolorSlot`, no rebuild → instant, pop-free) so they all
+follow the domain changer, not just the one slot that flips on the next swap.
+
+**Swap continuity.** A swap is seamless — the new vessel inherits the old one's:
+- **Domain / colour** — the swap re-syncs `Player.Domain` from the authoritative `NetDomain`
+  before it repaints (`ClientPlayerVesselInitializer.ReInitializePair`), so the new hull keeps the
+  domain you chose instead of snapping back to the Jade menu default (which desynced the domain
+  changer). Domain lives per-player in `NetDomain`, so it persists across every ship change.
+- **Position + orientation** — via `newVessel.SetPose(snapshot)` (also seeds `accumulatedRotation`
+  so the rotation doesn't snap back).
+- **Speed** — `SwapVesselAsync` captures the outgoing `VesselStatus.Speed` before despawn and
+  seeds it onto the new vessel (`IVessel.SetInitialSpeed` → `VesselTransformer.SetInitialSpeed`,
+  routed through a ClientRpc like `SetPose` so a party client's own vessel inherits it too),
+  avoiding the post-`ResetForPlay` dead stop.
+
 **Lost-control fix:** the swap pipeline drops the new vessel into autopilot with input paused
 (that's why the old toy left you unable to steer). `VesselChangerToySet.RestoreControlAfterSwap`
 waits for `IsSwapping` to clear, then re-hands freestyle control — mirroring
 `MenuVesselSelectionPanelController.RestoreFreestyleAfterSwapAsync`.
+
+**HUD after swap.** `VesselController.Initialize` creates every vessel's HUD **hidden**, and the
+only menu code that shows the local HUD fires on *entering* freestyle — which a swap doesn't do.
+So `ReInitializePair` re-raises `GameDataSO.OnPlayerPairInitialized` (as the initial-spawn path
+does) and `MenuMiniGameHUD` re-shows the local HUD on that event while in freestyle (gated on
+freestyle + local player). Covers both the toy swap and the vessel-selection panel swap.
 
 Collection defaults to a curated set (Manta, Dolphin, Rhino, Squirrel, Serpent, Sparrow) so
 the ring isn't crowded with all 11; override per-asset via `vesselCollection`.
@@ -196,6 +244,122 @@ hands it to the platform share sheet via the NativeShare plugin. Paintings finis
 drawing-state capture existed fall back to boxes laid along the stroke polylines, so share
 always works.
 
+### Wanderway / Microscene Conveyor (`ConveyorToy` + `MicrosceneConveyor` + `Microscene`)
+
+Fly through → the belt switches **ON** (the toy flips bright + relabels "flowing — fly through
+to stop"; another pass switches it off) and a field of **microscenes** blooms in ahead of your
+flight path, scene after scene — open-world exploring crossed with an infinite runner. **28
+recipes** built from a shared geometry vocabulary (`PrismGeometry`): gate runs, helix weaves,
+tunnels, slaloms, starbursts, orchards, meadows, menageries, polygon gates, serpent ribbons,
+colonnades, orbitals, canyons, lattices, comet tails, spiral ramps, archways, vortices (converging
+lines with an open convergence + an inviting crystal), slot corridors (parallel plates with gaps to
+roll through), cube fields, torus gates, pillar halls, turbines, asteroid fields, and living
+plains / groves / aviaries / preserves — each re-rolling its own radii/counts/twists/bends on every
+arrival, so the same recipe never lands the same way twice. The belt **follows you anywhere at any
+speed**: effective spacing = `max(sceneSpacing, speed × minSceneIntervalSeconds)` and lookahead =
+`aheadTargetScenes × spacing`, so there is always a field of ~7 structures ahead.
+
+**Geometry vs. theming (why it stays fresh, not chaotic).** A recipe produces pure *shape* only;
+`MicroscenePatterns.ApplyTheming` then themes each scene from a config-authored `MicroscenePalette`
+(`ConveyorToyDefinitionSO`): a **per-scene domain scheme** (mono / banded-by-structure / accented /
+neutral-veined-with-Blue — weighted so most scenes read one coherent colour, never per-prism
+confetti; domains read live each draw so the Domain Changer toy takes effect), a sparse **prism-kind
+scheme** (mostly plain, with occasional **danger** prisms — the Squirrel danger-skim risk/reward —
+and rarer **shielded** / **supershielded** accents, capped for the collider budget), a per-scene
+**scale mood** (grand vs. delicate), and a **crystal mix** (mostly elemental skims, occasional
+**omni** jackpots — body-collected fuel + speed buff). "Infinitely fresh" is the cross-product of
+recipe × domain-scheme × kind-scheme × scale-mood × per-arrival geometry roll; coherence comes from
+theming per *scene*, not per prism. Prism lay-down goes through the shared `PrismTrailBuilder` (the
+one canonical Instantiate→…→Initialize primitive, also used by the Spawnable environment system).
+See `Docs/EnvironmentSpawning/UNIFICATION_ASSESSMENT.md`.
+
+**Placement is a connected ribbon that can break and re-lay.** Every scene sits *on* the flight
+line — never scattered laterally (no orthogonal "sphere in front of you"). Each tick the belt scans
+a **forward cone** (half-angle `turnBreakDegrees`, default 55°) around the live course and does one
+of two things:
+
+- **Near-fill** — if nothing lies just ahead on the current heading (start-up, or a turn just
+  ejected the near scenes out of the cone), it drops a scene directly ahead at `firstSceneDistance`,
+  so a structure appears in front of you right after any turn.
+- **Extend** — otherwise it chains the next scene off the *actual frontmost scene* along the current
+  course (`tip + course × spacing`). Chaining off **real mass** (not a free-floating "head") keeps the
+  ribbon connected and lets it **bend** with gentle/moderate turns without ever drifting into a
+  parallel path far to the side — the drift that made the old head-chained belt lay a distant
+  shadow ribbon on any deviation.
+
+A **sharp turn** drops the whole old ribbon out of the cone: its measured reach collapses, near-fill
+re-lays straight down the **new** heading from `firstSceneDistance` outward, and the now-lateral
+leftovers become the farthest-first recycle candidates that rebuild ahead — so the ribbon *breaks and
+restarts in front of you* on a hard turn while staying a continuous ribbon through gentler ones.
+Passed scenes and a turn's leftovers clear (suction) as new ones arrive — spawn frequency IS the
+clear frequency, because the pool is finite and **closed**: a reclaimable scene (off the flight cone,
+or dropped far behind) is *suctioned* to a point, relocated onto the ribbon ahead, re-posed into a
+fresh recipe with new domain colour, and *bloomed* back out. Scenes still in the cone ahead (what
+you're flying toward) are never reclaimed, and a scene mid-recycle **claims its destination slot
+immediately** (`Microscene.PendingAnchor`) so a rebuild never piles several arrivals onto one point
+while the blooms are in flight. No score, no end condition; every belt advance is driven by the
+player's own motion (no timers). Exiting freestyle makes the belt dormant; toggling it off stops the
+flow — either way its scenes stay in the world.
+
+**Ecosystem invariants (this toy is ecology-adjacent — all hold by construction):**
+
+- *Continuity of existence* — prisms grow in via their own `PrismScaleAnimator`; crystals
+  `FadeIn`; recycling is suction-out → bloom-in (both sanctioned transitions). Nothing pops.
+- *Mass conservation / no passive removal* — the belt never destroys a prism; recycling
+  **transports the same prism instances** (movers contract: `Prism.NotifyPositionChanged`).
+  The only sink is fauna grazing belt prisms (an active force); grazed slots are re-minted
+  through the sanctioned pool-reuse lifecycle (`Prism.Initialize`), which is creation. Player
+  trails through scenes are never touched. This is *not* the rejected "recycle the oldest prism"
+  budget cheat: nothing is removed, the belt's total stock is fixed, and only toy-owned
+  exhibit content rides the belt.
+- *No imposed death* — lifeforms are **released, not owned**: meadow/menagerie scenes spawn
+  flora/fauna into the host `Cell` via the canonical sequences (`Initialize(cell)`,
+  `AssignLineage`, `RegisterSpawnedObject`) and never track, move, or despawn them. They live
+  and die by the food web only.
+- *No domain asymmetry* — fauna spawn in `Cell.ControllingDomain`; flora in a random playable
+  domain (both via the canonical `CellLifeSpawnerBase` spawn path the cell's own spawner uses).
+  Multi-domain colouring applies only to *prisms* (neutral mass), distributed per-scene by a
+  coherent domain scheme (incl. optional neutral-Blue veins) — not a per-domain spawn bias.
+- *Volume is the spine / collider budget* — belt mass is bounded at
+  `poolSize × prismBudgetPerScene` prisms (default 10 × 42 = 420 BoxColliders + ≤3 crystal
+  triggers per scene + 1 toy trigger, well under the ~1,500/cell target); distant scenes are
+  collider-LOD-culled by `PrismColliderLodManager` automatically. **Shielded / supershielded**
+  prisms swap their BoxCollider for an always-on convex MeshCollider that LOD can't reclaim, so the
+  palette caps them (`MaxShielded = 3`, `MaxSuperShielded = 1` per scene, low scheme weights) —
+  worst case ≈ 40 MeshColliders across a full pool, realistic steady state a handful. Danger prisms
+  keep the cheap cullable BoxCollider. The belt roams freely — mass
+  laid inside a cell registers with that cell's volume/grids as usual; mass laid in open space
+  is ordinary registered prism mass with no cell binding (same as any open-space track). The
+  conveyor adds **zero physics queries** — placement is pure arithmetic.
+- *Cell owns the environment* — no parallel spawner/boundary/population: lifeforms come from the
+  cell's own `SpawnProfileSO` configs, respect `FloraPlantingEnabled` + `MaxLivePopulation` +
+  the prey floor, and are released only when the scene sits INSIDE a live cell
+  (`Cell.FindCellContaining`) — open-space scenes are prisms + crystals only.
+
+Crystals are the four elemental pickups (`ElementalCrystalSetSO`, Resources-loaded), made
+skimmable at runtime via the internal setters added to `ImpactCollider` /
+`ElementalCrystalImpactor` (the runtime mirror of the components lifeform prefabs author in the
+inspector). Content is local-only, like every toy (party guests don't see your belt).
+
+## Freestyle input ownership (reaching / leaving the toybox)
+
+Toys only activate in freestyle, so who owns the gamepad matters. In the menu two readers poll
+the one pad: the **vessel** (`InputController` → `GamepadInputStrategy`, gated by
+`InputController.SetPause`) and the **appshell** (`ScreenSwitcher` screen-nav, already gated on
+`_isInFreestyle`, plus the EventSystem's UI `Navigate`/`Submit`). The EventSystem was ungated, so
+in freestyle the steering stick also drove the UI selection ring and the fire button also
+submitted the (still touch-interactable) vessel HUD.
+
+- **Enter/leave** freestyle via `MenuCrystalClickHandler.ToggleTransition` (tap the crystal to
+  enter; the on-screen Volume/Pause button *or* — new — the **gamepad Start button** to leave).
+  `MenuMiniGameHUD.Update` polls `Gamepad.current.startButton` while in freestyle and calls
+  `ToggleTransition`, so pad players hand control back to the appshell without reaching for a
+  touch button.
+- **Mutually-exclusive ownership:** in menu state the vessel input is paused (autopilot); in
+  freestyle `ScreenSwitcher.HandleEnterFreestyle` sets `EventSystem.sendNavigationEvents = false`
+  (restored on exit), so the pad flies the ship and no longer double-drives the UI. Pointer/touch
+  input is unaffected, so touch HUD buttons still work.
+
 ## Placement
 
 `ToyboxController` places one toy per **unlocked** definition once the menu vessel is ready
@@ -239,7 +403,9 @@ No central switch — definitions are polymorphic factories, so the framework ne
 
 Run **Tools → Cosmic Shore → Setup Freestyle Toybox**. It:
 
-1. authors the three toy definition assets under `Assets/_SO_Assets/Toys/`,
+1. authors the four toy definition assets under `Assets/_SO_Assets/Toys/` (the conveyor's
+   prism prefab + crystal effect are auto-wired: `SpawnablePrism.prefab` +
+   `SkimmerAdjustElementLevelByCrystalEffect.asset`),
 2. creates `Assets/Resources/Toybox.asset` and registers them, and
 3. adds a `ToyboxController` to Menu_Main (on the `MenuCrystalClickHandler` object) pointing
    at the toybox.
@@ -259,7 +425,25 @@ rely on the runtime default toybox.)
 
 ## Status & follow-up
 
-The framework + three toys are in and compile-reviewed; they are **not yet play-verified in an
-editor**. Polish/improvement work (per-toy tuning, mini-model materials, painting pen-up,
-placement anchor, unlock persistence, tests) is tracked in **`BACKLOG.md`**, grouped so each area
-can be its own branch.
+The framework + **four toys** are in (Vessel Changer, Domain Changer, Painting, and the Wanderway
+microscene conveyor), plus the vessel-changer second-pass fixes above: mini-model hull rendering,
+exit-gated re-arm + slow flip re-grow, swap continuity (domain / pose / speed), recolour-on-domain,
+HUD-after-swap, and gamepad-Start / input-ownership. The conveyor has been through two adversarial
+review passes (compile, logic, ecology invariants, game-feel, assets, docs). All are
+compile-reviewed against the real codebase but **not yet play-verified in an editor** (no Unity in
+the authoring environment) — an in-editor pass is the last step before/after merge. Remaining polish
+(per-toy tuning, skinned-mesh `BakeMesh` fidelity, painting pen-up, placement anchor, conveyor
+recipe/pacing tuning + audio, unlock persistence, tests) is tracked in **`BACKLOG.md`**, grouped so
+each area can be its own branch.
+
+### Files touched this pass (for review)
+
+| Area | Files |
+|---|---|
+| Re-arm / escape | `Controller/Toys/Toy.cs`, `Controller/Toys/SwapToySetCoordinator.cs` |
+| Mini-model rendering | `Controller/Toys/VesselModelBuilder.cs`, `Controller/Toys/VesselChangerToySet.cs` |
+| Recolour on domain change | `Controller/Toys/SwapToySetCoordinator.cs` (`OnTick`/`ForEachSlot`), `Controller/Toys/VesselChangerToySet.cs` |
+| Domain preserved on swap | `Controller/Multiplayer/ClientPlayerVesselInitializer.cs` (`ReInitializePair`) |
+| Speed inherited on swap | `Controller/Multiplayer/MenuServerPlayerVesselInitializer.cs`, `Controller/Vessel/IVessel.cs`, `Controller/Vessel/VesselController.cs`, `Controller/Vessel/VesselTransformer.cs` |
+| HUD re-show after swap | `Controller/Multiplayer/ClientPlayerVesselInitializer.cs`, `UI/MenuMiniGameHUD.cs` |
+| Gamepad Start / input ownership | `UI/MenuMiniGameHUD.cs`, `UI/ScreenSwitcher.cs` |
