@@ -33,8 +33,6 @@ namespace CosmicShore.Core
         // ── Scene systems ──
         public MenuCrystalClickHandler CrystalHandler;
         public QuestInstructionView InstructionView;
-        public TutorialUIView TutorialUI;
-        public FTUEIntroAnimator IntroAnimator;
         public ScreenSwitcher ScreenSwitcher;
         public IReadOnlyList<CallToActionTarget> GameCards;
 

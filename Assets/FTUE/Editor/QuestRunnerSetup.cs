@@ -40,8 +40,6 @@ namespace CosmicShore.Editor
 
             AssignObject(so, "crystalHandler", Object.FindFirstObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include));
             AssignObject(so, "instructionView", Object.FindFirstObjectByType<QuestInstructionView>(FindObjectsInactive.Include));
-            AssignObject(so, "tutorialUI", Object.FindFirstObjectByType<TutorialUIView>(FindObjectsInactive.Include));
-            AssignObject(so, "introAnimator", Object.FindFirstObjectByType<FTUEIntroAnimator>(FindObjectsInactive.Include));
             AssignObject(so, "dialoguePanel", Object.FindFirstObjectByType<QuestDialoguePanelView>(FindObjectsInactive.Include));
             AssignObject(so, "screenSwitcher", Object.FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include));
 

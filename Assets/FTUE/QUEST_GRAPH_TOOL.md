@@ -45,7 +45,6 @@ the whole quest.
 
 | Category (color) | Node | What it does |
 |---|---|---|
-| Flow | **PlayIntro / PlayOutro** | Captain cinematic in/out |
 | Flow | **Wait** | Fixed real-time delay |
 | Presentation | **ShowInstruction** | Typewriter text; wait-for-Next or show-and-continue |
 | Presentation | **Dialogue** | Shows the dialogue panel with lines authored ON the node (speaker, optional portrait override) — self-contained, no DialogueSet/DialogueManager |
@@ -59,7 +58,7 @@ the whole quest.
 | Gate | **WaitForModeUnlocked** | Mode becomes unlocked — i.e. the player **claims** it on the quest track |
 | Gate | **WaitForUserAction** | Generic `UserActionType` gate (e.g. `UnlockVessel` from the hangar UI) |
 | Gate | **WaitForDrift** | Local vessel `IsDrifting` (LT+RT) sustained for a hold time; success haptic |
-| Gate | **WaitForSkim** | Counts prisms skimmed via the skim-boost SOAP channel (local vessel, boost-increase filtered); live "n / target" counter on the instruction view; per-skim + completion haptics |
+| Gate | **WaitForSkim** | Counts prisms skimmed via the skim-boost SOAP channel (local vessel, boost-increase filtered); the live "n / target" count is appended to the active instruction set's own text; per-skim + completion haptics |
 | Guidance | **HighlightCTA** | Lights a CTA breadcrumb (+ dependency path) and waits for its completion action |
 | Progression | **UnlockMode** | Direct unlock write via `GameModeProgressionService.UnlockMode` |
 | Terminal | **PhaseEnd / End** | Ends the phase / completes the quest |
@@ -122,8 +121,7 @@ with a `PlayerPrefs` mirror for offline/pre-load gating. Every node advance mark
 
 ShowInstruction node fields: `text`, `haptic` (NiceVibrations preset via `HapticType`),
 `panelKey` (a hand-built CanvasGroup panel registered on `QuestInstructionView` — icons + text,
-animatable), `minDisplaySeconds`, `hideOnAdvance`. The legacy TutorialUIView typewriter is only
-a fallback when no `QuestInstructionView` is wired. Gate nodes (WaitForInput / WaitForDrift /
+animatable), `minDisplaySeconds`, `hideOnAdvance`. Gate nodes (WaitForInput / WaitForDrift /
 WaitForSkim) pulse a configurable `successHaptic` when the player performs the correct action.
 
 Control icon sprites (white, tintable, animatable parts) live at
@@ -142,6 +140,4 @@ Inward, Thumbstick_Look, Trigger_LT/RT, Button_B.
 
 ## Notes
 
-- The legacy `TutorialFlowController` / `TutorialSequenceSet` scaffold remains untouched and unused
-  by the runner; retire it once the Main Quest ships.
 - Node ids are stable GUIDs — UGS records survive renames/reorders. Don't hand-edit `nodeId`.

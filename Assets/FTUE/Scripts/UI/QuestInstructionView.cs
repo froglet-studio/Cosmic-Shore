@@ -39,11 +39,8 @@ namespace CosmicShore.Core
         [Tooltip("Fallback/simple text element. Optional when using keyed panels.")]
         [SerializeField] TMP_Text instructionText;
 
-        [Tooltip("Optional counter text for counting gates (e.g. skim 3/10).")]
-        [SerializeField] TMP_Text progressText;
-
-        [Tooltip("Progress format: {0}=current, {1}=target.")]
-        [SerializeField] string progressFormat = "{0} / {1}";
+        [Tooltip("Counting gates (e.g. skim) append this to the ACTIVE instruction's own text: {0}=current, {1}=target.")]
+        [SerializeField] string progressFormat = "  {0} / {1}";
 
         [Header("Keyed Panels (hand-built instruction sets)")]
         [SerializeField] List<InstructionPanel> panels = new();
@@ -53,6 +50,8 @@ namespace CosmicShore.Core
         [Min(0f)] [SerializeField] float fadeDuration = 0.25f;
 
         Coroutine _fade;
+        TMP_Text _activeText;
+        string _activeBaseText;
 
         void Awake()
         {
@@ -66,7 +65,6 @@ namespace CosmicShore.Core
             panel.alpha = 0f;
             panel.blocksRaycasts = false;
             panel.interactable = false;
-            SetProgress(0, 0);
         }
 
         /// <summary>
@@ -85,25 +83,32 @@ namespace CosmicShore.Core
                 instructionText.gameObject.SetActive(!usedPanel);
             }
 
+            if (!usedPanel)
+            {
+                _activeText = instructionText;
+                _activeBaseText = _activeText != null ? _activeText.text : null;
+            }
+
             if (haptic != HapticType.None)
                 HapticController.PlayHaptic(haptic);
 
-            SetProgress(0, 0);
             FadeTo(1f);
         }
 
-        /// <summary>Update the counter ("3 / 10"). target &lt;= 0 hides it.</summary>
+        /// <summary>
+        /// Update a counting gate's progress ("3 / 10") — appended to the ACTIVE
+        /// instruction's own text (base text restored when target &lt;= 0).
+        /// </summary>
         public void SetProgress(int current, int target)
         {
-            if (progressText == null) return;
+            if (_activeText == null || _activeBaseText == null) return;
 
-            bool visible = target > 0;
-            progressText.gameObject.SetActive(visible);
-            if (visible)
-                progressText.text = string.Format(progressFormat, current, target);
+            _activeText.text = target > 0
+                ? _activeBaseText + string.Format(progressFormat, current, target)
+                : _activeBaseText;
         }
 
-        /// <summary>Hide the instruction overlay (and counter).</summary>
+        /// <summary>Hide the instruction overlay (restoring any counter-modified text).</summary>
         public void Hide()
         {
             SetProgress(0, 0);
@@ -119,7 +124,13 @@ namespace CosmicShore.Core
                 bool match = !string.IsNullOrEmpty(key) && entry.key == key;
                 entry.group.gameObject.SetActive(match);
                 entry.group.alpha = match ? 1f : 0f;
-                if (match) found = true;
+                if (match)
+                {
+                    found = true;
+                    // Counting gates concatenate onto this panel's own text.
+                    _activeText = entry.group.GetComponentInChildren<TMP_Text>(true);
+                    _activeBaseText = _activeText != null ? _activeText.text : null;
+                }
             }
 
             if (!string.IsNullOrEmpty(key) && !found)

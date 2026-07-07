@@ -5,11 +5,10 @@ using UnityEngine;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Shows a lightweight in-game instruction (plain text + optional haptic pulse) via
-    /// <see cref="QuestInstructionView"/> — the control-teaching UI. The prompt stays on
-    /// screen while a following gate node (e.g. WaitForInput) holds the flow; the next
-    /// instruction replaces it, or set <see cref="hideOnAdvance"/> to clear it.
-    /// Falls back to the legacy TutorialUIView typewriter if no instruction view is wired.
+    /// Shows a lightweight in-game instruction (plain text or a keyed hand-built panel,
+    /// plus an optional haptic pulse) via <see cref="QuestInstructionView"/>. The prompt
+    /// stays on screen while a following gate node (e.g. WaitForInput) holds the flow; the
+    /// next instruction replaces it, or set <see cref="hideOnAdvance"/> to clear it.
     /// </summary>
     public class QuestShowInstructionNode : QuestNodeSO
     {
@@ -44,24 +43,14 @@ namespace CosmicShore.Core
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {
-            if (ctx.InstructionView != null)
+            if (ctx.InstructionView == null)
             {
-                ctx.InstructionView.Show(text, haptic, panelKey);
-            }
-            else if (ctx.TutorialUI != null)
-            {
-                // Legacy fallback: the captain typewriter panel, no next-press wait.
-                ctx.TutorialUI.ToggleFTUECanvas(true);
-                ctx.TutorialUI.ShowStep(text, null);
-                if (haptic != HapticType.None)
-                    HapticController.PlayHaptic(haptic);
-            }
-            else
-            {
-                Debug.LogError("[Quest] ShowInstructionNode: no QuestInstructionView or TutorialUIView wired — skipping.");
+                Debug.LogError("[Quest] ShowInstructionNode: no QuestInstructionView wired on the runner — skipping.");
                 advance(QuestPorts.Next);
                 yield break;
             }
+
+            ctx.InstructionView.Show(text, haptic, panelKey);
 
             if (minDisplaySeconds > 0f)
                 yield return new WaitForSecondsRealtime(minDisplaySeconds);

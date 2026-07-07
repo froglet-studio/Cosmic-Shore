@@ -46,8 +46,6 @@ namespace CosmicShore.Core
         [SerializeField] MenuCrystalClickHandler crystalHandler;
         [Tooltip("Lightweight text+haptics overlay used by ShowInstruction nodes (control teaching).")]
         [SerializeField] QuestInstructionView instructionView;
-        [SerializeField] TutorialUIView tutorialUI;
-        [SerializeField] FTUEIntroAnimator introAnimator;
         [Tooltip("Scene instance of the dialogue panel (DialogueSetUI). Dialogue nodes drive it directly — no dialogue system.")]
         [SerializeField] QuestDialoguePanelView dialoguePanel;
         [Tooltip("Optional prefab fallback: instantiated under Dialogue Panel Parent on first use when no scene instance is set.")]
@@ -176,8 +174,6 @@ namespace CosmicShore.Core
                 OnSkimBoost = skimBoostEvent,
                 CrystalHandler = crystalHandler,
                 InstructionView = instructionView,
-                TutorialUI = tutorialUI,
-                IntroAnimator = introAnimator,
                 DialoguePanel = dialoguePanel,
                 DialoguePanelPrefab = dialoguePanelPrefab,
                 DialoguePanelParent = dialoguePanelParent,

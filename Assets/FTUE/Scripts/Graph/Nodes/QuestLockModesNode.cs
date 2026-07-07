@@ -6,10 +6,9 @@ using UnityEngine.UI;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Locks every arcade game card except the designated tutorial game, so the FTUE can
-    /// funnel a first-time player into one specific mode. Preserves the behaviour of the
-    /// old <c>TutorialExecutorAdapter.LockAllExceptTutorialGame</c> — the game cards are
-    /// supplied to the runner and referenced through the context. Advances immediately.
+    /// Locks every arcade game card except the designated tutorial game, so the quest can
+    /// funnel a first-time player into one specific mode. The game cards are supplied to
+    /// the runner and referenced through the context. Advances immediately.
     /// </summary>
     public class QuestLockModesNode : QuestNodeSO
     {

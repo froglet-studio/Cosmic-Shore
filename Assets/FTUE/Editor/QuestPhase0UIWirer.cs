@@ -69,8 +69,6 @@ namespace CosmicShore.Editor
             for (int i = 0; i < container.childCount && keyIndex < PanelKeys.Length; i++)
             {
                 var child = container.GetChild(i);
-                if (child.name == "ProgressText") continue;
-
                 var childGroup = child.GetComponent<CanvasGroup>();
                 if (childGroup == null) childGroup = Undo.AddComponent<CanvasGroup>(child.gameObject);
 
@@ -87,8 +85,7 @@ namespace CosmicShore.Editor
                 Debug.LogWarning($"[Quest] Wirer: only {keyIndex}/{PanelKeys.Length} instruction sets found — " +
                                  $"missing keys: {string.Join(", ", PanelKeys.Skip(keyIndex))}.");
 
-            // Skim counter is OPT-IN: assign any TMP to 'Progress Text' on the view if you
-            // want the live "3 / 10" readout — the skim gate works fine without it.
+            // The skim counter appends " n / target" to the active set's own text automatically.
 
             so.ApplyModifiedProperties();
             EditorUtility.SetDirty(view);
