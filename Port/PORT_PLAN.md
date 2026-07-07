@@ -691,17 +691,47 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after Wanderway client content, 2026-07-07)
+## NEXT UP (after the initializer-remainder arc, 2026-07-07)
 
-1. **Vessel-initializer remainder** (from the menu-swap arc): port
-   `ServerPlayerVesselInitializerWithAI` (game-scene AI backfill),
-   `MenuCrystalClickHandler`, `MultiplayerSetup` / `DomainAssigner`, and wire the
-   menu-swap chain into the playable client scene.
-2. **Track bleeding-edge**: merge upstream again next iteration; every merge
+1. **Engine NetworkManager callback surface**: `ConnectionApprovalCallback` /
+   `OnClientDisconnectCallback` / `OnTransportFailure` + `StartHost()` /
+   `Shutdown()` and the `ConnectionApprovalRequest/Response` types — the engine
+   NetworkManager exposes none of these, so `MultiplayerSetup`'s host lifecycle
+   carries its callback wiring as transport-phase deviations. Connection
+   approval is core-logic (auto-creates player objects) and is the priority gap
+   for making the host lifecycle fully live.
+2. **`MainMenuController` (Menu_Main scene-controller arc)**: 4 ported
+   `MenuFreestyleToggleTests` methods are carried as deviations pending it; the
+   client's `FreestyleDirector` currently plays its role.
+3. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey with the
    `git diff <old-sync> origin/bleeding-edge -- Assets/_Scripts` ∩ ported-files
    intersection; record in `docs/DRIFT_<date>.txt` per the 2026-07-07 precedent).
-3. Update this file, commit, push.
+4. Update this file, commit, push.
+
+### Initializer-remainder arc ✅ (2026-07-07)
+
+The three remaining vessel-initializer files are IN (DomainAssigner needs no
+port — **retired upstream**; domain assignment now lives in the initializers
+themselves): `ServerPlayerVesselInitializerWithAI` verbatim (zero deviations —
+AI backfill, `GetBalancedDomain` enum-order tie-break, `NormalizeUnassignedHumans`,
+`destroyWithScene: false` AI spawns, AIPilot game-mode config; `SO_GameList`
+ported alongside), `MenuCrystalClickHandler` (state machine, ownership guards,
+autopilot toggles, `IsMultiplayerSession` timeScale guard, and all four SOAP
+bracket raises live; CanvasGroup fades + `MainMenuCameraController` carried as
+marked deviations per the #17 camera/UI-shell precedent), and `MultiplayerSetup`
+(host-lifecycle once-guard + signed-in flow + disconnect/transport-failure
+handler bodies live; the UGS Multiplayer session surface + Netcode callback
+wiring carried as services-phase / transport-phase deviations — see NEXT UP 1;
+`HostConnectionService` / `PartyInviteController` self-rescue branches carried
+as party-system deviations). Upstream tests ported alongside:
+`ServerPlayerVesselInitializerWithAITests` (14 tests, fully live) +
+`MenuFreestyleToggleTests` (9 live, 4 carried pending `MainMenuController`).
+The "wire the menu-swap chain into the playable client scene" clause was
+already satisfied — `ToyboxController` self-discovers the client's
+`MenuServerPlayerVesselInitializer` (vessel-changer e2e test covers it).
+**1359 tests green in BOTH configs (1051 + 308)**; all 5 CLI modes exit 0;
+both client diags byte-identical.
 
 ### Wanderway client content ✅ (2026-07-07, second pass)
 
