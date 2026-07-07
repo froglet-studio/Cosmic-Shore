@@ -331,10 +331,10 @@ namespace CosmicShore.UI
             if (Gamepad.current == null) return;
             if (HasActiveModal) return;
 
-            // Stripped build: the arcade/settings modals are dead weight (no games ship, and the
-            // DailyChallengeModal-style tickers they open never get to start). Keep the pad from
-            // opening them.
-            if (!PerfStrip.MenuUIStripped && ScreenIsActive(MenuScreens.HOME))
+            // The arcade modal is the launcher for Skim Race (HexRace) — the pad shortcuts stay
+            // live on the strip. (Modal tickers only start once a modal is opened; the arcade
+            // modal itself has none.)
+            if (ScreenIsActive(MenuScreens.HOME))
             {
                 if (Gamepad.current.buttonSouth.wasPressedThisFrame)
                 {

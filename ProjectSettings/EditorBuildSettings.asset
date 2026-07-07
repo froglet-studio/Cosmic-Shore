@@ -35,7 +35,7 @@ EditorBuildSettings:
   - enabled: 0
     path: Assets/_Scenes/Multiplayer Scenes/ArcadeGameMultiplayer2v2CoOpVsAI.unity
     guid: a596bbcaeca9b07498a4875cacea431c
-  - enabled: 0
+  - enabled: 1
     path: Assets/_Scenes/Multiplayer Scenes/MinigameHexRace.unity
     guid: 4793d5ff09048ed409980d836ad4f2a2
   - enabled: 0

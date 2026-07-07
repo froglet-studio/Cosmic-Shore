@@ -31,23 +31,32 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Stop vessels laying their continuous prism trail (the biggest per-frame win) — EXCEPT
-        /// while the conveyor breadcrumb is active (see <see cref="ConveyorBreadcrumbActive"/>).
+        /// while a capped trail is active (see <see cref="CappedTrailActive"/>): the conveyor's
+        /// breadcrumb (300) or Skim Race's skimmable trail (2000, ≥ two laps).
         /// </summary>
-        public static bool TrailsDisabled => Enabled && !ConveyorBreadcrumbActive;
+        public static bool TrailsDisabled => Enabled && !CappedTrailActive;
 
         /// <summary>
-        /// While the Wanderway belt runs, the local vessel lays a <b>breadcrumb trail</b> capped at
-        /// <see cref="ConveyorBreadcrumbMaxPrisms"/>: the oldest prism suctions into the toy switch
-        /// (which rides the trail's tail), so the player can always follow their own trail back to
-        /// the switch that stops the belt and brings the cell back. Set by ConveyorToy only.
-        /// The cap was explicitly authorized by the design owner for this branch (2026-07-07) —
-        /// removal happens via the sanctioned Prism.Consume (implode-toward-target) path, never a
-        /// silent despawn, so the continuity law's visible-transition requirement is met.
+        /// Capped-trail mode: vessels lay their trail, FIFO-capped at <see cref="CappedTrailLimit"/>
+        /// prisms — past the cap the OLDEST prism is consumed via the sanctioned Prism.Consume
+        /// (implode-toward-target) path, never a silent despawn, so the continuity law's
+        /// visible-transition requirement is met. The cap was explicitly authorized by the design
+        /// owner for this branch (2026-07-07). Two writers:
+        ///   • ConveyorToy — breadcrumb home (limit 300, prisms implode into the tail-riding switch);
+        ///   • HexRaceController ("Skim Race") — the skimmable race trail (limit 2000: the track is
+        ///     ~4000u per circuit and the Squirrel lays a prism every 5–7u ⇒ ~600–800 prisms/lap,
+        ///     so 2000 guarantees AT LEAST two laps of trail to skim after lap one).
         /// </summary>
-        public static bool ConveyorBreadcrumbActive;
+        public static bool CappedTrailActive;
 
-        /// <summary>Breadcrumb trail length cap, in prisms (~300 per design direction).</summary>
-        public const int ConveyorBreadcrumbMaxPrisms = 300;
+        /// <summary>Capped-trail length, in prisms. Set alongside <see cref="CappedTrailActive"/>.</summary>
+        public static int CappedTrailLimit = 300;
+
+        /// <summary>Conveyor breadcrumb cap (~300 per design direction).</summary>
+        public const int ConveyorBreadcrumbPrisms = 300;
+
+        /// <summary>Skim Race trail cap — sized to always cover ≥ 2 laps (see CappedTrailActive doc).</summary>
+        public const int SkimRaceTrailPrisms = 2000;
 
         /// <summary>Show only the conveyor toy in the freestyle toybox; skip the other three.</summary>
         public static bool ConveyorOnlyToybox => Enabled;

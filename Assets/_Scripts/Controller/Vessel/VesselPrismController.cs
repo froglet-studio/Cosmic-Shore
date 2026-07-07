@@ -297,14 +297,15 @@ namespace CosmicShore.Gameplay
             prism.prismProperties.Index = (ushort)trail.TrailList.IndexOf(prism);
             prism.Initialize(vesselStatus.PlayerName);
 
-            // Breadcrumb cap (stripped branch, conveyor mode only): past the cap the OLDEST prism
-            // is consumed via the sanctioned Prism.Consume path — a visible implode toward the toy
-            // switch riding the tail (continuity law honored; never a silent despawn). Cap
-            // explicitly authorized by the design owner for this branch.
-            if (PerfStrip.ConveyorBreadcrumbActive)
+            // Capped trail (stripped branch — conveyor breadcrumb OR Skim Race trail): past the cap
+            // the OLDEST prism is consumed via the sanctioned Prism.Consume path — a visible implode
+            // toward the anchor (the conveyor's tail-riding switch) or in place when anchorless
+            // (Skim Race). Continuity law honored; never a silent despawn. Cap explicitly authorized
+            // by the design owner for this branch.
+            if (PerfStrip.CappedTrailActive)
             {
                 _breadcrumb.Enqueue(prism);
-                while (_breadcrumb.Count > PerfStrip.ConveyorBreadcrumbMaxPrisms)
+                while (_breadcrumb.Count > PerfStrip.CappedTrailLimit)
                 {
                     var oldest = _breadcrumb.Dequeue();
                     if (oldest && !oldest.destroyed)

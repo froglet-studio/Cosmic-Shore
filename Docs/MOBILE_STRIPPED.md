@@ -224,6 +224,22 @@ the full vaporwave sky at **one texture sample per pixel**. Until it's baked (or
 on this pipeline — the tool logs a Reflection-Probe fallback recipe), the build uses the solid
 deep-space clear.
 
+## Skim Race (HexRace) — enabled on the strip
+
+"Skim Race" is the player-facing name of **HexRace** (`GameModes.HexRace = 33`,
+`MinigameHexRace.unity` — re-enabled in the build list). Launch it from the **arcade modal on
+HOME** (touch button, or gamepad **South** — the pad shortcuts were re-opened). The whole flow is
+offline-clean: launch is a plain Netcode scene load on the local host (no UGS session is created),
+and `UGSStatsManager` no-ops when not signed in.
+
+**The trail is the mechanic here**, so the strip's trail kill is lifted for the race via the shared
+capped-trail mode (`PerfStrip.CappedTrailActive`/`CappedTrailLimit`, set by `HexRaceController`
+Awake/OnDestroy): every vessel lays its trail, capped at **2,000 prisms**. Sizing: the track is
+~4,000u per circuit and the Squirrel lays a prism every 5–7u ⇒ ~600–800 prisms per lap — so 2,000
+guarantees **at least two full laps of skimmable trail** after lap one (typically ~3). Past the
+cap the oldest prism implodes in place via `Prism.Consume` (visible transition, never a silent
+despawn). The conveyor's breadcrumb uses the same mechanism at limit 300 with the toy as anchor.
+
 ## Tuning dials (if 60 fps isn't held, cut here first)
 
 1. **Conveyor budget** — `Toy_Conveyor.asset`: lower `prismBudgetPerScene` (≥6) and/or `poolSize`

@@ -47,6 +47,29 @@ namespace CosmicShore.Gameplay
         // InvokeWinnerCalculated from SyncGameEnd_ClientRpc.
         protected override bool HasEndGame => false;
 
+        // ── Stripped-performance branch: Skim Race trail ─────────────────────
+        // Trails are strip-disabled globally, but in Skim Race the trail IS the mechanic (skim
+        // your own laps for boost). Enable the capped-trail mode for this scene's lifetime with
+        // the race-sized cap: the track is ~4000u per circuit and the Squirrel lays a prism every
+        // 5–7u ⇒ ~600–800 prisms/lap, so 2000 guarantees the player still has AT LEAST two full
+        // laps of trail to skim after finishing lap one. Past the cap the oldest prism implodes
+        // in place via Prism.Consume (visible transition — never a silent despawn).
+        // Awake/OnDestroy (not network spawn/despawn) so the flags are set before any vessel
+        // starts its trail spawner and always restore on scene exit.
+        void Awake()
+        {
+            if (!CosmicShore.Utility.PerfStrip.Enabled) return;
+            CosmicShore.Utility.PerfStrip.CappedTrailLimit = CosmicShore.Utility.PerfStrip.SkimRaceTrailPrisms;
+            CosmicShore.Utility.PerfStrip.CappedTrailActive = true;
+        }
+
+        void OnDestroy()
+        {
+            if (!CosmicShore.Utility.PerfStrip.Enabled) return;
+            CosmicShore.Utility.PerfStrip.CappedTrailActive = false;
+            CosmicShore.Utility.PerfStrip.CappedTrailLimit = CosmicShore.Utility.PerfStrip.ConveyorBreadcrumbPrisms;
+        }
+
         public override void OnNetworkSpawn()
         {
             Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] OnNetworkSpawn — IsServer={IsServer}, Intensity={Intensity}</color>");

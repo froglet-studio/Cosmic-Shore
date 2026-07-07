@@ -112,7 +112,8 @@ namespace CosmicShore.Gameplay
             }
 
             // Breadcrumb on: the vessel's own (otherwise strip-disabled) trail becomes the way home.
-            CosmicShore.Utility.PerfStrip.ConveyorBreadcrumbActive = true;
+            CosmicShore.Utility.PerfStrip.CappedTrailLimit = CosmicShore.Utility.PerfStrip.ConveyorBreadcrumbPrisms;
+            CosmicShore.Utility.PerfStrip.CappedTrailActive = true;
             _breadcrumbSource = localVessel.VesselPrismController;
             if (_breadcrumbSource)
             {
@@ -127,7 +128,7 @@ namespace CosmicShore.Gameplay
         {
             if (!CosmicShore.Utility.PerfStrip.Enabled) return;
 
-            CosmicShore.Utility.PerfStrip.ConveyorBreadcrumbActive = false;
+            CosmicShore.Utility.PerfStrip.CappedTrailActive = false;
             if (_breadcrumbSource)
             {
                 _breadcrumbSource.StopSpawn();
