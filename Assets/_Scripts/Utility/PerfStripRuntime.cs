@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 
 namespace CosmicShore.Utility
@@ -36,6 +37,13 @@ namespace CosmicShore.Utility
             {
                 cam.clearFlags = CameraClearFlags.SolidColor;
                 cam.backgroundColor = DeepSpace;
+
+                // The scene camera has renderPostProcessing=1 but every volume override is neutral
+                // (bloom 0, vignette 0, tonemapping None) — the flag alone still buys a 32³ color-
+                // grading LUT render + a full-screen UberPost blit + final blit every frame, for
+                // literally nothing. Turn the whole chain off.
+                var extra = cam.GetComponent<UniversalAdditionalCameraData>();
+                if (extra) extra.renderPostProcessing = false;
             }
         }
     }

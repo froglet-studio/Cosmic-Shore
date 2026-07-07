@@ -39,6 +39,12 @@ namespace CosmicShore.Gameplay
 
         public void Initialize()
         {
+            // Android stripped-performance branch: skip the cytoplasm mote field entirely —
+            // ~300 individual transparent-material GameObjects (draw calls + the full-shard
+            // LookAt loop on every cell-items event). Pure cosmetic; not mass, not lifeforms.
+            if (CosmicShore.Utility.PerfStrip.Enabled)
+                return;
+
             if (!cellData.TryGetLocalCrystal(out Crystal crystal))
                 return;
 

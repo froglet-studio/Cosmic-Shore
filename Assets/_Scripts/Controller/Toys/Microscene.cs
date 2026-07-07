@@ -77,11 +77,13 @@ namespace CosmicShore.Gameplay
 
                 if (_prismPrefab)
                 {
-                    // 2/frame on the stripped mobile build: each Instantiate (GameObject + collider
+                    // 1/frame on the stripped mobile build: each Instantiate (GameObject + collider
                     // + Prism init + spatial-index register) costs ~0.5-2ms on an old phone, so 6/frame
-                    // was a visible 3-12ms hitch during every populate. At 2/frame a 40-prism scene
-                    // takes ~20 frames (~0.2s) to lay — invisible inside the bloom-in.
-                    int perFrame = CosmicShore.Utility.PerfStrip.Enabled ? 2 : 6;
+                    // was a visible 3-12ms hitch during every populate. At 1/frame a 40-prism scene
+                    // takes ~40 frames (~0.3s @120Hz) to lay — invisible: scenes spawn ≥170m ahead and
+                    // each prism's own grow-in covers it. Instantiates only happen for the first
+                    // poolSize populates; recycles re-pose the same instances.
+                    int perFrame = CosmicShore.Utility.PerfStrip.Enabled ? 1 : 6;
                     for (int i = 0; i < plan.PrismPoints.Count; i++)
                     {
                         var point = plan.PrismPoints[i];
@@ -127,7 +129,7 @@ namespace CosmicShore.Gameplay
                 await AnimateScaleAsync(1f, SuctionScale, transitionSeconds, ct);
 
                 transform.SetPositionAndRotation(pose.position, pose.rotation);
-                RearrangeInto(plan, domain);
+                await RearrangeIntoAsync(plan, domain, ct);
 
                 await AnimateScaleAsync(SuctionScale, 1f, transitionSeconds, ct);
                 transform.localScale = Vector3.one;
@@ -145,10 +147,18 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        void RearrangeInto(MicroscenePlan plan, Domains domain)
+        /// <summary>
+        /// Amortized re-pose: each prism's full re-initialize (ChangeTeam material state + spatial
+        /// index unregister/re-register + density-grid re-file + coroutine start) costs ~50-200µs,
+        /// so re-posing all ~40 in one frame was a recurring 2-8ms spike on EVERY recycle. Yielding
+        /// every few prisms spreads it over ~8 frames — completely invisible, because the container
+        /// sits suctioned at ~zero scale while this runs.
+        /// </summary>
+        async UniTask RearrangeIntoAsync(MicroscenePlan plan, Domains domain, CancellationToken ct)
         {
             RecipeName = plan.RecipeName;
 
+            const int perFrame = 5;
             int count = Mathf.Min(_prisms.Count, plan.PrismPoints.Count);
             for (int i = 0; i < count; i++)
             {
@@ -180,6 +190,9 @@ namespace CosmicShore.Gameplay
                 // AFTER Initialize — on an eaten slot the animator is only re-armed inside
                 // ResetState, so an earlier write would be silently dropped.
                 block.TargetScale = point.Scale;
+
+                if ((i + 1) % perFrame == 0)
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
 
             // Surviving crystals ride the belt to fresh plan slots (their value was stamped at

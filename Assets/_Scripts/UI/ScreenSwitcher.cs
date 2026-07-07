@@ -199,6 +199,23 @@ namespace CosmicShore.UI
                     "You can manually assign screens in the inspector for full control."
                 );
             }
+
+            // Android stripped-performance branch: only HOME ships. Deactivating the other screen
+            // roots at Awake stops their hidden per-frame churn from frame 0 (DailyRewardCard's
+            // per-frame DateTime+string.Format+TMP rebuild, QuestTrackView parallax, InfiniteScroll,
+            // Pulse image tints — none gate on visibility, and CanvasGroup alpha=0 does not stop
+            // Update/coroutines/canvas rebuilds). Adding them to disabledScreens routes all
+            // navigation (nav bar, triggers, saved-screen restore) around them via the existing
+            // gating. Screen caching is unaffected: CacheScreenComponents uses includeInactive.
+            if (PerfStrip.MenuUIStripped && screens != null)
+            {
+                foreach (var entry in screens)
+                {
+                    if (entry?.root == null || entry.id == MenuScreens.HOME) continue;
+                    if (!disabledScreens.Contains(entry.id)) disabledScreens.Add(entry.id);
+                    entry.root.gameObject.SetActive(false);
+                }
+            }
         }
 
         private void OnEnable()
@@ -207,6 +224,7 @@ namespace CosmicShore.UI
             {
                 freestyleEvents.OnGameStateTransitionStart.OnRaised += HandleEnterFreestyle;
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised += HandleExitFreestyle;
+                freestyleEvents.OnGameStateTransitionEnd.OnRaised += HandleFreestyleSettled;
             }
         }
 
@@ -216,7 +234,28 @@ namespace CosmicShore.UI
             {
                 freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleEnterFreestyle;
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleExitFreestyle;
+                freestyleEvents.OnGameStateTransitionEnd.OnRaised -= HandleFreestyleSettled;
             }
+        }
+
+        /// <summary>
+        /// Stripped build: once the enter-freestyle transition has fully completed (fade + camera
+        /// blend), hard-deactivate the remaining menu UI (HOME root + NavBar) so nothing menu-side
+        /// ticks, animates, or rebuilds the canvas while flying. Alpha-0 alone does not stop any of
+        /// that. Reactivated by <see cref="HandleExitFreestyle"/> before the alpha restore.
+        /// This GameObject (the ScreenSwitcher's own) is never deactivated — its subscriptions and
+        /// slide coroutines must survive.
+        /// </summary>
+        private void HandleFreestyleSettled()
+        {
+            if (!PerfStrip.MenuUIStripped) return;
+
+            if (screens != null)
+                foreach (var entry in screens)
+                    if (entry?.root != null)
+                        entry.root.gameObject.SetActive(false);
+
+            if (NavBar) NavBar.gameObject.SetActive(false);
         }
 
         private void Start()
@@ -292,7 +331,10 @@ namespace CosmicShore.UI
             if (Gamepad.current == null) return;
             if (HasActiveModal) return;
 
-            if (ScreenIsActive(MenuScreens.HOME))
+            // Stripped build: the arcade/settings modals are dead weight (no games ship, and the
+            // DailyChallengeModal-style tickers they open never get to start). Keep the pad from
+            // opening them.
+            if (!PerfStrip.MenuUIStripped && ScreenIsActive(MenuScreens.HOME))
             {
                 if (Gamepad.current.buttonSouth.wasPressedThisFrame)
                 {
@@ -784,6 +826,19 @@ namespace CosmicShore.UI
         private void HandleExitFreestyle()
         {
             _isInFreestyle = false;
+
+            // Stripped build: restore the UI that HandleFreestyleSettled deactivated — before the
+            // CanvasGroup alpha restore below so everything is renderable when it fades back in.
+            // Screens in disabledScreens (all non-HOME on the strip) stay off.
+            if (PerfStrip.MenuUIStripped)
+            {
+                if (screens != null)
+                    foreach (var entry in screens)
+                        if (entry?.root != null && !disabledScreens.Contains(entry.id))
+                            entry.root.gameObject.SetActive(true);
+
+                if (NavBar) NavBar.gameObject.SetActive(true);
+            }
 
             // Close any modals that were open
             CloseAllModals();

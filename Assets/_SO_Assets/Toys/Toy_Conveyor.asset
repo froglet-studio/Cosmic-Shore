@@ -23,7 +23,7 @@ MonoBehaviour:
   crystalCollectionEffects:
   - {fileID: 11400000, guid: 0ac04a748b4c4ad8825e811431df45f4, type: 2}
   maxCrystalsPerScene: 1
-  lifeformScenes: 1
+  lifeformScenes: 0
   poolSize: 5
   prismBudgetPerScene: 40
   sceneRadius: 80

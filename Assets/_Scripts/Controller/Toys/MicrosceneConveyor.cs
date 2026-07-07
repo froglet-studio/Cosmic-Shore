@@ -56,10 +56,11 @@ namespace CosmicShore.Gameplay
     {
         const float TickSeconds = 0.25f;
 
-        // Three arrivals may transition at once: the belt must outpace full throttle + elemental
-        // Time buffs (~150 u/s), and at high speed the speed-scaled spacing stretches so each
-        // arrival buys more distance. Boost bursts beyond that just fill in over the next few ticks.
-        const int MaxConcurrentArrivals = 3;
+        // Two arrivals may transition at once (was 3 — halved worst-case per-frame transition cost
+        // for the mobile strip): the belt must outpace full throttle + elemental Time buffs
+        // (~150 u/s), and at high speed the speed-scaled spacing stretches so each arrival buys
+        // more distance. Boost bursts beyond that just fill in over the next few ticks.
+        const int MaxConcurrentArrivals = 2;
 
         ConveyorConfig _cfg;
         IVesselStatus _vessel;

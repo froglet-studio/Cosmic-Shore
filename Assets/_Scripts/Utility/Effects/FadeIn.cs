@@ -7,21 +7,35 @@ namespace CosmicShore.Utility
     {
         [SerializeField] float fadeInRate;
 
+        Renderer _renderer;
         Material material;
         Coroutine fadeInCoroutine;
 
         void Start()
         {
+            // One explicit instance material, created once. The previous version cloned twice —
+            // `.material` (implicit clone) then `new Material(...)` of that clone — leaking the
+            // intermediate per renderer per mint (conveyor crystals mint continuously), and the
+            // fade loop did a GetComponent + `.material` every frame.
+            _renderer = GetComponent<Renderer>();
+            material = new Material(_renderer.sharedMaterial);
+            _renderer.material = material;
+
             StartFadeIn();
-            material = new Material(gameObject.GetComponent<Renderer>().material);
-            gameObject.GetComponent<Renderer>().material = material;
+        }
+
+        void OnDestroy()
+        {
+            if (material) Destroy(material);
         }
 
         public void StartFadeIn()
         {
+            if (!material) return;
+
             // Set the opacity to zero before starting the coroutine so there is no delay in the start of the effect
-            gameObject.GetComponent<Renderer>().material.SetFloat("_opacity", 0f);
-        
+            material.SetFloat("_opacity", 0f);
+
             if (fadeInCoroutine != null)
                 StopCoroutine(fadeInCoroutine);
 
@@ -37,7 +51,7 @@ namespace CosmicShore.Utility
                 yield return null;
                 fadeInRate *= 1.00f + Time.deltaTime;
                 opacity += fadeInRate;
-                gameObject.GetComponent<Renderer>().material.SetFloat("_opacity", opacity);
+                material.SetFloat("_opacity", opacity);
             }
         }
     }

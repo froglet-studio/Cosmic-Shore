@@ -149,6 +149,48 @@ crash-on-launch when you can't attach a debugger:
   The same trace is also at `Android/data/<package>/files/cs_boottrace.txt` (openable with a Files
   app). Turn the whole thing off with `PerfStrip.ShowBootTrace`/`Enabled = false`.
 
+## The 200fps push (batches 1 + 2)
+
+After the build first ran ("feels like 4 FPS"), a four-agent sweep of the boot-to-freestyle path
+found and fixed, in two batches:
+
+**Frame cap:** `BootstrapConfig._targetFrameRate` was `-1`, which Unity treats as **30 FPS on
+Android** — the game ran under a 30fps ceiling the whole time. Now **240** (Swappy clamps to the
+display's real refresh). `GraphicsSettingsApplier` is PerfStrip-gated so a stale saved settings
+snapshot on device can't re-cap it.
+
+**GPU:** the 767-line procedural HyperSea skybox (two 27-cell Voronoi loops + 7 FBM octaves per
+pixel) is nulled at runtime (`PerfStripRuntime`) — cameras clear to deep-space solid color; the
+post-processing chain (LUT render + UberPost + final blit bought for all-neutral overrides) is
+disabled per camera; the skimmer's near-fullscreen double-sided additive forcefield sphere renderer
+is off (collider + skim gameplay untouched); URP renderer `IntermediateTextureMode` Always→Auto.
+
+**Menu ecosystem (creation-side pause only — invariant-clean):** Menu_Main ships a Cell with 6
+BranchingFlora (12,000-volume growth ceiling, 0s intervals) and a ~300-mote cytoplasm field.
+Under PerfStrip: cell life spawners stay paused (`CellLifeSpawnerBase.Start`), flora never
+plant/grow (`Flora.Initialize`), cytoplasm never instantiates (`SnowChanger.Initialize`), and the
+conveyor's `lifeformScenes: 0`. Nothing existing is culled or decayed — mass conservation intact.
+
+**Menu UI:** `ScreenSwitcher` deactivates all non-HOME screens at Awake (their hidden per-frame
+tickers — DailyRewardCard's every-frame `DateTime`+`string.Format`+TMP rebuild, QuestTrackView
+parallax, InfiniteScroll, Pulse tints — never start; navigation already routes around
+`disabledScreens`), and once the freestyle transition settles it deactivates HOME + NavBar too
+(CanvasGroup alpha=0 does NOT stop Updates/TMP/canvas rebuilds). Everything restores on exit.
+Gamepad arcade/settings modal shortcuts are gated.
+
+**Conveyor smoothing (feel preserved: 5×40 worlds, 510m stream):** populate 1 prism/frame;
+`RearrangeInto` amortized to 5 prisms/frame across ~8 frames while the scene sits suctioned at
+~zero scale (was a 2–8ms single-frame spike on every recycle); `MaxConcurrentArrivals` 3→2;
+mid-transition spatial-index notifies every 3rd frame; `FadeIn` material double-clone leak fixed.
+
+**Micro:** `VesselTransformer.DecayBoost` only raises the SOAP boost event when the value actually
+changes (was every frame at rest, fanning out HUD + audio listeners).
+
+**Known remaining (next dials, in order):** renderScale 0.8→0.65; skimmer trigger layer-masking
+(put crystals on a dedicated layer so prism OnTriggerStay pairs vanish — needs editor layer setup);
+FMOD RuntimeManager tick (~0.3–1ms, banks don't load anyway); netcode netvar writes per frame
+(solo host, nothing sent).
+
 ## Tuning dials (if 60 fps isn't held, cut here first)
 
 1. **Conveyor budget** — `Toy_Conveyor.asset`: lower `prismBudgetPerScene` (≥6) and/or `poolSize`

@@ -16,6 +16,12 @@ namespace CosmicShore.Gameplay
         {
             Stop(host);
 
+            // Android stripped-performance branch: the cell's ambient life spawners stay paused.
+            // Creation-side only — "spawners can pause; not creating mass is allowed" (CLAUDE.md).
+            // Nothing existing is culled, decayed, or removed; collider budget strictly shrinks.
+            if (CosmicShore.Utility.PerfStrip.Enabled)
+                return;
+
             if (!Validate(host, config, runtime, gameData))
                 return;
 

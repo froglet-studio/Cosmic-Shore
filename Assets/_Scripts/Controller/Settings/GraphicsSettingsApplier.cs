@@ -18,6 +18,12 @@ namespace CosmicShore.Core
     {
         public static void ApplyAll(GraphicsSettingsData s)
         {
+            // Android stripped-performance branch: the strip owns engine graphics state
+            // (quality 0, renderScale 0.8, targetFrameRate 240, vsync 0). A stale saved
+            // GraphicsSettingsData on device would silently stomp those on boot — e.g. re-cap
+            // the frame rate — undoing the strip. All appliers no-op while the strip is on.
+            if (CosmicShore.Utility.PerfStrip.Enabled) return;
+
             if (s == null) return;
             ApplyQuality(s);
             ApplyFrameRate(s);
@@ -39,6 +45,8 @@ namespace CosmicShore.Core
 
         public static void ApplyQuality(GraphicsSettingsData s)
         {
+            if (CosmicShore.Utility.PerfStrip.Enabled) return; // strip owns graphics state — see ApplyAll
+
             // The preset is the master tier; Custom means individual overrides — don't stomp them.
             if (s.QualityPreset != QualityPresetSetting.Custom)
                 QualitySettings.SetQualityLevel((int)s.QualityPreset, true);
@@ -57,6 +65,8 @@ namespace CosmicShore.Core
 
         public static void ApplyFrameRate(GraphicsSettingsData s)
         {
+            if (CosmicShore.Utility.PerfStrip.Enabled) return; // strip owns the frame cap — see ApplyAll
+
             QualitySettings.vSyncCount = (int)s.VSync;
             // With VSync on, targetFrameRate is ignored by Unity — set it anyway so toggling
             // VSync off later picks up the intended cap. <= 0 means uncapped.

@@ -53,5 +53,14 @@ namespace CosmicShore.Utility
         /// existing menu vessel-spawn pipeline and the conveyor toy run with no backend.
         /// </summary>
         public static bool OfflineMode => Enabled;
+
+        /// <summary>
+        /// Strip the menu UI to the minimum the conveyor flow needs: only the HOME screen ships
+        /// (the other screen roots are deactivated at Awake — their hidden per-frame tickers never
+        /// start), and while flying freestyle the remaining menu UI (HOME + NavBar) is fully
+        /// deactivated, not just alpha-faded — CanvasGroup alpha=0 does not stop Update ticks,
+        /// TMP rebuilds, or canvas re-batching. See ScreenSwitcher.
+        /// </summary>
+        public static bool MenuUIStripped => Enabled;
     }
 }

@@ -57,7 +57,14 @@ namespace CosmicShore.Gameplay
         public void Initialize(IVesselStatus vesselStatus)
         {
             VesselStatus = vesselStatus;
-            
+
+            // Android stripped-performance branch: the skimmer's forcefield sphere renders a
+            // double-sided additive transparent material on a 15x-scaled sphere right in front of
+            // the chase camera — near-fullscreen 2x-overdraw blend bandwidth every frame. Kill the
+            // visual only; the trigger collider and all skim effects (the gameplay) stay live.
+            if (CosmicShore.Utility.PerfStrip.Enabled && TryGetComponent(out MeshRenderer forcefieldRenderer))
+                forcefieldRenderer.enabled = false;
+
             _sweetSpot = transform.localScale.x / 4f;
 
             ApplyScaleIfChanged();

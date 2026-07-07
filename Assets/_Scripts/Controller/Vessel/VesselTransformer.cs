@@ -113,15 +113,24 @@ public class VesselTransformer : MonoBehaviour
             MoveShip();
         }
 
+        float _lastRaisedBoost = -1f;
+
         protected virtual void DecayBoost()
         {
             if (VesselStatus == null) return;
 
                 // Decay toward 1.0
-        
-            VesselStatus.BoostMultiplier = VesselStatus.BoostMultiplier > 1 ? 
+
+            VesselStatus.BoostMultiplier = VesselStatus.BoostMultiplier > 1 ?
                     VesselStatus.BoostMultiplier - BoostDecayRate * Time.deltaTime:
                     Mathf.Min(1f, VesselStatus.BoostMultiplier + BoostDecayRate * Time.deltaTime);
+
+            // Only fan out when the value actually moved: at rest the multiplier sits at 1.0 and an
+            // unconditional Raise ran every listener (HUD fill+color writes -> canvas dirty, audio
+            // param sets) every single frame for no change.
+            if (Mathf.Approximately(_lastRaisedBoost, VesselStatus.BoostMultiplier))
+                return;
+            _lastRaisedBoost = VesselStatus.BoostMultiplier;
 
             boostChanged?.Raise(new BoostChangedPayload
             {
