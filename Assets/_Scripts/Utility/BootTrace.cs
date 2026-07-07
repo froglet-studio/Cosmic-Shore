@@ -43,10 +43,9 @@ namespace CosmicShore.Utility
 
             Application.logMessageReceivedThreaded += OnLog;
             Mark("SubsystemRegistration");
-
-            var go = new GameObject("[BootTrace]");
-            UnityEngine.Object.DontDestroyOnLoad(go);
-            go.AddComponent<BootTraceView>();
+            // NOTE: the view GameObject is created at AfterSceneLoad (below), NOT here —
+            // DontDestroyOnLoad is unreliable before the first scene is loaded, and OnGUI can't
+            // render until the first frame anyway. The static capture above is already live.
         }
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
@@ -56,7 +55,24 @@ namespace CosmicShore.Utility
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void MarkBeforeScene() => Mark("BeforeSceneLoad");
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        static void MarkAfterScene() => Mark("AfterSceneLoad");
+        static void MarkAfterScene()
+        {
+            Mark("AfterSceneLoad");
+            EnsureView();
+        }
+
+        static bool _viewCreated;
+
+        /// <summary>Create the on-screen view once the first scene has loaded (DontDestroyOnLoad is
+        /// reliable here). Safe to call more than once.</summary>
+        static void EnsureView()
+        {
+            if (_viewCreated || !PerfStrip.ShowBootTrace) return;
+            _viewCreated = true;
+            var go = new GameObject("[BootTrace]");
+            UnityEngine.Object.DontDestroyOnLoad(go);
+            go.AddComponent<BootTraceView>();
+        }
 
         /// <summary>Record a boot checkpoint. Flushed to disk immediately so a crash right after
         /// still leaves it in the file for the next launch to show.</summary>

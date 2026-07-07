@@ -87,6 +87,21 @@ The local host is started at **Auth-scene** timing (not Bootstrap) to match the 
 so the non-networked Bootstrap→Auth scene load never races a running host. To restore full UGS
 behaviour (on a build that has a UGS project), set `PerfStrip.Enabled = false`.
 
+## Audio (FMOD) disabled — was the crash-on-launch
+
+The pre-first-frame crash ("keeps stopping", no overlay) was **FMOD loading its banks at startup**.
+FMOD is the live audio engine; the `AudioSystem` in the Bootstrap scene forces FMOD to initialize
+during `Awake` (before the first frame), and `RuntimeManager.Initialize()` → `LoadBanks()` native-
+crashes on the incompatible `Master`/`SFX` banks. (FMOD's *system* init has a graceful NOSOUND
+fallback, but bank loading does not.) Fix, in `Assets/Plugins/FMOD/Resources/FMODStudioSettings.asset`:
+
+- `BankLoadType: 0 → 2` (All → **None**) — no banks are loaded at startup, so `loadBankFile` (the
+  crashing native call) never runs. FMOD still initializes; it just has no events (silent). Audio is
+  axable per the strip mandate.
+- `AutomaticEventLoading: 1 → 0` — belt-and-suspenders (no auto event/sample loading).
+
+To restore audio (on a build with compatible banks), set these back to `0` / `1`.
+
 ## On-device boot tracer (no PC / adb needed)
 
 `BootTrace` (`Assets/_Scripts/Utility/BootTrace.cs`, gated on `PerfStrip.ShowBootTrace`) diagnoses
