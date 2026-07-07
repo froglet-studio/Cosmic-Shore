@@ -6,19 +6,21 @@ using CosmicShore.Utility;
 using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
+    // Explicit values pin the serialized meaning of every prismType field in
+    // prefabs/SO assets (CLAUDE.md: enums always carry static numeric values).
     public enum PrismType
     {
-        Dolphin,
-        Serpent,
-        Sparrow,
-        Manta,
-        Squirrel,
-        Rhino,
-        Interactive,
-        Explosion,
-        Implosion,
-        Grow,
-        Spider
+        Dolphin = 0,
+        Serpent = 1,
+        Sparrow = 2,
+        Manta = 3,
+        Squirrel = 4,
+        Rhino = 5,
+        Interactive = 6,
+        Explosion = 7,
+        Implosion = 8,
+        Grow = 9,
+        Spider = 10
     }
     
     public class PrismFactory : MonoBehaviour
