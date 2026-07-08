@@ -77,12 +77,25 @@ namespace CosmicShore.Engine
         public static int height = 720;
         public static float dpi = 96f;
         public static ScreenOrientation orientation = ScreenOrientation.LandscapeLeft;
-        public static bool sleepTimeout;
+        public static int sleepTimeout = SleepTimeout.SystemSetting;
         public static bool autorotateToPortrait;
         public static bool autorotateToPortraitUpsideDown;
         public static bool autorotateToLandscapeLeft;
         public static bool autorotateToLandscapeRight;
         public static Resolution currentResolution => new() { width = width, height = height, refreshRate = 60 };
+    }
+
+    /// <summary>Original contract: UnityEngine.SleepTimeout constants.</summary>
+    public static class SleepTimeout
+    {
+        public const int NeverSleep = -1;
+        public const int SystemSetting = -2;
+    }
+
+    /// <summary>Original contract: UnityEngine.QualitySettings (the slice ported bootstrap config drives).</summary>
+    public static class QualitySettings
+    {
+        public static int vSyncCount;
     }
 
     public static class SystemInfo

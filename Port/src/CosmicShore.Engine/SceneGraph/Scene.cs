@@ -14,6 +14,13 @@ namespace CosmicShore.Engine
         public string name { get; set; }
 
         /// <summary>
+        /// Original contract: the scene's index in build settings. The port has no build
+        /// list; the single loop-owned scene reads 0 (the Bootstrap slot) until the full
+        /// loader lands. Settable so harnesses can model non-bootstrap scenes.
+        /// </summary>
+        public int buildIndex { get; set; }
+
+        /// <summary>
         /// Original engine contract: true once the scene's content is loaded. The single
         /// loop-owned scene is loaded for as long as its GameLoop is alive; objects probe
         /// this during teardown to skip work on an unloading scene.

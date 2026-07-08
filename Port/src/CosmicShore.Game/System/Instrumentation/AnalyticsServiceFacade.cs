@@ -10,6 +10,26 @@ namespace CosmicShore.Core
     {
         bool _menuReadyThisSession;
 
+        public AnalyticsServiceFacade() { }
+
+        /// <summary>
+        /// The upstream bootstrap ctor (AppManager's lazy factory passes the full SOAP
+        /// wiring surface). The shell accepts and discards the dependencies — the real
+        /// facade subscribes its ~40 typed events here when instrumentation ports.
+        /// </summary>
+        public AnalyticsServiceFacade(
+            CosmicShore.ScriptableObjects.AuthenticationDataVariable authenticationDataVariable,
+            CosmicShore.ScriptableObjects.NetworkMonitorDataVariable networkMonitorDataVariable,
+            CosmicShore.Utility.GameDataSO gameData,
+            CosmicShore.ScriptableObjects.ApplicationLifecycleEventsContainerSO lifecycleEvents,
+            CosmicShore.ScriptableObjects.ApplicationStateDataVariable applicationStateDataVariable,
+            CosmicShore.ScriptableObjects.MenuFreestyleEventsContainerSO menuFreestyleEvents,
+            CosmicShore.Utility.FriendsDataSO friendsData,
+            CosmicShore.Utility.HostConnectionDataSO hostConnectionData,
+            bool allowLog)
+        {
+        }
+
         /// <summary>Menu became fully interactive. Call from MainMenuController on ready.</summary>
         public void RecordMenuReady()
         {

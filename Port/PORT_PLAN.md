@@ -691,22 +691,55 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the AppManager groundwork, 2026-07-08)
+## NEXT UP (after AppManager, 2026-07-08)
 
-1. **`AppManager` (618L, the DI root)** — the groundwork is now in place:
-   the ContainerBuilder surface, all fifteen manager bindings resolvable
-   (ported, shelled, or fully live), and the pure-C# service quartet live.
-   Port it verbatim: platform config from BootstrapConfigSO,
-   TryResolveManagersEarly (scene lookups → engine Scene.FindObjectOfType),
-   InstallBindings (RegisterAsset + RegisterManagerSingleton + the lazy
-   service factories incl. the party ring), StartAuthentication /
-   StartNetworkMonitor, and the RunBootstrapAsync splash → Authentication
-   handoff (UniTaskVoid → Task per README; splash CanvasGroup live per the
-   SceneTransitionManager precedent). NetworkMonitor + AnalyticsServiceFacade
-   shells/ports may be needed — check both exist before starting.
+1. **Bootstrap-arc remainder**: `AuthenticationSceneController` +
+   `SplashToAuthFlow` (the Authentication-scene orchestration between
+   AppManager's handoff and Menu_Main — auto-skip on cached auth, guest
+   login, NavigateToMainMenu with the NetworkManager listening gate) — SCOPE
+   first; UI-panel surfaces carry as UI-shell deviations per precedent.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### AppManager ✅ (2026-07-08) — the DI root is live end to end
+
+**`NetworkMonitor` (102L) ported FULLY LIVE** (reachability poll against the
+engine's settable `Application.internetReachability` mirror, driving the
+NetworkMonitorData online flag + lost/found SOAP raises), plus the
+`DontDestroyOnLoad` marker component (the persistence stamp
+`EnsurePersistent` checks), and engine growths: `SleepTimeout` constants
+(+ `Screen.sleepTimeout` → int), `QualitySettings.vSyncCount`,
+`Object.FindObjectOfType<T>` (pre-2023 alias so the `#else` forks compile),
+`Scene.buildIndex`, the AnalyticsServiceFacade shell's 9-arg bootstrap ctor,
+and a `PrismFactory` shell (the one AppManager binding that was neither
+ported nor shelled).
+
+**`AppManager` (618L) ported FULLY LIVE, zero deviations** — the whole DI
+root: platform config from BootstrapConfigSO (framerate / vsync / sleep),
+the bootstrapped-once guard, TryResolveManagersEarly + the persistence
+stamp, InstallBindings (11 RegisterAsset values, 15 RegisterManagerSingleton
+lazy factories with deferred scene search, the service quartet + analytics +
+tournament + the 9 party-ring factories), ConfigureGameData menu defaults,
+StartAuthentication / StartNetworkMonitor (incl. NetworkDiagnostics init),
+the RunBootstrapAsync splash-hold → OnBootstrapComplete → Authenticating →
+Authentication-scene handoff through SceneTransitionManager, Shutdown, and
+the two RuntimeInitializeOnLoadMethod statics (data-only marker — harnesses
+call them directly).
+
+**4 behavior tests** (`AppManagerTests`): InstallBindings registering the
+full surface (assets + managers + services + the party ring, singleton
+identity), the bootstrap flow end to end (platform config, menu defaults,
+auth signed-in exactly once, monitor online, Bootstrapping →
+splash hold → HasBootstrapped + OnBootstrapComplete → Authenticating + the
+Authentication scene actually loaded through STM), the NetworkMonitor
+lost/found flips, and the bootstrapped-once duplicate guard. Two rig
+lessons recorded: **Awake runs at AddComponent time on an active GO** (stage
+composition roots inactive → configure → inject → activate), and GameDataSO
+rigs that hit `ResetAllData` need `VesselClassSelectedIndex` wired (the
+guarded lifecycle invoke swallows the NRE and silently aborts Start).
+**1508 tests green in BOTH configs (1170 + 338)**; all 5 CLI modes exit 0;
+both client diags byte-identical. bleeding-edge unmoved.
 
 ### AppManager groundwork ✅ (2026-07-08) — the Reflex builder surface + manager shells
 

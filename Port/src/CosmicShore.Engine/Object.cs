@@ -73,6 +73,10 @@ namespace CosmicShore.Engine
         /// Original API: "any" relaxes the ordering guarantee of "first". The headless
         /// scene walk is deterministic anyway, so both resolve identically here.
         /// </summary>
+        /// <summary>Pre-2023 alias of <see cref="FindAnyObjectByType{T}"/> (original contract:
+        /// UnityEngine.Object.FindObjectOfType). Ported #else branches compile against it.</summary>
+        public static T FindObjectOfType<T>() where T : class => FindAnyObjectByType<T>();
+
         public static T FindAnyObjectByType<T>() where T : class
             => FindFirstObjectByType<T>();
 
