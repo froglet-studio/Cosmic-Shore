@@ -691,16 +691,38 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the transport-callback arc, 2026-07-07)
+## NEXT UP (after the Menu_Main scene-controller arc, 2026-07-08)
 
-1. **`MainMenuController` (Menu_Main scene-controller arc)**: 4 ported
-   `MenuFreestyleToggleTests` methods are carried as deviations pending it; the
-   client's `FreestyleDirector` currently plays its role.
-2. **Track bleeding-edge**: merge upstream again next iteration; every merge
-   reopens the drift-sync lane (survey with the
-   `git diff <old-sync> origin/bleeding-edge -- Assets/_Scripts` ∩ ported-files
-   intersection; record in `docs/DRIFT_<date>.txt` per the 2026-07-07 precedent).
-3. Update this file, commit, push.
+1. **Engine `CanvasGroup` (data-only alpha/interactable/blocksRaycasts)** —
+   un-carries the UI-fade deviations in `MenuCrystalClickHandler` (7-method
+   `#region UI Fade` + fields + `WhenAll` fade arms; needs a `GameTask.WhenAll`
+   or per-arm await precedent) and the `TournamentSceneView` CanvasGroup blocks.
+2. **Party-system arc groundwork**: `HostConnectionService` /
+   `PartyInviteController` (the MultiplayerSetup + MenuFreestyleToggle rescue
+   branches reference them) — services-phase-heavy; scope the UGS surface first.
+3. **Track bleeding-edge**: merge upstream again next iteration; every merge
+   reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
+4. Update this file, commit, push.
+
+### Menu_Main scene-controller arc ✅ (2026-07-08)
+
+`MainMenuController` ported verbatim to `System/MainMenuController.cs` — the
+menu sub-state machine (None → Initializing → Ready ⇄ Freestyle →
+LaunchingGame, table-validated), `ConfigureMenuGameData`,
+`ApplyMenuVesselClassToHost` (owner-writable NetDefaultVesselType push through
+`NetworkManager.LocalClient`), `HandlePlayerPairInitialized` client-side
+autopilot activation, `ActivateLocalPlayerAutopilot`, and the `OnStateChanged`
+event — fully live, zero commented deviations in the file itself. Engine grew
+`NetworkManager.LocalClient` (original surface). `AnalyticsServiceFacade`
+gets a Deviation-#11-style type-preserving SHELL (`RecordMenuReady` +
+shell-only `MenuReadyThisSession` observability; real UGS Analytics facade
+lands with the instrumentation phase). The 4 carried
+`MenuFreestyleToggleTests` methods are RESTORED (live), plus 4 new
+`MainMenuControllerTests` drive the state machine end-to-end through the real
+SOAP events (full flow, invalid-transition rejection, launch-from-freestyle,
+menu game-data config). **1376 tests green in BOTH configs (1064 + 312)**;
+all 5 CLI modes exit 0; both client diags byte-identical. bleeding-edge
+unmoved this iteration.
 
 ### Transport-callback arc ✅ (2026-07-07)
 

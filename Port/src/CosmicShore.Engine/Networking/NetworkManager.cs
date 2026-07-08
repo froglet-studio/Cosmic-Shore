@@ -67,6 +67,14 @@ namespace CosmicShore.Engine.Networking
         /// </summary>
         public NetworkSpawnManager SpawnManager { get; set; } = new();
 
+        /// <summary>
+        /// The local machine's connection record (original surface —
+        /// <c>MainMenuController.ApplyMenuVesselClassToHost</c> reaches the host Player
+        /// through <c>LocalClient.PlayerObject</c>). Null by default — single-process
+        /// host-mode harnesses assign it when they spawn the persistent Player.
+        /// </summary>
+        public NetworkClient LocalClient { get; set; }
+
         // ── Netcode callback surface (engine addition for the transport arc:
         // MultiplayerSetup wires these in EnsureHostStarted; a future transport driver
         // raises the events for real remote connections) ─────────────────────────────

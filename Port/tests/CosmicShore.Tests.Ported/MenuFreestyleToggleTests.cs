@@ -91,52 +91,48 @@ namespace CosmicShore.Tests
 
         #region MainMenuController Freestyle Event Handling
 
-        // PORT Deviation (initializer-remainder arc 2026-07-07, Core.MainMenuController is
-        // unported — restore when the Menu_Main scene-controller arc ports): the four
-        // MainMenuController reflection tests below are carried as commented source.
-        //
-        // [Test]
-        // public void MainMenuController_HasHandleEnterFreestyleMethod()
-        // {
-        //     var method = typeof(Core.MainMenuController)
-        //         .GetMethod("HandleEnterFreestyle", BindingFlags.Instance | BindingFlags.NonPublic);
-        //
-        //     Assert.IsNotNull(method,
-        //         "MainMenuController should have HandleEnterFreestyle to combine " +
-        //         "state transition (→ Freestyle) with camera switching.");
-        // }
-        //
-        // [Test]
-        // public void MainMenuController_HasHandleExitFreestyleMethod()
-        // {
-        //     var method = typeof(Core.MainMenuController)
-        //         .GetMethod("HandleExitFreestyle", BindingFlags.Instance | BindingFlags.NonPublic);
-        //
-        //     Assert.IsNotNull(method,
-        //         "MainMenuController should have HandleExitFreestyle to combine " +
-        //         "state transition (→ Ready) with camera switching.");
-        // }
-        //
-        // [Test]
-        // public void MainMenuController_HasCurrentStateProperty()
-        // {
-        //     var prop = typeof(Core.MainMenuController)
-        //         .GetProperty("CurrentState", BindingFlags.Instance | BindingFlags.Public);
-        //
-        //     Assert.IsNotNull(prop);
-        //     Assert.AreEqual(typeof(Data.MainMenuState), prop.PropertyType);
-        // }
-        //
-        // [Test]
-        // public void MainMenuController_HasOnStateChangedEvent()
-        // {
-        //     var evt = typeof(Core.MainMenuController)
-        //         .GetEvent("OnStateChanged", BindingFlags.Instance | BindingFlags.Public);
-        //
-        //     Assert.IsNotNull(evt,
-        //         "MainMenuController should expose OnStateChanged event for UI systems " +
-        //         "to react to menu state changes including freestyle transitions.");
-        // }
+        [Test]
+        public void MainMenuController_HasHandleEnterFreestyleMethod()
+        {
+            var method = typeof(Core.MainMenuController)
+                .GetMethod("HandleEnterFreestyle", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.IsNotNull(method,
+                "MainMenuController should have HandleEnterFreestyle to combine " +
+                "state transition (→ Freestyle) with camera switching.");
+        }
+
+        [Test]
+        public void MainMenuController_HasHandleExitFreestyleMethod()
+        {
+            var method = typeof(Core.MainMenuController)
+                .GetMethod("HandleExitFreestyle", BindingFlags.Instance | BindingFlags.NonPublic);
+
+            Assert.IsNotNull(method,
+                "MainMenuController should have HandleExitFreestyle to combine " +
+                "state transition (→ Ready) with camera switching.");
+        }
+
+        [Test]
+        public void MainMenuController_HasCurrentStateProperty()
+        {
+            var prop = typeof(Core.MainMenuController)
+                .GetProperty("CurrentState", BindingFlags.Instance | BindingFlags.Public);
+
+            Assert.IsNotNull(prop);
+            Assert.AreEqual(typeof(Data.MainMenuState), prop.PropertyType);
+        }
+
+        [Test]
+        public void MainMenuController_HasOnStateChangedEvent()
+        {
+            var evt = typeof(Core.MainMenuController)
+                .GetEvent("OnStateChanged", BindingFlags.Instance | BindingFlags.Public);
+
+            Assert.IsNotNull(evt,
+                "MainMenuController should expose OnStateChanged event for UI systems " +
+                "to react to menu state changes including freestyle transitions.");
+        }
 
         #endregion
 
