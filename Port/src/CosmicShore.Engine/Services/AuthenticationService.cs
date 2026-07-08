@@ -74,6 +74,13 @@ namespace CosmicShore.Engine.Services
         public virtual void ClearSessionToken() => SessionTokenExists = false;
 
         /// <summary>
+        /// Async name read (original contract: the SDK fetches the stored player name).
+        /// The shim returns the local mirror.
+        /// </summary>
+        public virtual System.Threading.Tasks.Task<string> GetPlayerNameAsync()
+            => System.Threading.Tasks.Task.FromResult(PlayerName);
+
+        /// <summary>
         /// Update the UGS player name (original contract: the SDK persists it server-side
         /// and returns the stored value, possibly suffixed). The shim stores it locally.
         /// </summary>

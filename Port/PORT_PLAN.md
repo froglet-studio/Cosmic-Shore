@@ -691,19 +691,79 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the bootstrap arc completed, 2026-07-08)
+## NEXT UP (after the UGS Multiplayer session surface landed, 2026-07-08)
 
-1. **UGS Multiplayer session surface (services phase, MultiplayerSetup)**:
-   scope + grow the engine placeholders MultiplayerSetup's carried
-   session-management deviations need (MultiplayerService.Instance /
-   SessionOptions / QuerySessionsOptions / SessionProperty + PropertyIndex —
-   per the Friends-SDK placeholder precedent), then un-carry what the
-   growth satisfies (CreateOrJoinSession, GetPlayerProperties /
-   GetSessionProperties) with tests. SCOPE first — the session query/join
-   surface may split across two iterations.
+1. **Un-carry the party ring's session deviations against MultiplayerSdk**:
+   `PartySessionService` (6 markers) + `PresenceLobbyService` (8 markers)
+   carry exactly the types the engine `MultiplayerSdk` placeholder now
+   provides (MultiplayerService.Instance / SessionOptions +
+   `.WithRelayNetwork` / JoinSessionOptions / QuerySessionsOptions +
+   FilterOption + FilterField + FilterOperation / ISessionInfo /
+   SessionProperty + PropertyIndex / Create-Join-Query). Restore what the
+   surface satisfies with behavior tests (fake IMultiplayerService via the
+   settable Instance — the MultiplayerSessionTests precedent; remember
+   `MultiplayerService.Reset()` in test setup/teardown). SCOPE first —
+   `NetworkTransitionService` (12 markers) likely stays carried (transport
+   phase), don't overreach into it.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+> **Known intermittent (pre-existing, NOT this branch's regression):** the full
+> Release suite flakes ~1-in-10 runs under CPU load, alternating between
+> `SpawnerAdapterC6Tests.MiniGameAdapter_SpawnAIAtStart_PreSpawnsDefaults_InitializeGameDedupes`
+> (human player resolved "HumanJade"-style instead of the profile name — 2 players,
+> no "CloudName") and `HeadlessRoundTests.Round_SameSeed_ProducesIdenticalTranscript`.
+> Attribution verified 2026-07-08: the HeadlessRoundTests flake reproduces 1/10 on
+> the prior shipped commit `8053b22f` with an identical binary; class-alone stress
+> (15×) never fails. Same-binary nondeterminism → suspect process-level effects
+> (randomized string hashing → dictionary iteration order, or real-time leakage
+> into the sim under contention). Worth a dedicated diagnosis iteration; both
+> tests are pre-existing arcs (spawner C6 / headless round), untouched since.
+
+### UGS Multiplayer session surface ✅ (2026-07-08) — MultiplayerSetup fully live
+
+Engine growths: **`MultiplayerSdk.cs`** (`Engine/Networking`) — the full UGS
+Multiplayer placeholder per the Friends-SDK precedent: `PropertyIndex` /
+`FilterField` / `FilterOperation` enums, `SessionProperty`, `FilterOption`,
+`QuerySessionsOptions`/`QuerySessionsResults`, `ISessionInfo`,
+`SessionOptions` + `WithRelayNetwork()` (records `UseRelay` for the
+transport phase), `JoinSessionOptions`, `IMultiplayerService`
+(Create/JoinById/Query), and static `MultiplayerService` with a settable
+`Instance` + `Reset()`. The default is **`LocalMultiplayerService`** —
+honest single-process semantics (the NetworkSceneManager precedent):
+creation returns deterministic in-process `IHostSession`s
+(`local-session-N`, no clock/RNG), discovery sees no remote sessions, and
+join-by-id throws `SessionException(SessionNotFound)` — so the matchmaking
+flow converges on host-a-fresh-session with real observable behavior.
+Plus `AuthenticationService.GetPlayerNameAsync()` (virtual, returns the
+stored PlayerName — the SDK's observable contract).
+
+**All 8 carried regions in `MultiplayerSetup` RESTORED** — the file is now
+FULLY live: ExecuteMultiplayerSetup's query → filter (`IsJoinableSessionInfo`:
+room + not locked + not passworded) → `TryJoinFirstAvailable` (race-filled
+sessions skipped, rate-limit pause) → `StartSessionAsHost` (property maps +
+`.WithRelayNetwork()` + exponential rate-limit backoff `2000·2^attempt`,
+max 3 retries) tail, `JoinSessionAsClientById`, `QuerySessions` (String1 =
+gameMode, String2 = maxPlayers filters + retry loop),
+`GetPlayerProperties` (playerName → Member visibility via the grown
+`GetPlayerNameAsync`), `GetSessionProperties` (gameMode → String1,
+maxPlayers → String2, Public), and the `using Unity.Services.Multiplayer`
+line (resolves through `CosmicShore.Engine.Networking`). The CS1998 pragma
+stays for OnAuthenticationSignedInAsync's verbatim awaitless dispatcher
+shape. **7 behavior tests** (`MultiplayerSessionTests`): the no-remote-
+sessions end-to-end through LocalMultiplayerService (local host shut down
+for the local→Relay transition + `local-session-1` hosted + OnSessionStarted
+raised once), the existing-party-session fast path (no shutdown/query/
+create), the captured SessionOptions property-map assertions, the join-race
+fall-through (oldest first, filled candidate skipped, no create), the
+unjoinable filter (locked/full/passworded → host instead), the rate-limit
+backoff (throw "Too Many Requests" once → retry succeeds, 2 create calls),
+and the LocalMultiplayerService semantics unit (deterministic ids, carried
+MaxPlayers, SessionNotFound join, empty query, Reset() restores the id
+counter). **1521 tests green in BOTH configs (1183 + 338)**; all 5 CLI
+modes exit 0; both client diags byte-identical. bleeding-edge unmoved at
+`97d4ab29`.
 
 ### Bootstrap-arc remainder ✅ (2026-07-08) — the bootstrap arc is COMPLETE
 

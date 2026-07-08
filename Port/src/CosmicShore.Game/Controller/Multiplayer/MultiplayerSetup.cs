@@ -11,11 +11,14 @@
 // request/response types), OnConnectionApprovalCallback, and both Shutdown() sites all run
 // verbatim.
 //
-// UGS Multiplayer/Relay session surface (MultiplayerService.Instance, Create/Join/Query sessions,
-// SessionOptions.WithRelayNetwork, Player/SessionProperty, ISessionInfo, SessionException) has no
-// engine counterpart yet — carried as commented source per the services-phase precedent
-// (PORT_PLAN Deviations #14/#18/#19). The engine ISession placeholder covers Id/IsHost, so the
-// existing-party-session fast path in ExecuteMultiplayerSetup is live.
+// UGS Multiplayer session surface is FULLY live (RESTORED 2026-07-08): the engine
+// MultiplayerSdk placeholder (MultiplayerService.Instance / SessionOptions.WithRelayNetwork /
+// JoinSessionOptions / QuerySessionsOptions + FilterOption / ISessionInfo / SessionProperty +
+// PropertyIndex / Player property maps) grew per the Friends-SDK precedent, so
+// ExecuteMultiplayerSetup's full matchmaking flow — query → filter → join-with-race-retry →
+// host-fresh with rate-limit backoff — plus GetPlayerProperties/GetSessionProperties run
+// verbatim against LocalMultiplayerService (deterministic in-process sessions; queries empty,
+// join-by-id throws SessionNotFound — the single-process semantics converge on hosting fresh).
 //
 // The `#if UNITY_EDITOR` MPPM clone-port block is kept verbatim — UNITY_EDITOR is never defined
 // in the .NET build, so it compiles out (SpawnableWaypointTrack precedent).
@@ -27,7 +30,8 @@ using CosmicShore.Engine;
 using CosmicShore.Engine.Tasks;
 using CosmicShore.Engine.Networking;
 using CosmicShore.Engine.Services;
-// PORT Deviation (services phase, Unity.Services.Multiplayer — restore when UGS services port): using Unity.Services.Multiplayer;
+// (RESTORED 2026-07-08) `using Unity.Services.Multiplayer;` → the session types resolve through
+// CosmicShore.Engine.Networking above (MultiplayerSdk.cs placeholder surface).
 using CosmicShore.Utility;
 using CosmicShore.Engine.Injection;
 using CosmicShore.ScriptableObjects;
@@ -36,9 +40,8 @@ using Unity.Multiplayer.Playmode;
 using Unity.Netcode.Transports.UTP;
 #endif
 
-// PORT Deviation (services phase — remove when UGS services port): CS1998 is expected here.
-// OnAuthenticationSignedInAsync lacks an await upstream too (fire-and-forget dispatcher), and
-// ExecuteMultiplayerSetup's awaits live in the commented UGS session blocks below.
+// CS1998: OnAuthenticationSignedInAsync lacks an await upstream too (fire-and-forget
+// dispatcher over EnsureHostStarted + ExecuteMultiplayerSetup().Forget()) — verbatim shape.
 #pragma warning disable CS1998
 
 namespace CosmicShore.Gameplay
@@ -224,142 +227,137 @@ namespace CosmicShore.Gameplay
                 await GameTask.WaitUntil(() => !networkManager.IsListening);
             }
 
-            // PORT Deviation (services phase, MultiplayerService query/join/create — restore when UGS services port):
-            // // Query sessions for this game mode & player count
-            // var sessions = await QuerySessions();
-            //
-            // // Filter to sessions that look joinable
-            // var candidates = sessions?
-            //     .Where(IsJoinableSessionInfo)
-            //     .OrderBy(s => s.Created) // older first; tweak if you like
-            //     .ToList() ?? new List<ISessionInfo>();
-            //
-            // // Try to join the first joinable; if race-filled, keep trying others
-            // if (candidates.Count > 0 && await TryJoinFirstAvailable(candidates))
-            //     return;
-            //
-            // // Nothing joinable → create a fresh host session
-            // await StartSessionAsHost();
+            // Query sessions for this game mode & player count
+            var sessions = await QuerySessions();
+
+            // Filter to sessions that look joinable
+            var candidates = sessions?
+                .Where(IsJoinableSessionInfo)
+                .OrderBy(s => s.Created) // older first; tweak if you like
+                .ToList() ?? new List<ISessionInfo>();
+
+            // Try to join the first joinable; if race-filled, keep trying others
+            if (candidates.Count > 0 && await TryJoinFirstAvailable(candidates))
+                return;
+
+            // Nothing joinable → create a fresh host session
+            await StartSessionAsHost();
         }
 
-        // PORT Deviation (services phase, ISessionInfo / SessionException — restore when UGS services port):
-        // // Try join loop that handles race conditions (session fills between query and join)
-        // private async Task<bool> TryJoinFirstAvailable(IList<ISessionInfo> candidates)
-        // {
-        //     foreach (var s in candidates)
-        //     {
-        //         try
-        //         {
-        //             await JoinSessionAsClientById(s.Id);
-        //             return true;
-        //         }
-        //         catch (SessionException sx)
-        //         {
-        //             CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} — trying next.");
-        //             if (IsRateLimitException(sx))
-        //                 await GameTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
-        //             continue;
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             CSDebug.LogWarning($"[MultiplayerSetup] Unexpected join error for {s.Id}: {ex.Message} — trying next.");
-        //             continue;
-        //         }
-        //     }
-        //     return false;
-        // }
+        // Try join loop that handles race conditions (session fills between query and join)
+        private async Task<bool> TryJoinFirstAvailable(IList<ISessionInfo> candidates)
+        {
+            foreach (var s in candidates)
+            {
+                try
+                {
+                    await JoinSessionAsClientById(s.Id);
+                    return true;
+                }
+                catch (SessionException sx)
+                {
+                    CSDebug.LogWarning($"[MultiplayerSetup] Join failed for {s.Id}: {sx.Message} — trying next.");
+                    if (IsRateLimitException(sx))
+                        await GameTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
+                    continue;
+                }
+                catch (Exception ex)
+                {
+                    CSDebug.LogWarning($"[MultiplayerSetup] Unexpected join error for {s.Id}: {ex.Message} — trying next.");
+                    continue;
+                }
+            }
+            return false;
+        }
 
-        // PORT Deviation (services phase, ISessionInfo — restore when UGS services port):
-        // // Decide if a session is joinable based on info
-        // private bool IsJoinableSessionInfo(ISessionInfo info)
-        // {
-        //     if (info == null) return false;
-        //
-        //     // Defensive: prefer sessions that are not private/locked and have room
-        //     var hasRoom   = (info.MaxPlayers > 0) && (info.AvailableSlots > 0);
-        //     var notLocked = !info.IsLocked;
-        //     var notPrivate= !info.HasPassword;
-        //
-        //     return hasRoom && notLocked && notPrivate;
-        // }
+        // Decide if a session is joinable based on info
+        private bool IsJoinableSessionInfo(ISessionInfo info)
+        {
+            if (info == null) return false;
 
-        // PORT Deviation (services phase, SessionOptions.WithRelayNetwork / MultiplayerService.CreateSessionAsync — restore when UGS services port):
-        // private async Task StartSessionAsHost()
-        // {
-        //     var playerProperties  = await GetPlayerProperties();
-        //     var sessionProperties = GetSessionProperties();
-        //
-        //     var sessionOpts = new SessionOptions
-        //     {
-        //         MaxPlayers        = gameData.SelectedPlayerCount.Value,
-        //         IsLocked          = false,
-        //         IsPrivate         = false,
-        //         PlayerProperties  = playerProperties,
-        //         SessionProperties = sessionProperties
-        //     }.WithRelayNetwork();
-        //
-        //     for (int attempt = 0; ; attempt++)
-        //     {
-        //         try
-        //         {
-        //             gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
-        //             break;
-        //         }
-        //         catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-        //         {
-        //             int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-        //             CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on CreateSession — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-        //             await GameTask.Delay(delay);
-        //         }
-        //     }
-        //
-        //     gameData.InvokeSessionStarted();
-        //     CSDebug.Log($"[MultiplayerSetup] Created session {gameData.ActiveSession.Id} with GameMode = {gameData.GameMode}");
-        // }
+            // Defensive: prefer sessions that are not private/locked and have room
+            var hasRoom   = (info.MaxPlayers > 0) && (info.AvailableSlots > 0);
+            var notLocked = !info.IsLocked;
+            var notPrivate= !info.HasPassword;
 
-        // PORT Deviation (services phase, JoinSessionOptions / MultiplayerService.JoinSessionByIdAsync — restore when UGS services port):
-        // private async Task JoinSessionAsClientById(string sessionId)
-        // {
-        //     var playerProperties = await GetPlayerProperties();
-        //
-        //     var joinOpts = new JoinSessionOptions
-        //     {
-        //         PlayerProperties = playerProperties
-        //     };
-        //
-        //     CSDebug.Log($"[MultiplayerSetup] Joining session {sessionId}");
-        //     gameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts);
-        // }
+            return hasRoom && notLocked && notPrivate;
+        }
+
+        private async Task StartSessionAsHost()
+        {
+            var playerProperties  = await GetPlayerProperties();
+            var sessionProperties = GetSessionProperties();
+
+            var sessionOpts = new SessionOptions
+            {
+                MaxPlayers        = gameData.SelectedPlayerCount.Value,
+                IsLocked          = false,
+                IsPrivate         = false,
+                PlayerProperties  = playerProperties,
+                SessionProperties = sessionProperties
+            }.WithRelayNetwork();
+
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    // (Port: the retired `.AsMainThread()` boundary maps to a plain await.)
+                    gameData.ActiveSession = await MultiplayerService.Instance.CreateSessionAsync(sessionOpts);
+                    break;
+                }
+                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
+                {
+                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on CreateSession — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await GameTask.Delay(delay);
+                }
+            }
+
+            gameData.InvokeSessionStarted();
+            CSDebug.Log($"[MultiplayerSetup] Created session {gameData.ActiveSession.Id} with GameMode = {gameData.GameMode}");
+        }
+
+        private async Task JoinSessionAsClientById(string sessionId)
+        {
+            var playerProperties = await GetPlayerProperties();
+
+            var joinOpts = new JoinSessionOptions
+            {
+                PlayerProperties = playerProperties
+            };
+
+            CSDebug.Log($"[MultiplayerSetup] Joining session {sessionId}");
+            gameData.ActiveSession = await MultiplayerService.Instance.JoinSessionByIdAsync(sessionId, joinOpts);
+        }
 
         // --------------------------
         // Query Sessions (filtered by GameMode)
         // --------------------------
-        // PORT Deviation (services phase, QuerySessionsOptions / FilterOption / MultiplayerService.QuerySessionsAsync — restore when UGS services port):
-        // private async Task<IList<ISessionInfo>> QuerySessions()
-        // {
-        //     var gameModeString = gameData.GameMode.ToString();
-        //     var maxPlayers     = gameData.SelectedPlayerCount.Value.ToString();
-        //
-        //     var queryOptions = new QuerySessionsOptions();
-        //     queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal));
-        //     queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex2, maxPlayers,     FilterOperation.Equal));
-        //
-        //     for (int attempt = 0; ; attempt++)
-        //     {
-        //         try
-        //         {
-        //             var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
-        //             CSDebug.Log($"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
-        //             return results.Sessions;
-        //         }
-        //         catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
-        //         {
-        //             int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-        //             CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on QuerySessions — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-        //             await GameTask.Delay(delay);
-        //         }
-        //     }
-        // }
+        private async Task<IList<ISessionInfo>> QuerySessions()
+        {
+            var gameModeString = gameData.GameMode.ToString();
+            var maxPlayers     = gameData.SelectedPlayerCount.Value.ToString();
+
+            var queryOptions = new QuerySessionsOptions();
+            queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex1, gameModeString, FilterOperation.Equal));
+            queryOptions.FilterOptions.Add(new FilterOption(FilterField.StringIndex2, maxPlayers,     FilterOperation.Equal));
+
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    var results = await MultiplayerService.Instance.QuerySessionsAsync(queryOptions);
+                    CSDebug.Log($"[MultiplayerSetup] Queried {results.Sessions.Count} sessions for GameMode {gameModeString}");
+                    return results.Sessions;
+                }
+                catch (Exception e) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(e))
+                {
+                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                    CSDebug.LogWarning($"[MultiplayerSetup] Rate limited on QuerySessions — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await GameTask.Delay(delay);
+                }
+            }
+        }
 
         // --------------------------
         // NGO Connection Hooks
@@ -411,30 +409,26 @@ namespace CosmicShore.Gameplay
         // --------------------------
         // Player Properties
         // --------------------------
-        // PORT Deviation (services phase, PlayerProperty / VisibilityPropertyOptions /
-        // AuthenticationService.GetPlayerNameAsync — restore when UGS services port; the engine
-        // AuthenticationService shim exposes only the synchronous PlayerName):
-        // private async Task<Dictionary<string, PlayerProperty>> GetPlayerProperties()
-        // {
-        //     var playerName = await AuthenticationService.Instance.GetPlayerNameAsync();
-        //
-        //     return new Dictionary<string, PlayerProperty>
-        //     {
-        //         { PLAYER_NAME_PROPERTY_KEY, new PlayerProperty(playerName, VisibilityPropertyOptions.Member) },
-        //     };
-        // }
+        private async Task<Dictionary<string, PlayerProperty>> GetPlayerProperties()
+        {
+            var playerName = await AuthenticationService.Instance.GetPlayerNameAsync();
 
-        // PORT Deviation (services phase, SessionProperty / VisibilityPropertyOptions / PropertyIndex — restore when UGS services port):
-        // private Dictionary<string, SessionProperty> GetSessionProperties()
-        // {
-        //     string gameMode   = gameData.GameMode.ToString();
-        //     string maxPlayers = gameData.SelectedPlayerCount.Value.ToString();
-        //     return new Dictionary<string, SessionProperty>
-        //     {
-        //         { GAME_MODE_PROPERTY_KEY,   new SessionProperty(gameMode,   VisibilityPropertyOptions.Public, PropertyIndex.String1) },
-        //         { MAX_PLAYERS_PROPERTY_KEY, new SessionProperty(maxPlayers, VisibilityPropertyOptions.Public, PropertyIndex.String2) }
-        //     };
-        // }
+            return new Dictionary<string, PlayerProperty>
+            {
+                { PLAYER_NAME_PROPERTY_KEY, new PlayerProperty(playerName, VisibilityPropertyOptions.Member) },
+            };
+        }
+
+        private Dictionary<string, SessionProperty> GetSessionProperties()
+        {
+            string gameMode   = gameData.GameMode.ToString();
+            string maxPlayers = gameData.SelectedPlayerCount.Value.ToString();
+            return new Dictionary<string, SessionProperty>
+            {
+                { GAME_MODE_PROPERTY_KEY,   new SessionProperty(gameMode,   VisibilityPropertyOptions.Public, PropertyIndex.String1) },
+                { MAX_PLAYERS_PROPERTY_KEY, new SessionProperty(maxPlayers, VisibilityPropertyOptions.Public, PropertyIndex.String2) }
+            };
+        }
 
         // --------------------------
         // Transport Failure Handler
