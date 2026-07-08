@@ -96,8 +96,10 @@ namespace CosmicShore.Gameplay
             RefreshLabel();
         }
 
-        void Update()
+        protected override void Update()
         {
+            base.Update(); // the base's exit-gated re-arm — shadowing it would deaden the station
+
             // The choice gates are a freestyle offer — fold them away when the player returns to
             // the menu, so the lava lamp never drifts through a stale SHARE/REPAINT pair.
             if ((_shareGate || _repaintGate)

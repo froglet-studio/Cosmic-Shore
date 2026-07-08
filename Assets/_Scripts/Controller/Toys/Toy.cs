@@ -115,7 +115,11 @@ namespace CosmicShore.Gameplay
             // can't fire until that vessel flies clear.
         }
 
-        void Update()
+        // Virtual so subclasses that need their own per-frame work (e.g. PaintingToy's choice-gate
+        // cleanup) EXTEND rather than shadow it — Unity invokes only the most-derived Update(), so
+        // a hiding declaration in a subclass would silently disable the exit-gated re-arm below and
+        // the toy would never fire. Overrides must call base.Update().
+        protected virtual void Update()
         {
             if (_armed || _blooming || _activating) return;
             if (LocalVesselOutsideTrigger())
