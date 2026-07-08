@@ -57,11 +57,14 @@
 		</relationship>
 	</object>
 	<object class="EventAutomatableProperties" id="{5aae6ec6-b2ad-45f0-aba0-9dd22cfc2c63}">
+		<property name="dopplerEnabled">
+			<value>true</value>
+		</property>
 		<property name="minimumDistance">
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>150</value>
+			<value>200</value>
 		</property>
 	</object>
 	<object class="MarkerTrack" id="{57f8658c-3ee5-4801-b1b0-3277c8b2fdb7}" />
@@ -108,7 +111,7 @@
 	</object>
 	<object class="EventMixerGroup" id="{ef73ac8f-c4f6-4715-a586-228fe09a4cd4}">
 		<property name="volume">
-			<value>-11</value>
+			<value>-10</value>
 		</property>
 		<property name="name">
 			<value>Audio 1</value>
@@ -161,7 +164,7 @@
 			<value>0</value>
 		</property>
 		<property name="maximumDistance">
-			<value>150</value>
+			<value>200</value>
 		</property>
 	</object>
 </objects>

@@ -59,6 +59,8 @@ namespace CosmicShore.Gameplay
 
             if (ElementalLevels.Count > 0)
             {
+                RecoverBaseLevels(Time.deltaTime);
+
                 if (ChargeTestHarness != 0) ElementalLevels[Element.Charge] = ChargeTestHarness;
                 if (MassTestHarness   != 0) ElementalLevels[Element.Mass]   = MassTestHarness;
                 if (SpaceTestHarness  != 0) ElementalLevels[Element.Space]  = SpaceTestHarness;
@@ -122,12 +124,25 @@ namespace CosmicShore.Gameplay
         [field: SerializeField] public float SpaceLevel  { get; private set; }
         [field: SerializeField] public float TimeLevel   { get; private set; }
 
+        [Header("Elemental Recovery")]
+        [Tooltip("Elements passively return to the [0,10] resting band: an overcharge above level 10 " +
+                 "drains back down to 10, and a deficit below level 0 fills back up to 0 — symmetric ends. " +
+                 "Rate is in normalized units per second (0.1 = one integer level per second). " +
+                 "Set 0 to disable the drift.")]
+        [SerializeField, Min(0f)] float elementalRecoveryRate = 0.05f;
+
         public delegate void ElementLevelChange(Element element, int level);
         public event ElementLevelChange OnElementLevelChange;
 
         const float MinElementalLevel = -0.5f;
         const float MaxElementalLevel = 1.5f;
         const int   LevelScale = 10;
+
+        // Passive recovery pulls each element's BASE level back into the [0,10] resting band.
+        // Above the upper bound it drains down to it; below the lower bound it fills up to it;
+        // inside the band the level holds so ordinary crystal progress stays stable.
+        const float RestingBandLower = 0f; // integer level 0  — deficits recover up to here
+        const float RestingBandUpper = 1f; // integer level 10 — overcharge drains down to here
 
         static readonly Element[] AllElements =
             { Element.Charge, Element.Mass, Element.Space, Element.Time };
@@ -207,6 +222,45 @@ namespace CosmicShore.Gameplay
             });
             RecomputeModifiers();
         }
+
+        // Passively pulls each element's persistent base level back toward the [0,10] resting band.
+        // Symmetric with the temporary-effect decay: an overcharge above level 10 bleeds back down to
+        // 10, and a deficit below level 0 fills back up to 0, both at elementalRecoveryRate per second.
+        // Levels already inside the band are left untouched, so ordinary progress is stable — this only
+        // removes the excess so parking at the level-15 cap yields no lasting benefit over level 10.
+        void RecoverBaseLevels(float dt)
+        {
+            if (elementalRecoveryRate <= 0f) return;
+
+            float step = elementalRecoveryRate * dt;
+            for (int i = 0; i < AllElements.Length; i++)
+            {
+                var element = AllElements[i];
+                // A live test-harness override pins the level — don't fight it.
+                if (HarnessValueFor(element) != 0f) continue;
+                if (!ElementalLevels.TryGetValue(element, out var baseLevel)) continue;
+
+                float target;
+                if (baseLevel > RestingBandUpper) target = RestingBandUpper;
+                else if (baseLevel < RestingBandLower) target = RestingBandLower;
+                else continue; // already resting inside the band
+
+                float next = Mathf.MoveTowards(baseLevel, target, step);
+                if (Mathf.Approximately(next, baseLevel)) continue;
+
+                ElementalLevels[element] = next;
+                EmitElementLevel(element);
+            }
+        }
+
+        float HarnessValueFor(Element element) => element switch
+        {
+            Element.Charge => ChargeTestHarness,
+            Element.Mass   => MassTestHarness,
+            Element.Space  => SpaceTestHarness,
+            Element.Time   => TimeTestHarness,
+            _              => 0f,
+        };
 
         // Advances active temporary effects, drops expired ones, and refreshes modifier totals.
         void TickElementalEffects()

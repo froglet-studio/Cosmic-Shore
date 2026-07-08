@@ -768,6 +768,17 @@ namespace CosmicShore.UI
             // Hide NavBar and Screens via CanvasGroup
             SetNavBarVisible(false);
             SetCanvasGroupVisible(screensCanvasGroup, false);
+
+            // Hand the gamepad to the vessel: stop the EventSystem from also driving UI
+            // Navigate/Submit while flying. CanvasGroup.interactable can't do this — the vessel
+            // HUD group stays interactable (for touch), so the pad would otherwise both fly the
+            // ship AND navigate/submit the HUD. sendNavigationEvents=false disables ONLY the
+            // gamepad/keyboard nav ring; pointer/touch input keeps working.
+            if (EventSystem.current)
+            {
+                EventSystem.current.SetSelectedGameObject(null);
+                EventSystem.current.sendNavigationEvents = false;
+            }
         }
 
         private void HandleExitFreestyle()
@@ -776,6 +787,10 @@ namespace CosmicShore.UI
 
             // Close any modals that were open
             CloseAllModals();
+
+            // Give the appshell the gamepad back.
+            if (EventSystem.current)
+                EventSystem.current.sendNavigationEvents = true;
 
             // Show NavBar and Screens
             SetNavBarVisible(true);

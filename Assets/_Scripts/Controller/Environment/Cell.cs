@@ -45,6 +45,12 @@ namespace CosmicShore.Gameplay
         // Cached so it survives the nucleus-spawn-vs-request ordering race (applied in SpawnVisuals).
         float _pendingNucleusWorldRadius;
 
+        // Optional replacement MESH for the nucleus, requested by a mode that repurposes the nucleus as
+        // a NON-spherical play boundary (Astro League's ricochet courts — box/octagon/etc.). The mesh
+        // is already in world units (centered on origin), so the nucleus renders it at unit scale with
+        // its existing material. Cached so it survives the same nucleus-spawn-vs-request ordering race.
+        Mesh _pendingNucleusMesh;
+
         public float NucleusRadius => nucleus ? nucleus.transform.localScale.x : 0f;
         public float MembraneRadius
         {
@@ -900,12 +906,14 @@ namespace CosmicShore.Gameplay
             nucleus = Instantiate(cellConfigData.NucleusPrefab, transform.position, Quaternion.identity);
             nucleus.transform.localScale *= nucleusScaleMultiplier;
             ApplyNucleusWorldRadius(); // honor any radius a mode requested before the nucleus existed
+            ApplyNucleusMesh();        // ...or a replacement boundary mesh (non-spherical court)
         }
 
         /// <summary>
         /// Resize the nucleus marker to a target WORLD radius (mesh-agnostic, via renderer bounds, so
         /// it works regardless of the prefab mesh's base size). Lets a mode repurpose the nucleus as
-        /// its play boundary — e.g. Astro League scales it to the arena's spherical bounce radius.
+        /// its play boundary — e.g. Astro League uses it for the Sphere-shaped court (see
+        /// <see cref="SetNucleusMesh"/> for the flat-walled polytope courts).
         /// Safe to call before the nucleus spawns: the target is cached and applied in SpawnVisuals.
         /// </summary>
         public void SetNucleusWorldRadius(float worldRadius)
@@ -927,6 +935,33 @@ namespace CosmicShore.Gameplay
             if (current < 1e-4f) return;
 
             nucleus.transform.localScale *= _pendingNucleusWorldRadius / current;
+        }
+
+        /// <summary>
+        /// Replace the nucleus MESH so a mode can repurpose the nucleus as a NON-spherical play boundary
+        /// (e.g. Astro League's ricochet courts — box/octagon/etc.), keeping the prefab's material so the
+        /// glowing-cage look carries over. The mesh must be in world units centered on the origin; the
+        /// nucleus renders it at unit scale. Race-proof: cached and applied in SpawnVisuals if the
+        /// nucleus hasn't spawned yet. Pass null to leave the prefab mesh in place.
+        /// </summary>
+        public void SetNucleusMesh(Mesh mesh)
+        {
+            _pendingNucleusMesh = mesh;
+            ApplyNucleusMesh();
+        }
+
+        void ApplyNucleusMesh()
+        {
+            if (nucleus == null || _pendingNucleusMesh == null) return;
+
+            var mf = nucleus.GetComponentInChildren<MeshFilter>();
+            if (mf == null) return;
+
+            // sharedMesh on an instance only repoints THIS filter (doesn't mutate the prefab asset).
+            mf.sharedMesh = _pendingNucleusMesh;
+            // The mesh is already world-sized, so render at unit scale — overrides the prefab's base
+            // scale and any world-radius request (which targeted the original sphere mesh's bounds).
+            nucleus.transform.localScale = Vector3.one;
         }
 
         void ResetVolumes()

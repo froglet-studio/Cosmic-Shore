@@ -4843,6 +4843,7 @@ GameObject:
   - component: {fileID: 1486013852}
   - component: {fileID: 1486013853}
   - component: {fileID: 1486013854}
+  - component: {fileID: 1486013855}
   m_Layer: 0
   m_Name: Game
   m_TagString: Untagged
@@ -5073,6 +5074,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
+--- !u!114 &1486013855
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1486013830}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98b8f0053bbd280d70f5fe0955b4d063, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.ToyboxController
+  toybox: {fileID: 11400000, guid: fccd12e8dfa83114e81deb2356002ada, type: 2}
+  membraneFraction: 0.82
+  fallbackCenter: {x: 0, y: 0, z: 0}
+  fallbackRadius: 300
+  toyBodyRadius: 22
+  toyTriggerRadius: 42
 --- !u!1 &1518955611
 GameObject:
   m_ObjectHideFlags: 0

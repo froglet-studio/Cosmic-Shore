@@ -93,7 +93,9 @@ namespace CosmicShore.Gameplay
         
         public void Respawn()
         {
-            if (!allowRespawnOnImpact)
+            // A manager-less mint (e.g. the freestyle conveyor toy's local pickups) has no manager
+            // to respawn through — collect once and destroy.
+            if (!allowRespawnOnImpact || CrystalManager == null)
             {
                 DestroyCrystal();
                 return;
@@ -104,7 +106,7 @@ namespace CosmicShore.Gameplay
 
         public void DestroyCrystal()
         {
-            cellData.TryRemoveItem(this);
+            if (cellData) cellData.TryRemoveItem(this);
             Destroy(gameObject);
         }
         
