@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading;
 using Cysharp.Threading.Tasks;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.Pool;
 using CosmicShore.Utility;
@@ -30,8 +31,15 @@ namespace CosmicShore.Utility
         private CancellationTokenSource maintenanceCts;
         private float instantiateTimer;
 
+        // Per-pool attribution for mid-game buffer refills — conserved prisms make
+        // pool consumption one-way, so refills instantiate for the whole session;
+        // this marker is what names the pool (and the typical unit cost) when a
+        // refill shows up in a capture next to a GC.Collect.
+        private ProfilerMarker _refillMarker;
+
         protected virtual void Awake()
         {
+            _refillMarker = new ProfilerMarker($"PoolRefill.{(prefab ? prefab.name : GetType().Name)}");
             pool = new ObjectPool<T>(
                 CreateFunc,
                 OnGetFromPool,
@@ -237,8 +245,11 @@ namespace CosmicShore.Utility
                         int addsThisFrame = 0;
                         while (instantiateTimer >= interval && inactive < bufferSizeTarget && addsThisFrame < maxAddsPerFrame)
                         {
-                            var obj = CreateFunc();
-                            pool.Release(obj);
+                            using (_refillMarker.Auto())
+                            {
+                                var obj = CreateFunc();
+                                pool.Release(obj);
+                            }
                             instantiateTimer -= interval;
                             inactive++;
                             addsThisFrame++;
