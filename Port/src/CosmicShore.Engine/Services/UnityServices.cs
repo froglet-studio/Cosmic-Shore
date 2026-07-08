@@ -26,6 +26,19 @@ namespace CosmicShore.Engine.Services
         public static ServicesInitializationState State { get; set; }
             = ServicesInitializationState.Uninitialized;
 
+        /// <summary>
+        /// Local initialization (original contract: <c>UnityServices.InitializeAsync()</c>).
+        /// The shim has no wire to bring up — it flips <see cref="State"/> to Initialized
+        /// and completes, the observable contract verbatim callers
+        /// (AuthenticationServiceFacade.InitializeCore) depend on. The real SDK binding
+        /// replaces the body at the services phase.
+        /// </summary>
+        public static System.Threading.Tasks.Task InitializeAsync()
+        {
+            State = ServicesInitializationState.Initialized;
+            return System.Threading.Tasks.Task.CompletedTask;
+        }
+
         /// <summary>Restore the benign uninitialized default (test isolation helper).</summary>
         public static void Reset() => State = ServicesInitializationState.Uninitialized;
     }

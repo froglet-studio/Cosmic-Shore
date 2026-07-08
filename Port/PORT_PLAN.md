@@ -691,17 +691,59 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after ApplicationStateMachine, 2026-07-08)
+## NEXT UP (after the bootstrap arc's service layer, 2026-07-08)
 
-1. **Scope the bootstrap arc** (AppManager DI root / the full
-   ApplicationLifecycleManager / AuthenticationServiceFacade /
-   BootstrapConfigSO): the app-entry orchestration that wires everything the
-   recent arcs made live. SCOPE first per precedent — AppManager binds the
-   whole DI surface; port what goes live with services-phase deviations for
-   the UGS init/auth wire calls.
+1. **`AppManager` (618L, the DI root)** — scope findings from this iteration:
+   (a) the engine Injection layer needs the Reflex BUILDER surface grown
+   (ContainerBuilder + IInstaller + RegisterValue/RegisterFactory with
+   Lazy/Singleton resolution — Container exists, the builder does not);
+   (b) six bound manager types are still unported and need shells per the
+   CameraManager/AudioSystem precedent: UGSStatsManager, CaptainManager,
+   IAPManager, PostProcessingManager, StatsManager, UGSDataService (the other
+   nine bindings — GameSetting, AudioSystem, PlayerDataService, SceneLoader,
+   ThemeManager, CameraManager, SceneTransitionManager, MultiplayerSetup,
+   PrismFactory — are ported or shelled already, and the pure-C# quartet
+   AuthenticationServiceFacade / NetworkMonitor / FriendsServiceFacade /
+   ApplicationStateMachine is fully live); (c) the UniTaskVoid bootstrap
+   sequence (splash gate + scene handoff) maps per README. Likely one
+   iteration for builder + shells, one for AppManager itself.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Bootstrap arc — service layer ✅ (2026-07-08)
+
+Engine growths: `RuntimeInitializeOnLoadMethod` attribute +
+`RuntimeInitializeLoadType` (data-only marker — no domain reload exists, so
+harnesses call tagged resets directly), `SceneManager.sceneUnloaded` +
+`NotifySceneUnloaded`, `UnityServices.InitializeAsync()` (flips State →
+Initialized, the observable contract InitializeCore depends on), and the
+**auth shim grown to the full facade surface**: `SessionTokenExists`,
+virtual `SignInAnonymouslyAsync`/`SignOut`/`ClearSessionToken` (local
+sign-in mirrors the real SDK's observable sequence — identity set, token
+cached, SignedIn raised; subclass-and-swap via the settable Instance is the
+failure-test seam), and the four auth notifications.
+
+**Four files ported FULLY LIVE, zero deviations:** `BootstrapConfigSO`
+(38L), `ApplicationLifecycleEventsContainerSO` (SOAP container), the **full
+`ApplicationLifecycleManager`** (114L — replaces the statics shell on the
+upstream class shape: dual static+SOAP raise pipeline, sceneLoaded/
+sceneUnloaded bridge, IsQuitting latch, domain-reload static reset; the
+OnApplication* messages are host-raised when the app shell lands, tests
+drive them directly), and **`AuthenticationServiceFacade`** (318L — startup
+guard + coalesced init, anonymous sign-in with the double-raise dedup, the
+cached-session three-branch flow, sign-out + token clear, auth event wiring,
+single-writer AuthenticationData state + SOAP raises, provider stubs; the
+`#if UNITY_EDITOR` MPPM block compiles out verbatim).
+
+**6 behavior tests** (`BootstrapArcTests`): the full anonymous sign-in flow
+(state ladder, identity, exactly-one OnSignedIn despite the event+await
+double path, the startup guard), the cached-sign-in three branches, sign-out
++ token clear, the failure path through a throwing shim subclass + the
+ResetStartupState retry, the lifecycle manager's dual pipelines + scene
+bridge + IsQuitting latch, and the BootstrapConfigSO defaults. **1498 tests
+green in BOTH configs (1160 + 338)**; all 5 CLI modes exit 0; both client
+diags byte-identical. bleeding-edge unmoved.
 
 ### ApplicationStateMachine ✅ (2026-07-08) — SceneLoader FULLY LIVE
 

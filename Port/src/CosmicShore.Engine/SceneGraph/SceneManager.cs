@@ -31,6 +31,16 @@ namespace CosmicShore.Engine.SceneManagement
         /// <summary>Raised after a scene load completes (port surface: raised by <see cref="NotifySceneLoaded(Scene, LoadSceneMode)"/>).</summary>
         public static event Action<Scene, LoadSceneMode> sceneLoaded;
 
+        /// <summary>
+        /// Raised when a scene is unloaded (original contract:
+        /// <c>SceneManager.sceneUnloaded</c>). Nothing raises it automatically until the
+        /// full loader lands; harnesses announce via <see cref="NotifySceneUnloaded"/>.
+        /// </summary>
+        public static event Action<Scene> sceneUnloaded;
+
+        /// <summary>Announce a completed scene unload to all subscribers.</summary>
+        public static void NotifySceneUnloaded(Scene scene) => sceneUnloaded?.Invoke(scene);
+
         /// <summary>Announce a completed scene load to all subscribers.</summary>
         public static void NotifySceneLoaded(Scene scene, LoadSceneMode mode = LoadSceneMode.Single)
             => sceneLoaded?.Invoke(scene, mode);
