@@ -40,4 +40,5 @@ public enum GameModes
     DragScouting = 36,
     MultiplayerDogFight = 37,
     MultiplayerMissileDogFight = 38,
+    NeedleThread = 39,
 }

@@ -146,6 +146,20 @@ namespace CosmicShore.Game.Analytics
             SaveProfile();
         }
 
+        public void ReportNeedleThreadStats(GameModes mode, int intensity, float volumeDestroyed, float raceTime)
+        {
+            if (!_isReady) return;
+
+            string key = $"{mode}_{intensity}";
+            if (raceTime < 10000f)
+            {
+                _cachedProfile.MultiHexStats.TryUpdateBestTime(key, raceTime);
+                SubmitScoreInternal(mode, intensity, raceTime);
+            }
+
+            SaveProfile();
+        }
+
         public void ReportCrystalCaptureStats(GameModes mode, int intensity, int crystals)
         {
             if (!_isReady) return;

@@ -21,8 +21,8 @@ namespace CosmicShore.Game
 
         [Header("Refs")] [SerializeField] private Skimmer skimmer;
         public Skimmer Skimmer => skimmer;
-        public override Domains OwnDomain => Skimmer.Domain;
-        protected override bool isInitialized => Skimmer.IsInitialized;
+        public override Domains OwnDomain => skimmer != null && skimmer.IsInitialized ? skimmer.Domain : Domains.Unassigned;
+        protected override bool isInitialized => skimmer != null && skimmer.IsInitialized;
 
         // runtime state (moved from Skimmer)
         readonly Dictionary<string, float> _skimStartTimes = new();

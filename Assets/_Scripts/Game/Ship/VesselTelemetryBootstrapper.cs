@@ -34,6 +34,7 @@ namespace CosmicShore.Game
             {
                 VesselClassType.Sparrow  => gameObject.AddComponent<SparrowVesselTelemetry>(),
                 VesselClassType.Squirrel => gameObject.AddComponent<SquirrelVesselTelemetry>(),
+                VesselClassType.Dolphin  => gameObject.AddComponent<DolphinVesselTelemetry>(),
                 _ => gameObject.AddComponent<DefaultVesselTelemetry>()
             };
 
