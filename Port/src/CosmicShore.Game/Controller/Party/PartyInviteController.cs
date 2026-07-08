@@ -27,11 +27,10 @@
 //   SceneLoader (_sceneLoader splash re-arm), ToastChannel (bounceToastChannel notice):
 //   none of the three types exist in this build; fields + call sites carried as
 //   commented source.
-// • scene phase — SceneManager.LoadSceneAsync (2 sites, leave + recovery): no engine
-//   counterpart yet. The continuation stays LIVE and the load is announced via
-//   SceneManager.NotifySceneLoaded(_sceneNames.MainMenuScene) as the port-surface
-//   stand-in, because HostConnectionService.OnSceneLoaded depends on sceneLoaded
-//   firing for Menu_Main (invite-state reset + presence republish).
+// • (RESTORED 2026-07-08) scene phase — the engine SceneManager grew a minimal
+//   LoadSceneAsync (next-tick re-designation + sceneLoaded announce); both Menu_Main
+//   loads (leave + recovery) are real awaited calls again (.ToUniTask(ct) →
+//   Task.WaitAsync(ct)).
 // ─────────────────────────────────────────────────────────────────────────────
 
 using System;
@@ -362,13 +361,10 @@ namespace CosmicShore.Gameplay
                 await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, ct);
                 _networkTransition.ClearStaleReferences();
 
-                // PORT Deviation (scene phase 2026-07-08, SceneManager.LoadSceneAsync — restore when scene management ports):
-                // await SceneManager.LoadSceneAsync(_sceneNames.MainMenuScene, LoadSceneMode.Single)
-                //     .ToUniTask(cancellationToken: ct);
-                // Continuation kept LIVE; announce the load so sceneLoaded subscribers
-                // (HostConnectionService.OnSceneLoaded resets invite state + republishes
-                // presence on Menu_Main) observe it, as upstream's real load would.
-                SceneManager.NotifySceneLoaded(_sceneNames.MainMenuScene, LoadSceneMode.Single);
+                // (Port: AsyncOperation.ToUniTask(cancellationToken: ct) → Task.WaitAsync(ct),
+                // same cancellation semantics.)
+                await SceneManager.LoadSceneAsync(_sceneNames.MainMenuScene, LoadSceneMode.Single)
+                    .WaitAsync(ct);
 
                 if (hcs != null)
                     await hcs.EnsurePartySessionAsync();
@@ -541,13 +537,8 @@ namespace CosmicShore.Gameplay
                 await _networkTransition.ShutdownAsync(shutdownTimeoutSeconds, CancellationToken.None);
                 _networkTransition.ClearStaleReferences();
 
-                // PORT Deviation (scene phase 2026-07-08, SceneManager.LoadSceneAsync — restore when scene management ports):
-                // await SceneManager.LoadSceneAsync(_sceneNames.MainMenuScene, LoadSceneMode.Single)
-                //     .ToUniTask();
-                // Continuation kept LIVE; announce the load so sceneLoaded subscribers
-                // (HostConnectionService.OnSceneLoaded resets invite state + republishes
-                // presence on Menu_Main) observe it, as upstream's real load would.
-                SceneManager.NotifySceneLoaded(_sceneNames.MainMenuScene, LoadSceneMode.Single);
+                // (Port: AsyncOperation.ToUniTask() → plain await.)
+                await SceneManager.LoadSceneAsync(_sceneNames.MainMenuScene, LoadSceneMode.Single);
 
                 if (hcs != null)
                     await hcs.EnsurePartySessionAsync();

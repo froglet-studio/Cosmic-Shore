@@ -1,4 +1,6 @@
 using System;
+using System.Threading.Tasks;
+using CosmicShore.Engine.Tasks;
 
 namespace CosmicShore.Engine.SceneManagement
 {
@@ -44,5 +46,36 @@ namespace CosmicShore.Engine.SceneManagement
         /// reacting to later tests' scene notifications.
         /// </summary>
         public static void ResetSceneLoadedSubscribers() => sceneLoaded = null;
+
+        static readonly Scene s_noScene = new("");
+
+        /// <summary>
+        /// The active scene (original contract: <c>UnityEngine.SceneManagement.SceneManager
+        /// .GetActiveScene()</c>). One GameLoop owns one Scene, so the current loop's scene
+        /// IS the active scene; with no loop running this returns an unnamed placeholder
+        /// (mirroring the original's invalid-scene return, whose <c>.name</c> reads empty)
+        /// so <c>GetActiveScene().name</c> is always null-safe.
+        /// </summary>
+        public static Scene GetActiveScene() => GameLoop.Current?.Scene ?? s_noScene;
+
+        /// <summary>
+        /// Minimal scene load (original contract: <c>UnityEngine.SceneManagement.SceneManager
+        /// .LoadSceneAsync</c>, whose AsyncOperation ported call sites await —
+        /// <c>.ToUniTask(ct)</c> → <c>Task.WaitAsync(ct)</c>). The port has no scene assets
+        /// to instantiate yet, so the minimal semantic preserves the two observables ported
+        /// code depends on: after completion (next PlayerLoop tick, matching the original's
+        /// async apply) <see cref="GetActiveScene"/> reads the new scene name, and
+        /// <see cref="sceneLoaded"/> fires with the active scene. Content teardown +
+        /// instantiation arrive with the full loader in the content phase — this does NOT
+        /// destroy or create objects, it re-designates the loop-owned scene.
+        /// </summary>
+        public static async Task LoadSceneAsync(string sceneName, LoadSceneMode mode = LoadSceneMode.Single)
+        {
+            await GameTask.Yield();
+
+            var scene = GameLoop.Current?.Scene;
+            if (scene != null) scene.name = sceneName;
+            NotifySceneLoaded(scene ?? new Scene(sceneName), mode);
+        }
     }
 }

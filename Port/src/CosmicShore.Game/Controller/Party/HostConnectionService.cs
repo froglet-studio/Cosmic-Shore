@@ -35,8 +35,8 @@
 // • (RESTORED 2026-07-08) party-system arc — PartyInviteController ported: LeavePartyAsync
 //   body and the three IsTransitioning guards (RefreshAsync entry + catch,
 //   RefreshPartyMembersAsync catch) are live again.
-// • scene phase — SceneManager.GetActiveScene() has no engine counterpart yet; IsOnMenuScene
-//   reads GameLoop.Current.Scene.name (the single loop-owned scene) as the closest live signal.
+// • (RESTORED 2026-07-08) scene phase — the engine SceneManager grew GetActiveScene();
+//   IsOnMenuScene reads it verbatim.
 // ─────────────────────────────────────────────────────────────────────────────
 
 using System;
@@ -1994,11 +1994,7 @@ namespace CosmicShore.Gameplay
 
         private static bool IsOnMenuScene()
         {
-            // PORT Deviation (scene phase 2026-07-08, SceneManager.GetActiveScene — restore when
-            // multi-scene management ports; until then GameLoop.Current's single loop-owned Scene
-            // IS the active scene, the closest live signal — see Engine/SceneGraph/Scene.cs):
-            // var sceneName = SceneManager.GetActiveScene().name;
-            var sceneName = GameLoop.Current?.Scene?.name;
+            var sceneName = SceneManager.GetActiveScene().name;
             return sceneName == "Menu_Main" || sceneName == "Authentication";
         }
 

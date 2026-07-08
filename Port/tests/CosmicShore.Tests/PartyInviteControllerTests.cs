@@ -279,8 +279,10 @@ public class PartyInviteControllerTests : IDisposable
 
         Run(() => rig.Pic.LeavePartyAndReturnToMenuAsync());
 
-        // leave own session → NM shutdown → Menu_Main announce → solo session ensured.
+        // leave own session → NM shutdown → real Menu_Main load (announce + the
+        // active scene re-designated) → solo session ensured.
         Assert.Contains("Menu_Main", scenesAnnounced);
+        Assert.Equal("Menu_Main", CosmicShore.Engine.SceneManagement.SceneManager.GetActiveScene().name);
         Assert.Equal(2, rig.Transition.ShutdownCalls);   // leave flow + EnsurePartySession
         Assert.True(rig.Transition.ClearCalls >= 1);
         Assert.True(rig.Conn.IsPartyHost);

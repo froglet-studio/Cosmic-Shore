@@ -691,18 +691,50 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after MainMenuCameraController, 2026-07-08)
+## NEXT UP (after the scene-management surface, 2026-07-08)
 
-1. **Scene-management surface**: grow the engine `SceneManager`
-   (`GetActiveScene()` + a minimal `LoadSceneAsync` against the GameLoop's
-   scene ownership) per the ISession/Friends placeholder precedent, then
-   un-carry the 3 scene-phase deviations it satisfies —
-   `PartyInviteController`'s two Menu_Main loads (currently announce-only
-   via `NotifySceneLoaded`) and `HostConnectionService.IsOnMenuScene`'s
-   GameLoop scene-name read — with tests.
-2. **Track bleeding-edge**: merge upstream again next iteration; every merge
+1. **UGS-core error/kick surface**: grow the engine `RequestFailedException`
+   (with `ErrorCode`) in `CosmicShore.Engine.Services` +
+   `IHostSession.RemovePlayerAsync`, then un-carry the deviations they
+   satisfy — HostConnectionService's last 2 services-phase deviations
+   (KickPartyMemberAsync's UGS-side kick; the 404 arm in
+   IsDefiniteSessionGoneException) and NetworkDiagnostics' carried
+   RequestFailedException classifier arm — with tests.
+2. **Scope the UI-shell arc** (ToastChannel / SceneTransitionManager /
+   SceneLoader): un-carries PartyInviteController's three UI-shell
+   deviations; SceneLoader is the big one — scope before porting.
+3. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
-3. Update this file, commit, push.
+4. Update this file, commit, push.
+
+### Scene-management surface ✅ (2026-07-08) — 3 scene-phase deviations un-carried
+
+The engine `SceneManager` grew **`GetActiveScene()`** (one GameLoop owns one
+Scene, so the current loop's scene IS the active scene; a no-loop call
+returns an unnamed placeholder mirroring the original's invalid-scene
+`.name == ""` read) and a **minimal `LoadSceneAsync(name, mode)`** — the
+port has no scene assets to instantiate yet, so it preserves the two
+observables ported code depends on: completes asynchronously through the
+loop's continuation pump (`GameTask.Yield`), re-designates the loop-owned
+scene's name, and raises `sceneLoaded` once with the ACTIVE scene instance
+(what HostConnectionService.OnSceneLoaded keys on). Content teardown +
+instantiation arrive with the full loader in the content phase.
+
+**Un-carried (3):** `HostConnectionService.IsOnMenuScene` now reads
+`SceneManager.GetActiveScene().name` verbatim (was the GameLoop scene-name
+stand-in), and both of `PartyInviteController`'s Menu_Main loads (leave +
+recovery) are real awaited `LoadSceneAsync` calls again (`.ToUniTask(ct)` →
+`Task.WaitAsync(ct)`), replacing the announce-only `NotifySceneLoaded`
+stand-ins. HCS deviations now: **1 services-phase pair only** (RemovePlayerAsync
+kick + RequestFailedException 404 arm — NEXT UP 1); PIC deviations now:
+UI-shell arc only.
+
+**2 engine tests** (`SceneManagementTests`): GetActiveScene resolves the
+loop-owned scene; LoadSceneAsync settles through the pump, re-designates the
+active scene, and announces exactly once with the active instance + mode.
+The PIC leave-flow test now also asserts the active scene reads "Menu_Main"
+after a real load. **1444 tests green in BOTH configs (1132 + 312)**; all 5
+CLI modes exit 0; both client diags byte-identical. bleeding-edge unmoved.
 
 ### MainMenuCameraController (camera arc) ✅ (2026-07-08)
 
