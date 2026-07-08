@@ -691,18 +691,40 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the CanvasGroup/UI-fade arc, 2026-07-08)
+## NEXT UP (after party-system groundwork, 2026-07-08)
 
-1. **Party-system arc groundwork**: `HostConnectionService` /
-   `PartyInviteController` (the MultiplayerSetup + MenuFreestyleToggle rescue
-   branches reference them) — services-phase-heavy; scope the UGS surface first
-   (presence lobby + Relay party sessions; the engine ISession placeholder and
-   the new NetworkManager callback surface are the toeholds).
+1. **Party-system services, next ring outward**: `LobbyRefreshScheduler` (173L,
+   timing logic) + `InviteService` (269L, per-player invite-slot payloads) +
+   `AcceptanceSignalService` (316L) look mostly portable against the placeholder
+   surface (`PlayerProperty` dictionaries, ISession); `PartySessionService` /
+   `PresenceLobbyService` / `NetworkTransitionService` need the UGS
+   lobby/Relay + StartClient surface (services/transport phases);
+   `HostConnectionService` (2078L) is the orchestrator and lands LAST.
 2. **`MainMenuCameraController` (camera arc)**: the last deviation pair in
    `MenuCrystalClickHandler` (per-mode ActiveTransitionDuration).
 3. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 4. Update this file, commit, push.
+
+### Party-system arc groundwork ✅ (2026-07-08)
+
+The no-UGS subset of the party layer is IN (11 files): `HostConnectionDataSO`
+(pure SOAP container — all its ScriptablePartyData types were already ported),
+all six `Controller/Party/Interfaces/` contracts (UniTask → Task; the
+`Unity.Services.Multiplayer` using maps to `CosmicShore.Engine.Networking`),
+`PartyState` + `PartyStateMachine` (transition table live; PartyState values
+frozen in EnumFreezeTests: Disconnected 0 … Reconnecting 6), `SoapPartyEventBus`
+(implements no interface — verified upstream), and `PartyMemberService` FULLY
+live: the engine ISession placeholder grew `Players`
+(IReadOnlyList&lt;IReadOnlyPlayer&gt;) plus new `IReadOnlyPlayer` /
+`PlayerProperty` / `VisibilityPropertyOptions` placeholders, so
+`SyncFromSession`'s roster reconcile runs verbatim (no deviations anywhere in
+the batch). Tests: `PartyStateMachineTests` (3 — happy path, invalid-transition
+rejection, from/to event) + `PartyMemberServiceTests` (2 — identity-property
+parsing with fallbacks; reconcile adds joiners / removes leavers / never evicts
+the local player, events through the real bus) + the PartyState freeze theory.
+**1392 tests green in BOTH configs (1080 + 312)**; all 5 CLI modes exit 0; both
+client diags byte-identical. bleeding-edge unmoved.
 
 ### CanvasGroup / UI-fade arc ✅ (2026-07-08)
 

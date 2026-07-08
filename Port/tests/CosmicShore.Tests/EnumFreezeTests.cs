@@ -146,6 +146,17 @@ public class EnumFreezeTests
         => Assert.Equal(expected, (int)kind);
 
     [Theory]
+    [InlineData(CosmicShore.Gameplay.PartyState.Disconnected, 0)]
+    [InlineData(CosmicShore.Gameplay.PartyState.InPresenceLobby, 1)]
+    [InlineData(CosmicShore.Gameplay.PartyState.Inviting, 2)]
+    [InlineData(CosmicShore.Gameplay.PartyState.JoiningParty, 3)]
+    [InlineData(CosmicShore.Gameplay.PartyState.HostingParty, 4)]
+    [InlineData(CosmicShore.Gameplay.PartyState.InParty, 5)]
+    [InlineData(CosmicShore.Gameplay.PartyState.Reconnecting, 6)]
+    public void PartyState_Values_Frozen(CosmicShore.Gameplay.PartyState state, int expected)
+        => Assert.Equal(expected, (int)state);
+
+    [Theory]
     [InlineData(FaunaDiet.Herbivore, 0)]
     [InlineData(FaunaDiet.Predator, 1)]
     public void FaunaDiet_Values_Frozen(FaunaDiet diet, int expected)

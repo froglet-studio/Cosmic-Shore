@@ -37,6 +37,8 @@ public class MultiplayerSetupTests : IDisposable
         public int PlayerCount => 1;
         public event Action Deleted { add { } remove { } }
         public event Action<string> PlayerLeaving { add { } remove { } }
+        public System.Collections.Generic.IReadOnlyList<IReadOnlyPlayer> Players { get; } =
+            Array.Empty<IReadOnlyPlayer>();
     }
 
     (MultiplayerSetup setup, NetworkManager nm, GameDataSO gameData) MakeRig()

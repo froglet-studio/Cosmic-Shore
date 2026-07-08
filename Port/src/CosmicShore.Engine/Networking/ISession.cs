@@ -33,5 +33,50 @@ namespace CosmicShore.Engine.Networking
 
         /// <summary>Raised with the leaving player's client id string (UGS surface subset).</summary>
         event System.Action<string> PlayerLeaving;
+
+        /// <summary>
+        /// The session roster (party-system arc: <c>PartyMemberService.SyncFromSession</c>
+        /// reconciles the SOAP member list against it). The services phase maintains it live;
+        /// harness/test implementations back it with a plain list.
+        /// </summary>
+        System.Collections.Generic.IReadOnlyList<IReadOnlyPlayer> Players { get; }
+    }
+
+    /// <summary>
+    /// Placeholder for <c>Unity.Services.Multiplayer.IReadOnlyPlayer</c> (party-system arc:
+    /// <c>PartyMemberService.ReadMemberData</c> reads a roster member's id + properties).
+    /// The services phase supplies the live implementation.
+    /// </summary>
+    public interface IReadOnlyPlayer
+    {
+        /// <summary>UGS player id.</summary>
+        string Id { get; }
+
+        /// <summary>Per-player session properties (displayName, avatarId, invite_payloads, …).</summary>
+        System.Collections.Generic.IReadOnlyDictionary<string, PlayerProperty> Properties { get; }
+    }
+
+    /// <summary>
+    /// Placeholder for <c>Unity.Services.Multiplayer.PlayerProperty</c> — a string value with a
+    /// lobby visibility level (party-system arc: per-player invite slots + identity properties).
+    /// </summary>
+    public class PlayerProperty
+    {
+        public string Value { get; }
+        public VisibilityPropertyOptions Visibility { get; }
+
+        public PlayerProperty(string value, VisibilityPropertyOptions visibility = VisibilityPropertyOptions.Public)
+        {
+            Value = value;
+            Visibility = visibility;
+        }
+    }
+
+    /// <summary>Placeholder for <c>Unity.Services.Multiplayer.VisibilityPropertyOptions</c>.</summary>
+    public enum VisibilityPropertyOptions
+    {
+        Public = 0,
+        Member = 1,
+        Private = 2,
     }
 }
