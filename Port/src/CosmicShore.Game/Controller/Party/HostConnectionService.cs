@@ -32,11 +32,9 @@
 //   engine IHostSession carries only DeleteAsync) and the Unity.Services.Core
 //   .RequestFailedException 404 check in IsDefiniteSessionGoneException (without the SDK no
 //   exception can ever be that type, so skipping preserves the classifier's truth value).
-// • party-system arc — PartyInviteController (not yet ported): LeavePartyAsync carries its
-//   body as commented source and lives on upstream's own null-controller branch; the three
-//   IsTransitioning guards (RefreshAsync entry + catch, RefreshPartyMembersAsync catch) are
-//   commented — with no controller upstream's Instance is null, so the guards are false and
-//   the code falls through exactly as the live build does.
+// • (RESTORED 2026-07-08) party-system arc — PartyInviteController ported: LeavePartyAsync
+//   body and the three IsTransitioning guards (RefreshAsync entry + catch,
+//   RefreshPartyMembersAsync catch) are live again.
 // • scene phase — SceneManager.GetActiveScene() has no engine counterpart yet; IsOnMenuScene
 //   reads GameLoop.Current.Scene.name (the single loop-owned scene) as the closest live signal.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -745,66 +743,55 @@ namespace CosmicShore.Gameplay
         /// Client-side leave. Routes through <see cref="PartyInviteController"/>
         /// for the Netcode shutdown + fresh local-host restart.
         /// </summary>
-#pragma warning disable CS1998 // PORT Deviation (party-system arc 2026-07-08): the method's awaits live in the commented body below.
         public async Task LeavePartyAsync()
         {
-            // PORT Deviation (party-system arc 2026-07-08, PartyInviteController — restore when
-            // PartyInviteController ports): with no PartyInviteController type in this build,
-            // upstream's own null-controller branch is the live truth — Instance would be null,
-            // so the method warns and returns BEFORE any state mutation (upstream orders the
-            // controller check first). Original body, with the mechanical Task mappings
-            // pre-applied for restoration (UniTask → Task; UniTask.WhenAny(task,
-            // UniTask.Delay(TimeSpan)) → Task.WhenAny over an eagerly-bridged GameTask.Delay
-            // arm — the bridge's first await enqueues the delay at once so both arms run in
-            // parallel, same rationale as GameTask.WhenAll's DelayAwaitable overload — with the
-            // winner index derived by reference compare):
-            //
-            // var controller = PartyInviteController.Instance;
-            // if (controller == null)
-            // {
-            //     Debug.LogWarning("[HostConnectionService] PartyInviteController not available.");
-            //     return;
-            // }
-            //
-            // _lastFiredInvite    = null;
-            // _lastInviteResolved = true;
-            // _eventBus.RaiseInviteResolved();
-            //
-            // // Locally fire OnPartyMemberLeft so panels clear slots immediately
-            // // instead of waiting for the next refresh tick.
-            // _memberService.ClearWithEvents(connectionData.LocalPlayerId);
-            //
-            // // B8 fix 2: wait for the clear so the stale `joined_party` presence
-            // // property is actually removed on the wire BEFORE leave teardown
-            // // disrupts the lobby reference — otherwise the host keeps seeing the
-            // // stale "I'm in your party" claim (B8 fix 1 makes the host ignore it,
-            // // this removes it). Bounded by a timeout: WriteAsync is normally
-            // // ~1-3s (mutex + refresh + save-with-retry) but its retries can
-            // // stretch longer under B1 stale-index churn, and a clean leave must
-            // // not stall on a flaky property write. WriteAsync swallows its own
-            // // exceptions, so the clear can only be slow, never throw; if the
-            // // timeout wins we proceed (fix 1 already protects the host). Uses
-            // // WhenAny + Delay rather than UniTask.Timeout() to stick to core
-            // // UniTask primitives this version is known to support.
-            // var clearTask = ClearJoinedPartyAsync();
-            // static async Task DelayArm(TimeSpan span) => await GameTask.Delay(span);
-            // int winner = await Task.WhenAny(
-            //     clearTask,
-            //     DelayArm(TimeSpan.FromSeconds(CLEAR_JOINED_PARTY_TIMEOUT_SECONDS))) == clearTask ? 0 : 1;
-            // if (winner != 0)
-            //     Debug.LogWarning(
-            //         "[HostConnectionService] ClearJoinedParty did not complete within " +
-            //         $"{CLEAR_JOINED_PARTY_TIMEOUT_SECONDS}s — proceeding with leave " +
-            //         "(host ignores stale joined_party via the session cross-check).");
-            //
-            // // LeavePartyAndReturnToMenuAsync owns the full leave sequence:
-            // // session-leave → NM shutdown → Menu_Main reload → EnsurePartySessionAsync.
-            // // No trailing call needed.
-            // await controller.LeavePartyAndReturnToMenuAsync();
+            var controller = PartyInviteController.Instance;
+            if (controller == null)
+            {
+                Debug.LogWarning("[HostConnectionService] PartyInviteController not available.");
+                return;
+            }
 
-            Debug.LogWarning("[HostConnectionService] PartyInviteController not available.");
+            _lastFiredInvite    = null;
+            _lastInviteResolved = true;
+            _eventBus.RaiseInviteResolved();
+
+            // Locally fire OnPartyMemberLeft so panels clear slots immediately
+            // instead of waiting for the next refresh tick.
+            _memberService.ClearWithEvents(connectionData.LocalPlayerId);
+
+            // B8 fix 2: wait for the clear so the stale `joined_party` presence
+            // property is actually removed on the wire BEFORE leave teardown
+            // disrupts the lobby reference — otherwise the host keeps seeing the
+            // stale "I'm in your party" claim (B8 fix 1 makes the host ignore it,
+            // this removes it). Bounded by a timeout: WriteAsync is normally
+            // ~1-3s (mutex + refresh + save-with-retry) but its retries can
+            // stretch longer under B1 stale-index churn, and a clean leave must
+            // not stall on a flaky property write. WriteAsync swallows its own
+            // exceptions, so the clear can only be slow, never throw; if the
+            // timeout wins we proceed (fix 1 already protects the host). Uses
+            // WhenAny + Delay rather than UniTask.Timeout() to stick to core
+            // UniTask primitives this version is known to support.
+            // (PORT: UniTask.WhenAny(task, UniTask.Delay(TimeSpan)) → Task.WhenAny over an
+            // eagerly-bridged GameTask.Delay arm — the bridge's first await enqueues the
+            // delay at once so both arms run in parallel, same rationale as
+            // GameTask.WhenAll's DelayAwaitable overload — winner index by reference compare.)
+            var clearTask = ClearJoinedPartyAsync();
+            static async Task DelayArm(TimeSpan span) => await GameTask.Delay(span);
+            int winner = await Task.WhenAny(
+                clearTask,
+                DelayArm(TimeSpan.FromSeconds(CLEAR_JOINED_PARTY_TIMEOUT_SECONDS))) == clearTask ? 0 : 1;
+            if (winner != 0)
+                Debug.LogWarning(
+                    "[HostConnectionService] ClearJoinedParty did not complete within " +
+                    $"{CLEAR_JOINED_PARTY_TIMEOUT_SECONDS}s — proceeding with leave " +
+                    "(host ignores stale joined_party via the session cross-check).");
+
+            // LeavePartyAndReturnToMenuAsync owns the full leave sequence:
+            // session-leave → NM shutdown → Menu_Main reload → EnsurePartySessionAsync.
+            // No trailing call needed.
+            await controller.LeavePartyAndReturnToMenuAsync();
         }
-#pragma warning restore CS1998
 
 #pragma warning disable CS1998 // PORT Deviation (services phase 2026-07-08): the method's await lives in the commented RemovePlayerAsync line below.
         public async Task KickPartyMemberAsync(string playerId)
@@ -1048,14 +1035,11 @@ namespace CosmicShore.Gameplay
             // ForceReset → Reconnecting → throwaway presence lobby — even on a
             // successful join. Skip the tick and clear the counter. Host is
             // never IsTransitioning, so its scan loop keeps running.
-            // PORT Deviation (party-system arc 2026-07-08, PartyInviteController.Instance /
-            // .IsTransitioning — restore when PartyInviteController ports; with no controller in
-            // this build Instance is null upstream, so the guard is false and the tick proceeds):
-            // if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
-            // {
-            //     _consecutiveRefreshErrors = 0;
-            //     return;
-            // }
+            if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
+            {
+                _consecutiveRefreshErrors = 0;
+                return;
+            }
 
             // Quick non-blocking check — if someone else holds the mutex, skip
             // this tick rather than queuing up. The next tick will pick up.
@@ -1183,14 +1167,11 @@ namespace CosmicShore.Gameplay
                     // falsely escalate to ForceReset + Reconnecting + a throwaway lobby on a
                     // *successful* join. Reset wipes any stale accumulation too.  The finally
                     // block below still releases _lobbyMutex / clears _insideRefreshCycle.
-                    // PORT Deviation (party-system arc 2026-07-08, PartyInviteController.Instance /
-                    // .IsTransitioning — restore when PartyInviteController ports; with no controller
-                    // in this build the guard is false and the error counts, as upstream would):
-                    // if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
-                    // {
-                    //     _consecutiveRefreshErrors = 0;
-                    //     return;
-                    // }
+                    if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
+                    {
+                        _consecutiveRefreshErrors = 0;
+                        return;
+                    }
 
                     _consecutiveRefreshErrors++;
                     if (_consecutiveRefreshErrors >= MAX_REFRESH_ERRORS_BEFORE_RECONNECT)
@@ -1490,11 +1471,8 @@ namespace CosmicShore.Gameplay
                 // is teardown noise. Covers the interleaving the stale-tick check
                 // misses — the error lands a beat before ActiveSession is
                 // reassigned, so the refs still compare equal.
-                // PORT Deviation (party-system arc 2026-07-08, PartyInviteController.Instance /
-                // .IsTransitioning — restore when PartyInviteController ports; with no controller
-                // in this build the guard is false and the matrix below runs, as upstream would):
-                // if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
-                //     return;
+                if (PartyInviteController.Instance != null && PartyInviteController.Instance.IsTransitioning)
+                    return;
 
                 // Error-handling matrix — see Docs/PartySystem/ARCHITECTURE.md.
                 //

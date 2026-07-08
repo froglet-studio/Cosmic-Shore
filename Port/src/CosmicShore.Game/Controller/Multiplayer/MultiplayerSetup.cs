@@ -388,8 +388,7 @@ namespace CosmicShore.Gameplay
                     // graceful UGS ISession.PlayerLeaving. Only the Netcode clientId is
                     // available here (no UGS PlayerId), so this reconciles the roster;
                     // invite cleanup is handled by the PlayerLeaving handler / poll.
-                    // PORT Deviation (party system, restore when HostConnectionService ports):
-                    // HostConnectionService.Instance?.ReconcilePartyMembersNow();
+                    HostConnectionService.Instance?.ReconcilePartyMembersNow();
                 }
                 return;
             }
@@ -402,13 +401,10 @@ namespace CosmicShore.Gameplay
                 // self-rescue instead of gameData.InvokeOnSessionEnded() →
                 // SceneLoader.HandleActiveSessionEnd, whose defer-to-server guard hangs the
                 // client when the server is gone. See Docs/PartySystem/BUGS.md B10.
-                // PORT Deviation (party system, restore when PartyInviteController ports —
-                // until then the legacy fallback below runs unconditionally, matching the
-                // upstream else-branch when Instance is null):
-                // if (PartyInviteController.Instance != null)
-                //     PartyInviteController.Instance.HandleHostLossAsync("Host disconnected").Forget();
-                // else
-                gameData.InvokeOnSessionEnded(); // fallback: legacy path
+                if (PartyInviteController.Instance != null)
+                    PartyInviteController.Instance.HandleHostLossAsync("Host disconnected").Forget();
+                else
+                    gameData.InvokeOnSessionEnded(); // fallback: legacy path
             }
         }
 
@@ -453,12 +449,11 @@ namespace CosmicShore.Gameplay
                 // and recreate our OWN solo host (EnsurePartySessionAsync). The legacy path
                 // below shut NM down but never recreated the solo session, leaving a hostless
                 // menu. See Docs/PartySystem/BUGS.md B10.
-                // PORT Deviation (party system, restore when PartyInviteController ports):
-                // if (PartyInviteController.Instance != null)
-                // {
-                //     await PartyInviteController.Instance.HandleHostLossAsync("Connection lost");
-                //     return;
-                // }
+                if (PartyInviteController.Instance != null)
+                {
+                    await PartyInviteController.Instance.HandleHostLossAsync("Connection lost");
+                    return;
+                }
 
                 // Fallback (PartyInviteController unavailable): legacy teardown.
                 if (gameData.ActiveSession != null)

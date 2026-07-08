@@ -691,19 +691,63 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the orchestrator test suite, 2026-07-08)
+## NEXT UP (after PartyInviteController, 2026-07-08)
 
-1. **`PartyInviteController` (506L)** — un-carries the orchestrator's 4
-   party-system deviations (LeavePartyAsync body + 3 IsTransitioning guards);
-   the host↔client Netcode transition flows lean on the already-ported
-   NetworkTransitionService (its client-transport waits are fail-soft).
-2. **`FriendsInitializer` (236L)** — needs a FriendsServiceFacade shell or
-   port (UGS Friends SDK surface).
-3. **`MainMenuCameraController` (camera arc)**: the last deviation pair in
+1. **`FriendsInitializer` (236L)** — needs a FriendsServiceFacade shell or
+   port (UGS Friends SDK surface). Completes the party-system arc's file
+   inventory (`Controller/Party/` is otherwise fully ported).
+2. **`MainMenuCameraController` (camera arc)**: the last deviation pair in
    `MenuCrystalClickHandler`.
-4. **Track bleeding-edge**: merge upstream again next iteration; every merge
+3. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
-5. Update this file, commit, push.
+4. Update this file, commit, push.
+
+### PartyInviteController + orchestrator un-carry ✅ (2026-07-08)
+
+**`PartyInviteController` (506L → 562 with header/markers) ported** — the
+party-system arc's last transition orchestrator. FULLY LIVE: singleton
+lifecycle (Awake guard / OnDestroy CTS teardown), `IsTransitioning` + the
+test-reflected `_transitioning` field (name preserved), the five-step
+accept-invite orchestration (NM shutdown → ClearStaleReferences →
+HCS.AcceptInviteAsync → honored connect-wait bounce →
+WaitForClientReadyAsync terminal watchdog → OnPartyJoinCompleted +
+ForceRefreshNow in an isolated try/catch), DeclineInviteAsync, the
+leave-lobby cold-boot sequence (DestroyPlayerAndVessel + ResetRuntimeData →
+LeavePartySessionAsync → ShutdownAsync → Menu_Main → EnsurePartySessionAsync),
+no-op TransitionToPartyHostAsync, idempotent HandleHostLossAsync (+
+fire-and-forget ClearJoinedPartyAsync), BounceToSoloMenuAsync,
+RecoverFromFailedTransitionAsync, all timeout/linked-CTS handling, and every
+NetDiag line. Deviations: UI-shell/scene arc (ToastChannel bounce toast,
+SceneTransitionManager fade cover, SceneLoader splash re-arm — types absent,
+carried as commented source) and scene phase (2× SceneManager.LoadSceneAsync
+— continuation kept LIVE, announced via `NotifySceneLoaded(Menu_Main)` so
+HCS.OnSceneLoaded's invite-state reset + presence republish observe the load
+as upstream's real load would).
+
+**Orchestrator un-carry:** with the controller in the build,
+`HostConnectionService`'s 4 party-system deviations are RESTORED — the full
+LeavePartyAsync body (invite resolve → member ClearWithEvents → bounded
+ClearJoinedPartyAsync via Task.WhenAny over an eagerly-bridged GameTask.Delay
+arm → controller.LeavePartyAndReturnToMenuAsync) and the 3 IsTransitioning
+guards (RefreshAsync entry + catch, RefreshPartyMembersAsync catch). HCS
+deviations now: 2 services-phase + 1 scene-phase only. **`MultiplayerSetup`'s
+3 same-condition deviations un-carried in the same pass**: the
+`ReconcilePartyMembersNow` hard-drop backstop (restore condition met when HCS
+ported last iteration) and both `HandleHostLossAsync` self-rescue routes
+(OnClientDisconnect host-loss `.Forget()` branch + the awaited
+OnTransportFailure branch with legacy-teardown fallback).
+
+**9 behavior tests** (`PartyInviteControllerTests`) drive the real HCS+PIC
+pairing through fake lobby/session seams + a counting transition fake:
+singleton take/release, the duplicate-accept guard, the accept happy path
+(join completes, host seeded into PartyMembers, IsPartyHost false, no
+Menu_Main reload), the connect-failure bounce (Menu_Main announced, solo
+session restored, 3 shutdowns), HandleHostLoss idempotence + single recovery,
+the leave cold-boot sequence, the un-carried HCS.LeavePartyAsync routing
+through the controller (and the null-controller first-exit), and the
+un-carried RefreshAsync entry guard skipping the tick while transitioning.
+**1424 tests green in BOTH configs (1112 + 312)**; all 5 CLI modes exit 0;
+both client diags byte-identical. bleeding-edge unmoved.
 
 ### HostConnectionService behavior tests ✅ (2026-07-08)
 
