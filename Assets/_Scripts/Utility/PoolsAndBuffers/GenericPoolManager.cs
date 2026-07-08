@@ -67,6 +67,9 @@ namespace CosmicShore.Utility
 
         // ---------------- Public API ----------------
 
+        /// <summary>The prefab this pool instantiates. Read-only — lets subclasses key registries by prefab.</summary>
+        public T Prefab => prefab;
+
         public abstract T Get(Vector3 position, Quaternion rotation, Transform parent = null, bool worldPositionStays = true);
         public abstract void Release(T instance);
 

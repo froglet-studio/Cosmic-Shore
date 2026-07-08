@@ -16,7 +16,7 @@ namespace CosmicShore.Core
     /// </summary>
     public class BenchmarkSceneLauncher : MonoBehaviour
     {
-        /// <summary>Must match the scene file name added to Build Settings by the Create Benchmark Scene tool.</summary>
+        /// <summary>Must match the committed benchmark scene's file name (there is exactly one; it is never re-created).</summary>
         public const string BenchmarkSceneName = "BenchmarkStressTest";
 
         [Inject] GameDataSO gameData;

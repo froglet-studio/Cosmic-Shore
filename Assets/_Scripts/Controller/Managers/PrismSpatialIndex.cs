@@ -530,7 +530,7 @@ namespace CosmicShore.Gameplay
             // per-domain volume sums ("volume is the spine" — all prisms count,
             // whatever their source) but stay out of the targeting grids and
             // prism counts (see the remarks above).
-            bool environmentMass = !(prism is HealthPrism && prism.GetComponentInParent<Fauna>() != null);
+            bool environmentMass = !(prism is HealthPrism bodyPrism && bodyPrism.ResolveOwnerFauna() != null);
             var cell = Cell.FindCellContaining(position);
             _cells[index] = cell;
             if (cell) cell.AddBlock(prism, environmentMass);
@@ -550,37 +550,68 @@ namespace CosmicShore.Gameplay
             if (cell) cell.RemoveBlock(prism);
         }
 
+        // Hoisted float3 copies of the union-query centres — the old per-prism
+        // (float3)(Vector3) conversion inside the inner loop was pure waste.
+        float3[] _unionCenterScratch = new float3[16];
+
         /// <summary>
-        /// Live prisms within <paramref name="radius"/> of ANY of <paramref name="centers"/>,
-        /// in a SINGLE pass over the packed spatial array (early-break once a prism is
-        /// near any centre). Replaces N separate QuerySphere calls for the collider-LOD
-        /// union: a large LOD radius forces each QuerySphere into its linear-scan fallback,
-        /// so per-focus calls were O(centers × population); this is one cache-friendly pass.
+        /// Windowed union-of-spheres pass for the collider LOD: scans packed entries
+        /// [<paramref name="startIndex"/>, +<paramref name="maxEntries"/>) against all
+        /// <paramref name="centers"/> in one cache-friendly pass, so the LOD sweep can
+        /// spread its O(population) reclassification across frames instead of paying
+        /// it in one (a large LOD radius forces QuerySphere into its linear-scan
+        /// fallback, so per-focus calls were O(centers × population)).
+        /// <paramref name="nearResults"/> receives the window's live prisms within
+        /// radius of ANY centre; <paramref name="farResults"/> (optional — pass null
+        /// to skip) receives its remaining live prisms, for reconcile sweeps that must
+        /// classify the whole population. Both are cleared per call (slice-local).
+        /// <paramref name="nextIndex"/> is the cursor for the following slice, or -1
+        /// when the window reached the end of the packed array.
         /// </summary>
-        public int QueryUnionOfSpheres(List<Vector3> centers, float radius, List<Prism> results)
+        public int QueryUnionOfSpheresSlice(List<Vector3> centers, float radius,
+            int startIndex, int maxEntries, List<Prism> nearResults, List<Prism> farResults,
+            out int nextIndex)
         {
-            results.Clear();
+            nearResults.Clear();
+            farResults?.Clear();
+            nextIndex = -1;
             if (!_spatial.IsCreated || centers == null || centers.Count == 0) return 0;
 
-            float radiusSq = radius * radius;
             int centerCount = centers.Count;
-            // Stack-free: read centres straight from the list each test (centerCount is tiny).
-            for (int i = 0; i < _highWaterMark; i++)
+            if (_unionCenterScratch.Length < centerCount)
+                _unionCenterScratch = new float3[Mathf.NextPowerOfTwo(centerCount)];
+            for (int cI = 0; cI < centerCount; cI++)
+                _unionCenterScratch[cI] = (float3)(Vector3)centers[cI];
+
+            float radiusSq = radius * radius;
+            int start = Mathf.Max(0, startIndex);
+            int end = (maxEntries <= 0 || _highWaterMark - start <= maxEntries)
+                ? _highWaterMark
+                : start + maxEntries;
+
+            for (int i = start; i < end; i++)
             {
                 var s = _spatial[i];
                 if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+
+                bool near = false;
                 for (int cI = 0; cI < centerCount; cI++)
                 {
-                    float3 ctr = (float3)(Vector3)centers[cI];
-                    if (math.distancesq(s.Position, ctr) <= radiusSq)
+                    if (math.distancesq(s.Position, _unionCenterScratch[cI]) <= radiusSq)
                     {
-                        var prism = _prisms[i];
-                        if (prism) results.Add(prism);
+                        near = true;
                         break; // near at least one focus — no need to test the rest
                     }
                 }
+
+                var prism = _prisms[i];
+                if (!prism) continue;
+                if (near) nearResults.Add(prism);
+                else farResults?.Add(prism);
             }
-            return results.Count;
+
+            if (end < _highWaterMark) nextIndex = end;
+            return nearResults.Count;
         }
 
         /// <summary>

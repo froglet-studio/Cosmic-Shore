@@ -1,5 +1,6 @@
 using System;
 using Unity.Netcode;
+using Unity.Profiling;
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
@@ -21,7 +22,14 @@ namespace CosmicShore.Gameplay
         protected abstract void AcceptImpactee(IImpactor impactee);
 
         protected bool DoesEffectExist(ImpactEffectSO[] effects) => effects is { Length: > 0 };
-        
+
+        // Per-concrete-type profiler marker so an impact storm shows up in captures as
+        // e.g. 'SkimmerImpactor.AcceptImpactee' with real timings instead of vanishing
+        // into Physics.SendEvents self-time. Lazily created (one string per component
+        // lifetime) — no Awake added here, since most subclasses declare their own.
+        ProfilerMarker _acceptMarker;
+        bool _acceptMarkerInit;
+
         protected virtual void OnTriggerEnter(Collider other)
         {
             if (!isInitialized)
@@ -36,7 +44,13 @@ namespace CosmicShore.Gameplay
             if (!other.TryGetComponent(out ImpactCollider impacteeCollider))
                 return;
 
-            AcceptImpactee(impacteeCollider.Impactor);
+            if (!_acceptMarkerInit)
+            {
+                _acceptMarkerInit = true;
+                _acceptMarker = new ProfilerMarker(GetType().Name + ".AcceptImpactee");
+            }
+            using (_acceptMarker.Auto())
+                AcceptImpactee(impacteeCollider.Impactor);
         }
     }
 }

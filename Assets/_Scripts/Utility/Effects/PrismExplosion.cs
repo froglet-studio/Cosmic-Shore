@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.ECS;
 using CosmicShore.Gameplay;
@@ -117,8 +118,16 @@ namespace CosmicShore.Utility
                 _renderer.enabled = false;
         }
 
+        // Enabled-instance registry for PrismEffectsManager's zombie audit — replaces the
+        // periodic FindObjectsByType full-scene scans (a recurring dev-build profiler spike).
+        internal static readonly List<PrismExplosion> EnabledInstances = new();
+
+        private void OnEnable() => EnabledInstances.Add(this);
+
         private void OnDisable()
         {
+            EnabledInstances.Remove(this);
+
             if (IsActive)
             {
                 IsActive = false;

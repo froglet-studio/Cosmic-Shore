@@ -73,7 +73,9 @@ namespace CosmicShore.ECS
         // legacy MeshRenderer path stays the baseline so a build is never broken by
         // default. Enable via the PrismRenderConfig asset or SetRuntimeOverride(true).
         static bool _configEnabled;
+        static bool _configAssetFound;
         static bool _loggedActive;
+        static bool _loggedWorldBootstrap;
 
         /// <summary>
         /// Master switch for instanced prism rendering. Resolution order:
@@ -95,7 +97,7 @@ namespace CosmicShore.ECS
                     {
                         _configLoaded = true;
                         var config = Resources.Load<CosmicShore.ScriptableObjects.PrismRenderConfigSO>("PrismRenderConfig");
-                        if (config != null) _configEnabled = config.UseInstancedRendering;
+                        if (config != null) { _configAssetFound = true; _configEnabled = config.UseInstancedRendering; }
                     }
                     enabled = _configEnabled;
                 }
@@ -113,6 +115,35 @@ namespace CosmicShore.ECS
 
         /// <summary>Runtime A/B override (null = fall back to config). New prisms follow the new value; existing ones keep their current path until reuse.</summary>
         public static void SetRuntimeOverride(bool? enabled) => _runtimeOverride = enabled;
+
+        /// <summary>
+        /// Read-only, allocation-light diagnosis of whether the instanced path is
+        /// actually engaging — and if not, exactly which link in the chain is broken
+        /// (master toggle off / no config asset / no ECS world / no EntitiesGraphicsSystem).
+        /// Surfaced on the DiagnosticsHUD so a "still N draw calls" symptom self-explains
+        /// instead of failing silently. Does NOT create or cache the world.
+        /// </summary>
+        public static string StatusLine()
+        {
+            // Resolving Enabled also primes the config cache (_configAssetFound).
+            if (!Enabled)
+            {
+                if (_runtimeOverride.HasValue) return "OFF (runtime override = false)";
+                if (!_configAssetFound) return "OFF (no PrismRenderConfig asset in Resources)";
+                return "OFF (config: Use Instanced Rendering unchecked)";
+            }
+
+            var world = World.DefaultGameObjectInjectionWorld;
+            if (world == null || !world.IsCreated) return "OFF (no ECS world at runtime)";
+            if (world.GetExistingSystemManaged<EntitiesGraphicsSystem>() == null)
+                return "OFF (EntitiesGraphicsSystem missing — SRP/platform unsupported?)";
+
+            // meshes/mats = distinct mesh & material assets the entities are registered under.
+            // Entities Graphics batches by (mesh × material), so this is the batching ceiling:
+            // if meshes/mats are tiny but draw calls stay ~= ents, the shader isn't instancing
+            // (needs the Hybrid-Per-Instance variant); if meshes is huge, prisms don't share a mesh.
+            return $"ON · ents={LiveEntityCount} meshes={_meshIds.Count} mats={_materialIds.Count}";
+        }
 
         // ------------------------------------------------------------------
         // World / registration caches
@@ -144,6 +175,34 @@ namespace CosmicShore.ECS
             }
 
             var world = World.DefaultGameObjectInjectionWorld;
+            if (world == null || !world.IsCreated)
+            {
+                // This render path is (currently) the project's only runtime Entities
+                // usage, so if Unity's automatic world bootstrap is disabled the default
+                // world may never be created — every prism would then silently fall back
+                // to its MeshRenderer. Create it on demand instead of assuming it exists.
+                // Guarded on null so it can never double-create; Initialize() also appends
+                // the world's system groups (incl. EntitiesGraphicsSystem) to the player
+                // loop so they actually update. No subscene / scene authoring required.
+                try
+                {
+                    world = DefaultWorldInitialization.Initialize("Default World", false);
+                    if (!_loggedWorldBootstrap)
+                    {
+                        _loggedWorldBootstrap = true;
+                        Debug.Log("[PrismRenderService] No default ECS world found — bootstrapped one on demand for instanced prism rendering.");
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    if (!_loggedWorldBootstrap)
+                    {
+                        _loggedWorldBootstrap = true;
+                        Debug.LogWarning("[PrismRenderService] Could not bootstrap a default ECS world; staying on the legacy MeshRenderer path. " + e.Message);
+                    }
+                    return false;
+                }
+            }
             if (world == null || !world.IsCreated)
                 return false;
 
@@ -193,6 +252,38 @@ namespace CosmicShore.ECS
         static readonly int BrightColorId = Shader.PropertyToID("_BrightColor");
         static readonly int DarkColorId = Shader.PropertyToID("_DarkColor");
         static readonly int SpreadId = Shader.PropertyToID("_Spread");
+
+        // ------------------------------------------------------------------
+        // Color space
+        // ------------------------------------------------------------------
+        // DOTS-instanced per-instance data uploads to the GPU verbatim, while the legacy
+        // path's colors went through Unity's color-space handling (per-renderer
+        // MaterialPropertyBlock / material property upload). In a Linear color-space
+        // project the legacy prisms therefore rendered the sRGB→linear CONVERTED values;
+        // writing the same authored numbers raw reads brighter — most visibly on the dark
+        // 'outside' color. Convert at this single write boundary so both paths render
+        // identically. Runtime-overridable (the 'prismcolors' console command) for
+        // in-editor A/B verification; affects colors written after the call.
+
+        static bool? _linearizeOverride;
+        static readonly bool IsLinearColorSpace = QualitySettings.activeColorSpace == ColorSpace.Linear;
+
+        static bool LinearizeColors => _linearizeOverride ?? IsLinearColorSpace;
+
+        /// <summary>Debug A/B hook: true = convert authored colors sRGB→linear at the
+        /// entity write boundary (the default in Linear projects), false = write raw,
+        /// null = automatic.</summary>
+        public static void SetColorConversionOverride(bool? linearize) => _linearizeOverride = linearize;
+
+        /// <summary>
+        /// Applies the same color-space transform the legacy render path's property
+        /// upload applied. Used internally by every color-writing API; call it yourself
+        /// only when writing override components directly (stress-harness direct mode).
+        /// </summary>
+        public static float4 ApplyColorSpace(in float4 c) =>
+            LinearizeColors
+                ? new float4(Mathf.GammaToLinearSpace(c.x), Mathf.GammaToLinearSpace(c.y), Mathf.GammaToLinearSpace(c.z), c.w)
+                : c;
 
         // ------------------------------------------------------------------
         // API
@@ -292,13 +383,33 @@ namespace CosmicShore.ECS
             }
         }
 
-        /// <summary>Per-frame animated colors from MaterialStateManager's Burst job output.</summary>
+        /// <summary>
+        /// Swaps the entity's mesh (settled octahedron shield ↔ prism box) and refreshes
+        /// RenderBounds. The mesh registers once and is shared across entities, so
+        /// same-geometry shielded prisms keep batching.
+        /// </summary>
+        public static void SetMesh(in PrismRenderHandle handle, Mesh mesh)
+        {
+            if (mesh == null || !IsUsable(in handle)) return;
+            var em = _world.EntityManager;
+            var mmi = em.GetComponentData<MaterialMeshInfo>(handle.Entity);
+            mmi.MeshID = GetMeshID(mesh);
+            em.SetComponentData(handle.Entity, mmi);
+            em.SetComponentData(handle.Entity, new RenderBounds
+            {
+                Value = new AABB { Center = mesh.bounds.center, Extents = mesh.bounds.extents }
+            });
+        }
+
+        /// <summary>Per-frame animated colors from MaterialStateManager's Burst job output.
+        /// Inputs are authored-space values (the same numbers the legacy MPB received);
+        /// the color-space transform is applied here.</summary>
         public static void SetColors(in PrismRenderHandle handle, in float4 bright, in float4 dark, in float3 spread)
         {
             if (!IsUsable(in handle)) return;
             var em = _world.EntityManager;
-            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = bright });
-            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = dark });
+            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = ApplyColorSpace(in bright) });
+            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = ApplyColorSpace(in dark) });
             em.SetComponentData(handle.Entity, new PrismSpreadOverride { Value = spread });
         }
 
@@ -308,8 +419,8 @@ namespace CosmicShore.ECS
         {
             if (!IsUsable(in handle)) return;
             var em = _world.EntityManager;
-            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = bright });
-            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = dark });
+            em.SetComponentData(handle.Entity, new PrismBrightColorOverride { Value = ApplyColorSpace(in bright) });
+            em.SetComponentData(handle.Entity, new PrismDarkColorOverride { Value = ApplyColorSpace(in dark) });
         }
 
         /// <summary>Per-frame explosion shader params from PrismEffectsManager's Burst job output.</summary>
@@ -361,7 +472,7 @@ namespace CosmicShore.ECS
             if (material.HasProperty(propertyId))
             {
                 Color c = material.GetColor(propertyId);
-                return new float4(c.r, c.g, c.b, c.a);
+                return ApplyColorSpace(new float4(c.r, c.g, c.b, c.a));
             }
             return new float4(1f, 1f, 1f, 1f);
         }

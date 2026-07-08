@@ -82,7 +82,7 @@ namespace CosmicShore.Gameplay
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         [Header("Diagnostics (Editor / Dev builds only)")]
-        [Tooltip("Seconds between the leaked-VFX safety audit. The audit uses FindObjectsByType (a full-scene scan), so keep this infrequent. Set <= 0 to disable.")]
+        [Tooltip("Seconds between the leaked-VFX safety audit. The audit walks the effects' enabled-instance registries (O(live effects), no scene scan). Set <= 0 to disable.")]
         [SerializeField] private float zombieAuditIntervalSeconds = 5f;
         private float _nextZombieAuditTime;
 #endif
@@ -178,15 +178,18 @@ namespace CosmicShore.Gameplay
             // Safety audit: detect explosion / implosion VFX with enabled renderers
             // that aren't actively managed. Catches "zombie" pool instances whose
             // OnReturnToPool callback chain failed to deactivate the GameObject.
-            // Uses FindObjectsByType (a full-scene scan), so it runs on an infrequent
-            // time-based throttle rather than every frame — running it once per second
-            // showed up as a recurring spike in dev-build profiling.
+            // Iterates the effects' enabled-instance registries — O(live effects) —
+            // instead of FindObjectsByType full-scene scans, which showed up as a
+            // recurring multi-ms spike in dense scenes. Backwards, because
+            // SetActive(false) below removes the entry from the registry mid-walk.
             if (zombieAuditIntervalSeconds > 0f && Time.unscaledTime >= _nextZombieAuditTime)
             {
                 _nextZombieAuditTime = Time.unscaledTime + zombieAuditIntervalSeconds;
-                var allExplosions = FindObjectsByType<PrismExplosion>(FindObjectsSortMode.None);
-                foreach (var exp in allExplosions)
+                var allExplosions = PrismExplosion.EnabledInstances;
+                for (int i = allExplosions.Count - 1; i >= 0; i--)
                 {
+                    var exp = allExplosions[i];
+                    if (!exp) continue;
                     if (exp.Renderer != null && exp.Renderer.enabled && !exp.IsActive)
                         exp.Renderer.enabled = false;
                     // Entity-path zombies: companion entity left visible without
@@ -195,12 +198,13 @@ namespace CosmicShore.Gameplay
                         CosmicShore.ECS.PrismRenderService.SetVisible(in exp.RenderHandle, false);
                 }
 
-                var allImplosions = FindObjectsByType<PrismImplosion>(FindObjectsSortMode.None);
+                var allImplosions = PrismImplosion.EnabledInstances;
                 int activeGameObjects = 0;
                 int zombies = 0;
                 int healthy = 0;
-                foreach (var imp in allImplosions)
+                for (int i = allImplosions.Count - 1; i >= 0; i--)
                 {
+                    var imp = allImplosions[i];
                     if (!imp) continue;
                     bool goActive = imp.gameObject.activeSelf;
                     if (!goActive) continue;

@@ -35,6 +35,68 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// </summary>
     public class DiagnosticsHUD : MonoBehaviour
     {
+        // ── external stats API ────────────────────────────────────────────
+        // Any system (stress harness, perf probes, debug injectors) publishes rows here
+        // instead of drawing its own OnGUI overlay — one diagnostics surface. Sections
+        // render in registration order below the core rows, in simple AND advanced view.
+        // The methods exist in all builds but no-op outside editor/dev (the HUD itself
+        // only exists there).
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        static readonly List<string> s_statSectionOrder = new();
+        static readonly Dictionary<string, List<KeyValuePair<string, string>>> s_customStats = new();
+        static readonly Dictionary<string, System.Func<string[], string>> s_commands = new();
+#endif
+
+        /// <summary>Adds or updates one row under a titled section of the diagnostics overlay.</summary>
+        public static void SetStat(string section, string label, string value)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (!s_customStats.TryGetValue(section, out var rows))
+            {
+                rows = new List<KeyValuePair<string, string>>();
+                s_customStats[section] = rows;
+                s_statSectionOrder.Add(section);
+            }
+            for (int i = 0; i < rows.Count; i++)
+            {
+                if (rows[i].Key != label) continue;
+                rows[i] = new KeyValuePair<string, string>(label, value);
+                return;
+            }
+            rows.Add(new KeyValuePair<string, string>(label, value));
+#endif
+        }
+
+        /// <summary>Removes an entire section published via <see cref="SetStat"/> (call from the owner's OnDestroy).</summary>
+        public static void ClearStats(string section)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            s_customStats.Remove(section);
+            s_statSectionOrder.Remove(section);
+#endif
+        }
+
+        /// <summary>
+        /// Registers a console command for the HUD's input field (e.g. "prisms"). The handler
+        /// receives the whitespace-split arguments after the command name and returns a
+        /// one-line result shown on the overlay. Re-registering a name replaces the handler.
+        /// </summary>
+        public static void RegisterCommand(string name, System.Func<string[], string> handler)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (!string.IsNullOrEmpty(name) && handler != null)
+                s_commands[name.ToLowerInvariant()] = handler;
+#endif
+        }
+
+        /// <summary>Removes a console command (call from the owner's OnDestroy).</summary>
+        public static void UnregisterCommand(string name)
+        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (!string.IsNullOrEmpty(name)) s_commands.Remove(name.ToLowerInvariant());
+#endif
+        }
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         static DiagnosticsHUD _instance;
 
@@ -80,7 +142,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         // ui — two side-by-side blocks, each a label sub-column + value sub-column
         Text _labelA, _valueA, _labelB, _valueB, _advBtnLabel, _diagBtnLabel;
-        RectTransform _panel, _labelART, _valueART, _labelBRT, _valueBRT, _buttonRow;
+        RectTransform _panel, _labelART, _valueART, _labelBRT, _valueBRT, _buttonRow, _commandRow;
+        InputField _cmdInput;
         GameObject _canvasGO;
         Font _font;
 
@@ -143,7 +206,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         void Update()
         {
             var kb = Keyboard.current;
-            if (kb != null)
+            // While the command input has focus, letters must reach the field, not the hotkeys.
+            bool typingCommand = _cmdInput != null && _cmdInput.isFocused;
+            if (kb != null && !typingCommand)
             {
                 if (kb[ToggleKey].wasPressedThisFrame) SetVisible(!_visible);
                 if (kb[AdvancedKey].wasPressedThisFrame) ToggleAdvanced();
@@ -230,6 +295,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             Row(la, va, "GPU", MsValue(_smGpuMs));
             Row(la, va, "Bound", BoundValue(busyCpuMs));
 
+            // External sections published via SetStat (stress harness, probes, injectors).
+            foreach (var section in s_statSectionOrder)
+            {
+                Header(la, va, section);
+                foreach (var row in s_customStats[section])
+                    Row(la, va, row.Key, Col(White, row.Value));
+            }
+
             if (_advanced)
             {
                 // Left block — local frame cost (cpu/gpu threads + render + memory).
@@ -245,6 +318,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 Row(la, va, "SetPass", Col(White, RInt(_setPass).ToString()));
                 Row(la, va, "Triangles", Col(White, RLong(_triangles).ToString("N0")));
                 Row(la, va, "Vertices", Col(White, RLong(_vertices).ToString("N0")));
+
+                // Instanced prism path (Entities Graphics): ON ⇒ draw calls should decouple
+                // from prism count; OFF (reason) explains why they don't. See PrismRenderService.
+                string prismPath = CosmicShore.ECS.PrismRenderService.StatusLine();
+                Row(la, va, "Prism Path", Col(prismPath.StartsWith("ON") ? Good : Warn, prismPath));
 
                 Header(la, va, "Memory");
                 float gcKB = RLong(_gcAlloc) / 1024f;
@@ -360,7 +438,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             float dataRight = hasB ? valBX + bValW : valAX + aValW;
             // Min width so the four buttons (run to ~254px) always fit.
             float panelW = Mathf.Max(dataRight + Pad, 272f);
-            float panelH = TopY + textH + RowGap + BtnH + Pad;
+            float panelH = TopY + textH + RowGap + BtnH + RowGap + BtnH + Pad;
             _panel.sizeDelta = new Vector2(panelW, panelH);
 
             Place(_labelART, Pad, textH, aLblW);
@@ -369,6 +447,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             Place(_valueBRT, valBX, textH, bValW);
 
             if (_buttonRow != null) _buttonRow.anchoredPosition = new Vector2(Pad, -(TopY + textH + RowGap));
+            if (_commandRow != null) _commandRow.anchoredPosition = new Vector2(Pad, -(TopY + textH + RowGap + BtnH + RowGap));
         }
 
         static void Place(RectTransform rt, float x, float height, float width)
@@ -590,6 +669,44 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             CreateButton("-", _buttonRow, 188, 30, () => { _diagSeconds = Mathf.Max(1, _diagSeconds - 5); UpdateDiagButtonLabel(); });
             CreateButton("+", _buttonRow, 224, 30, () => { _diagSeconds = Mathf.Min(600, _diagSeconds + 5); UpdateDiagButtonLabel(); });
 
+            // Command console row — type a registered command (e.g. "prisms 50000") and press
+            // Enter or Run. Systems add commands via DiagnosticsHUD.RegisterCommand.
+            _commandRow = CreateRect("CommandRow", _panel, new Vector2(0, 1), new Vector2(0, 1),
+                new Vector2(Pad, -84), new Vector2(0, BtnH));
+
+            var inputRT = CreateRect("CmdInput", _commandRow, new Vector2(0, 1), new Vector2(0, 1),
+                Vector2.zero, new Vector2(196, BtnH));
+            var inputBg = inputRT.gameObject.AddComponent<Image>();
+            inputBg.color = new Color(0.12f, 0.15f, 0.2f, 0.95f);
+            _cmdInput = inputRT.gameObject.AddComponent<InputField>();
+            _cmdInput.targetGraphic = inputBg;
+            _cmdInput.lineType = InputField.LineType.SingleLine;
+
+            var cmdTextRT = CreateRect("Text", inputRT, new Vector2(0, 0), new Vector2(1, 1),
+                new Vector2(6, 0), new Vector2(-12, 0));
+            var cmdText = cmdTextRT.gameObject.AddComponent<Text>();
+            cmdText.font = _font;
+            cmdText.fontSize = 13;
+            cmdText.color = Color.white;
+            cmdText.alignment = TextAnchor.MiddleLeft;
+            cmdText.supportRichText = false;
+
+            var placeholderRT = CreateRect("Placeholder", inputRT, new Vector2(0, 0), new Vector2(1, 1),
+                new Vector2(6, 0), new Vector2(-12, 0));
+            var placeholder = placeholderRT.gameObject.AddComponent<Text>();
+            placeholder.font = _font;
+            placeholder.fontSize = 13;
+            placeholder.fontStyle = FontStyle.Italic;
+            placeholder.color = new Color(1f, 1f, 1f, 0.35f);
+            placeholder.alignment = TextAnchor.MiddleLeft;
+            placeholder.text = "command…  e.g. prisms 50000";
+
+            _cmdInput.textComponent = cmdText;
+            _cmdInput.placeholder = placeholder;
+            _cmdInput.onEndEdit.AddListener(OnCommandEndEdit);
+
+            CreateButton("Run", _commandRow, 202, 52, RunCommandFromInput);
+
             SetVisible(_visible);
             RefreshText();
         }
@@ -655,6 +772,51 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         {
             if (_diagBtnLabel != null)
                 _diagBtnLabel.text = _recording ? "Stop" : $"Run {_diagSeconds}s";
+        }
+
+        // ── command console ───────────────────────────────────────────────
+        void OnCommandEndEdit(string _)
+        {
+            // onEndEdit also fires on focus loss — only execute on an actual Enter press.
+            var kb = Keyboard.current;
+            bool submitted = kb != null && (kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame);
+            if (submitted) RunCommandFromInput();
+        }
+
+        void RunCommandFromInput()
+        {
+            if (_cmdInput == null) return;
+            string raw = _cmdInput.text;
+            _cmdInput.text = "";
+            ExecuteCommand(raw);
+            _cmdInput.ActivateInputField(); // keep focus for repeated commands
+        }
+
+        void ExecuteCommand(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return;
+
+            string[] tokens = raw.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            string name = tokens[0].ToLowerInvariant();
+
+            string result;
+            if (s_commands.TryGetValue(name, out var handler))
+            {
+                var args = new string[tokens.Length - 1];
+                Array.Copy(tokens, 1, args, 0, args.Length);
+                try { result = handler(args) ?? "done"; }
+                catch (Exception e) { result = "error: " + e.Message; }
+            }
+            else
+            {
+                result = s_commands.Count > 0
+                    ? $"unknown '{name}' — commands: {string.Join(", ", s_commands.Keys)}"
+                    : "no commands registered";
+            }
+
+            SetStat("Console", "›", result);
+            Debug.Log($"[DiagnosticsHUD] {raw} → {result}");
+            if (_visible) RefreshText();
         }
 
         // ── serializable report ───────────────────────────────────────────

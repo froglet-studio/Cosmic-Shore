@@ -216,14 +216,45 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // While set, the companion entity renders this mesh (a cache-shared settled-shield
+        // octahedron) instead of meshFilter.sharedMesh. This keeps SETTLED shielded prisms
+        // on the instanced path — batched with every same-geometry shielded prism — while
+        // the GameObject renderer handles only the brief per-prism morph/shatter animations.
+        Mesh _renderMeshOverride;
+
         void EnsureRenderEntity()
         {
             if (PrismRenderService.IsHandleUsable(in RenderHandle)) return;
             if (!meshRenderer || !meshFilter) return;
-            if (meshFilter.sharedMesh == null || meshRenderer.sharedMaterial == null) return;
+            Mesh renderMesh = _renderMeshOverride != null ? _renderMeshOverride : meshFilter.sharedMesh;
+            if (renderMesh == null || meshRenderer.sharedMaterial == null) return;
             RenderHandle = PrismRenderService.Create(
-                meshFilter.sharedMesh, meshRenderer.sharedMaterial,
+                renderMesh, meshRenderer.sharedMaterial,
                 transform.localToWorldMatrix, gameObject.layer);
+        }
+
+        /// <summary>Renders the companion entity with a shared mesh (settled octahedron
+        /// shield) in place of the prism's own mesh. Pair with SetExoticVisualActive(false)
+        /// so the entity path re-engages.</summary>
+        internal void SetRenderMeshOverride(Mesh sharedMesh)
+        {
+            _renderMeshOverride = sharedMesh;
+            if (sharedMesh != null && PrismRenderService.IsHandleUsable(in RenderHandle))
+                PrismRenderService.SetMesh(in RenderHandle, sharedMesh);
+        }
+
+        /// <summary>Returns the companion entity to the prism's own mesh (disengage /
+        /// pool reuse). Safe to call when no override is active.</summary>
+        internal void ClearRenderMeshOverride()
+        {
+            if (_renderMeshOverride == null) return;
+            _renderMeshOverride = null;
+            if (PrismRenderService.IsHandleUsable(in RenderHandle) && meshFilter != null && meshFilter.sharedMesh != null)
+            {
+                PrismRenderService.SetMesh(in RenderHandle, meshFilter.sharedMesh);
+                SyncRenderMaterial();
+                SyncRenderTransform();
+            }
         }
 
         /// <summary>Pushes the live transform to the companion entity. Called on
@@ -300,6 +331,7 @@ namespace CosmicShore.Gameplay
         {
             // [Fix] Always clean up previous state when coming from pool
             ResetState();
+            ClearRenderMeshOverride(); // pooled reuse: the entity must not keep a prior life's shield mesh
 
             PlayerName = playerName;
             blockCollider.enabled = false;
@@ -337,7 +369,18 @@ namespace CosmicShore.Gameplay
             CachedVolume = 0f;  // stale from the previous life; reseeded at CreateBlock
             IsSmallest = false;
             IsLargest = false;
-            
+
+            // SetupDestruction disables the scale animator (destroyed mass must stop scaling and
+            // weighing). Re-arm it on pool-reuse creation so the re-minted prism grows in from
+            // zero (continuity law) and GetCurrentVolume tracks again (volume is the spine).
+            // Gated on !enabled so fresh spawns and never-destroyed pooled reuse are untouched;
+            // Restore() never routes through here and keeps its bookkept-volume fallback.
+            if (scaleAnimator && !scaleAnimator.enabled)
+            {
+                scaleAnimator.enabled = true;
+                transform.localScale = Vector3.zero;
+            }
+
             // Clear trail renderer to prevent visual artifacts across the map
             if (Trail != null && Trail.TrailRenderer != null)
             {
@@ -367,10 +410,25 @@ namespace CosmicShore.Gameplay
             prismProperties.prism = this;
             prismProperties.Trail = Trail;
             prismProperties.TimeCreated = Time.time;
-            gameObject.layer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
+            int defaultLayer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
+            if (defaultLayer >= 0)
+                gameObject.layer = defaultLayer;
+            else
+                Debug.LogWarning($"[Prism] '{name}' has an invalid PrismProperties.DefaultLayerName '{prismProperties.DefaultLayerName}' — keeping layer '{LayerMask.LayerToName(gameObject.layer)}'.", this);
 
             prismProperties.volume = 1f;
         }
+
+        // Creation-completion budget. Simultaneous spawns (a pooled ring detonation,
+        // a flora regrow wave, a trail burst) all sleep the same waitTime, so their
+        // creation ticks land phase-locked on one frame — N inline SOAP raises,
+        // spatial-index registrations, and render activations at once (the
+        // CreateBlockCoroutine ×12 profiler burst). At most this many prisms finish
+        // creation per frame; the rest retry next frame. On top of the 0.6s spawn
+        // window the extra frames are invisible, and nothing is ever skipped.
+        const int MaxCreationCompletionsPerFrame = 6;
+        static int s_creationCompletionsThisFrame;
+        static int s_creationBudgetFrame = -1;
 
         private IEnumerator CreateBlockCoroutine(Vector3 authoredTargetScale)
         {
@@ -380,6 +438,21 @@ namespace CosmicShore.Gameplay
             // don't resurrect the renderer/collider or register a dead prism with the
             // AOE registry and cell grids.
             if (destroyed) yield break;
+
+            while (true)
+            {
+                if (s_creationBudgetFrame != Time.frameCount)
+                {
+                    s_creationBudgetFrame = Time.frameCount;
+                    s_creationCompletionsThisFrame = 0;
+                }
+                if (s_creationCompletionsThisFrame < MaxCreationCompletionsPerFrame)
+                    break;
+
+                yield return null;
+                if (destroyed) yield break; // killed while waiting for budget
+            }
+            s_creationCompletionsThisFrame++;
 
             SetRenderVisible(true);
             blockCollider.enabled = true;
@@ -434,6 +507,13 @@ namespace CosmicShore.Gameplay
         // exactly what the lifecycle/shield systems had set, never fighting them.
         bool _lodCulled;
         bool _colliderBeforeLodCull;
+
+        /// <summary>
+        /// Id of the last collider-LOD sweep that saw this prism near a focus.
+        /// Written/read by <c>PrismColliderLodManager</c> ONLY — an O(1) stamp that
+        /// replaced the manager's HashSet bookkeeping for near/far transitions.
+        /// </summary>
+        internal int LodNearSweepStamp;
 
         /// <summary>
         /// Called by <c>PrismColliderLodManager</c> ONLY. Culls/restores this prism's
@@ -688,7 +768,11 @@ namespace CosmicShore.Gameplay
             prismProperties.TimeCreated = Time.time;
             prismProperties.volume   = Mathf.Max(scaleAnimator ? scaleAnimator.GetCurrentVolume() : 1f, 1f);
 
-            gameObject.layer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
+            int defaultLayer = LayerMask.NameToLayer(prismProperties.DefaultLayerName);
+            if (defaultLayer >= 0)
+                gameObject.layer = defaultLayer;
+            else
+                Debug.LogWarning($"[Prism] '{name}' has an invalid PrismProperties.DefaultLayerName '{prismProperties.DefaultLayerName}' — keeping layer '{LayerMask.LayerToName(gameObject.layer)}'.", this);
             _onTrailBlockCreatedEventChannel.Raise(new PrismStats
             {
                 OwnName = PlayerName,

@@ -97,6 +97,10 @@ PrefabInstance:
         type: 3}
       insertIndex: -1
       addedObject: {fileID: 4680995198257862251}
+    - targetCorrespondingSourceObject: {fileID: 5535990081244205914, guid: 54802b89e00a0ed4281025fa5e770811,
+        type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 920533137644501617}
   m_SourcePrefab: {fileID: 100100000, guid: 54802b89e00a0ed4281025fa5e770811, type: 3}
 --- !u!1 &6588436222817790470 stripped
 GameObject:
@@ -119,7 +123,37 @@ MonoBehaviour:
   Crystal: {fileID: 6588436222817790495}
   omniCrystalShipEffects: []
   OnCrystalCollected: {fileID: 11400000, guid: 3664bc230593b734aa52dd67e3caa21c, type: 2}
-  onlyAllowOwnDomainImpactor: 1
+--- !u!114 &920533137644501617
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6588436222817790470}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9a6610d2e704f1648819acc8d7460285, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: FMODUnity::FMODUnity.StudioEventEmitter
+  CollisionTag: 
+  EventReference:
+    Guid:
+      Data1: 1077877568
+      Data2: 1099752816
+      Data3: -161258058
+      Data4: -163585613
+    Path: event:/SFX/Loops/Goal
+  Event: 
+  EventPlayTrigger: 1
+  EventStopTrigger: 2
+  AllowFadeout: 1
+  TriggerOnce: 0
+  Preload: 0
+  NonRigidbodyVelocity: 0
+  Params: []
+  OverrideAttenuation: 0
+  OverrideMinDistance: 1
+  OverrideMaxDistance: 250
 --- !u!114 &6588436222817790495 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 5535990081244205891, guid: 54802b89e00a0ed4281025fa5e770811,

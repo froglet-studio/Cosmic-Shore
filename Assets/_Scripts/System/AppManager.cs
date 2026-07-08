@@ -213,6 +213,12 @@ namespace CosmicShore.Core
                 // Wait one more frame so any Start()-driven systems settle.
                 await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
 
+                // Compile recorded shader variants while the splash overlay is
+                // opaque, so first-use effects (crystal pickups, explosions,
+                // trails) don't hitch on in-game shader compilation. Runs before
+                // the minimum-splash wait so its cost is absorbed by the hold.
+                WarmUpShaders();
+
                 // Enforce minimum splash duration.
                 // When auto-created (no config), use a short default so existing
                 // services like auth have time to start.
@@ -258,6 +264,35 @@ namespace CosmicShore.Core
                 Debug.LogError($"[AppManager] Fatal bootstrap error: {ex}");
                 OnBootstrapFailed?.Invoke(ex.Message);
             }
+        }
+
+        /// <summary>
+        /// Synchronously warms every ShaderVariantCollection wired on the
+        /// bootstrap config. Runs once behind the splash — variants stay
+        /// compiled for the rest of the session.
+        /// </summary>
+        void WarmUpShaders()
+        {
+            var collections = _bootstrapConfig != null ? _bootstrapConfig.ShaderWarmupCollections : null;
+            if (collections == null || collections.Length == 0)
+                return;
+
+            var warmupWatch = Stopwatch.StartNew();
+            int variantCount = 0;
+            foreach (var collection in collections)
+            {
+                if (collection == null)
+                {
+                    Debug.LogWarning("[AppManager] Null entry in BootstrapConfig.ShaderWarmupCollections.");
+                    continue;
+                }
+
+                if (!collection.isWarmedUp)
+                    collection.WarmUp();
+                variantCount += collection.variantCount;
+            }
+            warmupWatch.Stop();
+            Log($"Shader warmup: {variantCount} variants in {warmupWatch.ElapsedMilliseconds}ms");
         }
 
         #endregion

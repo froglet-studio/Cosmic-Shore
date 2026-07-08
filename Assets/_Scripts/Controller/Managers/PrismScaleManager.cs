@@ -1,23 +1,21 @@
 using UnityEngine;
-using Unity.Collections;
-using Unity.Jobs;
 using Unity.Mathematics;
+using Unity.Profiling;
 using System.Collections.Generic;
 using CosmicShore.Gameplay;
-using System.Linq;
 namespace CosmicShore.Gameplay
 {
     public class PrismScaleManager : AdaptiveAnimationManager<PrismScaleManager, PrismScaleAnimator, ScaleAnimationData>
     {
+        // The profiler collapses every AdaptiveAnimationManager instance into one
+        // generic Update row — this marker attributes this manager's share.
+        static readonly ProfilerMarker s_processMarker = new("PrismScaleManager.Process");
+
         // This is a squared distance threshold check (since we use lengthsq)
         private const float COMPLETION_THRESHOLD_SQR = 0.01f;
 
         private readonly List<(PrismScaleAnimator block, Vector3 scale)> completionQueue =
             new List<(PrismScaleAnimator, Vector3)>(32);
-
-        // ✅ This list is the critical fix: animators aligned 1:1 with animationData indices.
-        private readonly List<PrismScaleAnimator> scalingAnimators =
-            new List<PrismScaleAnimator>(256);
 
         protected override bool IsAnimatorActive(PrismScaleAnimator animator) => animator.IsScaling;
         protected override bool IsAnimatorValid(PrismScaleAnimator animator) => animator != null && animator.enabled;
@@ -27,77 +25,58 @@ namespace CosmicShore.Gameplay
 
         protected override void ProcessAnimationFrame(float deltaTime)
         {
-            // Refresh stable list
+            using var _ = s_processMarker.Auto();
+
+            // Refresh stable list — the snapshot also makes activeAnimators safe to
+            // mutate (stale-prune here, completion callbacks below).
             activeAnimatorsList.Clear();
             activeAnimatorsList.AddRange(activeAnimators);
 
-            scalingAnimators.Clear();
             completionQueue.Clear();
 
-            int scalingCount = 0;
-
-            // Build contiguous job input + aligned animator list
+            // Single fused pass. The per-element step is a few flops, so the old
+            // build-NativeArray → Schedule → Complete → apply round-trip cost more
+            // in scheduling and copying than the math it parallelized; the easing
+            // below is byte-identical to what the Burst job computed.
             for (int i = 0; i < activeAnimatorsList.Count; i++)
             {
                 var block = activeAnimatorsList[i];
-                if (block == null || !block.enabled || !block.IsScaling) continue;
+                if (block == null || !block.IsScaling)
+                {
+                    // Stale entry (destroyed / stopped) — prune instead of a second
+                    // whole-list cleanup walk at the end.
+                    activeAnimators.Remove(block);
+                    continue;
+                }
+                if (!block.enabled) continue;
 
                 var targetScale = Vector3.Min(
                     Vector3.Max(block.TargetScale, block.MinScale),
                     block.MaxScale
                 );
 
-                // Make sure our NativeArray is large enough (AdaptiveAnimationManager usually allocs it)
-                animationData[scalingCount] = new ScaleAnimationData
+                float3 current = block.transform.localScale;
+                float3 target = targetScale;
+
+                var lerpSpeed = math.clamp(block.GrowthRate * deltaTime, 0.05f, 0.1f);
+                var next = math.lerp(current, target, lerpSpeed);
+
+                if (math.lengthsq(target - next) <= COMPLETION_THRESHOLD_SQR)
                 {
-                    currentScale = block.transform.localScale,
-                    targetScale = targetScale,
-                    growthRate = block.GrowthRate
-                };
-
-                scalingAnimators.Add(block);
-                scalingCount++;
-            }
-
-            if (scalingCount == 0)
-                return;
-
-            var job = new UpdateScalesJob
-            {
-                data = animationData,
-                deltaTime = deltaTime,
-                completionThresholdSqr = COMPLETION_THRESHOLD_SQR
-            };
-
-            var handle = job.Schedule(scalingCount, BATCH_SIZE);
-            handle.Complete();
-
-            // Apply results to the correct block using scalingAnimators[i]
-            for (int i = 0; i < scalingCount; i++)
-            {
-                var data = animationData[i];
-                var block = scalingAnimators[i];
-
-                if (block == null || !block.enabled)
+                    // Reached target this step — snap + finalize in the completion
+                    // pass (callbacks may start/stop other animators).
+                    completionQueue.Add((block, targetScale));
                     continue;
-
-                var sqrDistance = math.lengthsq((float3)(data.targetScale - data.currentScale));
-
-                if (sqrDistance <= COMPLETION_THRESHOLD_SQR)
-                {
-                    completionQueue.Add((block, data.targetScale));
                 }
-                else
-                {
-                    block.transform.localScale = data.currentScale;
-                    // Keep the companion render entity's matrix in lockstep with
-                    // the growth animation (no-op on the legacy path)...
-                    block.OwnerPrism?.SyncRenderTransform();
-                    // ...and refresh the volume cache here (O(growing)/frame) so the
-                    // cell's per-domain aggregation never has to read lossyScale for
-                    // the whole population (O(all)/recompute — the old ~23ms hotspot).
-                    block.OwnerPrism?.RefreshVolumeCache();
-                }
+
+                block.transform.localScale = (Vector3)next;
+                // Keep the companion render entity's matrix in lockstep with
+                // the growth animation (no-op on the legacy path)...
+                block.OwnerPrism?.SyncRenderTransform();
+                // ...and refresh the volume cache here (O(growing)/frame) so the
+                // cell's per-domain aggregation never has to read lossyScale for
+                // the whole population (O(all)/recompute — the old ~23ms hotspot).
+                block.OwnerPrism?.RefreshVolumeCache();
             }
 
             // Process completions
@@ -120,20 +99,12 @@ namespace CosmicShore.Gameplay
 
                 block.ExecuteOnScaleComplete();
             }
-
-            // Cleanup: remove any animators that are no longer scaling
-            foreach (var animator in activeAnimatorsList)
-            {
-                if (animator == null || !animator.IsScaling)
-                    activeAnimators.Remove(animator);
-            }
         }
 
         protected override void CleanupResources()
         {
             base.CleanupResources();
             completionQueue.Clear();
-            scalingAnimators.Clear();
         }
     }
 
@@ -142,34 +113,5 @@ namespace CosmicShore.Gameplay
         public Vector3 currentScale;
         public Vector3 targetScale;
         public float growthRate;
-    }
-
-    [Unity.Burst.BurstCompile]
-    public struct UpdateScalesJob : IJobParallelFor
-    {
-        public NativeArray<ScaleAnimationData> data;
-        [ReadOnly] public float deltaTime;
-        [ReadOnly] public float completionThresholdSqr;
-
-        public void Execute(int i)
-        {
-            var item = data[i];
-
-            var diff = (float3)(item.targetScale - item.currentScale);
-            var sqrDistance = math.lengthsq(diff);
-
-            if (sqrDistance > completionThresholdSqr)
-            {
-                // You can tune these, but keeping your original clamp behavior:
-                var lerpSpeed = math.clamp(item.growthRate * deltaTime, 0.05f, 0.1f);
-                item.currentScale = math.lerp((float3)item.currentScale, (float3)item.targetScale, lerpSpeed);
-            }
-            else
-            {
-                item.currentScale = item.targetScale;
-            }
-
-            data[i] = item;
-        }
     }
 }

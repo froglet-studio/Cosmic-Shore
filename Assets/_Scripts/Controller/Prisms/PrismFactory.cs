@@ -8,16 +8,17 @@ namespace CosmicShore.Gameplay
 {
     public enum PrismType
     {
-        Dolphin,
-        Serpent,
-        Sparrow,
-        Manta,
-        Squirrel,
-        Rhino,
-        Interactive,
-        Explosion,
-        Implosion,
-        Grow
+        Dolphin = 0,
+        Serpent = 1,
+        Sparrow = 2,
+        Manta = 3,
+        Squirrel = 4,
+        Rhino = 5,
+        Interactive = 6,
+        Explosion = 7,
+        Implosion = 8,
+        Grow = 9,
+        FastGrow = 10,
     }
     
     public class PrismFactory : MonoBehaviour
@@ -41,7 +42,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] private InteractivePrismPoolManager squirrelPrismPool;
         [SerializeField] private InteractivePrismPoolManager rhinoPrismPool;
         [SerializeField] private InteractivePrismPoolManager interactivePrismPool;
-        
+        [SerializeField] private InteractivePrismPoolManager fastGrowPrismPool;
+
         [SerializeField] private PrismExplosionPoolManager explosionPool;
         [SerializeField] private PrismImplosionPoolManager implosionPool;
         // Add more later: PrismShockwavePoolManager, PrismDisintegrationPoolManager, etc.
@@ -85,6 +87,9 @@ namespace CosmicShore.Gameplay
             {
                 case PrismType.Interactive:
                     spawned = SpawnInteractivePrism(data);
+                    break;
+                case PrismType.FastGrow:
+                    spawned = SpawnFastGrowPrism(data);
                     break;
                 case PrismType.Dolphin:
                     spawned = SpawnDolphinPrism(data);
@@ -134,6 +139,13 @@ namespace CosmicShore.Gameplay
         {
             if (interactivePrismPool == null) { CSDebug.LogWarning("[PrismFactory] interactivePrismPool not set."); return null; }
             var prism = interactivePrismPool.Get(data.SpawnPosition, data.Rotation, interactivePrismPool.transform);
+            return prism ? prism.gameObject : null;
+        }
+
+        GameObject SpawnFastGrowPrism(PrismEventData data)
+        {
+            if (fastGrowPrismPool == null) { CSDebug.LogWarning("[PrismFactory] fastGrowPrismPool not set."); return null; }
+            var prism = fastGrowPrismPool.Get(data.SpawnPosition, data.Rotation, fastGrowPrismPool.transform);
             return prism ? prism.gameObject : null;
         }
             

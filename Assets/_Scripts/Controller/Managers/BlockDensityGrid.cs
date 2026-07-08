@@ -251,11 +251,22 @@ namespace CosmicShore.Gameplay
         protected int nGridPointsPerDimension;
         protected int kernelHalfWidth;
         protected NativeArray<ushort> jobValues;   // sole count storage — written directly by Add/RemoveBlock
+        protected NativeArray<ushort> jobValuesSnapshot; // job-read copy — lets Add/RemoveBlock keep writing jobValues while a job is in flight
         protected NativeArray<float> jobBufA;
         protected NativeArray<float> jobBufB;
         protected NativeArray<float3> jobResult;
         protected NativeArray<float> jobResultMeta;
         protected bool jobSystemInitialized = false;
+
+        // ---- Async job state ----
+        // The job used to run Schedule().Complete() inline — an ~O(dim³) stall on
+        // the main thread every time the cache went stale (the visible fauna-goal
+        // frame spike). It now schedules against the snapshot and the NEXT query
+        // harvests the finished result: callers always get the cached answer
+        // instantly, at most one caller-interval staler than before — inside the
+        // staleness tolerance the cache policy already declares.
+        JobHandle pendingJob;
+        bool jobInFlight;
 
         // ---- Result cache ----
         // The answer only changes when blocks are added/removed (dirty flag), and
@@ -303,6 +314,7 @@ namespace CosmicShore.Gameplay
 
             int totalSize = nGridPointsPerDimension * nGridPointsPerDimension * nGridPointsPerDimension;
             jobValues = new NativeArray<ushort>(totalSize, Allocator.Persistent);
+            jobValuesSnapshot = new NativeArray<ushort>(totalSize, Allocator.Persistent);
             jobBufA = new NativeArray<float>(totalSize, Allocator.Persistent);
             jobBufB = new NativeArray<float>(totalSize, Allocator.Persistent);
             jobResult = new NativeArray<float3>(1, Allocator.Persistent);
@@ -313,6 +325,7 @@ namespace CosmicShore.Gameplay
             hasCachedResult = false;
             cachedResultDensity = 0f;
             lastComputeTime = float.NegativeInfinity;
+            jobInFlight = false;
         }
 
         /// <summary>
@@ -322,7 +335,15 @@ namespace CosmicShore.Gameplay
         public void Dispose()
         {
             if (!jobSystemInitialized) return;
+            // An in-flight job reads the snapshot/scratch buffers — finish it
+            // before freeing them (Complete on a done job is a no-op).
+            if (jobInFlight)
+            {
+                pendingJob.Complete();
+                jobInFlight = false;
+            }
             if (jobValues.IsCreated) jobValues.Dispose();
+            if (jobValuesSnapshot.IsCreated) jobValuesSnapshot.Dispose();
             if (jobBufA.IsCreated) jobBufA.Dispose();
             if (jobBufB.IsCreated) jobBufB.Dispose();
             if (jobResult.IsCreated) jobResult.Dispose();
@@ -372,42 +393,61 @@ namespace CosmicShore.Gameplay
             if (!jobSystemInitialized)
                 return origin + Vector3.one * (totalLength / 2f); // grid center fallback
 
-            // Cache policy:
-            //  - clean (no block changes since last run) → exact cached answer
-            //  - dirty but computed < MinRecomputeIntervalSeconds ago → cached answer
-            //    (bounded staleness, invisible at fauna's 0.5-2s goal cadence)
-            //  - dirty and stale → run the job
-            if (hasCachedResult)
+            // Harvest a finished in-flight job (non-blocking: Complete() on a done
+            // handle only satisfies the safety system before we read the results).
+            if (jobInFlight && pendingJob.IsCompleted)
             {
-                bool recentlyComputed = Time.time - lastComputeTime < MinRecomputeIntervalSeconds;
-                if (!dirty || recentlyComputed)
-                    return cachedResult;
+                pendingJob.Complete();
+                jobInFlight = false;
+                float3 r = jobResult[0];
+                cachedResult = new Vector3(r.x, r.y, r.z);
+                cachedResultDensity = jobResultMeta[0];
+                hasCachedResult = true;
+                lastComputeTime = Time.time;
             }
 
-            var job = new FindDensestRegionJob
+            // Cache/schedule policy:
+            //  - clean (no block changes since last harvest) → exact cached answer
+            //  - dirty but harvested < MinRecomputeIntervalSeconds ago → cached
+            //    answer (bounded staleness, invisible at fauna's 0.5-2s goal cadence)
+            //  - dirty and stale → schedule the job on a snapshot of the counts and
+            //    keep returning the cached answer; a later query harvests it. The
+            //    snapshot is what lets Add/RemoveBlock keep writing the live counts
+            //    while the job runs on worker threads.
+            bool recentlyComputed = Time.time - lastComputeTime < MinRecomputeIntervalSeconds;
+            if (!jobInFlight && dirty && !recentlyComputed)
             {
-                values = jobValues,
-                bufA = jobBufA,
-                bufB = jobBufB,
-                result = jobResult,
-                resultMeta = jobResultMeta,
-                dim = nGridPointsPerDimension,
-                stride = Stride,
-                origin = new float3(origin.x, origin.y, origin.z),
-                kernelHalfWidth = kernelHalfWidth,
-                meanShiftRadiusVoxels = SmoothingRadiusMeters / Stride,
-                meanShiftIterations = MeanShiftIterations,
-            };
+                NativeArray<ushort>.Copy(jobValues, jobValuesSnapshot);
+                var job = new FindDensestRegionJob
+                {
+                    values = jobValuesSnapshot,
+                    bufA = jobBufA,
+                    bufB = jobBufB,
+                    result = jobResult,
+                    resultMeta = jobResultMeta,
+                    dim = nGridPointsPerDimension,
+                    stride = Stride,
+                    origin = new float3(origin.x, origin.y, origin.z),
+                    kernelHalfWidth = kernelHalfWidth,
+                    meanShiftRadiusVoxels = SmoothingRadiusMeters / Stride,
+                    meanShiftIterations = MeanShiftIterations,
+                };
+                pendingJob = job.Schedule();
+                jobInFlight = true;
+                // Blocks added/removed AFTER this snapshot re-mark dirty and are
+                // picked up by the next schedule.
+                dirty = false;
+            }
 
-            job.Schedule().Complete();
+            if (hasCachedResult)
+                return cachedResult;
 
-            float3 r = jobResult[0];
-            cachedResult = new Vector3(r.x, r.y, r.z);
-            cachedResultDensity = jobResultMeta[0];
-            hasCachedResult = true;
-            dirty = false;
-            lastComputeTime = Time.time;
-            return cachedResult;
+            // Cold start: first query since Init, nothing harvested yet. Report the
+            // grid-centre with LastResultDensity still 0 — callers treat density 0
+            // as "grid empty" and fall back to their anchor (crystal), exactly as
+            // they do for a genuinely empty grid. The first harvest replaces this
+            // within one caller interval.
+            return origin + Vector3.one * (totalLength / 2f);
         }
 
         public virtual void AddBlock(Prism block) {}

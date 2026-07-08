@@ -237,11 +237,22 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Caches this fauna's body HealthPrisms for the per-frame movement
-        /// notification. Call from Initialize, after the body hierarchy exists.
+        /// notification, and stamps each with its owner so fauna senses resolve
+        /// "whose body is this prism" with a field read (HealthPrism.OwnerFauna)
+        /// instead of a GetComponentInParent walk per neighbor per behavior tick.
+        /// Call from Initialize, after the body hierarchy exists.
         /// Returns the cached array so subclasses can reuse it for body setup.
         /// </summary>
-        protected HealthPrism[] CacheBodyPrisms() =>
+        protected HealthPrism[] CacheBodyPrisms()
+        {
             _bodyPrisms = GetComponentsInChildren<HealthPrism>(true);
+            for (int i = 0; i < _bodyPrisms.Length; i++)
+            {
+                if (_bodyPrisms[i])
+                    _bodyPrisms[i].OwnerFauna = this;
+            }
+            return _bodyPrisms;
+        }
 
         /// <summary>
         /// Pushes the body prisms' current positions into the spatial index. Call

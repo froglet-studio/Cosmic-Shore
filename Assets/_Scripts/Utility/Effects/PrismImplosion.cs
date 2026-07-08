@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using CosmicShore.ECS;
 using CosmicShore.Gameplay;
@@ -139,8 +140,14 @@ namespace CosmicShore.Utility
             mpb = new MaterialPropertyBlock();
         }
 
+        // Enabled-instance registry for PrismEffectsManager's zombie audit — replaces the
+        // periodic FindObjectsByType full-scene scans (a recurring dev-build profiler spike).
+        internal static readonly List<PrismImplosion> EnabledInstances = new();
+
         private void OnEnable()
         {
+            EnabledInstances.Add(this);
+
             // Backstop the watchdog timer for the case where the pool re-activates
             // a GameObject but the consumer never gets to call StartImplosion (e.g.,
             // an exception in PrismFactory between pool.Get and StartImplosion).
@@ -151,6 +158,8 @@ namespace CosmicShore.Utility
 
         private void OnDisable()
         {
+            EnabledInstances.Remove(this);
+
             // Pool return / scene teardown may bypass CompleteEffect — never carry a target
             // reference (possibly a destroyed transform) across pool reuse.
             _convergenceTransform = null;

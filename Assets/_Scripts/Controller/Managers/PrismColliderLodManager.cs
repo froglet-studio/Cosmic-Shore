@@ -50,6 +50,13 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds between LOD sweeps. At 0.25s a 100 u/s vessel moves 25m per sweep — well inside the radius margin.")]
         [Min(0.05f)] [SerializeField] float tickIntervalSeconds = 0.25f;
 
+        [Tooltip("Upper bound on packed spatial-index entries examined per FRAME while a sweep is in " +
+                 "progress. A sweep that can't finish in one slice continues on the following frames, so " +
+                 "the per-frame cost is bounded by this budget instead of by the prism population — the " +
+                 "whole population is still reclassified once per tick. Foci drift at most " +
+                 "speed × sweep-duration between the first and last slice, well inside the radius margin.")]
+        [Min(1000)] [SerializeField] int maxPrismChecksPerFrameSlice = 8000;
+
         // Focus registry: vessels + in-flight projectiles. Main-thread only, tiny.
         static readonly List<Transform> s_foci = new(16);
 
@@ -71,16 +78,24 @@ namespace CosmicShore.Gameplay
 
         float _nextTickAt;
         bool _culledAnything;
-        // One O(N) reconciliation is needed whenever LOD (re)gains an opinion:
-        // first sweep, foci returning after an idle restore-all, or re-enable.
-        // Steady state runs on transitions only (O(near + changes)), so the tick
-        // cost is bounded by the LOD bubbles, not the prism population.
-        bool _needsFullSweep = true;
+        // One whole-population reconciliation is needed whenever LOD (re)gains an
+        // opinion: first sweep, foci returning after an idle restore-all, or
+        // re-enable. Steady-state sweeps toggle only near/far TRANSITIONS,
+        // detected with per-prism sweep stamps (Prism.LodNearSweepStamp) instead
+        // of HashSet bookkeeping, and every sweep — reconcile included — runs as
+        // budgeted slices across frames so no single frame pays the population.
+        bool _reconcileNextSweep = true;
+
+        // ---- In-progress sweep state (a sweep spans one or more frames) ----
+        int _sweepId;
+        int _sliceCursor = -1;                    // >= 0 ⇒ a sweep is in progress
+        bool _sweepReconcile;
+        readonly List<Vector3> _fociSnapshot = new(16);
+        readonly List<Prism> _sliceNear = new(1024);
+        readonly List<Prism> _sliceFar = new(4096);
+        List<Prism> _nearList = new(4096);
+        List<Prism> _prevNearList = new(4096);
         readonly List<Prism> _liveScratch = new(4096);
-        readonly List<Prism> _queryScratch = new(1024);
-        readonly List<Vector3> _fociPos = new(16);
-        HashSet<Prism> _nearSet = new();
-        HashSet<Prism> _prevNearSet = new();
 
         /// <summary>
         /// Called when a prism's collider comes online outside the sweep cadence
@@ -120,12 +135,17 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
+            if (_sliceCursor >= 0)
+            {
+                ContinueSweep();
+                return;
+            }
             if (Time.time < _nextTickAt) return;
             _nextTickAt = Time.time + Mathf.Max(0.05f, tickIntervalSeconds);
-            Sweep();
+            BeginSweep();
         }
 
-        void Sweep()
+        void BeginSweep()
         {
             var index = PrismSpatialIndex.Instance;
             if (index == null || !index.IsAvailable) return;
@@ -146,67 +166,93 @@ namespace CosmicShore.Gameplay
                         _liveScratch[i].SetColliderCulledByLod(false);
                     _culledAnything = false;
                 }
-                _prevNearSet.Clear();
-                _needsFullSweep = true; // re-reconcile when foci return
+                _prevNearList.Clear();
+                _reconcileNextSweep = true; // re-reconcile when foci return
                 LastNearCount = LastLiveCount = 0;
                 return;
             }
 
-            // Union of per-focus neighborhoods → the prisms that keep colliders.
-            // ONE pass over the packed array against all foci (a large LOD radius
-            // forces QuerySphere into its O(population) linear-scan fallback, so the
-            // old per-focus loop was O(foci × population) per tick).
-            _fociPos.Clear();
+            // Snapshot the foci so every slice of this sweep classifies against the
+            // same centres. Foci drift between the first and last slice is bounded
+            // by the sweep duration — the same tolerance the tick interval already
+            // budgets for in the LOD radius margin.
+            _fociSnapshot.Clear();
             for (int f = 0; f < s_foci.Count; f++)
-                _fociPos.Add(s_foci[f].position);
+                _fociSnapshot.Add(s_foci[f].position);
 
-            _nearSet.Clear();
-            int hits = index.QueryUnionOfSpheres(_fociPos, lodRadiusMeters, _queryScratch);
-            for (int i = 0; i < hits; i++)
-                _nearSet.Add(_queryScratch[i]);
+            _sweepId++;
+            _sweepReconcile = _reconcileNextSweep;
+            _reconcileNextSweep = false;
+            _nearList.Clear();
+            _sliceCursor = 0;
+            ContinueSweep();
+        }
 
-            if (_needsFullSweep)
+        void ContinueSweep()
+        {
+            var index = PrismSpatialIndex.Instance;
+            if (index == null || !index.IsAvailable || !lodEnabled)
             {
-                // Reconcile the whole population once — prisms registered before
-                // this manager existed (or while LOD was idle) have never been
-                // classified.
-                int live = index.CopyLivePrisms(_liveScratch);
-                for (int i = 0; i < live; i++)
-                {
-                    var prism = _liveScratch[i];
-                    prism.SetColliderCulledByLod(!_nearSet.Contains(prism));
-                }
-                _needsFullSweep = false;
+                // Kill switch / teardown mid-sweep: abort; the next BeginSweep runs
+                // the restore-all (disabled) or reconcile (re-enabled) path.
+                _sliceCursor = -1;
+                _reconcileNextSweep = true;
+                return;
             }
-            else
+
+            // One budgeted window of the packed array against all foci. Near prisms
+            // get stamped + restored; far prisms are only touched on reconcile
+            // sweeps (steady state culls far-transitions from the previous near
+            // list instead — see below). Newly spawned far prisms are handled by
+            // NotifyPrismActivated.
+            int hits = index.QueryUnionOfSpheresSlice(
+                _fociSnapshot, lodRadiusMeters, _sliceCursor, maxPrismChecksPerFrameSlice,
+                _sliceNear, _sweepReconcile ? _sliceFar : null, out int nextIndex);
+
+            for (int i = 0; i < hits; i++)
             {
-                // Steady state: only near/far TRANSITIONS change collider state.
-                // Newly spawned far prisms are handled by NotifyPrismActivated.
-                foreach (var prism in _nearSet)
+                var prism = _sliceNear[i];
+                prism.LodNearSweepStamp = _sweepId;
+                prism.SetColliderCulledByLod(false); // idempotent — no-op when already restored
+                _nearList.Add(prism);
+            }
+
+            if (_sweepReconcile)
+            {
+                for (int i = 0; i < _sliceFar.Count; i++)
+                    _sliceFar[i].SetColliderCulledByLod(true);
+            }
+
+            _sliceCursor = nextIndex;
+            if (_sliceCursor >= 0) return; // more slices on the following frames
+
+            // Sweep complete. Prisms near LAST sweep that this sweep never stamped
+            // left every bubble — cull them. (Reconcile sweeps classified the whole
+            // population explicitly, so the previous list adds nothing.)
+            if (!_sweepReconcile)
+            {
+                for (int i = 0; i < _prevNearList.Count; i++)
                 {
-                    if (prism && !_prevNearSet.Contains(prism))
-                        prism.SetColliderCulledByLod(false);
-                }
-                foreach (var prism in _prevNearSet)
-                {
-                    if (prism && !_nearSet.Contains(prism))
+                    var prism = _prevNearList[i];
+                    if (prism && prism.LodNearSweepStamp != _sweepId)
                         prism.SetColliderCulledByLod(true);
                 }
             }
 
-            // Double-buffer the near sets — no per-tick copy.
-            (_prevNearSet, _nearSet) = (_nearSet, _prevNearSet);
+            // Double-buffer the near lists — no per-sweep copy.
+            (_prevNearList, _nearList) = (_nearList, _prevNearList);
 
             _culledAnything = true;
-            LastNearCount = _prevNearSet.Count;
+            LastNearCount = _prevNearList.Count;
             LastLiveCount = index.LiveCount;
         }
 
         void OnDisable()
         {
             // Component toggled off (or teardown): hand collider ownership back.
-            _prevNearSet.Clear();
-            _needsFullSweep = true;
+            _prevNearList.Clear();
+            _sliceCursor = -1;
+            _reconcileNextSweep = true;
             var index = PrismSpatialIndex.Instance;
             if (index == null || !index.IsAvailable || !_culledAnything) return;
             int n = index.CopyLivePrisms(_liveScratch);
