@@ -104,6 +104,12 @@ namespace CosmicShore.Engine.Networking
         {
             Error = error;
         }
+
+        public SessionException(SessionError error, string message, System.Exception innerException)
+            : base(message ?? error.ToString(), innerException)
+        {
+            Error = error;
+        }
     }
 
     /// <summary>

@@ -13,12 +13,17 @@ namespace CosmicShore.Tests;
 // PlayerLeaving relay + transient classification), PresenceLobbyService
 // (property save flow + identity property build), and NetworkTransitionService
 // (shutdown gate + client-connection wait) against the engine placeholders.
+// Session-surface restore (2026-07-09): the create/join/query flows now run
+// LIVE against the MultiplayerSdk placeholder — covered by the
+// *SessionFlowTests classes below (fake IMultiplayerService via the settable
+// MultiplayerService.Instance, per the MultiplayerSessionTests precedent).
 // ─────────────────────────────────────────────────────────────────────────────
 
 sealed class Ring3Session : IHostSession
 {
     public bool Host = true;
-    public string Id => "sess-3";
+    public string IdValue = "sess-3";
+    public string Id => IdValue;
     public string Code => "CODE";
     public bool IsHost => Host;
     public int MaxPlayers => 4;
@@ -156,6 +161,325 @@ public class PresenceLobbyServiceTests
         Assert.Null(svc.ActiveLobby);
         Assert.Equal(0, lobby.Left);
         Assert.Equal(0, lobby.Deletes);
+    }
+}
+
+sealed class Ring3SessionInfo : ISessionInfo
+{
+    public string Id { get; init; } = "info";
+    public DateTime Created { get; init; } = new(2026, 1, 1);
+    public int MaxPlayers { get; init; } = 100;
+    public int AvailableSlots { get; init; } = 99;
+    public bool IsLocked { get; init; }
+    public bool HasPassword { get; init; }
+}
+
+sealed class Ring3MultiplayerService : IMultiplayerService
+{
+    public List<ISessionInfo> QueryResults { get; } = new();
+    public List<string> JoinAttempts { get; } = new();
+    public int CreateCalls, QueryCalls;
+    public SessionOptions LastCreateOptions;
+    public Func<SessionOptions, ISession> CreateHandler;
+    public Func<string, ISession> JoinHandler;
+    public Func<Exception> QueryThrows;
+
+    public System.Threading.Tasks.Task<ISession> CreateSessionAsync(SessionOptions options)
+    {
+        CreateCalls++;
+        LastCreateOptions = options;
+        var session = CreateHandler != null ? CreateHandler(options) : new Ring3Session();
+        return System.Threading.Tasks.Task.FromResult(session);
+    }
+
+    public System.Threading.Tasks.Task<ISession> JoinSessionByIdAsync(string sessionId, JoinSessionOptions options = null)
+    {
+        JoinAttempts.Add(sessionId);
+        return System.Threading.Tasks.Task.FromResult(JoinHandler!(sessionId));
+    }
+
+    public System.Threading.Tasks.Task<QuerySessionsResults> QuerySessionsAsync(QuerySessionsOptions options)
+    {
+        QueryCalls++;
+        if (QueryThrows != null) throw QueryThrows();
+        return System.Threading.Tasks.Task.FromResult(new QuerySessionsResults(QueryResults));
+    }
+}
+
+/// <summary>
+/// PartySessionService's restored UGS create/join flow against the
+/// MultiplayerSdk placeholder (session-surface restore 2026-07-09).
+/// </summary>
+public class PartySessionFlowTests : IDisposable
+{
+    readonly GameLoop loop = new(nameof(PartySessionFlowTests));
+    readonly Ring3MultiplayerService fake = new();
+
+    public PartySessionFlowTests()
+    {
+        MultiplayerService.Reset();
+        MultiplayerService.Instance = fake;
+    }
+
+    public void Dispose()
+    {
+        MultiplayerService.Reset();
+        loop.Dispose();
+    }
+
+    void Pump(Func<bool> done, int maxFrames = 600)
+    {
+        for (int i = 0; i < maxFrames && !done(); i++) loop.Tick(1f / 60f);
+        Assert.True(done(), "condition should settle within the pump budget");
+    }
+
+    (PartySessionService svc, GameDataSO gameData, HostConnectionDataSO conn) MakeRig()
+    {
+        var gameData = ScriptableObject.CreateInstance<GameDataSO>();
+        var conn = ScriptableObject.CreateInstance<HostConnectionDataSO>();
+        return (new PartySessionService(conn, gameData), gameData, conn);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Create_SetsSession_StampsTime_WiresRelay_WithPrivateRelayOptions()
+    {
+        var (svc, gameData, conn) = MakeRig();
+        conn.LocalDisplayName = "Ace";
+        conn.LocalAvatarId = 7;
+        var session = new Ring3Session();
+        fake.CreateHandler = _ => session;
+        for (int i = 0; i < 10; i++) loop.Tick(1f / 60f); // advance unscaled time past 0
+
+        await svc.CreateAsync(maxPlayers: 4);
+
+        Assert.Same(session, svc.ActiveSession);
+        Assert.Same(session, gameData.ActiveSession); // backed by the shared SO
+        Assert.True(svc.CreatedAtUnscaledTime > 0f);
+
+        // The party session is PRIVATE (invite-only) on Relay transport.
+        var opts = fake.LastCreateOptions;
+        Assert.Equal(4, opts.MaxPlayers);
+        Assert.True(opts.IsPrivate);
+        Assert.False(opts.IsLocked);
+        Assert.True(opts.UseRelay);
+        Assert.Null(opts.SessionProperties); // party sessions publish no session properties
+
+        // All 8 identity keys present so no first-refresh false negatives.
+        Assert.Equal(8, opts.PlayerProperties.Count);
+        Assert.Equal("Ace", opts.PlayerProperties["displayName"].Value);
+        Assert.Equal("7", opts.PlayerProperties["avatarId"].Value);
+        Assert.Equal(string.Empty, opts.PlayerProperties["invite_payloads"].Value);
+
+        // PlayerLeaving relay: wired on create, unwired by ClearSession.
+        string left = null;
+        svc.PlayerLeaving += id => left = id;
+        session.RaisePlayerLeaving("p9");
+        Assert.Equal("p9", left);
+        svc.ClearSession();
+        left = null;
+        session.RaisePlayerLeaving("p9");
+        Assert.Null(left);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Create_NoOps_WhenASessionIsAlreadyActive()
+    {
+        var (svc, gameData, _) = MakeRig();
+        gameData.ActiveSession = new Ring3Session();
+
+        await svc.CreateAsync(maxPlayers: 4);
+
+        Assert.Equal(0, fake.CreateCalls);
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Create_RetriesHostConflict_ThenSucceeds()
+    {
+        var (svc, _, _) = MakeRig();
+        int attempts = 0;
+        fake.CreateHandler = _ => ++attempts < 2
+            ? throw new Exception("NetworkManager is still shutting down")
+            : new Ring3Session();
+
+        await svc.CreateAsync(maxPlayers: 4); // host-conflict retry has no delay
+
+        Assert.Equal(2, fake.CreateCalls);
+        Assert.NotNull(svc.ActiveSession);
+    }
+
+    [Fact]
+    public void Create_RateLimited429_BacksOff_ThenSucceeds()
+    {
+        var (svc, _, _) = MakeRig();
+        int attempts = 0;
+        // The restored classifier: engine RequestFailedException with ErrorCode 429
+        // (the message deliberately avoids host-conflict/transient keywords).
+        fake.CreateHandler = _ => ++attempts < 2
+            ? throw new CosmicShore.Engine.Services.RequestFailedException(429, "Rate limited by UGS")
+            : new Ring3Session();
+
+        var task = svc.CreateAsync(maxPlayers: 4); // 2000ms game-time back-off
+        Pump(() => task.IsCompleted);
+
+        Assert.Equal(2, fake.CreateCalls);
+        Assert.NotNull(svc.ActiveSession);
+    }
+
+    [Fact]
+    public void Join_RetriesTransientSdkNre_ThenSucceeds_AndWiresRelay()
+    {
+        var (svc, _, _) = MakeRig();
+        var session = new Ring3Session { Host = false };
+        int attempts = 0;
+        fake.JoinHandler = id => ++attempts < 2
+            ? throw new SessionException(SessionError.Unknown, "lobby events subscription blew up",
+                new NullReferenceException("inside the SDK"))
+            : session;
+
+        var task = svc.JoinByIdAsync("host-session"); // 1000ms transient back-off
+        Pump(() => task.IsCompleted);
+
+        Assert.Equal(new[] { "host-session", "host-session" }, fake.JoinAttempts);
+        Assert.Same(session, svc.ActiveSession);
+
+        string left = null;
+        svc.PlayerLeaving += id => left = id;
+        session.RaisePlayerLeaving("p2");
+        Assert.Equal("p2", left);
+    }
+}
+
+/// <summary>
+/// PresenceLobbyService's restored join-or-create / converge flow against the
+/// MultiplayerSdk placeholder (session-surface restore 2026-07-09).
+/// </summary>
+public class PresenceLobbyFlowTests : IDisposable
+{
+    readonly GameLoop loop = new(nameof(PresenceLobbyFlowTests));
+    readonly Ring3MultiplayerService fake = new();
+
+    public PresenceLobbyFlowTests()
+    {
+        MultiplayerService.Reset();
+        MultiplayerService.Instance = fake;
+    }
+
+    public void Dispose()
+    {
+        MultiplayerService.Reset();
+        loop.Dispose();
+    }
+
+    void Pump(Func<bool> done, int maxFrames = 600)
+    {
+        for (int i = 0; i < maxFrames && !done(); i++) loop.Tick(1f / 60f);
+        Assert.True(done(), "condition should settle within the pump budget");
+    }
+
+    (PresenceLobbyService svc, HostConnectionDataSO conn) MakeRig()
+    {
+        var conn = ScriptableObject.CreateInstance<HostConnectionDataSO>();
+        return (new PresenceLobbyService(conn, new LobbyPropertyWriter()), conn);
+    }
+
+    [Fact]
+    public void JoinOrCreate_NoVisibleLobbies_CreatesOwn_TaggedPresenceLobby()
+    {
+        var (svc, _) = MakeRig();
+        fake.CreateHandler = _ => new Ring3Session { IdValue = "own-lobby" };
+
+        // Query empty → create → 1500ms race settle → converge query (still empty,
+        // we hold the canonical) — the full three-step algorithm.
+        var task = svc.JoinOrCreateAsync(maxPlayers: 100);
+        Pump(() => task.IsCompleted);
+
+        Assert.Equal("own-lobby", svc.ActiveLobby.Id);
+        Assert.Equal(1, fake.CreateCalls);
+        Assert.Equal(2, fake.QueryCalls); // initial try-join + converge re-query
+
+        // The lobby is PUBLIC and discoverable by the PRESENCE_LOBBY gameMode tag.
+        var opts = fake.LastCreateOptions;
+        Assert.False(opts.IsPrivate);
+        Assert.False(opts.UseRelay); // lobby-only session — no Relay
+        var tag = opts.SessionProperties["gameMode"];
+        Assert.Equal("PRESENCE_LOBBY", tag.Value);
+        Assert.Equal(PropertyIndex.String1, tag.Index);
+        Assert.Equal(VisibilityPropertyOptions.Public, tag.Visibility);
+        Assert.Equal(8, opts.PlayerProperties.Count);
+        Assert.Equal("Pilot", opts.PlayerProperties["displayName"].Value); // empty name → fallback
+    }
+
+    [Fact]
+    public void JoinOrCreate_JoinsTheSmallestVisibleLobbyId_First()
+    {
+        var (svc, _) = MakeRig();
+        fake.QueryResults.Add(new Ring3SessionInfo { Id = "b-lobby" });
+        fake.QueryResults.Add(new Ring3SessionInfo { Id = "a-lobby" });
+        fake.JoinHandler = id => new Ring3Session { IdValue = id, Host = false };
+
+        var task = svc.JoinOrCreateAsync(maxPlayers: 100);
+        Pump(() => task.IsCompleted);
+
+        // Deterministic ordinal order so simultaneous joiners converge.
+        Assert.Equal(new[] { "a-lobby" }, fake.JoinAttempts);
+        Assert.Equal("a-lobby", svc.ActiveLobby.Id);
+        Assert.Equal(0, fake.CreateCalls); // joined — no create, no converge pass
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Converge_MigratesToTheCanonicalLobby_AndReleasesOurs()
+    {
+        var (svc, _) = MakeRig();
+        var own = new Ring3Session { IdValue = "z-lobby", Host = true };
+        fake.CreateHandler = _ => own;
+        await ((System.Threading.Tasks.Task)svc.GetType()
+            .GetMethod("CreateAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .Invoke(svc, new object[] { 100 })!);
+        Assert.Equal("z-lobby", svc.ActiveLobby.Id);
+
+        // A rival created "a-lobby" in the same instant — smaller id wins.
+        fake.QueryResults.Add(new Ring3SessionInfo { Id = "a-lobby" });
+        fake.QueryResults.Add(new Ring3SessionInfo { Id = "z-lobby" });
+        fake.JoinHandler = id => new Ring3Session { IdValue = id, Host = false };
+
+        await svc.ConvergeToCanonicalAsync(maxPlayers: 100);
+
+        Assert.Equal(new[] { "a-lobby" }, fake.JoinAttempts);
+        Assert.Equal("a-lobby", svc.ActiveLobby.Id);
+        Assert.Equal(1, own.Deletes); // race-lost lobby released AFTER the join landed
+    }
+
+    [Fact]
+    public async System.Threading.Tasks.Task Converge_KeepsOurs_WhenWeAlreadyHoldTheCanonicalId()
+    {
+        var (svc, _) = MakeRig();
+        var own = new Ring3Session { IdValue = "a-lobby", Host = true };
+        fake.CreateHandler = _ => own;
+        await ((System.Threading.Tasks.Task)svc.GetType()
+            .GetMethod("CreateAsync", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .Invoke(svc, new object[] { 100 })!);
+
+        fake.QueryResults.Add(new Ring3SessionInfo { Id = "b-lobby" }); // larger — not canonical
+
+        await svc.ConvergeToCanonicalAsync(maxPlayers: 100);
+
+        Assert.Empty(fake.JoinAttempts);
+        Assert.Equal("a-lobby", svc.ActiveLobby.Id);
+        Assert.Equal(0, own.Deletes);
+    }
+
+    [Fact]
+    public void JoinOrCreate_FallsBackToCreate_WhenTheQueryThrows()
+    {
+        var (svc, _) = MakeRig();
+        fake.QueryThrows = () => new InvalidOperationException("backend unreachable");
+        fake.CreateHandler = _ => new Ring3Session { IdValue = "fallback-lobby" };
+
+        var task = svc.JoinOrCreateAsync(maxPlayers: 100);
+        Pump(() => task.IsCompleted);
+
+        Assert.Equal("fallback-lobby", svc.ActiveLobby.Id);
+        Assert.Equal(1, fake.CreateCalls);
     }
 }
 

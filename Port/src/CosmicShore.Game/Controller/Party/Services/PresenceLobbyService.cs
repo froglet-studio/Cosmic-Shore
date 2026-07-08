@@ -13,12 +13,13 @@
 // and the JoinOrCreateAsync orchestration shell (query-join falls through to Create, settle
 // delay, converge call, catch-fallback).
 //
-// UGS Multiplayer session surface (MultiplayerService.Instance, QuerySessionsOptions /
-// FilterOption / FilterField / FilterOperation / ISessionInfo, JoinSessionOptions /
-// JoinSessionByIdAsync, SessionOptions / SessionProperty / PropertyIndex / CreateSessionAsync)
-// has no engine counterpart yet — carried as commented source per the services-phase precedent
-// (MultiplayerSetup.cs). Until it lands, TryQueryAndJoinAsync returns null, CreateAsync
-// resolves without a backend session, and ConvergeToCanonicalAsync no-ops on its early-returns.
+// UGS session surface FULLY RESTORED (2026-07-09): the engine MultiplayerSdk placeholder
+// (MultiplayerService.Instance, QuerySessionsOptions / FilterOption / FilterField /
+// FilterOperation / ISessionInfo, JoinSessionOptions / JoinSessionByIdAsync, SessionOptions /
+// SessionProperty / PropertyIndex / CreateSessionAsync) un-carried TryQueryAndJoinAsync,
+// CreateAsync, and ConvergeToCanonicalAsync — the whole file now runs verbatim. Against the
+// default LocalMultiplayerService, queries see no remote lobbies, so JoinOrCreateAsync
+// converges on create-own (the honest single-process semantics).
 // ─────────────────────────────────────────────────────────────────────────────
 // PresenceLobbyService.cs
 // Manages the UGS lobby-only session used for player discovery and invite
@@ -56,12 +57,8 @@ using CosmicShore.Utility;
 using CosmicShore.Engine.Tasks;
 using CosmicShore.Engine.Networking;
 using CosmicShore.Engine;
-// PORT Deviation (services phase 2026-07-08, Unity.Services.Multiplayer — restore when UGS services port): using Unity.Services.Multiplayer;
-
-// PORT Deviation (services phase 2026-07-08 — remove when UGS services port): CS1998 is expected
-// here. TryQueryAndJoinAsync / CreateAsync / ConvergeToCanonicalAsync keep their upstream async
-// signatures, but their awaits live in the commented UGS session blocks below.
-#pragma warning disable CS1998
+// (RESTORED 2026-07-09) `using Unity.Services.Multiplayer;` → the session types resolve through
+// CosmicShore.Engine.Networking above (MultiplayerSdk.cs placeholder surface).
 
 namespace CosmicShore.Gameplay
 {
@@ -123,8 +120,7 @@ namespace CosmicShore.Gameplay
         /// so a constructor-time read would pin null. See
         /// Docs/PartySystem/ARCHITECTURE.md (Investigation answers Q10).
         /// </summary>
-        // PORT Deviation (services phase 2026-07-08, IMultiplayerService / MultiplayerService.Instance — restore when UGS services port):
-        // private IMultiplayerService _multiplayerService => MultiplayerService.Instance;
+        private IMultiplayerService _multiplayerService => MultiplayerService.Instance;
         private ISession _activeLobby;
         private bool     _leaving;
 
@@ -205,46 +201,44 @@ namespace CosmicShore.Gameplay
         public async Task ConvergeToCanonicalAsync(int maxPlayers)
         {
             // Query the full presence-lobby set (rate-limit aware, like the join path).
-            // PORT Deviation (services phase 2026-07-08, QuerySessionsOptions / FilterOption / FilterField / FilterOperation / ISessionInfo / MultiplayerService.QuerySessionsAsync — restore when UGS services port):
-            // var queryOptions = new QuerySessionsOptions();
-            // queryOptions.FilterOptions.Add(
-            //     new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
-            //
-            // IList<ISessionInfo> sessions = null;
-            // for (int attempt = 0; ; attempt++)
-            // {
-            //     try
-            //     {
-            //         var results = await _multiplayerService.QuerySessionsAsync(queryOptions);
-            //         sessions = results.Sessions;
-            //         break;
-            //     }
-            //     catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
-            //     {
-            //         int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-            //         Debug.LogWarning($"[PresenceLobbyService] Rate limited during converge query — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-            //         await GameTask.Delay(delay);
-            //     }
-            //     catch (Exception e)
-            //     {
-            //         Debug.LogWarning($"[PresenceLobbyService] Converge query failed ({e.GetType().Name}): {e.Message}");
-            //         return;
-            //     }
-            // }
+            var queryOptions = new QuerySessionsOptions();
+            queryOptions.FilterOptions.Add(
+                new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
+
+            IList<ISessionInfo> sessions = null;
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    var results = await _multiplayerService.QuerySessionsAsync(queryOptions);
+                    sessions = results.Sessions;
+                    break;
+                }
+                catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
+                {
+                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                    Debug.LogWarning($"[PresenceLobbyService] Rate limited during converge query — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await GameTask.Delay(delay);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[PresenceLobbyService] Converge query failed ({e.GetType().Name}): {e.Message}");
+                    return;
+                }
+            }
 
             // Canonical id = smallest (ordinal) over the visible set ∪ our own lobby.
             // The smallest-id holder is the single point everyone migrates toward.
             string canonicalId = _activeLobby?.Id;
-            // PORT Deviation (services phase 2026-07-08, ISessionInfo — restore when UGS services port):
-            // if (sessions != null)
-            // {
-            //     foreach (var s in sessions)
-            //     {
-            //         if (string.IsNullOrEmpty(s.Id)) continue;
-            //         if (canonicalId == null || string.CompareOrdinal(s.Id, canonicalId) < 0)
-            //             canonicalId = s.Id;
-            //     }
-            // }
+            if (sessions != null)
+            {
+                foreach (var s in sessions)
+                {
+                    if (string.IsNullOrEmpty(s.Id)) continue;
+                    if (canonicalId == null || string.CompareOrdinal(s.Id, canonicalId) < 0)
+                        canonicalId = s.Id;
+                }
+            }
 
             // Nothing to converge to, or we already hold the canonical lobby.
             if (canonicalId == null) return;
@@ -252,23 +246,22 @@ namespace CosmicShore.Gameplay
 
             // Migrate down to the canonical lobby: join it FIRST so a failed join
             // never leaves us lobby-less, then release the one we were holding.
-            // PORT Deviation (services phase 2026-07-08, JoinSessionOptions / MultiplayerService.JoinSessionByIdAsync — restore when UGS services port):
-            // try
-            // {
-            //     var joined = await _multiplayerService.JoinSessionByIdAsync(
-            //         canonicalId,
-            //         new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
-            //
-            //     await DeleteOwnLobbyQuietlyAsync();   // releases the previous _activeLobby
-            //     _activeLobby = joined;
-            //     Debug.Log($"[PresenceLobbyService] Converged to canonical presence lobby {joined.Id}.");
-            // }
-            // catch (Exception e)
-            // {
-            //     // Canonical lobby may have died between query and join — keep our
-            //     // current lobby; the next periodic converge retries.
-            //     Debug.LogWarning($"[PresenceLobbyService] Converge join to {canonicalId} failed ({e.GetType().Name}): {e.Message}");
-            // }
+            try
+            {
+                var joined = await _multiplayerService.JoinSessionByIdAsync(
+                    canonicalId,
+                    new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
+
+                await DeleteOwnLobbyQuietlyAsync();   // releases the previous _activeLobby
+                _activeLobby = joined;
+                Debug.Log($"[PresenceLobbyService] Converged to canonical presence lobby {joined.Id}.");
+            }
+            catch (Exception e)
+            {
+                // Canonical lobby may have died between query and join — keep our
+                // current lobby; the next periodic converge retries.
+                Debug.LogWarning($"[PresenceLobbyService] Converge join to {canonicalId} failed ({e.GetType().Name}): {e.Message}");
+            }
         }
 
         /// <inheritdoc/>
@@ -395,57 +388,55 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private async Task<ISession> TryQueryAndJoinAsync(int maxPlayers)
         {
-            // PORT Deviation (services phase 2026-07-08, QuerySessionsOptions / FilterOption / FilterField / FilterOperation / ISessionInfo / MultiplayerService.QuerySessionsAsync / JoinSessionOptions / MultiplayerService.JoinSessionByIdAsync — restore when UGS services port;
-            // until then no backend is queryable, so this returns null and JoinOrCreateAsync falls through to CreateAsync):
-            // var queryOptions = new QuerySessionsOptions();
-            // queryOptions.FilterOptions.Add(
-            //     new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
-            //
-            // IList<ISessionInfo> sessions = null;
-            // for (int attempt = 0; ; attempt++)
-            // {
-            //     try
-            //     {
-            //         var results = await _multiplayerService.QuerySessionsAsync(queryOptions);
-            //         sessions = results.Sessions;
-            //         break;
-            //     }
-            //     catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
-            //     {
-            //         int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-            //         Debug.LogWarning($"[PresenceLobbyService] Rate limited querying lobby — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-            //         await GameTask.Delay(delay);
-            //     }
-            // }
-            //
-            // if (sessions == null || sessions.Count == 0) return null;
-            //
-            // // Deterministic order across all clients: always attempt the
-            // // lexicographically smallest id first so simultaneous joiners converge
-            // // on the same lobby instead of fanning out across different rivals.
-            // var ordered = new List<ISessionInfo>(sessions);
-            // ordered.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
-            //
-            // foreach (var session in ordered)
-            // {
-            //     // Skip if we somehow already hold a session with this id.
-            //     if (_activeLobby != null && session.Id == _activeLobby.Id) continue;
-            //
-            //     try
-            //     {
-            //         var joined = await _multiplayerService.JoinSessionByIdAsync(
-            //             session.Id,
-            //             new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
-            //         Debug.Log($"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}).");
-            //         return joined;
-            //     }
-            //     catch (Exception e)
-            //     {
-            //         Debug.LogWarning($"[PresenceLobbyService] Failed to join session {session.Id}: {e.Message}");
-            //         if (IsRateLimitException(e))
-            //             await GameTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
-            //     }
-            // }
+            var queryOptions = new QuerySessionsOptions();
+            queryOptions.FilterOptions.Add(
+                new FilterOption(FilterField.StringIndex1, PRESENCE_LOBBY_GAME_MODE, FilterOperation.Equal));
+
+            IList<ISessionInfo> sessions = null;
+            for (int attempt = 0; ; attempt++)
+            {
+                try
+                {
+                    var results = await _multiplayerService.QuerySessionsAsync(queryOptions);
+                    sessions = results.Sessions;
+                    break;
+                }
+                catch (Exception qe) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(qe))
+                {
+                    int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                    Debug.LogWarning($"[PresenceLobbyService] Rate limited querying lobby — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                    await GameTask.Delay(delay);
+                }
+            }
+
+            if (sessions == null || sessions.Count == 0) return null;
+
+            // Deterministic order across all clients: always attempt the
+            // lexicographically smallest id first so simultaneous joiners converge
+            // on the same lobby instead of fanning out across different rivals.
+            var ordered = new List<ISessionInfo>(sessions);
+            ordered.Sort((a, b) => string.CompareOrdinal(a.Id, b.Id));
+
+            foreach (var session in ordered)
+            {
+                // Skip if we somehow already hold a session with this id.
+                if (_activeLobby != null && session.Id == _activeLobby.Id) continue;
+
+                try
+                {
+                    var joined = await _multiplayerService.JoinSessionByIdAsync(
+                        session.Id,
+                        new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() });
+                    Debug.Log($"[PresenceLobbyService] Joined existing presence lobby {joined.Id} (capacity {maxPlayers}).");
+                    return joined;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[PresenceLobbyService] Failed to join session {session.Id}: {e.Message}");
+                    if (IsRateLimitException(e))
+                        await GameTask.Delay(RATE_LIMIT_BASE_DELAY_MS);
+                }
+            }
 
             return null;
         }
@@ -459,41 +450,39 @@ namespace CosmicShore.Gameplay
             Debug.Log($"[PresenceLobbyService] Creating new presence lobby (maxPlayers={maxPlayers})...");
             try
             {
-                // PORT Deviation (services phase 2026-07-08, SessionOptions / SessionProperty / PropertyIndex / MultiplayerService.CreateSessionAsync — restore when UGS services port;
-                // until then no backend session is created and _activeLobby stays null):
-                // var opts = new SessionOptions
-                // {
-                //     MaxPlayers        = maxPlayers,
-                //     IsLocked          = false,
-                //     IsPrivate         = false,
-                //     PlayerProperties  = BuildLocalPlayerProperties(),
-                //     SessionProperties = new Dictionary<string, SessionProperty>
-                //     {
-                //         {
-                //             "gameMode",
-                //             new SessionProperty(
-                //                 PRESENCE_LOBBY_GAME_MODE,
-                //                 VisibilityPropertyOptions.Public,
-                //                 PropertyIndex.String1)
-                //         }
-                //     }
-                // };
-                //
-                // for (int attempt = 0; ; attempt++)
-                // {
-                //     try
-                //     {
-                //         _activeLobby = await _multiplayerService.CreateSessionAsync(opts);
-                //         Debug.Log($"[PresenceLobbyService] Created presence lobby {_activeLobby.Id}.");
-                //         return;
-                //     }
-                //     catch (Exception re) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(re))
-                //     {
-                //         int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
-                //         Debug.LogWarning($"[PresenceLobbyService] Rate limited creating lobby — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
-                //         await GameTask.Delay(delay);
-                //     }
-                // }
+                var opts = new SessionOptions
+                {
+                    MaxPlayers        = maxPlayers,
+                    IsLocked          = false,
+                    IsPrivate         = false,
+                    PlayerProperties  = BuildLocalPlayerProperties(),
+                    SessionProperties = new Dictionary<string, SessionProperty>
+                    {
+                        {
+                            "gameMode",
+                            new SessionProperty(
+                                PRESENCE_LOBBY_GAME_MODE,
+                                VisibilityPropertyOptions.Public,
+                                PropertyIndex.String1)
+                        }
+                    }
+                };
+
+                for (int attempt = 0; ; attempt++)
+                {
+                    try
+                    {
+                        _activeLobby = await _multiplayerService.CreateSessionAsync(opts);
+                        Debug.Log($"[PresenceLobbyService] Created presence lobby {_activeLobby.Id}.");
+                        return;
+                    }
+                    catch (Exception re) when (attempt < RATE_LIMIT_MAX_RETRIES && IsRateLimitException(re))
+                    {
+                        int delay = RATE_LIMIT_BASE_DELAY_MS * (1 << attempt);
+                        Debug.LogWarning($"[PresenceLobbyService] Rate limited creating lobby — retry {attempt + 1}/{RATE_LIMIT_MAX_RETRIES} in {delay}ms");
+                        await GameTask.Delay(delay);
+                    }
+                }
             }
             catch (Exception e)
             {

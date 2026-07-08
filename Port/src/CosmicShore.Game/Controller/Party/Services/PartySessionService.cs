@@ -14,15 +14,11 @@
 // (engine PlayerProperty/VisibilityPropertyOptions), LeaveAsync's
 // AsHost().DeleteAsync()/LeaveAsync() teardown, RefreshAsync, ClearSession.
 //
-// Deviations (genuinely-absent UGS SDK entry points, carried as commented source):
-// IMultiplayerService / MultiplayerService.Instance, SessionOptions/.WithRelayNetwork,
-// JoinSessionOptions, Unity.Services.Core.RequestFailedException (IsRateLimitException
-// keeps a live `false` body — without the SDK no exception can ever be that type, so the
-// classifier's truth value is preserved). Until the create/join calls are restored, a
-// runtime CreateAsync/JoinByIdAsync would fault at the PlayerLeaving wire-up (ActiveSession
-// never assigned) — the caller (HostConnectionService) is not ported yet.
-// NetDiag log lines (CosmicShore.Utility.NetworkDiagnostics — first-party, not yet ported)
-// are commented until the NetworkDiagnostics helper ports (diagnostics-only, not core logic).
+// UGS session surface FULLY RESTORED (2026-07-09): the engine MultiplayerSdk placeholder
+// (MultiplayerService.Instance / SessionOptions + .WithRelayNetwork / JoinSessionOptions)
+// un-carried the create/join calls, and the engine RequestFailedException (UnityServices.cs,
+// ErrorCode) un-carried IsRateLimitException's 429 arm — the whole file now runs verbatim.
+// The service resolves MultiplayerService.Instance at use time (never ctor-cached, Q10).
 // ─────────────────────────────────────────────────────────────────────────────
 // PartySessionService.cs
 // Owns the UGS Relay-backed party session lifecycle.
@@ -121,8 +117,7 @@ namespace CosmicShore.Gameplay
         /// so a constructor-time read would pin null. See
         /// Docs/PartySystem/ARCHITECTURE.md (Investigation answers Q10).
         /// </summary>
-        // PORT Deviation (services phase 2026-07-08, IMultiplayerService / MultiplayerService.Instance — restore when UGS services port):
-        // private IMultiplayerService _multiplayerService => MultiplayerService.Instance;
+        private IMultiplayerService _multiplayerService => MultiplayerService.Instance;
 
         // ─────────────────────────────────────────────────────────────────────
         // IPartySessionService — state properties
@@ -196,21 +191,20 @@ namespace CosmicShore.Gameplay
         {
             if (ActiveSession != null) return;
 
-            // PORT Deviation (services phase 2026-07-08, SessionOptions / .WithRelayNetwork — restore when UGS services port):
-            // var opts = new SessionOptions
-            // {
-            //     MaxPlayers       = maxPlayers,
-            //     IsLocked         = false,
-            //     IsPrivate        = true,
-            //     PlayerProperties = BuildLocalPlayerProperties(),
-            // }.WithRelayNetwork();
+            var opts = new SessionOptions
+            {
+                MaxPlayers       = maxPlayers,
+                IsLocked         = false,
+                IsPrivate        = true,
+                PlayerProperties = BuildLocalPlayerProperties(),
+            }.WithRelayNetwork();
 
             for (int attempt = 0; ; attempt++)
             {
                 try
                 {
-                    // PORT Deviation (services phase 2026-07-08, MultiplayerService.Instance.CreateSessionAsync — restore when UGS services port; `.AsMainThread()` → plain await per README):
-                    // ActiveSession          = await _multiplayerService.CreateSessionAsync(opts);
+                    // (Port: the retired `.AsMainThread()` boundary maps to a plain await.)
+                    ActiveSession          = await _multiplayerService.CreateSessionAsync(opts);
                     CreatedAtUnscaledTime  = Time.unscaledTime;
                     ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
                     Debug.Log($"[PartySessionService] Created party session {ActiveSession.Id} (maxPlayers={maxPlayers}).");
@@ -252,8 +246,7 @@ namespace CosmicShore.Gameplay
         /// </param>
         public async Task JoinByIdAsync(string sessionId)
         {
-            // PORT Deviation (services phase 2026-07-08, JoinSessionOptions — restore when UGS services port):
-            // var opts = new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() };
+            var opts = new JoinSessionOptions { PlayerProperties = BuildLocalPlayerProperties() };
 
             // Retry transient join failures (HTTP 429 / SDK SessionException NRE /
             // lobby-events 23006). Two clients accepting the same host's invite near-
@@ -266,8 +259,8 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    // PORT Deviation (services phase 2026-07-08, MultiplayerService.Instance.JoinSessionByIdAsync — restore when UGS services port; `.AsMainThread()` → plain await per README):
-                    // ActiveSession = await _multiplayerService.JoinSessionByIdAsync(sessionId, opts);
+                    // (Port: the retired `.AsMainThread()` boundary maps to a plain await.)
+                    ActiveSession = await _multiplayerService.JoinSessionByIdAsync(sessionId, opts);
                     ActiveSession.PlayerLeaving += OnSessionPlayerLeaving;
                     Debug.Log($"[PartySessionService] Joined party session {ActiveSession.Id}.");
                     return;
@@ -371,13 +364,7 @@ namespace CosmicShore.Gameplay
         }
 
         private static bool IsRateLimitException(Exception e) =>
-            // PORT Deviation (services phase 2026-07-08, Unity.Services.Core.RequestFailedException — restore when UGS services port):
-            // e is Unity.Services.Core.RequestFailedException rfe && rfe.ErrorCode == 429;
-            //
-            // Live fallback: without the UGS SDK no exception can ever be a
-            // RequestFailedException, so `false` preserves the classifier's exact
-            // upstream truth value in this build.
-            false;
+            e is CosmicShore.Engine.Services.RequestFailedException rfe && rfe.ErrorCode == 429;
 
         private static bool IsHostConflictException(Exception e) =>
             e.Message?.Contains("NetworkManager", StringComparison.OrdinalIgnoreCase) == true ||

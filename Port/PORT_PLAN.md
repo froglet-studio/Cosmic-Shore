@@ -691,20 +691,18 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the UGS Multiplayer session surface landed, 2026-07-08)
+## NEXT UP (after the party ring went fully live, 2026-07-09)
 
-1. **Un-carry the party ring's session deviations against MultiplayerSdk**:
-   `PartySessionService` (6 markers) + `PresenceLobbyService` (8 markers)
-   carry exactly the types the engine `MultiplayerSdk` placeholder now
-   provides (MultiplayerService.Instance / SessionOptions +
-   `.WithRelayNetwork` / JoinSessionOptions / QuerySessionsOptions +
-   FilterOption + FilterField + FilterOperation / ISessionInfo /
-   SessionProperty + PropertyIndex / Create-Join-Query). Restore what the
-   surface satisfies with behavior tests (fake IMultiplayerService via the
-   settable Instance — the MultiplayerSessionTests precedent; remember
-   `MultiplayerService.Reset()` in test setup/teardown). SCOPE first —
-   `NetworkTransitionService` (12 markers) likely stays carried (transport
-   phase), don't overreach into it.
+1. **CloudSave / player-data services arc (services phase, #14 family)**:
+   SCOPE `UGSDataService` (currently a shell) + the `#14` deviation family —
+   `PlayerDataService` (12 markers: `_ugsDataService` injection, ProfileRepo
+   read/write, ready-event hooks, MergeCloudProfile's null seed) and
+   `GameSetting` (7 markers). Grow an engine CloudSave/data-repo placeholder
+   per the MultiplayerSdk/Friends precedent (honest local semantics — e.g. an
+   in-memory repo store), port UGSDataService against it, then un-carry what
+   the growth satisfies with behavior tests. SCOPE first — the repo surface
+   may split across two iterations; `AnalyticsServiceFacade` (still a shell)
+   is a separate later arc, don't overreach into it.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
@@ -720,6 +718,41 @@ client + AstroLeague headless round running + remaining ladder rungs (5: real lo
 > (randomized string hashing → dictionary iteration order, or real-time leakage
 > into the sim under contention). Worth a dedicated diagnosis iteration; both
 > tests are pre-existing arcs (spawner C6 / headless round), untouched since.
+
+### Party-ring session surface ✅ (2026-07-09) — PartySessionService + PresenceLobbyService fully live
+
+All 14 carried services-phase regions across the party ring RESTORED against
+the engine `MultiplayerSdk` placeholder — both files now run **verbatim, zero
+deviations** (normalized-diff-verified against upstream; only the sanctioned
+`UniTask.Delay → GameTask.Delay` mapping differs). **`PartySessionService`**
+(6): the use-time `_multiplayerService` resolver (never ctor-cached, Q10),
+CreateAsync's private+Relay SessionOptions + CreateSessionAsync (host-conflict
+/ 429 / transient retry ladder now exercises real calls), JoinByIdAsync's
+JoinSessionOptions + JoinSessionByIdAsync, and IsRateLimitException's real 429
+arm (`CosmicShore.Engine.Services.RequestFailedException.ErrorCode == 429` —
+the engine type from the error/kick arc replaces the carried `false` stub).
+**`PresenceLobbyService`** (8): the using line, the CS1998 pragma REMOVED
+(every method now awaits), the `_multiplayerService` resolver,
+TryQueryAndJoinAsync's full query → ordinal-sort → join-first body,
+ConvergeToCanonicalAsync's query + smallest-id fold + migrate-then-release,
+and CreateAsync's PRESENCE_LOBBY-tagged public SessionOptions + retry loop.
+Engine growth: `SessionException` gained the SDK-shaped inner-exception ctor
+(the transient classifier matches `InnerException is NullReferenceException`).
+
+**10 behavior tests** (`PartySessionFlowTests` + `PresenceLobbyFlowTests` in
+PartyServicesRing3Tests.cs, fake `IMultiplayerService` via the settable
+Instance per the MultiplayerSessionTests precedent): create stamps
+time/wires-unwires the PlayerLeaving relay/sends private+Relay options with
+all 8 identity keys, create no-ops on an active session, host-conflict retry
+(no delay), 429 back-off through the restored RequestFailedException arm,
+transient-NRE join retry, join-or-create creates own PUBLIC
+PRESENCE_LOBBY-tagged lobby (initial + converge re-query = 2 queries),
+smallest-id-first join, converge migrates to the canonical id and releases
+the race-lost lobby AFTER the join lands, converge keeps ours when already
+canonical, and the query-throw create fallback. `NetworkTransitionService`
+(12 markers) intentionally untouched — transport phase. **1531 tests green
+in BOTH configs (1193 + 338)**; all 5 CLI modes exit 0; both client diags
+byte-identical. bleeding-edge unmoved at `97d4ab29`.
 
 ### UGS Multiplayer session surface ✅ (2026-07-08) — MultiplayerSetup fully live
 
