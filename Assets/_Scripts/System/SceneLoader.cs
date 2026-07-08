@@ -243,6 +243,14 @@ namespace CosmicShore.Core
                 DelayType.UnscaledDeltaTime
             );
 
+            // The splash is opaque here — take a full blocking GC now so the heap
+            // that accumulated over the last session (conserved prisms, pool-refill
+            // churn) is collected behind cover instead of surfacing mid-gameplay as
+            // a ~20ms GC.Collect spike inside a pool-refill Instantiate. Incremental
+            // GC (enabled project-wide) spreads minor work but still blocks fully
+            // when the heap must expand; this resets that clock at every transition.
+            GC.Collect();
+
             if (isServer && nm.SceneManager != null)
             {
                 nm.SceneManager.LoadScene(sceneName, LoadSceneMode.Single);
