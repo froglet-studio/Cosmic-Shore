@@ -691,15 +691,57 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the UGS-core error/kick surface, 2026-07-08)
+## NEXT UP (after the UI-shell arc, 2026-07-08)
 
-1. **Scope the UI-shell arc** (ToastChannel / SceneTransitionManager /
-   SceneLoader): un-carries PartyInviteController's three UI-shell
-   deviations (bounce toast, fade cover, splash re-arm); SceneLoader is the
-   big one — SCOPE first, then port what goes live with tests per precedent.
+1. **`ApplicationStateMachine` (229L, bootstrap arc)** — pure C# single-writer
+   phase tracker over the already-ported ScriptableApplicationState SOAP
+   family; un-carries SceneLoader's one remaining deviation (the two
+   `_appStateMachine?.TransitionTo` calls), with tests (table-driven
+   transition graph + special states).
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### UI-shell arc ✅ (2026-07-08) — PartyInviteController FULLY LIVE
+
+Engine growths: a synchronous `SceneManager.LoadScene` (the defensive
+fallback loaders take — same minimal re-designate + announce semantic) and a
+`NetworkManager.SceneManager` placeholder (`NetworkSceneManager.LoadScene` →
+the engine async load, fire-and-forget per Netcode's void contract — in the
+single-process port a "network" scene load IS a local load; client
+replication arrives with the transport phase).
+
+**Three toast files ported fully live** (`ToastAnimation` frozen 0-2,
+`ChatToastRequest`, `ToastChannel` — the SO event channel; the view layer
+ToastService/ToastItemView ports later). **`SceneTransitionManager` (389L)
+ported** — the whole fade/transition core is LIVE on the engine CanvasGroup:
+LoadSceneAsync (fade-out → load → settle → OnSceneLoadComplete → fade-in,
+incl. the sync-fallback catch), LoadNetworkSceneAsync (server/client/no-NM
+branches), manual fades, SetFadeImmediate, the unscaled-time lerp, and
+CreateFadeOverlay's GameObject+CanvasGroup construction; deviations: the
+UnityEngine.UI dressing (Canvas/CanvasScaler/GraphicRaycaster/Image/
+RectTransform) + the retired-boundary MainThreadDispatcher canary.
+**`SceneLoader` (332L) ported** — the full launch/return/session-end flow is
+LIVE (SOAP subscriptions, splash cover + FadeFromSplashOnReady arm, the MPPM
+client-defer guards, Tournament splash-dwell read, server Netcode load
+through the placeholder, ClearPlayerVesselReferences AI-despawn ordering,
+quit cleanup); one deviation: the ApplicationStateMachine inject + 2
+TransitionTo calls (bootstrap arc — NEXT UP 1).
+
+**Un-carried:** PartyInviteController's three UI-shell deviations — the
+bounce toast, both SetFadeImmediate screen covers, and the
+ArmSplashFadeOnNextClientReady splash re-arm. **PartyInviteController now
+carries ZERO deviations — fully live.**
+
+**10 new tests + the enum freeze**: toast payloads (prefix/postfix/countdown
++ onDone), the programmatic overlay + immediate fades, the STM local load
+flow (fade-load-announce-fade), the STM network load through the Netcode
+placeholder, the SceneLoader launch flow (splash cover → load → fade on
+OnClientReady), the client-defer guard (cover applies, no local load),
+return-to-menu + splash re-arm, and the PIC bounce test now also asserting
+the covered screen + the B10-ordered bounce toast. **1466 tests green in
+BOTH configs (1154 + 312)**; all 5 CLI modes exit 0; both client diags
+byte-identical. bleeding-edge unmoved.
 
 ### UGS-core error/kick surface ✅ (2026-07-08) — HostConnectionService FULLY LIVE
 

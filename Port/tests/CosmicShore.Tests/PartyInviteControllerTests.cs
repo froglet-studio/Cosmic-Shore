@@ -83,6 +83,8 @@ public class PartyInviteControllerTests : IDisposable
         public FakeLobbyService Lobby;
         public FakePartySessionService Party;
         public PicFakeTransition Transition;
+        public CosmicShore.UI.ToastChannel Toast;
+        public CosmicShore.Core.SceneTransitionManager Stm;
     }
 
     /// <summary>
@@ -140,19 +142,26 @@ public class PartyInviteControllerTests : IDisposable
         Set(hcs, "_eventBus", bus);
         Set(hcs, "_scheduler", new LobbyRefreshScheduler(3f));
 
+        var toast = ScriptableObject.CreateInstance<CosmicShore.UI.ToastChannel>();
+        var stm = new GameObject("scene-transition-manager")
+            .AddComponent<CosmicShore.Core.SceneTransitionManager>();
+
         var picGo = new GameObject("party-invite-controller");
         var pic = picGo.AddComponent<PartyInviteController>();
         Set(pic, "connectionData", conn);
         Set(pic, "gameData", gameData);
         Set(pic, "_sceneNames", ScriptableObject.CreateInstance<SceneNameListSO>()); // default "Menu_Main"
         Set(pic, "_networkTransition", transition);
+        Set(pic, "bounceToastChannel", toast);
+        Set(pic, "_sceneTransitionManager", stm);
 
-        loop.Tick(1f / 60f); // Awake (both singletons) + Start (HCS signed-out → idle)
+        loop.Tick(1f / 60f); // Awake (both singletons + STM overlay) + Start (HCS signed-out → idle)
 
         return new Rig
         {
             Pic = pic, Hcs = hcs, Conn = conn, GameData = gameData,
             Lobby = lobby, Party = party, Transition = transition,
+            Toast = toast, Stm = stm,
         };
     }
 
@@ -238,6 +247,8 @@ public class PartyInviteControllerTests : IDisposable
         rig.Transition.ConnectResult = false;
         int joinCompleted = 0;
         rig.Conn.OnPartyJoinCompleted.OnRaised += () => joinCompleted++;
+        string toastShown = null;
+        rig.Toast.OnChatToast += (req, _) => toastShown = req.Prefix;
 
         Run(() => rig.Pic.AcceptInviteAsync(new PartyInviteData("host-9", "sess-9", "Host", 3)));
 
@@ -249,6 +260,14 @@ public class PartyInviteControllerTests : IDisposable
         Assert.Equal(3, rig.Transition.ShutdownCalls);
         Assert.True(rig.Conn.IsPartyHost);               // solo party restored
         Assert.False(rig.Pic.IsTransitioning);
+
+        // Un-carried UI shell: the accept covered the screen immediately, and the
+        // bounce surfaced its notice AFTER recovery (B10 ordering).
+        var overlay = typeof(CosmicShore.Core.SceneTransitionManager)
+            .GetField("_fadeCanvasGroup", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .GetValue(rig.Stm) as CanvasGroup;
+        Assert.Equal(1f, overlay.alpha);
+        Assert.Equal("Couldn't join — returned to your menu.", toastShown);
     }
 
     [Fact]

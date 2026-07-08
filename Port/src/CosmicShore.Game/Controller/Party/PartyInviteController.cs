@@ -22,11 +22,10 @@
 // RecoverFromFailedTransitionAsync, all timeouts/linked-CTS handling,
 // PauseSystem.TogglePauseGame, and every NetDiag classification log line.
 //
-// Deviations (all marked inline):
-// • UI-shell/scene arc — SceneTransitionManager (_sceneTransitionManager fade cover),
-//   SceneLoader (_sceneLoader splash re-arm), ToastChannel (bounceToastChannel notice):
-//   none of the three types exist in this build; fields + call sites carried as
-//   commented source.
+// Deviations: NONE remaining — the file is fully live.
+// • (RESTORED 2026-07-08) UI-shell arc — ToastChannel / SceneTransitionManager /
+//   SceneLoader ported: the bounce toast, both fade covers, and the splash re-arm
+//   are live again.
 // • (RESTORED 2026-07-08) scene phase — the engine SceneManager grew a minimal
 //   LoadSceneAsync (next-tick re-designation + sceneLoaded announce); both Menu_Main
 //   loads (leave + recovery) are real awaited calls again (.ToUniTask(ct) →
@@ -73,9 +72,8 @@ namespace CosmicShore.Gameplay
         [Header("SOAP Data")]
         [SerializeField] private HostConnectionDataSO connectionData;
 
-        // PORT Deviation (UI-shell/scene arc 2026-07-08, ToastChannel — restore when ToastChannel ports):
-        // [Tooltip("Optional. Best-effort toast shown when a join fails and the client bounces back to its own menu. May be suppressed during the scene reload.")]
-        // [SerializeField] private ToastChannel bounceToastChannel;
+        [Tooltip("Optional. Best-effort toast shown when a join fails and the client bounces back to its own menu. May be suppressed during the scene reload.")]
+        [SerializeField] private ToastChannel bounceToastChannel;
 
         [Header("Timing")]
         [Tooltip("Max time (seconds) to wait for NetworkManager shutdown.")]
@@ -88,10 +86,8 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float joinReadyTimeoutSeconds = 10f;
 
         [Inject] private GameDataSO gameData;
-        // PORT Deviation (UI-shell/scene arc 2026-07-08, SceneTransitionManager — restore when SceneTransitionManager ports):
-        // [Inject] private SceneTransitionManager _sceneTransitionManager;
-        // PORT Deviation (UI-shell/scene arc 2026-07-08, SceneLoader — restore when SceneLoader ports):
-        // [Inject] private SceneLoader _sceneLoader;
+        [Inject] private SceneTransitionManager _sceneTransitionManager;
+        [Inject] private SceneLoader _sceneLoader;
         [Inject] private SceneNameListSO _sceneNames;
 
         // ─────────────────────────────────────────────────────────────────────
@@ -183,8 +179,7 @@ namespace CosmicShore.Gameplay
             // state during NM shutdown + UGS join + Relay connect.
             // SceneLoader.OnSceneLoaded re-arms this on Menu_Main load; it is
             // idempotent at alpha=1, so calling it here is always safe.
-            // PORT Deviation (UI-shell/scene arc 2026-07-08, SceneTransitionManager — restore when SceneTransitionManager ports):
-            // _sceneTransitionManager?.SetFadeImmediate(1f);
+            _sceneTransitionManager?.SetFadeImmediate(1f);
 
             // Bug B fix: arm the splash fade-out trigger before the join flow starts.
             // SceneLoader only auto-subscribes FadeFromSplashOnReady when Menu_Main
@@ -194,8 +189,7 @@ namespace CosmicShore.Gameplay
             // re-arming here, the joining client's OnClientReady raise (after their
             // Player+Vessel pair is initialised) has no subscriber and the splash
             // stays opaque forever.
-            // PORT Deviation (UI-shell/scene arc 2026-07-08, SceneLoader — restore when SceneLoader ports):
-            // _sceneLoader?.ArmSplashFadeOnNextClientReady();
+            _sceneLoader?.ArmSplashFadeOnNextClientReady();
 
             // Unpause immediately — ScreenSwitcher pauses on non-HOME screens,
             // and the accept flow needs Update() ticking so the UGS SDK's
@@ -331,8 +325,7 @@ namespace CosmicShore.Gameplay
 
             // Cover the screen immediately — NM shutdown + solo Relay creation
             // takes 1-3s and the user should not see the frozen lava-lamp state.
-            // PORT Deviation (UI-shell/scene arc 2026-07-08, SceneTransitionManager — restore when SceneTransitionManager ports):
-            // _sceneTransitionManager?.SetFadeImmediate(1f);
+            _sceneTransitionManager?.SetFadeImmediate(1f);
             PauseSystem.TogglePauseGame(false);
 
             try
@@ -503,8 +496,7 @@ namespace CosmicShore.Gameplay
             // before recovery is therefore silently dropped (the channel event has no
             // subscriber). Raising it here lands on the fresh menu's live ToastService.
             // See Docs/PartySystem/BUGS.md B10.
-            // PORT Deviation (UI-shell/scene arc 2026-07-08, ToastChannel — restore when ToastChannel ports):
-            // bounceToastChannel?.ShowPrefix(toastMessage);
+            bounceToastChannel?.ShowPrefix(toastMessage);
         }
 
         /// <summary>

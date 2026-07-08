@@ -77,5 +77,17 @@ namespace CosmicShore.Engine.SceneManagement
             if (scene != null) scene.name = sceneName;
             NotifySceneLoaded(scene ?? new Scene(sceneName), mode);
         }
+
+        /// <summary>
+        /// Synchronous variant (original contract: <c>SceneManager.LoadScene</c> — the
+        /// defensive fallback ported loaders take when the async path is unavailable).
+        /// Same minimal semantic as <see cref="LoadSceneAsync"/>, applied immediately.
+        /// </summary>
+        public static void LoadScene(string sceneName, LoadSceneMode mode = LoadSceneMode.Single)
+        {
+            var scene = GameLoop.Current?.Scene;
+            if (scene != null) scene.name = sceneName;
+            NotifySceneLoaded(scene ?? new Scene(sceneName), mode);
+        }
     }
 }

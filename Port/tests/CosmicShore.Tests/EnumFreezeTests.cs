@@ -344,4 +344,11 @@ public class EnumFreezeTests
     [InlineData(CosmicShore.Gameplay.MenuCameraMode.VesselTopDownPan, 3)]
     public void MenuCameraMode_Values_Frozen(CosmicShore.Gameplay.MenuCameraMode mode, int expected)
         => Assert.Equal(expected, (int)mode);
+
+    [Theory]
+    [InlineData(CosmicShore.UI.ToastAnimation.ChatSubtleSlide, 0)]
+    [InlineData(CosmicShore.UI.ToastAnimation.Pop, 1)]
+    [InlineData(CosmicShore.UI.ToastAnimation.Fade, 2)]
+    public void ToastAnimation_Values_Frozen(CosmicShore.UI.ToastAnimation anim, int expected)
+        => Assert.Equal(expected, (int)anim);
 }

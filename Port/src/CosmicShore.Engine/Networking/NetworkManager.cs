@@ -1,3 +1,5 @@
+using CosmicShore.Engine.Tasks;
+
 namespace CosmicShore.Engine.Networking
 {
     /// <summary>
@@ -66,6 +68,23 @@ namespace CosmicShore.Engine.Networking
         /// <see cref="NetworkObject.SpawnWithOwnership"/> while a Singleton is assigned.
         /// </summary>
         public NetworkSpawnManager SpawnManager { get; set; } = new();
+
+        /// <summary>
+        /// Placeholder for Netcode's server-authoritative scene manager
+        /// (<c>NetworkManager.SceneManager</c>). In the single-process port a "network"
+        /// scene load IS a local load: <see cref="NetworkSceneManager.LoadScene"/> delegates
+        /// to the engine <c>SceneManagement.SceneManager.LoadSceneAsync</c> (fire-and-forget,
+        /// per Netcode's void contract) so loaders that poll the active scene name observe
+        /// the same convergence a replicated load would produce. Client-side replication
+        /// arrives with the transport phase.
+        /// </summary>
+        public NetworkSceneManager SceneManager { get; set; } = new();
+
+        public sealed class NetworkSceneManager
+        {
+            public void LoadScene(string sceneName, SceneManagement.LoadSceneMode mode)
+                => SceneManagement.SceneManager.LoadSceneAsync(sceneName, mode).Forget();
+        }
 
         /// <summary>
         /// The local machine's connection record (original surface —
