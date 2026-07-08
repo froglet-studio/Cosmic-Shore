@@ -29,4 +29,23 @@ namespace CosmicShore.Engine.Services
         /// <summary>Restore the benign uninitialized default (test isolation helper).</summary>
         public static void Reset() => State = ServicesInitializationState.Uninitialized;
     }
+
+    /// <summary>
+    /// Placeholder for <c>Unity.Services.Core.RequestFailedException</c> — the UGS request
+    /// layer's typed failure, wrapping the HTTP status (or SDK error code) on
+    /// <see cref="ErrorCode"/>. Grown so ported error classifiers
+    /// (<c>NetworkDiagnostics.ClassifyException</c>,
+    /// <c>HostConnectionService.IsDefiniteSessionGoneException</c>) run their typed arms
+    /// verbatim; real construction sites arrive with the services phase.
+    /// </summary>
+    public class RequestFailedException : System.Exception
+    {
+        public int ErrorCode { get; }
+
+        public RequestFailedException(int errorCode, string message)
+            : base(message) => ErrorCode = errorCode;
+
+        public RequestFailedException(int errorCode, string message, System.Exception innerException)
+            : base(message, innerException) => ErrorCode = errorCode;
+    }
 }

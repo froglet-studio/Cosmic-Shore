@@ -691,21 +691,37 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the scene-management surface, 2026-07-08)
+## NEXT UP (after the UGS-core error/kick surface, 2026-07-08)
 
-1. **UGS-core error/kick surface**: grow the engine `RequestFailedException`
-   (with `ErrorCode`) in `CosmicShore.Engine.Services` +
-   `IHostSession.RemovePlayerAsync`, then un-carry the deviations they
-   satisfy — HostConnectionService's last 2 services-phase deviations
-   (KickPartyMemberAsync's UGS-side kick; the 404 arm in
-   IsDefiniteSessionGoneException) and NetworkDiagnostics' carried
-   RequestFailedException classifier arm — with tests.
-2. **Scope the UI-shell arc** (ToastChannel / SceneTransitionManager /
+1. **Scope the UI-shell arc** (ToastChannel / SceneTransitionManager /
    SceneLoader): un-carries PartyInviteController's three UI-shell
-   deviations; SceneLoader is the big one — scope before porting.
-3. **Track bleeding-edge**: merge upstream again next iteration; every merge
+   deviations (bounce toast, fade cover, splash re-arm); SceneLoader is the
+   big one — SCOPE first, then port what goes live with tests per precedent.
+2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
-4. Update this file, commit, push.
+3. Update this file, commit, push.
+
+### UGS-core error/kick surface ✅ (2026-07-08) — HostConnectionService FULLY LIVE
+
+The engine grew **`RequestFailedException`** (with `ErrorCode`, in
+`CosmicShore.Engine.Services` next to the UnityServices shim — real
+construction sites arrive with the services phase) and
+**`IHostSession.RemovePlayerAsync`** (host-privilege kick; all six test
+fakes updated). Un-carried with them, the last carried code in the party
+orchestrator: `KickPartyMemberAsync`'s UGS-side kick
+(`ActiveSession.AsHost().RemovePlayerAsync`, CS1998 pragma retired) and the
+HTTP-404 arm in `IsDefiniteSessionGoneException` — plus
+`NetworkDiagnostics.ClassifyException`'s typed request-layer arm
+(429→RateLimit, 404→SessionGone, 5xx→Transient, -1/0→Offline,
+default→Transient). **The 2,078-line `HostConnectionService` now carries
+ZERO deviations — fully live**; `NetworkDiagnostics` likewise (its
+Unity-namespace string branches stay verbatim-dead until the real SDK).
+**12 new tests**: the kick flow through the rig (non-host guard, host path
+= local roster removal + OnPartyMemberKicked + recorded UGS kick, self-kick
+guard), the 7-case ClassifyException error-code map + the one-layer
+AggregateException unwrap, and the session-gone classifier's 404 read +
+inner-chain walk. **1456 tests green in BOTH configs (1144 + 312)**; all 5
+CLI modes exit 0; both client diags byte-identical. bleeding-edge unmoved.
 
 ### Scene-management surface ✅ (2026-07-08) — 3 scene-phase deviations un-carried
 

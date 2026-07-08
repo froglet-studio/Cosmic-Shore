@@ -36,6 +36,7 @@ sealed class Ring3Session : IHostSession
     public System.Threading.Tasks.Task LeaveAsync() { Left++; return System.Threading.Tasks.Task.CompletedTask; }
     public IHostSession AsHost() => this;
     public System.Threading.Tasks.Task DeleteAsync() { Deletes++; return System.Threading.Tasks.Task.CompletedTask; }
+    public System.Threading.Tasks.Task RemovePlayerAsync(string playerId) => System.Threading.Tasks.Task.CompletedTask;
 }
 
 public class PartySessionServiceTests : IDisposable

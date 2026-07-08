@@ -52,6 +52,7 @@ sealed class HcsLobby : IHostSession
     public Task LeaveAsync() => Task.CompletedTask;
     public IHostSession AsHost() => this;
     public Task DeleteAsync() => Task.CompletedTask;
+    public Task RemovePlayerAsync(string playerId) => Task.CompletedTask;
 }
 
 sealed class FakeLobbyService : IPresenceLobbyService
@@ -86,6 +87,8 @@ sealed class FakePartySession : IHostSession
     public Task LeaveAsync() => Task.CompletedTask;
     public IHostSession AsHost() => this;
     public Task DeleteAsync() => Task.CompletedTask;
+    public List<string> KickedIds { get; } = new();
+    public Task RemovePlayerAsync(string playerId) { KickedIds.Add(playerId); return Task.CompletedTask; }
 }
 
 sealed class FakePartySessionService : IPartySessionService
@@ -308,6 +311,34 @@ public class HostConnectionServiceTests : IDisposable
 
         Assert.Null(svc.LastPendingInvite);
         Assert.True(resolved >= 1);
+    }
+
+    [Fact]
+    public async Task KickPartyMember_HostOnly_RemovesLocallyAndKicksRemote()
+    {
+        var (svc, conn, _, party, _) = MakeRig();
+        conn.PartyMembers.Add(new PartyPlayerData("local", "Me", 1));
+        conn.PartyMembers.Add(new PartyPlayerData("guest-1", "Guest", 2));
+        int kickedRaises = 0;
+        conn.OnPartyMemberKicked.OnRaised += _ => kickedRaises++;
+        var session = (FakePartySession)party.ActiveSession;
+
+        // Non-host: guarded no-op — neither the local roster nor UGS is touched.
+        conn.IsPartyHost = false;
+        await svc.KickPartyMemberAsync("guest-1");
+        Assert.Empty(session.KickedIds);
+        Assert.Equal(0, kickedRaises);
+
+        // Host: local removal (OnPartyMemberKicked) + the un-carried UGS-side kick.
+        conn.IsPartyHost = true;
+        await svc.KickPartyMemberAsync("guest-1");
+        Assert.DoesNotContain(conn.PartyMembers, m => m.PlayerId == "guest-1");
+        Assert.Equal(1, kickedRaises);
+        Assert.Equal("guest-1", Assert.Single(session.KickedIds));
+
+        // Self-kick: guarded no-op.
+        await svc.KickPartyMemberAsync("local");
+        Assert.Single(session.KickedIds);
     }
 
     [Fact]

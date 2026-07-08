@@ -71,6 +71,9 @@ namespace CosmicShore.Engine.Networking
     public interface IHostSession : ISession
     {
         System.Threading.Tasks.Task DeleteAsync();
+
+        /// <summary>Kick a player from the session (host privilege). Placeholder no-ops complete immediately.</summary>
+        System.Threading.Tasks.Task RemovePlayerAsync(string playerId);
     }
 
     /// <summary>

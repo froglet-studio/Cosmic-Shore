@@ -27,11 +27,10 @@
 // the PartyStateMachine transitions, the SOAP raises via SoapPartyEventBus, IPartyStateQuery,
 // and every NetworkDiagnostics NetDiag log line (helper ported in parallel this arc).
 //
-// Deviations (all marked inline):
-// • services phase — IHostSession.RemovePlayerAsync (KickPartyMemberAsync's UGS-side kick;
-//   engine IHostSession carries only DeleteAsync) and the Unity.Services.Core
-//   .RequestFailedException 404 check in IsDefiniteSessionGoneException (without the SDK no
-//   exception can ever be that type, so skipping preserves the classifier's truth value).
+// Deviations: NONE remaining — the file is fully live.
+// • (RESTORED 2026-07-08) services phase — the engine grew IHostSession.RemovePlayerAsync
+//   (KickPartyMemberAsync's UGS-side kick) and RequestFailedException with ErrorCode
+//   (the 404 arm in IsDefiniteSessionGoneException).
 // • (RESTORED 2026-07-08) party-system arc — PartyInviteController ported: LeavePartyAsync
 //   body and the three IsTransitioning guards (RefreshAsync entry + catch,
 //   RefreshPartyMembersAsync catch) are live again.
@@ -793,7 +792,6 @@ namespace CosmicShore.Gameplay
             await controller.LeavePartyAndReturnToMenuAsync();
         }
 
-#pragma warning disable CS1998 // PORT Deviation (services phase 2026-07-08): the method's await lives in the commented RemovePlayerAsync line below.
         public async Task KickPartyMemberAsync(string playerId)
         {
             if (!connectionData.IsPartyHost)
@@ -813,9 +811,8 @@ namespace CosmicShore.Gameplay
             {
                 try
                 {
-                    // PORT Deviation (services phase 2026-07-08, IHostSession.RemovePlayerAsync — restore when UGS services port;
-                    // the engine IHostSession placeholder carries only DeleteAsync, and `.AsMainThread()` → plain await per README):
-                    // await _partySessionService.ActiveSession.AsHost().RemovePlayerAsync(playerId);
+                    // (Port: the retired `.AsMainThread()` boundary maps to a plain await.)
+                    await _partySessionService.ActiveSession.AsHost().RemovePlayerAsync(playerId);
                     Debug.Log($"[HostConnectionService] Kicked {playerId} from party session.");
                 }
                 catch (Exception e)
@@ -830,7 +827,6 @@ namespace CosmicShore.Gameplay
                 }
             }
         }
-#pragma warning restore CS1998
 
         // ╔═══════════════════════════════════════════════════════════════════╗
         // ║  Public misc API                                                  ║
@@ -2031,11 +2027,8 @@ namespace CosmicShore.Gameplay
                              or SessionError.NotInLobby)
                     return true;
 
-                // PORT Deviation (services phase 2026-07-08, Unity.Services.Core.RequestFailedException — restore when
-                // UGS services port; without the SDK no exception can ever be that type, so skipping the check
-                // preserves the classifier's exact upstream truth value in this build):
-                // if (current is Unity.Services.Core.RequestFailedException rfe && rfe.ErrorCode == 404)
-                //     return true;
+                if (current is CosmicShore.Engine.Services.RequestFailedException rfe && rfe.ErrorCode == 404)
+                    return true;
 
                 var msg = current.Message;
                 if (!string.IsNullOrEmpty(msg) &&

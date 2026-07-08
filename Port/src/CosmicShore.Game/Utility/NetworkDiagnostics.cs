@@ -3,7 +3,7 @@
 // + NetworkReachability are engine additions). The engine's SessionException placeholder gets a
 // structured-Error branch mirroring the upstream Unity.Services string branch (which is kept
 // verbatim below it — dead until the real SDK returns); the RequestFailedException typed branch
-// is carried as a services-phase deviation (type absent).
+// is LIVE against the engine placeholder (RESTORED 2026-07-08 — was a services-phase deviation).
 // ─────────────────────────────────────────────────────────────────────────────
 // NetworkDiagnostics.cs
 //
@@ -171,15 +171,14 @@ namespace CosmicShore.Utility
             }
 
             // UGS request layer — wraps HTTP status code on ErrorCode.
-            // PORT Deviation (services phase 2026-07-08, Unity.Services.Core.RequestFailedException — restore when UGS services port):
-            // if (inner is Unity.Services.Core.RequestFailedException rfe)
-            // {
-            //     if (rfe.ErrorCode == 429) return "RateLimit";
-            //     if (rfe.ErrorCode == 404) return "SessionGone";
-            //     if (rfe.ErrorCode >= 500 && rfe.ErrorCode < 600) return "Transient";
-            //     if (rfe.ErrorCode == -1 || rfe.ErrorCode == 0) return "Offline";
-            //     return "Transient";
-            // }
+            if (inner is CosmicShore.Engine.Services.RequestFailedException rfe)
+            {
+                if (rfe.ErrorCode == 429) return "RateLimit";
+                if (rfe.ErrorCode == 404) return "SessionGone";
+                if (rfe.ErrorCode >= 500 && rfe.ErrorCode < 600) return "Transient";
+                if (rfe.ErrorCode == -1 || rfe.ErrorCode == 0) return "Offline";
+                return "Transient";
+            }
 
             // Transport-layer offline signals.
             if (inner is WebException || inner is SocketException || inner is HttpRequestException)

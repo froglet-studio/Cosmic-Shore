@@ -48,6 +48,7 @@ sealed class RingStubLobby : IHostSession
     public int Left; public int Deleted2;
     public IHostSession AsHost() => this;
     public System.Threading.Tasks.Task DeleteAsync() { Deleted2++; return System.Threading.Tasks.Task.CompletedTask; }
+    public System.Threading.Tasks.Task RemovePlayerAsync(string playerId) => System.Threading.Tasks.Task.CompletedTask;
 }
 
 public class LobbyRefreshSchedulerTests : IDisposable
