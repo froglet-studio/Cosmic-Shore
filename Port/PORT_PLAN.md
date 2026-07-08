@@ -691,18 +691,22 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the party ring went fully live, 2026-07-09)
+## NEXT UP (after the CloudData core landed, 2026-07-09)
 
-1. **CloudSave / player-data services arc (services phase, #14 family)**:
-   SCOPE `UGSDataService` (currently a shell) + the `#14` deviation family —
-   `PlayerDataService` (12 markers: `_ugsDataService` injection, ProfileRepo
-   read/write, ready-event hooks, MergeCloudProfile's null seed) and
-   `GameSetting` (7 markers). Grow an engine CloudSave/data-repo placeholder
-   per the MultiplayerSdk/Friends precedent (honest local semantics — e.g. an
-   in-memory repo store), port UGSDataService against it, then un-carry what
-   the growth satisfies with behavior tests. SCOPE first — the repo surface
-   may split across two iterations; `AnalyticsServiceFacade` (still a shell)
-   is a separate later arc, don't overreach into it.
+1. **Un-carry the #14 consumers against the live UGSDataService**:
+   `PlayerDataService` (12 markers: the `_ugsDataService` [Inject] field, the
+   Start ready-event fork — `if (_ugsDataService.IsInitialized)
+   HandleDataServiceReady(); else += HandleDataServiceReady`, the OnDestroy
+   unsubscribe, MergeCloudProfile's `ds?.ProfileRepo == null` guard + real
+   `ds.ProfileRepo.Data` read replacing the null seed, and the
+   SyncCurrentProfileToRepo write path) and `GameSetting` (7 markers — the
+   PlayerSettingsRepository read/write staging). UGSDataService + all 11
+   repositories + UGSCloudSaveProvider are now FULLY live (CloudData-core
+   arc below), so these restores are pure un-carries with behavior tests
+   (LocalCloudSaveService pre-seed per the UgsDataServiceTests precedent;
+   remember CloudSaveService.Reset() + AuthenticationService.Reset() +
+   UnityServices.Reset() in setup/teardown). AnalyticsServiceFacade stays a
+   shell (separate later arc) — do NOT overreach into it.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
@@ -718,6 +722,48 @@ client + AstroLeague headless round running + remaining ladder rungs (5: real lo
 > (randomized string hashing → dictionary iteration order, or real-time leakage
 > into the sim under contention). Worth a dedicated diagnosis iteration; both
 > tests are pre-existing arcs (spawner C6 / headless round), untouched since.
+
+### CloudData core ✅ (2026-07-09) — the full CloudSave family + UGSDataService live
+
+Engine growth: **`CloudSaveSdk.cs`** (`Engine/Services`) — the UGS Cloud Save
+placeholder per the MultiplayerSdk precedent: `CloudSaveService` (settable
+`Instance` + `Reset()`), `ICloudSaveService.Data.Player` →
+`IPlayerDataApi.LoadAsync(HashSet<string>) / SaveAsync(Dictionary<string,object>)`,
+`Item` + `IDeserializable.GetAs<T>()`, and the shared `CloudSaveJson.Options`
+(`IncludeFields = true` — the models are Unity-style field-based classes,
+which System.Text.Json ignores by default; this is load-bearing). The default
+**`LocalCloudSaveService`** serializes on save and deserializes on load — a
+REAL JSON round-trip (dictionary fields survive, reference identity does
+not), empty on fresh process.
+
+**30 files ported** (all verbatim; substitutions noted in headers):
+`UGSKeys` (all cloud keys + analytics event names), the 3 CloudData
+interfaces (`ICloudSaveProvider`, `ICloudDataReader/Writer/Repository`,
+`IUGSDataService`), 8 CloudData models (Hangar/Loadout/Squad/Episode/
+DailyChallenge/Training/CaptainProgress + the already-ported PlayerSettings),
+`PlayerStatsProfile` + the 4 per-mode stats profiles, `VesselStatsCloudData`,
+`GameModeProgressionData`, `CloudDataRepository` (debounced-save base; the
+raw `Task.Delay` debounce is upstream's own — real-time, kept verbatim) + all
+12 domain repositories (incl. CaptainProgress, unreferenced by UGSDataService
+but part of the family — lose nothing), `UGSCloudSaveProvider` (availability
+gate, legacy-string load fallback via System.Text.Json-for-Newtonsoft,
+retry-with-backoff + once-per-episode `OnSaveFailed`; ONE carried deviation:
+the `ToastNotificationAPI.Show` failure toast, UI shell), `SO_VesselList`,
+and **`UGSDataService` (245L, replaces the Deviation-#14 shell)** — the
+auth-driven init over all 11 repositories, hangar→SO_Vessel unlock sync,
+flush-dirty-only, and reset-all run FULLY live.
+
+**12 behavior tests** (`CloudDataTests` + `UgsDataServiceTests`): the local
+store's real round-trip (dictionaries survive, missing keys absent), the
+provider's availability gate / save-load round-trip / legacy-string fallback
+/ cancelled-backoff arm (no failure episode), the repository lifecycle
+(empty-cloud default + OnDataChanged, debounced dirty→clean flush,
+keep-dirty-offline → flush-on-reconnect, reset-persists), and UGSDataService
+end to end (signed-in-at-start init + hangar unlock sync onto the SO asset,
+sign-in-later via the SOAP event, flush-dirty-only + reset-all through the
+cloud). **1543 tests green in BOTH configs (1205 + 338)**; all 5 CLI modes
+exit 0; both client diags byte-identical. bleeding-edge unmoved at
+`97d4ab29`.
 
 ### Party-ring session surface ✅ (2026-07-09) — PartySessionService + PresenceLobbyService fully live
 

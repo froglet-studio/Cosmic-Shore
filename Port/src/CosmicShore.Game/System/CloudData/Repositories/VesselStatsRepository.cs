@@ -1,0 +1,17 @@
+// Ported verbatim from _Scripts/System/CloudData/Repositories/VesselStatsRepository.cs (CloudSave arc 2026-07-09).
+using CosmicShore.Core;
+using CosmicShore.Gameplay;
+
+namespace CosmicShore.Core
+{
+    /// <summary>
+    /// Repository for per-vessel lifetime telemetry stats.
+    /// Cloud key: "VESSEL_STATS"
+    /// </summary>
+    public sealed class VesselStatsRepository : CloudDataRepository<VesselStatsCloudData>
+    {
+        public override string CloudKey => UGSKeys.VesselStats;
+
+        public VesselStatsRepository(ICloudSaveProvider provider) : base(provider, 2f) { }
+    }
+}
