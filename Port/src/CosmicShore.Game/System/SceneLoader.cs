@@ -18,10 +18,9 @@
 // ClearPlayerVesselReferences (AI despawn ordering), HandleActiveSessionEnd,
 // and the quit cleanup.
 //
-// Deviation (marked inline): bootstrap arc — ApplicationStateMachine (not yet
-// ported): the [Inject] field + the two `_appStateMachine?.TransitionTo(...)`
-// calls are carried as commented source; upstream's own null-conditional makes
-// the absent machine a no-op, so behavior is upstream-exact for this build.
+// Deviations: NONE remaining — the file is fully live.
+// • (RESTORED 2026-07-08) bootstrap arc — ApplicationStateMachine ported: the
+//   [Inject] field + both `_appStateMachine?.TransitionTo(...)` calls are live again.
 
 using System;
 using CosmicShore.Data;
@@ -64,10 +63,7 @@ namespace CosmicShore.Core
 
         [Inject] GameDataSO gameData;
         [Inject] SceneNameListSO _sceneNames;
-        // PORT Deviation (bootstrap arc 2026-07-08, ApplicationStateMachine — restore when the
-        // bootstrap arc ports; upstream's own null-conditional call sites make the absent
-        // machine a no-op, so behavior is upstream-exact in this build):
-        // [Inject] ApplicationStateMachine _appStateMachine;
+        [Inject] ApplicationStateMachine _appStateMachine;
         [Inject] SceneTransitionManager _sceneTransitionManager;
 
         #region Unity Lifecycle
@@ -169,8 +165,7 @@ namespace CosmicShore.Core
                       $"Intensity={gameData.SelectedIntensity.Value}, PlayerCount={gameData.SelectedPlayerCount.Value}, " +
                       $"AIBackfill={gameData.RequestedAIBackfillCount}</color>");
 
-            // PORT Deviation (bootstrap arc 2026-07-08, ApplicationStateMachine — restore when the bootstrap arc ports):
-            // _appStateMachine?.TransitionTo(ApplicationState.LoadingGame);
+            _appStateMachine?.TransitionTo(ApplicationState.LoadingGame);
 
             // Show splash overlay during scene transition.
             _sceneTransitionManager?.SetFadeImmediate(1f);
@@ -219,8 +214,7 @@ namespace CosmicShore.Core
         /// </summary>
         public void ReturnToMainMenu()
         {
-            // PORT Deviation (bootstrap arc 2026-07-08, ApplicationStateMachine — restore when the bootstrap arc ports):
-            // _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
+            _appStateMachine?.TransitionTo(ApplicationState.MainMenu);
 
             // Clear stale return-to-screen/modal state so Menu_Main starts clean
             // on HOME with no modals open. These keys are set by ScreenSwitcher

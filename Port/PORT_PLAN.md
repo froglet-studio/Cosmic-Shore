@@ -691,16 +691,37 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the UI-shell arc, 2026-07-08)
+## NEXT UP (after ApplicationStateMachine, 2026-07-08)
 
-1. **`ApplicationStateMachine` (229L, bootstrap arc)** — pure C# single-writer
-   phase tracker over the already-ported ScriptableApplicationState SOAP
-   family; un-carries SceneLoader's one remaining deviation (the two
-   `_appStateMachine?.TransitionTo` calls), with tests (table-driven
-   transition graph + special states).
+1. **Scope the bootstrap arc** (AppManager DI root / the full
+   ApplicationLifecycleManager / AuthenticationServiceFacade /
+   BootstrapConfigSO): the app-entry orchestration that wires everything the
+   recent arcs made live. SCOPE first per precedent — AppManager binds the
+   whole DI surface; port what goes live with services-phase deviations for
+   the UGS init/auth wire calls.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### ApplicationStateMachine ✅ (2026-07-08) — SceneLoader FULLY LIVE
+
+The `ApplicationLifecycleManager` statics shell grew the **`OnAppPaused` /
+`OnAppQuitting`** static C# events (+ `NotifyPaused`, and `NotifyQuitting`
+now raises) — the full MonoBehaviour lifecycle manager still ports with the
+bootstrap arc. **`ApplicationStateMachine` (229L) ported verbatim, FULLY
+LIVE, zero deviations**: the table-driven transition graph, the special
+states (ShuttingDown always allowed; Paused from any non-terminal state with
+restore-to-previous; Disconnected from any active state), the SOAP
+auto-wiring (OnSessionStarted → InGame, OnMiniGameEnd → GameOver, the
+lifecycle statics, OnNetworkLost → Disconnected), and the PreviousState +
+OnStateChanged publication. **Un-carried:** SceneLoader's last deviation
+(the `[Inject]` + both `TransitionTo` calls) — **SceneLoader now carries
+ZERO deviations.** Upstream's own **26-test EditMode suite ported verbatim**
+into CosmicShore.Tests.Ported (valid/invalid graph walks, same-state no-op,
+ShuttingDown/Paused/Disconnected specials, HandleAppPaused round trip,
+PreviousState tracking). **1492 tests green in BOTH configs (1154 + 338)**;
+all 5 CLI modes exit 0; both client diags byte-identical. bleeding-edge
+unmoved.
 
 ### UI-shell arc ✅ (2026-07-08) — PartyInviteController FULLY LIVE
 
