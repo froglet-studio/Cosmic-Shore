@@ -691,16 +691,45 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after PartyInviteController, 2026-07-08)
+## NEXT UP (after the Friends system, 2026-07-08)
 
-1. **`FriendsInitializer` (236L)** — needs a FriendsServiceFacade shell or
-   port (UGS Friends SDK surface). Completes the party-system arc's file
-   inventory (`Controller/Party/` is otherwise fully ported).
-2. **`MainMenuCameraController` (camera arc)**: the last deviation pair in
+1. **`MainMenuCameraController` (camera arc)**: the last deviation pair in
    `MenuCrystalClickHandler`.
-3. **Track bleeding-edge**: merge upstream again next iteration; every merge
+2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
-4. Update this file, commit, push.
+3. Update this file, commit, push.
+
+### Friends system ✅ (2026-07-08) — party-system arc file inventory COMPLETE
+
+The engine grew a **Friends SDK placeholder surface** per the ISession
+precedent (`CosmicShore.Engine.Services.Friends`, one flat namespace mapped
+from `Unity.Services.Friends[.Exceptions|.Models|.Notifications]` — README
+table updated): Availability/RelationshipType/MemberRole enums,
+Profile/Presence(+GetActivity&lt;T&gt;)/Member/Relationship shapes,
+FriendsServiceException, the three notification event interfaces,
+IFriendsService (full read/write/presence/refresh/notification surface), and
+a static `FriendsService.Instance` settable test hook (the
+NetworkManager.Singleton pattern). Against it, THREE files ported FULLY LIVE
+with **zero deviations**: `FriendsDataSO` (SOAP container: 4 reactive lists +
+4 events + ready event + computed counts + ResetRuntimeData),
+`FriendsServiceFacade` (534L single-writer: init + event wiring, the whole
+relationship API, presence, refresh, IsFriend/IsBlocked, SDK→SOAP sync incl.
+StripUgsDiscriminator + AvailabilityToInt; `FriendsService.Instance` null
+until the real SDK binds — InitializeAsync's own catch degrades that to a
+warning, upstream's exact failure path), and `FriendsInitializer` (236L
+bridge: sign-in bootstrap, party-presence subscriptions, all presence
+helpers, sign-out reset). `Controller/Party/` is now **fully ported** — the
+party-system arc's file inventory is complete. **8 behavior tests**
+(`FriendsSystemTests`) drive initializer+facade through a fake IFriendsService:
+sign-in bootstrap → init + "In Menu" presence; SDK→SOAP sync with
+discriminator strip / availability mapping / activity read-back / no-profile
+fallback; notification routing (Friend→OnFriendAdded,
+Source-FriendRequest→OnFriendRequestReceived, Target-request→nothing,
+delete→OnFriendRemoved); party presence following member join / last-remote
+leave; accept-request resync via an SDK side-effect hook; the pre-init
+mutation guard; sign-out reset + notification unwire; OnDestroy→Offline.
+**1432 tests green in BOTH configs (1120 + 312)**; all 5 CLI modes exit 0;
+both client diags byte-identical. bleeding-edge unmoved.
 
 ### PartyInviteController + orchestrator un-carry ✅ (2026-07-08)
 
