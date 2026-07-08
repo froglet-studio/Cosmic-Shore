@@ -33,6 +33,12 @@ namespace CosmicShore.Gameplay
         /// the companion render entity through this after each scale write.</summary>
         internal Prism OwnerPrism => prism;
 
+        /// <summary>Time.time of this animator's last processed growth step.
+        /// Written by PrismScaleManager: the sliced growth pass steps each grower
+        /// with its true elapsed dt, so tempo is preserved no matter how many
+        /// frames sit between a grower's slices.</summary>
+        internal float LastStepTime { get; set; }
+
         private bool isScaling;
         public bool IsScaling
         {
