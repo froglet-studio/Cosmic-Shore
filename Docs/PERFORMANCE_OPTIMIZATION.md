@@ -23,10 +23,41 @@ protocol and update this doc (status + measured numbers).
 | Menu_Main (lava lamp) | ~6 fps | ~50 fps |
 | HexRace | periodic multi-ms spike train | ~33 ms frames, no spike train |
 
-Remaining known costs: `PrismScaleManager.Process` spikes to **5.55 ms** when
-active growers hit ~1000 (Task 1); `EventSystem.Update` ≈ **0.5 ms** flat UI
-raycast tax (Task 2); first-use shader-compile hitches (Task 3 — plumbing
-shipped, collection not yet recorded).
+Remaining known costs: `EventSystem.Update` ≈ **0.5 ms** flat UI raycast tax
+(Task 2); first-use shader-compile hitches (Task 3 — plumbing shipped,
+collection not yet recorded).
+
+### 2026-07-08 capture (HexRace, frame 2721, 71.28 ms) — two new findings
+
+1. **Pool-refill Instantiate + full GC (35 ms).** `UniTaskLoopRunnerEarlyUpdate
+   → Instantiate.Produce` (one call, 14.30 ms self — a prism prefab, per the
+   child component ctors) with a **20.75 ms `GC.Collect`** inside it. Root
+   cause is structural: **conserved prisms make pool consumption one-way** —
+   `Prism.ReturnToPool()` has no gameplay caller (destroyed prisms persist as
+   restorable wrecks, by design), so after the first ~30 buffered instances
+   every trail prism laid = one runtime Instantiate of a heavy 7-component
+   prefab, all session. Pool config is consistent (no maxSize churn bug:
+   vessel pools 10/100/20 capacity/max/buffer; `PrismExplosionPool`
+   1500/1500/1500). The full GC is the heap-growth clock expiring mid-race.
+   **Shipped mitigations:** full `GC.Collect()` behind the scene-load splash
+   (`SceneLoader.LoadSceneAsync`); the per-spawn `WaitForSeconds` alloc in
+   `Prism.CreateBlockCoroutine` cached (one alloc per prism ever laid,
+   eliminated); `PoolRefill.<prefabName>` ProfilerMarker around maintenance
+   refills for per-pool attribution. **Escalation (needs the marker datum):**
+   if `PoolRefill.*` shows multi-ms *typical* (not GC-polluted) unit cost,
+   move maintenance refills to Unity 6 `Object.InstantiateAsync` so the
+   engine time-slices the instantiate — deliberate integration risk, only
+   with evidence.
+2. **Task 1's missing datum arrived: 4350 active / 11,400 registered**
+   growers (Animators HUD) during HexRace — 4× the design estimate. Source
+   shortlist (verified callers): **Boid grazing** calls `Grow(±1)` on prey +
+   own health prism per bite (`Boid.cs:297-298, 476`) — sustained grazing
+   keeps whole clusters legitimately re-animating; assembler bonding
+   (`GyroidAssembler.cs:372`, `WallAssembler.cs:313`, one-shot per bond);
+   `GunVesselTransformer.cs:100`; creation blooms. This is re-triggered
+   animation from real gameplay, **not a leak** (disabled/destroyed animators
+   unregister via `OnDisable`/`OnDestroy`) — so the fix is the Task 1
+   slice-and-budget, which shipped (below).
 
 ### Shipped optimizations (do not regress)
 
@@ -49,6 +80,11 @@ shipped, collection not yet recorded).
 | `660854e7` | Budget prism creation completions per frame (6/frame, `Prism.cs`) |
 | `0caca23a` | Attribute animation-manager cost (`PrismScaleManager.Process` marker); cache color endpoints |
 | `669b5ef8` | Raycast-target audit editor tool (Task 2 tooling) |
+| `27860eaa` | Growth step made dt-linear, tempo-preserved (Task 1 commit 1) |
+| `4b36b7f8` | Growth pass sliced under a per-frame budget, true-dt stepping (Task 1 commit 2) |
+| `5f6b497a` | Full GC behind the scene-load splash |
+| `546e2b98` | Spawn-window `WaitForSeconds` cached (kills one alloc per prism laid) |
+| `e04d5a72` | `PoolRefill.<prefabName>` markers on pool buffer refills |
 
 ---
 
@@ -98,12 +134,17 @@ shipped, collection not yet recorded).
 
 ## 4. Backlog (priority order = value for cost)
 
-### Task 1 — PrismScaleManager growth-wave cost ★ NEXT UP
+### Task 1 — PrismScaleManager growth-wave cost ✔ SHIPPED (2026-07-08)
 
-**Status:** fix fully designed and code-verified; safe to implement now. One
-open datum (spike source) is a *bonus* investigation, not a blocker.
-**Value:** highest — 5.55 ms → target ≤ ~1.7 ms on the worst observed frames,
-two small mechanical commits in one file each.
+**Status:** SHIPPED — `27860eaa` (dt-linear step) + `4b36b7f8` (sliced pass,
+`maxGrowersPerFrame = 300` serialized on `PrismScaleManager`, per-animator
+`LastStepTime` true-dt stepping, 0.5 s dt cap against catch-up pops). The
+spike source datum arrived (see §1): 4350 active growers during HexRace,
+driven by Boid grazing `Grow(±1)` per bite — legitimate re-animation, not a
+leak. **In-editor verification pending (see §5 + the per-fix checks below).**
+Design record kept below for the rationale.
+**Value:** highest — at 4350 active the unsliced pass walked every grower's
+native interop each 20 ms tick; the budget caps it at 300/tick (~1/14th).
 
 **Symptom.** `PrismScaleManager.Process` = 5.55 ms when active growers spike
 to ~1000 (baseline < 200; spikes a few times per session). Confirmed via the
@@ -161,10 +202,15 @@ pulse? gyroid assembly? If it's the flora regrowth pulse, note
 already-settled prisms every tick, kill it at the source (bigger win than
 slicing).
 
-**Verify:** same HexRace scenario; `PrismScaleManager.Process` ≤ ~1.7 ms at
-1000 active; growth blooms visually unchanged (rings, flora, trails);
+**Verify (in-editor, pending):** same HexRace scenario;
+`PrismScaleManager.Process` bounded (~≤ 2 ms even at 4350 active); growth
+blooms visually unchanged at low counts (rings, flora, trails — tempo
+identical); during a heavy frenzy, blooms step coarser but at the same
+overall speed — if visibly chunky, raise `maxGrowersPerFrame` on the
+`PrismScaleManager` component (PrismManagers prefab) and re-check the marker;
 Animators HUD count unchanged — slicing must not change WHO animates, only
-when they step.
+when they step. Confirm no prism ever pops instantly to full size (the
+unseeded-stamp fallback + dt cap guard this).
 
 ---
 
@@ -376,3 +422,4 @@ not compiler, at the time of the merge).
 | Date | Change |
 |---|---|
 | 2026-07-08 | Created. All task file/line claims verified against code (6-agent sweep). Corrections found: LightFauna's tick is `UpdateBehavior` (not `CalculateBehavior` — that's Boid's); AOE explosion lifetime is ~2.2–4.2 s (not 0.6 s); audit tool's prefab path is not Undo-able; StatsManager's Omni lambda is captureless (no alloc) — only the four elemental lambdas allocate; shader-warmup log additionally requires `_verboseLogging=1` on `BootstrapConfig.asset`. Task 1 marked NEXT UP. |
+| 2026-07-08 (later) | HexRace capture analyzed (71 ms frame): pool-refill Instantiate + 20.75 ms mid-race `GC.Collect` on EarlyUpdate, and the Task 1 datum landed — 4350/11,400 growers, source = Boid grazing re-animation (legit, not a leak). Shipped: Task 1 both commits (`27860eaa`, `4b36b7f8`), GC behind splash (`5f6b497a`), spawn-window WaitForSeconds cache (`546e2b98`), `PoolRefill.*` markers (`e04d5a72`). Ecology protocol run: pacing/attribution only, zero collider impact, tempo + continuity preserved by construction. Escalation recorded: `InstantiateAsync` refills only if `PoolRefill.*` shows multi-ms typical unit cost. |
