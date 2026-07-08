@@ -58,8 +58,18 @@ namespace CosmicShore.Gameplay
                 float3 current = block.transform.localScale;
                 float3 target = targetScale;
 
-                var lerpSpeed = math.clamp(block.GrowthRate * deltaTime, 0.05f, 0.1f);
-                var next = math.lerp(current, target, lerpSpeed);
+                // The old step was a clamped lerp FRACTION per processed tick
+                // (clamp(GrowthRate·dt, 0.05, 0.1)) fed an effectively fixed 20 ms dt
+                // by the base manager — growth tempo was defined by processing
+                // cadence, so stepping a grower less often visibly slowed it.
+                // Recast the same tempo as a rate: k is the per-second equivalent of
+                // the old per-tick fraction, and 1 − exp(−k·dt) reproduces it at the
+                // nominal cadence (0.0488 vs 0.05 at dt = 0.02) while staying correct
+                // at any dt — the prerequisite for slicing this pass.
+                const float dtNominal = 0.02f;
+                float k = math.clamp(block.GrowthRate * dtNominal, 0.05f, 0.1f) / dtNominal;
+                float alpha = 1f - math.exp(-k * deltaTime);
+                var next = math.lerp(current, target, alpha);
 
                 if (math.lengthsq(target - next) <= COMPLETION_THRESHOLD_SQR)
                 {
