@@ -44,6 +44,21 @@ namespace CosmicShore.Engine.Tasks
         public static DelayAwaitable Delay(TimeSpan delayTimeSpan, CancellationToken cancellationToken = default)
             => new((float)delayTimeSpan.TotalSeconds, unscaled: false, cancellationToken);
 
+        /// <summary>`await UniTask.WhenAll(a, b, …)` call sites — joins already-started tasks.</summary>
+        public static System.Threading.Tasks.Task WhenAll(params System.Threading.Tasks.Task[] tasks)
+            => System.Threading.Tasks.Task.WhenAll(tasks);
+
+        /// <summary>
+        /// `await UniTask.WhenAll(taskArm, UniTask.Delay(…))` call sites. The delay arm is
+        /// bridged to a Task EAGERLY (the bridge's first await enqueues the delay at once), so
+        /// both arms run in parallel exactly as upstream — a DelayAwaitable starts its clock at
+        /// await-time, so sequential awaiting would wrongly serialize it after the first arm.
+        /// </summary>
+        public static System.Threading.Tasks.Task WhenAll(System.Threading.Tasks.Task first, DelayAwaitable second)
+            => System.Threading.Tasks.Task.WhenAll(first, ToTask(second));
+
+        static async System.Threading.Tasks.Task ToTask(DelayAwaitable awaitable) => await awaitable;
+
         /// <summary>Resume on the frame the predicate first returns true (checked once per frame; completes synchronously if already true).</summary>
         public static WaitUntilAwaitable WaitUntil(Func<bool> predicate, CancellationToken cancellationToken = default)
             => new(predicate, cancellationToken);

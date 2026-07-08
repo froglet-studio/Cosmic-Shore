@@ -49,17 +49,16 @@ namespace CosmicShore.Gameplay
 
         [Inject] MenuFreestyleEventsContainerSO freestyleEvents;
 
-        // PORT Deviation (initializer-remainder arc 2026-07-07, CanvasGroup — restore when the UI-shell/CanvasGroup arc ports):
-        // [Header("Menu UI")]
-        // [Tooltip("CanvasGroups to fade OUT when entering freestyle (menu chrome, nav bar, etc).")]
-        // [SerializeField] CanvasGroup[] menuCanvasGroups;
-        //
-        // [Header("Freestyle UI")]
-        // [Tooltip("CanvasGroups to fade IN when entering freestyle (vessel HUD, freestyle controls, etc).")]
-        // [SerializeField] CanvasGroup[] freestyleCanvasGroups;
+        [Header("Menu UI")]
+        [Tooltip("CanvasGroups to fade OUT when entering freestyle (menu chrome, nav bar, etc).")]
+        [SerializeField] CanvasGroup[] menuCanvasGroups;
+
+        [Header("Freestyle UI")]
+        [Tooltip("CanvasGroups to fade IN when entering freestyle (vessel HUD, freestyle controls, etc).")]
+        [SerializeField] CanvasGroup[] freestyleCanvasGroups;
 
         [Header("Settings")]
-        // PORT Deviation (initializer-remainder arc 2026-07-07, CanvasGroup — restore when the UI-shell/CanvasGroup arc ports): [SerializeField] float fadeDuration = 0.5f;
+        [SerializeField] float fadeDuration = 0.5f;
 
         [SerializeField, Tooltip("Fallback transition duration, used when no MainMenuCameraController " +
                                  "is assigned (or for initial warm-up). When a controller is wired " +
@@ -87,7 +86,7 @@ namespace CosmicShore.Gameplay
 
         // Saved menu alphas so we restore to the pre-freestyle state
         // (e.g. ArcadeScreen at 0 stays at 0, not forced to 1).
-        // PORT Deviation (initializer-remainder arc 2026-07-07, CanvasGroup — restore when the UI-shell/CanvasGroup arc ports): float[] _savedMenuAlphas;
+        float[] _savedMenuAlphas;
 
         /// <summary>Whether the menu is currently in freestyle state.</summary>
         public bool IsInFreestyle => _isInFreestyle;
@@ -108,7 +107,7 @@ namespace CosmicShore.Gameplay
         void Start()
         {
             // Freestyle UI starts hidden
-            // PORT Deviation (initializer-remainder arc 2026-07-07, CanvasGroup — restore when the UI-shell/CanvasGroup arc ports): ApplyCanvasGroupState(freestyleCanvasGroups, 0f);
+            ApplyCanvasGroupState(freestyleCanvasGroups, 0f);
         }
 
         /// <summary>
@@ -162,7 +161,7 @@ namespace CosmicShore.Gameplay
 
             // Save current menu alphas so we can restore them exactly when exiting freestyle.
             // This preserves hidden panels (e.g. ArcadeScreen at alpha 0).
-            // PORT Deviation (initializer-remainder arc 2026-07-07, CanvasGroup — restore when the UI-shell/CanvasGroup arc ports): _savedMenuAlphas = CaptureAlphas(menuCanvasGroups);
+            _savedMenuAlphas = CaptureAlphas(menuCanvasGroups);
 
             // Raise SOAP event early so the camera blend and HUD setup start immediately.
             // The UI fade and camera blend then run in parallel.
@@ -171,14 +170,10 @@ namespace CosmicShore.Gameplay
             // Run UI fade and camera transition duration in parallel. The camera controller
             // picks the duration per current mode — CrystalOrbit = long, vessel modes = short.
             // _isTransitioning stays true until both complete — prevents click spam.
-            // PORT Deviation (initializer-remainder arc 2026-07-07, CanvasGroup — restore when the UI-shell/CanvasGroup arc ports):
-            // await UniTask.WhenAll(
-            //     FadeBetweenStates(menuAlpha: 0f, freestyleAlpha: 1f, ct),
-            //     UniTask.Delay((int)(CurrentTransitionDuration() * 1000),
-            //                   ignoreTimeScale: true, cancellationToken: ct));
-            // Duration arm live — preserves the _isTransitioning gate window:
-            await GameTask.Delay((int)(CurrentTransitionDuration() * 1000) / 1000f,
-                                 unscaledTime: true, cancellationToken: ct);
+            await GameTask.WhenAll(
+                FadeBetweenStates(menuAlpha: 0f, freestyleAlpha: 1f, ct),
+                GameTask.Delay((int)(CurrentTransitionDuration() * 1000) / 1000f,
+                               unscaledTime: true, cancellationToken: ct));
 
             // Release control to the player once the camera has settled.
             if (lockInputDuringEnterTransition)
@@ -206,14 +201,10 @@ namespace CosmicShore.Gameplay
             // FadeToSavedMenuAlphas restores each menu canvas group to its pre-freestyle
             // alpha (not blindly to 1, which would force-show hidden panels like ArcadeScreen).
             // _isTransitioning stays true until both complete — prevents click spam.
-            // PORT Deviation (initializer-remainder arc 2026-07-07, CanvasGroup — restore when the UI-shell/CanvasGroup arc ports):
-            // await UniTask.WhenAll(
-            //     FadeToSavedMenuAlphas(ct),
-            //     UniTask.Delay((int)(CurrentTransitionDuration() * 1000),
-            //                   ignoreTimeScale: true, cancellationToken: ct));
-            // Duration arm live — preserves the _isTransitioning gate window:
-            await GameTask.Delay((int)(CurrentTransitionDuration() * 1000) / 1000f,
-                                 unscaledTime: true, cancellationToken: ct);
+            await GameTask.WhenAll(
+                FadeToSavedMenuAlphas(ct),
+                GameTask.Delay((int)(CurrentTransitionDuration() * 1000) / 1000f,
+                               unscaledTime: true, cancellationToken: ct));
 
             freestyleEvents.OnMenuStateTransitionEnd.Raise();
             _isInFreestyle = false;
@@ -250,131 +241,126 @@ namespace CosmicShore.Gameplay
 
         #region UI Fade
 
-        // PORT Deviation (initializer-remainder arc 2026-07-07, CanvasGroup — restore when the UI-shell/CanvasGroup arc ports).
-        // The entire UI Fade region is presentation-side and carried as commented source
-        // (upstream bodies verbatim; `UniTask` → `Task`, `UniTask.Yield(ct)` → `GameTask.Yield(ct)`
-        // when restoring):
-        //
-        // /// <summary>
-        // /// Fades menu canvas groups back to their saved pre-freestyle alphas,
-        // /// and freestyle groups to 0.
-        // /// </summary>
-        // async Task FadeToSavedMenuAlphas(CancellationToken ct)
-        // {
-        //     if (fadeDuration <= 0f)
-        //     {
-        //         ApplyCanvasGroupStates(menuCanvasGroups, _savedMenuAlphas);
-        //         ApplyCanvasGroupState(freestyleCanvasGroups, 0f);
-        //         return;
-        //     }
-        //
-        //     float[] menuStartAlphas = CaptureAlphas(menuCanvasGroups);
-        //     float[] freestyleStartAlphas = CaptureAlphas(freestyleCanvasGroups);
-        //     float[] menuTargets = _savedMenuAlphas ?? CaptureAlphas(menuCanvasGroups);
-        //
-        //     float elapsed = 0f;
-        //     while (elapsed < fadeDuration)
-        //     {
-        //         elapsed += Time.unscaledDeltaTime;
-        //         float t = Mathf.Clamp01(elapsed / fadeDuration);
-        //
-        //         LerpCanvasGroupAlphasToTargets(menuCanvasGroups, menuStartAlphas, menuTargets, t);
-        //         LerpCanvasGroupAlphas(freestyleCanvasGroups, freestyleStartAlphas, 0f, t);
-        //
-        //         await GameTask.Yield(ct);
-        //     }
-        //
-        //     ApplyCanvasGroupStates(menuCanvasGroups, menuTargets);
-        //     ApplyCanvasGroupState(freestyleCanvasGroups, 0f);
-        // }
-        //
-        // async Task FadeBetweenStates(float menuAlpha, float freestyleAlpha, CancellationToken ct)
-        // {
-        //     if (fadeDuration <= 0f)
-        //     {
-        //         ApplyCanvasGroupState(menuCanvasGroups, menuAlpha);
-        //         ApplyCanvasGroupState(freestyleCanvasGroups, freestyleAlpha);
-        //         return;
-        //     }
-        //
-        //     float[] menuStartAlphas = CaptureAlphas(menuCanvasGroups);
-        //     float[] freestyleStartAlphas = CaptureAlphas(freestyleCanvasGroups);
-        //
-        //     float elapsed = 0f;
-        //     while (elapsed < fadeDuration)
-        //     {
-        //         elapsed += Time.unscaledDeltaTime;
-        //         float t = Mathf.Clamp01(elapsed / fadeDuration);
-        //
-        //         LerpCanvasGroupAlphas(menuCanvasGroups, menuStartAlphas, menuAlpha, t);
-        //         LerpCanvasGroupAlphas(freestyleCanvasGroups, freestyleStartAlphas, freestyleAlpha, t);
-        //
-        //         await GameTask.Yield(ct);
-        //     }
-        //
-        //     ApplyCanvasGroupState(menuCanvasGroups, menuAlpha);
-        //     ApplyCanvasGroupState(freestyleCanvasGroups, freestyleAlpha);
-        // }
-        //
-        // static float[] CaptureAlphas(CanvasGroup[] groups)
-        // {
-        //     if (groups is not { Length: > 0 }) return System.Array.Empty<float>();
-        //
-        //     var alphas = new float[groups.Length];
-        //     for (int i = 0; i < groups.Length; i++)
-        //         alphas[i] = groups[i] ? groups[i].alpha : 0f;
-        //     return alphas;
-        // }
-        //
-        // static void LerpCanvasGroupAlphas(CanvasGroup[] groups, float[] startAlphas, float targetAlpha, float t)
-        // {
-        //     if (groups is not { Length: > 0 }) return;
-        //
-        //     for (int i = 0; i < groups.Length; i++)
-        //     {
-        //         if (!groups[i]) continue;
-        //         groups[i].alpha = Mathf.Lerp(startAlphas[i], targetAlpha, t);
-        //     }
-        // }
-        //
-        // static void LerpCanvasGroupAlphasToTargets(CanvasGroup[] groups, float[] startAlphas, float[] targetAlphas, float t)
-        // {
-        //     if (groups is not { Length: > 0 }) return;
-        //
-        //     for (int i = 0; i < groups.Length; i++)
-        //     {
-        //         if (!groups[i]) continue;
-        //         float target = (targetAlphas != null && i < targetAlphas.Length) ? targetAlphas[i] : 1f;
-        //         groups[i].alpha = Mathf.Lerp(startAlphas[i], target, t);
-        //     }
-        // }
-        //
-        // static void ApplyCanvasGroupState(CanvasGroup[] groups, float alpha)
-        // {
-        //     if (groups is not { Length: > 0 }) return;
-        //
-        //     foreach (var cg in groups)
-        //     {
-        //         if (!cg) continue;
-        //         cg.alpha = alpha;
-        //         cg.blocksRaycasts = alpha > 0.01f;
-        //         cg.interactable = alpha > 0.01f;
-        //     }
-        // }
-        //
-        // static void ApplyCanvasGroupStates(CanvasGroup[] groups, float[] alphas)
-        // {
-        //     if (groups is not { Length: > 0 }) return;
-        //
-        //     for (int i = 0; i < groups.Length; i++)
-        //     {
-        //         if (!groups[i]) continue;
-        //         float alpha = (alphas != null && i < alphas.Length) ? alphas[i] : 1f;
-        //         groups[i].alpha = alpha;
-        //         groups[i].blocksRaycasts = alpha > 0.01f;
-        //         groups[i].interactable = alpha > 0.01f;
-        //     }
-        // }
+        /// <summary>
+        /// Fades menu canvas groups back to their saved pre-freestyle alphas,
+        /// and freestyle groups to 0.
+        /// </summary>
+        async Task FadeToSavedMenuAlphas(CancellationToken ct)
+        {
+            if (fadeDuration <= 0f)
+            {
+                ApplyCanvasGroupStates(menuCanvasGroups, _savedMenuAlphas);
+                ApplyCanvasGroupState(freestyleCanvasGroups, 0f);
+                return;
+            }
+
+            float[] menuStartAlphas = CaptureAlphas(menuCanvasGroups);
+            float[] freestyleStartAlphas = CaptureAlphas(freestyleCanvasGroups);
+            float[] menuTargets = _savedMenuAlphas ?? CaptureAlphas(menuCanvasGroups);
+
+            float elapsed = 0f;
+            while (elapsed < fadeDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / fadeDuration);
+
+                LerpCanvasGroupAlphasToTargets(menuCanvasGroups, menuStartAlphas, menuTargets, t);
+                LerpCanvasGroupAlphas(freestyleCanvasGroups, freestyleStartAlphas, 0f, t);
+
+                await GameTask.Yield(ct);
+            }
+
+            ApplyCanvasGroupStates(menuCanvasGroups, menuTargets);
+            ApplyCanvasGroupState(freestyleCanvasGroups, 0f);
+        }
+
+        async Task FadeBetweenStates(float menuAlpha, float freestyleAlpha, CancellationToken ct)
+        {
+            if (fadeDuration <= 0f)
+            {
+                ApplyCanvasGroupState(menuCanvasGroups, menuAlpha);
+                ApplyCanvasGroupState(freestyleCanvasGroups, freestyleAlpha);
+                return;
+            }
+
+            float[] menuStartAlphas = CaptureAlphas(menuCanvasGroups);
+            float[] freestyleStartAlphas = CaptureAlphas(freestyleCanvasGroups);
+
+            float elapsed = 0f;
+            while (elapsed < fadeDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float t = Mathf.Clamp01(elapsed / fadeDuration);
+
+                LerpCanvasGroupAlphas(menuCanvasGroups, menuStartAlphas, menuAlpha, t);
+                LerpCanvasGroupAlphas(freestyleCanvasGroups, freestyleStartAlphas, freestyleAlpha, t);
+
+                await GameTask.Yield(ct);
+            }
+
+            ApplyCanvasGroupState(menuCanvasGroups, menuAlpha);
+            ApplyCanvasGroupState(freestyleCanvasGroups, freestyleAlpha);
+        }
+
+        static float[] CaptureAlphas(CanvasGroup[] groups)
+        {
+            if (groups is not { Length: > 0 }) return System.Array.Empty<float>();
+
+            var alphas = new float[groups.Length];
+            for (int i = 0; i < groups.Length; i++)
+                alphas[i] = groups[i] ? groups[i].alpha : 0f;
+            return alphas;
+        }
+
+        static void LerpCanvasGroupAlphas(CanvasGroup[] groups, float[] startAlphas, float targetAlpha, float t)
+        {
+            if (groups is not { Length: > 0 }) return;
+
+            for (int i = 0; i < groups.Length; i++)
+            {
+                if (!groups[i]) continue;
+                groups[i].alpha = Mathf.Lerp(startAlphas[i], targetAlpha, t);
+            }
+        }
+
+        static void LerpCanvasGroupAlphasToTargets(CanvasGroup[] groups, float[] startAlphas, float[] targetAlphas, float t)
+        {
+            if (groups is not { Length: > 0 }) return;
+
+            for (int i = 0; i < groups.Length; i++)
+            {
+                if (!groups[i]) continue;
+                float target = (targetAlphas != null && i < targetAlphas.Length) ? targetAlphas[i] : 1f;
+                groups[i].alpha = Mathf.Lerp(startAlphas[i], target, t);
+            }
+        }
+
+        static void ApplyCanvasGroupState(CanvasGroup[] groups, float alpha)
+        {
+            if (groups is not { Length: > 0 }) return;
+
+            foreach (var cg in groups)
+            {
+                if (!cg) continue;
+                cg.alpha = alpha;
+                cg.blocksRaycasts = alpha > 0.01f;
+                cg.interactable = alpha > 0.01f;
+            }
+        }
+
+        static void ApplyCanvasGroupStates(CanvasGroup[] groups, float[] alphas)
+        {
+            if (groups is not { Length: > 0 }) return;
+
+            for (int i = 0; i < groups.Length; i++)
+            {
+                if (!groups[i]) continue;
+                float alpha = (alphas != null && i < alphas.Length) ? alphas[i] : 1f;
+                groups[i].alpha = alpha;
+                groups[i].blocksRaycasts = alpha > 0.01f;
+                groups[i].interactable = alpha > 0.01f;
+            }
+        }
 
         #endregion
     }

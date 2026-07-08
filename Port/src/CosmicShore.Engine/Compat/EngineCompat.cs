@@ -403,6 +403,20 @@ namespace CosmicShore.Engine
         }
     }
 
+    /// <summary>
+    /// Data-only stand-in for UnityEngine.CanvasGroup (the UI-fade arc):
+    /// <see cref="alpha"/> / <see cref="interactable"/> / <see cref="blocksRaycasts"/> carry the
+    /// original contract so fade logic (MenuCrystalClickHandler, TournamentSceneView) runs
+    /// verbatim headless; the render backend gives alpha a visual meaning later.
+    /// </summary>
+    public class CanvasGroup : Behaviour
+    {
+        public float alpha = 1f;
+        public bool interactable = true;
+        public bool blocksRaycasts = true;
+        public bool ignoreParentGroups;
+    }
+
     public class Collider : Behaviour
     {
         public bool isTrigger;

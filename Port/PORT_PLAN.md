@@ -691,18 +691,41 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the Menu_Main scene-controller arc, 2026-07-08)
+## NEXT UP (after the CanvasGroup/UI-fade arc, 2026-07-08)
 
-1. **Engine `CanvasGroup` (data-only alpha/interactable/blocksRaycasts)** —
-   un-carries the UI-fade deviations in `MenuCrystalClickHandler` (7-method
-   `#region UI Fade` + fields + `WhenAll` fade arms; needs a `GameTask.WhenAll`
-   or per-arm await precedent) and the `TournamentSceneView` CanvasGroup blocks.
-2. **Party-system arc groundwork**: `HostConnectionService` /
+1. **Party-system arc groundwork**: `HostConnectionService` /
    `PartyInviteController` (the MultiplayerSetup + MenuFreestyleToggle rescue
-   branches reference them) — services-phase-heavy; scope the UGS surface first.
+   branches reference them) — services-phase-heavy; scope the UGS surface first
+   (presence lobby + Relay party sessions; the engine ISession placeholder and
+   the new NetworkManager callback surface are the toeholds).
+2. **`MainMenuCameraController` (camera arc)**: the last deviation pair in
+   `MenuCrystalClickHandler` (per-mode ActiveTransitionDuration).
 3. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 4. Update this file, commit, push.
+
+### CanvasGroup / UI-fade arc ✅ (2026-07-08)
+
+Engine grew **`CanvasGroup`** (data-only alpha/interactable/blocksRaycasts —
+original contract, render backend gives alpha a visual meaning later) and
+**`GameTask.WhenAll`** (`Task[]` join + the `(Task, DelayAwaitable)` overload
+that bridges the delay arm to a Task EAGERLY, so both arms run in parallel
+exactly as upstream — a DelayAwaitable starts its clock at await-time, so
+sequential awaiting would wrongly serialize it). ALL seven CanvasGroup
+deviation sites in `MenuCrystalClickHandler` are RESTORED — the field pair +
+fadeDuration + `_savedMenuAlphas` + Start's initial hide + the saved-alpha
+capture + BOTH `UniTask.WhenAll` fade arms (now `GameTask.WhenAll`) + the
+entire 7-method `#region UI Fade` verbatim. The only deviations left in the
+file are the `MainMenuCameraController` pair (camera arc). TournamentSceneView
+needed no restore — its CanvasGroup mention lives inside the unported card
+prefab views (UI-card arc), not in discrete blocks. Tests:
+`MenuFreestyleFadeTests` (4 — initial hide; enter-fade landing mid-blend while
+the camera arm still gates, proving the WhenAll arms are parallel; exit
+restoring SAVED menu alphas so hidden panels stay hidden; click-spam gate).
+Test-rig note: toggles are driven INSIDE a Tick via a TickAction driver — the
+C4/C6 xunit-sync-context trap makes direct calls race their Task tails on the
+thread pool. **1380 tests green in BOTH configs (1068 + 312)**; all 5 CLI
+modes exit 0; both client diags byte-identical. bleeding-edge unmoved.
 
 ### Menu_Main scene-controller arc ✅ (2026-07-08)
 
