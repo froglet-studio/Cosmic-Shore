@@ -1,6 +1,8 @@
 using System;
 using CosmicShore.Engine;
 using CosmicShore.Engine.Injection;
+// Same alias upstream AppManager carries: the engine also has a screen Resolution type.
+using Resolution = CosmicShore.Engine.Injection.Resolution;
 
 namespace CosmicShore.Tests;
 
@@ -139,15 +141,113 @@ public class InjectionTests
     [Fact]
     public void Installer_Pattern_Works()
     {
-        var container = new Container();
+        // IInstaller carries the Reflex builder contract: install into a
+        // ContainerBuilder, then Build() the scope (the AppManager flow).
+        var builder = new ContainerBuilder();
         IInstaller installer = new TestInstaller();
-        installer.InstallBindings(container);
+        installer.InstallBindings(builder);
+        var container = builder.Build();
 
         Assert.Equal("impl", container.Resolve<IService>().Name);
     }
 
     class TestInstaller : IInstaller
     {
-        public void InstallBindings(Container container) => container.RegisterValue<IService>(new ServiceImpl());
+        public void InstallBindings(ContainerBuilder builder) => builder.RegisterValue<IService>(new ServiceImpl());
+    }
+
+    // ── ContainerBuilder (the Reflex builder surface AppManager drives) ──
+
+    [Fact]
+    public void Builder_FactoriesSeeSiblingBindings_RegardlessOfRegistrationOrder()
+    {
+        var builder = new ContainerBuilder();
+        // The dependent factory registers FIRST — at Build it must still resolve
+        // the sibling registered after it (the Reflex contract the party-service
+        // registrations in AppManager rely on).
+        builder.RegisterFactory(c => new Consumer { Concrete = c.Resolve<ServiceImpl>() },
+            lifetime: Lifetime.Singleton, resolution: Resolution.Lazy);
+        var impl = new ServiceImpl();
+        builder.RegisterValue(impl);
+
+        var container = builder.Build();
+
+        Assert.Same(impl, container.Resolve<Consumer>().Concrete);
+    }
+
+    [Fact]
+    public void Builder_LazySingleton_RunsTheFactoryOnceOnFirstResolve()
+    {
+        int constructions = 0;
+        var builder = new ContainerBuilder();
+        builder.RegisterFactory(_ => { constructions++; return new ServiceImpl(); },
+            lifetime: Lifetime.Singleton, resolution: Resolution.Lazy);
+
+        var container = builder.Build();
+        Assert.Equal(0, constructions); // lazy — nothing ran at Build
+
+        var first = container.Resolve<ServiceImpl>();
+        var second = container.Resolve<ServiceImpl>();
+        Assert.Equal(1, constructions);
+        Assert.Same(first, second);
+    }
+
+    [Fact]
+    public void Builder_EagerResolution_RunsTheFactoryAtBuild()
+    {
+        int constructions = 0;
+        var builder = new ContainerBuilder();
+        builder.RegisterFactory(_ => { constructions++; return new ServiceImpl(); },
+            lifetime: Lifetime.Singleton, resolution: Resolution.Eager);
+
+        builder.Build();
+
+        Assert.Equal(1, constructions);
+    }
+
+    [Fact]
+    public void Builder_NonSingletonLifetimes_FailLoudAtRegistration()
+    {
+        var builder = new ContainerBuilder();
+        Assert.Throws<NotSupportedException>(() =>
+            builder.RegisterFactory(_ => new ServiceImpl(), lifetime: Lifetime.Transient));
+    }
+
+    [Fact]
+    public void Builder_BuildWithParent_ChainsScopes()
+    {
+        var rootBuilder = new ContainerBuilder();
+        var impl = new ServiceImpl();
+        rootBuilder.RegisterValue<IService>(impl);
+        var root = rootBuilder.Build();
+
+        var child = new ContainerBuilder().Build(parent: root);
+
+        Assert.Same(impl, child.Resolve<IService>());
+    }
+
+    [Fact]
+    public void Builder_RegistersTheManagerShellFamily_AsLazySingletons()
+    {
+        // Mirrors AppManager.RegisterManagerSingleton for the six shelled managers:
+        // serialized reference preferred, lazy factory otherwise. All six must be
+        // registrable + resolvable so the AppManager port compiles against them.
+        using var loop = new GameLoop(nameof(Builder_RegistersTheManagerShellFamily_AsLazySingletons));
+        var go = new GameObject("managers");
+        var builder = new ContainerBuilder();
+        builder.RegisterFactory(_ => go.AddComponent<CosmicShore.Core.UGSStatsManager>());
+        builder.RegisterFactory(_ => go.AddComponent<CosmicShore.Core.CaptainManager>());
+        builder.RegisterFactory(_ => go.AddComponent<CosmicShore.Core.IAPManager>());
+        builder.RegisterFactory(_ => go.AddComponent<CosmicShore.Gameplay.PostProcessingManager>());
+        builder.RegisterFactory(_ => go.AddComponent<CosmicShore.Gameplay.StatsManager>());
+        builder.RegisterFactory(_ => go.AddComponent<CosmicShore.Core.UGSDataService>());
+        var container = builder.Build();
+
+        Assert.NotNull(container.Resolve<CosmicShore.Core.UGSStatsManager>());
+        Assert.NotNull(container.Resolve<CosmicShore.Core.CaptainManager>());
+        Assert.NotNull(container.Resolve<CosmicShore.Core.IAPManager>());
+        Assert.NotNull(container.Resolve<CosmicShore.Gameplay.PostProcessingManager>());
+        Assert.NotNull(container.Resolve<CosmicShore.Gameplay.StatsManager>());
+        Assert.NotNull(container.Resolve<CosmicShore.Core.UGSDataService>());
     }
 }

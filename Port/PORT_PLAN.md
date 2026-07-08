@@ -691,25 +691,54 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the bootstrap arc's service layer, 2026-07-08)
+## NEXT UP (after the AppManager groundwork, 2026-07-08)
 
-1. **`AppManager` (618L, the DI root)** — scope findings from this iteration:
-   (a) the engine Injection layer needs the Reflex BUILDER surface grown
-   (ContainerBuilder + IInstaller + RegisterValue/RegisterFactory with
-   Lazy/Singleton resolution — Container exists, the builder does not);
-   (b) six bound manager types are still unported and need shells per the
-   CameraManager/AudioSystem precedent: UGSStatsManager, CaptainManager,
-   IAPManager, PostProcessingManager, StatsManager, UGSDataService (the other
-   nine bindings — GameSetting, AudioSystem, PlayerDataService, SceneLoader,
-   ThemeManager, CameraManager, SceneTransitionManager, MultiplayerSetup,
-   PrismFactory — are ported or shelled already, and the pure-C# quartet
-   AuthenticationServiceFacade / NetworkMonitor / FriendsServiceFacade /
-   ApplicationStateMachine is fully live); (c) the UniTaskVoid bootstrap
-   sequence (splash gate + scene handoff) maps per README. Likely one
-   iteration for builder + shells, one for AppManager itself.
+1. **`AppManager` (618L, the DI root)** — the groundwork is now in place:
+   the ContainerBuilder surface, all fifteen manager bindings resolvable
+   (ported, shelled, or fully live), and the pure-C# service quartet live.
+   Port it verbatim: platform config from BootstrapConfigSO,
+   TryResolveManagersEarly (scene lookups → engine Scene.FindObjectOfType),
+   InstallBindings (RegisterAsset + RegisterManagerSingleton + the lazy
+   service factories incl. the party ring), StartAuthentication /
+   StartNetworkMonitor, and the RunBootstrapAsync splash → Authentication
+   handoff (UniTaskVoid → Task per README; splash CanvasGroup live per the
+   SceneTransitionManager precedent). NetworkMonitor + AnalyticsServiceFacade
+   shells/ports may be needed — check both exist before starting.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### AppManager groundwork ✅ (2026-07-08) — the Reflex builder surface + manager shells
+
+The engine Injection layer grew the **Reflex builder surface**:
+`Lifetime`/`Resolution` enums (placeholder-local values) and
+**`ContainerBuilder`** — deferred registrations applied to a fresh
+`Container` at `Build(parent?)`, so factories see every sibling binding
+regardless of registration order (the contract AppManager's party-ring
+factories rely on); `Resolution.Eager` resolves at Build, Lazy on first
+inject; non-Singleton lifetimes fail loud (`NotSupportedException`) rather
+than silently caching — the codebase registers only singletons.
+**`IInstaller` migrated** from the interim `InstallBindings(Container)`
+shape to the upstream `InstallBindings(ContainerBuilder)` signature (one
+test implementor updated — the installer now installs into a builder and
+the host Builds the scope).
+
+**Six manager shells added** per the AudioSystem/CameraManager precedent, on
+the upstream namespaces/paths/base classes: `UGSStatsManager` (UI/, UGS
+Leaderboards — services phase), `CaptainManager`
+(System/Playfab/Economy/, `SingletonPersistent<T>` — meta-economy phase),
+`IAPManager` (System/, UGS Purchasing — services phase),
+`PostProcessingManager` (Controller/Managers/, `Singleton<T>` — rendering
+phase), `StatsManager` (Controller/Managers/ — scoring arc's stats pass),
+and `UGSDataService` (System/CloudData/ — services phase; restoring it later
+un-carries the PlayerDataService/GameSetting deviation-#14 inject sites).
+
+**6 new tests** (in `InjectionTests`): order-independent sibling resolution
+through Build, lazy-singleton once-only construction, eager-at-Build,
+non-singleton fail-loud, parent-chained Build scopes, and the six-shell
+family registrable + resolvable through the builder. **1504 tests green in
+BOTH configs (1166 + 338)**; all 5 CLI modes exit 0; both client diags
+byte-identical. bleeding-edge unmoved.
 
 ### Bootstrap arc — service layer ✅ (2026-07-08)
 

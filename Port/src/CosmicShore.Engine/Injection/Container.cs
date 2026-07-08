@@ -9,10 +9,16 @@ namespace CosmicShore.Engine.Injection
     [AttributeUsage(AttributeTargets.Field | AttributeTargets.Property)]
     public sealed class InjectAttribute : Attribute { }
 
-    /// <summary>Implemented by composition roots (the port of the Reflex installer contract).</summary>
+    /// <summary>
+    /// Implemented by composition roots (the port of the Reflex installer contract —
+    /// original: <c>Reflex.Core.IInstaller.InstallBindings(ContainerBuilder)</c>).
+    /// Migrated 2026-07-08 from the interim Container-parameter shape so AppManager's
+    /// verbatim signature compiles: the host hands the installer a
+    /// <see cref="ContainerBuilder"/>, then <see cref="ContainerBuilder.Build"/>s the scope.
+    /// </summary>
     public interface IInstaller
     {
-        void InstallBindings(Container container);
+        void InstallBindings(ContainerBuilder builder);
     }
 
     /// <summary>
