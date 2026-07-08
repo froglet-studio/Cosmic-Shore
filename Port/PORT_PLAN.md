@@ -691,15 +691,12 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the HostConnectionService port, 2026-07-08)
+## NEXT UP (after the orchestrator test suite, 2026-07-08)
 
-1. **HostConnectionService behavior tests** (deferred from the port iteration):
-   drive the LIVE flows through fake ISession lobbies — refresh cycle
-   (online-player diff, invite detect/dedup, acceptance-signal scan), invite
-   send/cancel through InviteService + property publish, member reconcile,
-   `IPartyStateQuery`, sign-in/out lifecycle. Then **`PartyInviteController`
-   (506L)** — un-carries the orchestrator's 4 party-system deviations
-   (LeavePartyAsync body + 3 IsTransitioning guards).
+1. **`PartyInviteController` (506L)** — un-carries the orchestrator's 4
+   party-system deviations (LeavePartyAsync body + 3 IsTransitioning guards);
+   the host↔client Netcode transition flows lean on the already-ported
+   NetworkTransitionService (its client-transport waits are fail-soft).
 2. **`FriendsInitializer` (236L)** — needs a FriendsServiceFacade shell or
    port (UGS Friends SDK surface).
 3. **`MainMenuCameraController` (camera arc)**: the last deviation pair in
@@ -707,6 +704,25 @@ client + AstroLeague headless round running + remaining ladder rungs (5: real lo
 4. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 5. Update this file, commit, push.
+
+### HostConnectionService behavior tests ✅ (2026-07-08)
+
+Six tests drive the orchestrator's LIVE flows end-to-end through fake
+lobby/session services on the [Inject] seams (real InviteService /
+AcceptanceSignalService / LobbyPropertyWriter / SoapPartyEventBus /
+PartyMemberService / LobbyRefreshScheduler composed underneath):
+send-invite tracks + publishes the composite `invite_payloads` (with the
+REAL relay session id) onto the lobby CurrentPlayer + raises OnInviteSent;
+cancel clears the tracker, republishes WITHOUT the line, and fires
+OutgoingInviteCleared; the refresh cycle diffs OnlinePlayers (self excluded,
+leavers dropped) and detects an incoming invite from a remote player's
+payload line (LastPendingInvite + OnInviteReceived) with repeat-refresh
+DEDUP; decline resolves the pending invite (OnInviteResolved); and
+IPartyStateQuery mirrors the state machine. Private RefreshAsync is driven
+inside a Tick per the C4/C6 sync-context discipline. **1415 tests green in
+BOTH configs (1103 + 312)**; all 5 CLI modes exit 0; both client diags
+byte-identical. bleeding-edge unmoved. PartyInviteController deferred to
+next iteration (no room this round).
 
 ### HostConnectionService port ✅ (2026-07-08) — the party orchestrator lands
 
