@@ -129,8 +129,7 @@ namespace CosmicShore.Gameplay
                 Debug.LogWarning(
                     $"[NetworkTransitionService] NetworkManager shutdown timed out after {timeoutSeconds}s — forcing.");
                 LogNetworkState(NetworkManager.Singleton, "after shutdown timeout");
-                // PORT Deviation (party system 2026-07-08, CosmicShore.Utility.NetworkDiagnostics — restore when NetworkDiagnostics ports):
-                // CosmicShore.Utility.CSDebug.Log($"[NetworkTransitionService] NetDiag: class=Timeout | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                CosmicShore.Utility.CSDebug.Log($"[NetworkTransitionService] NetDiag: class=Timeout | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                 return false;
             }
 
@@ -201,8 +200,7 @@ namespace CosmicShore.Gameplay
                 Debug.LogWarning(
                     $"[NetworkTransitionService] Client connection not confirmed after {timeoutSeconds}s — proceeding anyway.");
                 LogNetworkState(NetworkManager.Singleton, "after connect timeout");
-                // PORT Deviation (party system 2026-07-08, CosmicShore.Utility.NetworkDiagnostics — restore when NetworkDiagnostics ports):
-                // CosmicShore.Utility.CSDebug.Log($"[NetworkTransitionService] NetDiag: class=Timeout | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                CosmicShore.Utility.CSDebug.Log($"[NetworkTransitionService] NetDiag: class=Timeout | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                 return false;
             }
             finally

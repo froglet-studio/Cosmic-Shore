@@ -4,8 +4,8 @@
 // (UniTask → Task; UniTask<string> → Task<string>; UniTask.Delay(ms) → GameTask.Delay(ms));
 // Unity.Services.Multiplayer → CosmicShore.Engine.Networking (ISession / PlayerProperty placeholders);
 // UnityEngine → CosmicShore.Engine (incl. fully-qualified UnityEngine.Time.unscaledTime).
-// Two marked deviations below: the engine ISession placeholder has no CurrentPlayer member yet,
-// so both current-player SetProperty writes are carried as commented source.
+// FULLY LIVE (2026-07-08): the engine ISession placeholder grew CurrentPlayer (writable
+// IPlayer), so both current-player SetProperty writes run verbatim — no deviations remain.
 // ─────────────────────────────────────────────────────────────────────────────
 // AcceptanceSignalService.cs
 // Orchestrates the PENDING-sentinel three-phase acceptance protocol.

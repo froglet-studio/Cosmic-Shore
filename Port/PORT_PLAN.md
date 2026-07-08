@@ -691,21 +691,49 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after party-services ring 3, 2026-07-08)
+## NEXT UP (after the HostConnectionService port, 2026-07-08)
 
-1. **`HostConnectionService` orchestrator (2078L)** — every dependency it
-   composes is now ported (data container, event bus, member/invite/signal/
-   writer/scheduler/session/lobby/transition services, state machine). Big
-   file: consider splitting the port across two iterations (verbatim port +
-   deviation pass, then tests) or a multi-agent pass. Also still open:
-   `PartyInviteController` (506L) + `FriendsInitializer` (236L, needs
-   FriendsServiceFacade) + `NetworkDiagnostics` (small first-party helper —
-   porting it un-carries 6 diagnostics-only deviation lines across ring 3).
-2. **`MainMenuCameraController` (camera arc)**: the last deviation pair in
-   `MenuCrystalClickHandler` (per-mode ActiveTransitionDuration).
-3. **Track bleeding-edge**: merge upstream again next iteration; every merge
+1. **HostConnectionService behavior tests** (deferred from the port iteration):
+   drive the LIVE flows through fake ISession lobbies — refresh cycle
+   (online-player diff, invite detect/dedup, acceptance-signal scan), invite
+   send/cancel through InviteService + property publish, member reconcile,
+   `IPartyStateQuery`, sign-in/out lifecycle. Then **`PartyInviteController`
+   (506L)** — un-carries the orchestrator's 4 party-system deviations
+   (LeavePartyAsync body + 3 IsTransitioning guards).
+2. **`FriendsInitializer` (236L)** — needs a FriendsServiceFacade shell or
+   port (UGS Friends SDK surface).
+3. **`MainMenuCameraController` (camera arc)**: the last deviation pair in
+   `MenuCrystalClickHandler`.
+4. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
-4. Update this file, commit, push.
+5. Update this file, commit, push.
+
+### HostConnectionService port ✅ (2026-07-08) — the party orchestrator lands
+
+`NetworkDiagnostics` ported first (engine grew
+`Application.internetReachability` + `NetworkReachability`; the engine
+SessionException gets a structured-Error classify branch mirroring the
+upstream string branch, which stays verbatim-dead until the real SDK; the
+RequestFailedException arm is the only deviation) — un-carrying all 8
+diagnostics deviation lines across ring 3. Then the **2,078-line
+`HostConnectionService`** ported (2,159 lines with header + markers; verified
+by mechanical-transform diff, 15 hunks all accounted for). FULLY LIVE: the
+whole refresh cycle (mutex, converge throttle, online-player diff,
+incoming-invite scan/dedup, acceptance-signal scan + republish, B8
+joined-party cross-check, full RefreshPartyMembersAsync error matrix +
+reconnect escalation), invite send/cancel/accept/decline (three-phase accept
+incl. leave-own → JoinByIdAsync), member reconcile + PlayerLeaving relay,
+session lifecycle (EnsurePartySessionAsync with NM shutdown via
+NetworkTransitionService), presence-lobby join + identity republish, state
+machine, SOAP bus, all NetDiag lines. Deviations: 2 services-phase
+(IHostSession.RemovePlayerAsync kick; RequestFailedException 404 arm), 4
+party-system (PartyInviteController-dependent: LeavePartyAsync body + 3
+IsTransitioning guards — all fall through on upstream's own null-controller
+truth values), 1 scene-phase (GetActiveScene → GameLoop scene-name read).
+Behavior tests intentionally DEFERRED to the next iteration (loop directive —
+the file lands build-green this round). **1409 tests green in BOTH configs
+(1097 + 312)**; all 5 CLI modes exit 0; both client diags byte-identical.
+bleeding-edge unmoved.
 
 ### Party-services ring 3 ✅ (2026-07-08)
 

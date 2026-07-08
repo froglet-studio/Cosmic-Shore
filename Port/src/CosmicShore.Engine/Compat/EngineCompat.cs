@@ -110,6 +110,21 @@ namespace CosmicShore.Engine
         }
         public static event Action quitting;
         public static void Quit() => quitting?.Invoke();
+
+        /// <summary>
+        /// Original-contract reachability read (party-system arc: NetworkDiagnostics
+        /// snapshots it). Headless default assumes a LAN; a harness or the future
+        /// platform layer may reassign.
+        /// </summary>
+        public static NetworkReachability internetReachability = NetworkReachability.ReachableViaLocalAreaNetwork;
+    }
+
+    /// <summary>Original UnityEngine.NetworkReachability values (frozen).</summary>
+    public enum NetworkReachability
+    {
+        NotReachable = 0,
+        ReachableViaCarrierDataNetwork = 1,
+        ReachableViaLocalAreaNetwork = 2,
     }
 
     /// <summary>In-memory prefs with JSON persistence under persistentDataPath.</summary>

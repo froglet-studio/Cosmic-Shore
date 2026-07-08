@@ -230,8 +230,7 @@ namespace CosmicShore.Gameplay
                 {
                     int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
                     CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Transient session error — retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e}");
-                    // PORT Deviation (NetDiag arc, CosmicShore.Utility.NetworkDiagnostics — restore when NetworkDiagnostics ports):
-                    // CosmicShore.Utility.CSDebug.Log($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                     await GameTask.Delay(delay);
                 }
             }
@@ -283,8 +282,7 @@ namespace CosmicShore.Gameplay
                 {
                     int delay = TRANSIENT_BASE_DELAY_MS * (1 << attempt);
                     CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Join transient error — retry {attempt + 1}/{TRANSIENT_MAX_RETRIES} in {delay}ms ({e.GetType().Name}): {e.Message}");
-                    // PORT Deviation (NetDiag arc, CosmicShore.Utility.NetworkDiagnostics — restore when NetworkDiagnostics ports):
-                    // CosmicShore.Utility.CSDebug.Log($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                    CosmicShore.Utility.CSDebug.Log($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
                     await GameTask.Delay(delay);
                 }
             }
@@ -310,8 +308,7 @@ namespace CosmicShore.Gameplay
             catch (Exception e)
             {
                 CosmicShore.Utility.CSDebug.Log($"[PartySessionService] Leave error (session already gone?): {e.Message}");
-                // PORT Deviation (NetDiag arc, CosmicShore.Utility.NetworkDiagnostics — restore when NetworkDiagnostics ports):
-                // CosmicShore.Utility.CSDebug.Log($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
+                CosmicShore.Utility.CSDebug.Log($"[PartySessionService] NetDiag: class={CosmicShore.Utility.NetworkDiagnostics.ClassifyException(e)} | {CosmicShore.Utility.NetworkDiagnostics.GetSnapshot()}");
             }
         }
 
