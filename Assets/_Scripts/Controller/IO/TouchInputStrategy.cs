@@ -9,6 +9,26 @@ namespace CosmicShore.Gameplay
 {
     public class TouchInputStrategy : BaseInputStrategy
     {
+        // ── Touch feel tuning ────────────────────────────────────────────────
+        // Informed by touch-vs-thumbstick input research: response curves exist on physical
+        // sticks to compensate for SPRING TENSION, and the raised edge lets players feel full
+        // deflection. Glass has neither — long travel + heavy curves read as pure lag, and with
+        // no felt edge players routinely sit at partial deflection believing they're at full
+        // tilt. So: short travel, near-linear response, and an explicit small dead zone for
+        // finger tremor (the job curves were doing on sticks).
+
+        /// <summary>Full-deflection thumb travel, in inches (was 1.0 — a whole inch of drag to
+        /// reach 100%). 0.6" keeps full deflection inside a comfortable thumb arc.</summary>
+        const float JoystickRadiusInches = 0.6f;
+
+        /// <summary>Tremor filter around the touch origin, in pixels (~10-15px is standard on
+        /// phones). Output rescales from the dead zone's EDGE to the rim (scaled radial dead
+        /// zone), so there is no output cliff when leaving it.</summary>
+        const float DeadZonePixels = 12f;
+
+        /// <summary>Fallback when Screen.dpi reports 0 (some Android devices).</summary>
+        const float FallbackDpi = 160f;
+
         private float joystickRadius;
         private Vector2 leftJoystickValue, rightJoystickValue;
         private Vector2 leftJoystickStart, rightJoystickStart;
@@ -28,7 +48,8 @@ namespace CosmicShore.Gameplay
         public override void Initialize(IInputStatus inputStatus)
         {
             base.Initialize(inputStatus);
-            joystickRadius = Screen.dpi;
+            float dpi = Screen.dpi > 0f ? Screen.dpi : FallbackDpi;
+            joystickRadius = dpi * JoystickRadiusInches;
             leftJoystickValue = leftClampedPosition = new Vector2(joystickRadius, joystickRadius);
             rightJoystickValue = rightClampedPosition = new Vector2(Screen.currentResolution.width - joystickRadius, joystickRadius);
             EnhancedTouchSupport.Enable();
@@ -41,11 +62,10 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Touch-tuned easing: mostly linear with a subtle cubic dead zone.
-        /// The gamepad cosine curve crushes mid-range to ~15% output — that
-        /// compensates for stick resistance but feels sluggish on glass where
-        /// there is no friction. This blend keeps a gentle noise filter near
-        /// center while staying responsive through mid-range.
+        /// Touch-tuned easing: 90% linear with a whisper of cubic. The gamepad cosine curve
+        /// crushes mid-range to ~15% output — that compensates for stick resistance but feels
+        /// sluggish on glass where there is no friction. Center noise is handled by the explicit
+        /// dead zone in <see cref="HandleJoystick"/>, so the curve no longer needs to do that job.
         ///
         /// Input [-2, 2] → Output [-1, 1] (same domain/range as gamepad Ease).
         /// </summary>
@@ -53,7 +73,7 @@ namespace CosmicShore.Gameplay
         {
             float t = Mathf.Clamp(input * 0.5f, -1f, 1f);
             float cubic = t * t * t;
-            return cubic * 0.25f + t * 0.75f;
+            return cubic * 0.1f + t * 0.9f;
         }
 
         public override void ProcessInput()
@@ -265,8 +285,18 @@ namespace CosmicShore.Gameplay
             Vector2 offset = touch.screenPosition - joystickStart;
             Vector2 clampedOffset = Vector2.ClampMagnitude(offset, joystickRadius);
             clampedPosition = joystickStart + clampedOffset;
-            Vector2 normalizedOffset = clampedOffset / joystickRadius;
-            joystick = normalizedOffset;
+
+            // Scaled radial dead zone: inside DeadZonePixels output is zero (tremor filter);
+            // outside, output rescales from the dead zone's edge to the rim so leaving the zone
+            // ramps smoothly from 0 instead of jumping.
+            float magnitude = clampedOffset.magnitude;
+            if (magnitude <= DeadZonePixels)
+            {
+                joystick = Vector2.zero;
+                return;
+            }
+            joystick = (clampedOffset / magnitude)
+                       * ((magnitude - DeadZonePixels) / (joystickRadius - DeadZonePixels));
         }
 
         private void StopStickEffects()
