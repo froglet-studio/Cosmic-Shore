@@ -463,11 +463,10 @@ namespace CosmicShore.Gameplay
                 // Fallback (PartyInviteController unavailable): legacy teardown.
                 if (gameData.ActiveSession != null)
                 {
-                    // PORT Deviation (services phase, ISession.AsHost/DeleteAsync/LeaveAsync — restore when UGS services port):
-                    // if (gameData.ActiveSession.IsHost)
-                    //     await gameData.ActiveSession.AsHost().DeleteAsync();
-                    // else
-                    //     await gameData.ActiveSession.LeaveAsync();
+                    if (gameData.ActiveSession.IsHost)
+                        await gameData.ActiveSession.AsHost().DeleteAsync();
+                    else
+                        await gameData.ActiveSession.LeaveAsync();
 
                     gameData.ActiveSession = null;
                 }

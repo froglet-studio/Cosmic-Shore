@@ -691,19 +691,46 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after party-services ring 2, 2026-07-08)
+## NEXT UP (after party-services ring 3, 2026-07-08)
 
-1. **Party-system ring 3**: `PartySessionService` / `PresenceLobbyService` /
-   `NetworkTransitionService` — these consume the UGS lobby/Relay create-join
-   surface and NetworkManager StartClient; scope how much of their state logic
-   can go live against placeholder extensions (the ring-2 precedent: grow
-   ISession rather than carry deviations) before the `HostConnectionService`
-   orchestrator (2078L) lands LAST.
+1. **`HostConnectionService` orchestrator (2078L)** — every dependency it
+   composes is now ported (data container, event bus, member/invite/signal/
+   writer/scheduler/session/lobby/transition services, state machine). Big
+   file: consider splitting the port across two iterations (verbatim port +
+   deviation pass, then tests) or a multi-agent pass. Also still open:
+   `PartyInviteController` (506L) + `FriendsInitializer` (236L, needs
+   FriendsServiceFacade) + `NetworkDiagnostics` (small first-party helper —
+   porting it un-carries 6 diagnostics-only deviation lines across ring 3).
 2. **`MainMenuCameraController` (camera arc)**: the last deviation pair in
    `MenuCrystalClickHandler` (per-mode ActiveTransitionDuration).
 3. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 4. Update this file, commit, push.
+
+### Party-services ring 3 ✅ (2026-07-08)
+
+The three UGS-adjacent services are IN with their state logic live:
+`NetworkTransitionService` (shutdown gate live end-to-end on the synchronous
+engine Shutdown; client-connection wait on live flags; scene-sync wait takes
+upstream's own missing-SceneManager fail-soft branch; 7 transport-phase
+deviations for the not-yet-ported client-transport surface),
+`PartySessionService` (full LeaveAsync host-delete/member-leave teardown,
+PlayerLeaving relay, retry loops + transient classification LIVE against the
+new engine `SessionException`/`SessionError`; only the MultiplayerService
+create/join call statements are services-phase gated), and
+`PresenceLobbyService` (SavePropertiesAsync mutex flow, identity-property
+build, LeaveAsync, ForceReset live; query/join/create interiors gated). The
+engine placeholder surface grew `ISession.LeaveAsync`/`AsHost()`,
+`IHostSession.DeleteAsync`, `SessionError`, and `SessionException` (structured
+`.Error` — classification code matches codes, never message text), which also
+let `MultiplayerSetup`'s LAST services-phase teardown deviation be RESTORED
+(host-delete/leave on transport failure). Recovery note: the
+PartySessionService worker died on an API server error mid-write and was
+resumed from its transcript to complete the file. Tests (+9):
+session teardown paths + refresh delegation, lobby property-save/leave/reset,
+transition shutdown/wait/fail-soft. **1409 tests green in BOTH configs
+(1097 + 312)**; all 5 CLI modes exit 0; both client diags byte-identical.
+bleeding-edge unmoved.
 
 ### Party-services ring 2 ✅ (2026-07-08)
 

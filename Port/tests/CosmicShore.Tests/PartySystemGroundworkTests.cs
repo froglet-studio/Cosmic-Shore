@@ -63,7 +63,7 @@ public class PartyMemberServiceTests
             new Dictionary<string, PlayerProperty>();
     }
 
-    sealed class StubSession : ISession
+    sealed class StubSession : IHostSession
     {
         public string Id => "party";
         public string Code => "CODE";
@@ -77,6 +77,10 @@ public class PartyMemberServiceTests
         public CosmicShore.Engine.Networking.IPlayer CurrentPlayer => null;
         public System.Threading.Tasks.Task RefreshAsync() => System.Threading.Tasks.Task.CompletedTask;
         public System.Threading.Tasks.Task SaveCurrentPlayerDataAsync() => System.Threading.Tasks.Task.CompletedTask;
+        public System.Threading.Tasks.Task LeaveAsync() { Left++; return System.Threading.Tasks.Task.CompletedTask; }
+        public int Left; public int Deleted2;
+        public IHostSession AsHost() => this;
+        public System.Threading.Tasks.Task DeleteAsync() { Deleted2++; return System.Threading.Tasks.Task.CompletedTask; }
     }
 
     static (PartyMemberService service, HostConnectionDataSO data) MakeRig()

@@ -56,6 +56,51 @@ namespace CosmicShore.Engine.Networking
         /// <summary>Push the local player's pending property writes (UGS surface subset —
         /// <c>LobbyPropertyWriter.SaveWithRetryAsync</c>).</summary>
         System.Threading.Tasks.Task SaveCurrentPlayerDataAsync();
+
+        /// <summary>Leave the session as a non-host member (UGS surface subset —
+        /// <c>PartySessionService.LeaveAsync</c>). Placeholder implementations complete
+        /// synchronously.</summary>
+        System.Threading.Tasks.Task LeaveAsync();
+
+        /// <summary>Host-privileged view of this session (UGS surface subset — the host
+        /// deletes rather than leaves).</summary>
+        IHostSession AsHost();
+    }
+
+    /// <summary>Placeholder for <c>Unity.Services.Multiplayer.IHostSession</c> (subset).</summary>
+    public interface IHostSession : ISession
+    {
+        System.Threading.Tasks.Task DeleteAsync();
+    }
+
+    /// <summary>
+    /// Placeholder for <c>Unity.Services.Multiplayer.SessionError</c> — the subset of codes
+    /// ported catch-classification reads (values placeholder-local until the services phase
+    /// wires the real SDK; never serialized).
+    /// </summary>
+    public enum SessionError
+    {
+        Unknown = 0,
+        NotInLobby = 1,
+        SessionDeleted = 2,
+        SessionNotFound = 3,
+        RateLimitExceeded = 4,
+    }
+
+    /// <summary>
+    /// Placeholder for <c>Unity.Services.Multiplayer.SessionException</c> — carries the
+    /// structured <see cref="Error"/> code that ported error classification matches on
+    /// (structured matching, never message text — Docs/PartySystem BUGS precedent).
+    /// </summary>
+    public class SessionException : System.Exception
+    {
+        public SessionError Error { get; }
+
+        public SessionException(SessionError error, string message = null)
+            : base(message ?? error.ToString())
+        {
+            Error = error;
+        }
     }
 
     /// <summary>
