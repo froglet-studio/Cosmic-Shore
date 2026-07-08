@@ -35,6 +35,27 @@ namespace CosmicShore.Engine
         public Transform GetChild(int index) => _children[index];
         public IEnumerator GetEnumerator() => _children.GetEnumerator();
 
+        /// <summary>
+        /// Finds a child by name (original engine contract: direct children only, with
+        /// '/'-separated paths descending one level per segment). Returns null when no
+        /// child matches.
+        /// </summary>
+        public Transform Find(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+
+            int slash = name.IndexOf('/');
+            string head = slash < 0 ? name : name[..slash];
+
+            foreach (var child in _children)
+            {
+                if (child.gameObject.name != head) continue;
+                return slash < 0 ? child : child.Find(name[(slash + 1)..]);
+            }
+
+            return null;
+        }
+
         public Vector3 position
         {
             get => parent is null ? localPosition : parent.TransformPoint(localPosition);

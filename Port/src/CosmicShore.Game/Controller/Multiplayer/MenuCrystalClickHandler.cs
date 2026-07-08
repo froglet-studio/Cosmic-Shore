@@ -65,12 +65,11 @@ namespace CosmicShore.Gameplay
                                  "below, its per-mode ActiveTransitionDuration takes precedence.")]
         float cameraTransitionDuration = 2f;
 
-        // PORT Deviation (initializer-remainder arc 2026-07-07, MainMenuCameraController — restore when the camera arc ports):
-        // [SerializeField, Tooltip("Camera controller on the Game GameObject. If assigned, its " +
-        //                          "ActiveTransitionDuration (per-mode) is used so CrystalOrbit reads " +
-        //                          "~2s while VesselFollow / VesselChaseTight / VesselFixedAim read " +
-        //                          "~0.5s. Leave null to always use the fallback duration above.")]
-        // MainMenuCameraController cameraController;
+        [SerializeField, Tooltip("Camera controller on the Game GameObject. If assigned, its " +
+                                 "ActiveTransitionDuration (per-mode) is used so CrystalOrbit reads " +
+                                 "~2s while VesselFollow / VesselChaseTight / VesselFixedAim read " +
+                                 "~0.5s. Leave null to always use the fallback duration above.")]
+        MainMenuCameraController cameraController;
 
         [SerializeField, Tooltip("Keep player input paused until after the camera blend completes. " +
                                  "With AI off and input paused, the vessel has no steering input and " +
@@ -220,7 +219,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         float CurrentTransitionDuration()
         {
-            // PORT Deviation (initializer-remainder arc 2026-07-07, MainMenuCameraController — restore when the camera arc ports): if (cameraController) return cameraController.ActiveTransitionDuration;
+            if (cameraController) return cameraController.ActiveTransitionDuration;
             return cameraTransitionDuration;
         }
 

@@ -336,4 +336,12 @@ public class EnumFreezeTests
     [InlineData(ScoringMetric.Jousts, 3)]
     public void ScoringMetric_Values_Frozen(ScoringMetric metric, int expected)
         => Assert.Equal(expected, (int)metric);
+
+    [Theory]
+    [InlineData(CosmicShore.Gameplay.MenuCameraMode.CrystalOrbit, 0)]
+    [InlineData(CosmicShore.Gameplay.MenuCameraMode.VesselFollow, 1)]
+    [InlineData(CosmicShore.Gameplay.MenuCameraMode.VesselChaseTight, 2)]
+    [InlineData(CosmicShore.Gameplay.MenuCameraMode.VesselTopDownPan, 3)]
+    public void MenuCameraMode_Values_Frozen(CosmicShore.Gameplay.MenuCameraMode mode, int expected)
+        => Assert.Equal(expected, (int)mode);
 }

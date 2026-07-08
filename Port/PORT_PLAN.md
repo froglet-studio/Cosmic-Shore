@@ -691,13 +691,63 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the Friends system, 2026-07-08)
+## NEXT UP (after MainMenuCameraController, 2026-07-08)
 
-1. **`MainMenuCameraController` (camera arc)**: the last deviation pair in
-   `MenuCrystalClickHandler`.
+1. **Scene-management surface**: grow the engine `SceneManager`
+   (`GetActiveScene()` + a minimal `LoadSceneAsync` against the GameLoop's
+   scene ownership) per the ISession/Friends placeholder precedent, then
+   un-carry the 3 scene-phase deviations it satisfies —
+   `PartyInviteController`'s two Menu_Main loads (currently announce-only
+   via `NotifySceneLoaded`) and `HostConnectionService.IsOnMenuScene`'s
+   GameLoop scene-name read — with tests.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### MainMenuCameraController (camera arc) ✅ (2026-07-08)
+
+Groundwork: engine `Transform.Find(string)` (direct children + '/'-paths);
+`RotateAroundOrigin` ported verbatim (15L, fully live); the CameraManager
+shell grew the activation quartet MainMenuCameraController drives —
+`SetMainMenuCameraActive` / `SetupGamePlayCameras` / `SetupEndCameraFollow` /
+`DeactivateAllCameras` — as no-ops into an observable `ShellCameraState`
+mirror (+ `LastGameplayFollowTarget`).
+
+**`MainMenuCameraController` (1028L) ported.** LIVE: the `MenuCameraMode`
+enum (frozen 0-3 in EnumFreezeTests) + all tuning fields, `Mode` +
+`ApplyModeChange`, **`ActiveTransitionDuration`** (the read
+`MenuCrystalClickHandler` un-carries below), `IsVesselMode`, the full SOAP
+wiring (OnClientReady → immediate menu-camera activation,
+OnGameStateTransitionStart/OnMenuStateTransitionStart → the two transitions,
+OnCrystalSpawned → orbit-rig placement), the transform-side crystal-orbit rig
+(follow-target parked at `crystal + back·radius`, world-origin
+RotateAroundOrigin disabled/re-enabled, per-frame unscaled-time orbit in
+`UpdateMenuOrbit`), the randomized mode-switch loop (`GameTask.Delay`
+unscaled), and the CTS lifecycle (BeginTransition preemption + OnDestroy
+teardown). Both transitions resolve through **upstream's own no-bridge /
+no-player-camera fallback branches** (FallbackActivateGameplayCamera /
+ActivateMenuCameraImmediate → the shell mirror) — the same "live on
+upstream's own null branch" precedent as LeavePartyAsync pre-un-carry.
+Deviations: one family, **camera arc — Unity.Cinemachine** (vCam
+caching/creation/config, brain-blend override + FOV punch, blend polling,
+priority juggling, the BindingMode field), all carried as commented source;
+the two spots where a vCam-null guard would kill live transform work
+(SetMenuVCamTarget entry, ActivateMenuCameraImmediate's CrystalOrbit branch)
+carry the guard itself as the deviation.
+
+**Un-carried:** `MenuCrystalClickHandler`'s last deviation pair — the
+`cameraController` SerializeField + the `CurrentTransitionDuration` per-mode
+read (controller wins, serialized fallback otherwise).
+
+**6 behavior tests** (`MainMenuCameraControllerTests`) + the enum freeze:
+per-mode durations (2s orbit / 0.5s all vessel modes) with the Mode setter
+re-activating the menu family; the un-carried duration read (fallback vs
+controller); OnClientReady activation; crystal-spawn orbit-rig placement +
+orbit math (radius preserved, yaw-only) + rotator arbitration; the freestyle
+enter/exit round trip through the shell mirror (Gameplay handoff with the
+vessel's follow target, then back to MainMenu); and the no-vessel no-op.
+**1442 tests green in BOTH configs (1130 + 312)**; all 5 CLI modes exit 0;
+both client diags byte-identical. bleeding-edge unmoved.
 
 ### Friends system ✅ (2026-07-08) — party-system arc file inventory COMPLETE
 
