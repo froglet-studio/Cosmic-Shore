@@ -40,6 +40,31 @@ namespace CosmicShore.Engine.Networking
         /// harness/test implementations back it with a plain list.
         /// </summary>
         System.Collections.Generic.IReadOnlyList<IReadOnlyPlayer> Players { get; }
+
+        /// <summary>
+        /// The local player's writable roster entry (party-system arc:
+        /// <c>AcceptanceSignalService</c> publishes accepted_invite / invite_payloads through
+        /// <c>CurrentPlayer.SetProperty</c>). The services phase supplies the live implementation.
+        /// </summary>
+        IPlayer CurrentPlayer { get; }
+
+        /// <summary>Pull the latest lobby state (UGS surface subset — <c>LobbyPropertyWriter</c>
+        /// refreshes before conflict-sensitive writes). Placeholder implementations complete
+        /// synchronously.</summary>
+        System.Threading.Tasks.Task RefreshAsync();
+
+        /// <summary>Push the local player's pending property writes (UGS surface subset —
+        /// <c>LobbyPropertyWriter.SaveWithRetryAsync</c>).</summary>
+        System.Threading.Tasks.Task SaveCurrentPlayerDataAsync();
+    }
+
+    /// <summary>
+    /// Placeholder for <c>Unity.Services.Multiplayer.IPlayer</c> — the writable counterpart of
+    /// <see cref="IReadOnlyPlayer"/> (party-system arc: per-player property publication).
+    /// </summary>
+    public interface IPlayer : IReadOnlyPlayer
+    {
+        void SetProperty(string key, PlayerProperty property);
     }
 
     /// <summary>

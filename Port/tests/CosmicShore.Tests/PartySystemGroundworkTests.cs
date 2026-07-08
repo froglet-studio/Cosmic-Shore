@@ -74,6 +74,9 @@ public class PartyMemberServiceTests
         public event Action<string> PlayerLeaving { add { } remove { } }
         public List<IReadOnlyPlayer> Roster { get; } = new();
         public IReadOnlyList<IReadOnlyPlayer> Players => Roster;
+        public CosmicShore.Engine.Networking.IPlayer CurrentPlayer => null;
+        public System.Threading.Tasks.Task RefreshAsync() => System.Threading.Tasks.Task.CompletedTask;
+        public System.Threading.Tasks.Task SaveCurrentPlayerDataAsync() => System.Threading.Tasks.Task.CompletedTask;
     }
 
     static (PartyMemberService service, HostConnectionDataSO data) MakeRig()

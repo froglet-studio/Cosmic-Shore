@@ -6,6 +6,8 @@ using CosmicShore.Engine.Soap;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 
+// Engine's UGS placeholder also declares an IPlayer — alias the game's player interface.
+using IPlayer = CosmicShore.Gameplay.IPlayer;
 namespace CosmicShore.Tests;
 
 // V10 coverage: GameDataSO ported verbatim. Exercises the player-count pipeline

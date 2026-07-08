@@ -691,20 +691,43 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after party-system groundwork, 2026-07-08)
+## NEXT UP (after party-services ring 2, 2026-07-08)
 
-1. **Party-system services, next ring outward**: `LobbyRefreshScheduler` (173L,
-   timing logic) + `InviteService` (269L, per-player invite-slot payloads) +
-   `AcceptanceSignalService` (316L) look mostly portable against the placeholder
-   surface (`PlayerProperty` dictionaries, ISession); `PartySessionService` /
-   `PresenceLobbyService` / `NetworkTransitionService` need the UGS
-   lobby/Relay + StartClient surface (services/transport phases);
-   `HostConnectionService` (2078L) is the orchestrator and lands LAST.
+1. **Party-system ring 3**: `PartySessionService` / `PresenceLobbyService` /
+   `NetworkTransitionService` — these consume the UGS lobby/Relay create-join
+   surface and NetworkManager StartClient; scope how much of their state logic
+   can go live against placeholder extensions (the ring-2 precedent: grow
+   ISession rather than carry deviations) before the `HostConnectionService`
+   orchestrator (2078L) lands LAST.
 2. **`MainMenuCameraController` (camera arc)**: the last deviation pair in
    `MenuCrystalClickHandler` (per-mode ActiveTransitionDuration).
 3. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 4. Update this file, commit, push.
+
+### Party-services ring 2 ✅ (2026-07-08)
+
+Four more services live, ZERO deviations end-state: `LobbyRefreshScheduler`
+(cadence + 0.75s boost window + deferred reset), `InviteService` (per-player
+invite-slot payloads — `targetId|localId|sessionId|name|avatar` lines, PENDING
+→ real-session rewrite, unscaled-time expiry), `LobbyPropertyWriter`
+(mutex → refresh → set → save-with-retry; the retired `.AsMainThread()`
+boundary maps to a plain await under GameSynchronizationContext), and
+`AcceptanceSignalService` (lobby scan for accepted_invite signals + publish
+through the writer mutex — its two carried `CurrentPlayer.SetProperty` sites
+were RESTORED in-iteration). The engine ISession placeholder grew
+`CurrentPlayer` (new writable `IPlayer` : IReadOnlyPlayer + SetProperty),
+`RefreshAsync()`, `SaveCurrentPlayerDataAsync()`. Engine `IPlayer` collides by
+design with `CosmicShore.Gameplay.IPlayer` (both are original contract names) —
+14 harness/test files that import both namespaces take a
+`using IPlayer = CosmicShore.Gameplay.IPlayer;` alias; files in the Gameplay
+namespace need nothing (enclosing namespace wins). Tests (+8):
+`LobbyRefreshSchedulerTests` (interval/boost-window/deferred),
+`InviteServiceTests` (payload format, PENDING rewrite, expiry),
+`AcceptanceSignalServiceTests` (scan matching only OUR invites; publish
+writes accepted_invite through the real mutex flow). **1400 tests green in
+BOTH configs (1088 + 312)**; all 5 CLI modes exit 0; both client diags
+byte-identical. bleeding-edge unmoved.
 
 ### Party-system arc groundwork ✅ (2026-07-08)
 

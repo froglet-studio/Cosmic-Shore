@@ -8,6 +8,8 @@ using CosmicShore.Gameplay;
 using CosmicShore.Engine.Networking;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
+// Engine's UGS placeholder also declares an IPlayer — alias the game's player interface.
+using IPlayer = CosmicShore.Gameplay.IPlayer;
 using Object = CosmicShore.Engine.Object;
 
 namespace CosmicShore.Tests;

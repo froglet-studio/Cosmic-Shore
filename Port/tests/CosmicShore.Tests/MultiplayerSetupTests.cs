@@ -39,6 +39,9 @@ public class MultiplayerSetupTests : IDisposable
         public event Action<string> PlayerLeaving { add { } remove { } }
         public System.Collections.Generic.IReadOnlyList<IReadOnlyPlayer> Players { get; } =
             Array.Empty<IReadOnlyPlayer>();
+        public CosmicShore.Engine.Networking.IPlayer CurrentPlayer => null;
+        public System.Threading.Tasks.Task RefreshAsync() => System.Threading.Tasks.Task.CompletedTask;
+        public System.Threading.Tasks.Task SaveCurrentPlayerDataAsync() => System.Threading.Tasks.Task.CompletedTask;
     }
 
     (MultiplayerSetup setup, NetworkManager nm, GameDataSO gameData) MakeRig()

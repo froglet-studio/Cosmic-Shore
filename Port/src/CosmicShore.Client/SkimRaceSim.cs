@@ -11,6 +11,9 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
+// The engine's UGS session placeholder also declares an IPlayer (Unity.Services.Multiplayer
+// contract) — alias the game's player interface, which is what this harness means.
+using IPlayer = CosmicShore.Gameplay.IPlayer;
 using Random = System.Random; // disambiguate from CosmicShore.Engine.Random
 
 namespace CosmicShore.Client
