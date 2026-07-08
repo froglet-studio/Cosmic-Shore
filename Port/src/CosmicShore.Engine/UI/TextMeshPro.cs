@@ -49,6 +49,16 @@ namespace CosmicShore.Engine.UI
     }
 
     /// <summary>Canvas (UGUI) TextMeshPro component.</summary>
+    /// <summary>
+    /// Data-only input-field shim (original contract: TMPro.TMP_InputField — the slice
+    /// ported controllers read/write: the entered text plus interactability via Behaviour).
+    /// A render/input layer binds it later; tests set <see cref="text"/> directly.
+    /// </summary>
+    public class TMP_InputField : Behaviour
+    {
+        public string text = string.Empty;
+    }
+
     public class TextMeshProUGUI : TMP_Text
     {
     }

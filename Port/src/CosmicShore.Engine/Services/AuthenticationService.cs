@@ -73,6 +73,16 @@ namespace CosmicShore.Engine.Services
         /// <summary>Drop the cached session token so the next sign-in is a fresh identity.</summary>
         public virtual void ClearSessionToken() => SessionTokenExists = false;
 
+        /// <summary>
+        /// Update the UGS player name (original contract: the SDK persists it server-side
+        /// and returns the stored value, possibly suffixed). The shim stores it locally.
+        /// </summary>
+        public virtual System.Threading.Tasks.Task<string> UpdatePlayerNameAsync(string name)
+        {
+            PlayerName = name;
+            return System.Threading.Tasks.Task.FromResult(name);
+        }
+
         /// <summary>Harness entry: raise <see cref="SignInFailed"/> as the SDK would.</summary>
         public void NotifySignInFailed(RequestFailedException e) => SignInFailed?.Invoke(e);
 

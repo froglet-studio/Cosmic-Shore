@@ -691,16 +691,53 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after AppManager, 2026-07-08)
+## NEXT UP (after the bootstrap arc completed, 2026-07-08)
 
-1. **Bootstrap-arc remainder**: `AuthenticationSceneController` +
-   `SplashToAuthFlow` (the Authentication-scene orchestration between
-   AppManager's handoff and Menu_Main — auto-skip on cached auth, guest
-   login, NavigateToMainMenu with the NetworkManager listening gate) — SCOPE
-   first; UI-panel surfaces carry as UI-shell deviations per precedent.
+1. **UGS Multiplayer session surface (services phase, MultiplayerSetup)**:
+   scope + grow the engine placeholders MultiplayerSetup's carried
+   session-management deviations need (MultiplayerService.Instance /
+   SessionOptions / QuerySessionsOptions / SessionProperty + PropertyIndex —
+   per the Friends-SDK placeholder precedent), then un-carry what the
+   growth satisfies (CreateOrJoinSession, GetPlayerProperties /
+   GetSessionProperties) with tests. SCOPE first — the session query/join
+   surface may split across two iterations.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Bootstrap-arc remainder ✅ (2026-07-08) — the bootstrap arc is COMPLETE
+
+Engine growths: the `TMP_InputField` data-only shim and the auth shim's
+`UpdatePlayerNameAsync` (stores locally, returns the name — the SDK's
+observable contract). **Both files ported FULLY LIVE, zero deviations:**
+**`SplashToAuthFlow`** (126L — the splash hold, the in-flight-auth settle
+wait with timeout, and the always-route-through-Authentication load; even a
+signed-in user routes through the auth scene so the network host starts
+before Menu_Main loads via Netcode) and **`AuthenticationSceneController`**
+(549L — the safety-timeout race per the LeavePartyAsync WhenAny precedent,
+the already-signed-in auto-skip, cached sign-in with timeout, the
+auth-panel/auto-sign-in fork, guest login, the post-auth PlayerDataService
+wait + username-needed check, username confirm through the grown shim, the
+BootStatusPanel SOAP surface, and the networked Menu_Main load —
+WaitForRelayReadyAsync's dual-condition gate, the 3-attempt
+EnsurePartySessionAsync re-kick, the manual-retry surface, the splash
+re-cover, and the Netcode load through the NetworkManager.SceneManager
+placeholder). Even the UI panel wiring is live against the engine's
+data-only Button/TMP shims — no UI-shell deviations needed.
+
+**The bootstrap arc is COMPLETE**: Bootstrap (AppManager DI root + platform
+config + services) → splash → Authentication (auto-skip / guest login /
+username setup + the relay gate) → networked Menu_Main load → SceneLoader's
+splash release on OnClientReady — every file on the app-entry path is fully
+live. **6 behavior tests** (`AuthFlowTests`): the splash hold-then-route,
+the auto-skip through the networked menu load (+ splash kept opaque), the
+no-panel anonymous auto-sign-in, the panel fork + guest-login click-through,
+the username fork (short-name reject, confirm → local + shim persist), and
+the relay gate ignoring the lobby-join fire until Netcode listens. Rig
+lesson: stage authored-inactive panels inactive at creation, or activeSelf
+polls exit before the flow runs. **1514 tests green in BOTH configs
+(1176 + 338)**; all 5 CLI modes exit 0; both client diags byte-identical.
+bleeding-edge unmoved.
 
 ### AppManager ✅ (2026-07-08) — the DI root is live end to end
 
