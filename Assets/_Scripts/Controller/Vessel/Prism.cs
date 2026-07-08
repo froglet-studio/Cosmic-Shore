@@ -24,10 +24,16 @@ namespace CosmicShore.Gameplay
         public GameObject ParticleEffect;
         public Trail Trail;
 
-        [Header("Prism Growth")] 
+        [Header("Prism Growth")]
         public Vector3 GrowthVector = new Vector3(0, 2, 0);
         public float growthRate = 0.01f;
         public float waitTime = 0.6f;
+
+        // One yield token per prism life, reused across pool reuses — a fresh
+        // WaitForSeconds per spawn was a managed alloc for every prism ever laid,
+        // steady food for the mid-session GC.Collect spikes.
+        WaitForSeconds _spawnWait;
+        float _spawnWaitSeconds = -1f;
 
         [Header("Prism Status")] 
         public bool destroyed;
@@ -432,7 +438,12 @@ namespace CosmicShore.Gameplay
 
         private IEnumerator CreateBlockCoroutine(Vector3 authoredTargetScale)
         {
-            yield return new WaitForSeconds(waitTime);
+            if (_spawnWait == null || _spawnWaitSeconds != waitTime)
+            {
+                _spawnWait = new WaitForSeconds(waitTime);
+                _spawnWaitSeconds = waitTime;
+            }
+            yield return _spawnWait;
 
             // Destroyed before creation completed (e.g. AOE within waitTime of spawn) —
             // don't resurrect the renderer/collider or register a dead prism with the
