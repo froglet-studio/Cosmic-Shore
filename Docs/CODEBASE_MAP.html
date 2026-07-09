@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Cosmic Shore — System Constellation</title>
+<style>
+  :root{
+    --bg:#05070e; --bg2:#080b14; --panel:#0d1120e6; --panel-solid:#0e1322;
+    --line:rgba(150,170,220,.14); --line2:rgba(150,170,220,.08);
+    --ink:#e9edfa; --ink2:#c0c8e0; --muted:#7f89a8; --faint:#586084;
+    --accent:#5fd3ff;
+    --code:#aeb8d6;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased}
+  .mono{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace}
+  a{color:var(--accent);text-decoration:none}
+  button{font-family:inherit;color:inherit;cursor:pointer}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+
+  #stage{position:fixed;inset:0}
+  canvas{display:block;position:absolute;inset:0;touch-action:none}
+  #fx{pointer-events:none}
+
+  /* ---- top bar ---- */
+  .topbar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:14px;
+    padding:12px 16px;background:linear-gradient(180deg,#04060cf2,#04060c00);pointer-events:none}
+  .topbar>*{pointer-events:auto}
+  .title{display:flex;align-items:center;gap:11px;min-width:0}
+  .title svg{width:26px;height:26px;flex:0 0 auto}
+  .title b{font-size:15px;letter-spacing:-.01em;white-space:nowrap}
+  .title .sub{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+  .spacer{flex:1 1 auto}
+  .search{position:relative;display:flex;align-items:center}
+  .search input{width:210px;max-width:38vw;padding:8px 12px 8px 32px;font-size:13px;color:var(--ink);
+    background:#0c1120cc;border:1px solid var(--line);border-radius:10px;backdrop-filter:blur(8px)}
+  .search input::placeholder{color:var(--faint)}
+  .search svg{position:absolute;left:10px;opacity:.55}
+  .tbtn{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;font-size:12.5px;color:var(--ink2);
+    background:#0c1120cc;border:1px solid var(--line);border-radius:10px;backdrop-filter:blur(8px);white-space:nowrap}
+  .tbtn:hover{border-color:var(--accent);color:var(--ink)}
+  .tbtn.on{border-color:var(--accent);color:var(--accent);background:#0e2230cc}
+
+  /* ---- legend ---- */
+  .legend{position:fixed;left:16px;bottom:16px;z-index:20;width:260px;max-width:calc(100vw - 32px);
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;backdrop-filter:blur(12px);
+    padding:12px 13px;box-shadow:0 20px 60px #000a}
+  .legend h4{margin:2px 0 8px;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .legend .grp{display:flex;flex-wrap:wrap;gap:5px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:4px 8px;border-radius:999px;font-size:11px;
+    border:1px solid var(--line);background:#0a0f1c;color:var(--ink2);user-select:none}
+  .chip:hover{border-color:var(--line)}
+  .chip.off{opacity:.32;filter:grayscale(.7)}
+  .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .ln{width:15px;height:0;border-top:2px solid;flex:0 0 auto}
+  .legend .rows{display:flex;flex-direction:column;gap:11px}
+  .legend .foot{margin-top:11px;padding-top:9px;border-top:1px solid var(--line2);font-size:11px;color:var(--faint);line-height:1.5}
+  .legend .foot b{color:var(--muted);font-weight:600}
+  .legmin{position:absolute;top:9px;right:10px;font-size:11px;color:var(--faint);background:none;border:none;padding:2px 4px}
+  .legend.min .rows,.legend.min .foot{display:none}
+
+  /* ---- detail panel ---- */
+  .detail{position:fixed;top:0;right:0;bottom:0;z-index:30;width:390px;max-width:92vw;
+    background:var(--panel);border-left:1px solid var(--line);backdrop-filter:blur(16px);
+    transform:translateX(102%);transition:transform .28s cubic-bezier(.2,.7,.2,1);
+    display:flex;flex-direction:column;box-shadow:-20px 0 70px #000a}
+  .detail.open{transform:none}
+  @media (prefers-reduced-motion:reduce){.detail{transition:none}}
+  .detail .dhead{padding:18px 20px 14px;border-bottom:1px solid var(--line2)}
+  .detail .dcat{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;letter-spacing:.14em;
+    text-transform:uppercase;font-weight:700;margin-bottom:9px}
+  .detail h2{margin:0;font-size:22px;letter-spacing:-.02em;line-height:1.12;font-weight:800;text-wrap:balance}
+  .detail .dbody{padding:16px 20px 28px;overflow-y:auto}
+  .detail .desc{color:var(--ink2);font-size:13.5px;line-height:1.55;margin:0 0 18px}
+  .detail .lbl{font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:16px 0 8px}
+  .comps{display:flex;flex-wrap:wrap;gap:6px}
+  .comps code{font-size:11.5px;background:#0a1020;border:1px solid var(--line);border-radius:6px;padding:3px 7px;color:var(--code)}
+  .conns{display:flex;flex-direction:column;gap:5px}
+  .conn{display:flex;align-items:center;gap:9px;padding:7px 9px;border-radius:9px;border:1px solid var(--line2);background:#0a0f1c99}
+  .conn:hover{border-color:var(--line);background:#0d1424}
+  .conn .arrow{font-size:12px;color:var(--faint);width:14px;text-align:center;flex:0 0 auto}
+  .conn .kind{font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:700;padding:2px 6px;border-radius:5px;flex:0 0 auto}
+  .conn .cname{font-size:12.5px;color:var(--ink2);flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .conn:hover .cname{color:var(--ink)}
+  .dclose{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:8px;border:1px solid var(--line);
+    background:#0c1120cc;color:var(--ink2);font-size:16px;display:grid;place-items:center}
+  .dclose:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* ---- tooltip ---- */
+  #tip{position:fixed;z-index:25;pointer-events:none;padding:6px 10px;border-radius:8px;font-size:12px;
+    background:#0c1220f2;border:1px solid var(--line);color:var(--ink);box-shadow:0 8px 24px #000a;
+    transform:translate(-50%,-140%);opacity:0;transition:opacity .1s;white-space:nowrap;max-width:280px}
+  #tip .tsub{color:var(--muted);font-size:11px}
+
+  /* ---- help ---- */
+  .help{position:fixed;inset:0;z-index:40;display:grid;place-items:center;background:#04060ccc;backdrop-filter:blur(4px)}
+  .help.hidden{display:none}
+  .hcard{width:min(440px,90vw);background:var(--panel-solid);border:1px solid var(--line);border-radius:18px;padding:26px 28px;box-shadow:0 30px 90px #000c}
+  .hcard h3{margin:0 0 4px;font-size:20px;letter-spacing:-.01em}
+  .hcard .hs{color:var(--muted);font-size:12.5px;margin:0 0 18px}
+  .hcard ul{margin:0 0 20px;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}
+  .hcard li{display:flex;gap:11px;align-items:flex-start;font-size:13px;color:var(--ink2);line-height:1.45}
+  .hcard li .k{flex:0 0 auto;margin-top:1px;font-size:10.5px;font-weight:700;letter-spacing:.03em;color:var(--accent);
+    border:1px solid var(--line);border-radius:6px;padding:3px 7px;min-width:74px;text-align:center;background:#0a1424}
+  .hcard .go{width:100%;padding:11px;text-align:center;font-size:13.5px;font-weight:700;color:#04121b;
+    background:linear-gradient(180deg,#7ee0ff,#3fbfe8);border:none;border-radius:11px;letter-spacing:.01em}
+  .hcard .go:hover{filter:brightness(1.06)}
+
+  .zoomctl{position:fixed;right:16px;bottom:16px;z-index:20;display:flex;flex-direction:column;gap:6px}
+  .zoomctl button{width:38px;height:38px;font-size:18px;border-radius:10px;border:1px solid var(--line);
+    background:#0c1120cc;color:var(--ink2);backdrop-filter:blur(8px);display:grid;place-items:center}
+  .zoomctl button:hover{border-color:var(--accent);color:var(--accent)}
+  .detail.open ~ .zoomctl{right:calc(390px + 16px)}
+  @media (max-width:560px){
+    .detail{width:100%;top:auto;height:72vh;border-left:none;border-top:1px solid var(--line);
+      border-radius:18px 18px 0 0;transform:translateY(102%)}
+    .detail.open{transform:none}
+    .detail.open ~ .zoomctl{right:16px;bottom:calc(72vh + 12px)}
+    .legend{display:none}
+    .title .sub{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="fx"></canvas>
+  <canvas id="net"></canvas>
+</div>
+
+<div class="topbar">
+  <div class="title">
+    <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="13" stroke="#5fd3ff" stroke-width="1.3" opacity=".5"/><path d="M16 4 26 16 16 28 6 16Z" stroke="#3be0a0" stroke-width="1.4"/><path d="M16 9 21.5 16 16 23 10.5 16Z" fill="#5fd3ff" opacity=".22" stroke="#5fd3ff" stroke-width="1.1"/><circle cx="16" cy="16" r="2" fill="#ffc24b"/></svg>
+    <div><b>System Constellation</b><div class="sub">Cosmic Shore · interactive architecture map</div></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg><input id="q" type="search" placeholder="Find a system…" autocomplete="off"></div>
+  <button class="tbtn on" id="btnLabels">Labels</button>
+  <button class="tbtn" id="btnFit">Fit</button>
+  <button class="tbtn" id="btnHelp" aria-label="Help">?</button>
+</div>
+
+<div class="legend" id="legend">
+  <button class="legmin" id="legMin">–</button>
+  <div class="rows">
+    <div><h4>Sectors</h4><div class="grp" id="secChips"></div></div>
+    <div><h4>Links</h4><div class="grp" id="kindChips"></div></div>
+  </div>
+  <div class="foot"><b>Drag</b> to pan · <b>scroll</b> to zoom · <b>click a star</b> to inspect it and light up its connections.</div>
+</div>
+
+<div class="zoomctl">
+  <button id="zin" aria-label="Zoom in">+</button>
+  <button id="zout" aria-label="Zoom out">−</button>
+</div>
+
+<aside class="detail" id="detail">
+  <button class="dclose" id="dclose" aria-label="Close">✕</button>
+  <div class="dhead"><div class="dcat" id="dcat"></div><h2 id="dtitle"></h2></div>
+  <div class="dbody">
+    <p class="desc" id="ddesc"></p>
+    <div class="lbl">Key components</div>
+    <div class="comps" id="dcomps"></div>
+    <div class="lbl" id="dconnlbl">Connections</div>
+    <div class="conns" id="dconns"></div>
+  </div>
+</aside>
+
+<div id="tip"></div>
+
+<div class="help" id="help">
+  <div class="hcard">
+    <h3>Fly the map</h3>
+    <p class="hs">74 systems of Cosmic Shore as a star chart. Sectors are colored; links are typed.</p>
+    <ul>
+      <li><span class="k">Drag</span><span>Pan across the constellation.</span></li>
+      <li><span class="k">Scroll</span><span>Zoom toward the cursor.</span></li>
+      <li><span class="k">Click star</span><span>Inspect a system — its components and every connection light up.</span></li>
+      <li><span class="k">Legend</span><span>Toggle sectors and link types on/off to isolate a flow.</span></li>
+    </ul>
+    <button class="go" id="helpGo">Enter the HyperSea</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ============================ DATA ============================ */
+// Sectors: [name, hue]
+const SECTORS = [
+  ["Core Spine",            190],
+  ["Vessels & Prisms",      222],
+  ["Ecosystem",             138],
+  ["Combat, Effects & Toys",  6],
+  ["Modes & Scoring",        42],
+  ["Netcode & Party",       300],
+  ["App & Backend",         266],
+  ["Client & Input",        166],
+  ["User Interface",        332],
+  ["Data & SOAP",            84],
+];
+const secColor = (s,l=63)=>`hsl(${SECTORS[s][1]} 72% ${l}%)`;
+
+// Nodes: id, label, sector, weight(1-3), desc, comps[]
+const NODES = [
+  // Core Spine (0)
+  ["appmanager","AppManager",0,3,"Reflex DI root & bootstrap orchestrator — registers every persistent manager and shared SO asset, configures the platform, runs the startup sequence.",["AppManager","InstallBindings()","BootstrapConfigSO"]],
+  ["appstate","ApplicationStateMachine",0,2,"Single-writer top-level phase FSM (Bootstrapping → Authenticating → MainMenu → LoadingGame → InGame → GameOver). Table-validated transitions.",["ApplicationStateMachine","ApplicationStateDataVariable"]],
+  ["sceneloader","SceneLoader",0,2,"Launches game scenes, returns to menu, restarts — host-driven Netcode scene load with a local fallback.",["SceneLoader","SceneNameListSO"]],
+  ["gamedata","GameDataSO",0,3,"The central SOAP runtime state & event bus: player roster, scoring, spawn poses, launch config, and all cross-system game events.",["GameDataSO","OnLaunchGame","OnClientReady","OnMiniGameEnd"]],
+  ["soap","SOAP Backbone",0,3,"The primary architecture — ScriptableVariable / ScriptableEvent / EventListener channels decouple every system. No singletons or static events.",["ScriptableVariable<T>","ScriptableEvent<T>","EventListener<T>"]],
+  ["mainmenu","MainMenuController",0,2,"Menu_Main sub-state machine (None→Initializing→Ready→LaunchingGame). Configures game data & drives the lava-lamp / freestyle experience.",["MainMenuController","MainMenuState"]],
+
+  // Vessels & Prisms (1)
+  ["vesselstatus","VesselStatus",1,3,"NetworkBehaviour vessel core: identity, domain, resources, state & lifecycle. The playable actor.",["VesselStatus","IVesselStatus"]],
+  ["vesselctrl","VesselController",1,1,"Assembles a vessel's components and drives its per-frame update loop.",["VesselController"]],
+  ["transformer","VesselTransformer",1,1,"Movement / steering models per vessel (SingleStick, Gun, Command variants).",["VesselTransformer","SingleStickVesselTransformer"]],
+  ["prismctrl","VesselPrismController",1,2,"Lays the vessel's trail — a stream of prisms (conserved mass) behind the ship.",["VesselPrismController","Trail"]],
+  ["resource","ResourceSystem",1,2,"Per-vessel elemental resources — Charge, Mass, Space, Time — the substrate of all buffs/debuffs.",["ResourceSystem","R_VesselElementStatsHandler"]],
+  ["actions","Vessel Actions",1,2,"40+ config-driven abilities: a VesselActionSO routes to an executor via the registry, composing with elementals.",["VesselActionSO","ActionExecutorRegistry","R_VesselActionHandler"]],
+  ["skimmer","Skimmer",1,1,"Invisible sphere collider that skims nearby prisms for energy and triggers skim effects.",["Skimmer"]],
+  ["prism","Prism / Trail",1,3,"The concrete unit of conserved mass. Only an active force (ability or fauna) removes one — never decay.",["Prism","Trail","HealthPrism"]],
+  ["silhouette","SilhouetteController",1,1,"Per-vessel driver that builds & feeds the 5-petal elemental flower HUD.",["SilhouetteController"]],
+  ["spatialindex","PrismSpatialIndex",1,2,"THE canonical Burst spatial index of all prism mass — AOE damage queries + growth-occupancy reservations + bucket grid.",["PrismSpatialIndex","TryReserve()"]],
+  ["scalemgr","Prism Managers",1,1,"Jobs+Burst batched prism scale/material animation and adaptive frame-skipping.",["PrismScaleManager","MaterialStateManager","AdaptiveAnimationManager"]],
+  ["prismfactory","PrismFactory",1,1,"Pools and builds prism GameObjects (bloom-in / suction-out lifecycle).",["PrismFactory","GenericPoolManager"]],
+
+  // Ecosystem (2)
+  ["cell","Cell",2,3,"The territorial region of play & unit of control. Its per-domain VOLUME drives phase, prey, and HUD.",["Cell","CellConfigDataSO","LiveVolume"]],
+  ["spawnprofile","SpawnProfileSO",2,1,"The population recipe for a cell's flora & fauna, keyed by intensity.",["SpawnProfileSO","CellPhaseThresholds"]],
+  ["lifespawner","Life Spawners",2,1,"Seeds life into a cell by intensity — flora canopy and fauna packs.",["RandomLifeSpawner","IntensityWiseLifeSpawner"]],
+  ["flora","Flora",2,2,"Domain-colored canopy that grows mass on a cell; the dominant color's canopy is never culled.",["Flora","FloraConfigurationSO"]],
+  ["fauna","Fauna",2,2,"Predators that hunt opposing mass and wither into a crystal when they starve — mass conserved.",["Fauna","LightFauna","FaunaConfigurationSO"]],
+  ["crystals","Crystals",2,2,"Elemental / team / omni crystals. Every lifeform drops one on death (LifeFormCrystal enforced).",["CrystalProperties","ElementalCrystal","LifeFormCrystal"]],
+  ["fields","Flow & Warp Fields",2,1,"Force fields that push vessels and mass through the HyperSea.",["FlowField","WarpField"]],
+
+  // Combat, Effects & Toys (3)
+  ["impactor","Impactors",3,2,"11 collision agents (vessel, prism, projectile, mine, crystal…) that route overlaps to effect SOs.",["ImpactorBase","VesselImpactor","PrismImpactor"]],
+  ["effectso","Effect SO Matrix",3,3,"90+ [Impactor][Target] effect ScriptableObjects — damage, boost, steal, debuff, shield, VFX — the composable reaction matrix.",["ImpactEffectSO","VesselExplosionByCrystalEffectSO"]],
+  ["projectile","Projectiles",3,1,"Guns, mines and AOE block/explosion spawners fired by vessels.",["Projectile","Gun","Mine","AOEExplosion"]],
+  ["toy","Freestyle Toys",3,2,"World-space stations the vessel flies into — no score, no end condition. A fundamental of freestyle.",["Toy","ToyboxController"]],
+  ["swaptoy","Swap Toy Sets",3,1,"Vessel-changer & domain-changer flip-sets (each toy is the option it switches you to).",["SwapToySetCoordinator","VesselChangerToySet","DomainChangerToySet"]],
+  ["conveyor","Wanderway Conveyor",3,1,"Streams a closed field of procedurally-varied microscenes ahead of the vessel — transports mass, never creates it.",["ConveyorToy","MicrosceneConveyor"]],
+
+  // Modes & Scoring (4)
+  ["minigamebase","MiniGameControllerBase",4,3,"Template-method game loop: rounds → turns → countdown → gameplay → end. Base of every mode.",["MiniGameControllerBase"]],
+  ["mpbase","Multiplayer Controllers",4,2,"Server-authoritative multiplayer / domain-games controller base driving turn/round flow via ClientRpc.",["MultiplayerMiniGameControllerBase","MultiplayerDomainGamesController"]],
+  ["hexrace","HexRace",4,1,"Crystal-collection race on a deterministic seeded track; golf scoring.",["HexRaceController"]],
+  ["joust","Joust",4,1,"Collision-jousting domain mode.",["MultiplayerJoustController"]],
+  ["crystalcap","Crystal Capture",4,1,"Domain crystal-capture mode.",["MultiplayerCrystalCaptureController"]],
+  ["cellduel","Cellular Duel",4,1,"Cell-control duel with vessel-ownership swaps between rounds.",["MultiplayerCellularDuelController","SinglePlayerCellularDuelController"]],
+  ["astro","AstroLeague",4,1,"Hypersea soccer — server-simulated ball, golden goal.",["AstroLeagueController"]],
+  ["tournament","Tournament / Maelstrom",4,1,"Session meta that chains HexRace → Joust → Crystal Capture; race-to-6 standings.",["TournamentController","TournamentDataSO"]],
+  ["turnmon","Turn Monitors",4,2,"End a turn when a domain's summed metric reaches the objective (domain-aggregated).",["NetworkCrystalCollisionTurnMonitor","JoustCollisionTurnMonitor"]],
+  ["scoringrule","ScoringRuleSO",4,2,"Per-domain objective evaluation over ScoringMetrics.SumByDomain — at most 3 scores exist.",["ScoringRuleSO","ScoringMetrics"]],
+  ["scoretracker","Score Trackers",4,1,"Local & networked score tracking plus UGS stats reporting.",["ScoreTracker","NetworkScoreTracker"]],
+  ["comeback","ElementalComebackSystem",4,1,"Grants elemental buffs sized to the team (domain) deficit.",["ElementalComebackSystem"]],
+
+  // Netcode & Party (5)
+  ["mpsetup","MultiplayerSetup",5,2,"NetworkManager lifecycle + UGS Relay/Multiplayer sessions; EnsureHostStarted, session join/create.",["MultiplayerSetup"]],
+  ["serverinit","Server Vessel Spawner",5,3,"Server-side vessel spawner (+WithAI, +Menu variants). Listens for player spawns, instantiates & injects vessels.",["ServerPlayerVesselInitializer","ServerPlayerVesselInitializerWithAI","MenuServerPlayerVesselInitializer"]],
+  ["clientinit","Client Pair Initializer",5,2,"Initializes player↔vessel pairs on every client; receives spawn RPCs, resolves pending pairs via SOAP.",["ClientPlayerVesselInitializer"]],
+  ["player","Player",5,3,"NetworkBehaviour identity. Its server-write NetDomain NetworkVariable drives all team state across clients.",["Player","NetDomain","IPlayer"]],
+  ["domainassigner","DomainAssigner",5,1,"Assigns a unique domain (Jade/Ruby/Gold) per player each session.",["DomainAssigner"]],
+  ["hostconn","HostConnectionService",5,1,"Presence lobby + party sessions (single writer). Eager per-user Relay design.",["HostConnectionService","HostConnectionDataSO"]],
+  ["partyinvite","PartyInviteController",5,1,"Orchestrates host↔client Netcode transitions for accepting party invites.",["PartyInviteController"]],
+
+  // App & Backend (6)
+  ["auth","Authentication",6,2,"UGS auth facade — single writer to AuthenticationData; anonymous sign-in, cached restore.",["AuthenticationServiceFacade","AuthenticationSceneController"]],
+  ["friends","Friends",6,1,"UGS Friends facade + presence (single writer to FriendsDataSO).",["FriendsServiceFacade","FriendsDataSO"]],
+  ["playerdata","PlayerDataService",6,1,"Cloud profile, XP, rewards; the primary source of the player's display name.",["PlayerDataService","PlayerProfileData"]],
+  ["clouddata","Cloud Data",6,1,"UGS CloudSave data service + typed repositories & models.",["UGSDataService"]],
+  ["playfab","PlayFab (legacy)",6,1,"Deprecated, inert PlayFab SDK integration kept for reference.",["AuthenticationManager"]],
+  ["analytics","Analytics",6,1,"UGS Analytics single writer; consent/age-gated event reporting.",["AnalyticsServiceFacade","UGSStatsManager"]],
+  ["dialogue","Dialogue Runtime",6,1,"Event-channel dialogue player; SO-authored sets fan out to per-channel views.",["DialogueManager","DialogueSet","IDialogueView"]],
+  ["rewind","Rewind System",6,1,"Standalone time-rewind — per-FixedUpdate transform snapshots in circular buffers.",["RewindSystem","CircularBuffer<T>"]],
+  ["audio","Audio",6,1,"DI singleton fronting FMOD SFX + Unity music; gameplay SFX raised through SOAP.",["AudioSystem","Jukebox"]],
+
+  // Client & Input (7)
+  ["inputctrl","Input",7,2,"Platform-agnostic input via strategy pattern (keyboard, gamepad, touch).",["InputController","IInputStrategy"]],
+  ["camera","Camera",7,1,"Cinemachine per-vessel camera follow/zoom via CameraSettingsSO.",["CameraManager","CustomCameraController","CameraSettingsSO"]],
+  ["aipilot","AI",7,1,"Runtime-configurable AI opponents & autopilot behavior.",["AIPilot","AIGunner"]],
+
+  // User Interface (8)
+  ["screenswitcher","ScreenSwitcher",8,2,"Sliding menu navigation + modal stack; notifies IScreen implementors on transitions.",["ScreenSwitcher","IScreen"]],
+  ["minigamehud","MiniGameHUD",8,2,"In-game HUD (freestyle + gameplay); reparents per-vessel HUDs and shows score/timers.",["MiniGameHUD","MenuMiniGameHUD"]],
+  ["scoreboard","Scoreboard",8,1,"End-game results — single & multiplayer views, winner banner.",["Scoreboard","PlayerScoreCard"]],
+  ["elementalbars","ElementalBarsView",8,1,"The 5-fold-symmetric elemental flower widget every vessel uses.",["ElementalBarsView","ElementalBarsConfigSO"]],
+  ["huds","Vessel HUDs",8,1,"Per-vessel HUD controllers & views (Manta, Rhino, Serpent, Sparrow, Dolphin, Squirrel).",["IVesselHUDController","MantaHUDView"]],
+  ["toasts","Toasts & Notifications",8,1,"Toast channels + push-notification UI.",["ToastService","ToastChannel"]],
+  ["gameeventfeed","Game Event Feed",8,1,"In-game event feed surfacing scoring/domain events.",["GameEventFeed","GameFeedAPI"]],
+  ["modals","Modals",8,1,"Modal dialogs (settings, profile, purchase confirmation).",["ModalWindowManager"]],
+
+  // Data & SOAP (9)
+  ["enums","Game Enums",9,1,"Serialization-stable enums: VesselClassType, Domains, GameModes, ResourceType, ShipActions…",["VesselClassType","Domains","GameModes"]],
+  ["sodefs","SO Definitions",9,1,"Static config assets: SO_Vessel, SO_Captain, SO_Game, SO_ArcadeGame, SO_Element.",["SO_ArcadeGame","SO_Vessel"]],
+  ["soaptypes","Custom SOAP Types",9,1,"16+ SOAP families (PartyData, PipData, VesselHUDData, ClassType, CrystalStats…).",["PartyData","PipData","VesselHUDData"]],
+  ["prefabcontainer","VesselPrefabContainer",9,1,"Maps a vessel class to its prefab for spawning.",["VesselPrefabContainer"]],
+];
+
+// Edges: from, to, kind
+// kinds: di, flow, soap, netcode, data, compose
+const EDGES = [
+  // DI
+  ["appmanager","gamedata","di"],["appmanager","appstate","di"],["appmanager","sceneloader","di"],
+  ["appmanager","auth","di"],["appmanager","friends","di"],["appmanager","audio","di"],["appmanager","camera","di"],
+  ["appmanager","clouddata","di"],["appmanager","analytics","di"],["appmanager","hostconn","di"],["appmanager","playerdata","di"],
+  // runtime flow
+  ["appstate","mainmenu","flow"],["auth","mainmenu","flow"],["mainmenu","gamedata","flow"],["sceneloader","minigamebase","flow"],
+  // SOAP channels
+  ["gamedata","sceneloader","soap"],["gamedata","appstate","soap"],["gamedata","minigamehud","soap"],
+  ["gamedata","scoreboard","soap"],["gamedata","gameeventfeed","soap"],["player","serverinit","soap"],
+  ["clientinit","gamedata","soap"],["auth","playerdata","soap"],["auth","mpsetup","soap"],
+  ["soap","audio","soap"],["soap","dialogue","soap"],["minigamebase","scoreboard","soap"],
+  // netcode
+  ["mpsetup","player","netcode"],["serverinit","vesselstatus","netcode"],["serverinit","clientinit","netcode"],
+  ["mpbase","gamedata","netcode"],["swaptoy","serverinit","netcode"],["domainassigner","player","netcode"],
+  ["partyinvite","mpsetup","netcode"],["hostconn","mpsetup","netcode"],
+  // data / shared-state
+  ["player","vesselstatus","data"],["player","huds","data"],["playerdata","gamedata","data"],
+  ["turnmon","gamedata","data"],["scoringrule","gamedata","data"],["scoretracker","gamedata","data"],
+  ["comeback","gamedata","data"],["prefabcontainer","serverinit","data"],["inputctrl","vesselstatus","data"],
+  ["camera","vesselstatus","data"],["aipilot","vesselstatus","data"],["silhouette","elementalbars","data"],
+  ["resource","elementalbars","data"],["enums","gamedata","data"],["sodefs","minigamebase","data"],
+  ["sodefs","gamedata","data"],["prismctrl","spatialindex","data"],["effectso","spatialindex","data"],
+  ["scalemgr","prism","data"],["soaptypes","soap","data"],["cell","spawnprofile","data"],
+  // composition (fundamentals)
+  ["vesselstatus","vesselctrl","compose"],["vesselstatus","transformer","compose"],["vesselstatus","prismctrl","compose"],
+  ["vesselstatus","resource","compose"],["vesselstatus","skimmer","compose"],["vesselstatus","actions","compose"],
+  ["vesselstatus","silhouette","compose"],["prismctrl","prism","compose"],["actions","resource","compose"],
+  ["actions","prism","compose"],["skimmer","effectso","compose"],["projectile","impactor","compose"],
+  ["impactor","effectso","data"],["impactor","vesselstatus","compose"],["effectso","resource","compose"],
+  ["cell","lifespawner","compose"],["lifespawner","flora","compose"],["lifespawner","fauna","compose"],
+  ["fauna","prism","compose"],["flora","prism","compose"],["fauna","crystals","compose"],["flora","crystals","compose"],
+  ["crystals","resource","compose"],["cell","fields","compose"],["toy","vesselstatus","compose"],
+  ["conveyor","cell","compose"],["conveyor","prism","compose"],["prismfactory","prism","compose"],
+  ["friends","hostconn","compose"],["playfab","auth","compose"],["minigamebase","mpbase","compose"],
+  ["mpbase","hexrace","compose"],["mpbase","joust","compose"],["mpbase","crystalcap","compose"],
+  ["mpbase","cellduel","compose"],["mpbase","astro","compose"],["tournament","hexrace","flow"],
+  ["tournament","joust","flow"],["tournament","crystalcap","flow"],["hexrace","turnmon","data"],
+  ["turnmon","scoringrule","data"],["hexrace","comeback","data"],["screenswitcher","modals","compose"],
+  ["minigamehud","huds","compose"],["swaptoy","toy","compose"],["conveyor","toy","compose"],
+];
+
+const KINDS = {
+  flow:   ["Runtime flow", "#dff1ff"],
+  di:     ["Dependency injection", "hsl(42 92% 62%)"],
+  netcode:["Netcode / RPC", "hsl(352 90% 68%)"],
+  soap:   ["SOAP event", "hsl(172 72% 55%)"],
+  data:   ["Shared state", "hsl(268 82% 74%)"],
+  compose:["Composition", "hsl(140 62% 58%)"],
+};
+
+/* ====================== LAYOUT ====================== */
+const nodeById = {}; NODES.forEach((n,i)=>{ nodeById[n[0]]={id:n[0],label:n[1],s:n[2],w:n[3],desc:n[4],comps:n[5],idx:i}; });
+const adj = {}; NODES.forEach(n=>adj[n[0]]=[]);
+EDGES.forEach((e,i)=>{ if(nodeById[e[0]]&&nodeById[e[1]]){ adj[e[0]].push({o:e[1],k:e[2],dir:"out",ei:i}); adj[e[1]].push({o:e[0],k:e[2],dir:"in",ei:i}); }});
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const rng = mulberry32(20260709);
+
+// sector centers: core at middle, sectors 1..9 on a ring
+const R = 720;
+const secCenter = SECTORS.map((_,s)=>{
+  if(s===0) return {x:0,y:0};
+  const a = ((s-1)/(SECTORS.length-1))*Math.PI*2 - Math.PI/2;
+  return {x:Math.cos(a)*R, y:Math.sin(a)*R};
+});
+// place nodes clustered in their sector
+const bySec = SECTORS.map(()=>[]);
+Object.values(nodeById).forEach(n=>bySec[n.s].push(n));
+bySec.forEach((list,s)=>{
+  const c = secCenter[s];
+  const cl = s===0 ? 150 : 210;
+  list.forEach((n,i)=>{
+    const ga = 2.399963; // golden angle
+    const rad = (s===0?90:60) + Math.sqrt(i+0.6)*(cl/Math.sqrt(list.length+1));
+    const ang = i*ga + rng()*0.5;
+    n.x = c.x + Math.cos(ang)*rad + (rng()-0.5)*30;
+    n.y = c.y + Math.sin(ang)*rad + (rng()-0.5)*30;
+    n.r = 5 + n.w*3.1;
+  });
+});
+// light relaxation: repel close nodes, weak spring to sector center
+for(let it=0; it<90; it++){
+  for(let i=0;i<NODES.length;i++){
+    const a = nodeById[NODES[i][0]];
+    for(let j=i+1;j<NODES.length;j++){
+      const b = nodeById[NODES[j][0]];
+      let dx=b.x-a.x, dy=b.y-a.y; let d=Math.hypot(dx,dy)||0.01;
+      const min = a.r+b.r+34;
+      if(d<min){ const push=(min-d)/d*0.5; dx*=push; dy*=push; a.x-=dx;a.y-=dy;b.x+=dx;b.y+=dy; }
+    }
+    const c=secCenter[a.s]; a.x+=(c.x-a.x)*0.008; a.y+=(c.y-a.y)*0.008;
+  }
+}
+// starfield
+const STARS=[]; for(let i=0;i<340;i++){STARS.push({x:(rng()-0.5)*2600,y:(rng()-0.5)*2600,z:rng()*0.8+0.2,ph:rng()*6.28});}
+
+/* ====================== RENDER ====================== */
+const net=document.getElementById("net"), fx=document.getElementById("fx");
+const nctx=net.getContext("2d"), fctx=fx.getContext("2d");
+let DPR=Math.min(window.devicePixelRatio||1,2), W=0,H=0;
+const view={s:1,tx:0,ty:0};
+let showLabels=true, selected=null, hover=null, reduced=matchMedia("(prefers-reduced-motion:reduce)").matches;
+const secOff=new Set(), kindOff=new Set();
+
+function resize(){
+  W=window.innerWidth; H=window.innerHeight;
+  [net,fx].forEach(cv=>{cv.width=W*DPR; cv.height=H*DPR; cv.style.width=W+"px"; cv.style.height=H+"px";});
+}
+function fit(pad=140){
+  let minx=1e9,miny=1e9,maxx=-1e9,maxy=-1e9;
+  Object.values(nodeById).forEach(n=>{minx=Math.min(minx,n.x);miny=Math.min(miny,n.y);maxx=Math.max(maxx,n.x);maxy=Math.max(maxy,n.y);});
+  const w=maxx-minx, h=maxy-miny;
+  const rightPad = (selected && W>560)?390:0;
+  view.s=Math.min((W-rightPad-pad*2)/w,(H-pad*2)/h);
+  view.s=Math.max(0.12,Math.min(view.s,1.6));
+  view.tx=(W-rightPad)/2 - (minx+maxx)/2*view.s;
+  view.ty=H/2 - (miny+maxy)/2*view.s;
+}
+const W2S=(x,y)=>[x*view.s+view.tx, y*view.s+view.ty];
+const S2W=(x,y)=>[(x-view.tx)/view.s, (y-view.ty)/view.s];
+
+let t0=performance.now();
+function draw(now){
+  const t=(now-t0)/1000;
+  // starfield on fx
+  fctx.setTransform(DPR,0,0,DPR,0,0); fctx.clearRect(0,0,W,H);
+  for(const st of STARS){
+    const [sx,sy]=W2S(st.x*st.z, st.y*st.z);
+    if(sx<-20||sx>W+20||sy<-20||sy>H+20) continue;
+    const tw = reduced?0.7:0.5+0.5*Math.sin(t*1.3+st.ph);
+    fctx.globalAlpha=0.12+st.z*0.4*tw;
+    fctx.fillStyle= st.z>0.75?"#bfe4ff":"#8ea6d6";
+    fctx.fillRect(sx,sy,st.z*1.7,st.z*1.7);
+  }
+  fctx.globalAlpha=1;
+
+  nctx.setTransform(DPR,0,0,DPR,0,0); nctx.clearRect(0,0,W,H);
+
+  // active neighbor set
+  const focus = selected || hover;
+  const near = new Set();
+  if(focus){ near.add(focus); adj[focus].forEach(a=>near.add(a.o)); }
+
+  // edges
+  nctx.lineCap="round";
+  for(let i=0;i<EDGES.length;i++){
+    const [f,tg,k]=EDGES[i];
+    if(kindOff.has(k)) continue;
+    const A=nodeById[f], B=nodeById[tg]; if(!A||!B) continue;
+    const dim = (secOff.has(A.s)||secOff.has(B.s));
+    const isNear = focus && (near.has(f)&&near.has(tg)) && (f===focus||tg===focus);
+    let alpha = focus ? (isNear?0.95:0.05) : (dim?0.03:0.2);
+    if(dim && !isNear) alpha=Math.min(alpha,0.05);
+    if(alpha<0.02) continue;
+    const [ax,ay]=W2S(A.x,A.y), [bx,by]=W2S(B.x,B.y);
+    nctx.strokeStyle=KINDS[k][1]; nctx.globalAlpha=alpha;
+    nctx.lineWidth=isNear?2.1:(k==="di"||k==="compose"?0.7:0.9);
+    if(k==="flow" && !reduced){ nctx.setLineDash([5,7]); nctx.lineDashOffset=-t*22; } else nctx.setLineDash([]);
+    nctx.beginPath(); nctx.moveTo(ax,ay);
+    // gentle curve
+    const mx=(ax+bx)/2, my=(ay+by)/2, nx=-(by-ay), ny=(bx-ax); const nl=Math.hypot(nx,ny)||1;
+    nctx.quadraticCurveTo(mx+nx/nl*14, my+ny/nl*14, bx,by); nctx.stroke();
+    // arrow head for near
+    if(isNear){
+      const ang=Math.atan2(by-my,bx-mx); const hx=bx-Math.cos(ang)*(B.r*view.s+3), hy=by-Math.sin(ang)*(B.r*view.s+3);
+      nctx.setLineDash([]); nctx.globalAlpha=0.95; nctx.fillStyle=KINDS[k][1];
+      nctx.beginPath();nctx.moveTo(hx,hy);
+      nctx.lineTo(hx-Math.cos(ang-0.4)*7,hy-Math.sin(ang-0.4)*7);
+      nctx.lineTo(hx-Math.cos(ang+0.4)*7,hy-Math.sin(ang+0.4)*7);
+      nctx.closePath();nctx.fill();
+    }
+  }
+  nctx.setLineDash([]); nctx.globalAlpha=1;
+
+  // nodes
+  for(const n of Object.values(nodeById)){
+    const dim = secOff.has(n.s);
+    const isFocus = n.id===focus;
+    const isNear = focus? near.has(n.id): true;
+    let alpha = focus ? (isNear?1:0.16) : (dim?0.22:1);
+    const [x,y]=W2S(n.x,n.y);
+    const r=n.r*view.s;
+    const col=secColor(n.s), colBright=secColor(n.s,72);
+    // glow
+    nctx.globalAlpha=alpha*(isFocus?0.9:0.5);
+    const g=nctx.createRadialGradient(x,y,0,x,y,r*(isFocus?4.5:2.6));
+    g.addColorStop(0,col); g.addColorStop(1,"transparent");
+    nctx.fillStyle=g; nctx.beginPath(); nctx.arc(x,y,r*(isFocus?4.5:2.6),0,6.283); nctx.fill();
+    // core disc
+    nctx.globalAlpha=alpha; nctx.fillStyle=colBright;
+    nctx.beginPath(); nctx.arc(x,y,r,0,6.283); nctx.fill();
+    nctx.lineWidth=1.4; nctx.strokeStyle="rgba(255,255,255,.55)"; nctx.globalAlpha=alpha*0.7; nctx.stroke();
+    if(isFocus && !reduced){
+      const pr=r+6+Math.sin(t*4)*3; nctx.globalAlpha=0.8; nctx.strokeStyle=col; nctx.lineWidth=1.6;
+      nctx.beginPath(); nctx.arc(x,y,pr,0,6.283); nctx.stroke();
+    }
+    // label
+    const big = n.w>=3 || isFocus || (focus&&isNear);
+    if(showLabels && (big || view.s>0.62) && alpha>0.5){
+      const fs = Math.max(11, Math.min(15, 10+n.w*1.6));
+      nctx.font=`${isFocus?600:500} ${fs}px system-ui,-apple-system,sans-serif`;
+      nctx.textAlign="center"; nctx.textBaseline="top";
+      nctx.globalAlpha=Math.min(1,alpha)*(big?1:0.85);
+      nctx.fillStyle="#04070e"; nctx.lineWidth=3; nctx.strokeStyle="#04070ecc";
+      nctx.strokeText(n.label,x,y+r+4);
+      nctx.fillStyle=isFocus?"#fff":"#dbe4fb";
+      nctx.fillText(n.label,x,y+r+4);
+    }
+  }
+  nctx.globalAlpha=1;
+  requestAnimationFrame(draw);
+}
+
+/* ====================== INTERACTION ====================== */
+function pickNode(mx,my){
+  let best=null,bd=1e9;
+  for(const n of Object.values(nodeById)){
+    if(secOff.has(n.s)) continue;
+    const [x,y]=W2S(n.x,n.y); const d=Math.hypot(x-mx,y-my); const hit=Math.max(n.r*view.s+6,11);
+    if(d<hit && d<bd){bd=d;best=n;}
+  }
+  return best;
+}
+let dragging=false,moved=false,lx=0,ly=0,downT=0;
+net.addEventListener("pointerdown",e=>{dragging=true;moved=false;lx=e.clientX;ly=e.clientY;downT=performance.now();net.setPointerCapture(e.pointerId);});
+net.addEventListener("pointermove",e=>{
+  const mx=e.clientX,my=e.clientY;
+  if(dragging){
+    const dx=mx-lx,dy=my-ly; if(Math.abs(dx)+Math.abs(dy)>3)moved=true;
+    view.tx+=dx; view.ty+=dy; lx=mx;ly=my;
+  } else {
+    const n=pickNode(mx,my); const id=n?n.id:null;
+    if(id!==hover){hover=id; net.style.cursor=id?"pointer":"grab"; }
+    const tip=document.getElementById("tip");
+    if(n){tip.style.opacity=1;tip.style.left=mx+"px";tip.style.top=my+"px";
+      tip.innerHTML=`<div>${n.label}</div><div class="tsub">${SECTORS[n.s][0]}</div>`;}
+    else tip.style.opacity=0;
+  }
+});
+function endDrag(e){ if(dragging){ dragging=false; if(!moved && (performance.now()-downT)<400){ const n=pickNode(e.clientX,e.clientY); n?select(n.id):deselect(); } } }
+net.addEventListener("pointerup",endDrag);
+net.addEventListener("pointercancel",()=>{dragging=false;});
+net.addEventListener("wheel",e=>{e.preventDefault(); zoomAt(e.clientX,e.clientY, Math.exp(-e.deltaY*0.0016));},{passive:false});
+function zoomAt(cx,cy,f){ const [wx,wy]=S2W(cx,cy); view.s=Math.max(0.1,Math.min(view.s*f,3.2)); view.tx=cx-wx*view.s; view.ty=cy-wy*view.s; }
+document.getElementById("zin").onclick=()=>zoomAt(W/2,H/2,1.25);
+document.getElementById("zout").onclick=()=>zoomAt(W/2,H/2,0.8);
+
+/* ---- selection & detail panel ---- */
+const D=document.getElementById("detail");
+function select(id){
+  selected=id; const n=nodeById[id];
+  document.getElementById("dcat").innerHTML=`<span class="dot" style="background:${secColor(n.s)}"></span>${SECTORS[n.s][0]}`;
+  document.getElementById("dcat").style.color=secColor(n.s,72);
+  document.getElementById("dtitle").textContent=n.label;
+  document.getElementById("ddesc").textContent=n.desc;
+  document.getElementById("dcomps").innerHTML=n.comps.map(c=>`<code>${c}</code>`).join("");
+  const cs=adj[id].slice().sort((a,b)=>a.k.localeCompare(b.k));
+  document.getElementById("dconnlbl").textContent=`Connections · ${cs.length}`;
+  document.getElementById("dconns").innerHTML=cs.map(a=>{
+    const o=nodeById[a.o]; const col=KINDS[a.k][1];
+    const arrow=a.dir==="out"?"→":"←";
+    return `<button class="conn" data-go="${a.o}"><span class="arrow">${arrow}</span>`+
+      `<span class="kind" style="color:${col};background:${col}22">${a.k}</span>`+
+      `<span class="cname">${o.label}</span></button>`;
+  }).join("");
+  D.classList.add("open");
+  // ease focus toward center-left
+  const rightPad=(W>560)?390:0; const tx=(W-rightPad)/2, ty=(W<=560)?H*0.22:H/2;
+  const [wx,wy]=[n.x,n.y]; view.tx=tx-wx*view.s; view.ty=ty-wy*view.s;
+}
+function deselect(){ selected=null; D.classList.remove("open"); }
+document.getElementById("dclose").onclick=deselect;
+document.getElementById("dconns").addEventListener("click",e=>{const b=e.target.closest("[data-go]"); if(b)select(b.getAttribute("data-go"));});
+
+/* ---- legend chips ---- */
+const secChips=document.getElementById("secChips");
+SECTORS.forEach((s,i)=>{const c=document.createElement("button");c.className="chip";c.dataset.sec=i;
+  c.innerHTML=`<span class="dot" style="background:${secColor(i)}"></span>${s[0]}`;
+  c.onclick=()=>{ if(secOff.has(i)){secOff.delete(i);c.classList.remove("off");}else{secOff.add(i);c.classList.add("off");} };
+  secChips.appendChild(c);});
+const kindChips=document.getElementById("kindChips");
+Object.entries(KINDS).forEach(([k,v])=>{const c=document.createElement("button");c.className="chip";
+  c.innerHTML=`<span class="ln" style="border-color:${v[1]}"></span>${v[0]}`;
+  c.onclick=()=>{ if(kindOff.has(k)){kindOff.delete(k);c.classList.remove("off");}else{kindOff.add(k);c.classList.add("off");} };
+  kindChips.appendChild(c);});
+document.getElementById("legMin").onclick=()=>document.getElementById("legend").classList.toggle("min");
+
+/* ---- toolbar ---- */
+document.getElementById("btnLabels").onclick=e=>{showLabels=!showLabels;e.target.classList.toggle("on",showLabels);};
+document.getElementById("btnFit").onclick=()=>{deselect();fit();};
+const help=document.getElementById("help");
+document.getElementById("btnHelp").onclick=()=>help.classList.remove("hidden");
+document.getElementById("helpGo").onclick=()=>help.classList.add("hidden");
+help.addEventListener("click",e=>{if(e.target===help)help.classList.add("hidden");});
+
+/* ---- search ---- */
+const q=document.getElementById("q");
+q.addEventListener("keydown",e=>{ if(e.key==="Enter"){ const v=q.value.trim().toLowerCase(); if(!v)return;
+  const hit=Object.values(nodeById).find(n=>n.label.toLowerCase().includes(v))||Object.values(nodeById).find(n=>n.id.includes(v));
+  if(hit){select(hit.id); q.blur();} }});
+
+window.addEventListener("resize",()=>{DPR=Math.min(window.devicePixelRatio||1,2);resize();});
+resize(); fit(); requestAnimationFrame(draw);
+net.style.cursor="grab";
+</script>
+</body>
+</html>
