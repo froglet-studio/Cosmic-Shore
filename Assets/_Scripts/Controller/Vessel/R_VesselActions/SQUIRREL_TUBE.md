@@ -54,19 +54,21 @@ puppeteers via an `Animator`/bone deformation — `ShipGeometries[0]` is a `Skin
 doesn't rigidly rotate). It comes from an **input-derived lean** applied on top of the root
 orientation (below), which keeps the axis correct while still banking with the ship.
 
-### Input-derived lean (SO fields)
+### Input-derived bank (SO fields)
 
-On top of the resolved model orientation, the tube leans with the same steering signals the vessel
-animation uses (`pitch = InputStatus.YSum`, `yaw = XSum`, `roll = YDiff`):
+On top of the root orientation, the tube banks with your steering so it visibly responds to
+flight/drift **without ever moving the axis off the nose**:
 
-- `puppetRollDegrees` (default 20) — banks the ring with roll input. Roll leaves the **axis**
-  untouched, so fly-through is unaffected. Negate to flip the bank side.
-- `puppetPitchYawDegrees` (default 6) — swings the axis with turns/drift. Kept small so the axis
-  barely tilts, and it settles to aligned as the input returns to centre (straighten out to release,
-  and the tube forms along your heading so you still thread the hollow centre).
+- `puppetRollDegrees` (default 20) — **rolls the ring** as you turn/drift (`roll = InputStatus.XSum`).
+  Roll is about the tube's own forward axis, so the tube still fires straight out the front — this is
+  the safe knob. Negate to flip the bank side; 0 = no bank.
+- `puppetPitchYawDegrees` (**default 0 — advanced**) — pitch/yaw from steering. Unlike roll this
+  **tilts the axis**, so the tube stops pointing straight ahead; over a long tube the far end lifts
+  well off-centre and it reads as exiting the top/side. Leave at 0 unless you deliberately want an
+  angled tube.
 
-Set both to 0 to project purely from the resolved orientation (no lean). This is the tunable knob
-for "how much does the tube visibly respond to flight/drift."
+> The axis is **always** the vessel root's forward (the nose / flight direction). Only roll should be
+> non-zero if you want the "fly straight through the front" guarantee.
 
 ## Pooling (best practice — no Instantiate/Destroy)
 

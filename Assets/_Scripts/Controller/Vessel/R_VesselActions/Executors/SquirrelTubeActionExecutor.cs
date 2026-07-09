@@ -137,17 +137,17 @@ namespace CosmicShore.Gameplay
             var model = ResolveModelTransform(status);
             Quaternion rot = model.rotation;
 
-            // Bank/swing the tube with the ship's flight-and-drift puppetry, driven by the same
-            // steering signals the vessel animation uses (pitch=YSum, yaw=XSum, roll=YDiff). Roll
-            // banks the ring without touching the axis; the small pitch/yaw lean swings it and
-            // settles to aligned as the input returns to centre (i.e. when you straighten to
-            // release, so flying straight still threads the hollow centre).
+            // Bank the tube with the ship's flight-and-drift steering. ROLL (about the tube's own
+            // forward axis) banks the ring as you turn/drift WITHOUT tilting the axis, so the tube
+            // still fires straight out the front. Pitch/yaw would tilt the axis (angling the tube off
+            // straight — reads as exiting the top) so it is OFF by default and gated behind the
+            // separate, advanced PuppetPitchYawDegrees.
             var inp = status.InputStatus;
             if (inp != null && (so.PuppetRollDegrees != 0f || so.PuppetPitchYawDegrees != 0f))
             {
-                float pitch = inp.YSum * so.PuppetPitchYawDegrees;
-                float yaw = inp.XSum * so.PuppetPitchYawDegrees;
-                float roll = inp.YDiff * so.PuppetRollDegrees;
+                float roll = inp.XSum * so.PuppetRollDegrees;   // bank into turns/drift; axis unchanged
+                float pitch = inp.YSum * so.PuppetPitchYawDegrees; // 0 by default (would tilt the axis)
+                float yaw = inp.XSum * so.PuppetPitchYawDegrees;   // 0 by default (would tilt the axis)
                 rot *= Quaternion.Euler(pitch, yaw, roll);
             }
 
