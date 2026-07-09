@@ -82,7 +82,7 @@ namespace CosmicShore.Editor
         {
             public int callbackOrder => 0;
 
-            public void OnPreprocessBuild(BuildReport _)
+            public void OnPreprocessBuild(BuildReport report)
             {
                 if (!EnforceOnBuild) return;
 
