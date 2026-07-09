@@ -142,6 +142,50 @@ and treat a dense field as you would any dense prismscape.
 
 ---
 
+## In-game test scene: `MinigamePrismPerception` (arcade, Squirrel)
+
+**Launch:** Arcade → **Prism Perception** card → Squirrel is the only vessel → Start. The mode is
+`GameModes.PrismPerception (38)`, single-player, always unlocked (added to
+`ProgressionConfig.alwaysUnlockedModes` + `fullIntensityModes`).
+
+The scene is a clone of `MinigameWildlifeBlitz.unity` (the same donor the benchmark tool clones —
+it preserves the hard-to-replicate wiring: ContainerScope, Cell, GameCanvas, spawner, PostProcessing
+with Bloom), with these deltas:
+
+- The `Game` controller is swapped to **`SandboxBenchmarkController`** — endless free flight,
+  auto-start after ~1s, `HasEndGame=false`. The `TurnMonitorController.monitors` list is emptied
+  (and the dormant time monitor's duration raised), so nothing ever ends the turn. Exit via the
+  pause menu → main menu.
+- Four **`PrismPerceptionField`** constructs are placed around the spawn corridor (player spawns at
+  `(0,0,−240)` flying toward the cell at the origin):
+
+| Construct | Mode / shape | What it demonstrates | Where |
+|---|---|---|---|
+| `PrismConstruct_PeriwinkleGamutDisc` | PartitiveVolume / disc, 900 prisms | The thesis swatch: Jade azure + Ruby violet dither fusing to **periwinkle blue** — a hue no domain owns | left of the corridor, facing spawn |
+| `PrismConstruct_LavenderSphere` | PartitiveVolume / sphere, 800 | "Almost white": the equal-mix **cool lavender** (no true neutral exists) | right of the corridor |
+| `PrismConstruct_TrefoilSplat` | SplatSurface, 900 | Connect-the-dots → continuous glowing surface, colour-swept along the knot | above the corridor |
+| `PrismConstruct_PlumBox` | PartitiveVolume / box, 500 | Plum (violet+amber) volumetric halftone | behind/right of spawn — turn around |
+
+**Collider budget statement (hard gate):** the four constructs total **3,100 prisms** → 3,100 trigger
+`BoxCollider`s laid batched at 60/frame (~1s bloom-in wave), on top of the donor scene's normal cell
+ecology. That is within what the WildlifeBlitz scene already sustains at high intensity, and this is
+a *test* scene, not a shipping mode; counts are inspector-tunable per construct (`count`).
+
+**In-editor verification:**
+1. Open the project — Unity imports `PrismPerceptionField.cs` (+ the new scene/asset; no console errors).
+2. Play from **Bootstrap** → menu → Arcade → the **Prism Perception** card appears (unlocked) → Start.
+3. Expect: countdown auto-starts ≈1s after load; the Squirrel is flyable; the four constructs bloom
+   in over ~1s; the disc reads periwinkle from the corridor and decomposes into azure/violet dots up
+   close (fusion is distance-bound); the game never ends on its own.
+4. Known ecology interaction: the donor Cell's fauna treat construct prisms as ordinary mass —
+   opposing-domain fauna may graze constructs near the cell over long sessions. That is the HyperSea
+   being the HyperSea (universality — no carve-outs), and it's why the gallery sits away from the
+   cell centre. If it bothers testing, reduce the cell's spawn profile in the scene, or move the
+   constructs further out.
+5. Direct scene play (open `MinigamePrismPerception.unity` and press Play without Bootstrap) is NOT
+   supported — `Prism.ChangeTeam` needs the persistent `ThemeManager` from Bootstrap. Always enter
+   through the normal flow.
+
 ## How this composes with the fundamentals
 
 Per `CLAUDE.md` — *favour emergent systems, don't cheat emergence*:

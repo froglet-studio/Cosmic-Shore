@@ -39,6 +39,7 @@ game scene and still exists.
 |---|---|---|---|
 | **MinigameCellularDuel** | `_Scenes/Singleplayer Scenes/` | `CellularDuel (8)` | `SinglePlayerCellularDuelController` |
 | **MinigameWildlifeBlitz** | `_Scenes/Singleplayer Scenes/` | `WildlifeBlitz (26)` | `SinglePlayerWildlifeBlitzController` |
+| **MinigamePrismPerception** | `_Scenes/Singleplayer Scenes/` | `PrismPerception (38)` | `SandboxBenchmarkController` (endless free flight; no turn monitor) |
 
 ### Multiplayer Game Scenes
 

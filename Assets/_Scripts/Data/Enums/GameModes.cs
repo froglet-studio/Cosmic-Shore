@@ -48,5 +48,9 @@ namespace CosmicShore.Data
         // AstroLeague (37): hypersea soccer domain minigame. See
         // _Scripts/Controller/Arcade/ASTROLEAGUE.md.
         AstroLeague = 37,
+        // PrismPerception (38): single-player free-flight gallery of prism
+        // perception constructs (domain-halftone colour fields, splat surfaces).
+        // See Docs/PrismPerception/PERCEPTION.md.
+        PrismPerception = 38,
     }
 }
