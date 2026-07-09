@@ -45,9 +45,10 @@ namespace CosmicShore.Gameplay
         [SerializeField] private InteractivePrismPoolManager squirrelPrismPool;
         [SerializeField] private InteractivePrismPoolManager rhinoPrismPool;
         [SerializeField] private InteractivePrismPoolManager interactivePrismPool;
-        [Tooltip("Dedicated pool for fast-growing, collider-live-on-spawn boost prisms " +
-                 "(Squirrel tube + joust danger blocks). Separate from the shared pools so the " +
-                 "waitTime/GrowthRate overrides can't leak into normal trail/AOE prisms.")]
+        [Tooltip("Dedicated pool for fast-growing, collider-live-on-spawn boost prisms — the " +
+                 "BoostRingBuilder rings (omnicrystal, joust, Squirrel tube). Serves the " +
+                 "FastGrowPrism prefab. Separate from the shared pools so the waitTime/GrowthRate " +
+                 "overrides can't leak into normal trail/AOE prisms.")]
         [SerializeField] private InteractivePrismPoolManager boostPrismPool;
 
         [SerializeField] private PrismExplosionPoolManager explosionPool;
@@ -55,9 +56,12 @@ namespace CosmicShore.Gameplay
         // Add more later: PrismShockwavePoolManager, PrismDisintegrationPoolManager, etc.
 
         [Header("Boost Prism Tuning")]
-        [Tooltip("Grow-in speed for boost prisms (fast bloom). Higher = faster. The shared " +
-                 "prism prefab defaults to a slow 0.01; boost prisms override to this.")]
-        [SerializeField] private float boostPrismGrowthRate = 0.2f;
+        [Tooltip("Grow-in speed for boost prisms (fast bloom). PrismScaleManager clamps " +
+                 "growthRate * deltaTime into [0.05, 0.1] lerp/frame, so values below ~6 are " +
+                 "indistinguishable from the default; 8 pins the bloom at the max speed across " +
+                 "framerates. The collider never waits on this — boost prisms hold a full-size " +
+                 "collider from frame 0 (Prism.HoldColliderAtFullSize).")]
+        [SerializeField] private float boostPrismGrowthRate = 8f;
 
         [Header("Data Containers")]
         [SerializeField] private ThemeManagerDataContainerSO _themeManagerData;

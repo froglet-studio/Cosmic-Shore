@@ -468,7 +468,7 @@ MonoBehaviour:
   boostPrismPool: {fileID: 7788990011223344003}
   explosionPool: {fileID: 5221892771149629006}
   implosionPool: {fileID: 4003532647074121721}
-  boostPrismGrowthRate: 0.2
+  boostPrismGrowthRate: 8
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
@@ -646,7 +646,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5f381cf090404919a975c8491ac56dc5, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  prefab: {fileID: 4563009547826722997, guid: 4f41edde676403347bb3700cf3ab244c, type: 3}
+  prefab: {fileID: 4563009547826722997, guid: 5e0149b915fc095448e82496cd02dde8, type: 3}
   defaultCapacity: 20
   maxSize: 256
   enableBufferMaintenance: 1

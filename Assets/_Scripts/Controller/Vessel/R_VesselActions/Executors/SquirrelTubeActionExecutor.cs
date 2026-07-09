@@ -17,22 +17,22 @@ namespace CosmicShore.Gameplay
     /// the vessel (along the nose / flight direction), so a Squirrel flying straight rockets through
     /// the hollow centre while it obstructs everyone else. No preview — it just places.
     ///
-    /// The prisms are POOLED — pulled via <see cref="PrismEventChannelWithReturnSO"/> from the
-    /// dedicated <c>Boost</c> pool (<see cref="PrismType.Boost"/>): fast-growing prisms whose collider
-    /// turns on immediately, so a skimmer can boost off them right away even though a vessel flying the
-    /// centre usually never touches them. The joust danger-block formation
-    /// (<c>AOEDangerHemisphereBlocks</c>) draws from the same pool. Each prism is configured like a
-    /// trail block, laid a few per frame, and returned to the pool on teardown — never
-    /// Instantiate/Destroy. Each blooms in, registers with the spatial index, and is removed only by an
-    /// active force. A long cooldown gates re-use (surfaced to the HUD via
+    /// Every ring is laid through the shared <see cref="BoostRingBuilder"/> — the same primitive
+    /// behind the omnicrystal ring and the joust ring — so the prisms are POOLED
+    /// (<see cref="PrismType.Boost"/>: fast bloom, waitTime 0) and carry a FULL-SIZE collider from
+    /// frame 0 (<see cref="Prism.HoldColliderAtFullSize"/>): the skimmer collides with the wall
+    /// deterministically at any speed, while a vessel flying the centre usually never touches it.
+    /// Rings are laid a few per frame and the prisms returned to the pool on teardown — never
+    /// Instantiate/Destroy. Each blooms in, registers with the spatial index, and is removed only by
+    /// an active force. A long cooldown gates re-use (surfaced to the HUD via
     /// <see cref="CooldownRemaining01"/>).
     /// </summary>
     public sealed class SquirrelTubeActionExecutor : ShipActionExecutorBase
     {
         [Header("Scene Refs")]
         [Tooltip("Pooled-prism spawn channel (EventOnSpawnPrismAndReturn) — same asset the vessel " +
-                 "trail uses. The SO's PrismType (Boost) selects the dedicated fast/immediate-collider " +
-                 "pool. The tube's prisms are pooled, never Instantiated.")]
+                 "trail uses. BoostRingBuilder routes the rings to the dedicated Boost pool " +
+                 "(fast bloom, full-size collider from frame 0). Never Instantiated.")]
         [SerializeField] private PrismEventChannelWithReturnSO prismSpawnChannel;
 
         [Header("Events")]
@@ -96,7 +96,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Release: nothing — the tube is placed on press (no preview).</summary>
         public void Commit(SquirrelTubeActionSO so, IVesselStatus status) { }
 
-        // ---------------- Tube spawn (pooled) ----------------
+        // ---------------- Tube spawn (pooled, via the shared boost-ring builder) ----------------
 
         void SpawnTube(SquirrelTubeActionSO so, IVesselStatus status, Pose pose)
         {
@@ -106,96 +106,38 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            var points = BuildRingPoints(so);
-
             _spawnCts?.Cancel();
             _spawnCts?.Dispose();
             _spawnCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
 
-            SpawnTubeAsync(so, status, pose, points, _spawnCts.Token).Forget();
+            SpawnTubeAsync(so, status, pose, _spawnCts.Token).Forget();
         }
 
-        async UniTaskVoid SpawnTubeAsync(SquirrelTubeActionSO so, IVesselStatus status, Pose pose,
-            IReadOnlyList<SpawnPoint> points, CancellationToken ct)
+        /// <summary>
+        /// Lays the tube ring-by-ring through <see cref="BoostRingBuilder"/> — the same primitive
+        /// the omnicrystal and joust rings use, so every ring is a wall of pooled Boost prisms with
+        /// full-size colliders from frame 0 (the skim is deterministic at any speed). Batched a few
+        /// rings per frame to spread the spawn cost.
+        /// </summary>
+        async UniTaskVoid SpawnTubeAsync(SquirrelTubeActionSO so, IVesselStatus status, Pose pose, CancellationToken ct)
         {
-            int perFrame = so.SpawnPerFrame;
+            var spec = new BoostRingSpec(so.Segments, so.Radius, Vector3.one * so.PrismScale,
+                so.Danger ? PrismKind.Danger : PrismKind.Plain);
             string playerName = status.PlayerName;
             Domains domain = status.Domain;
+            int ringsPerFrame = Mathf.Max(1, so.SpawnPerFrame / spec.Segments);
 
-            for (int i = 0; i < points.Count; i++)
+            for (int z = 0; z < so.Rings; z++)
             {
                 if (ct.IsCancellationRequested) return;
 
-                var p = points[i];
-                Vector3 worldPos = pose.position + pose.rotation * p.Position;
-                Quaternion worldRot = pose.rotation * p.Rotation;
-                SpawnOnePooledPrism(so, playerName, domain, worldPos, worldRot, p.Scale);
+                Vector3 ringCenter = pose.position + pose.rotation * (Vector3.forward * (z * so.RingSpacing));
+                BoostRingBuilder.LayRing(prismSpawnChannel, new Pose(ringCenter, pose.rotation), spec,
+                    domain, playerName, $"{playerName}::Tube::{z}", trail: null, collected: _tubePrisms);
 
-                if ((i + 1) % perFrame == 0)
+                if ((z + 1) % ringsPerFrame == 0)
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
-        }
-
-        /// <summary>
-        /// Pulls one prism from the shared pool and configures it like the trail does (team, danger,
-        /// grow-in). IsDangerous is set BEFORE Initialize so Initialize's MakeDangerous repaints it
-        /// to the team's dangerous material.
-        /// </summary>
-        void SpawnOnePooledPrism(SquirrelTubeActionSO so, string playerName, Domains domain,
-            Vector3 worldPos, Quaternion worldRot, Vector3 scale)
-        {
-            var ret = prismSpawnChannel.RaiseEvent(new PrismEventData
-            {
-                ownDomain = domain,
-                Rotation = worldRot,
-                SpawnPosition = worldPos,
-                Scale = scale,
-                PrismType = so.PrismType
-            });
-
-            if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism))
-                return;
-
-            prism.ownerID = playerName;
-            prism.TargetScale = scale;
-            prism.ChangeTeam(domain);
-            if (so.Danger && prism.prismProperties != null)
-                prism.prismProperties.IsDangerous = true; // Initialize → MakeDangerous repaints it
-
-            prism.Initialize(playerName);
-            _tubePrisms.Add(prism);
-        }
-
-        /// <summary>
-        /// Ring positions around the local +z axis (container-local; the caller supplies the world
-        /// pose). Every ring is centred on the axis so a vessel down the middle passes through the
-        /// hollow centre.
-        /// </summary>
-        List<SpawnPoint> BuildRingPoints(SquirrelTubeActionSO so)
-        {
-            int rings = so.Rings;
-            int segments = so.Segments;
-            float radius = so.Radius;
-            float spacing = so.RingSpacing;
-            var scale = Vector3.one * so.PrismScale;
-
-            var points = new List<SpawnPoint>(rings * segments);
-
-            for (int z = 0; z < rings; z++)
-            {
-                float depth = z * spacing;
-                for (int i = 0; i < segments; i++)
-                {
-                    float angle = i * (2f * Mathf.PI / segments);
-                    Vector3 radial = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f);
-                    Vector3 position = radial * radius + Vector3.forward * depth;
-                    // Long side runs along the tube axis; block "up" points outward radially.
-                    var rotation = Quaternion.LookRotation(Vector3.forward, radial);
-                    points.Add(new SpawnPoint(position, rotation, scale));
-                }
-            }
-
-            return points;
         }
 
         // ---------------- Cleanup ----------------
