@@ -18,10 +18,4 @@ MonoBehaviour:
   unlockedByDefault: 1
   placementAngleDegrees: 0
   accentColor: {r: 0.2, g: 0.9, b: 1, a: 1}
-  paintings:
-  - {fileID: 11400000, guid: 3e68cf96fbac330479adabdfb9898a9e, type: 2}
-  - {fileID: 11400000, guid: 75164b5f01fe35749849270b64f06492, type: 2}
-  - {fileID: 11400000, guid: a4afb1bc94270cf4e95deadf8a6b632a, type: 2}
-  - {fileID: 11400000, guid: 1a76d1b9545e2324193258d2a14ecbdb, type: 2}
-  anglePerToyDeg: 12
-  paintingClearance: 150
+  shape: {fileID: 11400000, guid: bf2a451ba14d3fe49a2bd5c4d23ee336, type: 2}
