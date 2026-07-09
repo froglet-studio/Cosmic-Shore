@@ -16,10 +16,9 @@
 // the CTS lifecycle, and CreateFadeOverlay's GameObject + CanvasGroup construction.
 //
 // Deviations (all marked inline):
-// • UI-shell arc — UnityEngine.UI presentation types (Canvas / CanvasScaler /
-//   GraphicRaycaster / Image / RectTransform / RenderMode): the overlay's visual
-//   dressing is carried as commented source; the CanvasGroup that drives every
-//   fade IS live, so alpha/raycast state is fully observable.
+// • UI-shell arc (RESTORED 2026-07-09, UI arc B2) — the overlay's Canvas /
+//   CanvasScaler / GraphicRaycaster / Image / RectTransform dressing is live
+//   verbatim over the engine UI family; the CanvasGroup still drives every fade.
 // • threading — the SetFadeImmediate off-main-thread canary read
 //   MainThreadDispatcher.IsOnMainThread, part of the retired `.AsMainThread()`
 //   boundary (GameSynchronizationContext owns affinity structurally — see
@@ -34,6 +33,7 @@ using CosmicShore.Engine.Tasks;
 using CosmicShore.Engine.Networking;
 using CosmicShore.Engine.SceneManagement;
 using CosmicShore.Engine;
+using CosmicShore.Engine.UI;
 
 namespace CosmicShore.Core
 {
@@ -75,8 +75,7 @@ namespace CosmicShore.Core
         float _postLoadSettleDelay = 0.1f;
 
         CanvasGroup _fadeCanvasGroup;
-        // PORT Deviation (UI-shell arc 2026-07-08, Canvas — restore when the UI presentation layer ports):
-        // Canvas _fadeCanvas;
+        Canvas _fadeCanvas; // (RESTORED 2026-07-09, UI arc B2)
         bool _isTransitioning;
         CancellationTokenSource _cts;
 
@@ -358,14 +357,14 @@ namespace CosmicShore.Core
         {
             _fadeCanvasGroup = _splashOverlay;
 
-            // PORT Deviation (UI-shell arc 2026-07-08, Canvas — restore when the UI presentation layer ports):
-            // var canvas = _splashOverlay.GetComponentInParent<Canvas>();
-            // if (canvas != null)
-            // {
-            //     canvas.sortingOrder = 32767;
-            //     DontDestroyOnLoad(canvas.gameObject);
-            //     _fadeCanvas = canvas;
-            // }
+            // (RESTORED 2026-07-09, UI arc B2)
+            var canvas = _splashOverlay.GetComponentInParent<Canvas>();
+            if (canvas != null)
+            {
+                canvas.sortingOrder = 32767;
+                DontDestroyOnLoad(canvas.gameObject);
+                _fadeCanvas = canvas;
+            }
 
             // interactable mirrors blocksRaycasts everywhere this group is driven:
             // the adopted splash hosts the BootStatusPanel retry button, which must
@@ -383,33 +382,31 @@ namespace CosmicShore.Core
             var canvasGO = new GameObject("[SceneTransition_Overlay]");
             canvasGO.transform.SetParent(transform, false);
 
-            // PORT Deviation (UI-shell arc 2026-07-08, Canvas/CanvasScaler/GraphicRaycaster —
-            // restore when the UI presentation layer ports):
-            // _fadeCanvas = canvasGO.AddComponent<Canvas>();
-            // _fadeCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
-            // _fadeCanvas.sortingOrder = 32767;
-            //
-            // var scaler = canvasGO.AddComponent<CanvasScaler>();
-            // scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            // scaler.referenceResolution = new Vector2(1920, 1080);
-            //
-            // canvasGO.AddComponent<GraphicRaycaster>();
+            // (RESTORED 2026-07-09, UI arc B2)
+            _fadeCanvas = canvasGO.AddComponent<Canvas>();
+            _fadeCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            _fadeCanvas.sortingOrder = 32767;
+
+            var scaler = canvasGO.AddComponent<CanvasScaler>();
+            scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1920, 1080);
+
+            canvasGO.AddComponent<GraphicRaycaster>();
 
             // Full-screen image with CanvasGroup for alpha control.
             var imageGO = new GameObject("FadeImage");
             imageGO.transform.SetParent(canvasGO.transform, false);
 
-            // PORT Deviation (UI-shell arc 2026-07-08, RectTransform/Image — restore when the
-            // UI presentation layer ports; the CanvasGroup below carries the fade state):
-            // var rt = imageGO.AddComponent<RectTransform>();
-            // rt.anchorMin = Vector2.zero;
-            // rt.anchorMax = Vector2.one;
-            // rt.offsetMin = Vector2.zero;
-            // rt.offsetMax = Vector2.zero;
-            //
-            // var image = imageGO.AddComponent<Image>();
-            // image.color = _fadeColor;
-            // image.raycastTarget = true;
+            // (RESTORED 2026-07-09, UI arc B2)
+            var rt = imageGO.AddComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+
+            var image = imageGO.AddComponent<Image>();
+            image.color = _fadeColor;
+            image.raycastTarget = true;
 
             _fadeCanvasGroup = imageGO.AddComponent<CanvasGroup>();
             _fadeCanvasGroup.alpha = 0f;

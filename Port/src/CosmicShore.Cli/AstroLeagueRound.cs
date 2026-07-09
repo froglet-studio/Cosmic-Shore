@@ -282,6 +282,11 @@ namespace CosmicShore.Cli
                 controllerGo.SetActive(false);
                 var countdownTimer = controllerGo.AddComponent<CountdownTimer>();
                 SetPrivateField(countdownTimer, "countdownDuration", 0.5f); // brisk CLI count-in (inspector value)
+                // Scene transcription: the real scene wires an Image child as the countdown display.
+                var countdownDisplay = new GameObject("CountdownDisplay", typeof(RectTransform))
+                    .AddComponent<CosmicShore.Engine.UI.Image>();
+                countdownDisplay.transform.SetParent(controllerGo.transform, false);
+                SetPrivateField(countdownTimer, "countdownDisplay", countdownDisplay);
                 matchMonitor = controllerGo.AddComponent<AstroLeagueMatchMonitor>();
                 SetPrivateField(matchMonitor, "gameData", gameData);
                 var displayChannel = ScriptableObject.CreateInstance<ScriptableEventString>();

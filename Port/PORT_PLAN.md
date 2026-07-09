@@ -711,21 +711,20 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc B part 2 — the Graphic/Image render-state family (headless).** The
-   layout core shipped (part 1 below). Now the render-facing component model
-   over it: `Graphic` base (color, raycastTarget, canvasRenderer link, dirty
-   hooks that no-op headless), `Image` (sprite/type/fillAmount/preserveAspect
-   state + its ILayoutElement face: preferredWidth/Height from sprite size —
-   REAL, since layout consumes it), `RawImage` (texture/uvRect), and the
-   `MaskableGraphic`/`Mask`/`RectMask2D` data surface (usage scan: Mask family
-   is present in the menu scene). Keep the Arc-A/B conventions: REAL maths
-   where geometry-bearing (Image's layout inputs), data-only where pixels-only
-   (fill/aspect flags until Arc C renders them), tests assert what layout
-   consumes (an Image-with-sprite inside a fitter-hugged group sizes the
-   panel). `AspectRatioFitter`/`Dropdown` stay skipped (0 uses). After part 2,
-   Arc B closes and Arc D (input/event layer: EventSystem + Selectable
-   hit-testing over the solved rects) opens next — Arc C (client render
-   primitives) can start any iteration after B closes.
+1. **Arc D — the input/event layer (headless).** Arc B is CLOSED (parts 1+2
+   below). Build the event system over the solved rects: `EventSystem` +
+   `PointerEventData` + the raycast walk (`GraphicRaycaster` goes REAL —
+   top-down through canvas graphics honoring `raycastTarget`, sort order, and
+   `RectTransform` containment via the Arc-A world corners), `Selectable`
+   (interactable/transition state machine; `Button` grows onto it, keeping the
+   existing `onClick` shim contract), pointer enter/exit/down/up/click
+   dispatch, and the `IPointerClickHandler`-family interfaces the menu code
+   implements. Headless tests drive SYNTHETIC pointer events at coordinates
+   and assert hits/clicks/selection — no windowing needed. Silk.NET
+   mouse/gamepad wiring is the LAST step and can defer to Arc H if it needs
+   the window. Arc C (client render primitives: bitmap font + textured quads)
+   is also open — pick it instead if a drift-sync eats the iteration budget,
+   but D is the critical path (A→B→D per the roadmap).
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
@@ -734,6 +733,51 @@ now works that milestone plan.
 > ~1-in-10 under CPU load (`SpawnerAdapterC6Tests` or `HeadlessRoundTests`) —
 > verified present on 8053b22f before the milestone arcs; not a regression.
 > Worth a dedicated diagnosis iteration if it worsens.
+
+### Arc B part 2 ✅ (2026-07-09) — the Graphic/Image family; ARC B CLOSED
+
+The render-facing component model over the layout core, split per convention —
+REAL where layout consumes it, data where only pixels do (Arc C rasterizes):
+
+**Engine growths:** `Vector2Int` (mirrors Vector3Int; Arc D screen coords),
+`Texture`/`Texture2D` (Rendering; width/height data), **`Sprite` grown** from
+the empty V11 stub to real geometry — texture/rect/pivot/border (L,B,R,T)/
+pixelsPerUnit + the `Create` factory; `Canvas.referencePixelsPerUnit` (same
+pull-from-scaler rule as scaleFactor). **`Engine.UI` new:** `Graphic` (abstract:
+color→SetVerticesDirty, raycastTarget, cached `rectTransform` that CONVERTS a
+plain-Transform host in place — the RequireComponent equivalent via the Arc-A
+converter, canvas walk, SetAllDirty/SetLayoutDirty→MarkLayoutForRebuild +
+no-op vertex/material hooks, OnEnable/OnDisable dirty marks),
+`MaskableGraphic` (maskable), **`Image`** (sprite/overrideSprite/type/fill*/
+preserveAspect/pixelsPerUnitMultiplier + the REAL ILayoutElement face:
+preferred = sprite rect ÷ (sprite ppu ÷ canvas reference ppu) × 1/multiplier,
+Sliced/Tiled → border sums, min 0/flexible −1/priority 0, SetNativeSize),
+**`RawImage`** (texture/uvRect/SetNativeSize×uvSpan; faithfully NOT an
+ILayoutElement — no size opinion), `Mask`/`RectMask2D` (clipper data until
+Arc C), `GraphicRaycaster` (data until Arc D makes the raycast real).
+
+**Un-carries:** `SceneTransitionManager.CreateFadeOverlay`+`AdoptSplashOverlay`
+— the full overlay dressing restored verbatim (Canvas ScreenSpaceOverlay
+sortingOrder 32767 + CanvasScaler ScaleWithScreenSize 1920×1080 +
+GraphicRaycaster + full-stretch RectTransform + Image fadeColor/raycastTarget);
+`CountdownTimer` — the `Image countdownDisplay` field + ALL non-tween
+presentation restored (display activation, per-beat sprite swap/scale
+reset/urgent tint with the original's null-animSettings defaults, between-beat
+alpha reset, final hide); only the DOTween tweens, beep SFX, and
+HUDAnimationSettingsSO stay deviation-marked. The 3 CLI rounds + the chain
+test now transcribe the scene's display wiring (Image child via
+SetPrivateField).
+
+**12 headless tests** (`EngineUiGraphicTests`): preferred-size maths (ppu
+variants, multiplier, sliced border, canvas reference-ppu division), the
+marquee (Image-with-sprite inside a fitter-hugged group sizes the panel),
+sprite-swap → canvas-slot re-solve (dirty propagation through the GameLoop
+tick), LayoutElement priority override, SetNativeSize both kinds, RawImage's
+no-opinion, Transform→RectTransform conversion on first rectTransform read,
+state defaults + fill clamp + clipper/raycaster round-trips. **1587 tests
+green in BOTH configs (1249 + 338)**; 5 CLI modes exit 0; both client diags
+byte-identical to the pre-change baseline (`trail 786` / `toys 12`).
+bleeding-edge unmoved at `f2b8f5aa`.
 
 ### Arc B part 1 ✅ (2026-07-09) — the layout core (headless)
 
@@ -858,8 +902,8 @@ several loop iterations, each ends green+pushed):
 
 | Arc | Scope | Phase | Track | Headless-testable |
 |---|---|---|---|---|
-| **A** | Engine UI geometry: `RectTransform` (anchors/pivot/sizeDelta/anchoredPosition/rect) + `Canvas` + `CanvasScaler` + rect-solve layout pass | 5 | UI framework | ✅ fully |
-| **B** | UGUI component model: `Image`/`Graphic`, `LayoutGroup` (H/V/Grid), `LayoutElement`, `ContentSizeFitter`, `Mask`/`RectMask2D` — real layout-participating components | 5 | UI framework | ✅ fully |
+| **A** ✅ | Engine UI geometry: `RectTransform` (anchors/pivot/sizeDelta/anchoredPosition/rect) + `Canvas` + `CanvasScaler` + rect-solve layout pass | 5 | UI framework | ✅ fully |
+| **B** ✅ | UGUI component model: `Image`/`Graphic`, `LayoutGroup` (H/V/Grid), `LayoutElement`, `ContentSizeFitter`, `Mask`/`RectMask2D` — real layout-participating components | 5 | UI framework | ✅ fully |
 | **C** | Client render primitives: embedded bitmap-font atlas + textured-quad shader + `DrawText`/`DrawRect` on the ortho pass; draw laid-out rects from A/B | 5 | render | screenshot byte-check |
 | **D** | Input/event layer: `EventSystem` + `PointerEventData` + `Selectable`/`Button` hit-testing wired to Silk.NET mouse/gamepad + gamepad nav-ring | 5 | UI framework | ✅ synthetic events |
 | **E** | Content bridge: a Unity YAML→first-party-scene extractor (new `Port/tools/`) scoped to the UGUI subset (RectTransform/Canvas/Image/TMP/Button/LayoutGroups/CanvasGroup) + script-GUID→type map, so `Menu_Main` imports rather than being hand-transcribed. **Decision point when it opens** — confirm extractor-vs-hand-authoring scope with the prompter (large sub-project). | 7 | content | round-trip parity |

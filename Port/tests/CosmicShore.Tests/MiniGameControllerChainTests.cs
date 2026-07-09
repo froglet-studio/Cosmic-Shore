@@ -171,6 +171,11 @@ public class MiniGameControllerChainTests
         var go = new GameObject("countdown");
         var timer = go.AddComponent<CountdownTimer>();
         SetField(timer, "countdownDuration", 0.5f); // 4 sprites × 0.5s = 2s total
+        // Scene transcription: the real scene wires an Image child as the countdown display.
+        var display = new GameObject("CountdownDisplay", typeof(RectTransform))
+            .AddComponent<CosmicShore.Engine.UI.Image>();
+        display.transform.SetParent(go.transform, false);
+        SetField(timer, "countdownDisplay", display);
 
         int completions = 0;
         timer.BeginCountdown(() => completions++);

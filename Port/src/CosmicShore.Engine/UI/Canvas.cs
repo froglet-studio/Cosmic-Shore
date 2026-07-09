@@ -66,5 +66,27 @@ namespace CosmicShore.Engine
 
         /// <summary>The canvas's pixel footprint — the screen, for screen-space canvases.</summary>
         public Rect pixelRect => new(0f, 0f, Screen.width, Screen.height);
+
+        float _referencePixelsPerUnit = 100f;
+
+        /// <summary>
+        /// Pixel density a sprite's pixelsPerUnit is measured against when the UI sizes it
+        /// (Image.pixelsPerUnit = sprite ppu / this). Same pull-based rule as
+        /// <see cref="scaleFactor"/>: nested canvases inherit the root's; a root with an
+        /// enabled scaler reads the scaler's reference value (the original pushes it during
+        /// the render pass); otherwise the stored value (original default: 100).
+        /// </summary>
+        public float referencePixelsPerUnit
+        {
+            get
+            {
+                if (!isRootCanvas) return rootCanvas.referencePixelsPerUnit;
+                var scaler = gameObject.GetComponent<UI.CanvasScaler>();
+                if (scaler != null && scaler.isActiveAndEnabled)
+                    return scaler.referencePixelsPerUnit;
+                return _referencePixelsPerUnit;
+            }
+            set => _referencePixelsPerUnit = value;
+        }
     }
 }
