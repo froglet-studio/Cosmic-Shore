@@ -85,6 +85,8 @@ collection not yet recorded).
 | `5f6b497a` | Full GC behind the scene-load splash |
 | `546e2b98` | Spawn-window `WaitForSeconds` cached (kills one alloc per prism laid) |
 | `e04d5a72` | `PoolRefill.<prefabName>` markers on pool buffer refills |
+| `d80e7ee5` | FIX from re-verification: growth tempo calibrated to the real 40 ms tick (`dtNominal = 0.04`); slice dt cap scaled to rotation period; cursor drift corrected |
+| `4443df83` | GC on every peer behind the post-load fade (clients + Play Again reloads were uncovered) |
 
 ---
 
@@ -138,13 +140,37 @@ collection not yet recorded).
 
 **Status:** SHIPPED — `27860eaa` (dt-linear step) + `4b36b7f8` (sliced pass,
 `maxGrowersPerFrame = 300` serialized on `PrismScaleManager`, per-animator
-`LastStepTime` true-dt stepping, 0.5 s dt cap against catch-up pops). The
-spike source datum arrived (see §1): 4350 active growers during HexRace,
-driven by Boid grazing `Grow(±1)` per bite — legitimate re-animation, not a
-leak. **In-editor verification pending (see §5 + the per-fix checks below).**
-Design record kept below for the rationale.
+`LastStepTime` true-dt stepping) **+ `d80e7ee5`**, which fixed two tempo
+blockers that a 6-agent adversarial re-verification caught in those commits
+before any build: (a) `dtNominal` was 0.02 but the project's Fixed Timestep —
+the cadence the old 5%-per-tick fraction was calibrated against — is **0.04**
+(`ProjectSettings/TimeManager.asset`), so growth ran ~1.9× too fast as first
+committed; now 0.04 → k ∈ [1.25, 2.5] s⁻¹, per-tick step within ~5% of
+historical across the whole GrowthRate range. (b) The fixed 0.5 s catch-up
+cap clamped budget-induced inter-step delay under exactly the target load
+(4350/300 = 15 ticks × 40 ms = 0.6 s rotation), silently slowing tempo — the
+cap now scales to 2 rotations (floored at 0.5 s), so slicing delay always
+integrates fully and only genuine stalls clamp. Same commit corrects cursor
+drift on removal bursts (advance compensates for in-window prunes +
+completions). The spike source datum arrived (see §1): 4350 active growers
+during HexRace, driven by Boid grazing `Grow(±1)` per bite — legitimate
+re-animation, not a leak. **In-editor verification pending (see §5 + the
+per-fix checks below).** Design record below updated to the corrected math.
 **Value:** highest — at 4350 active the unsliced pass walked every grower's
-native interop each 20 ms tick; the budget caps it at 300/tick (~1/14th).
+native interop each 40 ms tick; the budget caps it at 300/tick (~1/14th).
+
+**Accepted behavior notes (from re-verification, no code change):**
+- Completion detection (and thus `ExecuteOnScaleComplete`: shield activation,
+  `onPrismVolumeModified` stat credit) can lag by up to one rotation
+  (~0.6 s at the captured worst case) during a frenzy — acceptable; watch it
+  in-editor.
+- Under adaptive frame-interval creep the OLD code visibly slowed growth
+  (fraction-per-tick at long ticks); the dt-linear step now holds authored
+  tempo under load. Growth under heavy load therefore looks *faster than the
+  old build* — that is the fix working, not a regression.
+- Elapsed time beyond the (rotation-scaled) cap is dropped by design: a
+  genuine multi-second stall does not fast-forward growth afterwards, which
+  matches the old accumulator's spike clamp and preserves continuity.
 
 **Symptom.** `PrismScaleManager.Process` = 5.55 ms when active growers spike
 to ~1000 (baseline < 200; spikes a few times per session). Confirmed via the
@@ -165,7 +191,9 @@ dt: `AdaptiveAnimationManager.Update` uses
 `updateInterval = Time.fixedDeltaTime × currentFrameInterval` and passes
 `effectiveDeltaTime = updateInterval`
 (`Assets/_Scripts/Controller/Managers/AdaptiveAnimationManager.cs:203-208`),
-i.e. 20 ms at interval 1. Worse: `PrismScaleAnimator.GrowthRate` defaults to
+i.e. **40 ms** at interval 1 (the project Fixed Timestep is 0.04 —
+`ProjectSettings/TimeManager.asset`; do NOT assume Unity's 0.02 default).
+Worse: `PrismScaleAnimator.GrowthRate` defaults to
 **0.01** (`Assets/_Scripts/Controller/Environment/Prisms/PrismScaleAnimator.cs:26`),
 so `GrowthRate·dt = 0.0002` — *every* grower clamps up to the 0.05 floor.
 Growth tempo is therefore 100% cadence-defined: process a grower half as
@@ -176,23 +204,31 @@ until the step is dt-linear.
 
 1. `perf(prisms): make the growth step dt-linear, tempo-preserved`
    Replace the step in `PrismScaleManager.ProcessAnimationFrame` with
-   exponential easing:
+   exponential easing (constants as CORRECTED by `d80e7ee5`):
    ```
-   dtNominal = 0.02f
-   k     = clamp(GrowthRate * dtNominal, 0.05f, 0.1f) / dtNominal   // 2.5–5.0 s⁻¹
+   dtNominal = 0.04f   // MUST equal the project Fixed Timestep (TimeManager.asset)
+   k     = clamp(GrowthRate * dtNominal, 0.05f, 0.1f) / dtNominal   // 1.25–2.5 s⁻¹
    alpha = 1 - exp(-k * deltaTime)
    ```
-   At the current cadence (dt = 0.02) this gives `1 − exp(−0.05) ≈ 0.0488`
-   vs the old 0.05 — visually identical (−2.4% per step), but now *correct at
-   any dt*. Keep the `COMPLETION_THRESHOLD_SQR` snap semantics unchanged.
+   At the nominal cadence (dt = 0.04) this gives `1 − exp(−0.05) ≈ 0.0488`
+   vs the old 0.05 — visually identical (−2.4% per step), and within ~5% of
+   the historical per-tick fraction across the whole GrowthRate range
+   (rate 2 → 0.0769 vs 0.08; rate ≥ 2.5 → 0.0952 vs 0.10) — but now *correct
+   at any dt*. Do not read `Time.fixedDeltaTime` live (AstroLeague's hitstop
+   rescales it transiently). Keep `COMPLETION_THRESHOLD_SQR` snap semantics
+   unchanged.
 2. `perf(prisms): slice the growth pass`
    Serialized budget (`[Min(50)] int maxGrowersPerFrame = 300`), rotating
-   cursor over the snapshot list, and a per-animator `LastStepTime` stamp
-   (float on `PrismScaleAnimator`) so each grower steps with its **true
-   elapsed dt** when its slice comes up. `SyncRenderTransform` /
-   `RefreshVolumeCache` then run at 1/K rate automatically — safe because the
-   volume consumer (`Cell`'s per-domain aggregation) is itself on a 0.25 s
-   sliced cadence, and the render-matrix lag is bounded by the slice period.
+   cursor over the snapshot list (advance compensated for in-window
+   removals), and a per-animator `LastStepTime` stamp (float on
+   `PrismScaleAnimator`) so each grower steps with its **true elapsed dt**
+   when its slice comes up. The catch-up dt cap MUST scale with the rotation
+   period (`max(0.5s, 2 × tickDt × ceil(count/budget))`) — a fixed cap
+   silently slows tempo whenever a rotation exceeds it, which is exactly the
+   frenzy case. `SyncRenderTransform` / `RefreshVolumeCache` then run at 1/K
+   rate automatically — safe because the volume consumer (`Cell`'s per-domain
+   aggregation) is itself on a 0.25 s sliced cadence, and the render-matrix
+   lag is bounded by the slice period.
 
 **Bonus datum (parallel, user-driven):** observe what's on screen when the
 count spikes to ~1000 — tadpole swarm melting a trail cluster? flora regrow
@@ -423,3 +459,4 @@ not compiler, at the time of the merge).
 |---|---|
 | 2026-07-08 | Created. All task file/line claims verified against code (6-agent sweep). Corrections found: LightFauna's tick is `UpdateBehavior` (not `CalculateBehavior` — that's Boid's); AOE explosion lifetime is ~2.2–4.2 s (not 0.6 s); audit tool's prefab path is not Undo-able; StatsManager's Omni lambda is captureless (no alloc) — only the four elemental lambdas allocate; shader-warmup log additionally requires `_verboseLogging=1` on `BootstrapConfig.asset`. Task 1 marked NEXT UP. |
 | 2026-07-08 (later) | HexRace capture analyzed (71 ms frame): pool-refill Instantiate + 20.75 ms mid-race `GC.Collect` on EarlyUpdate, and the Task 1 datum landed — 4350/11,400 growers, source = Boid grazing re-animation (legit, not a leak). Shipped: Task 1 both commits (`27860eaa`, `4b36b7f8`), GC behind splash (`5f6b497a`), spawn-window WaitForSeconds cache (`546e2b98`), `PoolRefill.*` markers (`e04d5a72`). Ecology protocol run: pacing/attribution only, zero collider impact, tempo + continuity preserved by construction. Escalation recorded: `InstantiateAsync` refills only if `PoolRefill.*` shows multi-ms typical unit cost. |
+| 2026-07-09 | 6-agent adversarial re-verification of the five commits (pre-editor-test). **3 blockers found in the fresh Task 1 commits, fixed in `d80e7ee5`:** `dtNominal` 0.02 → 0.04 (project Fixed Timestep is 0.04 — growth was ~1.9× too fast as committed; two agents converged on it independently); fixed 0.5 s dt cap → rotation-scaled cap (fixed cap slowed tempo up to 7× under the target frenzy load); cursor drift on removal bursts corrected. GC coverage gaps (clients + Play Again reloads never took the scheduled collect) fixed in `4443df83` via the two all-peers post-load fade-back handlers. WaitForSeconds cache, pool marker verdicts: SOUND (notes: cache misses on the variable-`waitTime` `waitTillOutsideSkimmer` path — acceptable; prewarm burst unmarked — intentional). Final compile-sanity pass over all six edited files: PASS (arithmetic invariants proven, `MaterialStateManager` independent, no external readers of the sliced behavior). Lesson recorded: never assume Unity's 0.02 default fixed timestep — check `TimeManager.asset`. |
