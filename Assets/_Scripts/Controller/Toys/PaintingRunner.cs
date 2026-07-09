@@ -56,6 +56,7 @@ namespace CosmicShore.Gameplay
 
         StrokeInfo[] _strokes;
         float _bloom;                  // 0→1 on begin; swells then falls to 0 during the farewell fade
+        float _benchVisibility = 1f;   // 1 engaged, eases to 0 while benched so a paused blueprint fades away
 
         int _strokeIndex;              // == strokes completed while AwaitingGate
         int _pointIndex;
@@ -186,10 +187,13 @@ namespace CosmicShore.Gameplay
                 // pause another runner (the new brush holder) sets in the meantime.
                 RestorePen();
                 _gateBenchEasing = true;
+                HideMarker();           // the floating next-point spike goes with the blueprint
             }
             else
             {
                 BenchOtherRunners();
+                // Re-show the next-point marker we hid on pause (mid-stroke resume only).
+                if (_phase == RunPhase.Painting) MoveMarker(_strokeIndex, _pointIndex);
             }
             ProgressChanged?.Invoke();
         }
@@ -267,6 +271,15 @@ namespace CosmicShore.Gameplay
                     _marker.SetActive(false);
                     _markerHiding = false;
                 }
+            }
+
+            // A paused run's ghost blueprint fades away entirely (nothing lingers in the lava lamp);
+            // resuming fades it back. The already-painted prisms are conserved mass and are untouched.
+            float benchTarget = _benched ? 0f : 1f;
+            if (!Mathf.Approximately(_benchVisibility, benchTarget))
+            {
+                _benchVisibility = Mathf.MoveTowards(_benchVisibility, benchTarget, Time.deltaTime * 3.5f);
+                ApplyAllGhostStyles();
             }
         }
 
@@ -602,7 +615,7 @@ namespace CosmicShore.Gameplay
                     break;
             }
 
-            c.a *= _bloom;
+            c.a *= _bloom * _benchVisibility;
             lr.startColor = lr.endColor = c;
             lr.startWidth = lr.endWidth = width;
         }
