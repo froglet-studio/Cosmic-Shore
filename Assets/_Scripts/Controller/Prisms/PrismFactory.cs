@@ -17,7 +17,11 @@ namespace CosmicShore.Gameplay
         Interactive,
         Explosion,
         Implosion,
-        Grow
+        Grow,
+        // Fast-growing, collider-live-on-spawn prisms drawn from a dedicated pool: a
+        // surface a skimmer can boost off, but usually flown past without a body hit
+        // (Squirrel tube + joust danger-block formations). See PrismFactory.SpawnBoostPrism.
+        Boost
     }
     
     public class PrismFactory : MonoBehaviour
@@ -41,10 +45,19 @@ namespace CosmicShore.Gameplay
         [SerializeField] private InteractivePrismPoolManager squirrelPrismPool;
         [SerializeField] private InteractivePrismPoolManager rhinoPrismPool;
         [SerializeField] private InteractivePrismPoolManager interactivePrismPool;
-        
+        [Tooltip("Dedicated pool for fast-growing, collider-live-on-spawn boost prisms " +
+                 "(Squirrel tube + joust danger blocks). Separate from the shared pools so the " +
+                 "waitTime/GrowthRate overrides can't leak into normal trail/AOE prisms.")]
+        [SerializeField] private InteractivePrismPoolManager boostPrismPool;
+
         [SerializeField] private PrismExplosionPoolManager explosionPool;
         [SerializeField] private PrismImplosionPoolManager implosionPool;
         // Add more later: PrismShockwavePoolManager, PrismDisintegrationPoolManager, etc.
+
+        [Header("Boost Prism Tuning")]
+        [Tooltip("Grow-in speed for boost prisms (fast bloom). Higher = faster. The shared " +
+                 "prism prefab defaults to a slow 0.01; boost prisms override to this.")]
+        [SerializeField] private float boostPrismGrowthRate = 0.2f;
 
         [Header("Data Containers")]
         [SerializeField] private ThemeManagerDataContainerSO _themeManagerData;
@@ -117,6 +130,10 @@ namespace CosmicShore.Gameplay
                     spawned = SpawnGrow(data);
                     break;
 
+                case PrismType.Boost :
+                    spawned = SpawnBoostPrism(data);
+                    break;
+
                 // Add more cases here later
                 // case "Shockwave":
                 //     spawned = SpawnShockwave(data.OwnTeam, data.Position, data.Rotation);
@@ -177,6 +194,22 @@ namespace CosmicShore.Gameplay
             if (rhinoPrismPool == null) { CSDebug.LogWarning("[PrismFactory] rhinoPrismPool not set."); return null; }
             var prism = rhinoPrismPool.Get(data.SpawnPosition, data.Rotation, rhinoPrismPool.transform);
             return prism ? prism.gameObject : null;
+        }
+
+        // Fast-growing, collider-live-on-spawn prisms for boost-off surfaces (Squirrel tube,
+        // joust danger blocks). waitTime 0 → the collider comes on the frame after Initialize
+        // instead of after the 0.6s spawn window, so a skimmer can boost off it right away;
+        // a high GrowthRate blooms it in fast. These timing overrides are safe because this is
+        // a DEDICATED pool — they never recycle into a normal trail/AOE prism.
+        GameObject SpawnBoostPrism(PrismEventData data)
+        {
+            if (boostPrismPool == null) { CSDebug.LogWarning("[PrismFactory] boostPrismPool not set."); return null; }
+            var prism = boostPrismPool.Get(data.SpawnPosition, data.Rotation, boostPrismPool.transform);
+            if (!prism) return null;
+
+            prism.waitTime = 0f;
+            prism.SetGrowthRate(boostPrismGrowthRate);
+            return prism.gameObject;
         }
         
         GameObject SpawnExplosion(PrismEventData data)

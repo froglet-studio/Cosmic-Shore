@@ -12,9 +12,10 @@ namespace CosmicShore.Gameplay
     /// design). No preview; it just places.
     ///
     /// The placement is led by the vessel's speed (<see cref="LeadSeconds"/>) so it appears a fixed
-    /// travel-time ahead. The tube is real conserved mass laid from the shared prism POOL (via the
-    /// same <see cref="CosmicShore.ScriptableObjects.PrismEventChannelWithReturnSO"/> the trail uses,
-    /// not Instantiate), so it blooms in (continuity law), registers with
+    /// travel-time ahead. The tube is real conserved mass laid from the dedicated <b>Boost</b> prism
+    /// POOL (fast-growing prisms whose collider turns on immediately — the same pool the joust danger
+    /// blocks use), via the same <see cref="CosmicShore.ScriptableObjects.PrismEventChannelWithReturnSO"/>
+    /// the trail uses (not Instantiate), so it blooms in (continuity law), registers with
     /// <see cref="PrismSpatialIndex"/>, and is only ever removed by an active force
     /// (skim/ability/fauna) — never a timer. See <c>SQUIRREL_TUBE.md</c>.
     /// Everything below is designer-tunable; the <see cref="Radius"/> in particular must be tuned
@@ -24,9 +25,10 @@ namespace CosmicShore.Gameplay
     public class SquirrelTubeActionSO : ShipActionSO
     {
         [Header("Prism")]
-        [Tooltip("Which pooled prism the tube wall is built from (Squirrel prism by default). The " +
-                 "prism is pulled from the shared prism pool, not instantiated.")]
-        [SerializeField] private PrismType prismType = PrismType.Squirrel;
+        [Tooltip("Which pooled prism the tube wall is built from. Boost by default: a dedicated " +
+                 "pool of fast-growing prisms whose collider turns on immediately, so a skimmer " +
+                 "can boost off them right away (same pool the joust danger blocks use).")]
+        [SerializeField] private PrismType prismType = PrismType.Boost;
 
         [Tooltip("Lay the wall as danger prisms (slam on body contact, 10x skim energy).")]
         [SerializeField] private bool danger = true;
