@@ -25,6 +25,9 @@ namespace CosmicShore.Engine.UI
     {
         static readonly List<RectTransform> s_Queued = new();
 
+        /// <summary>Fresh-world reset — a new GameLoop drops marks queued by the old world.</summary>
+        internal static void ResetQueue() => s_Queued.Clear();
+
         /// <summary>Solves the whole subtree now (both axes, both passes).</summary>
         public static void ForceRebuildLayoutImmediate(RectTransform layoutRoot)
         {

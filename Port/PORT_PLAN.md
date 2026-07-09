@@ -711,23 +711,76 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc D — the input/event layer (headless).** Arc B is CLOSED (parts 1+2
-   below). Build the event system over the solved rects: `EventSystem` +
-   `PointerEventData` + the raycast walk (`GraphicRaycaster` goes REAL —
-   top-down through canvas graphics honoring `raycastTarget`, sort order, and
-   `RectTransform` containment via the Arc-A world corners), `Selectable`
-   (interactable/transition state machine; `Button` grows onto it, keeping the
-   existing `onClick` shim contract), pointer enter/exit/down/up/click
-   dispatch, and the `IPointerClickHandler`-family interfaces the menu code
-   implements. Headless tests drive SYNTHETIC pointer events at coordinates
-   and assert hits/clicks/selection — no windowing needed. Silk.NET
-   mouse/gamepad wiring is the LAST step and can defer to Arc H if it needs
-   the window. Arc C (client render primitives: bitmap font + textured quads)
-   is also open — pick it instead if a drift-sync eats the iteration budget,
-   but D is the critical path (A→B→D per the roadmap).
+1. **Arc D part 2 — navigation + the remaining interactive controls
+   (headless).** The event CORE shipped (part 1 below). Now the gamepad
+   nav-ring foundation the menu needs (`ScreenSwitcher` toggles
+   `sendNavigationEvents` for freestyle input ownership): `MoveDirection` +
+   `AxisEventData` + `IMoveHandler`, `Selectable` navigation (the `Navigation`
+   struct — mode Automatic/Explicit/None, `FindSelectableOnLeft/Right/Up/Down`
+   over the live selectable registry via rect positions), module-level
+   move/submit/cancel dispatch (`Move` steps selection along the graph when
+   `sendNavigationEvents`; `Submit` → ISubmitHandler on the selection — Button
+   already implements it). THEN scope the remaining interactive controls the
+   menu actually uses (`Toggle`, `Slider`, `ScrollRect`, `Scrollbar`,
+   `TMP_InputField`, `TMP_Dropdown` — usage-scan `_Scripts/UI` first, skip
+   0-use types) and build the used subset over Selectable + the drag pipeline
+   (ScrollRect rides IBeginDrag/IDrag/IEndDrag, which part 1 proved). After
+   part 2, Arc D closes; Arc C (client render primitives) is open in parallel
+   any iteration.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Arc D part 1 ✅ (2026-07-09) — the event-system core (headless)
+
+The full pointer pipeline over the solved rects, proven with synthetic events
+(the original's module split: hardware backends and tests share one injection
+seam, so the dispatch rules are proven long before a window exists):
+
+**`Engine.UI` new:** `EventInterfaces` (IEventSystemHandler + the
+enter/exit/down/up/click/drag/scroll/select/deselect/submit/cancel family —
+the original's EventSystems namespace folds into Engine.UI), `EventData`
+(BaseEventData used/selectedObject; PointerEventData with press/drag/hover
+context; RaycastResult), `ExecuteEvents` (Execute / ExecuteHierarchy /
+GetEventHandler ancestor walks + the static functor set; disabled Behaviours
+ineligible), `BaseRaycaster` (self-registering registry, the original's
+RaycasterManager), **`GraphicRaycaster` REAL** (hierarchy walk = draw order,
+later siblings on top; raycastTarget + activeInHierarchy gating; containment
+via Arc-A world corners; nested canvases own their subtrees),
+`RectTransformUtility` (point-in-quad RectangleContainsScreenPoint over the
+clockwise corner winding + ScreenPointToLocalPointInRectangle), `EventSystem`
+(current, sendNavigationEvents, selection with deselect→select ordering +
+re-entrancy guard, RaycastAll sorted sortingOrder→depth, pixelDragThreshold),
+`StandaloneInputModule` (the pointer state machine: enter/exit walked to the
+common hover root, press target = down-handler else click-handler owner,
+click only when release lands on the press target and eligibility survived,
+drag threshold + cross-object drags release the press and kill the click,
+scroll bubbling), `Selectable` (ColorBlock + Transition; state machine
+Normal/Highlighted/Pressed/Selected/Disabled driving targetGraphic tint —
+instant-apply documented deviation vs CrossFade — pointer-down self-select,
+interactable-off deselects), **`Button` grown** from the shim onto
+Selectable + IPointerClickHandler + ISubmitHandler (onClick contract intact —
+all existing harness `onClick.Invoke()` call sites unaffected).
+
+**Engine fix (fresh-world reset):** GameLoop's constructor now resets static
+UI state (`BaseRaycaster.ResetRegistry`, `LayoutRebuilder.ResetQueue`,
+`EventSystem.current = null`) — same rationale as `Time.Reset()`: loop
+disposal skips OnDisable, so a prior world's registrations would leak into
+the next (surfaced as cross-test contamination; would equally bite any
+sequential-loop host).
+
+**12 headless tests** (`EngineUiEventTests`, synthetic injection only):
+topmost-sibling raycast ordering, target/active/bounds gating, down→up→click
+on one object with position payload, click landing on the ancestor handler
+when the child is hit, click suppressed on cross-object release, drag
+threshold + endDrag, cross-object drag releasing the press and killing the
+click (the ScreenSwitcher shape), enter/exit walking to the common hover
+root, select/deselect ordering, Selectable pointer-down self-select +
+outside-press deselect, Button on the full stack (pressed/selected/disabled
+tints + onClick + interactable gate), EventSystem.current +
+IsPointerOverGameObject tracking. **1599 tests green in BOTH configs
+(1261 + 338)**; 5 CLI modes exit 0; both client diags byte-identical
+(`trail 786` / `toys 12`). bleeding-edge unmoved at `f2b8f5aa`.
 
 > **Known flake (pre-existing, logged 2026-07-09):** full Release suite fails
 > ~1-in-10 under CPU load (`SpawnerAdapterC6Tests` or `HeadlessRoundTests`) —
