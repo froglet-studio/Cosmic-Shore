@@ -19,11 +19,7 @@ MonoBehaviour:
   rings: 10
   ringSpacing: 10
   prismScale: 5
+  leadSeconds: 1
   forwardOffset: 24
-  puppetRollDegrees: 20
-  puppetPitchYawDegrees: 0
-  previewMaterial: {fileID: 0}
-  previewColor: {r: 1, g: 0.45, b: 0.1, a: 0.28}
-  previewFadeInSeconds: 0.15
   spawnPerFrame: 24
   cooldown: 20
