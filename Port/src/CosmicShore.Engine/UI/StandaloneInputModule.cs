@@ -107,6 +107,50 @@ namespace CosmicShore.Engine.UI
             HandlePointerExitAndEnter(e, currentOverGo);
         }
 
+        /// <summary>
+        /// Steps the selection along the navigation graph (gamepad dpad/stick, arrow
+        /// keys). Gated on <see cref="EventSystem.sendNavigationEvents"/> — the menu
+        /// turns that off in freestyle so the pad flies the ship, not the UI.
+        /// </summary>
+        public void Move(MoveDirection direction)
+        {
+            if (eventSystem == null || !eventSystem.sendNavigationEvents) return;
+            var selected = eventSystem.currentSelectedGameObject;
+            if (selected == null) return;
+
+            var axisData = new AxisEventData(eventSystem)
+            {
+                moveDir = direction,
+                moveVector = direction switch
+                {
+                    MoveDirection.Left => Vector2.left,
+                    MoveDirection.Right => Vector2.right,
+                    MoveDirection.Up => Vector2.up,
+                    MoveDirection.Down => Vector2.down,
+                    _ => Vector2.zero,
+                },
+            };
+            ExecuteEvents.Execute(selected, axisData, ExecuteEvents.moveHandler);
+        }
+
+        /// <summary>Submit (gamepad A / Enter) on the current selection — nav-gated.</summary>
+        public void Submit()
+        {
+            if (eventSystem == null || !eventSystem.sendNavigationEvents) return;
+            var selected = eventSystem.currentSelectedGameObject;
+            if (selected == null) return;
+            ExecuteEvents.Execute(selected, new BaseEventData(eventSystem), ExecuteEvents.submitHandler);
+        }
+
+        /// <summary>Cancel (gamepad B / Escape) on the current selection — nav-gated.</summary>
+        public void Cancel()
+        {
+            if (eventSystem == null || !eventSystem.sendNavigationEvents) return;
+            var selected = eventSystem.currentSelectedGameObject;
+            if (selected == null) return;
+            ExecuteEvents.Execute(selected, new BaseEventData(eventSystem), ExecuteEvents.cancelHandler);
+        }
+
         public void Scroll(Vector2 scrollDelta, Vector2 position)
         {
             var e = pointerData;

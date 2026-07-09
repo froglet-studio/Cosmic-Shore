@@ -36,6 +36,8 @@ namespace CosmicShore.Engine.UI
             (handler, data) => handler.OnSelect(data);
         public static EventFunction<IDeselectHandler> deselectHandler { get; } =
             (handler, data) => handler.OnDeselect(data);
+        public static EventFunction<IMoveHandler> moveHandler { get; } =
+            (handler, data) => handler.OnMove((AxisEventData)data);
         public static EventFunction<ISubmitHandler> submitHandler { get; } =
             (handler, data) => handler.OnSubmit(data);
         public static EventFunction<ICancelHandler> cancelHandler { get; } =

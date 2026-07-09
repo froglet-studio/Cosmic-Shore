@@ -33,11 +33,19 @@ namespace CosmicShore.Engine.UI
     /// </summary>
     public class Selectable : MonoBehaviour,
         IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler,
-        ISelectHandler, IDeselectHandler
+        ISelectHandler, IDeselectHandler, IMoveHandler
     {
         public enum Transition { None = 0, ColorTint = 1, SpriteSwap = 2, Animation = 3 }
 
         protected enum SelectionState { Normal = 0, Highlighted = 1, Pressed = 2, Selected = 3, Disabled = 4 }
+
+        // Live registry (original contract: allSelectables) — navigation searches it.
+        // GameLoop's fresh-world reset clears it alongside the raycaster registry.
+        static readonly System.Collections.Generic.List<Selectable> s_Selectables = new();
+
+        public static System.Collections.Generic.IReadOnlyList<Selectable> allSelectables => s_Selectables;
+
+        internal static void ResetRegistry() => s_Selectables.Clear();
 
         [SerializeField] bool m_Interactable = true;
         [SerializeField] Transition m_Transition = Transition.ColorTint;
@@ -47,6 +55,9 @@ namespace CosmicShore.Engine.UI
         [SerializeField] Sprite m_PressedSprite;
         [SerializeField] Sprite m_SelectedSprite;
         [SerializeField] Sprite m_DisabledSprite;
+        [SerializeField] Navigation m_Navigation = Navigation.defaultNavigation;
+
+        public Navigation navigation { get => m_Navigation; set => m_Navigation = value; }
 
         bool m_IsPointerInside;
         bool m_IsPointerDown;
@@ -89,6 +100,7 @@ namespace CosmicShore.Engine.UI
 
         protected virtual void OnEnable()
         {
+            if (!s_Selectables.Contains(this)) s_Selectables.Add(this);
             // If nothing wired the target graphic, adopt one on this object (original
             // editor-time default, resolved lazily here).
             m_TargetGraphic ??= gameObject.GetComponent<Graphic>();
@@ -97,6 +109,7 @@ namespace CosmicShore.Engine.UI
 
         protected virtual void OnDisable()
         {
+            s_Selectables.Remove(this);
             m_IsPointerInside = false;
             m_IsPointerDown = false;
             m_HasSelection = false;
@@ -141,6 +154,103 @@ namespace CosmicShore.Engine.UI
         {
             if (EventSystem.current == null) return;
             EventSystem.current.SetSelectedGameObject(gameObject);
+        }
+
+        // ── navigation (original contract) ───────────────────────────
+
+        public Selectable FindSelectableOnLeft()
+        {
+            if (m_Navigation.mode == Navigation.Mode.Explicit) return m_Navigation.selectOnLeft;
+            if (((int)m_Navigation.mode & (int)Navigation.Mode.Horizontal) != 0)
+                return FindSelectable(transform.rotation * Vector3.left);
+            return null;
+        }
+
+        public Selectable FindSelectableOnRight()
+        {
+            if (m_Navigation.mode == Navigation.Mode.Explicit) return m_Navigation.selectOnRight;
+            if (((int)m_Navigation.mode & (int)Navigation.Mode.Horizontal) != 0)
+                return FindSelectable(transform.rotation * Vector3.right);
+            return null;
+        }
+
+        public Selectable FindSelectableOnUp()
+        {
+            if (m_Navigation.mode == Navigation.Mode.Explicit) return m_Navigation.selectOnUp;
+            if (((int)m_Navigation.mode & (int)Navigation.Mode.Vertical) != 0)
+                return FindSelectable(transform.rotation * Vector3.up);
+            return null;
+        }
+
+        public Selectable FindSelectableOnDown()
+        {
+            if (m_Navigation.mode == Navigation.Mode.Explicit) return m_Navigation.selectOnDown;
+            if (((int)m_Navigation.mode & (int)Navigation.Mode.Vertical) != 0)
+                return FindSelectable(transform.rotation * Vector3.down);
+            return null;
+        }
+
+        /// <summary>
+        /// The best selectable in world direction <paramref name="dir"/> — original
+        /// scoring: candidates ahead of this rect's edge, ranked by dot ÷ distance²
+        /// (favors on-axis over merely-near).
+        /// </summary>
+        public Selectable FindSelectable(Vector3 dir)
+        {
+            dir = dir.normalized;
+            Vector3 localDir = Quaternion.Inverse(transform.rotation) * dir;
+            Vector3 searchOrigin = transform.TransformPoint(GetPointOnRectEdge(transform as RectTransform, localDir));
+
+            float maxScore = float.NegativeInfinity;
+            Selectable bestPick = null;
+
+            foreach (var candidate in s_Selectables)
+            {
+                if (candidate == this) continue;
+                if (!candidate.IsInteractable() || candidate.m_Navigation.mode == Navigation.Mode.None) continue;
+                if (!candidate.gameObject.activeInHierarchy || !candidate.enabled) continue;
+
+                var candidateRect = candidate.transform as RectTransform;
+                Vector3 candidateCenter = candidateRect != null ? (Vector3)candidateRect.rect.center : Vector3.zero;
+                Vector3 toCandidate = candidate.transform.TransformPoint(candidateCenter) - searchOrigin;
+
+                float dot = Vector3.Dot(dir, toCandidate);
+                if (dot <= 0f) continue;
+
+                float score = dot / toCandidate.sqrMagnitude;
+                if (score > maxScore)
+                {
+                    maxScore = score;
+                    bestPick = candidate;
+                }
+            }
+            return bestPick;
+        }
+
+        static Vector3 GetPointOnRectEdge(RectTransform rect, Vector3 dir)
+        {
+            if (rect == null) return Vector3.zero;
+            var r = rect.rect;
+            var dir2 = new Vector2(dir.x, dir.y);
+            if (dir2 != Vector2.zero) dir2 /= Mathf.Max(Mathf.Abs(dir2.x), Mathf.Abs(dir2.y));
+            return r.center + new Vector2(r.width * 0.5f * dir2.x, r.height * 0.5f * dir2.y);
+        }
+
+        void Navigate(AxisEventData eventData, Selectable target)
+        {
+            if (target != null && target.gameObject.activeInHierarchy)
+                eventData.selectedObject = target.gameObject;
+        }
+
+        public virtual void OnMove(AxisEventData eventData)
+        {
+            switch (eventData.moveDir)
+            {
+                case MoveDirection.Left: Navigate(eventData, FindSelectableOnLeft()); break;
+                case MoveDirection.Right: Navigate(eventData, FindSelectableOnRight()); break;
+                case MoveDirection.Up: Navigate(eventData, FindSelectableOnUp()); break;
+                case MoveDirection.Down: Navigate(eventData, FindSelectableOnDown()); break;
+            }
         }
 
         // ── event-system entry points ────────────────────────────────

@@ -711,25 +711,64 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc D part 2 — navigation + the remaining interactive controls
-   (headless).** The event CORE shipped (part 1 below). Now the gamepad
-   nav-ring foundation the menu needs (`ScreenSwitcher` toggles
-   `sendNavigationEvents` for freestyle input ownership): `MoveDirection` +
-   `AxisEventData` + `IMoveHandler`, `Selectable` navigation (the `Navigation`
-   struct — mode Automatic/Explicit/None, `FindSelectableOnLeft/Right/Up/Down`
-   over the live selectable registry via rect positions), module-level
-   move/submit/cancel dispatch (`Move` steps selection along the graph when
-   `sendNavigationEvents`; `Submit` → ISubmitHandler on the selection — Button
-   already implements it). THEN scope the remaining interactive controls the
-   menu actually uses (`Toggle`, `Slider`, `ScrollRect`, `Scrollbar`,
-   `TMP_InputField`, `TMP_Dropdown` — usage-scan `_Scripts/UI` first, skip
-   0-use types) and build the used subset over Selectable + the drag pipeline
-   (ScrollRect rides IBeginDrag/IDrag/IEndDrag, which part 1 proved). After
-   part 2, Arc D closes; Arc C (client render primitives) is open in parallel
-   any iteration.
+1. **Arc C — client render primitives (the first VISIBLE UI output).** The UI
+   framework's headless critical path (A→B→D) is COMPLETE. Now make the
+   client draw it: an embedded bitmap-font atlas (the client already draws
+   seven-segment digits via GL.Lines — a real glyph atlas replaces that), a
+   textured-quad + solid-rect path on the existing ortho pass (the client is
+   raw GL 3.3 with one vertex-color shader + bloom; add one textured/UI shader),
+   `DrawText`/`DrawRect` helpers, and then the bridge: render a REAL engine
+   canvas tree — walk canvases → graphics in draw order (the exact walk
+   GraphicRaycaster does), Image → tinted rect at its world corners, TMP_Text
+   → atlas text — so an Arc-A/B-laid-out panel appears on screen pixel-exact.
+   Gate: screenshot byte-check of a test canvas + the existing diags stay
+   byte-stable (UI pass off by default in the sims). This is windowed work —
+   xvfb screenshots verify. Arc F (ScreenSwitcher + the 6 menu screens) opens
+   after C proves canvas rendering; Arc G (windowed mode host) remains open in
+   parallel.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Arc D part 2 ✅ (2026-07-09) — navigation + used controls; ARC D CLOSED
+
+The gamepad nav-ring foundation + the interactive controls the project
+actually uses (usage-scanned: Toggle 36 files / Slider 8 / ScrollRect 6 /
+TMP_Dropdown 5 / TMP_InputField 7 — InputField/Dropdown growth rides with
+their Arc-F consumers since ported code only reads `.text` today; Scrollbar/
+Dropdown/ToggleGroup 0 uses, skipped):
+
+**`Engine.UI`:** `Navigation.cs` (MoveDirection, AxisEventData, IMoveHandler,
+the Navigation struct — None/Horizontal/Vertical/Automatic/Explicit +
+selectOn* links); **`Selectable` grown** — live registry (`allSelectables`,
+GameLoop fresh-world reset alongside the raycaster registry), `navigation`
+property, `FindSelectableOnLeft/Right/Up/Down` (Explicit follows authored
+links; Automatic searches the registry from the rect's edge with the
+original dot ÷ distance² scoring, skipping non-interactable/None/inactive
+candidates), `OnMove` navigating via `eventData.selectedObject`;
+**`StandaloneInputModule`** grew `Move`/`Submit`/`Cancel` — all gated on
+`EventSystem.sendNavigationEvents` (the exact flag `ScreenSwitcher` flips for
+freestyle pad ownership); **`Toggle`** (isOn/onValueChanged/
+SetIsOnWithoutNotify, click+submit flip, checkmark alpha — instant-apply like
+the Selectable tints); **`Slider`** (the REAL value model: clamp, wholeNumbers
+rounding, normalizedValue lerp, silent writes; handle/fill visual mapping
+documented as Arc-C work); **`ScrollRect`** (rides the proven drag pipeline:
+begin-drag anchors post-threshold exactly like the original, per-axis gates,
+Clamped slack bounds, wheel × scrollSensitivity, programmatic `velocity`
+flings decaying by decelerationRate in LateUpdate — the GameEventFeed's
+usage — normalized-position travel mapping both ways; Elastic clamps like
+Clamped headless, documented).
+
+**11 headless tests** (`EngineUiNavigationTests`): automatic-graph stepping
+(including off-the-end stays put), the sendNavigationEvents gate both ways,
+explicit links overriding positions, non-interactable candidates skipped,
+Submit driving the selected Button (nav-gated), Toggle flip/notify/silent
+write/checkmark alpha/interactable gate, Slider clamp/round/notify/silent/
+normalized round-trip, ScrollRect drag pan with threshold anchoring + slack
+clamp, wheel sensitivity, velocity fling decay in the loop (600-tick tail to
+zero, never past slack), normalized both-axis round-trips. **1610 tests green
+in BOTH configs (1272 + 338)**; 5 CLI modes exit 0; both client diags
+byte-identical (`trail 786` / `toys 12`). bleeding-edge unmoved at `f2b8f5aa`.
 
 ### Arc D part 1 ✅ (2026-07-09) — the event-system core (headless)
 
@@ -958,7 +997,7 @@ several loop iterations, each ends green+pushed):
 | **A** ✅ | Engine UI geometry: `RectTransform` (anchors/pivot/sizeDelta/anchoredPosition/rect) + `Canvas` + `CanvasScaler` + rect-solve layout pass | 5 | UI framework | ✅ fully |
 | **B** ✅ | UGUI component model: `Image`/`Graphic`, `LayoutGroup` (H/V/Grid), `LayoutElement`, `ContentSizeFitter`, `Mask`/`RectMask2D` — real layout-participating components | 5 | UI framework | ✅ fully |
 | **C** | Client render primitives: embedded bitmap-font atlas + textured-quad shader + `DrawText`/`DrawRect` on the ortho pass; draw laid-out rects from A/B | 5 | render | screenshot byte-check |
-| **D** | Input/event layer: `EventSystem` + `PointerEventData` + `Selectable`/`Button` hit-testing wired to Silk.NET mouse/gamepad + gamepad nav-ring | 5 | UI framework | ✅ synthetic events |
+| **D** ✅ | Input/event layer: `EventSystem` + `PointerEventData` + `Selectable`/`Button` hit-testing + gamepad nav-ring (Silk.NET hardware feed deferred to Arc H — same synthetic-injection seam) | 5 | UI framework | ✅ synthetic events |
 | **E** | Content bridge: a Unity YAML→first-party-scene extractor (new `Port/tools/`) scoped to the UGUI subset (RectTransform/Canvas/Image/TMP/Button/LayoutGroups/CanvasGroup) + script-GUID→type map, so `Menu_Main` imports rather than being hand-transcribed. **Decision point when it opens** — confirm extractor-vs-hand-authoring scope with the prompter (large sub-project). | 7 | content | round-trip parity |
 | **F** | Port `ScreenSwitcher` + `IScreen` + the 6 screens + `ModalWindowManager`, wired to the live `MainMenuController` + `PlayerDataService`. **Milestone sub-goal: menu renders + navigates + is testable.** | 5 | UI framework | ✅ + screenshot |
 | **G** | Windowed game-mode host: generalize `SkimRaceFactory` into a mode-agnostic factory instantiating the REAL arcade controllers (reuse the CLI `*Round.cs` wiring that already proves them headless) | 3/5 | mode host | ✅ construction |

@@ -65,6 +65,7 @@ namespace CosmicShore.Engine
             // loop disposal skips OnDisable, so the old world's registrations and
             // queued marks would otherwise leak into this one.
             UI.BaseRaycaster.ResetRegistry();
+            UI.Selectable.ResetRegistry();
             UI.LayoutRebuilder.ResetQueue();
             UI.EventSystem.current = null;
             Scene = new Scene(sceneName);
