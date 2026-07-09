@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76efb4f6e4f141f9baa24dba097db159, type: 3}
+  m_Name: SquirrelTubeAction
+  m_EditorClassIdentifier:
+  prism: {fileID: 4563009547826722997, guid: 7b267f607ed6bde46908cd599dd95472, type: 3}
+  danger: 1
+  radius: 8
+  segments: 8
+  rings: 44
+  ringSpacing: 6
+  prismScale: 6
+  forwardOffset: 24
+  previewMaterial: {fileID: 0}
+  previewColor: {r: 1, g: 0.45, b: 0.1, a: 0.28}
+  previewFadeInSeconds: 0.15
+  spawnPerFrame: 24
+  cooldown: 20

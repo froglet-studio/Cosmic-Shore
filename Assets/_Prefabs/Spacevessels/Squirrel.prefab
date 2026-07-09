@@ -8746,6 +8746,7 @@ MonoBehaviour:
   decayBoost: 1
   MaxBoostMultiplier: 5
   BoostDecayRate: 0.3
+  singleTriggerDrift: 1
   DriftDamping: 0
   boostChanged: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
   MinimumSpeed: 0
@@ -8939,26 +8940,26 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ShowTopMostFoldoutHeaderGroup: 1
   _executors: {fileID: 9105512684531825410}
-  _inputEventShipActions:
-  - InputEvent: 11
-    ShipActions:
-    - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}
-    - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
-  - InputEvent: 12
-    ShipActions:
-    - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}
-    - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
-  - InputEvent: 13
-    ShipActions:
-    - {fileID: 11400000, guid: af287adc12873b24ebd5de2b46fc444a, type: 2}
-    - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
+  _inputEventShipActions: []
   _resourceEventClassActions: []
   _touchActionOverrides:
   - InputEvent: 12
     ShipActions:
     - {fileID: 11400000, guid: af287adc12873b24ebd5de2b46fc444a, type: 2}
+    - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}
     - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
-  _gamepadActionOverrides: []
+  - InputEvent: 11
+    ShipActions:
+    - {fileID: 11400000, guid: 8e5c3de8b0bf4202bb1036130bcff192, type: 2}
+  _gamepadActionOverrides:
+  - InputEvent: 2
+    ShipActions:
+    - {fileID: 11400000, guid: af287adc12873b24ebd5de2b46fc444a, type: 2}
+    - {fileID: 11400000, guid: aa095c07c8cd0374698884d1a44dbdec, type: 2}
+    - {fileID: 11400000, guid: ca0139e36e14b1c4ba0b9fb12808d8cb, type: 2}
+  - InputEvent: 1
+    ShipActions:
+    - {fileID: 11400000, guid: 8e5c3de8b0bf4202bb1036130bcff192, type: 2}
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
   onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
@@ -11583,6 +11584,7 @@ Transform:
   m_Children:
   - {fileID: 3385562412690502085}
   - {fileID: 5991205547472762995}
+  - {fileID: 7788112233445566779}
   m_Father: {fileID: 5928382658856804067}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &9105512684531825410
@@ -11599,6 +11601,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _executors:
   - {fileID: 2317382454779808403}
+  - {fileID: 7788112233445566780}
 --- !u!1 &7872272122743391098
 GameObject:
   m_ObjectHideFlags: 0
@@ -15294,3 +15297,48 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   debugLog: 0
+--- !u!1 &7788112233445566778
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7788112233445566779}
+  - component: {fileID: 7788112233445566780}
+  m_Layer: 0
+  m_Name: SquirrelTubeActionExecutor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7788112233445566779
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7788112233445566778}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8075578658670966254}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7788112233445566780
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7788112233445566778}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 32b33e1ed2484f50a02e78e895fd4809, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
