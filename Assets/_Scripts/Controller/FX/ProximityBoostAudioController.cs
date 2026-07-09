@@ -112,6 +112,17 @@ namespace CosmicShore.Gameplay.Audio
             "registers.")]
         float tickEpsilon = 0.02f;
 
+        [SerializeField, Range(0f, 0.5f), Tooltip(
+            "Minimum real-time seconds between successive boost-tick one-shots. " +
+            "Dense continuous skimming (conveyor / skim-race) pins BoostMultiplier " +
+            "at max, where per-frame boost decay + a per-frame skim contact makes " +
+            "EVERY frame a fresh rising edge. Without this cap the one-shot " +
+            "machine-guns at frame rate (60-200/sec) and fuses into a harsh " +
+            "'crashing' buzz instead of distinct skim clicks. ~0.07 caps it at " +
+            "~14 clicks/sec — fast enough to read as rapid skimming, slow enough " +
+            "to stay percussive. 0 = no rate limit (legacy).")]
+        float minTickInterval = 0.07f;
+
         [Header("Loop Smoothing")]
         [SerializeField, Range(0f, 30f), Tooltip(
             "Exponential smoothing rate for the boost amount parameter on " +
@@ -193,6 +204,10 @@ namespace CosmicShore.Gameplay.Audio
         // independent of normalisation, so we don't miss a tick if base /
         // max change at runtime.
         float _lastRawMultiplier = float.NaN;
+
+        // Real-time stamp of the last boost-tick one-shot, for minTickInterval
+        // rate limiting. Unscaled so it's independent of any timescale change.
+        float _lastTickTime = float.NegativeInfinity;
 
         void Awake()
         {
@@ -370,6 +385,17 @@ namespace CosmicShore.Gameplay.Audio
         /// </summary>
         void FireTickOneShot()
         {
+            // Rate limit: continuous skimming can make every frame a rising edge
+            // (see minTickInterval). Cap the one-shot cadence so it reads as rapid
+            // skim clicks rather than a frame-rate buzz. The loop layer + boost
+            // gameplay are unaffected — only the audible one-shot is throttled.
+            if (minTickInterval > 0f)
+            {
+                float now = Time.unscaledTime;
+                if (now - _lastTickTime < minTickInterval) return;
+                _lastTickTime = now;
+            }
+
             float volume = ResolveSFXVolume();
 
             if (attachTickEventToShip)

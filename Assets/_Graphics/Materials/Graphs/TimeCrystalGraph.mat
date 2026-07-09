@@ -71,7 +71,7 @@ Material:
     - _ZWrite: 0
     - _ZWriteControl: 0
     m_Colors:
-    - _BrightCrystalColor: {r: 0, g: 0.2470588, b: 0.227451, a: 1}
-    - _DullCrystalColor: {r: 0, g: 0.07843138, b: 0.09803922, a: 1}
+    - _BrightCrystalColor: {r: 0.0, g: 1.0, b: 0.92063509, a: 1.0}
+    - _DullCrystalColor: {r: 0.0, g: 0.68000003, b: 0.85, a: 1.0}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

@@ -140,7 +140,7 @@ Material:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
     - _BrightCrystalColor: {r: 3.9999995, g: 1.6925262, b: 0, a: 0.9411765}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
-    - _DullCrystalColor: {r: 0.5058824, g: 0.08688408, b: 0, a: 0.9411765}
+    - _DullCrystalColor: {r: 0.85, g: 0.14598545, b: 0.0, a: 0.9411765}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
     - _playerColor1: {r: 0.9056604, g: 0.7079565, b: 0, a: 0}

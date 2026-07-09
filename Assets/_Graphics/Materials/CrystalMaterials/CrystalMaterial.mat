@@ -138,7 +138,7 @@ Material:
     - _spread: 0.005
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
-    - _BrightCrystalColor: {r: 0.042591315, g: 0.37450984, b: 0, a: 0.9411765}
+    - _BrightCrystalColor: {r: 0.11372549, g: 1.0, b: 0.0, a: 0.9411765}
     - _Color: {r: 1, g: 1, b: 1, a: 1}
     - _DullCrystalColor: {r: 0, g: 0.021958865, b: 0.9622642, a: 0.9411765}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}

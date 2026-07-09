@@ -35,7 +35,7 @@ Material:
     - _BrightCrystalColor: {r: 1.9743518, g: 4.8700967, b: 0.6119494, a: 0.9411765}
     - _Color1: {r: 0.68790275, g: 2.1822639, b: 0.34761727, a: 1}
     - _Color2: {r: 0.091280505, g: 0.34117648, b: 0.0039215777, a: 1}
-    - _DullCrystalColor: {r: 0.106299736, g: 0.39607844, b: 0, a: 0.9411765}
+    - _DullCrystalColor: {r: 0.22812344, g: 0.85, b: 0.0, a: 0.9411765}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
 --- !u!114 &4655690307531630582

@@ -297,3 +297,38 @@ boot/spawn path. In rough priority:
    lighten/disable the freestyle post Volume (costs some of the vaporwave look — conveyor spirit).
 4. **Squirrel cosmetics** — `NudgeShardPoolManager` (skimmer tube-marker FX) and the Squirrel HUD /
    element bars are safe heavy cuts (both faded/idle in freestyle) but need prefab edits.
+
+## Follow-up fixes — throttle audio buzz + dim crystals
+
+Two regressions surfaced in play-testing the stripped build:
+
+1. **Throttle "crashing sound"** — `ProximityBoostAudioController.FireTickOneShot()` fired the
+   Skim one-shot (`event:/SFX/Oneshots/Gameplay sfx/Skim`) on *every* rising edge of
+   `BoostMultiplier`, with no minimum interval. In the dense continuous skimming of conveyor /
+   skim-race the boost pins at max, where per-frame decay (`VesselTransformer.DecayBoost`) + a
+   per-frame skimmer-prism contact (`SkimmerBoostPrismEffectSO.Execute` adds `0.1` > `tickEpsilon`
+   `0.02`) makes **every frame** a fresh rising edge. The one-shot machine-gunned at frame rate
+   (60–200/sec) and fused into a harsh buzz that masked the engine loop — worse the harder you
+   throttle (higher speed sustains the continuous-skim state). Fix: added a serialized
+   `minTickInterval` (default **0.07 s** ≈ 14 clicks/sec, unscaled-time gated) that rate-limits the
+   one-shot only. The boost gameplay and the (unused-on-Squirrel) loop layer are untouched.
+   File: `_Scripts/Controller/FX/ProximityBoostAudioController.cs`.
+
+2. **Crystals too dim (no bloom)** — the crystal shader (ShepardGraph) fresnel-blends
+   `_BrightCrystalColor` → `_DullCrystalColor`. Gameplay authored these to be lifted by HDR + the
+   gameplay Bloom override (threshold 2.5, needs HDR); the perf strip turns HDR **and**
+   post-processing off, so the raw LDR colors show through and read dark (the menu/omni crystal was
+   dark green `0.048,0.265,0`). Re-enabling HDR + full post would reverse the three biggest perf
+   wins, so instead the crystals' intrinsic LDR brightness was raised: for each of the 23 crystal
+   materials, the displayed (HDR-clamped) color is scaled so its brightest channel reaches a target
+   (**bright → 1.0, dull → 0.85**), hue and alpha preserved, and **never darkened** — HDR-authored
+   cores (Time/Charge/Exploding/ActiveTime, channels already >1) are left as-is; only dim LDR
+   crystals brighten. Perf-free (no HDR, no bloom pass). Flora/fauna spindle materials that share
+   the shader (`*Fringe*`, `*Spindle*`, `Inverse*`) were excluded.
+   Files: `_Graphics/Materials/CrystalMaterials/*.mat`, `ShieldedCrystalMaterial.mat`,
+   `ActiveSpaceCrystalMaterial.mat`, `Graphs/TimeCrystalGraph.mat`.
+
+   *If the actual glow halo is wanted back (not just brightness), the cheapest path is a bloom-only
+   pass with HDR left off: keep `renderPostProcessing` on in `PerfStripRuntime`, set the Bloom
+   override `threshold < 1` (so LDR near-white crystals bloom) on the GamePlay + MainMenu profiles.
+   That costs one post pass — deferred in favor of the perf-free brightness lift.*
