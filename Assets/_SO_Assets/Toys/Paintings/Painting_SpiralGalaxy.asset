@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PaintingDefinitionSO
   paintingId: painting_spiral_galaxy
   displayName: Spiral Galaxy
-  description: Three colour-streamed arms winding out of a blazing bulge and impressionist disk.
+  description: A two-arm grand design: dust lanes, an old-gold bulge, stars streaming along the arms.
   strokes: []
   sourceShape: {fileID: 0}
   sourceShapeDomain: 4

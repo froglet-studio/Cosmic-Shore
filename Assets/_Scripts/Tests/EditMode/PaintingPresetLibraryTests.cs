@@ -245,9 +245,19 @@ namespace CosmicShore.Tests
             Assert.Greater(b.size.y, 0.05f * W, $"{preset} has no y-extent");
             Assert.Greater(b.size.z, 0.05f * W, $"{preset} is planar — no z-extent");
 
-            // Grandiose: eclipses the Taj Mahal (55 strokes / 15·W) on both axes.
-            Assert.GreaterOrEqual(strokes.Count, 40, $"{preset} is not grandiose enough");
-            Assert.Greater(PaintingPresetLibrary.TotalPathLength(strokes), 20f * W, $"{preset} is too short");
+            // Grandiose: eclipses or matches the Taj Mahal in flight. Reference-grade rebuilds keep
+            // HONEST proportions, so minimums are per-preset — a trefoil tube is 19 elegant strokes,
+            // not 40 padded ones, and a true-scale DNA molecule flies ~14·W.
+            var (minStrokes, minPathW) = preset switch
+            {
+                PaintingPreset.TorusKnot => (18, 30f),
+                PaintingPreset.DoubleHelix => (60, 12f),
+                PaintingPreset.Rose => (50, 15f),
+                PaintingPreset.SpiralGalaxy => (100, 15f),
+                _ => (40, 20f),
+            };
+            Assert.GreaterOrEqual(strokes.Count, minStrokes, $"{preset} is not grandiose enough");
+            Assert.Greater(PaintingPresetLibrary.TotalPathLength(strokes), minPathW * W, $"{preset} is too short");
 
             // Every segment flyable: no NaN, no degenerate (<0.4u) or unflyable (>0.65·W) jump.
             foreach (var s in strokes)
@@ -286,11 +296,34 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void Buckyball_HasTwelvePentagonsAndTwentyHexagons()
+        public void Buckyball_HasTwelvePentagonsTwentyHexagonsThirtyDoubleBonds()
         {
             var strokes = PaintingPresetLibrary.Generate(PaintingPreset.Buckyball, 1000f);
             Assert.AreEqual(12, strokes.Count(s => s.name.StartsWith("Pentagon")), "a soccer ball has 12 pentagons");
             Assert.AreEqual(20, strokes.Count(s => s.name.StartsWith("Hexagon")), "a soccer ball has 20 hexagons");
+            Assert.AreEqual(30, strokes.Count(s => s.name.StartsWith("Double Bond")),
+                "C60 has exactly 30 hexagon-hexagon (6:6) double bonds");
+        }
+
+        [Test]
+        public void ReferenceRebuilds_KeepTheirAnatomy()
+        {
+            // The reference-grade forms carry their real structural counts — locked so a future tweak
+            // can't silently drop the anatomy that makes them read as real.
+            var nautilus = PaintingPresetLibrary.Generate(PaintingPreset.Nautilus, 900f);
+            Assert.AreEqual(58, nautilus.Count(s => s.name.StartsWith("Growth Line")),
+                "the nautilus reads real because of its growth-line ribs");
+
+            var dna = PaintingPresetLibrary.Generate(PaintingPreset.DoubleHelix, 900f);
+            Assert.AreEqual(4, dna.Count(s => s.name.StartsWith("Backbone")), "two strands, ribboned = 4 helices");
+            Assert.AreEqual(28, dna.Count(s => s.name.EndsWith("Purine")), "10 bp/turn × 2.8 turns");
+
+            var galaxy = PaintingPresetLibrary.Generate(PaintingPreset.SpiralGalaxy, 1200f);
+            Assert.AreEqual(2, galaxy.Count(s => s.name.EndsWith("Dust Lane")), "grand designs have TWO arms");
+
+            var lotus = PaintingPresetLibrary.Generate(PaintingPreset.Lotus, 900f);
+            Assert.AreEqual(36, lotus.Count(s => s.name.StartsWith("Stamen")));
+            Assert.AreEqual(16, lotus.Count(s => s.name.StartsWith("Seed")), "the pod carries its embedded seeds");
         }
     }
 }

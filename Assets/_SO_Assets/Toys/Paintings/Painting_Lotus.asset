@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PaintingDefinitionSO
   paintingId: painting_lotus
   displayName: Lotus
-  description: Sixty petals on the golden-angle spiral, opening from a shimmering core.
+  description: Nelumbo anatomy: lily pads, three petal whorls, a stamen ring, the seed pod.
   strokes: []
   sourceShape: {fileID: 0}
   sourceShapeDomain: 4

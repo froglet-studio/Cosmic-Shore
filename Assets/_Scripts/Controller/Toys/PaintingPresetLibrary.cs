@@ -522,371 +522,572 @@ namespace CosmicShore.Gameplay
             return pts;
         }
 
-        static Domains DomainByRadius(float r, float mid, float outer)
-            => r > outer ? Domains.Jade : r > mid ? Domains.Ruby : Domains.Gold;
-
-        // ── Nautilus — chambered logarithmic-spiral shell ────────────────────────
+        // ── Nautilus — the real shell: logarithmic helico-spiral SURFACE ─────────
         //
-        // A true equiangular whorl (growth ×3/turn) climbing a cone, its internal septa dividing the
-        // chambers, wrapped in an impressionist mother-of-pearl sheen. XZ disc, +Y rise → spins about
-        // +Y showing nested chambers parallax. ~90 strokes, ~24·W.
+        // Reference model: the equiangular shell (r = a·e^(kθ)) with an embracing tube whorl
+        // (tube/coil ratio ρ≈0.52, reniform flattening 0.86, expansion ≈2.5×/turn — a chambered-
+        // nautilus fit). Rendered the way a real shell reads: whorl-margin spirals, 58 growth-line
+        // ribs (the shell's visible increments), alternating stripe banding, and the bold aperture.
 
         static List<PaintingStroke> Nautilus(float W)
         {
-            var rng = new Tk.Rng(1105);
             var s = new List<PaintingStroke>();
-            Vector3 U = Vector3.right, V = Vector3.forward, A = Vector3.up;
-            float a = 0.0106f * W, b = 0.175f, H = 0.30f * W, thMax = 3.5f * Mathf.PI * 2f;
-            float rOuter = a * Mathf.Exp(b * thMax);          // ≈0.50W
-            float RisePerRad = H / thMax;
+            float k = Mathf.Log(2.5f) / (Mathf.PI * 2f);
+            float thMax = 3.35f * Mathf.PI * 2f;
+            const float rho = 0.52f, axFlat = 0.86f;
+            float Rs = 0.42f * W / (Mathf.Exp(k * thMax) * (1f + rho));
+            float ms = Mathf.Max(5f, 0.007f * W);
 
-            Vector3 WhorlPt(float th, float outMul, float axMul)
+            Vector3 P(float th, float phi)
             {
-                float r = a * Mathf.Exp(b * th);
-                float rho = 0.22f * r;
-                Vector3 outward = U * Mathf.Cos(th) + V * Mathf.Sin(th);
-                Vector3 c = outward * r + A * (RisePerRad * th);
-                return c + outward * (outMul * rho) + A * (axMul * rho);
+                float R = Rs * Mathf.Exp(k * th);
+                float rr = rho * R;
+                var rd = new Vector3(Mathf.Cos(th), Mathf.Sin(th), 0f);
+                Vector3 c = rd * R;
+                return new Vector3(c.x + rd.x * Mathf.Cos(phi) * rr,
+                                   c.y + rd.y * Mathf.Cos(phi) * rr,
+                                   Mathf.Sin(phi) * rr * axFlat);
             }
-            List<Vector3> Rim(float outMul, float axMul, int n)
-            {
-                var p = new List<Vector3>(n + 1);
-                for (int i = 0; i <= n; i++) p.Add(WhorlPt(thMax * (i / (float)n), outMul, axMul));
-                return p;
-            }
+            float th0 = Mathf.Max(0f, Mathf.Log(0.035f * W / Rs) / k);
 
-            // Four tube-surface whorls (broadest curvature), banded by growth-ring age.
-            s.Add(St("Outer Whorl", Domains.Jade, Rim(1f, 0f, 200)));
-            s.Add(St("Crown Rim", Domains.Ruby, Rim(0f, 1f, 190)));
-            s.Add(St("Keel Rim", Domains.Ruby, Rim(0f, -1f, 190)));
-            s.Add(St("Inner Whorl", Domains.Gold, Rim(-1f, 0f, 180)));
-
-            // Aperture — the open mouth at the large end.
+            List<Vector3> Spiral(float phiDeg, float thStart, int n)
             {
-                float th = thMax, r = a * Mathf.Exp(b * th), rho = 0.22f * r;
-                Vector3 outward = U * Mathf.Cos(th) + V * Mathf.Sin(th);
-                Vector3 c = outward * r + A * (RisePerRad * th);
-                s.Add(St("Aperture", Domains.Jade, Circle(c, A, outward, rho * 1.05f, 22)));
+                float phi = phiDeg * Mathf.Deg2Rad;
+                var pts = new List<Vector3>(n + 1);
+                for (int i = 0; i <= n; i++) pts.Add(P(thStart + (thMax - thStart) * i / n, phi));
+                return Tk.MinSegFilter(pts, ms);
             }
 
-            // Chamber septa (mid detail): walls perpendicular to the whorl, biased to the open end.
-            for (int k = 0; k < 14; k++)
+            // Whorl-margin spirals (broadest curvature): outer lip, front rim, inner suture, back rim.
+            s.Add(St("Outer Lip", Domains.Jade, Spiral(0f, th0, 240)));
+            s.Add(St("Front Rim", Domains.Ruby, Spiral(90f, th0, 240)));
+            s.Add(St("Inner Suture", Domains.Gold, Spiral(180f, th0, 240)));
+            s.Add(St("Back Rim", Domains.Ruby, Spiral(270f, th0, 240)));
+            // Fine surface spirals between the margins (skip the tight core).
+            foreach (float phiDeg in new[] { 45f, 135f, 225f, 315f })
+                s.Add(St($"Surface {phiDeg:0}", Domains.Jade, Spiral(phiDeg, th0 + 2.2f, 170)));
+
+            // Growth-line ribs — the shell's real increments, alternating stripe colours.
+            const int ribs = 58;
+            float thRib0 = th0 + 1.6f;
+            for (int i = 0; i < ribs; i++)
             {
-                float th = Mathf.Lerp(thMax * 0.28f, thMax, k / 13f);
-                float r = a * Mathf.Exp(b * th), rho = 0.22f * r;
-                Vector3 outward = U * Mathf.Cos(th) + V * Mathf.Sin(th);
-                Vector3 c = outward * r + A * (RisePerRad * th);
-                s.Add(St($"Septum {k + 1}", DomainByRadius(r, 0.14f * W, 0.30f * W),
-                    Arc(c, A, outward, rho, 0f, 200f, 12)));
+                float th = Mathf.Lerp(thRib0, thMax, i / (ribs - 1f));
+                var ring = new List<Vector3>();
+                for (int a = -168; a <= 168; a += 12) ring.Add(P(th, a * Mathf.Deg2Rad));
+                s.Add(St($"Growth Line {i + 1}", i % 2 == 0 ? Domains.Ruby : Domains.Gold,
+                    Tk.MinSegFilter(ring, ms)));
             }
 
-            // Mother-of-pearl sheen (finest): impressionist strokes hugging the shell annulus.
-            s.AddRange(Impression(84,
-                r =>
-                {
-                    float th = r.Range(thMax * 0.22f, thMax);
-                    float rr = a * Mathf.Exp(b * th), rho = 0.22f * rr;
-                    Vector3 outward = U * Mathf.Cos(th) + V * Mathf.Sin(th);
-                    return outward * rr + A * (RisePerRad * th) + r.OnUnitSphere() * (rho * 0.85f);
-                },
-                p => DomainByRadius(new Vector2(p.x, p.z).magnitude, 0.14f * W, 0.30f * W),
-                rng, 1106, W, curlK: 3.2f, arcLen: 0.14f * W, prefix: "Nacre", batch: true));
-
+            // The aperture — the bold open mouth at the living end.
+            var mouth = new List<Vector3>();
+            for (int a = 0; a <= 360; a += 10) mouth.Add(P(thMax, a * Mathf.Deg2Rad));
+            s.Add(St("Aperture", Domains.Jade, Tk.MinSegFilter(mouth, ms)));
             return s;
         }
 
-        // ── Lotus — phyllotaxis petals opening in true 3D ────────────────────────
+        // ── Lotus — real Nelumbo nucifera anatomy ────────────────────────────────
+        //
+        // The sacred lotus as it actually grows: two notched lily pads with radial veins (Jade),
+        // three whorls of obovate cupped petals (8+8+6, arching open — Ruby), a dense ring of 36
+        // arcing stamens with anther hooks (Gold), and the iconic shower-head receptacle pod with
+        // its embedded seeds (Gold). Proportions from the living flower, not a mandala.
+
+        static (List<Vector3> outline, List<Vector3> vein, List<List<Vector3>> sideVeins) LotusPetal(
+            Vector3 baseC, float azim, float tiltDeg, float archDeg, float len, float wMax, float cup)
+        {
+            Vector3 up = Vector3.up;
+            var radial = new Vector3(Mathf.Cos(azim), 0f, Mathf.Sin(azim));
+            Vector3 side = Vector3.Cross(up, radial).normalized;
+
+            const int NS = 14;
+            var spine = new List<Vector3>(NS + 1) { baseC };
+            Vector3 p = baseC;
+            for (int i = 0; i < NS; i++)
+            {
+                float t = (i + 0.5f) / NS;
+                float a = (tiltDeg - archDeg * t) * Mathf.Deg2Rad; // arches open as it rises
+                p += (radial * Mathf.Cos(a) + up * Mathf.Sin(a)) * (len / NS);
+                spine.Add(p);
+            }
+
+            float HalfW(float t) => wMax * Mathf.Sin(Mathf.PI * Mathf.Min(1f, Mathf.Pow(t, 1.35f))); // obovate
+
+            var edgeL = new List<Vector3>(); var edgeR = new List<Vector3>();
+            for (int i = 0; i <= NS; i++)
+            {
+                float t = i / (float)NS;
+                float w = HalfW(t);
+                float a = (tiltDeg - archDeg * t) * Mathf.Deg2Rad;
+                Vector3 nrm = radial * -Mathf.Sin(a) + up * Mathf.Cos(a); // spine normal (tilt plane)
+                edgeL.Add(spine[i] - side * w + nrm * (cup * w));
+                edgeR.Add(spine[i] + side * w + nrm * (cup * w));
+            }
+            var outline = new List<Vector3>(edgeL);
+            for (int i = edgeR.Count - 1; i >= 0; i--) outline.Add(edgeR[i]);
+            outline.Add(edgeL[0]);
+
+            var sideVeins = new List<List<Vector3>>();
+            foreach (float sgn in new[] { -1f, 1f })
+            {
+                var sv = new List<Vector3>();
+                for (int i = 0; i <= NS; i++)
+                {
+                    float t = i / (float)NS;
+                    if (t < 0.08f) continue;
+                    float w = HalfW(t) * 0.55f;
+                    float a = (tiltDeg - archDeg * t) * Mathf.Deg2Rad;
+                    Vector3 nrm = radial * -Mathf.Sin(a) + up * Mathf.Cos(a);
+                    sv.Add(spine[i] + side * (sgn * w) + nrm * (cup * w * 0.6f));
+                }
+                sideVeins.Add(sv);
+            }
+            return (outline, spine, sideVeins);
+        }
 
         static List<PaintingStroke> Lotus(float W)
         {
-            var rng = new Tk.Rng(606);
             var s = new List<PaintingStroke>();
-            Vector3 A = Vector3.up;
-            int N = 60;
-            float R = 0.50f * W, c = R / Mathf.Sqrt(N);
+            float ms = Mathf.Max(5f, 0.007f * W);
+            float podTopY = 0.30f * W, podBaseY = 0.16f * W;
+            float podTopR = 0.105f * W, podBaseR = 0.05f * W;
 
-            // Base pads (broadest): three concentric ground rings.
-            foreach (var (rr, name) in new[] { (0.52f * W, "Outer Pad"), (0.42f * W, "Mid Pad"), (0.30f * W, "Inner Pad") })
-                s.Add(St(name, Domains.Jade, Circle(Vector3.zero, Vector3.right, Vector3.forward, rr, Mathf.Max(24, (int)(rr / 14f)))));
-
-            // Petals by phyllotaxis, authored outer→inner so the domain gate flips only at ring seams.
-            void Ring(int nFrom, int nTo, Domains domain, string tag)
+            // Lily pads (Jade): round leaves with the characteristic rim notch + radial veins.
+            foreach (var (px, pz, pr, rot) in new[]
+                     { (-0.30f * W, 0.10f * W, 0.26f * W, 0.6f), (0.28f * W, -0.14f * W, 0.22f * W, 2.9f) })
             {
-                for (int n = nFrom; n <= nTo; n++)
+                var c = new Vector3(px, 0.012f * W, pz);
+                var rim = new List<Vector3>();
+                for (int a = 0; a < 349; a += 6)
                 {
-                    float ang = n * 2.39996323f;                 // golden angle (rad)
-                    float rn = c * Mathf.Sqrt(n);
-                    Vector3 radial = new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang));
-                    float f = n / (float)N;
-                    float len = 0.10f * W + 0.14f * W * f;
-                    float tilt = Mathf.Deg2Rad * (80f - 70f * f);   // inner near-vertical, outer flat
-                    Vector3 outDir = radial * Mathf.Cos(tilt) + A * Mathf.Sin(tilt);
-                    float baseY = 0.42f * W * Mathf.Pow(Mathf.Max(0f, 1f - (rn / R) * (rn / R)), 1.6f);
-                    Vector3 baseC = radial * (rn * 0.5f) + A * baseY;
-                    s.Add(St($"{tag} Petal {n}", domain,
-                        Tk.PetalLoop(baseC, outDir, A, len, 0.4f * len, 0.35f, 5)));
+                    float ang = rot + (a + 6) * Mathf.Deg2Rad;
+                    rim.Add(c + new Vector3(Mathf.Cos(ang) * pr, 0.008f * W * Mathf.Sin(3f * ang), Mathf.Sin(ang) * pr));
+                }
+                s.Add(St("Pad Rim", Domains.Jade, Tk.MinSegFilter(rim, ms)));
+                for (int v = 0; v < 9; v++)
+                {
+                    float ang = rot + (20f + v * 36f) * Mathf.Deg2Rad;
+                    var tip = c + new Vector3(Mathf.Cos(ang) * pr * 0.94f, 0.006f * W, Mathf.Sin(ang) * pr * 0.94f);
+                    s.Add(St("Pad Vein", Domains.Jade, Tk.EnforceMaxSegment(new List<Vector3> { c, tip }, 0.10f * W)));
                 }
             }
-            Ring(41, 60, Domains.Jade, "Outer");
-            Ring(16, 40, Domains.Ruby, "Mid");
-            Ring(1, 15, Domains.Gold, "Bud");
 
-            // Stamen core (finest): a shimmering impressionist ball lifted into the flower's heart.
-            s.AddRange(Impression(48,
-                r => r.InUnitBall() * (0.10f * W) + A * (0.37f * W),
-                _ => Domains.Gold, rng, 607, W, curlK: 6f, arcLen: 0.10f * W, prefix: "Stamen"));
+            // Petal whorls (Ruby), outer→inner: (count, offsetDeg, tiltDeg, archDeg, length, halfWidth).
+            var whorls = new[]
+            {
+                (8, 0f, 38f, 30f, 0.335f * W, 0.105f * W),
+                (8, 22.5f, 58f, 26f, 0.285f * W, 0.095f * W),
+                (6, 45f, 76f, 20f, 0.225f * W, 0.075f * W),
+            };
+            int wi = 0;
+            foreach (var (count, offs, tilt, arch, len, wMax) in whorls)
+            {
+                wi++;
+                for (int i = 0; i < count; i++)
+                {
+                    float az = offs * Mathf.Deg2Rad + Mathf.PI * 2f * i / count;
+                    Vector3 baseC = new Vector3(Mathf.Cos(az), 0f, Mathf.Sin(az)) * (0.075f * W)
+                                    + Vector3.up * (podBaseY - 0.02f * W);
+                    var (outline, vein, sideVeins) = LotusPetal(baseC, az, tilt, arch, len, wMax, 0.34f);
+                    s.Add(St($"Whorl {wi} Petal {i + 1}", Domains.Ruby,
+                        Tk.MinSegFilter(Tk.CatmullRom(outline, 2), ms)));
+                    s.Add(St($"Whorl {wi} Vein {i + 1}", Domains.Ruby, Tk.MinSegFilter(vein, ms)));
+                    foreach (var sv in sideVeins)
+                        s.Add(St($"Whorl {wi} Side Vein {i + 1}", Domains.Ruby, Tk.MinSegFilter(sv, ms)));
+                }
+            }
 
+            // Stamens (Gold): 36 arcing filaments ending in anther hooks.
+            var rng = new Tk.Rng(707);
+            for (int i = 0; i < 36; i++)
+            {
+                float az = Mathf.PI * 2f * i / 36f + rng.Range(-0.05f, 0.05f);
+                var rd = new Vector3(Mathf.Cos(az), 0f, Mathf.Sin(az));
+                Vector3 p0 = rd * (0.075f * W) + Vector3.up * (podBaseY - 0.01f * W);
+                Vector3 p1 = rd * (0.105f * W) + Vector3.up * (podBaseY + 0.05f * W);
+                Vector3 p2 = rd * (0.125f * W) + Vector3.up * (podBaseY + 0.10f * W + rng.Range(0f, 0.02f * W));
+                Vector3 hook = p2 - rd * (0.012f * W) + Vector3.up * (0.014f * W);
+                s.Add(St($"Stamen {i + 1}", Domains.Gold,
+                    Tk.MinSegFilter(Tk.CatmullRom(new List<Vector3> { p0, p1, p2, hook }, 4), ms)));
+            }
+
+            // Receptacle pod (Gold): top rim, fluted sides, and the phyllotaxis of embedded seeds.
+            var top = new List<Vector3>();
+            for (int i = 0; i <= 28; i++)
+            {
+                float a = Mathf.PI * 2f * i / 28f;
+                top.Add(new Vector3(Mathf.Cos(a) * podTopR, podTopY, Mathf.Sin(a) * podTopR));
+            }
+            s.Add(St("Pod Rim", Domains.Gold, Tk.MinSegFilter(top, ms)));
+            for (int i = 0; i < 10; i++)
+            {
+                float az = Mathf.PI * 2f * i / 10f;
+                var rd = new Vector3(Mathf.Cos(az), 0f, Mathf.Sin(az));
+                s.Add(St($"Pod Flute {i + 1}", Domains.Gold, new List<Vector3>
+                {
+                    rd * podBaseR + Vector3.up * podBaseY,
+                    rd * (podTopR * 0.94f) + Vector3.up * (podTopY - 0.01f * W),
+                    rd * podTopR + Vector3.up * podTopY,
+                }));
+            }
+            for (int i = 0; i < 16; i++)
+            {
+                float ang = i * 2.39996323f;
+                float rr = i == 0 ? 0f : podTopR * 0.72f * Mathf.Sqrt(i / 15f);
+                float sx = Mathf.Cos(ang) * rr, sz = Mathf.Sin(ang) * rr;
+                float r = 0.016f * W;
+                var seed = new List<Vector3>();
+                for (int j = 0; j <= 10; j++)
+                {
+                    float a = Mathf.PI * 2f * j / 10f;
+                    seed.Add(new Vector3(sx + Mathf.Cos(a) * r, podTopY + 0.004f * W, sz + Mathf.Sin(a) * r));
+                }
+                s.Add(St($"Seed {i + 1}", Domains.Gold, Tk.MinSegFilter(seed, Mathf.Max(3f, ms * 0.6f))));
+            }
             return s;
         }
 
-        // ── Rose — nested spiral bloom of cupped petals ──────────────────────────
+        // ── Rose — the real bloom: furled heart + recurved petal rims + sepals ───
+        //
+        // What actually reads as "rose": the nested spiral of petal RIMS whose ends flare outward
+        // and roll down (the recurved edge), rising to a furled heart. Plus the plant: stem and five
+        // splayed sepals. The rims sit on the golden-angle spiral like real petal phyllotaxis.
+
+        static List<Vector3> RoseRim(float R, float h, float azim, float spanDeg, float roll)
+        {
+            var pts = new List<Vector3>(19);
+            float span = spanDeg * Mathf.Deg2Rad;
+            for (int i = 0; i < 19; i++)
+            {
+                float t = i / 18f;
+                float a = azim + span * (t - 0.5f);
+                float edge = Mathf.Abs(2f * t - 1f);
+                float rr = R * (1f + 0.16f * edge * edge);       // ends flare outward
+                float y = h - roll * Mathf.Pow(edge, 1.7f);      // ends roll down — the recurve
+                pts.Add(new Vector3(Mathf.Cos(a) * rr, y, Mathf.Sin(a) * rr));
+            }
+            return pts;
+        }
 
         static List<PaintingStroke> Rose(float W)
         {
-            var rng = new Tk.Rng(1414);
             var s = new List<PaintingStroke>();
-            Vector3 A = Vector3.up;
-            int N = 45;
-            float R = 0.50f * W;
+            float ms = Mathf.Max(5f, 0.007f * W);
+            const int N = 26;
+            float bloomR = 0.34f * W, baseY = 0.30f * W;
 
-            // Collar guide spiral (broadest).
-            s.Add(St("Collar", Domains.Jade,
-                LogSpiralBand(Vector3.zero, Vector3.right, Vector3.forward, A, 0.05f * W, 0.20f,
-                    0.06f * W, 0.48f * W, 0.14f * W / (Mathf.PI * 2f), 150)));
-
-            void Ring(int nFrom, int nTo, Domains domain, string tag)
+            // Stem (Jade): a gentle S from the ground to the bloom.
+            s.Add(St("Stem", Domains.Jade, Tk.MinSegFilter(Tk.CatmullRom(new List<Vector3>
             {
-                for (int n = nFrom; n <= nTo; n++)
+                new(0.02f * W, 0f, 0.01f * W), new(-0.015f * W, 0.10f * W, -0.01f * W),
+                new(0.01f * W, 0.22f * W, 0.005f * W), new(0f, baseY, 0f),
+            }, 8), ms)));
+            // Five sepals (Jade): long, pointed, splayed under the bloom with down-curling tips.
+            for (int i = 0; i < 5; i++)
+            {
+                float az = Mathf.PI * 2f * i / 5f + 0.35f;
+                var rd = new Vector3(Mathf.Cos(az), 0f, Mathf.Sin(az));
+                s.Add(St($"Sepal {i + 1}", Domains.Jade, Tk.MinSegFilter(Tk.CatmullRom(new List<Vector3>
                 {
-                    float ang = n * 2.39996323f;
-                    float rn = R * Mathf.Pow(n / (float)N, 0.62f);
-                    Vector3 radial = new Vector3(Mathf.Cos(ang), 0f, Mathf.Sin(ang));
-                    float f = n / (float)N;
-                    float len = 0.12f * W + 0.16f * W * f;
-                    float tilt = Mathf.Deg2Rad * (88f - 78f * f);
-                    float cup = 0.55f - 0.25f * f;
-                    Vector3 outDir = radial * Mathf.Cos(tilt) + A * Mathf.Sin(tilt);
-                    float baseY = 0.40f * W * Mathf.Pow(Mathf.Max(0f, 1f - (rn / R) * (rn / R)), 2.0f);
-                    Vector3 baseC = radial * (rn * 0.5f) + A * baseY;
-                    s.Add(St($"{tag} Petal {n}", domain,
-                        Tk.PetalLoop(baseC, outDir, A, len, 0.45f * len, cup, 5)));
-                }
+                    rd * (0.02f * W) + Vector3.up * baseY,
+                    rd * (0.16f * W) + Vector3.up * (baseY + 0.015f * W),
+                    rd * (0.26f * W) + Vector3.up * (baseY - 0.03f * W),
+                    rd * (0.30f * W) + Vector3.up * (baseY - 0.085f * W),
+                }, 5), ms)));
             }
-            Ring(31, 45, Domains.Jade, "Open");
-            Ring(13, 30, Domains.Ruby, "Mid");
-            Ring(1, 12, Domains.Gold, "Furl");
 
-            // Velvet interior (finest): impressionist strokes hugging the bloom dome.
-            s.AddRange(Impression(70,
-                r =>
-                {
-                    Vector3 d = r.OnUnitSphere(); d.y = Mathf.Abs(d.y);
-                    float rr = r.Range(0.05f * W, 0.46f * W);
-                    Vector3 p = new Vector3(d.x, 0f, d.z).normalized * rr;
-                    p.y = 0.40f * W * Mathf.Pow(Mathf.Max(0f, 1f - (rr / R) * (rr / R)), 2.0f) + r.Range(-0.03f * W, 0.03f * W);
-                    return p;
-                },
-                p => DomainByRadius(new Vector2(p.x, p.z).magnitude, 0.15f * W, 0.33f * W),
-                rng, 1415, W, curlK: 5f, arcLen: 0.14f * W, prefix: "Velvet", batch: true));
+            // Petal rims on the golden spiral, drawn broadest (outermost) first.
+            var rims = new List<(float f, float R, float h, float az, float span, float roll)>();
+            for (int i = 0; i < N; i++)
+            {
+                float f = i / (N - 1f);                                       // 0 = innermost
+                rims.Add((f,
+                    bloomR * (0.13f + 0.87f * Mathf.Pow(f, 1.25f)),
+                    baseY + 0.30f * W * (1f - 0.55f * f),                     // heart rises
+                    i * 2.39996323f,
+                    100f + 120f * f,                                          // outer wrap wider
+                    0.020f * W + 0.075f * W * f));                            // outer roll harder
+            }
+            rims.Sort((a, b) => b.R.CompareTo(a.R));
+            int pi = 0;
+            foreach (var (f, R, h, az, span, roll) in rims)
+            {
+                pi++;
+                Domains dom = f > 0.18f ? Domains.Ruby : Domains.Gold;
+                var rim = RoseRim(R, h, az, span, roll);
+                s.Add(St($"Petal Rim {pi}", dom, Tk.MinSegFilter(Tk.CatmullRom(rim, 2), ms)));
+                // one fold line per petal, from the rim mid down into the cup
+                Vector3 mid = rim[rim.Count / 2];
+                var inner = new Vector3(mid.x * 0.55f, h - 0.075f * W * (0.3f + 0.7f * f), mid.z * 0.55f);
+                s.Add(St($"Petal Fold {pi}", dom, new List<Vector3>
+                    { mid, Vector3.Lerp(mid, inner, 0.55f), inner }));
+            }
 
+            // The furled heart (Gold): a tight rising double spiral at the centre.
+            var heart = new List<Vector3>();
+            for (int i = 0; i <= 60; i++)
+            {
+                float t = i / 60f;
+                float th = t * 4.4f * Mathf.PI;
+                float r = 0.012f * W * Mathf.Exp(0.42f * th / (Mathf.PI * 2f) * 2.2f);
+                heart.Add(new Vector3(Mathf.Cos(th) * r, baseY + 0.305f * W + 0.02f * W * t, Mathf.Sin(th) * r));
+            }
+            s.Add(St("Furled Heart", Domains.Gold, Tk.MinSegFilter(heart, Mathf.Max(3f, ms * 0.6f))));
             return s;
         }
 
-        // ── Buckyball — truncated-icosahedron soccer ball ────────────────────────
+        // ── Buckyball — exact C60 with its 6:6 double bonds ──────────────────────
+        //
+        // The mathematically exact truncated icosahedron (12 pentagons + 20 hexagons, planar faces)
+        // plus real fullerene chemistry: the 30 hexagon–hexagon edges are C60's double bonds, drawn
+        // as inset parallel dashes. No decorative noise — the object IS the ornament.
 
         static List<PaintingStroke> Buckyball(float W)
         {
-            var rng = new Tk.Rng(32);
             var s = new List<PaintingStroke>();
-            float Rc = 0.50f * W, cy = 0.52f * W;
-            Vector3 C = new(0f, cy, 0f);
+            float ms = Mathf.Max(5f, 0.007f * W);
+            float Rc = 0.48f * W;
+            var C = new Vector3(0f, 0.50f * W, 0f);
             Tk.SoccerBallFaces(out var pentagons, out var hexagons);
 
-            List<Vector3> Face(Vector3[] loop, string _)
+            List<Vector3> Face(Vector3[] loop)
             {
                 var pts = new List<Vector3>(loop.Length);
                 foreach (var v in loop) pts.Add(C + v * Rc);
-                return Tk.CatmullRom(pts, 4, closed: false);
+                return Tk.MinSegFilter(Tk.CatmullRom(pts, 3), ms);
             }
 
-            // Three great-circle gimbal rings (broadest silhouette).
-            s.Add(St("Ring X", Domains.Jade, Circle(C, Vector3.up, Vector3.forward, Rc, 40)));
-            s.Add(St("Ring Y", Domains.Jade, Circle(C, Vector3.right, Vector3.forward, Rc, 40)));
-            s.Add(St("Ring Z", Domains.Jade, Circle(C, Vector3.right, Vector3.up, Rc, 40)));
+            for (int i = 0; i < hexagons.Count; i++) s.Add(St($"Hexagon {i + 1}", Domains.Ruby, Face(hexagons[i])));
+            for (int i = 0; i < pentagons.Count; i++) s.Add(St($"Pentagon {i + 1}", Domains.Gold, Face(pentagons[i])));
 
-            // 20 hexagon panels (Ruby) then 12 pentagon panels (Gold) — the soccer-ball two-tone.
-            for (int i = 0; i < hexagons.Count; i++) s.Add(St($"Hexagon {i + 1}", Domains.Ruby, Face(hexagons[i], "hex")));
-            for (int i = 0; i < pentagons.Count; i++) s.Add(St($"Pentagon {i + 1}", Domains.Gold, Face(pentagons[i], "pent")));
-
-            // Plasma nimbus (finest): impressionist shell just outside the cage, tri-sected by azimuth.
-            s.AddRange(Impression(40,
-                r => C + r.OnUnitSphere() * (Rc * 1.06f),
-                p => Tk.DomainFromScalar((Mathf.Atan2(p.z, p.x) + Mathf.PI) / (Mathf.PI * 2f)),
-                rng, 33, W, curlK: 3.2f, arcLen: 0.15f * W, prefix: "Nimbus", batch: true));
-
+            // 30 double bonds (Jade): inset dashes along every hexagon–hexagon edge.
+            Tk.SoccerBallDoubleBonds(out Vector3[] bondA, out Vector3[] bondB);
+            for (int i = 0; i < bondA.Length; i++)
+            {
+                Vector3 qa = C + Vector3.Lerp(bondA[i], bondB[i], 0.15f).normalized * Rc;
+                Vector3 qb = C + Vector3.Lerp(bondA[i], bondB[i], 0.85f).normalized * Rc;
+                qa = Vector3.Lerp(qa, C, 0.045f);
+                qb = Vector3.Lerp(qb, C, 0.045f);
+                s.Add(St($"Double Bond {i + 1}", Domains.Jade, new List<Vector3> { qa, qb }));
+            }
             return s;
         }
 
-        // ── Torus Knot — a woven (3,2) trefoil in a plasma sheath ────────────────
+        // ── Torus Knot — a clean (3,2) trefoil TUBE ──────────────────────────────
+        //
+        // The exact knot rendered as an engineered tube: six longitudinal frame lines on
+        // rotation-minimizing frames (one full barber-pole twist), twelve circumference rings,
+        // and the bright spine thread. Pure geometry, machine-clean.
 
         static List<PaintingStroke> TorusKnotPreset(float W)
         {
-            var rng = new Tk.Rng(232);
             var s = new List<PaintingStroke>();
-            float R = 0.34f * W, r = 0.13f * W, cy = 0.52f * W;
-            Vector3 C = new(0f, cy, 0f);
+            float ms = Mathf.Max(5f, 0.007f * W);
+            float R = 0.335f * W, rT = 0.14f * W, tube = 0.052f * W;
+            var C = new Vector3(0f, 0.52f * W, 0f);
 
-            var spine = Tk.TorusKnot(3, 2, R, r, 240);
-            for (int i = 0; i < spine.Count; i++) spine[i] += C;
+            const int NP = 300;
+            var spine = new List<Vector3>(NP + 1);
+            for (int i = 0; i <= NP; i++)
+            {
+                float t = (i / (float)NP) * Mathf.PI * 2f;
+                float ring = R + rT * Mathf.Cos(2f * t);
+                spine.Add(C + new Vector3(ring * Mathf.Cos(3f * t), rT * Mathf.Sin(2f * t), ring * Mathf.Sin(3f * t)));
+            }
 
-            // Torus guide rings (broadest) — the surface the knot lives on.
-            s.Add(St("Torus Equator", Domains.Jade, Circle(C, Vector3.right, Vector3.forward, R, 40)));
-            s.Add(St("Torus Girth", Domains.Jade, Circle(C + Vector3.right * R, Vector3.up, Vector3.forward, r, 20)));
+            var longs = Tk.TubeLongitudes(spine, tube, 6, 1);
+            Domains[] doms = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Jade, Domains.Ruby, Domains.Gold };
+            for (int k = 0; k < longs.Count; k++)
+                s.Add(St($"Longitude {k + 1}", doms[k], Tk.MinSegFilter(longs[k], ms)));
 
-            // The primary knot centreline (one long non-planar stroke).
-            s.Add(St("Trefoil", Domains.Gold, new List<Vector3>(spine)));
+            Tk.TransportFrames(spine, out Vector3[] normals, out Vector3[] binormals);
+            int ringIdx = 0;
+            for (int i = 0; i < NP; i += 25)
+                s.Add(St($"Ring {++ringIdx}", Domains.Gold,
+                    Tk.MinSegFilter(Tk.TubeRing(spine, normals, binormals, i, tube * 1.02f, 14), Mathf.Max(3f, ms * 0.7f))));
 
-            // Braided rope: five strands woven around the spine, cycling colour.
-            Domains[] strandCols = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Jade, Domains.Ruby };
-            for (int k = 0; k < 5; k++)
-                s.Add(St($"Strand {k + 1}", strandCols[k], Tk.FrameStrand(spine, k, 5, 0.35f * r, 2.0f)));
-
-            // Plasma sheath (finest): impressionist strokes seeded on the tube surface.
-            s.AddRange(Impression(44,
-                rg =>
-                {
-                    int idx = rg.RangeInt(0, spine.Count);
-                    Vector3 n = (spine[idx] - C); n.y = 0f;
-                    if (n.sqrMagnitude < 1e-4f) n = Vector3.right;
-                    return spine[idx] + n.normalized * (1.2f * r * rg.Range(0.6f, 1f));
-                },
-                p => Tk.DomainFromScalar((Mathf.Atan2(p.z, p.x) + Mathf.PI) / (Mathf.PI * 2f)),
-                rng, 233, W, curlK: 4f, arcLen: 0.12f * W, prefix: "Sheath", batch: true));
-
+            s.Add(St("Spine", Domains.Jade, Tk.MinSegFilter(spine, ms)));
             return s;
         }
 
-        // ── Double Helix — B-DNA with base pairs and a hydration shell ───────────
+        // ── Double Helix — true B-DNA proportions ────────────────────────────────
+        //
+        // Real B-DNA: pitch/diameter = 1.7 (3.4 nm / 2.0 nm), 10 base pairs per turn, strands offset
+        // 144° so the major and minor grooves read. Backbones as ribbons (two parallel helices per
+        // strand) with phosphate ticks; each base pair is a purine + pyrimidine meeting off-centre.
 
         static List<PaintingStroke> DoubleHelix(float W)
         {
-            var rng = new Tk.Rng(909);
             var s = new List<PaintingStroke>();
-            float aRad = 0.09f * W, H = 1.0f * W, delta = 2.513f; // 144° B-DNA phase
-            int turns = 5;
+            float ms = Mathf.Max(5f, 0.007f * W);
+            float d = 0.20f * W, r = d * 0.5f;
+            float pitch = 1.7f * d;
+            const float turns = 2.8f, delta = 2.51f;
+            float thMax = Mathf.PI * 2f * turns;
 
-            Vector3 BB(float th, float phase) => new(aRad * Mathf.Cos(th + phase),
-                H * th / (Mathf.PI * 2f * turns), aRad * Mathf.Sin(th + phase));
-            List<Vector3> Backbone(float phase, int seg)
-            {
-                var p = new List<Vector3>(seg + 1);
-                for (int i = 0; i <= seg; i++) p.Add(BB(Mathf.PI * 2f * turns * (i / (float)seg), phase));
-                return p;
-            }
+            Vector3 BB(float th, float ph) => new(r * Mathf.Cos(th + ph),
+                pitch * th / (Mathf.PI * 2f), r * Mathf.Sin(th + ph));
 
-            // Two backbones (broadest) + two fattening groove ribbons.
-            s.Add(St("Backbone A", Domains.Jade, Backbone(0f, 220)));
-            s.Add(St("Backbone B", Domains.Gold, Backbone(delta, 220)));
-            s.Add(St("Groove A", Domains.Jade, Backbone(0.14f, 200)));
-            s.Add(St("Groove B", Domains.Gold, Backbone(delta + 0.14f, 200)));
-
-            // Base-pair rungs (mid) — 40 bowed cross-links, twisting with the ladder.
-            for (int k = 0; k < 40; k++)
-            {
-                float th = Mathf.PI * 2f * turns * (k / 39f);
-                Vector3 p1 = BB(th, 0f), p2 = BB(th, delta);
-                Vector3 mid = (p1 + p2) * 0.5f + new Vector3(0f, 0f, 0f);
-                Vector3 bow = (mid - new Vector3(0f, mid.y, 0f)); // radial-out from the axis
-                if (bow.sqrMagnitude < 1e-4f) bow = Vector3.right;
-                mid += bow.normalized * (0.05f * aRad);
-                s.Add(St($"Base Pair {k + 1}", Domains.Ruby, Tk.CatmullRom(new List<Vector3> { p1, mid, p2 }, 3)));
-            }
-
-            // Hydration shell (finest): impressionist swirl in the [a,2a] annulus up the tower.
-            s.AddRange(Impression(46,
-                r =>
+            // Each strand as a ribbon: two parallel helices offset along the axis.
+            foreach (var (ph, dom, tag) in new[] { (0f, Domains.Jade, "A"), (delta, Domains.Gold, "B") })
+                foreach (float off in new[] { -0.011f * W, 0.011f * W })
                 {
-                    float y = r.Range(0f, H);
-                    float ang = r.Range(0f, Mathf.PI * 2f);
-                    float rr = r.Range(aRad, 2f * aRad);
-                    return new Vector3(Mathf.Cos(ang) * rr, y, Mathf.Sin(ang) * rr);
-                },
-                p => Tk.DomainFromScalar(p.y / H), rng, 910, W, curlK: 3f, arcLen: 0.12f * W, prefix: "Solvent", batch: true));
+                    var pts = new List<Vector3>(201);
+                    for (int i = 0; i <= 200; i++)
+                        pts.Add(BB(thMax * i / 200f, ph) + Vector3.up * off);
+                    s.Add(St($"Backbone {tag}", dom, Tk.MinSegFilter(pts, ms)));
+                }
 
+            // Base pairs: 10 per turn; purine (long, from A) meets pyrimidine (short, from B) off-centre.
+            int nbp = Mathf.RoundToInt(10f * turns);
+            for (int k = 0; k < nbp; k++)
+            {
+                float th = thMax * k / (nbp - 1f);
+                Vector3 pA = BB(th, 0f), pB = BB(th, delta);
+                Vector3 meet = Vector3.Lerp(pA, pB, 0.58f);
+                s.Add(St($"Base {k + 1} Purine", Domains.Ruby, new List<Vector3> { pA, Vector3.Lerp(pA, meet, 0.5f), meet }));
+                s.Add(St($"Base {k + 1} Pyrimidine", Domains.Ruby, new List<Vector3> { pB, Vector3.Lerp(pB, meet, 0.5f), meet }));
+            }
+
+            // Phosphate ticks: short outward dashes, five per turn per strand.
+            foreach (var (ph, dom) in new[] { (0f, Domains.Jade), (delta, Domains.Gold) })
+            {
+                int nt = Mathf.RoundToInt(5f * turns);
+                for (int k = 0; k < nt; k++)
+                {
+                    float th = thMax * (k + 0.5f) / nt;
+                    Vector3 p = BB(th, ph);
+                    var outw = new Vector3(p.x, 0f, p.z).normalized;
+                    s.Add(St("Phosphate", dom, new List<Vector3>
+                        { p, p + outw * (0.022f * W) + Vector3.up * (0.008f * W) }));
+                }
+            }
             return s;
         }
 
-        // ── Spiral Galaxy — log-spiral arms + impressionist starfield ────────────
+        // ── Spiral Galaxy — a 2-arm grand design, inclined like the real sky ─────
         //
-        // Three interleaved log-spiral streams (one per domain) wind out of a blazing bulge into a
-        // flattened impressionist disk wrapped in a faint spherical halo. Faces +Z (XY disc plane),
-        // spins about +Z like a pinwheel. ~150 strokes, ~40·W.
+        // Grand-design spirals have TWO arms (M81, M51): log-spiral ridges at 17° pitch with edge
+        // lines, dust lanes hugging the concave side (Ruby — HII/dust reads red), an old-gold bulge,
+        // and a disk of star STREAKS aligned with local orbital motion, densest along the arms
+        // (young blue stars — Jade). The whole disk is inclined 22°, the way we actually see them.
 
         static List<PaintingStroke> SpiralGalaxy(float W)
         {
-            var rng = new Tk.Rng(1010);
             var s = new List<PaintingStroke>();
+            float ms = Mathf.Max(4f, 0.006f * W);
+            var C = new Vector3(0f, 0.55f * W, 0f);
             Vector3 U = Vector3.right, V = Vector3.up, Ax = Vector3.forward;
-            float cy = 0.60f * W;
-            Vector3 C = new(0f, cy, 0f);
-            float Rd = 0.50f * W, b = 0.268f;
-            float a0 = 0.05f * W;
+            float Rd = 0.55f * W, b = Mathf.Tan(17f * Mathf.Deg2Rad), r0 = 0.085f * W;
+            float thMax = Mathf.Log(Rd / r0) / b;
 
-            // Arm colour = which of three 120°-offset spirals a point is nearest (self-colouring streams).
-            Domains ArmSector(Vector3 p)
+            Vector3 SpiralPt(float th, float phase, float rext, float zoff)
             {
-                Vector3 d = p - C;
-                float u = Vector3.Dot(d, U), v = Vector3.Dot(d, V);
-                float rr = Mathf.Sqrt(u * u + v * v);
-                float th = Mathf.Atan2(v, u);
-                float thp = th - Mathf.Log(Mathf.Max(rr, a0) / a0) / b;
-                float frac = thp / (Mathf.PI * 2f);
-                frac -= Mathf.Floor(frac);
-                return Tk.DomainFromScalar(frac);
+                float rr = r0 * Mathf.Exp(b * th) + rext;
+                float a = th + phase;
+                return C + U * (Mathf.Cos(a) * rr) + V * (Mathf.Sin(a) * rr) + Ax * zoff;
             }
-            Func<Vector3, Vector3> flatten = p =>
+
+            for (int arm = 0; arm < 2; arm++)
             {
-                Vector3 d = p - C;
-                return C + U * Vector3.Dot(d, U) + V * Vector3.Dot(d, V) + Ax * (Vector3.Dot(d, Ax) * 0.24f);
-            };
-
-            // Halo shell (broadest, faintest).
-            s.AddRange(Impression(28, r => C + r.OnUnitSphere() * (0.60f * W), ArmSector,
-                rng, 1011, W, curlK: 0.85f, arcLen: 0.35f * W, prefix: "Halo", batch: true));
-
-            // Disk field (the bulk of the impressionism).
-            s.AddRange(Impression(58,
-                r =>
+                float phase = arm * Mathf.PI;
+                var ridge = new List<Vector3>(151);
+                for (int i = 0; i <= 150; i++) ridge.Add(SpiralPt(thMax * i / 150f, phase, 0f, 0f));
+                s.Add(St($"Arm {arm + 1} Ridge", Domains.Jade, Tk.MinSegFilter(ridge, ms)));
+                foreach (float sgn in new[] { -1f, 1f })
                 {
-                    float rr = 0.5f * Rd * (-Mathf.Log(1f - r.Range(0.02f, 0.98f)));
-                    rr = Mathf.Min(rr, Rd);
-                    float ang = r.Range(0f, Mathf.PI * 2f);
-                    return C + (U * Mathf.Cos(ang) + V * Mathf.Sin(ang)) * rr + Ax * (0.06f * W * r.Range(-1f, 1f));
-                },
-                ArmSector, rng, 1012, W, curlK: 2f, arcLen: 0.22f * W, project: flatten, prefix: "Disk", batch: true));
-
-            // Three spiral arm ridges + dust lanes (structural), each domain one arm.
-            Domains[] armCols = { Domains.Jade, Domains.Ruby, Domains.Gold };
-            for (int arm = 0; arm < 3; arm++)
-            {
-                float phase = arm * (Mathf.PI * 2f / 3f);
-                Vector3 u2 = U * Mathf.Cos(phase) + V * Mathf.Sin(phase);
-                Vector3 v2 = -U * Mathf.Sin(phase) + V * Mathf.Cos(phase);
-                var ridge = LogSpiralBand(C, u2, v2, Ax, a0, b, 0.05f * W, Rd, 0f, 120);
-                for (int i = 0; i < ridge.Count; i++)
-                {
-                    float t = i / (float)(ridge.Count - 1);
-                    ridge[i] += Ax * (0.05f * W * Mathf.Sin(t * Mathf.PI * 4f));
+                    var edge = new List<Vector3>(141);
+                    for (int i = 0; i <= 140; i++)
+                    {
+                        float th = thMax * i / 140f;
+                        float wloc = 0.045f * W * (1f - 0.55f * th / thMax);
+                        edge.Add(SpiralPt(th, phase, sgn * wloc, 0f));
+                    }
+                    s.Add(St($"Arm {arm + 1} Edge", Domains.Jade, Tk.MinSegFilter(edge, ms)));
                 }
-                s.Add(St($"Arm {arm + 1}", armCols[arm], ridge));
+                var dust = new List<Vector3>(131);
+                for (int i = 0; i <= 130; i++)
+                {
+                    float th = thMax * (0.12f + 0.88f * i / 130f);
+                    dust.Add(SpiralPt(th, phase, -0.055f * W * (1f - 0.4f * th / thMax), 0.008f * W));
+                }
+                s.Add(St($"Arm {arm + 1} Dust Lane", Domains.Ruby, Tk.MinSegFilter(dust, ms)));
             }
 
-            // Bulge core (tight, brightest) + three core whirls.
-            s.AddRange(Impression(40, r => C + Scale(r.InUnitBall(), new Vector3(1f, 1f, 0.6f)) * (0.15f * W),
-                ArmSector, rng, 1013, W, curlK: 8f, arcLen: 0.10f * W, prefix: "Core", batch: true));
-            for (int k = 0; k < 3; k++)
-                s.Add(St($"Whirl {k + 1}", armCols[k], Tk.Helix(C, Ax, 0.06f * W, 0.02f * W, 3f, 40)));
+            // Bulge (Gold): concentric flattened ellipses + short old-star streaks.
+            foreach (var (rr, fl) in new[] { (0.075f * W, 0.72f), (0.055f * W, 0.78f), (0.035f * W, 0.85f) })
+            {
+                var ring = new List<Vector3>(27);
+                for (int i = 0; i <= 26; i++)
+                {
+                    float a = Mathf.PI * 2f * i / 26f;
+                    ring.Add(C + U * (Mathf.Cos(a) * rr) + V * (Mathf.Sin(a) * rr * fl));
+                }
+                s.Add(St("Bulge Ring", Domains.Gold, Tk.MinSegFilter(ring, Mathf.Max(3f, ms * 0.6f))));
+            }
+            var rng = new Tk.Rng(4242);
+            for (int i = 0; i < 26; i++)
+            {
+                float a = rng.Range(0f, Mathf.PI * 2f);
+                float rr = 0.065f * W * Mathf.Sqrt(rng.Next01());
+                Vector3 p = C + U * (Mathf.Cos(a) * rr) + V * (Mathf.Sin(a) * rr * 0.75f)
+                            + Ax * (rng.Range(-0.02f, 0.02f) * W * 0.5f);
+                Vector3 tang = (U * -Mathf.Sin(a) + V * (Mathf.Cos(a) * 0.75f)).normalized;
+                float L = 0.020f * W;
+                s.Add(St("Core Star", Domains.Gold, new List<Vector3> { p - tang * (L / 2f), p + tang * (L / 2f) }));
+            }
 
+            // Disk star streaks (Jade), Monte-Carlo sampled with density concentrated along the arms;
+            // occasional HII knots (Ruby) sitting right on the arms.
+            float ArmDist(float rr, float a)
+            {
+                float th = Mathf.Log(Mathf.Max(rr, r0 * 0.7f) / r0) / b;
+                float dd = Mathf.Repeat(a - th, Mathf.PI * 2f);
+                float d1 = Mathf.Min(dd, Mathf.PI * 2f - dd);
+                float d2 = Mathf.Abs(dd - Mathf.PI);
+                return Mathf.Min(d1, Mathf.Min(d2, Mathf.PI * 2f - d2));
+            }
+            int stars = 0;
+            for (int tries = 0; stars < 150 && tries < 6000; tries++)
+            {
+                float rr = -0.24f * W * Mathf.Log(1f - rng.Range(0.02f, 0.985f));
+                if (rr < 0.09f * W || rr > 0.56f * W) continue;
+                float a = rng.Range(0f, Mathf.PI * 2f);
+                float dd = ArmDist(rr, a);
+                if (rng.Next01() > 0.88f * Mathf.Exp(-(dd / 0.55f) * (dd / 0.55f)) + 0.12f) continue;
+                float z = rng.Range(-1f, 1f) * 0.015f * W * Mathf.Exp(-rr / (0.3f * W));
+                Vector3 p = C + U * (Mathf.Cos(a) * rr) + V * (Mathf.Sin(a) * rr) + Ax * z;
+                Vector3 tang = (U * -Mathf.Sin(a) + V * Mathf.Cos(a)).normalized;
+                Vector3 radv = U * Mathf.Cos(a) + V * Mathf.Sin(a);
+                Vector3 streak = (tang + radv * (b * 0.8f)).normalized;
+                float L = 0.030f * W + 0.025f * W * rng.Next01();
+                if (dd < 0.30f && rng.Next01() < 0.30f && stars % 3 == 0)
+                {
+                    float kr = 0.008f * W + 0.006f * W * rng.Next01();
+                    var knot = new List<Vector3>(9);
+                    for (int j = 0; j <= 8; j++)
+                    {
+                        float ka = Mathf.PI * 2f * j / 8f;
+                        knot.Add(p + U * (Mathf.Cos(ka) * kr) + V * (Mathf.Sin(ka) * kr));
+                    }
+                    s.Add(St("HII Knot", Domains.Ruby, knot));
+                }
+                else
+                {
+                    Vector3 e0 = p - streak * (L / 2f), e1 = p + streak * (L / 2f);
+                    s.Add(St("Star Streak", Domains.Jade, new List<Vector3> { e0, Vector3.Lerp(e0, e1, 0.5f), e1 }));
+                }
+                stars++;
+            }
+
+            // Incline the whole galaxy 22° about x — the aspect we actually see them at.
+            float ci = Mathf.Cos(22f * Mathf.Deg2Rad), si = Mathf.Sin(22f * Mathf.Deg2Rad);
+            foreach (var st in s)
+                for (int i = 0; i < st.points.Count; i++)
+                {
+                    Vector3 q = st.points[i] - C;
+                    st.points[i] = C + new Vector3(q.x, q.y * ci - q.z * si, q.y * si + q.z * ci);
+                }
             return s;
         }
 
@@ -1245,8 +1446,6 @@ namespace CosmicShore.Gameplay
 
             return s;
         }
-
-        static Vector3 Scale(Vector3 a, Vector3 b) => new(a.x * b.x, a.y * b.y, a.z * b.z);
 
         // ── Geometry helpers ─────────────────────────────────────────────────────
 

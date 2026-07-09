@@ -93,15 +93,19 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
 - **Feedback juice.** Waypoint-collect VFX, gate-pass SFX/haptics (AudioSystem gameplay SFX +
   NiceVibrations — the framework-wide audio item below), a subtle beam from station to its
   monument so ownership reads at a glance.
-- **More paintings — SHIPPED (12 grandiose 3D constructions).** The preset library now composes a
-  dedicated **`PaintingStrokeToolkit`** (deterministic PRNG, parametric curves — Catmull-Rom, helix,
-  log-spiral, torus knot, phyllotaxis, truncated-icosahedron faces — plus the impressionist curl
-  field) into: Torus Knot, Buckyball, Double Helix, Nautilus, Lotus, Rose, Spiral Galaxy, Phoenix,
-  Almighty Mountain (Bob Ross), Starry Night, Lion's Head, Peacock. Each is non-planar, only
-  Jade/Ruby/Gold, y≥0, flyable-segment-checked, and >20·W of flight (the Taj is 15·W). All are
-  validated by `PaintingPresetLibraryTests` + `PaintingStrokeToolkitTests` and by an offline geometry
-  harness (soccer-ball topology, curl determinism, flyability). Any `ShapeDefinition` still converts
-  via `sourceShape`. Remaining candidates for a future batch: Great Wave, pagoda, Colosseum.
+- **More paintings — SHIPPED (12 grandiose 3D constructions), then QUALITY-REBUILT.** After the
+  prompter's review ("less symbolic, more realistic, properly proportioned — pull from reference
+  material, not first principles"), the seven mathematically-real forms were rebuilt at
+  **reference grade** from published parametrizations, and ALL random curl-noise scribble was
+  removed from them: Nautilus (embracing-whorl shell model + 58 growth-line ribs), Lotus (real
+  Nelumbo: lily pads, obovate petal whorls, stamens, seed pod), Rose (recurved petal rims → furled
+  heart, sepals), Double Helix (true B-DNA: pitch/diameter 1.7, 10 bp/turn, ribboned backbones),
+  Torus Knot (engineered tube on rotation-minimizing frames), Buckyball (C60 + its 30 real 6:6
+  double bonds), Spiral Galaxy (two-arm grand design, dust lanes, arm-following star streaks,
+  22° inclination). Anatomy counts are locked by `ReferenceRebuilds_KeepTheirAnatomy`.
+  The five representational subjects (Lion's Head, Peacock, Phoenix, Starry Night, Almighty
+  Mountain) are pending the **Camp B real-model pipeline** (mesh → hatched flight strokes, baked
+  as authored `PaintingDefinitionSO.strokes`). Remaining candidates: Great Wave, pagoda, Colosseum.
 - **Perf / in-editor pass for the big paintings.** Each stroke stands up one ghost `LineRenderer` +
   one start gate at `PaintingRunner.Begin`, so Peacock (~226 strokes) and Lion's Head (~171) create a
   few hundred lightweight LineRenderers up front. This is the intended "hours of flying" ceiling but

@@ -161,13 +161,13 @@ dozen **grandiose non-planar constructions** that dwarf the Taj (every one is >2
 | 2 | Rainbow | 700 | 3 | the domain gates, one band per colour |
 | 3 | Saturn | 800 | 3 | genuinely 3D flying (tilted rings) |
 | 4 | **Taj Mahal** | 1100 | ~55 | plinth, chamfered body, iwan+niches, onion-dome rib cage, 4 chhatris, 4 minarets, pool + charbagh |
-| 5 | Torus Knot | 1000 | ~52 | a woven (3,2) trefoil + braided rope + plasma sheath — flows through itself when spun |
-| 6 | Buckyball | 1000 | ~75 | truncated-icosahedron soccer ball: **exactly 12 pentagons + 20 hexagons**, planar faces, + a nimbus |
-| 7 | Double Helix | 900 | ~90 | B-DNA: two phase-offset backbones, 40 base-pair rungs, a hydration shell |
-| 8 | Nautilus | 900 | ~103 | a chambered log-spiral shell climbing a cone, mother-of-pearl impressionist sheen |
-| 9 | Lotus | 900 | ~111 | 60 phyllotaxis petals opening in 3D from a shimmering stamen core |
-| 10 | Rose | 900 | ~116 | a nested spiral bloom of cupped, velvet-lined petals |
-| 11 | Spiral Galaxy | 1200 | ~132 | 3 colour-streamed log-spiral arms, an impressionist disk + halo, a blazing bulge |
+| 5 | Torus Knot | 1000 | ~19 | the exact (3,2) trefoil as a machine-clean TUBE: 6 rotation-minimizing longitudes (one barber-pole twist), 12 rings, spine |
+| 6 | Buckyball | 1000 | ~62 | exact C60: **12 pentagons + 20 hexagons** (planar faces) + the 30 real 6:6 double bonds as inset dashes |
+| 7 | Double Helix | 900 | ~88 | true B-DNA: pitch/diameter 1.7, 10 bp/turn, 144° grooves, ribboned backbones, purine+pyrimidine pairs, phosphate ticks |
+| 8 | Nautilus | 900 | ~67 | the real shell model: embracing log-spiral whorls, 58 growth-line ribs, tiger striping, the open aperture |
+| 9 | Lotus | 900 | ~171 | Nelumbo anatomy: notched lily pads + veins, 3 whorls of obovate cupped petals, 36 stamens, the shower-head seed pod |
+| 10 | Rose | 900 | ~59 | a real bloom: golden-spiral petal RIMS that flare and roll (recurve), rising to a furled heart; sepals + stem |
+| 11 | Spiral Galaxy | 1200 | ~187 | a TWO-arm grand design at 17° pitch, inclined 22°: dust lanes, old-gold bulge, star streaks flowing along the arms |
 | 12 | Phoenix | 1200 | ~120 | a firebird: feathered wings + an impressionist flame tail |
 | 13 | Almighty Mountain | 1300 | ~110 | a Bob Ross vista flown into: 5 fractal ridges, a mirror lake, sun, happy little firs |
 | 14 | Starry Night | 1300 | ~73 | Van Gogh stepped into: a swirling sky shell, 11 star vortices, moon, cypress flame, village |
@@ -256,14 +256,18 @@ unit-tested geometry library. It answers "where do we pull more sophisticated st
   Botanical/terrain helpers: `PetalLoop`, `DomeLift`, `MidpointRidge` (fractal mountains), `ReflectY`
   (lake reflections), `FirTree`, `FeatherStroke`, `FrameStrand` (braided rope), `RadialCurlStroke`
   (mane/flame strands).
-- **The impressionist field (the signature technique)** — `CurlNoise` is a divergence-free 3D flow
-  field (curl of a value-noise vector potential; `∇·(∇×Ψ)=0`, so streamlines fill space without
-  converging to a point). `ImpressionistStrokes` integrates short strokes along it whose **radii of
-  curvature stochastically fill a region in every direction** — "3D impressionism". It seeds any
-  region (ball / disk / shell / annulus), optionally reprojects each step onto a surface (the Starry
-  Night sky shell, the galaxy disk), biases upward for flame, and colours each stroke by a spatial
-  `domainField` that can only emit Jade/Ruby/Gold. This is the lion's mane, the Van Gogh sky, the
-  galaxy halo, the nautilus nacre, the phoenix flame.
+- **The impressionist field** — `CurlNoise` is a divergence-free 3D flow field (curl of a value-noise
+  vector potential; `∇·(∇×Ψ)=0`, so streamlines fill space without converging to a point).
+  `ImpressionistStrokes` integrates short strokes along it whose radii of curvature stochastically
+  fill a region in every direction. **Scope note (quality direction):** random curl fill reads as
+  scribble on *objects*, so the reference-grade rebuilds (rows 5–11) use **structured**
+  surface-following strokes instead — growth lines, veins, bonds, orbital streaks. The curl field
+  remains the right tool for genuinely turbulent subjects (the Van Gogh sky, flame, mist) and for
+  the mane/feather sprays of the representational five, pending their real-model rebuild.
+- **Structure kit (reference-grade rebuilds)** — `MinSegFilter` (dense parametric sampling never
+  emits a degenerate segment), `TransportFrames` (rotation-minimizing frames — tube longitudes that
+  never flip on curves like torus knots), `TubeLongitudes` / `TubeRing` (engineered tube rendering),
+  `SoccerBallDoubleBonds` (C60's 30 hexagon–hexagon 6:6 bonds).
 
 **Invariants every generator upholds** (locked by `Generate` + tests): base plane at y=0
 (`RebaseToGround` runs after every grandiose preset), front toward +Z, only Jade/Ruby/Gold, flyable

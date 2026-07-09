@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PaintingDefinitionSO
   paintingId: painting_nautilus
   displayName: Nautilus
-  description: A chambered logarithmic shell climbing a cone under a mother-of-pearl sheen.
+  description: The real shell: nested whorls, growth-line ribs, tiger striping, the open aperture.
   strokes: []
   sourceShape: {fileID: 0}
   sourceShapeDomain: 4

@@ -807,6 +807,136 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Drop points closer than <paramref name="minSeg"/> to their predecessor so dense parametric
+        /// sampling (tight spiral cores, converging petal edges) never emits a degenerate segment.
+        /// The final point is always represented; it merges into its predecessor when too close.
+        /// </summary>
+        public static List<Vector3> MinSegFilter(IReadOnlyList<Vector3> pts, float minSeg)
+        {
+            var outPts = new List<Vector3>();
+            if (pts == null || pts.Count == 0) return outPts;
+            outPts.Add(pts[0]);
+            if (pts.Count < 2) return outPts;
+            for (int i = 1; i < pts.Count - 1; i++)
+                if (Vector3.Distance(pts[i], outPts[outPts.Count - 1]) >= minSeg)
+                    outPts.Add(pts[i]);
+            Vector3 last = pts[pts.Count - 1];
+            if (Vector3.Distance(last, outPts[outPts.Count - 1]) >= minSeg * 0.5f)
+                outPts.Add(last);
+            else
+                outPts[outPts.Count - 1] = last;
+            return outPts;
+        }
+
+        /// <summary>
+        /// Rotation-minimizing frames along a polyline (projection transport). Unlike calling
+        /// <see cref="Basis"/> per point, the frame never flips as the tangent sweeps — required for
+        /// clean tube longitudes on curves like torus knots whose tangents cover the whole sphere.
+        /// </summary>
+        public static void TransportFrames(IReadOnlyList<Vector3> spine, out Vector3[] normals, out Vector3[] binormals)
+        {
+            int n = spine?.Count ?? 0;
+            normals = new Vector3[n];
+            binormals = new Vector3[n];
+            if (n < 2) return;
+
+            Vector3 tan0 = (spine[1] - spine[0]).normalized;
+            Basis(tan0, out Vector3 nrm, out _, out _);
+            for (int i = 0; i < n; i++)
+            {
+                Vector3 tan = i == 0 ? tan0
+                    : i == n - 1 ? (spine[i] - spine[i - 1]).normalized
+                    : (spine[i + 1] - spine[i - 1]).normalized;
+                nrm -= tan * Vector3.Dot(nrm, tan);
+                if (nrm.sqrMagnitude < 1e-10f) Basis(tan, out nrm, out _, out _);
+                nrm.Normalize();
+                normals[i] = nrm;
+                binormals[i] = Vector3.Cross(tan, nrm);
+            }
+        }
+
+        /// <summary>
+        /// <paramref name="count"/> longitudinal frame lines on a tube around <paramref name="spine"/>,
+        /// twisting <paramref name="twistTurns"/> full turns end to end (keep it whole so closed curves seal).
+        /// </summary>
+        public static List<List<Vector3>> TubeLongitudes(IReadOnlyList<Vector3> spine, float radius,
+            int count, int twistTurns)
+        {
+            TransportFrames(spine, out Vector3[] normals, out Vector3[] binormals);
+            var lines = new List<List<Vector3>>(count);
+            int n = spine.Count;
+            for (int k = 0; k < count; k++)
+            {
+                var pts = new List<Vector3>(n);
+                for (int i = 0; i < n; i++)
+                {
+                    float t = i / (float)(n - 1);
+                    float ang = Mathf.PI * 2f * (k / (float)count) + Mathf.PI * 2f * twistTurns * t;
+                    pts.Add(spine[i] + normals[i] * (Mathf.Cos(ang) * radius) + binormals[i] * (Mathf.Sin(ang) * radius));
+                }
+                lines.Add(pts);
+            }
+            return lines;
+        }
+
+        /// <summary>One circumference ring of the tube at spine index <paramref name="i"/> (frames from <see cref="TransportFrames"/>).</summary>
+        public static List<Vector3> TubeRing(IReadOnlyList<Vector3> spine, Vector3[] normals, Vector3[] binormals,
+            int i, float radius, int seg)
+        {
+            var pts = new List<Vector3>(seg + 1);
+            for (int j = 0; j <= seg; j++)
+            {
+                float a = Mathf.PI * 2f * j / seg;
+                pts.Add(spine[i] + normals[i] * (Mathf.Cos(a) * radius) + binormals[i] * (Mathf.Sin(a) * radius));
+            }
+            return pts;
+        }
+
+        /// <summary>
+        /// The 30 hexagon–hexagon shared edges of the truncated icosahedron — chemically, C60's 6:6
+        /// DOUBLE bonds (every edge not belonging to a pentagon). Endpoints on the unit sphere.
+        /// </summary>
+        public static void SoccerBallDoubleBonds(out Vector3[] bondA, out Vector3[] bondB)
+        {
+            TruncatedIcosahedron(out Vector3[] verts, out int[] edgeA, out int[] edgeB);
+
+            // Pentagon membership: gather each pentagon's ring the same way SoccerBallFaces does.
+            var adj = new HashSet<int>(edgeA.Length);
+            for (int e = 0; e < edgeA.Length; e++)
+                adj.Add(Mathf.Min(edgeA[e], edgeB[e]) * 64 + Mathf.Max(edgeA[e], edgeB[e]));
+            var pentEdges = new HashSet<int>();
+            foreach (var c in IcosahedronDirs())
+            {
+                var loop = GatherFace(verts, adj, c, 5);
+                for (int i = 0; i < loop.Length - 1; i++)
+                {
+                    int a = IndexOfVertex(verts, loop[i]);
+                    int b = IndexOfVertex(verts, loop[i + 1]);
+                    pentEdges.Add(Mathf.Min(a, b) * 64 + Mathf.Max(a, b));
+                }
+            }
+
+            var la = new List<Vector3>(30);
+            var lb = new List<Vector3>(30);
+            for (int e = 0; e < edgeA.Length; e++)
+            {
+                int key = Mathf.Min(edgeA[e], edgeB[e]) * 64 + Mathf.Max(edgeA[e], edgeB[e]);
+                if (pentEdges.Contains(key)) continue;
+                la.Add(verts[edgeA[e]]);
+                lb.Add(verts[edgeB[e]]);
+            }
+            bondA = la.ToArray();
+            bondB = lb.ToArray();
+        }
+
+        static int IndexOfVertex(Vector3[] verts, Vector3 v)
+        {
+            for (int i = 0; i < verts.Length; i++)
+                if ((verts[i] - v).sqrMagnitude < 1e-6f) return i;
+            return -1;
+        }
+
+        /// <summary>
         /// Resample a polyline so no segment exceeds <paramref name="maxSeg"/> — inserts points along
         /// long spans so a fast, broad curve stays flyable (the runner advances point-to-point).
         /// </summary>

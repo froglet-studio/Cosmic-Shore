@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PaintingDefinitionSO
   paintingId: painting_torus_knot
   displayName: Torus Knot
-  description: A woven trefoil that flows through itself forever, in a plasma sheath.
+  description: A machine-clean trefoil tube that flows through itself forever.
   strokes: []
   sourceShape: {fileID: 0}
   sourceShapeDomain: 4
