@@ -276,14 +276,17 @@ namespace CosmicShore.Gameplay
                     if (_pool[i, r])
                     {
                         var go = _pool[i, r].gameObject;
-                        if (Application.isEditor) DestroyImmediate(go); else Destroy(go);
+                        // isPlaying, not isEditor: editor PLAY mode must use deferred Destroy —
+                        // DestroyImmediate is illegal inside physics/animation/render callbacks
+                        // (e.g. a domain change triggered by flying through a toy gate).
+                        if (Application.isPlaying) Destroy(go); else DestroyImmediate(go);
                     }
                 }
 
                 if (!_parents[i]) continue;
                 {
                     var go = _parents[i].gameObject;
-                    if (Application.isEditor) DestroyImmediate(go); else Destroy(go);
+                    if (Application.isPlaying) Destroy(go); else DestroyImmediate(go);
                 }
             }
             _pool = null; _parents = null; _cols = 0;
