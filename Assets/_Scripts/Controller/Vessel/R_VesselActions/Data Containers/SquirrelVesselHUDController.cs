@@ -2,7 +2,6 @@ using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
-using DG.Tweening;
 using Obvious.Soap;
 using Reflex.Attributes;
 using UnityEngine;
@@ -28,14 +27,11 @@ namespace CosmicShore.UI
 
         [Inject] private GameDataSO gameData;
 
-        [Header("Flash Durations")]
-        [SerializeField] private float joustFlashDuration = 1f;
-        [SerializeField] private float shieldFlashDuration = 1f;
-
         private IVesselStatus _vesselStatus;
         private Domains _lastSourceDomain = Domains.Blue;
-        private Tween _joustFlashTween;
-        private Tween _shieldFlashTween;
+
+        // Polled each frame to drive the tube cooldown icon in the freed HUD slot.
+        private SquirrelTubeActionExecutor _tubeExecutor;
 
         // Single source of truth — the same ColorSet the vessels and prisms use (R5).
         private Color ResolveDomainColor(Domains domain) =>
@@ -65,6 +61,19 @@ namespace CosmicShore.UI
             view.SetPlayerDomainColor(playerColor);
             Subscribe();
             PaintFromStatusFallback();
+
+            // The tube executor lives on a child of the vessel; poll it in Update for the
+            // cooldown icon. Local user only (this whole branch is gated on IsLocalUser).
+            _tubeExecutor = vesselStatus.Vessel?.Transform
+                ? vesselStatus.Vessel.Transform.GetComponentInChildren<SquirrelTubeActionExecutor>(true)
+                : null;
+        }
+
+        private void Update()
+        {
+            if (!view || _tubeExecutor == null) return;
+            // Fill grows 0 -> 1 as the ability recharges (ready = full + bright).
+            view.SetTubeCooldownReady(1f - _tubeExecutor.CooldownRemaining01);
         }
 
         private void Subscribe()
@@ -88,9 +97,6 @@ namespace CosmicShore.UI
 
         private void OnDisable()
         {
-            _joustFlashTween?.Kill();
-            _shieldFlashTween?.Kill();
-
             if (boostChanged != null)
                 boostChanged.OnRaised -= HandleBoostChanged;
             if (isDrifting != null)
@@ -157,12 +163,8 @@ namespace CosmicShore.UI
             // Shared global event — only react to our own vessel's joust collisions.
             if (playerName != _vesselStatus.PlayerName) return;
 
-            _joustFlashTween?.Kill();
-            view.UpdateDangerIcon(true);
-            _joustFlashTween = DOVirtual.DelayedCall(joustFlashDuration, () =>
-            {
-                if (view) view.UpdateDangerIcon(false);
-            });
+            // Joust and crystal share ONE impact icon; flash it with the joust colour.
+            view.JuiceJoustImpact();
         }
 
         private void PaintFromStatusFallback()
@@ -210,12 +212,8 @@ namespace CosmicShore.UI
 
             view.FlashCrystalSurge();
 
-            _shieldFlashTween?.Kill();
-            view.UpdateShieldColor(true);
-            _shieldFlashTween = DOVirtual.DelayedCall(shieldFlashDuration, () =>
-            {
-                if (view) view.UpdateShieldColor(false);
-            });
+            // Joust and crystal share ONE impact icon; flash it with the crystal colour.
+            view.JuiceCrystalImpact();
         }
     }
 }

@@ -1,5 +1,6 @@
 using DG.Tweening;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace CosmicShore.UI
@@ -18,15 +19,23 @@ namespace CosmicShore.UI
         [SerializeField] private Sprite driftingSprite;
         [SerializeField] private Sprite doubleDriftingSprite;
 
-        [Header("Danger")]
-        [SerializeField] private Image dangerRingIcon;
-        [SerializeField] private Color normalColor = Color.white;
-        [SerializeField] private Color dangerColor = Color.red;
+        [Header("Impact (joust + crystal share one icon)")]
+        [FormerlySerializedAs("dangerRingIcon")]
+        [SerializeField] private Image impactIcon;
+        [FormerlySerializedAs("normalColor")]
+        [SerializeField] private Color impactRestColor = Color.white;
+        [FormerlySerializedAs("dangerColor")]
+        [SerializeField] private Color joustFlashColor = Color.red;
+        [Tooltip("Flash colour when the impact icon fires from collecting a crystal.")]
+        [SerializeField] private Color crystalFlashColor = new Color(0.4f, 0.9f, 1f, 1f);
 
-        [Header("Shield")]
-        [SerializeField] private Image shieldIcon;
-        [SerializeField] private Color shieldNormalColor = Color.white;
-        [SerializeField] private Color shieldActiveColor = Color.green;
+        [Header("Tube Cooldown (repurposed shield slot)")]
+        [FormerlySerializedAs("shieldIcon")]
+        [SerializeField] private Image tubeCooldownIcon;
+        [Tooltip("Colour of the tube cooldown icon while recharging (fill < 1).")]
+        [SerializeField] private Color tubeCoolingColor = new Color(1f, 1f, 1f, 0.3f);
+        [Tooltip("Colour of the tube cooldown icon once ready (fill == 1).")]
+        [SerializeField] private Color tubeReadyColor = Color.white;
 
         [Header("Icon Juice")]
         [Tooltip("Duration for icon scale punch on events")]
@@ -49,15 +58,12 @@ namespace CosmicShore.UI
         private Tween _driftIconScaleTween;
         private Tween _driftIconColorTween;
         private Tween _driftIconRotationTween;
-        private Tween _dangerScaleTween;
-        private Tween _dangerColorTween;
-        private Tween _shieldScaleTween;
-        private Tween _shieldColorTween;
+        private Tween _impactScaleTween;
+        private Tween _impactColorTween;
         private Tween _boostScaleTween;
 
         private Vector3 _driftIconOriginalScale;
-        private Vector3 _dangerIconOriginalScale;
-        private Vector3 _shieldIconOriginalScale;
+        private Vector3 _impactIconOriginalScale;
         private Color _driftIconOriginalColor;
 
         public override void Initialize()
@@ -74,13 +80,18 @@ namespace CosmicShore.UI
                 _driftIconOriginalColor = driftButtonIcon.color;
             }
 
-            if (dangerRingIcon)
-                _dangerIconOriginalScale = dangerRingIcon.rectTransform.localScale;
-
-            if (shieldIcon)
+            if (impactIcon)
             {
-                shieldIcon.color = shieldNormalColor;
-                _shieldIconOriginalScale = shieldIcon.rectTransform.localScale;
+                impactIcon.color = impactRestColor;
+                _impactIconOriginalScale = impactIcon.rectTransform.localScale;
+            }
+
+            if (tubeCooldownIcon)
+            {
+                // Repurposed as a radial cooldown fill: start ready (full + bright).
+                tubeCooldownIcon.type = Image.Type.Filled;
+                tubeCooldownIcon.fillAmount = 1f;
+                tubeCooldownIcon.color = tubeReadyColor;
             }
         }
 
@@ -220,97 +231,49 @@ namespace CosmicShore.UI
         }
 
         // ---------------------------------------------------------------
-        // Danger/joust icon with juice: scale punch + red flash
+        // Impact icon: ONE icon shared by joust (hit a vessel) and crystal
+        // (hit a crystal). Scale punch + a colour flash keyed to the source.
         // ---------------------------------------------------------------
-        public void UpdateDangerIcon(bool inDanger)
-        {
-            if (!dangerRingIcon) return;
+        public void JuiceJoustImpact() => JuiceImpact(joustFlashColor);
+        public void JuiceCrystalImpact() => JuiceImpact(crystalFlashColor);
 
-            dangerRingIcon.color = inDanger ? dangerColor : normalColor;
-        }
-
-        /// <summary>
-        /// Joust juice: scale punch + red color tween on the danger icon.
-        /// </summary>
-        public void JuiceJoust()
+        public void JuiceImpact(Color flashColor)
         {
-            if (!dangerRingIcon) return;
+            if (!impactIcon) return;
 
             // Scale punch
-            _dangerScaleTween?.Kill();
-            dangerRingIcon.rectTransform.localScale = _dangerIconOriginalScale;
-            _dangerScaleTween = dangerRingIcon.rectTransform
-                .DOScale(_dangerIconOriginalScale * iconPunchScale, iconPunchDuration * 0.3f)
+            _impactScaleTween?.Kill();
+            impactIcon.rectTransform.localScale = _impactIconOriginalScale;
+            _impactScaleTween = impactIcon.rectTransform
+                .DOScale(_impactIconOriginalScale * iconPunchScale, iconPunchDuration * 0.3f)
                 .SetEase(Ease.OutQuad)
                 .OnComplete(() =>
                 {
-                    _dangerScaleTween = dangerRingIcon.rectTransform
-                        .DOScale(_dangerIconOriginalScale, iconPunchDuration * 0.7f)
+                    _impactScaleTween = impactIcon.rectTransform
+                        .DOScale(_impactIconOriginalScale, iconPunchDuration * 0.7f)
                         .SetEase(Ease.OutBounce);
                 });
 
-            // Color flash: snap to red, tween back
-            _dangerColorTween?.Kill();
-            dangerRingIcon.color = dangerColor;
-            _dangerColorTween = dangerRingIcon
-                .DOColor(normalColor, colorTweenDuration)
+            // Color flash: snap to the source colour, tween back to rest
+            _impactColorTween?.Kill();
+            impactIcon.color = flashColor;
+            _impactColorTween = impactIcon
+                .DOColor(impactRestColor, colorTweenDuration)
                 .SetEase(Ease.OutQuad);
         }
 
         // ---------------------------------------------------------------
-        // Shield/crystal icon with juice: scale punch + domain color flash
+        // Tube cooldown: radial fill in the freed slot. ready01: 0 = just
+        // deployed (empty), 1 = fully recharged (ready). Driven each frame
+        // by the controller polling the tube executor.
         // ---------------------------------------------------------------
-        public void UpdateShieldColor(bool active)
+        public void SetTubeCooldownReady(float ready01)
         {
-            if (!shieldIcon) return;
+            if (!tubeCooldownIcon) return;
 
-            shieldIcon.color = active ? shieldActiveColor : shieldNormalColor;
-        }
-
-        /// <summary>
-        /// Crystal collection juice: scale punch + tween to domain color and back.
-        /// </summary>
-        public void JuiceCrystalCollected(Color domainColor)
-        {
-            if (!shieldIcon) return;
-
-            // Scale punch
-            _shieldScaleTween?.Kill();
-            shieldIcon.rectTransform.localScale = _shieldIconOriginalScale;
-            _shieldScaleTween = shieldIcon.rectTransform
-                .DOScale(_shieldIconOriginalScale * iconPunchScale, iconPunchDuration * 0.3f)
-                .SetEase(Ease.OutQuad)
-                .OnComplete(() =>
-                {
-                    _shieldScaleTween = shieldIcon.rectTransform
-                        .DOScale(_shieldIconOriginalScale, iconPunchDuration * 0.7f)
-                        .SetEase(Ease.OutBounce);
-                });
-
-            // Color flash: snap to domain color, tween back
-            _shieldColorTween?.Kill();
-            shieldIcon.color = domainColor;
-            _shieldColorTween = shieldIcon
-                .DOColor(shieldNormalColor, colorTweenDuration)
-                .SetEase(Ease.OutQuad);
-
-            // Also punch the boost fill if visible
-            if (boostFill && boostFill.enabled)
-            {
-                _boostScaleTween?.Kill();
-                var boostRT = boostFill.rectTransform;
-                var origScale = Vector3.one;
-                boostRT.localScale = origScale;
-                _boostScaleTween = boostRT
-                    .DOScale(origScale * 1.1f, iconPunchDuration * 0.3f)
-                    .SetEase(Ease.OutQuad)
-                    .OnComplete(() =>
-                    {
-                        _boostScaleTween = boostRT
-                            .DOScale(origScale, iconPunchDuration * 0.7f)
-                            .SetEase(Ease.OutQuad);
-                    });
-            }
+            ready01 = Mathf.Clamp01(ready01);
+            tubeCooldownIcon.fillAmount = ready01;
+            tubeCooldownIcon.color = Color.Lerp(tubeCoolingColor, tubeReadyColor, ready01);
         }
 
         protected override void OnDestroy()
@@ -319,10 +282,8 @@ namespace CosmicShore.UI
             _driftIconScaleTween?.Kill();
             _driftIconColorTween?.Kill();
             _driftIconRotationTween?.Kill();
-            _dangerScaleTween?.Kill();
-            _dangerColorTween?.Kill();
-            _shieldScaleTween?.Kill();
-            _shieldColorTween?.Kill();
+            _impactScaleTween?.Kill();
+            _impactColorTween?.Kill();
             _boostScaleTween?.Kill();
         }
     }

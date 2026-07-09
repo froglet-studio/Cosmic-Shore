@@ -12,34 +12,50 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Runtime executor for <see cref="SquirrelTubeActionSO"/> — the Squirrel's "Oak Trunk" tube.
     ///
-    /// Begin (trigger press): raises a translucent hollow-cylinder preview that tracks the vessel,
-    /// telegraphing where the tube will form (the Dolphin ghost-crystal shape, scaled to a tube).
-    /// Commit (trigger release): freezes the vessel's pose, destroys the preview, and lays a long
-    /// wall of thick danger prisms along that forward axis through the canonical
+    /// Begin (trigger press): raises a translucent preview built from the EXACT ghost geometry the
+    /// tube will form (a ring field of prism-sized boxes), parented to and following the vessel's
+    /// orientation — never the camera — so as the player turns or drifts the preview swings with the
+    /// nose and shows the true radius/length/thickness of the final wall.
+    /// Commit (trigger release): freezes the vessel's pose, destroys the preview, and lays the wall
+    /// of thick danger prisms along that forward axis through the canonical
     /// <see cref="PrismTrailBuilder"/> path (batched a few per frame). The wall is real conserved
     /// mass — it blooms in, registers with the spatial index, and is only removed by an active
-    /// force. A long cooldown gates re-use; while the ability is cooling down Begin is a no-op so
-    /// no preview appears.
+    /// force. A long cooldown gates re-use (surfaced to the HUD via <see cref="CooldownRemaining01"/>).
     /// </summary>
     public sealed class SquirrelTubeActionExecutor : ShipActionExecutorBase
     {
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
         static readonly int ColorId = Shader.PropertyToID("_Color");
 
-        // One shared unit tube mesh (radius 1, length 1, centred on origin along +z), scaled per use.
-        static Mesh _unitTubeMesh;
+        // Unity's built-in unit cube, shared across every executor (never destroyed — a built-in).
+        static Mesh _unitCubeMesh;
 
         [Header("Events")]
         [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
 
         float _cooldownEndTime;
+        float _activeCooldown;
 
         GameObject _preview;
         Material _previewMaterialInstance;
         Coroutine _previewFollow;
 
+        // Ghost preview mesh, cached per SO geometry so repeated presses reuse the built mesh.
+        Mesh _ghostMesh;
+        int _ghostSignature;
+
         CancellationTokenSource _spawnCts;
         readonly List<GameObject> _tubes = new();
+
+        /// <summary>
+        /// Cooldown remaining as a 0-1 fraction: 1 right after a deploy (full cooldown left),
+        /// 0 when ready again. Read by the Squirrel HUD to drive the tube cooldown icon fill.
+        /// </summary>
+        public float CooldownRemaining01 =>
+            _activeCooldown <= 0f ? 0f : Mathf.Clamp01((_cooldownEndTime - Time.time) / _activeCooldown);
+
+        /// <summary>True when the tube can be deployed again (off cooldown).</summary>
+        public bool TubeReady => Time.time >= _cooldownEndTime;
 
         void OnEnable()
         {
@@ -50,6 +66,12 @@ namespace CosmicShore.Gameplay
         {
             OnMiniGameTurnEnd.OnRaised -= OnTurnEndOfMiniGame;
             Cleanup();
+        }
+
+        void OnDestroy()
+        {
+            if (_ghostMesh) Destroy(_ghostMesh);
+            _ghostMesh = null;
         }
 
         void OnTurnEndOfMiniGame() => Cleanup();
@@ -79,13 +101,15 @@ namespace CosmicShore.Gameplay
             DestroyPreview();
 
             var vessel = status.Vessel.Transform;
-            // The tube mouth forms ahead of the vessel, axis aligned to the release-frame forward,
-            // so flying straight carries the vessel through the hollow centre.
+            // The tube mouth forms ahead of the vessel, axis aligned to the release-frame forward
+            // (vessel orientation, not the camera), so flying straight carries the vessel through
+            // the hollow centre.
             Vector3 origin = vessel.position + vessel.forward * so.ForwardOffset;
             Quaternion rotation = vessel.rotation;
 
             SpawnTube(so, status, origin, rotation);
 
+            _activeCooldown = so.Cooldown;
             _cooldownEndTime = Time.time + so.Cooldown;
         }
 
@@ -114,7 +138,8 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Rings of prisms around the local +z axis. Positions are container-local; the container
         /// carries the world pose. Every ring is centred on the axis so a vessel down the middle
-        /// passes through the hollow centre of each one.
+        /// passes through the hollow centre of each one. Shared by the real spawn and the ghost
+        /// preview so the two are geometrically identical.
         /// </summary>
         List<PrismLay> BuildLays(SquirrelTubeActionSO so, Domains domain)
         {
@@ -151,7 +176,7 @@ namespace CosmicShore.Gameplay
             _preview = new GameObject("SquirrelTubePreview");
             var mf = _preview.AddComponent<MeshFilter>();
             var mr = _preview.AddComponent<MeshRenderer>();
-            mf.sharedMesh = GetUnitTubeMesh();
+            mf.sharedMesh = GetGhostMesh(so);
 
             _previewMaterialInstance = BuildPreviewMaterial(so);
             mr.sharedMaterial = _previewMaterialInstance;
@@ -163,8 +188,6 @@ namespace CosmicShore.Gameplay
 
         IEnumerator PreviewFollowRoutine(SquirrelTubeActionSO so, IVesselStatus status)
         {
-            float length = Mathf.Max(so.Length, so.PrismScale);
-            float half = length * 0.5f;
             float fade = so.PreviewFadeInSeconds;
             float elapsed = 0f;
 
@@ -174,10 +197,12 @@ namespace CosmicShore.Gameplay
             while (_preview && status?.Vessel?.Transform != null)
             {
                 var vessel = status.Vessel.Transform;
+                // Container origin = the tube mouth (forwardOffset ahead); the ghost mesh spans
+                // 0..Length in local +z, so the preview is the exact final geometry and swings with
+                // the vessel's orientation as the player turns or drifts.
                 _preview.transform.SetPositionAndRotation(
-                    vessel.position + vessel.forward * (so.ForwardOffset + half),
+                    vessel.position + vessel.forward * so.ForwardOffset,
                     vessel.rotation);
-                _preview.transform.localScale = new Vector3(so.Radius, so.Radius, length);
 
                 if (fade > 0f && elapsed < fade)
                 {
@@ -188,6 +213,47 @@ namespace CosmicShore.Gameplay
 
                 yield return null;
             }
+        }
+
+        /// <summary>
+        /// The ghost preview mesh: one prism-sized box per ring position, combined into a single
+        /// mesh (one draw call). Built from the same <see cref="BuildLays"/> geometry as the real
+        /// tube, so the preview is a faithful stand-in for the final wall's radius, length and
+        /// thickness. Cached and rebuilt only when the SO geometry changes.
+        /// </summary>
+        Mesh GetGhostMesh(SquirrelTubeActionSO so)
+        {
+            int sig = System.HashCode.Combine(so.Rings, so.Segments, so.Radius, so.RingSpacing, so.PrismScale);
+            if (_ghostMesh && sig == _ghostSignature)
+                return _ghostMesh;
+
+            if (_ghostMesh) Destroy(_ghostMesh);
+
+            var lays = BuildLays(so, Domains.Blue); // domain irrelevant for geometry
+            var cube = GetUnitCubeMesh();
+            var instances = new CombineInstance[lays.Count];
+            for (int i = 0; i < lays.Count; i++)
+                instances[i] = new CombineInstance
+                {
+                    mesh = cube,
+                    transform = Matrix4x4.TRS(lays[i].Point.Position, lays[i].Point.Rotation, lays[i].Point.Scale)
+                };
+
+            _ghostMesh = new Mesh { name = "SquirrelTubePreviewGhost", indexFormat = IndexFormat.UInt32 };
+            _ghostMesh.CombineMeshes(instances, true, true);
+            _ghostMesh.RecalculateBounds();
+            _ghostSignature = sig;
+            return _ghostMesh;
+        }
+
+        static Mesh GetUnitCubeMesh()
+        {
+            if (_unitCubeMesh) return _unitCubeMesh;
+            var temp = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            _unitCubeMesh = temp.GetComponent<MeshFilter>().sharedMesh; // built-in shared mesh; survives GO destroy
+            if (Application.isPlaying) Destroy(temp);
+            else DestroyImmediate(temp);
+            return _unitCubeMesh;
         }
 
         Material BuildPreviewMaterial(SquirrelTubeActionSO so)
@@ -255,58 +321,6 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < _tubes.Count; i++)
                 if (_tubes[i]) Destroy(_tubes[i]);
             _tubes.Clear();
-        }
-
-        // ---------------- Mesh ----------------
-
-        /// <summary>
-        /// A hollow, double-sided open cylinder: radius 1, spanning z ∈ [-0.5, 0.5]. Double-sided
-        /// so the preview reads correctly from inside (flying through it) and outside.
-        /// </summary>
-        static Mesh GetUnitTubeMesh()
-        {
-            if (_unitTubeMesh) return _unitTubeMesh;
-
-            const int seg = 24;
-            var verts = new Vector3[(seg + 1) * 2];
-            var uvs = new Vector2[verts.Length];
-            for (int i = 0; i <= seg; i++)
-            {
-                float t = i / (float)seg;
-                float a = t * 2f * Mathf.PI;
-                float x = Mathf.Cos(a);
-                float y = Mathf.Sin(a);
-                verts[i] = new Vector3(x, y, -0.5f);
-                verts[i + seg + 1] = new Vector3(x, y, 0.5f);
-                uvs[i] = new Vector2(t, 0f);
-                uvs[i + seg + 1] = new Vector2(t, 1f);
-            }
-
-            // Two triangles per quad, emitted with both windings for double-sided rendering.
-            var tris = new int[seg * 12];
-            int ti = 0;
-            for (int i = 0; i < seg; i++)
-            {
-                int a = i;
-                int b = i + 1;
-                int c = i + seg + 1;
-                int d = i + seg + 2;
-
-                // front
-                tris[ti++] = a; tris[ti++] = c; tris[ti++] = b;
-                tris[ti++] = b; tris[ti++] = c; tris[ti++] = d;
-                // back
-                tris[ti++] = a; tris[ti++] = b; tris[ti++] = c;
-                tris[ti++] = b; tris[ti++] = d; tris[ti++] = c;
-            }
-
-            _unitTubeMesh = new Mesh { name = "SquirrelTubePreviewUnitMesh" };
-            _unitTubeMesh.vertices = verts;
-            _unitTubeMesh.uv = uvs;
-            _unitTubeMesh.triangles = tris;
-            _unitTubeMesh.RecalculateNormals();
-            _unitTubeMesh.RecalculateBounds();
-            return _unitTubeMesh;
         }
     }
 }
