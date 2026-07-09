@@ -332,3 +332,33 @@ Two regressions surfaced in play-testing the stripped build:
    pass with HDR left off: keep `renderPostProcessing` on in `PerfStripRuntime`, set the Bloom
    override `threshold < 1` (so LDR near-white crystals bloom) on the GamePlay + MainMenu profiles.
    That costs one post pass — deferred in favor of the perf-free brightness lift.*
+
+## Round 2 — haptics on-device + residual skim-buzz
+
+**No haptics at all.** The full wiring chain is actually correct: `SkimmerHapticsByPrismEffect`
+(type 2) is on the Squirrel's *skimmer* prism-effect list (the same list as the boost effect that
+produces the audible skim click, so it provably executes), all haptic effect assets deserialize to
+valid types, `GameSetting` resolves (audio proves the same PlayerPref path), the `!AutoPilotEnabled`
+gate passes in freestyle, the arm64 `liblofelt_sdk.so` ships in `LofeltHaptics.aar`, and that AAR
+declares `android.permission.VIBRATE`. The break is the **Lofelt runtime**: `HapticPatterns.PlayPreset`
+only reaches the motor when the device meets Lofelt's "advanced requirements" (amplitude-controlled
+haptics) or its version-supported fallback fires — on a mid/older phone that can silently no-op, and
+in the Editor nothing vibrates at all.
+
+Fix: added `AndroidHaptics` (`_Scripts/Controller/IO/AndroidHaptics.cs`) — a direct
+`android.os.Vibrator` JNI path (VibratorManager on API 31+, one-shot `VibrationEffect` on 26+,
+legacy `vibrate(ms)` below), fully try/caught so failure is a silent no-op. `HapticController` now
+routes on-device Android through it (short amplitude pulses per `HapticType`, scaled by the strength
+slider) and keeps the NiceVibrations path for Editor/iOS. Also added a **per-type rate limit** (0.08 s)
+so the per-contact skim/crystal effects can't machine-gun the motor into a solid buzz. **Haptics only
+fire on a physical device — the Editor has no vibration motor.**
+
+**Residual "weird audio" (delayed onset).** The 0.07 s tick cap thinned the machine-gun but the buzz
+still onset after a few seconds of skimming: boost *climbs* to its ceiling over those seconds, then
+sits pinned at max where per-frame decay + a per-frame skim keep re-crossing the rising threshold, so
+the tick sustained a ~14/sec buzz. Added `maxTickNormalized` (0.9) to `ProximityBoostAudioController`
+— the skim click fires only while boost is genuinely *climbing* (below 90% of max) and goes silent
+while you *hold* the cap. Clicks on engage, quiet at full boost.
+
+Files: `_Scripts/Controller/IO/HapticController.cs`, `AndroidHaptics.cs`,
+`_Scripts/Controller/FX/ProximityBoostAudioController.cs`.

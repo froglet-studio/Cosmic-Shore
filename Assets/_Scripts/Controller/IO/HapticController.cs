@@ -42,6 +42,22 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        // Per-type real-time rate limit. Skim/crystal effects fire per collider
+        // contact (many per frame while skimming), so without this a hand-held
+        // buzz would machine-gun. Unscaled so it's independent of timescale.
+        const float MinIntervalSeconds = 0.08f;
+        static readonly float[] s_lastPlayByType = new float[16];
+
+        static bool RateLimitPass(HapticType type)
+        {
+            int i = (int)type;
+            if (i < 0 || i >= s_lastPlayByType.Length) return true;
+            float now = Time.unscaledTime;
+            if (now - s_lastPlayByType[i] < MinIntervalSeconds) return false;
+            s_lastPlayByType[i] = now;
+            return true;
+        }
+
         /// <summary>
         /// Play Haptic
         /// Play haptic pattern presets when haptics are enabled.
@@ -52,23 +68,66 @@ namespace CosmicShore.Gameplay
             var settings = Settings;
             if (settings == null || !settings.HapticsEnabled || settings.HapticsLevel == 0)
                 return;
+            if (type == HapticType.None)
+                return;
+            if (!RateLimitPass(type))
+                return;
 
+#if UNITY_ANDROID && !UNITY_EDITOR
+            // On-device Android: go straight to the OS Vibrator. Reliable across
+            // devices where Lofelt's advanced-haptics gate silently no-ops.
+            GetPulse(type, out long ms, out int baseAmplitude);
+            int amp = Mathf.Clamp(Mathf.RoundToInt(baseAmplitude * Mathf.Clamp01(settings.HapticsLevel)), 1, 255);
+            AndroidHaptics.Pulse(ms, amp);
+#else
+            // Editor / iOS / other: keep the NiceVibrations preset path (gamepad
+            // rumble in-editor, Taptic Engine on iOS).
             Lofelt.NiceVibrations.HapticController.outputLevel = settings.HapticsLevel;
-
-            var pattern = GetPatternForHapticType(type);
-
-            HapticPatterns.PlayPreset(pattern);
+            HapticPatterns.PlayPreset(GetPatternForHapticType(type));
+#endif
         }
+
+        /// <summary>
+        /// Maps a HapticType to a native Android one-shot (pulse duration in ms +
+        /// nominal amplitude 1..255 before the strength slider is applied).
+        /// </summary>
+        static void GetPulse(HapticType type, out long durationMs, out int amplitude)
+        {
+            switch (type)
+            {
+                case HapticType.ButtonPress:      durationMs = 12; amplitude = 130; break;
+                case HapticType.PrismCollision:   durationMs = 14; amplitude = 165; break;
+                case HapticType.CrystalCollision: durationMs = 22; amplitude = 205; break;
+                case HapticType.ShipCollision:    durationMs = 45; amplitude = 255; break;
+                case HapticType.MineCollision:    durationMs = 45; amplitude = 255; break;
+                default:                          durationMs = 15; amplitude = 160; break;
+            }
+        }
+
+        static float s_lastConstant = float.NegativeInfinity;
 
         public static void PlayConstant(float amplitude, float frequency, float duration)
         {
             var settings = Settings;
             if (settings == null || !settings.HapticsEnabled || settings.HapticsLevel == 0)
                 return;
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+            // Some callers drive this per-frame (distance-scaled skim). Rate-limit
+            // so the native Vibrator isn't machine-gunned into a solid buzz.
+            float now = Time.unscaledTime;
+            if (now - s_lastConstant < MinIntervalSeconds) return;
+            s_lastConstant = now;
+
+            long ms = Mathf.Clamp(Mathf.RoundToInt(duration * 1000f), 8, 200);
+            int amp = Mathf.Clamp(Mathf.RoundToInt(Mathf.Clamp01(amplitude) * 255f * Mathf.Clamp01(settings.HapticsLevel)), 1, 255);
+            AndroidHaptics.Pulse(ms, amp);
+#else
             // Honor the strength slider for continuous rumbles too (PlayPreset already does via
             // outputLevel above).
             Lofelt.NiceVibrations.HapticController.outputLevel = settings.HapticsLevel;
             HapticPatterns.PlayConstant(amplitude, frequency, duration);
+#endif
         }
 
         /// <summary>

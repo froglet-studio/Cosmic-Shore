@@ -123,6 +123,15 @@ namespace CosmicShore.Gameplay.Audio
             "to stay percussive. 0 = no rate limit (legacy).")]
         float minTickInterval = 0.07f;
 
+        [SerializeField, Range(0f, 1f), Tooltip(
+            "Suppress the boost-tick one-shot once normalised boost is at or above " +
+            "this fraction of max. Continuous dense skimming pins boost at the " +
+            "ceiling, where every frame re-crosses the rising threshold; without " +
+            "this the tick sustains a buzz once you reach the cap. Click while " +
+            "climbing (below this), stay silent while maintaining the cap. " +
+            "1 = never suppress (legacy).")]
+        float maxTickNormalized = 0.9f;
+
         [Header("Loop Smoothing")]
         [SerializeField, Range(0f, 30f), Tooltip(
             "Exponential smoothing rate for the boost amount parameter on " +
@@ -352,7 +361,14 @@ namespace CosmicShore.Gameplay.Audio
 
             if (rising)
             {
-                FireTickOneShot();
+                // Suppress the click once boost is pinned near max: continuous
+                // dense skimming holds boost at the ceiling where per-frame decay
+                // + a per-frame skim keep re-crossing the rising threshold, so
+                // without this the tick sustains a buzz *after* a few seconds of
+                // climbing (the delayed onset). Click only while genuinely
+                // gaining boost; go silent while maintaining the cap.
+                if (ComputeNormalisedAmount(prev) < maxTickNormalized)
+                    FireTickOneShot();
                 EnsureLoopStarted();
 
                 if (debugLog)
