@@ -21,6 +21,7 @@ namespace CosmicShore.UI
 
         private int _slowedCount;
         private IVesselStatus _vesselStatus;
+        private bool _subscribed;
 
         readonly HashSet<IVesselStatus> _uniqueSlowedThisExplosion = new();
 
@@ -37,7 +38,16 @@ namespace CosmicShore.UI
 
             view?.Initialize();
 
+            // Re-init (menu vessel swap / ReInitializePair) must not double-subscribe —
+            // that was double-counting the slowed tally on every re-initialize.
+            Unsubscribe();
             Subscribe();
+        }
+
+        void OnEnable()
+        {
+            // Re-attach after a disable→enable cycle (pooled/toggled HUD). No-op before Initialize.
+            if (_vesselStatus != null) Subscribe();
         }
 
         void OnDisable()
@@ -47,7 +57,8 @@ namespace CosmicShore.UI
 
         void Subscribe()
         {
-            if (_vesselStatus == null) return;
+            if (_subscribed || _vesselStatus == null) return;
+            _subscribed = true;
 
             if (vesselSlowedByExplosionEvent != null)
                 vesselSlowedByExplosionEvent.OnRaised += HandleVesselSlowedByExplosion;
@@ -69,7 +80,8 @@ namespace CosmicShore.UI
 
         void Unsubscribe()
         {
-            if (_vesselStatus == null) return;
+            if (!_subscribed) return;
+            _subscribed = false;
 
             if (vesselSlowedByExplosionEvent != null)
                 vesselSlowedByExplosionEvent.OnRaised -= HandleVesselSlowedByExplosion;
