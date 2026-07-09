@@ -123,7 +123,10 @@ namespace CosmicShore.Gameplay
             audioSystem.PlayGameplaySFX(GameplaySFXCategory.BoostActivate);
 
             int pipIndex = Mathf.Clamp(_available - 1, 0, _so.MaxCharges - 1);
-            float duration = Mathf.Max(0.05f, _so.BoostDuration);
+            // Element → parameter (Time → boost duration). Anchored at 1x at resting level; a high
+            // Time element makes each Serpent boost charge last longer.
+            float duration = Mathf.Max(0.05f,
+                ElementalScaling.Scale(_status, Element.Time, _so.BoostDuration, atFull: 1.6f));
 
             OnChargeConsumed?.Invoke(pipIndex, duration);
             _available = Mathf.Max(0, _available - 1);

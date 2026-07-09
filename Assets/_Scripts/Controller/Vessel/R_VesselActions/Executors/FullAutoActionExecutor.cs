@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using CosmicShore.Utility;
@@ -135,8 +136,10 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
         var   ammoIndex       = so.AmmoIndex;
         var ammoCost        = so.AmmoCost;
         var  inherit         = so.Inherit;
-        var projectileScale = so.ProjectileScale;
-        var projectileTime  = so.ProjectileTime;
+        // Element → parameter (Mass → projectile size, Time → projectile lifetime). Anchored at
+        // base at resting level; captured once per hold, re-captured on the next trigger press.
+        var projectileScale = ElementalScaling.Scale(_status, Element.Mass, so.ProjectileScale, atFull: 1.5f);
+        var projectileTime  = ElementalScaling.Scale(_status, Element.Time, so.ProjectileTime, atFull: 1.5f);
         var   firingPattern   = so.FiringPattern;
         var energy          = so.Energy;
         var speedValue      = so.SpeedValue.Value;
