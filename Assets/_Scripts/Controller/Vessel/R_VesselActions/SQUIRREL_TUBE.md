@@ -36,38 +36,39 @@ drift SFX isn't doubled when both tiers stack on one trigger.
 
 ## Orientation — projects from the vessel MODEL, not the camera
 
-The tube's axis and the preview both key off the **visual ship model** transform, resolved by
+The tube's **axis** follows a transform's forward, resolved by
 `SquirrelTubeActionExecutor.ResolveModelTransform`:
 
-1. `orientationSource` — an **explicit serialized override** on the executor (wire this to the
-   transform that actually banks/rotates for the vessel), else
-2. `IVesselStatus.ShipGeometries[0]` (the customization-collected visual mesh), else
-3. `IVesselStatus.OrientationHandle`, else
-4. the vessel root (last resort).
+1. `orientationSource` — an **explicit serialized override** on the executor (wire this to a rigid
+   transform whose forward is the ship's nose, if the vessel has one), else
+2. the **vessel root** (`Vessel.Transform`) — its forward is the nose / flight direction.
 
-The origin is the vessel centre; the axis is `model.rotation * forward`. **Do not** use
-`Vessel.Transform` (the root) alone — the camera follows the root (`CameraFollowTarget`), so a
-root-aligned tube reads as camera-locked.
+The origin is the vessel centre; the axis is `rot * forward`.
 
-> **Caveat — the Squirrel puppeteers via an `Animator` (bone deformation), not a rigid transform.**
-> The Squirrel's `MantaAnimationContoller` feeds Pitch/Yaw/Roll blend params to a skinned mesh, so
-> `ShipGeometries[0]` (a `SkinnedMeshRenderer`) may **not** rigidly rotate — the visible bank lives
-> in the skeleton. So the tube also adds an **input-derived lean** on top of the resolved
-> orientation so it banks/swings with flight and drift regardless.
+> **Do NOT project the axis from `ShipGeometries[0]`/the mesh transform.** Those local axes are
+> authored for the model — the Squirrel mesh's forward points out the **top** — so a tube built from
+> `mesh.rotation * forward` fires out the wrong face. The root's forward is the correct nose axis.
 
-### Input-derived lean (SO fields)
+The **visible bank/swing** with flight and drift does NOT come from a ship transform (the Squirrel
+puppeteers via an `Animator`/bone deformation — `ShipGeometries[0]` is a `SkinnedMeshRenderer` that
+doesn't rigidly rotate). It comes from an **input-derived lean** applied on top of the root
+orientation (below), which keeps the axis correct while still banking with the ship.
 
-On top of the resolved model orientation, the tube leans with the same steering signals the vessel
-animation uses (`pitch = InputStatus.YSum`, `yaw = XSum`, `roll = YDiff`):
+### Input-derived bank (SO fields)
 
-- `puppetRollDegrees` (default 20) — banks the ring with roll input. Roll leaves the **axis**
-  untouched, so fly-through is unaffected. Negate to flip the bank side.
-- `puppetPitchYawDegrees` (default 6) — swings the axis with turns/drift. Kept small so the axis
-  barely tilts, and it settles to aligned as the input returns to centre (straighten out to release,
-  and the tube forms along your heading so you still thread the hollow centre).
+On top of the root orientation, the tube banks with your steering so it visibly responds to
+flight/drift **without ever moving the axis off the nose**:
 
-Set both to 0 to project purely from the resolved orientation (no lean). This is the tunable knob
-for "how much does the tube visibly respond to flight/drift."
+- `puppetRollDegrees` (default 20) — **rolls the ring** as you turn/drift (`roll = InputStatus.XSum`).
+  Roll is about the tube's own forward axis, so the tube still fires straight out the front — this is
+  the safe knob. Negate to flip the bank side; 0 = no bank.
+- `puppetPitchYawDegrees` (**default 0 — advanced**) — pitch/yaw from steering. Unlike roll this
+  **tilts the axis**, so the tube stops pointing straight ahead; over a long tube the far end lifts
+  well off-centre and it reads as exiting the top/side. Leave at 0 unless you deliberately want an
+  angled tube.
+
+> The axis is **always** the vessel root's forward (the nose / flight direction). Only roll should be
+> non-zero if you want the "fly straight through the front" guarantee.
 
 ## Pooling (best practice — no Instantiate/Destroy)
 

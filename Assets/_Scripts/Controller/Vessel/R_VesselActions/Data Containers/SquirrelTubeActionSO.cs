@@ -52,15 +52,17 @@ namespace CosmicShore.Gameplay
         [Tooltip("How far ahead of the vessel the tube mouth forms (world units).")]
         [SerializeField] private float forwardOffset = 24f;
 
-        [Header("Model Lean (bank/swing with flight & drift)")]
+        [Header("Model Lean (bank with flight & drift)")]
         [Tooltip("Max roll (deg) added to the tube from roll input, so the ring visibly BANKS with " +
-                 "the ship. Roll leaves the axis alone, so fly-through is unaffected. Negate to flip.")]
+                 "the ship as it rolls. Roll is about the tube's OWN axis, so the tube still fires " +
+                 "straight out the front — safe. Negate to flip the bank side. 0 = no bank.")]
         [SerializeField] private float puppetRollDegrees = 20f;
 
-        [Tooltip("Max pitch/yaw lean (deg) from steering input, so the tube swings with turns/drift. " +
-                 "Keep small so the axis barely tilts and you still thread the centre; it settles to " +
-                 "aligned as you straighten out to release. 0 = no axis lean.")]
-        [SerializeField] private float puppetPitchYawDegrees = 6f;
+        [Tooltip("ADVANCED (default 0). Max pitch/yaw lean (deg) from steering input. Unlike roll, " +
+                 "this TILTS THE AXIS, so the tube no longer points straight ahead (over a long tube " +
+                 "the far end lifts well off-centre — it will look like it exits the top/side). Leave " +
+                 "at 0 unless you specifically want an angled tube.")]
+        [SerializeField] private float puppetPitchYawDegrees = 0f;
 
         [Header("Preview")]
         [Tooltip("Optional translucent material for the hold preview. If null a runtime unlit " +

@@ -137,17 +137,17 @@ namespace CosmicShore.Gameplay
             var model = ResolveModelTransform(status);
             Quaternion rot = model.rotation;
 
-            // Bank/swing the tube with the ship's flight-and-drift puppetry, driven by the same
-            // steering signals the vessel animation uses (pitch=YSum, yaw=XSum, roll=YDiff). Roll
-            // banks the ring without touching the axis; the small pitch/yaw lean swings it and
-            // settles to aligned as the input returns to centre (i.e. when you straighten to
-            // release, so flying straight still threads the hollow centre).
+            // Bank the tube with the ship's flight-and-drift steering. ROLL (about the tube's own
+            // forward axis) banks the ring as you turn/drift WITHOUT tilting the axis, so the tube
+            // still fires straight out the front. Pitch/yaw would tilt the axis (angling the tube off
+            // straight — reads as exiting the top) so it is OFF by default and gated behind the
+            // separate, advanced PuppetPitchYawDegrees.
             var inp = status.InputStatus;
             if (inp != null && (so.PuppetRollDegrees != 0f || so.PuppetPitchYawDegrees != 0f))
             {
-                float pitch = inp.YSum * so.PuppetPitchYawDegrees;
-                float yaw = inp.XSum * so.PuppetPitchYawDegrees;
-                float roll = inp.YDiff * so.PuppetRollDegrees;
+                float roll = inp.XSum * so.PuppetRollDegrees;   // bank into turns/drift; axis unchanged
+                float pitch = inp.YSum * so.PuppetPitchYawDegrees; // 0 by default (would tilt the axis)
+                float yaw = inp.XSum * so.PuppetPitchYawDegrees;   // 0 by default (would tilt the axis)
                 rot *= Quaternion.Euler(pitch, yaw, roll);
             }
 
@@ -156,21 +156,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The visual ship model transform, whose world rotation carries the flight/drift
-        /// puppeteering. Prefers an explicitly-wired <see cref="orientationSource"/>, then the
-        /// customization-collected ship geometry, then the orientation handle, then the
-        /// (camera-followed) root as a last resort.
+        /// The transform whose forward the tube's axis follows. Defaults to the vessel ROOT — its
+        /// forward is the nose / flight direction, which is the correct tube axis (a Squirrel flying
+        /// straight threads the centre). The ship-geometry transforms are NOT used here: their local
+        /// axes are authored for the mesh (the Squirrel model's forward points out the top), so
+        /// projecting from them fires the tube out the wrong face. The visible bank/swing comes from
+        /// the input-derived lean in <see cref="ResolveTubePose"/> instead. An explicit
+        /// <see cref="orientationSource"/> override can still supply a rigid transform whose forward
+        /// is the nose if a vessel has one.
         /// </summary>
         Transform ResolveModelTransform(IVesselStatus status)
         {
             if (orientationSource) return orientationSource;
-
-            var geos = status.ShipGeometries;
-            if (geos != null)
-                for (int i = 0; i < geos.Count; i++)
-                    if (geos[i]) return geos[i].transform;
-
-            if (status.OrientationHandle) return status.OrientationHandle.transform;
             return status.Vessel.Transform;
         }
 

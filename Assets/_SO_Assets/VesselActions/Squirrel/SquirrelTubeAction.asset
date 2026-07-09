@@ -21,7 +21,7 @@ MonoBehaviour:
   prismScale: 5
   forwardOffset: 24
   puppetRollDegrees: 20
-  puppetPitchYawDegrees: 6
+  puppetPitchYawDegrees: 0
   previewMaterial: {fileID: 0}
   previewColor: {r: 1, g: 0.45, b: 0.1, a: 0.28}
   previewFadeInSeconds: 0.15
