@@ -711,22 +711,71 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc B — the UGUI component model (headless).** SCOPE first: inventory the
-   component surface the menu scene + `_Scripts/UI` actually use (`Image`,
-   `RawImage`, `Graphic`/`MaskableGraphic`, `Selectable`, `HorizontalLayoutGroup`
-   / `VerticalLayoutGroup` / `GridLayoutGroup`, `LayoutElement`,
-   `ContentSizeFitter`, `AspectRatioFitter`, `Mask`/`RectMask2D`,
-   `LayoutRebuilder`), then build the layout-participating components over the
-   Arc-A geometry core: real layout maths (padding/spacing/child alignment/
-   flexible sizes driving child RectTransforms), fully headless-tested by
-   asserting the driven child rects. Data-only where render-only (`Image`
-   sprite/color state), REAL where geometry-bearing (layout groups + fitters).
-   May split across iterations — layout groups first (the menu's structural
-   skeleton), masks/fitters after. Do NOT start Arc C (client render
-   primitives) until B's layout maths is tested.
+1. **Arc B part 2 — the Graphic/Image render-state family (headless).** The
+   layout core shipped (part 1 below). Now the render-facing component model
+   over it: `Graphic` base (color, raycastTarget, canvasRenderer link, dirty
+   hooks that no-op headless), `Image` (sprite/type/fillAmount/preserveAspect
+   state + its ILayoutElement face: preferredWidth/Height from sprite size —
+   REAL, since layout consumes it), `RawImage` (texture/uvRect), and the
+   `MaskableGraphic`/`Mask`/`RectMask2D` data surface (usage scan: Mask family
+   is present in the menu scene). Keep the Arc-A/B conventions: REAL maths
+   where geometry-bearing (Image's layout inputs), data-only where pixels-only
+   (fill/aspect flags until Arc C renders them), tests assert what layout
+   consumes (an Image-with-sprite inside a fitter-hugged group sizes the
+   panel). `AspectRatioFitter`/`Dropdown` stay skipped (0 uses). After part 2,
+   Arc B closes and Arc D (input/event layer: EventSystem + Selectable
+   hit-testing over the solved rects) opens next — Arc C (client render
+   primitives) can start any iteration after B closes.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+> **Known flake (pre-existing, logged 2026-07-09):** full Release suite fails
+> ~1-in-10 under CPU load (`SpawnerAdapterC6Tests` or `HeadlessRoundTests`) —
+> verified present on 8053b22f before the milestone arcs; not a regression.
+> Worth a dedicated diagnosis iteration if it worsens.
+
+### Arc B part 1 ✅ (2026-07-09) — the layout core (headless)
+
+The full uGUI layout pipeline over the Arc-A geometry core, PUSH-BASED like
+the original (groups WRITE child RectTransform state — pin anchors upper-left,
+set sizeDelta/anchoredPosition — because layout is imperative in uGUI and the
+menu's transcribed scenes will expect exactly those driven values):
+
+**Engine files (`Engine.UI` unless noted):** `TextAnchor` (engine ns, 9-cell
+grid), `RectOffset` (engine ns), `LayoutInterfaces` (ILayoutElement /
+ILayoutController / ILayoutGroup / ILayoutSelfController / ILayoutIgnorer),
+`LayoutUtility` (highest-priority-wins property resolution, negative = no
+opinion, preferred clamped ≥ min, disabled Behaviours skipped),
+`LayoutElement` (all sizes default −1, priority 1), `LayoutGroup` (abstract:
+padding/childAlignment, rectChildren collection ILayoutIgnorer-filtered,
+totals per axis, GetStartOffset alignment maths, SetChildAlongAxis both
+overloads with the pivot-aware anchored back-solve),
+`HorizontalOrVerticalLayoutGroup` (CalcAlongAxis min/preferred/flexible sums
+with trailing-gap removal; SetChildrenAlongAxis: minMaxLerp shrink between min
+and preferred, flexible-surplus distribution by weight, no-flexible run
+alignment, cross-axis control/expand/align per childControl/childForceExpand)
++ `HorizontalLayoutGroup`/`VerticalLayoutGroup` concretes, `GridLayoutGroup`
+(fixed-column/row + flexible cell counts, startCorner mirroring, row/column-
+major fill, two-pass sizing — axis 0 pins cells, axis 1 positions once both
+dims are known), `ContentSizeFitter` (ILayoutSelfController hugging min/
+preferred via SetSizeWithCurrentAnchors), `LayoutRebuilder` (two-phase solve:
+input bottom-up then control top-down, horizontal fully before vertical;
+self-controllers before group controllers per node; MarkLayoutForRebuild
+walks to the topmost active-group root, deduped queue;
+`FlushQueuedRebuilds` snapshot-drains so mid-rebuild marks land next tick).
+**GameLoop** grew the canvas-update slot: `LayoutRebuilder.FlushQueuedRebuilds()`
+after LateUpdate, before end-of-frame.
+
+**11 headless tests** (`EngineUiLayoutTests`, driven-rect assertions in a
+top-left/y-down parent frame): vertical stack + width stretch, flexible
+surplus by weight, min↔preferred shrink when space is short, run alignment
+when nothing flexes, horizontal mirror, ILayoutIgnorer skip, grid row-major
+fill with padding+spacing, grid UpperRight corner mirroring, ContentSizeFitter
+hug, nested groups in ONE rebuild (outer hands cells, inner subdivides), and
+the GameLoop canvas-slot flush (mark → tick → solved). **1575 tests green in
+BOTH configs (1237 + 338)**; 5 CLI modes exit 0; both client diags
+byte-identical (`trail 786` / `toys 12`). bleeding-edge unmoved at `f2b8f5aa`.
 
 ### Arc A ✅ (2026-07-09) — the engine UI geometry core (headless)
 

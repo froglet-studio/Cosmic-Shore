@@ -127,6 +127,7 @@ namespace CosmicShore.Engine
                 Coroutines.RunFrame();
                 Scheduler.RunFrame();
                 RunPhase(static mb => mb.HasLateUpdate, static mb => mb.RunLateUpdate());
+                UI.LayoutRebuilder.FlushQueuedRebuilds(); // canvas-update slot: queued UI layout solves after LateUpdate
                 Scheduler.RunEndOfFrame();
                 FlushDestroyQueue();
             }
