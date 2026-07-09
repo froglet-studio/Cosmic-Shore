@@ -1,6 +1,5 @@
 
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -52,6 +51,24 @@ namespace CosmicShore.Gameplay
                  "branch has been consumed or exhausted (a mature gyroid has none). This is what " +
                  "lets a grazed flora 'reawaken' instead of sitting as a dead fragment.")]
         [SerializeField] int reseedBranchCount = 3;
+
+        [Tooltip("Grow-order instantiations executed per frame. The grow TICK decides up to " +
+                 "itemsPerGrow children at once (claiming their sites in the spatial index); " +
+                 "instantiating them all in that one frame was a multi-ms burst (prism + spindle " +
+                 "prefab per child). Draining the decided orders at this rate spreads the cost " +
+                 "over a few frames of the 3s grow period — pacing only, throughput preserved.")]
+        [SerializeField, Min(1)] int maxSpawnsPerFrame = 1;
+
+        // A growth decision made at the grow tick, executed by the per-frame drain.
+        // The site is already claimed (GetGrowthInfo → TryReserve), which is what
+        // makes the deferred Instantiate safe against siblings growing into it.
+        struct GrowOrder
+        {
+            public Branch parent;
+            public GrowthInfo info;
+        }
+
+        readonly Queue<GrowOrder> pendingSpawns = new Queue<GrowOrder>();
 
         HashSet<Branch> activeBranches = new HashSet<Branch>();
 
@@ -117,14 +134,20 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            List<Branch> newBranches = new List<Branch>();
             List<Branch> branchesToRemove = new List<Branch>();
 
+            // Decision pass only: pick branches, claim sites, enqueue. The heavyweight
+            // Instantiate work (prism + spindle prefab per child — the multi-ms
+            // AssembledFlora.GrowCoroutine burst in captures) drains at
+            // maxSpawnsPerFrame in Update. Plain enumeration replaces the old
+            // ElementAt(i) walk — LINQ ElementAt on a HashSet is O(i) per call
+            // (O(n²) per tick) and allocates an enumerator every call; enumeration
+            // order is identical.
             float itemsSpawned = 0;
             int skippedItems = 0;
-            for (int i = 0; i < activeBranches.Count && itemsSpawned < itemsPerGrow; i++)
+            foreach (Branch branch in activeBranches)
             {
-                Branch branch = activeBranches.ElementAt(i);
+                if (itemsSpawned >= itemsPerGrow) break;
 
                 if (!branch.assembler || branch.depth >= maxDepth)
                 {
@@ -148,39 +171,8 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
-                HealthPrism newHealthPrism = Instantiate(healthPrism, growthInfo.Position, growthInfo.Rotation);
-                AddHealthBlock(newHealthPrism);
-                Branch newBranch = new Branch(newHealthPrism);
-
-                var newAssembler = AssemblerFactory.ProgramAssembler(newHealthPrism.gameObject, growthInfo);
-                if (newAssembler == null)
-                {
-                    CSDebug.LogError("Failed to create assembler");
-                    continue;
-                }
-
-                Spindle newSpindle = Instantiate(spindle, branch.gameObject.transform);
-                newSpindle.LifeForm = this;
-                newSpindle.transform.position = newHealthPrism.transform.position;
-                newSpindle.transform.rotation = newHealthPrism.transform.rotation;
-
-                newHealthPrism.transform.SetParent(newSpindle.transform, false);
-                newHealthPrism.transform.localPosition = Vector3.zero;
-                newHealthPrism.transform.localRotation = Quaternion.identity;
-                if (growthInfo.IsDangerous) newHealthPrism.MakeDangerous();
-                newHealthPrism.Initialize();
-                
-                newBranch.gameObject = newSpindle.gameObject;
-                newBranch.assembler = newAssembler;
-                newBranch.depth = branch.depth + 1;
-
-                newBranches.Add(newBranch);
+                pendingSpawns.Enqueue(new GrowOrder { parent = branch, info = growthInfo });
                 itemsSpawned++;
-
-                if (branch.depth >= maxDepth - 1 || branch.assembler.IsFullyBonded())
-                {
-                    branchesToRemove.Add(branch);
-                }
             }
 
             foreach (Branch branch in branchesToRemove)
@@ -188,8 +180,63 @@ namespace CosmicShore.Gameplay
                 activeBranches.Remove(branch);
             }
 
-            activeBranches.UnionWith(newBranches);
             GrowCrystal();
+        }
+
+        void Update()
+        {
+            if (pendingSpawns.Count == 0) return;
+
+            // Frenzy gate re-checked at drain time: orders decided just before the
+            // cell crossed into Frenzy WAIT here (sites stay claimed) and execute
+            // when growing re-enables — same freeze-and-resume the tick gate gives.
+            if (cell && !cell.FloraGrowingEnabled) return;
+
+            for (int spawned = 0; spawned < maxSpawnsPerFrame && pendingSpawns.Count > 0; spawned++)
+                ExecuteGrowOrder(pendingSpawns.Dequeue());
+        }
+
+        void ExecuteGrowOrder(GrowOrder order)
+        {
+            // Parent spindle may have been consumed in the few frames between
+            // decision and drain — the claimed site simply expires with its
+            // reservation TTL, exactly like the old skip-after-claim path.
+            if (!order.parent.gameObject || !order.parent.assembler) return;
+
+            var growthInfo = order.info;
+
+            HealthPrism newHealthPrism = Instantiate(healthPrism, growthInfo.Position, growthInfo.Rotation);
+            AddHealthBlock(newHealthPrism);
+            Branch newBranch = new Branch(newHealthPrism);
+
+            var newAssembler = AssemblerFactory.ProgramAssembler(newHealthPrism.gameObject, growthInfo);
+            if (newAssembler == null)
+            {
+                CSDebug.LogError("Failed to create assembler");
+                return;
+            }
+
+            Spindle newSpindle = Instantiate(spindle, order.parent.gameObject.transform);
+            newSpindle.LifeForm = this;
+            newSpindle.transform.position = newHealthPrism.transform.position;
+            newSpindle.transform.rotation = newHealthPrism.transform.rotation;
+
+            newHealthPrism.transform.SetParent(newSpindle.transform, false);
+            newHealthPrism.transform.localPosition = Vector3.zero;
+            newHealthPrism.transform.localRotation = Quaternion.identity;
+            if (growthInfo.IsDangerous) newHealthPrism.MakeDangerous();
+            newHealthPrism.Initialize();
+
+            newBranch.gameObject = newSpindle.gameObject;
+            newBranch.assembler = newAssembler;
+            newBranch.depth = order.parent.depth + 1;
+
+            activeBranches.Add(newBranch);
+
+            // Parent retirement, evaluated after the child exists — same ordering
+            // as the old inline loop.
+            if (order.parent.depth >= maxDepth - 1 || order.parent.assembler.IsFullyBonded())
+                activeBranches.Remove(order.parent);
         }
 
         /// <summary>
@@ -243,8 +290,16 @@ namespace CosmicShore.Gameplay
         public override void RemoveSpindle(Spindle spindle)
         {
             base.RemoveSpindle(spindle);
-            Branch result = activeBranches.FirstOrDefault(item => item.gameObject == spindle.gameObject);
-            activeBranches.Remove(result);
+            Branch found = default;
+            bool hasMatch = false;
+            foreach (var item in activeBranches)
+            {
+                if (item.gameObject != spindle.gameObject) continue;
+                found = item;
+                hasMatch = true;
+                break;
+            }
+            if (hasMatch) activeBranches.Remove(found);
         }
 
         public override void Plant()
