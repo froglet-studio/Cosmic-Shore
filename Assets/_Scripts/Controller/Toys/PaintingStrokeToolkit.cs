@@ -170,7 +170,8 @@ namespace CosmicShore.Gameplay
         /// </summary>
         /// <param name="curlFreq">Base spatial frequency of the flow (world-units^-1). Lower = broader sweeps.</param>
         /// <param name="stepLength">World spacing between consecutive stroke points — keep flyable (≳8).</param>
-        /// <param name="minSteps">/<param name="maxSteps">Stochastic stroke length in points (arc length varies).</param>
+        /// <param name="minSteps">Lower bound of the stochastic stroke length in points.</param>
+        /// <param name="maxSteps">Upper bound of the stochastic stroke length in points (arc length varies).</param>
         /// <param name="freqJitter">Per-stroke curl-frequency spread → varied radii of curvature.</param>
         /// <param name="upBias">Extra push toward +Y each step (0=none). Turns a fill into rising flame tongues.</param>
         /// <param name="project">Optional post-step reprojection (e.g. snap onto a sky shell or flatten a
