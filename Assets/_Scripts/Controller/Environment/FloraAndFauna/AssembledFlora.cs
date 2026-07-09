@@ -66,7 +66,15 @@ namespace CosmicShore.Gameplay
         {
             public Branch parent;
             public GrowthInfo info;
+            public float decidedAt;
         }
+
+        // A Frenzy hold can keep orders queued longer than the spatial-index
+        // reservation TTL; executing an order whose claim lapsed can overlap
+        // another grower's spawn on the same site. Orders older than this are
+        // dropped at drain (one second of safety margin under the TTL) — the next
+        // grow tick simply re-decides them.
+        const float MaxOrderAgeSeconds = PrismSpatialIndex.ReservationTtlSeconds - 1f;
 
         readonly Queue<GrowOrder> pendingSpawns = new Queue<GrowOrder>();
 
@@ -171,7 +179,7 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
-                pendingSpawns.Enqueue(new GrowOrder { parent = branch, info = growthInfo });
+                pendingSpawns.Enqueue(new GrowOrder { parent = branch, info = growthInfo, decidedAt = Time.time });
                 itemsSpawned++;
             }
 
@@ -187,13 +195,41 @@ namespace CosmicShore.Gameplay
         {
             if (pendingSpawns.Count == 0) return;
 
+            // Parity with the old WaitForSeconds-driven grow loop: growth froze at
+            // timeScale 0 (menu pause), so the drain does too.
+            if (Time.timeScale <= 0f) return;
+
             // Frenzy gate re-checked at drain time: orders decided just before the
             // cell crossed into Frenzy WAIT here (sites stay claimed) and execute
             // when growing re-enables — same freeze-and-resume the tick gate gives.
             if (cell && !cell.FloraGrowingEnabled) return;
 
-            for (int spawned = 0; spawned < maxSpawnsPerFrame && pendingSpawns.Count > 0; spawned++)
-                ExecuteGrowOrder(pendingSpawns.Dequeue());
+            int spawned = 0;
+            while (spawned < maxSpawnsPerFrame && pendingSpawns.Count > 0)
+            {
+                var order = pendingSpawns.Dequeue();
+
+                // Claim lapsed during a long hold — drop it (see MaxOrderAgeSeconds);
+                // the next grow tick re-decides this branch.
+                if (Time.time - order.decidedAt > MaxOrderAgeSeconds) continue;
+
+                ExecuteGrowOrder(order);
+                spawned++;
+            }
+        }
+
+        protected override void Die(string killerName = "")
+        {
+            // The old inline path stopped instantiating on death for free —
+            // Die's StopAllCoroutines killed GrowCoroutine, the only spawn site.
+            // The drain is not a coroutine, so without this a dying flora kept
+            // executing pending orders through its wither window: a fresh spindle
+            // registering on the corpse stalls DieCoroutine's empty-tracker wait
+            // (zombie flora), and a child parented under an evaporating spindle is
+            // hard-destroyed with it (a pop-out). Claimed sites release via the
+            // reservation TTL, same as any skipped-after-claim site.
+            pendingSpawns.Clear();
+            base.Die(killerName);
         }
 
         void ExecuteGrowOrder(GrowOrder order)

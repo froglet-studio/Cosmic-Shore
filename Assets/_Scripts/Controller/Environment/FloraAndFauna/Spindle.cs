@@ -17,10 +17,14 @@ namespace CosmicShore.Gameplay
         // static scratch serves every spindle). The old path cloned a Material per
         // animation (new Material + renderer.material — the banned clone pattern) and
         // Destroyed it after; with dozens of spindles condensing at once that was
-        // constant material churn. The MPB un-batches the renderer only while the
-        // fade runs — exactly what the clone did — and clearing it on completion
-        // (SetPropertyBlock(null)) returns the spindle to the shared phase-variant
-        // material and SRP batching.
+        // constant material create/destroy churn. Trade-off, stated honestly: a clone
+        // kept the renderer SRP-Batcher-compatible (same shader), while an MPB
+        // excludes it for the fade's ~1s duration (see the header comment above) —
+        // the win is zero material churn, at the cost of unbatched draws during
+        // fades. If a capture shows the unbatched fade draws regressing, bucket the
+        // fade into a few shared quantized-fade materials like the phase variants.
+        // Clearing the block on completion (SetPropertyBlock(null)) returns the
+        // spindle to its shared phase-variant material and SRP batching.
         static MaterialPropertyBlock s_fadeMpb;
 
         // Spindle sway is desynced with a small set of SHARED phase-variant materials chosen
@@ -204,8 +208,11 @@ namespace CosmicShore.Gameplay
             {
                 yield return null;
 
-                if (!RenderedObject) yield break;
-
+                // No early-out when the renderer is gone: SetFadeValue and
+                // RestoreOriginalMaterial null-guard, and the loop MUST run to
+                // completion so DisableSpindle/Destroy below always finalize the
+                // lifecycle — bailing here leaves a dying=true spindle registered
+                // forever and stalls LifeForm.DieCoroutine's empty-tracker wait.
                 SetFadeValue(deathAnimation);
                 deathAnimation += Time.deltaTime * animationSpeed;
             }
