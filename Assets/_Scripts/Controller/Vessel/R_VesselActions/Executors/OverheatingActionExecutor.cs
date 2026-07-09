@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using CosmicShore.Utility;
@@ -207,7 +208,11 @@ namespace CosmicShore.Gameplay
 
                 while (_heatResource.CurrentAmount > 0)
                 {
-                    _resources.ChangeResourceAmount(so.HeatResourceIndex, -so.HeatDecayRate.Value);
+                    // Element → parameter (Charge → heat-decay rate). Anchored at 1x at resting
+                    // level; a high Charge element cools the overheat penalty off faster.
+                    float decay = so.HeatDecayRate.Value *
+                        ElementalScaling.Multiplier(_status, Element.Charge, atFull: 1.5f);
+                    _resources.ChangeResourceAmount(so.HeatResourceIndex, -decay);
 
                     await UniTask.Delay(
                         TimeSpan.FromSeconds(0.1f),
