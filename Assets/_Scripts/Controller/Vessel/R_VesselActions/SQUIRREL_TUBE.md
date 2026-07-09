@@ -36,24 +36,23 @@ drift SFX isn't doubled when both tiers stack on one trigger.
 
 ## Orientation — projects from the vessel MODEL, not the camera
 
-The tube's axis and the preview both key off the **visual ship model** transform, resolved by
+The tube's **axis** follows a transform's forward, resolved by
 `SquirrelTubeActionExecutor.ResolveModelTransform`:
 
-1. `orientationSource` — an **explicit serialized override** on the executor (wire this to the
-   transform that actually banks/rotates for the vessel), else
-2. `IVesselStatus.ShipGeometries[0]` (the customization-collected visual mesh), else
-3. `IVesselStatus.OrientationHandle`, else
-4. the vessel root (last resort).
+1. `orientationSource` — an **explicit serialized override** on the executor (wire this to a rigid
+   transform whose forward is the ship's nose, if the vessel has one), else
+2. the **vessel root** (`Vessel.Transform`) — its forward is the nose / flight direction.
 
-The origin is the vessel centre; the axis is `model.rotation * forward`. **Do not** use
-`Vessel.Transform` (the root) alone — the camera follows the root (`CameraFollowTarget`), so a
-root-aligned tube reads as camera-locked.
+The origin is the vessel centre; the axis is `rot * forward`.
 
-> **Caveat — the Squirrel puppeteers via an `Animator` (bone deformation), not a rigid transform.**
-> The Squirrel's `MantaAnimationContoller` feeds Pitch/Yaw/Roll blend params to a skinned mesh, so
-> `ShipGeometries[0]` (a `SkinnedMeshRenderer`) may **not** rigidly rotate — the visible bank lives
-> in the skeleton. So the tube also adds an **input-derived lean** on top of the resolved
-> orientation so it banks/swings with flight and drift regardless.
+> **Do NOT project the axis from `ShipGeometries[0]`/the mesh transform.** Those local axes are
+> authored for the model — the Squirrel mesh's forward points out the **top** — so a tube built from
+> `mesh.rotation * forward` fires out the wrong face. The root's forward is the correct nose axis.
+
+The **visible bank/swing** with flight and drift does NOT come from a ship transform (the Squirrel
+puppeteers via an `Animator`/bone deformation — `ShipGeometries[0]` is a `SkinnedMeshRenderer` that
+doesn't rigidly rotate). It comes from an **input-derived lean** applied on top of the root
+orientation (below), which keeps the axis correct while still banking with the ship.
 
 ### Input-derived lean (SO fields)
 

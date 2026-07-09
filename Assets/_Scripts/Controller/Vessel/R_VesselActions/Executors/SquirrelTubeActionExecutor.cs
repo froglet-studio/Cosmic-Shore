@@ -156,21 +156,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The visual ship model transform, whose world rotation carries the flight/drift
-        /// puppeteering. Prefers an explicitly-wired <see cref="orientationSource"/>, then the
-        /// customization-collected ship geometry, then the orientation handle, then the
-        /// (camera-followed) root as a last resort.
+        /// The transform whose forward the tube's axis follows. Defaults to the vessel ROOT — its
+        /// forward is the nose / flight direction, which is the correct tube axis (a Squirrel flying
+        /// straight threads the centre). The ship-geometry transforms are NOT used here: their local
+        /// axes are authored for the mesh (the Squirrel model's forward points out the top), so
+        /// projecting from them fires the tube out the wrong face. The visible bank/swing comes from
+        /// the input-derived lean in <see cref="ResolveTubePose"/> instead. An explicit
+        /// <see cref="orientationSource"/> override can still supply a rigid transform whose forward
+        /// is the nose if a vessel has one.
         /// </summary>
         Transform ResolveModelTransform(IVesselStatus status)
         {
             if (orientationSource) return orientationSource;
-
-            var geos = status.ShipGeometries;
-            if (geos != null)
-                for (int i = 0; i < geos.Count; i++)
-                    if (geos[i]) return geos[i].transform;
-
-            if (status.OrientationHandle) return status.OrientationHandle.transform;
             return status.Vessel.Transform;
         }
 
