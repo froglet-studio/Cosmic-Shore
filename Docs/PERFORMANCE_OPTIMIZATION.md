@@ -27,6 +27,39 @@ Remaining known costs: `EventSystem.Update` ≈ **0.5 ms** flat UI raycast tax
 (Task 2); first-use shader-compile hitches (Task 3 — plumbing shipped,
 collection not yet recorded).
 
+### 2026-07-09 capture (frame 33237, 32.76 ms) — the flora growth pipeline
+
+Post-slicing capture. The animation managers are bounded (1.41 ms for BOTH,
+was 5.55) and the frame driver moved to `CoroutinesDelayedCalls` = 9.88 ms
+(30%) + 43 KB GC — the **flora growth pipeline**, three linked costs:
+
+1. **`AssembledFlora.GrowCoroutine` 4.92 ms + 36.4 KB, one call** — one
+   flora's grow tick: up to `itemsPerGrow` (5) unpooled `Instantiate`s of
+   HealthPrism + Spindle prefabs inline in one frame, every `growPeriod`
+   (3 s) per flora → the red spike train. Plus `activeBranches.ElementAt(i)`
+   (LINQ, O(n²)/tick + enumerator allocs). **Fixed `019eb3c0`:** grow tick
+   decides + claims sites, per-frame drain (`maxSpawnsPerFrame`, default 1)
+   instantiates — pacing only; de-LINQ'd.
+2. **`HealthPrism.CreateBlockCoroutine` 2.38 ms / 5 calls (~0.47 ms per
+   creation tick)** — Task 4 now measured. **Split markers shipped
+   `d4f696ae`** (`Prism.Create.Visibility` / `.SOAPRaise` / `.SpatialBind`);
+   next capture names the dominant part, then fix it (structural-change →
+   enableable component is the favorite).
+3. **`Spindle` fades cloned a Material per condense/evaporate** (49
+   condensing in-capture) — the banned `renderer.material` pattern. **Fixed
+   `5da47650`:** `_DeathAnimation` via shared MaterialPropertyBlock, cleared
+   on completion to restore SRP batching.
+
+Secondary: `DomainVolumeIndicator.Update` 1.02 ms flat — **fixed
+`481a7ad8`** (colors on sample cadence, push gated on convergence/cycle
+epsilon/fresh sample). Editor-only rows to ignore in captures:
+`DiagnosticsHUD.Update` 0.43 ms + 7.8 KB/frame, animation-manager stat
+strings 2.2 KB (both compiled out of release).
+
+Deliberately NOT done: no change to flora growth cadence, item counts, or
+any ecosystem tuning — the regrowth behavior is working as designed; every
+fix spreads or de-allocates the same work.
+
 ### 2026-07-08 capture (HexRace, frame 2721, 71.28 ms) — two new findings
 
 1. **Pool-refill Instantiate + full GC (35 ms).** `UniTaskLoopRunnerEarlyUpdate
@@ -87,6 +120,10 @@ collection not yet recorded).
 | `e04d5a72` | `PoolRefill.<prefabName>` markers on pool buffer refills |
 | `d80e7ee5` | FIX from re-verification: growth tempo calibrated to the real 40 ms tick (`dtNominal = 0.04`); slice dt cap scaled to rotation period; cursor drift corrected |
 | `4443df83` | GC on every peer behind the post-load fade (clients + Play Again reloads were uncovered) |
+| `019eb3c0` | Flora grow-tick instantiation paced across frames (decision at tick, drain 1/frame); branch walk de-LINQ'd |
+| `5da47650` | Spindle condense/evaporate fades via shared MaterialPropertyBlock (was a Material clone + Destroy per fade) |
+| `d4f696ae` | Creation-tick split markers: `Prism.Create.Visibility` / `.SOAPRaise` / `.SpatialBind` (Task 4 attribution) |
+| `481a7ad8` | Domain-volume gauge: colors on sample cadence, push gated on real change (was 1.02 ms/frame flat) |
 
 ---
 
@@ -459,4 +496,5 @@ not compiler, at the time of the merge).
 |---|---|
 | 2026-07-08 | Created. All task file/line claims verified against code (6-agent sweep). Corrections found: LightFauna's tick is `UpdateBehavior` (not `CalculateBehavior` — that's Boid's); AOE explosion lifetime is ~2.2–4.2 s (not 0.6 s); audit tool's prefab path is not Undo-able; StatsManager's Omni lambda is captureless (no alloc) — only the four elemental lambdas allocate; shader-warmup log additionally requires `_verboseLogging=1` on `BootstrapConfig.asset`. Task 1 marked NEXT UP. |
 | 2026-07-08 (later) | HexRace capture analyzed (71 ms frame): pool-refill Instantiate + 20.75 ms mid-race `GC.Collect` on EarlyUpdate, and the Task 1 datum landed — 4350/11,400 growers, source = Boid grazing re-animation (legit, not a leak). Shipped: Task 1 both commits (`27860eaa`, `4b36b7f8`), GC behind splash (`5f6b497a`), spawn-window WaitForSeconds cache (`546e2b98`), `PoolRefill.*` markers (`e04d5a72`). Ecology protocol run: pacing/attribution only, zero collider impact, tempo + continuity preserved by construction. Escalation recorded: `InstantiateAsync` refills only if `PoolRefill.*` shows multi-ms typical unit cost. |
+| 2026-07-09 (flora round) | New capture (32.76 ms frame) analyzed: frame driver = flora growth pipeline (`CoroutinesDelayedCalls` 9.88 ms + 43 KB GC). Shipped under `/ecology`: grow-tick pacing `019eb3c0`, spindle MPB fades `5da47650`, creation-tick split markers `d4f696ae`, gauge push gating `481a7ad8`. Animation managers confirmed bounded post-slice (1.41 ms both, was 5.55). Verify in-editor: flora canopy shape/density unchanged over a full regrow cycle (children appear over ≤5 frames instead of one burst — invisible at 3 s cadence); spindle condense/evaporate fades look identical; gauge fills/ring/dominant tint behave identically; next capture reads `Prism.Create.*` split + `PoolRefill.*`. |
 | 2026-07-09 | 6-agent adversarial re-verification of the five commits (pre-editor-test). **3 blockers found in the fresh Task 1 commits, fixed in `d80e7ee5`:** `dtNominal` 0.02 → 0.04 (project Fixed Timestep is 0.04 — growth was ~1.9× too fast as committed; two agents converged on it independently); fixed 0.5 s dt cap → rotation-scaled cap (fixed cap slowed tempo up to 7× under the target frenzy load); cursor drift on removal bursts corrected. GC coverage gaps (clients + Play Again reloads never took the scheduled collect) fixed in `4443df83` via the two all-peers post-load fade-back handlers. WaitForSeconds cache, pool marker verdicts: SOUND (notes: cache misses on the variable-`waitTime` `waitTillOutsideSkimmer` path — acceptable; prewarm burst unmarked — intentional). Final compile-sanity pass over all six edited files: PASS (arithmetic invariants proven, `MaterialStateManager` independent, no external readers of the sliced behavior). Lesson recorded: never assume Unity's 0.02 default fixed timestep — check `TimeManager.asset`. |
