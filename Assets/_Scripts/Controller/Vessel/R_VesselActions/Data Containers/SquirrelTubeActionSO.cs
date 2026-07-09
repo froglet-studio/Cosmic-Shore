@@ -12,9 +12,11 @@ namespace CosmicShore.Gameplay
     /// boost energy per danger skim) while it obstructs everyone else — danger prisms slam any
     /// vessel body that touches them, friendly fire included (locked design).
     ///
-    /// The tube is real conserved mass laid through the canonical <see cref="PrismTrailBuilder"/>
-    /// path, so it blooms in (continuity law), registers with <see cref="PrismSpatialIndex"/>,
-    /// and is only ever removed by an active force (skim/ability/fauna) — never a timer.
+    /// The tube is real conserved mass laid from the shared prism POOL (via the same
+    /// <see cref="CosmicShore.ScriptableObjects.PrismEventChannelWithReturnSO"/> the trail uses,
+    /// not Instantiate), so it blooms in (continuity law), registers with
+    /// <see cref="PrismSpatialIndex"/>, and is only ever removed by an active force
+    /// (skim/ability/fauna) — never a timer. See <c>SQUIRREL_TUBE.md</c>.
     /// Everything below is designer-tunable in the SO; the geometry defaults are a starting point
     /// and the <see cref="Radius"/> in particular must be tuned in-editor so a level-0 Space
     /// Skimmer sphere reaches the ring while the vessel body clears it.
@@ -23,8 +25,9 @@ namespace CosmicShore.Gameplay
     public class SquirrelTubeActionSO : ShipActionSO
     {
         [Header("Prism")]
-        [Tooltip("Prism prefab the tube wall is built from (the Squirrel prism).")]
-        [SerializeField] private Prism prism;
+        [Tooltip("Which pooled prism the tube wall is built from (Squirrel prism by default). The " +
+                 "prism is pulled from the shared prism pool, not instantiated.")]
+        [SerializeField] private PrismType prismType = PrismType.Squirrel;
 
         [Tooltip("Lay the wall as danger prisms (slam on body contact, 10x skim energy).")]
         [SerializeField] private bool danger = true;
@@ -67,7 +70,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds before the ability can be used again after it forms. Keep it long.")]
         [SerializeField] private float cooldown = 20f;
 
-        public Prism Prism => prism;
+        public PrismType PrismType => prismType;
         public bool Danger => danger;
         public float Radius => radius;
         public int Segments => Mathf.Max(3, segments);

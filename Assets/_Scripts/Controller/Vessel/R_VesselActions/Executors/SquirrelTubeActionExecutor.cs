@@ -2,6 +2,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using UnityEngine;
@@ -11,16 +13,19 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Runtime executor for <see cref="SquirrelTubeActionSO"/> — the Squirrel's "Oak Trunk" tube.
+    /// See <c>SQUIRREL_TUBE.md</c> for the full design (orientation, pooling, cooldown HUD).
     ///
     /// Begin (trigger press): raises a translucent preview built from the EXACT ghost geometry the
-    /// tube will form (a ring field of prism-sized boxes), parented to and following the vessel's
-    /// orientation — never the camera — so as the player turns or drifts the preview swings with the
-    /// nose and shows the true radius/length/thickness of the final wall.
-    /// Commit (trigger release): freezes the vessel's pose, destroys the preview, and lays the wall
-    /// of thick danger prisms along that forward axis through the canonical
-    /// <see cref="PrismTrailBuilder"/> path (batched a few per frame). The wall is real conserved
-    /// mass — it blooms in, registers with the spatial index, and is only removed by an active
-    /// force. A long cooldown gates re-use (surfaced to the HUD via <see cref="CooldownRemaining01"/>).
+    /// tube will form (a ring field of prism-sized boxes). It projects from the VESSEL MODEL's
+    /// orientation (<see cref="ResolveModelTransform"/>) — the puppeteered ship transform, NOT the
+    /// camera-followed root — so as the player turns and drifts the preview banks and swings with
+    /// the ship model.
+    /// Commit (trigger release): freezes that model pose, destroys the preview, and lays a wall of
+    /// thick danger prisms along the axis. The prisms are POOLED — pulled from the shared prism pool
+    /// via <see cref="PrismEventChannelWithReturnSO"/> (the same path the trail and AOE danger
+    /// blocks use) and returned to the pool on teardown — never Instantiate/Destroy. Each blooms in,
+    /// registers with the spatial index, and is removed only by an active force. A long cooldown
+    /// gates re-use (surfaced to the HUD via <see cref="CooldownRemaining01"/>).
     /// </summary>
     public sealed class SquirrelTubeActionExecutor : ShipActionExecutorBase
     {
@@ -29,6 +34,16 @@ namespace CosmicShore.Gameplay
 
         // Unity's built-in unit cube, shared across every executor (never destroyed — a built-in).
         static Mesh _unitCubeMesh;
+
+        [Header("Scene Refs")]
+        [Tooltip("Shared pooled-prism spawn channel (EventOnSpawnPrismAndReturn) — same asset the " +
+                 "vessel trail uses. The tube's prisms are pooled, never Instantiated.")]
+        [SerializeField] private PrismEventChannelWithReturnSO prismSpawnChannel;
+
+        [Tooltip("Optional explicit transform the tube + preview project from — the ship's visual " +
+                 "model transform that banks with flight/drift. If unset, resolves to " +
+                 "ShipGeometries[0] → OrientationHandle → vessel root. See SQUIRREL_TUBE.md.")]
+        [SerializeField] private Transform orientationSource;
 
         [Header("Events")]
         [SerializeField] private ScriptableEventNoParam OnMiniGameTurnEnd;
@@ -45,7 +60,11 @@ namespace CosmicShore.Gameplay
         int _ghostSignature;
 
         CancellationTokenSource _spawnCts;
-        readonly List<GameObject> _tubes = new();
+
+        // Pooled prisms laid by this executor, tracked so they can be returned to the pool on
+        // teardown (turn end / vessel despawn). ReturnToPool self-unsubscribes, so it is safe to
+        // call on an already-returned prism.
+        readonly List<Prism> _tubePrisms = new();
 
         /// <summary>
         /// Cooldown remaining as a 0-1 fraction: 1 right after a deploy (full cooldown left),
@@ -100,57 +119,130 @@ namespace CosmicShore.Gameplay
 
             DestroyPreview();
 
-            var vessel = status.Vessel.Transform;
-            // The tube mouth forms ahead of the vessel, axis aligned to the release-frame forward
-            // (vessel orientation, not the camera), so flying straight carries the vessel through
-            // the hollow centre.
-            Vector3 origin = vessel.position + vessel.forward * so.ForwardOffset;
-            Quaternion rotation = vessel.rotation;
-
-            SpawnTube(so, status, origin, rotation);
+            var pose = ResolveTubePose(so, status);
+            SpawnTube(so, status, pose);
 
             _activeCooldown = so.Cooldown;
             _cooldownEndTime = Time.time + so.Cooldown;
         }
 
-        // ---------------- Tube spawn ----------------
+        // ---------------- Orientation ----------------
 
-        void SpawnTube(SquirrelTubeActionSO so, IVesselStatus status, Vector3 origin, Quaternion rotation)
+        /// <summary>
+        /// The tube's world pose: origin ahead of the vessel centre, axis aligned to the VESSEL
+        /// MODEL's orientation (which banks/leans with flight and drift), not the camera.
+        /// </summary>
+        Pose ResolveTubePose(SquirrelTubeActionSO so, IVesselStatus status)
         {
-            if (!so.Prism) return;
+            var model = ResolveModelTransform(status);
+            Quaternion rot = model.rotation;
+            Vector3 origin = status.Vessel.Transform.position + rot * Vector3.forward * so.ForwardOffset;
+            return new Pose(origin, rot);
+        }
 
-            var container = new GameObject($"SquirrelTube_{status.PlayerName}");
-            container.transform.SetPositionAndRotation(origin, rotation);
-            _tubes.Add(container);
+        /// <summary>
+        /// The visual ship model transform, whose world rotation carries the flight/drift
+        /// puppeteering. Prefers an explicitly-wired <see cref="orientationSource"/>, then the
+        /// customization-collected ship geometry, then the orientation handle, then the
+        /// (camera-followed) root as a last resort.
+        /// </summary>
+        Transform ResolveModelTransform(IVesselStatus status)
+        {
+            if (orientationSource) return orientationSource;
 
-            var lays = BuildLays(so, status.Domain);
-            var trail = new Trail(false);
+            var geos = status.ShipGeometries;
+            if (geos != null)
+                for (int i = 0; i < geos.Count; i++)
+                    if (geos[i]) return geos[i].transform;
+
+            if (status.OrientationHandle) return status.OrientationHandle.transform;
+            return status.Vessel.Transform;
+        }
+
+        // ---------------- Tube spawn (pooled) ----------------
+
+        void SpawnTube(SquirrelTubeActionSO so, IVesselStatus status, Pose pose)
+        {
+            if (!prismSpawnChannel)
+            {
+                CSDebug.LogWarning("[SquirrelTube] prismSpawnChannel not wired — cannot spawn tube.");
+                return;
+            }
+
+            var points = BuildRingPoints(so);
 
             _spawnCts?.Cancel();
             _spawnCts?.Dispose();
             _spawnCts = CancellationTokenSource.CreateLinkedTokenSource(this.GetCancellationTokenOnDestroy());
 
-            PrismTrailBuilder.LayBatched(
-                so.Prism, lays, container.transform, trail,
-                $"{status.PlayerName}::tube", so.SpawnPerFrame, _spawnCts.Token).Forget();
+            SpawnTubeAsync(so, status, pose, points, _spawnCts.Token).Forget();
+        }
+
+        async UniTaskVoid SpawnTubeAsync(SquirrelTubeActionSO so, IVesselStatus status, Pose pose,
+            IReadOnlyList<SpawnPoint> points, CancellationToken ct)
+        {
+            int perFrame = so.SpawnPerFrame;
+            string playerName = status.PlayerName;
+            Domains domain = status.Domain;
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                if (ct.IsCancellationRequested) return;
+
+                var p = points[i];
+                Vector3 worldPos = pose.position + pose.rotation * p.Position;
+                Quaternion worldRot = pose.rotation * p.Rotation;
+                SpawnOnePooledPrism(so, playerName, domain, worldPos, worldRot, p.Scale);
+
+                if ((i + 1) % perFrame == 0)
+                    await UniTask.Yield(PlayerLoopTiming.Update, ct);
+            }
         }
 
         /// <summary>
-        /// Rings of prisms around the local +z axis. Positions are container-local; the container
-        /// carries the world pose. Every ring is centred on the axis so a vessel down the middle
-        /// passes through the hollow centre of each one. Shared by the real spawn and the ghost
-        /// preview so the two are geometrically identical.
+        /// Pulls one prism from the shared pool and configures it like the trail does (team, danger,
+        /// grow-in). IsDangerous is set BEFORE Initialize so Initialize's MakeDangerous repaints it
+        /// to the team's dangerous material.
         /// </summary>
-        List<PrismLay> BuildLays(SquirrelTubeActionSO so, Domains domain)
+        void SpawnOnePooledPrism(SquirrelTubeActionSO so, string playerName, Domains domain,
+            Vector3 worldPos, Quaternion worldRot, Vector3 scale)
+        {
+            var ret = prismSpawnChannel.RaiseEvent(new PrismEventData
+            {
+                ownDomain = domain,
+                Rotation = worldRot,
+                SpawnPosition = worldPos,
+                Scale = scale,
+                PrismType = so.PrismType
+            });
+
+            if (!ret.SpawnedObject || !ret.SpawnedObject.TryGetComponent(out Prism prism))
+                return;
+
+            prism.ownerID = playerName;
+            prism.TargetScale = scale;
+            prism.ChangeTeam(domain);
+            if (so.Danger && prism.prismProperties != null)
+                prism.prismProperties.IsDangerous = true; // Initialize → MakeDangerous repaints it
+
+            prism.Initialize(playerName);
+            _tubePrisms.Add(prism);
+        }
+
+        /// <summary>
+        /// Ring positions around the local +z axis (container-local). Every ring is centred on the
+        /// axis so a vessel down the middle passes through the hollow centre. Shared by the pooled
+        /// spawn and the ghost preview so the two are geometrically identical.
+        /// </summary>
+        List<SpawnPoint> BuildRingPoints(SquirrelTubeActionSO so)
         {
             int rings = so.Rings;
             int segments = so.Segments;
             float radius = so.Radius;
             float spacing = so.RingSpacing;
             var scale = Vector3.one * so.PrismScale;
-            var kind = so.Danger ? PrismKind.Danger : PrismKind.Plain;
 
-            var lays = new List<PrismLay>(rings * segments);
+            var points = new List<SpawnPoint>(rings * segments);
 
             for (int z = 0; z < rings; z++)
             {
@@ -162,11 +254,11 @@ namespace CosmicShore.Gameplay
                     Vector3 position = radial * radius + Vector3.forward * depth;
                     // Long side runs along the tube axis; block "up" points outward radially.
                     var rotation = Quaternion.LookRotation(Vector3.forward, radial);
-                    lays.Add(new PrismLay(new SpawnPoint(position, rotation, scale), domain, kind));
+                    points.Add(new SpawnPoint(position, rotation, scale));
                 }
             }
 
-            return lays;
+            return points;
         }
 
         // ---------------- Preview ----------------
@@ -196,13 +288,11 @@ namespace CosmicShore.Gameplay
 
             while (_preview && status?.Vessel?.Transform != null)
             {
-                var vessel = status.Vessel.Transform;
-                // Container origin = the tube mouth (forwardOffset ahead); the ghost mesh spans
-                // 0..Length in local +z, so the preview is the exact final geometry and swings with
-                // the vessel's orientation as the player turns or drifts.
-                _preview.transform.SetPositionAndRotation(
-                    vessel.position + vessel.forward * so.ForwardOffset,
-                    vessel.rotation);
+                // Project from the vessel MODEL each frame so the preview banks and swings with the
+                // ship's flight/drift puppeteering, not the camera. The ghost mesh spans 0..Length
+                // in local +z from this pose, matching the final tube exactly.
+                var pose = ResolveTubePose(so, status);
+                _preview.transform.SetPositionAndRotation(pose.position, pose.rotation);
 
                 if (fade > 0f && elapsed < fade)
                 {
@@ -217,9 +307,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The ghost preview mesh: one prism-sized box per ring position, combined into a single
-        /// mesh (one draw call). Built from the same <see cref="BuildLays"/> geometry as the real
-        /// tube, so the preview is a faithful stand-in for the final wall's radius, length and
-        /// thickness. Cached and rebuilt only when the SO geometry changes.
+        /// mesh (one draw call) from the same <see cref="BuildRingPoints"/> geometry as the real
+        /// tube. Cached and rebuilt only when the SO geometry changes.
         /// </summary>
         Mesh GetGhostMesh(SquirrelTubeActionSO so)
         {
@@ -229,14 +318,14 @@ namespace CosmicShore.Gameplay
 
             if (_ghostMesh) Destroy(_ghostMesh);
 
-            var lays = BuildLays(so, Domains.Blue); // domain irrelevant for geometry
+            var points = BuildRingPoints(so);
             var cube = GetUnitCubeMesh();
-            var instances = new CombineInstance[lays.Count];
-            for (int i = 0; i < lays.Count; i++)
+            var instances = new CombineInstance[points.Count];
+            for (int i = 0; i < points.Count; i++)
                 instances[i] = new CombineInstance
                 {
                     mesh = cube,
-                    transform = Matrix4x4.TRS(lays[i].Point.Position, lays[i].Point.Rotation, lays[i].Point.Scale)
+                    transform = Matrix4x4.TRS(points[i].Position, points[i].Rotation, points[i].Scale)
                 };
 
             _ghostMesh = new Mesh { name = "SquirrelTubePreviewGhost", indexFormat = IndexFormat.UInt32 };
@@ -318,9 +407,18 @@ namespace CosmicShore.Gameplay
 
             DestroyPreview();
 
-            for (int i = 0; i < _tubes.Count; i++)
-                if (_tubes[i]) Destroy(_tubes[i]);
-            _tubes.Clear();
+            // Return pooled prisms rather than destroying them. ReturnToPool self-unsubscribes, so
+            // an already-returned (e.g. skimmed-and-exploded) prism is a safe no-op; only live tube
+            // prisms are recycled here. Clear the danger state FIRST so a recycled prism can't carry
+            // its danger flag into a plain trail block the shared pool later hands out.
+            for (int i = 0; i < _tubePrisms.Count; i++)
+            {
+                var p = _tubePrisms[i];
+                if (!p || p.destroyed) continue;
+                PrismKinds.Clear(p);
+                p.ReturnToPool();
+            }
+            _tubePrisms.Clear();
         }
     }
 }
