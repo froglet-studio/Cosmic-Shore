@@ -66,9 +66,9 @@ All shipped on the branch; see `ARCHITECTURE.md` § "Status & follow-up" for the
   body. Confirm it reads clearly; consider using the prism/hull look for stronger identity.
 - **Layout.** Two toys fanned by `anglePerToyDeg` around one slot — tune spacing.
 
-## Branch: painting ("fly by numbers") polish
+## Branch: painting ("Connect the Dots") polish
 
-Shipped in the fly-by-numbers enhancement: multi-stroke multi-domain paintings
+Shipped in the connect-the-dots enhancement: multi-stroke multi-domain paintings
 (`PaintingDefinitionSO` + `PaintingPresetLibrary`: Star / Rainbow / Saturn / **Taj Mahal**),
 world-anchored upright monuments, per-stroke domain start gates
 (`RequestSetDomain_ServerRpc`), pen-up between strokes
@@ -93,9 +93,21 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
 - **Feedback juice.** Waypoint-collect VFX, gate-pass SFX/haptics (AudioSystem gameplay SFX +
   NiceVibrations — the framework-wide audio item below), a subtle beam from station to its
   monument so ownership reads at a glance.
-- **More paintings.** The preset library composes easily (arcs/rects/circles/meridians) —
-  candidates: Great Wave, rocket, pagoda, Colosseum. Any `ShapeDefinition` already converts
-  via `sourceShape` (pen-up gaps become strokes, now honored).
+- **More paintings — SHIPPED (12 grandiose 3D constructions).** The preset library now composes a
+  dedicated **`PaintingStrokeToolkit`** (deterministic PRNG, parametric curves — Catmull-Rom, helix,
+  log-spiral, torus knot, phyllotaxis, truncated-icosahedron faces — plus the impressionist curl
+  field) into: Torus Knot, Buckyball, Double Helix, Nautilus, Lotus, Rose, Spiral Galaxy, Phoenix,
+  Almighty Mountain (Bob Ross), Starry Night, Lion's Head, Peacock. Each is non-planar, only
+  Jade/Ruby/Gold, y≥0, flyable-segment-checked, and >20·W of flight (the Taj is 15·W). All are
+  validated by `PaintingPresetLibraryTests` + `PaintingStrokeToolkitTests` and by an offline geometry
+  harness (soccer-ball topology, curl determinism, flyability). Any `ShapeDefinition` still converts
+  via `sourceShape`. Remaining candidates for a future batch: Great Wave, pagoda, Colosseum.
+- **Perf / in-editor pass for the big paintings.** Each stroke stands up one ghost `LineRenderer` +
+  one start gate at `PaintingRunner.Begin`, so Peacock (~226 strokes) and Lion's Head (~171) create a
+  few hundred lightweight LineRenderers up front. This is the intended "hours of flying" ceiling but
+  wants an in-editor confirmation on mobile (and a possible LOD/stream-in of ghosts for the largest
+  gallery entries). Gallery fan spacing is now `anglePerToyDeg = 8°` (~120° for all 16 stations) —
+  confirm it reads well against the lava-lamp play area.
 - **Reviewed and deliberately deferred** (from the enhancement's review pass): coalesce the
   per-stroke synchronous saves (`DataAccessor` full-file JSON writes at each stroke boundary —
   both the small progress file and the growing `PaintingPrismStore` drawing-state file; the

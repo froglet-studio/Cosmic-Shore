@@ -6,7 +6,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// One "fly by numbers" painting station. Its label shows the painting's name and live progress;
+    /// One "connect the dots" painting station. Its label shows the painting's name and live progress;
     /// flying through it starts (or resumes) the painting's <see cref="PaintingRunner"/> at a fixed
     /// world anchor — a monument-in-progress you can leave and come back to (across vessel swaps,
     /// other paintings, other game modes, and sessions — the saved drawing state regrows). Re-flying

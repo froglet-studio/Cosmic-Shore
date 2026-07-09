@@ -57,7 +57,8 @@ detection. On top of that base the `Toy` class adds:
 | Painting station (one per painting) | `Assets/_Scripts/Controller/Toys/PaintingToy.cs` |
 | Multi-stroke fly-by-numbers runner | `Assets/_Scripts/Controller/Toys/PaintingRunner.cs` |
 | Painting data (strokes + domains) | `Assets/_Scripts/ScriptableObjects/Toys/PaintingDefinitionSO.cs` |
-| Preset generators (Star…Taj Mahal) | `Assets/_Scripts/Controller/Toys/PaintingPresetLibrary.cs` |
+| Preset generators (Star…Peacock, 16) | `Assets/_Scripts/Controller/Toys/PaintingPresetLibrary.cs` |
+| Sophisticated-stroke library (curves + curl field) | `Assets/_Scripts/Controller/Toys/PaintingStrokeToolkit.cs` |
 | Painting progress persistence | `Assets/_Scripts/Controller/Toys/PaintingProgressStore.cs` |
 | Drawing state (per-prism pose/domain) | `Assets/_Scripts/Controller/Toys/PaintingPrismStore.cs` |
 | Web share export (inline-WebGL viewer) | `Assets/_Scripts/Controller/Toys/PaintingShareExporter.cs` |
@@ -142,21 +143,39 @@ colours you are *not*. Flying through one requests that domain via the server-au
 `Player.RequestSetDomain_ServerRpc` (**never** a client-local write — CLAUDE.md), and the toy
 flips to the colour you just left.
 
-### Painting / Fly-by-Numbers (`PaintingToy` + `PaintingRunner`)
+### Painting / Connect the Dots (`PaintingToy` + `PaintingRunner`)
 
-The painting toy is a **gallery**: `PaintingToyDefinitionSO` spawns one `PaintingToy` station per
-`PaintingDefinitionSO`, fanned around its ring slot, each labelled with the painting's name and
-live progress. A painting is **multi-stroke and multi-domain** — a list of `PaintingStroke`s
-(name, domain, ordered 3D points) flown in author order — and it stands as a fixed, upright
-**monument-in-progress** anchored just outside the toy ring (front facing the ring), not a
-billboard that follows the vessel. The ladder of built-in presets (`PaintingPresetLibrary`):
+The painting toy (player-facing name **"Connect the Dots"**, formerly "Fly by Numbers") is a
+**gallery**: `PaintingToyDefinitionSO` spawns one `PaintingToy` station per `PaintingDefinitionSO`,
+fanned around its ring slot, each labelled with the painting's name and live progress. A painting
+is **multi-stroke and multi-domain** — a list of `PaintingStroke`s (name, domain, ordered 3D
+points) flown in author order — and it stands as a fixed, upright **monument-in-progress** anchored
+just outside the toy ring (front facing the ring), not a billboard that follows the vessel. The
+built-in gallery (`PaintingPresetLibrary`) is a 16-painting ladder: a four-station on-ramp, then a
+dozen **grandiose non-planar constructions** that dwarf the Taj (every one is >20·W of flight, most
+>100 strokes — the Taj is ~55 / 15·W):
 
-| Painting | Size | Strokes | Domains | What it teaches |
+| # | Painting | Size | Strokes | What it is |
 |---|---|---|---|---|
-| Star | 420 | 1 | Gold | the basic trace, big enough to feel real |
-| Rainbow | 700 | 3 | all three | the domain gates, one band per colour |
-| Saturn | 800 | 3 | all three | genuinely 3D flying (tilted rings) |
-| **Taj Mahal** | 1100 | ~55 | all three | the monument: plinth, chamfered body, grand iwan + niches, onion-dome rib cage, 4 chhatris, 4 minarets with balconies, jade reflecting pool + charbagh — hours of flying |
+| 1 | Star | 420 | 1 | the basic trace, big enough to feel real |
+| 2 | Rainbow | 700 | 3 | the domain gates, one band per colour |
+| 3 | Saturn | 800 | 3 | genuinely 3D flying (tilted rings) |
+| 4 | **Taj Mahal** | 1100 | ~55 | plinth, chamfered body, iwan+niches, onion-dome rib cage, 4 chhatris, 4 minarets, pool + charbagh |
+| 5 | Torus Knot | 1000 | ~52 | a woven (3,2) trefoil + braided rope + plasma sheath — flows through itself when spun |
+| 6 | Buckyball | 1000 | ~75 | truncated-icosahedron soccer ball: **exactly 12 pentagons + 20 hexagons**, planar faces, + a nimbus |
+| 7 | Double Helix | 900 | ~90 | B-DNA: two phase-offset backbones, 40 base-pair rungs, a hydration shell |
+| 8 | Nautilus | 900 | ~103 | a chambered log-spiral shell climbing a cone, mother-of-pearl impressionist sheen |
+| 9 | Lotus | 900 | ~111 | 60 phyllotaxis petals opening in 3D from a shimmering stamen core |
+| 10 | Rose | 900 | ~116 | a nested spiral bloom of cupped, velvet-lined petals |
+| 11 | Spiral Galaxy | 1200 | ~132 | 3 colour-streamed log-spiral arms, an impressionist disk + halo, a blazing bulge |
+| 12 | Phoenix | 1200 | ~120 | a firebird: feathered wings + an impressionist flame tail |
+| 13 | Almighty Mountain | 1300 | ~110 | a Bob Ross vista flown into: 5 fractal ridges, a mirror lake, sun, happy little firs |
+| 14 | Starry Night | 1300 | ~73 | Van Gogh stepped into: a swirling sky shell, 11 star vortices, moon, cypress flame, village |
+| 15 | Lion's Head | 1100 | ~171 | a golden mane of 160 curl-field strands around a Ruby-eyed face |
+| 16 | Peacock | 1100 | ~226 | a fanned 3D train of eye-feathers — the toy's magnum opus |
+
+These are built by composition, not by hand-placing points — see **`PaintingStrokeToolkit`** below.
+The gallery fans ~120° at `anglePerToyDeg = 8°`.
 
 How a run plays:
 
@@ -220,6 +239,44 @@ reach (which tightens on short segments) ramps with them. The Taj Mahal preset i
 reference: pools → plinth → body → arches → dome → chhatris → minaret balconies. Batch
 domains at meaningful architectural boundaries within that ordering (see
 `PaintingPresetLibrary`).
+
+#### The stroke toolkit — where sophisticated strokes come from
+
+The grandiose constructions (rows 5–16 above) are not hand-authored point lists — they are
+composed from **`PaintingStrokeToolkit`** (`Assets/_Scripts/Controller/Toys/`), a pure, deterministic,
+unit-tested geometry library. It answers "where do we pull more sophisticated strokes from?" with
+*math*, not assets:
+
+- **Deterministic PRNG** (`Rng`) — a seedable xorshift, never `UnityEngine.Random`, so every painting
+  regenerates identically (and is testable). Same painting id → same monument every time.
+- **Parametric curve families** — `CatmullRom`, `Helix`, `LogSpiral3D`/`LogSpiralBand` (the golden
+  spiral behind Nautilus + galaxy arms), `TorusKnot(p,q)`, `Rose3D`, `Lissajous3D`, `FibonacciSphere`,
+  `Phyllotaxis` (the 137.5° golden-angle lattice behind Lotus/Rose/Peacock), plus the
+  `TruncatedIcosahedron` / `SoccerBallFaces` graph (exact 60-vertex/90-edge/32-face buckyball).
+  Botanical/terrain helpers: `PetalLoop`, `DomeLift`, `MidpointRidge` (fractal mountains), `ReflectY`
+  (lake reflections), `FirTree`, `FeatherStroke`, `FrameStrand` (braided rope), `RadialCurlStroke`
+  (mane/flame strands).
+- **The impressionist field (the signature technique)** — `CurlNoise` is a divergence-free 3D flow
+  field (curl of a value-noise vector potential; `∇·(∇×Ψ)=0`, so streamlines fill space without
+  converging to a point). `ImpressionistStrokes` integrates short strokes along it whose **radii of
+  curvature stochastically fill a region in every direction** — "3D impressionism". It seeds any
+  region (ball / disk / shell / annulus), optionally reprojects each step onto a surface (the Starry
+  Night sky shell, the galaxy disk), biases upward for flame, and colours each stroke by a spatial
+  `domainField` that can only emit Jade/Ruby/Gold. This is the lion's mane, the Van Gogh sky, the
+  galaxy halo, the nautilus nacre, the phoenix flame.
+
+**Invariants every generator upholds** (locked by `Generate` + tests): base plane at y=0
+(`RebaseToGround` runs after every grandiose preset), front toward +Z, only Jade/Ruby/Gold, flyable
+segments (no degenerate or unflyable jumps), genuine non-planarity, and >20·W of flight. Multi-domain
+impressionist fills are **batched by domain** so the trail recolours ≤2× per fill rather than at every
+scattered stroke. Adding a construction = adding a `PaintingPreset` enum value + a generator that
+composes the toolkit; nothing else changes.
+
+**Collider budget / perf.** A painting is drawn by the *vessel's own trail* (conserved mass, no
+caps) — the geometry cost is one `LineRenderer` ghost + one start gate per stroke, created at
+`PaintingRunner.Begin`. The largest pieces (Peacock ~226, Lion ~171) therefore stand up a few hundred
+lightweight LineRenderers; that is the deliberate "hours of flying" ceiling and is tracked in
+`BACKLOG.md` for an in-editor perf pass.
 
 #### Drawing state — the painting survives everything
 

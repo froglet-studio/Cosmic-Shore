@@ -10,7 +10,7 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Pure-geometry tests for the fly-by-numbers painting presets and the ShapeDefinition
+    /// Pure-geometry tests for the connect-the-dots painting presets and the ShapeDefinition
     /// converter. These guard the invariants the <see cref="PaintingRunner"/> relies on:
     /// every stroke is flyable (≥2 points), every domain is a real team colour, paintings sit
     /// on their base plane (y ≥ 0), and the Taj Mahal actually is the monumental, three-domain,
@@ -215,6 +215,82 @@ namespace CosmicShore.Tests
             {
                 Object.DestroyImmediate(def);
             }
+        }
+
+        // ── Grandiose 3D constructions ───────────────────────────────────────
+
+        static readonly PaintingPreset[] GrandiosePresets =
+        {
+            PaintingPreset.Nautilus, PaintingPreset.Lotus, PaintingPreset.Rose, PaintingPreset.Buckyball,
+            PaintingPreset.TorusKnot, PaintingPreset.DoubleHelix, PaintingPreset.SpiralGalaxy,
+            PaintingPreset.LionsHead, PaintingPreset.Phoenix, PaintingPreset.Peacock,
+            PaintingPreset.StarryNight, PaintingPreset.BobRossVista,
+        };
+
+        [Test]
+        public void GrandiosePreset_IsWellFormedFlyableAndNonPlanar(
+            [ValueSource(nameof(GrandiosePresets))] PaintingPreset preset)
+        {
+            const float W = 1200f;
+            var strokes = PaintingPresetLibrary.Generate(preset, W);
+            AssertStrokesWellFormed(strokes); // ≥2 pts, named, ONLY Jade/Ruby/Gold
+
+            // Base plane at y=0 — every generator rebases.
+            float minY = strokes.SelectMany(s => s.points).Min(p => p.y);
+            Assert.GreaterOrEqual(minY, -1f, $"{preset} dips below its base plane");
+
+            // Genuinely non-planar: real extent on all three axes (not a billboard).
+            var b = PaintingPresetLibrary.ComputeBounds(strokes);
+            Assert.Greater(b.size.x, 0.05f * W, $"{preset} has no x-extent");
+            Assert.Greater(b.size.y, 0.05f * W, $"{preset} has no y-extent");
+            Assert.Greater(b.size.z, 0.05f * W, $"{preset} is planar — no z-extent");
+
+            // Grandiose: eclipses the Taj Mahal (55 strokes / 15·W) on both axes.
+            Assert.GreaterOrEqual(strokes.Count, 40, $"{preset} is not grandiose enough");
+            Assert.Greater(PaintingPresetLibrary.TotalPathLength(strokes), 20f * W, $"{preset} is too short");
+
+            // Every segment flyable: no NaN, no degenerate (<0.4u) or unflyable (>0.65·W) jump.
+            foreach (var s in strokes)
+                for (int i = 1; i < s.points.Count; i++)
+                {
+                    Vector3 p = s.points[i];
+                    Assert.IsFalse(float.IsNaN(p.x) || float.IsNaN(p.y) || float.IsNaN(p.z), $"{preset} NaN point");
+                    float seg = Vector3.Distance(s.points[i - 1], p);
+                    Assert.Greater(seg, 0.4f, $"{preset} '{s.name}' has a degenerate segment");
+                    Assert.Less(seg, 0.65f * W, $"{preset} '{s.name}' has an unflyable jump");
+                }
+        }
+
+        [Test]
+        public void GrandiosePreset_IsDeterministic(
+            [ValueSource(nameof(GrandiosePresets))] PaintingPreset preset)
+        {
+            var a = PaintingPresetLibrary.Generate(preset, 1000f);
+            var c = PaintingPresetLibrary.Generate(preset, 1000f);
+            Assert.AreEqual(a.Count, c.Count, $"{preset} stroke count not stable");
+            for (int i = 0; i < a.Count; i++)
+            {
+                Assert.AreEqual(a[i].domain, c[i].domain);
+                Assert.AreEqual(a[i].points.Count, c[i].points.Count);
+                for (int p = 0; p < a[i].points.Count; p++)
+                    Assert.AreEqual(a[i].points[p], c[i].points[p], $"{preset} stroke {i} point {p} not stable");
+            }
+        }
+
+        [Test]
+        public void LionsHead_HasHundredsOfManeStrokes()
+        {
+            var strokes = PaintingPresetLibrary.Generate(PaintingPreset.LionsHead, 1100f);
+            Assert.GreaterOrEqual(strokes.Count(s => s.name.StartsWith("Mane")), 120,
+                "the lion's mane should be built from many curl-field strands");
+        }
+
+        [Test]
+        public void Buckyball_HasTwelvePentagonsAndTwentyHexagons()
+        {
+            var strokes = PaintingPresetLibrary.Generate(PaintingPreset.Buckyball, 1000f);
+            Assert.AreEqual(12, strokes.Count(s => s.name.StartsWith("Pentagon")), "a soccer ball has 12 pentagons");
+            Assert.AreEqual(20, strokes.Count(s => s.name.StartsWith("Hexagon")), "a soccer ball has 20 hexagons");
         }
     }
 }

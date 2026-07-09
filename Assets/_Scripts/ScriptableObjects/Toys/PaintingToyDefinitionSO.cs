@@ -5,7 +5,7 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The "fly by numbers" painting toy — a small gallery of painting stations fanned around its
+    /// The "connect the dots" painting toy — a small gallery of painting stations fanned around its
     /// toybox slot, one per <see cref="PaintingDefinitionSO"/>. Each station shows its painting's
     /// name + live progress and, when flown through, runs that painting at a fixed world anchor
     /// just outside the toy ring: multi-stroke, multi-domain (start gates recolour the trail via
@@ -18,13 +18,14 @@ namespace CosmicShore.ScriptableObjects
     [CreateAssetMenu(fileName = "Toy_Painting", menuName = "ScriptableObjects/Toys/Painting Toy")]
     public class PaintingToyDefinitionSO : ToyDefinitionSO
     {
-        [Header("Painting (Fly-by-Numbers)")]
+        [Header("Painting (Connect the Dots)")]
         [SerializeField, Tooltip("The gallery: one painting station spawns per entry. Leave empty for the " +
                                  "built-in default gallery (Star, Rainbow, Saturn, Taj Mahal).")]
         List<PaintingDefinitionSO> paintings = new();
 
-        [SerializeField, Tooltip("Angular gap (degrees) between adjacent painting stations around the ring.")]
-        float anglePerToyDeg = 12f;
+        [SerializeField, Tooltip("Angular gap (degrees) between adjacent painting stations around the ring. " +
+                                 "The full 16-painting gallery fans ~120° at 8°.")]
+        float anglePerToyDeg = 8f;
 
         [SerializeField, Tooltip("Clearance between the toy ring and the near edge of each painting, world units.")]
         float paintingClearance = 150f;
@@ -118,6 +119,7 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public static readonly DefaultPaintingSpec[] DefaultGalleryCatalog =
         {
+            // ── On-ramp ──
             new("painting_star", "Star", "One clean stroke — a warm-up canvas.",
                 PaintingPreset.Star, 420f, 30f),
             new("painting_rainbow", "Rainbow", "Three bands, three colours — ride the gates.",
@@ -127,6 +129,44 @@ namespace CosmicShore.ScriptableObjects
             new("painting_taj_mahal", "Taj Mahal",
                 "The monument. Fifty-five strokes, three colours, hours of flying.",
                 PaintingPreset.TajMahal, 1100f, 26f),
+
+            // ── Grandiose 3D constructions — beautiful when spun (each dwarfs the Taj) ──
+            new("painting_torus_knot", "Torus Knot",
+                "A woven trefoil that flows through itself forever, in a plasma sheath.",
+                PaintingPreset.TorusKnot, 1000f, 18f),
+            new("painting_buckyball", "Buckyball",
+                "The soccer ball — twelve pentagons, twenty hexagons, a geodesic cage.",
+                PaintingPreset.Buckyball, 1000f, 18f),
+            new("painting_double_helix", "Double Helix",
+                "B-DNA: two backbones laddered by base pairs in a swirling hydration shell.",
+                PaintingPreset.DoubleHelix, 900f, 18f),
+            new("painting_nautilus", "Nautilus",
+                "A chambered logarithmic shell climbing a cone under a mother-of-pearl sheen.",
+                PaintingPreset.Nautilus, 900f, 18f),
+            new("painting_lotus", "Lotus",
+                "Sixty petals on the golden-angle spiral, opening from a shimmering core.",
+                PaintingPreset.Lotus, 900f, 18f),
+            new("painting_rose", "Rose",
+                "A nested spiral bloom of cupped, velvet-lined petals.",
+                PaintingPreset.Rose, 900f, 18f),
+            new("painting_spiral_galaxy", "Spiral Galaxy",
+                "Three colour-streamed arms winding out of a blazing bulge and impressionist disk.",
+                PaintingPreset.SpiralGalaxy, 1200f, 22f),
+            new("painting_phoenix", "Phoenix",
+                "A firebird of feathered wings above an impressionist flame tail.",
+                PaintingPreset.Phoenix, 1200f, 22f),
+            new("painting_bob_ross", "Almighty Mountain",
+                "A Bob Ross vista you fly into: fractal ridges, a mirror lake, and happy little firs.",
+                PaintingPreset.BobRossVista, 1300f, 24f),
+            new("painting_starry_night", "Starry Night",
+                "Step into Van Gogh: a swirling sky shell, star vortices, a cypress flame, a village.",
+                PaintingPreset.StarryNight, 1300f, 24f),
+            new("painting_lions_head", "Lion's Head",
+                "A golden mane of a hundred and sixty curl-field strands around a Ruby-eyed face.",
+                PaintingPreset.LionsHead, 1100f, 20f),
+            new("painting_peacock", "Peacock",
+                "A fanned 3D train of eye-feathers — the toy's magnum opus.",
+                PaintingPreset.Peacock, 1100f, 20f),
         };
 
         /// <summary>

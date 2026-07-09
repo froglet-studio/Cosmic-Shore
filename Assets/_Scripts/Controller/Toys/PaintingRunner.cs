@@ -10,7 +10,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The multi-stroke "fly by numbers" runner. A painting is a world-anchored monument-in-progress:
+    /// The multi-stroke "connect the dots" runner. A painting is a world-anchored monument-in-progress:
     /// every stroke renders as a ghost line tinted its domain colour, the current stroke opens with a
     /// <b>start gate</b> (a ring the vessel flies through, which requests the stroke's domain via the
     /// server-authoritative pick RPC so the trail recolours), and the vessel's own trail paints each
