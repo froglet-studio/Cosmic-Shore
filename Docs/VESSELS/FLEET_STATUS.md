@@ -6,7 +6,9 @@ Cosmic Shore ships 11 vessel classes (`VesselClassType`). Each is meant to be a 
 1. **Identity** — a clear genre/fantasy.
 2. **Four abilities ↔ four dynamic icons** — abilities wired on the prefab's
    `R_VesselActionHandler._inputEventShipActions` (InputEvent → `ShipActionSO`); each ability's HUD
-   icon conveys live state, not just a static button.
+   icon conveys live state, not just a static button. **Every vessel shows exactly four ability
+   icons** — a hard contract (see "The four-icon contract" below); a slot can bundle several kit
+   parts or be a shallow passive, and unfilled slots show an obvious placeholder.
 3. **Four elements ↔ four parameters** — `Charge / Mass / Space / Time` each scale a gameplay
    parameter.
 4. **A distinct trail** — a per-vessel prism prefab / `TrailScaleProfileSO` / prism controller.
@@ -54,6 +56,37 @@ float scaled = ElementalScaling.Scale(status, Element.Mass, so.BaseValue, atFull
 
 **Element convention (fleet-wide):** `Space → reach/handling`, `Time → duration/cooldown/rate`,
 `Charge → energy output`, `Mass → physical size`.
+
+---
+
+## The four-icon contract (`VesselAbilityBar`)
+
+To the player, **every vessel presents exactly four ability icons** — a fixed expectation of "four
+abilities," where the icons are the mnemonics. Under the hood an "ability" is decoupled from this:
+one slot can be a shallow passive, or several kit parts hamfisted into one ability, because some
+vessels are more complicated than others. It is a deliberate simplification of the game's surface.
+
+Shipped this pass (code):
+
+- **`VesselAbilitySetSO`** (`_Scripts/ScriptableObjects/`) — a per-vessel set of **exactly four**
+  `VesselAbilitySlot`s (`Label`, `Description`, `Input`, `Icon`, `IsPlaceholder`). The four-slot size
+  is enforced in `OnValidate` — you cannot author a set with more or fewer.
+- **`VesselAbilityBar`** (`_Scripts/UI/Controller/`) — renders exactly four icons from the set, lights
+  each icon while its `Input` is held, and **self-builds its icon row** if none is authored. Any slot
+  without a real icon shows an **obvious code-generated placeholder** (`AbilityIconPlaceholder` —
+  hazard-stripe tile, no asset needed), so a vessel *cannot* display fewer than four icons.
+- **`VesselHUDController`** resolves and initializes a `VesselAbilityBar` under the HUD if present —
+  **non-regressing**: existing HUDs are untouched until they adopt a bar.
+- **`Tools > Cosmic Shore > Validate Vessel Ability Icons`** (`_Scripts/Editor/`) reports every
+  vessel/HUD prefab as compliant / bar-without-set / missing-a-bar. A build gate exists
+  (`EnforceOnBuild`, default **off**); flip it on once all vessels are migrated to make a
+  non-compliant fleet fail the build — the hard "impossible to ship a vessel without four icons".
+
+**Adopt per vessel (asset step):** add a `VesselAbilityBar` under the vessel's HUD (or let it
+self-build), create a `VesselAbilitySetSO` (right-click ▸ *ScriptableObjects/Vessel/Ability Set (4
+icons)*), fill the four slots with `Input` + `Label` and a real `Icon` where one exists (leave the
+rest as placeholders), and assign the set to the bar. The rich per-vessel state widgets (boost fill,
+overcharge dial, …) stay as they are — the bar is only the four-icon mnemonic layer.
 
 ---
 

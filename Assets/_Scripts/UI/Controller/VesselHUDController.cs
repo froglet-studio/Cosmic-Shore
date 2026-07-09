@@ -9,6 +9,12 @@ namespace CosmicShore.UI
         [Header("Base View (fallback)")]
         [SerializeField] private VesselHUDView baseView;
 
+        [Header("Ability Bar (4-icon contract)")]
+        [Tooltip("Optional. When present, guarantees exactly four ability icons (placeholders for " +
+                 "unfilled slots). Resolved from children if left empty; a HUD without one is flagged " +
+                 "by Tools > Cosmic Shore > Validate Vessel Ability Icons.")]
+        [SerializeField] private VesselAbilityBar abilityBar;
+
         [Header("Legacy Silhouette")]
         [SerializeField] private SilhouetteController silhouette;
 
@@ -25,6 +31,12 @@ namespace CosmicShore.UI
                 baseView = GetComponentInChildren<VesselHUDView>(true);
 
             baseView?.Initialize();
+
+            // Four-icon contract: initialize the ability bar if this HUD has one. No-op when absent,
+            // so existing HUDs are untouched until they adopt a VesselAbilityBar.
+            if (!abilityBar)
+                abilityBar = GetComponentInChildren<VesselAbilityBar>(true);
+            abilityBar?.Initialize(vesselStatus);
         }
 
         public void SubscribeToEvents()
