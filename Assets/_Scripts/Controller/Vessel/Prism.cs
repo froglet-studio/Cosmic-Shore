@@ -1,4 +1,5 @@
 using System;
+using Unity.Profiling;
 using UnityEngine;
 using System.Collections;
 using CosmicShore.Core;
@@ -436,6 +437,14 @@ namespace CosmicShore.Gameplay
         static int s_creationCompletionsThisFrame;
         static int s_creationBudgetFrame = -1;
 
+        // Split attribution for the ~0.5ms creation-completion tick: which of the
+        // three suspects dominates decides the fix (enableable-component render flag
+        // vs SOAP listener work vs spatial bind). See
+        // Docs/PERFORMANCE_OPTIMIZATION.md Task 4.
+        static readonly ProfilerMarker s_createVisibilityMarker = new("Prism.Create.Visibility");
+        static readonly ProfilerMarker s_createSoapMarker = new("Prism.Create.SOAPRaise");
+        static readonly ProfilerMarker s_createSpatialMarker = new("Prism.Create.SpatialBind");
+
         private IEnumerator CreateBlockCoroutine(Vector3 authoredTargetScale)
         {
             if (_spawnWait == null || _spawnWaitSeconds != waitTime)
@@ -465,8 +474,11 @@ namespace CosmicShore.Gameplay
             }
             s_creationCompletionsThisFrame++;
 
-            SetRenderVisible(true);
-            blockCollider.enabled = true;
+            using (s_createVisibilityMarker.Auto())
+            {
+                SetRenderVisible(true);
+                blockCollider.enabled = true;
+            }
 
             if (scaleAnimator.TargetScale == Vector3.zero)
                 scaleAnimator.SetTargetScale(authoredTargetScale);
@@ -475,11 +487,14 @@ namespace CosmicShore.Gameplay
 
             scaleAnimator.BeginGrowthAnimation();
 
-            _onTrailBlockCreatedEventChannel.Raise(new PrismStats
+            using (s_createSoapMarker.Auto())
             {
-                OwnName = PlayerName,
-                Volume = prismProperties.volume,
-            });
+                _onTrailBlockCreatedEventChannel.Raise(new PrismStats
+                {
+                    OwnName = PlayerName,
+                    Volume = prismProperties.volume,
+                });
+            }
 
             // Register with the spatial index — one registration, every view:
             // cache-friendly batch AOE processing, growth occupancy (consumes the
@@ -491,16 +506,19 @@ namespace CosmicShore.Gameplay
             // Seed the volume cache before the cell starts aggregating this prism
             // (it enters massTracked via the Register → BindCell path below), so the
             // first volume recompute reads a real value, not the default 0.
-            RefreshVolumeCache();
+            using (s_createSpatialMarker.Auto())
+            {
+                RefreshVolumeCache();
 
-            var spatialIndex = PrismSpatialIndex.EnsureInstance();
-            if (spatialIndex != null && spatialIndex.IsAvailable)
-                SpatialIndexId = spatialIndex.Register(this);
+                var spatialIndex = PrismSpatialIndex.EnsureInstance();
+                if (spatialIndex != null && spatialIndex.IsAvailable)
+                    SpatialIndexId = spatialIndex.Register(this);
 
-            // The LOD sweep is transition-based — it must be told about colliders
-            // that come online between ticks, or a prism born far from every focus
-            // keeps its collider until a bubble boundary happens to cross it.
-            PrismColliderLodManager.NotifyPrismActivated(this);
+                // The LOD sweep is transition-based — it must be told about colliders
+                // that come online between ticks, or a prism born far from every focus
+                // keeps its collider until a bubble boundary happens to cross it.
+                PrismColliderLodManager.NotifyPrismActivated(this);
+            }
         }
 
         /// <summary>
