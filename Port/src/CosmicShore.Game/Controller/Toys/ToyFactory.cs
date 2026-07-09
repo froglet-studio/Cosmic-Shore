@@ -3,10 +3,10 @@
 // .Rendering for Mesh/LineRenderer/MeshRenderer/Material/Shader/PrimitiveType/ShadowCastingMode);
 // TMPro → CosmicShore.Engine.UI; Cysharp.Threading.Tasks → System.Threading.Tasks +
 // CosmicShore.Engine.Tasks (async UniTaskVoid ScaleOutAndDestroy → async Task, callers .Forget();
-// UniTask.Yield(PlayerLoopTiming.Update, ct) → GameTask.Yield(ct)). The one carried surface is
-// the 3D-TMP label's RectTransform (UI-shell deviation, restore when RectTransform ports) — the
-// same deviation the pre-rework port ToyFactory carried; everything else (cone/jack/ring meshes,
-// gate builder, material cache, domain colour/material) ports LIVE.
+// UniTask.Yield(PlayerLoopTiming.Update, ct) → GameTask.Yield(ct)). FULLY live — the last
+// carried surface (the 3D-TMP label's `new GameObject("Label", typeof(RectTransform))`) was
+// RESTORED 2026-07-09 when the engine UI geometry core (Arc A) grew RectTransform + the
+// component-type-list GameObject constructor.
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
 using System.Threading.Tasks;
@@ -352,8 +352,7 @@ namespace CosmicShore.Gameplay
         public static TMP_Text AddLabel(Transform parent, string text, Color color, float upOffset)
         {
             // 3D TextMeshPro uses a RectTransform — create it up front so AddComponent is safe.
-            // PORT Deviation (UI shell, restore when RectTransform ports): var go = new GameObject("Label", typeof(RectTransform));
-            var go = new GameObject("Label");
+            var go = new GameObject("Label", typeof(RectTransform));
             go.transform.SetParent(parent, false);
             go.transform.localPosition = Vector3.up * upOffset;
 

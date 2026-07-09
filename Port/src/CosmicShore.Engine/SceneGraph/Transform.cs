@@ -13,14 +13,20 @@ namespace CosmicShore.Engine
     /// Position/rotation/scale + hierarchy. Local values are authoritative; world values
     /// compose through the parent chain (TRS, no shear — lossyScale is the componentwise
     /// approximation, same caveat as the original engine).
+    ///
+    /// Unsealed for <see cref="RectTransform"/> (the UI geometry core), which derives
+    /// <see cref="localPosition"/> (and, when driven by a root Canvas,
+    /// <see cref="localScale"/>) from its anchor state — hence those two are virtual
+    /// properties rather than fields. <see cref="localRotation"/> stays a plain field:
+    /// nothing drives it.
     /// </summary>
-    public sealed class Transform : Component, IEnumerable
+    public class Transform : Component, IEnumerable
     {
         readonly List<Transform> _children = new();
 
-        public Vector3 localPosition = Vector3.zero;
+        public virtual Vector3 localPosition { get; set; } = Vector3.zero;
         public Quaternion localRotation = Quaternion.identity;
-        public Vector3 localScale = Vector3.one;
+        public virtual Vector3 localScale { get; set; } = Vector3.one;
 
         Transform _parent;
 
@@ -211,6 +217,46 @@ namespace CosmicShore.Engine
         {
             parent?._children.Remove(this);
             _parent = null;
+        }
+
+        /// <summary>
+        /// Transform→RectTransform conversion support (original contract: adding a
+        /// RectTransform replaces the GameObject's Transform in place). Transplants the
+        /// old transform's hierarchy position — parent slot (same child index), children
+        /// (same order, reparented in place) — and local pose onto this instance, then
+        /// retires the old transform. Hierarchy first, pose last: a RectTransform's
+        /// localPosition setter back-solves anchoredPosition against the REAL parent
+        /// rect, so the world pose survives the conversion exactly.
+        /// </summary>
+        internal void AdoptHierarchyFrom(Transform old)
+        {
+            Vector3 oldLocalPosition = old.localPosition;
+            Quaternion oldLocalRotation = old.localRotation;
+            Vector3 oldLocalScale = old.localScale;
+
+            // Parent slot, preserving sibling order.
+            _parent = old._parent;
+            if (_parent is not null)
+            {
+                int slot = _parent._children.IndexOf(old);
+                if (slot >= 0) _parent._children[slot] = this;
+                else _parent._children.Add(this); // defensive (should not happen)
+            }
+
+            // Children, preserving order.
+            foreach (var child in old._children)
+            {
+                child._parent = this;
+                _children.Add(child);
+            }
+            old._children.Clear();
+            old._parent = null;
+
+            localRotation = oldLocalRotation;
+            localScale = oldLocalScale;
+            localPosition = oldLocalPosition;
+
+            old.destroyedFlag = true;
         }
 
         internal override void DestroyComponentNow()

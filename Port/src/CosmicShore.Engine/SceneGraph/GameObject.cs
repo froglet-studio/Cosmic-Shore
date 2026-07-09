@@ -12,7 +12,7 @@ namespace CosmicShore.Engine
     {
         readonly List<Component> _components = new();
 
-        public Transform transform { get; }
+        public Transform transform { get; private set; }
 
         /// <summary>
         /// Self-reference, matching the original engine's GameObject.gameObject property —
@@ -38,6 +38,17 @@ namespace CosmicShore.Engine
             _components.Add(transform);
             scene = loop.Scene;
             scene.AddRoot(this);
+        }
+
+        /// <summary>
+        /// Original-engine contract: create with components attached in order. A
+        /// Transform-derived type in the list (RectTransform) becomes the object's
+        /// transform (the UI creation idiom <c>new GameObject("x", typeof(RectTransform))</c>).
+        /// </summary>
+        public GameObject(string name, params Type[] components) : this(name)
+        {
+            foreach (var type in components)
+                AddComponent(type);
         }
 
         /// <summary>
@@ -108,6 +119,24 @@ namespace CosmicShore.Engine
         {
             if (!typeof(Component).IsAssignableFrom(componentType))
                 throw new ArgumentException($"{componentType.Name} is not a Component.");
+
+            // Transform-derived types (RectTransform) CONVERT the existing transform in
+            // place rather than adding a second one (original contract: a GameObject has
+            // exactly one transform; adding a RectTransform upgrades it, preserving the
+            // hierarchy slot, children, and local pose). Adding a plain Transform is
+            // meaningless — the object already has one.
+            if (typeof(Transform).IsAssignableFrom(componentType))
+            {
+                if (componentType == typeof(Transform)) return transform;
+                if (componentType.IsInstanceOfType(transform)) return transform; // already converted
+                var replacement = (Transform)Activator.CreateInstance(componentType, nonPublic: true);
+                replacement.gameObject = this;
+                replacement.AdoptHierarchyFrom(transform);
+                _components[_components.IndexOf(transform)] = replacement;
+                transform = replacement;
+                return replacement;
+            }
+
             var component = (Component)Activator.CreateInstance(componentType, nonPublic: true);
             component.gameObject = this;
             _components.Add(component);

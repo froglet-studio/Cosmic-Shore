@@ -711,18 +711,65 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc A — Engine UI geometry core (headless).** Build a first-party
-   `RectTransform` (anchorMin/anchorMax, pivot, sizeDelta, anchoredPosition,
-   computed `rect`) + `Canvas` + `CanvasScaler` (reference-resolution scaling)
-   + a rect-solve layout pass, in `CosmicShore.Engine`. Fully unit-testable
-   with NO renderer — assert computed world/screen rects from anchors/pivots/
-   sizeDelta across parent sizes and scale factors. This is THE foundation
-   (the Unity menu is 1142 RectTransforms); headless-first per ground rule 2.
-   Scope it first; it may split across two iterations. Do NOT start the client
-   render primitives (Arc C) until the geometry model is solid and tested.
+1. **Arc B — the UGUI component model (headless).** SCOPE first: inventory the
+   component surface the menu scene + `_Scripts/UI` actually use (`Image`,
+   `RawImage`, `Graphic`/`MaskableGraphic`, `Selectable`, `HorizontalLayoutGroup`
+   / `VerticalLayoutGroup` / `GridLayoutGroup`, `LayoutElement`,
+   `ContentSizeFitter`, `AspectRatioFitter`, `Mask`/`RectMask2D`,
+   `LayoutRebuilder`), then build the layout-participating components over the
+   Arc-A geometry core: real layout maths (padding/spacing/child alignment/
+   flexible sizes driving child RectTransforms), fully headless-tested by
+   asserting the driven child rects. Data-only where render-only (`Image`
+   sprite/color state), REAL where geometry-bearing (layout groups + fitters).
+   May split across iterations — layout groups first (the menu's structural
+   skeleton), masks/fitters after. Do NOT start Arc C (client render
+   primitives) until B's layout maths is tested.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Arc A ✅ (2026-07-09) — the engine UI geometry core (headless)
+
+Engine growths (`CosmicShore.Engine`): **`Rect`** (full struct: min/max/center/
+size, edge setters, MinMaxRect, Contains/Overlaps, normalized-point maps);
+**`Transform` unsealed** with `localPosition`/`localScale` converted to virtual
+properties (verified zero CS1612/ref/reflection breakers repo-wide;
+`localRotation` stays a field — nothing drives it) + internal
+`AdoptHierarchyFrom` (hierarchy-first, pose-last transplant so back-solves land
+against the real parent rect); **`GameObject`** grew the component-type-list
+constructor (`new GameObject(name, typeof(RectTransform))`) and Transform-
+derived `AddComponent` now CONVERTS the transform in place (same sibling slot,
+children in order, local pose preserved; adding plain `Transform` or an
+already-converted type returns the existing one); **`RectTransform`** — the
+anchor solve, PULL-BASED (rect + localPosition compute from live anchor state
++ parent chain on every read → always consistent, zero dirty-tracking/update
+ordering, headless-deterministic): anchorMin/Max, pivot, anchoredPosition(3D),
+sizeDelta, `rect`, offsetMin/Max (round-tripping views), GetLocalCorners/
+GetWorldCorners (BL,TL,TR,BR), SetSizeWithCurrentAnchors,
+SetInsetAndSizeFromParentEdge, localPosition setter back-solves
+anchoredPosition (what makes reparenting + conversion keep world pose);
+**`Canvas`** (+`RenderMode`) — rootCanvas walk, isRootCanvas, sortingOrder/
+overrideSorting/worldCamera/pixelRect; a root screen-space canvas DRIVES its
+RectTransform (rect = screen/scaleFactor, pose = screen centre, scale =
+scaleFactor); **`CanvasScaler`** (`Engine.UI`) — ConstantPixelSize +
+ScaleWithScreenSize (MatchWidthOrHeight in log space, Expand, Shrink).
+Documented pull-based deviation: the original pushes scaleFactor during its
+render pass; the port's Canvas pulls from the scaler on read — identical
+steady-state, never stale.
+
+**15 headless tests** (`EngineUiGeometryTests`): point/corner/stretch anchors,
+offset round-trips through an asymmetric pivot, localPosition back-solve,
+reparent-keeps-world-pose, nested stretch chain world corners, sizing helpers,
+Transform→RectTransform conversion (hierarchy slot/children/pose/component
+list), the ctor idiom, canvas-driven root rect at scale factors (world corners
+stay pixels), full-stretch child covering the screen, IMMEDIATE screen-resize
+propagation (the pull-based payoff), CanvasScaler ratio maths (1.6/1.2/
+geometric mean/expand/shrink) + reference-resolution rect, nested-canvas
+factor inheritance. **Bonus un-carry:** ToyFactory's label deviation
+(`new GameObject("Label", typeof(RectTransform))`) — ToyFactory is now FULLY
+live; zero RectTransform deviations remain repo-wide. **1564 tests green in
+BOTH configs (1226 + 338)**; 5 CLI modes exit 0; both client diags
+byte-identical (`trail 786` / `toys 12`). bleeding-edge unmoved at `f2b8f5aa`.
 
 ## MILESTONE: MENU-UI + MULTI-MODE PLAYABLE (prompter 2026-07-08)
 
