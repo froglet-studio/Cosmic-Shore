@@ -136,6 +136,21 @@ namespace CosmicShore.Gameplay
         {
             var model = ResolveModelTransform(status);
             Quaternion rot = model.rotation;
+
+            // Bank/swing the tube with the ship's flight-and-drift puppetry, driven by the same
+            // steering signals the vessel animation uses (pitch=YSum, yaw=XSum, roll=YDiff). Roll
+            // banks the ring without touching the axis; the small pitch/yaw lean swings it and
+            // settles to aligned as the input returns to centre (i.e. when you straighten to
+            // release, so flying straight still threads the hollow centre).
+            var inp = status.InputStatus;
+            if (inp != null && (so.PuppetRollDegrees != 0f || so.PuppetPitchYawDegrees != 0f))
+            {
+                float pitch = inp.YSum * so.PuppetPitchYawDegrees;
+                float yaw = inp.XSum * so.PuppetPitchYawDegrees;
+                float roll = inp.YDiff * so.PuppetRollDegrees;
+                rot *= Quaternion.Euler(pitch, yaw, roll);
+            }
+
             Vector3 origin = status.Vessel.Transform.position + rot * Vector3.forward * so.ForwardOffset;
             return new Pose(origin, rot);
         }

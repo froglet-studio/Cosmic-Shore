@@ -52,9 +52,22 @@ root-aligned tube reads as camera-locked.
 > **Caveat — the Squirrel puppeteers via an `Animator` (bone deformation), not a rigid transform.**
 > The Squirrel's `MantaAnimationContoller` feeds Pitch/Yaw/Roll blend params to a skinned mesh, so
 > `ShipGeometries[0]` (a `SkinnedMeshRenderer`) may **not** rigidly rotate — the visible bank lives
-> in the skeleton. If the auto-resolved transform doesn't visibly track the ship, wire
-> `orientationSource` to a rigid transform that does bank (or add an input-derived lean from
-> `InputStatus.XSum/YSum/YDiff`). This is a per-vessel authoring decision.
+> in the skeleton. So the tube also adds an **input-derived lean** on top of the resolved
+> orientation so it banks/swings with flight and drift regardless.
+
+### Input-derived lean (SO fields)
+
+On top of the resolved model orientation, the tube leans with the same steering signals the vessel
+animation uses (`pitch = InputStatus.YSum`, `yaw = XSum`, `roll = YDiff`):
+
+- `puppetRollDegrees` (default 20) — banks the ring with roll input. Roll leaves the **axis**
+  untouched, so fly-through is unaffected. Negate to flip the bank side.
+- `puppetPitchYawDegrees` (default 6) — swings the axis with turns/drift. Kept small so the axis
+  barely tilts, and it settles to aligned as the input returns to centre (straighten out to release,
+  and the tube forms along your heading so you still thread the hollow centre).
+
+Set both to 0 to project purely from the resolved orientation (no lean). This is the tunable knob
+for "how much does the tube visibly respond to flight/drift."
 
 ## Pooling (best practice — no Instantiate/Destroy)
 
