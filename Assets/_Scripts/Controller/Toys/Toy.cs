@@ -115,7 +115,11 @@ namespace CosmicShore.Gameplay
             // can't fire until that vessel flies clear.
         }
 
-        void Update()
+        // Virtual so subclasses that need their own per-frame work (e.g. PaintingToy's choice-gate
+        // cleanup) EXTEND rather than shadow it — Unity invokes only the most-derived Update(), so
+        // a hiding declaration in a subclass would silently disable the exit-gated re-arm below and
+        // the toy would never fire. Overrides must call base.Update().
+        protected virtual void Update()
         {
             if (_armed || _blooming || _activating) return;
             if (LocalVesselOutsideTrigger())
@@ -133,6 +137,18 @@ namespace CosmicShore.Gameplay
 
             _armed = false; // Update() re-arms only after the vessel has flown clear again.
             _activating = true;
+            ActivateDeferred(vessel).Forget();
+        }
+
+        /// <summary>
+        /// Toy effects run on the next Update tick, NOT inside the physics trigger callback:
+        /// they reach deep (domain RPC → vessel re-theme → HUD pool rebuilds, networked vessel
+        /// swaps), and a swath of engine APIs (DestroyImmediate among them) is illegal during
+        /// physics/animation/render callbacks. One frame of deferral is imperceptible.
+        /// </summary>
+        async UniTaskVoid ActivateDeferred(IVesselStatus vessel)
+        {
+            await UniTask.Yield(PlayerLoopTiming.Update, this.GetCancellationTokenOnDestroy());
             try { OnActivated(vessel); }
             finally { _activating = false; }
         }
