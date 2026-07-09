@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
@@ -8,32 +7,41 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// Renders a vessel's four player-facing ability icons — always exactly four. Any slot without
-    /// an authored icon shows an obvious placeholder, so it is impossible for a vessel to present
-    /// fewer than four ability icons. Each icon lights up while its ability's input is held.
+    /// Guarantees a vessel presents exactly four ability icons, and lights each while its ability's
+    /// input is held.
     ///
-    /// The bar self-builds its icon row if none is authored in the prefab, so a brand-new vessel
-    /// gets four placeholder icons for free. Drive it from <see cref="VesselHUDController"/> by
-    /// calling <see cref="Initialize"/>; the base controller resolves and initializes any bar found
-    /// under the HUD, so existing HUDs are untouched until one is added.
+    /// PREFERRED path — author the four icon <see cref="Image"/>s in the HUD prefab and assign them
+    /// to <see cref="slotImages"/>. They then load with the HUD like any other element: zero runtime
+    /// allocation, and no work on the vessel-spawn/swap hotpath.
+    ///
+    /// FALLBACK path — any slot left unassigned is built once at <see cref="Initialize"/> so a
+    /// not-yet-authored vessel (or a stub) still shows four icons, with an obvious placeholder.
+    /// This is the exceptional path, so its one-time construction cost is irrelevant.
+    ///
+    /// No pooling: a bar is created at most once per vessel and lives for the HUD's lifetime — there
+    /// is nothing high-frequency to pool, and the structure is never rebuilt (it survives HUD
+    /// show/hide untouched). Unfilled abilities show a code-generated placeholder sprite.
     /// </summary>
     public sealed class VesselAbilityBar : MonoBehaviour
     {
         [Header("Data — the four player-facing abilities")]
         [SerializeField] private VesselAbilitySetSO abilitySet;
 
-        [Header("Layout (self-built if the container is left empty)")]
-        [SerializeField] private RectTransform iconContainer;
-        [SerializeField] private Vector2 iconSize = new(96f, 96f);
-        [SerializeField] private float spacing = 16f;
-        [SerializeField] private Vector2 selfBuiltAnchoredOffset = new(0f, 24f);
+        [Header("Icons — assign four in the HUD prefab (preferred, zero runtime alloc)")]
+        [SerializeField] private Image[] slotImages = new Image[VesselAbilitySetSO.SlotCount];
+
+        [Header("Fallback layout — only used to self-build unassigned slots")]
+        [SerializeField] private RectTransform fallbackContainer;
+        [SerializeField] private Vector2 fallbackIconSize = new(96f, 96f);
+        [SerializeField] private float fallbackSpacing = 16f;
+        [SerializeField] private Vector2 fallbackAnchoredOffset = new(0f, 24f);
 
         [Header("Active-state feel")]
         [SerializeField, Range(0f, 1f)] private float idleAlpha = 0.55f;
         [SerializeField, Range(0f, 1f)] private float activeAlpha = 1f;
         [SerializeField] private float activeScale = 1.15f;
 
-        readonly List<Image> _icons = new();
+        readonly Image[] _icons = new Image[VesselAbilitySetSO.SlotCount];
         R_VesselActionHandler _actions;
         bool _subscribed;
         bool _built;
@@ -44,13 +52,14 @@ namespace CosmicShore.UI
         public void Initialize(IVesselStatus status)
         {
             _actions = status?.ActionHandler;
-            BuildIcons();
+            ResolveIcons();
             Subscribe();
         }
 
         void OnEnable()
         {
-            // Re-attach after a disable→enable cycle (pooled / toggled HUD). No-op before Initialize.
+            // Re-attach after a disable→enable cycle (HUD show/hide). The icon structure persists —
+            // it is never released or rebuilt — so this only re-subscribes. No-op before Initialize.
             if (_actions != null) Subscribe();
         }
 
@@ -73,49 +82,77 @@ namespace CosmicShore.UI
             _subscribed = false;
         }
 
-        void BuildIcons()
+        void ResolveIcons()
         {
-            EnsureContainer();
+            if (_built)
+            {
+                Repaint(); // re-Initialize (vessel swap) just repaints the existing structure
+                return;
+            }
 
             for (int i = 0; i < SlotCount; i++)
             {
-                Image img = i < _icons.Count ? _icons[i] : null;
-                if (!img)
-                {
-                    img = CreateIcon(i);
-                    _icons.Add(img);
-                }
-
-                var slot = abilitySet ? abilitySet.GetSlot(i) : default;
-                bool hasIcon = slot.HasIcon;
-
-                img.sprite = hasIcon ? slot.Icon : AbilityIconPlaceholder.Sprite;
-                img.color = new Color(1f, 1f, 1f, idleAlpha);
-                img.rectTransform.localScale = Vector3.one;
-                img.name = hasIcon ? $"AbilitySlot{i}_{slot.Label}" : $"AbilitySlot{i}_Placeholder";
+                // Preferred: an icon authored in the prefab — no allocation.
+                var img = (slotImages != null && i < slotImages.Length) ? slotImages[i] : null;
+                // Fallback: self-build a missing slot once, so the four-icon contract still holds.
+                if (!img) img = BuildFallbackIcon(i);
+                _icons[i] = img;
             }
 
             _built = true;
+            Repaint();
 
             if (!abilitySet)
                 Debug.LogError($"[VesselAbilityBar] No VesselAbilitySetSO assigned on '{name}'. " +
                                "Showing four placeholders — every vessel must have a 4-slot ability set.");
         }
 
-        void EnsureContainer()
+        void Repaint()
         {
-            if (iconContainer) return;
+            for (int i = 0; i < SlotCount; i++)
+            {
+                var img = _icons[i];
+                if (!img) continue;
+
+                var slot = abilitySet ? abilitySet.GetSlot(i) : default;
+                bool hasIcon = slot.HasIcon;
+
+                img.sprite = hasIcon ? slot.Icon : AbilityIconPlaceholder.Sprite;
+                if (!img.enabled) img.enabled = true;
+                img.color = new Color(1f, 1f, 1f, idleAlpha);
+                img.rectTransform.localScale = Vector3.one;
+            }
+        }
+
+        Image BuildFallbackIcon(int index)
+        {
+            EnsureFallbackContainer();
+
+            var go = new GameObject($"AbilitySlot{index}_fallback", typeof(RectTransform), typeof(Image));
+            var rt = go.GetComponent<RectTransform>();
+            rt.SetParent(fallbackContainer, false);
+            rt.sizeDelta = fallbackIconSize;
+
+            var img = go.GetComponent<Image>();
+            img.raycastTarget = false;
+            img.preserveAspect = true;
+            return img;
+        }
+
+        void EnsureFallbackContainer()
+        {
+            if (fallbackContainer) return;
 
             var go = new GameObject("AbilityIconContainer", typeof(RectTransform));
-            iconContainer = go.GetComponent<RectTransform>();
-            iconContainer.SetParent(transform, false);
-            iconContainer.anchorMin = new Vector2(0.5f, 0f);
-            iconContainer.anchorMax = new Vector2(0.5f, 0f);
-            iconContainer.pivot = new Vector2(0.5f, 0f);
-            iconContainer.anchoredPosition = selfBuiltAnchoredOffset;
+            fallbackContainer = go.GetComponent<RectTransform>();
+            fallbackContainer.SetParent(transform, false);
+            fallbackContainer.anchorMin = new Vector2(0.5f, 0f);
+            fallbackContainer.anchorMax = new Vector2(0.5f, 0f);
+            fallbackContainer.pivot = new Vector2(0.5f, 0f);
+            fallbackContainer.anchoredPosition = fallbackAnchoredOffset;
 
             var layout = go.AddComponent<HorizontalLayoutGroup>();
-            layout.spacing = spacing;
+            layout.spacing = fallbackSpacing;
             layout.childAlignment = TextAnchor.LowerCenter;
             layout.childControlWidth = false;
             layout.childControlHeight = false;
@@ -127,19 +164,6 @@ namespace CosmicShore.UI
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         }
 
-        Image CreateIcon(int index)
-        {
-            var go = new GameObject($"AbilitySlot{index}", typeof(RectTransform), typeof(Image));
-            var rt = go.GetComponent<RectTransform>();
-            rt.SetParent(iconContainer, false);
-            rt.sizeDelta = iconSize;
-
-            var img = go.GetComponent<Image>();
-            img.raycastTarget = false;
-            img.preserveAspect = true;
-            return img;
-        }
-
         void HandleInputStarted(InputEvents input) => SetActive(input, true);
         void HandleInputStopped(InputEvents input) => SetActive(input, false);
 
@@ -147,7 +171,7 @@ namespace CosmicShore.UI
         {
             if (!_built || !abilitySet) return;
 
-            for (int i = 0; i < SlotCount && i < _icons.Count; i++)
+            for (int i = 0; i < SlotCount; i++)
             {
                 if (abilitySet.GetSlot(i).Input != input) continue;
 

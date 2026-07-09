@@ -71,10 +71,14 @@ Shipped this pass (code):
 - **`VesselAbilitySetSO`** (`_Scripts/ScriptableObjects/`) — a per-vessel set of **exactly four**
   `VesselAbilitySlot`s (`Label`, `Description`, `Input`, `Icon`, `IsPlaceholder`). The four-slot size
   is enforced in `OnValidate` — you cannot author a set with more or fewer.
-- **`VesselAbilityBar`** (`_Scripts/UI/Controller/`) — renders exactly four icons from the set, lights
-  each icon while its `Input` is held, and **self-builds its icon row** if none is authored. Any slot
-  without a real icon shows an **obvious code-generated placeholder** (`AbilityIconPlaceholder` —
-  hazard-stripe tile, no asset needed), so a vessel *cannot* display fewer than four icons.
+- **`VesselAbilityBar`** (`_Scripts/UI/Controller/`) — renders exactly four icons and lights each
+  while its `Input` is held. **Preferred:** the four icon `Image`s are authored in the HUD prefab and
+  assigned to `slotImages` — they load with the HUD, so there is *zero* runtime allocation and nothing
+  built on the vessel-spawn/swap hotpath. **Fallback:** any slot left unassigned is self-built once so
+  a not-yet-authored vessel (or stub) still shows four icons, with an **obvious code-generated
+  placeholder** (`AbilityIconPlaceholder` — hazard-stripe tile, no asset needed). So a vessel *cannot*
+  display fewer than four icons. No pooling — a bar is created at most once per vessel and never
+  rebuilt (it survives HUD show/hide untouched), so there is nothing high-frequency to pool.
 - **`VesselHUDController`** resolves and initializes a `VesselAbilityBar` under the HUD if present —
   **non-regressing**: existing HUDs are untouched until they adopt a bar.
 - **`Tools > Cosmic Shore > Validate Vessel Ability Icons`** (`_Scripts/Editor/`) reports every
@@ -82,11 +86,13 @@ Shipped this pass (code):
   (`EnforceOnBuild`, default **off**); flip it on once all vessels are migrated to make a
   non-compliant fleet fail the build — the hard "impossible to ship a vessel without four icons".
 
-**Adopt per vessel (asset step):** add a `VesselAbilityBar` under the vessel's HUD (or let it
-self-build), create a `VesselAbilitySetSO` (right-click ▸ *ScriptableObjects/Vessel/Ability Set (4
-icons)*), fill the four slots with `Input` + `Label` and a real `Icon` where one exists (leave the
-rest as placeholders), and assign the set to the bar. The rich per-vessel state widgets (boost fill,
-overcharge dial, …) stay as they are — the bar is only the four-icon mnemonic layer.
+**Adopt per vessel (asset step):** add a `VesselAbilityBar` under the vessel's HUD; **author four
+icon `Image`s in the HUD prefab and drag them into `slotImages`** (the zero-alloc path — if you skip
+this the bar self-builds placeholders instead). Create a `VesselAbilitySetSO` (right-click ▸
+*ScriptableObjects/Vessel/Ability Set (4 icons)*), fill the four slots with `Input` + `Label` and a
+real `Icon` where one exists (leave the rest as placeholders), and assign the set to the bar. The
+rich per-vessel state widgets (boost fill, overcharge dial, …) stay as they are — the bar is only the
+four-icon mnemonic layer.
 
 ---
 
