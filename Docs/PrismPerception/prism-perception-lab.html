@@ -1,0 +1,1052 @@
+<title>Prism Perception Bench — 3 Domains, Larger Space</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  /* ---- Single deliberate world: a dark optical bench. -------------------
+     Partitive (additive) colour mixing is a black-ground phenomenon: glowing
+     dots sum to new colours ONLY against black. A light background would
+     physically destroy every demo on this page, so this instrument commits to
+     one visual world on purpose. The three domains are the only saturated
+     colour here; all chrome is graphite + steel. --------------------------- */
+  :root{
+    --bg:#07090e; --bg-2:#0a0d13; --panel:#0d1016; --panel-2:#10141c;
+    --rule:#1b212c; --rule-2:#232b38;
+    --ink:#e9ecf1; --steel:#98a2b2; --dim:#5b6474; --dimmer:#3c4452;
+    /* The REAL prism HDR emission (_BrightColor), gamma-encoded — a near-CMY triad,
+       NOT the team green/red/gold. Jade glows azure-cyan, Ruby violet, Gold amber. */
+    --jade:#00bbff; --ruby:#a100ff; --gold:#ffaf43;
+    --focus:#7fe3ff;
+    --mono:ui-monospace,"JetBrains Mono","SFMono-Regular","Cascadia Code",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --maxw:1200px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;background:var(--bg);color:var(--ink);
+    font-family:var(--sans);font-size:16px;line-height:1.62;
+    -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+    overflow-x:hidden;
+  }
+  ::selection{background:rgba(127,227,255,.28);color:#fff}
+  a{color:var(--focus);text-decoration:none;border-bottom:1px solid rgba(127,227,255,.35)}
+  :focus-visible{outline:2px solid var(--focus);outline-offset:3px;border-radius:2px}
+
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 clamp(18px,4vw,40px)}
+
+  /* mono utility labels */
+  .klabel{font-family:var(--mono);text-transform:uppercase;letter-spacing:.22em;
+    font-size:11px;color:var(--dim);font-weight:600}
+  .tnum{font-variant-numeric:tabular-nums;font-family:var(--mono)}
+
+  /* ---------- top bar ---------- */
+  header.top{position:sticky;top:0;z-index:40;background:rgba(7,9,14,.78);
+    backdrop-filter:blur(10px);border-bottom:1px solid var(--rule)}
+  header.top .wrap{display:flex;align-items:center;gap:18px;height:56px}
+  .brand{font-family:var(--mono);font-weight:700;letter-spacing:.16em;font-size:13px;
+    text-transform:uppercase;display:flex;align-items:center;gap:11px}
+  .brand .tri{display:inline-flex;gap:3px}
+  .brand .tri i{width:8px;height:8px;border-radius:50%;display:block;
+    filter:blur(.3px) drop-shadow(0 0 5px currentColor)}
+  .brand .tri i:nth-child(1){background:var(--jade);color:var(--jade)}
+  .brand .tri i:nth-child(2){background:var(--ruby);color:var(--ruby)}
+  .brand .tri i:nth-child(3){background:var(--gold);color:var(--gold)}
+  header.top nav{margin-left:auto;display:flex;gap:2px;flex-wrap:wrap}
+  header.top nav a{font-family:var(--mono);font-size:11px;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--steel);border:0;padding:7px 10px;border-radius:6px}
+  header.top nav a:hover{color:var(--ink);background:var(--panel-2)}
+  @media(max-width:720px){header.top nav{display:none}}
+
+  /* ---------- hero ---------- */
+  .hero{position:relative;border-bottom:1px solid var(--rule);overflow:hidden}
+  .hero-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:0;min-height:min(78vh,720px)}
+  @media(max-width:900px){.hero-grid{grid-template-columns:1fr;min-height:0}}
+  .hero-copy{padding:clamp(30px,5vw,64px) clamp(18px,4vw,40px);display:flex;flex-direction:column;
+    justify-content:center;gap:22px;position:relative;z-index:2}
+  .eyebrow{display:flex;align-items:center;gap:12px}
+  .eyebrow .ln{height:1px;width:34px;background:var(--rule-2)}
+  h1{font-family:var(--mono);font-weight:700;line-height:1.04;letter-spacing:-.01em;
+    font-size:clamp(30px,5.4vw,58px);margin:0;text-wrap:balance}
+  h1 .g{color:var(--jade)} h1 .r{color:var(--ruby)} h1 .y{color:var(--gold)}
+  .lede{font-size:clamp(15px,1.7vw,18px);color:var(--steel);max-width:52ch;text-wrap:pretty}
+  .lede b{color:var(--ink);font-weight:600}
+  .hero-stage{position:relative;border-left:1px solid var(--rule);background:
+    radial-gradient(120% 90% at 70% 30%,#0b0f17 0%,#07090e 70%)}
+  /* absolute fill removes the canvas from inline flow so ResizeObserver can't
+     enter a shrink/clear feedback loop (see build notes). */
+  .hero-stage canvas#cv-gamut{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;z-index:1}
+  @media(max-width:900px){.hero-stage{border-left:0;border-top:1px solid var(--rule);height:64vh;min-height:420px}}
+  .stage-badge{position:absolute;top:14px;left:14px;z-index:3;pointer-events:none}
+  .hint{position:absolute;bottom:12px;left:0;right:0;text-align:center;z-index:3;pointer-events:none;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+
+  /* control chips */
+  .ctrls{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center}
+  .ctrl{display:flex;flex-direction:column;gap:5px;min-width:0}
+  .ctrl .cl{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+  .ctrl .cl .nm{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+  .ctrl .cl .vl{font-family:var(--mono);font-size:11px;color:var(--steel);font-variant-numeric:tabular-nums}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:3px;border-radius:3px;
+    background:var(--rule-2);width:160px;max-width:44vw;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;
+    background:var(--ink);border:2px solid #0b0f17;box-shadow:0 0 0 1px var(--rule-2)}
+  input[type=range]::-moz-range-thumb{width:13px;height:13px;border:2px solid #0b0f17;border-radius:50%;background:var(--ink)}
+  .seg{display:inline-flex;border:1px solid var(--rule-2);border-radius:7px;overflow:hidden}
+  .seg button{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+    background:transparent;color:var(--steel);border:0;padding:6px 11px;cursor:pointer}
+  .seg button[aria-pressed=true]{background:var(--panel-2);color:var(--ink)}
+  .seg button+button{border-left:1px solid var(--rule-2)}
+  .toggle{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+    background:var(--panel);color:var(--steel);border:1px solid var(--rule-2);border-radius:7px;
+    padding:7px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:8px}
+  .toggle[aria-pressed=true]{color:var(--ink);border-color:var(--rule-2);background:var(--panel-2)}
+  .toggle .dot{width:7px;height:7px;border-radius:50%;background:var(--dimmer)}
+  .toggle[aria-pressed=true] .dot{background:var(--focus);box-shadow:0 0 7px var(--focus)}
+
+  /* ---------- section / stations ---------- */
+  section{border-bottom:1px solid var(--rule)}
+  .band{display:grid;grid-template-columns:minmax(0,380px) 1fr;gap:0}
+  @media(max-width:900px){.band{grid-template-columns:1fr}}
+  .readout{padding:clamp(26px,3.4vw,44px) clamp(18px,3vw,38px);border-right:1px solid var(--rule);
+    display:flex;flex-direction:column;gap:16px;position:relative}
+  @media(max-width:900px){.readout{border-right:0;border-bottom:1px solid var(--rule)}}
+  .st-index{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--dimmer)}
+  .st-title{font-family:var(--mono);font-weight:700;font-size:clamp(19px,2.3vw,25px);line-height:1.12;
+    letter-spacing:-.005em;margin:0;text-wrap:balance}
+  .st-trick{font-size:14.5px;color:var(--steel)}
+  .st-trick b{color:var(--ink);font-weight:600}
+  .facts{display:flex;flex-direction:column;gap:11px;margin-top:2px}
+  .fact{display:grid;grid-template-columns:82px 1fr;gap:12px;align-items:start;
+    padding-top:11px;border-top:1px solid var(--rule)}
+  .fact .k{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);padding-top:2px}
+  .fact .v{font-size:13.5px;color:var(--steel)}
+  .fact .v code{font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--panel-2);
+    padding:1px 6px;border-radius:5px;border:1px solid var(--rule)}
+  .fact.warn .k{color:var(--gold)}
+  .stage{position:relative;background:radial-gradient(130% 100% at 60% 35%,#0a0e16 0%,#07090e 72%);min-height:clamp(360px,52vh,560px)}
+  .stage canvas{display:block;width:100%;height:100%;touch-action:none}
+  .stage .overlay{position:absolute;inset:0;pointer-events:none}
+  .stage .ctrls-bar{position:absolute;left:0;right:0;bottom:0;z-index:4;
+    padding:12px clamp(14px,2.4vw,26px);display:flex;gap:10px 20px;flex-wrap:wrap;align-items:flex-end;
+    background:linear-gradient(0deg,rgba(7,9,14,.92),rgba(7,9,14,0));pointer-events:auto}
+  .readback{position:absolute;top:12px;right:14px;z-index:4;text-align:right;pointer-events:none;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;color:var(--dim);line-height:1.7}
+  .readback .big{font-size:13px;color:var(--steel)}
+  .swatch{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-right:5px;
+    box-shadow:0 0 6px currentColor}
+
+  /* gamut picker (hero) */
+  .gamut-pick{position:absolute;top:12px;right:12px;z-index:5;width:132px;height:132px;
+    background:rgba(10,13,19,.6);border:1px solid var(--rule-2);border-radius:10px;backdrop-filter:blur(6px);
+    touch-action:none;cursor:crosshair}
+  @media(max-width:520px){.gamut-pick{width:104px;height:104px}}
+
+  /* intro strip of primaries */
+  .primer{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--rule)}
+  @media(max-width:640px){.primer{grid-template-columns:1fr}}
+  .prim{padding:20px clamp(18px,3vw,30px);display:flex;align-items:center;gap:14px;border-right:1px solid var(--rule)}
+  .prim:last-child{border-right:0}
+  @media(max-width:640px){.prim{border-right:0;border-bottom:1px solid var(--rule)}}
+  .prim .orb{width:26px;height:26px;border-radius:50%;flex:0 0 auto;
+    filter:drop-shadow(0 0 10px currentColor) drop-shadow(0 0 3px currentColor)}
+  .prim .meta .nm{font-family:var(--mono);font-weight:700;letter-spacing:.14em;font-size:13px}
+  .prim .meta .sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;color:var(--dim);text-transform:uppercase}
+  .prim.j .orb{background:var(--jade);color:var(--jade)} .prim.j .nm{color:var(--jade)}
+  .prim.r .orb{background:var(--ruby);color:var(--ruby)} .prim.r .nm{color:var(--ruby)}
+  .prim.g .orb{background:var(--gold);color:var(--gold)} .prim.g .nm{color:var(--gold)}
+
+  /* section intro rows */
+  .lead-band{padding:clamp(30px,4vw,54px) 0}
+  .lead-band h2{font-family:var(--mono);font-weight:700;font-size:clamp(20px,2.6vw,28px);margin:0 0 8px;letter-spacing:-.01em}
+  .lead-band p{color:var(--steel);max-width:64ch;margin:0}
+  .axis-tags{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px}
+  .tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--steel);border:1px solid var(--rule-2);border-radius:20px;padding:5px 12px}
+  .tag b{color:var(--ink)}
+
+  /* honesty / footer */
+  .notes{padding:clamp(30px,4vw,56px) 0}
+  .notes-grid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,3vw,40px)}
+  @media(max-width:760px){.notes-grid{grid-template-columns:1fr}}
+  .note h3{font-family:var(--mono);font-size:13px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 12px;color:var(--ink)}
+  .note ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}
+  .note li{display:grid;grid-template-columns:18px 1fr;gap:10px;color:var(--steel);font-size:14px}
+  .note li .m{font-family:var(--mono);color:var(--dim)}
+  .note.gamut li .m{color:var(--gold)}
+  footer{border-top:1px solid var(--rule);padding:26px 0 44px}
+  footer .wrap{display:flex;flex-wrap:wrap;gap:14px 26px;align-items:baseline;justify-content:space-between}
+  footer .muted{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--dim);text-transform:uppercase}
+
+  .status{font-family:var(--mono);font-size:10px;color:var(--dimmer);letter-spacing:.14em}
+  @media (prefers-reduced-motion: reduce){*{scroll-behavior:auto}}
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><span class="tri"><i></i><i></i><i></i></span>PRISM&nbsp;PERCEPTION&nbsp;BENCH</div>
+    <nav>
+      <a href="#gamut">Gamut</a>
+      <a href="#value">Value</a>
+      <a href="#form">Form</a>
+      <a href="#portrait">Portrait</a>
+      <a href="#lenticular">View-Dep</a>
+      <a href="#moire">Moiré</a>
+      <a href="#temporal">Temporal</a>
+      <a href="#sightline">Sightline</a>
+      <a href="#honesty">Limits</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-grid wrap" style="max-width:none;padding:0">
+    <div class="hero-copy">
+      <div class="eyebrow"><span class="ln"></span><span class="klabel">Cosmic Shore · R&amp;D · Prism Constructs</span></div>
+      <h1>Three domains.<br>A perceptual space<br>much larger than <span class="g">three</span> <span class="r">colours</span><span class="y">.</span></h1>
+      <p class="lede">A printed page fools the eye with three inks in a dot matrix. Here's the twist: a
+        prism's HDR emission doesn't glow in its team colour — it glows <b>near-CMY</b> (Jade <b>azure</b>,
+        Ruby <b>violet</b>, Gold <b>amber</b>). Our board is, physically, a print triad — rendered in
+        <b>additive light</b> with a whole extra dimension to spend. This bench pushes the limit: what
+        colour, value, form, image, and even <b>motion</b> can be <b>tricked into perception</b> purely by
+        how prisms are arranged in 3D. Drag any stage to orbit.</p>
+      <div class="ctrls" id="hero-ctrls"></div>
+    </div>
+    <div class="hero-stage" id="stage-gamut-wrap">
+      <div class="stage-badge klabel">STATION 00 · Partitive Gamut</div>
+      <canvas id="cv-gamut"></canvas>
+      <canvas class="gamut-pick" id="pick-gamut" width="132" height="132" title="Drag inside the domain triangle to retune the field"></canvas>
+      <div class="readback" id="rb-gamut"></div>
+      <div class="hint">drag to orbit · drag the triangle to pick a target</div>
+    </div>
+  </div>
+  <div class="primer">
+    <div class="prim j"><span class="orb"></span><div class="meta"><div class="nm">JADE</div><div class="sub">#00BBFF · azure-cyan · ≈ C</div></div></div>
+    <div class="prim r"><span class="orb"></span><div class="meta"><div class="nm">RUBY</div><div class="sub">#A100FF · violet · ≈ M</div></div></div>
+    <div class="prim g"><span class="orb"></span><div class="meta"><div class="nm">GOLD</div><div class="sub">#FFAF43 · amber · ≈ Y</div></div></div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap lead-band">
+    <h2>The trick, generalised to a volume</h2>
+    <p>Additive light is the honest medium here — glowing prisms on black <b>sum</b>, so an azure prism
+      beside a violet one reads <b>blue</b> at distance, and all three together drift toward a cool white.
+      That gives five independent knobs to encode a target the eye then reconstructs. Each station isolates
+      one — and the <a href="#honesty">Limits</a> are stated honestly: the triad is a compact wedge, not the
+      whole rainbow.</p>
+    <div class="axis-tags">
+      <span class="tag"><b>RATIO</b> → hue &amp; saturation</span>
+      <span class="tag"><b>DENSITY</b> → value / luminance</span>
+      <span class="tag"><b>ARRANGEMENT</b> → form &amp; depth</span>
+      <span class="tag"><b>ORIENTATION</b> → view-dependence</span>
+      <span class="tag"><b>TIME</b> → gamut beyond the triangle</span>
+    </div>
+  </div>
+</section>
+
+<!-- STATION 01 : VALUE -->
+<section id="value">
+  <div class="band">
+    <div class="readout">
+      <div class="st-index">STATION 01</div>
+      <h3 class="st-title">Value from binary dots</h3>
+      <p class="st-trick"><b>Density modulation.</b> One domain, two states — dot or no dot. Vary how many
+        prisms occupy a region and the eye reads a smooth luminance ramp. This is the ink-coverage axis of
+        halftoning, lifted into a 3D shell.</p>
+      <div class="facts">
+        <div class="fact"><div class="k">Mechanism</div><div class="v">Local coverage <code>c ∈ [0,1]</code> → apparent value; the retina low-passes the dot field.</div></div>
+        <div class="fact"><div class="k">Encodes</div><div class="v">A Lambert-shaded sphere, rendered with a single-colour prism cloud.</div></div>
+        <div class="fact warn"><div class="k">Limit</div><div class="v">Value ceiling is fixed by dot brightness; past full coverage it clips to a glowing blob.</div></div>
+      </div>
+    </div>
+    <div class="stage" data-scene="value">
+      <canvas></canvas><div class="readback"></div>
+      <div class="ctrls-bar"></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATION 02 : FORM / SPLAT -->
+<section id="form">
+  <div class="band">
+    <div class="readout">
+      <div class="st-index">STATION 02</div>
+      <h3 class="st-title">Surface from a dot cloud</h3>
+      <p class="st-trick"><b>Connect-the-dots → splat.</b> Sparse points with soft additive falloff read as a
+        <b>continuous surface</b> — the perceptual bridge to the Gaussian-splat reference this branch was
+        chasing. Nothing is solid; the surface is inferred.</p>
+      <div class="facts">
+        <div class="fact"><div class="k">Mechanism</div><div class="v">Overlapping glow kernels close the gaps; contour + occlusion cues do the rest.</div></div>
+        <div class="fact"><div class="k">Encodes</div><div class="v">A trefoil knot as pure position — no mesh, no faces.</div></div>
+        <div class="fact"><div class="k">Sweep</div><div class="v">Drop the point budget and watch the surface dissolve back into a constellation.</div></div>
+      </div>
+    </div>
+    <div class="stage" data-scene="form">
+      <canvas></canvas><div class="readback"></div>
+      <div class="ctrls-bar"></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATION 03 : PORTRAIT / DITHER -->
+<section id="portrait">
+  <div class="band">
+    <div class="readout">
+      <div class="st-index">STATION 03</div>
+      <h3 class="st-title">A full-colour image from three</h3>
+      <p class="st-trick"><b>3D error-diffusion.</b> A target picture is quantised to the nearest domain per
+        voxel, the error pushed to neighbours. Up close you see Jade/Ruby/Gold grain; pull back and the
+        eye fuses it into a continuous-tone image.</p>
+      <div class="facts">
+        <div class="fact"><div class="k">Mechanism</div><div class="v">Floyd–Steinberg on a lattice: <code>err → </code> forward + downstream neighbours.</div></div>
+        <div class="fact"><div class="k">Encodes</div><div class="v">A synthesised planet-over-hypersea scene, mapped onto a curtain.</div></div>
+        <div class="fact warn"><div class="k">Honesty</div><div class="v">Blues &amp; purples reproduce well; saturated greens desaturate — the triad rings green. See <a href="#honesty">Limits</a>.</div></div>
+      </div>
+    </div>
+    <div class="stage" data-scene="portrait">
+      <canvas></canvas><div class="readback"></div>
+      <div class="ctrls-bar"></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATION 04 : LENTICULAR / VIEW DEPENDENT -->
+<section id="lenticular">
+  <div class="band">
+    <div class="readout">
+      <div class="st-index">STATION 04 · the 3D-only move</div>
+      <h3 class="st-title">Three images in one construct</h3>
+      <p class="st-trick"><b>View-dependent colour.</b> Print can't do this. Each prism is angularly gated —
+        visible only within a cone facing one viewpoint. Orbit and the whole sculpture cross-fades between
+        a <span style="color:var(--jade)">JADE</span>, a <span style="color:var(--ruby)">RUBY</span>, and a
+        <span style="color:var(--gold)">GOLD</span> word, occupying the same space.</p>
+      <div class="facts">
+        <div class="fact"><div class="k">Mechanism</div><div class="v">Per-dot preferred azimuth; <code>α = gauss(view − θ★)</code>. A lenticular lattice.</div></div>
+        <div class="fact"><div class="k">Encodes</div><div class="v">Three messages superimposed — the same volume, three readings.</div></div>
+        <div class="fact"><div class="k">Payoff</div><div class="v">Territory that literally shows a different face to each seat at the table.</div></div>
+      </div>
+    </div>
+    <div class="stage" data-scene="lenticular">
+      <canvas></canvas><div class="readback"></div>
+      <div class="ctrls-bar"></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATION 05 : MOIRE -->
+<section id="moire">
+  <div class="band">
+    <div class="readout">
+      <div class="st-index">STATION 05</div>
+      <h3 class="st-title">Phantom depth &amp; motion</h3>
+      <p class="st-trick"><b>Structured moiré.</b> Two domain lattices at slightly different periods beat
+        against each other. The interference fringes carry apparent depth, and they <b>glide</b> as you
+        orbit — motion emerging from a completely static construct.</p>
+      <div class="facts">
+        <div class="fact"><div class="k">Mechanism</div><div class="v">Beat period <code>P = p₁p₂/|p₁−p₂|</code> ≫ either lattice; small offsets swing it hugely.</div></div>
+        <div class="fact"><div class="k">Encodes</div><div class="v">A third colour (the overlap) and a moving band no prism actually moves along.</div></div>
+        <div class="fact"><div class="k">Detune</div><div class="v">Slide the period mismatch to speed up or freeze the phantom.</div></div>
+      </div>
+    </div>
+    <div class="stage" data-scene="moire">
+      <canvas></canvas><div class="readback"></div>
+      <div class="ctrls-bar"></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATION 06 : TEMPORAL -->
+<section id="temporal">
+  <div class="band">
+    <div class="readout">
+      <div class="st-index">STATION 06 · beyond the triangle</div>
+      <h3 class="st-title">Colour the triangle can't hold</h3>
+      <p class="st-trick"><b>Temporal PWM + assimilation.</b> Flicker a site between two domains faster than
+        flicker-fusion and persistence of vision blends them in <b>time</b>, not space — a fourth mixing
+        axis. Paired with simultaneous contrast, apparent colours drift toward hues no static prism owns.</p>
+      <div class="facts">
+        <div class="fact"><div class="k">Mechanism</div><div class="v">Duty cycle <code>d</code> sets the time-average; the eye integrates over ~50&nbsp;ms.</div></div>
+        <div class="fact"><div class="k">Encodes</div><div class="v">Left half temporal-mixed, right half spatial-mixed — same target, two routes.</div></div>
+        <div class="fact warn"><div class="k">Cost</div><div class="v">Flicker below fusion is fatiguing; a real build must stay above ~50&nbsp;Hz.</div></div>
+      </div>
+    </div>
+    <div class="stage" data-scene="temporal">
+      <canvas></canvas><div class="readback"></div>
+      <div class="ctrls-bar"></div>
+    </div>
+  </div>
+</section>
+
+<!-- STATION 07 : SIGHTLINE / ANAMORPHIC -->
+<section id="sightline">
+  <div class="band">
+    <div class="readout">
+      <div class="st-index">STATION 07 · the monument you can only see once</div>
+      <h3 class="st-title">An image hidden in one line of sight</h3>
+      <p class="st-trick"><b>Anamorphic single-ray.</b> Every prism is scattered to a random depth <b>along
+        the ray</b> from one anchor viewpoint through one pixel of a target. From that single approach
+        vector the cloud collapses into a floating pointillist crest. Step off the line and parallax
+        shreds it back to embers.</p>
+      <div class="facts">
+        <div class="fact"><div class="k">Mechanism</div><div class="v">Depth is free along a ray: <code>x = iₓ·(d−z)</code> projects to the same pixel for every <code>z</code> — at the anchor only.</div></div>
+        <div class="fact"><div class="k">Encodes</div><div class="v">A crest that resolves from ONE angle; bury a second along another ray and each shows only to its own vantage.</div></div>
+        <div class="fact"><div class="k">Payoff</div><div class="v">A shrine invisible except from one heading — signage the whole table can't read, only the pilot on-axis.</div></div>
+        <div class="fact warn"><div class="k">Limit</div><div class="v">The lock is a few degrees wide — ~95% of viewpoints see noise. Great for a secret, useless for a billboard.</div></div>
+      </div>
+    </div>
+    <div class="stage" data-scene="sightline">
+      <canvas></canvas><div class="readback"></div>
+      <div class="ctrls-bar"></div>
+    </div>
+  </div>
+</section>
+
+<!-- HONESTY -->
+<section id="honesty">
+  <div class="wrap notes">
+    <div class="notes-grid">
+      <div class="note gamut">
+        <h3>Where the trick runs out</h3>
+        <ul>
+          <li><span class="m">△</span><span>The reachable gamut is the <b>triangle</b> spanned by the three primaries — and measured against sRGB it's a <b>compact wedge, ≈⅕ of the cube</b>. It spans azure&nbsp;→&nbsp;violet&nbsp;→&nbsp;amber, so blues, teals, periwinkles, purples, plums and ambers are all yours by arrangement. What's <b>outside</b>: saturated pure green (there's no green primary, only cyan and amber flanking it) and pure spectral red — both desaturate as you push for them.</span></li>
+          <li><span class="m">◐</span><span>There is <b>no true neutral white</b>: an equal mix lands at a cool lavender (D65 sits just outside the triangle), so "grey" always reads faintly cold. The single hue you cannot fake is the one that would need a colour <em>outside</em> the wedge — and simultaneous-contrast ("impossible" colours) can nudge a patch there, but only in the eye, never in the pixels or a screenshot.</span></li>
+          <li><span class="m">☼</span><span>Value has a ceiling: additive coverage tops out and clips to a bright blob. Dark tones are easy (fewer dots); brilliant tones fight the black ground, and a perceptually-even ramp needs a <b>cubic</b> coverage curve.</span></li>
+          <li><span class="m">◴</span><span>Temporal (PWM) mixing hits the <b>same</b> triangle at zero grain — a resolution tool, not a gamut expander — and below flicker-fusion it's fatiguing and strobes on capture.</span></li>
+          <li><span class="m">⊙</span><span>Every spatial trick is <b>distance-bound</b>: it fuses only when the dot subtense drops below ~1 arc-minute. Too close and the illusion decomposes into its prisms — the honest signature of the medium — so dithering must be <b>isotropic</b> in 3D or it shows worms when you orbit off-axis.</span></li>
+        </ul>
+      </div>
+      <div class="note">
+        <h3>Why this belongs in the real prism system</h3>
+        <ul>
+          <li><span class="m">01</span><span><b>Prisms already are the dots.</b> These constructs are trails/prismscapes at a particular density — no new primitive, exactly the "compose the fundamentals" mandate.</span></li>
+          <li><span class="m">02</span><span><b>Domain is the ink.</b> Colour comes only from Jade/Ruby/Gold material sets; the gamut is emergent from arrangement, never a hand-picked shade.</span></li>
+          <li><span class="m">03</span><span><b>Mass is conserved.</b> A construct is a fixed stock of prisms — it blooms in, holds, and is only removed by an active force. Nothing here needs decay or a timer.</span></li>
+          <li><span class="m">04</span><span><b>View-dependence is a mechanic, not a gimmick.</b> Territory that shows each player a different face is a design surface the 2D analogy simply can't offer.</span></li>
+        </ul>
+        <p class="status" style="margin-top:18px" id="synth-status">Companion Unity generators + theory notes ship alongside this bench.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="muted">Prism Perception Bench · proof-of-concept · <span class="tnum" id="fps">—</span></div>
+    <div class="muted">Canvas 2D · additive compositing = partitive mixing · no external libraries</div>
+  </div>
+</footer>
+
+<script>
+"use strict";
+/* =====================================================================
+   Prism Perception Bench — self-contained Canvas-2D additive engine.
+   Additive 'lighter' compositing IS optical/partitive colour mixing, so
+   the colour you see is physically what overlapping glowing prisms produce.
+   ===================================================================== */
+
+// Real prism emissive primaries (_BrightColor HDR, gamma-encoded to sRGB display).
+// Jade = azure-cyan, Ruby = violet, Gold = amber — a near-CMY additive triad.
+const DOM = {
+  jade:{name:'JADE', rgb:[0,187,255]},
+  ruby:{name:'RUBY', rgb:[161,0,255]},
+  gold:{name:'GOLD', rgb:[255,175,67]},
+};
+const KEYS = ['jade','ruby','gold'];
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---- glow-sprite cache: one radial-gradient sprite per colour ---- */
+const spriteCache = new Map();
+function sprite(rgb){
+  const key = rgb[0]+','+rgb[1]+','+rgb[2];
+  let s = spriteCache.get(key);
+  if(s) return s;
+  const S = 64, c = document.createElement('canvas'); c.width=c.height=S;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(S/2,S/2,0, S/2,S/2,S/2);
+  const [r,gg,b] = rgb;
+  grd.addColorStop(0,   `rgba(${r},${gg},${b},1)`);
+  grd.addColorStop(0.28,`rgba(${r},${gg},${b},0.72)`);
+  grd.addColorStop(0.6, `rgba(${r},${gg},${b},0.18)`);
+  grd.addColorStop(1,   `rgba(${r},${gg},${b},0)`);
+  g.fillStyle = grd; g.fillRect(0,0,S,S);
+  spriteCache.set(key,c); return c;
+}
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const lerp=(a,b,t)=>a+(b-a)*t;
+
+/* ---- deterministic PRNG so constructs are stable across frames ---- */
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+/* ---------------------------------------------------------------------
+   Bench : orbit camera + additive projector for a static point set.
+   A scene supplies points {x,y,z, ...} in a [-1,1] box and a shade()
+   returning {rgb,size,alpha} per point per frame.
+   ------------------------------------------------------------------- */
+class Bench{
+  constructor(canvas, scene, opts={}){
+    this.canvas=canvas; this.g=canvas.getContext('2d',{alpha:false});
+    this.scene=scene; this.opts=opts;
+    this.az = opts.az ?? 0.5; this.el = opts.el ?? -0.12;
+    this.autoAz = (opts.autoAz ?? 0.12);
+    this.dist = opts.dist ?? 3.2; this.f = opts.f ?? 1.55;
+    this.dragging=false; this.lastx=0; this.lasty=0; this.pdown=false;
+    this.visible=true; this.t=0;
+    this._bind(); this.resize();
+    if(scene.build) scene.build(this);
+  }
+  _bind(){
+    const el=this.canvas;
+    const down=e=>{this.dragging=true;this.pdown=true;const p=this._pt(e);this.lastx=p.x;this.lasty=p.y;el.setPointerCapture&&el.setPointerCapture(e.pointerId);};
+    const move=e=>{if(!this.dragging)return;const p=this._pt(e);this.az+=(p.x-this.lastx)*0.006;this.el=clamp(this.el+(p.y-this.lasty)*0.005,-1.35,1.35);this.lastx=p.x;this.lasty=p.y;};
+    const up=e=>{this.dragging=false;this.pdown=false;};
+    el.addEventListener('pointerdown',down);
+    window.addEventListener('pointermove',move);
+    window.addEventListener('pointerup',up);
+    el.addEventListener('pointercancel',up);
+    new ResizeObserver(()=>this.resize()).observe(el.parentElement||el);
+  }
+  _pt(e){const r=this.canvas.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};}
+  resize(){
+    const r=(this.canvas.parentElement||this.canvas).getBoundingClientRect();
+    const dpr=Math.min(devicePixelRatio||1,2);
+    this.W=Math.max(2,r.width); this.H=Math.max(2,r.height);
+    this.canvas.width=Math.floor(this.W*dpr); this.canvas.height=Math.floor(this.H*dpr);
+    this.canvas.style.width=r.width+'px'; this.canvas.style.height=r.height+'px';
+    this.g.setTransform(dpr,0,0,dpr,0,0);
+  }
+  frame(dt){
+    if(reduceMotion===false && !this.pdown) this.az += this.autoAz*dt*(this.scene.autoScale?this.scene.autoScale(this):1);
+    if(this.scene.step) this.scene.step(this,dt);
+    this.t += dt;
+    const g=this.g;
+    g.globalCompositeOperation='source-over';
+    g.fillStyle='#07090e'; g.fillRect(0,0,this.W,this.H);
+    if(this.scene.background) this.scene.background(this,g);
+    g.globalCompositeOperation='lighter';
+    const pts=this.scene.points, zoom=this.opts.zoom||1;
+    const ca=Math.cos(this.az),sa=Math.sin(this.az),ce=Math.cos(this.el),se=Math.sin(this.el);
+    const HH=this.H*0.5;
+    for(let i=0;i<pts.length;i++){
+      const p=pts[i];
+      const sh=this.scene.shade(p,this);
+      if(!sh||sh.alpha<=0.003) continue;
+      const x=p.x,y=p.y,z=p.z;
+      const X=x*ca+z*sa, Z=-x*sa+z*ca;
+      const Y2=y*ce-Z*se, Z2=y*se+Z*ce;
+      const zc=this.dist-Z2; if(zc<=0.06) continue;
+      const s=this.f/zc;
+      const sx=this.W/2 + X*s*HH*zoom;
+      const sy=this.H/2 - Y2*s*HH;
+      const rad=Math.max(1.2,(sh.size||1)*s*HH*0.05);
+      if(sx< -rad||sx>this.W+rad||sy<-rad||sy>this.H+rad) continue;
+      g.globalAlpha=clamp(sh.alpha,0,1);
+      const spr=sprite(sh.rgb);
+      g.drawImage(spr, sx-rad, sy-rad, rad*2, rad*2);
+    }
+    g.globalAlpha=1; g.globalCompositeOperation='source-over';
+    if(this.scene.readback && this.rb) this.rb.innerHTML=this.scene.readback(this);
+  }
+}
+
+/* ---- offscreen image sampler (procedural targets, no external assets) ---- */
+function sampler(w,h,draw){
+  const c=document.createElement('canvas'); c.width=w;c.height=h;
+  const g=c.getContext('2d'); draw(g,w,h);
+  const d=g.getImageData(0,0,w,h).data;
+  return {w,h,at(u,v){ // u,v in [0,1]
+    const x=clamp(Math.floor(u*w),0,w-1), y=clamp(Math.floor(v*h),0,h-1);
+    const i=(y*w+x)*4; return [d[i],d[i+1],d[i+2],d[i+3]];
+  }};
+}
+function textMask(text,{fw='800',size=140,font='var'}={}){
+  const w=512,h=256;
+  return sampler(w,h,(g)=>{
+    g.fillStyle='#000';g.fillRect(0,0,w,h);
+    g.fillStyle='#fff';g.textAlign='center';g.textBaseline='middle';
+    g.font=`${fw} ${size}px ui-monospace, "JetBrains Mono", Menlo, monospace`;
+    g.fillText(text,w/2,h/2+6);
+  });
+}
+
+/* ---- barycentric: target rgb -> weights over the 3 primaries (least-squares, clamped) ---- */
+const P = KEYS.map(k=>DOM[k].rgb.map(v=>v/255));
+function baryWeights(rgb){
+  // solve min || w0*P0 + w1*P1 + w2*P2 - rgb ||, w>=0, via small search on the simplex
+  const t=rgb.map(v=>v/255);
+  let best=null,bw=[0.34,0.33,0.33];
+  const N=12;
+  for(let a=0;a<=N;a++)for(let b=0;b<=N-a;b++){
+    const c=N-a-b; const w=[a/N,b/N,c/N];
+    let e=0; for(let k=0;k<3;k++){const m=w[0]*P[0][k]+w[1]*P[1][k]+w[2]*P[2][k];const d=m-t[k];e+=d*d;}
+    if(best===null||e<best){best=e;bw=w;}
+  }
+  return {w:bw, err:Math.sqrt(best)};
+}
+
+/* =====================================================================
+   SCENES
+   ===================================================================== */
+
+/* ---- 00 · Partitive gamut curtain ------------------------------------ */
+function sceneGamut(){
+  const rnd=mulberry32(7);
+  const N=2600, pts=[];
+  // a gently curved curtain filling a disc, each site owns a domain sampled
+  // to match a target ratio (the "picked" colour)
+  for(let i=0;i<N;i++){
+    const a=rnd()*Math.PI*2, r=Math.sqrt(rnd());
+    const x=Math.cos(a)*r*1.15, y=Math.sin(a)*r*1.15;
+    const z=Math.sin(x*1.6)*0.14 + Math.cos(y*1.4)*0.12 + (rnd()-0.5)*0.06;
+    pts.push({x,y,z,dom:0,u:rnd(),jit:rnd()});
+  }
+  const target={w:[0.34,0.33,0.33], rgb:[120,150,110]};
+  const style={alpha:0.5, size:0.62}; // tuned so additive sum lands AT the target, not clipped white
+  function assign(){ // stochastic dithering to the target weights
+    for(const p of pts){
+      const u=p.u; const w=target.w;
+      p.dom = u<w[0]?0 : u<w[0]+w[1]?1:2;
+    }
+  }
+  assign();
+  return {
+    points:pts, target, style,
+    setTarget(w,rgb){target.w=w;target.rgb=rgb;assign();},
+    autoScale(){return 0.5;},
+    shade(p){ const k=KEYS[p.dom]; return {rgb:DOM[k].rgb, size:style.size+p.jit*0.28, alpha:style.alpha}; },
+    readback(b){
+      const [r,g,bl]=b.scene.target.rgb;
+      const w=b.scene.target.w.map(x=>Math.round(x*100));
+      return `<div class="big">APPARENT MIX</div>
+        <span class="swatch" style="color:rgb(${r},${g},${bl});background:rgb(${r},${g},${bl})"></span>rgb ${r} ${g} ${bl}<br>
+        J ${w[0]}% · R ${w[1]}% · G ${w[2]}%`;
+    }
+  };
+}
+
+/* ---- 01 · Value by density ------------------------------------------- */
+function sceneValue(){
+  const rnd=mulberry32(21);
+  const pts=[]; const N=9000;
+  // rejection-sample a sphere shell, keep a point with prob ~ shading(value)
+  const L=[0.5,0.7,0.5]; const ll=Math.hypot(...L); const Ln=L.map(v=>v/ll);
+  for(let i=0;i<N;i++){
+    // uniform on sphere
+    const u=rnd()*2-1, th=rnd()*Math.PI*2, s=Math.sqrt(1-u*u);
+    const nx=s*Math.cos(th), ny=u, nz=s*Math.sin(th);
+    let val=clamp(nx*Ln[0]+ny*Ln[1]+nz*Ln[2],0,1); val=Math.pow(val,0.9);
+    pts.push({x:nx*1.05,y:ny*1.05,z:nz*1.05,val,u:rnd()});
+  }
+  const st={budget:0.62, mono:1, key:0};
+  return {
+    points:pts,
+    setBudget(v){st.budget=v;}, setMono(v){st.mono=v;}, setKey(k){st.key=k;},
+    autoScale(){return 0.6;},
+    shade(p){
+      const cov = clamp((p.val - (1-st.budget)) ,0,1); // higher budget => more dots survive
+      if(p.u > cov*1.15) return null;
+      const k = st.mono ? KEYS[st.key] : KEYS[(p.u*3)|0];
+      return {rgb:DOM[k].rgb, size:1.05, alpha:0.75};
+    },
+    readback(b){ return `<div class="big">COVERAGE → VALUE</div>budget ${Math.round(st.budget*100)}%<br>${st.mono?'single domain':'tri-domain'}`; }
+  };
+}
+
+/* ---- 02 · Surface from cloud (trefoil) ------------------------------- */
+function sceneForm(){
+  const rnd=mulberry32(5);
+  const MAX=5200; const pts=[];
+  for(let i=0;i<MAX;i++){
+    const t=rnd()*Math.PI*2;
+    // trefoil knot
+    let x=Math.sin(t)+2*Math.sin(2*t);
+    let y=Math.cos(t)-2*Math.cos(2*t);
+    let z=-Math.sin(3*t);
+    // tube jitter
+    const rr=0.16*Math.sqrt(rnd());
+    const a=rnd()*Math.PI*2;
+    x+=Math.cos(a)*rr; y+=Math.sin(a)*rr; z+=(rnd()-0.5)*0.2;
+    const sc=0.34;
+    pts.push({x:x*sc,y:y*sc,z:z*sc,t,u:rnd(),dom:(rnd()*3)|0});
+  }
+  const st={budget:0.72};
+  return {
+    points:pts, setBudget(v){st.budget=v;},
+    autoScale(){return 0.8;},
+    shade(p){
+      if(p.u>st.budget) return null;
+      const hue=(p.t/(Math.PI*2));
+      const dom = hue<0.4?0:hue<0.72?2:1; // sweep colour along the knot
+      return {rgb:DOM[KEYS[dom]].rgb, size:lerp(2.4,1.15,st.budget), alpha:lerp(0.9,0.62,st.budget)};
+    },
+    readback(b){ const n=Math.round(st.budget*5200); return `<div class="big">DOT BUDGET</div>${n.toLocaleString()} prisms<br>${st.budget<0.28?'constellation':st.budget<0.6?'resolving…':'continuous surface'}`; }
+  };
+}
+
+/* ---- 03 · Full-colour image via 3D error diffusion ------------------- */
+function scenePortrait(){
+  // synth target: a hypersea scene (planet + horizon glow + star specks)
+  const img = sampler(160,120,(g,w,h)=>{
+    // Cool "hypersea" scene chosen to sit INSIDE the azure→violet→amber wedge.
+    const sky=g.createLinearGradient(0,0,0,h);
+    sky.addColorStop(0,'#160a38'); sky.addColorStop(0.5,'#123a72'); sky.addColorStop(1,'#177088');
+    g.fillStyle=sky; g.fillRect(0,0,w,h);
+    // amber sun with a violet corona — spans the gamut edge-to-edge
+    const pg=g.createRadialGradient(w*0.63,h*0.38,2, w*0.63,h*0.38,44);
+    pg.addColorStop(0,'#ffdf9c'); pg.addColorStop(0.35,'#ff9e3d'); pg.addColorStop(0.7,'#9a44d6'); pg.addColorStop(1,'#2a1450');
+    g.fillStyle=pg; g.beginPath(); g.arc(w*0.63,h*0.38,42,0,7); g.fill();
+    // teal→violet sea band
+    const hb=g.createLinearGradient(0,h*0.68,0,h); hb.addColorStop(0,'#1aa0a0'); hb.addColorStop(1,'#241455');
+    g.fillStyle=hb; g.fillRect(0,h*0.7,w,h*0.3);
+  });
+  const GW=120, GH=90; // dither grid
+  const rnd=mulberry32(99);
+  // build error-diffused domain grid
+  const grid=new Int8Array(GW*GH);
+  const buf=new Float32Array(GW*GH*3);
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    const c=img.at((x+0.5)/GW,(y+0.5)/GH);
+    const i=(y*GW+x)*3; buf[i]=c[0];buf[i+1]=c[1];buf[i+2]=c[2];
+  }
+  const primsRGB=P.map(p=>p.map(v=>v*255));
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    const i=(y*GW+x)*3; const old=[buf[i],buf[i+1],buf[i+2]];
+    // nearest primary (additive: pick primary closest in direction+magnitude)
+    let bd=1e9,bk=0;
+    for(let k=0;k<3;k++){let e=0;for(let c=0;c<3;c++){const d=old[c]-primsRGB[k][c];e+=d*d;}if(e<bd){bd=e;bk=k;}}
+    grid[y*GW+x]=bk;
+    const err=[old[0]-primsRGB[bk][0],old[1]-primsRGB[bk][1],old[2]-primsRGB[bk][2]];
+    const push=(xx,yy,f)=>{if(xx<0||xx>=GW||yy<0||yy>=GH)return;const j=(yy*GW+xx)*3;buf[j]+=err[0]*f;buf[j+1]+=err[1]*f;buf[j+2]+=err[2]*f;};
+    push(x+1,y,7/16);push(x-1,y+1,3/16);push(x,y+1,5/16);push(x+1,y+1,1/16);
+  }
+  const pts=[];
+  for(let y=0;y<GH;y++)for(let x=0;x<GW;x++){
+    const c=img.at((x+0.5)/GW,(y+0.5)/GH); if(c[3]<8) continue;
+    const u=x/(GW-1), v=y/(GH-1);
+    // curtain in 3D with slight cylindrical curve
+    const ang=(u-0.5)*1.5;
+    const X=Math.sin(ang)*1.55, Z=Math.cos(ang)*0.5 - 0.2;
+    const Y=(0.5-v)*1.5;
+    pts.push({x:X,y:Y,z:Z,dom:grid[y*GW+x],u:rnd()});
+  }
+  const st={mode:'dither'}; // dither | truth
+  return {
+    points:pts, setMode(m){st.mode=m;},
+    autoScale(){return 0.35;},
+    shade(p){ return {rgb:DOM[KEYS[p.dom]].rgb, size:0.34, alpha:0.7}; },
+    readback(b){ return `<div class="big">3D ERROR-DIFFUSION</div>${pts.length.toLocaleString()} sites · 3 domains<br>${b.dist<3.0?'← grain visible · pull back to fuse':'image resolves ✓'}`; }
+  };
+}
+
+/* ---- 04 · Lenticular / view-dependent (3 words) ---------------------- */
+function sceneLenticular(){
+  const rnd=mulberry32(3);
+  const words=[
+    {t:'JADE',dom:0,az:0.0},
+    {t:'RUBY',dom:1,az:Math.PI*2/3},
+    {t:'GOLD',dom:2,az:Math.PI*4/3},
+  ];
+  const pts=[];
+  for(const wd of words){
+    const m=textMask(wd.t,{size:150,fw:'900'});
+    let placed=0, tries=0;
+    while(placed<1500 && tries<40000){
+      tries++;
+      const u=rnd(), v=rnd();
+      const c=m.at(u,v); if(c[0]<128) continue;
+      const X=(u-0.5)*2.4, Y=(0.5-v)*1.2;
+      const Z=(rnd()-0.5)*0.5;
+      pts.push({x:X,y:Y,z:Z,dom:wd.dom,az:wd.az,jit:rnd()});
+      placed++;
+    }
+  }
+  const st={sharp:0.9};
+  return {
+    points:pts, setSharp(v){st.sharp=v;},
+    autoScale(){return 0.55;},
+    shade(p,b){
+      // angular gate around preferred azimuth
+      let d=Math.abs(((b.az - p.az + Math.PI)%(Math.PI*2)) - Math.PI);
+      const width=lerp(1.3,0.5,st.sharp);
+      const a=Math.exp(-(d*d)/(2*width*width));
+      if(a<0.02) return null;
+      return {rgb:DOM[KEYS[p.dom]].rgb, size:1.25+p.jit*0.4, alpha:a*0.95};
+    },
+    readback(b){
+      // which word dominates
+      let best=0,bi=0; for(const wd of [0,1,2]){const az=wd*Math.PI*2/3;let d=Math.abs(((b.az-az+Math.PI)%(Math.PI*2))-Math.PI);const s=Math.exp(-(d*d)/0.8);if(s>best){best=s;bi=wd;}}
+      const nm=DOM[KEYS[bi]].name;
+      return `<div class="big">ANGULAR GATE</div>facing → <span class="swatch" style="color:rgb(${DOM[KEYS[bi]].rgb});background:rgb(${DOM[KEYS[bi]].rgb})"></span>${nm}<br>orbit to cross-fade`;
+    }
+  };
+}
+
+/* ---- 05 · Moiré depth & phantom motion ------------------------------- */
+function sceneMoire(){
+  const pts=[];
+  const R=1.35;
+  const lat=(period,dom,ph)=>{
+    for(let i=-14;i<=14;i++)for(let j=-14;j<=14;j++){
+      const x=i*period, y=j*period; if(Math.hypot(x,y)>R) continue;
+      pts.push({x,y,z:0,base:x, dom, period, ph});
+    }
+  };
+  const st={detune:0.09};
+  function rebuild(){ pts.length=0; lat(0.13,0,0); lat(0.13+st.detune*0.13,1,0); }
+  rebuild();
+  return {
+    points:pts, setDetune(v){st.detune=v;rebuild();},
+    autoScale(){return 0.9;},
+    step(b,dt){ /* rotation handled by orbit; add gentle z-wobble to read depth */ },
+    shade(p,b){
+      // brightness beats where the two lattices phase-align in screen space
+      const beat=0.5+0.5*Math.cos((p.x+p.y)* (14+ (p.dom? 3:0)) + b.t*(reduceMotion?0:0.6));
+      return {rgb:DOM[KEYS[p.dom]].rgb, size:1.5, alpha:0.35+0.6*beat};
+    },
+    readback(b){ const P=(0.13*(0.13+st.detune*0.13))/Math.max(1e-4,Math.abs(0.13-(0.13+st.detune*0.13))); return `<div class="big">MOIRÉ BEAT</div>detune ${(st.detune*100)|0}%<br>beat period ≈ ${P.toFixed(2)} (≫ lattice)`; }
+  };
+}
+
+/* ---- 06 · Temporal PWM vs spatial mix -------------------------------- */
+function sceneTemporal(){
+  const rnd=mulberry32(44);
+  const pts=[];
+  // two panels: left temporal, right spatial. target = orange-ish (ruby+gold)
+  const N=1700;
+  for(let side=0;side<2;side++){
+    for(let i=0;i<N;i++){
+      const x=(rnd()*0.9+0.06)*1.2*(side?1:-1) - (side?0:0);
+      const y=(rnd()-0.5)*1.7;
+      const z=(rnd()-0.5)*0.25;
+      pts.push({x,y,z,side,u:rnd(),ph:rnd()});
+    }
+  }
+  const st={duty:0.5, on:1, hz:3}; // demo-speed twinkle; a real build runs >50Hz (fuses invisibly)
+  const target=[1,2]; // ruby & gold
+  return {
+    points:pts, setDuty(v){st.duty=v;}, setOn(v){st.on=v;},
+    autoScale(){return 0.25;},
+    shade(p,b){
+      if(p.side===0){ // temporal: each dot flips ruby<->gold on its OWN phase, so at any
+                      // instant ~duty are ruby (fuses to the same orange as the spatial panel),
+                      // yet every dot visibly twinkles over time — mixing in TIME, not space.
+        let dom;
+        if(st.on){
+          const phase=((b.t*st.hz + p.ph)%1); // full random per-dot offset -> desynced
+          dom = phase<st.duty ? target[0] : target[1];
+        } else dom = target[0]; // toggle off -> panel collapses to pure Ruby (reveals the trick)
+        return {rgb:DOM[KEYS[dom]].rgb, size:1.25, alpha:0.6};
+      } else { // spatial: fixed dithered mix at duty ratio -> steady orange, no motion
+        const dom = p.u<st.duty?target[0]:target[1];
+        return {rgb:DOM[KEYS[dom]].rgb, size:1.25, alpha:0.6};
+      }
+    },
+    readback(b){ return `<div class="big">TWO ROUTES · ONE TARGET</div>◀ temporal ${st.on?'ON':'off'} (duty ${(st.duty*100)|0}%)<br>spatial dither ${(st.duty*100)|0}% ▶`; }
+  };
+}
+
+/* ---- 07 · Sightline: anamorphic single-ray reveal -------------------- */
+function sceneSightline(){
+  const rnd=mulberry32(88);
+  // target: a star crest, coloured top→bottom azure→violet→amber
+  const mask=sampler(220,220,(g,w,h)=>{
+    g.fillStyle='#000';g.fillRect(0,0,w,h);
+    g.fillStyle='#fff';g.translate(w/2,h/2);
+    const spikes=5,outer=w*0.46,inner=w*0.19;g.beginPath();
+    for(let i=0;i<spikes*2;i++){const r=i%2?inner:outer;const a=(i/(spikes*2))*Math.PI*2-Math.PI/2;g.lineTo(Math.cos(a)*r,Math.sin(a)*r);}
+    g.closePath();g.fill();
+  });
+  const A=0.52, DIST=3.2;
+  const pts=[]; let placed=0,tries=0;
+  while(placed<3200 && tries<120000){
+    tries++;
+    const u=rnd(), v=rnd(); if(mask.at(u,v)[0]<128) continue;
+    const ix=(u-0.5)*2, iy=(0.5-v)*2;
+    const z=(rnd()-0.5)*2.6;            // random depth along the anchor ray
+    const x=ix*(DIST-z)*A, y=iy*(DIST-z)*A;
+    // colour by height: top azure(jade) · middle violet(ruby) · lower amber(gold), dithered
+    const t=(v+ (rnd()-0.5)*0.18);
+    const dom = t<0.4?0 : t<0.66?1 : 2;
+    pts.push({x,y,z,dom,jit:rnd()});
+    placed++;
+  }
+  const st={homing:false};
+  return {
+    points:pts, dist:DIST,
+    reform(){st.homing=true;},
+    autoScale(){return 0;}, // no auto-orbit; the anchor view is the payload
+    step(b,dt){
+      if(b.dragging) st.homing=false;
+      if(st.homing){ b.az=lerp(b.az,0,Math.min(1,dt*3.5)); b.el=lerp(b.el,0,Math.min(1,dt*3.5));
+        if(Math.abs(b.az)<0.004 && Math.abs(b.el)<0.004){b.az=0;b.el=0;st.homing=false;} }
+    },
+    shade(p,b){
+      const coh=Math.exp(-((b.az*b.az)+(b.el*b.el))/0.12);
+      // bright & tight when the image is locked; dimmer confetti when scattered
+      return {rgb:DOM[KEYS[p.dom]].rgb, size:0.7+p.jit*0.3, alpha:0.4+0.5*coh};
+    },
+    readback(b){
+      const coh=Math.exp(-((b.az*b.az)+(b.el*b.el))/0.12);
+      return `<div class="big">SIGHTLINE COHERENCE</div>${Math.round(coh*100)}%<br>${coh>0.75?'★ image locked':coh>0.3?'drifting…':'scattered to noise'}`;
+    }
+  };
+}
+
+/* =====================================================================
+   Controls factory
+   ===================================================================== */
+function ctrlSlider(label,min,max,val,fmt,on){
+  const w=document.createElement('label'); w.className='ctrl';
+  w.innerHTML=`<span class="cl"><span class="nm">${label}</span><span class="vl"></span></span>`;
+  const inp=document.createElement('input'); inp.type='range'; inp.min=min;inp.max=max;inp.step=(max-min)/200;inp.value=val;
+  const vl=w.querySelector('.vl');
+  const upd=()=>{vl.textContent=fmt(+inp.value);on(+inp.value);};
+  inp.addEventListener('input',upd); w.appendChild(inp); upd();
+  return w;
+}
+function ctrlSeg(label,options,idx,on){
+  const w=document.createElement('div'); w.className='ctrl';
+  w.innerHTML=`<span class="cl"><span class="nm">${label}</span></span>`;
+  const seg=document.createElement('div'); seg.className='seg';
+  options.forEach((o,i)=>{const b=document.createElement('button');b.textContent=o;b.setAttribute('aria-pressed',i===idx);b.onclick=()=>{seg.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');on(i);};seg.appendChild(b);});
+  w.appendChild(seg); return w;
+}
+function ctrlToggle(label,initial,on){
+  const b=document.createElement('button');b.className='toggle';b.setAttribute('aria-pressed',!!initial);
+  b.innerHTML=`<span class="dot"></span>${label}`;
+  b.onclick=()=>{const v=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',v);on(v);};
+  return b;
+}
+
+/* =====================================================================
+   Boot
+   ===================================================================== */
+const benches=[];
+
+// -- hero gamut --
+(function(){
+  const cv=document.getElementById('cv-gamut');
+  const scene=sceneGamut();
+  const b=new Bench(cv,scene,{az:0.6,el:-0.15,dist:3.0,zoom:1});
+  b.rb=document.getElementById('rb-gamut');
+  benches.push(b);
+
+  // gamut picker: triangle of the 3 primaries; drag to set target
+  const pk=document.getElementById('pick-gamut'), pg=pk.getContext('2d');
+  const tri=[[0.5,0.08],[0.92,0.86],[0.08,0.86]]; // J top, G right, R left  (screen coords 0..1)
+  const primOrder=[0,2,1]; // vertex->domain: top=jade, right=gold, left=ruby
+  function drawPick(px,py){
+    const W=pk.width,H=pk.height; pg.clearRect(0,0,W,H);
+    pg.fillStyle='rgba(8,10,15,.4)';pg.fillRect(0,0,W,H);
+    // fill triangle with barycentric additive preview
+    const img=pg.createImageData(W,H);
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const u=x/W,v=y/H; const w=bary(u,v);
+      if(w){ const i=(y*W+x)*4;
+        let r=0,g=0,bl=0; const doms=[0,2,1];
+        for(let k=0;k<3;k++){const P=DOM[KEYS[doms[k]]].rgb; r+=w[k]*P[0];g+=w[k]*P[1];bl+=w[k]*P[2];}
+        img.data[i]=r;img.data[i+1]=g;img.data[i+2]=bl;img.data[i+3]=235;
+      }
+    }
+    pg.putImageData(img,0,0);
+    // marker
+    pg.strokeStyle='#fff';pg.lineWidth=1.5;pg.beginPath();pg.arc(px*W,py*H,5,0,7);pg.stroke();
+    pg.strokeStyle='rgba(0,0,0,.6)';pg.beginPath();pg.arc(px*W,py*H,6.4,0,7);pg.stroke();
+  }
+  function bary(u,v){
+    const [ax,ay]=tri[0],[bx,by]=tri[1],[cx,cy]=tri[2];
+    const d=((by-cy)*(ax-cx)+(cx-bx)*(ay-cy));
+    const wa=((by-cy)*(u-cx)+(cx-bx)*(v-cy))/d;
+    const wb=((cy-ay)*(u-cx)+(ax-cx)*(v-cy))/d;
+    const wc=1-wa-wb;
+    if(wa<-0.02||wb<-0.02||wc<-0.02) return null;
+    return [clamp(wa,0,1),clamp(wb,0,1),clamp(wc,0,1)];
+  }
+  let mk=[0.34,0.47]; // default: periwinkle BLUE (Jade azure + Ruby violet) — a hue none of the three domains own
+  function applyPick(u,v){
+    const w=bary(u,v); if(!w){ // clamp to nearest inside
+      return;
+    }
+    mk=[u,v];
+    const doms=[0,2,1]; // vertex order jade,gold,ruby -> map to weights[jade,ruby,gold]
+    const wj=w[0], wg=w[1], wr=w[2];
+    let r=0,g=0,bl=0;
+    r=wj*DOM.jade.rgb[0]+wr*DOM.ruby.rgb[0]+wg*DOM.gold.rgb[0];
+    g=wj*DOM.jade.rgb[1]+wr*DOM.ruby.rgb[1]+wg*DOM.gold.rgb[1];
+    bl=wj*DOM.jade.rgb[2]+wr*DOM.ruby.rgb[2]+wg*DOM.gold.rgb[2];
+    scene.setTarget([wj,wr,wg],[Math.round(r),Math.round(g),Math.round(bl)]);
+    drawPick(u,v);
+  }
+  const ptp=e=>{const r=pk.getBoundingClientRect();return[clamp((e.clientX-r.left)/r.width,0,1),clamp((e.clientY-r.top)/r.height,0,1)];};
+  let pdrag=false;
+  pk.addEventListener('pointerdown',e=>{pdrag=true;const[u,v]=ptp(e);applyPick(u,v);pk.setPointerCapture(e.pointerId);e.stopPropagation();});
+  pk.addEventListener('pointermove',e=>{if(pdrag){const[u,v]=ptp(e);applyPick(u,v);}});
+  pk.addEventListener('pointerup',()=>pdrag=false);
+  drawPick(mk[0],mk[1]); applyPick(mk[0],mk[1]);
+
+  // hero control chips
+  const hc=document.getElementById('hero-ctrls');
+  hc.appendChild(ctrlToggle('AUTO-ORBIT', !reduceMotion, v=>{b.autoAz=v?0.12:0;}));
+})();
+
+// -- station benches --
+const SCENES={value:sceneValue,form:sceneForm,portrait:scenePortrait,lenticular:sceneLenticular,moire:sceneMoire,temporal:sceneTemporal,sightline:sceneSightline};
+document.querySelectorAll('.stage[data-scene]').forEach(stage=>{
+  const key=stage.dataset.scene;
+  const cv=stage.querySelector('canvas');
+  const scene=SCENES[key]();
+  const opts={value:{dist:3.1,el:-0.1},form:{dist:3.0,el:-0.05},portrait:{dist:3.4,el:-0.02,zoom:1},
+    lenticular:{dist:3.0,el:-0.02,az:0.0,autoAz:0.35},moire:{dist:2.4,el:-0.4},temporal:{dist:3.2,el:0},
+    sightline:{dist:3.2,el:0,az:0,autoAz:0}}[key]||{};
+  const b=new Bench(cv,scene,Object.assign({zoom:1},opts));
+  b.rb=stage.querySelector('.readback');
+  benches.push(b);
+  const bar=stage.querySelector('.ctrls-bar');
+
+  if(key==='value'){
+    bar.appendChild(ctrlSlider('DOT BUDGET',0.15,0.95,0.62,v=>Math.round(v*100)+'%',v=>scene.setBudget(v)));
+    bar.appendChild(ctrlSeg('INK',['1 DOMAIN','TRI'],0,i=>scene.setMono(i===0?1:0)));
+    bar.appendChild(ctrlSeg('WHICH',['JADE','RUBY','GOLD'],0,i=>scene.setKey(i)));
+  }
+  if(key==='form'){
+    bar.appendChild(ctrlSlider('POINT BUDGET',0.05,1.0,0.72,v=>Math.round(v*5200).toLocaleString(),v=>scene.setBudget(v)));
+  }
+  if(key==='portrait'){
+    bar.appendChild(ctrlSlider('VIEW DISTANCE',1.7,4.6,3.4,v=>v.toFixed(1),v=>{b.dist=v;}));
+    const z=ctrlSlider('ZOOM',0.7,2.0,1,v=>v.toFixed(2)+'×',v=>{b.opts.zoom=v;});
+    bar.appendChild(z);
+  }
+  if(key==='lenticular'){
+    bar.appendChild(ctrlSlider('GATE SHARPNESS',0.2,1.0,0.85,v=>Math.round(v*100)+'%',v=>scene.setSharp(v)));
+    bar.appendChild(ctrlToggle('AUTO-ORBIT',!reduceMotion,v=>{b.autoAz=v?0.35:0;}));
+  }
+  if(key==='moire'){
+    bar.appendChild(ctrlSlider('DETUNE',0.01,0.5,0.09,v=>Math.round(v*100)+'%',v=>scene.setDetune(v)));
+  }
+  if(key==='temporal'){
+    bar.appendChild(ctrlSlider('DUTY CYCLE',0.05,0.95,0.5,v=>Math.round(v*100)+'%',v=>scene.setDuty(v)));
+    bar.appendChild(ctrlToggle('TEMPORAL MIX',true,v=>scene.setOn(v?1:0)));
+  }
+  if(key==='sightline'){
+    const btn=document.createElement('button'); btn.className='toggle'; btn.setAttribute('aria-pressed','false');
+    btn.innerHTML='<span class="dot"></span>◎ RETURN TO SIGHTLINE';
+    btn.onclick=()=>scene.reform();
+    bar.appendChild(btn);
+  }
+});
+
+// visibility gating (perf): only render benches near the viewport
+benches.forEach(b=>{ b.visible=true;
+  const target=b.canvas.parentElement;
+  new IntersectionObserver(es=>{b.visible=es[0].isIntersecting;},{rootMargin:'160px'}).observe(target);
+});
+
+// master loop
+let last=performance.now(), fpsAcc=0, fpsN=0;
+const fpsEl=document.getElementById('fps');
+function loop(now){
+  let dt=(now-last)/1000; last=now; if(dt>0.05)dt=0.05;
+  for(const b of benches){ if(b.visible) b.frame(dt); }
+  fpsAcc+=dt;fpsN++; if(fpsAcc>0.5){fpsEl.textContent=Math.round(fpsN/fpsAcc)+' FPS';fpsAcc=0;fpsN=0;}
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+</script>
