@@ -170,12 +170,16 @@ dozen **grandiose non-planar constructions** that dwarf the Taj (every one is >2
 | 11 | Spiral Galaxy | 1200 | ~187 | a TWO-arm grand design at 17° pitch, inclined 22°: dust lanes, old-gold bulge, star streaks flowing along the arms |
 | 12 | Phoenix | 1200 | ~120 | a firebird: feathered wings + an impressionist flame tail |
 | 13 | Almighty Mountain | 1300 | ~110 | a Bob Ross vista flown into: 5 fractal ridges, a mirror lake, sun, happy little firs |
-| 14 | Starry Night | 1300 | ~73 | Van Gogh stepped into: a swirling sky shell, 11 star vortices, moon, cypress flame, village |
-| 15 | Lion's Head | 1100 | ~171 | a golden mane of 160 curl-field strands around a Ruby-eyed face |
+| 14 | Starry Night | 1300 | 300 | **baked from the real painting**: every stroke traced from van Gogh's brush flow (structure-tensor streamlines of the public-domain scan), palette-split Jade sky / Gold lights / Ruby cypress, bent onto an immersive curved canvas |
+| 15 | Lion | 1100 | 198 | **baked from a real sculpture**: the CC0 Temperance Union Lion scan (1896) — 56 engraving contours + 136 mane-curl feature lines extracted from the mesh |
 | 16 | Peacock | 1100 | ~226 | a fanned 3D train of eye-feathers — the toy's magnum opus |
 
-These are built by composition, not by hand-placing points — see **`PaintingStrokeToolkit`** below.
-The gallery fans ~120° at `anglePerToyDeg = 8°`.
+Rows 5–11 are built by composition from **`PaintingStrokeToolkit`** (below); rows 14–15 are
+**baked from real references** by the offline **painting pipeline** (`Tools/PaintingPipeline/` —
+mesh→engraving-stroke converter + painting-flow tracer + asset baker; licences audited in
+`Tools/PaintingPipeline/REFERENCE_MODELS.md`). Baked paintings live as authored `strokes` on the
+`PaintingDefinitionSO` asset — the SO's highest-priority source — so they need zero runtime code
+and their `preset` remains as fallback. The gallery fans ~120° at `anglePerToyDeg = 8°`.
 
 How a run plays:
 

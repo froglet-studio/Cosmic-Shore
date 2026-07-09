@@ -103,9 +103,17 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
   Torus Knot (engineered tube on rotation-minimizing frames), Buckyball (C60 + its 30 real 6:6
   double bonds), Spiral Galaxy (two-arm grand design, dust lanes, arm-following star streaks,
   22° inclination). Anatomy counts are locked by `ReferenceRebuilds_KeepTheirAnatomy`.
-  The five representational subjects (Lion's Head, Peacock, Phoenix, Starry Night, Almighty
-  Mountain) are pending the **Camp B real-model pipeline** (mesh → hatched flight strokes, baked
-  as authored `PaintingDefinitionSO.strokes`). Remaining candidates: Great Wave, pagoda, Colosseum.
+  Of the five representational subjects, **two are now baked from real references** via the
+  offline pipeline (`Tools/PaintingPipeline/`): **Lion** (CC0 Temperance Union Lion sculpture
+  scan → 56 engraving contours + 136 mane-curl feature lines) and **Starry Night** (every stroke
+  traced from the painting's own brush flow, palette-quantized, bent onto an immersive curved
+  canvas). **Peacock, Phoenix, Almighty Mountain remain procedural** pending a bake decision:
+  verified-licence references are already downloaded + audited (`REFERENCE_MODELS.md`) —
+  the YahooJAPAN Peafowl (CC-BY 4.0, attribution required in credits), the threedscans Striding
+  Eagle (no restrictions — Phoenix body/wings, flame tail stays procedural), and a real-DEM or
+  fractal rework for the vista. Extra baked-painting candidates from the same haul: the Medici
+  Riccardi Horse Head and the Glycon serpent (both threedscans, no restrictions). Remaining
+  procedural candidates: Great Wave, pagoda, Colosseum.
 - **Perf / in-editor pass for the big paintings.** Each stroke stands up one ghost `LineRenderer` +
   one start gate at `PaintingRunner.Begin`, so Peacock (~226 strokes) and Lion's Head (~171) create a
   few hundred lightweight LineRenderers up front. This is the intended "hours of flying" ceiling but
