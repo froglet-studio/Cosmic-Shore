@@ -96,9 +96,7 @@ namespace CosmicShore.Gameplay
 
             // Element → parameter (Mass → harvest capacity). Anchored at base at resting level;
             // a high Mass element lets the ray collect more opposing prisms before it detonates.
-            var harvestStatus = impactor ? impactor.Skimmer?.VesselStatus : null;
-            int effectiveMax = Mathf.Max(1, Mathf.RoundToInt(
-                ElementalScaling.Scale(harvestStatus, Element.Mass, maxBlockHits, atFull: 1.75f)));
+            int effectiveMax = EffectiveMaxFor(impactor);
 
             var rawCount = hitSet.Count;
             var clamped  = Mathf.Min(rawCount, effectiveMax);
@@ -132,7 +130,18 @@ namespace CosmicShore.Gameplay
             readySet.Remove(impactor);
             cooldownTimers[impactor] = Time.time + cooldownDuration;
             OnCooldownStarted?.Invoke(impactor, cooldownDuration);
-            OnCountChanged?.Invoke(impactor, 0, maxBlockHits); // reset UI counter
+            // Reset against the SAME Mass-scaled capacity used while filling, so the HUD "/ max"
+            // denominator doesn't jump between the scaled cap and the base cap.
+            OnCountChanged?.Invoke(impactor, 0, EffectiveMaxFor(impactor)); // reset UI counter
+        }
+
+        // Mass → harvest capacity, read per-vessel from the skimmer's own ResourceSystem.
+        // Anchored at maxBlockHits at the resting level (Mass == 0).
+        private int EffectiveMaxFor(SkimmerImpactor impactor)
+        {
+            var status = impactor ? impactor.Skimmer?.VesselStatus : null;
+            return Mathf.Max(1, Mathf.RoundToInt(
+                ElementalScaling.Scale(status, Element.Mass, maxBlockHits, atFull: 1.75f)));
         }
         
         private void TriggerOvercharge(SkimmerImpactor impactor, HashSet<PrismImpactor> hitSet)
