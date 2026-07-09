@@ -393,6 +393,14 @@ namespace CosmicShore.Gameplay
         private void FadeFromBlackOnReplay()
         {
             gameData.OnClientReady.OnRaised -= FadeFromBlackOnReplay;
+
+            // Play Again reloads bypass SceneLoader.LoadSceneAsync entirely, so
+            // neither host nor clients would ever take the scheduled scene-change
+            // GC on repeated replays. This runs on every peer with the overlay
+            // still opaque and the reloaded scene up — the covered moment to take
+            // the full collect and reset the mid-gameplay collection clock.
+            GC.Collect();
+
             _sceneTransitionManager?.FadeFromBlack().Forget();
         }
 

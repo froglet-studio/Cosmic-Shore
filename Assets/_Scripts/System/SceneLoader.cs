@@ -180,6 +180,14 @@ namespace CosmicShore.Core
         {
             Debug.Log("<color=#FFFFFF><b>[FLOW-8] [SceneLoader] FadeFromSplashOnReady — OnClientReady fired!</b></color>");
             gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
+
+            // Runs on EVERY peer (clients never reach LoadSceneAsync's pre-load
+            // collect — they defer scene loads to the server) with the splash still
+            // fully opaque and the NEW scene loaded, so the old scene's managed heap
+            // is unreachable here — the most effective covered moment to take the
+            // full GC and reset the mid-gameplay collection clock.
+            GC.Collect();
+
             _sceneTransitionManager?.FadeFromBlack().Forget();
         }
 
