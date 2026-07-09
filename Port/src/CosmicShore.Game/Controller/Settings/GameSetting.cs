@@ -8,9 +8,7 @@ namespace CosmicShore.Core
 {
     public class GameSetting : SingletonPersistent<GameSetting>
     {
-        // PORT Deviation #14: UGSDataService is services-phase (UGS-coupled);
-        // settings persist via PlayerPrefs only until then.
-        // [Inject] UGSDataService _ugsDataService;
+        [Inject] UGSDataService _ugsDataService;
 
         public delegate void OnChangeMusicEnabledStatusEvent(bool status);
         public static event OnChangeMusicEnabledStatusEvent OnChangeMusicEnabledStatus;
@@ -107,23 +105,22 @@ namespace CosmicShore.Core
             hapticsLevel = PlayerPrefs.GetFloat(nameof(PlayerPrefKeys.HapticsLevel));
 
             // Subscribe to cloud data ready event to apply cloud settings on top of local
-            // PORT Deviation #14 (whole if/else — UGS cloud settings, services phase):
-            // if (_ugsDataService.IsInitialized)
-            //     ApplyCloudSettings(_ugsDataService.Settings?.Data);
-            // else
-            //     _ugsDataService.OnInitialized += HandleCloudDataReady;
+            if (_ugsDataService.IsInitialized)
+                ApplyCloudSettings(_ugsDataService.Settings?.Data);
+            else
+                _ugsDataService.OnInitialized += HandleCloudDataReady;
         }
 
         void OnDestroy()
         {
-            // PORT Deviation #14: if (_ugsDataService != null)
-                // PORT Deviation #14: _ugsDataService.OnInitialized -= HandleCloudDataReady;
+            if (_ugsDataService != null)
+                _ugsDataService.OnInitialized -= HandleCloudDataReady;
         }
 
         void HandleCloudDataReady()
         {
-            // PORT Deviation #14: _ugsDataService.OnInitialized -= HandleCloudDataReady;
-            // PORT Deviation #14: ApplyCloudSettings(_ugsDataService.Settings?.Data);
+            _ugsDataService.OnInitialized -= HandleCloudDataReady;
+            ApplyCloudSettings(_ugsDataService.Settings?.Data);
         }
 
         /// <summary>
@@ -260,12 +257,21 @@ namespace CosmicShore.Core
         /// </summary>
         void SyncToCloud()
         {
-            // PORT Deviation #14 (whole body — UGS Cloud Save, services phase):
-            // var ds = _ugsDataService;
-            // if (ds?.SettingsRepo == null) return;
-            // var cloud = ds.SettingsRepo.Data;
-            // cloud.MusicEnabled = musicEnabled; … cloud.HapticsLevel = hapticsLevel;
-            // ds.SettingsRepo.MarkDirty();
+            var ds = _ugsDataService;
+            if (ds?.SettingsRepo == null) return;
+
+            var cloud = ds.SettingsRepo.Data;
+            cloud.MusicEnabled = musicEnabled;
+            cloud.SFXEnabled = sfxEnabled;
+            cloud.HapticsEnabled = hapticsEnabled;
+            cloud.InvertYEnabled = invertYEnabled;
+            cloud.InvertThrottleEnabled = invertThrottleEnabled;
+            cloud.JoystickVisualsEnabled = joystickVisualsEnabled;
+            cloud.MusicLevel = musicLevel;
+            cloud.SFXLevel = sfxLevel;
+            cloud.HapticsLevel = hapticsLevel;
+
+            ds.SettingsRepo.MarkDirty();
         }
 
         void SetPlayerPrefDefault(PlayerPrefKeys key, int value)

@@ -25,8 +25,7 @@ namespace CosmicShore.UI
         [Header("Game Data")]
         [SerializeField] private GameDataSO gameData;
 
-        // PORT Deviation #14 (C2, restore when UGSDataService ports — CloudSave repo, services phase):
-        // [Inject] UGSDataService _ugsDataService;
+        [Inject] UGSDataService _ugsDataService;
         // PORT Deviation (drift-sync, restore when AnalyticsServiceFacade ports — UGS Analytics, services phase):
         // [Inject] AnalyticsServiceFacade _analytics;
 
@@ -54,10 +53,9 @@ namespace CosmicShore.UI
             if (Instance == this)
                 Instance = null;
 
-            // PORT Deviation #14 (C2, restore when UGSDataService ports):
-            // var ds = _ugsDataService;
-            // if (ds != null)
-            //     ds.OnInitialized -= HandleDataServiceReady;
+            var ds = _ugsDataService;
+            if (ds != null)
+                ds.OnInitialized -= HandleDataServiceReady;
 
             OnProfileChanged -= SyncProfileToGameData;
         }
@@ -66,10 +64,7 @@ namespace CosmicShore.UI
         {
             OnProfileChanged += SyncProfileToGameData;
 
-            // PORT Deviation #14 (C2, restore when UGSDataService ports — headless the cloud
-            // data service is never injected, so the original null-fallback below is the main
-            // path until the services phase):
-            // if (_ugsDataService == null)
+            if (_ugsDataService == null)
             {
                 // DI failed to supply the cloud data service (e.g. instantiated outside a
                 // ContainerScope). Keep the local default profile so UI still renders rather
@@ -78,17 +73,15 @@ namespace CosmicShore.UI
                 return;
             }
 
-            // PORT Deviation #14 (C2, restore when UGSDataService ports):
-            // if (_ugsDataService.IsInitialized)
-            //     HandleDataServiceReady();
-            // else
-            //     _ugsDataService.OnInitialized += HandleDataServiceReady;
+            if (_ugsDataService.IsInitialized)
+                HandleDataServiceReady();
+            else
+                _ugsDataService.OnInitialized += HandleDataServiceReady;
         }
 
         void HandleDataServiceReady()
         {
-            // PORT Deviation #14 (C2, restore when UGSDataService ports):
-            // _ugsDataService.OnInitialized -= HandleDataServiceReady;
+            _ugsDataService.OnInitialized -= HandleDataServiceReady;
 
             MergeCloudProfile();
 
@@ -118,15 +111,10 @@ namespace CosmicShore.UI
         /// </summary>
         void MergeCloudProfile()
         {
-            // PORT Deviation #14 (C2, restore when UGSDataService ports — ProfileRepo is the
-            // CloudSave repository. Headless there is no repo, so cloudData stays null and the
-            // no-cloud-profile branch pushes local defaults via the (also staged)
-            // SyncCurrentProfileToRepo. The merge + auth-id logic past the branch compiles live
-            // against the E13 auth shim; restore by deleting the null seed below.):
-            // var ds = _ugsDataService;
-            // if (ds?.ProfileRepo == null) return;
-            // var cloudData = ds.ProfileRepo.Data;
-            PlayerProfileData cloudData = null;
+            var ds = _ugsDataService;
+            if (ds?.ProfileRepo == null) return;
+
+            var cloudData = ds.ProfileRepo.Data;
             if (cloudData == null || string.IsNullOrEmpty(cloudData.userId))
             {
                 // No cloud profile → push local defaults to cloud
@@ -198,20 +186,19 @@ namespace CosmicShore.UI
         /// </summary>
         void SyncCurrentProfileToRepo()
         {
-            // PORT Deviation #14 (C2, whole body — UGS CloudSave repo, services phase):
-            // var ds = _ugsDataService;
-            // if (ds?.ProfileRepo == null || CurrentProfile == null) return;
-            //
-            // var repoData = ds.ProfileRepo.Data;
-            // repoData.userId = CurrentProfile.userId;
-            // repoData.displayName = CurrentProfile.displayName;
-            // repoData.avatarId = CurrentProfile.avatarId;
-            // repoData.crystalBalance = CurrentProfile.crystalBalance;
-            // repoData.xp = CurrentProfile.xp;
-            // repoData.unlockedRewardIds = CurrentProfile.unlockedRewardIds;
-            // repoData.firstSeenUtc = CurrentProfile.firstSeenUtc;
-            //
-            // ds.ProfileRepo.MarkDirty();
+            var ds = _ugsDataService;
+            if (ds?.ProfileRepo == null || CurrentProfile == null) return;
+
+            var repoData = ds.ProfileRepo.Data;
+            repoData.userId = CurrentProfile.userId;
+            repoData.displayName = CurrentProfile.displayName;
+            repoData.avatarId = CurrentProfile.avatarId;
+            repoData.crystalBalance = CurrentProfile.crystalBalance;
+            repoData.xp = CurrentProfile.xp;
+            repoData.unlockedRewardIds = CurrentProfile.unlockedRewardIds;
+            repoData.firstSeenUtc = CurrentProfile.firstSeenUtc;
+
+            ds.ProfileRepo.MarkDirty();
         }
 
         void ScheduleSave()
@@ -224,22 +211,20 @@ namespace CosmicShore.UI
         /// so deliberate user actions like changing the avatar persist right away rather than
         /// after the ~1.5s debounce. Mirrors GameModeProgressionService.SaveImmediateAsync.
         /// </summary>
-        void SaveProfileImmediateAsync()
+        async void SaveProfileImmediateAsync()
         {
-            // PORT Deviation #14 (C2, whole body — UGS CloudSave repo, services phase; the
-            // original is `async void` awaiting repo.SaveAsync()):
-            // var repo = _ugsDataService?.ProfileRepo;
-            // if (repo == null) return;
-            //
-            // try
-            // {
-            //     await repo.SaveAsync();
-            // }
-            // catch (Exception e)
-            // {
-            //     CSDebug.LogWarning($"[PlayerDataService] Immediate profile save failed: {e.Message}. " +
-            //                        "Falling back to the debounced save.");
-            // }
+            var repo = _ugsDataService?.ProfileRepo;
+            if (repo == null) return;
+
+            try
+            {
+                await repo.SaveAsync();
+            }
+            catch (Exception e)
+            {
+                CSDebug.LogWarning($"[PlayerDataService] Immediate profile save failed: {e.Message}. " +
+                                   "Falling back to the debounced save.");
+            }
         }
 
         // ----------------- Public API -----------------

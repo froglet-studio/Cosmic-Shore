@@ -295,13 +295,15 @@ public class PlayerDataServiceC2Tests : IDisposable
     }
 
     [Fact]
-    public void HandleDataServiceReady_StagedPath_InitializesAndNotifiesCurrentTotals()
+    public void HandleDataServiceReady_InitializesAndNotifiesCurrentTotals()
     {
-        // The cloud-ready path is staged (#14) but its post-merge notify logic is live.
-        // Drive it directly: MergeCloudProfile sees no repo (null cloudData seed) and
-        // keeps the local profile; IsInitialized flips and both static views refresh.
+        // The cloud-ready path is LIVE (#14 un-carried). With an initialized-but-empty
+        // cloud repo (no cloud userId), MergeCloudProfile keeps the local profile,
+        // IsInitialized flips, and both static views refresh with the current totals.
         using var loop = new GameLoop();
         var (service, _) = CreateService();
+        var ds = new GameObject("ugs-data-service").AddComponent<CosmicShore.Core.UGSDataService>();
+        C2C3Reflect.Set(service, "_ugsDataService", ds); // Awake created empty repos
         service.AddCrystals(12);
         service.AddXP(34);
 

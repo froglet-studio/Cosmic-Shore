@@ -691,25 +691,107 @@ Gap-closure definition for this /loop: drift-sync complete + toys playable in th
 client + AstroLeague headless round running + remaining ladder rungs (5: real look,
 6: ambience/modes) — each iteration ships a player-feelable step, per Reorientation 1.
 
-## NEXT UP (after the CloudData core landed, 2026-07-09)
+## NEXT UP (milestone pivot, 2026-07-08)
 
-1. **Un-carry the #14 consumers against the live UGSDataService**:
-   `PlayerDataService` (12 markers: the `_ugsDataService` [Inject] field, the
-   Start ready-event fork — `if (_ugsDataService.IsInitialized)
-   HandleDataServiceReady(); else += HandleDataServiceReady`, the OnDestroy
-   unsubscribe, MergeCloudProfile's `ds?.ProfileRepo == null` guard + real
-   `ds.ProfileRepo.Data` read replacing the null seed, and the
-   SyncCurrentProfileToRepo write path) and `GameSetting` (7 markers — the
-   PlayerSettingsRepository read/write staging). UGSDataService + all 11
-   repositories + UGSCloudSaveProvider are now FULLY live (CloudData-core
-   arc below), so these restores are pure un-carries with behavior tests
-   (LocalCloudSaveService pre-seed per the UgsDataServiceTests precedent;
-   remember CloudSaveService.Reset() + AuthenticationService.Reset() +
-   UnityServices.Reset() in setup/teardown). AnalyticsServiceFacade stays a
-   shell (separate later arc) — do NOT overreach into it.
+**North star (prompter, 2026-07-08):** `/loop` until a milestone where the
+**menu-UI is testable AND multiple game modes are playable**, as close to the
+Unity build as we can get. *"Don't skip steps or rush. Build a foundation for
+excellence, not a proof of concept."* The full sequenced plan is in
+**"MILESTONE: MENU-UI + MULTI-MODE PLAYABLE"** below (8 arcs, A→I). The
+services-phase deviation backlog is drained (see the shipped arcs) — the loop
+now works that milestone plan.
+
+1. **Arc A — Engine UI geometry core (headless).** Build a first-party
+   `RectTransform` (anchorMin/anchorMax, pivot, sizeDelta, anchoredPosition,
+   computed `rect`) + `Canvas` + `CanvasScaler` (reference-resolution scaling)
+   + a rect-solve layout pass, in `CosmicShore.Engine`. Fully unit-testable
+   with NO renderer — assert computed world/screen rects from anchors/pivots/
+   sizeDelta across parent sizes and scale factors. This is THE foundation
+   (the Unity menu is 1142 RectTransforms); headless-first per ground rule 2.
+   Scope it first; it may split across two iterations. Do NOT start the client
+   render primitives (Arc C) until the geometry model is solid and tested.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+## MILESTONE: MENU-UI + MULTI-MODE PLAYABLE (prompter 2026-07-08)
+
+Grounded by a full read-only scope of the port's render/UI/menu/mode/content
+surface (2026-07-08). Key findings:
+
+- **Client renderer** (`src/CosmicShore.Client`, Silk.NET + raw OpenGL 3.3):
+  renders 3D gameplay (SkimRace + Freestyle lava-lamp) built **in code** via
+  `new GameObject().AddComponent<>()` against the REAL ported systems. The only
+  2D is a **procedural line HUD** (seven-segment digits drawn as `GL.Lines` in
+  an ortho pass) — **no font atlas, no textured-quad/sprite path, no
+  arbitrary-string rendering**. One vertex-color shader + a bloom chain.
+- **Engine UI types are all data-only shims** (`Button`, `TMP_Text` family,
+  `CanvasGroup`, `Sprite` stub) — no layout, no render. **Missing entirely:**
+  `RectTransform`, `Canvas`, `CanvasScaler`, `Image`/`Graphic`, `LayoutGroup`,
+  `EventSystem`/`PointerEventData`, `Selectable`, etc. `Transform` is pure 3D
+  (no anchors/pivot/sizeDelta) — the hard blocker.
+- **Menu UI:** `ScreenSwitcher` (855L, UGUI-heavy) + `IScreen` + 6 screens +
+  ~227 `_Scripts/UI` files — **~10% ported, all the non-visual data/service/
+  feed slice** (incl. the already-live headless `MainMenuController` state
+  machine + `MainMenuCameraController`). `Menu_Main.unity` is a 3.7 MB /
+  123k-line YAML scene: **1142 RectTransform, 988 CanvasRenderer, 1 Canvas** —
+  layout+sprites+wiring live in the scene, and **nothing in the port reads it**.
+- **Game modes:** all five modes' REAL controllers ARE ported and run headless
+  via the CLI (`MultiplayerJoustController`, `MultiplayerCrystalCaptureController`,
+  `AstroLeagueController`, `HexRaceController`, `TournamentController`). But the
+  **windowed client instantiates none of them** — it renders two bespoke rigs
+  (SkimRace `SkimRaceDirector`, Freestyle). The mode LOGIC is done + proven; the
+  gap is a windowed host + per-mode rendering/HUD/input.
+- **Content pipeline:** none. Scenes/prefabs/SO `.asset`s (556 assets, 381
+  prefabs) are **hand-transcribed to C#** (e.g. `SkimRaceTheme.cs` transcribes
+  the color-palette asset verbatim). No YAML→JSON extractor, no asset registry,
+  no `Port/tools/`.
+
+**Sequenced arcs** (foundation-first; headless where possible; each is
+several loop iterations, each ends green+pushed):
+
+| Arc | Scope | Phase | Track | Headless-testable |
+|---|---|---|---|---|
+| **A** | Engine UI geometry: `RectTransform` (anchors/pivot/sizeDelta/anchoredPosition/rect) + `Canvas` + `CanvasScaler` + rect-solve layout pass | 5 | UI framework | ✅ fully |
+| **B** | UGUI component model: `Image`/`Graphic`, `LayoutGroup` (H/V/Grid), `LayoutElement`, `ContentSizeFitter`, `Mask`/`RectMask2D` — real layout-participating components | 5 | UI framework | ✅ fully |
+| **C** | Client render primitives: embedded bitmap-font atlas + textured-quad shader + `DrawText`/`DrawRect` on the ortho pass; draw laid-out rects from A/B | 5 | render | screenshot byte-check |
+| **D** | Input/event layer: `EventSystem` + `PointerEventData` + `Selectable`/`Button` hit-testing wired to Silk.NET mouse/gamepad + gamepad nav-ring | 5 | UI framework | ✅ synthetic events |
+| **E** | Content bridge: a Unity YAML→first-party-scene extractor (new `Port/tools/`) scoped to the UGUI subset (RectTransform/Canvas/Image/TMP/Button/LayoutGroups/CanvasGroup) + script-GUID→type map, so `Menu_Main` imports rather than being hand-transcribed. **Decision point when it opens** — confirm extractor-vs-hand-authoring scope with the prompter (large sub-project). | 7 | content | round-trip parity |
+| **F** | Port `ScreenSwitcher` + `IScreen` + the 6 screens + `ModalWindowManager`, wired to the live `MainMenuController` + `PlayerDataService`. **Milestone sub-goal: menu renders + navigates + is testable.** | 5 | UI framework | ✅ + screenshot |
+| **G** | Windowed game-mode host: generalize `SkimRaceFactory` into a mode-agnostic factory instantiating the REAL arcade controllers (reuse the CLI `*Round.cs` wiring that already proves them headless) | 3/5 | mode host | ✅ construction |
+| **H** | Per-mode rendering + HUD: extend the renderer beyond stars/rails/crystals/vessels to each mode's objects (joust field, capture crystals, AstroLeague ball/goal/boundary, hex course) + each mode's HUD; route real human input | 5 | render | screenshot |
+| **I** | Menu→game→menu loop: connect `MainMenuController`'s LaunchGame SOAP path to the windowed mode host and back, satisfying the controllers' ready-button/scoreboard UI seams with the real UI. **FINAL MILESTONE.** | 8 | integration | ✅ E2E |
+
+**Critical path:** A→B→D (the UI framework from scratch — the long pole) and
+G→H (windowed mode host — largely integration since mode logic is done) can run
+as two parallel tracks after Arc A, converging at Arc I. C is the first visible
+output; F is the first testable menu; I is the milestone. **No shortcuts:** the
+content bridge (E) is a real extractor, not hand-transcription of 123k scene
+lines; the windowed host (G) instantiates the REAL controllers, not new bespoke
+rigs. The existing SkimRace/Freestyle clients + 5 headless CLI modes remain the
+always-runnable progress build throughout.
+
+### #14 consumers un-carried ✅ (2026-07-08) — the services deviation backlog is drained
+
+`PlayerDataService` (12 markers) + `GameSetting` (7 markers) restored verbatim
+against the live `UGSDataService`, so both now persist through the real
+CloudData repositories. PlayerDataService: the `_ugsDataService` [Inject]
+field, the Start ready-event fork, the OnDestroy unsubscribe, HandleDataServiceReady's
+unsubscribe, MergeCloudProfile's real `ds.ProfileRepo.Data` read (null seed
+deleted), SyncCurrentProfileToRepo's repo write + MarkDirty, and
+SaveProfileImmediateAsync's `async void` repo.SaveAsync (the AnalyticsServiceFacade
+`_analytics` inject stays carried — separate arc). GameSetting: the
+`_ugsDataService` field, Awake's cloud-settings fork, OnDestroy unsubscribe,
+HandleCloudDataReady, and SyncToCloud's PlayerSettingsRepository write.
+**6 behavior tests** (`PlayerDataCloudTests`): returning-player cloud merge over
+local defaults (+ gameData mirror), new-player push-defaults-to-repo,
+SetDisplayName write-through, no-service local fallback, GameSetting cloud-apply
+over PlayerPrefs, and GameSetting change→SyncToCloud. Also **updated the
+pre-existing C2 staged-path test** to drive the now-live path and **fixed a race
+in my own CloudData offline-recovery test** (poll the persisted value, not the
+`!IsDirty` flag the debounce loop clears before the cross-thread write lands).
+**1549 tests green in BOTH configs (1211 + 338)**; 5 CLI modes exit 0; both
+client diags byte-identical. bleeding-edge unmoved at `97d4ab29`.
 
 > **Known intermittent (pre-existing, NOT this branch's regression):** the full
 > Release suite flakes ~1-in-10 runs under CPU load, alternating between

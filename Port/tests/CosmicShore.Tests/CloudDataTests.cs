@@ -223,11 +223,20 @@ public class CloudDataTests : IDisposable
         await Task.Delay(200);
         Assert.True(repo.IsDirty);
 
-        // Reconnect: the background retry loop flushes the pending change.
+        // Reconnect: the background retry loop flushes the pending change. Poll the
+        // PERSISTED value, not !IsDirty — the debounce loop clears the dirty flag before
+        // the (cross-thread) save completes, so asserting on IsDirty races the store write.
         AuthenticationService.Instance.IsSignedIn = true;
-        await WaitUntil(() => !repo.IsDirty);
-        var cloud = await provider.LoadAsync<HangarCloudData>("TEST_REPO");
-        Assert.True(cloud.IsVesselUnlocked("Rhino"));
+        HangarCloudData cloud = null;
+        var deadline = DateTime.UtcNow.AddMilliseconds(4000);
+        while (DateTime.UtcNow < deadline)
+        {
+            cloud = await provider.LoadAsync<HangarCloudData>("TEST_REPO");
+            if (cloud != null && cloud.IsVesselUnlocked("Rhino")) break;
+            await Task.Delay(10);
+        }
+        Assert.True(cloud != null && cloud.IsVesselUnlocked("Rhino"),
+            "the pending change should flush to cloud on reconnect");
     }
 
     [Fact]
