@@ -17,18 +17,22 @@ namespace CosmicShore.Gameplay
     /// the vessel (along the nose / flight direction), so a Squirrel flying straight rockets through
     /// the hollow centre while it obstructs everyone else. No preview — it just places.
     ///
-    /// The prisms are POOLED — pulled from the shared prism pool via
-    /// <see cref="PrismEventChannelWithReturnSO"/> (the same path the trail and AOE danger blocks
-    /// use), configured like a trail block, laid a few per frame, and returned to the pool on
-    /// teardown — never Instantiate/Destroy. Each blooms in, registers with the spatial index, and is
-    /// removed only by an active force. A long cooldown gates re-use (surfaced to the HUD via
+    /// The prisms are POOLED — pulled via <see cref="PrismEventChannelWithReturnSO"/> from the
+    /// dedicated <c>Boost</c> pool (<see cref="PrismType.Boost"/>): fast-growing prisms whose collider
+    /// turns on immediately, so a skimmer can boost off them right away even though a vessel flying the
+    /// centre usually never touches them. The joust danger-block formation
+    /// (<c>AOEDangerHemisphereBlocks</c>) draws from the same pool. Each prism is configured like a
+    /// trail block, laid a few per frame, and returned to the pool on teardown — never
+    /// Instantiate/Destroy. Each blooms in, registers with the spatial index, and is removed only by an
+    /// active force. A long cooldown gates re-use (surfaced to the HUD via
     /// <see cref="CooldownRemaining01"/>).
     /// </summary>
     public sealed class SquirrelTubeActionExecutor : ShipActionExecutorBase
     {
         [Header("Scene Refs")]
-        [Tooltip("Shared pooled-prism spawn channel (EventOnSpawnPrismAndReturn) — same asset the " +
-                 "vessel trail uses. The tube's prisms are pooled, never Instantiated.")]
+        [Tooltip("Pooled-prism spawn channel (EventOnSpawnPrismAndReturn) — same asset the vessel " +
+                 "trail uses. The SO's PrismType (Boost) selects the dedicated fast/immediate-collider " +
+                 "pool. The tube's prisms are pooled, never Instantiated.")]
         [SerializeField] private PrismEventChannelWithReturnSO prismSpawnChannel;
 
         [Header("Events")]

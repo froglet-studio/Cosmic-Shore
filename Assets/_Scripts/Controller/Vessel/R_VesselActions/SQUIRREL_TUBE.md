@@ -52,23 +52,40 @@ axis and made the tube read as exiting the top; that was removed.
   (friendly fire included — locked design, danger effects never gate on domain), and a skimmer that
   grazes them gets **10× boost energy** (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`). A level-0
   Space Skimmer reaches the ring from the centre; the vessel body flies clear of it. Tune `radius`
-  so that holds for the live skimmer size.
+  so that holds for the live skimmer size. Because the prisms come from the **Boost pool** (below)
+  their colliders are live the instant they spawn — a skimmer can boost off them immediately, even
+  though a vessel flying the centre usually never touches them.
 
-## Pooling (best practice — no Instantiate/Destroy)
+## Pooling — the dedicated "Boost" prism pool (best practice, no Instantiate/Destroy)
 
-The wall's prisms are **pooled**, not instantiated:
+The wall's prisms are **pooled**, not instantiated, and they come from a pool built for exactly this
+job: **fast-growing prisms whose collider turns on immediately** — something to boost off that
+*usually doesn't collide at all*.
 
-- Spawned through the shared `PrismEventChannelWithReturnSO` (`EventOnSpawnPrismAndReturn.asset`) →
-  `PrismFactory` → the per-vessel `InteractivePrismPoolManager` — the exact path the vessel trail
-  (`VesselPrismController`) and AOE danger blocks (`AOEDangerHemisphereBlocks`) use.
-- Each prism is configured like a trail block: `ChangeTeam(domain)`, `IsDangerous = true` **before**
-  `Initialize` (so `Initialize`'s `MakeDangerous` repaints it to the team's dangerous material),
-  then `Initialize(playerName)` to bloom it in.
+- **`PrismType.Boost`** routes through the shared `PrismEventChannelWithReturnSO`
+  (`EventOnSpawnPrismAndReturn.asset`) → `PrismFactory.SpawnBoostPrism` → a **dedicated**
+  `InteractivePrismPoolManager` (`BoostPrismPool`, a child of `PrismManagers.prefab`).
+- `SpawnBoostPrism` sets, on every `Get`:
+  - `prism.waitTime = 0` — the collider comes on the frame after `Initialize` instead of after the
+    normal **0.6 s spawn window**, so a skimmer can boost off it right away.
+  - `prism.SetGrowthRate(boostPrismGrowthRate)` — a fast bloom-in (the shared prism prefab caches its
+    slow `0.01` GrowthRate onto the scale animator at `Awake`, so `SetGrowthRate` pushes the fast
+    value through to the animator too).
+- **Why a separate pool:** the pool's `OnGet`/`OnRelease` don't reset `waitTime`/`GrowthRate`, so
+  applying those overrides to a *shared* pool would leak an immediate-collider / fast-grow prism into
+  the next plain trail block that pool hands out. A dedicated pool means every prism in it is meant to
+  be fast + collider-immediate, so nothing leaks.
+- **Joust danger blocks use the same pool.** `AOEDangerHemisphereBlocks` (the danger-block formation
+  a skimmer overtake throws up) also spawns `PrismType.Boost` — same purpose, a boost-off surface
+  with a live collider — so the two share one pool and one behaviour.
+- Each tube prism is still configured like a trail block: `ChangeTeam(domain)`, `IsDangerous = true`
+  **before** `Initialize` (so `Initialize`'s `MakeDangerous` repaints it to the team's dangerous
+  material), then `Initialize(playerName)` to bloom it in.
 - The spawn is **batched** a few per frame (`spawnPerFrame`) to avoid a single-frame spike.
 - On teardown (turn end via `OnMiniGameTurnEnd`, or vessel despawn via `OnDisable`) the tracked prisms
-  are **returned to the pool** — `PrismKinds.Clear` first (so a recycled prism can't carry its danger
-  flag into a later plain trail block), then `Prism.ReturnToPool` (which self-unsubscribes so an
-  already-recycled prism is a safe no-op). Scene reloads release the whole pool anyway.
+  are **returned to the pool** — `PrismKinds.Clear` first, then `Prism.ReturnToPool` (which
+  self-unsubscribes so an already-recycled prism is a safe no-op). Scene reloads release the whole
+  pool anyway.
 
 ## Cooldown HUD
 
@@ -87,10 +104,13 @@ on either a vessel hit (joust) or a crystal hit.
 | HUD view / controller | `UI/View/SquirrelVesselHUDView.cs`, `R_VesselActions/Data Containers/SquirrelVesselHUDController.cs` |
 | Drift analog toggle | `VesselTransformer.singleTriggerDrift`, `DriftActionSO.playDriftSfx` |
 | Input mapping | `Squirrel.prefab` R_VesselActionHandler (`OnlyLeft/OnlyRight` + gamepad `LeftStick/RightStick` overrides) |
+| Boost prism pool | `PrismFactory.SpawnBoostPrism` (`PrismType.Boost`), `BoostPrismPool` in `PrismManagers.prefab`, `Prism.SetGrowthRate` |
+| Shared with joust | `AOEDangerHemisphereBlocks` (danger-block formation also spawns `PrismType.Boost`) |
 
 ## Tuning (all on the SO)
 
-`prismType`, `danger`, `radius`, `segments`, `rings`, `ringSpacing`, `prismScale`, `leadSeconds`,
-`forwardOffset` (min floor), `spawnPerFrame`, `cooldown`. Defaults: radius 8, 8 segments × 44 rings,
-scale 6, leadSeconds 1, forwardOffset 24, cooldown 20s. **`radius` needs in-editor tuning against the
-live level-0 skimmer size.**
+`prismType` (**Boost** — the fast/immediate-collider pool), `danger`, `radius`, `segments`, `rings`,
+`ringSpacing`, `prismScale`, `leadSeconds`, `forwardOffset` (min floor), `spawnPerFrame`, `cooldown`.
+Grow-in speed and collider timing are pool-level, on `PrismFactory` (`boostPrismGrowthRate`, default
+0.2) + `SpawnBoostPrism` (`waitTime = 0`). **`radius` needs in-editor tuning against the live level-0
+skimmer size.**

@@ -121,6 +121,18 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        /// <summary>
+        /// Overrides the grow-in speed at runtime. The <see cref="growthRate"/> field is cached
+        /// onto the scale animator in <see cref="Awake"/>, so a pooled prism won't honour a later
+        /// field write on its own — this pushes the value through to the animator too. Used by the
+        /// boost-prism pool (fast bloom).
+        /// </summary>
+        public void SetGrowthRate(float rate)
+        {
+            growthRate = rate;
+            if (scaleAnimator is not null) scaleAnimator.GrowthRate = rate;
+        }
+
         private void Awake()
         {
             materialAnimator = GetComponent<MaterialPropertyAnimator>();

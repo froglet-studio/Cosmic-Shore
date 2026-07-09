@@ -419,6 +419,7 @@ Transform:
   - {fileID: 2038420415473227853}
   - {fileID: 8683340294252458987}
   - {fileID: 29521603721079737}
+  - {fileID: 7788990011223344002}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8858616571013055913
@@ -464,8 +465,10 @@ MonoBehaviour:
   squirrelPrismPool: {fileID: 1847103263696127272}
   rhinoPrismPool: {fileID: 1172266200121829895}
   interactivePrismPool: {fileID: 2304155038879766684}
+  boostPrismPool: {fileID: 7788990011223344003}
   explosionPool: {fileID: 5221892771149629006}
   implosionPool: {fileID: 4003532647074121721}
+  boostPrismGrowthRate: 0.2
   _themeManagerData: {fileID: 11400000, guid: d45a23e6bd2da304988606fba6c97628, type: 2}
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
@@ -599,3 +602,57 @@ MonoBehaviour:
   maxInstantiateRate: 20
   baseInstantiateRate: 5
   maxAddsPerFrame: 4
+--- !u!1 &7788990011223344001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7788990011223344002}
+  - component: {fileID: 7788990011223344003}
+  m_Layer: 0
+  m_Name: BoostPrismPool
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7788990011223344002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7788990011223344001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 801077012243388966}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7788990011223344003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7788990011223344001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f381cf090404919a975c8491ac56dc5, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  prefab: {fileID: 4563009547826722997, guid: 4f41edde676403347bb3700cf3ab244c, type: 3}
+  defaultCapacity: 20
+  maxSize: 256
+  enableBufferMaintenance: 1
+  bufferSizeTarget: 40
+  maxInstantiateRate: 20
+  baseInstantiateRate: 5
+  maxAddsPerFrame: 4
+  OnResetForReplay: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+  OnSceneTransition: {fileID: 11400000, guid: c72e9a4cdd785b14e9f5787bf660425a, type: 2}
