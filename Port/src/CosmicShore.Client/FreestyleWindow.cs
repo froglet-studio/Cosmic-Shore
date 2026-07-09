@@ -820,7 +820,7 @@ void main()
         /// straight from the runner's LineRenderers, plus the next-waypoint marker.</summary>
         void DrawPainter()
         {
-            var painter = EngineObject.FindFirstObjectByType<MenuShapePainter>();
+            var painter = EngineObject.FindFirstObjectByType<PaintingRunner>();
             if (painter == null || !painter.gameObject.activeSelf) return;
 
             foreach (var lr in painter.gameObject.GetComponentsInChildren<LineRenderer>(true))

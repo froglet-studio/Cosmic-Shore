@@ -383,7 +383,7 @@ namespace CosmicShore.Client
             if (_initializerNetObj && _initializerNetObj.IsSpawned)
                 _initializerNetObj.Despawn(false); // OnNetworkDespawn cancels the spawn CTS
 
-            var painter = EngineObject.FindFirstObjectByType<MenuShapePainter>();
+            var painter = EngineObject.FindFirstObjectByType<PaintingRunner>();
             if (painter) painter.gameObject.SetActive(false);
 
             if (Cell)

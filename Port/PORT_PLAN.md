@@ -701,6 +701,16 @@ excellence, not a proof of concept."* The full sequenced plan is in
 services-phase deviation backlog is drained (see the shipped arcs) — the loop
 now works that milestone plan.
 
+> **Drift-sync note (2026-07-09):** bleeding-edge moved `97d4ab29` → `f2b8f5aa`
+> (PR #581 painting-toy rework) and was merged + drift-synced this iteration —
+> see `docs/DRIFT_2026-07-09.txt` (8 new files, 8 changed, 7 engine growths,
+> 5 tests updated). Arc A deferred one iteration by that drift-sync. **Gate
+> value change:** the freestyle client diag is now **`toys 12`** (was `toys 9`)
+> — intended + deterministic: the painting toy fans its 4-station default
+> gallery. race@1200 unchanged (`trail 786`). **Deferred follow-up:** port
+> upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
+> suite for additive preset-geometry coverage.
+
 1. **Arc A — Engine UI geometry core (headless).** Build a first-party
    `RectTransform` (anchorMin/anchorMax, pivot, sizeDelta, anchoredPosition,
    computed `rect`) + `Canvas` + `CanvasScaler` (reference-resolution scaling)

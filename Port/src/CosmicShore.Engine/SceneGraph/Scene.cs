@@ -50,5 +50,14 @@ namespace CosmicShore.Engine
             }
             return null;
         }
+
+        /// <summary>All components of type T anywhere in the scene (slow — avoid in hot paths).</summary>
+        public List<T> FindObjectsOfType<T>(bool includeInactive = false) where T : class
+        {
+            var results = new List<T>();
+            foreach (var root in _roots.ToArray())
+                results.AddRange(root.GetComponentsInChildren<T>(includeInactive));
+            return results;
+        }
     }
 }

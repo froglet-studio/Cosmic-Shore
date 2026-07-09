@@ -49,6 +49,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Spawner Control")]
         [SerializeField] bool spawnerEnabled = true;
+        bool trailPenUp; // painting pen-up — independent of spawnerEnabled (see SetSpawnerPaused)
         float waitTime;
         [SerializeField] float startDelay = 2.1f;
 
@@ -73,6 +74,10 @@ namespace CosmicShore.Gameplay
         bool     _dangerAppend;
 
         // Properties
+        /// <summary>The prism type this vessel lays (read by the painting toy's capture/restore).</summary>
+        public PrismType SpawnPrismType => prismType;
+        /// <summary>The factory channel this vessel spawns through (read by the painting toy's restore).</summary>
+        public PrismEventChannelWithReturnSO PrismSpawnChannel => _onPrismSpawnedEventChannel;
         public float MinWaveLength => minWavelength;
         public ushort TrailLength => (ushort)Trail.TrailList.Count;
         public float TrailZScale => BaseScale.z; // <- from BaseScale now
@@ -123,6 +128,16 @@ namespace CosmicShore.Gameplay
             cts = null;
         }
 
+        /// <summary>
+        /// Pen-up / pen-down for systems that sculpt with the trail (e.g. the fly-by-numbers
+        /// painting toy). Deliberately an INDEPENDENT axis from <see cref="spawnerEnabled"/> /
+        /// <see cref="StopSpawn"/>/<see cref="StartSpawn"/> (which gameplay vessel actions own):
+        /// pen-up only gates block creation, so it never resurrects a spawn loop an ability
+        /// stopped, an ability's StartSpawn never overrides a held pen, and pen-down resumes
+        /// instantly (no <see cref="startDelay"/>) when the loop is alive.
+        /// </summary>
+        public void SetSpawnerPaused(bool paused) => trailPenUp = paused;
+
         public void ToggleBlockWaitTime(bool extended)
         {
             waitTime = extended ? defaultWaitTime * 3f : defaultWaitTime;
@@ -152,7 +167,7 @@ namespace CosmicShore.Gameplay
 
             while (!ct.IsCancellationRequested)
             {
-                if (spawnerEnabled && !vesselStatus.IsAttached && vesselStatus.Speed > 3f)
+                if (spawnerEnabled && !trailPenUp && !vesselStatus.IsAttached && vesselStatus.Speed > 3f)
                 {
                     if (Mathf.Approximately(Gap, 0f))
                     {

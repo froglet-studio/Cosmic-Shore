@@ -80,6 +80,15 @@ namespace CosmicShore.Engine
         public static T FindAnyObjectByType<T>() where T : class
             => FindFirstObjectByType<T>();
 
+        /// <summary>
+        /// All live components of type T in the scene (original contract:
+        /// UnityEngine.Object.FindObjectsByType). The headless scene walk is deterministic,
+        /// so <paramref name="sortMode"/> is accepted for signature parity but not applied.
+        /// </summary>
+        public static T[] FindObjectsByType<T>(FindObjectsSortMode sortMode) where T : class
+            => GameLoop.Current?.Scene.FindObjectsOfType<T>(includeInactive: true).ToArray()
+               ?? System.Array.Empty<T>();
+
         /// <summary>Clone an asset or object graph (see ObjectUtilities for semantics).</summary>
         public static T Instantiate<T>(T original) where T : Object
             => ObjectUtilities.InstantiateObject(original);

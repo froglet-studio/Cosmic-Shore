@@ -125,6 +125,12 @@ namespace CosmicShore.Engine
         public static void Quit() => quitting?.Invoke();
 
         /// <summary>
+        /// Original-contract URL open (e.g. the painting toy's web-share viewer). Headless has no
+        /// browser; log the intent so the flow is observable. A future platform layer may launch it.
+        /// </summary>
+        public static void OpenURL(string url) => Debug.Log($"[Application] OpenURL: {url}");
+
+        /// <summary>
         /// Original-contract reachability read (party-system arc: NetworkDiagnostics
         /// snapshots it). Headless default assumes a LAN; a harness or the future
         /// platform layer may reassign.

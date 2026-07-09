@@ -148,6 +148,7 @@ namespace CosmicShore.Engine
     public class LineRenderer : Renderer
     {
         public bool useWorldSpace = true;
+        public bool loop;
         public float startWidth = 1f;
         public float endWidth = 1f;
         public Color startColor = Color.white;

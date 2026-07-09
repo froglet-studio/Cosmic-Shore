@@ -683,17 +683,39 @@ public class PaintingToyTests : IDisposable
 
     GameObject Track(GameObject go) { spawned.Add(go); return go; }
 
-    static ShapeDefinition MakeStar()
+    // The painting toy was reworked (PR #581) from a single ShapeDefinition + MenuShapePainter
+    // into a gallery of PaintingDefinitionSO stations, each driving a PaintingRunner. These tests
+    // validate the new spawn → activate → runner flow (the retired MenuShapePainter tests were
+    // replaced). The preset geometry itself is covered by the ported PaintingPresetLibraryTests.
+
+    static int RunnerCount() => Object.FindObjectsByType<PaintingRunner>(FindObjectsSortMode.None).Length;
+
+    [Fact]
+    public void FlyingThroughAPaintingStation_StartsExactlyOneRunner()
     {
-        var star = ScriptableObject.CreateInstance<ShapeDefinition>();
-        star.shapeName = "Star";
-        star.autoGeneratePreset = ShapePreset.Star;
-        star.autoGenerateRadius = 100f;
-        return star;
+        var gameData = ToyRig.MakeGameData();
+        var (vesselGo, _, _, localPlayer) = ToyRig.MakeVessel(Vector3.zero);
+        ToyRig.SetLocalPlayer(gameData, localPlayer); // exit-gated re-arm reads GameData.LocalPlayer.Vessel
+        Track(vesselGo);
+
+        // No paintings authored → the built-in default gallery (Star … Taj Mahal) fans stations.
+        var definition = ScriptableObject.CreateInstance<PaintingToyDefinitionSO>();
+        var toysParent = Track(new GameObject("toys"));
+        var placement = new ToyPlacement(new Vector3(0f, 0f, 1000f), Vector3.zero, 20f, 40f);
+        definition.Spawn(toysParent.transform, placement, ToyRig.MakeContext(gameData));
+
+        var station = ToyRig.Children(toysParent.transform).First();
+        ToyRig.RunSeconds(loop, 1.5f); // bloom → armed (vessel at origin is outside the ring stations)
+        Assert.Equal(0, RunnerCount());
+
+        // Fly into one station → its PaintingRunner starts (activation defers one tick).
+        vesselGo.transform.position = station.position;
+        ToyRig.RunSeconds(loop, 0.3f);
+        Assert.Equal(1, RunnerCount());
     }
 
     [Fact]
-    public void FlyByNumbers_GuidesThroughEveryWaypointInOrder_ThenCompletesAndFades()
+    public void SecondPassDuringActiveRun_DoesNotStartASecondRunner()
     {
         var gameData = ToyRig.MakeGameData();
         var (vesselGo, _, _, localPlayer) = ToyRig.MakeVessel(Vector3.zero);
@@ -701,93 +723,24 @@ public class PaintingToyTests : IDisposable
         Track(vesselGo);
 
         var definition = ScriptableObject.CreateInstance<PaintingToyDefinitionSO>();
-        var star = MakeStar();
-        ToyRig.Set(definition, "shape", star);
-
         var toysParent = Track(new GameObject("toys"));
         var placement = new ToyPlacement(new Vector3(0f, 0f, 1000f), Vector3.zero, 20f, 40f);
         definition.Spawn(toysParent.transform, placement, ToyRig.MakeContext(gameData));
-        var toyRoot = ToyRig.Children(toysParent.transform).Single();
 
-        ToyRig.RunSeconds(loop, 1.5f); // bloom → armed
-
-        // Fly into the toy → a self-contained painter starts.
-        vesselGo.transform.position = toyRoot.position;
-        loop.Tick(0.1f);
-        var painter = Object.FindFirstObjectByType<MenuShapePainter>();
-        Assert.NotNull(painter);
-
-        // The ghost outline previews the full shape (star preset waypoints), and the
-        // world waypoints are the shape's local points placed ahead of the vessel.
-        var expectedLocal = star.GetAllWorldWaypoints(Vector3.zero, 1f);
-        var waypoints = ToyRig.Get<Vector3[]>(painter, "_worldWaypoints");
-        Assert.Equal(expectedLocal.Length, waypoints.Length);
-        var ghost = painter.gameObject.GetComponentInChildren<LineRenderer>(includeInactive: true);
-        Assert.NotNull(ghost);
-        Assert.Equal(waypoints.Length, ghost.positionCount);
-
-        // The toy station is done for this test — the painter runs standalone
-        // (retire it so waypoint flight near the station can't re-trigger a new run).
-        Object.Destroy(toyRoot.gameObject);
-
-        // A "painted trail" stand-in laid during the run: the runner must never touch
-        // it — the painted structure is conserved mass, guides are the only teardown.
-        var paintedTrail = Track(new GameObject("painted-prism"));
-        paintedTrail.transform.position = waypoints[0];
-
-        bool completed = false;
-        painter.Completed += () => completed = true;
-
-        // Fly the numbers: visit every waypoint in order; the marker advances with us.
-        for (int i = 0; i < waypoints.Length; i++)
-        {
-            Assert.Equal(i, ToyRig.Get<int>(painter, "_index"));
-            vesselGo.transform.position = waypoints[i];
-            loop.Tick(0.1f);
-        }
-
-        Assert.True(completed); // no fail state — reaching the last point completes
-        Assert.False(ToyRig.Get<bool>(painter, "_running"));
-
-        // The guides fade out (2s unscaled), then the runner destroys ONLY itself.
-        ToyRig.RunSeconds(loop, 2.5f);
-        Assert.False(painter);            // runner gone
-        Assert.True((bool)paintedTrail);  // painted structure untouched (mass conserved)
-    }
-
-    [Fact]
-    public void SecondPassDuringActiveRun_DoesNotStartASecondPainter()
-    {
-        var gameData = ToyRig.MakeGameData();
-        var (vesselGo, _, _, localPlayer) = ToyRig.MakeVessel(Vector3.zero);
-        ToyRig.SetLocalPlayer(gameData, localPlayer); // exit-gated re-arm reads GameData.LocalPlayer.Vessel
-        Track(vesselGo);
-
-        var definition = ScriptableObject.CreateInstance<PaintingToyDefinitionSO>();
-        ToyRig.Set(definition, "shape", MakeStar());
-
-        var toysParent = Track(new GameObject("toys"));
-        var placement = new ToyPlacement(new Vector3(0f, 0f, 1000f), Vector3.zero, 20f, 40f);
-        definition.Spawn(toysParent.transform, placement, ToyRig.MakeContext(gameData));
-        var toyRoot = ToyRig.Children(toysParent.transform).Single();
-
+        var station = ToyRig.Children(toysParent.transform).First();
         ToyRig.RunSeconds(loop, 1.5f);
 
-        vesselGo.transform.position = toyRoot.position;
-        loop.Tick(0.1f);
-        Assert.NotNull(Object.FindFirstObjectByType<MenuShapePainter>());
+        vesselGo.transform.position = station.position;
+        ToyRig.RunSeconds(loop, 0.3f);
+        Assert.Equal(1, RunnerCount());
 
-        // Leave, re-arm, and pass through again mid-run: the toy re-activates but the
-        // painting toy keeps the one active run (no painter pile-up).
+        // Leave, re-arm, and pass through the same station again mid-run: the toy benches/resumes
+        // the ONE active run rather than piling up a second runner.
         vesselGo.transform.position = Vector3.zero;
         ToyRig.RunSeconds(loop, 0.5f);
-        vesselGo.transform.position = toyRoot.position;
-        loop.Tick(0.1f);
-
-        int painterCount = 0;
-        foreach (var root in GameLoop.Current.Scene.GetRootGameObjects())
-            if (root && root.name == "MenuShapePainter") painterCount++;
-        Assert.Equal(1, painterCount);
+        vesselGo.transform.position = station.position;
+        ToyRig.RunSeconds(loop, 0.3f);
+        Assert.Equal(1, RunnerCount());
     }
 }
 
@@ -876,6 +829,14 @@ public class ToyboxControllerTests : IDisposable
         var def = ScriptableObject.CreateInstance<PaintingToyDefinitionSO>();
         ToyRig.Set(def, "id", id);
         ToyRig.Set(def, "placementAngleDegrees", angleDeg);
+        // Author a single painting so the definition places exactly ONE station at its slot —
+        // these tests exercise the ToyboxController's ring distribution, not the painting gallery
+        // (an empty list would fan the four-painting default). The station is named "Toy_{id}_p".
+        var painting = ScriptableObject.CreateInstance<PaintingDefinitionSO>();
+        ToyRig.Set(painting, "paintingId", "p");
+        ToyRig.Set(painting, "preset", PaintingPreset.Star);
+        ToyRig.Set(painting, "presetSize", 100f);
+        ToyRig.Set(def, "paintings", new List<PaintingDefinitionSO> { painting });
         return def;
     }
 
@@ -908,7 +869,7 @@ public class ToyboxControllerTests : IDisposable
 
         // No Cell in the scene → fallback ring (center zero, radius 300). Auto-placed
         // toys distribute evenly (0°, 180°); the pinned one sits at its angle (90°).
-        Vector3 PosOf(string name) => toys.Single(t => t.name == $"Toy_{name}").position;
+        Vector3 PosOf(string name) => toys.Single(t => t.name == $"Toy_{name}_p").position;
         Assert.True((PosOf("a") - new Vector3(0f, 0f, 300f)).magnitude < 0.01f);
         Assert.True((PosOf("b") - new Vector3(300f, 0f, 0f)).magnitude < 0.01f);
         Assert.True((PosOf("c") - new Vector3(0f, 0f, -300f)).magnitude < 0.01f);
@@ -939,7 +900,7 @@ public class ToyboxControllerTests : IDisposable
         var root = ToyRig.Children(controller.transform).Single(t => t.name == "FreestyleToybox");
         var toys = ToyRig.Children(root);
         Assert.Single(toys);
-        Assert.Equal("Toy_open", toys[0].name);
+        Assert.Equal("Toy_open_p", toys[0].name);
 
         ToyRig.RunSeconds(loop, 1.5f); // complete the bloom started outside a Tick (async-void trap)
     }
@@ -953,8 +914,10 @@ public class ToyboxControllerTests : IDisposable
 
         var root = ToyRig.Children(controller.transform).Single(t => t.name == "FreestyleToybox");
         var names = ToyRig.Children(root).Select(t => t.name).ToArray();
-        Assert.Equal(4, names.Length);
-        Assert.Contains("Toy_painting", names);            // fly-by-numbers (with a star shape)
+        // Four built-in toy TYPES, but the fly-by-numbers painting fans its default gallery
+        // (Star → Rainbow → Saturn → Taj Mahal) into four stations, so seven roots are placed.
+        Assert.Equal(7, names.Length);
+        Assert.Equal(4, names.Count(n => n.StartsWith("Toy_painting_"))); // gallery stations
         Assert.Contains("ToySet_vessel_changer", names);   // coordinated flip-set
         Assert.Contains("ToySet_domain_changer", names);   // coordinated flip-set
         Assert.Contains("Toy_conveyor", names);            // Wanderway microscene conveyor

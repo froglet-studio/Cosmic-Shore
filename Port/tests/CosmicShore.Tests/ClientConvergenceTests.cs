@@ -998,11 +998,13 @@ public class FreestyleConvergenceTests : IDisposable
             foreach (var fauna in director.Cell.LiveFauna)
                 Assert.Equal(batchDomain, fauna.Domain);
 
-            // The toybox placed the four built-in toys on the membrane ring.
+            // The toybox placed the built-in toys on the membrane ring — the fly-by-numbers
+            // painting fans its default gallery (Star … Taj Mahal) into four stations, so seven
+            // roots for the four toy types.
             var toyboxRoot = Children(director.Toybox.transform).Single(t => t.name == "FreestyleToybox");
             var names = Children(toyboxRoot).Select(t => t.name).ToArray();
-            Assert.Equal(4, names.Length);
-            Assert.Contains("Toy_painting", names);
+            Assert.Equal(7, names.Length);
+            Assert.Equal(4, names.Count(n => n.StartsWith("Toy_painting_")));
             Assert.Contains("ToySet_vessel_changer", names);
             Assert.Contains("ToySet_domain_changer", names);
             Assert.Contains("Toy_conveyor", names);
