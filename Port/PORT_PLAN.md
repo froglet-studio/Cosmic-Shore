@@ -711,24 +711,62 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc C — client render primitives (the first VISIBLE UI output).** The UI
-   framework's headless critical path (A→B→D) is COMPLETE. Now make the
-   client draw it: an embedded bitmap-font atlas (the client already draws
-   seven-segment digits via GL.Lines — a real glyph atlas replaces that), a
-   textured-quad + solid-rect path on the existing ortho pass (the client is
-   raw GL 3.3 with one vertex-color shader + bloom; add one textured/UI shader),
-   `DrawText`/`DrawRect` helpers, and then the bridge: render a REAL engine
-   canvas tree — walk canvases → graphics in draw order (the exact walk
-   GraphicRaycaster does), Image → tinted rect at its world corners, TMP_Text
-   → atlas text — so an Arc-A/B-laid-out panel appears on screen pixel-exact.
-   Gate: screenshot byte-check of a test canvas + the existing diags stay
-   byte-stable (UI pass off by default in the sims). This is windowed work —
-   xvfb screenshots verify. Arc F (ScreenSwitcher + the 6 menu screens) opens
-   after C proves canvas rendering; Arc G (windowed mode host) remains open in
-   parallel.
+1. **Arc F — the menu shell (ScreenSwitcher + IScreen + screens).** Canvas
+   rendering is PROVEN (Arc C below — the uidemo image is the whole A→B→D→C
+   stack in one screenshot). Now port the real menu code onto it. SCOPE
+   first: `ScreenSwitcher` (~800L upstream: horizontal slide between 5 screen
+   panels, modal stack, PlayerPrefs return-state, gamepad trigger nav,
+   IScreen enter/exit discovery), `IScreen`, `MenuScreens` enum,
+   `ModalWindowManager` base, then the screens by increasing dependency
+   weight (HomeScreen first; ArcadeScreen needs SO_ArcadeGame card data;
+   Hangar/Leaderboards implement IScreen). Wire a `menushell` client mode
+   (uidemo's pattern: real GameLoop + canvas + the ported ScreenSwitcher with
+   hand-authored panel content standing in for the unported prefab art) so
+   the milestone's "menu renders + navigates + is testable" sub-goal becomes
+   literal: click/nav between screens under xvfb, screenshot byte-check per
+   screen. May split across iterations — ScreenSwitcher + IScreen + 2 screens
+   + menushell first. Arc G (windowed mode host) stays open in parallel if a
+   drift-sync eats the budget.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+> **Flake note:** the known pre-existing Release flake re-occurred once
+> during the Arc-C gate (clean on immediate re-run) — still not a regression.
+
+### Arc C ✅ (2026-07-09) — client render primitives; the UI stack is VISIBLE
+
+The first pixels out of the first-party UI framework — and the whole
+milestone stack in one deterministic image (`--mode uidemo`): Arc-A geometry
+scaled by the CanvasScaler, an Arc-B fitter-hugged VerticalLayoutGroup menu
+panel, an Arc-D synthetic click leaving its selected tint on a Button, all
+rasterized by the new Arc-C pass.
+
+**Client files:** `UiFont` — embedded 8×8 public-domain bitmap font
+(font8x8_basic, Daniel Hepper / Marcel Sondaar-IBM VGA lineage, fetched
+verbatim; 95 ASCII glyphs) laid on a 128×48 atlas with the last cell baked
+SOLID white so rects and text share ONE texture/batch; `UiRenderer` — the UI
+quad pass: one textured shader alongside the sims' vertex-color one,
+pos2+uv2+rgba triangle batch, pixel-space y-up ortho, `DrawRect`/`DrawText`
+(monospace 0.75-advance, newline stacking)/`MeasureText`, NEAREST filtering
+(crisp + driver-deterministic), standard alpha inside Begin/End with the
+sims' additive+depth state restored on End; `UiCanvasBridge` — renders the
+live engine canvas tree with the EXACT GraphicRaycaster walk (hierarchy
+order = draw order, nested canvases own their subtrees), root canvases
+back-to-front by sortingOrder, CanvasGroup alpha multiplying down the tree,
+Image/RawImage → tinted rect at world corners (sprite PIXELS ride with the
+Arc-E content pipeline), TMP_Text → atlas text with the TMP alignment
+bit-layout (low byte horizontal / high byte vertical) and **fontSize × the
+rect's world scale** (canvas units → pixels exactly as the corners convert —
+caught visually in the first screenshot and fixed); `UiDemoWindow` +
+`--mode uidemo` in Program — the verification host, screenshot + diag line
+at frame 60.
+
+**New gate line (byte-stable, two runs):** `uidemo@60` →
+`scale 0.6667, graphics 6, texts 6, panel 712x449, clicks 1, selected
+Row_HANGAR`. **1610 tests green in BOTH configs (1272 + 338)**; 5 CLI modes
+exit 0; race/freestyle diags byte-identical (`trail 786` / `toys 12`) — the
+UI pass touches nothing in the sims. bleeding-edge unmoved at `f2b8f5aa`.
 
 ### Arc D part 2 ✅ (2026-07-09) — navigation + used controls; ARC D CLOSED
 
@@ -996,7 +1034,7 @@ several loop iterations, each ends green+pushed):
 |---|---|---|---|---|
 | **A** ✅ | Engine UI geometry: `RectTransform` (anchors/pivot/sizeDelta/anchoredPosition/rect) + `Canvas` + `CanvasScaler` + rect-solve layout pass | 5 | UI framework | ✅ fully |
 | **B** ✅ | UGUI component model: `Image`/`Graphic`, `LayoutGroup` (H/V/Grid), `LayoutElement`, `ContentSizeFitter`, `Mask`/`RectMask2D` — real layout-participating components | 5 | UI framework | ✅ fully |
-| **C** | Client render primitives: embedded bitmap-font atlas + textured-quad shader + `DrawText`/`DrawRect` on the ortho pass; draw laid-out rects from A/B | 5 | render | screenshot byte-check |
+| **C** ✅ | Client render primitives: embedded bitmap-font atlas + textured-quad shader + `DrawText`/`DrawRect` on the ortho pass; draw laid-out rects from A/B (sprite-PIXEL rendering rides with the Arc-E content pipeline — tinted rects until then) | 5 | render | screenshot byte-check |
 | **D** ✅ | Input/event layer: `EventSystem` + `PointerEventData` + `Selectable`/`Button` hit-testing + gamepad nav-ring (Silk.NET hardware feed deferred to Arc H — same synthetic-injection seam) | 5 | UI framework | ✅ synthetic events |
 | **E** | Content bridge: a Unity YAML→first-party-scene extractor (new `Port/tools/`) scoped to the UGUI subset (RectTransform/Canvas/Image/TMP/Button/LayoutGroups/CanvasGroup) + script-GUID→type map, so `Menu_Main` imports rather than being hand-transcribed. **Decision point when it opens** — confirm extractor-vs-hand-authoring scope with the prompter (large sub-project). | 7 | content | round-trip parity |
 | **F** | Port `ScreenSwitcher` + `IScreen` + the 6 screens + `ModalWindowManager`, wired to the live `MainMenuController` + `PlayerDataService`. **Milestone sub-goal: menu renders + navigates + is testable.** | 5 | UI framework | ✅ + screenshot |

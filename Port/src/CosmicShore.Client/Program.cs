@@ -44,6 +44,13 @@ namespace CosmicShore.Client
 
             try
             {
+                if (mode == "uidemo")
+                {
+                    Console.WriteLine("UI demo — engine canvas rendered through the Arc-C bridge");
+                    new UiDemoWindow(screenshot, screenshotFrame).Run();
+                    return 0;
+                }
+
                 if (mode == "freestyle")
                 {
                     Console.WriteLine($"Freestyle — seed {seed}");
