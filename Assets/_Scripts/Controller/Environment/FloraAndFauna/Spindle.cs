@@ -10,6 +10,18 @@ namespace CosmicShore.Gameplay
     public class Spindle : MonoBehaviour
     {
         private static readonly int PhaseOffsetID = Shader.PropertyToID("_Phase");
+        private static readonly int DeathAnimationID = Shader.PropertyToID("_DeathAnimation");
+
+        // Condense/evaporate fades write _DeathAnimation through a shared scratch
+        // MaterialPropertyBlock (SetPropertyBlock copies it into the renderer, so one
+        // static scratch serves every spindle). The old path cloned a Material per
+        // animation (new Material + renderer.material — the banned clone pattern) and
+        // Destroyed it after; with dozens of spindles condensing at once that was
+        // constant material churn. The MPB un-batches the renderer only while the
+        // fade runs — exactly what the clone did — and clearing it on completion
+        // (SetPropertyBlock(null)) returns the spindle to the shared phase-variant
+        // material and SRP batching.
+        static MaterialPropertyBlock s_fadeMpb;
 
         // Spindle sway is desynced with a small set of SHARED phase-variant materials chosen
         // by world position, NOT a per-renderer MaterialPropertyBlock. A per-renderer MPB
@@ -31,7 +43,6 @@ namespace CosmicShore.Gameplay
         HashSet<Spindle> spindles = new HashSet<Spindle>();
 
         Material originalMaterial;
-        Material temporaryMaterial;
         Coroutine condenseCoroutine;
 
         bool deregistered;
@@ -162,17 +173,21 @@ namespace CosmicShore.Gameplay
 
         void RestoreOriginalMaterial()
         {
-            if (RenderedObject) RenderedObject.sharedMaterial = originalMaterial;
-
-            if (!temporaryMaterial) return;
-            Destroy(temporaryMaterial);
-            temporaryMaterial = null;
+            // Clearing the property block is what restores SRP batching; the shared
+            // phase-variant material itself was never swapped out.
+            if (RenderedObject)
+            {
+                RenderedObject.sharedMaterial = originalMaterial;
+                RenderedObject.SetPropertyBlock(null);
+            }
         }
 
-        void UseTemporaryMaterial()
+        void SetFadeValue(float deathAnimation)
         {
-            temporaryMaterial = new Material(originalMaterial);
-            if (RenderedObject) RenderedObject.material = temporaryMaterial;
+            if (!RenderedObject) return;
+            s_fadeMpb ??= new MaterialPropertyBlock();
+            s_fadeMpb.SetFloat(DeathAnimationID, deathAnimation);
+            RenderedObject.SetPropertyBlock(s_fadeMpb);
         }
 
         IEnumerator EvaporateCoroutine()
@@ -183,17 +198,15 @@ namespace CosmicShore.Gameplay
                 condenseCoroutine = null;
             }
 
-            UseTemporaryMaterial();
-
             float deathAnimation = 0f;
             float animationSpeed = 1f;
             while (deathAnimation < 1f)
             {
                 yield return null;
 
-                if (!temporaryMaterial) yield break;
+                if (!RenderedObject) yield break;
 
-                temporaryMaterial.SetFloat("_DeathAnimation", deathAnimation);
+                SetFadeValue(deathAnimation);
                 deathAnimation += Time.deltaTime * animationSpeed;
             }
 
@@ -216,19 +229,16 @@ namespace CosmicShore.Gameplay
         {
             if (isPermanentlyWithered) yield break;
 
-            UseTemporaryMaterial();
-
             float deathAnimation = 1f;
             float animationSpeed = 1f;
             while (deathAnimation > 0f)
             {
                 if (isPermanentlyWithered) yield break;
-                temporaryMaterial.SetFloat("_DeathAnimation", deathAnimation);
+                SetFadeValue(deathAnimation);
                 deathAnimation -= Time.deltaTime * animationSpeed;
                 yield return null;
             }
 
-            temporaryMaterial.SetFloat("_DeathAnimation", 0);
             RestoreOriginalMaterial();
         }
 
