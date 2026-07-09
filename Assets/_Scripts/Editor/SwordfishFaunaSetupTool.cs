@@ -11,34 +11,39 @@ namespace CosmicShore.Editor
 {
     /// <summary>
     /// Builds the flagship swordfish fauna (MassSwordfishFauna) from the raw SwordFish_A model,
-    /// mirroring the MassSharkFauna assembly it succeeds as the Blob (menu) apex predator:
+    /// mirroring how the hand-authored MassSharkFauna sits its prisms on the skeleton — the shark's
+    /// blocks are parented to bones (Wing_2.L, MouthTop_2, Body_3, …) and each is oriented + sized
+    /// to the body part it wraps (a flat 2×12×6 wing slab, a needle-thin 1×1×15 tooth on the jaw),
+    /// NOT axis-aligned boxes clamped to arbitrary sizes. We reproduce that from geometry instead of
+    /// by hand:
     ///
-    ///   • FBX import pass — loops the SwrdFsh_Move take (continuous swim) and imports the
-    ///     SwrdFsh_Charge take alongside it.
-    ///   • Animator controller (SwordFish_A.controller) — default looping Swim state (+ a Charge
-    ///     state, unwired, for future attack juice).
-    ///   • Root LightFauna — diet Predator, 45s starvation clock, Runtime Cell Data + a new
-    ///     MassSwordfishFaunaDataSO (fastest fauna in the sea: the swordfish out-swims the shark).
-    ///   • Prism body — DynamicHealthBlocks along the body and DangerBlocks along the bill (the
-    ///     sword IS the weapon; danger prisms are dangerous to everyone, per the locked design),
-    ///     parented under the nearest skeleton bones so they ride the swim animation. Body prisms
-    ///     bloom in via PrismScaleAnimator (continuity: nothing pops in) and are registered mass
-    ///     (Fauna.NotifyBodyPrismsMoved keeps the spatial index honest).
+    ///   • Per bone-cluster fitting — the tool runs INSIDE Unity, so it reads the live
+    ///     SkinnedMeshRenderer (bones + bindposes + boneWeights) and, for each bone, PCA-fits an
+    ///     oriented box to the rest-pose vertices that bone actually skins. The prism inherits that
+    ///     box's principal axes (so the dorsal slab stands vertical, the pectorals cant outward —
+    ///     real per-part orientation, not one boring root rotation) and is scaled to the real local
+    ///     silhouette, thinned to a slab, so nothing is oversized.
+    ///   • Bill = danger needles — the forward-most cluster (the sword) is tiled with thin DangerBlock
+    ///     needles laid END-TO-END along the bill so they don't overlap (each needle spans one
+    ///     segment of the bill length). The sword IS the weapon and danger prisms hit everyone, per
+    ///     the locked design.
+    ///   • Body = DynamicHealthBlock slabs on the other clusters (long clusters split in two for
+    ///     coverage), parented to their bone so they ride the swim animation.
+    ///   • Prisms bloom in via PrismScaleAnimator (continuity: nothing pops in) and are registered
+    ///     mass (Fauna.NotifyBodyPrismsMoved keeps the spatial index honest).
     ///   • One Spindle per SkinnedMeshRenderer (RenderedObject wired) so death runs the sealed
-    ///     wither path — extremity-first spindle dissolve, never a pop — and spawn gets the
-    ///     dissolve-in (Spindle.CondenseCoroutine).
-    ///   • A dormant authored CrystalMass child (Crystal + SphereCollider disabled, exactly like
-    ///     the shark's) — the locked "every lifeform drops one elemental crystal" invariant;
-    ///     the sealed Fauna.Die activates it on any death path.
-    ///   • Blob Swordfish Fauna Config Data (FaunaConfigurationSO, apex-tier numbers mirroring
-    ///     the shark: seed floor 1, cap 2, births on 6 kills) and swaps the shark entry for the
-    ///     swordfish in the Blob Cell Spawn Profile. The shark assets stay authored for other
-    ///     biomes; only the menu flagship slot changes hands.
+    ///     extremity-first wither dissolve and spawn gets the condense-in.
+    ///   • A dormant authored CrystalMass child (Crystal + pickup collider disabled, shark parity) —
+    ///     the locked "every lifeform drops one elemental crystal" invariant; Fauna.Die activates it.
+    ///   • Root LightFauna — diet Predator, 45s starvation clock, Runtime Cell Data + a new
+    ///     MassSwordfishFaunaDataSO (fastest fauna in the sea: out-swims the shark).
+    ///   • Blob Swordfish Fauna Config Data (apex numbers 1:1 with the shark slot) swapped into the
+    ///     Blob Cell Spawn Profile. The shark assets stay authored for other biomes.
     ///
-    /// Run via Tools ▸ Cosmic Shore ▸ Build Swordfish Flagship Fauna. Idempotent: the prefab is
-    /// rebuilt in place (same GUID), existing SO assets keep their human-tuned values and only
-    /// re-point at the rebuilt prefab. After running, run Tools ▸ Cosmic Shore ▸ Validate
-    /// Lifeform Crystals.
+    /// Run via Tools ▸ Cosmic Shore ▸ Build Swordfish Flagship Fauna, then run
+    /// Tools ▸ Cosmic Shore ▸ Validate Lifeform Crystals. Idempotent (rebuilds in place, keeps
+    /// human-tuned SO values). Placement is geometry-driven; open the prefab and nudge any prism —
+    /// they're parented to the bones exactly like the shark's, so hand-tuning is straightforward.
     /// </summary>
     public static class SwordfishFaunaSetupTool
     {
@@ -55,16 +60,19 @@ namespace CosmicShore.Editor
         const string DangerBlockPrefabPath = "Assets/_Prefabs/Trails/DangerBlock.prefab";
         const string CrystalPrefabPath = "Assets/_Prefabs/Environment/CrystalMass.prefab";
         const string BodyMaterialPath = "Assets/_Graphics/Materials/SpindleMaterial.mat";
-        const string AccentMaterialPath = "Assets/_Graphics/Materials/CrystalMaterials/BlueMassCrystalMaterial.mat";
 
-        // --- Body layout ------------------------------------------------------------------------
-        // Shark-scale creature. Stations are fractions of body length measured from the NOSE
-        // (bill tip): the sword carries DangerBlocks, the body carries DynamicHealthBlocks.
-        // 3 + 5 = 8 body prisms vs the shark's 10 — collider budget strictly ≤ the slot it takes.
-        const float TargetBodyLength = 30f;
-        static readonly float[] BillStations = { 0.03f, 0.10f, 0.18f };
-        static readonly float[] BodyStations = { 0.32f, 0.45f, 0.58f, 0.71f, 0.85f };
-        const float SlabHalfWidthFraction = 0.05f; // vertex slab sampled around each station
+        // --- Tuning ---------------------------------------------------------------------------
+        // Apex-sized creature. The model is scaled so its long axis spans TargetBodyLength; every
+        // prism is then fitted to the real local silhouette (never clamped to a guessed size).
+        const float TargetBodyLength = 34f;      // shark-class length
+        const float SlabFitFactor = 0.72f;       // fill ~0.72 of the local silhouette (leaves the mesh proud)
+        const float SlabFlatnessFraction = 0.32f;// thinnest axis capped to this fraction of the mid axis → a slab
+        const float SplitAspect = 2.6f;          // a non-bill cluster longer than this (major/mid) becomes 2 slabs
+        const float MinPrismDim = 0.6f;          // matches DynamicHealthBlock minScale
+        const int MinClusterVerts = 8;           // ignore near-empty bones
+        const float BillNeedleLength = 9f;        // target length per bill needle → count = billLen / this
+        const float BillNeedleGap = 0.85f;        // needle length = segment × this, so consecutive needles don't touch
+        const int MaxBillNeedles = 4;
 
         [MenuItem("Tools/Cosmic Shore/Build Swordfish Flagship Fauna")]
         public static void Build()
@@ -79,23 +87,32 @@ namespace CosmicShore.Editor
             var root = new GameObject("MassSwordfishFauna");
             try
             {
-                var model = AssembleModel(root, fbx, controller, out var bodyLength);
-                AttachBodyPrisms(root, model, bodyLength);
+                var model = AssembleModel(root, fbx, controller);
+
+                // 1) Analyse rest-pose clusters, orient the model nose(+Z), scale to length,
+                //    then re-analyse so placement uses the final world transforms.
+                var clusters = AnalyzeBoneClusters(model);
+                if (clusters.Count == 0)
+                {
+                    Debug.LogError("[SwordfishFauna] No skinned bone clusters found — is SwordFish_A rigged? Aborting.");
+                    return;
+                }
+                OrientAndScaleModel(model, clusters);
+                clusters = AnalyzeBoneClusters(model);
+
+                PlacePrisms(root, clusters);
                 AttachSpindles(root, model);
                 AttachDormantCrystal(root);
-                var faunaData = EnsureFaunaData();
-                ConfigureLightFauna(root, faunaData);
+                ConfigureLightFauna(root, EnsureFaunaData());
 
                 var prefab = PrefabUtility.SaveAsPrefabAsset(root, PrefabPath);
-                var faunaConfig = EnsureBlobConfig(prefab.GetComponent<LightFauna>());
-                WireBlobSpawnProfile(faunaConfig);
+                WireBlobSpawnProfile(EnsureBlobConfig(prefab.GetComponent<LightFauna>()));
 
                 AssetDatabase.SaveAssets();
-                Debug.Log($"[SwordfishFauna] Built {PrefabPath} (body length {bodyLength:F1}), " +
-                          $"wired {BlobConfigPath} into the Blob spawn profile apex slot. " +
-                          "Verify: bill (DangerBlocks) points +Z / nose-forward — if the heuristic guessed the " +
-                          "wrong end, rotate the Model child 180° about Y and re-save. Then run " +
-                          "Tools ▸ Cosmic Shore ▸ Validate Lifeform Crystals.");
+                Debug.Log($"[SwordfishFauna] Built {PrefabPath} — {clusters.Count} bone clusters fitted; " +
+                          "bill rendered as tiled DangerBlock needles. Open the prefab to eyeball the fit " +
+                          "(prisms are parented to the bones like the shark; nudge any that read off). " +
+                          "Then run Tools ▸ Cosmic Shore ▸ Validate Lifeform Crystals.");
             }
             finally
             {
@@ -107,183 +124,297 @@ namespace CosmicShore.Editor
         static void ConfigureImporter()
         {
             if (AssetImporter.GetAtPath(FbxPath) is not ModelImporter importer) return;
-
             var clips = importer.defaultClipAnimations;
             if (clips == null || clips.Length == 0) return;
-
             foreach (var clip in clips)
-            {
-                // The swim cycle must loop; the charge/attack take stays a one-shot.
-                clip.loopTime = clip.name.Contains("Move");
-            }
+                clip.loopTime = clip.name.Contains("Move"); // swim loops; charge stays a one-shot
             importer.clipAnimations = clips;
             importer.SaveAndReimport();
         }
 
         static RuntimeAnimatorController BuildAnimatorController()
         {
-            var existing = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
-            if (existing) AssetDatabase.DeleteAsset(ControllerPath);
+            if (AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath))
+                AssetDatabase.DeleteAsset(ControllerPath);
 
             var controller = AnimatorController.CreateAnimatorControllerAtPath(ControllerPath);
-            var stateMachine = controller.layers[0].stateMachine;
+            var sm = controller.layers[0].stateMachine;
 
-            var fbxClips = AssetDatabase.LoadAllAssetsAtPath(FbxPath)
-                .OfType<AnimationClip>()
-                .Where(c => !c.name.StartsWith("__preview__"))
-                .ToList();
+            var clips = AssetDatabase.LoadAllAssetsAtPath(FbxPath)
+                .OfType<AnimationClip>().Where(c => !c.name.StartsWith("__preview__")).ToList();
+            var move = clips.FirstOrDefault(c => c.name.Contains("Move"));
+            var charge = clips.FirstOrDefault(c => c.name.Contains("Charge"));
 
-            var moveClip = fbxClips.FirstOrDefault(c => c.name.Contains("Move"));
-            var chargeClip = fbxClips.FirstOrDefault(c => c.name.Contains("Charge"));
-
-            if (moveClip)
+            if (move)
             {
-                var swim = stateMachine.AddState("Swim");
-                swim.motion = moveClip;
-                swim.speed = 2f; // brisk cruise — the flagship reads fast even at Calm
-                stateMachine.defaultState = swim;
+                var swim = sm.AddState("Swim");
+                swim.motion = move;
+                swim.speed = 2f;
+                sm.defaultState = swim;
             }
-            else
-            {
-                Debug.LogWarning("[SwordfishFauna] No SwrdFsh_Move clip found on the FBX — the fish will T-pose.");
-            }
+            else Debug.LogWarning("[SwordfishFauna] No SwrdFsh_Move clip — the fish will T-pose.");
 
-            if (chargeClip)
-            {
-                // Authored but unwired: future attack juice can transition to it without re-authoring.
-                var charge = stateMachine.AddState("Charge");
-                charge.motion = chargeClip;
-            }
-
+            if (charge) sm.AddState("Charge").motion = charge; // authored, unwired, for future attack juice
             return controller;
         }
 
-        // --- Model: orient nose-forward (+Z), scale to shark-class length ------------------------
-        static GameObject AssembleModel(GameObject root, GameObject fbx, RuntimeAnimatorController controller, out float bodyLength)
+        // --- Model: instantiate, material, animator (orientation/scale applied later) ------------
+        static GameObject AssembleModel(GameObject root, GameObject fbx, RuntimeAnimatorController controller)
         {
             var model = Object.Instantiate(fbx, root.transform);
             model.name = "Model";
             model.transform.localPosition = Vector3.zero;
             model.transform.localRotation = Quaternion.identity;
 
-            var animator = model.GetComponent<Animator>();
-            if (!animator) animator = model.AddComponent<Animator>();
+            var animator = model.GetComponent<Animator>() ? model.GetComponent<Animator>() : model.AddComponent<Animator>();
             animator.runtimeAnimatorController = controller;
             animator.applyRootMotion = false; // LightFauna owns locomotion; the clip only sways the body
 
-            // Replace the raw FBX materials with the lifeform look: SpindleMaterial carries the
-            // _DeathAnimation dissolve the Spindle wither/condense path drives, so the mesh
-            // blooms in on spawn and evaporates on death instead of popping.
+            // SpindleMaterial carries the _DeathAnimation dissolve the Spindle wither/condense drives,
+            // so the mesh blooms in on spawn and evaporates on death instead of popping.
             var bodyMaterial = AssetDatabase.LoadAssetAtPath<Material>(BodyMaterialPath);
-            var accentMaterial = AssetDatabase.LoadAssetAtPath<Material>(AccentMaterialPath);
             if (bodyMaterial)
-            {
-                foreach (var renderer in model.GetComponentsInChildren<Renderer>(true))
-                {
-                    var materials = renderer.sharedMaterials;
-                    for (int i = 0; i < materials.Length; i++)
-                        materials[i] = i == 0 || !accentMaterial ? bodyMaterial : accentMaterial;
-                    renderer.sharedMaterials = materials;
-                }
-            }
+                foreach (var r in model.GetComponentsInChildren<Renderer>(true))
+                    r.sharedMaterials = Enumerable.Repeat(bodyMaterial, r.sharedMaterials.Length).ToArray();
             else
-            {
-                Debug.LogWarning($"[SwordfishFauna] Missing {BodyMaterialPath} — keeping the raw FBX materials " +
-                                 "(no _DeathAnimation dissolve; the spindle wither/condense will be invisible).");
-            }
-
-            // Orient: find the mesh's long axis, then decide which end is the nose — the bill is
-            // a long thin spike, so the end with the smaller mean cross-section radius is the front.
-            var vertices = CollectLocalVertices(model.transform);
-            if (vertices.Count == 0)
-            {
-                Debug.LogWarning("[SwordfishFauna] No mesh vertices found — skipping orientation/scale.");
-                bodyLength = TargetBodyLength;
-                return model;
-            }
-
-            var (axis, min, max) = LongestAxis(vertices);
-            var noseDir = NoseDirection(vertices, axis, min, max);
-            model.transform.localRotation = RotationToForward(noseDir);
-
-            // Uniform-scale so nose→tail spans TargetBodyLength, measured in ROOT space so any
-            // FBX import scale on the model root is already factored in.
-            var rootVertices = CollectRootSpaceVertices(root.transform, model.transform);
-            float rawLength = rootVertices.Max(v => v.z) - rootVertices.Min(v => v.z);
-            if (rawLength > 0.001f)
-                model.transform.localScale *= TargetBodyLength / rawLength;
-            bodyLength = TargetBodyLength;
+                Debug.LogWarning($"[SwordfishFauna] Missing {BodyMaterialPath} — keeping raw FBX materials " +
+                                 "(the spindle dissolve will be invisible).");
             return model;
         }
 
-        // --- Body prisms: DangerBlocks on the sword, DynamicHealthBlocks along the body ----------
-        static void AttachBodyPrisms(GameObject root, GameObject model, float bodyLength)
+        // --- A fitted oriented box for one bone's rest-pose vertex cluster ------------------------
+        class BoneCluster
         {
-            var healthBlockPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(HealthBlockPrefabPath);
-            var dangerBlockPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(DangerBlockPrefabPath);
-            if (!healthBlockPrefab || !dangerBlockPrefab)
+            public Transform Bone;
+            public Vector3 Center;         // world
+            public Vector3[] Axes;         // world principal axes, longest→shortest
+            public Vector3 Extents;        // span along each axis (Axes[0]..[2])
+        }
+
+        /// <summary>
+        /// Per bone, gathers the rest-pose world positions of the vertices it dominantly skins and
+        /// PCA-fits an oriented box. Rest-pose world vertex = bone.localToWorld · bindpose · vertex
+        /// (single-dominant-bone approximation of linear-blend skinning at rest), so it works in the
+        /// editor with no Animator playing.
+        /// </summary>
+        static List<BoneCluster> AnalyzeBoneClusters(GameObject model)
+        {
+            var result = new List<BoneCluster>();
+            foreach (var smr in model.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
-                Debug.LogError("[SwordfishFauna] Missing DynamicHealthBlock/DangerBlock prefabs — no body prisms placed.");
+                var mesh = smr.sharedMesh;
+                if (!mesh || smr.bones == null || smr.bones.Length == 0) continue;
+
+                var verts = mesh.vertices;
+                var weights = mesh.boneWeights;
+                var binds = mesh.bindposes;
+                var bones = smr.bones;
+
+                var perBone = new Dictionary<int, List<Vector3>>();
+                for (int i = 0; i < verts.Length; i++)
+                {
+                    int b = weights[i].boneIndex0; // dominant bone
+                    if (b < 0 || b >= bones.Length || !bones[b]) continue;
+                    var world = bones[b].localToWorldMatrix.MultiplyPoint3x4(binds[b].MultiplyPoint3x4(verts[i]));
+                    if (!perBone.TryGetValue(b, out var list)) perBone[b] = list = new List<Vector3>();
+                    list.Add(world);
+                }
+
+                foreach (var kv in perBone)
+                {
+                    if (kv.Value.Count < MinClusterVerts) continue;
+                    var cluster = FitOrientedBox(bones[kv.Key], kv.Value);
+                    if (cluster != null) result.Add(cluster);
+                }
+            }
+            return result;
+        }
+
+        static BoneCluster FitOrientedBox(Transform bone, List<Vector3> pts)
+        {
+            Vector3 c = Vector3.zero;
+            foreach (var p in pts) c += p;
+            c /= pts.Count;
+
+            // Symmetric covariance of the centered cloud.
+            float xx = 0, xy = 0, xz = 0, yy = 0, yz = 0, zz = 0;
+            foreach (var p in pts)
+            {
+                var d = p - c;
+                xx += d.x * d.x; xy += d.x * d.y; xz += d.x * d.z;
+                yy += d.y * d.y; yz += d.y * d.z; zz += d.z * d.z;
+            }
+            var axes = JacobiEigenvectors(xx, xy, xz, yy, yz, zz);
+
+            // Extent along each principal axis, then sort longest→shortest.
+            var withExt = axes.Select(a =>
+            {
+                float min = float.PositiveInfinity, max = float.NegativeInfinity;
+                foreach (var p in pts) { float t = Vector3.Dot(p - c, a); if (t < min) min = t; if (t > max) max = t; }
+                return (axis: a, ext: max - min);
+            }).OrderByDescending(t => t.ext).ToArray();
+
+            return new BoneCluster
+            {
+                Bone = bone,
+                Center = c,
+                Axes = new[] { withExt[0].axis, withExt[1].axis, withExt[2].axis },
+                Extents = new Vector3(withExt[0].ext, withExt[1].ext, withExt[2].ext),
+            };
+        }
+
+        // --- Orientation & scale: nose → +Z, long axis → TargetBodyLength ------------------------
+        static void OrientAndScaleModel(GameObject model, List<BoneCluster> clusters)
+        {
+            // Body = the cluster with the largest bounding volume; bill = the most elongated cluster
+            // farthest from the body centre (the forward spike). Forward = body → bill.
+            var body = clusters.OrderByDescending(c => c.Extents.x * c.Extents.y * c.Extents.z).First();
+            var bill = clusters.OrderByDescending(c => Elongation(c) * (c.Center - body.Center).magnitude).First();
+
+            Vector3 forward = (bill.Center - body.Center);
+            if (forward.sqrMagnitude < 1e-4f) forward = body.Axes[0]; // degenerate: fall back to body long axis
+            forward.Normalize();
+
+            // Up = the world-vertical-most principal axis of the body (keeps the dorsal fin upright).
+            Vector3 up = body.Axes.OrderByDescending(a => Mathf.Abs(a.y)).First();
+            up = (up - Vector3.Dot(up, forward) * forward).normalized;
+            if (up.sqrMagnitude < 1e-4f) up = Vector3.up;
+
+            // Rotate the model so its nose faces +Z and the dorsal faces +Y.
+            var current = Quaternion.LookRotation(forward, up);
+            model.transform.rotation = Quaternion.Inverse(current) * model.transform.rotation;
+
+            // Uniform-scale to the target length using the whole rendered bounds along +Z.
+            var b = EncapsulateRenderers(model);
+            float rawLength = b.size.z > 1e-3f ? b.size.z : Mathf.Max(b.size.x, b.size.y, b.size.z);
+            if (rawLength > 1e-3f)
+                model.transform.localScale *= TargetBodyLength / rawLength;
+        }
+
+        static float Elongation(BoneCluster c) => c.Extents.x / Mathf.Max(1e-3f, c.Extents.y);
+
+        static Bounds EncapsulateRenderers(GameObject model)
+        {
+            var renderers = model.GetComponentsInChildren<Renderer>(true);
+            var b = renderers[0].bounds;
+            foreach (var r in renderers) b.Encapsulate(r.bounds);
+            return b;
+        }
+
+        // --- Prism placement: slabs on the body, needles on the bill -----------------------------
+        static void PlacePrisms(GameObject root, List<BoneCluster> clusters)
+        {
+            var healthPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(HealthBlockPrefabPath);
+            var dangerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(DangerBlockPrefabPath);
+            if (!healthPrefab || !dangerPrefab)
+            {
+                Debug.LogError("[SwordfishFauna] Missing DynamicHealthBlock/DangerBlock prefabs — no body prisms.");
                 return;
             }
 
-            // Vertices in ROOT space (model is now oriented nose = +Z and scaled).
-            var vertices = CollectRootSpaceVertices(root.transform, model.transform);
-            if (vertices.Count == 0) return;
+            // The bill is the forward-most cluster (after orientation, largest Center.z).
+            var bill = clusters.OrderByDescending(c => c.Center.z).First();
 
-            float zMax = vertices.Max(v => v.z); // nose
-            float zMin = vertices.Min(v => v.z); // tail
-            float length = Mathf.Max(0.001f, zMax - zMin);
-            var bones = CollectBones(model);
+            int idx = 0;
+            foreach (var c in clusters)
+            {
+                if (c == bill)
+                {
+                    PlaceBillNeedles(root, dangerPrefab, c, ref idx);
+                    continue;
+                }
 
-            foreach (float t in BillStations)
-                PlaceBlock(dangerBlockPrefab, $"DangerBlock Bill {t:F2}", root, bones, vertices,
-                    zMax - t * length, length, minCross: 1f, maxCross: 2.5f);
-
-            foreach (float t in BodyStations)
-                PlaceBlock(healthBlockPrefab, $"DynamicHealthBlock Body {t:F2}", root, bones, vertices,
-                    zMax - t * length, length, minCross: 1.5f, maxCross: 7f);
+                // A long body part (e.g. the trunk) gets split into two slabs for coverage; the shark
+                // spreads several blocks along its body the same way.
+                int segments = Elongation(c) > SplitAspect ? 2 : 1;
+                for (int s = 0; s < segments; s++)
+                {
+                    float f = segments == 1 ? 0f : (s == 0 ? -0.25f : 0.25f);
+                    Vector3 center = c.Center + c.Axes[0] * (f * c.Extents.x);
+                    float lenZ = c.Extents.x / segments;
+                    // World box dims: Z = along the part (major), Y = mid, X = thinnest → a flat slab.
+                    float thin = Mathf.Min(c.Extents.z, SlabFlatnessFraction * c.Extents.y);
+                    Vector3 worldDims = new Vector3(thin, c.Extents.y, lenZ) * SlabFitFactor;
+                    SpawnPrism(healthPrefab, $"BodyBlock {idx++}", root, c.Bone, center,
+                        c.Axes[0], c.Axes[1], worldDims);
+                }
+            }
         }
 
-        static void PlaceBlock(GameObject blockPrefab, string name, GameObject root,
-            List<Transform> bones, List<Vector3> vertices, float zStation, float bodyLength,
-            float minCross, float maxCross)
+        static void PlaceBillNeedles(GameObject root, GameObject dangerPrefab, BoneCluster bill, ref int idx)
         {
-            float halfSlab = SlabHalfWidthFraction * bodyLength;
-            var slab = vertices.Where(v => Mathf.Abs(v.z - zStation) <= halfSlab).ToList();
-            if (slab.Count == 0) return; // gap in the silhouette — nothing to wrap a prism around
+            float billLen = bill.Extents.x;
+            int count = Mathf.Clamp(Mathf.RoundToInt(billLen / BillNeedleLength), 1, MaxBillNeedles);
+            float seg = billLen / count;
+            // Needle cross-section = the bill's own (thin) minor extents, so it reads as the sword,
+            // not a box. Length = one segment × gap, laid END-TO-END so needles never overlap.
+            float cross = Mathf.Max(MinPrismDim, Mathf.Min(bill.Extents.y, bill.Extents.z) * SlabFitFactor);
+            float needleLen = seg * BillNeedleGap;
 
-            Vector3 center = slab.Aggregate(Vector3.zero, (acc, v) => acc + v) / slab.Count;
-            float extentX = slab.Max(v => v.x) - slab.Min(v => v.x);
-            float extentY = slab.Max(v => v.y) - slab.Min(v => v.y);
-            var worldScale = new Vector3(
-                Mathf.Clamp(extentX * 0.8f, minCross, maxCross),
-                Mathf.Clamp(extentY * 0.8f, minCross, maxCross),
-                bodyLength * 2f * SlabHalfWidthFraction);
-
-            var block = (GameObject)PrefabUtility.InstantiatePrefab(blockPrefab);
-            block.name = name;
-            block.transform.SetPositionAndRotation(root.transform.TransformPoint(center), root.transform.rotation);
-
-            var parent = NearestBone(bones, block.transform.position) ?? root.transform;
-            block.transform.SetParent(parent, worldPositionStays: true);
-
-            // Bones inherit the model's uniform scale — divide it back out so the authored
-            // block size is a world-space size (mirrors the shark's hand-authored blocks).
-            var parentScale = parent.lossyScale;
-            block.transform.localScale = new Vector3(
-                worldScale.x / SafeAxis(parentScale.x),
-                worldScale.y / SafeAxis(parentScale.y),
-                worldScale.z / SafeAxis(parentScale.z));
-
-            // Grow-to-authored-scale on Initialize: the body blooms in, nothing pops (continuity).
-            var scaleAnimator = block.GetComponentInChildren<PrismScaleAnimator>(true);
-            if (scaleAnimator)
+            for (int s = 0; s < count; s++)
             {
-                var so = new SerializedObject(scaleAnimator);
+                // Segment centres from tail-end of the bill to the tip along the major axis.
+                float t = -0.5f * billLen + (s + 0.5f) * seg;
+                Vector3 center = bill.Center + bill.Axes[0] * t;
+                Vector3 worldDims = new Vector3(cross, cross, needleLen);
+                SpawnPrism(dangerPrefab, $"BillNeedle {idx++}", root, bill.Bone, center,
+                    bill.Axes[0], bill.Axes[1], worldDims);
+            }
+        }
+
+        /// <summary>
+        /// Instantiates a block, parents it to its bone (so it rides the swim animation like the
+        /// shark's blocks), orients its local +Z along <paramref name="forwardAxis"/> with +Y along
+        /// <paramref name="upAxis"/>, and sets a localScale that realises <paramref name="worldDims"/>
+        /// (X,Y,Z) given the bone's world scale. Enables grow-in and lifts the animator's max-scale so
+        /// a large slab isn't clamped.
+        /// </summary>
+        static void SpawnPrism(GameObject prefab, string name, GameObject root, Transform bone,
+            Vector3 center, Vector3 forwardAxis, Vector3 upAxis, Vector3 worldDims)
+        {
+            var block = (GameObject)PrefabUtility.InstantiatePrefab(prefab);
+            block.name = name;
+
+            var parent = bone ? bone : root.transform;
+            block.transform.SetParent(parent, worldPositionStays: true);
+            block.transform.position = center;
+            block.transform.rotation = SafeLook(forwardAxis, upAxis);
+
+            // worldDims is measured along the block's own local axes; divide out the parent's world
+            // scale so localScale realises those world sizes (bones are ~uniformly scaled).
+            Vector3 ls = parent.lossyScale;
+            Vector3 local = new Vector3(
+                Mathf.Max(MinPrismDim, worldDims.x) / SafeAxis(ls.x),
+                Mathf.Max(MinPrismDim, worldDims.y) / SafeAxis(ls.y),
+                Mathf.Max(MinPrismDim, worldDims.z) / SafeAxis(ls.z));
+            block.transform.localScale = local;
+
+            var animator = block.GetComponentInChildren<PrismScaleAnimator>(true);
+            if (animator)
+            {
+                var so = new SerializedObject(animator);
                 so.FindProperty("usePrefabScaleAsDefaultTarget").boolValue = true;
+
+                // PrismScaleAnimator.SetTargetScale clamps the authored target (= this localScale) to
+                // [minScale, maxScale] (default 0.5–10). The swordfish rig bakes globalScale 100 into
+                // the bones, so a body-parented prism's LOCAL scale can land outside that band and get
+                // clamped (blown up by min, or truncated by max). Bracket both around the real value so
+                // the fitted slab survives verbatim.
+                var abs = new Vector3(Mathf.Abs(local.x), Mathf.Abs(local.y), Mathf.Abs(local.z));
+                var minProp = so.FindProperty("minScale");
+                var maxProp = so.FindProperty("maxScale");
+                minProp.vector3Value = Vector3.Min(minProp.vector3Value, abs * 0.5f);
+                maxProp.vector3Value = Vector3.Max(maxProp.vector3Value, abs + Vector3.one);
                 so.ApplyModifiedPropertiesWithoutUndo();
             }
+        }
+
+        static Quaternion SafeLook(Vector3 forward, Vector3 up)
+        {
+            if (forward.sqrMagnitude < 1e-6f) return Quaternion.identity;
+            if (Mathf.Abs(Vector3.Dot(forward.normalized, up.normalized)) > 0.999f)
+                up = Mathf.Abs(forward.normalized.y) < 0.9f ? Vector3.up : Vector3.right;
+            return Quaternion.LookRotation(forward.normalized, up.normalized);
         }
 
         // --- Spindles: one per renderer so the wither path dissolves the mesh, never pops it -----
@@ -291,14 +422,12 @@ namespace CosmicShore.Editor
         {
             var container = new GameObject("Spindles");
             container.transform.SetParent(root.transform, false);
-
             foreach (var renderer in model.GetComponentsInChildren<Renderer>(true))
             {
-                var spindleGo = new GameObject($"Spindle {renderer.name}");
-                spindleGo.transform.SetParent(container.transform, false);
-                spindleGo.transform.position = renderer.bounds.center;
-                var spindle = spindleGo.AddComponent<Spindle>();
-                spindle.RenderedObject = renderer;
+                var go = new GameObject($"Spindle {renderer.name}");
+                go.transform.SetParent(container.transform, false);
+                go.transform.position = renderer.bounds.center;
+                go.AddComponent<Spindle>().RenderedObject = renderer;
             }
         }
 
@@ -312,20 +441,17 @@ namespace CosmicShore.Editor
                 return;
             }
 
-            var crystalGo = (GameObject)PrefabUtility.InstantiatePrefab(crystalPrefab, root.transform);
-            crystalGo.name = "CrystalMass";
-            crystalGo.transform.localPosition = Vector3.zero;
-            crystalGo.transform.localRotation = Quaternion.identity;
-            crystalGo.transform.localScale = Vector3.one * 5f;
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(crystalPrefab, root.transform);
+            go.name = "CrystalMass";
+            go.transform.localPosition = Vector3.zero;
+            go.transform.localRotation = Quaternion.identity;
+            go.transform.localScale = Vector3.one * 5f;
 
-            // Same dormant state the shark authors: component + pickup collider off while carried;
-            // Crystal.ActivateCrystal re-enables both and reparents to the cell on death.
-            var crystal = crystalGo.GetComponentInChildren<Crystal>(true);
+            var crystal = go.GetComponentInChildren<Crystal>(true);
             if (crystal)
             {
                 crystal.enabled = false;
-                if (crystal.TryGetComponent(out SphereCollider pickup))
-                    pickup.enabled = false;
+                if (crystal.TryGetComponent(out SphereCollider pickup)) pickup.enabled = false;
             }
         }
 
@@ -334,8 +460,7 @@ namespace CosmicShore.Editor
         {
             var fauna = root.AddComponent<LightFauna>();
             var so = new SerializedObject(fauna);
-            so.FindProperty("cellData").objectReferenceValue =
-                AssetDatabase.LoadAssetAtPath<ScriptableObject>(CellDataPath);
+            so.FindProperty("cellData").objectReferenceValue = AssetDatabase.LoadAssetAtPath<ScriptableObject>(CellDataPath);
             so.FindProperty("diet").intValue = (int)FaunaDiet.Predator;
             so.FindProperty("starvationSeconds").floatValue = 45f; // apex clock, shark parity
             so.FindProperty("data").objectReferenceValue = faunaData;
@@ -354,7 +479,7 @@ namespace CosmicShore.Editor
             data.behaviorUpdateRate = 2f;
             data.separationWeight = 20f;
             data.goalWeight = 1.5f;
-            data.minSpeed = 30f; // the swordfish is the fastest thing in the sea — out-swims the shark (25/35)
+            data.minSpeed = 30f; // fastest fauna in the sea — out-swims the shark's 25/35
             data.maxSpeed = 45f;
             data.rotationLerpSpeed = 6f;
             data.witherRingInterval = 0.25f;
@@ -368,8 +493,7 @@ namespace CosmicShore.Editor
             if (!config)
             {
                 config = ScriptableObject.CreateInstance<FaunaConfigurationSO>();
-                // Apex-tier numbers, 1:1 with the shark slot it replaces (Docs/ECOSYSTEM.md §7.2):
-                // the taming balance and predator pressure on the herbivores are unchanged.
+                // Apex-tier numbers, 1:1 with the shark slot it replaces (Docs/ECOSYSTEM.md §7.2).
                 config.InitialSpawnCount = 1;
                 config.PopulationSize = 1;
                 config.SpawnProbability = 1f;
@@ -379,7 +503,6 @@ namespace CosmicShore.Editor
                 config.MaxLivePopulation = 2;
                 AssetDatabase.CreateAsset(config, BlobConfigPath);
             }
-
             config.FaunaPrefab = prefabFauna; // always re-point at the rebuilt prefab
             EditorUtility.SetDirty(config);
             return config;
@@ -395,112 +518,54 @@ namespace CosmicShore.Editor
             }
             if (profile.SupportedFaunas.Contains(swordfishConfig)) return;
 
-            // The flagship takes the shark's apex slot; the shark stays authored for other biomes.
             var sharkConfig = AssetDatabase.LoadAssetAtPath<FaunaConfigurationSO>(BlobSharkConfigPath);
             int slot = sharkConfig ? profile.SupportedFaunas.IndexOf(sharkConfig) : -1;
-            if (slot >= 0)
-                profile.SupportedFaunas[slot] = swordfishConfig;
-            else
-                profile.SupportedFaunas.Add(swordfishConfig);
+            if (slot >= 0) profile.SupportedFaunas[slot] = swordfishConfig; // flagship takes the apex slot
+            else profile.SupportedFaunas.Add(swordfishConfig);
             EditorUtility.SetDirty(profile);
         }
 
-        // --- Mesh analysis helpers -----------------------------------------------------------------
-
-        static List<Vector3> CollectLocalVertices(Transform modelRoot)
+        // --- Symmetric 3×3 eigenvectors (Jacobi) — principal axes of the vertex cloud ------------
+        static Vector3[] JacobiEigenvectors(float xx, float xy, float xz, float yy, float yz, float zz)
         {
-            var vertices = new List<Vector3>();
-            foreach (var smr in modelRoot.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-                AppendVertices(vertices, smr.sharedMesh, smr.transform, modelRoot);
-            foreach (var mf in modelRoot.GetComponentsInChildren<MeshFilter>(true))
-                AppendVertices(vertices, mf.sharedMesh, mf.transform, modelRoot);
-            return vertices;
-        }
+            // a = symmetric matrix; v accumulates the eigenvector basis.
+            double[,] a = { { xx, xy, xz }, { xy, yy, yz }, { xz, yz, zz } };
+            double[,] v = { { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 } };
 
-        static List<Vector3> CollectRootSpaceVertices(Transform root, Transform model)
-        {
-            var vertices = new List<Vector3>();
-            foreach (var smr in model.GetComponentsInChildren<SkinnedMeshRenderer>(true))
-                AppendVertices(vertices, smr.sharedMesh, smr.transform, root);
-            foreach (var mf in model.GetComponentsInChildren<MeshFilter>(true))
-                AppendVertices(vertices, mf.sharedMesh, mf.transform, root);
-            return vertices;
-        }
-
-        static void AppendVertices(List<Vector3> into, Mesh mesh, Transform meshTransform, Transform space)
-        {
-            if (!mesh) return;
-            var toSpace = space.worldToLocalMatrix * meshTransform.localToWorldMatrix;
-            foreach (var v in mesh.vertices)
-                into.Add(toSpace.MultiplyPoint3x4(v));
-        }
-
-        static (int axis, float min, float max) LongestAxis(List<Vector3> vertices)
-        {
-            Vector3 min = vertices[0], max = vertices[0];
-            foreach (var v in vertices) { min = Vector3.Min(min, v); max = Vector3.Max(max, v); }
-            var size = max - min;
-            int axis = size.x >= size.y && size.x >= size.z ? 0 : size.y >= size.z ? 1 : 2;
-            return (axis, min[axis], max[axis]);
-        }
-
-        /// <summary>
-        /// The bill is a long thin spike, so the body end with the smaller mean cross-section
-        /// radius is the nose. Returns the model-local direction the nose points in.
-        /// </summary>
-        static Vector3 NoseDirection(List<Vector3> vertices, int axis, float min, float max)
-        {
-            float band = (max - min) * 0.15f;
-            int a = (axis + 1) % 3, b = (axis + 2) % 3;
-
-            // Mean cross-section radius of the end band, measured from the band's own
-            // centroid so a centerline offset from the origin doesn't skew the comparison.
-            float RadiusNear(float station)
+            for (int sweep = 0; sweep < 32; sweep++)
             {
-                var slab = vertices.Where(v => Mathf.Abs(v[axis] - station) <= band).ToList();
-                if (slab.Count == 0) return 0f;
-                float ca = slab.Average(v => v[a]);
-                float cb = slab.Average(v => v[b]);
-                return slab.Average(v => Mathf.Sqrt((v[a] - ca) * (v[a] - ca) + (v[b] - cb) * (v[b] - cb)));
+                // Largest off-diagonal magnitude.
+                int p = 0, q = 1;
+                double off = System.Math.Abs(a[0, 1]);
+                if (System.Math.Abs(a[0, 2]) > off) { off = System.Math.Abs(a[0, 2]); p = 0; q = 2; }
+                if (System.Math.Abs(a[1, 2]) > off) { off = System.Math.Abs(a[1, 2]); p = 1; q = 2; }
+                if (off < 1e-10) break;
+
+                double app = a[p, p], aqq = a[q, q], apq = a[p, q];
+                double phi = 0.5 * System.Math.Atan2(2 * apq, aqq - app);
+                double c = System.Math.Cos(phi), s = System.Math.Sin(phi);
+
+                for (int k = 0; k < 3; k++)
+                {
+                    double akp = a[k, p], akq = a[k, q];
+                    a[k, p] = c * akp - s * akq;
+                    a[k, q] = s * akp + c * akq;
+                }
+                for (int k = 0; k < 3; k++)
+                {
+                    double apk = a[p, k], aqk = a[q, k];
+                    a[p, k] = c * apk - s * aqk;
+                    a[q, k] = s * apk + c * aqk;
+                    double vkp = v[k, p], vkq = v[k, q];
+                    v[k, p] = c * vkp - s * vkq;
+                    v[k, q] = s * vkp + c * vkq;
+                }
             }
 
-            bool noseAtMax = RadiusNear(max) <= RadiusNear(min);
-            var dir = Vector3.zero;
-            dir[axis] = noseAtMax ? 1f : -1f;
-            return dir;
+            Vector3 Col(int j) => new Vector3((float)v[0, j], (float)v[1, j], (float)v[2, j]).normalized;
+            return new[] { Col(0), Col(1), Col(2) };
         }
 
-        static Quaternion RotationToForward(Vector3 noseDir)
-        {
-            if (noseDir == Vector3.forward) return Quaternion.identity;
-            if (noseDir == Vector3.back) return Quaternion.Euler(0f, 180f, 0f);
-            if (noseDir == Vector3.right) return Quaternion.Euler(0f, -90f, 0f);
-            if (noseDir == Vector3.left) return Quaternion.Euler(0f, 90f, 0f);
-            if (noseDir == Vector3.up) return Quaternion.Euler(90f, 0f, 0f);
-            return Quaternion.Euler(-90f, 0f, 0f); // Vector3.down
-        }
-
-        static List<Transform> CollectBones(GameObject model)
-        {
-            return model.GetComponentsInChildren<SkinnedMeshRenderer>(true)
-                .SelectMany(smr => smr.bones)
-                .Where(b => b)
-                .Distinct()
-                .ToList();
-        }
-
-        static Transform NearestBone(List<Transform> bones, Vector3 worldPosition)
-        {
-            Transform best = null;
-            float bestSqr = float.PositiveInfinity;
-            foreach (var bone in bones)
-            {
-                float sqr = (bone.position - worldPosition).sqrMagnitude;
-                if (sqr < bestSqr) { bestSqr = sqr; best = bone; }
-            }
-            return best;
-        }
-
-        static float SafeAxis(float value) => Mathf.Abs(value) < 0.0001f ? 1f : value;
+        static float SafeAxis(float value) => Mathf.Abs(value) < 1e-4f ? 1f : value;
     }
 }
