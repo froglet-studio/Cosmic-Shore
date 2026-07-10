@@ -711,24 +711,77 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc F part 2b-iii(b) — the ArcadeGameConfigureModal itself (1381L).**
-   Every supporting type is now live (2b-iii(a) below): ArcadeGameConfigSO,
-   IntStepper, IntensitySelectButton, FavoriteIcon, DomainInfoData,
-   DomainAvatarChip, ArcadeConfigSyncManager (the full Netcode relay:
-   commit/close/screen-change ClientRpcs + the ready-up ServerRpc counter),
-   the Arcade launcher, SO_Mission(+List)/SO_TrainingGameList. Port the
-   modal verbatim on top (it extends the live ModalWindowManager; scope the
-   remaining field types as they surface — VideoPlayer exists as an engine
-   stub). Un-carry ExploreView's two remaining modal lines (field +
-   SelectGame open — the launcher line is already RESTORED). Then wire the
-   configure flow into the menushell (card click → configure screen →
-   InvokeGameLaunch) and re-baseline. After that the arcade unit is
-   COMPLETE — the direct on-ramp to Arc G/I. Then HangarScreen /
-   LeaderboardsMenu / StoreScreen units (map their service singletons
-   first: LeaderboardManager, PlayerDataController, CatalogManager economy).
+1. **Arc G — the windowed MODE HOST.** The arcade unit is COMPLETE (2b-iii(b)
+   below): menushell walks card click → configure Screen 1 → Screen 2 →
+   START → `GameDataSO` synced + `OnLaunchGame` raised — the exact seam
+   `SceneLoader.LaunchGame` consumes. Arc G makes that seam GO somewhere in
+   the windowed client: a mode-host window layer that reacts to
+   `OnLaunchGame` by tearing down the menu world and standing up the chosen
+   mode's world (the CLI already proves all five modes headless — HexRace /
+   Joust / CrystalCapture / AstroLeague / Tournament run to completion), then
+   returns to the menu on game end (Arc I's loop). Start by scoping what the
+   CLI round drivers (`src/CosmicShore.Cli/*Round.cs`) can share with a
+   windowed host (world construction is already factored there), then bridge
+   the smallest mode (CrystalCapture or HexRace) into a window with the Arc-C
+   renderer. Remaining Arc F screens (HangarScreen / LeaderboardsMenu /
+   StoreScreen — service singletons LeaderboardManager, PlayerDataController,
+   CatalogManager economy) queue behind the G→I spine; they widen the menu
+   but don't block the milestone loop.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Arc F part 2b-iii(b) ✅ (2026-07-10) — the configure modal; the ARCADE UNIT IS COMPLETE
+
+**`ArcadeGameConfigureModal` (1381L) ported verbatim** — zero behavior
+deviations: the whole host flow (SetSelectedGame → Screen 1 game defaults →
+commit-once OnConfirmConfiguration → Screen 2 → ready-up → launch), the
+client-RPC flow (HandleConfigOpenedOnClient / Closed / ScreenChanged +
+ApplyHostOnlyInteractability), the per-player chip lifecycle
+(NetDomain.OnValueChanged reparent delegates, late-joiner spawn watch,
+despawn-on-close), `ShouldLocalPlayerLaunch` launch authority,
+DC-bounded-by-PC stepper math with per-game MinDomainsAllowed floors, ship
+cycling with the 4-rule default (prev class → saved loadout → Dolphin →
+first), and the GameDataSO sync trio (config / ship / local-player vessel
+type). **Engine growths:** `Object.GetInstanceID()` (session-unique,
+construction-ordered ids) and `VideoPlayer.clip` + `VideoClip` stub.
+**Port growths:** `SO_GameModeQuestData` (verbatim — quest-chain data +
+`QuestTargetType`), `GameModeProgressionService` shell grew
+`GetMaxUnlockedIntensity`/`IsIntensityUnlocked`/`GetQuestForMode` (shell:
+all unlocked / null quest — callers null-guard exactly like upstream),
+`ToastNotificationAPI` log-only shell (its lone caller is unreachable while
+the progression shell returns null quests), `InternalsVisibleTo("CosmicShore.
+Tests")` on CosmicShore.Game (upstream internals were same-assembly-visible).
+**Un-carries:** ExploreView's last two deviation lines RESTORED (modal field +
+SelectGame's `ModalWindowIn`/`SetSelectedGame`) — ExploreView is now fully
+live; ArcadeScreen's menushell wiring completed (Explore/Loadout pair + both
+toggles — the 2b-ii guarded NREs are gone). **Menushell configure flow
+(shipping code end-to-end):** frame 90 HEX RACE card → Screen 1, 120
+intensity 2, 132 PC “+” (stepper → 2), 150 CONFIRM → Screen 2 (Jade selected
+green, Ruby/Gold dimmed per DC, Dolphin summary), 180 START → solo path →
+`launch HexRace@MinigameHexRace players=2 ai=1 intensity=2 dc=1` + LAUNCHING
+banner. Two shell findings encoded: engine `Selectable.OnEnable` lazily
+re-adopts a target graphic, so components that own their visuals get
+`transition = Transition.None` (not a null target); the configure modal's
+CanvasGroup hide is a scaled-time `WaitForSeconds` and the menu holds
+`timeScale = 0` (pause-on-non-HOME), so the visual hide defers while the
+modal STACK pops immediately — faithful to upstream semantics, and the
+capture shows the arcade modal back on top (`arcadeModal ARCADE`).
+**Tests: +10 `ArcadeGameConfigureModalTests`** (Screen-1 defaults sync,
+per-game DC floor, commit-once guard, solo-launch GameDataSO payload +
+launch-event single-fire + modal hide, close-resets-config + guard re-arm,
+intensity clamp, PC→DC re-bound, ship cycling wrap + class broadcast, Blue
+sentinel hidden + DC dimming, ShouldLocalPlayerLaunch truth table).
+**1632 tests green in BOTH configs (1294 + 338)**; 5 CLI modes exit 0; race
+canonical `--seed 42 --frames 1200` → `trail 786` byte-stable AND
+pixel-identical to pre-change HEAD (an off-baseline `--rivals 2` probe this
+iteration measured `trail 607` — different field, not drift); freestyle
+`toys 12`; uidemo unchanged. **New gate line: `menushell@216`** →
+`active HANGAR, slideX -5120.0, modalStack open, arcadeModal ARCADE,
+gameCards 3, configIntensity 0, configPlayers 0, configDomains 1, launch
+HexRace@MinigameHexRace players=2 ai=1 intensity=2 dc=1, paused True` (the
+config zeros PROVE the post-launch ResetState). bleeding-edge unmoved at
+`f2b8f5aa`.
 
 ### Arc F part 2b-iii(a) ✅ (2026-07-10) — the modal's foundation + the Arcade launcher
 
@@ -1179,7 +1232,7 @@ several loop iterations, each ends green+pushed):
 | **C** ✅ | Client render primitives: embedded bitmap-font atlas + textured-quad shader + `DrawText`/`DrawRect` on the ortho pass; draw laid-out rects from A/B (sprite-PIXEL rendering rides with the Arc-E content pipeline — tinted rects until then) | 5 | render | screenshot byte-check |
 | **D** ✅ | Input/event layer: `EventSystem` + `PointerEventData` + `Selectable`/`Button` hit-testing + gamepad nav-ring (Silk.NET hardware feed deferred to Arc H — same synthetic-injection seam) | 5 | UI framework | ✅ synthetic events |
 | **E** | Content bridge: a Unity YAML→first-party-scene extractor (new `Port/tools/`) scoped to the UGUI subset (RectTransform/Canvas/Image/TMP/Button/LayoutGroups/CanvasGroup) + script-GUID→type map, so `Menu_Main` imports rather than being hand-transcribed. **Decision point when it opens** — confirm extractor-vs-hand-authoring scope with the prompter (large sub-project). | 7 | content | round-trip parity |
-| **F** | Port `ScreenSwitcher` + `IScreen` + the 6 screens + `ModalWindowManager`, wired to the live `MainMenuController` + `PlayerDataService`. **Milestone sub-goal: menu renders + navigates + is testable.** | 5 | UI framework | ✅ + screenshot |
+| **F** ✅(spine) | Port `ScreenSwitcher` + `IScreen` + the 6 screens + `ModalWindowManager`, wired to the live `MainMenuController` + `PlayerDataService`. **Milestone sub-goal: menu renders + navigates + is testable.** ARCADE SPINE COMPLETE (2b-iii(b)): nav → arcade modal → GameCards → configure modal → `OnLaunchGame`. Hangar/Leaderboards/Store screen units queue behind Arc G→I. | 5 | UI framework | ✅ + screenshot |
 | **G** | Windowed game-mode host: generalize `SkimRaceFactory` into a mode-agnostic factory instantiating the REAL arcade controllers (reuse the CLI `*Round.cs` wiring that already proves them headless) | 3/5 | mode host | ✅ construction |
 | **H** | Per-mode rendering + HUD: extend the renderer beyond stars/rails/crystals/vessels to each mode's objects (joust field, capture crystals, AstroLeague ball/goal/boundary, hex course) + each mode's HUD; route real human input | 5 | render | screenshot |
 | **I** | Menu→game→menu loop: connect `MainMenuController`'s LaunchGame SOAP path to the windowed mode host and back, satisfying the controllers' ready-button/scoreboard UI seams with the real UI. **FINAL MILESTONE.** | 8 | integration | ✅ E2E |

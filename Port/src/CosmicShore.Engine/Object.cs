@@ -40,6 +40,15 @@ namespace CosmicShore.Engine
 
         public override string ToString() => destroyedFlag ? "null" : $"{name} ({GetType().Name})";
 
+        // Session-unique instance IDs, assigned at construction. Deterministic within a
+        // run (single-threaded construction order), unique across GameLoop lifetimes —
+        // matching the original engine's per-session uniqueness. Never reset: two objects
+        // alive in the same process must never share an ID, even across fresh worlds.
+        static int s_nextInstanceId;
+        readonly int instanceId = ++s_nextInstanceId;
+
+        public int GetInstanceID() => instanceId;
+
         /// <summary>
         /// Schedule destruction at the end of the current frame (GameObjects/Components),
         /// matching the original engine's deferred-destroy contract. ScriptableObjects are

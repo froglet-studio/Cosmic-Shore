@@ -5,4 +5,11 @@
     <ProjectReference Include="../CosmicShore.Data/CosmicShore.Data.csproj" />
   </ItemGroup>
 
+  <!-- Upstream `internal` members are same-assembly-visible to Unity's default
+       assembly; the port splits tests out, so internals used by behavior tests
+       (e.g. ArcadeGameConfigureModal.ShouldLocalPlayerLaunch) need this grant. -->
+  <ItemGroup>
+    <InternalsVisibleTo Include="CosmicShore.Tests" />
+  </ItemGroup>
+
 </Project>

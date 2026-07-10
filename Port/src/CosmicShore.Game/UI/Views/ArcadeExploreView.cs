@@ -1,9 +1,9 @@
 // Ported from Assets/_Scripts/UI/Views/ArcadeExploreView.cs (Arc F 2b-ii) — verbatim
 // with the standard substitutions (UnityEngine → CosmicShore.Engine, UnityEngine.UI →
 // CosmicShore.Engine.UI, Obvious.Soap → CosmicShore.Engine.Soap, Reflex.Attributes →
-// CosmicShore.Engine.Injection). Deviations (marked inline, Arc F 2b-iii's unit):
-// the ArcadeGameConfigureModal field + SelectGame's modal open, and PlaySelectedGame's
-// Arcade.Instance launch — the modal + launcher port together as the game-launch seam.
+// CosmicShore.Engine.Injection). Fully live: the Arc F 2b-iii deviations (modal field +
+// SelectGame's modal open, PlaySelectedGame's Arcade.Instance launch) were RESTORED
+// when the ArcadeGameConfigureModal + Arcade launcher ported (2b-iii(a)/(b)).
 using CosmicShore.Core;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
@@ -28,8 +28,8 @@ namespace CosmicShore.UI
         [SerializeField] ArcadeDPadNav ArcadeDPadNav;
         [SerializeField] DailyChallengeCard DailyChallengeCard;
         [Header("Game Detail View")]
-        // PORT Deviation (Arc F 2b-iii, ArcadeGameConfigureModal — restore when the modal ports):
-        // [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
+        // (RESTORED 2026-07-10, Arc F 2b-iii(b) — ArcadeGameConfigureModal live)
+        [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
         [Header("Test Settings")]
         [Tooltip("If true, will filter out unowned games from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
         [SerializeField] bool RespectInventoryForGameSelection = false;
@@ -139,9 +139,9 @@ namespace CosmicShore.UI
         public void SelectGame(SO_ArcadeGame selectedGame)
         {
             SelectedGame = selectedGame;
-            // PORT Deviation (Arc F 2b-iii, ArcadeGameConfigureModal — restore when the modal ports):
-            // ArcadeGameConfigureModal.ModalWindowIn();
-            // ArcadeGameConfigureModal.SetSelectedGame(SelectedGame);
+            // (RESTORED 2026-07-10, Arc F 2b-iii(b) — ArcadeGameConfigureModal live)
+            ArcadeGameConfigureModal.ModalWindowIn();
+            ArcadeGameConfigureModal.SetSelectedGame(SelectedGame);
             // TODO: is is throwing a key not found exception
             //UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
         }

@@ -17,14 +17,22 @@ namespace CosmicShore.Client
     /// driving the real menu contract — five screen panels laid out to the viewport
     /// (STORE / ARK / HOME / PORT / HANGAR in the authored visual order), the nav bar
     /// as real Buttons wired to the OnClick*Nav handlers, HomeScreen living on the
-    /// HOME panel, PORT/ARK disabled exactly like the shipping menu. At frame 30 a
-    /// SYNTHETIC pointer click (full raycast/dispatch stack) presses the HANGAR nav
-    /// button; the switcher slides one viewport per index over its 0.5s easing; the
-    /// screenshot at frame 90 must show the HANGAR panel — byte-identical across
-    /// runs (the loop ticks a FIXED 1/60 step, so the coroutine slide is exact).
+    /// HOME panel, PORT/ARK disabled exactly like the shipping menu. SYNTHETIC
+    /// pointer clicks (full raycast/dispatch stack) then walk the whole shipping
+    /// arcade flow on the FIXED 1/60 step (byte-identical across runs):
+    ///   frame  30 — HANGAR nav (screen slide)
+    ///   frame  60 — ARCADE nav → arcade modal (3 real GameCards)
+    ///   frame  90 — HEX RACE card → ArcadeExploreView.SelectGame →
+    ///               ArcadeGameConfigureModal Screen 1 (game defaults)
+    ///   frame 120 — intensity 2 (IntensitySelectButton.Select)
+    ///   frame 132 — player-count “+” (IntStepper → PC 2, AI backfill 1)
+    ///   frame 150 — CONFIRM CONFIGURATION → Screen 2 (domain tiles + ship + START)
+    ///   frame 180 — START → no sync manager → HandleAllPlayersReady →
+    ///               GameDataSO synced + OnLaunchGame raised (LAUNCHING banner)
+    /// The default screenshot at frame 210 shows the settled post-launch state.
     ///
     /// Panel content is hand-authored placeholder art (the real prefabs arrive with
-    /// the Arc-E content bridge); the NAVIGATION is the shipping code path.
+    /// the Arc-E content bridge); the NAVIGATION + CONFIGURE flow is shipping code.
     /// </summary>
     public sealed class MenuShellWindow
     {
@@ -41,6 +49,15 @@ namespace CosmicShore.Client
         Button _arcadeNavButton;
         CosmicShore.Core.AudioSystem _audioSystem;
         ModalWindowManager _arcadeModal;
+        ArcadeGameConfigureModal _configureModal;
+        CosmicShore.UI.ArcadeGameConfigSO _config;
+        CosmicShore.Utility.GameDataSO _gameData;
+        IntensitySelectButton _intensityTwoButton;
+        Button _pcIncrementButton;
+        Button _confirmConfigButton;
+        Button _startGameButton;
+        TextMeshProUGUI _launchBanner;
+        string _launchInfo = "none";
         int _frameIndex;
 
         static readonly (ScreenSwitcher.MenuScreens id, string title, Color tint)[] Panels =
@@ -238,17 +255,28 @@ namespace CosmicShore.Client
         {
             var gameList = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.SO_GameList>();
             gameList.Games = new List<CosmicShore.ScriptableObjects.SO_ArcadeGame>();
-            (string name, CosmicShore.Data.GameModes mode)[] games =
+            (string name, CosmicShore.Data.GameModes mode, string scene, int minDomains)[] games =
             {
-                ("HEX RACE", CosmicShore.Data.GameModes.HexRace),
-                ("JOUST", CosmicShore.Data.GameModes.MultiplayerJoust),
-                ("CRYSTAL CAPTURE", CosmicShore.Data.GameModes.MultiplayerCrystalCapture),
+                ("HEX RACE", CosmicShore.Data.GameModes.HexRace, "MinigameHexRace", 1),
+                ("JOUST", CosmicShore.Data.GameModes.MultiplayerJoust, "MinigameJoust_Gameplay", 2),
+                ("CRYSTAL CAPTURE", CosmicShore.Data.GameModes.MultiplayerCrystalCapture, "MinigameCrystalCaptureMultiplayer_Gameplay", 2),
             };
-            foreach (var (name, mode) in games)
+            foreach (var (name, mode, scene, minDomains) in games)
             {
                 var so = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.SO_ArcadeGame>();
                 so.DisplayName = name;
                 so.Mode = mode;
+                so.SceneName = scene;
+                so.IsMultiplayer = true;
+                so.Description = $"{name} - the same mode the CLI gate proves headlessly.";
+                so.MinPlayersAllowed = 1;
+                so.MaxPlayersAllowed = 4;
+                so.MinDomainsAllowed = minDomains;
+                so.MaxDomainsAllowed = 3;
+                var dolphin = ScriptableObject.CreateInstance<SO_Vessel>(); // SO_Vessel is global-namespace (as upstream)
+                dolphin.Class = CosmicShore.Data.VesselClassType.Dolphin;
+                dolphin.Name = "Dolphin";
+                so.Vessels = new List<SO_Vessel> { dolphin };
                 gameList.Games.Add(so);
             }
 
@@ -295,6 +323,20 @@ namespace CosmicShore.Client
             SetPrivateField(explore, "GameList", gameList);
             SetPrivateField(explore, "selectedVesselClassType",
                 ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.VesselClassTypeVariable>());
+
+            // ArcadeScreen's Explore/Loadout pair: the explore view IS this panel's
+            // view; the loadout view exists inactive (its screen is a future unit)
+            // so Awake's EnsureCanvasGroup and Start's LoadoutButton.Select() run
+            // on real references instead of guarded NREs.
+            var loadoutGo = MakeChild("LoadoutView", panel);
+            loadoutGo.gameObject.SetActive(false);
+            var loadoutView = loadoutGo.gameObject.AddComponent<ArcadeLoadoutView>();
+            var loadoutToggle = MakeChild("LoadoutButton", panel).gameObject.AddComponent<Toggle>();
+            var exploreToggle = MakeChild("ExploreButton", panel).gameObject.AddComponent<Toggle>();
+            SetPrivateField(screen, "ExploreView", explore);
+            SetPrivateField(screen, "LoadoutView", loadoutView);
+            SetPrivateField(screen, "LoadoutButton", loadoutToggle);
+            SetPrivateField(screen, "ExploreButton", exploreToggle);
 
             var dpad = panel.gameObject.AddComponent<CosmicShore.Core.ArcadeDPadNav>();
             SetPrivateField(explore, "ArcadeDPadNav", dpad);
@@ -366,11 +408,354 @@ namespace CosmicShore.Client
                 SetPrivateField(gameCard, "StarImage", starImage);
             }
 
-            // The switcher owns the modal (OnClickArcadeNav + CloseAllModals paths).
+            BuildConfigureModal(canvasRect, gameList, explore);
+
+            // The switcher owns the modals (OnClickArcadeNav + CloseAllModals paths).
             SetPrivateField(_switcher, "ArcadeModal", _arcadeModal);
-            SetPrivateField(_switcher, "Modals", new List<ModalWindowManager> { _arcadeModal });
+            SetPrivateField(_switcher, "Modals", new List<ModalWindowManager> { _arcadeModal, _configureModal });
 
             modalRoot.gameObject.SetActive(true); // Start hides it via CanvasGroup until opened
+        }
+
+        /// <summary>
+        /// The REAL ArcadeGameConfigureModal on the shipping SOLO path (no
+        /// ArcadeConfigSyncManager, no NetworkManager): card click → Screen 1
+        /// (intensity buttons + PC/DC IntSteppers + Confirm) → Screen 2 (domain
+        /// tiles + ship summary + Start) → HandleAllPlayersReady → GameDataSO
+        /// synced + OnLaunchGame raised. The host subscribes OnLaunchGame and
+        /// shows the LAUNCHING banner where SceneLoader would load the scene.
+        /// </summary>
+        void BuildConfigureModal(RectTransform canvasRect,
+                                 CosmicShore.ScriptableObjects.SO_GameList gameList,
+                                 ArcadeExploreView explore)
+        {
+            // The shared game data the launch seam writes into (the same SOAP
+            // container the CLI rounds and SceneLoader read).
+            _gameData = ScriptableObject.CreateInstance<CosmicShore.Utility.GameDataSO>();
+            _gameData.OnLaunchGame = ScriptableObject.CreateInstance<CosmicShore.Engine.Soap.ScriptableEventNoParam>();
+            _gameData.SelectedIntensity = ScriptableObject.CreateInstance<CosmicShore.Engine.Soap.IntVariable>();
+            _gameData.SelectedPlayerCount = ScriptableObject.CreateInstance<CosmicShore.Engine.Soap.IntVariable>();
+            _gameData.selectedVesselClass = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.VesselClassTypeVariable>();
+            _gameData.VesselClassSelectedIndex = ScriptableObject.CreateInstance<CosmicShore.Engine.Soap.IntVariable>();
+            _gameData.OnLaunchGame.OnRaised += () =>
+            {
+                _launchInfo = $"{_gameData.GameMode}@{_gameData.SceneName} " +
+                              $"players={_gameData.SelectedPlayerCount.Value} ai={_gameData.RequestedAIBackfillCount} " +
+                              $"intensity={_gameData.SelectedIntensity.Value} dc={_gameData.RequestedDomainCount}";
+                if (_launchBanner != null)
+                {
+                    _launchBanner.text = $"LAUNCHING {_gameData.GameMode} -> {_gameData.SceneName}";
+                    _launchBanner.gameObject.SetActive(true);
+                }
+            };
+
+            _config = ScriptableObject.CreateInstance<CosmicShore.UI.ArcadeGameConfigSO>();
+
+            // Modal root: full-screen dim + CanvasGroup + the ported modal itself.
+            var modalRoot = MakeChild("ArcadeGameConfigureModal", canvasRect);
+            modalRoot.gameObject.SetActive(false); // wire fields before Awake/OnEnable/Start
+            modalRoot.anchorMin = Vector2.zero;
+            modalRoot.anchorMax = Vector2.one;
+            modalRoot.offsetMin = Vector2.zero;
+            modalRoot.offsetMax = Vector2.zero;
+            modalRoot.gameObject.AddComponent<CanvasGroup>();
+            var dim = modalRoot.gameObject.AddComponent<Image>();
+            dim.color = new Color(0f, 0f, 0f, 0.82f);
+            _configureModal = modalRoot.gameObject.AddComponent<ArcadeGameConfigureModal>();
+            _configureModal.ModalType = ScreenSwitcher.ModalWindows.ARCADE_GAME_CONFIGURE;
+            typeof(ModalWindowManager)
+                .GetField("screenSwitcher", BindingFlags.NonPublic | BindingFlags.Instance)!
+                .SetValue(_configureModal, _switcher);
+            typeof(ModalWindowManager)
+                .GetField("audioSystem", BindingFlags.NonPublic | BindingFlags.Instance)!
+                .SetValue(_configureModal, _audioSystem);
+
+            var panel = MakeChild("ConfigurePanel", modalRoot);
+            panel.anchorMin = panel.anchorMax = new Vector2(0.5f, 0.5f);
+            panel.sizeDelta = new Vector2(1400f, 720f);
+            var panelImage = panel.gameObject.AddComponent<Image>();
+            panelImage.color = new Color(0.055f, 0.045f, 0.16f, 0.98f);
+            panelImage.raycastTarget = false;
+
+            // ── Game meta (left side — always visible) ─────────────────────────
+            var nameLabel = MakeChild("SelectedGameName", panel);
+            nameLabel.anchorMin = new Vector2(0f, 1f);
+            nameLabel.anchorMax = new Vector2(0.42f, 1f);
+            nameLabel.pivot = new Vector2(0.5f, 1f);
+            nameLabel.anchoredPosition = new Vector2(0f, -36f);
+            nameLabel.sizeDelta = new Vector2(0f, 64f);
+            var nameText = nameLabel.gameObject.AddComponent<TextMeshProUGUI>();
+            nameText.fontSize = 40f;
+            nameText.color = new Color(0.55f, 0.95f, 1f, 1f);
+            nameText.alignment = TextAlignmentOptions.Center;
+
+            var descLabel = MakeChild("SelectedGameDescription", panel);
+            descLabel.anchorMin = new Vector2(0f, 1f);
+            descLabel.anchorMax = new Vector2(0.42f, 1f);
+            descLabel.pivot = new Vector2(0.5f, 1f);
+            descLabel.anchoredPosition = new Vector2(0f, -120f);
+            descLabel.sizeDelta = new Vector2(-48f, 120f);
+            var descText = descLabel.gameObject.AddComponent<TextMeshProUGUI>();
+            descText.fontSize = 16f;
+            descText.color = new Color(0.85f, 0.9f, 1f, 0.85f);
+            descText.alignment = TextAlignmentOptions.Center;
+
+            // ── Screen 1: ConfigurationDetailView ──────────────────────────────
+            var screen1 = MakeChild("ConfigurationDetailView", panel);
+            screen1.anchorMin = new Vector2(0.42f, 0f);
+            screen1.anchorMax = Vector2.one;
+            screen1.offsetMin = Vector2.zero;
+            screen1.offsetMax = Vector2.zero;
+
+            MakeSectionLabel(screen1, "INTENSITY", new Vector2(0f, -40f));
+            var intensityRow = MakeChild("IntensityRow", screen1);
+            intensityRow.anchorMin = intensityRow.anchorMax = new Vector2(0.5f, 1f);
+            intensityRow.pivot = new Vector2(0.5f, 1f);
+            intensityRow.anchoredPosition = new Vector2(0f, -80f);
+            intensityRow.sizeDelta = new Vector2(520f, 110f);
+            var intensityGroup = intensityRow.gameObject.AddComponent<HorizontalLayoutGroup>();
+            intensityGroup.spacing = 20f;
+            intensityGroup.childForceExpandWidth = true;
+            intensityGroup.childForceExpandHeight = true;
+
+            var sharedIntensityVariable = ScriptableObject.CreateInstance<CosmicShore.Engine.Soap.IntVariable>();
+            var intensityButtons = new List<IntensitySelectButton>();
+            for (int level = 1; level <= 4; level++)
+            {
+                var isb = MakeIntensityButton(intensityRow, sharedIntensityVariable);
+                intensityButtons.Add(isb);
+                if (level == 2) _intensityTwoButton = isb;
+            }
+
+            MakeSectionLabel(screen1, "PLAYERS", new Vector2(0f, -230f));
+            var (pcStepper, pcIncrement) = MakeStepper(screen1, "PlayerCountStepper", new Vector2(0f, -270f));
+            _pcIncrementButton = pcIncrement;
+
+            MakeSectionLabel(screen1, "DOMAINS", new Vector2(0f, -380f));
+            var (dcStepper, _) = MakeStepper(screen1, "DomainCountStepper", new Vector2(0f, -420f));
+
+            _confirmConfigButton = MakeActionButton(screen1, "ConfirmConfigurationButton", "CONFIRM CONFIGURATION",
+                new Vector2(0f, 56f), new Vector2(420f, 76f));
+            _confirmConfigButton.onClick.AddListener(() => _configureModal.OnConfirmConfiguration());
+
+            // ── Screen 2: GameDetailView ───────────────────────────────────────
+            var screen2 = MakeChild("GameDetailView", panel);
+            screen2.anchorMin = new Vector2(0.42f, 0f);
+            screen2.anchorMax = Vector2.one;
+            screen2.offsetMin = Vector2.zero;
+            screen2.offsetMax = Vector2.zero;
+
+            MakeSectionLabel(screen2, "PICK YOUR DOMAIN", new Vector2(0f, -40f));
+            var tileRow = MakeChild("DomainTileRow", screen2);
+            tileRow.anchorMin = tileRow.anchorMax = new Vector2(0.5f, 1f);
+            tileRow.pivot = new Vector2(0.5f, 1f);
+            tileRow.anchoredPosition = new Vector2(0f, -80f);
+            tileRow.sizeDelta = new Vector2(640f, 160f);
+            var tileGroup = tileRow.gameObject.AddComponent<HorizontalLayoutGroup>();
+            tileGroup.spacing = 24f;
+            tileGroup.childForceExpandWidth = true;
+            tileGroup.childForceExpandHeight = true;
+
+            var domainTiles = new List<DomainInfoData>
+            {
+                MakeDomainTile(tileRow, CosmicShore.Data.Domains.Jade, new Color(0.15f, 0.62f, 0.38f, 1f)),
+                MakeDomainTile(tileRow, CosmicShore.Data.Domains.Ruby, new Color(0.68f, 0.16f, 0.28f, 1f)),
+                MakeDomainTile(tileRow, CosmicShore.Data.Domains.Gold, new Color(0.75f, 0.58f, 0.14f, 1f)),
+            };
+
+            MakeSectionLabel(screen2, "VESSEL", new Vector2(0f, -290f));
+            var shipLabel = MakeChild("ShipNameText", screen2);
+            shipLabel.anchorMin = shipLabel.anchorMax = new Vector2(0.5f, 1f);
+            shipLabel.pivot = new Vector2(0.5f, 1f);
+            shipLabel.anchoredPosition = new Vector2(0f, -330f);
+            shipLabel.sizeDelta = new Vector2(500f, 48f);
+            var shipText = shipLabel.gameObject.AddComponent<TextMeshProUGUI>();
+            shipText.fontSize = 30f;
+            shipText.color = new Color(1f, 0.45f, 0.85f, 1f);
+            shipText.alignment = TextAlignmentOptions.Center;
+
+            _startGameButton = MakeActionButton(screen2, "StartGameButton", "START",
+                new Vector2(0f, 56f), new Vector2(320f, 76f));
+            _startGameButton.onClick.AddListener(() => _configureModal.OnStartGameClicked());
+
+            var waitingLabel = MakeChild("WaitingForOthersLabel", screen2);
+            waitingLabel.anchorMin = waitingLabel.anchorMax = new Vector2(0.5f, 0f);
+            waitingLabel.pivot = new Vector2(0.5f, 0f);
+            waitingLabel.anchoredPosition = new Vector2(0f, 56f);
+            waitingLabel.sizeDelta = new Vector2(500f, 48f);
+            var waitingText = waitingLabel.gameObject.AddComponent<TextMeshProUGUI>();
+            waitingText.text = "WAITING FOR OTHERS...";
+            waitingText.fontSize = 24f;
+            waitingText.color = new Color(0.9f, 0.9f, 0.6f, 1f);
+            waitingText.alignment = TextAlignmentOptions.Center;
+            waitingLabel.gameObject.SetActive(false);
+
+            // ── Field wiring (the prefab's inspector references) ───────────────
+            SetPrivateField(_configureModal, "config", _config);
+            SetPrivateField(_configureModal, "gameData", _gameData);
+            SetPrivateField(_configureModal, "shipClassTypeVariable",
+                ScriptableObject.CreateInstance<CosmicShore.Engine.Soap.IntVariable>());
+            SetPrivateField(_configureModal, "arcadeExploreView", explore);
+            SetPrivateField(_configureModal, "selectedGameName", nameText);
+            SetPrivateField(_configureModal, "selectedGameDescription", descText);
+            SetPrivateField(_configureModal, "configurationDetailView", screen1.gameObject);
+            SetPrivateField(_configureModal, "gameDetailView", screen2.gameObject);
+            SetPrivateField(_configureModal, "intensityButtons", intensityButtons);
+            SetPrivateField(_configureModal, "pcStepper", pcStepper);
+            SetPrivateField(_configureModal, "dcStepper", dcStepper);
+            SetPrivateField(_configureModal, "domainInfoItems", domainTiles);
+            SetPrivateField(_configureModal, "shipNameText", shipText);
+            SetPrivateField(_configureModal, "startGameButton", _startGameButton);
+            SetPrivateField(_configureModal, "waitingForOthersLabel", waitingLabel.gameObject);
+            SetPrivateField(_configureModal, "confirmConfigurationButton", _confirmConfigButton);
+
+            // ExploreView.SelectGame opens THIS modal — the restored 2b-iii seam.
+            SetPrivateField(explore, "ArcadeGameConfigureModal", _configureModal);
+
+            // Launch banner (host-side stand-in for SceneLoader's loading splash).
+            var banner = MakeChild("LaunchBanner", canvasRect);
+            banner.anchorMin = banner.anchorMax = new Vector2(0.5f, 0f);
+            banner.pivot = new Vector2(0.5f, 0f);
+            banner.anchoredPosition = new Vector2(0f, 140f);
+            banner.sizeDelta = new Vector2(1400f, 72f);
+            _launchBanner = banner.gameObject.AddComponent<TextMeshProUGUI>();
+            _launchBanner.fontSize = 40f;
+            _launchBanner.color = new Color(0.4f, 1f, 0.6f, 1f);
+            _launchBanner.alignment = TextAlignmentOptions.Center;
+            banner.gameObject.SetActive(false);
+
+            modalRoot.gameObject.SetActive(true); // Start hides it via CanvasGroup until opened
+        }
+
+        void MakeSectionLabel(RectTransform parent, string content, Vector2 anchoredPosition)
+        {
+            var label = MakeChild($"Label_{content}", parent);
+            label.anchorMin = label.anchorMax = new Vector2(0.5f, 1f);
+            label.pivot = new Vector2(0.5f, 1f);
+            label.anchoredPosition = anchoredPosition;
+            label.sizeDelta = new Vector2(600f, 32f);
+            var text = label.gameObject.AddComponent<TextMeshProUGUI>();
+            text.text = content;
+            text.fontSize = 20f;
+            text.color = new Color(0.7f, 0.8f, 1f, 0.9f);
+            text.alignment = TextAlignmentOptions.Center;
+        }
+
+        IntensitySelectButton MakeIntensityButton(RectTransform row,
+            CosmicShore.Engine.Soap.IntVariable sharedIntensityVariable)
+        {
+            var rect = MakeChild("IntensityButton", row);
+            var border = rect.gameObject.AddComponent<Image>();
+            border.color = new Color(0.2f, 0.25f, 0.55f, 1f);
+            var button = rect.gameObject.AddComponent<Button>();
+            var isb = rect.gameObject.AddComponent<IntensitySelectButton>();
+
+            var fill = MakeChild("IntensityImage", rect);
+            fill.anchorMin = Vector2.zero;
+            fill.anchorMax = Vector2.one;
+            fill.offsetMin = new Vector2(6f, 6f);
+            fill.offsetMax = new Vector2(-6f, -6f);
+            var fillImage = fill.gameObject.AddComponent<Image>();
+            fillImage.color = new Color(0.1f, 0.12f, 0.3f, 1f);
+            fillImage.raycastTarget = false;
+
+            var label = MakeFullStretchText(rect, "", 34f);
+
+            SetPrivateField(isb, "BorderImage", border);
+            SetPrivateField(isb, "IntensityImage", fillImage);
+            SetPrivateField(isb, "IntensityText", label);
+            SetPrivateField(isb, "selectedIntensityCount", sharedIntensityVariable);
+            SetPrivateField(isb, "IntensityColorSelected", (Color32)new Color(1f, 1f, 1f, 1f));
+            SetPrivateField(isb, "IntensityColorUnselected", (Color32)new Color(0.55f, 0.6f, 0.8f, 1f));
+            SetPrivateField(isb, "IntensityColorActive", (Color32)new Color(0.9f, 0.95f, 1f, 1f));
+            SetPrivateField(isb, "IntensityColorInactive", (Color32)new Color(0.3f, 0.32f, 0.4f, 1f));
+
+            // IntensitySelectButton owns the border/fill colors — turn off the
+            // Selectable's color transition so its white normalColor can't stamp
+            // them (OnEnable lazily re-adopts a target graphic, so nulling the
+            // reference wouldn't stick — Transition.None is the prefab-faithful way).
+            button.transition = Selectable.Transition.None;
+            button.onClick.AddListener(isb.Select); // prefab wiring: Button → Select()
+            return isb;
+        }
+
+        (IntStepper stepper, Button increment) MakeStepper(RectTransform parent, string name, Vector2 anchoredPosition)
+        {
+            var rect = MakeChild(name, parent);
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = new Vector2(340f, 84f);
+            var group = rect.gameObject.AddComponent<HorizontalLayoutGroup>();
+            group.spacing = 16f;
+            group.childForceExpandWidth = true;
+            group.childForceExpandHeight = true;
+
+            var decrement = MakeStepperButton(rect, "Decrement", "-");
+            var countLabel = MakeChild("Count", rect);
+            var countText = countLabel.gameObject.AddComponent<TextMeshProUGUI>();
+            countText.fontSize = 40f;
+            countText.color = new Color(1f, 1f, 1f, 1f);
+            countText.alignment = TextAlignmentOptions.Center;
+            var increment = MakeStepperButton(rect, "Increment", "+");
+
+            var stepper = rect.gameObject.AddComponent<IntStepper>();
+            SetPrivateField(stepper, "decrementButton", decrement);
+            SetPrivateField(stepper, "incrementButton", increment);
+            SetPrivateField(stepper, "countText", countText);
+            return (stepper, increment);
+        }
+
+        Button MakeStepperButton(RectTransform row, string name, string glyph)
+        {
+            var rect = MakeChild(name, row);
+            var image = rect.gameObject.AddComponent<Image>();
+            image.color = new Color(0.18f, 0.22f, 0.5f, 1f);
+            var button = rect.gameObject.AddComponent<Button>();
+            var colors = button.colors;
+            colors.normalColor = new Color(0.18f, 0.22f, 0.5f, 1f);
+            colors.pressedColor = new Color(0.45f, 0.6f, 0.95f, 1f);
+            colors.disabledColor = new Color(0.12f, 0.13f, 0.22f, 1f);
+            button.colors = colors;
+            MakeFullStretchText(rect, glyph, 40f);
+            return button;
+        }
+
+        DomainInfoData MakeDomainTile(RectTransform row, CosmicShore.Data.Domains domain, Color tint)
+        {
+            var rect = MakeChild($"Tile_{domain}", row);
+            var background = rect.gameObject.AddComponent<Image>();
+            background.color = tint;
+            var button = rect.gameObject.AddComponent<Button>();
+            // DomainInfoData owns the tile's tint + dim — turn off the Selectable's
+            // color transition so its white normalColor can't stamp the domain hue.
+            button.transition = Selectable.Transition.None;
+            var label = MakeFullStretchText(rect, domain.ToString().ToUpperInvariant(), 26f);
+            var tile = rect.gameObject.AddComponent<DomainInfoData>();
+            SetPrivateField(tile, "domain", domain);
+            SetPrivateField(tile, "button", button);
+            SetPrivateField(tile, "backgroundImage", background);
+            SetPrivateField(tile, "labelText", label);
+            return tile;
+        }
+
+        Button MakeActionButton(RectTransform parent, string name, string caption,
+            Vector2 anchoredPosition, Vector2 size)
+        {
+            var rect = MakeChild(name, parent);
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0f);
+            rect.pivot = new Vector2(0.5f, 0f);
+            rect.anchoredPosition = anchoredPosition;
+            rect.sizeDelta = size;
+            var image = rect.gameObject.AddComponent<Image>();
+            image.color = new Color(0.16f, 0.42f, 0.28f, 1f);
+            var button = rect.gameObject.AddComponent<Button>();
+            var colors = button.colors;
+            colors.normalColor = new Color(0.16f, 0.42f, 0.28f, 1f);
+            colors.pressedColor = new Color(0.35f, 0.8f, 0.5f, 1f);
+            button.colors = colors;
+            MakeFullStretchText(rect, caption, 26f);
+            return button;
         }
 
         static TextMeshProUGUI MakeFullStretchText(RectTransform parent, string content, float size)
@@ -404,8 +789,9 @@ namespace CosmicShore.Client
 
         void OnUpdate(double dt)
         {
-            // FIXED-step ticking: the 0.5s slide coroutine spans exactly 30 ticks, so
-            // the frame-90 screenshot always lands on the settled HANGAR layout.
+            // FIXED-step ticking: the 0.5s slide/hide coroutines span exactly 30
+            // ticks, so every scripted click lands on settled layout and the final
+            // screenshot is byte-identical across runs.
             _loop.Tick(1f / 60f);
             _frameIndex++;
 
@@ -416,6 +802,36 @@ namespace CosmicShore.Client
             // on the ARCADE nav → OnClickArcadeNav → ArcadeModal.ModalWindowIn.
             if (_frameIndex == 60 && _arcadeNavButton != null)
                 ClickButton(_arcadeNavButton);
+
+            // Frame 90: click the HEX RACE card → ArcadeExploreView.SelectGame →
+            // configure modal opens at Screen 1 with the game's defaults.
+            if (_frameIndex == 90)
+            {
+                foreach (var card in Object.FindObjectsByType<GameCard>(FindObjectsSortMode.None))
+                {
+                    if (card.GameMode != CosmicShore.Data.GameModes.HexRace) continue;
+                    ClickButton(card.GetComponent<Button>());
+                    break;
+                }
+            }
+
+            // Frame 120: pick intensity 2 (IntensitySelectButton.Select via Button).
+            if (_frameIndex == 120 && _intensityTwoButton != null)
+                ClickButton(_intensityTwoButton.GetComponent<Button>());
+
+            // Frame 132: player-count “+” — IntStepper → HandlePlayerCountSelected(2)
+            // (one AI backfill slot at launch: 2 desired − 1 human).
+            if (_frameIndex == 132 && _pcIncrementButton != null)
+                ClickButton(_pcIncrementButton);
+
+            // Frame 150: CONFIRM CONFIGURATION → single-shot commit → Screen 2.
+            if (_frameIndex == 150 && _confirmConfigButton != null)
+                ClickButton(_confirmConfigButton);
+
+            // Frame 180: START → solo path (no sync manager) → HandleAllPlayersReady
+            // → GameDataSO synced + OnLaunchGame raised (LAUNCHING banner shows).
+            if (_frameIndex == 180 && _startGameButton != null)
+                ClickButton(_startGameButton);
         }
 
         void ClickButton(Button button)
@@ -462,7 +878,9 @@ namespace CosmicShore.Client
                 $"mode menushell, active {active}, slideX {screensRoot.position.x:F1}, " +
                 $"modalStack {(_switcher.HasActiveModal ? "open" : "empty")}, " +
                 $"arcadeModal {(_switcher.ModalIsActive(ScreenSwitcher.ModalWindows.ARCADE) ? "ARCADE" : "none")}, " +
-                $"gameCards {cardCount}, paused {CosmicShore.Core.PauseSystem.Paused}");
+                $"gameCards {cardCount}, " +
+                $"configIntensity {_config.Intensity}, configPlayers {_config.PlayerCount}, configDomains {_config.DomainCount}, " +
+                $"launch {_launchInfo}, paused {CosmicShore.Core.PauseSystem.Paused}");
         }
     }
 }

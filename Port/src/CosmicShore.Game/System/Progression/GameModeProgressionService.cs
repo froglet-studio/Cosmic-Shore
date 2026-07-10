@@ -8,6 +8,7 @@
 using System;
 using CosmicShore.Engine;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Core
 {
@@ -30,6 +31,18 @@ namespace CosmicShore.Core
 
         /// <summary>Shell: every mode is unlocked (progression gating arrives with the real port).</summary>
         public bool IsGameModeUnlocked(GameModes mode) => true;
+
+        /// <summary>Shell: every intensity tier is unlocked (real: Cloud-Save-backed play counts).</summary>
+        public int GetMaxUnlockedIntensity(GameModes mode) => 4;
+
+        /// <summary>Shell: mirrors the upstream definition over the shell max (always true).</summary>
+        public bool IsIntensityUnlocked(GameModes mode, int intensity) => intensity <= GetMaxUnlockedIntensity(mode);
+
+        /// <summary>
+        /// Shell: no quest chain yet — always null. Callers null-guard exactly like the
+        /// original (locked-intensity goal toasts simply never fire until the real port).
+        /// </summary>
+        public SO_GameModeQuestData GetQuestForMode(GameModes mode) => null;
 
         protected void RaiseProgressionChanged(GameModeProgressionData data) => OnProgressionChanged?.Invoke(data);
     }
