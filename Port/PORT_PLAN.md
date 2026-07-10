@@ -729,12 +729,15 @@ now works that milestone plan.
 > needs the prompter).
 
 1. **Next live shell: PrismFactory** (10 refs — pairs with the
-   prism/gameplay arcs) or the **CaptainManager remainder** (grown but
-   still shell-tagged). Survey the shell's carried answers first per the
-   established protocol. 12 `type-preserving SHELL` files remain; Crystal
-   (313L) still waits for the impact-effects arc. Longer-term parked
-   restores: the four telemetry deviation lanes when their arcs land
-   (VesselDamagePrismEffectSO / SkimmerStealPrismEffectSO →
+   prism/gameplay arcs). It needs a PLANNED MULTI-PART ARC, not a single
+   iteration: the survey showed its chain balloons to ~1400L (3 pool
+   managers + `PrismExplosion` 183L + `PrismImplosion` 281L, which needs
+   the unported `PrismEffectsManager` 470L Burst-jobs manager) — split it
+   pool-managers-first per the AudioSystem precedent. Alternatively pick
+   another surveyed shell. 11 `type-preserving SHELL` files remain;
+   Crystal (313L) still waits for the impact-effects arc. Longer-term
+   parked restores: the four telemetry deviation lanes when their arcs
+   land (VesselDamagePrismEffectSO / SkimmerStealPrismEffectSO →
    impact-effects arc; FullAutoBlockShootActionExecutor /
    FireGunActionExecutor → vessel-actions arc);
    `WildlifeBlitzEndGameStatsTracker` (the last unported Scoring/ file,
@@ -748,6 +751,50 @@ now works that milestone plan.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### CaptainManager unit ✅ (2026-07-10) — the captain economy manager + XpHandler are REAL
+
+**3 source files landed** (`(CaptainManager unit 2026-07-10)` headers):
+`SO_CaptainList` (verbatim 12L); **`XpHandler` full port** replacing the
+struct-only extraction (`XpHandler.Structs.cs` absorbed/deleted — upstream
+declares `XpData` in this file): the LOCAL lanes are live (`ClassXpData` /
+`EncounteredCaptainsData` dictionaries, `IssueXP`'s per-element
+accumulation with on-demand class rows, `EncounterCaptain`'s dedupe,
+`GetCaptainXP`'s reads, `OnCaptainDataLoaded`), the PlayFab persistence
+sends + `OnLoadCaptainXpData` pull converters carried as commented
+`PORT Deviation (PlayFab arc)` source; **`CaptainManager` (202L) full
+verbatim** replacing the Store-unit shell: `CaptainData`,
+`UpgradeXPRequirements` (100/200/300/400 ladder), `LoadCaptainsData`
+deriving the roster (XP / Encountered / Unlocked / Level = 1 +
+matching-upgrade count) over the live XpHandler + `CatalogManager.Inventory`,
+`IssueXP` double-write, the query surface, `UnlockedShips`. Upstream
+posture kept: OnEnable's `[PLAYFAB DISABLED]` early return is live
+behavior (the dead wiring below it carried commented); OnDisable's `+=`
+bug on `OnLoadInventory` kept verbatim. The port-only `LoadLocalCaptains`
+rig seam is retained + grew two duties: it authors the `SO_CaptainList`
+from the models (so `GetCaptainSOByName` / `GetAllSOCaptains` are
+verbatim-live) and seeds the XpHandler dictionaries `??=` empty (the
+PlayFab-login stand-in — buying a captain routes
+`AddToInventory → EncounterCaptain → XpHandler`, which NRE'd on the
+verbatim-uninitialized statics).
+
+**Verified:** 4 new `CaptainXpFamilyTests` over the REAL lanes (roster
+derivation from XpHandler + Inventory incl. Level 2 = 1 + one matching
+Manta/Space upgrade and the locked-→-Level-0 floor; IssueXP element
+accumulation + on-demand rows; EncounterCaptain dedupe + reload
+derivation; SO lookup / upgrade tag match / XP ladder). One upstream
+semantic PINNED, not "fixed": the string-overload `IssueXP` aliases
+`GetCaptainByName`'s instance with the `captainData` entry, so the model
+XP double-adds (120+30+30=180) while the XpHandler element lane lands
+once (150). **Flake fixed at the root:** `CatalogManager.ResetLocalEconomy()`
+now also nulls its four static events — a prior world's StoreScreen
+stayed subscribed to `OnLoadInventory` (GameLoop teardown runs no
+OnDisable) and fired `UpdateView` on destroyed objects; the failure
+order flipped run-to-run because xunit orders test classes by
+randomized string hash. **ALL ELEVEN diag lines byte-stable ×2, values
+AND PNGs identical to the scoring-family baseline.** **1712 tests green
+in BOTH configs (1360 + 352, +4)**; 5 CLI modes exit 0. bleeding-edge
+unmoved at `f2b8f5aa`. Shell count 12 → 11.
 
 ### Scoring family ✅ (2026-07-10) — BaseScoreTracker + the full CreateScoring switch; HexRaceScoreTracker restored
 

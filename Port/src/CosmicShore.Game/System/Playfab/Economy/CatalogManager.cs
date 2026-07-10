@@ -379,6 +379,14 @@ namespace CosmicShore.Core
             StoreShelve = new();
             Inventory = new();
             CatalogLoaded = false;
+            // Static-event hygiene for harness worlds: GameLoop teardown never
+            // runs OnDisable, so subscribers from a previous world (e.g. a
+            // StoreScreen's UpdateView on OnLoadInventory) would otherwise leak
+            // into the next world's raises and fire on destroyed objects.
+            OnLoadCatalogSuccess = null;
+            OnLoadInventory = null;
+            OnInventoryChange = null;
+            OnCurrencyBalanceChange = null;
         }
     }
 }
