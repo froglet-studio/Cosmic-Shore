@@ -11,14 +11,14 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 76efb4f6e4f141f9baa24dba097db159, type: 3}
   m_Name: SquirrelTubeAction
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   danger: 1
-  radius: 10
+  radius: 8
   segments: 8
   rings: 2
   ringSpacing: 10
   prismScale: 4
-  leadSeconds: 1
+  leadSeconds: 1.5
   forwardOffset: 24
   spawnPerFrame: 24
   cooldown: 20
