@@ -62,5 +62,11 @@ namespace CosmicShore.Core
 
         /// <summary>Shell-only observability: the last RecordIntensityUnlocked payload.</summary>
         public (CosmicShore.Data.GameModes Mode, int Intensity)? LastIntensityUnlocked { get; private set; }
+
+        /// <summary>Play-again pressed on the scoreboard (real: UGSKeys play-again event). Called by UGSStatsManager.TrackPlayAgain.</summary>
+        public void RecordPlayAgain() => PlayAgainCount++;
+
+        /// <summary>Shell-only observability: RecordPlayAgain call count.</summary>
+        public int PlayAgainCount { get; private set; }
     }
 }

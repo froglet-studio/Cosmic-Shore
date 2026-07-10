@@ -728,18 +728,26 @@ now works that milestone plan.
 > the **Arc-E content-bridge decision point** (extractor vs hand-authoring —
 > needs the prompter).
 
-1. **Arcade stats-reporter family** — the natural follow-on now that every
-   round world carries a live StatsManager: port
-   `JoustStatsReporter` (65L) + `CrystalCaptureStatsReporter` (58L) +
-   `HexRaceScoreTracker` (160L) + `VesselCollisionTurnMonitor` (41L).
-   They read RoundStats (real) and report through **UGSStatsManager**
-   (still a 14L shell vs 254L upstream) — grow that shell's local lanes
-   first per the "[UGS DISABLED] → local lanes live" pattern (leaderboard
-   writes route through the ported LeaderboardManager offline lanes).
-   Alternative next shells if the family balloons: **PrismFactory**
-   (10 refs) or the **CaptainManager remainder**. 13 `type-preserving
-   SHELL` files remain; Crystal (313L) still waits for the impact-effects
-   arc.
+1. **BaseScoreTracker + the concrete scoring family, then restore
+   HexRaceScoreTracker.** The stats-reporter family shipped 2026-07-10
+   EXCEPT `HexRaceScoreTracker` (160L): its base `BaseScoreTracker`
+   (163L incl. the `ScoringConfig` struct) needs ~9 concrete scoring
+   classes the port lacks (PrismsCreatedScoring,
+   HostilePrismsDestroyedScoring, HostileVolumeDestroyedScoring,
+   VolumeCreatedScoring, ElementalCrystalsCollectedBlitzScoring,
+   TurnsPlayedScoring, VolumeAndBlocksStolenScoring,
+   TeamVolumeDifferenceScoring, CrystalsCollectedScoring — upstream
+   `Controller/Arcade/Scoring/`, ~500L mechanical; 4 of 13 scoring files
+   already ported). The parked verbatim transcription is at
+   `scratchpad/HexRaceScoreTracker.cs.parked` (same-session scratch) —
+   re-transcribe from upstream if the scratchpad is gone. Also restore
+   the four telemetry deviation lanes when their arcs land
+   (VesselDamagePrismEffectSO / SkimmerStealPrismEffectSO →
+   impact-effects arc; FullAutoBlockShootActionExecutor /
+   FireGunActionExecutor → vessel-actions arc). Alternative next shells:
+   **PrismFactory** (10 refs) or the **CaptainManager remainder**.
+   12 `type-preserving SHELL` files remain; Crystal (313L) still waits
+   for the impact-effects arc.
    **Prompter-facing flags still parked (do NOT act without input):**
    (b) the upstream in-place-sort quirk
    (`ArcadeExploreView.PopulateGameSelectionList` sorts the shared
@@ -749,6 +757,45 @@ now works that milestone plan.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Stats-reporter family ✅ (2026-07-10) — UGSStatsManager is REAL + the reporter/telemetry family lands
+
+**`UGSStatsManager` (254L) ported verbatim** (background-agent
+transcription, `(stats-reporter family 2026-07-10)` headers), replacing
+the 14L shell: the smart high-score evaluation (golf modes take
+min-with-cloud, a DNF-sentinel session falls back to the cloud best;
+blitz/CC take max), the four per-mode report lanes (best-time/high-score
+updates + leaderboard submission, DNF submits nothing), per-vessel
+telemetry roll-ups (best-keeping + counters into
+`VesselStatsCloudData.GetOrCreate`), `TrackPlayAgain` → analytics, and the
+repo-backed save lanes (MarkDirty debounce). **Engine growth:**
+`CosmicShore.Engine.Services.Leaderboards` (CloudSaveSdk precedent —
+`LeaderboardsService.Instance` over an honest `LocalLeaderboardsService`
+with a submissions log + `Reset()` seam), so the submission lane is LIVE,
+not stubbed. Analytics shell grew `RecordPlayAgain` (+count seam).
+
+**Family ported alongside** (9 files): `LeaderboardConfigSO` (159L,
+mapping cache), `VesselStatEventSO` (84L), the telemetry trio
+(`VesselTelemetry` 235L + Sparrow 92L + Squirrel 103L — the four
+static-event subscription lanes on still-unported effect/executor SOs are
+carried deviations: impact-effects arc / vessel-actions arc; drift/boost
+tracking, the stat registry, and everything the reporters read is LIVE),
+`JoustStatsReporter` (65L) + `CrystalCaptureStatsReporter` (58L)
+(OnMiniGameEnd → winner-only reporting), `VesselCollisionTurnMonitor`
+(41L, upstream-vestigial TEMP body kept verbatim), and
+`IStatExposable` + `StatModuleSO` (the `ValueFormatType` home).
+**`HexRaceScoreTracker` PARKED** — its `BaseScoreTracker` base needs ~9
+concrete scoring classes the port lacks (~500L); the ballooning case the
+plan anticipated. Recorded as NEXT UP item 1 with the parked
+transcription's location.
+
+**Verified:** 5 new `UGSStatsFamilyTests` (report/DNF/leaderboard lane;
+golf-vs-max evaluation; Squirrel telemetry roll-up best-keeping;
+play-again analytics; JoustStatsReporter winner-only end-to-end over a
+live UGSDataService rig + the local leaderboard store). **ALL ELEVEN diag
+lines byte-stable ×2, values AND PNGs identical to the harness-routing
+baseline.** **1703 tests green in BOTH configs (1351 + 352, +5)**; 5 CLI
+modes exit 0. bleeding-edge unmoved at `f2b8f5aa`.
 
 ### StatsManager LIVE in the harnesses ✅ (2026-07-10) — round bookkeeping routes through the real aggregator
 
