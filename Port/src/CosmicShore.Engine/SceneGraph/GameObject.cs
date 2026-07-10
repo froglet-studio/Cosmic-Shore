@@ -106,8 +106,13 @@ namespace CosmicShore.Engine
                 if (component is MonoBehaviour mb)
                     mb.HandleHierarchyActive(active);
 
-            foreach (var child in transform.Children)
-                if (child.gameObject.activeSelf)
+            // Snapshot the children too — Awake/OnEnable in the recursion may
+            // legally add or reparent siblings (original contract: hierarchy
+            // mutation during activation callbacks is allowed; late additions
+            // run their own activation when created).
+            var children = System.Linq.Enumerable.ToArray(transform.Children);
+            foreach (var child in children)
+                if (!child.gameObject.destroyedFlag && child.gameObject.activeSelf)
                     child.gameObject.NotifyHierarchyActiveChanged(active);
         }
 

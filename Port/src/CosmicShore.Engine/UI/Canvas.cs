@@ -27,6 +27,14 @@ namespace CosmicShore.Engine
         public bool overrideSorting;
         public Camera worldCamera;
 
+        /// <summary>
+        /// Original contract: flush pending canvas/layout work NOW so rects read
+        /// final sizes this frame. The engine's geometry is pull-based (rects and
+        /// scale resolve on read) so the only deferred work is the queued layout
+        /// rebuilds — flush them.
+        /// </summary>
+        public static void ForceUpdateCanvases() => UI.LayoutRebuilder.FlushQueuedRebuilds();
+
         float _scaleFactor = 1f;
 
         /// <summary>The topmost Canvas in this canvas's parent chain (self when none above).</summary>

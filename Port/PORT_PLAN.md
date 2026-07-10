@@ -720,21 +720,74 @@ now works that milestone plan.
 > plumbing: more menu screens (Hangar/Leaderboards/Store), richer per-mode
 > art, and the Arc-E content-bridge decision.
 
-1. **Menu breadth — the Hangar screen unit** (first of the three queued
-   screen units: Hangar → Leaderboards → Store, per the Arc-F spine note).
-   Map the upstream `HangarScreen` + its views/dependencies
-   (`VesselSelectionView`, captain/vessel data plumbing, `LoadoutView`
-   interplay) and port the unit with its singletons-first prerequisite
-   pass (the pattern every screen unit has used). Wire it into the
-   menushell so HANGAR shows a real screen instead of the placeholder
-   panel; keep the menushell diags byte-stable (HANGAR is the persisted
-   ReturnToScreen — its content change WILL rebaseline the two menushell
-   PNGs; diag values should hold unless the screen adds tracked state).
-   After that: Leaderboards (LeaderboardManager), Store (CatalogManager
-   economy singletons).
+1. **Menu breadth — the Leaderboards (PORT) screen unit** (second of the
+   three queued screen units: Hangar ✅ → Leaderboards → Store). Map the
+   upstream `LeaderboardsMenu` (IScreen, `OnScreenEnter → LoadView`) + its
+   dependency tail (`LeaderboardManager` / UGS Leaderboards surface,
+   per-game leaderboard views, player-rank rows) and port the unit
+   singletons-first (the pattern every screen unit has used — see the
+   Hangar unit below for the freshest template: agent-ported verbatim
+   files + inline shells for out-of-unit tails). Wire it into the
+   menushell so PORT shows a real screen; menushell PNGs only rebaseline
+   if the PORT panel is visible in a capture (it is not the return screen
+   — diag values must hold). After that: Store (CatalogManager economy
+   singletons).
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Hangar screen unit ✅ (2026-07-10) — the first menu-breadth unit; HANGAR is REAL
+
+**15 files ported verbatim** (background-agent transcription, `(Hangar unit
+2026-07-10)` headers): `HangarScreen` (331L: grid flow + legacy flow +
+per-frame LoadView coalescing), `HangarVesselGridCard` (hover DOTween →
+documented instant-scale deviation), `HangarVesselDetailView` (268L: tab
+system + crystal unlock flow), `VesselUnlockSystem` (lock/unlock +
+HangarRepo cloud persistence + `TryPurchaseVessel` through the
+PlayerDataService wallet), `View` (the SOAP-selected model base),
+`NavLink`/`NavGroup`, `InfiniteScroll`, `HangarShipSelectNavLink`,
+`HangarOverviewView`/`HangarAbilitiesView`, `HangarTrainingModal` +
+`HangarTrainingGameButton` + `TrainingGameProgressSystem` +
+`GameplayRewardButton`. Every prerequisite was already live (SO_Vessel lock
+surface, PlayerDataService crystal wallet, UGSDataService.HangarRepo,
+IntensitySelectButton, Arcade.LaunchTrainingGame) — the singletons-first
+pass reduced to four SHELLS: `IconEmitter` (UI juice no-op),
+`DailyChallengeSystem` (ClaimReward→false), `GameModeProgressionService.
+IsVesselHangarUnlocked()` (→true, everything-unlocked posture), and
+`AnalyticsServiceFacade.RecordVesselUnlocked` (last-call observability).
+
+**Engine growths (4):** `WaitForSecondsRealtime` (unscaled-clock wait — the
+staggered card fade runs while the menu holds timeScale 0);
+`Canvas.ForceUpdateCanvases()` (flushes queued layout rebuilds);
+`Transform.SetAsLastSibling/SetAsFirstSibling` (InfiniteScroll's
+duplication ring). **Engine FIXES (2, found by the hangar's first real UI
+clone):** `Instantiate` now clones a RectTransform AS a RectTransform with
+its anchor data (it came up as a plain Transform before — the first
+Graphic access converted it lazily MID-ACTIVATION, mutating the parent's
+child list under the activation walk and dropping every authored anchor),
+and `NotifyHierarchyActiveChanged` snapshots the child list like it
+already snapshotted components (hierarchy mutation during activation
+callbacks is legal in the original engine).
+
+**Menushell wiring:** the HANGAR panel hosts the real screen — 8-vessel SO
+roster fixture (4 unlocked, 4 locked with crystal costs, 2 abilities each),
+grid container + GridLayoutGroup + inactive card template (engine
+Instantiate = the prefab seam), NAMES eye toggle, and the full detail view
+(tab strip, description + unlock button, ability preview, spend-crystals
+confirm panel) — wire-then-activate so OnEnable sees its fields.
+
+**Verified:** 8 new headless tests (`HangarScreenTests`: unlocked-first
+stable sort + lock overlays, per-frame LoadView coalescing, fade-in on
+UNSCALED time under timeScale 0, eye toggle, card-click → detail content,
+insufficient-crystals hides CONFIRM, purchase spends wallet + unlocks +
+re-sorts + UNLOCKED button state, VesselUnlockSystem event contract; rig
+clears the leakable PlayerDataService.Instance static). **ALL NINE diag
+lines byte-stable ×2, values unchanged; the 7 non-menushell PNGs are
+pixel-identical to the pre-hangar baseline** (the engine fixes altered
+nothing outside the menushell); the 2 menushell PNGs rebaselined to show
+the real hangar (grid + LOCKED overlays visible in ms3600). **1645 tests
+green in BOTH configs (1307 + 338)**; 5 CLI modes exit 0. bleeding-edge
+unmoved at `f2b8f5aa`.
 
 ### Arc I remainder ✅ (2026-07-10) — READY + scoreboard are REAL UI; ARC I CLOSED
 

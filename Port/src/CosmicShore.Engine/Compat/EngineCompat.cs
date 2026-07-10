@@ -652,6 +652,22 @@ namespace CosmicShore.Engine
             // placement, so Awake sees the final placement like the original engine.
             var clone = new GameObject(isRoot ? source.name + "(Clone)" : source.name);
             clone.SetActive(false);
+
+            // A RectTransform source clones as a RectTransform WITH its rect data
+            // (original contract — UI prefabs keep their authored layout). Without
+            // this the clone came up as a plain Transform and the first Graphic
+            // access converted it lazily MID-ACTIVATION, mutating the parent's
+            // child list under the activation walk and dropping every anchor.
+            if (source.transform is RectTransform sourceRect)
+            {
+                var rect = clone.AddComponent<RectTransform>(); // in-place conversion
+                rect.anchorMin = sourceRect.anchorMin;
+                rect.anchorMax = sourceRect.anchorMax;
+                rect.pivot = sourceRect.pivot;
+                rect.anchoredPosition = sourceRect.anchoredPosition;
+                rect.sizeDelta = sourceRect.sizeDelta;
+            }
+
             map[source] = clone;
             map[source.transform] = clone.transform;
 

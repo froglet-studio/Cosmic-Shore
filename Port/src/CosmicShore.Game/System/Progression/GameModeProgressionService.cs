@@ -44,6 +44,14 @@ namespace CosmicShore.Core
         /// </summary>
         public SO_GameModeQuestData GetQuestForMode(GameModes mode) => null;
 
+        /// <summary>
+        /// Shell: the hangar is reachable (real: true once every quest before the
+        /// "VESSEL HANGAR" quest in the chain is completed). Matches the shell's
+        /// everything-unlocked fresh-install posture so the detail view's unlock
+        /// flow stays live.
+        /// </summary>
+        public bool IsVesselHangarUnlocked() => true;
+
         protected void RaiseProgressionChanged(GameModeProgressionData data) => OnProgressionChanged?.Invoke(data);
     }
 }

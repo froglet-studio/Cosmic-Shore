@@ -215,6 +215,17 @@ namespace CosmicShore.Client
                 text.color = new Color(0.85f, 0.95f, 1f, 0.95f);
                 text.alignment = TextAlignmentOptions.Center;
 
+                if (id == ScreenSwitcher.MenuScreens.HANGAR)
+                {
+                    // The real HangarScreen (grid of vessel cards + detail view with
+                    // the crystal unlock flow) — the placeholder title shrinks to a
+                    // header so the grid owns the panel.
+                    label.anchorMin = new Vector2(0f, 0.88f);
+                    label.anchorMax = Vector2.one;
+                    text.fontSize = 40f;
+                    BuildHangarScreen(panel);
+                }
+
                 if (id == ScreenSwitcher.MenuScreens.HOME)
                 {
                     // The real HomeScreen lives on the HOME panel (shipping wiring);
@@ -461,6 +472,307 @@ namespace CosmicShore.Client
             SetPrivateField(_switcher, "Modals", new List<ModalWindowManager> { _arcadeModal, _configureModal });
 
             modalRoot.gameObject.SetActive(true); // Start hides it via CanvasGroup until opened
+        }
+
+        /// <summary>
+        /// The REAL HangarScreen on the HANGAR panel (Hangar unit): a grid of
+        /// vessel cards (unlocked sort first, staggered fade-in, eye toggles the
+        /// names) and the detail view (description tab + ability tabs + the
+        /// crystal unlock flow — the confirm branch stays dormant in the shell
+        /// because no PlayerDataService instance means a zero wallet, exactly the
+        /// upstream fresh-boot posture). Roster is a hand-authored SO fixture;
+        /// prefab art arrives with the Arc-E content bridge — the WIRING is
+        /// shipping code. Panel deactivates during wiring so OnEnable/Awake see
+        /// their serialized fields (the scene-load ordering the original engine
+        /// guarantees).
+        /// </summary>
+        void BuildHangarScreen(RectTransform panel)
+        {
+            panel.gameObject.SetActive(false); // wire fields before OnEnable/Start
+
+            var vesselList = ScriptableObject.CreateInstance<SO_VesselList>();
+            vesselList.VesselList = new List<SO_Vessel>();
+            (string name, CosmicShore.Data.VesselClassType cls, string desc, int cost, bool locked)[] roster =
+            {
+                ("Manta", CosmicShore.Data.VesselClassType.Manta, "Feature-complete flagship - sweeping trails and skimmer play.", 0, false),
+                ("Dolphin", CosmicShore.Data.VesselClassType.Dolphin, "Feature-complete racer - momentum and flow.", 0, false),
+                ("Rhino", CosmicShore.Data.VesselClassType.Rhino, "Feature-complete bruiser - mass and momentum.", 0, false),
+                ("Squirrel", CosmicShore.Data.VesselClassType.Squirrel, "Vaporwave drift racer - ride the trails.", 0, false),
+                ("Urchin", CosmicShore.Data.VesselClassType.Urchin, "Spiky area-denial specialist.", 150, true),
+                ("Grizzly", CosmicShore.Data.VesselClassType.Grizzly, "Heavy support - shields and sustain.", 300, true),
+                ("Serpent", CosmicShore.Data.VesselClassType.Serpent, "Sinuous striker with a dedicated HUD.", 300, true),
+                ("Sparrow", CosmicShore.Data.VesselClassType.Sparrow, "Arcade space combat - guns and missiles.", 500, true),
+            };
+            foreach (var (name, cls, desc, cost, locked) in roster)
+            {
+                var vessel = ScriptableObject.CreateInstance<SO_Vessel>(); // global namespace (as upstream)
+                vessel.Name = name;
+                vessel.Class = cls;
+                vessel.Description = desc;
+                vessel.UnlockCost = cost;
+                if (locked) vessel.Lock();
+                var abilityA = ScriptableObject.CreateInstance<SO_VesselAbility>();
+                abilityA.Name = "BOOST";
+                abilityA.Description = $"{name}: channel skim energy into a burst of speed.";
+                var abilityB = ScriptableObject.CreateInstance<SO_VesselAbility>();
+                abilityB.Name = "DRIFT";
+                abilityB.Description = $"{name}: decouple heading from velocity for wide arcs.";
+                vessel.Abilities = new List<SO_VesselAbility> { abilityA, abilityB };
+                vesselList.VesselList.Add(vessel);
+            }
+
+            var screen = panel.gameObject.AddComponent<HangarScreen>();
+            SetPrivateField(screen, "ShipList", vesselList);
+
+            // ── grid panel: container + card template + eye toggle ─────────────
+            var gridPanel = MakeChild("GridPanel", panel);
+            gridPanel.anchorMin = new Vector2(0.04f, 0.08f);
+            gridPanel.anchorMax = new Vector2(0.96f, 0.86f);
+            gridPanel.offsetMin = Vector2.zero;
+            gridPanel.offsetMax = Vector2.zero;
+
+            var gridContainer = MakeChild("GridContainer", gridPanel);
+            gridContainer.anchorMin = Vector2.zero;
+            gridContainer.anchorMax = Vector2.one;
+            gridContainer.offsetMin = Vector2.zero;
+            gridContainer.offsetMax = Vector2.zero;
+            var grid = gridContainer.gameObject.AddComponent<GridLayoutGroup>();
+            grid.cellSize = new Vector2(420f, 180f);
+            grid.spacing = new Vector2(24f, 56f); // tall gutter: name strips clear the next row
+
+            // Template lives OUTSIDE gridContainer (PopulateGrid clears the container)
+            // and stays inactive — engine Instantiate clones it per vessel.
+            var template = MakeChild("GridCardTemplate", panel);
+            template.gameObject.SetActive(false);
+            template.sizeDelta = new Vector2(420f, 180f);
+            template.gameObject.AddComponent<CanvasGroup>();
+            var cardBg = template.gameObject.AddComponent<Image>();
+            cardBg.color = new Color(0.24f, 0.16f, 0.09f, 1f);
+            var cardButton = template.gameObject.AddComponent<Button>();
+            cardButton.transition = Selectable.Transition.None; // card owns its visuals
+            var cardName = MakeChild("Name", template);
+            cardName.anchorMin = Vector2.zero;
+            cardName.anchorMax = new Vector2(1f, 0.34f);
+            cardName.offsetMin = Vector2.zero;
+            cardName.offsetMax = Vector2.zero;
+            var cardNameText = cardName.gameObject.AddComponent<TextMeshProUGUI>();
+            cardNameText.fontSize = 26f;
+            cardNameText.color = new Color(0.95f, 0.85f, 0.6f, 1f);
+            cardNameText.alignment = TextAlignmentOptions.Center;
+            var lockOverlay = MakeChild("LockOverlay", template);
+            lockOverlay.anchorMin = Vector2.zero;
+            lockOverlay.anchorMax = Vector2.one;
+            lockOverlay.offsetMin = Vector2.zero;
+            lockOverlay.offsetMax = Vector2.zero;
+            var lockImage = lockOverlay.gameObject.AddComponent<Image>();
+            lockImage.color = new Color(0.02f, 0.02f, 0.05f, 0.62f);
+            lockImage.raycastTarget = false;
+            var lockText = MakeFullStretchText(lockOverlay, "LOCKED", 30f);
+            lockText.color = new Color(1f, 0.55f, 0.35f, 0.95f);
+            var gridCard = template.gameObject.AddComponent<HangarVesselGridCard>();
+            SetPrivateField(gridCard, "vesselIcon", cardBg);
+            SetPrivateField(gridCard, "vesselName", cardNameText);
+            SetPrivateField(gridCard, "lockOverlay", lockOverlay.gameObject);
+            SetPrivateField(gridCard, "cardButton", cardButton);
+
+            var eye = MakeChild("EyeButton", panel);
+            eye.anchorMin = eye.anchorMax = new Vector2(0.96f, 0.88f);
+            eye.pivot = new Vector2(1f, 0.5f);
+            eye.sizeDelta = new Vector2(120f, 48f);
+            var eyeImage = eye.gameObject.AddComponent<Image>();
+            eyeImage.color = new Color(0.30f, 0.22f, 0.10f, 1f);
+            var eyeButton = eye.gameObject.AddComponent<Button>();
+            eyeButton.transition = Selectable.Transition.None;
+            MakeFullStretchText(eye, "NAMES", 20f);
+
+            SetPrivateField(screen, "gridPanel", gridPanel.gameObject);
+            SetPrivateField(screen, "gridContainer", (Transform)gridContainer);
+            SetPrivateField(screen, "gridCardPrefab", gridCard);
+            SetPrivateField(screen, "eyeButton", eyeButton);
+
+            // ── detail panel: title/back + general & ability tabs + unlock flow ─
+            var detailPanel = MakeChild("DetailPanel", panel);
+            detailPanel.gameObject.SetActive(false); // Awake sees wired fields on first show
+            detailPanel.anchorMin = new Vector2(0.04f, 0.06f);
+            detailPanel.anchorMax = new Vector2(0.96f, 0.86f);
+            detailPanel.offsetMin = Vector2.zero;
+            detailPanel.offsetMax = Vector2.zero;
+            var detailBg = detailPanel.gameObject.AddComponent<Image>();
+            detailBg.color = new Color(0.10f, 0.07f, 0.04f, 0.98f);
+            detailBg.raycastTarget = false;
+            var detailView = detailPanel.gameObject.AddComponent<HangarVesselDetailView>();
+
+            var detailTitle = MakeChild("VesselName", detailPanel);
+            detailTitle.anchorMin = new Vector2(0f, 0.88f);
+            detailTitle.anchorMax = Vector2.one;
+            detailTitle.offsetMin = Vector2.zero;
+            detailTitle.offsetMax = Vector2.zero;
+            var detailTitleText = detailTitle.gameObject.AddComponent<TextMeshProUGUI>();
+            detailTitleText.fontSize = 40f;
+            detailTitleText.color = new Color(0.95f, 0.85f, 0.6f, 1f);
+            detailTitleText.alignment = TextAlignmentOptions.Center;
+
+            var back = MakeChild("BackButton", detailPanel);
+            back.anchorMin = back.anchorMax = new Vector2(0f, 1f);
+            back.pivot = new Vector2(0f, 1f);
+            back.anchoredPosition = new Vector2(18f, -14f);
+            back.sizeDelta = new Vector2(140f, 52f);
+            var backImage = back.gameObject.AddComponent<Image>();
+            backImage.color = new Color(0.30f, 0.22f, 0.10f, 1f);
+            var backButton = back.gameObject.AddComponent<Button>();
+            backButton.transition = Selectable.Transition.None;
+            MakeFullStretchText(back, "< BACK", 22f);
+
+            // Tab strip: GENERAL + the ability tabs (SetVessel hides unused ones).
+            var tabs = MakeChild("Tabs", detailPanel);
+            tabs.anchorMin = new Vector2(0.05f, 0.74f);
+            tabs.anchorMax = new Vector2(0.95f, 0.85f);
+            tabs.offsetMin = Vector2.zero;
+            tabs.offsetMax = Vector2.zero;
+            var tabRow = tabs.gameObject.AddComponent<HorizontalLayoutGroup>();
+            tabRow.spacing = 16f;
+            tabRow.childForceExpandWidth = true;
+            tabRow.childForceExpandHeight = true;
+
+            (Button button, GameObject bg) MakeTab(string tabLabel)
+            {
+                var tab = MakeChild($"Tab_{tabLabel}", tabs);
+                var tabImage = tab.gameObject.AddComponent<Image>();
+                tabImage.color = new Color(0.20f, 0.15f, 0.08f, 1f);
+                var tabButton = tab.gameObject.AddComponent<Button>();
+                tabButton.transition = Selectable.Transition.None;
+                var bg = MakeChild("BG", tab);
+                bg.anchorMin = Vector2.zero;
+                bg.anchorMax = Vector2.one;
+                bg.offsetMin = Vector2.zero;
+                bg.offsetMax = Vector2.zero;
+                var bgImage = bg.gameObject.AddComponent<Image>();
+                bgImage.color = new Color(0.55f, 0.40f, 0.16f, 1f);
+                bgImage.raycastTarget = false;
+                bg.gameObject.SetActive(false);
+                MakeFullStretchText(tab, tabLabel, 20f);
+                return (tabButton, bg.gameObject);
+            }
+
+            var (generalButton, generalBG) = MakeTab("GENERAL");
+            var abilityButtons = new Button[4];
+            var abilityBGs = new GameObject[4];
+            for (int i = 0; i < 4; i++)
+                (abilityButtons[i], abilityBGs[i]) = MakeTab($"ABILITY{i + 1}");
+
+            // General tab content: description + the unlock button.
+            var descriptionPanel = MakeChild("DescriptionPanel", detailPanel);
+            descriptionPanel.anchorMin = new Vector2(0.05f, 0.10f);
+            descriptionPanel.anchorMax = new Vector2(0.95f, 0.72f);
+            descriptionPanel.offsetMin = Vector2.zero;
+            descriptionPanel.offsetMax = Vector2.zero;
+            var descText = MakeFullStretchText(descriptionPanel, "", 24f);
+            descText.color = new Color(0.9f, 0.92f, 0.95f, 1f);
+
+            var unlock = MakeChild("UnlockButton", descriptionPanel);
+            unlock.anchorMin = unlock.anchorMax = new Vector2(0.5f, 0f);
+            unlock.pivot = new Vector2(0.5f, 0f);
+            unlock.anchoredPosition = new Vector2(0f, 10f);
+            unlock.sizeDelta = new Vector2(320f, 60f);
+            var unlockImage = unlock.gameObject.AddComponent<Image>();
+            unlockImage.color = new Color(0.16f, 0.42f, 0.28f, 1f);
+            var unlockButton = unlock.gameObject.AddComponent<Button>();
+            unlockButton.transition = Selectable.Transition.None;
+            var unlockText = MakeFullStretchText(unlock, "", 24f);
+
+            // Ability tab content.
+            var abilitiesPanel = MakeChild("AbilitiesPanel", detailPanel);
+            abilitiesPanel.gameObject.SetActive(false);
+            abilitiesPanel.anchorMin = new Vector2(0.05f, 0.10f);
+            abilitiesPanel.anchorMax = new Vector2(0.95f, 0.72f);
+            abilitiesPanel.offsetMin = Vector2.zero;
+            abilitiesPanel.offsetMax = Vector2.zero;
+            var abilityTitle = MakeChild("AbilityTitle", abilitiesPanel);
+            abilityTitle.anchorMin = new Vector2(0f, 0.8f);
+            abilityTitle.anchorMax = Vector2.one;
+            abilityTitle.offsetMin = Vector2.zero;
+            abilityTitle.offsetMax = Vector2.zero;
+            var abilityTitleText = abilityTitle.gameObject.AddComponent<TextMeshProUGUI>();
+            abilityTitleText.fontSize = 30f;
+            abilityTitleText.color = new Color(0.95f, 0.85f, 0.6f, 1f);
+            abilityTitleText.alignment = TextAlignmentOptions.Center;
+            var abilityBody = MakeChild("AbilityBody", abilitiesPanel);
+            abilityBody.anchorMin = Vector2.zero;
+            abilityBody.anchorMax = new Vector2(1f, 0.8f);
+            abilityBody.offsetMin = Vector2.zero;
+            abilityBody.offsetMax = Vector2.zero;
+            var abilityBodyText = abilityBody.gameObject.AddComponent<TextMeshProUGUI>();
+            abilityBodyText.fontSize = 22f;
+            abilityBodyText.color = new Color(0.9f, 0.92f, 0.95f, 1f);
+            abilityBodyText.alignment = TextAlignmentOptions.Center;
+
+            // Unlock confirmation (spend-crystals) panel.
+            var unlockPanel = MakeChild("UnlockPanel", detailPanel);
+            unlockPanel.gameObject.SetActive(false);
+            unlockPanel.anchorMin = Vector2.zero;
+            unlockPanel.anchorMax = Vector2.one;
+            unlockPanel.offsetMin = Vector2.zero;
+            unlockPanel.offsetMax = Vector2.zero;
+            var unlockDim = unlockPanel.gameObject.AddComponent<Image>();
+            unlockDim.color = new Color(0f, 0f, 0f, 0.6f);
+            var spendPanel = MakeChild("SpendCrystalsPanel", unlockPanel);
+            spendPanel.anchorMin = spendPanel.anchorMax = new Vector2(0.5f, 0.5f);
+            spendPanel.sizeDelta = new Vector2(520f, 300f);
+            var spendImage = spendPanel.gameObject.AddComponent<Image>();
+            spendImage.color = new Color(0.10f, 0.08f, 0.22f, 0.98f);
+            spendImage.raycastTarget = false;
+            var spendDetail = MakeChild("Detail", spendPanel);
+            spendDetail.anchorMin = new Vector2(0f, 0.55f);
+            spendDetail.anchorMax = Vector2.one;
+            spendDetail.offsetMin = Vector2.zero;
+            spendDetail.offsetMax = Vector2.zero;
+            var spendDetailText = spendDetail.gameObject.AddComponent<TextMeshProUGUI>();
+            spendDetailText.fontSize = 22f;
+            spendDetailText.color = new Color(0.9f, 0.92f, 0.95f, 1f);
+            spendDetailText.alignment = TextAlignmentOptions.Center;
+            var crystalAmount = MakeChild("CrystalAmount", spendPanel);
+            crystalAmount.anchorMin = new Vector2(0f, 0.36f);
+            crystalAmount.anchorMax = new Vector2(1f, 0.55f);
+            crystalAmount.offsetMin = Vector2.zero;
+            crystalAmount.offsetMax = Vector2.zero;
+            var crystalAmountText = crystalAmount.gameObject.AddComponent<TextMeshProUGUI>();
+            crystalAmountText.fontSize = 26f;
+            crystalAmountText.color = new Color(0.55f, 0.95f, 1f, 1f);
+            crystalAmountText.alignment = TextAlignmentOptions.Center;
+            var confirm = MakeChild("ConfirmButton", spendPanel);
+            confirm.anchorMin = confirm.anchorMax = new Vector2(0.5f, 0f);
+            confirm.pivot = new Vector2(0.5f, 0f);
+            confirm.anchoredPosition = new Vector2(0f, 24f);
+            confirm.sizeDelta = new Vector2(240f, 60f);
+            var confirmImage = confirm.gameObject.AddComponent<Image>();
+            confirmImage.color = new Color(0.16f, 0.42f, 0.28f, 1f);
+            var confirmButton = confirm.gameObject.AddComponent<Button>();
+            confirmButton.transition = Selectable.Transition.None;
+            MakeFullStretchText(confirm, "CONFIRM", 22f);
+
+            SetPrivateField(detailView, "vesselNameText", detailTitleText);
+            SetPrivateField(detailView, "backButton", backButton);
+            SetPrivateField(detailView, "generalButton", generalButton);
+            SetPrivateField(detailView, "abilityButtons", abilityButtons);
+            SetPrivateField(detailView, "generalButtonBG", generalBG);
+            SetPrivateField(detailView, "abilityButtonBGs", abilityBGs);
+            SetPrivateField(detailView, "descriptionPanel", descriptionPanel.gameObject);
+            SetPrivateField(detailView, "abilitiesPanel", abilitiesPanel.gameObject);
+            SetPrivateField(detailView, "vesselDescriptionText", descText);
+            SetPrivateField(detailView, "unlockButton", unlockButton);
+            SetPrivateField(detailView, "unlockButtonText", unlockText);
+            SetPrivateField(detailView, "abilitiesPreviewTitle", abilityTitleText);
+            SetPrivateField(detailView, "abilitiesPreviewText", abilityBodyText);
+            SetPrivateField(detailView, "unlockPanel", unlockPanel.gameObject);
+            SetPrivateField(detailView, "spendCrystalsPanel", spendPanel.gameObject);
+            SetPrivateField(detailView, "confirmButton", confirmButton);
+            SetPrivateField(detailView, "spendCrystalsDetailText", spendDetailText);
+            SetPrivateField(detailView, "crystalAmountText", crystalAmountText);
+
+            SetPrivateField(screen, "detailPanel", detailPanel.gameObject);
+            SetPrivateField(screen, "detailView", detailView);
+
+            panel.gameObject.SetActive(true); // fields wired — OnEnable/Start may run
         }
 
         /// <summary>

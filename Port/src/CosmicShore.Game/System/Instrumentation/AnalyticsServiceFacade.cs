@@ -38,5 +38,15 @@ namespace CosmicShore.Core
 
         /// <summary>Shell-only observability: whether RecordMenuReady fired this session.</summary>
         public bool MenuReadyThisSession => _menuReadyThisSession;
+
+        /// <summary>
+        /// A vessel was purchased/unlocked (real: UGSKeys.EventVesselUnlocked with
+        /// vessel/cost/balance). Shell records the last call for test observability.
+        /// </summary>
+        public void RecordVesselUnlocked(string vessel, int cost, int balance)
+            => LastVesselUnlocked = (vessel, cost, balance);
+
+        /// <summary>Shell-only observability: the last RecordVesselUnlocked payload.</summary>
+        public (string Vessel, int Cost, int Balance)? LastVesselUnlocked { get; private set; }
     }
 }

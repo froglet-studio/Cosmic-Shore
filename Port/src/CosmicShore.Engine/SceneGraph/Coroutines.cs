@@ -13,6 +13,19 @@ namespace CosmicShore.Engine
         public WaitForSeconds(float seconds) { this.seconds = seconds; }
     }
 
+    /// <summary>
+    /// Suspends a coroutine for UNSCALED seconds (original contract: immune to
+    /// timeScale — menu UI animates while the game is paused). The engine's
+    /// unscaled clock advances per tick regardless of Time.timeScale, which is
+    /// exactly the original's realtime-during-play semantics in this fixed-step
+    /// harness.
+    /// </summary>
+    public sealed class WaitForSecondsRealtime : YieldInstruction
+    {
+        internal readonly float seconds;
+        public WaitForSecondsRealtime(float seconds) { this.seconds = seconds; }
+    }
+
     /// <summary>Handle returned by StartCoroutine; yield it to await completion.</summary>
     /// <summary>
     /// Original contract: resume at the end of the current frame. The runner's
@@ -43,6 +56,7 @@ namespace CosmicShore.Engine
             public IEnumerator Root;
             public Coroutine Handle;
             public float WaitUntilTime = -1f;
+            public float WaitUntilUnscaledTime = -1f;
             public Coroutine WaitingOn;
         }
 
@@ -117,6 +131,12 @@ namespace CosmicShore.Engine
                     entry.WaitUntilTime = -1f;
                 }
 
+                if (entry.WaitUntilUnscaledTime >= 0f)
+                {
+                    if (Time.unscaledTime < entry.WaitUntilUnscaledTime) continue;
+                    entry.WaitUntilUnscaledTime = -1f;
+                }
+
                 if (entry.WaitingOn is not null)
                 {
                     if (!entry.WaitingOn.Done) continue;
@@ -160,6 +180,9 @@ namespace CosmicShore.Engine
                         return true; // resume next frame
                     case WaitForSeconds wait:
                         entry.WaitUntilTime = Time.time + wait.seconds;
+                        return true;
+                    case WaitForSecondsRealtime waitRealtime:
+                        entry.WaitUntilUnscaledTime = Time.unscaledTime + waitRealtime.seconds;
                         return true;
                     case IEnumerator nested:
                         entry.Frames.Push(nested); // child runs to its first yield this frame

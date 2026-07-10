@@ -41,6 +41,22 @@ namespace CosmicShore.Engine
         public Transform GetChild(int index) => _children[index];
         public IEnumerator GetEnumerator() => _children.GetEnumerator();
 
+        /// <summary>Move to the end of the parent's child list (original contract: renders last / laid out last). No-op at the root.</summary>
+        public void SetAsLastSibling()
+        {
+            if (_parent is null) return;
+            _parent._children.Remove(this);
+            _parent._children.Add(this);
+        }
+
+        /// <summary>Move to the front of the parent's child list (original contract: renders first / laid out first). No-op at the root.</summary>
+        public void SetAsFirstSibling()
+        {
+            if (_parent is null) return;
+            _parent._children.Remove(this);
+            _parent._children.Insert(0, this);
+        }
+
         /// <summary>
         /// Finds a child by name (original engine contract: direct children only, with
         /// '/'-separated paths descending one level per segment). Returns null when no
