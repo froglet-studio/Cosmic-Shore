@@ -262,6 +262,9 @@ namespace CosmicShore.Client
         /// <summary>Scored crystal claims this race (diagnostics + tests).</summary>
         public int TotalClaims { get; private set; }
 
+        // The scene's stats aggregator (StatsManager unit) — authored in InitializeRace.
+        StatsManager _statsManager;
+
         /// <summary>(station, position, byHuman) — raised from inside the real impact pipeline.</summary>
         public event Action<int, Vector3, bool> OnCrystalClaimed;
 
@@ -275,10 +278,12 @@ namespace CosmicShore.Client
             NetworkCrystalCollisionTurnMonitor turnMonitor, GameObject scoringRig,
             ScriptableEventString onTurnMonitorDisplay,
             List<SkimRacePilot> pilots, int winTarget,
-            ScriptableEventInputEvents onButtonPressed, ScriptableEventInputEvents onButtonReleased)
+            ScriptableEventInputEvents onButtonPressed, ScriptableEventInputEvents onButtonReleased,
+            StatsManager statsManager)
         {
             Track = track;
             GameData = gameData;
+            _statsManager = statsManager;
             CourseData = courseData;
             _prismFactory = prismFactory;
             Crystals = crystalManager;
@@ -470,12 +475,9 @@ namespace CosmicShore.Client
             if (pilot == null) return;
 
             TotalClaims++;
-            var stats = pilot.Stats;
-            stats.CrystalsCollected++;
-            if (element == Element.Omni)
-                stats.OmniCrystalsCollected++;
-            else
-                stats.ElementalCrystalsCollected++;
+            // The REAL StatsManager records the RoundStats side (line-identical to
+            // the retired hand-rolled writes; race stations carry no elemental Value).
+            _statsManager.CrystalCollected(new CrystalStats { PlayerName = playerName, Element = element });
             PublishDomainSums(); // in-game HUD domain panels (the controller's server role)
             OnCrystalClaimed?.Invoke(station, Track.Crystals[station], !pilot.IsAI);
         }
@@ -928,6 +930,15 @@ namespace CosmicShore.Client
             container.RegisterValue(new GameObject("PlayerDataService").AddComponent<PlayerDataService>());
             // VesselImpactor's [Inject] AudioSystem must resolve at clone injection.
             container.RegisterValue(CosmicShore.Cli.AudioSystemRig.Create());
+            // The REAL per-round stats aggregator (StatsManager unit): station-claim
+            // bookkeeping routes through it; no cellData / NetcodeHooks (offline
+            // posture, record gate open).
+            var statsGo = new GameObject("StatsManager");
+            statsGo.SetActive(false);
+            var statsManager = statsGo.AddComponent<StatsManager>();
+            SetPrivateField(statsManager, "gameData", gameData);
+            statsGo.SetActive(true);
+            container.RegisterValue(statsManager);
 
             var spawnerGo = new GameObject("Spawners");
             var vesselSpawner = spawnerGo.AddComponent<VesselSpawner>();
@@ -1023,7 +1034,7 @@ namespace CosmicShore.Client
             var director = directorGo.AddComponent<SkimRaceDirector>();
             director.InitializeRace(track, gameData, courseData, prismFactory, crystalManager,
                 turnMonitor, scoringRig, onTurnMonitorDisplay,
-                pilots, winTarget, onButtonPressed, onButtonReleased);
+                pilots, winTarget, onButtonPressed, onButtonReleased, statsManager);
             return (loop, director);
         }
 

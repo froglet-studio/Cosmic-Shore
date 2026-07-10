@@ -131,6 +131,7 @@ namespace CosmicShore.Cli
         internal ILogSink previousSink;
 
         internal GameDataSO gameData;
+        internal StatsManager statsManager;
         internal MultiplayerCrystalCaptureController controller;
         internal NetworkCrystalCollisionTurnMonitor crystalMonitor;
         internal GameObject cellHost;
@@ -311,7 +312,7 @@ namespace CosmicShore.Cli
         {
             result.TotalClaims++;
             var claimant = players.First(p => p.Name == stats.PlayerName);
-            CrystalCaptureRound.ApplyCrystalPickup(claimant, stats.Element);
+            CrystalCaptureRound.ApplyCrystalPickup(statsManager, claimant, stats.Element);
 
             Log($"[t={CrystalCaptureRound.F(Time.time - turnStart),7}s] {claimant.Name} ({claimant.Domain}) captures crystal #{courseIndex + 1} [{stats.Element}] — " +
                 $"Jade {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Jade)} · " +
@@ -550,6 +551,16 @@ namespace CosmicShore.Cli
                 container.RegisterValue(playerDataService);
                 var audioSystem = AudioSystemRig.Create();
                 container.RegisterValue(audioSystem);
+                // The REAL per-round stats aggregator (StatsManager unit) — see
+                // HexRaceRound: claim bookkeeping routes through it; no cellData /
+                // NetcodeHooks (offline posture, record gate open).
+                var statsGo = new GameObject("StatsManager");
+                statsGo.SetActive(false);
+                var statsManager = statsGo.AddComponent<StatsManager>();
+                SetPrivateField(statsManager, "gameData", gameData);
+                statsGo.SetActive(true);
+                container.RegisterValue(statsManager);
+                handle.statsManager = statsManager;
 
                 // ── the controller GO (Game object of the real scene) ─────────
                 var controllerGo = new GameObject("Game");
@@ -753,16 +764,19 @@ namespace CosmicShore.Cli
             return crystal;
         }
 
-        /// <summary>RoundStats + ResourceSystem elemental progression (the StatsManager role).</summary>
-        internal static void ApplyCrystalPickup(IPlayer claimant, Element element)
+        /// <summary>
+        /// RoundStats through the REAL StatsManager (line-identical to the retired
+        /// hand-rolled writes; CLI crystals carry no elemental Value) + the
+        /// ResourceSystem elemental progression, which stays harness-side (upstream
+        /// that grant lives in the crystal effect SOs, not in StatsManager).
+        /// </summary>
+        internal static void ApplyCrystalPickup(StatsManager statsManager, IPlayer claimant, Element element)
         {
-            var stats = claimant.RoundStats;
-            stats.CrystalsCollected++;
+            statsManager.CrystalCollected(new CrystalStats { PlayerName = claimant.Name, Element = element });
 
             var resources = ((VesselController)claimant.Vessel).VesselStatus.ResourceSystem;
             if (element == Element.Omni)
             {
-                stats.OmniCrystalsCollected++;
                 resources.IncrementLevel(Element.Charge);
                 resources.IncrementLevel(Element.Mass);
                 resources.IncrementLevel(Element.Space);
@@ -770,7 +784,6 @@ namespace CosmicShore.Cli
             }
             else
             {
-                stats.ElementalCrystalsCollected++;
                 resources.IncrementLevel(element);
                 resources.ChangeResourceAmount(0, element == Element.Charge ? 0.3f : 0.15f);
             }

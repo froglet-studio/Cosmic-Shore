@@ -140,6 +140,7 @@ namespace CosmicShore.Cli
 
         internal GameObject cellHost;
         internal GameDataSO gameData;
+        internal StatsManager statsManager;
         internal CellRuntimeDataSO courseData;
         internal CrystalManager crystalManager;
         internal ScoringRuleSO rule;
@@ -295,7 +296,7 @@ namespace CosmicShore.Cli
         {
             result.TotalClaims++;
             var claimant = players.First(p => p.Name == stats.PlayerName);
-            HexRaceRound.ApplyCrystalPickup(claimant, stats.Element);
+            HexRaceRound.ApplyCrystalPickup(statsManager, claimant, stats.Element);
 
             // Closest rival's distance to the crystal at claim time — the "photo finish" gap.
             float rivalSqr = float.PositiveInfinity;
@@ -540,6 +541,17 @@ namespace CosmicShore.Cli
                 // DI-injects the cloned vessel. The rig wires the scene's full audio
                 // singleton (GameSetting + mixer + sources) so the real Start runs clean.
                 container.RegisterValue(AudioSystemRig.Create());
+                // The REAL per-round stats aggregator (StatsManager unit): the claim
+                // bookkeeping routes through it exactly like upstream's crystal effects.
+                // No cellData (lifeform lane no-ops) and no NetcodeHooks (offline scene
+                // posture — the record gate stays open).
+                var statsGo = new GameObject("StatsManager");
+                statsGo.SetActive(false);
+                var statsManager = statsGo.AddComponent<StatsManager>();
+                SetPrivateField(statsManager, "gameData", gameData);
+                statsGo.SetActive(true);
+                container.RegisterValue(statsManager);
+                handle.statsManager = statsManager;
 
                 var spawnerGo = new GameObject("Spawners");
                 var vesselSpawner = spawnerGo.AddComponent<VesselSpawner>();
@@ -688,15 +700,18 @@ namespace CosmicShore.Cli
         }
 
         /// <summary>RoundStats + ResourceSystem elemental progression, mirroring the SkimRace sim.</summary>
-        internal static void ApplyCrystalPickup(IPlayer claimant, Element element)
+        internal static void ApplyCrystalPickup(StatsManager statsManager, IPlayer claimant, Element element)
         {
-            var stats = claimant.RoundStats;
-            stats.CrystalsCollected++;
+            // The REAL aggregator records the RoundStats side (CrystalsCollected +
+            // the Omni/Elemental split — line-identical to the retired hand-rolled
+            // writes; CLI crystals carry no elemental Value). The ResourceSystem
+            // progression below stays harness-side: upstream that grant lives in
+            // the crystal effect SOs, not in StatsManager.
+            statsManager.CrystalCollected(new CrystalStats { PlayerName = claimant.Name, Element = element });
 
             var resources = ((VesselController)claimant.Vessel).VesselStatus.ResourceSystem;
             if (element == Element.Omni)
             {
-                stats.OmniCrystalsCollected++;
                 resources.IncrementLevel(Element.Charge);
                 resources.IncrementLevel(Element.Mass);
                 resources.IncrementLevel(Element.Space);
@@ -704,7 +719,6 @@ namespace CosmicShore.Cli
             }
             else
             {
-                stats.ElementalCrystalsCollected++;
                 resources.IncrementLevel(element);
                 resources.ChangeResourceAmount(0, element == Element.Charge ? 0.3f : 0.15f);
             }

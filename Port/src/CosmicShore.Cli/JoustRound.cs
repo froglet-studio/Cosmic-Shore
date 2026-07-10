@@ -127,6 +127,7 @@ namespace CosmicShore.Cli
         internal ILogSink previousSink;
 
         internal GameDataSO gameData;
+        internal StatsManager statsManager;
         internal MultiplayerJoustController controller;
         internal NetworkJoustCollisionTurnMonitor joustMonitor;
         internal readonly List<NetworkBehaviour> spawnedBehaviours = new();
@@ -309,14 +310,15 @@ namespace CosmicShore.Cli
                 ((VesselController)p.Vessel).VesselStatus.VesselPrismController.StopSpawn();
         }
 
-        // The StatsManager role (StatsManager.ExecuteJoustCollision): the verbatim
-        // effect raises OnJoustCollision with the SCORING vessel's name (the faster
-        // vessel whose skimmer swept the slower opponent); the stat lands on that
-        // player's RoundStats, whose setter drives the network monitor + HUD events.
+        // The REAL StatsManager.ExecuteJoustCollision (StatsManager unit): the
+        // verbatim effect raises OnJoustCollision with the SCORING vessel's name
+        // (the faster vessel whose skimmer swept the slower opponent); the stat
+        // lands on that player's RoundStats, whose setter drives the network
+        // monitor + HUD events.
         internal void HandleJoustCollision(string joustPlayerName)
         {
             if (!gameData.TryGetRoundStats(joustPlayerName, out var roundStats)) return;
-            roundStats.JoustCollisions++;
+            statsManager.ExecuteJoustCollision(joustPlayerName);
             result.TotalJousts++;
 
             Log($"[t={JoustRound.F(Time.time - turnStart),7}s] {joustPlayerName} ({roundStats.Domain}) scores a joust — " +
@@ -513,6 +515,16 @@ namespace CosmicShore.Cli
                 container.RegisterValue(playerDataService);
                 var audioSystem = AudioSystemRig.Create();
                 container.RegisterValue(audioSystem);
+                // The REAL per-round stats aggregator (StatsManager unit) — the joust
+                // counter routes through ExecuteJoustCollision exactly like upstream's
+                // effect chain; no cellData / NetcodeHooks (offline posture, gate open).
+                var statsGo = new GameObject("StatsManager");
+                statsGo.SetActive(false);
+                var statsManager = statsGo.AddComponent<StatsManager>();
+                SetPrivateField(statsManager, "gameData", gameData);
+                statsGo.SetActive(true);
+                container.RegisterValue(statsManager);
+                handle.statsManager = statsManager;
 
                 // ── the joust scoring effect (the SO wired into the skimmer container) ──
                 var onJoustCollision = ScriptableObject.CreateInstance<ScriptableEventString>();

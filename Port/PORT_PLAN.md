@@ -728,19 +728,18 @@ now works that milestone plan.
 > the **Arc-E content-bridge decision point** (extractor vs hand-authoring —
 > needs the prompter).
 
-1. **Wire the real StatsManager into the round harnesses.** The
-   StatsManager unit shipped (2026-07-10) but the CLI rounds still
-   hand-roll "StatsManager-shaped bookkeeping" (HexRaceRound line ~289,
-   SkimRaceSim, SkimRaceCrystals) — survey whether the rounds' claim /
-   prism accounting can now route through the REAL manager the way the
-   upstream arcade trackers do (VesselCollisionTurnMonitor /
-   HexRaceScoreTracker / JoustStatsReporter consume it upstream — those
-   trackers are the natural next ports and each needs a live StatsManager
-   world). If the tracker family is too big for one iteration, take the
-   next live shell instead: **PrismFactory** (10 refs — pairs with the
-   prism/gameplay arcs) or the **CaptainManager remainder** (grown but
-   still shell-tagged). 13 `type-preserving SHELL` files remain; Crystal
-   (313L) still waits for the impact-effects arc.
+1. **Arcade stats-reporter family** — the natural follow-on now that every
+   round world carries a live StatsManager: port
+   `JoustStatsReporter` (65L) + `CrystalCaptureStatsReporter` (58L) +
+   `HexRaceScoreTracker` (160L) + `VesselCollisionTurnMonitor` (41L).
+   They read RoundStats (real) and report through **UGSStatsManager**
+   (still a 14L shell vs 254L upstream) — grow that shell's local lanes
+   first per the "[UGS DISABLED] → local lanes live" pattern (leaderboard
+   writes route through the ported LeaderboardManager offline lanes).
+   Alternative next shells if the family balloons: **PrismFactory**
+   (10 refs) or the **CaptainManager remainder**. 13 `type-preserving
+   SHELL` files remain; Crystal (313L) still waits for the impact-effects
+   arc.
    **Prompter-facing flags still parked (do NOT act without input):**
    (b) the upstream in-place-sort quirk
    (`ArcadeExploreView.PopulateGameSelectionList` sorts the shared
@@ -750,6 +749,30 @@ now works that milestone plan.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### StatsManager LIVE in the harnesses ✅ (2026-07-10) — round bookkeeping routes through the real aggregator
+
+**Every round world now carries and USES the real StatsManager.** The four
+harness worlds (HexRace / CrystalCapture / Joust CLI rounds + the SkimRace
+sim) author a wired manager beside the audio rig (gameData only — no
+cellData, lifeform lane no-ops; no NetcodeHooks, the offline record gate
+stays open — and DI-registered like AppManager does) and route their claim
+bookkeeping through it: `ApplyCrystalPickup` calls
+`statsManager.CrystalCollected` (line-identical to the retired hand-rolled
+RoundStats writes — CrystalsCollected + the Omni/Elemental split; CLI
+crystals carry no elemental Value, so the value accumulators stay 0),
+Joust's `HandleJoustCollision` routes through `ExecuteJoustCollision`
+(same TryGetRoundStats + increment), and SkimRace's `HandleStationClaimed`
+does the same via a manager threaded through `InitializeRace`. The
+ResourceSystem elemental progression stays harness-side — upstream that
+grant lives in the crystal effect SOs, not in StatsManager.
+
+**Value-neutral by construction AND by proof:** the manager resolves the
+same RoundStats rows by name that the hand-rolled lanes wrote directly.
+ALL ELEVEN diag lines byte-stable ×2 with values AND PNGs identical to the
+StatsManager-unit baseline; the stepped-vs-blocking transcript parity
+tests hold for all four modes. **1698 tests green in BOTH configs
+(1346 + 352)**; 5 CLI modes exit 0. bleeding-edge unmoved at `f2b8f5aa`.
 
 ### StatsManager unit ✅ (2026-07-10) — the per-round stats aggregator is REAL (333L)
 
