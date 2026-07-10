@@ -40,6 +40,13 @@ namespace CosmicShore.Engine.UI
             // A nested canvas owns its own graphics (and its own raycaster).
             if (!isRoot && node.gameObject.GetComponent<Canvas>() != null) return;
 
+            // Original rule: a CanvasGroup with blocksRaycasts=false makes its whole
+            // subtree invisible to raycasts (the hidden-modal case — alpha 0 overlays
+            // must not swallow clicks). ignoreParentGroups re-opt-in is not yet
+            // consumed by any ported UI; add it when a consumer arrives.
+            var group = node.gameObject.GetComponent<CanvasGroup>();
+            if (group != null && group.isActiveAndEnabled && !group.blocksRaycasts) return;
+
             foreach (var graphic in node.gameObject.GetComponents<Graphic>())
             {
                 if (!graphic.isActiveAndEnabled) continue;

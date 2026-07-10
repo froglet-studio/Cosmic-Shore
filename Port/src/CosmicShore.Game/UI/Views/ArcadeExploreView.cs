@@ -1,0 +1,176 @@
+// Ported from Assets/_Scripts/UI/Views/ArcadeExploreView.cs (Arc F 2b-ii) — verbatim
+// with the standard substitutions (UnityEngine → CosmicShore.Engine, UnityEngine.UI →
+// CosmicShore.Engine.UI, Obvious.Soap → CosmicShore.Engine.Soap, Reflex.Attributes →
+// CosmicShore.Engine.Injection). Deviations (marked inline, Arc F 2b-iii's unit):
+// the ArcadeGameConfigureModal field + SelectGame's modal open, and PlaySelectedGame's
+// Arcade.Instance launch — the modal + launcher port together as the game-launch seam.
+using CosmicShore.Core;
+using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
+using CosmicShore.Gameplay;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using CosmicShore.Engine.Soap;
+using CosmicShore.Engine.Injection;
+using CosmicShore.Engine;
+using CosmicShore.Engine.UI;
+using CosmicShore.Utility;
+
+namespace CosmicShore.UI
+{
+    public class ArcadeExploreView : MonoBehaviour
+    {
+        [Header("Game Selection View")]
+        [Inject] SO_GameList GameList;
+        [SerializeField] GameObject GameSelectionView;
+        [SerializeField] Transform GameSelectionGrid;
+        [SerializeField] ArcadeDPadNav ArcadeDPadNav;
+        [SerializeField] DailyChallengeCard DailyChallengeCard;
+        [Header("Game Detail View")]
+        // PORT Deviation (Arc F 2b-iii, ArcadeGameConfigureModal — restore when the modal ports):
+        // [SerializeField] ArcadeGameConfigureModal ArcadeGameConfigureModal;
+        [Header("Test Settings")]
+        [Tooltip("If true, will filter out unowned games from being available to play (MUST BE TRUE ON FOR PRODUCTION BUILDS")]
+        [SerializeField] bool RespectInventoryForGameSelection = false;
+
+        [SerializeField] VesselClassTypeVariable selectedVesselClassType;
+
+        SO_ArcadeGame SelectedGame;
+        List<GameCard> GameCards;
+
+        void OnEnable()
+        {
+            CatalogManager.OnLoadInventory += PopulateGameSelectionList;
+
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
+        }
+
+        void OnDisable()
+        {
+            CatalogManager.OnLoadInventory -= PopulateGameSelectionList;
+
+            if (GameModeProgressionService.Instance != null)
+                GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
+        }
+
+        void Start()
+        {
+            LoadoutSystem.Init();
+            PopulateGameSelectionList();
+        }
+
+        public void PopulateGameSelectionList()
+        {
+            GameCards = new List<GameCard>();
+            ArcadeDPadNav.AddRow(new List<Button>());
+            ArcadeDPadNav.AddButtonToRow(DailyChallengeCard.GetComponent<Button>(), 0);
+
+            // Deactivate all game cards and add them to the list of game cards
+            for (var i = 0; i < GameSelectionGrid.transform.childCount; i++)
+            {
+                ArcadeDPadNav.AddRow(new List<Button>());
+
+                var gameSelectionRow = GameSelectionGrid.GetChild(i);
+                for (var j = 0; j < gameSelectionRow.childCount; j++)
+                {
+                    gameSelectionRow.GetChild(j).gameObject.SetActive(false);
+                    GameCards.Add(gameSelectionRow.GetChild(j).GetComponent<GameCard>());
+
+                    ArcadeDPadNav.AddButtonToRow(gameSelectionRow.GetChild(j).GetComponent<Button>(), i+1);
+                }
+            }
+
+            // Sort favorited first, then alphabetically
+            var filteredGames = RespectInventoryForGameSelection ? GameList.Games.Where(x => CatalogManager.Inventory.ContainsGame(x.DisplayName)).ToList() : GameList.Games;
+            var sortedGames = filteredGames;
+            sortedGames.Sort((x, y) =>
+            {
+                int flagComparison = FavoriteSystem.IsFavorited(y.Mode).CompareTo(FavoriteSystem.IsFavorited(x.Mode));
+                if (flagComparison == 0)
+                    return string.Compare(x.DisplayName, y.DisplayName, StringComparison.Ordinal); // Sort alphabetically by Name if they're tied
+
+                return flagComparison;
+            });
+
+            var progressionService = GameModeProgressionService.Instance;
+
+            for (var i = 0; i < GameCards.Count && i < GameList.Games.Count && i < sortedGames.Count; i++)
+            {
+                var game = sortedGames[i];
+
+                CSDebug.Log($"ExploreMenu - Populating Game Select List: {game.DisplayName}");
+
+                var gameCard = GameCards[i];
+                gameCard.GameMode = game.Mode;
+                gameCard.Favorited = FavoriteSystem.IsFavorited(game.Mode);
+                gameCard.GetComponent<Button>().onClick.RemoveAllListeners();
+                gameCard.ExploreView = this;
+
+                // Check if this game mode is unlocked via the quest progression system
+                bool isLocked = progressionService != null && !progressionService.IsGameModeUnlocked(game.Mode);
+                gameCard.SetLocked(isLocked);
+
+                if (!isLocked)
+                {
+                    gameCard.GetComponent<Button>().onClick.AddListener(() => SelectGame(game));
+                }
+
+                if (gameCard.TryGetComponent(out CallToActionTarget target))
+                {
+                    target.TargetID = game.CallToActionTargetType;
+                }
+                else
+                {
+                    CSDebug.LogWarningFormat("{0} - The {1} game card does not have Call To Action Target Component. Please attach it.",
+                        nameof(ArcadeExploreView), game.CallToActionTargetType.ToString());
+                }
+
+                gameCard.gameObject.SetActive(true);
+            }
+        }
+
+        void OnProgressionChanged(GameModeProgressionData data)
+        {
+            PopulateGameSelectionList();
+        }
+
+        public void SelectGame(SO_ArcadeGame selectedGame)
+        {
+            SelectedGame = selectedGame;
+            // PORT Deviation (Arc F 2b-iii, ArcadeGameConfigureModal — restore when the modal ports):
+            // ArcadeGameConfigureModal.ModalWindowIn();
+            // ArcadeGameConfigureModal.SetSelectedGame(SelectedGame);
+            // TODO: is is throwing a key not found exception
+            //UserActionSystem.Instance.CompleteAction(SelectedGame.ViewUserAction);
+        }
+
+        public void SelectShip(SO_Vessel selectedShip)
+        {
+            CSDebug.Log($"SelectShip: {selectedShip.Name}");
+
+            selectedVesselClassType.Value = selectedShip.Class;
+            // TODO - Remove statics from MiniGame, use SOAP Data Container
+            // notify the mini game engine that this is the vessel to play
+            // MiniGame.PlayerShipType = selectedShip.Class;
+
+            // Set resource levels from the vessel's config
+            MiniGame.ResourceCollection = selectedShip.InitialResourceLevels;
+        }
+
+        public void PlaySelectedGame()
+        {
+            AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
+            LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerVesselType, SelectedGame.Mode, SelectedGame.IsMultiplayer));
+            // PORT Deviation (Arc F 2b-iii, Arcade launcher — restore when Arcade ports):
+            // Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerVesselType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, SelectedGame.IsMultiplayer, false);
+        }
+
+        public void ToggleFavorite()
+        {
+            FavoriteSystem.ToggleFavorite(SelectedGame.Mode);
+            PopulateGameSelectionList();
+        }
+    }
+}

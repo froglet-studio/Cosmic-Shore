@@ -711,36 +711,55 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc F part 2b-ii — the arcade cards + views + screen.** The service
-   foundation is live (2b-i below); the full arcade dependency graph is
-   mapped (see the box below). Port: `GameCard` (124L) + `DailyChallengeCard`
-   (24L) + `ArcadeExploreView` (168L) + `ArcadeLoadoutView` (276L) +
-   `ArcadeScreen` (75L), with SHELLS for the two service walls the views
-   null-guard anyway — `CatalogManager` (SingletonPersistent; the views use
-   `OnLoadInventory` static event + `Inventory.ContainsGame`, and
-   RespectInventoryForGameSelection defaults FALSE so the shell can be
-   data-only) and `GameModeProgressionService` (788L quest progression — its
-   own future unit; shell = `Instance` + `OnProgressionChanged` +
-   `IsGameModeUnlocked` returning true). Deviation-mark ONLY the
-   `ArcadeGameConfigureModal` interactions in ExploreView (SetSelectedGame /
-   ModalWindowIn — the modal is 2b-iii's unit). Wire the arcade panel into
-   menushell as a MODAL overlay via the shipping path (OnClickArcadeNav →
-   ArcadeModal.ModalWindowIn — ARK screen stays disabled like shipping), with
-   the REAL GameCard grid fed by hand-authored SO_ArcadeGame entries
-   (HexRace/Joust/CrystalCapture SOs exist). Re-baseline menushell +
-   document.
-2. **Arc F part 2b-iii (after ii):** `ArcadeGameConfigureModal` (1381L — THE
-   game-launch config seam Arc I needs: SyncAllGameDataForLaunch →
-   InvokeGameLaunch) + `Arcade` launcher (198L, SingletonPersistent; needs
-   SO_MissionList/SO_TrainingGameList surface) + `MiniGame` statics
-   (ResourceCollection/IntensityLevel/NumberOfPlayers/PlayerVesselType —
-   482L legacy class, port the static surface the views/modal consume).
-   Then HangarScreen / LeaderboardsMenu / StoreScreen units (each needs
-   service singletons: LeaderboardManager, PlayerDataController,
+1. **Arc F part 2b-iii — the game-launch seam.** `ArcadeGameConfigureModal`
+   (1381L — THE config seam Arc I needs: SyncAllGameDataForLaunch →
+   InvokeGameLaunch; scope its stepper/party dependencies first) + `Arcade`
+   launcher (198L, SingletonPersistent; needs SO_MissionList /
+   SO_TrainingGameList surface + an Animator deviation). Un-carry
+   ExploreView's three deviation-marked lines (modal field + SelectGame open
+   + PlaySelectedGame launch) when they land. MiniGame statics already
+   shipped (2b-ii). After 2b-iii the arcade unit is COMPLETE and the
+   menushell can click card → configure → launch — the direct on-ramp to
+   Arc G/I. Then HangarScreen / LeaderboardsMenu / StoreScreen units (each
+   needs service singletons: LeaderboardManager, PlayerDataController,
    CatalogManager economy — map before porting).
-3. **Track bleeding-edge**: merge upstream again next iteration; every merge
+2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
-4. Update this file, commit, push.
+3. Update this file, commit, push.
+
+### Arc F part 2b-ii ✅ (2026-07-10) — the arcade family renders through the shipping modal
+
+**Five verbatim ports:** `GameCard` (favorites star, lock tint, CTA click),
+`DailyChallengeCard` (self-disabling COMING SOON), `LoadoutCard`,
+`ArcadeExploreView` (the real populate/sort pipeline: favorites-first then
+alphabetical, progression lock gating, dpad grid registration; ONLY the
+ArcadeGameConfigureModal open + Arcade.Instance launch lines are
+deviation-marked — 2b-iii's unit), `ArcadeLoadoutView` (fully live — launches
+through gameData.SyncFromArcadeGame + InvokeGameLaunch, the real SOAP path),
+`ArcadeScreen` (CanvasGroup view toggling). **Three shells (documented):**
+`CatalogManager` + `Inventory` (name-lookup surface; empty inventory ==
+shipping default since RespectInventoryForGameSelection is false),
+`GameModeProgressionService` (Instance/OnProgressionChanged/
+IsGameModeUnlocked→true; the real 788L quest service is its own unit),
+`MiniGame` STATIC shell (the launch-config statics verbatim; the 482L legacy
+instance machinery stays unported). **Engine fix (faithful):**
+GraphicRaycaster now honors `CanvasGroup.blocksRaycasts=false` — a hidden
+modal's alpha-0 full-screen dim was swallowing every click (the original
+culls such subtrees from raycasts; ignoreParentGroups re-opt-in deferred
+until a consumer arrives).
+
+**menushell re-baselined:** a sixth nav button (ARCADE) drives the shipping
+`OnClickArcadeNav → ArcadeModal.ModalWindowIn` path at frame 60 (after the
+frame-30 HANGAR slide) — the REAL ModalWindowManager + ArcadeScreen +
+ExploreView populate a 3-card GameCard grid from hand-authored SO_ArcadeGame
+entries, alphabetically sorted by the real code (CRYSTAL CAPTURE / HEX RACE /
+JOUST), with the daily-challenge card COMING-SOON-disabled. White card faces
+are the verbatim SetLocked(false) tint — color arrives with Arc-E sprite
+pixels. Scene services grew CallToActionSystem + AudioSystem. New gate line
+(byte-stable): `menushell@90` → `active HANGAR, slideX -5120.0, modalStack
+open, arcadeModal ARCADE, gameCards 3, paused True`. **1622 tests green in
+BOTH configs (1284 + 338)**; 5 CLI modes exit 0; race/freestyle/uidemo diags
+byte-identical. bleeding-edge unmoved at `f2b8f5aa`.
 
 > **Arcade dependency graph (mapped 2026-07-10):** ArcadeScreen → {ArcadeExploreView,
 > ArcadeLoadoutView, Toggle✅}; ExploreView → {SO_GameList✅, GameCard,
