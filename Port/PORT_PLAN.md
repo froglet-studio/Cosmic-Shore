@@ -728,15 +728,19 @@ now works that milestone plan.
 > the **Arc-E content-bridge decision point** (extractor vs hand-authoring —
 > needs the prompter).
 
-1. **StatsManager unit** (`Controller/Managers/StatsManager.cs`, 333L
-   upstream, 9 consumer files) — the next live shell by consumer count
-   after the CameraManager unit shipped (14 `type-preserving SHELL` files
-   remain). Survey the shell's carried answers vs the ported RoundStats /
-   scoring family first (the ScoringSystem docs family is the domain
-   reference). Runners-up: CaptainManager remainder (grown but still
-   shell-tagged), PrismFactory (10 refs — pairs with the prism/gameplay
-   arcs), Crystal (313L — wants the impact-effects arc, not a standalone
-   unit).
+1. **Wire the real StatsManager into the round harnesses.** The
+   StatsManager unit shipped (2026-07-10) but the CLI rounds still
+   hand-roll "StatsManager-shaped bookkeeping" (HexRaceRound line ~289,
+   SkimRaceSim, SkimRaceCrystals) — survey whether the rounds' claim /
+   prism accounting can now route through the REAL manager the way the
+   upstream arcade trackers do (VesselCollisionTurnMonitor /
+   HexRaceScoreTracker / JoustStatsReporter consume it upstream — those
+   trackers are the natural next ports and each needs a live StatsManager
+   world). If the tracker family is too big for one iteration, take the
+   next live shell instead: **PrismFactory** (10 refs — pairs with the
+   prism/gameplay arcs) or the **CaptainManager remainder** (grown but
+   still shell-tagged). 13 `type-preserving SHELL` files remain; Crystal
+   (313L) still waits for the impact-effects arc.
    **Prompter-facing flags still parked (do NOT act without input):**
    (b) the upstream in-place-sort quirk
    (`ArcadeExploreView.PopulateGameSelectionList` sorts the shared
@@ -746,6 +750,39 @@ now works that milestone plan.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### StatsManager unit ✅ (2026-07-10) — the per-round stats aggregator is REAL (333L)
+
+**`StatsManager` (333L) ported verbatim**, replacing the type-preserving
+shell and re-absorbing `StatsManager.Structs.cs` (upstream declares
+CellStats/CrystalStats/PrismStats/AbilityStats in this file — the port now
+matches file-for-file). Only substitution: `UnityEngine → CosmicShore.Engine`.
+Every lane LIVE over the already-ported `GameDataSO.TryGetRoundStats` +
+`CellRuntimeDataSO.CellStatsList`: the crystal per-element roll-ups (Omni
+vs the four elementals with per-element value accumulation, `Element.None`
+counting the collection only), prism create/destroy accounting with the
+friendly-vs-hostile attribution rules (self-kill friendly by name,
+same-domain friendly, cross-domain hostile; the victim's remaining
+prisms/volume always decrement, attacker known or not), restore /
+volume-modify / steal transfers (stealer gains what the victim loses),
+skimmer + joust collision counters (the joust miss lane warns with the
+roster dump, never throws), per-control-type ability durations, per-cell
+lifeform counts, and the server-only record gate (`NetcodeHooks` spawn
+hook: client spawn closes it, server spawn reopens).
+
+**Blast radius:** zero behavior change anywhere live — no ported file
+calls the manager's methods yet (the port's "9 consumers" were comment
+references + the AppManager DI binding; the upstream callers are the
+arcade tracker family, still to port). The CLI rounds keep their
+hand-rolled bookkeeping for now — follow-up recorded in NEXT UP.
+
+**Verified:** 6 new `StatsManagerTests` (element roll-ups incl. None +
+ghost players; friendly/hostile attribution matrix; the
+restore/modify/steal volume ledger; collisions + ability durations;
+per-cell lifeform counts; the client/server record gate). **ALL ELEVEN
+diag lines byte-stable ×2, values AND PNGs identical to the CameraManager
+baseline.** **1698 tests green in BOTH configs (1346 + 352, +6)**; 5 CLI
+modes exit 0. bleeding-edge unmoved at `f2b8f5aa`.
 
 ### CameraManager unit ✅ (2026-07-10) — the camera hub is REAL (273L, 11 consumers)
 

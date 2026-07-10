@@ -1,14 +1,344 @@
-// PORT Deviation — type-preserving SHELL of the gameplay stats aggregator
-// (original: Assets/_Scripts/Controller/Managers/StatsManager.cs, 333 lines: the
-// per-round team/player stat roll-ups consumed by end-game scorecards). Only the
-// type exists so AppManager's RegisterManagerSingleton<StatsManager> binding
-// compiles; the full port lands with the scoring arc's stats pass. Precedent:
-// AudioSystem shell (Deviation #11).
+// Ported verbatim from Assets/_Scripts/Controller/Managers/StatsManager.cs
+// (StatsManager unit 2026-07-10), replacing the type-preserving shell and
+// re-absorbing StatsManager.Structs.cs (upstream declares the stat payload
+// structs in this file — the port now matches file-for-file). Mechanical
+// substitutions only: UnityEngine → CosmicShore.Engine. Every lane is LIVE:
+// the server-only record gate (NetcodeHooks spawn hook), the crystal
+// per-element roll-ups, prism create/destroy/restore/modify/steal accounting
+// with friendly-vs-hostile attribution by name/domain, skimmer + joust
+// collision counters, per-control-type ability durations, and the per-cell
+// lifeform counts — all over GameDataSO.TryGetRoundStats and
+// CellRuntimeDataSO.CellStatsList.
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using CosmicShore.Engine;
+using CosmicShore.Data;
+using CosmicShore.Utility;
+
 
 namespace CosmicShore.Gameplay
 {
+    [System.Serializable]
+    public struct CellStats
+    {
+        public int LifeFormsInCell;
+        public int LiveBlockCount;
+        public CellPhase Phase;
+        public Domains DominantDomain;
+    }
+
+    [Serializable]
+    public struct CrystalStats
+    {
+        public string PlayerName;
+        public Element Element;
+        public float Value;
+    }
+
+    [Serializable]
+    public struct PrismStats
+    {
+        public string OwnName;
+        public float Volume;
+        public string AttackerName;
+    }
+
+    [Serializable]
+    public struct AbilityStats
+    {
+        public string PlayerName;
+        public InputEvents ControlType;
+        public float Duration;
+    }
+
     public class StatsManager : MonoBehaviour
     {
+        [SerializeField]
+        GameDataSO gameData;
+
+        [SerializeField]
+        CellRuntimeDataSO cellData;
+
+        [SerializeField]
+        NetcodeHooks _netcodeHooks;
+
+        bool _allowRecord = true;
+
+        void OnEnable()
+        {
+            if (_netcodeHooks != null)
+                _netcodeHooks.OnNetworkSpawnHook += OnNetworkSpawn;
+        }
+
+        void OnDisable()
+        {
+            if (_netcodeHooks != null)
+                _netcodeHooks.OnNetworkSpawnHook -= OnNetworkSpawn;
+        }
+
+        void OnNetworkSpawn()
+        {
+            if (_netcodeHooks.IsServer)
+            {
+                _allowRecord = true;
+                return;
+            }
+
+            _allowRecord = false;
+        }
+
+        public void LifeformCreated(int cellID)
+        {
+            if (!_allowRecord || cellData == null) return;
+
+            var cellStatsList = cellData.CellStatsList;
+
+            if (!cellStatsList.ContainsKey(cellID))
+                cellStatsList[cellID] = new CellStats();
+
+            var cs = cellStatsList[cellID];
+            cs.LifeFormsInCell++;
+            cellStatsList[cellID] = cs;
+        }
+
+        public void LifeformDestroyed(int cellID)
+        {
+            if (!_allowRecord || cellData == null) return;
+
+            var cellStatsList = cellData.CellStatsList;
+
+            if (!cellStatsList.ContainsKey(cellID))
+                cellStatsList[cellID] = new CellStats();
+
+            var cs = cellStatsList[cellID];
+            cs.LifeFormsInCell--;
+            cellStatsList[cellID] = cs;
+        }
+
+        public void CrystalCollected(CrystalStats crystalStats)
+        {
+            if (!_allowRecord) return;
+
+            var playerName = crystalStats.PlayerName;
+            if (!gameData.TryGetRoundStats(playerName, out IRoundStats stats))
+                return;
+            stats.CrystalsCollected++;
+
+            switch (crystalStats.Element)
+            {
+                case Element.Omni:
+                    UpdateStatForPlayer(playerName, s =>
+                    {
+                        s.OmniCrystalsCollected++;
+                    });
+                    break;
+
+                case Element.Charge:
+                    UpdateStatForPlayer(playerName, s =>
+                    {
+                        s.ElementalCrystalsCollected++;
+                        s.ChargeCrystalValue += crystalStats.Value;
+                    });
+                    break;
+
+                case Element.Mass:
+                    UpdateStatForPlayer(playerName, s =>
+                    {
+                        s.ElementalCrystalsCollected++;
+                        s.MassCrystalValue += crystalStats.Value;
+                    });
+                    break;
+
+                case Element.Space:
+                    UpdateStatForPlayer(playerName, s =>
+                    {
+                        s.ElementalCrystalsCollected++;
+                        s.SpaceCrystalValue += crystalStats.Value;
+                    });
+                    break;
+
+                case Element.Time:
+                    UpdateStatForPlayer(playerName, s =>
+                    {
+                        s.ElementalCrystalsCollected++;
+                        s.TimeCrystalValue += crystalStats.Value;
+                    });
+                    break;
+                case Element.None:
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public void ExecuteSkimmerShipCollision(string skimmerPlayerName)
+        {
+            if (!_allowRecord) return;
+
+            if (!gameData.TryGetRoundStats(skimmerPlayerName, out var roundStats))
+                return;
+            roundStats.SkimmerShipCollisions++;
+        }
+
+        public void ExecuteJoustCollision(string joustPlayerName)
+        {
+            if (!_allowRecord) return;
+
+            if (!gameData.TryGetRoundStats(joustPlayerName, out var roundStats))
+            {
+                CSDebug.LogWarning($"[StatsManager] ExecuteJoustCollision: no RoundStats for '{joustPlayerName}'. " +
+                    $"Available: [{string.Join(", ", gameData.RoundStatsList.Select(s => $"'{s.Name}'"))}]");
+                return;
+            }
+
+            roundStats.JoustCollisions++;
+            CSDebug.Log($"[StatsManager] JoustCollision recorded for '{joustPlayerName}': {roundStats.JoustCollisions}");
+        }
+
+        public void PrismCreated(PrismStats prismStats)
+        {
+            if (!_allowRecord) return;
+
+            if (!gameData.TryGetRoundStats(prismStats.OwnName, out var roundStats))
+                return;
+
+            roundStats.BlocksCreated++;
+            roundStats.PrismsRemaining++;
+            roundStats.VolumeCreated += prismStats.Volume;
+            roundStats.VolumeRemaining += prismStats.Volume;
+        }
+
+        public void PrismDestroyed(PrismStats prismStats)
+        {
+            if (!_allowRecord) return;
+
+            var attackingPlayerName = prismStats.AttackerName;
+            var victimPlayerName = prismStats.OwnName;
+
+            var hasAttacker = gameData.TryGetRoundStats(attackingPlayerName, out IRoundStats attackerPlayerStats);
+            var hasVictim = gameData.TryGetRoundStats(victimPlayerName, out IRoundStats victimPlayerStats);
+
+            if (hasAttacker)
+            {
+                attackerPlayerStats.BlocksDestroyed++;
+                attackerPlayerStats.TotalVolumeDestroyed += prismStats.Volume;
+
+                var isFriendly =
+                    attackingPlayerName == victimPlayerName ||
+                    (hasVictim && attackerPlayerStats.Domain == victimPlayerStats.Domain);
+
+                if (isFriendly)
+                {
+                    attackerPlayerStats.FriendlyPrismsDestroyed++;
+                    attackerPlayerStats.FriendlyVolumeDestroyed += prismStats.Volume;
+                }
+                else
+                {
+                    attackerPlayerStats.HostilePrismsDestroyed++;
+                    attackerPlayerStats.HostileVolumeDestroyed += prismStats.Volume;
+                }
+            }
+
+            if (!hasVictim) return;
+            victimPlayerStats.PrismsRemaining--;
+            victimPlayerStats.VolumeRemaining -= prismStats.Volume;
+        }
+
+        public void PrismRestored(PrismStats prismStats)
+        {
+            if (!_allowRecord) return;
+
+            var restoringPlayerName = prismStats.OwnName;
+
+            if (!gameData.TryGetRoundStats(restoringPlayerName, out IRoundStats roundStats))
+                return;
+
+            roundStats.BlocksRestored++;
+            roundStats.PrismsRemaining++;
+            roundStats.VolumeRestored += prismStats.Volume;
+            roundStats.VolumeRemaining += prismStats.Volume;
+        }
+
+        public void PrismVolumeModified(PrismStats prismStats)
+        {
+            if (!_allowRecord) return;
+
+            var ownerPlayerName = prismStats.OwnName;
+
+            if (!gameData.TryGetRoundStats(ownerPlayerName, out IRoundStats roundStats))
+                return;
+
+            roundStats.VolumeCreated += prismStats.Volume;
+            roundStats.VolumeRemaining += prismStats.Volume;
+        }
+
+        public void PrismStolen(PrismStats prismStats)
+        {
+            if (!_allowRecord) return;
+
+            var stealingPlayerName = prismStats.OwnName;
+            if (!gameData.TryGetRoundStats(stealingPlayerName, out IRoundStats stealingPlayerStats))
+                return;
+
+            stealingPlayerStats.PrismStolen++;
+            stealingPlayerStats.PrismsRemaining++;
+            stealingPlayerStats.VolumeStolen += prismStats.Volume;
+            stealingPlayerStats.VolumeRemaining += prismStats.Volume;
+
+            var victimPlayerName = prismStats.AttackerName;
+            if (!gameData.TryGetRoundStats(victimPlayerName, out IRoundStats victimPlayerStats))
+                return;
+
+            victimPlayerStats.PrismsRemaining--;
+            victimPlayerStats.VolumeRemaining -= prismStats.Volume;
+        }
+
+        public void RegisterAbilityExecuted(AbilityStats abilityStats)
+        {
+            if (!_allowRecord) return;
+
+            if (!gameData.TryGetRoundStats(abilityStats.PlayerName, out IRoundStats playerStats))
+                return;
+
+            switch (abilityStats.ControlType)
+            {
+                case InputEvents.FullSpeedStraightAction:
+                    playerStats.FullSpeedStraightAbilityActiveTime += abilityStats.Duration;
+                    break;
+
+                case InputEvents.RightStickAction:
+                    playerStats.RightStickAbilityActiveTime += abilityStats.Duration;
+                    break;
+
+                case InputEvents.LeftStickAction:
+                    playerStats.LeftStickAbilityActiveTime += abilityStats.Duration;
+                    break;
+
+                case InputEvents.FlipAction:
+                    playerStats.FlipAbilityActiveTime += abilityStats.Duration;
+                    break;
+
+                case InputEvents.Button1Action:
+                    playerStats.Button1AbilityActiveTime += abilityStats.Duration;
+                    break;
+
+                case InputEvents.Button2Action:
+                    playerStats.Button2AbilityActiveTime += abilityStats.Duration;
+                    break;
+
+                case InputEvents.Button3Action:
+                    playerStats.Button3AbilityActiveTime += abilityStats.Duration;
+                    break;
+            }
+        }
+
+        void UpdateStatForPlayer(string playerName, Action<IRoundStats> updateAction)
+        {
+            if (!gameData.TryGetRoundStats(playerName, out var roundStats))
+                return;
+
+            updateAction(roundStats);
+        }
     }
 }
