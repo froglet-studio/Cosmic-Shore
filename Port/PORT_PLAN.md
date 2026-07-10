@@ -728,23 +728,58 @@ now works that milestone plan.
 > the **Arc-E content-bridge decision point** (extractor vs hand-authoring —
 > needs the prompter).
 
-1. **The real GameModeProgressionService (788L)** — the largest live shell
-   left in the menu path. The 49L shell answers "everything unlocked";
-   the real port brings the quest-chain progression over Cloud Save
-   (`ProgressionData`, `SO_GameModeQuestData` quest list, per-mode
-   intensity tiers, `IsVesselHangarUnlocked` for real) — which makes the
-   arcade card locking, locked-intensity toasts, and the hangar gate
-   behave like the Unity build. Singletons-first: survey its tail
-   (`GameModeProgressionData`, quest SOs, CloudSave repo hooks — the
-   repos already exist from the CloudSave arc). Un-carry the shell's four
-   always-unlocked answers against the real logic; keep the menushell's
-   fresh-boot posture identical (a fresh install IS everything-locked to
-   the first quest — check what the scripted flow needs so the pinned
-   menushell diags hold; if the arcade cards would lock, seed the fixture
-   progression so the canonical choreography still launches HexRace).
+1. **Progression LIVE in the menushell + ParticipationXpAwarder.** The real
+   `GameModeProgressionService` shipped (below) but the menushell never
+   instantiates it — `Instance` stays null and every consumer falls back
+   to unlocked (the pre-service posture). Wire it live: author a quest
+   chain fixture (HexRace first-free → Joust → Crystal Capture, e.g.
+   crystals/jousts targets), instantiate the service in `BuildMenu` with
+   the UGSDataService rig (or reflection-flip `IsInitialized` like the
+   test rig), and let the arcade cards show REAL locks + the configure
+   modal gate intensities + the locked-intensity toast fire — the Unity
+   build's fresh-boot arcade. The pinned scripted flow launches HexRace
+   (free) so the canonical choreography holds; ms3600 captures HANGAR so
+   PNGs likely hold too — verify, rebaseline only if the modal shows lock
+   art in a capture. Also port `ParticipationXpAwarder` (61L companion —
+   flat XP per game through PlayerDataService.AddXP).
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Progression unit ✅ (2026-07-10) — the REAL quest-chain service (largest menu shell retired)
+
+**`GameModeProgressionService` (788L) ported verbatim**, replacing the Arc F
+2b-ii 49L everything-unlocked shell: the quest-chain progression over Cloud
+Save is real — unlock state (`Config.IsAlwaysUnlocked` + first-quest-free +
+`ProgressionData.IsUnlocked`), quest evaluation on game end (stat lane:
+crystals/score/race-time-under/jousts/win-match/survival; intensity lane:
+`RecordIntensityPlay` tier ladder with play-count OR stat-based unlocks,
+tier 4 = quest complete), claim-consumes-completion → next-mode unlock, the
+vessel-hangar feature gate (every prior non-placeholder quest complete),
+debug jump/reset seams, and the ProgressionRepo save paths (immediate +
+MarkDirty debounce). Supporting SOs ported verbatim:
+`SO_GameModeQuestList` + `SO_ProgressionConfig` (designer knobs whose
+defaults reproduce the old hardcoded rules; Tournament always-unlocked +
+full-intensity). `SO_GameModeQuestData` + `GameModeProgressionData` were
+already verbatim from earlier arcs; `GameProgressionRepository` from the
+CloudSave arc. Analytics shell grew `RecordModeUnlocked` +
+`RecordIntensityUnlocked` observability.
+
+**Menushell posture unchanged by design:** nothing instantiates the service
+there yet, so `Instance` stays null and every consumer's null-guard falls
+back to unlocked — byte-for-byte the shell-era behavior (proven below).
+Wiring it LIVE (real card locks) is the next unit.
+
+**Verified:** 5 new headless tests (`GameModeProgressionServiceTests`, a
+live UGSDataService rig with repos + reflection-flipped readiness): fresh
+boot = first-free + Tournament-always + intensity floor/zero/full; report →
+complete-at-target → claim unlocks next (+analytics, +claimed count);
+hangar gate over prior quests with placeholder skip; debug index jump +
+reset; intensity ladder remaining-plays math + clamp + event fan-out.
+**ALL ELEVEN diag lines byte-stable ×2 with values AND PNGs pixel-identical
+to the store-iteration baseline** (the service provably changed nothing
+while dormant). **1661 tests green in BOTH configs (1323 + 338)**; 5 CLI
+modes exit 0. bleeding-edge unmoved at `f2b8f5aa`.
 
 ### Store screen unit ✅ (2026-07-10) — STORE is REAL; MENU BREADTH COMPLETE
 

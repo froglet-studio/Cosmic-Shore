@@ -48,5 +48,19 @@ namespace CosmicShore.Core
 
         /// <summary>Shell-only observability: the last RecordVesselUnlocked payload.</summary>
         public (string Vessel, int Cost, int Balance)? LastVesselUnlocked { get; private set; }
+
+        /// <summary>A quest claim unlocked a new game mode (real: UGSKeys mode-unlocked event).</summary>
+        public void RecordModeUnlocked(CosmicShore.Data.GameModes mode)
+            => LastModeUnlocked = mode;
+
+        /// <summary>Shell-only observability: the last RecordModeUnlocked payload.</summary>
+        public CosmicShore.Data.GameModes? LastModeUnlocked { get; private set; }
+
+        /// <summary>An intensity tier unlocked for a mode (real: UGSKeys intensity-unlocked event).</summary>
+        public void RecordIntensityUnlocked(CosmicShore.Data.GameModes mode, int intensity)
+            => LastIntensityUnlocked = (mode, intensity);
+
+        /// <summary>Shell-only observability: the last RecordIntensityUnlocked payload.</summary>
+        public (CosmicShore.Data.GameModes Mode, int Intensity)? LastIntensityUnlocked { get; private set; }
     }
 }
