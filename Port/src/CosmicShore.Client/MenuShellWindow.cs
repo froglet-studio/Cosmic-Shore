@@ -9,6 +9,10 @@ using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
 using Vector2 = CosmicShore.Engine.Vector2;
 using Object = CosmicShore.Engine.Object;
+// Silk.NET.Input aliased (not opened) — its Button would collide with the engine's UI Button.
+using IInputContext = Silk.NET.Input.IInputContext;
+using Key = Silk.NET.Input.Key;
+using InputWindowExtensions = Silk.NET.Input.InputWindowExtensions;
 
 namespace CosmicShore.Client
 {
@@ -83,6 +87,11 @@ namespace CosmicShore.Client
         int _gameFinishFrame;
         string _lastGameSummary = "none";
 
+        // Arc H: Tab in the game phase hands the stick to the human (and back).
+        IInputContext _inputContext;
+        readonly HumanPilotBridge _bridge = new();
+        bool _prevTab;
+
         static readonly (ScreenSwitcher.MenuScreens id, string title, Color tint)[] Panels =
         {
             (ScreenSwitcher.MenuScreens.STORE, "STORE", new Color(0.20f, 0.08f, 0.30f, 1f)),
@@ -130,9 +139,13 @@ namespace CosmicShore.Client
             Screen.width = _window.FramebufferSize.X;
             Screen.height = _window.FramebufferSize.Y;
 
+            // Arc H: hardware keyboard for the game phase (extension called statically —
+            // opening Silk.NET.Input would collide Button with the engine's UI Button).
+            _inputContext = InputWindowExtensions.CreateInput(_window);
+
             _loop = new GameLoop("MenuShell");
             BuildMenu(firstBoot: true);
-            Console.WriteLine("[3/3] ready — menu shell.");
+            Console.WriteLine("[3/3] ready — menu shell. In a game: Tab toggles human/autopilot, WASD+arrows fly, Space boost, Shift drift.");
         }
 
         void BuildMenu(bool firstBoot)
@@ -830,6 +843,21 @@ namespace CosmicShore.Client
                 _frameIndex++;
                 if (_round == null) return;
 
+                // Arc H: Tab toggles human/autopilot on Players[0] (edge-detected);
+                // the human writes land before the tick, like any hardware pilot.
+                bool tab = false;
+                foreach (var keyboard in _inputContext.Keyboards)
+                    if (keyboard.IsKeyPressed(Key.Tab)) tab = true;
+                if (tab && !_prevTab)
+                {
+                    if (_bridge.Active) _bridge.Detach();
+                    else _bridge.Attach(_round);
+                    Console.WriteLine($"[menushell] pilot: {(_bridge.Active ? "HUMAN" : "autopilot")}");
+                }
+                _prevTab = tab;
+                if (_bridge.Active)
+                    _bridge.Drive(_inputContext);
+
                 if (!_roundDone)
                 {
                     if (_round.StepFrame())
@@ -847,6 +875,7 @@ namespace CosmicShore.Client
                 }
                 else if (_frameIndex - _gameFinishFrame >= ReturnLingerFrames)
                 {
+                    if (_bridge.Active) _bridge.Detach(); // hand back before the world dies
                     ReturnToMenu();
                 }
                 return;
@@ -996,7 +1025,8 @@ namespace CosmicShore.Client
             if (_phase == HostPhase.Game && _round != null)
             {
                 _scene.Render(_round, _window.FramebufferSize.X, _window.FramebufferSize.Y);
-                _scene.DrawHud(_ui, _round, _window.FramebufferSize.X, _window.FramebufferSize.Y);
+                _scene.DrawHud(_ui, _round, _window.FramebufferSize.X, _window.FramebufferSize.Y,
+                    _bridge.Active ? _round.Players[0].Name : null);
             }
             else
             {

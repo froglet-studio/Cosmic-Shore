@@ -1,6 +1,7 @@
 using System;
 using CosmicShore.Cli;
 using CosmicShore.Data;
+using Silk.NET.Input;
 using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
@@ -26,6 +27,7 @@ namespace CosmicShore.Client
         readonly int _seed;
         readonly int _playerCount;
         readonly int _crystalTarget;
+        readonly bool _humanPilot;
         readonly string _screenshotPath;
         readonly int _screenshotFrame;
 
@@ -34,17 +36,20 @@ namespace CosmicShore.Client
         UiRenderer _ui;
         RoundScenePass _scene;
         IRoundDriver _round;
+        IInputContext _inputContext;
+        readonly HumanPilotBridge _bridge = new();
 
         int _frameIndex;
         bool _raceDone;
 
         public ModeHostWindow(string game, int seed, int playerCount, int crystalTarget,
-            string screenshotPath, int screenshotFrame)
+            bool humanPilot, string screenshotPath, int screenshotFrame)
         {
             _game = game;
             _seed = seed;
             _playerCount = playerCount;
             _crystalTarget = crystalTarget;
+            _humanPilot = humanPilot;
             _screenshotPath = screenshotPath;
             _screenshotFrame = screenshotFrame;
         }
@@ -120,13 +125,27 @@ namespace CosmicShore.Client
             _round = CreateDriver(_game, _seed, _playerCount, _crystalTarget,
                 line => Console.WriteLine("  " + line));
 
-            Console.WriteLine($"[3/3] ready — {_round.GameLabel}, {_playerCount} AI pilots, first domain to {_crystalTarget}.");
+            if (_humanPilot)
+            {
+                _inputContext = _window.CreateInput();
+                _bridge.Attach(_round);
+                Console.WriteLine($"[3/3] ready — {_round.GameLabel}, YOU are {_round.Players[0].Name} " +
+                    "(WASD = left stick · arrows = right · Space boost · Shift drift).");
+            }
+            else
+            {
+                Console.WriteLine($"[3/3] ready — {_round.GameLabel}, {_playerCount} AI pilots, first domain to {_crystalTarget}.");
+            }
         }
 
         void OnUpdate(double dt)
         {
             // ONE deterministic engine frame per window update (fixed 1/60 inside the
-            // handle) — the windowed twin of the CLI's while-loop.
+            // handle) — the windowed twin of the CLI's while-loop. The human writes
+            // land BEFORE the tick, like any hardware pilot.
+            if (_bridge.Active && _inputContext != null)
+                _bridge.Drive(_inputContext);
+
             if (!_raceDone && _round != null)
             {
                 if (_round.StepFrame())
@@ -148,7 +167,8 @@ namespace CosmicShore.Client
             if (_round != null)
             {
                 _scene.Render(_round, _window.FramebufferSize.X, _window.FramebufferSize.Y);
-                _scene.DrawHud(_ui, _round, _window.FramebufferSize.X, _window.FramebufferSize.Y);
+                _scene.DrawHud(_ui, _round, _window.FramebufferSize.X, _window.FramebufferSize.Y,
+                    _bridge.Active ? _round.Players[0].Name : null);
             }
 
             if (_screenshotPath != null && _frameIndex >= _screenshotFrame)

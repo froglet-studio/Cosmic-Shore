@@ -711,22 +711,56 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc H — the HUMAN PILOT in the windowed round.** All four domain modes
-   now stand up behind `IRoundDriver` (part 3 below closed Joust +
-   AstroLeague). Next: route HUMAN input into the windowed round so the
-   launched game is PLAYABLE, not just AI-vs-AI — the RaceWindow
-   keyboard→InputEvents idiom (Silk.NET key events → the vessel's
-   `OnButtonPressed/Released` SOAP raises + `IInputStatus` stick writes)
-   pointed at round.Players[0]'s vessel with its AIPilot toggled OFF (the
-   `MenuCrystalClickHandler.ToggleTransition` shape: `ToggleAIPilot(false)`
-   + input unpause). Add `--pilot human` to `--mode play` and a menushell
-   toggle (screenshot autopilot stays default — gates stay deterministic;
-   human mode is for the prompter's hands-on testing). Camera follows the
-   human vessel. Then: the ready-button/scoreboard seams on the real UI
-   (Arc I's remainder) and the Hangar/Leaderboards/Store screen units.
+1. **Arc I remainder — the READY button + end-game scoreboard as REAL UI in
+   the windowed round.** The human pilot shipped (Arc H below): the launched
+   game is now FLYABLE (`--pilot human`, menushell Tab). Next, replace the
+   harness's auto-ready with the real seam: the domain-game controllers
+   raise `_onToggleReadyButton` (ScriptableEventBool) expecting a UI Ready
+   button — surface a real clickable button (engine UI canvas over the
+   round, the menushell click stack already proves the input path) whose
+   press calls `controller.OnReadyClicked()`, and render the end-game
+   standings through a real panel instead of (in addition to) the HUD text
+   block. The round handles already expose the seams (`readyButtonChannel`
+   internal — add a public hook on `IRoundDriver`). Keep gates deterministic:
+   screenshot runs auto-click ready exactly like today (the handle's
+   StepFrame path), interactive runs wait for the human. After that:
+   Hangar / Leaderboards / Store screen units (LeaderboardManager,
+   PlayerDataController, CatalogManager economy singletons first).
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Arc H ✅ (2026-07-10) — the HUMAN PILOT: the launched game is FLYABLE
+
+**`HumanPilotBridge`** (Client): takes over `round.Players[0]` in the
+MenuCrystalClickHandler.ToggleTransition shape — `ToggleAIPilot(false)`,
+then the human drives the SAME `IInputStatus` sink the AIPilot wrote
+(`VesselStatus.InputStatus → Player.InputController.InputStatus`), so the
+verbatim InputStatus → VesselTransformer flight path is untouched. Keyboard
+scheme = the RaceWindow idiom (WASD left stick, arrows right, mirror-left
+for single-hand, XSum/YSum/YDiff/XDiff writes, Space boost, Shift drift);
+button actions go straight to the ONE vessel via
+`VesselController.PerformShipControllerActions(Button1Action /
+OnlyLeftStickAction)` — the call the real input pipeline ultimately makes
+(the round harness wires per-world SOAP channels, not the shared scene
+assets). The domain-game controllers re-arm every AIPilot at turn start
+(SetPlayersActive → StartPlayer), so `Drive` re-asserts StopAIPilot whenever
+autopilot crept back — the human keeps the stick across countdowns and
+kickoff re-parks. **`--pilot human`** on `--mode play` (any of the four
+games); **Tab** in the menushell game phase toggles human/autopilot
+mid-round (Silk.NET.Input aliased, not opened — its Button collides with
+the engine's UI Button; `CreateInput` called as a static extension). The
+HUD shows the Arc-H control strip (`YOU: <name> — WASD+arrows fly …`).
+
+**Verified under xvfb** (no keys → sticks read zero, deterministic): human
+takeover demonstrably changes the world — HexRace `claims 2, jade 2` at
+t 15 (vs all-AI `claims 3, jade 3`: AI-1 no longer claims), CrystalCapture
+`jade 0 ruby 2` (vs `jade 1 ruby 2`), zero engine errors across the
+controller-chain re-arms. **Gates stay autopilot-default: ALL NINE diag
+lines byte-stable/unchanged** (race `trail 786`, freestyle `toys 12`,
+uidemo, play/play-cc/play-joust/play-astro, menushell@1200/@3600).
+**1636 tests green in BOTH configs (1298 + 338)**; 5 CLI modes exit 0.
+bleeding-edge unmoved at `f2b8f5aa`.
 
 ### Arc G part 3 ✅ (2026-07-10) — ALL FOUR domain modes stand up in the window
 
@@ -1362,7 +1396,7 @@ several loop iterations, each ends green+pushed):
 | **E** | Content bridge: a Unity YAML→first-party-scene extractor (new `Port/tools/`) scoped to the UGUI subset (RectTransform/Canvas/Image/TMP/Button/LayoutGroups/CanvasGroup) + script-GUID→type map, so `Menu_Main` imports rather than being hand-transcribed. **Decision point when it opens** — confirm extractor-vs-hand-authoring scope with the prompter (large sub-project). | 7 | content | round-trip parity |
 | **F** ✅(spine) | Port `ScreenSwitcher` + `IScreen` + the 6 screens + `ModalWindowManager`, wired to the live `MainMenuController` + `PlayerDataService`. **Milestone sub-goal: menu renders + navigates + is testable.** ARCADE SPINE COMPLETE (2b-iii(b)): nav → arcade modal → GameCards → configure modal → `OnLaunchGame`. Hangar/Leaderboards/Store screen units queue behind Arc G→I. | 5 | UI framework | ✅ + screenshot |
 | **G** ✅ | Windowed game-mode host: ALL FOUR domain-mode worlds split into steppable handles behind `IRoundDriver` (HexRace / CrystalCapture / Joust / AstroLeague; transcript-pinned to the CLI), rendered by the shared `RoundScenePass` (crystals, ball, goal rings, arena boundary), driven by `ModeHostWindow` (`--mode play --game …`) AND by the menushell's game phase. | 3/5 | mode host | ✅ construction |
-| **H** | Per-mode rendering + HUD: extend the renderer beyond stars/rails/crystals/vessels to each mode's objects (joust field, capture crystals, AstroLeague ball/goal/boundary, hex course) + each mode's HUD; route real human input | 5 | render | screenshot |
+| **H** ✅(input) | Per-mode rendering + HUD: mode objects render (hex course, capture crystals, joust melee, AstroLeague ball/goals/boundary — shipped with Arc G's RoundScenePass) + per-mode HUD scores; REAL HUMAN INPUT routed (`HumanPilotBridge`: `--pilot human`, menushell Tab — the RaceWindow keyboard scheme into the verbatim InputStatus sink). Richer per-mode art queues behind the milestone. | 5 | render | screenshot |
 | **I** ⏳(loop closed) | Menu→game→menu loop: connect the LaunchGame SOAP path to the windowed mode host and back. **The loop IS closed** (G part 2): configure modal → OnLaunchGame → menu world disposed → real round steps + renders → standings linger → menu rebuilt via the persisted ReturnToScreen. Remaining for the FINAL MILESTONE: human input (Arc H), all four modes launchable (G part 3), ready-button/scoreboard seams on the real UI. | 8 | integration | ✅ E2E |
 
 **Critical path:** A→B→D (the UI framework from scratch — the long pole) and

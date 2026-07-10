@@ -24,6 +24,7 @@ namespace CosmicShore.Client
         {
             string mode = "race";
             string game = "hexrace";
+            string pilot = "ai";
             int seed = 42;
             int crystals = 30;
             int rivals = 3;
@@ -38,6 +39,7 @@ namespace CosmicShore.Client
                 {
                     case "--mode" when i + 1 < args.Length: mode = args[++i].ToLowerInvariant(); break;
                     case "--game" when i + 1 < args.Length: game = args[++i].ToLowerInvariant(); break;
+                    case "--pilot" when i + 1 < args.Length: pilot = args[++i].ToLowerInvariant(); break;
                     case "--seed" when i + 1 < args.Length: int.TryParse(args[++i], out seed); break;
                     case "--crystals" when i + 1 < args.Length: int.TryParse(args[++i], out crystals); break;
                     case "--rivals" when i + 1 < args.Length: int.TryParse(args[++i], out rivals); break;
@@ -67,7 +69,7 @@ namespace CosmicShore.Client
                 if (mode == "play")
                 {
                     Console.WriteLine($"Mode host — {game}, the CLI-proven round stepped in a window (seed {seed}, {players} pilots, first domain to {target})");
-                    new ModeHostWindow(game, seed, players, target, screenshot, screenshotFrame).Run();
+                    new ModeHostWindow(game, seed, players, target, pilot == "human", screenshot, screenshotFrame).Run();
                     return 0;
                 }
 

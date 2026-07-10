@@ -70,12 +70,19 @@ namespace CosmicShore.Client
 
         public static int DomainSum(IRoundDriver round, Domains domain) => round.DomainScore(domain);
 
-        /// <summary>The shared round HUD (UiRenderer text overlay, y-up pixels).</summary>
-        public void DrawHud(UiRenderer ui, IRoundDriver round, float w, float h)
+        /// <summary>
+        /// The shared round HUD (UiRenderer text overlay, y-up pixels).
+        /// <paramref name="humanPilotName"/> non-null → the Arc-H control strip shows.
+        /// </summary>
+        public void DrawHud(UiRenderer ui, IRoundDriver round, float w, float h, string humanPilotName = null)
         {
             ui.Begin(w, h);
 
             ui.DrawText(round.GameLabel, 24f, h - 46f, 30f, new Vector4(0.55f, 0.95f, 1f, 1f));
+
+            if (humanPilotName != null)
+                ui.DrawText($"YOU: {humanPilotName}   WASD+arrows fly - Space boost - Shift drift",
+                    24f, 24f, 16f, new Vector4(1f, 0.45f, 0.85f, 1f));
             ui.DrawText($"FIRST DOMAIN TO {round.Target}   t={Clock(round):0.0}s   claims {round.TotalClaims}",
                 24f, h - 78f, 18f, new Vector4(0.85f, 0.9f, 1f, 0.9f));
             ui.DrawText($"JADE {DomainSum(round, Domains.Jade)}", 24f, h - 112f, 22f, DomainColor(Domains.Jade));
