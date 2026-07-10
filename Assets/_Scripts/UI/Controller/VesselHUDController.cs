@@ -1,6 +1,7 @@
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
+using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 namespace CosmicShore.UI
 {
@@ -32,11 +33,42 @@ namespace CosmicShore.UI
 
             baseView?.Initialize();
 
-            // Four-icon contract: initialize the ability bar if this HUD has one. No-op when absent,
-            // so existing HUDs are untouched until they adopt a VesselAbilityBar.
+            // Four-icon contract: every vessel presents exactly four ability icons. Prefer a bar
+            // authored in the HUD prefab; otherwise auto-adopt one from the vessel's ability set in
+            // Resources (same zero-wire pattern as ElementalBarsView's config fallback).
             if (!abilityBar)
                 abilityBar = GetComponentInChildren<VesselAbilityBar>(true);
+            if (!abilityBar)
+                abilityBar = TryAutoAdoptAbilityBar(vesselStatus);
             abilityBar?.Initialize(vesselStatus);
+        }
+
+        /// <summary>
+        /// Zero-wire adoption of the four-icon contract: when the HUD has no authored
+        /// <see cref="VesselAbilityBar"/> but a <c>Resources/VesselAbilitySets/{VesselClassType}</c>
+        /// set exists, build a bar under the HUD view at runtime. Only for the local human pilot —
+        /// AI and remote vessels keep their HUDs hidden and get no bar.
+        /// </summary>
+        VesselAbilityBar TryAutoAdoptAbilityBar(IVesselStatus vesselStatus)
+        {
+            if (vesselStatus == null || vesselStatus.IsInitializedAsAI || !vesselStatus.IsLocalUser)
+                return null;
+            if (!baseView) return null;
+
+            var set = Resources.Load<VesselAbilitySetSO>($"VesselAbilitySets/{vesselStatus.VesselType}");
+            if (!set) return null;
+
+            var go = new GameObject("VesselAbilityBar (auto)", typeof(RectTransform));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(baseView.transform, false);
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.one;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+
+            var bar = go.AddComponent<VesselAbilityBar>();
+            bar.SetAbilitySet(set);
+            return bar;
         }
 
         public void SubscribeToEvents()

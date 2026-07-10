@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c456d81d47a34582b792c1205528a048, type: 3}
+  m_Name: Manta
+  m_EditorClassIdentifier: 
+  vesselClass: 1
+  slots:
+  - Label: 'Bank Right'
+    Description: 'Hold to sweep the ray into a banking right turn.'
+    Input: 11
+    Icon: {fileID: 0}
+    IsPlaceholder: 0
+  - Label: 'Bank Left'
+    Description: 'Hold to sweep the ray into a banking left turn.'
+    Input: 12
+    Icon: {fileID: 0}
+    IsPlaceholder: 0
+  - Label: 'Boost'
+    Description: 'Hold both sticks to surge forward.'
+    Input: 13
+    Icon: {fileID: 0}
+    IsPlaceholder: 0
+  - Label: 'Overcharge'
+    Description: 'Passive: skim opposing prisms to charge, then chain-detonate the harvest.'
+    Input: 6
+    Icon: {fileID: 0}
+    IsPlaceholder: 0

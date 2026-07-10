@@ -49,6 +49,14 @@ namespace CosmicShore.UI
         public int SlotCount => VesselAbilitySetSO.SlotCount;
         public bool HasAbilitySet => abilitySet != null;
 
+        /// <summary>Assign the ability set at runtime (auto-adoption path). Call before
+        /// <see cref="Initialize"/>; after init it takes effect on the next repaint.</summary>
+        public void SetAbilitySet(VesselAbilitySetSO set)
+        {
+            abilitySet = set;
+            if (_built) Repaint();
+        }
+
         public void Initialize(IVesselStatus status)
         {
             _actions = status?.ActionHandler;

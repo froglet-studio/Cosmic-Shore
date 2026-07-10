@@ -81,10 +81,18 @@ Shipped this pass (code):
   rebuilt (it survives HUD show/hide untouched), so there is nothing high-frequency to pool.
 - **`VesselHUDController`** resolves and initializes a `VesselAbilityBar` under the HUD if present —
   **non-regressing**: existing HUDs are untouched until they adopt a bar.
+- **LIVE via zero-wire auto-adoption:** the six flyable vessels each have a
+  `Resources/VesselAbilitySets/{VesselClassType}.asset` authored with their real input wiring
+  (verified against each prefab's `_inputEventShipActions`). When a HUD has no authored bar,
+  `VesselHUDController.TryAutoAdoptAbilityBar` builds one at runtime for the local human pilot —
+  same zero-wire pattern as `ElementalBarsView`'s Resources config fallback. So **all six flyables
+  show four icons today**; authoring a bar + real icon `Image`s in the HUD prefab later upgrades a
+  vessel to the zero-alloc path and takes precedence automatically.
 - **`Tools > Cosmic Shore > Validate Vessel Ability Icons`** (`_Scripts/Editor/`) reports every
-  vessel/HUD prefab as compliant / bar-without-set / missing-a-bar. A build gate exists
-  (`EnforceOnBuild`, default **off**); flip it on once all vessels are migrated to make a
-  non-compliant fleet fail the build — the hard "impossible to ship a vessel without four icons".
+  vessel prefab as compliant (authored bar **or** resolvable ability set) / non-compliant. A build
+  gate exists (`EnforceOnBuild`, default **off**); flip it on once the stub vessels are resurrected
+  to make a non-compliant fleet fail the build — the hard "impossible to ship a vessel without four
+  icons".
 
 **Adopt per vessel (asset step):** add a `VesselAbilityBar` under the vessel's HUD; **author four
 icon `Image`s in the HUD prefab and drag them into `slotImages`** (the zero-alloc path — if you skip

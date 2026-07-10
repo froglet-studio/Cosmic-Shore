@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c456d81d47a34582b792c1205528a048, type: 3}
+  m_Name: Serpent
+  m_EditorClassIdentifier: 
+  vesselClass: 7
+  slots:
+  - Label: 'Serpent Boost'
+    Description: 'Spend one of four boost charges.'
+    Input: 6
+    Icon: {fileID: 0}
+    IsPlaceholder: 0
+  - Label: 'Seed Wall'
+    Description: 'Go stationary and seed a wall from the surrounding prisms.'
+    Input: 7
+    Icon: {fileID: 0}
+    IsPlaceholder: 0
+  - Label: 'Cloak Weave'
+    Description: 'Cloak and weave a hidden seed wall.'
+    Input: 1
+    Icon: {fileID: 0}
+    IsPlaceholder: 0
+  - Label: '???'
+    Description: 'A fourth ability is on its way.'
+    Input: 8
+    Icon: {fileID: 0}
+    IsPlaceholder: 1
