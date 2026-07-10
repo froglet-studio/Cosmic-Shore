@@ -18,7 +18,7 @@ MonoBehaviour:
   rings: 2
   ringSpacing: 10
   prismScale: 4
-  leadSeconds: 1.5
-  forwardOffset: 24
+  leadSeconds: -1.5
+  forwardOffset: 100
   spawnPerFrame: 24
   cooldown: 20
