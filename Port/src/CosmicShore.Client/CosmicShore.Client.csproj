@@ -9,6 +9,9 @@
     <ProjectReference Include="../CosmicShore.Engine/CosmicShore.Engine.csproj" />
     <ProjectReference Include="../CosmicShore.Data/CosmicShore.Data.csproj" />
     <ProjectReference Include="../CosmicShore.Game/CosmicShore.Game.csproj" />
+    <!-- Arc G: the windowed mode host drives the SAME round worlds the CLI proves
+         headlessly (HexRaceRoundHandle et al. live with their CLI drivers). -->
+    <ProjectReference Include="../CosmicShore.Cli/CosmicShore.Cli.csproj" />
   </ItemGroup>
 
   <ItemGroup>

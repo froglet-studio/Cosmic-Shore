@@ -711,25 +711,63 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc G — the windowed MODE HOST.** The arcade unit is COMPLETE (2b-iii(b)
-   below): menushell walks card click → configure Screen 1 → Screen 2 →
-   START → `GameDataSO` synced + `OnLaunchGame` raised — the exact seam
-   `SceneLoader.LaunchGame` consumes. Arc G makes that seam GO somewhere in
-   the windowed client: a mode-host window layer that reacts to
-   `OnLaunchGame` by tearing down the menu world and standing up the chosen
-   mode's world (the CLI already proves all five modes headless — HexRace /
-   Joust / CrystalCapture / AstroLeague / Tournament run to completion), then
-   returns to the menu on game end (Arc I's loop). Start by scoping what the
-   CLI round drivers (`src/CosmicShore.Cli/*Round.cs`) can share with a
-   windowed host (world construction is already factored there), then bridge
-   the smallest mode (CrystalCapture or HexRace) into a window with the Arc-C
-   renderer. Remaining Arc F screens (HangarScreen / LeaderboardsMenu /
-   StoreScreen — service singletons LeaderboardManager, PlayerDataController,
-   CatalogManager economy) queue behind the G→I spine; they widen the menu
-   but don't block the milestone loop.
+1. **Arc G part 2 / Arc I entry — the menu→game→menu HANDOFF.** Part 1 (below)
+   proved the windowed mode host: `--mode play` steps the REAL HexRace round
+   (the Setup/Step/Finish `HexRaceRoundHandle` split; CLI `Run` is the same
+   handle, transcript-pinned) and renders it. Now connect the seams: in the
+   windowed client, `GameDataSO.OnLaunchGame` (which the configure modal
+   already raises end-to-end in menushell) tears down the MENU world
+   (dispose its GameLoop — fresh-world statics make menu/game loops mutually
+   exclusive) and stands up the mode-host world for `gameData.GameMode`;
+   on `FinishAndScore` + a beat, dispose the round handle and REBUILD the
+   menu world (BuildMenu is already a from-scratch constructor — Unity's
+   scene-unload/reload semantics). Extend the handle split to a second mode
+   (CrystalCaptureRound is the nearest sibling) so the host switches on
+   GameMode. Remaining Arc F screens (Hangar / Leaderboards / Store) queue
+   behind this spine.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Arc G part 1 ✅ (2026-07-10) — the windowed MODE HOST stands up a real round
+
+**The Setup/Step/Finish split (`HexRaceRoundHandle`):** `HexRaceRound.Run`'s
+world construction, frame loop, and scoring were factored into a steppable
+handle — `Setup(options, liveLog)` builds the full round world (loop, theme,
+GameDataSO + scoring rule, Cell + course registry, crystal manager, prefab
+fixture, AI field, first staged crystal), `StepFrame()` is ONE engine frame +
+the turn-monitor-shaped objective check, `CompleteStepping()` /
+`FinishAndScore()` are the CLI's post-loop branches, and `Dispose()` is the
+CLI's finally block (wind-down, cell unregister, destroy flush, singleton
+resets, sink restore + EngineErrors flush) followed by loop disposal. `Run`
+is now the handle stepped in a while-loop — **pre/post transcripts diffed
+byte-identical for `--mode hexrace` AND `--mode tournament`** (3 legs), and a
+new `SteppedHandle_MatchesBlockingRun_Exactly` test pins the parity
+permanently. The handle exposes the world a renderer needs (GameData,
+Players, ActiveCrystal, Course(+Elements), CourseIndex, Target,
+RaceStartTime, FramesStepped).
+
+**`ModeHostWindow` (`--mode play [--players N] [--target N]`):** the windowed
+twin of the CLI round — one `StepFrame()` per window update (fixed 1/60,
+deterministic), wireframe render pass in the RaceWindow pos3+color4 idiom
+(seeded System.Random starfield — NEVER the engine RNG, the sim owns that
+stream; upcoming-course crosses; the active crystal as a spinning
+element-tinted octahedron; each AI vessel a domain-tinted arrow; sim-derived
+chase camera, no wall-clock smoothing) + UiRenderer HUD (domain sums,
+per-pilot crystals, and the WINNER + standings block once the objective
+lands). Client gained a ProjectReference to CosmicShore.Cli — the round
+drivers ARE the shared world constructors (still 7 csproj). GL-state finding
+encoded: `UiRenderer.End` hands back sim state (depth ON, additive blend), so
+a host must clear DEPTH and own its blend/depth setup each frame — the
+mode-host pass runs depth-off additive over the cleared indigo.
+
+**Verified:** full round to completion IN THE WINDOW (target 6: objective at
+29.32s/1759 frames, winner AI-1 Jade, golf standings rendered). **New gate
+line `play@1200`** (`--mode play --seed 42 --players 4 --target 6`) →
+`t 20.00, claims 3, jade 3 ruby 0 gold 0, state Racing, winner none` —
+byte-stable two runs. **1633 tests green in BOTH configs (1295 + 338)**;
+5 CLI modes exit 0; race `trail 786` byte-stable ×2; freestyle `toys 12`;
+uidemo + menushell@216 unchanged. bleeding-edge unmoved at `f2b8f5aa`.
 
 ### Arc F part 2b-iii(b) ✅ (2026-07-10) — the configure modal; the ARCADE UNIT IS COMPLETE
 
@@ -1233,7 +1271,7 @@ several loop iterations, each ends green+pushed):
 | **D** ✅ | Input/event layer: `EventSystem` + `PointerEventData` + `Selectable`/`Button` hit-testing + gamepad nav-ring (Silk.NET hardware feed deferred to Arc H — same synthetic-injection seam) | 5 | UI framework | ✅ synthetic events |
 | **E** | Content bridge: a Unity YAML→first-party-scene extractor (new `Port/tools/`) scoped to the UGUI subset (RectTransform/Canvas/Image/TMP/Button/LayoutGroups/CanvasGroup) + script-GUID→type map, so `Menu_Main` imports rather than being hand-transcribed. **Decision point when it opens** — confirm extractor-vs-hand-authoring scope with the prompter (large sub-project). | 7 | content | round-trip parity |
 | **F** ✅(spine) | Port `ScreenSwitcher` + `IScreen` + the 6 screens + `ModalWindowManager`, wired to the live `MainMenuController` + `PlayerDataService`. **Milestone sub-goal: menu renders + navigates + is testable.** ARCADE SPINE COMPLETE (2b-iii(b)): nav → arcade modal → GameCards → configure modal → `OnLaunchGame`. Hangar/Leaderboards/Store screen units queue behind Arc G→I. | 5 | UI framework | ✅ + screenshot |
-| **G** | Windowed game-mode host: generalize `SkimRaceFactory` into a mode-agnostic factory instantiating the REAL arcade controllers (reuse the CLI `*Round.cs` wiring that already proves them headless) | 3/5 | mode host | ✅ construction |
+| **G** ✅(part 1) | Windowed game-mode host: the CLI `*Round.cs` world constructors split into steppable handles (`HexRaceRoundHandle`), driven per-frame by `ModeHostWindow` (`--mode play`) with a wireframe render + HUD — a REAL round stands up, steps, scores, and renders in a window (transcript-pinned to the CLI). Part 2 = menu→game handoff on `OnLaunchGame` + a second mode handle. | 3/5 | mode host | ✅ construction |
 | **H** | Per-mode rendering + HUD: extend the renderer beyond stars/rails/crystals/vessels to each mode's objects (joust field, capture crystals, AstroLeague ball/goal/boundary, hex course) + each mode's HUD; route real human input | 5 | render | screenshot |
 | **I** | Menu→game→menu loop: connect `MainMenuController`'s LaunchGame SOAP path to the windowed mode host and back, satisfying the controllers' ready-button/scoreboard UI seams with the real UI. **FINAL MILESTONE.** | 8 | integration | ✅ E2E |
 

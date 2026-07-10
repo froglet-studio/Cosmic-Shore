@@ -26,6 +26,8 @@ namespace CosmicShore.Client
             int seed = 42;
             int crystals = 30;
             int rivals = 3;
+            int players = 4;
+            int target = 6;
             string screenshot = null;
             int screenshotFrame = 240;
 
@@ -37,6 +39,8 @@ namespace CosmicShore.Client
                     case "--seed" when i + 1 < args.Length: int.TryParse(args[++i], out seed); break;
                     case "--crystals" when i + 1 < args.Length: int.TryParse(args[++i], out crystals); break;
                     case "--rivals" when i + 1 < args.Length: int.TryParse(args[++i], out rivals); break;
+                    case "--players" when i + 1 < args.Length: int.TryParse(args[++i], out players); break;
+                    case "--target" when i + 1 < args.Length: int.TryParse(args[++i], out target); break;
                     case "--screenshot" when i + 1 < args.Length: screenshot = args[++i]; break;
                     case "--frames" when i + 1 < args.Length: int.TryParse(args[++i], out screenshotFrame); break;
                 }
@@ -55,6 +59,13 @@ namespace CosmicShore.Client
                 {
                     Console.WriteLine("Menu shell — the REAL ScreenSwitcher on the first-party UI stack");
                     new MenuShellWindow(screenshot, screenshotFrame).Run();
+                    return 0;
+                }
+
+                if (mode == "play")
+                {
+                    Console.WriteLine($"Mode host — HexRace, the CLI-proven round stepped in a window (seed {seed}, {players} pilots, first domain to {target})");
+                    new ModeHostWindow(seed, players, target, screenshot, screenshotFrame).Run();
                     return 0;
                 }
 

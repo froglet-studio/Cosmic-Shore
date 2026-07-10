@@ -120,6 +120,222 @@ namespace CosmicShore.Cli
     }
 
     /// <summary>
+    /// A LIVE HexRace round the caller steps one engine frame at a time (Arc G: the
+    /// windowed mode host drives this from its render loop; the CLI's blocking
+    /// <see cref="HexRaceRound.Run"/> is the same handle stepped in a while-loop).
+    /// Owns the round's GameLoop and every fixture <see cref="HexRaceRound.Setup"/>
+    /// built; <see cref="Dispose"/> performs the exact teardown the CLI's finally
+    /// block always did (AI/spawn wind-down, cell unregister, destroy flush, singleton
+    /// resets, log-sink restore + EngineErrors flush) and then disposes the loop.
+    /// </summary>
+    public sealed class HexRaceRoundHandle : IDisposable
+    {
+        internal HexRaceRoundOptions options;
+        internal Action<string> liveLog;
+        internal HexRaceRoundResult result;
+
+        internal GameLoop loop;
+        internal CapturingLogSink capturedLog;
+        internal ILogSink previousSink;
+
+        internal GameObject cellHost;
+        internal GameDataSO gameData;
+        internal CellRuntimeDataSO courseData;
+        internal CrystalManager crystalManager;
+        internal ScoringRuleSO rule;
+        internal List<IPlayer> players;
+
+        internal Vector3[] coursePositions;
+        internal Element[] courseElements;
+        internal int courseIndex;
+        internal Crystal activeCrystal;
+        internal ScriptableEventCrystalStats onCrystalCollected;
+        internal float crystalTriggerRadius;
+
+        internal int target;
+        internal float raceStart;
+        internal int frames;
+        internal bool objectiveReached;
+        internal Domains objectiveDomain = Domains.Blue;
+
+        bool _steppingCompleted;
+        bool _finished;
+        bool _disposed;
+
+        // ── world view for a rendering host ─────────────────────────────────
+        public HexRaceRoundOptions Options => options;
+        public HexRaceRoundResult Result => result;
+        public GameDataSO GameData => gameData;
+        public IReadOnlyList<IPlayer> Players => players;
+        public Crystal ActiveCrystal => activeCrystal;
+        public Vector3[] Course => coursePositions;
+        public Element[] CourseElements => courseElements;
+        public int CourseIndex => courseIndex;
+        public int Target => target;
+        public float RaceStartTime => raceStart;
+        public int FramesStepped => frames;
+        public bool ObjectiveReached => objectiveReached;
+        public Domains ObjectiveDomain => objectiveDomain;
+
+        internal void Log(string line)
+        {
+            result.Transcript.Add(line);
+            liveLog?.Invoke(line);
+        }
+
+        /// <summary>
+        /// One engine frame: tick (claims happen inside — trigger pass → impactor
+        /// dispatch), then the turn-monitor-shaped objective check. Returns true the
+        /// frame some domain reaches the target.
+        /// </summary>
+        public bool StepFrame()
+        {
+            loop.Tick(options.DeltaTime);
+            frames++;
+
+            if (rule.IsObjectiveReached(gameData, out objectiveDomain))
+            {
+                objectiveReached = true;
+                return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Ends the stepping phase (idempotent): detaches the claim observer and stamps
+        /// FramesSimulated — exactly what the CLI loop did between its while-loop and
+        /// the timeout/score branch.
+        /// </summary>
+        public void CompleteStepping()
+        {
+            if (_steppingCompleted) return;
+            _steppingCompleted = true;
+            onCrystalCollected.OnRaised -= HandleCrystalCollected;
+            result.FramesSimulated = frames;
+        }
+
+        /// <summary>
+        /// Finish: resolve, score (golf), publish results, log standings. No-op unless
+        /// the objective was reached (a timed-out round has nothing to score).
+        /// </summary>
+        public void FinishAndScore()
+        {
+            CompleteStepping();
+            if (_finished || !objectiveReached) return;
+            _finished = true;
+
+            float finishTime = Time.time - raceStart;
+            var winnerDomain = rule.ResolveWinner(gameData);   // == objectiveDomain (highest sum, Jade→Ruby→Gold ties)
+            rule.AssignScores(gameData, winnerDomain, finishTime);
+            gameData.SetResults(rule.BuildResults(gameData));
+            gameData.InvokeGameTurnConditionsMet();
+            gameData.InvokeWinnerCalculated();
+            gameData.InvokeMiniGameEnd();
+
+            result.Finished = true;
+            result.FinishTime = finishTime;
+            result.WinnerName = gameData.WinnerName;
+            result.WinnerDomain = gameData.WinnerDomain;
+
+            Log("");
+            Log($"OBJECTIVE — {objectiveDomain} domain reached {target} crystals in {HexRaceRound.F(finishTime)}s ({frames} frames).");
+            Log($"WINNER    — {gameData.WinnerName} ({gameData.WinnerDomain}), representative of the winning domain.");
+            Log("");
+            Log("STANDINGS (golf rules — lower score is better):");
+
+            var crystalsByName = gameData.RoundStatsList.ToDictionary(s => (string)s.Name, s => s.CrystalsCollected);
+            foreach (var row in gameData.Results)
+            {
+                var standing = new HexRaceStanding
+                {
+                    Rank = row.Rank,
+                    Name = row.Name,
+                    Domain = row.Domain,
+                    Crystals = crystalsByName.TryGetValue(row.Name, out var c) ? c : 0,
+                    Score = row.Score,
+                    ScoreText = row.ScoreText,
+                    Secondary = row.Secondary,
+                };
+                result.Standings.Add(standing);
+                Log($"  #{standing.Rank} {standing.Name,-6} {standing.Domain,-5} {standing.Crystals,2} crystals  score={HexRaceRound.F(standing.Score),9}  {standing.ScoreText}");
+            }
+        }
+
+        // Claim observer — fires from INSIDE the trigger pass, at the end of the
+        // genuine OnTriggerEnter → ImpactorBase.AcceptImpactee → ExecuteEffect
+        // chain on the crystal's OmniCrystalImpactor. The harness applies the
+        // StatsManager-shaped bookkeeping (RoundStats + elemental progression),
+        // logs the claim at the contact instant (authentic photo-finish gap), and
+        // stages the next waypoint. The crystal then removes itself: AcceptImpactee
+        // continues into Crystal.Respawn() → DestroyCrystal() →
+        // courseData.TryRemoveItem (pilots retarget) → Destroy(gameObject).
+        internal void HandleCrystalCollected(CrystalStats stats)
+        {
+            result.TotalClaims++;
+            var claimant = players.First(p => p.Name == stats.PlayerName);
+            HexRaceRound.ApplyCrystalPickup(claimant, stats.Element);
+
+            // Closest rival's distance to the crystal at claim time — the "photo finish" gap.
+            float rivalSqr = float.PositiveInfinity;
+            foreach (var other in players)
+            {
+                if (ReferenceEquals(other, claimant)) continue;
+                var d2 = (other.Vessel.Transform.position - activeCrystal.transform.position).sqrMagnitude;
+                if (d2 < rivalSqr) rivalSqr = d2;
+            }
+            string gap = players.Count > 1 ? $" (rival {HexRaceRound.F(Mathf.Sqrt(rivalSqr))}u behind)" : "";
+
+            Log($"[t={HexRaceRound.F(Time.time - raceStart),7}s] {claimant.Name} ({claimant.Domain}) claims crystal #{courseIndex + 1} [{stats.Element}]{gap} — " +
+                $"Jade {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Jade)} · " +
+                $"Ruby {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Ruby)} · " +
+                $"Gold {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Gold)}");
+
+            // Stage the next waypoint crystal unless the race just ended.
+            if (!rule.IsObjectiveReached(gameData, out _) && courseIndex + 1 < coursePositions.Length)
+            {
+                courseIndex++;
+                activeCrystal = HexRaceRound.SpawnCrystal(courseData, crystalManager, coursePositions, courseIndex,
+                    courseElements[courseIndex], crystalTriggerRadius, onCrystalCollected);
+            }
+            else
+            {
+                activeCrystal = null;
+            }
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+
+            // Stop AI/spawn loops + flush destroys so the loop (and process) can wind down.
+            if (gameData != null)
+            {
+                foreach (var p in gameData.Players.ToList())
+                {
+                    if (p?.Vessel is VesselController vc)
+                        vc.VesselStatus.VesselPrismController.StopSpawn();
+                    p?.ResetForPlay(); // AI path: toggles the AIPilot OFF
+                }
+            }
+            if (cellHost != null)
+                cellHost.SetActive(false); // unregisters Cell.ActiveCells + resets the course registry
+            loop?.Tick(options.DeltaTime); // end-of-frame destroy flush
+
+            typeof(PlayerDataService).GetProperty("Instance")!.SetValue(null, null);
+            typeof(AudioSystem).GetProperty("Instance")!.SetValue(null, null); // shell singleton (Awake-set)
+            NetworkManager.Singleton = null;
+            Debug.Sink = previousSink;
+
+            foreach (var entry in capturedLog.Entries)
+                if (entry.Type is LogType.Error or LogType.Exception)
+                    result.EngineErrors.Add($"{entry.Type}: {entry.Message}");
+
+            loop?.Dispose();
+        }
+    }
+
+    /// <summary>
     /// Milestone port-m2 orchestration harness: the first full headless game-mode round.
     /// An AI field races to a crystal target through the verbatim ported systems —
     /// PlayerSpawner/VesselSpawner (C6) spawn the AI player+vessel pairs, AIPilot does the
@@ -138,6 +354,12 @@ namespace CosmicShore.Cli
     /// (Respawn → DestroyCrystal → CellRuntimeDataSO.TryRemoveItem). No game logic lives
     /// here — only construction, wiring, and a claim observer that applies RoundStats /
     /// elemental progression (the StatsManager role) and writes the transcript.
+    ///
+    /// Arc G split the harness into <see cref="Setup"/> (world construction) +
+    /// <see cref="HexRaceRoundHandle.StepFrame"/> (one engine frame) +
+    /// <see cref="HexRaceRoundHandle.FinishAndScore"/> + Dispose, so the windowed mode
+    /// host can drive the SAME round from its render loop. <see cref="Run"/> is that
+    /// handle stepped in a blocking while-loop — transcript and results are unchanged.
     /// </summary>
     public static class HexRaceRound
     {
@@ -155,35 +377,62 @@ namespace CosmicShore.Cli
             throw new MissingFieldException(target.GetType().Name, field);
         }
 
-        static string F(float v) => v.ToString("0.00", CultureInfo.InvariantCulture);
+        internal static string F(float v) => v.ToString("0.00", CultureInfo.InvariantCulture);
 
-        // ── round entry point ──────────────────────────────────────────────────
+        // ── round entry points ─────────────────────────────────────────────────
 
+        /// <summary>The CLI's blocking round: Setup → step to objective/timeout → score.</summary>
         public static HexRaceRoundResult Run(HexRaceRoundOptions options, Action<string> liveLog = null)
+        {
+            using var handle = Setup(options, liveLog);
+
+            while (handle.frames < handle.options.MaxFrames)
+            {
+                if (handle.StepFrame())
+                    break;
+            }
+
+            handle.CompleteStepping();
+
+            if (!handle.objectiveReached)
+            {
+                handle.Log($"TIMEOUT — no domain reached {handle.target} crystals within {handle.frames} frames.");
+                return handle.result;
+            }
+
+            handle.FinishAndScore();
+            return handle.result;
+        }
+
+        /// <summary>
+        /// Builds the full round world (loop, cell, course, prefabs, AI field) and
+        /// stages the first crystal — everything the CLI round did before its frame
+        /// loop. The caller owns the returned handle: step it, finish it, dispose it.
+        /// </summary>
+        public static HexRaceRoundHandle Setup(HexRaceRoundOptions options, Action<string> liveLog = null)
         {
             options ??= new HexRaceRoundOptions();
             int playerCount = Mathf.Clamp(options.PlayerCount, 1, 12);
             int target = Mathf.Max(1, options.CrystalTarget);
 
-            var result = new HexRaceRoundResult();
-            void Log(string line)
+            var handle = new HexRaceRoundHandle
             {
-                result.Transcript.Add(line);
-                liveLog?.Invoke(line);
-            }
+                options = options,
+                liveLog = liveLog,
+                result = new HexRaceRoundResult(),
+                target = target,
+            };
 
             // Engine log → capture (keeps the transcript deterministic and quiet);
-            // Error/Exception entries are surfaced on the result afterwards.
-            var capturedLog = new CapturingLogSink();
-            var previousSink = Debug.Sink;
-            Debug.Sink = capturedLog;
+            // Error/Exception entries are surfaced on the result at Dispose.
+            handle.capturedLog = new CapturingLogSink();
+            handle.previousSink = Debug.Sink;
+            Debug.Sink = handle.capturedLog;
 
-            using var loop = new GameLoop("HexRaceRound");
+            handle.loop = new GameLoop("HexRaceRound");
             NetworkManager.Singleton = null;
             Random.InitState(options.Seed);
 
-            GameObject cellHost = null;
-            GameDataSO gameData = null;
             try
             {
                 // ── shared data: theme + GameDataSO + scoring rule ────────────
@@ -197,7 +446,8 @@ namespace CosmicShore.Cli
                     theme.TeamMaterialSets[domain] = set;
                 }
 
-                gameData = ScriptableObject.CreateInstance<GameDataSO>();
+                var gameData = ScriptableObject.CreateInstance<GameDataSO>();
+                handle.gameData = gameData;
                 gameData.ThemeManagerData = theme;
                 gameData.OnInitializeGame = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
                 gameData.OnPlayerNetworkSpawnedUlong = ScriptableObject.CreateInstance<ScriptableEventUlong>();
@@ -212,6 +462,7 @@ namespace CosmicShore.Cli
                 // ── the cell + course registry (V11/V12) ──────────────────────
                 var sharedCellItemsEvent = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
                 var courseData = ScriptableObject.CreateInstance<CellRuntimeDataSO>();
+                handle.courseData = courseData;
                 SetPrivateField(courseData, "gameData", gameData);
                 courseData.OnResetForReplay = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
                 courseData.OnCrystalSpawned = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
@@ -222,6 +473,7 @@ namespace CosmicShore.Cli
                 var crystalManagerGo = new GameObject("hexrace-crystal-manager");
                 crystalManagerGo.SetActive(false); // configure-before-activation
                 var crystalManager = crystalManagerGo.AddComponent<HexRaceCrystalManager>();
+                handle.crystalManager = crystalManager;
                 SetPrivateField(crystalManager, "cellData", courseData);
                 crystalManagerGo.SetActive(true);
 
@@ -229,24 +481,24 @@ namespace CosmicShore.Cli
                 cellConfig.CellName = "HexRaceCourse";
                 cellConfig.SenseRadiusOverride = 300f; // keeps the density grids small; the course registry is the SO, not ContainsPosition
 
-                cellHost = new GameObject("hexrace-cell");
-                cellHost.SetActive(false);
-                var cell = cellHost.AddComponent<Cell>();
+                handle.cellHost = new GameObject("hexrace-cell");
+                handle.cellHost.SetActive(false);
+                var cell = handle.cellHost.AddComponent<Cell>();
                 cell.ID = 1;
                 SetPrivateField(cell, "runtime", courseData);
                 SetPrivateField(cell, "gameData", gameData);
                 SetPrivateField(cell, "CellConfigs", new List<CellConfigDataSO> { cellConfig });
-                cellHost.SetActive(true);
+                handle.cellHost.SetActive(true);
 
                 gameData.InitializeGame(); // OnInitializeGame → Cell.Initialize binds courseData.Cell + builds grids
 
                 // ── seeded crystal course ─────────────────────────────────────
                 // Max claims before some domain reaches the target: (target-1)*3 + 1.
                 int courseLength = target * 3;
-                var coursePositions = GenerateCourse(courseLength);
-                var courseElements = new Element[courseLength];
+                handle.coursePositions = GenerateCourse(courseLength);
+                handle.courseElements = new Element[courseLength];
                 for (int i = 0; i < courseLength; i++)
-                    courseElements[i] = RollElement(i);
+                    handle.courseElements[i] = RollElement(i);
 
                 // ── prefabs + spawners (verbatim C6 pipeline) ─────────────────
                 var vesselTemplate = BuildVesselPrefab("SparrowPrefab", VesselClassType.Sparrow, gameData,
@@ -285,7 +537,7 @@ namespace CosmicShore.Cli
                 gameData.SetSpawnPositions(spawnTransforms);
 
                 // ── spawn the AI field through PlayerSpawner.SpawnPlayerAndShip ──
-                var players = new List<IPlayer>(playerCount);
+                handle.players = new List<IPlayer>(playerCount);
                 for (int i = 0; i < playerCount; i++)
                 {
                     var player = playerSpawner.SpawnPlayerAndShip(new IPlayer.InitializeData
@@ -314,158 +566,31 @@ namespace CosmicShore.Cli
                     // Known trap (C4/C6): end the async prism spawn loop so the process can exit.
                     ((VesselController)player.Vessel).VesselStatus.VesselPrismController.StopSpawn();
 
-                    players.Add(player);
+                    handle.players.Add(player);
                 }
 
-                // ── race ──────────────────────────────────────────────────────
+                // ── race start ────────────────────────────────────────────────
                 gameData.StartTurn();
-                float raceStart = gameData.TurnStartTime;
-                var rule = gameData.ScoringRule;
-                int frames = 0;
-                bool objectiveReached = false;
-                Domains objectiveDomain = Domains.Blue;
+                handle.raceStart = gameData.TurnStartTime;
+                handle.rule = gameData.ScoringRule;
 
                 // Contact rig sizing: claim happens at center distance == ClaimRadius
                 // (crystal trigger radius + vessel contact-bubble radius).
-                float crystalTriggerRadius =
+                handle.crystalTriggerRadius =
                     Mathf.Max(0.5f, options.ClaimRadius - options.VesselContactRadius);
 
-                int courseIndex = 0;
-                var onCrystalCollected = ScriptableObject.CreateInstance<ScriptableEventCrystalStats>();
-                Crystal activeCrystal = null;
+                handle.onCrystalCollected = ScriptableObject.CreateInstance<ScriptableEventCrystalStats>();
+                handle.onCrystalCollected.OnRaised += handle.HandleCrystalCollected;
+                handle.activeCrystal = SpawnCrystal(courseData, crystalManager, handle.coursePositions,
+                    handle.courseIndex, handle.courseElements[handle.courseIndex],
+                    handle.crystalTriggerRadius, handle.onCrystalCollected);
 
-                // Claim observer — fires from INSIDE the trigger pass, at the end of the
-                // genuine OnTriggerEnter → ImpactorBase.AcceptImpactee → ExecuteEffect
-                // chain on the crystal's OmniCrystalImpactor. The harness applies the
-                // StatsManager-shaped bookkeeping (RoundStats + elemental progression),
-                // logs the claim at the contact instant (authentic photo-finish gap), and
-                // stages the next waypoint. The crystal then removes itself: AcceptImpactee
-                // continues into Crystal.Respawn() → DestroyCrystal() →
-                // courseData.TryRemoveItem (pilots retarget) → Destroy(gameObject).
-                void HandleCrystalCollected(CrystalStats stats)
-                {
-                    result.TotalClaims++;
-                    var claimant = players.First(p => p.Name == stats.PlayerName);
-                    ApplyCrystalPickup(claimant, stats.Element);
-
-                    // Closest rival's distance to the crystal at claim time — the "photo finish" gap.
-                    float rivalSqr = float.PositiveInfinity;
-                    foreach (var other in players)
-                    {
-                        if (ReferenceEquals(other, claimant)) continue;
-                        var d2 = (other.Vessel.Transform.position - activeCrystal.transform.position).sqrMagnitude;
-                        if (d2 < rivalSqr) rivalSqr = d2;
-                    }
-                    string gap = players.Count > 1 ? $" (rival {F(Mathf.Sqrt(rivalSqr))}u behind)" : "";
-
-                    Log($"[t={F(Time.time - raceStart),7}s] {claimant.Name} ({claimant.Domain}) claims crystal #{courseIndex + 1} [{stats.Element}]{gap} — " +
-                        $"Jade {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Jade)} · " +
-                        $"Ruby {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Ruby)} · " +
-                        $"Gold {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Gold)}");
-
-                    // Stage the next waypoint crystal unless the race just ended.
-                    if (!rule.IsObjectiveReached(gameData, out _) && courseIndex + 1 < coursePositions.Length)
-                    {
-                        courseIndex++;
-                        activeCrystal = SpawnCrystal(courseData, crystalManager, coursePositions, courseIndex,
-                            courseElements[courseIndex], crystalTriggerRadius, onCrystalCollected);
-                    }
-                    else
-                    {
-                        activeCrystal = null;
-                    }
-                }
-
-                onCrystalCollected.OnRaised += HandleCrystalCollected;
-                activeCrystal = SpawnCrystal(courseData, crystalManager, coursePositions, courseIndex,
-                    courseElements[courseIndex], crystalTriggerRadius, onCrystalCollected);
-
-                while (frames < options.MaxFrames)
-                {
-                    loop.Tick(options.DeltaTime); // claims happen inside: trigger pass → impactor dispatch
-                    frames++;
-
-                    // Turn-monitor shape: the server checks the scoring rule every frame.
-                    if (rule.IsObjectiveReached(gameData, out objectiveDomain))
-                    {
-                        objectiveReached = true;
-                        break;
-                    }
-                }
-
-                onCrystalCollected.OnRaised -= HandleCrystalCollected;
-
-                result.FramesSimulated = frames;
-
-                if (!objectiveReached)
-                {
-                    Log($"TIMEOUT — no domain reached {target} crystals within {frames} frames.");
-                    return result;
-                }
-
-                // ── finish: resolve, score (golf), publish results ────────────
-                float finishTime = Time.time - raceStart;
-                var winnerDomain = rule.ResolveWinner(gameData);   // == objectiveDomain (highest sum, Jade→Ruby→Gold ties)
-                rule.AssignScores(gameData, winnerDomain, finishTime);
-                gameData.SetResults(rule.BuildResults(gameData));
-                gameData.InvokeGameTurnConditionsMet();
-                gameData.InvokeWinnerCalculated();
-                gameData.InvokeMiniGameEnd();
-
-                result.Finished = true;
-                result.FinishTime = finishTime;
-                result.WinnerName = gameData.WinnerName;
-                result.WinnerDomain = gameData.WinnerDomain;
-
-                Log("");
-                Log($"OBJECTIVE — {objectiveDomain} domain reached {target} crystals in {F(finishTime)}s ({frames} frames).");
-                Log($"WINNER    — {gameData.WinnerName} ({gameData.WinnerDomain}), representative of the winning domain.");
-                Log("");
-                Log("STANDINGS (golf rules — lower score is better):");
-
-                var crystalsByName = gameData.RoundStatsList.ToDictionary(s => (string)s.Name, s => s.CrystalsCollected);
-                foreach (var row in gameData.Results)
-                {
-                    var standing = new HexRaceStanding
-                    {
-                        Rank = row.Rank,
-                        Name = row.Name,
-                        Domain = row.Domain,
-                        Crystals = crystalsByName.TryGetValue(row.Name, out var c) ? c : 0,
-                        Score = row.Score,
-                        ScoreText = row.ScoreText,
-                        Secondary = row.Secondary,
-                    };
-                    result.Standings.Add(standing);
-                    Log($"  #{standing.Rank} {standing.Name,-6} {standing.Domain,-5} {standing.Crystals,2} crystals  score={F(standing.Score),9}  {standing.ScoreText}");
-                }
-
-                return result;
+                return handle;
             }
-            finally
+            catch
             {
-                // Stop AI/spawn loops + flush destroys so the loop (and process) can wind down.
-                if (gameData != null)
-                {
-                    foreach (var p in gameData.Players.ToList())
-                    {
-                        if (p?.Vessel is VesselController vc)
-                            vc.VesselStatus.VesselPrismController.StopSpawn();
-                        p?.ResetForPlay(); // AI path: toggles the AIPilot OFF
-                    }
-                }
-                if (cellHost != null)
-                    cellHost.SetActive(false); // unregisters Cell.ActiveCells + resets the course registry
-                loop.Tick(options.DeltaTime);  // end-of-frame destroy flush
-
-                typeof(PlayerDataService).GetProperty("Instance")!.SetValue(null, null);
-                typeof(AudioSystem).GetProperty("Instance")!.SetValue(null, null); // shell singleton (Awake-set)
-                NetworkManager.Singleton = null;
-                Debug.Sink = previousSink;
-
-                foreach (var entry in capturedLog.Entries)
-                    if (entry.Type is LogType.Error or LogType.Exception)
-                        result.EngineErrors.Add($"{entry.Type}: {entry.Message}");
+                handle.Dispose();
+                throw;
             }
         }
 
@@ -505,7 +630,7 @@ namespace CosmicShore.Cli
         /// on collection (Respawn → DestroyCrystal → TryRemoveItem), so the harness only
         /// observes the OnCrystalCollected SOAP event.
         /// </summary>
-        static Crystal SpawnCrystal(CellRuntimeDataSO courseData, CrystalManager crystalManager,
+        internal static Crystal SpawnCrystal(CellRuntimeDataSO courseData, CrystalManager crystalManager,
             Vector3[] course, int index,
             Element element, float triggerRadius, ScriptableEventCrystalStats onCrystalCollected)
         {
@@ -540,7 +665,7 @@ namespace CosmicShore.Cli
         }
 
         /// <summary>RoundStats + ResourceSystem elemental progression, mirroring the SkimRace sim.</summary>
-        static void ApplyCrystalPickup(IPlayer claimant, Element element)
+        internal static void ApplyCrystalPickup(IPlayer claimant, Element element)
         {
             var stats = claimant.RoundStats;
             stats.CrystalsCollected++;

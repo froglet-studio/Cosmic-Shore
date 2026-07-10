@@ -134,4 +134,45 @@ public class HeadlessRoundTests
         // A different seed lays a different course → the claim sequence (who/when) differs.
         Assert.NotEqual(ClaimLines(first).ToList(), ClaimLines(second).ToList());
     }
+
+    // ── Arc G: the stepped handle IS the blocking Run ────────────────────────
+    // The windowed mode host drives Setup → StepFrame → FinishAndScore directly;
+    // this pins that path to the CLI's Run — same world, same claims, same
+    // standings, transcript line-identical.
+
+    [Fact]
+    public void SteppedHandle_MatchesBlockingRun_Exactly()
+    {
+        var blocking = RunRound(players: 4, seed: 42);
+
+        var options = new HexRaceRoundOptions
+        {
+            PlayerCount = 4,
+            Seed = 42,
+            CrystalTarget = CompactTarget,
+        };
+        HexRaceRoundResult stepped;
+        using (var handle = HexRaceRound.Setup(options))
+        {
+            while (handle.FramesStepped < handle.Options.MaxFrames)
+            {
+                if (handle.StepFrame())
+                    break;
+            }
+            handle.FinishAndScore(); // CompleteStepping folds in (unsubscribe + frame stamp)
+            stepped = handle.Result;
+        }
+
+        Assert.True(stepped.Finished);
+        Assert.Empty(stepped.EngineErrors);
+        Assert.Equal(blocking.Transcript, stepped.Transcript);
+        Assert.Equal(blocking.WinnerName, stepped.WinnerName);
+        Assert.Equal(blocking.WinnerDomain, stepped.WinnerDomain);
+        Assert.Equal(blocking.FinishTime, stepped.FinishTime);
+        Assert.Equal(blocking.FramesSimulated, stepped.FramesSimulated);
+        Assert.Equal(blocking.TotalClaims, stepped.TotalClaims);
+        Assert.Equal(
+            blocking.Standings.Select(s => (s.Rank, s.Name, s.Domain, s.Crystals, s.Score)),
+            stepped.Standings.Select(s => (s.Rank, s.Name, s.Domain, s.Crystals, s.Score)));
+    }
 }
