@@ -711,22 +711,44 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc F part 2 — more screens + shell hardening.** The shell core is LIVE
-   (part 1 below — the real ScreenSwitcher navigates on screen). Next:
-   (a) **headless ScreenSwitcher tests** (navigation core, disabled-screen
-   skipping, modal stack push/pop + return-state PlayerPrefs, IScreen
-   enter/exit ordering, freestyle handoff flipping sendNavigationEvents —
-   all drivable without a window; part 1 leaned on the menushell screenshot);
-   (b) port the next screens by dependency weight — `StoreScreen` (extends
-   View — check the View base first), `HangarScreen` + `LeaderboardsMenu`
-   (IScreen implementors; un-carry the switcher's two screen deviations when
-   they land), `ArcadeScreen` (needs SO_ArcadeGame card data); (c) wire
-   ported screens into the menushell panels as they arrive so the screenshot
-   gate grows real content. Arc G (windowed mode host) stays open in
-   parallel — it's the other milestone track (G→H) and hasn't started.
+1. **Arc F part 2b — the screens, as coherent units.** The switcher contract
+   is now test-pinned (part 2a below). Port each screen WITH its view/card
+   family so nothing lands half-deviated: **ArcadeScreen** first (75L +
+   `ArcadeExploreView` 168L + `ArcadeLoadoutView` 276L + their card types —
+   scope the SO_ArcadeGame card surface before starting), then
+   **HangarScreen** (331L + HangarVesselGridCard + HangarVesselDetailView +
+   SO_VesselList), **LeaderboardsMenu** (226L), **StoreScreen** (239L —
+   check its `View` base class first). Un-carry the switcher's two screen
+   deviations (HangarMenu/LeaderboardMenu fields + LoadView calls) as each
+   lands, and wire ported screens into the menushell panels so the
+   screenshot gate grows real content. Arc G (windowed mode host — the
+   parallel G→H milestone track, unstarted) is the alternative if a
+   drift-sync eats the budget.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Arc F part 2a ✅ (2026-07-10) — the switcher contract, test-pinned
+
+**8 headless tests** (`ScreenSwitcherTests`) drive the REAL ported
+ScreenSwitcher in a transcribed Menu_Main shell (canvas + scaler + Screens
+root on the world-(0,0) pivot contract + 5 panels + UserActionSystem; the
+freestyle test wires a real `MenuFreestyleEventsContainerSO` through the
+inactive-GO-then-activate pattern so OnEnable subscribes): HOME landing +
+viewport panel layout (1920-unit panels at i×1920, root slid −2 viewports in
+world pixels), arrow navigation skipping disabled screens BOTH directions
+(PORT and ARK hops + off-the-end stays put), direct-nav rejection of disabled
+screens, IScreen exit-before-enter ordering, the pause-on-non-HOME rule
+through the real PauseSystem (reset in Dispose — static), return-state
+consumed across switcher GENERATIONS (new GameLoop + new shell lands on the
+persisted screen and deletes the key), the modal stack (stacked top-wins,
+ReturnToModal PlayerPrefs written on push / cleared at empty), and the
+freestyle handoff (sendNavigationEvents flip + screens CanvasGroup hide +
+navigation blocked while flying + IScreen re-entry on exit). PlayerPrefs
+return-state hygiene via the switcher's own RunOnStart before AND after every
+test. **1618 tests green in BOTH configs (1280 + 338)**; 5 CLI modes exit 0;
+all FOUR client diags byte-identical (`trail 786` / `toys 12` / uidemo /
+menushell). bleeding-edge unmoved at `f2b8f5aa`.
 
 ### Arc F part 1 ✅ (2026-07-10) — the menu shell is LIVE on screen
 
