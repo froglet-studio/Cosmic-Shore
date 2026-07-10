@@ -931,8 +931,13 @@ namespace CosmicShore.Client
         {
             var mode = _gameData.GameMode;
             int players = Math.Max(1, _gameData.SelectedPlayerCount.Value);
-            string game = mode == CosmicShore.Data.GameModes.MultiplayerCrystalCapture
-                ? "crystalcapture" : "hexrace";
+            string game = mode switch
+            {
+                CosmicShore.Data.GameModes.MultiplayerCrystalCapture => "crystalcapture",
+                CosmicShore.Data.GameModes.MultiplayerJoust => "joust",
+                CosmicShore.Data.GameModes.AstroLeague => "astroleague",
+                _ => "hexrace",
+            };
 
             Console.WriteLine($"[menushell] LAUNCH — tearing down the menu world, standing up {mode} ({players} pilots)");
 

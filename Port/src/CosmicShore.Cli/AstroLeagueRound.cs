@@ -106,6 +106,283 @@ namespace CosmicShore.Cli
     /// constructs and wires (the scene + ServerPlayerVesselInitializer roles), observes
     /// SOAP events for the transcript, and tears everything down.
     /// </summary>
+    /// <summary>
+    /// A LIVE Astro League match the caller steps one engine frame at a time
+    /// (Arc G part 3). Same shape as the sibling handles: owns the match's GameLoop,
+    /// ball, arena, goals + controller chain; Dispose is the CLI's finally block
+    /// (including the solo hitstop/celebration timeScale reset) then loop disposal.
+    /// </summary>
+    public sealed class AstroLeagueRoundHandle : IRoundDriver
+    {
+        internal AstroLeagueRoundOptions options;
+        internal Action<string> liveLog;
+        internal AstroLeagueRoundResult result;
+
+        internal GameLoop loop;
+        internal CapturingLogSink capturedLog;
+        internal ILogSink previousSink;
+
+        internal GameDataSO gameData;
+        internal AstroLeagueController controller;
+        internal AstroLeagueMatchMonitor matchMonitor;
+        internal AstroLeagueBall ball;
+        internal AstroLeagueSettingsSO settings;
+        internal readonly List<NetworkBehaviour> spawnedBehaviours = new();
+        internal AstroLeagueScoringRuleSO rule;
+        internal List<IPlayer> players;
+        internal ScriptableEventBool readyButtonChannel;
+        internal ScriptableEventString displayChannel;
+        internal readonly List<(IRoundStats stats, Action<IRoundStats> handler)> goalHandlers = new();
+        internal readonly Dictionary<string, int> loggedGoals = new();
+
+        internal int frames;
+        internal bool matchEnded;
+        internal bool readyShown;
+        internal bool readyClicked;
+        internal bool turnStarted;
+        internal float turnStart;
+        internal bool overtimeSeen;
+        internal string lastClock = "";
+        internal string lastLoggedStriker;
+        internal int diagEvery;
+
+        static readonly Vector3[] EmptyCourse = Array.Empty<Vector3>();
+        static readonly Element[] EmptyElements = Array.Empty<Element>();
+
+        bool _steppingCompleted;
+        bool _finished;
+        bool _disposed;
+
+        // ── IRoundDriver (world view for a rendering host) ───────────────────
+        public string GameLabel => "ASTRO LEAGUE";
+        public string ScoringLabel => "points - higher is better";
+        public AstroLeagueRoundOptions Options => options;
+        public AstroLeagueRoundResult Result => result;
+        public GameDataSO GameData => gameData;
+        public IReadOnlyList<IPlayer> Players => players;
+        public Crystal ActiveCrystal => null;      // the objective is the BALL, exposed as a marker
+        public Vector3[] Course => EmptyCourse;
+        public Element[] CourseElements => EmptyElements;
+        public int CourseIndex => 0;
+        public int Target => settings != null ? settings.goalLimit : 0;
+        public int FramesStepped => frames;
+        public int MaxFrames => options.MaxFrames;
+        public bool Live => turnStarted;
+        public float ClockStart => turnStart;
+        public bool Finished => result.Finished;
+        public string WinnerName => result.WinnerName;
+        public Domains WinnerDomain => result.WinnerDomain;
+        public int TotalClaims => DomainScore(Domains.Jade) + DomainScore(Domains.Ruby);
+        public IEnumerable<(int Rank, string Name, Domains Domain, int Crystals, string ScoreText)> StandingRows
+        {
+            get
+            {
+                foreach (var s in result.Standings)
+                    yield return (s.Rank, s.Name, s.Domain, s.Goals, s.ScoreText);
+            }
+        }
+        public int DomainScore(Domains domain) => ScoringMetrics.SumByDomain(gameData, ScoringMetric.Goals, domain);
+        public int PlayerScore(IPlayer player) => player.RoundStats.GoalsScored;
+
+        /// <summary>The camera watches the BALL — hypersea soccer's one true objective.</summary>
+        public Vector3? LookTarget => ball ? ball.transform.position : (Vector3?)null;
+
+        /// <summary>Ball (white octahedron), goal mouths (domain rings), arena boundary (dim ring).</summary>
+        public IEnumerable<RoundSceneMarker> SceneMarkers
+        {
+            get
+            {
+                if (ball)
+                    yield return new RoundSceneMarker(ball.transform.position, 7f,
+                        RoundSceneMarkerKind.Octahedron, Vector3.up, 1f, 1f, 1f, 1f);
+                if (settings != null)
+                {
+                    // Goal mouths face ±Z (Jade defends -Z, Ruby defends +Z — the scene layout).
+                    yield return new RoundSceneMarker(new Vector3(0f, 0f, -150f), options.GoalMouthRadius,
+                        RoundSceneMarkerKind.Ring, new Vector3(0f, 0f, 1f), 0.25f, 0.9f, 0.55f, 0.9f);
+                    yield return new RoundSceneMarker(new Vector3(0f, 0f, +150f), options.GoalMouthRadius,
+                        RoundSceneMarkerKind.Ring, new Vector3(0f, 0f, 1f), 0.95f, 0.28f, 0.4f, 0.9f);
+                    // Arena boundary — the containment sphere's equator.
+                    yield return new RoundSceneMarker(Vector3.zero, settings.boundaryRadius,
+                        RoundSceneMarkerKind.Ring, Vector3.up, 0.5f, 0.55f, 0.8f, 0.35f);
+                }
+            }
+        }
+
+        internal void Log(string line)
+        {
+            result.Transcript.Add(line);
+            liveLog?.Invoke(line);
+        }
+
+        /// <summary>One engine frame + the CLI's diag beat and ready-click follow-up.</summary>
+        public bool StepFrame()
+        {
+            loop.Tick(options.DeltaTime);
+            frames++;
+
+            if (diagEvery > 0 && frames % diagEvery == 0)
+            {
+                var bp = ball.transform.position;
+                var bv = ball.Velocity;
+                string ai = string.Join(" | ", players.Select(p =>
+                {
+                    var v = p.Vessel.Transform.position;
+                    return $"{p.Name} d={AstroLeagueRound.F(Vector3.Distance(v, bp))}";
+                }));
+                Log($"[diag t={AstroLeagueRound.F(Time.time)}] ball ({AstroLeagueRound.F(bp.x)},{AstroLeagueRound.F(bp.y)},{AstroLeagueRound.F(bp.z)}) |v|={AstroLeagueRound.F(bv.magnitude)} frozen={ball.IsFrozen} | {ai}");
+            }
+
+            if (!readyClicked && readyShown)
+            {
+                readyClicked = true;
+                Log($"[t={AstroLeagueRound.F(Time.time),7}s] ready — count-in starts (kickoff parking at GO)");
+                controller.OnReadyClicked(); // DomainGames ready flow → countdown → kickoff
+            }
+
+            return matchEnded;
+        }
+
+        /// <summary>Idempotent end-of-stepping: stamps + observer detach (the CLI's post-loop block).</summary>
+        public void CompleteStepping()
+        {
+            if (_steppingCompleted) return;
+            _steppingCompleted = true;
+
+            result.FramesSimulated = frames;
+            result.WentToOvertime = overtimeSeen;
+
+            gameData.OnMiniGameEnd.OnRaised -= MarkEnded;
+            readyButtonChannel.OnRaised -= OnReadyToggled;
+            gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStartedStopPrismSpawns;
+            displayChannel.OnRaised -= OnClockDisplay;
+            ball.OnStruckServer -= OnStruck;
+            foreach (var (stats, handler) in goalHandlers)
+                stats.OnGoalsScoredChanged -= handler;
+        }
+
+        /// <summary>Finish: read the shared end-game surface + log standings (no-op unless ended).</summary>
+        public void FinishAndScore()
+        {
+            CompleteStepping();
+            if (_finished || !matchEnded) return;
+            _finished = true;
+
+            result.Finished = true;
+            result.WinnerName = gameData.WinnerName;
+            result.WinnerDomain = gameData.WinnerDomain;
+            result.JadeGoals = SumGoals(Domains.Jade);
+            result.RubyGoals = SumGoals(Domains.Ruby);
+
+            Log("");
+            Log($"FULL TIME — {result.WinnerDomain} wins {Math.Max(result.JadeGoals, result.RubyGoals)}–" +
+                $"{Math.Min(result.JadeGoals, result.RubyGoals)}{(overtimeSeen ? " (golden goal)" : "")} " +
+                $"after {frames} frames ({AstroLeagueRound.F(Time.time)}s).");
+            Log($"WINNER    — {result.WinnerName} ({result.WinnerDomain}), top scorer of the winning domain.");
+            Log("");
+            Log("STANDINGS (points — higher is better):");
+
+            var goalsByName = gameData.RoundStatsList.ToDictionary(s => (string)s.Name, s => s.GoalsScored);
+            foreach (var row in gameData.Results)
+            {
+                var standing = new AstroLeagueStanding
+                {
+                    Rank = row.Rank,
+                    Name = row.Name,
+                    Domain = row.Domain,
+                    Goals = goalsByName.TryGetValue(row.Name, out var g) ? g : 0,
+                    Score = row.Score,
+                    ScoreText = row.ScoreText,
+                };
+                result.Standings.Add(standing);
+                Log($"  #{standing.Rank} {standing.Name,-6} {standing.Domain,-5} {standing.Goals,2} goals  {standing.ScoreText}");
+            }
+        }
+
+        // ── observers (the CLI's local functions, promoted to handle methods) ──
+
+        internal int SumGoals(Domains d) => ScoringMetrics.SumByDomain(gameData, ScoringMetric.Goals, d);
+
+        internal void MarkEnded() => matchEnded = true;
+
+        internal void OnReadyToggled(bool enabled) { if (enabled) readyShown = true; }
+
+        // Known trap (C4/C6), kickoff edition: OnCountdownTimerEnded_ClientRpc →
+        // SetPlayersActive → StartPlayer → StartVessel RE-ARMS every prism spawn loop.
+        // The round wires no prism factory channel (Astro League's prism game is the
+        // ball's spatial scan; headless there is no trail mass), so pause the spawner
+        // again the moment the turn starts — pausing mass creation is allowed
+        // (conserved-mass rules), aging it out would not be.
+        internal void OnTurnStartedStopPrismSpawns()
+        {
+            turnStarted = true;
+            turnStart = Time.time;
+            foreach (var p in players)
+                ((VesselController)p.Vessel).VesselStatus.VesselPrismController.StopSpawn();
+        }
+
+        internal void OnClockDisplay(string display)
+        {
+            if (display == lastClock) return;
+            lastClock = display;
+            if (display == "OT")
+            {
+                overtimeSeen = true;
+                Log($"[t={AstroLeagueRound.F(Time.time),7}s] ⏱ OVERTIME — golden goal, next score wins");
+            }
+            else if (display.EndsWith(":00") || display.EndsWith(":30"))
+            {
+                Log($"[t={AstroLeagueRound.F(Time.time),7}s] ⏱ clock {display} · Jade {SumGoals(Domains.Jade)} — {SumGoals(Domains.Ruby)} Ruby");
+            }
+        }
+
+        internal void OnStruck(IVessel vessel, float intensity)
+        {
+            result.TotalStrikes++;
+            var striker = players.FirstOrDefault(p => ReferenceEquals(p.Vessel, vessel));
+            if (striker == null) return;
+            if (striker.Name == lastLoggedStriker) return; // log possession changes, not dribbles
+            lastLoggedStriker = striker.Name;
+            Log($"[t={AstroLeagueRound.F(Time.time),7}s] {striker.Name} ({striker.Domain}) strikes the ball (intensity {AstroLeagueRound.F(intensity)})");
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+
+            // Wind down every async loop the chain started (async-void trap: nothing may
+            // outlive the round) — despawn in reverse spawn order, stop the monitor, stop
+            // AI/prism loops, then flush destroys.
+            matchMonitor?.StopMonitor();
+            for (int i = spawnedBehaviours.Count - 1; i >= 0; i--)
+                spawnedBehaviours[i].Despawn(); // controller despawn cancels matchCts + coroutines
+
+            if (gameData != null)
+            {
+                foreach (var p in gameData.Players.ToList())
+                {
+                    if (p?.Vessel is VesselController vc)
+                        vc.VesselStatus.VesselPrismController.StopSpawn();
+                    p?.ResetForPlay(); // AI path: toggles the AIPilot OFF
+                }
+            }
+            loop?.Tick(options.DeltaTime); // end-of-frame destroy flush
+
+            typeof(PlayerDataService).GetProperty("Instance")!.SetValue(null, null);
+            typeof(AudioSystem).GetProperty("Instance")!.SetValue(null, null); // shell singleton (Awake-set)
+            NetworkManager.Singleton = null;
+            Time.timeScale = 1f; // solo hitstop/celebration slow-mo must not leak past the round
+            Debug.Sink = previousSink;
+
+            foreach (var entry in capturedLog.Entries)
+                if (entry.Type is LogType.Error or LogType.Exception)
+                    result.EngineErrors.Add($"{entry.Type}: {entry.Message}");
+
+            loop?.Dispose();
+        }
+    }
+
     public static class AstroLeagueRound
     {
         // ── reflection stand-in for inspector wiring of serialized fields ─────
@@ -129,37 +406,57 @@ namespace CosmicShore.Cli
             p.SetValue(target, value);
         }
 
-        static string F(float v) => v.ToString("0.00", CultureInfo.InvariantCulture);
+        internal static string F(float v) => v.ToString("0.00", CultureInfo.InvariantCulture);
 
-        // ── round entry point ──────────────────────────────────────────────────
+        // ── round entry points ─────────────────────────────────────────────────
 
+        /// <summary>The CLI's blocking match: Setup → step to end/timeout → read scores.</summary>
         public static AstroLeagueRoundResult Run(AstroLeagueRoundOptions options, Action<string> liveLog = null)
+        {
+            using var handle = Setup(options, liveLog);
+
+            while (handle.frames < handle.options.MaxFrames && !handle.matchEnded)
+            {
+                if (handle.StepFrame())
+                    break;
+            }
+
+            handle.CompleteStepping();
+
+            if (!handle.matchEnded)
+            {
+                handle.Log($"TIMEOUT — match did not finish within {handle.frames} frames.");
+                return handle.result;
+            }
+
+            handle.FinishAndScore();
+            return handle.result;
+        }
+
+        /// <summary>Builds the full match world; the caller owns the returned handle.</summary>
+        public static AstroLeagueRoundHandle Setup(AstroLeagueRoundOptions options, Action<string> liveLog = null)
         {
             options ??= new AstroLeagueRoundOptions();
             int playerCount = Mathf.Clamp(options.PlayerCount, 2, 6);
 
-            var result = new AstroLeagueRoundResult();
-            void Log(string line)
+            var handle = new AstroLeagueRoundHandle
             {
-                result.Transcript.Add(line);
-                liveLog?.Invoke(line);
-            }
+                options = options,
+                liveLog = liveLog,
+                result = new AstroLeagueRoundResult(),
+                diagEvery = Environment.GetEnvironmentVariable("ASTRO_DIAG") == "1" ? 600 : 0,
+            };
 
-            var capturedLog = new CapturingLogSink();
-            var previousSink = Debug.Sink;
-            Debug.Sink = capturedLog;
+            handle.capturedLog = new CapturingLogSink();
+            handle.previousSink = Debug.Sink;
+            Debug.Sink = handle.capturedLog;
 
-            using var loop = new GameLoop("AstroLeagueRound");
+            handle.loop = new GameLoop("AstroLeagueRound");
             Random.InitState(options.Seed);
             // In-process test hygiene (HeadlessRoundTests pattern): a prior test's
             // PrismSpatialIndex singleton must not leak into the ball's per-tick scan.
             typeof(Singleton<PrismSpatialIndex>).GetProperty("Instance")!.SetValue(null, null);
 
-            GameDataSO gameData = null;
-            AstroLeagueController controller = null;
-            AstroLeagueMatchMonitor matchMonitor = null;
-            AstroLeagueBall ball = null;
-            var spawnedBehaviours = new List<NetworkBehaviour>();
             var networkManagerGo = new GameObject("NetworkManager");
             NetworkManager.Singleton = networkManagerGo.AddComponent<NetworkManager>();
 
@@ -167,6 +464,7 @@ namespace CosmicShore.Cli
             {
                 // ── settings + rule (the SO assets of the real scene) ─────────
                 var settings = ScriptableObject.CreateInstance<AstroLeagueSettingsSO>();
+                handle.settings = settings;
                 settings.goalLimit = Mathf.Max(1, options.GoalLimit);
                 settings.matchDurationSeconds = Mathf.Max(10f, options.MatchDurationSeconds);
                 // Headless tuning (settings-asset values, the designer knob surface): the CLI's
@@ -177,6 +475,7 @@ namespace CosmicShore.Cli
                 settings.boundaryRadius = 170f;
 
                 var rule = ScriptableObject.CreateInstance<AstroLeagueScoringRuleSO>();
+                handle.rule = rule;
                 SetPrivateField(rule, "metric", ScoringMetric.Goals);
                 SetPrivateField(rule, "golfRules", false);
 
@@ -191,7 +490,8 @@ namespace CosmicShore.Cli
                     theme.TeamMaterialSets[domain] = set;
                 }
 
-                gameData = ScriptableObject.CreateInstance<GameDataSO>();
+                var gameData = ScriptableObject.CreateInstance<GameDataSO>();
+                handle.gameData = gameData;
                 gameData.ThemeManagerData = theme;
                 gameData.OnInitializeGame = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
                 gameData.OnSessionStarted = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
@@ -240,12 +540,13 @@ namespace CosmicShore.Cli
                 ballGo.AddComponent<Rigidbody>();
                 var ballCol = ballGo.AddComponent<SphereCollider>();
                 ballCol.radius = 0.5f;
-                ball = ballGo.AddComponent<AstroLeagueBall>();
+                var ball = ballGo.AddComponent<AstroLeagueBall>();
+                handle.ball = ball;
                 SetPrivateField(ball, "settings", settings);
                 SetPrivateField(ball, "gameData", gameData);
                 ballGo.SetActive(true); // Awake: rigidbody config + visuals
                 ball.Spawn();           // host-mode NetworkBehaviour (server-authoritative sim)
-                spawnedBehaviours.Add(ball);
+                handle.spawnedBehaviours.Add(ball);
 
                 // ── arena + goals + team spawns (the scene layout) ────────────
                 var arenaGo = new GameObject("AstroLeagueArena");
@@ -287,15 +588,18 @@ namespace CosmicShore.Cli
                     .AddComponent<CosmicShore.Engine.UI.Image>();
                 countdownDisplay.transform.SetParent(controllerGo.transform, false);
                 SetPrivateField(countdownTimer, "countdownDisplay", countdownDisplay);
-                matchMonitor = controllerGo.AddComponent<AstroLeagueMatchMonitor>();
+                var matchMonitor = controllerGo.AddComponent<AstroLeagueMatchMonitor>();
+                handle.matchMonitor = matchMonitor;
                 SetPrivateField(matchMonitor, "gameData", gameData);
                 var displayChannel = ScriptableObject.CreateInstance<ScriptableEventString>();
+                handle.displayChannel = displayChannel;
                 SetPrivateField(matchMonitor, "onUpdateTurnMonitorDisplay", displayChannel);
                 var turnMonitorController = controllerGo.AddComponent<TurnMonitorController>();
                 SetPrivateField(turnMonitorController, "gameData", gameData);
                 SetPrivateField(turnMonitorController, "monitors", new List<TurnMonitor> { matchMonitor });
 
-                controller = controllerGo.AddComponent<AstroLeagueController>();
+                var controller = controllerGo.AddComponent<AstroLeagueController>();
+                handle.controller = controller;
                 var goals = new List<AstroLeagueGoal>
                 {
                     // Order must match GameDataSO.ActiveDomains (Jade, Ruby): Jade defends -Z, Ruby defends +Z.
@@ -316,6 +620,7 @@ namespace CosmicShore.Cli
                 SetPrivateField(controller, "teamSpawns", teamSpawns);
                 SetPrivateField(controller, "countdownTimer", countdownTimer);
                 var readyButtonChannel = ScriptableObject.CreateInstance<ScriptableEventBool>();
+                handle.readyButtonChannel = readyButtonChannel;
                 SetPrivateField(controller, "_onToggleReadyButton", readyButtonChannel);
                 container.InjectGameObject(controllerGo); // [Inject] gameData + audioSystem
                 controllerGo.SetActive(true);
@@ -349,7 +654,7 @@ namespace CosmicShore.Cli
                 }
                 gameData.SetSpawnPositions(spawnTransforms);
 
-                var players = new List<IPlayer>(playerCount);
+                handle.players = new List<IPlayer>(playerCount);
                 for (int i = 0; i < playerCount; i++)
                 {
                     var player = playerSpawner.SpawnPlayerAndShip(new IPlayer.InitializeData
@@ -382,211 +687,60 @@ namespace CosmicShore.Cli
                     // per-tick velocity sampler reads (network-spawn does this in the real scene).
                     gameData.Vessels.Add(player.Vessel);
 
-                    players.Add(player);
+                    handle.players.Add(player);
                 }
 
                 // Single-process: the first AI doubles as the "local user" the ready flow reads
                 // (rung-4 precedent — LocalPlayer/LocalRoundStats reflection-mirrored).
-                SetProperty(gameData, "LocalPlayer", players[0]);
-                SetProperty(gameData, "LocalRoundStats", players[0].RoundStats);
+                SetProperty(gameData, "LocalPlayer", handle.players[0]);
+                SetProperty(gameData, "LocalRoundStats", handle.players[0].RoundStats);
 
-                // ── transcript observers (SOAP + controller events) ───────────
-                bool matchEnded = false;
-                bool readyShown = false;
-                bool overtimeSeen = false;
-                string lastClock = "";
-                string lastLoggedStriker = null;
+                // ── transcript observers (handle methods) ─────────────────
+                gameData.OnMiniGameEnd.OnRaised += handle.MarkEnded;
+                readyButtonChannel.OnRaised += handle.OnReadyToggled;
+                gameData.OnMiniGameTurnStarted.OnRaised += handle.OnTurnStartedStopPrismSpawns;
+                displayChannel.OnRaised += handle.OnClockDisplay;
+                ball.OnStruckServer += handle.OnStruck;
 
-                gameData.OnMiniGameEnd.OnRaised += MarkEnded;
-                void MarkEnded() => matchEnded = true;
-                readyButtonChannel.OnRaised += OnReadyToggled;
-                void OnReadyToggled(bool enabled) { if (enabled) readyShown = true; }
-
-                // Known trap (C4/C6), kickoff edition: OnCountdownTimerEnded_ClientRpc →
-                // SetPlayersActive → StartPlayer → StartVessel RE-ARMS every prism spawn loop.
-                // The round wires no prism factory channel (Astro League's prism game is the
-                // ball's spatial scan; headless there is no trail mass), so pause the spawner
-                // again the moment the turn starts — pausing mass creation is allowed
-                // (conserved-mass rules), aging it out would not be.
-                gameData.OnMiniGameTurnStarted.OnRaised += StopAllPrismSpawns;
-                void StopAllPrismSpawns()
-                {
-                    foreach (var p in players)
-                        ((VesselController)p.Vessel).VesselStatus.VesselPrismController.StopSpawn();
-                }
-
-                displayChannel.OnRaised += OnClockDisplay;
-                void OnClockDisplay(string display)
-                {
-                    if (display == lastClock) return;
-                    lastClock = display;
-                    if (display == "OT")
-                    {
-                        overtimeSeen = true;
-                        Log($"[t={F(Time.time),7}s] ⏱ OVERTIME — golden goal, next score wins");
-                    }
-                    else if (display.EndsWith(":00") || display.EndsWith(":30"))
-                    {
-                        Log($"[t={F(Time.time),7}s] ⏱ clock {display} · Jade {SumGoals(Domains.Jade)} — {SumGoals(Domains.Ruby)} Ruby");
-                    }
-                }
-
-                int SumGoals(Domains d) => ScoringMetrics.SumByDomain(gameData, ScoringMetric.Goals, d);
-
-                ball.OnStruckServer += OnStruck;
-                void OnStruck(IVessel vessel, float intensity)
-                {
-                    result.TotalStrikes++;
-                    var striker = players.FirstOrDefault(p => ReferenceEquals(p.Vessel, vessel));
-                    if (striker == null) return;
-                    if (striker.Name == lastLoggedStriker) return; // log possession changes, not dribbles
-                    lastLoggedStriker = striker.Name;
-                    Log($"[t={F(Time.time),7}s] {striker.Name} ({striker.Domain}) strikes the ball (intensity {F(intensity)})");
-                }
-
-                var goalHandlers = new List<(IRoundStats stats, Action<IRoundStats> handler)>();
-                var loggedGoals = new Dictionary<string, int>();
-                foreach (var p in players)
+                foreach (var p in handle.players)
                 {
                     var captured = p;
-                    Action<IRoundStats> handler = stats =>
+                    Action<IRoundStats> goalHandler = stats =>
                     {
                         // Log only genuine increments — SyncFinalScores_ClientRpc re-writes
                         // GoalsScored on every stat at match end, re-raising the event.
-                        loggedGoals.TryGetValue(captured.Name, out int known);
+                        handle.loggedGoals.TryGetValue(captured.Name, out int known);
                         if (stats.GoalsScored <= known) return;
-                        loggedGoals[captured.Name] = stats.GoalsScored;
+                        handle.loggedGoals[captured.Name] = stats.GoalsScored;
 
-                        lastLoggedStriker = null;
-                        Log($"[t={F(Time.time),7}s] ⚽ GOAL! {captured.Name} ({captured.Domain}) scores — " +
-                            $"Jade {SumGoals(Domains.Jade)} — {SumGoals(Domains.Ruby)} Ruby");
+                        handle.lastLoggedStriker = null;
+                        handle.Log($"[t={F(Time.time),7}s] ⚽ GOAL! {captured.Name} ({captured.Domain}) scores — " +
+                            $"Jade {handle.SumGoals(Domains.Jade)} — {handle.SumGoals(Domains.Ruby)} Ruby");
                     };
-                    p.RoundStats.OnGoalsScoredChanged += handler;
-                    goalHandlers.Add((p.RoundStats, handler));
+                    p.RoundStats.OnGoalsScoredChanged += goalHandler;
+                    handle.goalHandlers.Add((p.RoundStats, goalHandler));
                 }
 
                 // ── kick the real flow: spawn the scene-placed NetworkBehaviours ──
                 matchMonitor.Spawn();
-                spawnedBehaviours.Add(matchMonitor);
+                handle.spawnedBehaviours.Add(matchMonitor);
                 turnMonitorController.Spawn();
-                spawnedBehaviours.Add(turnMonitorController);
+                handle.spawnedBehaviours.Add(turnMonitorController);
                 controller.Spawn(); // OnNetworkSpawn → config sync → InitializeAfterDelay → SetupNewRound/Turn
-                spawnedBehaviours.Add(controller);
+                handle.spawnedBehaviours.Add(controller);
 
-                Log($"match: {playerCount} AI ({(playerCount + 1) / 2}v{playerCount / 2}), goal limit {settings.goalLimit} (mercy), " +
+                handle.Log($"match: {playerCount} AI ({(playerCount + 1) / 2}v{playerCount / 2}), goal limit {settings.goalLimit} (mercy), " +
                     $"clock {settings.matchDurationSeconds:0}s, golden goal {(settings.goldenGoalOvertime ? "on" : "off")}, seed {options.Seed}");
 
-                // ── drive: wait for the Ready button, click it, then run the match ──
-                int frames = 0;
-                bool readyClicked = false;
-                int diagEvery = Environment.GetEnvironmentVariable("ASTRO_DIAG") == "1" ? 600 : 0;
-                while (frames < options.MaxFrames && !matchEnded)
-                {
-                    loop.Tick(options.DeltaTime);
-                    frames++;
-
-                    if (diagEvery > 0 && frames % diagEvery == 0)
-                    {
-                        var bp = ball.transform.position;
-                        var bv = ball.Velocity;
-                        string ai = string.Join(" | ", players.Select(p =>
-                        {
-                            var v = p.Vessel.Transform.position;
-                            return $"{p.Name} d={F(Vector3.Distance(v, bp))}";
-                        }));
-                        Log($"[diag t={F(Time.time)}] ball ({F(bp.x)},{F(bp.y)},{F(bp.z)}) |v|={F(bv.magnitude)} frozen={ball.IsFrozen} | {ai}");
-                    }
-
-                    if (!readyClicked && readyShown)
-                    {
-                        readyClicked = true;
-                        Log($"[t={F(Time.time),7}s] ready — count-in starts (kickoff parking at GO)");
-                        controller.OnReadyClicked(); // DomainGames ready flow → countdown → kickoff
-                    }
-                }
-
-                result.FramesSimulated = frames;
-                result.WentToOvertime = overtimeSeen;
-
-                // Detach observers before teardown ticks.
-                gameData.OnMiniGameEnd.OnRaised -= MarkEnded;
-                readyButtonChannel.OnRaised -= OnReadyToggled;
-                gameData.OnMiniGameTurnStarted.OnRaised -= StopAllPrismSpawns;
-                displayChannel.OnRaised -= OnClockDisplay;
-                ball.OnStruckServer -= OnStruck;
-                foreach (var (stats, handler) in goalHandlers)
-                    stats.OnGoalsScoredChanged -= handler;
-
-                if (!matchEnded)
-                {
-                    Log($"TIMEOUT — match did not finish within {frames} frames.");
-                    return result;
-                }
-
-                // ── finish: read the shared end-game surface ──────────────────
-                result.Finished = true;
-                result.WinnerName = gameData.WinnerName;
-                result.WinnerDomain = gameData.WinnerDomain;
-                result.JadeGoals = SumGoals(Domains.Jade);
-                result.RubyGoals = SumGoals(Domains.Ruby);
-
-                Log("");
-                Log($"FULL TIME — {result.WinnerDomain} wins {Math.Max(result.JadeGoals, result.RubyGoals)}–" +
-                    $"{Math.Min(result.JadeGoals, result.RubyGoals)}{(overtimeSeen ? " (golden goal)" : "")} " +
-                    $"after {frames} frames ({F(Time.time)}s).");
-                Log($"WINNER    — {result.WinnerName} ({result.WinnerDomain}), top scorer of the winning domain.");
-                Log("");
-                Log("STANDINGS (points — higher is better):");
-
-                var goalsByName = gameData.RoundStatsList.ToDictionary(s => (string)s.Name, s => s.GoalsScored);
-                foreach (var row in gameData.Results)
-                {
-                    var standing = new AstroLeagueStanding
-                    {
-                        Rank = row.Rank,
-                        Name = row.Name,
-                        Domain = row.Domain,
-                        Goals = goalsByName.TryGetValue(row.Name, out var g) ? g : 0,
-                        Score = row.Score,
-                        ScoreText = row.ScoreText,
-                    };
-                    result.Standings.Add(standing);
-                    Log($"  #{standing.Rank} {standing.Name,-6} {standing.Domain,-5} {standing.Goals,2} goals  {standing.ScoreText}");
-                }
-
-                return result;
+                return handle;
             }
-            finally
+            catch
             {
-                // Wind down every async loop the chain started (async-void trap: nothing may
-                // outlive the round) — despawn in reverse spawn order, stop the monitor, stop
-                // AI/prism loops, then flush destroys.
-                matchMonitor?.StopMonitor();
-                for (int i = spawnedBehaviours.Count - 1; i >= 0; i--)
-                    spawnedBehaviours[i].Despawn(); // controller despawn cancels matchCts + coroutines
-
-                if (gameData != null)
-                {
-                    foreach (var p in gameData.Players.ToList())
-                    {
-                        if (p?.Vessel is VesselController vc)
-                            vc.VesselStatus.VesselPrismController.StopSpawn();
-                        p?.ResetForPlay(); // AI path: toggles the AIPilot OFF
-                    }
-                }
-                loop.Tick(options.DeltaTime); // end-of-frame destroy flush
-
-                typeof(PlayerDataService).GetProperty("Instance")!.SetValue(null, null);
-                typeof(AudioSystem).GetProperty("Instance")!.SetValue(null, null); // shell singleton (Awake-set)
-                NetworkManager.Singleton = null;
-                Time.timeScale = 1f; // solo hitstop/celebration slow-mo must not leak past the round
-                Debug.Sink = previousSink;
-
-                foreach (var entry in capturedLog.Entries)
-                    if (entry.Type is LogType.Error or LogType.Exception)
-                        result.EngineErrors.Add($"{entry.Type}: {entry.Message}");
+                handle.Dispose();
+                throw;
             }
         }
+
 
         // ── vessel prefab fixture (HexRaceRound's builder, striker edition) ──
 

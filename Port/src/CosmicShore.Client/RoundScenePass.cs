@@ -68,14 +68,7 @@ namespace CosmicShore.Client
         public static float Clock(IRoundDriver round) =>
             round.Live ? CosmicShore.Engine.Time.time - round.ClockStart : 0f;
 
-        public static int DomainSum(IRoundDriver round, Domains domain)
-        {
-            int sum = 0;
-            foreach (var stats in round.GameData.RoundStatsList)
-                if (stats.Domain == domain)
-                    sum += stats.CrystalsCollected;
-            return sum;
-        }
+        public static int DomainSum(IRoundDriver round, Domains domain) => round.DomainScore(domain);
 
         /// <summary>The shared round HUD (UiRenderer text overlay, y-up pixels).</summary>
         public void DrawHud(UiRenderer ui, IRoundDriver round, float w, float h)
@@ -87,12 +80,13 @@ namespace CosmicShore.Client
                 24f, h - 78f, 18f, new Vector4(0.85f, 0.9f, 1f, 0.9f));
             ui.DrawText($"JADE {DomainSum(round, Domains.Jade)}", 24f, h - 112f, 22f, DomainColor(Domains.Jade));
             ui.DrawText($"RUBY {DomainSum(round, Domains.Ruby)}", 190f, h - 112f, 22f, DomainColor(Domains.Ruby));
-            ui.DrawText($"GOLD {DomainSum(round, Domains.Gold)}", 356f, h - 112f, 22f, DomainColor(Domains.Gold));
+            if (round.GameData.RequestedDomainCount >= 3)
+                ui.DrawText($"GOLD {DomainSum(round, Domains.Gold)}", 356f, h - 112f, 22f, DomainColor(Domains.Gold));
 
             float y = h - 156f;
-            foreach (var stats in round.GameData.RoundStatsList)
+            foreach (var player in round.Players)
             {
-                ui.DrawText($"{stats.Name,-6} {stats.CrystalsCollected,2}", 24f, y, 16f, DomainColor(stats.Domain));
+                ui.DrawText($"{player.Name,-6} {round.PlayerScore(player),2}", 24f, y, 16f, DomainColor(player.Domain));
                 y -= 24f;
             }
 
@@ -102,7 +96,8 @@ namespace CosmicShore.Client
                 float sy = 96f;
                 foreach (var standing in round.StandingRows)
                 {
-                    ui.DrawText($"#{standing.Rank} {standing.Name,-6} {standing.Domain,-5} {standing.Crystals,2} crystals  {standing.ScoreText}",
+                    // Crystals carries the mode's own metric (crystals / jousts / goals).
+                    ui.DrawText($"#{standing.Rank} {standing.Name,-6} {standing.Domain,-5} {standing.Crystals,2}  {standing.ScoreText}",
                         24f, sy, 16f, DomainColor(standing.Domain));
                     sy -= 22f;
                 }
@@ -121,10 +116,8 @@ namespace CosmicShore.Client
             // behind the first pilot, looking at the active crystal (or ahead).
             var v0 = round.Players[0].Vessel.Transform;
             EngineVector3 eye = v0.position - v0.forward * 70f + EngineVector3.up * 26f;
-            var crystal = round.ActiveCrystal;
-            EngineVector3 look = crystal
-                ? crystal.transform.position
-                : v0.position + v0.forward * 120f;
+            var target = round.LookTarget;
+            EngineVector3 look = target ?? (v0.position + v0.forward * 120f);
 
             float aspect = fbWidth / (float)Math.Max(1, fbHeight);
             var view = Matrix4x4.CreateLookAt(eye, look, new Vector3(0f, 1f, 0f));
@@ -153,6 +146,22 @@ namespace CosmicShore.Client
                 float yaw = round.FramesStepped * (1f / 60f) * 1.1f;
                 var element = round.CourseElements[round.CourseIndex];
                 AddOctahedron(crystal.transform.position, 10f, yaw, ElementColor(element));
+            }
+
+            // Mode-specific extras (AstroLeague: white ball octahedron, goal-mouth rings,
+            // arena-boundary ring) — position read live from the driver each frame.
+            foreach (var marker in round.SceneMarkers)
+            {
+                var color = new Vector4(marker.R, marker.G, marker.B, marker.A);
+                if (marker.Kind == RoundSceneMarkerKind.Octahedron)
+                {
+                    float yaw = round.FramesStepped * (1f / 60f) * 1.1f;
+                    AddOctahedron(marker.Position, marker.Size, yaw, color);
+                }
+                else
+                {
+                    AddRing(marker.Position, marker.Size, marker.Normal, color);
+                }
             }
 
             // The AI field — domain-tinted arrows built from each vessel's live pose.
@@ -203,6 +212,25 @@ namespace CosmicShore.Client
             AddLine(top, e0, color); AddLine(top, e1, color); AddLine(top, e2, color); AddLine(top, e3, color);
             AddLine(bottom, e0, color); AddLine(bottom, e1, color); AddLine(bottom, e2, color); AddLine(bottom, e3, color);
             AddLine(e0, e1, color); AddLine(e1, e2, color); AddLine(e2, e3, color); AddLine(e3, e0, color);
+        }
+
+        void AddRing(EngineVector3 center, float radius, EngineVector3 normal, Vector4 color)
+        {
+            // Build an orthonormal basis in the ring's plane (24 segments).
+            EngineVector3 n = normal.normalized;
+            EngineVector3 seed = MathF.Abs(n.y) < 0.9f ? EngineVector3.up : new EngineVector3(1f, 0f, 0f);
+            EngineVector3 u = EngineVector3.Cross(n, seed).normalized;
+            EngineVector3 v = EngineVector3.Cross(n, u);
+
+            const int segments = 24;
+            EngineVector3 prev = center + u * radius;
+            for (int i = 1; i <= segments; i++)
+            {
+                float a = i * (2f * MathF.PI / segments);
+                EngineVector3 next = center + (u * MathF.Cos(a) + v * MathF.Sin(a)) * radius;
+                AddLine(prev, next, color);
+                prev = next;
+            }
         }
 
         unsafe void UploadLines()

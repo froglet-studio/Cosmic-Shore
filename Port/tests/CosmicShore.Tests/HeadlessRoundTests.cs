@@ -217,4 +217,77 @@ public class HeadlessRoundTests
             blocking.Standings.Select(s => (s.Rank, s.Name, s.Domain, s.Crystals, s.Score)),
             stepped.Standings.Select(s => (s.Rank, s.Name, s.Domain, s.Crystals, s.Score)));
     }
+
+    [Fact]
+    public void SteppedJoustHandle_MatchesBlockingRun_Exactly()
+    {
+        JoustRoundOptions Options() => new()
+        {
+            PlayerCount = 2,
+            Seed = 42,
+            JoustTarget = 1, // one contact ends it — the full flow at minimum runtime
+        };
+
+        var blocking = JoustRound.Run(Options());
+
+        JoustRoundResult stepped;
+        using (var handle = JoustRound.Setup(Options()))
+        {
+            while (handle.FramesStepped < handle.MaxFrames)
+            {
+                if (handle.StepFrame())
+                    break;
+            }
+            handle.FinishAndScore();
+            stepped = handle.Result;
+        }
+
+        Assert.True(stepped.Finished);
+        Assert.Empty(stepped.EngineErrors);
+        Assert.Equal(blocking.Transcript, stepped.Transcript);
+        Assert.Equal(blocking.WinnerName, stepped.WinnerName);
+        Assert.Equal(blocking.WinnerDomain, stepped.WinnerDomain);
+        Assert.Equal(blocking.FramesSimulated, stepped.FramesSimulated);
+        Assert.Equal(blocking.TotalJousts, stepped.TotalJousts);
+        Assert.Equal(
+            blocking.Standings.Select(s => (s.Rank, s.Name, s.Domain, s.Jousts, s.Score)),
+            stepped.Standings.Select(s => (s.Rank, s.Name, s.Domain, s.Jousts, s.Score)));
+    }
+
+    [Fact]
+    public void SteppedAstroLeagueHandle_MatchesBlockingRun_Exactly()
+    {
+        AstroLeagueRoundOptions Options() => new()
+        {
+            PlayerCount = 2,
+            Seed = 42,
+            GoalLimit = 1, // golden touch — mercy rule ends the match on the first goal
+        };
+
+        var blocking = AstroLeagueRound.Run(Options());
+
+        AstroLeagueRoundResult stepped;
+        using (var handle = AstroLeagueRound.Setup(Options()))
+        {
+            while (handle.FramesStepped < handle.MaxFrames)
+            {
+                if (handle.StepFrame())
+                    break;
+            }
+            handle.FinishAndScore();
+            stepped = handle.Result;
+        }
+
+        Assert.True(stepped.Finished);
+        Assert.Empty(stepped.EngineErrors);
+        Assert.Equal(blocking.Transcript, stepped.Transcript);
+        Assert.Equal(blocking.WinnerName, stepped.WinnerName);
+        Assert.Equal(blocking.WinnerDomain, stepped.WinnerDomain);
+        Assert.Equal(blocking.FramesSimulated, stepped.FramesSimulated);
+        Assert.Equal(blocking.JadeGoals, stepped.JadeGoals);
+        Assert.Equal(blocking.RubyGoals, stepped.RubyGoals);
+        Assert.Equal(
+            blocking.Standings.Select(s => (s.Rank, s.Name, s.Domain, s.Goals, s.Score)),
+            stepped.Standings.Select(s => (s.Rank, s.Name, s.Domain, s.Goals, s.Score)));
+    }
 }

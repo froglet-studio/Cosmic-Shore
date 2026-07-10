@@ -111,6 +111,250 @@ namespace CosmicShore.Cli
     /// path). The harness only constructs and wires (the scene + spawner roles), observes
     /// SOAP events for the transcript, and tears everything down.
     /// </summary>
+    /// <summary>
+    /// A LIVE Joust match the caller steps one engine frame at a time (Arc G part 3).
+    /// Same shape as the sibling handles: owns the match's GameLoop + controller
+    /// chain; Dispose is the CLI's finally block then loop disposal.
+    /// </summary>
+    public sealed class JoustRoundHandle : IRoundDriver
+    {
+        internal JoustRoundOptions options;
+        internal Action<string> liveLog;
+        internal JoustRoundResult result;
+
+        internal GameLoop loop;
+        internal CapturingLogSink capturedLog;
+        internal ILogSink previousSink;
+
+        internal GameDataSO gameData;
+        internal MultiplayerJoustController controller;
+        internal NetworkJoustCollisionTurnMonitor joustMonitor;
+        internal readonly List<NetworkBehaviour> spawnedBehaviours = new();
+        internal JoustScoringRuleSO rule;
+        internal List<IPlayer> players;
+        internal ScriptableEventBool readyButtonChannel;
+        internal ScriptableEventString onJoustCollision;
+
+        internal int target;
+        internal int frames;
+        internal bool matchEnded;
+        internal bool readyShown;
+        internal bool readyClicked;
+        internal bool turnStarted;
+        internal float turnStart;
+        internal int diagEvery;
+
+        static readonly Vector3[] EmptyCourse = Array.Empty<Vector3>();
+        static readonly Element[] EmptyElements = Array.Empty<Element>();
+
+        bool _steppingCompleted;
+        bool _finished;
+        bool _disposed;
+
+        // ── IRoundDriver (world view for a rendering host) ───────────────────
+        public string GameLabel => "JOUST";
+        public string ScoringLabel => "golf rules - lower is better";
+        public JoustRoundOptions Options => options;
+        public JoustRoundResult Result => result;
+        public GameDataSO GameData => gameData;
+        public IReadOnlyList<IPlayer> Players => players;
+        public Crystal ActiveCrystal => null;      // no crystals — the contact game is vessel-vs-skimmer
+        public Vector3[] Course => EmptyCourse;
+        public Element[] CourseElements => EmptyElements;
+        public int CourseIndex => 0;
+        public int Target => target;
+        public int FramesStepped => frames;
+        public int MaxFrames => options.MaxFrames;
+        public bool Live => turnStarted;
+        public float ClockStart => turnStart;
+        public bool Finished => result.Finished;
+        public string WinnerName => result.WinnerName;
+        public Domains WinnerDomain => result.WinnerDomain;
+        public int TotalClaims => result.TotalJousts;
+        public IEnumerable<(int Rank, string Name, Domains Domain, int Crystals, string ScoreText)> StandingRows
+        {
+            get
+            {
+                foreach (var s in result.Standings)
+                    yield return (s.Rank, s.Name, s.Domain, s.Jousts, s.ScoreText);
+            }
+        }
+        public int DomainScore(Domains domain) => ScoringMetrics.SumByDomain(gameData, rule.Metric, domain);
+        public int PlayerScore(IPlayer player) => player.RoundStats.JoustCollisions;
+
+        /// <summary>The camera watches the melee centroid — Joust has no fixed objective point.</summary>
+        public Vector3? LookTarget
+        {
+            get
+            {
+                if (players == null || players.Count == 0) return null;
+                var sum = Vector3.zero;
+                foreach (var p in players)
+                    sum += p.Vessel.Transform.position;
+                return sum / players.Count;
+            }
+        }
+
+        internal void Log(string line)
+        {
+            result.Transcript.Add(line);
+            liveLog?.Invoke(line);
+        }
+
+        /// <summary>One engine frame + the CLI's diag beat and ready-click follow-up.</summary>
+        public bool StepFrame()
+        {
+            loop.Tick(options.DeltaTime);
+            frames++;
+
+            if (diagEvery > 0 && frames % diagEvery == 0)
+            {
+                string ai = string.Join(" | ", players.Select(p =>
+                {
+                    var v = ((VesselController)p.Vessel).VesselStatus;
+                    var pos = p.Vessel.Transform.position;
+                    return $"{p.Name} v={JoustRound.F(v.Speed)} ({JoustRound.F(pos.x)},{JoustRound.F(pos.y)},{JoustRound.F(pos.z)})";
+                }));
+                Log($"[diag t={JoustRound.F(Time.time)}] {ai}");
+            }
+
+            if (!readyClicked && readyShown)
+            {
+                readyClicked = true;
+                Log($"[t={JoustRound.F(Time.time),7}s] ready — count-in starts (lances up at GO)");
+                controller.OnReadyClicked(); // DomainGames ready flow → countdown → StartTurn
+            }
+
+            return matchEnded;
+        }
+
+        /// <summary>Idempotent end-of-stepping: frame stamp + observer detach (the CLI's post-loop block).</summary>
+        public void CompleteStepping()
+        {
+            if (_steppingCompleted) return;
+            _steppingCompleted = true;
+
+            result.FramesSimulated = frames;
+
+            gameData.OnMiniGameEnd.OnRaised -= MarkEnded;
+            readyButtonChannel.OnRaised -= OnReadyToggled;
+            gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
+            onJoustCollision.OnRaised -= HandleJoustCollision;
+        }
+
+        /// <summary>Finish: read the shared end-game surface + log standings (no-op unless ended).</summary>
+        public void FinishAndScore()
+        {
+            CompleteStepping();
+            if (_finished || !matchEnded) return;
+            _finished = true;
+
+            result.Finished = true;
+            result.WinnerName = gameData.WinnerName;
+            result.WinnerDomain = gameData.WinnerDomain;
+            result.FinishTime = gameData.RoundStatsList
+                .Where(s => GolfScoreSentinels.IsFinishTime(s.Score))
+                .Select(s => s.Score)
+                .DefaultIfEmpty(0f)
+                .First();
+
+            Log("");
+            Log($"OBJECTIVE — {result.WinnerDomain} domain reached {gameData.JoustTargetCount} jousts " +
+                $"in {JoustRound.F(result.FinishTime)}s ({frames} frames).");
+            Log($"WINNER    — {result.WinnerName} ({result.WinnerDomain}), representative of the winning domain.");
+            Log("");
+            Log("STANDINGS (golf rules — lower score is better; losers tie on the sentinel):");
+
+            var joustsByName = gameData.RoundStatsList.ToDictionary(s => (string)s.Name, s => s.JoustCollisions);
+            foreach (var row in gameData.Results)
+            {
+                var standing = new JoustStanding
+                {
+                    Rank = row.Rank,
+                    Name = row.Name,
+                    Domain = row.Domain,
+                    Jousts = joustsByName.TryGetValue(row.Name, out var j) ? j : 0,
+                    Score = row.Score,
+                    ScoreText = row.ScoreText,
+                    Secondary = row.Secondary,
+                };
+                result.Standings.Add(standing);
+                Log($"  #{standing.Rank} {standing.Name,-6} {standing.Domain,-5} {standing.Jousts,2} jousts  score={JoustRound.F(standing.Score),9}  {standing.ScoreText}");
+            }
+        }
+
+        // ── observers (the CLI's local functions, promoted to handle methods) ──
+
+        internal void MarkEnded() => matchEnded = true;
+
+        internal void OnReadyToggled(bool enabled) { if (enabled) readyShown = true; }
+
+        // Known trap (C4/C6): OnCountdownTimerEnded_ClientRpc → SetPlayersActive →
+        // StartPlayer → StartVessel arms every prism spawn loop. The round wires no
+        // prism factory channel (Joust's contact game is skimmer-vs-vessel; headless
+        // there is no trail mass), so pause the spawner the moment the turn starts —
+        // pausing mass creation is allowed (conserved-mass rules), aging it out is not.
+        internal void OnTurnStarted()
+        {
+            turnStarted = true;
+            turnStart = Time.time;
+            foreach (var p in players)
+                ((VesselController)p.Vessel).VesselStatus.VesselPrismController.StopSpawn();
+        }
+
+        // The StatsManager role (StatsManager.ExecuteJoustCollision): the verbatim
+        // effect raises OnJoustCollision with the SCORING vessel's name (the faster
+        // vessel whose skimmer swept the slower opponent); the stat lands on that
+        // player's RoundStats, whose setter drives the network monitor + HUD events.
+        internal void HandleJoustCollision(string joustPlayerName)
+        {
+            if (!gameData.TryGetRoundStats(joustPlayerName, out var roundStats)) return;
+            roundStats.JoustCollisions++;
+            result.TotalJousts++;
+
+            Log($"[t={JoustRound.F(Time.time - turnStart),7}s] {joustPlayerName} ({roundStats.Domain}) scores a joust — " +
+                $"Jade {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Jade)} · " +
+                $"Ruby {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Ruby)}");
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+
+            // Wind down every async loop the chain started (async-void trap: nothing may
+            // outlive the round) — stop the monitor, despawn in reverse spawn order, stop
+            // AI/prism loops, then flush destroys.
+            joustMonitor?.StopMonitor();
+            for (int i = spawnedBehaviours.Count - 1; i >= 0; i--)
+                spawnedBehaviours[i].Despawn();
+
+            if (gameData != null)
+            {
+                foreach (var p in gameData.Players.ToList())
+                {
+                    if (p?.Vessel is VesselController vc)
+                        vc.VesselStatus.VesselPrismController.StopSpawn();
+                    p?.ResetForPlay(); // AI path: toggles the AIPilot OFF
+                }
+            }
+            loop?.Tick(options.DeltaTime); // end-of-frame destroy flush
+
+            typeof(PlayerDataService).GetProperty("Instance")!.SetValue(null, null);
+            typeof(AudioSystem).GetProperty("Instance")!.SetValue(null, null); // shell singleton (Awake-set)
+            NetworkManager.Singleton = null;
+            Resources.Register(EndConditionOverridesSO.ResourcePath, null); // unregister the tool asset
+            JoustRound.ResetEndConditionOverridesCache();
+            Debug.Sink = previousSink;
+
+            foreach (var entry in capturedLog.Entries)
+                if (entry.Type is LogType.Error or LogType.Exception)
+                    result.EngineErrors.Add($"{entry.Type}: {entry.Message}");
+
+            loop?.Dispose();
+        }
+    }
+
     public static class JoustRound
     {
         // ── reflection stand-in for inspector wiring of serialized fields ─────
@@ -135,38 +379,59 @@ namespace CosmicShore.Cli
         }
 
         /// <summary>Reset the EndConditionOverridesSO cached-instance static (tool-asset hygiene).</summary>
-        static void ResetEndConditionOverridesCache() =>
+        internal static void ResetEndConditionOverridesCache() =>
             typeof(EndConditionOverridesSO)
                 .GetField("_instance", BindingFlags.Static | BindingFlags.NonPublic)!
                 .SetValue(null, null);
 
-        static string F(float v) => v.ToString("0.00", CultureInfo.InvariantCulture);
+        internal static string F(float v) => v.ToString("0.00", CultureInfo.InvariantCulture);
 
-        // ── round entry point ──────────────────────────────────────────────────
+        // ── round entry points ─────────────────────────────────────────────────
 
+        /// <summary>The CLI's blocking match: Setup → step to end/timeout → read scores.</summary>
         public static JoustRoundResult Run(JoustRoundOptions options, Action<string> liveLog = null)
+        {
+            using var handle = Setup(options, liveLog);
+
+            while (handle.frames < handle.options.MaxFrames && !handle.matchEnded)
+            {
+                if (handle.StepFrame())
+                    break;
+            }
+
+            handle.CompleteStepping();
+
+            if (!handle.matchEnded)
+            {
+                handle.Log($"TIMEOUT — match did not finish within {handle.frames} frames.");
+                return handle.result;
+            }
+
+            handle.FinishAndScore();
+            return handle.result;
+        }
+
+        /// <summary>Builds the full match world; the caller owns the returned handle.</summary>
+        public static JoustRoundHandle Setup(JoustRoundOptions options, Action<string> liveLog = null)
         {
             options ??= new JoustRoundOptions();
             int playerCount = Mathf.Clamp(options.PlayerCount, 2, 12); // Joust minimum: 2 players, 2 domains
 
-            var result = new JoustRoundResult();
-            void Log(string line)
+            var handle = new JoustRoundHandle
             {
-                result.Transcript.Add(line);
-                liveLog?.Invoke(line);
-            }
+                options = options,
+                liveLog = liveLog,
+                result = new JoustRoundResult(),
+                diagEvery = Environment.GetEnvironmentVariable("JOUST_DIAG") == "1" ? 600 : 0,
+            };
 
-            var capturedLog = new CapturingLogSink();
-            var previousSink = Debug.Sink;
-            Debug.Sink = capturedLog;
+            handle.capturedLog = new CapturingLogSink();
+            handle.previousSink = Debug.Sink;
+            Debug.Sink = handle.capturedLog;
 
-            using var loop = new GameLoop("JoustRound");
+            handle.loop = new GameLoop("JoustRound");
             Random.InitState(options.Seed);
 
-            GameDataSO gameData = null;
-            MultiplayerJoustController controller = null;
-            NetworkJoustCollisionTurnMonitor joustMonitor = null;
-            var spawnedBehaviours = new List<NetworkBehaviour>();
             var networkManagerGo = new GameObject("NetworkManager");
             NetworkManager.Singleton = networkManagerGo.AddComponent<NetworkManager>();
 
@@ -180,9 +445,11 @@ namespace CosmicShore.Cli
                 var endConditions = ScriptableObject.CreateInstance<EndConditionOverridesSO>();
                 endConditions.joustCount = Mathf.Max(1, options.JoustTarget);
                 Resources.Register(EndConditionOverridesSO.ResourcePath, endConditions);
+                handle.target = endConditions.GetJoustCount();
 
                 // ── the mode's scoring rule (the SO asset of the real scene) ──
                 var rule = ScriptableObject.CreateInstance<JoustScoringRuleSO>();
+                handle.rule = rule;
                 SetPrivateField(rule, "metric", ScoringMetric.Jousts);
                 SetPrivateField(rule, "golfRules", true);
 
@@ -197,7 +464,8 @@ namespace CosmicShore.Cli
                     theme.TeamMaterialSets[domain] = set;
                 }
 
-                gameData = ScriptableObject.CreateInstance<GameDataSO>();
+                var gameData = ScriptableObject.CreateInstance<GameDataSO>();
+                handle.gameData = gameData;
                 gameData.ThemeManagerData = theme;
                 gameData.OnInitializeGame = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
                 gameData.OnSessionStarted = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
@@ -241,6 +509,7 @@ namespace CosmicShore.Cli
 
                 // ── the joust scoring effect (the SO wired into the skimmer container) ──
                 var onJoustCollision = ScriptableObject.CreateInstance<ScriptableEventString>();
+                handle.onJoustCollision = onJoustCollision;
                 var joustEffect = ScriptableObject.CreateInstance<VesselExplosionBySkimmerEffectSO>();
                 SetPrivateField(joustEffect, "OnJoustCollision", onJoustCollision);
                 var skimmerContainer = ScriptableObject.CreateInstance<SkimmerImpactorDataContainerSO>();
@@ -257,7 +526,8 @@ namespace CosmicShore.Cli
                     .AddComponent<CosmicShore.Engine.UI.Image>();
                 countdownDisplay.transform.SetParent(controllerGo.transform, false);
                 SetPrivateField(countdownTimer, "countdownDisplay", countdownDisplay);
-                joustMonitor = controllerGo.AddComponent<NetworkJoustCollisionTurnMonitor>();
+                var joustMonitor = controllerGo.AddComponent<NetworkJoustCollisionTurnMonitor>();
+                handle.joustMonitor = joustMonitor;
                 SetPrivateField(joustMonitor, "gameData", gameData);
                 var displayChannel = ScriptableObject.CreateInstance<ScriptableEventString>();
                 SetPrivateField(joustMonitor, "onUpdateTurnMonitorDisplay", displayChannel);
@@ -265,10 +535,12 @@ namespace CosmicShore.Cli
                 SetPrivateField(turnMonitorController, "gameData", gameData);
                 SetPrivateField(turnMonitorController, "monitors", new List<TurnMonitor> { joustMonitor });
 
-                controller = controllerGo.AddComponent<MultiplayerJoustController>();
+                var controller = controllerGo.AddComponent<MultiplayerJoustController>();
+                handle.controller = controller;
                 SetPrivateField(controller, "rule", rule);
                 SetPrivateField(controller, "countdownTimer", countdownTimer);
                 var readyButtonChannel = ScriptableObject.CreateInstance<ScriptableEventBool>();
+                handle.readyButtonChannel = readyButtonChannel;
                 SetPrivateField(controller, "_onToggleReadyButton", readyButtonChannel);
                 container.InjectGameObject(controllerGo); // [Inject] gameData
                 controllerGo.SetActive(true);
@@ -302,7 +574,7 @@ namespace CosmicShore.Cli
                 }
                 gameData.SetSpawnPositions(spawnTransforms);
 
-                var players = new List<IPlayer>(playerCount);
+                handle.players = new List<IPlayer>(playerCount);
                 for (int i = 0; i < playerCount; i++)
                 {
                     var player = playerSpawner.SpawnPlayerAndShip(new IPlayer.InitializeData
@@ -344,172 +616,37 @@ namespace CosmicShore.Cli
 
                     // Vessels stay parked until the countdown ends (SetPlayersActive) — the
                     // real flow; jousts must not score before the turn starts.
-                    players.Add(player);
+                    handle.players.Add(player);
                 }
 
                 // Single-process: the first AI doubles as the "local user" the ready flow and
                 // the monitor's domain-remaining readout use (rung-4 precedent).
-                SetProperty(gameData, "LocalPlayer", players[0]);
-                SetProperty(gameData, "LocalRoundStats", players[0].RoundStats);
+                SetProperty(gameData, "LocalPlayer", handle.players[0]);
+                SetProperty(gameData, "LocalRoundStats", handle.players[0].RoundStats);
 
-                // ── transcript observers (SOAP + StatsManager-shaped bookkeeping) ──
-                bool matchEnded = false;
-                bool readyShown = false;
-                float turnStart = 0f;
-
-                gameData.OnMiniGameEnd.OnRaised += MarkEnded;
-                void MarkEnded() => matchEnded = true;
-                readyButtonChannel.OnRaised += OnReadyToggled;
-                void OnReadyToggled(bool enabled) { if (enabled) readyShown = true; }
-
-                // Known trap (C4/C6): OnCountdownTimerEnded_ClientRpc → SetPlayersActive →
-                // StartPlayer → StartVessel arms every prism spawn loop. The round wires no
-                // prism factory channel (Joust's contact game is skimmer-vs-vessel; headless
-                // there is no trail mass), so pause the spawner the moment the turn starts —
-                // pausing mass creation is allowed (conserved-mass rules), aging it out is not.
-                gameData.OnMiniGameTurnStarted.OnRaised += OnTurnStarted;
-                void OnTurnStarted()
-                {
-                    turnStart = Time.time;
-                    foreach (var p in players)
-                        ((VesselController)p.Vessel).VesselStatus.VesselPrismController.StopSpawn();
-                }
-
-                // The StatsManager role (StatsManager.ExecuteJoustCollision): the verbatim
-                // effect raises OnJoustCollision with the SCORING vessel's name (the faster
-                // vessel whose skimmer swept the slower opponent); the stat lands on that
-                // player's RoundStats, whose setter drives the network monitor + HUD events.
-                onJoustCollision.OnRaised += HandleJoustCollision;
-                void HandleJoustCollision(string joustPlayerName)
-                {
-                    if (!gameData.TryGetRoundStats(joustPlayerName, out var roundStats)) return;
-                    roundStats.JoustCollisions++;
-                    result.TotalJousts++;
-
-                    Log($"[t={F(Time.time - turnStart),7}s] {joustPlayerName} ({roundStats.Domain}) scores a joust — " +
-                        $"Jade {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Jade)} · " +
-                        $"Ruby {ScoringMetrics.SumByDomain(gameData, rule.Metric, Domains.Ruby)}");
-                }
+                // ── transcript observers (handle methods) ─────────────────────
+                gameData.OnMiniGameEnd.OnRaised += handle.MarkEnded;
+                readyButtonChannel.OnRaised += handle.OnReadyToggled;
+                gameData.OnMiniGameTurnStarted.OnRaised += handle.OnTurnStarted;
+                onJoustCollision.OnRaised += handle.HandleJoustCollision;
 
                 // ── kick the real flow: spawn the scene-placed NetworkBehaviours ──
                 joustMonitor.Spawn();
-                spawnedBehaviours.Add(joustMonitor);
+                handle.spawnedBehaviours.Add(joustMonitor);
                 turnMonitorController.Spawn();
-                spawnedBehaviours.Add(turnMonitorController);
+                handle.spawnedBehaviours.Add(turnMonitorController);
                 controller.Spawn(); // OnNetworkSpawn → config sync → InitializeAfterDelay → SetupNewRound/Turn
-                spawnedBehaviours.Add(controller);
+                handle.spawnedBehaviours.Add(controller);
 
-                Log($"match: {playerCount} AI ({(playerCount + 1) / 2}v{playerCount / 2}), first domain to " +
+                handle.Log($"match: {playerCount} AI ({(playerCount + 1) / 2}v{playerCount / 2}), first domain to " +
                     $"{endConditions.GetJoustCount()} jousts wins (golf: winner scores elapsed time), seed {options.Seed}");
 
-                // ── drive: wait for the Ready button, click it, then run the match ──
-                int frames = 0;
-                bool readyClicked = false;
-                int diagEvery = Environment.GetEnvironmentVariable("JOUST_DIAG") == "1" ? 600 : 0;
-                while (frames < options.MaxFrames && !matchEnded)
-                {
-                    loop.Tick(options.DeltaTime); // contacts happen inside: trigger pass → impactor dispatch
-                    frames++;
-
-                    if (diagEvery > 0 && frames % diagEvery == 0)
-                    {
-                        string ai = string.Join(" | ", players.Select(p =>
-                        {
-                            var v = ((VesselController)p.Vessel).VesselStatus;
-                            var pos = p.Vessel.Transform.position;
-                            return $"{p.Name} v={F(v.Speed)} ({F(pos.x)},{F(pos.y)},{F(pos.z)})";
-                        }));
-                        Log($"[diag t={F(Time.time)}] {ai}");
-                    }
-
-                    if (!readyClicked && readyShown)
-                    {
-                        readyClicked = true;
-                        Log($"[t={F(Time.time),7}s] ready — count-in starts (lances up at GO)");
-                        controller.OnReadyClicked(); // DomainGames ready flow → countdown → StartTurn
-                    }
-                }
-
-                result.FramesSimulated = frames;
-
-                // Detach observers before teardown ticks.
-                gameData.OnMiniGameEnd.OnRaised -= MarkEnded;
-                readyButtonChannel.OnRaised -= OnReadyToggled;
-                gameData.OnMiniGameTurnStarted.OnRaised -= OnTurnStarted;
-                onJoustCollision.OnRaised -= HandleJoustCollision;
-
-                if (!matchEnded)
-                {
-                    Log($"TIMEOUT — match did not finish within {frames} frames.");
-                    return result;
-                }
-
-                // ── finish: read the shared end-game surface ──────────────────
-                result.Finished = true;
-                result.WinnerName = gameData.WinnerName;
-                result.WinnerDomain = gameData.WinnerDomain;
-                result.FinishTime = gameData.RoundStatsList
-                    .Where(s => GolfScoreSentinels.IsFinishTime(s.Score))
-                    .Select(s => s.Score)
-                    .DefaultIfEmpty(0f)
-                    .First();
-
-                Log("");
-                Log($"OBJECTIVE — {result.WinnerDomain} domain reached {gameData.JoustTargetCount} jousts " +
-                    $"in {F(result.FinishTime)}s ({frames} frames).");
-                Log($"WINNER    — {result.WinnerName} ({result.WinnerDomain}), representative of the winning domain.");
-                Log("");
-                Log("STANDINGS (golf rules — lower score is better; losers tie on the sentinel):");
-
-                var joustsByName = gameData.RoundStatsList.ToDictionary(s => (string)s.Name, s => s.JoustCollisions);
-                foreach (var row in gameData.Results)
-                {
-                    var standing = new JoustStanding
-                    {
-                        Rank = row.Rank,
-                        Name = row.Name,
-                        Domain = row.Domain,
-                        Jousts = joustsByName.TryGetValue(row.Name, out var j) ? j : 0,
-                        Score = row.Score,
-                        ScoreText = row.ScoreText,
-                        Secondary = row.Secondary,
-                    };
-                    result.Standings.Add(standing);
-                    Log($"  #{standing.Rank} {standing.Name,-6} {standing.Domain,-5} {standing.Jousts,2} jousts  score={F(standing.Score),9}  {standing.ScoreText}");
-                }
-
-                return result;
+                return handle;
             }
-            finally
+            catch
             {
-                // Wind down every async loop the chain started (async-void trap: nothing may
-                // outlive the round) — stop the monitor, despawn in reverse spawn order, stop
-                // AI/prism loops, then flush destroys.
-                joustMonitor?.StopMonitor();
-                for (int i = spawnedBehaviours.Count - 1; i >= 0; i--)
-                    spawnedBehaviours[i].Despawn();
-
-                if (gameData != null)
-                {
-                    foreach (var p in gameData.Players.ToList())
-                    {
-                        if (p?.Vessel is VesselController vc)
-                            vc.VesselStatus.VesselPrismController.StopSpawn();
-                        p?.ResetForPlay(); // AI path: toggles the AIPilot OFF
-                    }
-                }
-                loop.Tick(options.DeltaTime); // end-of-frame destroy flush
-
-                typeof(PlayerDataService).GetProperty("Instance")!.SetValue(null, null);
-                typeof(AudioSystem).GetProperty("Instance")!.SetValue(null, null); // shell singleton (Awake-set)
-                NetworkManager.Singleton = null;
-                Resources.Register(EndConditionOverridesSO.ResourcePath, null); // unregister the tool asset
-                ResetEndConditionOverridesCache();
-                Debug.Sink = previousSink;
-
-                foreach (var entry in capturedLog.Entries)
-                    if (entry.Type is LogType.Error or LogType.Exception)
-                        result.EngineErrors.Add($"{entry.Type}: {entry.Message}");
+                handle.Dispose();
+                throw;
             }
         }
 

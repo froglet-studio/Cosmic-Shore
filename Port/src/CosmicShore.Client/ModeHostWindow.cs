@@ -60,6 +60,18 @@ namespace CosmicShore.Client
                     Seed = seed,
                     CrystalTarget = crystalTarget,
                 }, liveLog),
+                "joust" => JoustRound.Setup(new JoustRoundOptions
+                {
+                    PlayerCount = playerCount,
+                    Seed = seed,
+                    JoustTarget = crystalTarget,
+                }, liveLog),
+                "astroleague" => AstroLeagueRound.Setup(new AstroLeagueRoundOptions
+                {
+                    PlayerCount = playerCount,
+                    Seed = seed,
+                    GoalLimit = crystalTarget,
+                }, liveLog),
                 _ => HexRaceRound.Setup(new HexRaceRoundOptions
                 {
                     PlayerCount = playerCount,

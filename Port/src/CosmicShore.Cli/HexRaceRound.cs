@@ -193,6 +193,8 @@ namespace CosmicShore.Cli
                     yield return (s.Rank, s.Name, s.Domain, s.Crystals, s.ScoreText);
             }
         }
+        public int DomainScore(Domains domain) => ScoringMetrics.SumByDomain(gameData, rule.Metric, domain);
+        public int PlayerScore(IPlayer player) => player.RoundStats.CrystalsCollected;
 
         internal void Log(string line)
         {
