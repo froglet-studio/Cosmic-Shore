@@ -728,23 +728,57 @@ now works that milestone plan.
 > the **Arc-E content-bridge decision point** (extractor vs hand-authoring —
 > needs the prompter).
 
-1. **Progression LIVE in the menushell + ParticipationXpAwarder.** The real
-   `GameModeProgressionService` shipped (below) but the menushell never
-   instantiates it — `Instance` stays null and every consumer falls back
-   to unlocked (the pre-service posture). Wire it live: author a quest
-   chain fixture (HexRace first-free → Joust → Crystal Capture, e.g.
-   crystals/jousts targets), instantiate the service in `BuildMenu` with
-   the UGSDataService rig (or reflection-flip `IsInitialized` like the
-   test rig), and let the arcade cards show REAL locks + the configure
-   modal gate intensities + the locked-intensity toast fire — the Unity
-   build's fresh-boot arcade. The pinned scripted flow launches HexRace
-   (free) so the canonical choreography holds; ms3600 captures HANGAR so
-   PNGs likely hold too — verify, rebaseline only if the modal shows lock
-   art in a capture. Also port `ParticipationXpAwarder` (61L companion —
-   flat XP per game through PlayerDataService.AddXP).
+1. **Deferred follow-ups sweep.** The milestone stack is deep and green —
+   pick up the parked small items before the next big arc: (a) port
+   upstream's `PaintingPresetLibraryTests.cs` (221L NUnit → Ported suite,
+   deferred since the 2026-07-09 drift-sync); (b) consider surfacing the
+   upstream in-place-sort quirk (`ArcadeExploreView.PopulateGameSelectionList`
+   sorts the shared `SO_GameList.Games` list itself — the LeaderboardsMenu
+   comment upstream warns about it; with progression live the PORT board
+   now defaults to the alphabetized first game) to the prompter as an
+   upstream bug-report candidate — do NOT fix locally without a matching
+   upstream change; (c) the **Arc-E content-bridge decision point**
+   (extractor vs hand-authoring) still needs the prompter. If all parked
+   items are done and no prompter input has arrived, take the next
+   largest live shell by consumer count (survey `PORT Deviation — 
+   type-preserving SHELL` headers and pick the one with the most live
+   call sites).
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Progression LIVE ✅ (2026-07-10) — real arcade locks in the menushell + ParticipationXpAwarder
+
+**The menushell now runs the quest chain for real:** `BuildProgressionService`
+(called at the top of BuildMenu) stands up a live `GameModeProgressionService`
+over a local UGSDataService rig (repos real, auth dormant, readiness flipped
+like the test rig) with a three-quest fixture — HexRace (first-in-chain,
+free) → Joust → Crystal Capture. The arcade cards got the `lockOverlay` the
+GameCard was already wired to drive: **Joust + Crystal Capture render dimmed
+with LOCKED overlays and no click listener; HexRace stays bright and
+clickable** — the Unity build's fresh-boot arcade. The configure modal's
+intensity gating + locked-intensity toast lanes are live (the scripted flow
+picks intensity 2 = the unlocked floor, so the canonical choreography is
+untouched). **`ParticipationXpAwarder` (61L) ported verbatim** (inert
+without a PlayerDataService — the AddXP lane null-guards, upstream's
+fresh-boot posture).
+
+**Behavior note (upstream quirk, surfaced not fixed):** with the service
+live, its first `OnProgressionChanged` triggers
+`ArcadeExploreView.PopulateGameSelectionList`, whose sort mutates the shared
+`SO_GameList.Games` IN PLACE (upstream's own LeaderboardsMenu comment warns
+"IMPORTANT to copy the list so we don't modify the SO"). The PORT
+leaderboards screen then copies the alphabetized list, so its default board
+is now CRYSTAL CAPTURE — deterministic, and faithful to the upstream
+order-dependent behavior. `port@60` PNG rebaselined (diag values pinned +
+unchanged); flagged in NEXT UP as an upstream bug-report candidate.
+
+**Verified:** menushell@1200 + @3600 diag values HOLD exactly (HexRace
+launches through the same scripted flow — first-free); frame-75 capture
+shows the modal with real LOCKED cards. **ALL ELEVEN diag lines byte-stable
+×2; values identical to the prior baseline; PNGs identical except the
+explained `port@60` rebase.** **1661 tests green in BOTH configs
+(1323 + 338)**; 5 CLI modes exit 0. bleeding-edge unmoved at `f2b8f5aa`.
 
 ### Progression unit ✅ (2026-07-10) — the REAL quest-chain service (largest menu shell retired)
 

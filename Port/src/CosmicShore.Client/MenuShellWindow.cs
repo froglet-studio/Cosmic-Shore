@@ -170,6 +170,7 @@ namespace CosmicShore.Client
             new GameObject("UserActionSystem").AddComponent<CosmicShore.Core.UserActionSystem>();
             _audioSystem = new GameObject("AudioSystem").AddComponent<CosmicShore.Core.AudioSystem>();
             new GameObject("CallToActionSystem").AddComponent<CosmicShore.Core.CallToActionSystem>();
+            BuildProgressionService();
 
             var canvasGo = new GameObject("Canvas", typeof(RectTransform));
             canvasGo.AddComponent<Canvas>();
@@ -341,6 +342,69 @@ namespace CosmicShore.Client
         /// by hand-authored SO_ArcadeGame entries — the same modes the CLI proves.
         /// Prefab art arrives with the Arc-E content bridge; the WIRING is shipping code.
         /// </summary>
+        /// <summary>
+        /// The REAL GameModeProgressionService, LIVE (Progression unit): a quest
+        /// chain over the same three arcade modes — HexRace is first-in-chain
+        /// (free), Joust and Crystal Capture are locked behind it. The arcade
+        /// cards show real LOCKED overlays through ArcadeExploreView's
+        /// progression check, the configure modal clamps + gates intensities
+        /// (the locked-intensity toast lane is live), and the hangar gate runs
+        /// the real quest-prefix rule. Persistence rides a local UGSDataService
+        /// rig (repos real, auth dormant — readiness flipped like a fresh
+        /// signed-out boot that already loaded local data).
+        /// </summary>
+        void BuildProgressionService()
+        {
+            var authVar = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.AuthenticationDataVariable>();
+            authVar.Value = new CosmicShore.ScriptableObjects.AuthenticationData
+            {
+                OnSignedIn = ScriptableObject.CreateInstance<CosmicShore.Engine.Soap.ScriptableEventNoParam>(),
+            };
+            var vesselList = ScriptableObject.CreateInstance<SO_VesselList>();
+            vesselList.VesselList = new List<SO_Vessel>();
+            var ugsGo = new GameObject("UGSDataService");
+            ugsGo.SetActive(false);
+            var ugs = ugsGo.AddComponent<CosmicShore.Core.UGSDataService>();
+            SetPrivateField(ugs, "vesselList", vesselList);
+            SetPrivateField(ugs, "_authData", authVar);
+            ugsGo.SetActive(true); // Awake: repos created
+            typeof(CosmicShore.Core.UGSDataService).GetProperty("IsInitialized")!.SetValue(ugs, true);
+
+            CosmicShore.ScriptableObjects.SO_GameModeQuestData MakeQuest(
+                CosmicShore.Data.GameModes mode, string displayName,
+                CosmicShore.ScriptableObjects.QuestTargetType targetType, float targetValue)
+            {
+                var quest = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.SO_GameModeQuestData>();
+                quest.GameMode = mode;
+                quest.DisplayName = displayName;
+                quest.TargetType = targetType;
+                quest.TargetValue = targetValue;
+                return quest;
+            }
+            var questList = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.SO_GameModeQuestList>();
+            questList.Quests = new List<CosmicShore.ScriptableObjects.SO_GameModeQuestData>
+            {
+                MakeQuest(CosmicShore.Data.GameModes.HexRace, "HEX RACE",
+                    CosmicShore.ScriptableObjects.QuestTargetType.CrystalsCollected, 3f),
+                MakeQuest(CosmicShore.Data.GameModes.MultiplayerJoust, "JOUST",
+                    CosmicShore.ScriptableObjects.QuestTargetType.JoustsWon, 3f),
+                MakeQuest(CosmicShore.Data.GameModes.MultiplayerCrystalCapture, "CRYSTAL CAPTURE",
+                    CosmicShore.ScriptableObjects.QuestTargetType.CrystalsCollected, 3f),
+            };
+
+            var serviceGo = new GameObject("GameModeProgressionService");
+            serviceGo.SetActive(false);
+            var progression = serviceGo.AddComponent<CosmicShore.Core.GameModeProgressionService>();
+            SetPrivateField(progression, "questList", questList);
+            SetPrivateField(progression, "_ugsDataService", ugs);
+            serviceGo.SetActive(true); // Awake: Instance + first-mode (HexRace) unlock
+
+            // The participation-XP companion (inert without a PlayerDataService —
+            // its AddXP lane null-guards, exactly the upstream fresh-boot posture).
+            var xpGo = new GameObject("ParticipationXpAwarder");
+            xpGo.AddComponent<CosmicShore.Core.ParticipationXpAwarder>();
+        }
+
         /// <summary>
         /// The REAL StoreScreen on the STORE panel (Store unit): crystal + ticket
         /// balances, the captain purchase grid, the daily-challenge ticket card, and
@@ -1005,6 +1069,29 @@ namespace CosmicShore.Client
                 starImage.color = new Color(1f, 0.82f, 0.25f, 0.9f);
                 starImage.raycastTarget = false;
                 SetPrivateField(gameCard, "StarImage", starImage);
+
+                // Lock overlay: shown by GameCard.SetLocked when the quest chain
+                // hasn't reached this mode (the progression service is LIVE).
+                var lockOverlay = MakeChild("LockOverlay", card);
+                lockOverlay.anchorMin = Vector2.zero;
+                lockOverlay.anchorMax = Vector2.one;
+                lockOverlay.offsetMin = Vector2.zero;
+                lockOverlay.offsetMax = Vector2.zero;
+                var lockImage = lockOverlay.gameObject.AddComponent<Image>();
+                lockImage.color = new Color(0.02f, 0.02f, 0.06f, 0.55f);
+                lockImage.raycastTarget = false;
+                var lockLabel = MakeChild("Label", lockOverlay);
+                lockLabel.anchorMin = Vector2.zero;
+                lockLabel.anchorMax = new Vector2(1f, 0.3f); // low strip — clears the card title
+                lockLabel.offsetMin = Vector2.zero;
+                lockLabel.offsetMax = Vector2.zero;
+                var lockText = lockLabel.gameObject.AddComponent<TextMeshProUGUI>();
+                lockText.text = "LOCKED";
+                lockText.fontSize = 22f;
+                lockText.color = new Color(1f, 0.55f, 0.35f, 0.95f);
+                lockText.alignment = TextAlignmentOptions.Center;
+                lockOverlay.gameObject.SetActive(false);
+                SetPrivateField(gameCard, "lockOverlay", lockOverlay.gameObject);
             }
 
             BuildConfigureModal(canvasRect, gameList, explore);
