@@ -720,21 +720,71 @@ now works that milestone plan.
 > plumbing: more menu screens (Hangar/Leaderboards/Store), richer per-mode
 > art, and the Arc-E content-bridge decision.
 
-1. **Menu breadth — the Leaderboards (PORT) screen unit** (second of the
-   three queued screen units: Hangar ✅ → Leaderboards → Store). Map the
-   upstream `LeaderboardsMenu` (IScreen, `OnScreenEnter → LoadView`) + its
-   dependency tail (`LeaderboardManager` / UGS Leaderboards surface,
-   per-game leaderboard views, player-rank rows) and port the unit
-   singletons-first (the pattern every screen unit has used — see the
-   Hangar unit below for the freshest template: agent-ported verbatim
-   files + inline shells for out-of-unit tails). Wire it into the
-   menushell so PORT shows a real screen; menushell PNGs only rebaseline
-   if the PORT panel is visible in a capture (it is not the return screen
-   — diag values must hold). After that: Store (CatalogManager economy
-   singletons).
+1. **Menu breadth — the Store screen unit** (last of the three queued
+   screen units: Hangar ✅ → Leaderboards ✅ → Store). Map the upstream
+   `StoreScreen` (extends `View`, `Start()` + `OnEnable()` events) + its
+   dependency tail (CatalogManager / IAP economy singletons, purchase
+   cells, crystal-balance display — `CrystalCurrencyDisplay` already sits
+   in the ported Hangar elements folder upstream) and port the unit
+   singletons-first (template: the Hangar/Leaderboards units below —
+   verbatim ports + documented shells for out-of-unit tails, wire into
+   the menushell so STORE shows a real screen). Menushell diag values
+   must hold (STORE is not the return screen); reuse the `--screen store`
+   peek lane for the visual verify if useful (the `--screen` arg ships).
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Leaderboards screen unit ✅ (2026-07-10) — PORT is REAL (the offline lane IS upstream's live lane)
+
+**`LeaderboardsMenu` (226L) ported verbatim** — the PORT screen: per-game
+select buttons (icon swap active/inactive), the vessel-class `TMP_Dropdown`
+(the ">1 vessels → Any option" rule), and the high-score board (1-based
+ranks, `[NAMELESS PILOT]` small-font fallback, golf display sign-flip,
+cyan local-player highlight by `PlayFabAccount.ID`). **`LeaderboardManager`
+(402L) ported structure-verbatim with the OFFLINE lane real** — upstream
+runs its "[PLAYFAB DISABLED]" state (UGS UGSStatsManager owns live boards;
+manager pending removal), so its live behavior IS the offline lane:
+`FetchLeaderboard` serves the DataAccessor-cached lists and
+`ReportGameplayStatistic` accumulates `offline_stats.data` (mode+vessel /
+mode+ANY / _PlayCount rows, golf negation). The unreachable
+PlayFabClientAPI lanes are deviation-commented in place;
+`PlayFab.ClientModels.StatisticUpdate` carried as the minimal serialized
+type. **Legacy shells (2):** `AuthenticationManager` (static
+`PlayFabAccount = new()` — non-null upstream too, so the WaitUntil gates
+pass identically) + `PlayerDataController` (static `OnProfileLoaded` +
+internal test raise). `PlayFabAccount` ported verbatim (AuthContext →
+object placeholder).
+
+**Engine growths (4):** `WaitUntil` (predicate yield, polled at the resume
+point), `TMP_Dropdown` (options/value/onValueChanged/SetValueWithoutNotify/
+captionText real; the popup list is presentation the ported code never
+reads — click cycles options), `UnityException`,
+`SystemInfo.deviceUniqueIdentifier` (stable machine-derived id). Plus
+`InternalsVisibleTo(CosmicShore.Client)` so the host authors fixtures
+through internal seams (DataAccessor) exactly like the tests.
+
+**Menushell wiring:** the PORT panel hosts the real screen (game row +
+dropdown + six-row board), seeded with a deterministic cached board per
+game (five pilots, the local pilot's row at rank 3 — the highlight lane
+lives). PORT removed from `disabledScreens` (the scene-serialized override
+the Unity build would carry; ARK stays disabled). **New `--screen <name>`
+peek lane** on the menushell: `--screen port` navigates straight there at
+frame 6 and holds — a dedicated verify that leaves the canonical
+choreography untouched. **New pinned line `port@60`** → `phase menu,
+active PORT, slideX -3840.0, … paused True` (byte-stable ×2, PNG
+identical; shows the full board with the cyan YOU row).
+
+**Verified:** 5 new headless tests (`LeaderboardsMenuTests`: cached-board
+population + Any-option rule + nameless/highlight lanes, game switch +
+golf display flip, OnProfileLoaded refresh, stat-key format, offline
+accumulation appends until flush). **ALL NINE canonical diags byte-stable
+×2 with values AND PNGs pixel-identical to the hangar-iteration baseline**
+— the unit provably changed nothing outside its own peek lane. **1650
+tests green in BOTH configs (1312 + 338)**; 5 CLI modes exit 0. One
+single-test blip in the first combined run matched the documented
+pre-existing flake (clean on the exact-sequence re-run, twice).
+bleeding-edge unmoved at `f2b8f5aa`.
 
 ### Hangar screen unit ✅ (2026-07-10) — the first menu-breadth unit; HANGAR is REAL
 

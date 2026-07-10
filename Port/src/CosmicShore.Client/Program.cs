@@ -26,6 +26,7 @@ namespace CosmicShore.Client
             string game = "hexrace";
             string pilot = "ai";
             string ready = "auto";
+            string screen = null;
             int seed = 42;
             int crystals = 30;
             int rivals = 3;
@@ -42,6 +43,7 @@ namespace CosmicShore.Client
                     case "--game" when i + 1 < args.Length: game = args[++i].ToLowerInvariant(); break;
                     case "--pilot" when i + 1 < args.Length: pilot = args[++i].ToLowerInvariant(); break;
                     case "--ready" when i + 1 < args.Length: ready = args[++i].ToLowerInvariant(); break;
+                    case "--screen" when i + 1 < args.Length: screen = args[++i].ToLowerInvariant(); break;
                     case "--seed" when i + 1 < args.Length: int.TryParse(args[++i], out seed); break;
                     case "--crystals" when i + 1 < args.Length: int.TryParse(args[++i], out crystals); break;
                     case "--rivals" when i + 1 < args.Length: int.TryParse(args[++i], out rivals); break;
@@ -64,7 +66,7 @@ namespace CosmicShore.Client
                 if (mode == "menushell")
                 {
                     Console.WriteLine("Menu shell — the REAL ScreenSwitcher on the first-party UI stack");
-                    new MenuShellWindow(screenshot, screenshotFrame).Run();
+                    new MenuShellWindow(screenshot, screenshotFrame, screen).Run();
                     return 0;
                 }
 

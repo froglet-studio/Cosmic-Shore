@@ -101,6 +101,22 @@ namespace CosmicShore.Engine
     public static class SystemInfo
     {
         public static DeviceType deviceType = DeviceType.Desktop;
+
+        /// <summary>
+        /// Original contract: a stable per-device id. Derived from the machine +
+        /// user names — constant across runs on one machine, which is the only
+        /// property the ported PlayFabAccount.UniqueID read relies on.
+        /// </summary>
+        public static string deviceUniqueIdentifier { get; } =
+            $"{Environment.MachineName}-{Environment.UserName}".GetHashCode().ToString("x8");
+    }
+
+    /// <summary>Original engine's own exception type (thrown by out-of-bounds scene APIs).</summary>
+    public class UnityException : Exception
+    {
+        public UnityException() { }
+        public UnityException(string message) : base(message) { }
+        public UnityException(string message, Exception innerException) : base(message, innerException) { }
     }
 
     public static class Application

@@ -94,6 +94,9 @@ namespace CosmicShore.Client
 
         // Arc I: the real in-round UI (Ready button + scoreboard panel).
         RoundUiOverlay _overlay;
+        CosmicShore.ScriptableObjects.SO_GameList _gameList;
+        readonly string _screenPeek;
+        Button _portNavButton;
 
         static readonly (ScreenSwitcher.MenuScreens id, string title, Color tint)[] Panels =
         {
@@ -104,10 +107,11 @@ namespace CosmicShore.Client
             (ScreenSwitcher.MenuScreens.HANGAR, "HANGAR", new Color(0.16f, 0.10f, 0.05f, 1f)),
         };
 
-        public MenuShellWindow(string screenshotPath, int screenshotFrame)
+        public MenuShellWindow(string screenshotPath, int screenshotFrame, string screenPeek = null)
         {
             _screenshotPath = screenshotPath;
             _screenshotFrame = screenshotFrame;
+            _screenPeek = screenPeek;
         }
 
         public void Run()
@@ -153,6 +157,7 @@ namespace CosmicShore.Client
 
         void BuildMenu(bool firstBoot)
         {
+            _gameList = null; // fresh SO fixture per menu world (matches the old per-build behavior)
             var esGo = new GameObject("EventSystem");
             esGo.AddComponent<EventSystem>();
             _module = esGo.AddComponent<StandaloneInputModule>();
@@ -215,6 +220,16 @@ namespace CosmicShore.Client
                 text.color = new Color(0.85f, 0.95f, 1f, 0.95f);
                 text.alignment = TextAlignmentOptions.Center;
 
+                if (id == ScreenSwitcher.MenuScreens.PORT)
+                {
+                    // The real LeaderboardsMenu on the PORT panel — header shrinks
+                    // like the hangar's so the board owns the panel.
+                    label.anchorMin = new Vector2(0f, 0.88f);
+                    label.anchorMax = Vector2.one;
+                    text.fontSize = 40f;
+                    BuildLeaderboardsScreen(panel);
+                }
+
                 if (id == ScreenSwitcher.MenuScreens.HANGAR)
                 {
                     // The real HangarScreen (grid of vessel cards + detail view with
@@ -248,6 +263,10 @@ namespace CosmicShore.Client
             }
             SetPrivateField(_switcher, "screens", entries);
             SetPrivateField(_switcher, "screensCanvasGroup", screensGroup);
+            // PORT hosts the real LeaderboardsMenu now — only ARK stays disabled
+            // (the scene-serialized override the Unity build would carry).
+            SetPrivateField(_switcher, "disabledScreens",
+                new List<ScreenSwitcher.MenuScreens> { ScreenSwitcher.MenuScreens.ARK });
 
             // Nav bar: five real Buttons across the bottom wired to the shipping
             // OnClick*Nav handlers (PORT/ARK stay wired — the switcher itself rejects
@@ -286,6 +305,7 @@ namespace CosmicShore.Client
                 button.onClick.AddListener(() => onClick(switcher));
                 if (label == "HANGAR") _hangarNavButton = button;
                 if (label == "ARCADE") _arcadeNavButton = button;
+                if (label == "PORT") _portNavButton = button;
 
                 var buttonLabel = MakeChild("Label", buttonRect);
                 buttonLabel.anchorMin = Vector2.zero;
@@ -308,10 +328,142 @@ namespace CosmicShore.Client
         /// by hand-authored SO_ArcadeGame entries — the same modes the CLI proves.
         /// Prefab art arrives with the Arc-E content bridge; the WIRING is shipping code.
         /// </summary>
-        void BuildArcadeModal(RectTransform canvasRect)
+        /// <summary>
+        /// The REAL LeaderboardsMenu on the PORT panel (Leaderboards unit): three
+        /// game-select buttons, the vessel-class dropdown, and the high-score board.
+        /// Upstream's manager runs its "[PLAYFAB DISABLED]" offline lane, so the rows
+        /// come from the DataAccessor-cached lists — seeded here with a deterministic
+        /// fixture board per game (identical every boot → byte-stable captures). The
+        /// local pilot's PlayFabAccount.ID matches one seeded row, exercising the
+        /// player-highlight lane.
+        /// </summary>
+        void BuildLeaderboardsScreen(RectTransform panel)
         {
-            var gameList = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.SO_GameList>();
-            gameList.Games = new List<CosmicShore.ScriptableObjects.SO_ArcadeGame>();
+            panel.gameObject.SetActive(false); // wire fields before Start runs
+
+            var gameList = EnsureGameList();
+
+            // The offline manager singleton the screen fetches through (upstream: a
+            // scene object with the NetworkMonitor variable serialized in).
+            if (CosmicShore.Core.LeaderboardManager.Instance == null)
+            {
+                var managerGo = new GameObject("LeaderboardManager");
+                managerGo.SetActive(false);
+                var manager = managerGo.AddComponent<CosmicShore.Core.LeaderboardManager>();
+                var netVariable = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.NetworkMonitorDataVariable>();
+                netVariable.Value = new CosmicShore.ScriptableObjects.NetworkMonitorData
+                {
+                    OnNetworkFound = ScriptableObject.CreateInstance<CosmicShore.Engine.Soap.ScriptableEventNoParam>(),
+                    OnNetworkLost = ScriptableObject.CreateInstance<CosmicShore.Engine.Soap.ScriptableEventNoParam>(),
+                };
+                SetPrivateField(manager, "_networkMonitorDataVariable", netVariable);
+                managerGo.SetActive(true);
+            }
+
+            // Deterministic cached boards: five pilots per game, the local pilot on
+            // rank 3 (the screen paints that row cyan via PlayFabAccount.ID).
+            CosmicShore.Core.AuthenticationManager.PlayFabAccount.ID = "pilot-local";
+            string[] rivals = { "VELA", "CRUX", "YOU", "LYRA", "DRACO" };
+            foreach (var game in gameList.Games)
+            {
+                var entries = new List<CosmicShore.Core.LeaderboardManager.LeaderboardEntry>();
+                int baseScore = 120 + game.DisplayName.Length; // per-game flavor, constant
+                for (int i = 0; i < rivals.Length; i++)
+                    entries.Add(new CosmicShore.Core.LeaderboardManager.LeaderboardEntry(
+                        rivals[i] == "YOU" ? "YOU" : rivals[i],
+                        rivals[i] == "YOU" ? "pilot-local" : $"pilot-{rivals[i]}",
+                        baseScore - i * 7,
+                        i,
+                        avatarUrl: null));
+                CosmicShore.Utility.DataAccessor.Save(
+                    $"leaderboard_{game.Mode.ToString().ToUpper()}_DOLPHIN.data", entries);
+            }
+
+            // Game-select buttons (Image + Button per slot, the shape SelectGame reads).
+            var gameRow = MakeChild("GameSelectionContainer", panel);
+            gameRow.anchorMin = new Vector2(0.06f, 0.72f);
+            gameRow.anchorMax = new Vector2(0.66f, 0.84f);
+            gameRow.offsetMin = Vector2.zero;
+            gameRow.offsetMax = Vector2.zero;
+            var gameRowGroup = gameRow.gameObject.AddComponent<HorizontalLayoutGroup>();
+            gameRowGroup.spacing = 18f;
+            gameRowGroup.childForceExpandWidth = true;
+            gameRowGroup.childForceExpandHeight = true;
+            for (int i = 0; i < gameList.Games.Count; i++)
+            {
+                var slot = MakeChild($"GameSelect_{i}", gameRow);
+                var slotImage = slot.gameObject.AddComponent<Image>();
+                slotImage.color = new Color(0.10f, 0.24f, 0.38f, 1f);
+                var slotButton = slot.gameObject.AddComponent<Button>();
+                slotButton.transition = Selectable.Transition.None;
+                var slotLabel = MakeFullStretchText(slot, gameList.Games[i].DisplayName, 18f);
+                slotLabel.color = new Color(0.8f, 0.95f, 1f, 1f);
+            }
+
+            // Vessel-class dropdown (top right).
+            var dropdownRect = MakeChild("ShipClassSelection", panel);
+            dropdownRect.anchorMin = new Vector2(0.70f, 0.74f);
+            dropdownRect.anchorMax = new Vector2(0.94f, 0.82f);
+            dropdownRect.offsetMin = Vector2.zero;
+            dropdownRect.offsetMax = Vector2.zero;
+            var dropdownImage = dropdownRect.gameObject.AddComponent<Image>();
+            dropdownImage.color = new Color(0.12f, 0.20f, 0.30f, 1f);
+            var dropdown = dropdownRect.gameObject.AddComponent<TMP_Dropdown>();
+            dropdown.transition = Selectable.Transition.None;
+            var caption = MakeFullStretchText(dropdownRect, "", 20f);
+            dropdown.captionText = caption;
+
+            // High-score board: six rows of [rank | pilot | score].
+            var board = MakeChild("HighScoresContainer", panel);
+            board.anchorMin = new Vector2(0.06f, 0.10f);
+            board.anchorMax = new Vector2(0.94f, 0.68f);
+            board.offsetMin = Vector2.zero;
+            board.offsetMax = Vector2.zero;
+            var boardImage = board.gameObject.AddComponent<Image>();
+            boardImage.color = new Color(0.03f, 0.10f, 0.18f, 0.9f);
+            boardImage.raycastTarget = false;
+            var boardGroup = board.gameObject.AddComponent<VerticalLayoutGroup>();
+            boardGroup.spacing = 8f;
+            boardGroup.childForceExpandWidth = true;
+            boardGroup.childForceExpandHeight = true;
+            for (int i = 0; i < 6; i++)
+            {
+                var row = MakeChild($"ScoreRow_{i}", board);
+                var rowGroup = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+                rowGroup.spacing = 12f;
+                rowGroup.childForceExpandWidth = true;
+                rowGroup.childForceExpandHeight = true;
+                for (int c = 0; c < 3; c++)
+                {
+                    var cell = MakeChild(c == 0 ? "Rank" : c == 1 ? "Pilot" : "Score", row);
+                    var cellText = cell.gameObject.AddComponent<TextMeshProUGUI>();
+                    cellText.fontSize = 20f;
+                    cellText.color = Color.white;
+                    cellText.alignment = TextAlignmentOptions.Center;
+                }
+            }
+
+            panel.gameObject.AddComponent<MenuAudio>(); // [RequireComponent] partner (engine doesn't auto-add)
+            var leaderboards = panel.gameObject.AddComponent<LeaderboardsMenu>();
+            SetPrivateField(leaderboards, "allGames", gameList);
+            SetPrivateField(leaderboards, "GameSelectionContainer", (Transform)gameRow);
+            SetPrivateField(leaderboards, "HighScoresContainer", board.gameObject);
+            SetPrivateField(leaderboards, "ShipClassSelection", dropdown);
+
+            panel.gameObject.SetActive(true); // fields wired — Start may run
+        }
+
+        /// <summary>
+        /// The hand-authored 3-game SO fixture (the same modes the CLI proves). One
+        /// instance feeds BOTH the arcade modal's cards and the PORT leaderboards
+        /// screen (which copies the list before filtering, per the upstream comment).
+        /// </summary>
+        CosmicShore.ScriptableObjects.SO_GameList EnsureGameList()
+        {
+            if (_gameList != null) return _gameList;
+
+            _gameList = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.SO_GameList>();
+            _gameList.Games = new List<CosmicShore.ScriptableObjects.SO_ArcadeGame>();
             (string name, CosmicShore.Data.GameModes mode, string scene, int minDomains)[] games =
             {
                 ("HEX RACE", CosmicShore.Data.GameModes.HexRace, "MinigameHexRace", 1),
@@ -334,8 +486,14 @@ namespace CosmicShore.Client
                 dolphin.Class = CosmicShore.Data.VesselClassType.Dolphin;
                 dolphin.Name = "Dolphin";
                 so.Vessels = new List<SO_Vessel> { dolphin };
-                gameList.Games.Add(so);
+                _gameList.Games.Add(so);
             }
+            return _gameList;
+        }
+
+        void BuildArcadeModal(RectTransform canvasRect)
+        {
+            var gameList = EnsureGameList();
 
             // Modal root: full-screen dim + CanvasGroup + ModalWindowManager(ARCADE).
             var modalRoot = MakeChild("ArcadeModal", canvasRect);
@@ -442,7 +600,7 @@ namespace CosmicShore.Client
             rowGroup.childForceExpandWidth = true;
             rowGroup.childForceExpandHeight = true;
 
-            for (int i = 0; i < games.Length; i++)
+            for (int i = 0; i < gameList.Games.Count; i++)
             {
                 var card = MakeChild($"GameCard_{i}", row);
                 var cardImage = card.gameObject.AddComponent<Image>();
@@ -1217,6 +1375,24 @@ namespace CosmicShore.Client
 
             // The scripted click flow drives only the FIRST menu visit.
             if (_phase != HostPhase.Menu) return;
+
+            // `--screen <name>` capture runs: navigate straight to that screen and
+            // hold (no game flow) — a dedicated verify lane that leaves the
+            // canonical choreography (and its pinned diags) untouched.
+            if (_screenPeek != null)
+            {
+                if (_frameIndex == 6)
+                {
+                    var peek = _screenPeek.ToUpperInvariant() switch
+                    {
+                        "PORT" => _portNavButton,
+                        "HANGAR" => _hangarNavButton,
+                        _ => null,
+                    };
+                    if (peek != null) ClickButton(peek);
+                }
+                return;
+            }
 
             if (_frameIndex == 30 && _hangarNavButton != null)
                 ClickButton(_hangarNavButton);

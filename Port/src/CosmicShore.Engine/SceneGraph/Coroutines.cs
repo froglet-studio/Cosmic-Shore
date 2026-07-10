@@ -26,6 +26,18 @@ namespace CosmicShore.Engine
         public WaitForSecondsRealtime(float seconds) { this.seconds = seconds; }
     }
 
+    /// <summary>
+    /// Suspends a coroutine until the predicate reports true (original contract:
+    /// polled once per frame at the resume point; an already-true predicate still
+    /// costs one frame of suspension, like the runner's other yields).
+    /// </summary>
+    public sealed class WaitUntil : YieldInstruction
+    {
+        internal readonly Func<bool> predicate;
+        public WaitUntil(Func<bool> predicate)
+            => this.predicate = predicate ?? throw new ArgumentNullException(nameof(predicate));
+    }
+
     /// <summary>Handle returned by StartCoroutine; yield it to await completion.</summary>
     /// <summary>
     /// Original contract: resume at the end of the current frame. The runner's
@@ -57,6 +69,7 @@ namespace CosmicShore.Engine
             public Coroutine Handle;
             public float WaitUntilTime = -1f;
             public float WaitUntilUnscaledTime = -1f;
+            public Func<bool> WaitPredicate;
             public Coroutine WaitingOn;
         }
 
@@ -137,6 +150,12 @@ namespace CosmicShore.Engine
                     entry.WaitUntilUnscaledTime = -1f;
                 }
 
+                if (entry.WaitPredicate is not null)
+                {
+                    if (!entry.WaitPredicate()) continue;
+                    entry.WaitPredicate = null;
+                }
+
                 if (entry.WaitingOn is not null)
                 {
                     if (!entry.WaitingOn.Done) continue;
@@ -183,6 +202,9 @@ namespace CosmicShore.Engine
                         return true;
                     case WaitForSecondsRealtime waitRealtime:
                         entry.WaitUntilUnscaledTime = Time.unscaledTime + waitRealtime.seconds;
+                        return true;
+                    case WaitUntil waitUntil:
+                        entry.WaitPredicate = waitUntil.predicate;
                         return true;
                     case IEnumerator nested:
                         entry.Frames.Push(nested); // child runs to its first yield this frame
