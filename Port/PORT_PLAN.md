@@ -720,20 +720,85 @@ now works that milestone plan.
 > plumbing: more menu screens (Hangar/Leaderboards/Store), richer per-mode
 > art, and the Arc-E content-bridge decision.
 
-1. **Menu breadth — the Store screen unit** (last of the three queued
-   screen units: Hangar ✅ → Leaderboards ✅ → Store). Map the upstream
-   `StoreScreen` (extends `View`, `Start()` + `OnEnable()` events) + its
-   dependency tail (CatalogManager / IAP economy singletons, purchase
-   cells, crystal-balance display — `CrystalCurrencyDisplay` already sits
-   in the ported Hangar elements folder upstream) and port the unit
-   singletons-first (template: the Hangar/Leaderboards units below —
-   verbatim ports + documented shells for out-of-unit tails, wire into
-   the menushell so STORE shows a real screen). Menushell diag values
-   must hold (STORE is not the return screen); reuse the `--screen store`
-   peek lane for the visual verify if useful (the `--screen` arg ships).
+> **MENU BREADTH COMPLETE (2026-07-10):** all three queued screen units are
+> real — Hangar ✅, Leaderboards ✅, Store ✅. Every screen the nav bar can
+> reach (STORE / HOME / PORT / HANGAR + the ARCADE modal family) now hosts
+> shipping ported code; only ARK remains a disabled placeholder (no upstream
+> screen exists for it). Remaining milestone depth: richer per-mode art and
+> the **Arc-E content-bridge decision point** (extractor vs hand-authoring —
+> needs the prompter).
+
+1. **The real GameModeProgressionService (788L)** — the largest live shell
+   left in the menu path. The 49L shell answers "everything unlocked";
+   the real port brings the quest-chain progression over Cloud Save
+   (`ProgressionData`, `SO_GameModeQuestData` quest list, per-mode
+   intensity tiers, `IsVesselHangarUnlocked` for real) — which makes the
+   arcade card locking, locked-intensity toasts, and the hangar gate
+   behave like the Unity build. Singletons-first: survey its tail
+   (`GameModeProgressionData`, quest SOs, CloudSave repo hooks — the
+   repos already exist from the CloudSave arc). Un-carry the shell's four
+   always-unlocked answers against the real logic; keep the menushell's
+   fresh-boot posture identical (a fresh install IS everything-locked to
+   the first quest — check what the scripted flow needs so the pinned
+   menushell diags hold; if the arcade cards would lock, seed the fixture
+   progression so the canonical choreography still launches HexRace).
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Store screen unit ✅ (2026-07-10) — STORE is REAL; MENU BREADTH COMPLETE
+
+**11 files ported verbatim** (background-agent transcription, `(Store unit
+2026-07-10)` headers): `StoreScreen` (239L: balances + captain grid + ticket
+card + game section behind `ShowGamePurchasing`), the purchase-card family
+(`PurchaseCard` → `PurchaseItemCard` 221L with the affordability/owned state
+machine + unscaled card-flip juice → `PurchaseCaptainCard` /
+`PurchaseGameCard` / `PurchaseGameplayTicketCard`),
+`PurchaseConfirmationModal` (155L: price/unlock text, balances, per-type
+item image, count-up/pulse juice), `StoreShelve`, the real `Inventory`
+(replacing the Arc-F inline shell), `SO_Captain` + `Captain` (the captain
+data model, new `Data/` dir). **`CatalogManager` grown 49L shell →
+structure-faithful** (the LeaderboardManager pattern): upstream runs
+"[PLAYFAB DISABLED]", so the LOCAL lanes are the live ones and are REAL —
+StoreShelve/Inventory routing, the purchase guard + local settlement
+(extracted verbatim from the PlayFab success callback as
+`SettlePurchaseLocally`), ticket/crystal balances, currency fan-out — with
+every PlayFab request lane deviation-commented at its call site.
+`CaptainManager` shell grew the lookup surface (`GetCaptainByName` /
+`GetCaptainSOByName` / `GetCaptainFromUpgrade` / `EncounterCaptain` over a
+seedable roster); `DailyRewardHandler` landed as an unanswered-cloud-call
+shell. Engine grew `Assertions.Assert` (AreEqual/AreNotEqual/IsTrue/IsNull
+family, fail-loud).
+
+**Two fixture findings encoded:** (1) engine `Instantiate` clones stay
+inactive when the template is inactive (original contract — prefabs are
+ACTIVE assets), so scene-built card/grid templates live ACTIVE under an
+inactive `Templates` holder; (2) runtime `AddListener` delegates survive
+cloning still bound to the TEMPLATE instance (the original engine clones
+inspector-serialized PERSISTENT listeners instead, remapping targets) — the
+`PurchaseCardClickBinding` component stands in for the prefab's persistent
+listener by re-wiring each clone's Button to its own card on Awake.
+Menushell's `SetPrivateField` now walks base types (a subclass wiring a
+base `[SerializeField]`).
+
+**Menushell wiring:** the STORE panel hosts the real screen — 500-crystal
+wallet, three encountered captains (AURELIA 150 / KORVAX 300 / SIRRA 450)
+with live affordability, the 25-crystal daily-ticket card, both balances,
+and the purchase-confirmation modal (registered with the switcher's modal
+stack as `PURCHASE_ITEM_CONFIRMATION`) — all seeded through the manager's
+internal landing lanes. `--screen store` joins the peek lane. **New pinned
+line `store@120`** → `phase menu, active STORE, slideX 0.0, … paused True`
+(byte-stable ×2).
+
+**Verified:** 6 new headless tests (`StoreScreenTests`: UpdateView populates
+cards + balances; card → modal → confirm settles locally — wallet deducted,
+captain inventoried + auto-encountered, card flips OWNED; currency fan-out
+flips unaffordable cards; ticket purchase raises the ticket balance;
+over-purchase guard; element-filtered balance). **ALL NINE canonical diags
+byte-stable ×2 with values AND PNGs pixel-identical to the prior baseline**;
+`port@60` + `store@120` peeks byte-stable ×2. **1656 tests green in BOTH
+configs (1318 + 338)**; 5 CLI modes exit 0. bleeding-edge unmoved at
+`f2b8f5aa`.
 
 ### Leaderboards screen unit ✅ (2026-07-10) — PORT is REAL (the offline lane IS upstream's live lane)
 

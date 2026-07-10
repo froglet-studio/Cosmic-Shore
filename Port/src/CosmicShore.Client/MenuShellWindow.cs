@@ -97,6 +97,8 @@ namespace CosmicShore.Client
         CosmicShore.ScriptableObjects.SO_GameList _gameList;
         readonly string _screenPeek;
         Button _portNavButton;
+        Button _storeNavButton;
+        PurchaseConfirmationModal _purchaseModal;
 
         static readonly (ScreenSwitcher.MenuScreens id, string title, Color tint)[] Panels =
         {
@@ -220,6 +222,16 @@ namespace CosmicShore.Client
                 text.color = new Color(0.85f, 0.95f, 1f, 0.95f);
                 text.alignment = TextAlignmentOptions.Center;
 
+                if (id == ScreenSwitcher.MenuScreens.STORE)
+                {
+                    // The real StoreScreen on the STORE panel — header shrinks like
+                    // the other real screens.
+                    label.anchorMin = new Vector2(0f, 0.88f);
+                    label.anchorMax = Vector2.one;
+                    text.fontSize = 40f;
+                    BuildStoreScreen(panel, canvasRect);
+                }
+
                 if (id == ScreenSwitcher.MenuScreens.PORT)
                 {
                     // The real LeaderboardsMenu on the PORT panel — header shrinks
@@ -306,6 +318,7 @@ namespace CosmicShore.Client
                 if (label == "HANGAR") _hangarNavButton = button;
                 if (label == "ARCADE") _arcadeNavButton = button;
                 if (label == "PORT") _portNavButton = button;
+                if (label == "STORE") _storeNavButton = button;
 
                 var buttonLabel = MakeChild("Label", buttonRect);
                 buttonLabel.anchorMin = Vector2.zero;
@@ -328,6 +341,377 @@ namespace CosmicShore.Client
         /// by hand-authored SO_ArcadeGame entries — the same modes the CLI proves.
         /// Prefab art arrives with the Arc-E content bridge; the WIRING is shipping code.
         /// </summary>
+        /// <summary>
+        /// The REAL StoreScreen on the STORE panel (Store unit): crystal + ticket
+        /// balances, the captain purchase grid, the daily-challenge ticket card, and
+        /// the purchase-confirmation modal — all running the CatalogManager's LOCAL
+        /// economy lanes (upstream's PlayFab lanes are inert there too). Fixture: a
+        /// 500-crystal wallet, three encountered captains priced 150/300/450, and
+        /// the 25-crystal ticket — seeded through the same internal landing lanes
+        /// the PlayFab callbacks funneled into.
+        /// </summary>
+        void BuildStoreScreen(RectTransform panel, RectTransform canvasRect)
+        {
+            panel.gameObject.SetActive(false); // wire fields before OnEnable/Start
+
+            // ── economy singletons + deterministic fixture ─────────────────────
+            CosmicShore.Core.CatalogManager.ResetLocalEconomy();
+            var captainManagerGo = new GameObject("CaptainManager");
+            var captainManager = captainManagerGo.AddComponent<CosmicShore.Core.CaptainManager>();
+            new GameObject("DailyRewardHandler").AddComponent<CosmicShore.Core.DailyRewardHandler>();
+
+            var catalogGo = new GameObject("CatalogManager");
+            catalogGo.SetActive(false);
+            var catalog = catalogGo.AddComponent<CosmicShore.Core.CatalogManager>();
+            var netVariable = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.NetworkMonitorDataVariable>();
+            netVariable.Value = new CosmicShore.ScriptableObjects.NetworkMonitorData
+            {
+                OnNetworkFound = ScriptableObject.CreateInstance<CosmicShore.Engine.Soap.ScriptableEventNoParam>(),
+                OnNetworkLost = ScriptableObject.CreateInstance<CosmicShore.Engine.Soap.ScriptableEventNoParam>(),
+            };
+            SetPrivateField(catalog, "_networkMonitorDataVariable", netVariable);
+            SetPrivateField(catalog, "_captainManager", captainManager);
+            catalogGo.SetActive(true);
+
+            (string name, CosmicShore.Data.VesselClassType cls, CosmicShore.Data.Element element, int cost, string flavor)[] roster =
+            {
+                ("AURELIA", CosmicShore.Data.VesselClassType.Manta, CosmicShore.Data.Element.Space, 150, "Cartographer of the open sea."),
+                ("KORVAX", CosmicShore.Data.VesselClassType.Rhino, CosmicShore.Data.Element.Mass, 300, "Breaks lines. Keeps promises."),
+                ("SIRRA", CosmicShore.Data.VesselClassType.Dolphin, CosmicShore.Data.Element.Time, 450, "Arrives before the wave does."),
+            };
+
+            var captains = new List<CosmicShore.Data.Captain>();
+            var shelveItems = new List<CosmicShore.Core.VirtualItem>();
+            var crystal = new CosmicShore.Core.VirtualItem
+            {
+                ItemId = "crystal-omni",
+                Name = "Omni Crystal",
+                ContentType = "Crystal",
+                Tags = new List<string> { "Omni" },
+                Price = new List<CosmicShore.Core.ItemPrice>(),
+                Amount = 500, // the wallet — one shared instance in shelve + inventory
+            };
+            shelveItems.Add(crystal);
+
+            int captainIndex = 0;
+            foreach (var (name, cls, element, cost, flavor) in roster)
+            {
+                var vessel = ScriptableObject.CreateInstance<SO_Vessel>(); // global namespace (as upstream)
+                vessel.Name = cls.ToString();
+                vessel.Class = cls;
+                var soCaptain = ScriptableObject.CreateInstance<CosmicShore.ScriptableObjects.SO_Captain>();
+                soCaptain.Name = name;
+                soCaptain.Description = flavor;
+                soCaptain.Vessel = vessel;
+                soCaptain.PrimaryElement = element;
+                captains.Add(new CosmicShore.Data.Captain(soCaptain) { Encountered = true });
+
+                shelveItems.Add(new CosmicShore.Core.VirtualItem
+                {
+                    ItemId = $"captain-{++captainIndex}",
+                    Name = name,
+                    Description = flavor,
+                    ContentType = "Captain",
+                    Tags = new List<string>(),
+                    Price = new List<CosmicShore.Core.ItemPrice>
+                    {
+                        new() { ItemId = "crystal-omni", Amount = cost, UnitAmount = 1 },
+                    },
+                    Amount = 1, // PlayFab inventory items carry >=1 — the over-purchase guard reads it
+                });
+            }
+
+            shelveItems.Add(new CosmicShore.Core.VirtualItem
+            {
+                ItemId = "ticket-dc",
+                Name = "Daily Challenge Ticket",
+                Description = "One entry into today's challenge.",
+                ContentType = "Ticket",
+                Tags = new List<string>(),
+                Price = new List<CosmicShore.Core.ItemPrice>
+                {
+                    new() { ItemId = "crystal-omni", Amount = 25, UnitAmount = 1 },
+                },
+                Amount = 0,
+            });
+
+            captainManager.LoadLocalCaptains(captains);
+            catalog.LoadLocalCatalog(shelveItems);
+            catalog.LoadLocalInventory(new List<CosmicShore.Core.VirtualItem> { crystal });
+
+            // ── balances header (top right) ────────────────────────────────────
+            TMP_Text MakeBalance(string balanceName, float anchorX)
+            {
+                var cell = MakeChild(balanceName, panel);
+                cell.anchorMin = new Vector2(anchorX, 0.88f);
+                cell.anchorMax = new Vector2(anchorX + 0.14f, 0.96f);
+                cell.offsetMin = Vector2.zero;
+                cell.offsetMax = Vector2.zero;
+                var cellImage = cell.gameObject.AddComponent<Image>();
+                cellImage.color = new Color(0.12f, 0.06f, 0.20f, 1f);
+                cellImage.raycastTarget = false;
+                var labelText = MakeChild("Label", cell);
+                labelText.anchorMin = new Vector2(0f, 0.5f);
+                labelText.anchorMax = Vector2.one;
+                labelText.offsetMin = Vector2.zero;
+                labelText.offsetMax = Vector2.zero;
+                var caption = labelText.gameObject.AddComponent<TextMeshProUGUI>();
+                caption.text = balanceName == "CrystalBalance" ? "CRYSTALS" : "TICKETS";
+                caption.fontSize = 14f;
+                caption.color = new Color(0.7f, 0.8f, 0.95f, 1f);
+                caption.alignment = TextAlignmentOptions.Center;
+                var valueRect = MakeChild("Value", cell);
+                valueRect.anchorMin = Vector2.zero;
+                valueRect.anchorMax = new Vector2(1f, 0.5f);
+                valueRect.offsetMin = Vector2.zero;
+                valueRect.offsetMax = Vector2.zero;
+                var value = valueRect.gameObject.AddComponent<TextMeshProUGUI>();
+                value.fontSize = 22f;
+                value.color = new Color(0.55f, 0.95f, 1f, 1f);
+                value.alignment = TextAlignmentOptions.Center;
+                return value;
+            }
+            var crystalBalanceText = MakeBalance("CrystalBalance", 0.66f);
+            var ticketBalanceText = MakeBalance("TicketBalance", 0.82f);
+
+            // Templates live ACTIVE under an inactive holder: upstream's prefabs are
+            // active assets, so Instantiate must yield active clones (an inactive
+            // template would clone inactive and StoreScreen never re-activates).
+            var templateHolder = MakeChild("Templates", panel);
+            templateHolder.gameObject.SetActive(false);
+
+            // ── purchase card template builder (captain / game / ticket share it) ──
+            T MakeCardTemplate<T>(string cardName, RectTransform parent) where T : PurchaseItemCard
+            {
+                var card = MakeChild(cardName, parent);
+                card.sizeDelta = new Vector2(420f, 240f);
+                var cardBg = card.gameObject.AddComponent<Image>();
+                cardBg.color = new Color(0.16f, 0.09f, 0.26f, 1f);
+                var cardButton = card.gameObject.AddComponent<Button>();
+                cardButton.transition = Selectable.Transition.None;
+
+                var nameText = MakeChild("Name", card);
+                nameText.anchorMin = new Vector2(0f, 0.74f);
+                nameText.anchorMax = Vector2.one;
+                nameText.offsetMin = Vector2.zero;
+                nameText.offsetMax = Vector2.zero;
+                var nameLabel = nameText.gameObject.AddComponent<TextMeshProUGUI>();
+                nameLabel.fontSize = 24f;
+                nameLabel.color = new Color(0.95f, 0.85f, 0.6f, 1f);
+                nameLabel.alignment = TextAlignmentOptions.Center;
+
+                var descText = MakeChild("Description", card);
+                descText.anchorMin = new Vector2(0.04f, 0.36f);
+                descText.anchorMax = new Vector2(0.96f, 0.72f);
+                descText.offsetMin = Vector2.zero;
+                descText.offsetMax = Vector2.zero;
+                var descLabel = descText.gameObject.AddComponent<TextMeshProUGUI>();
+                descLabel.fontSize = 15f;
+                descLabel.color = new Color(0.85f, 0.88f, 0.95f, 1f);
+                descLabel.alignment = TextAlignmentOptions.Center;
+
+                var itemImageRect = MakeChild("ItemImage", card);
+                itemImageRect.anchorMin = new Vector2(0.4f, 0.36f);
+                itemImageRect.anchorMax = new Vector2(0.6f, 0.7f);
+                itemImageRect.offsetMin = Vector2.zero;
+                itemImageRect.offsetMax = Vector2.zero;
+                var itemImage = itemImageRect.gameObject.AddComponent<Image>();
+                itemImage.color = new Color(1f, 1f, 1f, 0f); // sprite art arrives with Arc E
+                itemImage.raycastTarget = false;
+
+                (RectTransform rect, TextMeshProUGUI label, Image image) MakeStateButton(string stateName, string caption, Color color, bool active)
+                {
+                    var state = MakeChild(stateName, card);
+                    state.anchorMin = new Vector2(0.2f, 0.06f);
+                    state.anchorMax = new Vector2(0.8f, 0.30f);
+                    state.offsetMin = Vector2.zero;
+                    state.offsetMax = Vector2.zero;
+                    var stateImage = state.gameObject.AddComponent<Image>();
+                    stateImage.color = color;
+                    stateImage.raycastTarget = false;
+                    var stateLabel = MakeFullStretchText(state, caption, 20f);
+                    state.gameObject.SetActive(active);
+                    return (state, stateLabel, stateImage);
+                }
+                var (_, priceLabel, priceImage) = MakeStateButton("PriceButton", "", new Color(0.16f, 0.42f, 0.28f, 1f), active: true);
+                var (_, unavailableLabel, unavailableImage) = MakeStateButton("UnavailableButton", "", new Color(0.4f, 0.16f, 0.14f, 1f), active: false);
+                var (_, ownedLabel, ownedImage) = MakeStateButton("PurchasedButton", "OWNED", new Color(0.2f, 0.26f, 0.5f, 1f), active: false);
+
+                var component = card.gameObject.AddComponent<T>();
+                SetPrivateField(component, "PriceLabel", priceLabel);
+                SetPrivateField(component, "UnavailablePriceLabel", unavailableLabel);
+                SetPrivateField(component, "ItemNameLabel", nameLabel);
+                SetPrivateField(component, "ItemDescriptionLabel", descLabel);
+                SetPrivateField(component, "ItemImage", itemImage);
+                SetPrivateField(component, "PriceButton", priceImage);
+                SetPrivateField(component, "UnavailableButton", unavailableImage);
+                SetPrivateField(component, "PurchasedButton", ownedImage);
+                SetPrivateField(component, "BackgroundImage", cardBg);
+                // Prefab-persistent listener stand-in: a template-captured delegate
+                // would survive cloning pointing at the TEMPLATE card — the binding
+                // component re-wires each clone to ITS OWN card on Awake.
+                card.gameObject.AddComponent<PurchaseCardClickBinding>();
+                return component;
+            }
+
+            // ── captain purchase section: two rows + inactive template ─────────
+            var captainSection = MakeChild("CaptainPurchaseSection", panel);
+            captainSection.anchorMin = new Vector2(0.04f, 0.30f);
+            captainSection.anchorMax = new Vector2(0.72f, 0.86f);
+            captainSection.offsetMin = Vector2.zero;
+            captainSection.offsetMax = Vector2.zero;
+            var captainRows = new List<HorizontalLayoutGroup>();
+            for (int r = 0; r < 2; r++)
+            {
+                var row = MakeChild($"CaptainRow_{r}", captainSection);
+                row.anchorMin = new Vector2(0f, r == 0 ? 0.52f : 0.02f);
+                row.anchorMax = new Vector2(1f, r == 0 ? 0.98f : 0.48f);
+                row.offsetMin = Vector2.zero;
+                row.offsetMax = Vector2.zero;
+                var rowGroup = row.gameObject.AddComponent<HorizontalLayoutGroup>();
+                rowGroup.spacing = 20f;
+                rowGroup.childForceExpandWidth = true;
+                rowGroup.childForceExpandHeight = true;
+                if (r > 0) row.gameObject.SetActive(false); // upstream activates on overflow
+                captainRows.Add(rowGroup);
+            }
+            var captainTemplate = MakeCardTemplate<PurchaseCaptainCard>("CaptainCardTemplate", templateHolder);
+            SetPrivateField(captainTemplate, "_captainManager", captainManager); // clones inherit the inject
+
+            // ── daily-challenge ticket card (fixed scene instance) ─────────────
+            var ticketArea = MakeChild("TicketArea", panel);
+            ticketArea.anchorMin = new Vector2(0.75f, 0.44f);
+            ticketArea.anchorMax = new Vector2(0.96f, 0.86f);
+            ticketArea.offsetMin = Vector2.zero;
+            ticketArea.offsetMax = Vector2.zero;
+            var ticketCard = MakeCardTemplate<PurchaseGameplayTicketCard>("DailyChallengeTicketCard", ticketArea);
+            var ticketRect = (RectTransform)ticketCard.transform;
+            ticketRect.anchorMin = Vector2.zero;
+            ticketRect.anchorMax = Vector2.one;
+            ticketRect.offsetMin = Vector2.zero;
+            ticketRect.offsetMax = Vector2.zero;
+            var ticketName = (TMP_Text)typeof(PurchaseItemCard)
+                .GetField("ItemNameLabel", BindingFlags.NonPublic | BindingFlags.Instance)!
+                .GetValue(ticketCard);
+            ticketName.text = "DAILY CHALLENGE TICKET";
+            var ticketDesc = (TMP_Text)typeof(PurchaseItemCard)
+                .GetField("ItemDescriptionLabel", BindingFlags.NonPublic | BindingFlags.Instance)!
+                .GetValue(ticketCard);
+            ticketDesc.text = "One entry into today's challenge.";
+
+            // ── game purchase section (ShowGamePurchasing defaults FALSE upstream) ──
+            var gameSection = MakeChild("GamePurchaseSection", panel);
+            gameSection.gameObject.SetActive(false);
+            var gameRow0 = MakeChild("GameRow_0", gameSection);
+            var gameRowGroup = gameRow0.gameObject.AddComponent<HorizontalLayoutGroup>();
+            var gameTemplate = MakeCardTemplate<PurchaseGameCard>("GameCardTemplate", templateHolder);
+
+            // ── purchase confirmation modal (canvas-level, like the arcade modal) ──
+            var modalRoot = MakeChild("PurchaseConfirmationModal", canvasRect);
+            modalRoot.gameObject.SetActive(false);
+            modalRoot.anchorMin = Vector2.zero;
+            modalRoot.anchorMax = Vector2.one;
+            modalRoot.offsetMin = Vector2.zero;
+            modalRoot.offsetMax = Vector2.zero;
+            modalRoot.gameObject.AddComponent<CanvasGroup>();
+            var modalDim = modalRoot.gameObject.AddComponent<Image>();
+            modalDim.color = new Color(0f, 0f, 0f, 0.72f);
+            _purchaseModal = modalRoot.gameObject.AddComponent<PurchaseConfirmationModal>();
+            _purchaseModal.ModalType = ScreenSwitcher.ModalWindows.PURCHASE_ITEM_CONFIRMATION;
+            SetPrivateField(_purchaseModal, "screenSwitcher", _switcher);
+            typeof(ModalWindowManager)
+                .GetField("audioSystem", BindingFlags.NonPublic | BindingFlags.Instance)!
+                .SetValue(_purchaseModal, _audioSystem);
+            SetPrivateField(_purchaseModal, "_captainManager", captainManager);
+
+            var modalPanel = MakeChild("Panel", modalRoot);
+            modalPanel.anchorMin = modalPanel.anchorMax = new Vector2(0.5f, 0.5f);
+            modalPanel.sizeDelta = new Vector2(640f, 420f);
+            var modalPanelImage = modalPanel.gameObject.AddComponent<Image>();
+            modalPanelImage.color = new Color(0.10f, 0.06f, 0.22f, 0.98f);
+            modalPanelImage.raycastTarget = false;
+
+            TMP_Text MakeModalText(string textName, float yMin, float yMax, float size, Color color)
+            {
+                var rect = MakeChild(textName, modalPanel);
+                rect.anchorMin = new Vector2(0.05f, yMin);
+                rect.anchorMax = new Vector2(0.95f, yMax);
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+                var modalText = rect.gameObject.AddComponent<TextMeshProUGUI>();
+                modalText.fontSize = size;
+                modalText.color = color;
+                modalText.alignment = TextAlignmentOptions.Center;
+                return modalText;
+            }
+            var modalPrice = MakeModalText("PriceLabel", 0.62f, 0.80f, 40f, new Color(0.55f, 0.95f, 1f, 1f));
+            var modalUnlock = MakeModalText("UnlockText", 0.46f, 0.60f, 22f, new Color(0.9f, 0.92f, 0.95f, 1f));
+            var modalCrystalBalance = MakeModalText("CrystalBalance", 0.32f, 0.44f, 20f, new Color(0.7f, 0.8f, 0.95f, 1f));
+            var modalTicketBalance = MakeModalText("TicketBalance", 0.20f, 0.32f, 20f, new Color(0.7f, 0.8f, 0.95f, 1f));
+
+            Button MakeModalButton(string buttonName, string caption, float xMin, float xMax, Color color)
+            {
+                var rect = MakeChild(buttonName, modalPanel);
+                rect.anchorMin = new Vector2(xMin, 0.04f);
+                rect.anchorMax = new Vector2(xMax, 0.17f);
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+                var buttonImage = rect.gameObject.AddComponent<Image>();
+                buttonImage.color = color;
+                var modalButton = rect.gameObject.AddComponent<Button>();
+                modalButton.transition = Selectable.Transition.None;
+                MakeFullStretchText(rect, caption, 22f);
+                return modalButton;
+            }
+            var confirmButton = MakeModalButton("ConfirmButton", "CONFIRM", 0.54f, 0.94f, new Color(0.16f, 0.42f, 0.28f, 1f));
+            confirmButton.onClick.AddListener(_purchaseModal.Confirm);
+            var cancelButton = MakeModalButton("CancelButton", "CANCEL", 0.06f, 0.46f, new Color(0.30f, 0.14f, 0.14f, 1f));
+            cancelButton.onClick.AddListener(_purchaseModal.ModalWindowOut);
+
+            var modalEmitter = modalRoot.gameObject.AddComponent<IconEmitter>();
+            var modalImages = new Image[3];
+            for (int i = 0; i < 3; i++)
+            {
+                var imageRect = MakeChild(i == 0 ? "CaptainImage" : i == 1 ? "GameImage" : "TicketImage", modalPanel);
+                imageRect.anchorMin = new Vector2(0.42f, 0.82f);
+                imageRect.anchorMax = new Vector2(0.58f, 0.96f);
+                imageRect.offsetMin = Vector2.zero;
+                imageRect.offsetMax = Vector2.zero;
+                modalImages[i] = imageRect.gameObject.AddComponent<Image>();
+                modalImages[i].color = new Color(0.8f, 0.85f, 1f, 0.25f);
+                modalImages[i].raycastTarget = false;
+                imageRect.gameObject.SetActive(false);
+            }
+            SetPrivateField(_purchaseModal, "PriceLabel", modalPrice);
+            SetPrivateField(_purchaseModal, "UnlockText", modalUnlock);
+            SetPrivateField(_purchaseModal, "CrystalBalanceText", modalCrystalBalance);
+            SetPrivateField(_purchaseModal, "TicketBalanceText", modalTicketBalance);
+            SetPrivateField(_purchaseModal, "ConfirmButton", confirmButton);
+            SetPrivateField(_purchaseModal, "IconEmitter", modalEmitter);
+            SetPrivateField(_purchaseModal, "CaptainImage", modalImages[0]);
+            SetPrivateField(_purchaseModal, "GameImage", modalImages[1]);
+            SetPrivateField(_purchaseModal, "TicketImage", modalImages[2]);
+            modalRoot.gameObject.SetActive(true); // Start hides via CanvasGroup until opened
+
+            // ── the screen itself ───────────────────────────────────────────────
+            panel.gameObject.AddComponent<MenuAudio>();
+            var store = panel.gameObject.AddComponent<StoreScreen>();
+            SetPrivateField(store, "_captainManager", captainManager); // the [Inject] (no DI scope in the shell)
+            SetPrivateField(store, "CrystalBalance", crystalBalanceText);
+            SetPrivateField(store, "TicketBalance", ticketBalanceText);
+            SetPrivateField(store, "CaptainPurchaseSection", captainSection.gameObject);
+            SetPrivateField(store, "PurchaseCaptainPrefab", captainTemplate);
+            SetPrivateField(store, "CaptainPurchaseRows", captainRows);
+            SetPrivateField(store, "PurchaseConfirmationModal", _purchaseModal);
+            SetPrivateField(store, "PurchaseConfirmationButton", confirmButton);
+            SetPrivateField(store, "GamePurchaseSection", gameSection.gameObject);
+            SetPrivateField(store, "PurchaseGamePrefab", gameTemplate);
+            SetPrivateField(store, "GamePurchaseRows", new List<HorizontalLayoutGroup> { gameRowGroup });
+            SetPrivateField(store, "DailyChallengeTicketCard", ticketCard);
+
+            panel.gameObject.SetActive(true); // fields wired — Start's CatalogLoaded lane populates
+        }
+
         /// <summary>
         /// The REAL LeaderboardsMenu on the PORT panel (Leaderboards unit): three
         /// game-select buttons, the vessel-class dropdown, and the high-score board.
@@ -627,7 +1011,7 @@ namespace CosmicShore.Client
 
             // The switcher owns the modals (OnClickArcadeNav + CloseAllModals paths).
             SetPrivateField(_switcher, "ArcadeModal", _arcadeModal);
-            SetPrivateField(_switcher, "Modals", new List<ModalWindowManager> { _arcadeModal, _configureModal });
+            SetPrivateField(_switcher, "Modals", new List<ModalWindowManager> { _arcadeModal, _configureModal, _purchaseModal });
 
             modalRoot.gameObject.SetActive(true); // Start hides it via CanvasGroup until opened
         }
@@ -1301,11 +1685,31 @@ namespace CosmicShore.Client
             return rt;
         }
 
+        /// <summary>
+        /// Stand-in for the upstream prefab's PERSISTENT Button.onClick listener
+        /// (inspector-serialized, remapped per clone by Unity). Runtime AddListener
+        /// delegates capture the template instance and survive engine cloning still
+        /// bound to it — so each clone re-wires its own Button → its own card here.
+        /// </summary>
+        sealed class PurchaseCardClickBinding : MonoBehaviour
+        {
+            void Awake()
+            {
+                var button = GetComponent<Button>();
+                var card = GetComponent<PurchaseCard>();
+                button.onClick.RemoveAllListeners(); // drop the template-bound stale delegate
+                button.onClick.AddListener(card.OnClickBuy);
+            }
+        }
+
         static void SetPrivateField(object target, string fieldName, object value)
         {
-            var field = target.GetType().GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance)
-                        ?? throw new MissingFieldException(target.GetType().Name, fieldName);
-            field.SetValue(target, value);
+            // Private fields don't surface through GetField on derived types —
+            // walk the base chain (a subclass wiring a base [SerializeField]).
+            FieldInfo field = null;
+            for (var t = target.GetType(); t != null && field == null; t = t.BaseType)
+                field = t.GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Instance);
+            (field ?? throw new MissingFieldException(target.GetType().Name, fieldName)).SetValue(target, value);
         }
 
         void OnUpdate(double dt)
@@ -1387,6 +1791,7 @@ namespace CosmicShore.Client
                     {
                         "PORT" => _portNavButton,
                         "HANGAR" => _hangarNavButton,
+                        "STORE" => _storeNavButton,
                         _ => null,
                     };
                     if (peek != null) ClickButton(peek);
