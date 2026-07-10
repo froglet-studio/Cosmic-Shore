@@ -711,21 +711,46 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc F part 2b-iii — the game-launch seam.** `ArcadeGameConfigureModal`
-   (1381L — THE config seam Arc I needs: SyncAllGameDataForLaunch →
-   InvokeGameLaunch; scope its stepper/party dependencies first) + `Arcade`
-   launcher (198L, SingletonPersistent; needs SO_MissionList /
-   SO_TrainingGameList surface + an Animator deviation). Un-carry
-   ExploreView's three deviation-marked lines (modal field + SelectGame open
-   + PlaySelectedGame launch) when they land. MiniGame statics already
-   shipped (2b-ii). After 2b-iii the arcade unit is COMPLETE and the
-   menushell can click card → configure → launch — the direct on-ramp to
-   Arc G/I. Then HangarScreen / LeaderboardsMenu / StoreScreen units (each
-   needs service singletons: LeaderboardManager, PlayerDataController,
-   CatalogManager economy — map before porting).
+1. **Arc F part 2b-iii(b) — the ArcadeGameConfigureModal itself (1381L).**
+   Every supporting type is now live (2b-iii(a) below): ArcadeGameConfigSO,
+   IntStepper, IntensitySelectButton, FavoriteIcon, DomainInfoData,
+   DomainAvatarChip, ArcadeConfigSyncManager (the full Netcode relay:
+   commit/close/screen-change ClientRpcs + the ready-up ServerRpc counter),
+   the Arcade launcher, SO_Mission(+List)/SO_TrainingGameList. Port the
+   modal verbatim on top (it extends the live ModalWindowManager; scope the
+   remaining field types as they surface — VideoPlayer exists as an engine
+   stub). Un-carry ExploreView's two remaining modal lines (field +
+   SelectGame open — the launcher line is already RESTORED). Then wire the
+   configure flow into the menushell (card click → configure screen →
+   InvokeGameLaunch) and re-baseline. After that the arcade unit is
+   COMPLETE — the direct on-ramp to Arc G/I. Then HangarScreen /
+   LeaderboardsMenu / StoreScreen units (map their service singletons
+   first: LeaderboardManager, PlayerDataController, CatalogManager economy).
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Arc F part 2b-iii(a) ✅ (2026-07-10) — the modal's foundation + the Arcade launcher
+
+**Nine verbatim ports:** `ArcadeGameConfigSO` (the modal's runtime config
+state), `IntStepper` (the generic ± stepper both PC and DC selection reuse),
+`IntensitySelectButton` (selected/active/locked tri-state with the
+OnLockedSelect path), `FavoriteIcon`, `DomainInfoData` (per-domain tile +
+avatar strip; the #if UNITY_EDITOR OnValidate block compiles out like a
+player build), `DomainAvatarChip`, **`ArcadeConfigSyncManager`** (243L — the
+full Netcode config relay: host commit → NetDomain Jade reset →
+OpenConfigOnClients_ClientRpc, close/screen-change relays, the ready-up
+ServerRpc counter with AllPlayersReady broadcast — compiles against the
+port's live RPC surface), **`Arcade` launcher** (198L SingletonPersistent —
+all three launch paths write GameDataSO and fire InvokeGameLaunch, the real
+SOAP seam; only the Animator field is deviation-marked, consumed solely by
+commented legacy code upstream), `SO_Mission` + `SO_MissionList` +
+`SO_TrainingGameList` (the launcher's lookup surfaces; Threat/SpawnMode
+included). **Un-carry:** ExploreView's `PlaySelectedGame` now calls the REAL
+`Arcade.Instance.LaunchArcadeGame` (RESTORED marker). **1622 tests green in
+BOTH configs (1284 + 338)**; 5 CLI modes exit 0; all four diags
+byte-identical (menushell unchanged — the launcher path isn't in the
+screenshot flow until the modal lands). bleeding-edge unmoved at `f2b8f5aa`.
 
 ### Arc F part 2b-ii ✅ (2026-07-10) — the arcade family renders through the shipping modal
 

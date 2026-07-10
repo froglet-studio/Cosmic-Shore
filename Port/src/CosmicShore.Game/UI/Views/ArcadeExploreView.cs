@@ -163,8 +163,8 @@ namespace CosmicShore.UI
         {
             AudioSystem.Instance.PlayMenuAudio(MenuAudioCategory.LetsGo);
             LoadoutSystem.SaveGameLoadOut(SelectedGame.Mode, new Loadout(MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, MiniGame.PlayerVesselType, SelectedGame.Mode, SelectedGame.IsMultiplayer));
-            // PORT Deviation (Arc F 2b-iii, Arcade launcher — restore when Arcade ports):
-            // Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerVesselType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, SelectedGame.IsMultiplayer, false);
+            // (RESTORED 2026-07-10, Arc F 2b-iii — Arcade launcher live)
+            Arcade.Instance.LaunchArcadeGame(SelectedGame.Mode, MiniGame.PlayerVesselType, MiniGame.ResourceCollection, MiniGame.IntensityLevel, MiniGame.NumberOfPlayers, SelectedGame.IsMultiplayer, false);
         }
 
         public void ToggleFavorite()
