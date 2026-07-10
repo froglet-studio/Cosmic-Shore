@@ -693,6 +693,25 @@ client + AstroLeague headless round running + remaining ladder rungs (5: real lo
 
 ## NEXT UP (milestone pivot, 2026-07-08)
 
+> **⏸ PROJECT PAUSED (2026-07-10, prompter direction).** The loop is stopped at a
+> clean, fully-verified state to show progress and evaluate. The recurring
+> check-in trigger has been deleted (nothing will fire). **State at pause:**
+> branch `claude/quirky-cannon-sk8a02` @ `8d03bc46` (CaptainManager unit), 1712
+> tests green in BOTH configs (1360 + 352), 5 CLI modes exit 0, all ELEVEN xvfb
+> diags byte-stable ×2 (gate g15; PNGs pixel-identical to the g7 baseline).
+> Progress report for sharing: `Port/docs/PROGRESS_2026-07-10.md`.
+> **First item on resume:** bleeding-edge moved `f2b8f5aa` → `07ba5dc7`
+> (PR #582 Squirrel prism-tube ability + deterministic boost rings + Boost
+> prism pool) AFTER the last push — merge + drift-sync per the
+> `docs/DRIFT_2026-07-09.txt` precedent BEFORE any arc work (touches ~9 ported
+> files: Prism.cs +98, VesselTransformer, DriftActionSO, Squirrel HUD pair,
+> R_VesselActionHandler, SpawnableRings, AOEBlockSpawner,
+> AOEDangerHemisphereBlocks, + the PrismFactory shell's carried source; new
+> files: BoostRingBuilder 122L, SquirrelTubeActionSO 83L,
+> SquirrelTubeActionExecutor 165L). Squirrel-related gate pins (race
+> `trail 786`, fs `prisms 219 / toys 12`) may legitimately shift — verify any
+> delta is upstream-intended before accepting a new baseline. Then item 1 below.
+
 **North star (prompter, 2026-07-08):** `/loop` until a milestone where the
 **menu-UI is testable AND multiple game modes are playable**, as close to the
 Unity build as we can get. *"Don't skip steps or rush. Build a foundation for
