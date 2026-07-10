@@ -129,6 +129,32 @@ namespace CosmicShore.Engine
         public void StopAllCoroutines()
             => GameLoop.Current?.Coroutines.StopAll(this);
 
+        /// <summary>
+        /// Schedules a zero-argument method by name after <paramref name="time"/> seconds
+        /// of scaled time (original contract: UnityEngine.MonoBehaviour.Invoke — any
+        /// visibility, resolved by reflection; rides the coroutine runner, so it stops
+        /// with the behaviour like the original's destroy semantics).
+        /// </summary>
+        public void Invoke(string methodName, float time)
+        {
+            var method = GetType().GetMethod(methodName,
+                System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.Public |
+                System.Reflection.BindingFlags.NonPublic);
+            if (method == null || method.GetParameters().Length != 0)
+            {
+                Debug.LogError($"Invoke: no zero-argument method '{methodName}' on {GetType().Name}.", this);
+                return;
+            }
+            StartCoroutine(InvokeRoutine(method, time));
+        }
+
+        System.Collections.IEnumerator InvokeRoutine(System.Reflection.MethodInfo method, float time)
+        {
+            yield return new WaitForSeconds(time);
+            method.Invoke(this, null);
+        }
+
         System.Threading.CancellationTokenSource _destroyCts;
 
         /// <summary>

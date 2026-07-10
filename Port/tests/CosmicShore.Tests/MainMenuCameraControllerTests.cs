@@ -11,10 +11,13 @@ namespace CosmicShore.Tests;
 // ─────────────────────────────────────────────────────────────────────────────
 // MainMenuCameraController — the camera arc's LIVE surface: per-mode transition
 // durations (the read MenuCrystalClickHandler un-carries this iteration), the
-// SOAP-driven activation flow through the CameraManager shell's observable
-// state mirror, the transform-side crystal-orbit rig (follow-target placement +
-// per-frame orbit math + RotateAroundOrigin arbitration), and the freestyle
-// enter/exit round trip resolving through upstream's own no-bridge fallbacks.
+// SOAP-driven activation flow through the REAL CameraManager (CameraManager
+// unit 2026-07-10 — the shell's ShellCameraState mirror is gone; asserts read
+// the real observables: GetActiveController, PlayerFollowTarget, and the
+// managed "CM PlayerCam"/"CM DeathCam"/"CM EndCam" trio's GameObject activity),
+// the transform-side crystal-orbit rig (follow-target placement + per-frame
+// orbit math + RotateAroundOrigin arbitration), and the freestyle enter/exit
+// round trip resolving through upstream's own no-bridge fallbacks.
 // ─────────────────────────────────────────────────────────────────────────────
 
 public class MainMenuCameraControllerTests : IDisposable
@@ -59,15 +62,31 @@ public class MainMenuCameraControllerTests : IDisposable
         public CellRuntimeDataSO CellData;
         public GameDataSO GameData;
         public Crystal Crystal;
+        public GameObject PlayerCam;   // "CM PlayerCam" — trio activity is the real observable
+        public GameObject DeathCam;
+        public GameObject EndCam;
     }
 
     Rig MakeRig()
     {
-        // CameraManager with the "Main Menu Follow Target" child the controller caches.
-        // No "CM PlayerCam" child — the exit transition takes upstream's own
-        // no-player-camera branch (ActivateMenuCameraImmediate).
+        // The REAL CameraManager: wire-then-activate — Awake discovers the managed
+        // camera trio by child name, so the children (each carrying the Camera
+        // component CustomCameraController.Awake requires) must exist first, and the
+        // SOAP pair must be wired before OnEnable subscribes (fail-loud, no guards).
         var cmGo = new GameObject("camera-manager");
-        var cameras = cmGo.AddComponent<CameraManager>();
+        cmGo.SetActive(false);
+
+        GameObject MakeCam(string name)
+        {
+            var camGo = new GameObject(name);
+            camGo.AddComponent<Camera>();
+            camGo.transform.SetParent(cmGo.transform, false);
+            return camGo;
+        }
+        var playerCamGo = MakeCam("CM PlayerCam");
+        var deathCamGo = MakeCam("CM DeathCam");
+        var endCamGo = MakeCam("CM EndCam");
+
         // Scene layout: "CM Main Menu" must exist for CacheMenuVCam to proceed to the
         // follow-target lookup (upstream early-returns without it).
         var menuVCamGo = new GameObject("CM Main Menu");
@@ -75,6 +94,19 @@ public class MainMenuCameraControllerTests : IDisposable
         var followGo = new GameObject("Main Menu Follow Target");
         followGo.transform.SetParent(cmGo.transform, false);
         var rotator = followGo.AddComponent<RotateAroundOrigin>();
+
+        var cameras = cmGo.AddComponent<CameraManager>();
+        Set(cameras, "_onReturnToMainMenu", ScriptableObject.CreateInstance<ScriptableEventNoParam>());
+        Set(cameras, "_onInitializePlayerCamera", ScriptableObject.CreateInstance<ScriptableEventTransform>());
+        Set(cameras, "_sceneNameList", ScriptableObject.CreateInstance<SceneNameListSO>());
+        var theme = C6Fixture.CreateTheme(out _);
+        // The gameplay handoff writes the sky color onto the activated camera —
+        // author the ColorSet the C6 fixture doesn't need (SetBackgroundColor
+        // dereferences it unguarded, faithful to the always-wired scene asset).
+        theme.ColorSet = ScriptableObject.CreateInstance<SO_ColorSet>();
+        theme.ColorSet.EnvironmentColors = new EnvironmentColorSet { SkyColor = new Color(0.1f, 0.2f, 0.3f) };
+        Set(cameras, "_themeManagerData", theme);
+        cmGo.SetActive(true);
 
         var freestyle = ScriptableObject.CreateInstance<MenuFreestyleEventsContainerSO>();
         freestyle.OnGameStateTransitionStart = ScriptableObject.CreateInstance<ScriptableEventNoParam>();
@@ -106,6 +138,7 @@ public class MainMenuCameraControllerTests : IDisposable
             FollowTarget = followGo.transform, Rotator = rotator,
             Freestyle = freestyle, CellData = cellData, GameData = gameData,
             Crystal = crystal,
+            PlayerCam = playerCamGo, DeathCam = deathCamGo, EndCam = endCamGo,
         };
     }
 
@@ -135,8 +168,14 @@ public class MainMenuCameraControllerTests : IDisposable
         rig.Controller.Mode = MenuCameraMode.VesselTopDownPan;
         Assert.Equal(0.5f, rig.Controller.ActiveTransitionDuration);
 
-        // The setter re-activated the menu camera family for the new mode.
-        Assert.Equal(CameraManager.ShellCameraState.MainMenu, rig.Cameras.ActiveShellState);
+        // The setter re-activated the menu camera family for the new mode:
+        // SetMainMenuCameraActive deactivates the whole managed trio and clears
+        // the active controller (the Cinemachine menu vCam side is a carried
+        // deviation — the trio handoff IS the real observable).
+        Assert.Null(rig.Cameras.GetActiveController());
+        Assert.False(rig.PlayerCam.activeSelf);
+        Assert.False(rig.DeathCam.activeSelf);
+        Assert.False(rig.EndCam.activeSelf);
     }
 
     [Fact]
@@ -164,11 +203,17 @@ public class MainMenuCameraControllerTests : IDisposable
     public void ClientReady_ActivatesTheMenuCameraFamily()
     {
         var rig = MakeRig();
-        Assert.Equal(CameraManager.ShellCameraState.None, rig.Cameras.ActiveShellState);
+        // Untouched manager: no controller active yet, trio still authored-active.
+        Assert.Null(rig.Cameras.GetActiveController());
+        Assert.True(rig.PlayerCam.activeSelf);
 
         rig.GameData.InvokeClientReady();
 
-        Assert.Equal(CameraManager.ShellCameraState.MainMenu, rig.Cameras.ActiveShellState);
+        // Menu family activated: SetMainMenuCameraActive parked the whole trio.
+        Assert.Null(rig.Cameras.GetActiveController());
+        Assert.False(rig.PlayerCam.activeSelf);
+        Assert.False(rig.DeathCam.activeSelf);
+        Assert.False(rig.EndCam.activeSelf);
         Assert.False(Get<bool>(rig.Controller, "_isInFreestyle"));
     }
 
@@ -211,8 +256,13 @@ public class MainMenuCameraControllerTests : IDisposable
         rig.Freestyle.OnGameStateTransitionStart.Raise();
         loop.Tick(1f / 60f);
 
-        Assert.Equal(CameraManager.ShellCameraState.Gameplay, rig.Cameras.ActiveShellState);
-        Assert.Same(followTarget, rig.Cameras.LastGameplayFollowTarget);
+        // Gameplay handoff: SetupGamePlayCameras activated the player camera and
+        // recorded the vessel's follow target.
+        Assert.NotNull(rig.Cameras.GetActiveController());
+        Assert.Same(rig.PlayerCam.GetComponent<CustomCameraController>(), rig.Cameras.GetActiveController());
+        Assert.True(rig.PlayerCam.activeSelf);
+        Assert.False(rig.EndCam.activeSelf);
+        Assert.Same(followTarget, rig.Cameras.PlayerFollowTarget);
         Assert.True(Get<bool>(rig.Controller, "_isInFreestyle"));
 
         // Exit freestyle: no "CM PlayerCam" child exists, so upstream's own
@@ -220,7 +270,9 @@ public class MainMenuCameraControllerTests : IDisposable
         rig.Freestyle.OnMenuStateTransitionStart.Raise();
         loop.Tick(1f / 60f);
 
-        Assert.Equal(CameraManager.ShellCameraState.MainMenu, rig.Cameras.ActiveShellState);
+        // Menu family again: the trio parks and the active controller clears.
+        Assert.Null(rig.Cameras.GetActiveController());
+        Assert.False(rig.PlayerCam.activeSelf);
         Assert.False(Get<bool>(rig.Controller, "_isInFreestyle"));
     }
 
@@ -232,7 +284,10 @@ public class MainMenuCameraControllerTests : IDisposable
         rig.Freestyle.OnGameStateTransitionStart.Raise();
         loop.Tick(1f / 60f);
 
-        Assert.Equal(CameraManager.ShellCameraState.None, rig.Cameras.ActiveShellState);
+        // Nothing touched the manager: no active controller AND the trio is still
+        // authored-active (distinguishes "untouched" from the parked menu family).
+        Assert.Null(rig.Cameras.GetActiveController());
+        Assert.True(rig.PlayerCam.activeSelf);
         Assert.False(Get<bool>(rig.Controller, "_isInFreestyle"));
     }
 }

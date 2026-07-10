@@ -1,68 +1,306 @@
-// PORT Deviation #12 — type-preserving SHELL of the Cinemachine-bound CameraManager
-// (original: Assets/_Scripts/Controller/Managers/CameraManager.cs, 233 lines). The
-// original wires CinemachineCamera priorities, scene-name routing, and the
-// player/death/end CustomCameraController trio discovered by child-transform lookup —
-// all presentation-phase concerns. Only the public surface consumers need is present:
-// the vessel-layer closure (VesselCameraCustomizer.RetargetAndApply reads
-// Instance.GetActiveController()) and — grown 2026-07-08 for the camera arc — the
-// MainMenuCameraController activation quartet (SetMainMenuCameraActive /
-// SetupGamePlayCameras / SetupEndCameraFollow / DeactivateAllCameras), which no-op
-// into an observable ShellCameraState mirror. The real port arrives with the
-// phase-5 Cinemachine replacement. Precedent: AudioSystem shell (Deviation #11).
-//
-// Drift-sync note (bleeding-edge merge c833c580): upstream added a
-// DisplayGraphicsSettings/GraphicsSettingsApplier sync (FOV + post-process AA pushed
-// onto the managed cameras) — entirely inside the stubbed presentation body, so the
-// shell surface is unchanged. Restore with the full port.
+// Ported verbatim from Assets/_Scripts/Controller/Managers/CameraManager.cs
+// (CameraManager unit 2026-07-10), replacing the type-preserving shell
+// (PORT Deviation #12, retired — the ShellCameraState mirror is gone; consumers
+// observe the real state: GetActiveController / PlayerFollowTarget / the managed
+// controllers' GameObject activity). Mechanical substitutions: UnityEngine →
+// CosmicShore.Engine; Obvious.Soap → CosmicShore.Engine.Soap;
+// UnityEngine.SceneManagement → CosmicShore.Engine (engine SceneManager).
+// TWO carried deviation families, both marked inline:
+//   1. camera arc (Unity.Cinemachine) — the `CinemachineCamera mainMenuCamera`
+//      member and its Priority/LookAt/SetActive lines, the SAME commented family
+//      MainMenuCameraController carries. Restore when the Cinemachine replacement
+//      ports.
+//   2. graphics-settings family (DisplayGraphicsSettings / GraphicsSettingsData /
+//      GraphicsSettingsApplier, 394L across three upstream Settings files,
+//      URP/QualitySettings-bound) — the FOV + post-process-AA sync pushed onto the
+//      managed cameras. Restore when the Settings family ports (anticipated by the
+//      shell's own drift note for upstream c833c580).
+// Everything else is LIVE: the camera-trio discovery (transform.Find +
+// AddComponent<CustomCameraController>), gameplay/end camera setup (follow targets,
+// VesselCameraCustomizer.Configure, SnapToTarget), active-camera switching,
+// DeactivateAllCameras, SnapPlayerCameraToTarget, scene-name routing, the SOAP
+// subscription pair, and the theme background-color writes.
+using CosmicShore.Core;
+using CosmicShore.Data;
+using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using CosmicShore.Engine.Soap;
+// PORT Deviation (camera arc 2026-07-10 — restore when Cinemachine ports): using Unity.Cinemachine;
 using CosmicShore.Engine;
+using CosmicShore.Engine.SceneManagement;
+using CosmicShore.ScriptableObjects;
 
 namespace CosmicShore.Gameplay
 {
     public class CameraManager : Singleton<CameraManager>
     {
+        [SerializeField]
+        CellRuntimeDataSO cellData;
+
+        [SerializeField]
+        SceneNameListSO _sceneNameList;
+
+        [SerializeField] ThemeManagerDataContainerSO _themeManagerData;
+        [SerializeField] private ScriptableEventNoParam _onReturnToMainMenu;
+        [SerializeField] private ScriptableEventTransform _onInitializePlayerCamera;
+
+        // TODO - Need to have a game over event, to activate the end camera
+        // += SetEndCameraActive
+        // [SerializeField] private ScriptableEventNoParam _onGameOver;
+
+        private ICameraController _playerCamera;
+        private ICameraController _deathCamera;
         private ICameraController _activeController;
+
+        [SerializeField] private CustomCameraController endCamera;
+        // PORT Deviation (camera arc 2026-07-10, CinemachineCamera — restore when Cinemachine ports):
+        // [SerializeField] private CinemachineCamera mainMenuCamera;
+        [SerializeField] private Transform endCameraFollowTarget;
+        [SerializeField] private Transform endCameraLookAtTarget;
+        [SerializeField] private float startTransitionDistance = 40f;
+
+        private Transform _playerFollowTarget;
+        private const int ActivePriority = 10;
+
+        public Transform PlayerFollowTarget
+        {
+            get => _playerFollowTarget;
+            set => _playerFollowTarget = value;
+        }
+
+        private Camera _vCam;
+        private IVesselStatus vesselStatus;
+
+        public override void Awake()
+        {
+            base.Awake();
+            _playerCamera = GetOrFindCameraController("CM PlayerCam");
+            _deathCamera = GetOrFindCameraController("CM DeathCam");
+            endCamera = GetOrFindCameraController("CM EndCam") as CustomCameraController;
+        }
+
+        private void OnEnable()
+        {
+            _onReturnToMainMenu.OnRaised += OnEnteredMainMenu;
+            _onInitializePlayerCamera.OnRaised += SetupGamePlayCameras;
+
+            // Keep FOV + post-process AA on the managed cameras in sync with the settings panel,
+            // live. The cameras are children of this manager (not spawned with the vessel), so this
+            // is the spawn-proof place to apply — no per-camera scene reference needed.
+            // PORT Deviation (graphics-settings family 2026-07-10 — restore when DisplayGraphicsSettings ports):
+            // DisplayGraphicsSettings.OnFieldOfViewChanged += HandleCameraGraphicsChanged;
+            // DisplayGraphicsSettings.OnAnySettingChanged += HandleCameraGraphicsChanged;
+        }
+
+        void OnDisable()
+        {
+            _onReturnToMainMenu.OnRaised -= OnEnteredMainMenu;
+            _onInitializePlayerCamera.OnRaised -= SetupGamePlayCameras;
+
+            // PORT Deviation (graphics-settings family 2026-07-10 — restore when DisplayGraphicsSettings ports):
+            // DisplayGraphicsSettings.OnFieldOfViewChanged -= HandleCameraGraphicsChanged;
+            // DisplayGraphicsSettings.OnAnySettingChanged -= HandleCameraGraphicsChanged;
+        }
+
+        // PORT Deviation (graphics-settings family 2026-07-10 — restore when DisplayGraphicsSettings ports):
+        // void HandleCameraGraphicsChanged(float _) => ApplyCameraGraphicsSettings();
+        // void HandleCameraGraphicsChanged(GraphicsSettingsData _) => ApplyCameraGraphicsSettings();
+
+        /// <summary>
+        /// Pushes the saved Field-of-View and post-process AA (FXAA/SMAA/TAA) onto every managed
+        /// camera. MSAA is global on the URP asset (handled by DisplayGraphicsSettings),
+        /// so this only sets FOV + the per-camera post-AA mode. Null-safe and called on every camera
+        /// setup, so a vessel that spawns later still gets the right look.
+        /// PORT Deviation (graphics-settings family 2026-07-10): body carried commented — the
+        /// method stays so the setup call sites keep the upstream shape; no-op until the
+        /// DisplayGraphicsSettings family ports.
+        /// </summary>
+        public void ApplyCameraGraphicsSettings()
+        {
+            // var s = DisplayGraphicsSettings.Instance;
+            // if (s == null) return;
+            // var d = s.Current;
+            // ApplyToCamera((_playerCamera as CustomCameraController)?.Camera, d);
+            // ApplyToCamera((_deathCamera as CustomCameraController)?.Camera, d);
+            // ApplyToCamera(endCamera != null ? endCamera.Camera : null, d);
+        }
+
+        // PORT Deviation (graphics-settings family 2026-07-10 — restore when DisplayGraphicsSettings ports):
+        // static void ApplyToCamera(Camera cam, GraphicsSettingsData d)
+        // {
+        //     if (cam == null) return;
+        //     if (!cam.orthographic) cam.fieldOfView = d.FieldOfView;
+        //     GraphicsSettingsApplier.ApplyCameraAntiAliasing(cam, d.AntiAliasing);
+        // }
+
+        void Start()
+        {
+            _vCam = (_playerCamera as CustomCameraController)?.Camera;
+            InitializeSceneCamera();
+        }
+
+        private void InitializeSceneCamera()
+        {
+            var activeScene = SceneManager.GetActiveScene().name;
+
+            if (activeScene == _sceneNameList.MainMenuScene)
+            {
+                OnEnteredMainMenu();
+            }
+        }
+
+        private ICameraController GetOrFindCameraController(string name)
+        {
+            Transform t = transform.Find(name);
+            if (t)
+            {
+                var ctrl = t.GetComponent<ICameraController>();
+                if (ctrl == null)
+                {
+                    ctrl = t.gameObject.AddComponent<CustomCameraController>();
+                }
+                return ctrl;
+            }
+            CSDebug.LogWarning($"[CameraManager] Could not find camera controller: {name}");
+            return null;
+        }
+
+        public Transform GetCloseCamera() => (_playerCamera as CustomCameraController)?.transform;
+
+        void OnEnteredMainMenu()
+        {
+            SetMainMenuCameraActive();
+            _themeManagerData.SetBackgroundColor(Camera.main);
+        }
+
+        public void SetupGamePlayCameras(Transform followTarget)
+        {
+            if(!gameObject.activeInHierarchy) gameObject.SetActive(true);
+
+            _playerFollowTarget = followTarget;
+            _playerCamera?.SetFollowTarget(_playerFollowTarget);
+            _deathCamera?.SetFollowTarget(_playerFollowTarget);
+
+            SetCloseCameraActive();
+            // Use the camera we just activated directly — Camera.main can return null in the
+            // first frame after a scene transition because the tag-based lookup hasn't
+            // observed the newly-activated GameObject yet.
+            var activeCam = (_playerCamera as CustomCameraController)?.Camera;
+            _themeManagerData.SetBackgroundColor(activeCam != null ? activeCam : Camera.main);
+
+            var shipGO = _playerFollowTarget.gameObject;
+            var shipCustomizer = shipGO.GetComponent<VesselCameraCustomizer>();
+            if (shipCustomizer != null)
+                shipCustomizer.Configure(_playerCamera);
+
+            // Snap camera to correct initial position to prevent retaining
+            // stale end-game or transition state from the previous session.
+            if (_playerCamera is CustomCameraController pcc)
+                pcc.SnapToTarget();
+
+            ApplyCameraGraphicsSettings();
+        }
+
+        /// <summary>
+        /// Configures the end camera to follow the given target with the vessel's
+        /// camera settings applied. Used by Menu_Main to follow the autopilot vessel.
+        /// </summary>
+        public void SetupEndCameraFollow(Transform followTarget)
+        {
+            if (!gameObject.activeInHierarchy) gameObject.SetActive(true);
+
+            endCamera.SetFollowTarget(followTarget);
+
+            var customizer = followTarget.GetComponent<VesselCameraCustomizer>();
+            customizer.Configure(endCamera);
+
+            endCamera.SnapToTarget();
+            SetEndCameraActive();
+            ApplyCameraGraphicsSettings();
+            _themeManagerData.SetBackgroundColor(Camera.main);
+        }
+
+        public void SetMainMenuCameraActive()
+        {
+            // PORT Deviation (camera arc 2026-07-10, CinemachineCamera — restore when Cinemachine ports):
+            // if (mainMenuCamera != null)
+            // {
+            //     mainMenuCamera.Priority = ActivePriority;
+            //     mainMenuCamera.gameObject.SetActive(true);
+            // }
+            // else
+            // {
+            //     CSDebug.LogWarning("[CameraManager] Main menu camera is not assigned!");
+            // }
+
+            if (_playerCamera is CustomCameraController pcc)
+                pcc.Deactivate();
+            if (_deathCamera is CustomCameraController dcc)
+                dcc.Deactivate();
+            if (endCamera != null)
+                endCamera.Deactivate();
+
+            _activeController = null;
+            Invoke("LookAtCrystal", 1f);
+        }
+
+        void LookAtCrystal()
+        {
+            // PORT Deviation (camera arc 2026-07-10, CinemachineCamera.LookAt — restore when Cinemachine ports):
+            // if (mainMenuCamera && cellData != null)
+            //     mainMenuCamera.LookAt = cellData.CrystalTransform;
+        }
+
+        public void SetCloseCameraActive() => SetActiveCamera(_playerCamera);
+
+        public void SetDeathCameraActive() => SetActiveCamera(_deathCamera);
+
+        public void SetEndCameraActive() => SetActiveCamera(endCamera);
+
+        void SetActiveCamera(ICameraController controller)
+        {
+                if (_playerCamera != null) _playerCamera.Deactivate();
+                if (_deathCamera != null) _deathCamera.Deactivate();
+                if (endCamera != null) endCamera.Deactivate();
+
+            controller?.Activate();
+            _activeController = controller;
+            // PORT Deviation (camera arc 2026-07-10, CinemachineCamera — restore when Cinemachine ports):
+            // if (mainMenuCamera != null)
+            //     mainMenuCamera.gameObject.SetActive(false);
+        }
 
         public ICameraController GetActiveController() => _activeController;
 
         /// <summary>
-        /// Shell surface for the controller-chain arc: the original re-snaps the player's
-        /// Cinemachine camera to its follow target after ResetPlayers teleports the vessel
-        /// (MultiplayerMiniGameControllerBase.ResetForReplay_ClientRpc). No-op headless.
+        /// Deactivates all managed cameras (player, death, end) without activating a replacement.
+        /// Used by the menu to hand control to the Cinemachine-driven main menu camera.
         /// </summary>
-        public void SnapPlayerCameraToTarget() { }
-
-        // ── Shell surface for the camera arc (MainMenuCameraController) ──
-        // The original activates/deactivates the Cinemachine vCam family and hands
-        // gameplay following to CustomCameraController ("CM PlayerCam"). The shell
-        // mirrors the CALL STATE so scene logic (and tests) can observe the handoff
-        // sequencing; the presentation bodies arrive with the full Cinemachine
-        // replacement.
-
-        /// <summary>Which camera family the last activation call selected — shell state mirror.</summary>
-        public enum ShellCameraState { None = 0, MainMenu = 1, Gameplay = 2, AllOff = 3 }
-
-        /// <summary>Last activation observed by the shell (state mirror for scene logic/tests).</summary>
-        public ShellCameraState ActiveShellState { get; private set; } = ShellCameraState.None;
-
-        /// <summary>Follow target passed to the last <see cref="SetupGamePlayCameras"/> call.</summary>
-        public Transform LastGameplayFollowTarget { get; private set; }
-
-        /// <summary>Original: activates "CM Main Menu" and deactivates the gameplay trio.</summary>
-        public void SetMainMenuCameraActive() => ActiveShellState = ShellCameraState.MainMenu;
-
-        /// <summary>Original: activates the CustomCameraController pipeline on the follow target.</summary>
-        public void SetupGamePlayCameras(Transform followTarget)
+        public void DeactivateAllCameras()
         {
-            LastGameplayFollowTarget = followTarget;
-            ActiveShellState = ShellCameraState.Gameplay;
+            if (_playerCamera != null) _playerCamera.Deactivate();
+            if (_deathCamera != null) _deathCamera.Deactivate();
+            if (endCamera != null) endCamera.Deactivate();
+            _activeController = null;
         }
 
-        /// <summary>Original: re-targets the end-game follow camera. Shell records the target only.</summary>
-        public void SetupEndCameraFollow(Transform followTarget)
-            => LastGameplayFollowTarget = followTarget;
+        /// <summary>
+        /// Snaps the player camera to its follow target's current position.
+        /// Call after vessel teleport or end-game cinematic to reset the camera.
+        /// </summary>
+        public void SnapPlayerCameraToTarget()
+        {
+            if (_playerCamera is CustomCameraController pcc)
+                pcc.SnapToTarget();
+        }
 
-        /// <summary>Original: deactivates every managed camera before a hand-rolled activation.</summary>
-        public void DeactivateAllCameras() => ActiveShellState = ShellCameraState.AllOff;
+        public void SetNormalizedCloseCameraDistance(float normalizedDistance)
+        {
+            if (_playerCamera == null) return;
+            // float close = CloseCamDistance > 0 ? CloseCamDistance : 10f;
+            // float far = FarCamDistance > 0 ? FarCamDistance : 40f;
+            // float distance = Mathf.Lerp(close, far, normalizedDistance);
+            // _playerCamera.SetCameraDistance(distance);
+        }
     }
 }

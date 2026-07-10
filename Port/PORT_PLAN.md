@@ -728,34 +728,15 @@ now works that milestone plan.
 > the **Arc-E content-bridge decision point** (extractor vs hand-authoring —
 > needs the prompter).
 
-1. **CameraManager unit** (`Controller/Managers/CameraManager.cs`, 273L
-   upstream, 11 consumer files — Deviation #12 shell). Survey done
-   2026-07-10; port verbatim with TWO carried deviation families:
-   (i) the `Unity.Cinemachine.CinemachineCamera mainMenuCamera` member +
-   its Priority/LookAt lines — the SAME commented camera-arc family
-   `MainMenuCameraController` already carries ("restore when the
-   Cinemachine replacement ports"); (ii) the
-   `DisplayGraphicsSettings`/`GraphicsSettingsApplier` FOV+AA sync
-   (394L across 3 upstream Settings files, URP/QualitySettings-bound —
-   the shell's own drift note already parks it). Everything else goes
-   LIVE: the camera-trio discovery (`GetOrFindCameraController` via
-   `transform.Find` + `AddComponent<CustomCameraController>` — the rigs
-   must author "CM PlayerCam"/"CM DeathCam"/"CM EndCam" children),
-   `SetupGamePlayCameras` (follow targets + `VesselCameraCustomizer
-   .Configure` + `SnapToTarget`), `SetupEndCameraFollow`,
-   `SetActiveCamera` switching + `GetActiveController`,
-   `DeactivateAllCameras`, `SnapPlayerCameraToTarget`, scene-name routing
-   (`InitializeSceneCamera` → `OnEnteredMainMenu`), the SOAP pair
-   (`_onReturnToMainMenu`/`_onInitializePlayerCamera`), and the
-   `ThemeManagerDataContainerSO.SetBackgroundColor` calls. Engine needs
-   `MonoBehaviour.Invoke(string, float)` (the `Invoke("LookAtCrystal", 1f)`
-   lane). Consumers to migrate: `MainMenuCameraControllerTests` asserts
-   the shell's `ShellCameraState`/`LastGameplayFollowTarget` mirror at 7
-   sites — rewrite against real observables (`GetActiveController`,
-   controller follow targets); audit `SetupEndCameraFollow` callers for
-   follow targets lacking a `VesselCameraCustomizer` (upstream
-   dereferences it unguarded). Runners-up after: StatsManager (333L,
-   9 files); Crystal (313L — wants the impact-effects arc).
+1. **StatsManager unit** (`Controller/Managers/StatsManager.cs`, 333L
+   upstream, 9 consumer files) — the next live shell by consumer count
+   after the CameraManager unit shipped (14 `type-preserving SHELL` files
+   remain). Survey the shell's carried answers vs the ported RoundStats /
+   scoring family first (the ScoringSystem docs family is the domain
+   reference). Runners-up: CaptainManager remainder (grown but still
+   shell-tagged), PrismFactory (10 refs — pairs with the prism/gameplay
+   arcs), Crystal (313L — wants the impact-effects arc, not a standalone
+   unit).
    **Prompter-facing flags still parked (do NOT act without input):**
    (b) the upstream in-place-sort quirk
    (`ArcadeExploreView.PopulateGameSelectionList` sorts the shared
@@ -765,6 +746,51 @@ now works that milestone plan.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### CameraManager unit ✅ (2026-07-10) — the camera hub is REAL (273L, 11 consumers)
+
+**`CameraManager` (273L) ported verbatim**, replacing the Deviation #12
+shell (the `ShellCameraState` mirror is retired — consumers observe the
+real state: `GetActiveController`, `PlayerFollowTarget`, and the managed
+trio's GameObject activity). TWO carried deviation families, both marked
+inline: (i) camera arc — the `Unity.Cinemachine.CinemachineCamera
+mainMenuCamera` member + its Priority/LookAt/SetActive lines (the same
+commented family `MainMenuCameraController` carries); (ii)
+graphics-settings family — the `DisplayGraphicsSettings` FOV+AA sync
+(`ApplyCameraGraphicsSettings` stays as an empty-bodied method so the
+setup call sites keep the upstream shape). Everything else LIVE: Awake's
+camera-trio discovery (`transform.Find` +
+`AddComponent<CustomCameraController>` — the children carry the `Camera`
+component `CustomCameraController.Awake` requires), `SetupGamePlayCameras`
+(follow targets on player+death cams, activation, sky color onto the
+just-activated camera, `VesselCameraCustomizer.Configure`, `SnapToTarget`),
+`SetupEndCameraFollow` (through the customizer, unguarded like upstream),
+the `SetActiveCamera` switch discipline, `DeactivateAllCameras`,
+`SnapPlayerCameraToTarget`, scene-name routing, the SOAP pair, and the
+theme background-color writes. **Engine growth:**
+`MonoBehaviour.Invoke(string methodName, float time)` (reflection lookup,
+any visibility, rides the coroutine runner — the `Invoke("LookAtCrystal",
+1f)` lane).
+
+**Consumers:** every gameplay caller already guards on
+`CameraManager.Instance` (the `Singleton<T>` base never auto-creates), so
+worlds without a manager GO — the menushell, the CLI rounds — are
+untouched; only the camera test rigs author one.
+`MainMenuCameraControllerTests`' rig now builds the REAL manager
+(wire-then-activate: trio children with cameras, SOAP pair, scene list,
+theme with an authored `ColorSet` — `SetBackgroundColor` dereferences it
+unguarded and the miss was swallowed by a `.Forget()` into a false
+`_isInFreestyle`), and its 7 shell-mirror asserts read real observables.
+
+**Verified:** 6 new `CameraManagerTests` (trio discovery, gameplay setup +
+sky paint + snap-at-offset, switch discipline, end-camera-through-
+customizer, SOAP pair + the Invoke-scheduled LookAtCrystal surviving its
+delay, and the engine Invoke contract: fires once after the scaled delay,
+never repeats) + the 6 rewritten controller tests — all green both
+configs. **ALL ELEVEN diag lines byte-stable ×2, values AND PNGs identical
+to the beep-un-carry baseline.** **1692 tests green in BOTH configs
+(1340 + 352, +6)**; 5 CLI modes exit 0. bleeding-edge unmoved at
+`f2b8f5aa`.
 
 ### CountdownTimer beep un-carry ✅ (2026-07-10) — the last parked audio deviation is restored
 
