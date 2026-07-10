@@ -1537,6 +1537,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1716607888102834236}
   - component: {fileID: 7385827388877614041}
+  - component: {fileID: 3330787732666681920}
   m_Layer: 0
   m_Name: YawsteryActionExecutor
   m_TagString: Untagged
@@ -1574,6 +1575,21 @@ MonoBehaviour:
   vesselTransformer: {fileID: 7686683633640807837}
   shipAnimator: {fileID: 5658933110804061391}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+--- !u!114 &3330787732666681920
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4912294615010770138}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09cf0b6e8a811ff42b924e06000db455, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  maxYawDegPerSec: 60
+  boostMultiplierOverride: 0
+  vesselTransformer: {fileID: 7686683633640807837}
 --- !u!1 &5022817358293899131
 GameObject:
   m_ObjectHideFlags: 0
@@ -2439,6 +2455,17 @@ MonoBehaviour:
     ShipActions:
     - {fileID: 11400000, guid: 8346bd7ce3239e541830985234265532, type: 2}
   _resourceEventClassActions: []
+  _touchActionOverrides: []
+  _gamepadActionOverrides:
+  - InputEvent: 11
+    ShipActions:
+    - {fileID: 11400000, guid: 42c61c113d6a0434797cbc4b2ae97ac6, type: 2}
+  - InputEvent: 12
+    ShipActions:
+    - {fileID: 11400000, guid: 42c61c113d6a0434797cbc4b2ae97ac6, type: 2}
+  - InputEvent: 13
+    ShipActions:
+    - {fileID: 11400000, guid: 42c61c113d6a0434797cbc4b2ae97ac6, type: 2}
   _onButtonPressed: {fileID: 11400000, guid: e284840cd85013046af88075baea6be9, type: 2}
   _onButtonReleased: {fileID: 11400000, guid: 0323078ac5f77e345a4f10b93669d97e, type: 2}
   onAbilityExecuted: {fileID: 11400000, guid: 008be405ba71e3247b25b8bbc89d90df, type: 2}
@@ -3221,6 +3248,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _executors:
   - {fileID: 7385827388877614041}
+  - {fileID: 3330787732666681920}
 --- !u!1 &7953374546544284131
 GameObject:
   m_ObjectHideFlags: 0
