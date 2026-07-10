@@ -1,30 +1,858 @@
+// Ported verbatim from Assets/_Scripts/System/Audio/AudioSystem.cs (AudioSystem
+// unit 2026-07-10), replacing the V6 type-preserving shell (PORT Deviation #11,
+// retired) and absorbing AudioCategories.cs (the enums live in this file
+// upstream). Mechanical substitutions: FMODUnity / FMOD.Studio → the engine's
+// CosmicShore.Engine.Audio.Fmod placeholder surface (the qualified
+// `FMOD.Studio.Bus` field type becomes `Bus` via the using); UnityEngine →
+// CosmicShore.Engine; UnityEngine.Audio → CosmicShore.Engine.Audio;
+// Reflex.Attributes → CosmicShore.Engine.Injection. The local lanes — bus
+// volume/mute from the SFX slider, enabled/level state, music-source routing
+// and crossfade, mixer writes, per-category volume scale, the BlockDestroy
+// sliding-window throttle, warn-once unwired-category logging — are all LIVE;
+// only the audible FMOD/AudioSource backends are placeholder-observed.
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using CosmicShore.Gameplay;
+using CosmicShore.Gameplay.Audio;
+using CosmicShore.Utility;
+using CosmicShore.Engine.Audio.Fmod;
+using CosmicShore.Engine.Injection;
 using CosmicShore.Engine;
+using CosmicShore.Engine.Audio;
 
+/// <summary>
+/// Central audio service. Two parallel pipelines:
+///
+///   1. **FMOD events** (preferred / new) — one-shot SFX wired in the
+///      inspector as <see cref="EventReference"/> per
+///      <see cref="MenuAudioCategory"/> and <see cref="GameplaySFXCategory"/>.
+///      Routed through <see cref="FMODOneShotVolumeHelper"/> so each one-shot
+///      respects <see cref="GameSetting.SFXLevel"/> / SFXEnabled.
+///
+///   2. **Unity AudioSource** (legacy) — music routing via two
+///      <see cref="AudioSource"/>s (<see cref="MusicSource1"/> /
+///      <see cref="MusicSource2"/>) with crossfade support, plus a single
+///      shared <see cref="sfxSource"/> for the older
+///      <see cref="PlaySFXClip(AudioClip)"/> API still used by
+///      <c>CountdownTimer</c>, <c>ProfileModal</c>, and <c>Crystal</c>.
+///      The mixer-bus volume (<see cref="masterMixer"/>) only affects this
+///      path — FMOD events bypass it entirely.
+///
+/// Migration path: convert callers from <see cref="PlaySFXClip(AudioClip)"/>
+/// to <see cref="PlaySFXEvent(EventReference)"/> (or one of its overloads)
+/// and wire the corresponding <c>EventReference</c> on the caller. Convert
+/// music callers (currently <c>Jukebox</c>) by swapping <c>SO_Song.Clip</c>
+/// for an <c>EventReference</c> field and adding a music-event API to this
+/// class. The Unity AudioSource path can be deleted once all callers have
+/// migrated.
+/// </summary>
 namespace CosmicShore.Core
 {
-    /// <summary>
-    /// PORT Deviation #11 — type-preserving SHELL of the Wwise/FMOD-backed AudioSystem
-    /// (original: Assets/_Scripts/System/Audio/AudioSystem.cs, 530+ lines). Landed early
-    /// (V6) because ActionExecutorRegistry's [Inject] field and public AudioSystem
-    /// property need the type. Only the public surface used by the vessel-layer closure
-    /// is present; bodies no-op. The real port arrives with the phase-5 audio backend
-    /// (the standalone client already has its own procedural AudioEngine).
-    /// </summary>
+    [Serializable]
+    public enum MenuAudioCategory
+    {
+        OptionClick = 1,
+        OpenView = 2,
+        SwitchView = 3,
+        CloseView = 4,
+        SmallReward = 5,
+        BigReward = 6,
+        Upgrade = 7,
+        Denied = 8,
+        Confirmed = 9,
+        LetsGo = 10,
+        SwitchScreen = 11,
+        RedeemTicket = 12,
+    }
+
+    [Serializable]
+    public enum GameplaySFXCategory
+    {
+        BlockDestroy = 1,
+        ShieldActivate = 2,
+        ShieldDeactivate = 3,
+        MineExplode = 4,
+        ProjectileLaunch = 5,
+        CrystalCollect = 6,
+        VesselImpact = 7,
+        GameEnd = 8,
+        ScoreReveal = 9,
+        PauseOpen = 10,
+        PauseClose = 11,
+        GunFire = 12,
+        BoostActivate = 13,
+        Explosion = 14,
+        CreatureDeath = 15,
+        DriftStart = 16,
+        DriftEnd = 17,
+        EnergyGain = 18,
+        SpeedBurst = 19,
+        CrystalSkim = 20,
+        JoustScored = 21,
+        JoustReceived = 22,
+        ElementChargeReceived = 23,
+        ElementMassReceived = 24,
+        ElementSpaceReceived = 25,
+        ElementTimeReceived = 26,
+        ComebackCharge = 27,
+        ComebackMass = 28,
+        ComebackSpace = 29,
+        ComebackTime = 30,
+        JoustBuffCharge = 31,
+        JoustBuffMass = 32,
+        JoustBuffSpace = 33,
+        JoustBuffTime = 34,
+        TrackImpact = 35,
+        FloraCollision = 36,
+        CreatureBlockHit = 37,
+    }
+
+    [DefaultExecutionOrder(-1)]
     public class AudioSystem : MonoBehaviour
     {
         public static AudioSystem Instance { get; private set; }
 
+        #region Fields
+        [Inject] GameSetting gameSetting;
+
+        [Header("Music Routing (Unity AudioSource — legacy)")]
+        [SerializeField, Tooltip(
+            "Master AudioMixer driving the legacy music + SFX AudioSources. " +
+            "FMOD events do NOT route through this mixer — their volume is " +
+            "applied per-instance via FMODOneShotVolumeHelper.")]
+        AudioMixer masterMixer;
+
+        [Header("SFX Bus Routing (FMOD)")]
+        [SerializeField, Tooltip(
+            "FMOD bus whose volume + mute are driven by the in-game SFX slider " +
+            "(GameSetting.SFXLevel / SFXEnabled). Every FMOD SFX event — the " +
+            "continuous emitters (engine, drift, proximity, flora ambient) AND " +
+            "the one-shots — routes through this bus, so this is what makes the " +
+            "whole SFX bank obey the slider, not just the one-shots. Defaults to " +
+            "the FMOD master bus \"bus:/\", which is correct while FMOD carries " +
+            "only SFX (music runs on the legacy Unity AudioSource path). If an " +
+            "explicit SFX bus is later authored in FMOD Studio, point this at " +
+            "\"bus:/SFX\".")]
+        string sfxBusPath = "bus:/";
+
+        [SerializeField, Tooltip(
+            "AudioSource used by the legacy PlaySFXClip(AudioClip) API. " +
+            "FMOD-based PlayMenuAudio / PlayGameplaySFX / PlaySFXEvent do " +
+            "not use this source.")]
+        AudioSource sfxSource;
+
+        [SerializeField] AudioSource musicSource1;
+        [SerializeField] AudioSource musicSource2;
+        [SerializeField] float musicVolume = .1f;
+        [SerializeField] float sfxVolume = .1f;
+
+        [Header("Menu Audio Events (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for MenuAudioCategory.OptionClick.")]
+        EventReference optionClickEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.OpenView.")]
+        EventReference openViewEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.SwitchView.")]
+        EventReference switchViewEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.CloseView.")]
+        EventReference closeViewEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.SmallReward.")]
+        EventReference smallRewardEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.BigReward.")]
+        EventReference bigRewardEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.Upgrade.")]
+        EventReference upgradeEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.Denied.")]
+        EventReference deniedEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.Confirmed.")]
+        EventReference confirmedEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.LetsGo.")]
+        EventReference letsGoEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.SwitchScreen.")]
+        EventReference switchScreenEvent;
+
+        [SerializeField, Tooltip("Played for MenuAudioCategory.RedeemTicket.")]
+        EventReference redeemTicketEvent;
+
+        [Header("Gameplay SFX Events (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.BlockDestroy.")]
+        EventReference blockDestroyEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ShieldActivate.")]
+        EventReference shieldActivateEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ShieldDeactivate.")]
+        EventReference shieldDeactivateEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.MineExplode.")]
+        EventReference mineExplodeEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ProjectileLaunch.")]
+        EventReference projectileLaunchEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.CrystalCollect.")]
+        EventReference crystalCollectEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.VesselImpact.")]
+        EventReference vesselImpactEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.GameEnd.")]
+        EventReference gameEndEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ScoreReveal.")]
+        EventReference scoreRevealEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.PauseOpen.")]
+        EventReference pauseOpenEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.PauseClose.")]
+        EventReference pauseCloseEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.GunFire.")]
+        EventReference gunFireEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.BoostActivate.")]
+        EventReference boostActivateEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.Explosion.")]
+        EventReference explosionEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.CreatureDeath.")]
+        EventReference creatureDeathEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.DriftStart.")]
+        EventReference driftStartEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.DriftEnd.")]
+        EventReference driftEndEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.EnergyGain.")]
+        EventReference energyGainEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.SpeedBurst.")]
+        EventReference speedBurstEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.CrystalSkim.")]
+        EventReference crystalSkimEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustScored — local player's skimmer overtook an opponent.")]
+        EventReference joustScoredEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustReceived — local player was overtaken by an opponent's skimmer.")]
+        EventReference joustReceivedEvent;
+
+        [Header("Elemental Crystal Receive Events (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementChargeReceived — local player collected a Charge crystal.")]
+        EventReference elementChargeReceivedEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementMassReceived — local player collected a Mass crystal.")]
+        EventReference elementMassReceivedEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementSpaceReceived — local player collected a Space crystal.")]
+        EventReference elementSpaceReceivedEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ElementTimeReceived — local player collected a Time crystal.")]
+        EventReference elementTimeReceivedEvent;
+
+        [Header("Comeback Boost Events (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackCharge — local player receives a Charge comeback buff.")]
+        EventReference comebackChargeEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackMass — local player receives a Mass comeback buff.")]
+        EventReference comebackMassEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackSpace — local player receives a Space comeback buff.")]
+        EventReference comebackSpaceEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.ComebackTime — local player receives a Time comeback buff.")]
+        EventReference comebackTimeEvent;
+
+        [Header("Joust Buff Events (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffCharge — local ally was overtaken (jousted) by a teammate's skimmer and buffed; Charge representative.")]
+        EventReference joustBuffChargeEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffMass — local ally was overtaken (jousted) by a teammate's skimmer and buffed; Mass representative.")]
+        EventReference joustBuffMassEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffSpace — local ally was overtaken (jousted) by a teammate's skimmer and buffed; Space representative.")]
+        EventReference joustBuffSpaceEvent;
+
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.JoustBuffTime — local ally was overtaken (jousted) by a teammate's skimmer and buffed; Time representative.")]
+        EventReference joustBuffTimeEvent;
+
+        [Header("Track Impact Event (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.TrackImpact — a vessel ran into the HexRace track (an indestructible, environment-owned prism) rather than a destructible player trail. Spatialized at the impact position.")]
+        EventReference trackImpactEvent;
+
+        [Header("Flora Event (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.FloraCollision — a flora's health prism was destroyed (by any source). Replaces the generic BlockDestroy one-shot for flora prisms. Spatialized at the prism position.")]
+        EventReference floraCollisionEvent;
+
+        [Header("Creature Event (FMOD) — wire in the inspector")]
+        [SerializeField, Tooltip("Played for GameplaySFXCategory.CreatureBlockHit — a creature (fauna) destroyed/consumed a non-flora block. Replaces the generic BlockDestroy one-shot for creature kills; flora blocks still play their own FloraCollision sound. Spatialized at the prism position.")]
+        EventReference creatureBlockHitEvent;
+
+        [Header("Gameplay SFX Tuning")]
+        [SerializeField, Range(0f, 1f), Tooltip(
+            "Extra volume multiplier applied to BlockDestroy one-shots on top " +
+            "of the SFX slider. Dozens of prisms can break in a single frame " +
+            "(mode entry, trail collapse, fauna swarms); attenuating the " +
+            "per-block volume keeps the stacked result from phasing into a " +
+            "harsh wall of noise.")]
+        float blockDestroyVolumeScale = 0.35f;
+
+        [SerializeField, Range(0f, 1f), Tooltip(
+            "Extra volume multiplier applied to Explosion one-shots on top of " +
+            "the SFX slider.")]
+        float explosionVolumeScale = 0.6f;
+
+        [SerializeField, Min(1), Tooltip(
+            "Max BlockDestroy one-shots allowed to start within " +
+            "blockDestroyThrottleWindow seconds. Breaks beyond this cap in the " +
+            "same window are dropped — the sound is already saturated, so the " +
+            "extra voices are inaudible individually but would otherwise stack " +
+            "into harsh noise and waste FMOD voices.")]
+        int blockDestroyMaxPerWindow = 4;
+
+        [SerializeField, Min(0.01f), Tooltip(
+            "Sliding window (seconds) over which blockDestroyMaxPerWindow is " +
+            "counted.")]
+        float blockDestroyThrottleWindow = 0.1f;
+
+        [Header("Logging")]
+        [SerializeField, Tooltip(
+            "When true, log a warning the first time a category is played " +
+            "without an EventReference wired. Useful during the AudioClip " +
+            "→ FMOD migration; turn off once all slots are filled.")]
+        bool warnOnUnwiredCategory = true;
+
+        public AudioSource MusicSource1 { get => musicSource1; set => musicSource1 = value; }
+        public AudioSource MusicSource2 { get => musicSource2; set => musicSource2 = value; }
+
+        float SFXVolume { get { return sfxEnabled ? sfxVolume : 0; } }
+        float MusicVolume { get { return musicEnabled ? musicVolume : 0; } }
+
+        bool firstMusicSourceIsPlaying = true;
+        bool musicEnabled = true;
+        bool sfxEnabled = true;
+
+        // FMOD SFX bus (resolved lazily from sfxBusPath). Volume + mute are
+        // driven from the SFX slider so the entire SFX bank is governed.
+        Bus _sfxBus;
+        bool _sfxBusResolved;
+
+        Dictionary<MenuAudioCategory, EventReference> MenuAudioEvents;
+        Dictionary<GameplaySFXCategory, EventReference> GameplaySFXEvents;
+
+        // Tracks per-category warnings so we don't spam the log every frame
+        // when a category is fired with no event wired.
+        readonly HashSet<MenuAudioCategory> _warnedMenuCategories = new();
+        readonly HashSet<GameplaySFXCategory> _warnedGameplayCategories = new();
+
+        // Sliding-window throttle for BlockDestroy. When many prisms break in
+        // the same instant, only the first blockDestroyMaxPerWindow voices per
+        // blockDestroyThrottleWindow are allowed to start; the rest are dropped.
+        float _blockDestroyWindowStart;
+        int _blockDestroyWindowCount;
+
+        public bool MusicEnabled { get { return musicEnabled; } }
+        public bool SFXEnabled { get { return sfxEnabled; } }
+        #endregion
+
         void Awake()
         {
+            if (Instance != null && Instance != this)
+            {
+                Destroy(gameObject);
+                return;
+            }
             Instance = this;
         }
 
-        public void PlayGameplaySFX(GameplaySFXCategory category) { }
+        void Start()
+        {
+            InitializeMenuAudioEvents();
+            InitializeGameplaySFXEvents();
 
-        public void PlayGameplaySFX(GameplaySFXCategory category, Vector3 worldPosition) { }
+            // Fallback: when auto-created by AppManager.EnsureService before the
+            // Reflex container is built, [Inject] will not have resolved yet.
+            gameSetting ??= FindFirstObjectByType<GameSetting>();
 
-        // UI-shell surface (Arc F): menu click/open/close cues — no-op until the
-        // phase-5 audio backend, same convention as the gameplay SFX above.
-        public void PlayMenuAudio(MenuAudioCategory category) { }
+            if (gameSetting == null)
+            {
+                CSDebug.LogError("[AudioSystem] GameSetting not injected — ensure GameSetting is registered in the DI container.");
+                return;
+            }
+
+            musicEnabled = gameSetting.MusicEnabled;
+            sfxEnabled = gameSetting.SFXEnabled;
+            ChangeMusicLevel(gameSetting.MusicLevel);
+            ChangeSFXLevel(gameSetting.SFXLevel);
+            ChangeMusicEnabledStatus(musicEnabled);
+
+            // The FMOD bus may not be loaded the instant Start runs; apply once
+            // it resolves so the SFX slider takes effect on first frame too.
+            StartCoroutine(ApplySfxBusWhenReady());
+        }
+
+        void OnEnable()
+        {
+            GameSetting.OnChangeMusicEnabledStatus += ChangeMusicEnabledStatus;
+            GameSetting.OnChangeSFXEnabledStatus += ChangeSFXEnabledStatus;
+            GameSetting.OnChangeMusicLevel += ChangeMusicLevel;
+            GameSetting.OnChangeSFXLevel += ChangeSFXLevel;
+        }
+
+        void OnDisable()
+        {
+            GameSetting.OnChangeMusicEnabledStatus -= ChangeMusicEnabledStatus;
+            GameSetting.OnChangeSFXEnabledStatus -= ChangeSFXEnabledStatus;
+            GameSetting.OnChangeMusicLevel -= ChangeMusicLevel;
+            GameSetting.OnChangeSFXLevel -= ChangeSFXLevel;
+        }
+
+        void ChangeMusicEnabledStatus(bool status)
+        {
+            CSDebug.Log($"AudioSystem.OnChangeAudioEnabledStatus - status: {status}");
+
+            musicEnabled = status;
+            SetMixerMusicVolume(musicEnabled ? musicVolume : 0);
+        }
+
+        void ChangeSFXEnabledStatus(bool status)
+        {
+            sfxEnabled = status;
+            ApplySfxBus();
+        }
+
+        void ChangeMusicLevel(float level)
+        {
+            CSDebug.Log($"ChangeMusicLevel: {level}, {level / 5f}");
+            musicVolume = level / 5f;   // max .2 -- default max volume is too high
+            if (musicSource1 != null) musicSource1.volume = musicVolume;
+            if (musicSource2 != null) musicSource2.volume = musicVolume;
+        }
+
+        void ChangeSFXLevel(float level)
+        {
+            sfxVolume = level / 5f;   // legacy Unity AudioSource SFX path
+            ApplySfxBus();            // FMOD SFX bus carries the raw 0..1 slider
+        }
+
+        // ---------- Music API (Unity AudioSource — legacy) ----------
+
+        public void PlayMusicClip(AudioClip audioClip)
+        {
+            AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
+            activeAudioSource.clip = audioClip;
+            activeAudioSource.volume = MusicVolume;
+            activeAudioSource.Play();
+            CSDebug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
+        }
+
+        public void PlayNextMusicClip(AudioClip audioClip)
+        {
+            AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource2 : musicSource1);
+            activeAudioSource.clip = audioClip;
+            activeAudioSource.volume = MusicVolume;
+            activeAudioSource.Play();
+            CSDebug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
+        }
+
+        public void PlayMusicClipWithFade(AudioClip audioClip, float transitionTime = 1.0f)
+        {
+            AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
+            StartCoroutine(UpdateMusicWithFade(activeAudioSource, audioClip, transitionTime));
+        }
+
+        IEnumerator UpdateMusicWithFade(AudioSource activeAudioSource, AudioClip newAudioClip, float transitionTime)
+        {
+            // Make sure source is active and playing
+            if (!activeAudioSource.isPlaying)
+                activeAudioSource.Play();
+
+            for (float t = 0; t < transitionTime; t += Time.deltaTime)
+            {
+                // Fade out original clip masterVolume
+                activeAudioSource.volume = SFXVolume * (1 - (t / transitionTime));
+                yield return null;
+            }
+
+            activeAudioSource.Stop();
+            activeAudioSource.clip = newAudioClip; // Change AudioClip
+            activeAudioSource.Play();
+            CSDebug.Log($"Playing New Music Clip: {activeAudioSource.clip.name}");
+
+            for (float t = 0; t < transitionTime; t += Time.deltaTime)
+            {
+                // Fade in new clip masterVolume
+                activeAudioSource.volume = SFXVolume * (t / transitionTime);
+                yield return null;
+            }
+        }
+
+        public void PlayMusicClipWithCrossFade(AudioClip newAudioClip, float transitionTime = 1.0f)
+        {
+            //Determine the active audio source
+            AudioSource activeAudioSource = (firstMusicSourceIsPlaying ? musicSource1 : musicSource2);
+            AudioSource newAudioSource = (firstMusicSourceIsPlaying ? musicSource2 : musicSource1);
+
+            //Switch the bool
+            firstMusicSourceIsPlaying = !firstMusicSourceIsPlaying;
+
+            //Set the new audio source
+            newAudioSource.clip = newAudioClip;
+            newAudioSource.Play();
+            CSDebug.Log($"Playing New Music Clip: {newAudioSource.clip.name}");
+
+            //crossfade music
+            StartCoroutine(UpdateMusicWithCrossFade(activeAudioSource, newAudioSource, transitionTime));
+        }
+
+        IEnumerator UpdateMusicWithCrossFade(AudioSource originalSource, AudioSource newSource, float transitionTime)
+        {
+            for (float t = 0; t < transitionTime; t += Time.deltaTime)
+            {
+                originalSource.volume = SFXVolume * (1 - (t / transitionTime));
+                newSource.volume = SFXVolume * (t / transitionTime);
+                yield return null;
+            }
+
+            originalSource.Stop();
+        }
+
+        public void StopAllSongs()
+        {
+            musicSource1.Stop();
+            musicSource2.Stop();
+        }
+
+        public bool IsMusicSourcePlaying()
+        {
+            return musicSource1.isPlaying || musicSource2.isPlaying;
+        }
+
+        // ---------- SFX API (FMOD — preferred) ----------
+
+        /// <summary>
+        /// Plays the FMOD event wired for <paramref name="category"/>. Volume
+        /// is applied per-instance from <see cref="GameSetting.SFXLevel"/> /
+        /// SFXEnabled via <see cref="FMODOneShotVolumeHelper"/>.
+        /// </summary>
+        public void PlayMenuAudio(MenuAudioCategory category)
+        {
+            if (MenuAudioEvents == null) InitializeMenuAudioEvents();
+
+            if (MenuAudioEvents.TryGetValue(category, out var reference) && !reference.IsNull)
+            {
+                PlaySFXEvent(reference);
+                return;
+            }
+
+            if (warnOnUnwiredCategory && _warnedMenuCategories.Add(category))
+            {
+                Debug.LogWarning(
+                    $"[AudioSystem] No FMOD EventReference wired for MenuAudioCategory.{category}. " +
+                    $"Wire it on the AudioSystem GameObject. (This warning fires once per category.)");
+            }
+        }
+
+        /// <summary>
+        /// Plays the FMOD event wired for <paramref name="category"/>. Volume
+        /// is applied per-instance from <see cref="GameSetting.SFXLevel"/> /
+        /// SFXEnabled via <see cref="FMODOneShotVolumeHelper"/>.
+        /// </summary>
+        public void PlayGameplaySFX(GameplaySFXCategory category)
+            => PlayGameplaySFXInternal(category, spatial: false, Vector3.zero);
+
+        /// <summary>
+        /// Plays the FMOD event wired for <paramref name="category"/> as a
+        /// spatialized one-shot at <paramref name="worldPosition"/>. Use for
+        /// in-world events (crystal explosions, skims) where the sound should
+        /// emanate from the collision site rather than the listener origin.
+        /// </summary>
+        public void PlayGameplaySFX(GameplaySFXCategory category, Vector3 worldPosition)
+            => PlayGameplaySFXInternal(category, spatial: true, worldPosition);
+
+        /// <summary>
+        /// Shared implementation for the gameplay SFX overloads. Applies the
+        /// per-category volume scale (see <see cref="GetCategoryVolumeScale"/>)
+        /// on top of the SFX slider and gates throttled categories
+        /// (see <see cref="PassesGameplaySFXThrottle"/>) so a burst of
+        /// simultaneous prism breaks can't stack into harsh noise.
+        /// </summary>
+        void PlayGameplaySFXInternal(GameplaySFXCategory category, bool spatial, Vector3 worldPosition)
+        {
+            if (GameplaySFXEvents == null) InitializeGameplaySFXEvents();
+
+            if (GameplaySFXEvents.TryGetValue(category, out var reference) && !reference.IsNull)
+            {
+                if (!PassesGameplaySFXThrottle(category)) return;
+
+                float volume = ResolveFMODSFXVolume() * GetCategoryVolumeScale(category);
+                FMODOneShotVolumeHelper.PlaySFXOneShot(reference, spatial ? worldPosition : Vector3.zero, volume);
+                return;
+            }
+
+            if (warnOnUnwiredCategory && _warnedGameplayCategories.Add(category))
+            {
+                Debug.LogWarning(
+                    $"[AudioSystem] No FMOD EventReference wired for GameplaySFXCategory.{category}. " +
+                    $"Wire it on the AudioSystem GameObject. (This warning fires once per category.)");
+            }
+        }
+
+        /// <summary>
+        /// Plays an arbitrary FMOD event as a 2D one-shot at world origin
+        /// with the SFX slider volume applied. Use for UI / menu sounds
+        /// authored as 2D events in FMOD Studio (no spatializer).
+        /// </summary>
+        public void PlaySFXEvent(EventReference reference)
+        {
+            FMODOneShotVolumeHelper.PlaySFXOneShot(reference, Vector3.zero, ResolveFMODSFXVolume());
+        }
+
+        /// <summary>
+        /// Plays an FMOD event as a one-shot at <paramref name="worldPosition"/>
+        /// with the SFX slider volume applied. Use for spatialized 3D events.
+        /// </summary>
+        public void PlaySFXEvent(EventReference reference, Vector3 worldPosition)
+        {
+            FMODOneShotVolumeHelper.PlaySFXOneShot(reference, worldPosition, ResolveFMODSFXVolume());
+        }
+
+        /// <summary>
+        /// Plays an FMOD event attached to <paramref name="attachTo"/> with
+        /// the SFX slider volume applied. The instance follows the GameObject
+        /// for the duration of playback.
+        /// </summary>
+        public void PlaySFXEventAttached(EventReference reference, GameObject attachTo)
+        {
+            FMODOneShotVolumeHelper.PlaySFXOneShotAttached(reference, attachTo, ResolveFMODSFXVolume());
+        }
+
+        // ---------- SFX API (Unity AudioSource — legacy) ----------
+
+        public void PlaySFXClip(AudioClip audioClip, AudioSource sfxSource)
+        {
+            sfxSource.volume = SFXVolume;
+            sfxSource.PlayOneShot(audioClip);
+        }
+
+        public void PlaySFXClip(AudioClip audioClip)
+        {
+            sfxSource.volume = SFXVolume;
+            sfxSource.PlayOneShot(audioClip);
+        }
+
+        // ---------- Mixer ----------
+
+        #region Mixer Methods
+
+        public void SetMixerMusicVolume(float value)
+        {
+            masterMixer.SetFloat("MusicVolume", value);
+        }
+
+        public void SetMixerSFXVolume(float value)
+        {
+            masterMixer.SetFloat("SFXVolume", value);
+        }
+
+        #endregion
+
+        // ---------- Internals ----------
+
+        /// <summary>
+        /// Per-instance linear volume for FMOD SFX one-shots. Returns 0 when
+        /// SFX is muted (so muted SFX creates zero FMOD voices). When the SFX
+        /// bus is active it returns 1 — the slider is applied globally by the
+        /// bus (see <see cref="ApplySfxBus"/>), so folding it in per-instance
+        /// would double-attenuate. Only when the bus fails to resolve does this
+        /// fall back to the raw slider value (legacy per-instance behavior).
+        /// Decoupled from <see cref="sfxVolume"/> (the /5-scaled legacy
+        /// AudioSource path).
+        /// </summary>
+        float ResolveFMODSFXVolume()
+        {
+            if (!sfxEnabled) return 0f;
+
+            // When the SFX bus is driving global SFX volume, one-shots pass
+            // through at full and the bus applies the slider — folding the
+            // slider in here too would attenuate one-shots by slider². If the
+            // bus failed to resolve, fall back to applying the slider
+            // per-instance so the slider still controls one-shot volume.
+            if (_sfxBusResolved) return 1f;
+
+            var gs = gameSetting != null ? gameSetting : GameSetting.Instance;
+            return gs != null ? Mathf.Clamp01(gs.SFXLevel) : 1f;
+        }
+
+        // ---------- FMOD SFX bus ----------
+
+        /// <summary>
+        /// Drives the FMOD <see cref="sfxBusPath"/> bus volume + mute from the
+        /// in-game SFX slider (<see cref="GameSetting.SFXLevel"/> /
+        /// <see cref="GameSetting.SFXEnabled"/>). Because every FMOD SFX event
+        /// routes through this bus, this governs the ENTIRE SFX bank — the
+        /// continuous emitters (engine, drift, proximity, flora ambient) as
+        /// well as the one-shots — not just the one-shots that flow through
+        /// <see cref="FMODOneShotVolumeHelper"/>.
+        /// </summary>
+        void ApplySfxBus()
+        {
+            if (!TryResolveSfxBus()) return;
+
+            float level = gameSetting != null ? gameSetting.SFXLevel : 1f;
+            _sfxBus.setVolume(Mathf.Clamp01(level));
+            _sfxBus.setMute(!sfxEnabled);
+        }
+
+        bool TryResolveSfxBus()
+        {
+            if (_sfxBusResolved && _sfxBus.isValid()) return true;
+            try
+            {
+                _sfxBus = RuntimeManager.GetBus(sfxBusPath);
+                _sfxBusResolved = _sfxBus.isValid();
+            }
+            catch
+            {
+                _sfxBusResolved = false;
+            }
+            return _sfxBusResolved;
+        }
+
+        IEnumerator ApplySfxBusWhenReady()
+        {
+            // FMOD banks (and thus the bus) may not be loaded the instant
+            // AudioSystem.Start runs. Retry briefly until the bus resolves,
+            // then apply the current slider state.
+            for (int i = 0; i < 120; i++)
+            {
+                if (TryResolveSfxBus())
+                {
+                    ApplySfxBus();
+                    yield break;
+                }
+                yield return null;
+            }
+
+            Debug.LogWarning(
+                $"[AudioSystem] FMOD SFX bus '{sfxBusPath}' did not resolve. " +
+                $"SFX one-shots fall back to per-instance slider volume, but " +
+                $"continuous emitters won't follow the slider. Check the bus " +
+                $"path and that the Master (strings) bank is loaded.");
+        }
+
+        /// <summary>
+        /// Per-category volume multiplier applied on top of the SFX slider.
+        /// Categories that tend to fire en masse in a single frame (block
+        /// destruction, explosions) are attenuated so the stacked result
+        /// doesn't clip into harsh noise. Everything else passes through at 1.
+        /// </summary>
+        float GetCategoryVolumeScale(GameplaySFXCategory category) => category switch
+        {
+            GameplaySFXCategory.BlockDestroy => blockDestroyVolumeScale,
+            GameplaySFXCategory.Explosion => explosionVolumeScale,
+            _ => 1f,
+        };
+
+        /// <summary>
+        /// Sliding-window concurrency gate for categories that can fire in
+        /// large bursts. Currently only BlockDestroy is throttled: at most
+        /// <see cref="blockDestroyMaxPerWindow"/> voices may start per
+        /// <see cref="blockDestroyThrottleWindow"/> seconds. Returns false to
+        /// drop the one-shot. Non-throttled categories always pass.
+        /// </summary>
+        bool PassesGameplaySFXThrottle(GameplaySFXCategory category)
+        {
+            if (category != GameplaySFXCategory.BlockDestroy) return true;
+
+            float now = Time.unscaledTime;
+            if (now - _blockDestroyWindowStart > blockDestroyThrottleWindow)
+            {
+                _blockDestroyWindowStart = now;
+                _blockDestroyWindowCount = 0;
+            }
+
+            if (_blockDestroyWindowCount >= blockDestroyMaxPerWindow) return false;
+
+            _blockDestroyWindowCount++;
+            return true;
+        }
+
+        void InitializeMenuAudioEvents()
+        {
+            MenuAudioEvents = new Dictionary<MenuAudioCategory, EventReference>()
+            {
+                {MenuAudioCategory.OptionClick, optionClickEvent},
+                {MenuAudioCategory.OpenView, openViewEvent},
+                {MenuAudioCategory.SwitchView, switchViewEvent},
+                {MenuAudioCategory.CloseView, closeViewEvent},
+                {MenuAudioCategory.SmallReward, smallRewardEvent},
+                {MenuAudioCategory.BigReward, bigRewardEvent},
+                {MenuAudioCategory.Upgrade, upgradeEvent},
+                {MenuAudioCategory.Denied, deniedEvent},
+                {MenuAudioCategory.Confirmed, confirmedEvent},
+                {MenuAudioCategory.LetsGo, letsGoEvent},
+                {MenuAudioCategory.SwitchScreen, switchScreenEvent},
+                {MenuAudioCategory.RedeemTicket, redeemTicketEvent},
+            };
+        }
+
+        void InitializeGameplaySFXEvents()
+        {
+            GameplaySFXEvents = new Dictionary<GameplaySFXCategory, EventReference>()
+            {
+                {GameplaySFXCategory.BlockDestroy, blockDestroyEvent},
+                {GameplaySFXCategory.ShieldActivate, shieldActivateEvent},
+                {GameplaySFXCategory.ShieldDeactivate, shieldDeactivateEvent},
+                {GameplaySFXCategory.MineExplode, mineExplodeEvent},
+                {GameplaySFXCategory.ProjectileLaunch, projectileLaunchEvent},
+                {GameplaySFXCategory.CrystalCollect, crystalCollectEvent},
+                {GameplaySFXCategory.VesselImpact, vesselImpactEvent},
+                {GameplaySFXCategory.GameEnd, gameEndEvent},
+                {GameplaySFXCategory.ScoreReveal, scoreRevealEvent},
+                {GameplaySFXCategory.PauseOpen, pauseOpenEvent},
+                {GameplaySFXCategory.PauseClose, pauseCloseEvent},
+                {GameplaySFXCategory.GunFire, gunFireEvent},
+                {GameplaySFXCategory.BoostActivate, boostActivateEvent},
+                {GameplaySFXCategory.Explosion, explosionEvent},
+                {GameplaySFXCategory.CreatureDeath, creatureDeathEvent},
+                {GameplaySFXCategory.DriftStart, driftStartEvent},
+                {GameplaySFXCategory.DriftEnd, driftEndEvent},
+                {GameplaySFXCategory.EnergyGain, energyGainEvent},
+                {GameplaySFXCategory.SpeedBurst, speedBurstEvent},
+                {GameplaySFXCategory.CrystalSkim, crystalSkimEvent},
+                {GameplaySFXCategory.JoustScored, joustScoredEvent},
+                {GameplaySFXCategory.JoustReceived, joustReceivedEvent},
+                {GameplaySFXCategory.ElementChargeReceived, elementChargeReceivedEvent},
+                {GameplaySFXCategory.ElementMassReceived, elementMassReceivedEvent},
+                {GameplaySFXCategory.ElementSpaceReceived, elementSpaceReceivedEvent},
+                {GameplaySFXCategory.ElementTimeReceived, elementTimeReceivedEvent},
+                {GameplaySFXCategory.ComebackCharge, comebackChargeEvent},
+                {GameplaySFXCategory.ComebackMass, comebackMassEvent},
+                {GameplaySFXCategory.ComebackSpace, comebackSpaceEvent},
+                {GameplaySFXCategory.ComebackTime, comebackTimeEvent},
+                {GameplaySFXCategory.JoustBuffCharge, joustBuffChargeEvent},
+                {GameplaySFXCategory.JoustBuffMass, joustBuffMassEvent},
+                {GameplaySFXCategory.JoustBuffSpace, joustBuffSpaceEvent},
+                {GameplaySFXCategory.JoustBuffTime, joustBuffTimeEvent},
+                {GameplaySFXCategory.TrackImpact, trackImpactEvent},
+                {GameplaySFXCategory.FloraCollision, floraCollisionEvent},
+                {GameplaySFXCategory.CreatureBlockHit, creatureBlockHitEvent},
+            };
+        }
     }
 }

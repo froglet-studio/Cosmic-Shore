@@ -926,8 +926,8 @@ namespace CosmicShore.Client
             var container = new Container();
             container.RegisterValue(gameData);
             container.RegisterValue(new GameObject("PlayerDataService").AddComponent<PlayerDataService>());
-            // VesselImpactor's [Inject] AudioSystem (shell) must resolve at clone injection.
-            container.RegisterValue(new GameObject("AudioSystem").AddComponent<AudioSystem>());
+            // VesselImpactor's [Inject] AudioSystem must resolve at clone injection.
+            container.RegisterValue(CosmicShore.Cli.AudioSystemRig.Create());
 
             var spawnerGo = new GameObject("Spawners");
             var vesselSpawner = spawnerGo.AddComponent<VesselSpawner>();

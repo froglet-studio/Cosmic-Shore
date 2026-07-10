@@ -112,7 +112,7 @@ public class StoreScreenTests : IDisposable
         catalog.LoadLocalInventory(new List<VirtualItem> { crystal });
 
         // ── modal rig ───────────────────────────────────────────────────────
-        var audio = new GameObject("AudioSystem").AddComponent<AudioSystem>();
+        var audio = CosmicShore.Cli.AudioSystemRig.Create();
         var modalGo = new GameObject("PurchaseConfirmationModal", typeof(RectTransform));
         modalGo.SetActive(false);
         modalGo.AddComponent<CanvasGroup>();

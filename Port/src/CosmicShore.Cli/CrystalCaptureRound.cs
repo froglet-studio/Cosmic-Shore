@@ -548,7 +548,7 @@ namespace CosmicShore.Cli
                 container.RegisterValue(gameData);
                 var playerDataService = new GameObject("PlayerDataService").AddComponent<PlayerDataService>();
                 container.RegisterValue(playerDataService);
-                var audioSystem = new GameObject("AudioSystem").AddComponent<AudioSystem>();
+                var audioSystem = AudioSystemRig.Create();
                 container.RegisterValue(audioSystem);
 
                 // ── the controller GO (Game object of the real scene) ─────────

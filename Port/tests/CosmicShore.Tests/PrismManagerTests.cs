@@ -44,7 +44,7 @@ public class PrismManagerTests
 
     // ── helpers ─────────────────────────────────────────────────────────────
 
-    static void MakeAudio() => new GameObject("audio").AddComponent<AudioSystem>();
+    static void MakeAudio() => CosmicShore.Cli.AudioSystemRig.Create();
 
     static (PrismStateManager state, PrismTeamManager team, GameObject go) MakePrism(
         ScriptableEventPrismStats stolenEvent = null)

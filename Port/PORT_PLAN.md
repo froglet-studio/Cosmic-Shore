@@ -728,17 +728,20 @@ now works that milestone plan.
 > the **Arc-E content-bridge decision point** (extractor vs hand-authoring —
 > needs the prompter).
 
-1. **AudioSystem unit — the largest live shell by consumer count.** The
-   2026-07-10 shell survey (16 `type-preserving SHELL` files ranked by
-   distinct referencing files) put `System/Audio/AudioSystem.cs` first:
-   **43 consumer files, 846L upstream**. Port it structure-faithful per the
-   established "[X DISABLED] → local lanes are live" pattern: the Wwise
-   call sites (`AkSoundEngine`/`AK.Wwise` posts) become deviation-commented
-   lanes; the routing/registry/state lanes (bus volumes, mute state,
-   `ScriptableEventGameplaySFX` listener wiring, music/SFX toggles read by
-   GameSetting + menus) port verbatim and get behavior tests. Survey
-   runners-up for later units: Crystal (gameplay-side, big; wants the
-   impact-effects arc), CameraManager (11 files), StatsManager (9 files).
+1. **Audio consumer un-carry + CameraManager unit.** (a) The AudioSystem
+   unit left ONE parked audio deviation: `CountdownTimer`'s beep
+   (`[SerializeField] AudioClip countdownBeep` + the verbatim
+   `AudioSystem.Instance.PlaySFXClip(countdownBeep)` beat callback —
+   engine `AudioClip`/`AudioSource` are now real and every round world
+   carries a fully-wired AudioSystem via `AudioSystemRig`, so the restore
+   is unblocked; author a beep `AudioClip` wherever the harness creates
+   the CountdownTimer so the engine's null-clip warning lane stays quiet).
+   (b) Then the next live shell by consumer count: **CameraManager**
+   (`Controller/Managers/CameraManager.cs`, 273L upstream, 11 consumer
+   files) — survey the shell's carried answers vs the already-ported
+   `MainMenuCameraController`/`CustomCameraController` family first.
+   Runners-up: StatsManager (333L, 9 files); Crystal (313L, gameplay-side —
+   wants the impact-effects arc, not a standalone unit).
    **Prompter-facing flags still parked (do NOT act without input):**
    (b) the upstream in-place-sort quirk
    (`ArcadeExploreView.PopulateGameSelectionList` sorts the shared
@@ -748,6 +751,58 @@ now works that milestone plan.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### AudioSystem unit ✅ (2026-07-10) — the largest live shell is REAL (846L, 43 consumers)
+
+**`AudioSystem` (846L) ported verbatim**, replacing the V6 type-preserving
+shell (Deviation #11, retired) and absorbing `AudioCategories.cs` (upstream
+declares the enums in AudioSystem.cs — the port now matches file-for-file).
+Upstream is **FMOD-backed** (not Wwise as earlier notes assumed):
+`FMODUnity`/`FMOD.Studio` map to a new engine placeholder surface
+(`CosmicShore.Engine.Audio.Fmod`, CloudSaveSdk-precedent: honest local
+semantics + public test seams) — `EventReference` (path + IsNull),
+`EventInstance`/`Bus` as struct handles over shared state, `RuntimeManager`
+with a REAL per-path bus registry (volume/mute state), a started-one-shot
+observability log, and a `FailBusResolution` seam that throws like FMOD's
+unloaded-banks lane. Engine also grew the Unity audio types:
+`AudioClip`, `AudioSource` (play/stop/one-shot state real + observable),
+`AudioMixer` (`CosmicShore.Engine.Audio`, SetFloat/GetFloat over a dict).
+**`FMODOneShotVolumeHelper` (99L) ported verbatim** (Controller/FX). Every
+local lane is LIVE: the SFX bus carries the raw slider + mute
+(`GameSetting` static-event re-application), one-shots pass volume 1 when
+the bus is live (the double-attenuation guard) and fall back to the
+per-instance slider when banks never load, muted SFX creates ZERO
+instances, BlockDestroy attenuates ×0.35 and throttles (max 4 per 0.1s
+sliding window on unscaled time), Explosion ×0.6, spatial one-shots carry
+the impact position, unwired categories warn once, the legacy music lanes
+(level/5 law, crossfade source flip, mixer writes, PlaySFXClip) all work.
+
+**`AudioSystemRig` (Cli)** — shared harness authoring for the scene's audio
+singleton (AppManager DDOL in Unity): statics cleared (Instance +
+SingletonPersistent&lt;GameSetting&gt; — worlds rebuild without destroying
+the old world's objects, so the duplicate guards would otherwise kill every
+rebuilt component), GameSetting with a **dormant** UGSDataService (inactive
+GO, Awake never runs → `IsInitialized` false, the not-yet-signed-in boot —
+GameSetting.Awake dereferences the inject unguarded upstream), mixer +
+three AudioSources wired, migration warn flag off. Used by all 4 CLI
+rounds, both Client sims, the menushell (`BuildAudioSystem`), and 6 test
+rigs that previously authored bare mixer-less components.
+
+**Debug lesson (fixed via the rig, not the port):** bare-component
+AudioSystem rigs broke 11 tests two ways — (1) round worlds' real `Start`
+logged the "GameSetting not injected" error into the zero-error asserts;
+(2) leaked mixer-less components stay subscribed to GameSetting's STATIC
+events (engine world disposal runs no OnDisable), so a later
+music-enabled toggle NRE'd through `SetMixerMusicVolume`. The rig wires
+every world like the authored scene, so the real code path runs clean.
+
+**Verified:** 11 new `AudioSystemTests` (bus-follows-slider ×2 lanes,
+one-shot volume trichotomy, throttle window slide, spatial position,
+unwired silence, crossfade flip, mixer writes, legacy clip lane, duplicate
+guard) — all green both configs. **ALL ELEVEN diag lines byte-stable ×2
+with values AND PNGs identical to the deferred-sweep baseline** (the audio
+rig provably changed no gameplay). **1686 tests green in BOTH configs
+(1334 + 352)**; 5 CLI modes exit 0. bleeding-edge unmoved at `f2b8f5aa`.
 
 ### Deferred sweep ✅ (2026-07-10) — PaintingPresetLibraryTests ported + shell survey
 

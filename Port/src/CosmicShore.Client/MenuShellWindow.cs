@@ -168,7 +168,7 @@ namespace CosmicShore.Client
             // singleton (the HANGAR nav completes a ViewHangarMenu action through it)
             // and the AudioSystem (modal open/close cues route through it).
             new GameObject("UserActionSystem").AddComponent<CosmicShore.Core.UserActionSystem>();
-            _audioSystem = new GameObject("AudioSystem").AddComponent<CosmicShore.Core.AudioSystem>();
+            BuildAudioSystem();
             new GameObject("CallToActionSystem").AddComponent<CosmicShore.Core.CallToActionSystem>();
             BuildProgressionService();
 
@@ -342,6 +342,25 @@ namespace CosmicShore.Client
         /// by hand-authored SO_ArcadeGame entries — the same modes the CLI proves.
         /// Prefab art arrives with the Arc-E content bridge; the WIRING is shipping code.
         /// </summary>
+        /// <summary>
+        /// The REAL AudioSystem, LIVE (AudioSystem unit): a fully-wired rig
+        /// modelling the Unity scene's inspector authoring — a GameSetting
+        /// singleton (PlayerPrefs-backed levels/toggles), the master AudioMixer,
+        /// and the three legacy AudioSources. Start pulls the setting state and
+        /// drives the FMOD SFX bus (engine placeholder) exactly like the wire;
+        /// modal open/close cues route through PlayMenuAudio. No FMOD events
+        /// exist in the port fixture yet, so the migration warn flag is off —
+        /// the authored-scene posture once all slots are filled. Statics
+        /// (AudioSystem.Instance, SingletonPersistent&lt;GameSetting&gt;.Instance)
+        /// are cleared first: the previous menu world's objects are not
+        /// destroyed by GameLoop disposal, so the duplicate-instance guards
+        /// would otherwise kill every rebuilt world's components.
+        /// </summary>
+        void BuildAudioSystem()
+        {
+            _audioSystem = CosmicShore.Cli.AudioSystemRig.Create();
+        }
+
         /// <summary>
         /// The REAL GameModeProgressionService, LIVE (Progression unit): a quest
         /// chain over the same three arcade modes — HexRace is first-in-chain

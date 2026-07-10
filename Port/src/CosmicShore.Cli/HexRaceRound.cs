@@ -536,9 +536,10 @@ namespace CosmicShore.Cli
                 container.RegisterValue(gameData);
                 var playerDataService = new GameObject("PlayerDataService").AddComponent<PlayerDataService>();
                 container.RegisterValue(playerDataService);
-                // VesselImpactor's [Inject] AudioSystem (shell — Deviation #11) must resolve
-                // when VesselSpawner DI-injects the cloned vessel.
-                container.RegisterValue(new GameObject("AudioSystem").AddComponent<AudioSystem>());
+                // VesselImpactor's [Inject] AudioSystem must resolve when VesselSpawner
+                // DI-injects the cloned vessel. The rig wires the scene's full audio
+                // singleton (GameSetting + mixer + sources) so the real Start runs clean.
+                container.RegisterValue(AudioSystemRig.Create());
 
                 var spawnerGo = new GameObject("Spawners");
                 var vesselSpawner = spawnerGo.AddComponent<VesselSpawner>();

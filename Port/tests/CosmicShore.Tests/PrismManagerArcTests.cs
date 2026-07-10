@@ -148,7 +148,7 @@ public class PrismManagerArcTests : IDisposable
     public void ScaleManager_ClampsTargetIntoLiveMinMax_AndFlagsLargest()
     {
         using var loop = new GameLoop();
-        new GameObject("audio").AddComponent<AudioSystem>(); // largest → ActivateShield → SFX
+        CosmicShore.Cli.AudioSystemRig.Create(); // largest → ActivateShield → SFX
         MakeScaleManager();
         var rig = PrismTestRig.Create();
         var anim = rig.ScaleAnimator;

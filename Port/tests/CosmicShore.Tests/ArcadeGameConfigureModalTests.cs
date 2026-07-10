@@ -50,7 +50,7 @@ public class ArcadeGameConfigureModalTests : IDisposable
         // Scene transcription (Menu_Main): the AudioSystem singleton the modal
         // family plays its open/close/confirm cues through, and the loadout store
         // ArcadeExploreView.Start initializes before any game can be selected.
-        var audio = new GameObject("AudioSystem").AddComponent<AudioSystem>();
+        var audio = CosmicShore.Cli.AudioSystemRig.Create();
         LoadoutSystem.Init();
 
         gameData = ScriptableObject.CreateInstance<GameDataSO>();

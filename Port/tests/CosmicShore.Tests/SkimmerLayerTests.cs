@@ -44,7 +44,7 @@ public class SkimmerLayerTests
     static object Get(object target, System.Type declaringType, string field)
         => declaringType.GetField(field, Priv)!.GetValue(target);
 
-    static AudioSystem MakeAudio() => new GameObject("audio").AddComponent<AudioSystem>();
+    static AudioSystem MakeAudio() => CosmicShore.Cli.AudioSystemRig.Create();
 
     // ── doubles ─────────────────────────────────────────────────────────────
 

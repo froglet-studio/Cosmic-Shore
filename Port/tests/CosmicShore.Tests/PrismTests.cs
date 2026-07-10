@@ -35,7 +35,7 @@ public class PrismTests
 
     // ── helpers ─────────────────────────────────────────────────────────────
 
-    static void MakeAudio() => new GameObject("audio").AddComponent<AudioSystem>();
+    static void MakeAudio() => CosmicShore.Cli.AudioSystemRig.Create();
 
     static List<PrismStats> Capture(CosmicShore.ScriptableObjects.ScriptableEventPrismStats channel)
     {

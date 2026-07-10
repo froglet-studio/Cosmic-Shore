@@ -481,7 +481,7 @@ namespace CosmicShore.Client
             container.RegisterValue(gameData);
             container.RegisterValue(freestyleEvents);
             container.RegisterValue(new GameObject("PlayerDataService").AddComponent<PlayerDataService>());
-            container.RegisterValue(new GameObject("AudioSystem").AddComponent<AudioSystem>());
+            container.RegisterValue(CosmicShore.Cli.AudioSystemRig.Create());
 
             // ── input channels (shared by the player's InputStatus + every vessel's
             // action handler, exactly like the real prefab assets) ──
