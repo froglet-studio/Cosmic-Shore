@@ -728,26 +728,17 @@ now works that milestone plan.
 > the **Arc-E content-bridge decision point** (extractor vs hand-authoring —
 > needs the prompter).
 
-1. **BaseScoreTracker + the concrete scoring family, then restore
-   HexRaceScoreTracker.** The stats-reporter family shipped 2026-07-10
-   EXCEPT `HexRaceScoreTracker` (160L): its base `BaseScoreTracker`
-   (163L incl. the `ScoringConfig` struct) needs ~9 concrete scoring
-   classes the port lacks (PrismsCreatedScoring,
-   HostilePrismsDestroyedScoring, HostileVolumeDestroyedScoring,
-   VolumeCreatedScoring, ElementalCrystalsCollectedBlitzScoring,
-   TurnsPlayedScoring, VolumeAndBlocksStolenScoring,
-   TeamVolumeDifferenceScoring, CrystalsCollectedScoring — upstream
-   `Controller/Arcade/Scoring/`, ~500L mechanical; 4 of 13 scoring files
-   already ported). The parked verbatim transcription is at
-   `scratchpad/HexRaceScoreTracker.cs.parked` (same-session scratch) —
-   re-transcribe from upstream if the scratchpad is gone. Also restore
-   the four telemetry deviation lanes when their arcs land
+1. **Next live shell: PrismFactory** (10 refs — pairs with the
+   prism/gameplay arcs) or the **CaptainManager remainder** (grown but
+   still shell-tagged). Survey the shell's carried answers first per the
+   established protocol. 12 `type-preserving SHELL` files remain; Crystal
+   (313L) still waits for the impact-effects arc. Longer-term parked
+   restores: the four telemetry deviation lanes when their arcs land
    (VesselDamagePrismEffectSO / SkimmerStealPrismEffectSO →
    impact-effects arc; FullAutoBlockShootActionExecutor /
-   FireGunActionExecutor → vessel-actions arc). Alternative next shells:
-   **PrismFactory** (10 refs) or the **CaptainManager remainder**.
-   12 `type-preserving SHELL` files remain; Crystal (313L) still waits
-   for the impact-effects arc.
+   FireGunActionExecutor → vessel-actions arc);
+   `WildlifeBlitzEndGameStatsTracker` (the last unported Scoring/ file,
+   wants the WildlifeBlitz mode arc).
    **Prompter-facing flags still parked (do NOT act without input):**
    (b) the upstream in-place-sort quirk
    (`ArcadeExploreView.PopulateGameSelectionList` sorts the shared
@@ -757,6 +748,38 @@ now works that milestone plan.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Scoring family ✅ (2026-07-10) — BaseScoreTracker + the full CreateScoring switch; HexRaceScoreTracker restored
+
+**12 files landed** (background-agent transcription, `(scoring family
+2026-07-10)` headers): `BaseScoreTracker` (163L incl. the `ScoringConfig`
+struct — the SOAP-driven tracker lifecycle: OnInitializeGame →
+CreateScoring per config, turn start/end → per-scoring
+Subscribe/Unsubscribe over RoundStats stat events, OnMiniGameEnd →
+SortRoundStats + CalculateDomainStats + InvokeWinnerCalculated,
+`CalculateTotalScore` summing every scoring's accumulator into
+RoundStats.Score, `GetScoring<T>`), `ScoringModes` (the frozen enum), and
+the 9 concrete scorings that complete upstream's CreateScoring switch
+(PrismsCreated / HostilePrismsDestroyed / HostileVolumeDestroyed /
+VolumeCreated / ElementalCrystalsCollectedBlitz / TurnsPlayed /
+VolumeAndBlocksStolen / TeamVolumeDifference / CrystalsCollected — every
+Scoring/ file except the WildlifeBlitz end-game tracker is now ported).
+**`HexRaceScoreTracker` restored** byte-for-byte from the parked
+transcription — the stats-reporter family's one gap is closed.
+
+**Verified:** 5 new `ScoringFamilyTests` driving the REAL end-to-end lane
+(config → CreateScoring → turn subscribe → stat-setter →
+scoring.UpdateScore → CalculateTotalScore → RoundStats.Score; turn-end
+freeze; game-end sort + winner raise; GetScoring; the restored tracker's
+GetExposedStats pre-race posture). One upstream semantic PINNED, not
+"fixed": each scoring instance holds ONE shared accumulator
+(BaseScoring.Score) overwritten by whichever player's stat changed last —
+a cross-player roll-up sums the latest accumulators, not per-player
+ledgers. **ALL ELEVEN diag lines byte-stable ×2, values AND PNGs identical
+to the stats-reporter baseline** (nothing live instantiates the trackers
+yet — upstream wires them per scene). **1708 tests green in BOTH configs
+(1356 + 352, +5)**; 5 CLI modes exit 0. bleeding-edge unmoved at
+`f2b8f5aa`.
 
 ### Stats-reporter family ✅ (2026-07-10) — UGSStatsManager is REAL + the reporter/telemetry family lands
 
