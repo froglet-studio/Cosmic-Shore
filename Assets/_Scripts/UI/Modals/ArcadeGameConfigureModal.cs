@@ -14,6 +14,7 @@ using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
+using UnityEngine.InputSystem;
 using UnityEngine.Video;
 
 namespace CosmicShore.UI
@@ -111,6 +112,14 @@ namespace CosmicShore.UI
                  "commit-once flow has no back path. Wire in the inspector if a back " +
                  "button still exists in the prefab.")]
         [SerializeField] private GameObject backFromGameSelectButton;
+
+        // D-pad navigation for Screen 1 — rows: 0=intensity, 1=player count, 2=domain count, 3=confirm
+        int _dpadFocusRow;
+        const int DpadRowIntensity = 0;
+        const int DpadRowPlayerCount = 1;
+        const int DpadRowDomainCount = 2;
+        const int DpadRowConfirm = 3;
+        const int DpadRowCount = 4;
 
         // Hard cap on the number of players/domains the game supports
         const int MaxSupportedPlayers = 12;
@@ -245,6 +254,86 @@ namespace CosmicShore.UI
             DespawnAllChips();
         }
 
+        protected override void Update()
+        {
+            base.Update();
+
+            var pad = Gamepad.current;
+            if (pad == null) return;
+            if (IsClientMode) return;
+            if (!configurationDetailView || !configurationDetailView.activeSelf) return;
+
+            if (pad.dpad.up.wasPressedThisFrame)
+                MoveDpadFocusRow(-1);
+            else if (pad.dpad.down.wasPressedThisFrame)
+                MoveDpadFocusRow(1);
+            else if (pad.dpad.left.wasPressedThisFrame)
+                HandleDpadHorizontal(-1);
+            else if (pad.dpad.right.wasPressedThisFrame)
+                HandleDpadHorizontal(1);
+            else if (pad.buttonSouth.wasPressedThisFrame && _dpadFocusRow == DpadRowConfirm)
+                OnConfirmConfiguration();
+        }
+
+        void MoveDpadFocusRow(int direction)
+        {
+            _dpadFocusRow = Mathf.Clamp(_dpadFocusRow + direction, 0, DpadRowCount - 1);
+        }
+
+        void HandleDpadHorizontal(int direction)
+        {
+            switch (_dpadFocusRow)
+            {
+                case DpadRowIntensity:
+                    CycleIntensity(direction);
+                    break;
+                case DpadRowPlayerCount:
+                    if (pcStepper)
+                    {
+                        if (direction > 0) pcStepper.Increment();
+                        else pcStepper.Decrement();
+                    }
+                    break;
+                case DpadRowDomainCount:
+                    if (dcStepper)
+                    {
+                        if (direction > 0) dcStepper.Increment();
+                        else dcStepper.Decrement();
+                    }
+                    break;
+            }
+        }
+
+        void CycleIntensity(int direction)
+        {
+            if (config == null) return;
+
+            int currentIdx = -1;
+            for (int i = 0; i < intensityButtons.Count; i++)
+            {
+                if (intensityButtons[i] && intensityButtons[i].Intensity == config.Intensity)
+                {
+                    currentIdx = i;
+                    break;
+                }
+            }
+
+            int nextIdx = currentIdx;
+            while (true)
+            {
+                nextIdx += direction;
+                if (nextIdx < 0 || nextIdx >= intensityButtons.Count) return;
+                var btn = intensityButtons[nextIdx];
+                if (!btn) continue;
+                var uiBtn = btn.GetComponent<Button>();
+                if (uiBtn && uiBtn.enabled)
+                {
+                    btn.Select();
+                    return;
+                }
+            }
+        }
+
         #endregion
 
         #region Public API
@@ -277,6 +366,8 @@ namespace CosmicShore.UI
             InitializeDomainSelection();
             ApplyHostOnlyInteractability();
             ResetReadyUpUI();
+
+            _dpadFocusRow = DpadRowIntensity;
 
             // Host configures privately on Screen 1. No client involvement until
             // the host clicks Confirm Configuration → CommitConfiguration RPC fires.

@@ -51,7 +51,7 @@ namespace CosmicShore.UI
             Refresh();
         }
 
-        void Increment()
+        public void Increment()
         {
             if (_current >= _max) return;
             _current++;
@@ -59,7 +59,7 @@ namespace CosmicShore.UI
             OnValueChanged?.Invoke(_current);
         }
 
-        void Decrement()
+        public void Decrement()
         {
             if (_current <= _min) return;
             _current--;
