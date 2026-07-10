@@ -321,9 +321,16 @@ namespace CosmicShore.Tests
             var galaxy = PaintingPresetLibrary.Generate(PaintingPreset.SpiralGalaxy, 1200f);
             Assert.AreEqual(2, galaxy.Count(s => s.name.EndsWith("Dust Lane")), "grand designs have TWO arms");
 
+            // Both flowers are closed blooms of PURE petals (per direction) — each petal is an
+            // outline + a midrib stroke.
             var lotus = PaintingPresetLibrary.Generate(PaintingPreset.Lotus, 900f);
-            Assert.AreEqual(36, lotus.Count(s => s.name.StartsWith("Stamen")));
-            Assert.AreEqual(16, lotus.Count(s => s.name.StartsWith("Seed")), "the pod carries its embedded seeds");
+            Assert.AreEqual(30, lotus.Count(s => s.name.Contains("Petal")), "9+9+7+5 petals, nothing else");
+            Assert.AreEqual(lotus.Count(s => s.name.Contains("Petal")), lotus.Count(s => s.name.Contains("Rib")));
+
+            var rose = PaintingPresetLibrary.Generate(PaintingPreset.Rose, 900f);
+            Assert.AreEqual(27, rose.Count(s => s.name.Contains("Petal")), "8+8+6+5 wrapping petals");
+            Assert.AreEqual(5, rose.Count(s => s.name.StartsWith("Sepal")));
+            Assert.AreEqual(1, rose.Count(s => s.name.StartsWith("Furled Heart")));
         }
     }
 }

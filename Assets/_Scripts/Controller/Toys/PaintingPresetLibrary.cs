@@ -586,12 +586,12 @@ namespace CosmicShore.Gameplay
             return s;
         }
 
-        // ── Lotus — real Nelumbo nucifera anatomy ────────────────────────────────
+        // ── Lotus — a closed bloom of pure petals ────────────────────────────────
         //
-        // The sacred lotus as it actually grows: two notched lily pads with radial veins (Jade),
-        // three whorls of obovate cupped petals (8+8+6, arching open — Ruby), a dense ring of 36
-        // arcing stamens with anther hooks (Gold), and the iconic shower-head receptacle pod with
-        // its embedded seeds (Gold). Proportions from the living flower, not a mandala.
+        // Four alternating whorls of obovate cupped petals (9+9+7+5) rising steeply around a tight
+        // bud core — nothing but petals, per direction. The petal shape is the real Nelumbo blade
+        // (obovate width profile, cupped cross-section, arching spine); the outer whorl is greenish
+        // (Jade — real lotus buds transition sepal→petal), the heart Gold.
 
         static (List<Vector3> outline, List<Vector3> vein, List<List<Vector3>> sideVeins) LotusPetal(
             Vector3 baseC, float azim, float tiltDeg, float archDeg, float len, float wMax, float cup)
@@ -647,190 +647,124 @@ namespace CosmicShore.Gameplay
 
         static List<PaintingStroke> Lotus(float W)
         {
+            // A CLOSED lotus of pure petals: four alternating whorls of obovate cupped petals rising
+            // steeply around a tight bud core — nothing but petals (outer whorl greenish, as real
+            // lotus buds transition sepal→petal; Gold at the heart). Each petal = outline + midrib.
             var s = new List<PaintingStroke>();
             float ms = Mathf.Max(5f, 0.007f * W);
-            float podTopY = 0.30f * W, podBaseY = 0.16f * W;
-            float podTopR = 0.105f * W, podBaseR = 0.05f * W;
+            float baseY = 0.06f * W;
 
-            // Lily pads (Jade): round leaves with the characteristic rim notch + radial veins.
-            foreach (var (px, pz, pr, rot) in new[]
-                     { (-0.30f * W, 0.10f * W, 0.26f * W, 0.6f), (0.28f * W, -0.14f * W, 0.22f * W, 2.9f) })
-            {
-                var c = new Vector3(px, 0.012f * W, pz);
-                var rim = new List<Vector3>();
-                for (int a = 0; a < 349; a += 6)
-                {
-                    float ang = rot + (a + 6) * Mathf.Deg2Rad;
-                    rim.Add(c + new Vector3(Mathf.Cos(ang) * pr, 0.008f * W * Mathf.Sin(3f * ang), Mathf.Sin(ang) * pr));
-                }
-                s.Add(St("Pad Rim", Domains.Jade, Tk.MinSegFilter(rim, ms)));
-                for (int v = 0; v < 9; v++)
-                {
-                    float ang = rot + (20f + v * 36f) * Mathf.Deg2Rad;
-                    var tip = c + new Vector3(Mathf.Cos(ang) * pr * 0.94f, 0.006f * W, Mathf.Sin(ang) * pr * 0.94f);
-                    s.Add(St("Pad Vein", Domains.Jade, Tk.EnforceMaxSegment(new List<Vector3> { c, tip }, 0.10f * W)));
-                }
-            }
-
-            // Petal whorls (Ruby), outer→inner: (count, offsetDeg, tiltDeg, archDeg, length, halfWidth).
             var whorls = new[]
             {
-                (8, 0f, 38f, 30f, 0.335f * W, 0.105f * W),
-                (8, 22.5f, 58f, 26f, 0.285f * W, 0.095f * W),
-                (6, 45f, 76f, 20f, 0.225f * W, 0.075f * W),
+                (9, 0f, 55f, 22f, 0.40f * W, 0.125f * W, 0.085f * W, Domains.Jade),
+                (9, 20f, 66f, 16f, 0.37f * W, 0.115f * W, 0.070f * W, Domains.Ruby),
+                (7, 40f, 76f, 10f, 0.335f * W, 0.10f * W, 0.055f * W, Domains.Ruby),
+                (5, 62f, 84f, 5f, 0.30f * W, 0.085f * W, 0.040f * W, Domains.Gold),
             };
             int wi = 0;
-            foreach (var (count, offs, tilt, arch, len, wMax) in whorls)
+            foreach (var (count, offs, tilt, arch, len, wMax, baseR, dom) in whorls)
             {
                 wi++;
                 for (int i = 0; i < count; i++)
                 {
                     float az = offs * Mathf.Deg2Rad + Mathf.PI * 2f * i / count;
-                    Vector3 baseC = new Vector3(Mathf.Cos(az), 0f, Mathf.Sin(az)) * (0.075f * W)
-                                    + Vector3.up * (podBaseY - 0.02f * W);
-                    var (outline, vein, sideVeins) = LotusPetal(baseC, az, tilt, arch, len, wMax, 0.34f);
-                    s.Add(St($"Whorl {wi} Petal {i + 1}", Domains.Ruby,
+                    Vector3 baseC = new Vector3(Mathf.Cos(az), 0f, Mathf.Sin(az)) * baseR
+                                    + Vector3.up * baseY;
+                    var (outline, vein, _) = LotusPetal(baseC, az, tilt, arch, len, wMax, 0.42f);
+                    s.Add(St($"Whorl {wi} Petal {i + 1}", dom,
                         Tk.MinSegFilter(Tk.CatmullRom(outline, 2), ms)));
-                    s.Add(St($"Whorl {wi} Vein {i + 1}", Domains.Ruby, Tk.MinSegFilter(vein, ms)));
-                    foreach (var sv in sideVeins)
-                        s.Add(St($"Whorl {wi} Side Vein {i + 1}", Domains.Ruby, Tk.MinSegFilter(sv, ms)));
+                    s.Add(St($"Whorl {wi} Rib {i + 1}", dom, Tk.MinSegFilter(vein, ms)));
                 }
-            }
-
-            // Stamens (Gold): 36 arcing filaments ending in anther hooks.
-            var rng = new Tk.Rng(707);
-            for (int i = 0; i < 36; i++)
-            {
-                float az = Mathf.PI * 2f * i / 36f + rng.Range(-0.05f, 0.05f);
-                var rd = new Vector3(Mathf.Cos(az), 0f, Mathf.Sin(az));
-                Vector3 p0 = rd * (0.075f * W) + Vector3.up * (podBaseY - 0.01f * W);
-                Vector3 p1 = rd * (0.105f * W) + Vector3.up * (podBaseY + 0.05f * W);
-                Vector3 p2 = rd * (0.125f * W) + Vector3.up * (podBaseY + 0.10f * W + rng.Range(0f, 0.02f * W));
-                Vector3 hook = p2 - rd * (0.012f * W) + Vector3.up * (0.014f * W);
-                s.Add(St($"Stamen {i + 1}", Domains.Gold,
-                    Tk.MinSegFilter(Tk.CatmullRom(new List<Vector3> { p0, p1, p2, hook }, 4), ms)));
-            }
-
-            // Receptacle pod (Gold): top rim, fluted sides, and the phyllotaxis of embedded seeds.
-            var top = new List<Vector3>();
-            for (int i = 0; i <= 28; i++)
-            {
-                float a = Mathf.PI * 2f * i / 28f;
-                top.Add(new Vector3(Mathf.Cos(a) * podTopR, podTopY, Mathf.Sin(a) * podTopR));
-            }
-            s.Add(St("Pod Rim", Domains.Gold, Tk.MinSegFilter(top, ms)));
-            for (int i = 0; i < 10; i++)
-            {
-                float az = Mathf.PI * 2f * i / 10f;
-                var rd = new Vector3(Mathf.Cos(az), 0f, Mathf.Sin(az));
-                s.Add(St($"Pod Flute {i + 1}", Domains.Gold, new List<Vector3>
-                {
-                    rd * podBaseR + Vector3.up * podBaseY,
-                    rd * (podTopR * 0.94f) + Vector3.up * (podTopY - 0.01f * W),
-                    rd * podTopR + Vector3.up * podTopY,
-                }));
-            }
-            for (int i = 0; i < 16; i++)
-            {
-                float ang = i * 2.39996323f;
-                float rr = i == 0 ? 0f : podTopR * 0.72f * Mathf.Sqrt(i / 15f);
-                float sx = Mathf.Cos(ang) * rr, sz = Mathf.Sin(ang) * rr;
-                float r = 0.016f * W;
-                var seed = new List<Vector3>();
-                for (int j = 0; j <= 10; j++)
-                {
-                    float a = Mathf.PI * 2f * j / 10f;
-                    seed.Add(new Vector3(sx + Mathf.Cos(a) * r, podTopY + 0.004f * W, sz + Mathf.Sin(a) * r));
-                }
-                s.Add(St($"Seed {i + 1}", Domains.Gold, Tk.MinSegFilter(seed, Mathf.Max(3f, ms * 0.6f))));
             }
             return s;
         }
 
-        // ── Rose — the real bloom: furled heart + recurved petal rims + sepals ───
+        // ── Rose — a closed bloom of wrapping, recurved petals ───────────────────
         //
-        // What actually reads as "rose": the nested spiral of petal RIMS whose ends flare outward
-        // and roll down (the recurved edge), rising to a furled heart. Plus the plant: stem and five
-        // splayed sepals. The rims sit on the golden-angle spiral like real petal phyllotaxis.
+        // The garden-rose read: broad petal blades WRAPPING around the bloom axis, cupped, their top
+        // edges rolling outward-down (the recurve), nested in tightening whorls to a furled Gold
+        // heart, with five splayed sepals below. Pure petal surfaces — no schematic rims.
 
-        static List<Vector3> RoseRim(float R, float h, float azim, float spanDeg, float roll)
+        static (List<Vector3> outline, List<Vector3> rib) RosePetal(float azim, float tiltDeg,
+            float wrapDeg, float len, float cup, float baseR, float baseY, float roll)
         {
-            var pts = new List<Vector3>(19);
-            float span = spanDeg * Mathf.Deg2Rad;
-            for (int i = 0; i < 19; i++)
+            const int NS = 10;
+            var outL = new List<Vector3>(NS + 1);
+            var outR = new List<Vector3>(NS + 1);
+            var rib = new List<Vector3>(NS + 1);
+            float wrap = wrapDeg * Mathf.Deg2Rad;
+            float lean = tiltDeg * Mathf.Deg2Rad;
+            for (int i = 0; i <= NS; i++)
             {
-                float t = i / 18f;
-                float a = azim + span * (t - 0.5f);
-                float edge = Mathf.Abs(2f * t - 1f);
-                float rr = R * (1f + 0.16f * edge * edge);       // ends flare outward
-                float y = h - roll * Mathf.Pow(edge, 1.7f);      // ends roll down — the recurve
-                pts.Add(new Vector3(Mathf.Cos(a) * rr, y, Mathf.Sin(a) * rr));
+                float t = i / (float)NS;
+                float r = baseR + len * Mathf.Cos(lean) * t;
+                float y = baseY + len * Mathf.Sin(lean) * t;
+                float rollT = Mathf.Max(0f, (t - 0.78f) / 0.22f);   // the recurve: top edge rolls out+down
+                y -= roll * rollT * rollT;
+                r += roll * 0.8f * rollT;
+                float halfwAng = wrap * 0.5f * Mathf.Sin(Mathf.PI * Mathf.Min(1f, Mathf.Pow(t, 0.9f) + 0.08f));
+                rib.Add(new Vector3(Mathf.Cos(azim) * r, y, Mathf.Sin(azim) * r));
+                float rr = r * (1f - cup * 0.25f * Mathf.Sin(Mathf.PI * t));   // cupped mid-height
+                float yy = y + cup * 0.12f * len * Mathf.Sin(Mathf.PI * t);
+                outL.Add(new Vector3(Mathf.Cos(azim - halfwAng) * rr, yy, Mathf.Sin(azim - halfwAng) * rr));
+                outR.Add(new Vector3(Mathf.Cos(azim + halfwAng) * rr, yy, Mathf.Sin(azim + halfwAng) * rr));
             }
-            return pts;
+            var outline = new List<Vector3>(outL);
+            for (int i = outR.Count - 1; i >= 0; i--) outline.Add(outR[i]);
+            outline.Add(outL[0]);
+            return (outline, rib);
         }
 
         static List<PaintingStroke> Rose(float W)
         {
             var s = new List<PaintingStroke>();
             float ms = Mathf.Max(5f, 0.007f * W);
-            const int N = 26;
-            float bloomR = 0.34f * W, baseY = 0.30f * W;
+            float baseY = 0.10f * W;
 
-            // Stem (Jade): a gentle S from the ground to the bloom.
-            s.Add(St("Stem", Domains.Jade, Tk.MinSegFilter(Tk.CatmullRom(new List<Vector3>
-            {
-                new(0.02f * W, 0f, 0.01f * W), new(-0.015f * W, 0.10f * W, -0.01f * W),
-                new(0.01f * W, 0.22f * W, 0.005f * W), new(0f, baseY, 0f),
-            }, 8), ms)));
-            // Five sepals (Jade): long, pointed, splayed under the bloom with down-curling tips.
+            // Five sepals (Jade) splayed under the bloom, tips curling down.
             for (int i = 0; i < 5; i++)
             {
                 float az = Mathf.PI * 2f * i / 5f + 0.35f;
                 var rd = new Vector3(Mathf.Cos(az), 0f, Mathf.Sin(az));
                 s.Add(St($"Sepal {i + 1}", Domains.Jade, Tk.MinSegFilter(Tk.CatmullRom(new List<Vector3>
                 {
-                    rd * (0.02f * W) + Vector3.up * baseY,
-                    rd * (0.16f * W) + Vector3.up * (baseY + 0.015f * W),
-                    rd * (0.26f * W) + Vector3.up * (baseY - 0.03f * W),
-                    rd * (0.30f * W) + Vector3.up * (baseY - 0.085f * W),
+                    rd * (0.05f * W) + Vector3.up * baseY,
+                    rd * (0.20f * W) + Vector3.up * (baseY - 0.005f * W),
+                    rd * (0.32f * W) + Vector3.up * (baseY - 0.05f * W),
+                    rd * (0.37f * W) + Vector3.up * (baseY - 0.115f * W),
                 }, 5), ms)));
             }
 
-            // Petal rims on the golden spiral, drawn broadest (outermost) first.
-            var rims = new List<(float f, float R, float h, float az, float span, float roll)>();
-            for (int i = 0; i < N; i++)
+            // Petal whorls, outer→inner: (count, offsetDeg, tiltDeg, wrapDeg, length, cup, baseR, roll, domain).
+            var whorls = new[]
             {
-                float f = i / (N - 1f);                                       // 0 = innermost
-                rims.Add((f,
-                    bloomR * (0.13f + 0.87f * Mathf.Pow(f, 1.25f)),
-                    baseY + 0.30f * W * (1f - 0.55f * f),                     // heart rises
-                    i * 2.39996323f,
-                    100f + 120f * f,                                          // outer wrap wider
-                    0.020f * W + 0.075f * W * f));                            // outer roll harder
-            }
-            rims.Sort((a, b) => b.R.CompareTo(a.R));
-            int pi = 0;
-            foreach (var (f, R, h, az, span, roll) in rims)
+                (8, 0f, 55f, 78f, 0.34f * W, 0.5f, 0.11f * W, 0.075f * W, Domains.Ruby),
+                (8, 22.5f, 68f, 64f, 0.30f * W, 0.55f, 0.085f * W, 0.06f * W, Domains.Ruby),
+                (6, 45f, 78f, 55f, 0.26f * W, 0.6f, 0.062f * W, 0.045f * W, Domains.Ruby),
+                (5, 66f, 86f, 48f, 0.22f * W, 0.6f, 0.042f * W, 0.03f * W, Domains.Gold),
+            };
+            int wi = 0;
+            foreach (var (count, offs, tilt, wrap, len, cup, baseR, roll, dom) in whorls)
             {
-                pi++;
-                Domains dom = f > 0.18f ? Domains.Ruby : Domains.Gold;
-                var rim = RoseRim(R, h, az, span, roll);
-                s.Add(St($"Petal Rim {pi}", dom, Tk.MinSegFilter(Tk.CatmullRom(rim, 2), ms)));
-                // one fold line per petal, from the rim mid down into the cup
-                Vector3 mid = rim[rim.Count / 2];
-                var inner = new Vector3(mid.x * 0.55f, h - 0.075f * W * (0.3f + 0.7f * f), mid.z * 0.55f);
-                s.Add(St($"Petal Fold {pi}", dom, new List<Vector3>
-                    { mid, Vector3.Lerp(mid, inner, 0.55f), inner }));
+                wi++;
+                for (int i = 0; i < count; i++)
+                {
+                    float az = offs * Mathf.Deg2Rad + Mathf.PI * 2f * i / count;
+                    var (outline, rib) = RosePetal(az, tilt, wrap, len, cup, baseR, baseY, roll);
+                    s.Add(St($"Whorl {wi} Petal {i + 1}", dom,
+                        Tk.MinSegFilter(Tk.CatmullRom(outline, 2), ms)));
+                    s.Add(St($"Whorl {wi} Rib {i + 1}", dom, Tk.MinSegFilter(rib, ms)));
+                }
             }
 
             // The furled heart (Gold): a tight rising double spiral at the centre.
-            var heart = new List<Vector3>();
+            var heart = new List<Vector3>(61);
             for (int i = 0; i <= 60; i++)
             {
                 float t = i / 60f;
-                float th = t * 4.4f * Mathf.PI;
-                float r = 0.012f * W * Mathf.Exp(0.42f * th / (Mathf.PI * 2f) * 2.2f);
-                heart.Add(new Vector3(Mathf.Cos(th) * r, baseY + 0.305f * W + 0.02f * W * t, Mathf.Sin(th) * r));
+                float th = t * 4.2f * Mathf.PI;
+                float r = Mathf.Min(0.014f * W * Mathf.Exp(0.34f * th), 0.05f * W);
+                heart.Add(new Vector3(Mathf.Cos(th) * r, baseY + 0.26f * W + 0.05f * W * t, Mathf.Sin(th) * r));
             }
             s.Add(St("Furled Heart", Domains.Gold, Tk.MinSegFilter(heart, Mathf.Max(3f, ms * 0.6f))));
             return s;

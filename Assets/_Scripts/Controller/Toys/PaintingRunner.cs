@@ -46,6 +46,7 @@ namespace CosmicShore.Gameplay
             public Color BaseColor;       // resolved once at Begin — no per-frame theme lookups
             public LineRenderer Ghost;
             public GhostStyle Style;
+            public List<int> Checkpoints; // sparse ride targets (never on tight curvature)
         }
 
         ToyContext _context;
@@ -59,10 +60,12 @@ namespace CosmicShore.Gameplay
         float _benchVisibility = 1f;   // 1 engaged, eases to 0 while benched so a paused blueprint fades away
 
         int _strokeIndex;              // == strokes completed while AwaitingGate
-        int _pointIndex;
+        int _pointIndex;               // index into CurrentStroke.Checkpoints while Painting
         RunPhase _phase;
         bool _benched;
         bool _wasEngaged;
+        GameObject _dashParent;        // prism-material ride beads along the active stroke
+        float _rideGlow;               // 0..1 — how faithfully the player is riding the curve
 
         GameObject _gate;
         bool _gateBenchEasing;
@@ -73,6 +76,7 @@ namespace CosmicShore.Gameplay
         bool _markerHiding;
         LineRenderer _guide;
         float _markerBaseRadius;
+        float _markerPop;              // transient checkpoint-pop overshoot, decays in SettleMarker
 
         Vector3 _zoneCenter;
         float _zoneSqrRadius;
@@ -101,6 +105,11 @@ namespace CosmicShore.Gameplay
             _origin = origin;
             _rotation = rotation;
 
+            // Checkpoint rhythm scales with the monument, not the stroke: a big painting gets big
+            // gaps between ride markers (the curve between them is scenery to carve, not a quiz).
+            Bounds localBounds = painting.LocalBounds;
+            float checkpointSpacing = Mathf.Max(90f, 0.085f * localBounds.size.magnitude);
+
             // PaintingDefinitionSO.Strokes is already filtered to drawable strokes — using it
             // verbatim keeps this count identical to the one PaintingToy and the progress store see.
             var source = painting.Strokes;
@@ -118,13 +127,18 @@ namespace CosmicShore.Gameplay
                 for (int p = 1; p < world.Length; p++)
                     minSeg = Mathf.Min(minSeg, Vector3.Distance(world[p - 1], world[p]));
 
+                float reach = Mathf.Clamp(minSeg * 0.7f, 4f, _painting.ReachThreshold);
                 _strokes[i] = new StrokeInfo
                 {
                     Points = world,
                     Name = string.IsNullOrEmpty(s.name) ? $"Stroke {i + 1}" : s.name,
                     Domain = s.domain,
-                    Reach = Mathf.Clamp(minSeg * 0.7f, 4f, _painting.ReachThreshold),
+                    Reach = reach,
                     BaseColor = ToyFactory.DomainAccentColor(context, s.domain),
+                    // Ride targets are SPARSE — spaced by arc, never parked on tight curvature —
+                    // so dense reference curves are ridden freely between big forgiving markers.
+                    Checkpoints = PaintingStrokeToolkit.RideCheckpoints(world,
+                        Mathf.Max(checkpointSpacing, reach * 3f), 28f),
                 };
             }
 
@@ -281,6 +295,14 @@ namespace CosmicShore.Gameplay
                 _benchVisibility = Mathf.MoveTowards(_benchVisibility, benchTarget, Time.deltaTime * 3.5f);
                 ApplyAllGhostStyles();
             }
+
+            // Ride dashes follow the same law: grow in on stroke start, shrink away while benched.
+            if (_dashParent)
+            {
+                Vector3 dashTarget = _benched ? Vector3.zero : Vector3.one;
+                _dashParent.transform.localScale = Vector3.Lerp(
+                    _dashParent.transform.localScale, dashTarget, Time.deltaTime * 6f);
+            }
         }
 
         void OnDestroy()
@@ -303,20 +325,50 @@ namespace CosmicShore.Gameplay
         void UpdatePainting(Vector3 shipPos)
         {
             var stroke = CurrentStroke;
-            Vector3 target = stroke.Points[_pointIndex];
+            var cps = stroke.Checkpoints;
+            int targetIdx = cps[_pointIndex];
+            Vector3 target = stroke.Points[targetIdx];
 
-            DrawGuide(shipPos, target, 0.6f);
+            // Perfect-ride glow: how close the vessel hugs the curve between checkpoints.
+            UpdateRideGlow(shipPos, stroke, cps[_pointIndex - 1], targetIdx);
+            DrawGuide(shipPos, target, Mathf.Lerp(0.45f, 0.9f, _rideGlow));
 
-            if ((shipPos - target).sqrMagnitude > stroke.Reach * stroke.Reach) return;
+            // Big forgiving hit box — a checkpoint is a waypoint to sweep through, not a bullseye.
+            float hit = Mathf.Max(18f, stroke.Reach * 1.8f);
+            if ((shipPos - target).sqrMagnitude > hit * hit) return;
 
+            PopMarker();
             _pointIndex++;
-            if (_pointIndex >= stroke.Points.Length)
+            if (_pointIndex >= cps.Count)
             {
                 CompleteStroke();
                 return;
             }
             MoveMarker(_strokeIndex, _pointIndex);
         }
+
+        /// <summary>
+        /// Ease _rideGlow toward how faithfully the vessel is riding the curve span it is on —
+        /// the reward signal for a perfect ride (brighter guide, bigger checkpoint pops).
+        /// </summary>
+        void UpdateRideGlow(Vector3 shipPos, StrokeInfo stroke, int fromIdx, int toIdx)
+        {
+            float best = float.MaxValue;
+            for (int i = fromIdx; i <= toIdx; i++)
+            {
+                float d = (stroke.Points[i] - shipPos).sqrMagnitude;
+                if (d < best) best = d;
+            }
+            float corridor = Mathf.Max(14f, stroke.Reach * 1.2f);
+            float target = Mathf.Sqrt(best) <= corridor ? 1f : 0f;
+            _rideGlow = Mathf.MoveTowards(_rideGlow, target, Time.deltaTime * (target > _rideGlow ? 0.9f : 1.6f));
+        }
+
+        /// <summary>
+        /// A satisfying pop as a checkpoint is swept: the next marker blooms in oversized and settles
+        /// (SettleMarker decays the overshoot) — bigger on a perfect ride.
+        /// </summary>
+        void PopMarker() => _markerPop = Mathf.Lerp(0.45f, 1.1f, _rideGlow);
 
         void DrawGuide(Vector3 from, Vector3 to, float alpha)
         {
@@ -331,6 +383,7 @@ namespace CosmicShore.Gameplay
 
         void CompleteStroke()
         {
+            DespawnDashes();
             SetGhostStyle(_strokeIndex, GhostStyle.Done);
             // Persist the stroke's prisms as drawing state (position/orientation/size/domain) —
             // this is what regrows on return and what the share exporter reconstructs.
@@ -360,6 +413,7 @@ namespace CosmicShore.Gameplay
             RestorePen();
             StopCapture();
             DespawnGate();
+            DespawnDashes();
             HideMarker();
             if (_guide) _guide.enabled = false;
 
@@ -398,7 +452,9 @@ namespace CosmicShore.Gameplay
             RequestStrokeDomain(stroke.Domain);
 
             _phase = RunPhase.Painting;
-            _pointIndex = 1; // the gate sits on point 0 — flying it consumes the stroke's start
+            _pointIndex = 1; // checkpoint 0 IS the gate — flying it consumes the stroke's start
+            _rideGlow = 0f;
+            SpawnDashes(stroke);
             MoveMarker(_strokeIndex, _pointIndex);
 
             var gate = _gate;
@@ -601,8 +657,10 @@ namespace CosmicShore.Gameplay
             switch (stroke.Style)
             {
                 case GhostStyle.Active:
-                    c.a = 0.55f;
-                    width = 1.7f;
+                    // Demoted to a hint: the ride itself is carried by the solid dash beads and
+                    // checkpoints — a bright dense line here is the "weird artifact" we retired.
+                    c.a = 0.30f;
+                    width = 1.1f;
                     break;
                 case GhostStyle.Done:
                     // Dimmed solid — across sessions this is the "memory" of already-painted strokes.
@@ -626,12 +684,15 @@ namespace CosmicShore.Gameplay
         /// both change your trail); each stroke's FINAL point — the one that turns the trail off —
         /// is a JACK. Both wear the stroke domain's prism material.
         /// </summary>
-        void MoveMarker(int strokeIndex, int pointIndex)
+        void MoveMarker(int strokeIndex, int checkpointIndex)
         {
             var stroke = _strokes[strokeIndex];
-            Vector3 pos = stroke.Points[pointIndex];
-            bool isStrokeEnd = pointIndex == stroke.Points.Length - 1;
-            _markerBaseRadius = Mathf.Max(3.5f, stroke.Reach * 0.35f);
+            var cps = stroke.Checkpoints;
+            int ptIdx = cps[Mathf.Clamp(checkpointIndex, 0, cps.Count - 1)];
+            Vector3 pos = stroke.Points[ptIdx];
+            bool isStrokeEnd = checkpointIndex >= cps.Count - 1;
+            // Big and readable: checkpoints are sparse now, so each one carries the ride.
+            _markerBaseRadius = Mathf.Max(7f, stroke.Reach * 0.6f);
 
             if (!_marker)
             {
@@ -656,7 +717,9 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                Vector3 toNext = stroke.Points[pointIndex + 1] - pos;
+                // Apex points along the LOCAL tangent — "the ride continues this way" — which on a
+                // curl is the way the curve bends, not a beeline to the next checkpoint.
+                Vector3 toNext = stroke.Points[Mathf.Min(ptIdx + 1, stroke.Points.Length - 1)] - pos;
                 _marker.transform.rotation = toNext.sqrMagnitude > 1e-4f
                     ? Quaternion.LookRotation(toNext.normalized, Vector3.up)
                     : _rotation;
@@ -668,15 +731,66 @@ namespace CosmicShore.Gameplay
             _marker.transform.localScale = Vector3.zero; // SettleMarker grows it back in — nothing snaps
         }
 
+        // ── Ride dashes — the curve itself, as matter instead of a line ──────
+
+        /// <summary>
+        /// The active stroke's curve rendered as spaced prism-material beads (the trail-to-be) —
+        /// a rideable rhythm of solid geometry instead of a LineRenderer artifact. Checkpoints sit
+        /// sparse on top; the dashes carry the curve's true shape between them.
+        /// </summary>
+        void SpawnDashes(StrokeInfo stroke)
+        {
+            DespawnDashes();
+            _dashParent = new GameObject($"Dashes_{stroke.Name}");
+            _dashParent.transform.SetParent(transform, false);
+
+            var mat = ToyFactory.DomainPrismMaterial(_context, stroke.Domain);
+            float spacing = Mathf.Max(26f, stroke.Reach * 1.1f);
+            float len = spacing * 0.34f;
+            float girth = Mathf.Max(2.2f, stroke.Reach * 0.16f);
+
+            float sinceLast = spacing; // place the first dash immediately past the gate
+            for (int i = 1; i < stroke.Points.Length; i++)
+            {
+                Vector3 a = stroke.Points[i - 1], b = stroke.Points[i];
+                float segLen = Vector3.Distance(a, b);
+                if (segLen < 1e-4f) continue;
+                sinceLast += segLen;
+                if (sinceLast < spacing) continue;
+                sinceLast = 0f;
+
+                var dash = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                dash.name = "Dash";
+                if (dash.TryGetComponent(out Collider col)) Destroy(col); // visual only — never a trigger
+                dash.transform.SetParent(_dashParent.transform, false);
+                dash.transform.position = Vector3.Lerp(a, b, 0.5f);
+                dash.transform.rotation = Quaternion.LookRotation((b - a) / segLen, Vector3.up);
+                dash.transform.localScale = new Vector3(girth, girth, len);
+                var rend = dash.GetComponent<MeshRenderer>();
+                rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                rend.receiveShadows = false;
+                if (mat) rend.sharedMaterial = mat;
+            }
+            _dashParent.transform.localScale = Vector3.zero; // EaseTransitions grows it in — nothing pops
+        }
+
+        void DespawnDashes()
+        {
+            if (!_dashParent) return;
+            ToyFactory.ScaleOutAndDestroy(_dashParent, GateDespawnSeconds).Forget();
+            _dashParent = null;
+        }
+
         void HideMarker() => _markerHiding = true; // EaseTransitions shrinks it out — nothing blinks off
 
         void SettleMarker()
         {
             if (!_marker || !_marker.activeSelf || _markerHiding) return;
-            // No pulsing: the marker grows in once (from the zero MoveMarker sets) and holds its
-            // size — the idle life comes from the body's slow ToyIdleSpin, matching the calm
-            // motion language of the game's other pickups.
-            float target = _markerBaseRadius * 2f;
+            // The marker grows in once (from the zero MoveMarker sets); a fresh checkpoint pass adds a
+            // transient overshoot (_markerPop) that decays — the pop-and-settle reward. Idle life comes
+            // from the body's slow ToyIdleSpin, matching the calm motion language of other pickups.
+            _markerPop = Mathf.MoveTowards(_markerPop, 0f, Time.deltaTime * 2.2f);
+            float target = _markerBaseRadius * 2f * (1f + _markerPop);
             float current = _marker.transform.localScale.x;
             if (Mathf.Abs(current - target) < 0.01f) return;
             _marker.transform.localScale = Vector3.one * Mathf.Lerp(current, target, Time.deltaTime * 8f);

@@ -165,13 +165,13 @@ dozen **grandiose non-planar constructions** that dwarf the Taj (every one is >2
 | 6 | Buckyball | 1000 | ~62 | exact C60: **12 pentagons + 20 hexagons** (planar faces) + the 30 real 6:6 double bonds as inset dashes |
 | 7 | Double Helix | 900 | ~88 | true B-DNA: pitch/diameter 1.7, 10 bp/turn, 144° grooves, ribboned backbones, purine+pyrimidine pairs, phosphate ticks |
 | 8 | Nautilus | 900 | ~67 | the real shell model: embracing log-spiral whorls, 58 growth-line ribs, tiger striping, the open aperture |
-| 9 | Lotus | 900 | ~171 | Nelumbo anatomy: notched lily pads + veins, 3 whorls of obovate cupped petals, 36 stamens, the shower-head seed pod |
-| 10 | Rose | 900 | ~59 | a real bloom: golden-spiral petal RIMS that flare and roll (recurve), rising to a furled heart; sepals + stem |
+| 9 | Lotus | 900 | ~60 | a CLOSED bloom of pure petals: four whorls (9+9+7+5) of obovate cupped Nelumbo blades — Jade outer whorl → Ruby → Gold bud |
+| 10 | Rose | 900 | ~60 | a closed garden rose: broad wrapping petals with recurved tops (8+8+6+5 whorls), a furled Gold heart, five sepals |
 | 11 | Spiral Galaxy | 1200 | ~187 | a TWO-arm grand design at 17° pitch, inclined 22°: dust lanes, old-gold bulge, star streaks flowing along the arms |
 | 12 | Phoenix | 1200 | ~120 | a firebird: feathered wings + an impressionist flame tail |
 | 13 | Almighty Mountain | 1300 | ~110 | a Bob Ross vista flown into: 5 fractal ridges, a mirror lake, sun, happy little firs |
 | 14 | Starry Night | 1300 | 300 | **baked from the real painting**: every stroke traced from van Gogh's brush flow (structure-tensor streamlines of the public-domain scan), palette-split Jade sky / Gold lights / Ruby cypress, bent onto an immersive curved canvas |
-| 15 | Lion | 1100 | 198 | **baked from a real sculpture**: the CC0 Temperance Union Lion scan (1896) — 56 engraving contours + 136 mane-curl feature lines extracted from the mesh |
+| 15 | Lion | 1800 | 124 | **baked from a real sculpture**: the CC0 Temperance Union Lion scan (1896), Squirrel-scaled — engraving contours + 62 mane-curl feature lines (micro-curls under 28u turn radius filtered out) |
 | 16 | Peacock | 1100 | ~226 | a fanned 3D train of eye-feathers — the toy's magnum opus |
 
 Rows 5–11 are built by composition from **`PaintingStrokeToolkit`** (below); rows 14–15 are
@@ -198,11 +198,18 @@ How a run plays:
   the zone, exiting freestyle, benching, or destroying the runner ALWAYS restores it. Pausing
   the spawner is the sanctioned mass-law lever ("not creating mass is allowed; aging it out is
   not") — the painted trail itself is conserved mass, no caps/TTLs.
-- **Guide + marker.** A guide line runs from the vessel to the next point; the marker on it is
-  a faceted crystal spike (flat-shaded, six-sided, in the stroke domain's prism material) that
-  slowly spins about its pointing axis — no pulsing; the calm idle motion (`ToyIdleSpin`)
-  matches the game's other pickups. The advance threshold tightens automatically on
-  fine-detail strokes (minaret balconies) so tight loops must actually be flown.
+- **Checkpoint riding (not vertex-chasing).** A stroke is ridden through SPARSE checkpoints
+  (`PaintingStrokeToolkit.RideCheckpoints`): spaced by arc (≥ max(90u, 8.5% of the painting's
+  bounds diagonal)), never parked on tight curvature (>28° local turn — a hairpin apex is a
+  punishing target at speed; on an all-tight stretch the flattest vertex is used so progress
+  can't stall), with the stroke start (gate) and end (jack) always included. The checkpoint
+  marker is big (≥7u base, cone/jack in the domain prism material) with a forgiving hit box
+  (1.8× reach) — a waypoint to sweep through, not a bullseye — and each pass pops the next
+  marker in oversized before it settles.
+- **Ride dashes, not a line.** The ACTIVE stroke renders as spaced prism-material dash beads
+  (the trail-to-be, solid geometry) instead of a bright LineRenderer — the line ghost stays only
+  as the faint blueprint hint. A **perfect ride** (hugging the curve inside ~1.2× reach) builds
+  `_rideGlow`: the guide brightens and checkpoint pops grow bigger — the satisfaction channel.
 - **Progress, pause, resume.** Progress is stroke-granular. Re-flying the station benches /
   resumes the run ("put the brush down"); progress also persists across sessions
   (`PaintingProgressStore`, the FavoriteSystem `DataAccessor` JSON pattern — completed strokes

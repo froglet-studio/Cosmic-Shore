@@ -937,6 +937,60 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Ride checkpoints for a stroke polyline: indices spaced at least <paramref name="minSpacing"/>
+        /// of arc apart, preferring vertices whose local turn is gentle (≤ <paramref name="maxTurnDeg"/>)
+        /// — a checkpoint on a hairpin punishes a fast vessel that can't sit on the apex. On a stretch
+        /// that is tight everywhere, the flattest vertex since the last checkpoint is used once the arc
+        /// exceeds 2.5× spacing, so progress can never stall. Index 0 (the start gate) and the final
+        /// index (the stroke-end jack) are always included; a checkpoint landing within 0.4× spacing of
+        /// the end is dropped in its favour.
+        /// </summary>
+        public static List<int> RideCheckpoints(IReadOnlyList<Vector3> pts, float minSpacing, float maxTurnDeg)
+        {
+            var cps = new List<int> { 0 };
+            int n = pts?.Count ?? 0;
+            if (n < 2) return cps;
+
+            float sinceLast = 0f;
+            int bestIdx = -1;
+            float bestTurn = float.MaxValue;
+            for (int i = 1; i < n - 1; i++)
+            {
+                sinceLast += Vector3.Distance(pts[i - 1], pts[i]);
+                if (sinceLast < minSpacing) continue;
+
+                float turn = Vector3.Angle(pts[i] - pts[i - 1], pts[i + 1] - pts[i]);
+                if (turn < bestTurn) { bestTurn = turn; bestIdx = i; }
+
+                if (turn <= maxTurnDeg)
+                {
+                    cps.Add(i);
+                    sinceLast = 0f;
+                    bestIdx = -1; bestTurn = float.MaxValue;
+                }
+                else if (sinceLast > minSpacing * 2.5f && bestIdx >= 0)
+                {
+                    // everything since the last checkpoint is tight — take the flattest vertex seen
+                    cps.Add(bestIdx);
+                    float arc = 0f;
+                    for (int k = bestIdx + 1; k <= i; k++) arc += Vector3.Distance(pts[k - 1], pts[k]);
+                    sinceLast = arc;
+                    bestIdx = -1; bestTurn = float.MaxValue;
+                }
+            }
+
+            // The stroke end is always a checkpoint; drop a predecessor that crowds it.
+            if (cps.Count > 1 && cps[cps.Count - 1] != 0)
+            {
+                float arcToEnd = 0f;
+                for (int k = cps[cps.Count - 1] + 1; k < n; k++) arcToEnd += Vector3.Distance(pts[k - 1], pts[k]);
+                if (arcToEnd < minSpacing * 0.4f) cps.RemoveAt(cps.Count - 1);
+            }
+            cps.Add(n - 1);
+            return cps;
+        }
+
+        /// <summary>
         /// Resample a polyline so no segment exceeds <paramref name="maxSeg"/> — inserts points along
         /// long spans so a fast, broad curve stays flyable (the runner advances point-to-point).
         /// </summary>

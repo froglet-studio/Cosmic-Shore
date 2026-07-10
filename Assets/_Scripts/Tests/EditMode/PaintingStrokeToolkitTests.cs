@@ -164,6 +164,55 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void RideCheckpoints_AreSpacedAndIncludeBothEnds()
+        {
+            // A long straight line: checkpoints every ~spacing, none closer, ends included.
+            var pts = new List<Vector3>();
+            for (int i = 0; i <= 100; i++) pts.Add(new Vector3(i * 10f, 0f, 0f));
+            var cps = Tk.RideCheckpoints(pts, 70f, 28f);
+
+            Assert.AreEqual(0, cps[0], "the stroke start (gate) is always a checkpoint");
+            Assert.AreEqual(100, cps[^1], "the stroke end (jack) is always a checkpoint");
+            for (int i = 1; i < cps.Count; i++)
+            {
+                Assert.Greater(cps[i], cps[i - 1], "checkpoints advance monotonically");
+                float arc = (cps[i] - cps[i - 1]) * 10f;
+                if (i < cps.Count - 1)
+                    Assert.GreaterOrEqual(arc, 70f, "checkpoints are never closer than the spacing");
+            }
+            Assert.Greater(cps.Count, 5, "a 1000u straight gets several checkpoints");
+            Assert.Less(cps.Count, 20, "…but far fewer than the vertex count");
+        }
+
+        [Test]
+        public void RideCheckpoints_AvoidTightCurvature()
+        {
+            // An L: straight, hairpin corner, straight. The corner vertex must NOT be a checkpoint.
+            var pts = new List<Vector3>();
+            for (int i = 0; i <= 20; i++) pts.Add(new Vector3(i * 10f, 0f, 0f));      // corner at idx 20
+            for (int i = 1; i <= 20; i++) pts.Add(new Vector3(200f, 0f, i * 10f));
+            var cps = Tk.RideCheckpoints(pts, 70f, 28f);
+            CollectionAssert.DoesNotContain(cps, 20, "no checkpoint parked on the hairpin");
+            Assert.AreEqual(pts.Count - 1, cps[^1]);
+        }
+
+        [Test]
+        public void RideCheckpoints_NeverStallOnAnAllTightStroke()
+        {
+            // A tight circle — every vertex over the turn threshold. Forced checkpoints must still
+            // appear (flattest-available), so progress cannot stall.
+            var pts = new List<Vector3>();
+            for (int i = 0; i <= 72; i++)
+            {
+                float a = i / 72f * Mathf.PI * 2f;
+                pts.Add(new Vector3(Mathf.Cos(a) * 60f, 0f, Mathf.Sin(a) * 60f)); // ~5.2u segs, 25° turns? tight
+            }
+            var cps = Tk.RideCheckpoints(pts, 70f, 2f); // threshold 2° → everything is "tight"
+            Assert.Greater(cps.Count, 2, "forced checkpoints appear on an all-tight stroke");
+            Assert.AreEqual(72, cps[^1]);
+        }
+
+        [Test]
         public void PetalLoop_IsClosedAndCupped()
         {
             var petal = Tk.PetalLoop(Vector3.zero, Vector3.forward, Vector3.up, 140f, 56f, 0.35f, 5);
