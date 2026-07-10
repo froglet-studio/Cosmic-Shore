@@ -556,6 +556,9 @@ namespace CosmicShore.Cli
                 controllerGo.SetActive(false);
                 var countdownTimer = controllerGo.AddComponent<CountdownTimer>();
                 SetPrivateField(countdownTimer, "countdownDuration", 0.5f); // brisk CLI count-in (inspector value)
+                // Scene transcription: the prefab wires a beep clip; the beat callback
+                // plays it through AudioSystem.Instance.PlaySFXClip (AudioSystem unit).
+                SetPrivateField(countdownTimer, "countdownBeep", new AudioClip { name = "countdown-beep" });
                 // Scene transcription: the real scene wires an Image child as the countdown display.
                 var countdownDisplay = new GameObject("CountdownDisplay", typeof(RectTransform))
                     .AddComponent<CosmicShore.Engine.UI.Image>();

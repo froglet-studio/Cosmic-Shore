@@ -728,20 +728,34 @@ now works that milestone plan.
 > the **Arc-E content-bridge decision point** (extractor vs hand-authoring —
 > needs the prompter).
 
-1. **Audio consumer un-carry + CameraManager unit.** (a) The AudioSystem
-   unit left ONE parked audio deviation: `CountdownTimer`'s beep
-   (`[SerializeField] AudioClip countdownBeep` + the verbatim
-   `AudioSystem.Instance.PlaySFXClip(countdownBeep)` beat callback —
-   engine `AudioClip`/`AudioSource` are now real and every round world
-   carries a fully-wired AudioSystem via `AudioSystemRig`, so the restore
-   is unblocked; author a beep `AudioClip` wherever the harness creates
-   the CountdownTimer so the engine's null-clip warning lane stays quiet).
-   (b) Then the next live shell by consumer count: **CameraManager**
-   (`Controller/Managers/CameraManager.cs`, 273L upstream, 11 consumer
-   files) — survey the shell's carried answers vs the already-ported
-   `MainMenuCameraController`/`CustomCameraController` family first.
-   Runners-up: StatsManager (333L, 9 files); Crystal (313L, gameplay-side —
-   wants the impact-effects arc, not a standalone unit).
+1. **CameraManager unit** (`Controller/Managers/CameraManager.cs`, 273L
+   upstream, 11 consumer files — Deviation #12 shell). Survey done
+   2026-07-10; port verbatim with TWO carried deviation families:
+   (i) the `Unity.Cinemachine.CinemachineCamera mainMenuCamera` member +
+   its Priority/LookAt lines — the SAME commented camera-arc family
+   `MainMenuCameraController` already carries ("restore when the
+   Cinemachine replacement ports"); (ii) the
+   `DisplayGraphicsSettings`/`GraphicsSettingsApplier` FOV+AA sync
+   (394L across 3 upstream Settings files, URP/QualitySettings-bound —
+   the shell's own drift note already parks it). Everything else goes
+   LIVE: the camera-trio discovery (`GetOrFindCameraController` via
+   `transform.Find` + `AddComponent<CustomCameraController>` — the rigs
+   must author "CM PlayerCam"/"CM DeathCam"/"CM EndCam" children),
+   `SetupGamePlayCameras` (follow targets + `VesselCameraCustomizer
+   .Configure` + `SnapToTarget`), `SetupEndCameraFollow`,
+   `SetActiveCamera` switching + `GetActiveController`,
+   `DeactivateAllCameras`, `SnapPlayerCameraToTarget`, scene-name routing
+   (`InitializeSceneCamera` → `OnEnteredMainMenu`), the SOAP pair
+   (`_onReturnToMainMenu`/`_onInitializePlayerCamera`), and the
+   `ThemeManagerDataContainerSO.SetBackgroundColor` calls. Engine needs
+   `MonoBehaviour.Invoke(string, float)` (the `Invoke("LookAtCrystal", 1f)`
+   lane). Consumers to migrate: `MainMenuCameraControllerTests` asserts
+   the shell's `ShellCameraState`/`LastGameplayFollowTarget` mirror at 7
+   sites — rewrite against real observables (`GetActiveController`,
+   controller follow targets); audit `SetupEndCameraFollow` callers for
+   follow targets lacking a `VesselCameraCustomizer` (upstream
+   dereferences it unguarded). Runners-up after: StatsManager (333L,
+   9 files); Crystal (313L — wants the impact-effects arc).
    **Prompter-facing flags still parked (do NOT act without input):**
    (b) the upstream in-place-sort quirk
    (`ArcadeExploreView.PopulateGameSelectionList` sorts the shared
@@ -751,6 +765,31 @@ now works that milestone plan.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### CountdownTimer beep un-carry ✅ (2026-07-10) — the last parked audio deviation is restored
+
+**The countdown beep is verbatim again:** `[SerializeField] AudioClip
+countdownBeep` + the beat-start `AudioSystem.Instance.PlaySFXClip(countdownBeep)`
+(last in the callback body, exactly the upstream AppendCallback order) —
+unblocked by the AudioSystem unit (engine `AudioClip`/`AudioSource` real,
+every round world carrying a fully-wired AudioSystem via `AudioSystemRig`).
+The three CLI rounds that author a CountdownTimer (Joust / CrystalCapture /
+AstroLeague — HexRace has no count-in) wire an authored `countdown-beep`
+clip like the prefab does, keeping the engine's null-clip warning lane
+quiet. `MiniGameControllerChainTests` gained the audio rig + beep clip and
+now ALSO asserts the beep landed on the shared legacy SFX source (≥4
+one-shots across the kill/restart sequence, clip identity checked) — the
+restored lane is pinned, not just tolerated. **CameraManager survey**
+(next unit) recorded in NEXT UP item 1: two carried deviation families
+(Cinemachine member; DisplayGraphicsSettings sync), everything else live,
+rigs must author the "CM PlayerCam"/"CM DeathCam"/"CM EndCam" trio, 7
+shell-mirror test asserts to rewrite, engine needs
+`MonoBehaviour.Invoke(string, float)`.
+
+**Verified:** ALL ELEVEN diag lines byte-stable ×2, values AND PNGs
+identical to the AudioSystem-unit baseline (the beep lane provably changed
+no gameplay). **1686 tests green in BOTH configs (1334 + 352)**; 5 CLI
+modes exit 0. bleeding-edge unmoved at `f2b8f5aa`.
 
 ### AudioSystem unit ✅ (2026-07-10) — the largest live shell is REAL (846L, 43 consumers)
 

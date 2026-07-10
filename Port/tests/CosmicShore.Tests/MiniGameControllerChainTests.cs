@@ -168,9 +168,13 @@ public class MiniGameControllerChainTests
     public void CountdownTimer_FiresOnComplete_AfterFourBeats_AndKillsOnRestart()
     {
         using var loop = new GameLoop(nameof(CountdownTimer_FiresOnComplete_AfterFourBeats_AndKillsOnRestart));
+        // The scene's audio singleton: the beat callback plays the beep through
+        // AudioSystem.Instance.PlaySFXClip (AudioSystem unit).
+        var audio = CosmicShore.Cli.AudioSystemRig.Create();
         var go = new GameObject("countdown");
         var timer = go.AddComponent<CountdownTimer>();
         SetField(timer, "countdownDuration", 0.5f); // 4 sprites × 0.5s = 2s total
+        SetField(timer, "countdownBeep", new CosmicShore.Engine.AudioClip { name = "countdown-beep" });
         // Scene transcription: the real scene wires an Image child as the countdown display.
         var display = new GameObject("CountdownDisplay", typeof(RectTransform))
             .AddComponent<CosmicShore.Engine.UI.Image>();
@@ -190,6 +194,14 @@ public class MiniGameControllerChainTests
 
         loop.Run(240, Dt); // no further fires
         Assert.Equal(1, completions);
+
+        // Each beat-start played the beep through the shared legacy SFX source
+        // (first count-in: 2 beats before the restart kill; restarted: all 4).
+        var sfxSource = (CosmicShore.Engine.AudioSource)typeof(CosmicShore.Core.AudioSystem)
+            .GetField("sfxSource", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(audio)!;
+        Assert.Equal("countdown-beep", sfxSource.LastOneShotClip.name);
+        Assert.True(sfxSource.OneShotCount >= 4);
     }
 
     // ── HexRaceController: domain-aggregated winner + golf scores (CLAUDE.md semantics) ──

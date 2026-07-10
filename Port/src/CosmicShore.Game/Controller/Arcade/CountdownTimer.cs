@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] Sprite  countdown2;
         [SerializeField] Sprite  countdown1;
         [SerializeField] Sprite  countdown0;
-        // PORT Deviation (audio arc, restore when AudioClip ports): [SerializeField] AudioClip countdownBeep;
+        [SerializeField] AudioClip countdownBeep; // (RESTORED 2026-07-10, AudioSystem unit)
         [SerializeField] float     countdownDuration  = 1f;
         [SerializeField] float     countdownGrowScale = 1.5f;
 
@@ -90,13 +90,13 @@ namespace CosmicShore.Gameplay
                     Sprite spr = _sprites[i];
 
                     // The original's beat-start AppendCallback body (RESTORED 2026-07-09,
-                    // UI arc B2) minus the beep:
-                    // PORT Deviation (audio arc): AudioSystem.Instance.PlaySFXClip(countdownBeep);
+                    // UI arc B2; beep RESTORED 2026-07-10, AudioSystem unit):
                     countdownDisplay.sprite = spr;
                     countdownDisplay.transform.localScale = Vector3.one;
                     countdownDisplay.color = idx >= urgentStart
                         ? urgentColor
                         : Color.white;
+                    AudioSystem.Instance.PlaySFXClip(countdownBeep);
 
                     // PORT Deviation (UI shell): DOFade(1f, fadeIn) + DOScale(grow) run
                     // across this beat in the original; the hold time is identical.
