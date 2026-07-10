@@ -175,4 +175,46 @@ public class HeadlessRoundTests
             blocking.Standings.Select(s => (s.Rank, s.Name, s.Domain, s.Crystals, s.Score)),
             stepped.Standings.Select(s => (s.Rank, s.Name, s.Domain, s.Crystals, s.Score)));
     }
+
+    [Fact]
+    public void SteppedCaptureHandle_MatchesBlockingRun_Exactly()
+    {
+        CrystalCaptureRoundResult RunBlocking() => CrystalCaptureRound.Run(new CrystalCaptureRoundOptions
+        {
+            PlayerCount = 4,
+            Seed = 42,
+            CrystalTarget = CompactTarget,
+        });
+
+        var blocking = RunBlocking();
+
+        CrystalCaptureRoundResult stepped;
+        using (var handle = CrystalCaptureRound.Setup(new CrystalCaptureRoundOptions
+        {
+            PlayerCount = 4,
+            Seed = 42,
+            CrystalTarget = CompactTarget,
+        }))
+        {
+            while (handle.FramesStepped < handle.MaxFrames)
+            {
+                if (handle.StepFrame())
+                    break;
+            }
+            handle.FinishAndScore();
+            stepped = handle.Result;
+        }
+
+        Assert.True(stepped.Finished);
+        Assert.Empty(stepped.EngineErrors);
+        Assert.Equal(blocking.Transcript, stepped.Transcript);
+        Assert.Equal(blocking.WinnerName, stepped.WinnerName);
+        Assert.Equal(blocking.WinnerDomain, stepped.WinnerDomain);
+        Assert.Equal(blocking.WinnerDomainCrystals, stepped.WinnerDomainCrystals);
+        Assert.Equal(blocking.FramesSimulated, stepped.FramesSimulated);
+        Assert.Equal(blocking.TotalClaims, stepped.TotalClaims);
+        Assert.Equal(
+            blocking.Standings.Select(s => (s.Rank, s.Name, s.Domain, s.Crystals, s.Score)),
+            stepped.Standings.Select(s => (s.Rank, s.Name, s.Domain, s.Crystals, s.Score)));
+    }
 }

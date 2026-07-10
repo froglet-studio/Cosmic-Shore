@@ -28,20 +28,35 @@ namespace CosmicShore.Client
     ///   frame 132 — player-count “+” (IntStepper → PC 2, AI backfill 1)
     ///   frame 150 — CONFIRM CONFIGURATION → Screen 2 (domain tiles + ship + START)
     ///   frame 180 — START → no sync manager → HandleAllPlayersReady →
-    ///               GameDataSO synced + OnLaunchGame raised (LAUNCHING banner)
-    /// The default screenshot at frame 210 shows the settled post-launch state.
+    ///               GameDataSO synced + OnLaunchGame raised
+    ///
+    /// Arc G part 2 / Arc I entry — the OnLaunchGame raise now performs the REAL
+    /// menu→game handoff: the menu world's GameLoop is disposed (fresh-world statics
+    /// make menu/game loops mutually exclusive — Unity scene-unload semantics), the
+    /// mode host stands up the round for gameData.GameMode through the SAME
+    /// IRoundDriver split the CLI proves, the round steps + renders via
+    /// RoundScenePass to completion, and after a linger on the standings the menu is
+    /// REBUILT from scratch (ReturnToScreen consumed from PlayerPrefs — the shipping
+    /// return path; RunOnStart only runs on first boot, per-app-run semantics).
+    /// The default capture shows the RETURNED menu with the loop's summary banner.
     ///
     /// Panel content is hand-authored placeholder art (the real prefabs arrive with
-    /// the Arc-E content bridge); the NAVIGATION + CONFIGURE flow is shipping code.
+    /// the Arc-E content bridge); the NAVIGATION + CONFIGURE + LAUNCH flow is
+    /// shipping code.
     /// </summary>
     public sealed class MenuShellWindow
     {
+        enum HostPhase { Menu, Game, MenuReturned }
+
+        const int ReturnLingerFrames = 240; // 4s on the standings before the menu returns
+
         readonly string _screenshotPath;
         readonly int _screenshotFrame;
 
         IWindow _window;
         GL _gl;
         UiRenderer _ui;
+        RoundScenePass _scene;
         GameLoop _loop;
         StandaloneInputModule _module;
         ScreenSwitcher _switcher;
@@ -59,6 +74,14 @@ namespace CosmicShore.Client
         TextMeshProUGUI _launchBanner;
         string _launchInfo = "none";
         int _frameIndex;
+
+        // ── the menu→game→menu loop state ──────────────────────────────────
+        HostPhase _phase = HostPhase.Menu;
+        bool _pendingLaunch;
+        CosmicShore.Cli.IRoundDriver _round;
+        bool _roundDone;
+        int _gameFinishFrame;
+        string _lastGameSummary = "none";
 
         static readonly (ScreenSwitcher.MenuScreens id, string title, Color tint)[] Panels =
         {
@@ -89,6 +112,7 @@ namespace CosmicShore.Client
             _window.Update += OnUpdate;
             _window.Render += OnRender;
             _window.Run();
+            _round?.Dispose();
             _loop?.Dispose();
         }
 
@@ -99,17 +123,19 @@ namespace CosmicShore.Client
             _gl.ClearColor(0.02f, 0.015f, 0.06f, 1f);
             _gl.Enable(EnableCap.Blend);
             _gl.BlendFunc(BlendingFactor.SrcAlpha, BlendingFactor.OneMinusSrcAlpha);
+            _gl.Enable(EnableCap.ProgramPointSize);
             _ui = new UiRenderer(_gl);
+            _scene = new RoundScenePass(_gl);
 
             Screen.width = _window.FramebufferSize.X;
             Screen.height = _window.FramebufferSize.Y;
 
             _loop = new GameLoop("MenuShell");
-            BuildMenu();
+            BuildMenu(firstBoot: true);
             Console.WriteLine("[3/3] ready — menu shell.");
         }
 
-        void BuildMenu()
+        void BuildMenu(bool firstBoot)
         {
             var esGo = new GameObject("EventSystem");
             esGo.AddComponent<EventSystem>();
@@ -144,11 +170,15 @@ namespace CosmicShore.Client
             var screensGroup = screensRoot.gameObject.AddComponent<CanvasGroup>();
             _switcher = screensRoot.gameObject.AddComponent<ScreenSwitcher>();
 
-            // Clear stale PlayerPrefs return-state — the host stands in for the
-            // original engine's runtime-initialize pass (data-only attribute here).
-            typeof(ScreenSwitcher)
-                .GetMethod("RunOnStart", BindingFlags.NonPublic | BindingFlags.Static)!
-                .Invoke(null, null);
+            // Clear stale PlayerPrefs return-state ON FIRST BOOT ONLY — the host
+            // stands in for the original engine's runtime-initialize pass
+            // ([RuntimeInitializeOnLoadMethod] runs once per app-run, NOT per scene
+            // load). On a menu REBUILD after a game, the persisted ReturnToScreen is
+            // consumed by ScreenSwitcher.Start — the shipping return path.
+            if (firstBoot)
+                typeof(ScreenSwitcher)
+                    .GetMethod("RunOnStart", BindingFlags.NonPublic | BindingFlags.Static)!
+                    .Invoke(null, null);
 
             var entries = new List<ScreenSwitcher.ScreenEntry>();
             foreach (var (id, title, tint) in Panels)
@@ -447,6 +477,11 @@ namespace CosmicShore.Client
                     _launchBanner.text = $"LAUNCHING {_gameData.GameMode} -> {_gameData.SceneName}";
                     _launchBanner.gameObject.SetActive(true);
                 }
+
+                // The SceneLoader seam: the raise arrives from INSIDE _loop.Tick
+                // (modal HandleAllPlayersReady), so the actual world swap is
+                // deferred to the next OnUpdate — never tear a loop down mid-tick.
+                _pendingLaunch = true;
             };
 
             _config = ScriptableObject.CreateInstance<CosmicShore.UI.ArcadeGameConfigSO>();
@@ -789,11 +824,50 @@ namespace CosmicShore.Client
 
         void OnUpdate(double dt)
         {
-            // FIXED-step ticking: the 0.5s slide/hide coroutines span exactly 30
-            // ticks, so every scripted click lands on settled layout and the final
-            // screenshot is byte-identical across runs.
+            // ── game phase: step the round (it owns its own GameLoop) ──────────
+            if (_phase == HostPhase.Game)
+            {
+                _frameIndex++;
+                if (_round == null) return;
+
+                if (!_roundDone)
+                {
+                    if (_round.StepFrame())
+                    {
+                        _roundDone = true;
+                        _round.FinishAndScore();
+                        _gameFinishFrame = _frameIndex;
+                    }
+                    else if (_round.FramesStepped >= _round.MaxFrames)
+                    {
+                        _roundDone = true;
+                        _round.CompleteStepping();
+                        _gameFinishFrame = _frameIndex;
+                    }
+                }
+                else if (_frameIndex - _gameFinishFrame >= ReturnLingerFrames)
+                {
+                    ReturnToMenu();
+                }
+                return;
+            }
+
+            // ── menu phases: FIXED-step ticking — the 0.5s slide/hide coroutines
+            // span exactly 30 ticks, so every scripted click lands on settled
+            // layout and captures are byte-identical across runs.
             _loop.Tick(1f / 60f);
             _frameIndex++;
+
+            // OnLaunchGame fired inside the tick above — swap worlds now.
+            if (_pendingLaunch)
+            {
+                _pendingLaunch = false;
+                EnterGame();
+                return;
+            }
+
+            // The scripted click flow drives only the FIRST menu visit.
+            if (_phase != HostPhase.Menu) return;
 
             if (_frameIndex == 30 && _hangarNavButton != null)
                 ClickButton(_hangarNavButton);
@@ -845,12 +919,88 @@ namespace CosmicShore.Client
             _module.PointerUp(centre);
         }
 
+        // ── the menu→game→menu handoff (the SceneLoader.LaunchGame seam) ──────
+
+        /// <summary>
+        /// Tear down the MENU world and stand up the mode host for
+        /// gameData.GameMode — the windowed counterpart of the host/server Netcode
+        /// scene load. The launch parameters are captured from the SAME GameDataSO
+        /// the configure modal synced (ScriptableObjects outlive the GameLoop).
+        /// </summary>
+        void EnterGame()
+        {
+            var mode = _gameData.GameMode;
+            int players = Math.Max(1, _gameData.SelectedPlayerCount.Value);
+            string game = mode == CosmicShore.Data.GameModes.MultiplayerCrystalCapture
+                ? "crystalcapture" : "hexrace";
+
+            Console.WriteLine($"[menushell] LAUNCH — tearing down the menu world, standing up {mode} ({players} pilots)");
+
+            // Unity scene-unload semantics: the menu world dies with its loop; the
+            // fresh-world statics the round's GameLoop resets are exactly why the
+            // two worlds are mutually exclusive.
+            _loop.Dispose();
+            _loop = null;
+            _switcher = null;
+            _module = null;
+            _hangarNavButton = null;
+            _arcadeNavButton = null;
+            _arcadeModal = null;
+            _configureModal = null;
+            _intensityTwoButton = null;
+            _pcIncrementButton = null;
+            _confirmConfigButton = null;
+            _startGameButton = null;
+            _launchBanner = null;
+
+            _round = ModeHostWindow.CreateDriver(game, seed: 42, players, crystalTarget: 6,
+                line => Console.WriteLine("  " + line));
+            _roundDone = false;
+            _phase = HostPhase.Game;
+        }
+
+        /// <summary>
+        /// Dispose the finished round and REBUILD the menu world from scratch —
+        /// the windowed counterpart of returning to Menu_Main. ScreenSwitcher.Start
+        /// consumes the persisted ReturnToScreen (game modals never auto-reopen).
+        /// </summary>
+        void ReturnToMenu()
+        {
+            _lastGameSummary = _round.Finished
+                ? $"{ModeHostWindow.DiagName(_round)} winner {_round.WinnerName} ({_round.WinnerDomain})"
+                : $"{ModeHostWindow.DiagName(_round)} timeout";
+            Console.WriteLine($"[menushell] RETURN — {_lastGameSummary}; rebuilding the menu world");
+
+            _round.Dispose();
+            _round = null;
+
+            _loop = new GameLoop("MenuShell");
+            BuildMenu(firstBoot: false);
+            _phase = HostPhase.MenuReturned;
+
+            // The loop's summary where the loading splash would land (host-level).
+            if (_launchBanner != null)
+            {
+                _launchBanner.text = $"RETURNED - {_lastGameSummary}";
+                _launchBanner.gameObject.SetActive(true);
+            }
+        }
+
         unsafe void OnRender(double dt)
         {
-            _gl.Viewport(0, 0, (uint)_window.FramebufferSize.X, (uint)_window.FramebufferSize.Y);
-            _gl.Clear(ClearBufferMask.ColorBufferBit);
+            if (_phase == HostPhase.Game && _round != null)
+            {
+                _scene.Render(_round, _window.FramebufferSize.X, _window.FramebufferSize.Y);
+                _scene.DrawHud(_ui, _round, _window.FramebufferSize.X, _window.FramebufferSize.Y);
+            }
+            else
+            {
+                _gl.Viewport(0, 0, (uint)_window.FramebufferSize.X, (uint)_window.FramebufferSize.Y);
+                _gl.ClearColor(0.02f, 0.015f, 0.06f, 1f); // RoundScenePass clears indigo — restore the menu's own
+                _gl.Clear(ClearBufferMask.ColorBufferBit);
 
-            UiCanvasBridge.Render(_ui, _window.FramebufferSize.X, _window.FramebufferSize.Y);
+                UiCanvasBridge.Render(_ui, _window.FramebufferSize.X, _window.FramebufferSize.Y);
+            }
 
             if (_screenshotPath != null && _frameIndex >= _screenshotFrame)
             {
@@ -867,6 +1017,21 @@ namespace CosmicShore.Client
                 _gl.ReadPixels(0, 0, (uint)w, (uint)h, PixelFormat.Rgba, PixelType.UnsignedByte, p);
             MiniPng.Write(_screenshotPath, pixels, w, h);
 
+            if (_phase == HostPhase.Game && _round != null)
+            {
+                // Mid-game capture: the menu world is disposed — report the round.
+                Console.WriteLine($"screenshot → {_screenshotPath} ({w}x{h}) frame {_frameIndex}, " +
+                    $"mode menushell, phase game, game {ModeHostWindow.DiagName(_round)}, " +
+                    $"t {RoundScenePass.Clock(_round):0.00}, claims {_round.TotalClaims}, " +
+                    $"jade {RoundScenePass.DomainSum(_round, CosmicShore.Data.Domains.Jade)} " +
+                    $"ruby {RoundScenePass.DomainSum(_round, CosmicShore.Data.Domains.Ruby)} " +
+                    $"gold {RoundScenePass.DomainSum(_round, CosmicShore.Data.Domains.Gold)}, " +
+                    $"state {(_round.Finished ? "Finished" : "Racing")}, " +
+                    $"winner {(_round.Finished ? _round.WinnerName : "none")}, " +
+                    $"launch {_launchInfo}");
+                return;
+            }
+
             string active = "?";
             foreach (var (id, title, _) in Panels)
                 if (_switcher.ScreenIsActive(id)) active = title;
@@ -875,12 +1040,13 @@ namespace CosmicShore.Client
             foreach (var card in Object.FindObjectsByType<GameCard>(FindObjectsSortMode.None))
                 if (card.gameObject.activeInHierarchy) cardCount++;
             Console.WriteLine($"screenshot → {_screenshotPath} ({w}x{h}) frame {_frameIndex}, " +
-                $"mode menushell, active {active}, slideX {screensRoot.position.x:F1}, " +
+                $"mode menushell, phase {(_phase == HostPhase.MenuReturned ? "menuReturned" : "menu")}, " +
+                $"active {active}, slideX {screensRoot.position.x:F1}, " +
                 $"modalStack {(_switcher.HasActiveModal ? "open" : "empty")}, " +
                 $"arcadeModal {(_switcher.ModalIsActive(ScreenSwitcher.ModalWindows.ARCADE) ? "ARCADE" : "none")}, " +
                 $"gameCards {cardCount}, " +
                 $"configIntensity {_config.Intensity}, configPlayers {_config.PlayerCount}, configDomains {_config.DomainCount}, " +
-                $"launch {_launchInfo}, paused {CosmicShore.Core.PauseSystem.Paused}");
+                $"launch {_launchInfo}, lastGame {_lastGameSummary}, paused {CosmicShore.Core.PauseSystem.Paused}");
         }
     }
 }

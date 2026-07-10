@@ -711,23 +711,80 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc G part 2 / Arc I entry — the menu→game→menu HANDOFF.** Part 1 (below)
-   proved the windowed mode host: `--mode play` steps the REAL HexRace round
-   (the Setup/Step/Finish `HexRaceRoundHandle` split; CLI `Run` is the same
-   handle, transcript-pinned) and renders it. Now connect the seams: in the
-   windowed client, `GameDataSO.OnLaunchGame` (which the configure modal
-   already raises end-to-end in menushell) tears down the MENU world
-   (dispose its GameLoop — fresh-world statics make menu/game loops mutually
-   exclusive) and stands up the mode-host world for `gameData.GameMode`;
-   on `FinishAndScore` + a beat, dispose the round handle and REBUILD the
-   menu world (BuildMenu is already a from-scratch constructor — Unity's
-   scene-unload/reload semantics). Extend the handle split to a second mode
-   (CrystalCaptureRound is the nearest sibling) so the host switches on
-   GameMode. Remaining Arc F screens (Hangar / Leaderboards / Store) queue
+1. **Arc G part 3 — every arcade card launches ITS mode; then Arc H entry
+   (the human pilot).** Part 2 (below) closed the menu→game→menu loop with
+   two drivers (HexRace + CrystalCapture behind `IRoundDriver`). Next:
+   (a) extend the Setup/Step/Finish handle split to `JoustRound` and
+   `AstroLeagueRound` (same transcript-pinned refactor + parity tests) and
+   map them in `MenuShellWindow.EnterGame` + `ModeHostWindow.CreateDriver`,
+   so all three arcade cards (and `--game joust|astroleague`) stand up their
+   REAL mode — Joust's vessel-vs-vessel collisions and AstroLeague's
+   server-simulated ball need render additions to `RoundScenePass` (ball +
+   goals + arena boundary as wireframes). (b) Arc H entry: route HUMAN input
+   into the windowed round — the RaceWindow keyboard→InputEvents idiom
+   (OnButtonPressed/Released raises) pointed at one round vessel whose
+   AIPilot is toggled off; the launched game becomes PLAYABLE, not just
+   AI-vs-AI. Remaining Arc F screens (Hangar / Leaderboards / Store) queue
    behind this spine.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Arc G part 2 / Arc I entry ✅ (2026-07-10) — the menu→game→menu LOOP is closed
+
+**`CrystalCaptureRoundHandle`:** the controller-chain round (real
+MultiplayerCrystalCaptureController + NetworkCrystalCollisionTurnMonitor +
+TurnMonitorController + CountdownTimer, Spawn()ed host-mode) got the same
+Setup/Step/Finish split as HexRace — StepFrame carries the CLI's
+ready-click follow-up, CompleteStepping detaches the four observers (the
+CLI's local functions promoted to handle methods), FinishAndScore reads the
+controller-published end-game surface, Dispose is the finally block
+(monitor stop, reverse despawn, wind-down, tool-asset unregister) then loop
+disposal. **Pre/post transcripts diffed byte-identical for
+`--mode crystalcapture` AND `--mode tournament`**; a second parity test
+(`SteppedCaptureHandle_MatchesBlockingRun_Exactly`) pins it.
+
+**`IRoundDriver`** (CosmicShore.Cli): the shared surface a windowed host
+needs — world view (GameData/Players/ActiveCrystal/Course/CourseIndex),
+stepping contract (StepFrame/CompleteStepping/FinishAndScore/MaxFrames),
+round clock (Live/ClockStart), and the end-game readout
+(Finished/Winner/StandingRows/labels). Both handles implement it; hosts
+switch modes without knowing internals. **`RoundScenePass`** (Client):
+the Arc-G wireframe scene + shared round HUD extracted from ModeHostWindow
+— one render idiom for every windowed round host; `ModeHostWindow` shrank
+to driver + capture and gained `--game hexrace|crystalcapture` (the capture
+round renders with its countdown "GET READY..." beat — the field is
+COMPETITIVE from the level start: `jade 1 ruby 2` at t 16.9).
+
+**The LOOP (menushell):** `OnLaunchGame` (raised by the REAL configure
+modal) now performs the actual handoff — deferred to post-tick (never tear
+a loop down mid-tick), the menu world's GameLoop is DISPOSED (Unity
+scene-unload semantics; fresh-world statics make menu/game loops mutually
+exclusive), the round driver stands up for `gameData.GameMode` with the
+player count the modal's stepper chose (2 → AI-1 Jade vs AI-2 Ruby), the
+round steps + renders via RoundScenePass to completion, lingers 240 frames
+on the standings, then the menu is REBUILT from scratch — `RunOnStart` only
+on first boot (per-app-run semantics), so `ScreenSwitcher.Start` consumes
+the persisted ReturnToScreen (menu returns on HANGAR; game modals never
+auto-reopen, by upstream design) — with a host-level RETURNED summary
+banner. Nuance encoded: upstream's launch-time unpause lives in
+`SceneLoader.LaunchGame` (`TogglePauseGame(false)`), which the shell
+doesn't host — `PauseSystem.Paused` reads a stale True on return while
+every GameLoop's `Time.Reset()` keeps timeScale correct; the flag
+self-heals on HOME nav.
+
+**Gate lines re-baselined (all byte-stable ×2):** `menushell@1200` →
+`phase game, game HexRace, t 16.98, claims 3, jade 3 ruby 0 gold 0, state
+Racing` (the menu is GONE mid-game); **`menushell@3600`** →
+`phase menuReturned, active HANGAR, modalStack empty, arcadeModal none,
+gameCards 3, launch HexRace@MinigameHexRace players=2 ai=1 intensity=2
+dc=1, lastGame HexRace winner AI-1 (Jade), paused True` (the full-loop
+proof — supersedes menushell@216); `play@1200` hexrace unchanged
+(`t 20.00, claims 3, jade 3 ruby 0 gold 0`); NEW
+`play-cc@1200` (`--game crystalcapture`) → `t 16.92, claims 3, jade 1
+ruby 2 gold 0, state Racing`. **1634 tests green in BOTH configs
+(1296 + 338)**; 5 CLI modes exit 0; race `trail 786`; freestyle `toys 12`;
+uidemo unchanged. bleeding-edge unmoved at `f2b8f5aa`.
 
 ### Arc G part 1 ✅ (2026-07-10) — the windowed MODE HOST stands up a real round
 
@@ -1271,9 +1328,9 @@ several loop iterations, each ends green+pushed):
 | **D** ✅ | Input/event layer: `EventSystem` + `PointerEventData` + `Selectable`/`Button` hit-testing + gamepad nav-ring (Silk.NET hardware feed deferred to Arc H — same synthetic-injection seam) | 5 | UI framework | ✅ synthetic events |
 | **E** | Content bridge: a Unity YAML→first-party-scene extractor (new `Port/tools/`) scoped to the UGUI subset (RectTransform/Canvas/Image/TMP/Button/LayoutGroups/CanvasGroup) + script-GUID→type map, so `Menu_Main` imports rather than being hand-transcribed. **Decision point when it opens** — confirm extractor-vs-hand-authoring scope with the prompter (large sub-project). | 7 | content | round-trip parity |
 | **F** ✅(spine) | Port `ScreenSwitcher` + `IScreen` + the 6 screens + `ModalWindowManager`, wired to the live `MainMenuController` + `PlayerDataService`. **Milestone sub-goal: menu renders + navigates + is testable.** ARCADE SPINE COMPLETE (2b-iii(b)): nav → arcade modal → GameCards → configure modal → `OnLaunchGame`. Hangar/Leaderboards/Store screen units queue behind Arc G→I. | 5 | UI framework | ✅ + screenshot |
-| **G** ✅(part 1) | Windowed game-mode host: the CLI `*Round.cs` world constructors split into steppable handles (`HexRaceRoundHandle`), driven per-frame by `ModeHostWindow` (`--mode play`) with a wireframe render + HUD — a REAL round stands up, steps, scores, and renders in a window (transcript-pinned to the CLI). Part 2 = menu→game handoff on `OnLaunchGame` + a second mode handle. | 3/5 | mode host | ✅ construction |
+| **G** ✅(parts 1-2) | Windowed game-mode host: the CLI `*Round.cs` world constructors split into steppable handles behind `IRoundDriver` (HexRace + CrystalCapture; transcript-pinned to the CLI), rendered by the shared `RoundScenePass`, driven by `ModeHostWindow` (`--mode play --game …`) AND by the menushell's game phase. Part 3 = Joust + AstroLeague handles. | 3/5 | mode host | ✅ construction |
 | **H** | Per-mode rendering + HUD: extend the renderer beyond stars/rails/crystals/vessels to each mode's objects (joust field, capture crystals, AstroLeague ball/goal/boundary, hex course) + each mode's HUD; route real human input | 5 | render | screenshot |
-| **I** | Menu→game→menu loop: connect `MainMenuController`'s LaunchGame SOAP path to the windowed mode host and back, satisfying the controllers' ready-button/scoreboard UI seams with the real UI. **FINAL MILESTONE.** | 8 | integration | ✅ E2E |
+| **I** ⏳(loop closed) | Menu→game→menu loop: connect the LaunchGame SOAP path to the windowed mode host and back. **The loop IS closed** (G part 2): configure modal → OnLaunchGame → menu world disposed → real round steps + renders → standings linger → menu rebuilt via the persisted ReturnToScreen. Remaining for the FINAL MILESTONE: human input (Arc H), all four modes launchable (G part 3), ready-button/scoreboard seams on the real UI. | 8 | integration | ✅ E2E |
 
 **Critical path:** A→B→D (the UI framework from scratch — the long pole) and
 G→H (windowed mode host — largely integration since mode logic is done) can run

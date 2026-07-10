@@ -128,7 +128,7 @@ namespace CosmicShore.Cli
     /// block always did (AI/spawn wind-down, cell unregister, destroy flush, singleton
     /// resets, log-sink restore + EngineErrors flush) and then disposes the loop.
     /// </summary>
-    public sealed class HexRaceRoundHandle : IDisposable
+    public sealed class HexRaceRoundHandle : IRoundDriver
     {
         internal HexRaceRoundOptions options;
         internal Action<string> liveLog;
@@ -162,7 +162,9 @@ namespace CosmicShore.Cli
         bool _finished;
         bool _disposed;
 
-        // ── world view for a rendering host ─────────────────────────────────
+        // ── IRoundDriver (world view for a rendering host) ──────────────────
+        public string GameLabel => "HEX RACE";
+        public string ScoringLabel => "golf rules - lower is better";
         public HexRaceRoundOptions Options => options;
         public HexRaceRoundResult Result => result;
         public GameDataSO GameData => gameData;
@@ -176,6 +178,21 @@ namespace CosmicShore.Cli
         public int FramesStepped => frames;
         public bool ObjectiveReached => objectiveReached;
         public Domains ObjectiveDomain => objectiveDomain;
+        public int MaxFrames => options.MaxFrames;
+        public bool Live => true;                 // the race clock runs from Setup
+        public float ClockStart => raceStart;
+        public bool Finished => result.Finished;
+        public string WinnerName => result.WinnerName;
+        public Domains WinnerDomain => result.WinnerDomain;
+        public int TotalClaims => result.TotalClaims;
+        public IEnumerable<(int Rank, string Name, Domains Domain, int Crystals, string ScoreText)> StandingRows
+        {
+            get
+            {
+                foreach (var s in result.Standings)
+                    yield return (s.Rank, s.Name, s.Domain, s.Crystals, s.ScoreText);
+            }
+        }
 
         internal void Log(string line)
         {
