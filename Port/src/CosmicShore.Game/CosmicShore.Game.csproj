@@ -10,6 +10,7 @@
        (e.g. ArcadeGameConfigureModal.ShouldLocalPlayerLaunch) need this grant. -->
   <ItemGroup>
     <InternalsVisibleTo Include="CosmicShore.Tests" />
+    <InternalsVisibleTo Include="CosmicShore.Tests.Ported" />
     <!-- The windowed host authors deterministic fixtures through internal seams
          (e.g. DataAccessor-cached leaderboards) exactly like the tests do. -->
     <InternalsVisibleTo Include="CosmicShore.Client" />

@@ -728,24 +728,60 @@ now works that milestone plan.
 > the **Arc-E content-bridge decision point** (extractor vs hand-authoring —
 > needs the prompter).
 
-1. **Deferred follow-ups sweep.** The milestone stack is deep and green —
-   pick up the parked small items before the next big arc: (a) port
-   upstream's `PaintingPresetLibraryTests.cs` (221L NUnit → Ported suite,
-   deferred since the 2026-07-09 drift-sync); (b) consider surfacing the
-   upstream in-place-sort quirk (`ArcadeExploreView.PopulateGameSelectionList`
-   sorts the shared `SO_GameList.Games` list itself — the LeaderboardsMenu
-   comment upstream warns about it; with progression live the PORT board
-   now defaults to the alphabetized first game) to the prompter as an
-   upstream bug-report candidate — do NOT fix locally without a matching
-   upstream change; (c) the **Arc-E content-bridge decision point**
-   (extractor vs hand-authoring) still needs the prompter. If all parked
-   items are done and no prompter input has arrived, take the next
-   largest live shell by consumer count (survey `PORT Deviation — 
-   type-preserving SHELL` headers and pick the one with the most live
-   call sites).
+1. **AudioSystem unit — the largest live shell by consumer count.** The
+   2026-07-10 shell survey (16 `type-preserving SHELL` files ranked by
+   distinct referencing files) put `System/Audio/AudioSystem.cs` first:
+   **43 consumer files, 846L upstream**. Port it structure-faithful per the
+   established "[X DISABLED] → local lanes are live" pattern: the Wwise
+   call sites (`AkSoundEngine`/`AK.Wwise` posts) become deviation-commented
+   lanes; the routing/registry/state lanes (bus volumes, mute state,
+   `ScriptableEventGameplaySFX` listener wiring, music/SFX toggles read by
+   GameSetting + menus) port verbatim and get behavior tests. Survey
+   runners-up for later units: Crystal (gameplay-side, big; wants the
+   impact-effects arc), CameraManager (11 files), StatsManager (9 files).
+   **Prompter-facing flags still parked (do NOT act without input):**
+   (b) the upstream in-place-sort quirk
+   (`ArcadeExploreView.PopulateGameSelectionList` sorts the shared
+   `SO_GameList.Games` list itself — upstream bug-report candidate, no
+   local fix); (c) the **Arc-E content-bridge decision point**
+   (extractor vs hand-authoring).
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Deferred sweep ✅ (2026-07-10) — PaintingPresetLibraryTests ported + shell survey
+
+**(a) `PaintingPresetLibraryTests` (221L) ported verbatim** into the Ported
+suite (parked since the 2026-07-09 painting-toy drift-sync): 11 test methods
+(TestCase ×4 on the preset generator = **14 cases**) locking the
+fly-by-numbers geometry invariants — every preset's strokes flyable/named/
+paintable-domain and on the base plane; Star one-big-stroke; Rainbow
+three-domain one-per-band; Saturn's ring genuinely 3D; the Taj Mahal's
+monument contract (≥50 strokes, three domains, tower/plinth bounds, ≥15×W
+path length, batched domain switches, 4× minarets/chhatris/corner towers)
++ segment flyability; `FromShape` pen-up splitting + y=0 re-basing over the
+generated Smiley; `PaintingDefinitionSO` preset resolution without asset
+mutation; `ComputeBounds` empty/null; `PaintingShareExporter` self-contained
+WebGL viewer (canvas/webgl/HTML-escaped title/all tokens substituted/no
+external scripts) + fallback segment coverage. Only substitutions: dropped
+`#if UNITY_EDITOR`, `UnityEngine → CosmicShore.Engine`. One csproj growth:
+`InternalsVisibleTo("CosmicShore.Tests.Ported")` on CosmicShore.Game (the
+test drives the internal `SetRuntimeData` seam, same-assembly-visible
+upstream). All 14 pass first try — the ported generators were already
+faithful.
+
+**(d) Shell survey** (16 remaining `type-preserving SHELL` files ranked by
+distinct referencing files): **AudioSystem 43 · Crystal ~37 · CameraManager
+11 · StatsManager 9 · CaptainManager/PrismFactory/IconEmitter/
+AuthenticationManager ≤10 · rest ≤4.** AudioSystem (846L upstream) selected
+as NEXT UP item 1; Crystal wants the impact-effects gameplay arc, not a
+standalone unit. (b) in-place-sort quirk + (c) Arc-E content bridge remain
+prompter-facing flags.
+
+**Verified:** ALL ELEVEN diag lines byte-stable ×2, values AND PNGs
+identical to the progression-live baseline. **1675 tests green in BOTH
+configs (1323 + 352)**; 5 CLI modes exit 0. bleeding-edge unmoved at
+`f2b8f5aa`.
 
 ### Progression LIVE ✅ (2026-07-10) — real arcade locks in the menushell + ParticipationXpAwarder
 
