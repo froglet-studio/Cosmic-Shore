@@ -111,13 +111,13 @@ void main() { frag = texture(uTex, vUv) * vColor; }";
 
         /// <summary>
         /// Text with its BOTTOM-LEFT corner at (x, y). Monospace: each glyph advances
-        /// by <paramref name="pixelHeight"/> × 0.75 (the classic 8x8 set reads best a
-        /// touch tighter than square). Newlines stack downward.
+        /// by <paramref name="pixelHeight"/> × 0.875 — font8x8 glyphs fill 7 of 8
+        /// columns, the eighth IS the spacing. Newlines stack downward.
         /// </summary>
         public void DrawText(string text, float x, float y, float pixelHeight, Vector4 rgba)
         {
             if (string.IsNullOrEmpty(text)) return;
-            float advance = pixelHeight * 0.75f;
+            float advance = pixelHeight * 0.875f;
             float penX = x, penY = y;
             foreach (char c in text)
             {
@@ -142,7 +142,7 @@ void main() { frag = texture(uTex, vUv) * vColor; }";
                 if (c == '\n') { longest = Math.Max(longest, current); current = 0; continue; }
                 current++;
             }
-            return Math.Max(longest, current) * pixelHeight * 0.75f;
+            return Math.Max(longest, current) * pixelHeight * 0.875f;
         }
 
         // Two CCW triangles; (u0,v0) at the BOTTOM-left vertex, (u1,v1) at the TOP-right.

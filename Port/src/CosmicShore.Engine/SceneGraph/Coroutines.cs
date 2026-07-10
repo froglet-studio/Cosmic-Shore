@@ -14,6 +14,14 @@ namespace CosmicShore.Engine
     }
 
     /// <summary>Handle returned by StartCoroutine; yield it to await completion.</summary>
+    /// <summary>
+    /// Original contract: resume at the end of the current frame. The runner's
+    /// default case resumes unknown yields NEXT frame — one tick later than the
+    /// original, which every ported use (deferred modal launch, screenshot timing)
+    /// tolerates; exact end-of-frame timing is available via GameTask.WaitForEndOfFrame.
+    /// </summary>
+    public sealed class WaitForEndOfFrame : YieldInstruction { }
+
     public sealed class Coroutine : YieldInstruction
     {
         internal bool Done;

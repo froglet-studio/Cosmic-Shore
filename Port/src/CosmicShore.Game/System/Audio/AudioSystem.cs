@@ -22,5 +22,9 @@ namespace CosmicShore.Core
         public void PlayGameplaySFX(GameplaySFXCategory category) { }
 
         public void PlayGameplaySFX(GameplaySFXCategory category, Vector3 worldPosition) { }
+
+        // UI-shell surface (Arc F): menu click/open/close cues — no-op until the
+        // phase-5 audio backend, same convention as the gameplay SFX above.
+        public void PlayMenuAudio(MenuAudioCategory category) { }
     }
 }

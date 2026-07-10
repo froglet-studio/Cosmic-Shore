@@ -711,25 +711,59 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc F — the menu shell (ScreenSwitcher + IScreen + screens).** Canvas
-   rendering is PROVEN (Arc C below — the uidemo image is the whole A→B→D→C
-   stack in one screenshot). Now port the real menu code onto it. SCOPE
-   first: `ScreenSwitcher` (~800L upstream: horizontal slide between 5 screen
-   panels, modal stack, PlayerPrefs return-state, gamepad trigger nav,
-   IScreen enter/exit discovery), `IScreen`, `MenuScreens` enum,
-   `ModalWindowManager` base, then the screens by increasing dependency
-   weight (HomeScreen first; ArcadeScreen needs SO_ArcadeGame card data;
-   Hangar/Leaderboards implement IScreen). Wire a `menushell` client mode
-   (uidemo's pattern: real GameLoop + canvas + the ported ScreenSwitcher with
-   hand-authored panel content standing in for the unported prefab art) so
-   the milestone's "menu renders + navigates + is testable" sub-goal becomes
-   literal: click/nav between screens under xvfb, screenshot byte-check per
-   screen. May split across iterations — ScreenSwitcher + IScreen + 2 screens
-   + menushell first. Arc G (windowed mode host) stays open in parallel if a
-   drift-sync eats the budget.
+1. **Arc F part 2 — more screens + shell hardening.** The shell core is LIVE
+   (part 1 below — the real ScreenSwitcher navigates on screen). Next:
+   (a) **headless ScreenSwitcher tests** (navigation core, disabled-screen
+   skipping, modal stack push/pop + return-state PlayerPrefs, IScreen
+   enter/exit ordering, freestyle handoff flipping sendNavigationEvents —
+   all drivable without a window; part 1 leaned on the menushell screenshot);
+   (b) port the next screens by dependency weight — `StoreScreen` (extends
+   View — check the View base first), `HangarScreen` + `LeaderboardsMenu`
+   (IScreen implementors; un-carry the switcher's two screen deviations when
+   they land), `ArcadeScreen` (needs SO_ArcadeGame card data); (c) wire
+   ported screens into the menushell panels as they arrive so the screenshot
+   gate grows real content. Arc G (windowed mode host) stays open in
+   parallel — it's the other milestone track (G→H) and hasn't started.
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Arc F part 1 ✅ (2026-07-10) — the menu shell is LIVE on screen
+
+**The milestone's "menu renders + navigates + is testable" sub-goal is now
+literal**: `--mode menushell` hosts the REAL ported `ScreenSwitcher` on the
+full first-party stack — five viewport-wide screen panels (STORE/ARK/HOME/
+PORT/HANGAR in shipping visual order), a nav bar of real Buttons wired to the
+shipping `OnClick*Nav` handlers, `HomeScreen` living on the HOME panel, and
+PORT/ARK disabled exactly like the shipping menu. A synthetic pointer click
+(full raycast/dispatch) presses the HANGAR nav at frame 30; the switcher
+slides one viewport per index over its 0.5s coroutine easing (fixed-step
+ticking → the frame-90 screenshot always lands on the settled layout);
+`paused True` in the diag is the shipping "pause on non-HOME screens" rule
+firing through the real `PauseSystem`.
+
+**Ports (verbatim + standard substitutions):** `IScreen`, `MenuAudio`,
+`ModalWindowManager` (Animator clips deviation-marked; the CanvasGroup
+show/hide carrying all observable state is live), **`ScreenSwitcher` (854L)**
+— modal stack, PlayerPrefs return-state, gamepad trigger nav, IScreen
+lifecycle, freestyle handoff (`sendNavigationEvents` flip), nav-bar icon
+toggling, viewport layout + slide; only the HangarScreen/LeaderboardsMenu
+references are deviation-marked (they port in part 2). `HomeScreen` (95L).
+**Growths:** engine `WaitForEndOfFrame` yield type (runner's default-case
+next-frame resume, documented), `AudioSystem.PlayMenuAudio` no-op surface.
+**Scene-contract findings baked into the menushell:** `NavigateTo` writes
+`transform.position` with y=0, so the Screens container's pivot must rest at
+world (0,0) (bottom-left anchor/pivot); Menu_Main's `UserActionSystem`
+singleton must exist (HANGAR nav completes ViewHangarMenu through it); hosts
+invoke the data-only `[RuntimeInitializeOnLoadMethod]` `RunOnStart` clear.
+**Font fix:** glyph advance 0.75→0.875 (font8x8 fills 7 of 8 columns; large
+titles overlapped) — uidemo PNG baseline rebased, diag line unchanged.
+
+**Gate lines (byte-stable, two runs each):** `menushell@90` →
+`active HANGAR, slideX -5120.0, modalStack empty, paused True`; `uidemo@60`
+unchanged diag. **1610 tests green in BOTH configs (1272 + 338)**; 5 CLI
+modes exit 0; race/freestyle diags byte-identical (`trail 786` / `toys 12`).
+bleeding-edge unmoved at `f2b8f5aa`.
 
 > **Flake note:** the known pre-existing Release flake re-occurred once
 > during the Arc-C gate (clean on immediate re-run) — still not a regression.

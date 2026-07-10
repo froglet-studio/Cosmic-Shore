@@ -51,6 +51,13 @@ namespace CosmicShore.Client
                     return 0;
                 }
 
+                if (mode == "menushell")
+                {
+                    Console.WriteLine("Menu shell — the REAL ScreenSwitcher on the first-party UI stack");
+                    new MenuShellWindow(screenshot, screenshotFrame).Run();
+                    return 0;
+                }
+
                 if (mode == "freestyle")
                 {
                     Console.WriteLine($"Freestyle — seed {seed}");
