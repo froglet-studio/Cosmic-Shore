@@ -190,6 +190,17 @@ namespace CosmicShore.Cli
         }
         public int DomainScore(Domains domain) => ScoringMetrics.SumByDomain(gameData, rule.Metric, domain);
         public int PlayerScore(IPlayer player) => player.RoundStats.CrystalsCollected;
+        public bool AutoReady { get; set; } = true;
+        public bool ReadyPending => readyShown && !readyClicked;
+
+        /// <summary>The Ready press (factored from StepFrame's auto-click; idempotent).</summary>
+        public void ClickReady()
+        {
+            if (readyClicked || !readyShown) return;
+            readyClicked = true;
+            Log($"[t={CrystalCaptureRound.F(Time.time),7}s] ready — count-in starts (crystals seed at GO)");
+            controller.OnReadyClicked(); // DomainGames ready flow → countdown → StartTurn
+        }
 
         internal void Log(string line)
         {
@@ -208,12 +219,8 @@ namespace CosmicShore.Cli
             loop.Tick(options.DeltaTime);
             frames++;
 
-            if (!readyClicked && readyShown)
-            {
-                readyClicked = true;
-                Log($"[t={CrystalCaptureRound.F(Time.time),7}s] ready — count-in starts (crystals seed at GO)");
-                controller.OnReadyClicked(); // DomainGames ready flow → countdown → StartTurn
-            }
+            if (AutoReady)
+                ClickReady();
 
             return roundEnded;
         }

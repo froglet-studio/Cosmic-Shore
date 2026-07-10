@@ -195,6 +195,9 @@ namespace CosmicShore.Cli
         }
         public int DomainScore(Domains domain) => ScoringMetrics.SumByDomain(gameData, rule.Metric, domain);
         public int PlayerScore(IPlayer player) => player.RoundStats.CrystalsCollected;
+        public bool AutoReady { get; set; } = true; // HexRace has no ready flow — unused
+        public bool ReadyPending => false;
+        public void ClickReady() { }
 
         internal void Log(string line)
         {

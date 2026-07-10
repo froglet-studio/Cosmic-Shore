@@ -92,6 +92,9 @@ namespace CosmicShore.Client
         readonly HumanPilotBridge _bridge = new();
         bool _prevTab;
 
+        // Arc I: the real in-round UI (Ready button + scoreboard panel).
+        RoundUiOverlay _overlay;
+
         static readonly (ScreenSwitcher.MenuScreens id, string title, Color tint)[] Panels =
         {
             (ScreenSwitcher.MenuScreens.STORE, "STORE", new Color(0.20f, 0.08f, 0.30f, 1f)),
@@ -858,6 +861,10 @@ namespace CosmicShore.Client
                 if (_bridge.Active)
                     _bridge.Drive(_inputContext);
 
+                _overlay?.Update();
+                if (_screenshotPath == null)
+                    _overlay?.DriveMouse(_inputContext);
+
                 if (!_roundDone)
                 {
                     if (_round.StepFrame())
@@ -876,6 +883,7 @@ namespace CosmicShore.Client
                 else if (_frameIndex - _gameFinishFrame >= ReturnLingerFrames)
                 {
                     if (_bridge.Active) _bridge.Detach(); // hand back before the world dies
+                    _overlay = null;                       // dies with the round world
                     ReturnToMenu();
                 }
                 return;
@@ -989,6 +997,12 @@ namespace CosmicShore.Client
 
             _round = ModeHostWindow.CreateDriver(game, seed: 42, players, crystalTarget: 6,
                 line => Console.WriteLine("  " + line));
+
+            // Arc I: the real in-round UI lives in the round's world. Screenshot runs
+            // keep the deterministic auto-ready; interactive runs get the REAL button.
+            _round.AutoReady = _screenshotPath != null;
+            _overlay = new RoundUiOverlay(_round);
+
             _roundDone = false;
             _phase = HostPhase.Game;
         }
@@ -1026,7 +1040,9 @@ namespace CosmicShore.Client
             {
                 _scene.Render(_round, _window.FramebufferSize.X, _window.FramebufferSize.Y);
                 _scene.DrawHud(_ui, _round, _window.FramebufferSize.X, _window.FramebufferSize.Y,
-                    _bridge.Active ? _round.Players[0].Name : null);
+                    _bridge.Active ? _round.Players[0].Name : null,
+                    standingsPanelShown: _overlay?.ScoreboardShown ?? false);
+                UiCanvasBridge.Render(_ui, _window.FramebufferSize.X, _window.FramebufferSize.Y);
             }
             else
             {

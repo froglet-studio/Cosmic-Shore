@@ -74,7 +74,8 @@ namespace CosmicShore.Client
         /// The shared round HUD (UiRenderer text overlay, y-up pixels).
         /// <paramref name="humanPilotName"/> non-null → the Arc-H control strip shows.
         /// </summary>
-        public void DrawHud(UiRenderer ui, IRoundDriver round, float w, float h, string humanPilotName = null)
+        public void DrawHud(UiRenderer ui, IRoundDriver round, float w, float h,
+            string humanPilotName = null, bool standingsPanelShown = false)
         {
             ui.Begin(w, h);
 
@@ -97,7 +98,7 @@ namespace CosmicShore.Client
                 y -= 24f;
             }
 
-            if (round.Finished)
+            if (round.Finished && !standingsPanelShown)
             {
                 ui.DrawText($"WINNER  {round.WinnerName} ({round.WinnerDomain})", 24f, 130f, 26f, new Vector4(0.4f, 1f, 0.6f, 1f));
                 float sy = 96f;

@@ -28,6 +28,7 @@ namespace CosmicShore.Client
         readonly int _playerCount;
         readonly int _crystalTarget;
         readonly bool _humanPilot;
+        readonly bool _manualReady;
         readonly string _screenshotPath;
         readonly int _screenshotFrame;
 
@@ -37,19 +38,21 @@ namespace CosmicShore.Client
         RoundScenePass _scene;
         IRoundDriver _round;
         IInputContext _inputContext;
+        RoundUiOverlay _overlay;
         readonly HumanPilotBridge _bridge = new();
 
         int _frameIndex;
         bool _raceDone;
 
         public ModeHostWindow(string game, int seed, int playerCount, int crystalTarget,
-            bool humanPilot, string screenshotPath, int screenshotFrame)
+            bool humanPilot, bool manualReady, string screenshotPath, int screenshotFrame)
         {
             _game = game;
             _seed = seed;
             _playerCount = playerCount;
             _crystalTarget = crystalTarget;
             _humanPilot = humanPilot;
+            _manualReady = manualReady;
             _screenshotPath = screenshotPath;
             _screenshotFrame = screenshotFrame;
         }
@@ -121,13 +124,24 @@ namespace CosmicShore.Client
             _ui = new UiRenderer(_gl);
             _scene = new RoundScenePass(_gl);
 
+            Engine.Screen.width = _window.FramebufferSize.X;
+            Engine.Screen.height = _window.FramebufferSize.Y;
+
             // The REAL round world — same construction the CLI gate proves headless.
             _round = CreateDriver(_game, _seed, _playerCount, _crystalTarget,
                 line => Console.WriteLine("  " + line));
 
+            // Arc I: the real in-round UI (Ready + scoreboard) lives in the round's
+            // world. Manual-ready runs (interactive or --ready manual) hand the press
+            // to the real Button; screenshot gates keep the deterministic auto-ready.
+            _round.AutoReady = !_manualReady && _screenshotPath != null;
+            _overlay = new RoundUiOverlay(_round);
+            if (_screenshotPath == null || _humanPilot)
+                _inputContext ??= _window.CreateInput();
+
             if (_humanPilot)
             {
-                _inputContext = _window.CreateInput();
+                _inputContext ??= _window.CreateInput();
                 _bridge.Attach(_round);
                 Console.WriteLine($"[3/3] ready — {_round.GameLabel}, YOU are {_round.Players[0].Name} " +
                     "(WASD = left stick · arrows = right · Space boost · Shift drift).");
@@ -145,6 +159,16 @@ namespace CosmicShore.Client
             // land BEFORE the tick, like any hardware pilot.
             if (_bridge.Active && _inputContext != null)
                 _bridge.Drive(_inputContext);
+
+            _overlay?.Update();
+            if (_screenshotPath == null && _inputContext != null)
+                _overlay?.DriveMouse(_inputContext);
+
+            // `--ready manual` + screenshot: the deterministic scripted press — a
+            // synthetic pointer click through the full raycast → Button → onClick
+            // stack at frame 300 (proves the REAL ready seam end-to-end).
+            if (_manualReady && _screenshotPath != null && _frameIndex == 300)
+                Console.WriteLine($"[modehost] scripted READY press → {_overlay?.ClickReadySynthetic()}");
 
             if (!_raceDone && _round != null)
             {
@@ -168,7 +192,9 @@ namespace CosmicShore.Client
             {
                 _scene.Render(_round, _window.FramebufferSize.X, _window.FramebufferSize.Y);
                 _scene.DrawHud(_ui, _round, _window.FramebufferSize.X, _window.FramebufferSize.Y,
-                    _bridge.Active ? _round.Players[0].Name : null);
+                    _bridge.Active ? _round.Players[0].Name : null,
+                    standingsPanelShown: _overlay?.ScoreboardShown ?? false);
+                UiCanvasBridge.Render(_ui, _window.FramebufferSize.X, _window.FramebufferSize.Y);
             }
 
             if (_screenshotPath != null && _frameIndex >= _screenshotFrame)

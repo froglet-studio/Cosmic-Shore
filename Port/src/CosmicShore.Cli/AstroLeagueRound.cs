@@ -183,6 +183,17 @@ namespace CosmicShore.Cli
         }
         public int DomainScore(Domains domain) => ScoringMetrics.SumByDomain(gameData, ScoringMetric.Goals, domain);
         public int PlayerScore(IPlayer player) => player.RoundStats.GoalsScored;
+        public bool AutoReady { get; set; } = true;
+        public bool ReadyPending => readyShown && !readyClicked;
+
+        /// <summary>The Ready press (factored from StepFrame's auto-click; idempotent).</summary>
+        public void ClickReady()
+        {
+            if (readyClicked || !readyShown) return;
+            readyClicked = true;
+            Log($"[t={AstroLeagueRound.F(Time.time),7}s] ready — count-in starts (kickoff parking at GO)");
+            controller.OnReadyClicked(); // DomainGames ready flow → countdown → kickoff
+        }
 
         /// <summary>The camera watches the BALL — hypersea soccer's one true objective.</summary>
         public Vector3? LookTarget => ball ? ball.transform.position : (Vector3?)null;
@@ -233,12 +244,8 @@ namespace CosmicShore.Cli
                 Log($"[diag t={AstroLeagueRound.F(Time.time)}] ball ({AstroLeagueRound.F(bp.x)},{AstroLeagueRound.F(bp.y)},{AstroLeagueRound.F(bp.z)}) |v|={AstroLeagueRound.F(bv.magnitude)} frozen={ball.IsFrozen} | {ai}");
             }
 
-            if (!readyClicked && readyShown)
-            {
-                readyClicked = true;
-                Log($"[t={AstroLeagueRound.F(Time.time),7}s] ready — count-in starts (kickoff parking at GO)");
-                controller.OnReadyClicked(); // DomainGames ready flow → countdown → kickoff
-            }
+            if (AutoReady)
+                ClickReady();
 
             return matchEnded;
         }

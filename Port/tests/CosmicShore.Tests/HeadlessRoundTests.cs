@@ -290,4 +290,54 @@ public class HeadlessRoundTests
             blocking.Standings.Select(s => (s.Rank, s.Name, s.Domain, s.Goals, s.Score)),
             stepped.Standings.Select(s => (s.Rank, s.Name, s.Domain, s.Goals, s.Score)));
     }
+
+    /// <summary>
+    /// Arc I: with AutoReady off the round idles on the REAL ready gate — the
+    /// DomainGames controller shows its ready button and nothing starts until
+    /// ClickReady() presses it (the windowed hosts route a real UI Button here).
+    /// </summary>
+    [Fact]
+    public void ManualReady_HoldsRoundAtReadyGate_UntilClicked()
+    {
+        using var handle = CrystalCaptureRound.Setup(new CrystalCaptureRoundOptions
+        {
+            PlayerCount = 4,
+            Seed = 42,
+            CrystalTarget = CompactTarget,
+        });
+        handle.AutoReady = false;
+
+        // Step until the controller raises its ready button...
+        int guard = 0;
+        while (!handle.ReadyPending && guard++ < 1200)
+            Assert.False(handle.StepFrame());
+        Assert.True(handle.ReadyPending);
+
+        // ...then hold: 300 more frames with the button unpressed — the turn
+        // must NOT start on its own (no countdown, no crystals, no claims).
+        for (int i = 0; i < 300; i++)
+            Assert.False(handle.StepFrame());
+        Assert.True(handle.ReadyPending);
+        Assert.False(handle.Live);
+        Assert.Equal(0, handle.TotalClaims);
+
+        // The press (idempotent) releases the gate; the round then runs to the
+        // same full completion the auto path proves.
+        handle.ClickReady();
+        handle.ClickReady();
+        Assert.False(handle.ReadyPending);
+
+        while (handle.FramesStepped < handle.MaxFrames)
+        {
+            if (handle.StepFrame())
+                break;
+        }
+        handle.FinishAndScore();
+
+        Assert.True(handle.Result.Finished);
+        Assert.True(handle.Live);
+        Assert.Empty(handle.Result.EngineErrors);
+        Assert.Equal(CompactTarget, handle.Result.WinnerDomainCrystals);
+        Assert.NotEmpty(handle.Result.Standings);
+    }
 }

@@ -711,24 +711,79 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc I remainder — the READY button + end-game scoreboard as REAL UI in
-   the windowed round.** The human pilot shipped (Arc H below): the launched
-   game is now FLYABLE (`--pilot human`, menushell Tab). Next, replace the
-   harness's auto-ready with the real seam: the domain-game controllers
-   raise `_onToggleReadyButton` (ScriptableEventBool) expecting a UI Ready
-   button — surface a real clickable button (engine UI canvas over the
-   round, the menushell click stack already proves the input path) whose
-   press calls `controller.OnReadyClicked()`, and render the end-game
-   standings through a real panel instead of (in addition to) the HUD text
-   block. The round handles already expose the seams (`readyButtonChannel`
-   internal — add a public hook on `IRoundDriver`). Keep gates deterministic:
-   screenshot runs auto-click ready exactly like today (the handle's
-   StepFrame path), interactive runs wait for the human. After that:
-   Hangar / Leaderboards / Store screen units (LeaderboardManager,
-   PlayerDataController, CatalogManager economy singletons first).
+> **MILESTONE STATE (2026-07-10): the A→I integration chain is COMPLETE**
+> (E deferred as its own decision point). The interactive client now covers
+> the full loop the milestone asked for: `--mode menushell` → real menu →
+> arcade → configure modal → launch ANY of the four domain modes → click the
+> REAL READY button with the mouse → fly with Tab + keyboard → real
+> scoreboard panel → back to the menu. Remaining depth is BREADTH, not
+> plumbing: more menu screens (Hangar/Leaderboards/Store), richer per-mode
+> art, and the Arc-E content-bridge decision.
+
+1. **Menu breadth — the Hangar screen unit** (first of the three queued
+   screen units: Hangar → Leaderboards → Store, per the Arc-F spine note).
+   Map the upstream `HangarScreen` + its views/dependencies
+   (`VesselSelectionView`, captain/vessel data plumbing, `LoadoutView`
+   interplay) and port the unit with its singletons-first prerequisite
+   pass (the pattern every screen unit has used). Wire it into the
+   menushell so HANGAR shows a real screen instead of the placeholder
+   panel; keep the menushell diags byte-stable (HANGAR is the persisted
+   ReturnToScreen — its content change WILL rebaseline the two menushell
+   PNGs; diag values should hold unless the screen adds tracked state).
+   After that: Leaderboards (LeaderboardManager), Store (CatalogManager
+   economy singletons).
 2. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
 3. Update this file, commit, push.
+
+### Arc I remainder ✅ (2026-07-10) — READY + scoreboard are REAL UI; ARC I CLOSED
+
+**`IRoundDriver` grew the ready seam:** `AutoReady` (default true — the CLI's
+auto-press, byte-identical behavior), `ReadyPending` (true while the mode's
+ready button awaits a press; HexRace has no ready flow → always false), and
+`ClickReady()` (idempotent press → `controller.OnReadyClicked()`). The three
+ready-flow handles (capture/joust/astro) factored their StepFrame auto-click
+into `ClickReady`, guarded by `readyShown/readyClicked`; StepFrame is now
+`if (AutoReady) ClickReady();` — CLI transcripts untouched.
+
+**`RoundUiOverlay` (Client):** a REAL engine-UI canvas built inside the
+round's world (its own EventSystem + StandaloneInputModule + Canvas +
+CanvasScaler 1920×1080 + GraphicRaycaster — fresh-world statics demand a
+fresh event stack; `UiCanvasBridge.Render` resolves the current loop's
+canvases). Two elements: the READY button (lower center, green ColorBlock,
+`onClick → round.ClickReady()`, shown while `ReadyPending`) and the
+scoreboard panel (centered CanvasGroup, populated from `StandingRows` +
+`ScoringLabel` the frame the round finishes; `RoundScenePass.DrawHud` gained
+`standingsPanelShown` and suppresses its text standings when the panel is
+up). `DriveMouse` maps the hardware mouse (Silk top-down Y flipped) into
+`PointerMove/Down/Up`; `ClickReadySynthetic()` presses the button's center
+through the full raycast → Button → onClick stack. TMP note: the engine's
+`TextMeshProUGUI` exposes no `raycastTarget` — labels simply aren't raycast
+targets here, so no suppression needed.
+
+**Host wiring:** ModeHostWindow gained `--ready manual` and sets
+`AutoReady = !manualReady && screenshot != null`; menushell's game phase sets
+`AutoReady = screenshot != null` — so ALL screenshot gates keep the
+deterministic auto-ready, and interactive runs wait for the human's mouse
+press on the real button. A `--ready manual --screenshot` run makes the
+scripted synthetic press at frame 300 (the deterministic E2E proof of the
+real seam). Both hosts render the overlay through `UiCanvasBridge.Render`
+after the HUD and hand the panel state to DrawHud.
+
+**Verified:** headless `ManualReady_HoldsRoundAtReadyGate_UntilClicked`
+(AutoReady=false: round idles at the gate 300+ frames — not Live, zero
+claims — then ClickReady releases it to full completion); xvfb
+`cc-manual@900` (`--game crystalcapture --ready manual`) → scripted press
+fires the controller ready flow at exactly t=5.00s (frame 300), diag
+`t 8.00, claims 1, jade 1 ruby 0 gold 0` + PNG **byte-stable ×2**; frame-250
+capture shows the READY button live over the parked round (t=0, claims 0);
+`play-joust@1500` (Finished) now renders the real scoreboard PANEL —
+byte-stable ×2 as part of the gate. **ALL NINE canonical diag lines
+byte-stable ×2 with PNGs identical across runs** (race `trail 786`,
+freestyle `toys 12`, uidemo, play/play-cc/play-joust/play-astro,
+menushell@1200/@3600 — values unchanged from Arc H). **1637 tests green in
+BOTH configs (1299 + 338)**; 5 CLI modes exit 0. bleeding-edge unmoved at
+`f2b8f5aa`. **Arc I is closed — the A→I milestone chain is complete.**
 
 ### Arc H ✅ (2026-07-10) — the HUMAN PILOT: the launched game is FLYABLE
 
@@ -1397,7 +1452,7 @@ several loop iterations, each ends green+pushed):
 | **F** ✅(spine) | Port `ScreenSwitcher` + `IScreen` + the 6 screens + `ModalWindowManager`, wired to the live `MainMenuController` + `PlayerDataService`. **Milestone sub-goal: menu renders + navigates + is testable.** ARCADE SPINE COMPLETE (2b-iii(b)): nav → arcade modal → GameCards → configure modal → `OnLaunchGame`. Hangar/Leaderboards/Store screen units queue behind Arc G→I. | 5 | UI framework | ✅ + screenshot |
 | **G** ✅ | Windowed game-mode host: ALL FOUR domain-mode worlds split into steppable handles behind `IRoundDriver` (HexRace / CrystalCapture / Joust / AstroLeague; transcript-pinned to the CLI), rendered by the shared `RoundScenePass` (crystals, ball, goal rings, arena boundary), driven by `ModeHostWindow` (`--mode play --game …`) AND by the menushell's game phase. | 3/5 | mode host | ✅ construction |
 | **H** ✅(input) | Per-mode rendering + HUD: mode objects render (hex course, capture crystals, joust melee, AstroLeague ball/goals/boundary — shipped with Arc G's RoundScenePass) + per-mode HUD scores; REAL HUMAN INPUT routed (`HumanPilotBridge`: `--pilot human`, menushell Tab — the RaceWindow keyboard scheme into the verbatim InputStatus sink). Richer per-mode art queues behind the milestone. | 5 | render | screenshot |
-| **I** ⏳(loop closed) | Menu→game→menu loop: connect the LaunchGame SOAP path to the windowed mode host and back. **The loop IS closed** (G part 2): configure modal → OnLaunchGame → menu world disposed → real round steps + renders → standings linger → menu rebuilt via the persisted ReturnToScreen. Remaining for the FINAL MILESTONE: human input (Arc H), all four modes launchable (G part 3), ready-button/scoreboard seams on the real UI. | 8 | integration | ✅ E2E |
+| **I** ✅ | Menu→game→menu loop: the LaunchGame SOAP path drives the windowed mode host and back (configure modal → OnLaunchGame → menu world disposed → real round steps + renders → menu rebuilt via ReturnToScreen), with the in-round seams on REAL UI: the READY button (`RoundUiOverlay`, `IRoundDriver.AutoReady/ReadyPending/ClickReady`, mouse-pressable; scripted synthetic press for deterministic verifies) and the end-game scoreboard panel (StandingRows → CanvasGroup panel; HUD text standings suppressed). Human input shipped (H), all four modes launchable (G3). **THE A→I MILESTONE CHAIN IS COMPLETE.** | 8 | integration | ✅ E2E |
 
 **Critical path:** A→B→D (the UI framework from scratch — the long pole) and
 G→H (windowed mode host — largely integration since mode logic is done) can run

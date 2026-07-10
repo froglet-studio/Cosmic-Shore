@@ -76,6 +76,20 @@ namespace CosmicShore.Cli
         /// <summary>Mode-specific wireframe extras (default: none).</summary>
         IEnumerable<RoundSceneMarker> SceneMarkers => Enumerable.Empty<RoundSceneMarker>();
 
+        /// <summary>
+        /// When true (the default), StepFrame presses the Ready button itself the frame
+        /// it appears — the CLI's behavior, and what keeps screenshot gates
+        /// deterministic. A windowed host sets false to hand the press to a REAL UI
+        /// Ready button (Arc I), which calls <see cref="ClickReady"/>.
+        /// </summary>
+        bool AutoReady { get; set; }
+
+        /// <summary>True while the mode's Ready button is up awaiting a press (HexRace: never).</summary>
+        bool ReadyPending { get; }
+
+        /// <summary>Press Ready (idempotent; no-op for modes without a ready flow).</summary>
+        void ClickReady();
+
         /// <summary>One engine frame; true when the round's objective/end condition lands.</summary>
         bool StepFrame();
 
