@@ -711,22 +711,64 @@ now works that milestone plan.
 > upstream's new `PaintingPresetLibraryTests.cs` (221L NUnit) into the Ported
 > suite for additive preset-geometry coverage.
 
-1. **Arc F part 2b — the screens, as coherent units.** The switcher contract
-   is now test-pinned (part 2a below). Port each screen WITH its view/card
-   family so nothing lands half-deviated: **ArcadeScreen** first (75L +
-   `ArcadeExploreView` 168L + `ArcadeLoadoutView` 276L + their card types —
-   scope the SO_ArcadeGame card surface before starting), then
-   **HangarScreen** (331L + HangarVesselGridCard + HangarVesselDetailView +
-   SO_VesselList), **LeaderboardsMenu** (226L), **StoreScreen** (239L —
-   check its `View` base class first). Un-carry the switcher's two screen
-   deviations (HangarMenu/LeaderboardMenu fields + LoadView calls) as each
-   lands, and wire ported screens into the menushell panels so the
-   screenshot gate grows real content. Arc G (windowed mode host — the
-   parallel G→H milestone track, unstarted) is the alternative if a
-   drift-sync eats the budget.
-2. **Track bleeding-edge**: merge upstream again next iteration; every merge
+1. **Arc F part 2b-ii — the arcade cards + views + screen.** The service
+   foundation is live (2b-i below); the full arcade dependency graph is
+   mapped (see the box below). Port: `GameCard` (124L) + `DailyChallengeCard`
+   (24L) + `ArcadeExploreView` (168L) + `ArcadeLoadoutView` (276L) +
+   `ArcadeScreen` (75L), with SHELLS for the two service walls the views
+   null-guard anyway — `CatalogManager` (SingletonPersistent; the views use
+   `OnLoadInventory` static event + `Inventory.ContainsGame`, and
+   RespectInventoryForGameSelection defaults FALSE so the shell can be
+   data-only) and `GameModeProgressionService` (788L quest progression — its
+   own future unit; shell = `Instance` + `OnProgressionChanged` +
+   `IsGameModeUnlocked` returning true). Deviation-mark ONLY the
+   `ArcadeGameConfigureModal` interactions in ExploreView (SetSelectedGame /
+   ModalWindowIn — the modal is 2b-iii's unit). Wire the arcade panel into
+   menushell as a MODAL overlay via the shipping path (OnClickArcadeNav →
+   ArcadeModal.ModalWindowIn — ARK screen stays disabled like shipping), with
+   the REAL GameCard grid fed by hand-authored SO_ArcadeGame entries
+   (HexRace/Joust/CrystalCapture SOs exist). Re-baseline menushell +
+   document.
+2. **Arc F part 2b-iii (after ii):** `ArcadeGameConfigureModal` (1381L — THE
+   game-launch config seam Arc I needs: SyncAllGameDataForLaunch →
+   InvokeGameLaunch) + `Arcade` launcher (198L, SingletonPersistent; needs
+   SO_MissionList/SO_TrainingGameList surface) + `MiniGame` statics
+   (ResourceCollection/IntensityLevel/NumberOfPlayers/PlayerVesselType —
+   482L legacy class, port the static surface the views/modal consume).
+   Then HangarScreen / LeaderboardsMenu / StoreScreen units (each needs
+   service singletons: LeaderboardManager, PlayerDataController,
+   CatalogManager economy — map before porting).
+3. **Track bleeding-edge**: merge upstream again next iteration; every merge
    reopens the drift-sync lane (survey + `docs/DRIFT_<date>.txt` per precedent).
-3. Update this file, commit, push.
+4. Update this file, commit, push.
+
+> **Arcade dependency graph (mapped 2026-07-10):** ArcadeScreen → {ArcadeExploreView,
+> ArcadeLoadoutView, Toggle✅}; ExploreView → {SO_GameList✅, GameCard,
+> ArcadeDPadNav✅, DailyChallengeCard, ArcadeGameConfigureModal(2b-iii),
+> CatalogManager(shell), GameModeProgressionService(shell), FavoriteSystem✅,
+> LoadoutSystem✅, MiniGame statics(2b-iii), Arcade launcher(2b-iii),
+> CallToActionTarget✅, FTUEEventManager✅, VesselClassTypeVariable✅,
+> SO_Vessel✅}; GameCard → {SO_GameList✅, FavoriteSystem✅, FTUEEventManager✅,
+> AudioSystem✅, Button✅/Image✅/TMP✅}. ✅ = live in the port.
+
+### Arc F part 2b-i ✅ (2026-07-10) — the arcade service foundation
+
+Six verbatim ports + one engine growth, the layer the arcade cards/views
+stand on: **`Loadout`** + **`ArcadeGameLoadout`** (launch-config models with
+the all-defaults `Initialized` sentinel), **`LoadoutSystem`** (per-game +
+player loadout persistence through the real DataAccessor JSON store),
+**`FavoriteSystem`** (toggle/notify/persist; `OnFavoriteChanged` event),
+**`CallToActionTarget`** (registers against the live CallToActionSystem),
+**`FTUEEventManager`** (the FTUE static event hub — first FTUE-directory
+port), **`ArcadeDPadNav`** (the arcade grid's dpad navigation over real
+Buttons/ScrollRect — needed the engine **`DpadControl` growth** on Gamepad:
+up/down/left/right ButtonControls). **4 headless tests**
+(`ArcadeServiceFoundationTests`): favorite toggle flips state + notifies +
+leaves no net state, game-loadout save/load round-trip through the real
+store, unknown-mode fallback returns the uninitialized sentinel, active-slot
+writes follow the index. **1622 tests green in BOTH configs (1284 + 338)**;
+5 CLI modes exit 0; all four diags byte-identical. bleeding-edge unmoved at
+`f2b8f5aa`.
 
 ### Arc F part 2a ✅ (2026-07-10) — the switcher contract, test-pinned
 

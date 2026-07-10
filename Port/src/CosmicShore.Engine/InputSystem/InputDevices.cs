@@ -42,11 +42,18 @@ namespace CosmicShore.Engine.InputSystem
         public Vector2 ReadValue() => value;
     }
 
+    /// <summary>Four-way pad (original contract: DpadControl) — UI-arc growth for ArcadeDPadNav.</summary>
+    public sealed class DpadControl
+    {
+        public readonly ButtonControl up = new(), down = new(), left = new(), right = new();
+    }
+
     public sealed class Gamepad
     {
         public static Gamepad current;
 
         public readonly StickControl leftStick = new(), rightStick = new();
+        public readonly DpadControl dpad = new();
         public readonly ButtonControl leftTrigger = new(), rightTrigger = new(),
             buttonSouth = new(), buttonNorth = new(), buttonEast = new(), buttonWest = new(),
             leftShoulder = new(), rightShoulder = new(), startButton = new(), selectButton = new();
