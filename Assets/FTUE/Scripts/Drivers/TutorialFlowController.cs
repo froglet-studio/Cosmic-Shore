@@ -1,4 +1,5 @@
 using CosmicShore.App.Systems.CTA;
+using CosmicShore.App.UI.MainMenuVesselInteraction;
 using CosmicShore.Events;
 using System.Collections;
 using System.Collections.Generic;
@@ -65,6 +66,11 @@ namespace CosmicShore.FTUE
             if (ftueProgress.ftueDebugKey)
                 return;
 
+            // Skip Phase1 if the new vessel tutorial is handling onboarding
+            if (ftueProgress.currentPhase == TutorialPhase.Phase1_Intro
+                && MainMenuVesselTutorialController.IsActive)
+                return;
+
             if (ftueProgress.currentPhase == TutorialPhase.Phase1_Intro)
             {
                 _currentIndex = 0;
@@ -93,7 +99,7 @@ namespace CosmicShore.FTUE
         }
 
         /// <summary>
-        /// Called by each handler when it’s done.
+        /// Called by each handler when itï¿½s done.
         /// </summary>
         public void StepCompleted()
         {

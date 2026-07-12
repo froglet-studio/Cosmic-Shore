@@ -8,6 +8,11 @@ namespace CosmicShore.Game
 {
     public class SkimmerImpactor : ImpactorBase
     {
+        /// <summary>
+        /// Fired when any skimmer begins skimming a prism. Used by the vessel tutorial to detect skim completion.
+        /// </summary>
+        public static event Action OnPrismSkimmed;
+
         [FormerlySerializedAs("shipSkimmerEffectsSO")]
         [Header("Effect lists")]
         // [SerializeField] VesselSkimmerEffectsSO[] vesselSkimmerEffectsSO;
@@ -186,7 +191,7 @@ namespace CosmicShore.Game
         {
             if (_skimStartTimes.ContainsKey(ownerId)) return;
             _skimStartTimes.Add(ownerId, Time.time);
-            //ActivelySkimmingBlockCount++;
+            OnPrismSkimmed?.Invoke();
         }
     }
 }
