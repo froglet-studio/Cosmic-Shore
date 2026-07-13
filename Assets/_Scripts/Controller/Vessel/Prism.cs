@@ -213,10 +213,16 @@ namespace CosmicShore.Gameplay
                     SyncRenderMaterial();
                     SyncRenderTransform();
                 }
-                PrismRenderService.SetVisible(in RenderHandle, show);
+                // Batched: applied in one structural change per direction at
+                // LateUpdate (same frame, before rendering). Per-prism toggles were
+                // the dominant creation-tick cost (Prism.Create.Visibility).
+                PrismRenderService.QueueVisible(in RenderHandle, show);
             }
             else
             {
+                // Immediate: the GameObject renderer takes over THIS frame (exotic
+                // shield morph / legacy fallback) — a queued hide would double-draw
+                // entity + MeshRenderer for the rest of the frame.
                 if (PrismRenderService.IsHandleUsable(in RenderHandle))
                     PrismRenderService.SetVisible(in RenderHandle, false);
                 if (meshRenderer) meshRenderer.enabled = _renderVisible;
@@ -886,9 +892,10 @@ namespace CosmicShore.Gameplay
 
             // The companion entity is not tied to GameObject activation — hide it
             // explicitly so a pooled prism can't keep drawing while it waits for
-            // reuse. (The next Initialize re-establishes visibility.)
+            // reuse. (The next Initialize re-establishes visibility.) Queued: the
+            // batch flush applies it this frame at LateUpdate, before rendering.
             if (PrismRenderService.IsHandleUsable(in RenderHandle))
-                PrismRenderService.SetVisible(in RenderHandle, false);
+                PrismRenderService.QueueVisible(in RenderHandle, false);
         }
 
         private void OnDestroy()

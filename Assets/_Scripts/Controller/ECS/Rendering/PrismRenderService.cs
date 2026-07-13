@@ -155,6 +155,18 @@ namespace CosmicShore.ECS
         static readonly Dictionary<Mesh, BatchMeshID> _meshIds = new();
         static readonly Dictionary<Material, BatchMaterialID> _materialIds = new();
 
+        // Prototype entities, one per (override set, layer). Creating a fresh entity
+        // used to be ~8 structural changes (CreateEntity + RenderMeshUtility bundle +
+        // one AddComponentData per override + DisableRendering) and EVERY structural
+        // change is an archetype move that syncs running jobs — the measured
+        // Prism.Create.Visibility cost (CompleteAllJobs under it), which grows with
+        // the live entity count. Instantiating a prebuilt prototype is ONE structural
+        // op; everything per-prism after that is SetComponentData (non-structural).
+        // The Prefab tag keeps the prototype itself out of every query (it never
+        // renders) and is stripped from clones automatically by Instantiate.
+        static readonly Dictionary<(int layer, PrismRenderOverrideSet set), Entity> _prototypes = new();
+        static int _prototypesEpoch = -1;
+
         /// <summary>Live companion entities (telemetry for the benchmark overlay).</summary>
         public static int LiveEntityCount { get; private set; }
 
@@ -290,9 +302,68 @@ namespace CosmicShore.ECS
         // ------------------------------------------------------------------
 
         /// <summary>
+        /// Prebuilt archetype donor for <see cref="Create"/> — see the _prototypes
+        /// comment. Built lazily per (layer, override set); rebuilt when the world
+        /// epoch changes.
+        /// </summary>
+        static Entity GetPrototype(int layer, PrismRenderOverrideSet overrideSet, Mesh mesh, Material material)
+        {
+            if (_prototypesEpoch != _epoch)
+            {
+                _prototypes.Clear();
+                _prototypesEpoch = _epoch;
+            }
+
+            var em = _world.EntityManager;
+            var key = (layer, overrideSet);
+            if (_prototypes.TryGetValue(key, out var prototype) && em.Exists(prototype))
+                return prototype;
+
+            prototype = em.CreateEntity();
+
+            var desc = new RenderMeshDescription(ShadowCastingMode.Off, receiveShadows: false);
+            var filter = desc.FilterSettings;
+            filter.Layer = layer;
+            desc.FilterSettings = filter;
+
+            // Mesh/material here are only archetype placeholders — every clone gets
+            // its real MaterialMeshInfo via SetComponentData in Create().
+            RenderMeshUtility.AddComponents(
+                prototype, em, in desc,
+                new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh)));
+
+            em.AddComponentData(prototype, new PrismBrightColorOverride { Value = new float4(1f) });
+            em.AddComponentData(prototype, new PrismDarkColorOverride { Value = new float4(1f) });
+            em.AddComponentData(prototype, new PrismSpreadOverride { Value = float3.zero });
+
+            switch (overrideSet)
+            {
+                case PrismRenderOverrideSet.Explosion:
+                    em.AddComponentData(prototype, new PrismVelocityOverride { Value = float3.zero });
+                    em.AddComponentData(prototype, new PrismExplosionAmountOverride { Value = 0f });
+                    em.AddComponentData(prototype, new PrismOpacityOverride { Value = 1f });
+                    break;
+                case PrismRenderOverrideSet.Implosion:
+                    em.AddComponentData(prototype, new PrismImplosionStateOverride { Value = 0f });
+                    em.AddComponentData(prototype, new PrismImplosionLocationOverride { Value = float3.zero });
+                    break;
+            }
+
+            // Clones are born hidden (existing contract); the Prefab tag keeps the
+            // prototype itself invisible to every query and is stripped on Instantiate.
+            em.AddComponent<DisableRendering>(prototype);
+            em.AddComponent<Prefab>(prototype);
+
+            _prototypes[key] = prototype;
+            return prototype;
+        }
+
+        /// <summary>
         /// Creates a hidden companion render entity for a prism. Returns an
         /// invalid handle (and the caller stays on the MeshRenderer path) when
         /// the toggle is off or no ECS world / graphics system exists.
+        /// One structural change (Instantiate from prototype); all per-prism
+        /// state lands via non-structural SetComponentData.
         /// </summary>
         public static PrismRenderHandle Create(Mesh mesh, Material material, in Matrix4x4 localToWorld, int layer,
             PrismRenderOverrideSet overrideSet = PrismRenderOverrideSet.Prism)
@@ -301,48 +372,27 @@ namespace CosmicShore.ECS
                 return PrismRenderHandle.Invalid;
 
             var em = _world.EntityManager;
-            var entity = em.CreateEntity();
+            var entity = em.Instantiate(GetPrototype(layer, overrideSet, mesh, material));
 
-            var desc = new RenderMeshDescription(ShadowCastingMode.Off, receiveShadows: false);
-            var filter = desc.FilterSettings;
-            filter.Layer = layer;
-            desc.FilterSettings = filter;
-
-            RenderMeshUtility.AddComponents(
-                entity, em, in desc,
-                new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh)));
-
+            em.SetComponentData(entity, new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh)));
             em.SetComponentData(entity, new LocalToWorld { Value = ToFloat4x4(in localToWorld) });
             em.SetComponentData(entity, new RenderBounds
             {
                 Value = new AABB { Center = mesh.bounds.center, Extents = mesh.bounds.extents }
             });
 
-            em.AddComponentData(entity, new PrismBrightColorOverride { Value = ReadColor(material, BrightColorId) });
-            em.AddComponentData(entity, new PrismDarkColorOverride { Value = ReadColor(material, DarkColorId) });
-            em.AddComponentData(entity, new PrismSpreadOverride { Value = ReadVector3(material, SpreadId) });
-
-            switch (overrideSet)
-            {
-                case PrismRenderOverrideSet.Explosion:
-                    em.AddComponentData(entity, new PrismVelocityOverride { Value = float3.zero });
-                    em.AddComponentData(entity, new PrismExplosionAmountOverride { Value = 0f });
-                    em.AddComponentData(entity, new PrismOpacityOverride { Value = 1f });
-                    break;
-                case PrismRenderOverrideSet.Implosion:
-                    em.AddComponentData(entity, new PrismImplosionStateOverride { Value = 0f });
-                    em.AddComponentData(entity, new PrismImplosionLocationOverride { Value = float3.zero });
-                    break;
-            }
-
-            // Born hidden — the owner shows it when its visual actually starts.
-            em.AddComponent<DisableRendering>(entity);
+            em.SetComponentData(entity, new PrismBrightColorOverride { Value = ReadColor(material, BrightColorId) });
+            em.SetComponentData(entity, new PrismDarkColorOverride { Value = ReadColor(material, DarkColorId) });
+            em.SetComponentData(entity, new PrismSpreadOverride { Value = ReadVector3(material, SpreadId) });
 
             LiveEntityCount++;
             return new PrismRenderHandle { Entity = entity, Epoch = _epoch };
         }
 
-        /// <summary>Shows/hides the entity (DisableRendering tag add/remove).</summary>
+        /// <summary>Shows/hides the entity immediately (DisableRendering tag add/remove —
+        /// a structural change per call). Use for pooled VFX bursts and hand-offs to the
+        /// GameObject renderer, where same-instant application matters. High-churn
+        /// callers (the prism lifecycle) should use <see cref="QueueVisible"/>.</summary>
         public static void SetVisible(in PrismRenderHandle handle, bool visible)
         {
             if (!IsUsable(in handle)) return;
@@ -352,6 +402,77 @@ namespace CosmicShore.ECS
                 em.RemoveComponent<DisableRendering>(handle.Entity);
             else if (!visible && !hidden)
                 em.AddComponent<DisableRendering>(handle.Entity);
+        }
+
+        // ------------------------------------------------------------------
+        // Batched visibility — one structural change per direction per frame
+        // ------------------------------------------------------------------
+
+        // Desired-state map (last write this frame wins) flushed once in LateUpdate,
+        // before rendering, by a hidden host. Per-entity DisableRendering toggles were
+        // per-prism structural changes; the batch APIs move N entities in two ops.
+        static readonly Dictionary<Entity, bool> s_pendingVisibility = new(64);
+        static VisibilityFlushHost s_flushHost;
+        static readonly Unity.Profiling.ProfilerMarker s_flushMarker = new("PrismRender.VisibilityFlush");
+
+        /// <summary>
+        /// Deferred SetVisible: applied in one batched structural change per direction
+        /// at LateUpdate — same frame, before rendering, so nothing is ever visibly
+        /// late. The prism lifecycle routes its show/hide churn through this.
+        /// </summary>
+        public static void QueueVisible(in PrismRenderHandle handle, bool visible)
+        {
+            if (!IsUsable(in handle)) return;
+            s_pendingVisibility[handle.Entity] = visible;
+            EnsureFlushHost();
+        }
+
+        static void EnsureFlushHost()
+        {
+            if (s_flushHost != null) return;
+            var go = new GameObject("[PrismRenderVisibilityFlush]") { hideFlags = HideFlags.HideAndDontSave };
+            Object.DontDestroyOnLoad(go);
+            s_flushHost = go.AddComponent<VisibilityFlushHost>();
+        }
+
+        sealed class VisibilityFlushHost : MonoBehaviour
+        {
+            void LateUpdate() => FlushVisibility();
+        }
+
+        internal static void FlushVisibility()
+        {
+            if (s_pendingVisibility.Count == 0) return;
+            if (_world == null || !_world.IsCreated)
+            {
+                s_pendingVisibility.Clear();
+                return;
+            }
+
+            using (s_flushMarker.Auto())
+            {
+                var em = _world.EntityManager;
+                var show = new Unity.Collections.NativeList<Entity>(s_pendingVisibility.Count, Unity.Collections.Allocator.Temp);
+                var hide = new Unity.Collections.NativeList<Entity>(s_pendingVisibility.Count, Unity.Collections.Allocator.Temp);
+
+                foreach (var kv in s_pendingVisibility)
+                {
+                    var entity = kv.Key;
+                    if (!em.Exists(entity)) continue;
+                    bool hidden = em.HasComponent<DisableRendering>(entity);
+                    if (kv.Value && hidden) show.Add(entity);
+                    else if (!kv.Value && !hidden) hide.Add(entity);
+                }
+
+                if (show.Length > 0)
+                    em.RemoveComponent(show.AsArray(), ComponentType.ReadWrite<DisableRendering>());
+                if (hide.Length > 0)
+                    em.AddComponent(hide.AsArray(), ComponentType.ReadWrite<DisableRendering>());
+
+                show.Dispose();
+                hide.Dispose();
+                s_pendingVisibility.Clear();
+            }
         }
 
         /// <summary>Pushes the prism's current localToWorld matrix to the entity.</summary>
