@@ -214,10 +214,15 @@ How a run plays:
   marker is big (≥7u base, cone/jack in the domain prism material) with a forgiving hit box
   (1.8× reach) — a waypoint to sweep through, not a bullseye — and each pass pops the next
   marker in oversized before it settles.
-- **Ride dashes, not a line.** The ACTIVE stroke renders as spaced prism-material dash beads
-  (the trail-to-be, solid geometry) instead of a bright LineRenderer — the line ghost stays only
-  as the faint blueprint hint. A **perfect ride** (hugging the curve inside ~1.2× reach) builds
-  `_rideGlow`: the guide brightens and checkpoint pops grow bigger — the satisfaction channel.
+- **Rings, not lines, not cones.** While AWAITING its gate the next stroke's ghost shows faintly
+  (something to aim at); once you are RIDING it the line disappears entirely — the ride is the
+  milestone RINGS and your own painted trail. Each milestone is a ring gate faced along the local
+  flight tangent whose **SphereCollider trigger is scaled to the ring radius** (flying through the
+  ring IS the hit test; a slightly tighter distance check backstops fast physics misses, and all
+  effects run on the Update tick, never in the physics callback). The trail-on **cone** appears
+  only on the stroke's START gate; the final milestone ring carries the trail-off **jack** in its
+  centre. Rings fold away as they're swept and the next blooms in (continuity law). A **perfect
+  ride** (hugging the curve inside ~1.2× reach) builds `_rideGlow` and brightens the guide.
 - **Progress, pause, resume.** Progress is stroke-granular. Re-flying the station benches /
   resumes the run ("put the brush down"); progress also persists across sessions
   (`PaintingProgressStore`, the FavoriteSystem `DataAccessor` JSON pattern — completed strokes

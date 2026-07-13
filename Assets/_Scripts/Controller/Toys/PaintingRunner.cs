@@ -64,19 +64,12 @@ namespace CosmicShore.Gameplay
         RunPhase _phase;
         bool _benched;
         bool _wasEngaged;
-        GameObject _dashParent;        // prism-material ride beads along the active stroke
         float _rideGlow;               // 0..1 — how faithfully the player is riding the curve
 
         GameObject _gate;
         bool _gateBenchEasing;
-        GameObject _marker;
-        GameObject _markerCone;
-        GameObject _markerJack;
-        int _markerStrokeIndex = -1;
-        bool _markerHiding;
+        GameObject _milestone;         // the ONE live ride ring (SphereCollider trigger = its radius)
         LineRenderer _guide;
-        float _markerBaseRadius;
-        float _markerPop;              // transient checkpoint-pop overshoot, decays in SettleMarker
 
         Vector3 _zoneCenter;
         float _zoneSqrRadius;
@@ -201,13 +194,13 @@ namespace CosmicShore.Gameplay
                 // pause another runner (the new brush holder) sets in the meantime.
                 RestorePen();
                 _gateBenchEasing = true;
-                HideMarker();           // the floating next-point spike goes with the blueprint
+                DespawnMilestone();     // the ride ring folds away with the blueprint
             }
             else
             {
                 BenchOtherRunners();
-                // Re-show the next-point marker we hid on pause (mid-stroke resume only).
-                if (_phase == RunPhase.Painting) MoveMarker(_strokeIndex, _pointIndex);
+                // Re-spawn the ride ring we folded on pause (mid-stroke resume only).
+                if (_phase == RunPhase.Painting) SpawnMilestone();
             }
             ProgressChanged?.Invoke();
         }
@@ -254,8 +247,6 @@ namespace CosmicShore.Gameplay
                 UpdatePainting(shipPos);
             else
                 UpdateAwaitingGate(shipPos);
-
-            SettleMarker();
         }
 
         /// <summary>
@@ -276,17 +267,6 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            if (_markerHiding && _marker && _marker.activeSelf)
-            {
-                var t = _marker.transform;
-                t.localScale = Vector3.Lerp(t.localScale, Vector3.zero, Time.deltaTime * 9f);
-                if (t.localScale.x < 0.05f)
-                {
-                    _marker.SetActive(false);
-                    _markerHiding = false;
-                }
-            }
-
             // A paused run's ghost blueprint fades away entirely (nothing lingers in the lava lamp);
             // resuming fades it back. The already-painted prisms are conserved mass and are untouched.
             float benchTarget = _benched ? 0f : 1f;
@@ -296,12 +276,12 @@ namespace CosmicShore.Gameplay
                 ApplyAllGhostStyles();
             }
 
-            // Ride dashes follow the same law: grow in on stroke start, shrink away while benched.
-            if (_dashParent)
+            // The ride ring grows in on spawn and folds away while benched (continuity law).
+            if (_milestone)
             {
-                Vector3 dashTarget = _benched ? Vector3.zero : Vector3.one;
-                _dashParent.transform.localScale = Vector3.Lerp(
-                    _dashParent.transform.localScale, dashTarget, Time.deltaTime * 6f);
+                Vector3 target = _benched ? Vector3.zero : Vector3.one;
+                _milestone.transform.localScale = Vector3.Lerp(
+                    _milestone.transform.localScale, target, Time.deltaTime * 7f);
             }
         }
 
@@ -333,18 +313,14 @@ namespace CosmicShore.Gameplay
             UpdateRideGlow(shipPos, stroke, cps[_pointIndex - 1], targetIdx);
             DrawGuide(shipPos, target, Mathf.Lerp(0.45f, 0.9f, _rideGlow));
 
-            // Big forgiving hit box — a checkpoint is a waypoint to sweep through, not a bullseye.
-            float hit = Mathf.Max(18f, stroke.Reach * 1.8f);
-            if ((shipPos - target).sqrMagnitude > hit * hit) return;
+            // The milestone ring's sphere trigger is the hit volume; effects run here on the Update
+            // tick (never inside the physics callback). A slightly tighter distance check backstops
+            // fast passes the physics step might miss.
+            bool tripped = _milestone && _milestone.TryGetComponent(out StrokeMilestoneTrigger trig) && trig.Tripped;
+            float backstop = MilestoneRadius(stroke) * 0.85f;
+            if (!tripped && (shipPos - target).sqrMagnitude > backstop * backstop) return;
 
-            PopMarker();
-            _pointIndex++;
-            if (_pointIndex >= cps.Count)
-            {
-                CompleteStroke();
-                return;
-            }
-            MoveMarker(_strokeIndex, _pointIndex);
+            AdvanceMilestone();
         }
 
         /// <summary>
@@ -364,12 +340,6 @@ namespace CosmicShore.Gameplay
             _rideGlow = Mathf.MoveTowards(_rideGlow, target, Time.deltaTime * (target > _rideGlow ? 0.9f : 1.6f));
         }
 
-        /// <summary>
-        /// A satisfying pop as a checkpoint is swept: the next marker blooms in oversized and settles
-        /// (SettleMarker decays the overshoot) — bigger on a perfect ride.
-        /// </summary>
-        void PopMarker() => _markerPop = Mathf.Lerp(0.45f, 1.1f, _rideGlow);
-
         void DrawGuide(Vector3 from, Vector3 to, float alpha)
         {
             if (!_guide) return;
@@ -383,7 +353,7 @@ namespace CosmicShore.Gameplay
 
         void CompleteStroke()
         {
-            DespawnDashes();
+            DespawnMilestone();
             SetGhostStyle(_strokeIndex, GhostStyle.Done);
             // Persist the stroke's prisms as drawing state (position/orientation/size/domain) —
             // this is what regrows on return and what the share exporter reconstructs.
@@ -391,7 +361,6 @@ namespace CosmicShore.Gameplay
             _strokeIndex++;
             PaintingProgressStore.SetStrokesCompleted(_painting.PaintingId, _strokeIndex, _strokes.Length);
 
-            HideMarker();
             if (_strokeIndex >= _strokes.Length)
             {
                 ProgressChanged?.Invoke();
@@ -413,8 +382,7 @@ namespace CosmicShore.Gameplay
             RestorePen();
             StopCapture();
             DespawnGate();
-            DespawnDashes();
-            HideMarker();
+            DespawnMilestone();
             if (_guide) _guide.enabled = false;
 
             PaintingProgressStore.MarkCompleted(_painting.PaintingId, _strokes.Length);
@@ -454,8 +422,8 @@ namespace CosmicShore.Gameplay
             _phase = RunPhase.Painting;
             _pointIndex = 1; // checkpoint 0 IS the gate — flying it consumes the stroke's start
             _rideGlow = 0f;
-            SpawnDashes(stroke);
-            MoveMarker(_strokeIndex, _pointIndex);
+            ApplyGhostStyle(stroke); // the line disappears on the stroke you are riding
+            SpawnMilestone();
 
             var gate = _gate;
             _gate = null;
@@ -657,9 +625,10 @@ namespace CosmicShore.Gameplay
             switch (stroke.Style)
             {
                 case GhostStyle.Active:
-                    // Demoted to a hint: the ride itself is carried by the solid dash beads and
-                    // checkpoints — a bright dense line here is the "weird artifact" we retired.
-                    c.a = 0.30f;
+                    // While AWAITING the gate the next stroke shows faintly (something to aim at);
+                    // once you are RIDING it the line disappears entirely — the ride is the rings
+                    // and your own trail, not a line rendering.
+                    c.a = _phase == RunPhase.Painting ? 0f : 0.45f;
                     width = 1.1f;
                     break;
                 case GhostStyle.Done:
@@ -678,122 +647,71 @@ namespace CosmicShore.Gameplay
             lr.startWidth = lr.endWidth = width;
         }
 
+        // ── Ride milestones — rings you fly THROUGH, sized as their own hit volume ──
+
+        float MilestoneRadius(StrokeInfo stroke) => Mathf.Max(18f, stroke.Reach * 1.8f);
+
         /// <summary>
-        /// Shared trail-toy shape language: intermediate points are CONES whose apex points at the
-        /// stroke's next point ("this way next" — the same shape the domain changer wears, since
-        /// both change your trail); each stroke's FINAL point — the one that turns the trail off —
-        /// is a JACK. Both wear the stroke domain's prism material.
+        /// The ONE live milestone: a ring gate at the current checkpoint, faced along the local
+        /// flight tangent, whose SphereCollider trigger is scaled to the ring radius — flying
+        /// through the ring IS the hit test. The final milestone carries the trail-off jack in its
+        /// centre; the trail-on cone appears only on the stroke's start gate.
         /// </summary>
-        void MoveMarker(int strokeIndex, int checkpointIndex)
+        void SpawnMilestone()
         {
-            var stroke = _strokes[strokeIndex];
+            DespawnMilestone();
+            var stroke = CurrentStroke;
             var cps = stroke.Checkpoints;
-            int ptIdx = cps[Mathf.Clamp(checkpointIndex, 0, cps.Count - 1)];
+            if (_pointIndex >= cps.Count) return;
+
+            int ptIdx = cps[_pointIndex];
             Vector3 pos = stroke.Points[ptIdx];
-            bool isStrokeEnd = checkpointIndex >= cps.Count - 1;
-            // Big and readable: checkpoints are sparse now, so each one carries the ride.
-            _markerBaseRadius = Mathf.Max(7f, stroke.Reach * 0.6f);
+            bool isStrokeEnd = _pointIndex == cps.Count - 1;
+            float ringR = MilestoneRadius(stroke);
 
-            if (!_marker)
-            {
-                _marker = new GameObject("NextPoint");
-                _marker.transform.SetParent(transform, false);
-            }
-            if (_markerStrokeIndex != strokeIndex || !_markerCone || !_markerJack)
-            {
-                _markerStrokeIndex = strokeIndex;
-                for (int i = _marker.transform.childCount - 1; i >= 0; i--)
-                    Destroy(_marker.transform.GetChild(i).gameObject);
-                var prismMat = ToyFactory.DomainPrismMaterial(_context, stroke.Domain);
-                _markerCone = ToyFactory.AddConeBody(_marker.transform, 0.45f, 1.25f, stroke.BaseColor, prismMat);
-                _markerJack = ToyFactory.AddJackBody(_marker.transform, 0.55f, stroke.BaseColor, prismMat);
-            }
-            _markerCone.SetActive(!isStrokeEnd);
-            _markerJack.SetActive(isStrokeEnd);
+            _milestone = new GameObject($"Milestone_{_pointIndex}");
+            _milestone.transform.SetParent(transform, false);
+            _milestone.transform.position = pos;
+            Vector3 tangent = stroke.Points[Mathf.Min(ptIdx + 1, stroke.Points.Length - 1)]
+                              - stroke.Points[Mathf.Max(ptIdx - 1, 0)];
+            _milestone.transform.rotation = tangent.sqrMagnitude > 1e-4f
+                ? Quaternion.LookRotation(tangent.normalized, Vector3.up)
+                : _rotation;
 
+            ToyFactory.AddRingBody(_milestone.transform, ringR, stroke.BaseColor);
             if (isStrokeEnd)
-            {
-                _marker.transform.rotation = _rotation; // jacks are omnidirectional — sit square to the painting
-            }
-            else
-            {
-                // Apex points along the LOCAL tangent — "the ride continues this way" — which on a
-                // curl is the way the curve bends, not a beeline to the next checkpoint.
-                Vector3 toNext = stroke.Points[Mathf.Min(ptIdx + 1, stroke.Points.Length - 1)] - pos;
-                _marker.transform.rotation = toNext.sqrMagnitude > 1e-4f
-                    ? Quaternion.LookRotation(toNext.normalized, Vector3.up)
-                    : _rotation;
-            }
+                ToyFactory.AddJackBody(_milestone.transform, ringR * 0.45f, stroke.BaseColor,
+                    ToyFactory.DomainPrismMaterial(_context, stroke.Domain));
 
-            _markerHiding = false;
-            _marker.SetActive(true);
-            _marker.transform.position = pos;
-            _marker.transform.localScale = Vector3.zero; // SettleMarker grows it back in — nothing snaps
+            var trigger = _milestone.AddComponent<SphereCollider>();
+            trigger.isTrigger = true;
+            trigger.radius = ringR;   // the hit volume IS the ring
+
+            _milestone.AddComponent<StrokeMilestoneTrigger>();
+            _milestone.transform.localScale = Vector3.zero; // EaseTransitions grows it in
         }
 
-        // ── Ride dashes — the curve itself, as matter instead of a line ──────
-
-        /// <summary>
-        /// The active stroke's curve rendered as spaced prism-material beads (the trail-to-be) —
-        /// a rideable rhythm of solid geometry instead of a LineRenderer artifact. Checkpoints sit
-        /// sparse on top; the dashes carry the curve's true shape between them.
-        /// </summary>
-        void SpawnDashes(StrokeInfo stroke)
+        /// <summary>Sweep past the current ring: it folds away, the next one blooms (or the stroke ends).</summary>
+        void AdvanceMilestone()
         {
-            DespawnDashes();
-            _dashParent = new GameObject($"Dashes_{stroke.Name}");
-            _dashParent.transform.SetParent(transform, false);
+            var passed = _milestone;
+            _milestone = null;
+            if (passed) ToyFactory.ScaleOutAndDestroy(passed, GateDespawnSeconds).Forget();
 
-            var mat = ToyFactory.DomainPrismMaterial(_context, stroke.Domain);
-            float spacing = Mathf.Max(26f, stroke.Reach * 1.1f);
-            float len = spacing * 0.34f;
-            float girth = Mathf.Max(2.2f, stroke.Reach * 0.16f);
-
-            float sinceLast = spacing; // place the first dash immediately past the gate
-            for (int i = 1; i < stroke.Points.Length; i++)
+            _pointIndex++;
+            if (_pointIndex >= CurrentStroke.Checkpoints.Count)
             {
-                Vector3 a = stroke.Points[i - 1], b = stroke.Points[i];
-                float segLen = Vector3.Distance(a, b);
-                if (segLen < 1e-4f) continue;
-                sinceLast += segLen;
-                if (sinceLast < spacing) continue;
-                sinceLast = 0f;
-
-                var dash = GameObject.CreatePrimitive(PrimitiveType.Cube);
-                dash.name = "Dash";
-                if (dash.TryGetComponent(out Collider col)) Destroy(col); // visual only — never a trigger
-                dash.transform.SetParent(_dashParent.transform, false);
-                dash.transform.position = Vector3.Lerp(a, b, 0.5f);
-                dash.transform.rotation = Quaternion.LookRotation((b - a) / segLen, Vector3.up);
-                dash.transform.localScale = new Vector3(girth, girth, len);
-                var rend = dash.GetComponent<MeshRenderer>();
-                rend.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-                rend.receiveShadows = false;
-                if (mat) rend.sharedMaterial = mat;
+                CompleteStroke();
+                return;
             }
-            _dashParent.transform.localScale = Vector3.zero; // EaseTransitions grows it in — nothing pops
+            SpawnMilestone();
         }
 
-        void DespawnDashes()
+        void DespawnMilestone()
         {
-            if (!_dashParent) return;
-            ToyFactory.ScaleOutAndDestroy(_dashParent, GateDespawnSeconds).Forget();
-            _dashParent = null;
-        }
-
-        void HideMarker() => _markerHiding = true; // EaseTransitions shrinks it out — nothing blinks off
-
-        void SettleMarker()
-        {
-            if (!_marker || !_marker.activeSelf || _markerHiding) return;
-            // The marker grows in once (from the zero MoveMarker sets); a fresh checkpoint pass adds a
-            // transient overshoot (_markerPop) that decays — the pop-and-settle reward. Idle life comes
-            // from the body's slow ToyIdleSpin, matching the calm motion language of other pickups.
-            _markerPop = Mathf.MoveTowards(_markerPop, 0f, Time.deltaTime * 2.2f);
-            float target = _markerBaseRadius * 2f * (1f + _markerPop);
-            float current = _marker.transform.localScale.x;
-            if (Mathf.Abs(current - target) < 0.01f) return;
-            _marker.transform.localScale = Vector3.one * Mathf.Lerp(current, target, Time.deltaTime * 8f);
+            if (!_milestone) return;
+            ToyFactory.ScaleOutAndDestroy(_milestone, GateDespawnSeconds).Forget();
+            _milestone = null;
         }
 
         IVesselStatus ResolveVessel()
@@ -849,5 +767,24 @@ namespace CosmicShore.Gameplay
             if (this) Destroy(gameObject);
         }
 
+    }
+
+    /// <summary>
+    /// Trigger on a ride-milestone ring: trips when the LOCAL player's vessel enters its sphere
+    /// (scaled to the ring radius). The <see cref="PaintingRunner"/> polls <see cref="Tripped"/>
+    /// from Update, keeping all effects out of the physics callback.
+    /// </summary>
+    class StrokeMilestoneTrigger : MonoBehaviour
+    {
+        public bool Tripped { get; private set; }
+
+        void OnTriggerEnter(Collider other)
+        {
+            var status = other.GetComponentInParent<VesselStatus>();
+            if (!status) return;
+            IVesselStatus vessel = status;
+            if (!vessel.IsLocalUser) return;
+            Tripped = true;
+        }
     }
 }

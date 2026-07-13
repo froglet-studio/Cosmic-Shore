@@ -857,23 +857,38 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// <paramref name="count"/> longitudinal frame lines on a tube around <paramref name="spine"/>,
-        /// twisting <paramref name="twistTurns"/> full turns end to end (keep it whole so closed curves seal).
+        /// twisting <paramref name="twistTurns"/> full turns end to end (keep it whole so closed curves
+        /// seal). On a CLOSED spine, parallel transport comes back rotated by the loop's holonomy —
+        /// left uncorrected, every longitude ends offset around the tube and the loop doesn't quite
+        /// connect. The holonomy is measured and distributed as a compensating counter-twist, and the
+        /// final point is snapped exactly onto the first.
         /// </summary>
         public static List<List<Vector3>> TubeLongitudes(IReadOnlyList<Vector3> spine, float radius,
             int count, int twistTurns)
         {
             TransportFrames(spine, out Vector3[] normals, out Vector3[] binormals);
-            var lines = new List<List<Vector3>>(count);
             int n = spine.Count;
+
+            bool closed = n > 3 && Vector3.Distance(spine[0], spine[n - 1]) < Mathf.Max(1e-3f, 0.02f * radius);
+            float holonomyRad = 0f;
+            if (closed)
+            {
+                Vector3 tan0 = (spine[1] - spine[0]).normalized;
+                holonomyRad = Vector3.SignedAngle(normals[0], normals[n - 1], tan0) * Mathf.Deg2Rad;
+            }
+
+            var lines = new List<List<Vector3>>(count);
             for (int k = 0; k < count; k++)
             {
                 var pts = new List<Vector3>(n);
                 for (int i = 0; i < n; i++)
                 {
                     float t = i / (float)(n - 1);
-                    float ang = Mathf.PI * 2f * (k / (float)count) + Mathf.PI * 2f * twistTurns * t;
+                    float ang = Mathf.PI * 2f * (k / (float)count) + Mathf.PI * 2f * twistTurns * t
+                                - holonomyRad * t;   // cancel the transport holonomy → the loop seals
                     pts.Add(spine[i] + normals[i] * (Mathf.Cos(ang) * radius) + binormals[i] * (Mathf.Sin(ang) * radius));
                 }
+                if (closed) pts[n - 1] = pts[0]; // kill the last float-drift so shared surfaces truly connect
                 lines.Add(pts);
             }
             return lines;

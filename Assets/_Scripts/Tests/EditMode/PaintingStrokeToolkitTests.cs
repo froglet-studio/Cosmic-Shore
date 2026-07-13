@@ -164,6 +164,29 @@ namespace CosmicShore.Tests
         }
 
         [Test]
+        public void TubeLongitudes_SealExactlyOnAClosedKnot()
+        {
+            // Parallel transport around a closed loop returns rotated (holonomy) — uncorrected, every
+            // longitude ends ~30u off its own start on the trefoil tube. The fix must seal them.
+            const float R = 335f, rT = 140f, tube = 52f;
+            const int NP = 300;
+            var spine = new List<Vector3>(NP + 1);
+            for (int i = 0; i <= NP; i++)
+            {
+                float t = (i / (float)NP) * Mathf.PI * 2f;
+                float ring = R + rT * Mathf.Cos(2f * t);
+                spine.Add(new Vector3(ring * Mathf.Cos(3f * t), rT * Mathf.Sin(2f * t), ring * Mathf.Sin(3f * t)));
+            }
+            spine[NP] = spine[0];
+
+            var longs = Tk.TubeLongitudes(spine, tube, 6, 1);
+            Assert.AreEqual(6, longs.Count);
+            foreach (var line in longs)
+                Assert.Less(Vector3.Distance(line[0], line[^1]), 1e-3f,
+                    "every longitude must close onto itself — the knot's strokes connect on their shared surface");
+        }
+
+        [Test]
         public void RideCheckpoints_AreSpacedAndIncludeBothEnds()
         {
             // A long straight line: checkpoints every ~spacing, none closer, ends included.

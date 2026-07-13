@@ -857,6 +857,7 @@ namespace CosmicShore.Gameplay
                 float ring = R + rT * Mathf.Cos(2f * t);
                 spine.Add(C + new Vector3(ring * Mathf.Cos(3f * t), rT * Mathf.Sin(2f * t), ring * Mathf.Sin(3f * t)));
             }
+            spine[NP] = spine[0]; // a knot is a LOOP — snap out the trig float-drift so it seals exactly
 
             var longs = Tk.TubeLongitudes(spine, tube, 6, 1);
             Domains[] doms = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Jade, Domains.Ruby, Domains.Gold };
