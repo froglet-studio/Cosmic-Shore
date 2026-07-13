@@ -27,6 +27,65 @@ Remaining known costs: `EventSystem.Update` ≈ **0.5 ms** flat UI raycast tax
 (Task 2); first-use shader-compile hitches (Task 3 — plumbing shipped,
 collection not yet recorded).
 
+### 2026-07-09 soak capture (Menu_Main, ~25,000 prisms) — the population-scaling rows
+
+Long lava-lamp soak: **25,483 registered prisms** (PrismScaleManager HUD;
+27,030 in MaterialStateManager), 27 fps, CPU-busy 25.1 ms, GPU 10.9 ms. This
+population is a **valid designed state**, not a leak: the menu vessel is Jade,
+fauna spawn in the cell's controlling color and eat only *opposing* mass —
+a single-domain cloud has no predator (territorial permanence), so it grows
+until an active force consumes it. The perf contract is therefore that every
+per-frame system must be **O(near/active), not O(population)**. Two rows
+violate that today; the creation-tick verdict also landed.
+
+1. **`Prism.Create.Visibility` VERDICT (Task 4 closed):** 90%+ of the
+   creation tick (0.72/0.80 ms at 11k prisms; 1.32/1.46 ms at 25k — the cost
+   *scales with entity count*), with `CompleteAllJobs` / `InvalidateArrays`
+   children — the ECS structural-change signature of the `DisableRendering`
+   add/remove. `SpatialBind` (0.04) and `SOAPRaise` (0.03, 384 B — PrismStats
+   payload, Task 7 micro-item) are exonerated. **Fix (designed, next up):**
+   make prism render visibility non-structural — create the render entity
+   visible at the creation tick instead of born-hidden-then-revealed, and
+   batch the hide-side toggles (ECB / batched RemoveComponent) so per-prism
+   sync points disappear.
+2. **`PrismColliderLodManager.Update` = 5.54 ms on slice frames.** The sweep
+   is budgeted (`maxPrismChecksPerFrameSlice = 8000`) but the slice scan
+   (`PrismSpatialIndex.QueryUnionOfSpheresSlice`) is a **managed** loop —
+   per entry: NativeArray indexer (editor safety checks), flag test,
+   per-focus `distancesq`, managed ref + Unity-null check, `List.Add` ≈
+   0.7 µs/entry. At 25k prisms a sweep = 4 slice-frames × 5.5 ms every
+   0.25 s. **Fix (designed):** Burst the classification — add an LOD-near
+   flag bit to `PrismSpatialData`, run one Burst job per sweep over the
+   packed array emitting `becameNear`/`becameFar` transition index lists,
+   complete async (schedule → apply next frame, the densest-region pattern),
+   managed side applies **transitions only** (typically a handful per sweep).
+   Managed cost collapses from O(population) to O(transitions). Interim knob
+   if needed before the job lands: lower `maxPrismChecksPerFrameSlice` to
+   ~2500 (≈1.7 ms/frame, sweep stretches to ~11 frames — still inside the
+   radius margin at menu speeds).
+3. **`UniTaskLoopRunnerUpdate` = 4.38 ms + 3.4 KB on trail-spawn ticks.**
+   The trail spawner (`VesselPrismController` UniTask loop) calls
+   `CreateBlock` → `PrismFactory` → pool `Get()`; with the buffer drained
+   (long-soak consumption outruns the 20/s maintenance), `ObjectPool.Get`
+   falls through to `CreateFunc` = **synchronous prism-prefab Instantiate
+   inline on the spawn tick** (2 blocks for a gapped trail ≈ 2 × ~2 ms).
+   These on-demand misses are NOT covered by the `PoolRefill.*` marker
+   (maintenance-only). **Fix path:** (a) instrument the miss —
+   marker around `CreateFunc` itself (`PoolMiss.<prefabName>`) to count
+   misses vs buffered hits; (b) the now-evidence-backed escalation:
+   maintenance refills via Unity 6 `InstantiateAsync` + deeper
+   `bufferSizeTarget`/`maxInstantiateRate` on the vessel prism pools so the
+   buffer never empties and every instantiate is engine-timesliced.
+4. **Open item:** console shows a one-off
+   `ArgumentNullException: Value cannot be null. Parameter name: source`
+   (a LINQ call on a null collection somewhere) — grab the stack trace next
+   time it appears; not yet attributed.
+
+Post-fix rows confirmed healthy at 25k: `PrismScaleManager.Process`
+invisible (68 active growers), creation budget holding (2/frame),
+`CoroutinesDelayedCalls` 1.61 ms / 472 B, physics 1.62 ms, GPU 10.9 ms
+(instancing coping with 25k).
+
 ### 2026-07-09 capture (frame 33237, 32.76 ms) — the flora growth pipeline
 
 Post-slicing capture. The animation managers are bounded (1.41 ms for BOTH,
@@ -497,5 +556,6 @@ not compiler, at the time of the merge).
 | 2026-07-08 | Created. All task file/line claims verified against code (6-agent sweep). Corrections found: LightFauna's tick is `UpdateBehavior` (not `CalculateBehavior` — that's Boid's); AOE explosion lifetime is ~2.2–4.2 s (not 0.6 s); audit tool's prefab path is not Undo-able; StatsManager's Omni lambda is captureless (no alloc) — only the four elemental lambdas allocate; shader-warmup log additionally requires `_verboseLogging=1` on `BootstrapConfig.asset`. Task 1 marked NEXT UP. |
 | 2026-07-08 (later) | HexRace capture analyzed (71 ms frame): pool-refill Instantiate + 20.75 ms mid-race `GC.Collect` on EarlyUpdate, and the Task 1 datum landed — 4350/11,400 growers, source = Boid grazing re-animation (legit, not a leak). Shipped: Task 1 both commits (`27860eaa`, `4b36b7f8`), GC behind splash (`5f6b497a`), spawn-window WaitForSeconds cache (`546e2b98`), `PoolRefill.*` markers (`e04d5a72`). Ecology protocol run: pacing/attribution only, zero collider impact, tempo + continuity preserved by construction. Escalation recorded: `InstantiateAsync` refills only if `PoolRefill.*` shows multi-ms typical unit cost. |
 | 2026-07-09 (flora round) | New capture (32.76 ms frame) analyzed: frame driver = flora growth pipeline (`CoroutinesDelayedCalls` 9.88 ms + 43 KB GC). Shipped under `/ecology`: grow-tick pacing `019eb3c0`, spindle MPB fades `5da47650`, creation-tick split markers `d4f696ae`, gauge push gating `481a7ad8`. Animation managers confirmed bounded post-slice (1.41 ms both, was 5.55). Verify in-editor: flora canopy shape/density unchanged over a full regrow cycle (children appear over ≤5 frames instead of one burst — invisible at 3 s cadence); spindle condense/evaporate fades look identical; gauge fills/ring/dominant tint behave identically; next capture reads `Prism.Create.*` split + `PoolRefill.*`. |
+| 2026-07-09 (soak round) | 25k-prism menu soak analyzed (user capture). Task 4 verdict: `Prism.Create.Visibility` dominates (90%+, scales with entity count, `CompleteAllJobs` signature) → non-structural visibility fix is next. Two new O(population) offenders found + fixes designed: collider-LOD slice scan is managed (5.54 ms/slice-frame at 25k → Burst transition-list job), and trail-spawn pool misses Instantiate inline under `UniTaskLoopRunnerUpdate` (4.38 ms — invisible to `PoolRefill.*`; add `PoolMiss.*` marker, then `InstantiateAsync` + deeper buffers). `SOAPRaise` 384 B ruled a Task 7 micro-item. Open: unattributed one-off `ArgumentNullException (source)` in console. HexRace pass deferred by user. |
 | 2026-07-09 (flora round, re-verified) | Adversarial pass over the four commits. Markers + gauge gating: SOUND. Two real bugs fixed in `fc9c53f3`: (1) the flora drain outlived `LifeForm.Die` (`StopAllCoroutines` killed the old GrowCoroutine spawn site but not `Update`) — a dying flora kept spawning through its wither window (zombie flora / child pop-out); `Die` override clears the queue. (2) Spindle's evaporate renderer-gone early-out could bail before `DisableSpindle`, hanging `DieCoroutine`'s empty-tracker wait — removed. Hardening: grow orders carry `decidedAt` and drop past `ReservationTtlSeconds − 1` (Frenzy holds could outlive the 5 s claim → overlap risk); drain freezes at `timeScale 0` (parity with the old `WaitForSeconds` loop). **Correction of record:** a material clone stays SRP-batchable; an MPB excludes the renderer for the fade duration — the spindle win is zero material create/destroy churn, at the cost of unbatched draws *during* fades. Re-measure in the next capture; fallback is quantized shared fade materials (phase-variant pattern). Accepted nuances: gauge ring can lag ≤1 rebuild-epsilon (~1.4°, under segment granularity); theme-swap colors up to 0.25 s latent; per-tick flora throughput can under-fill only when a parent dies or an assembler fails mid-window (rare, disclosed). |
 | 2026-07-09 | 6-agent adversarial re-verification of the five commits (pre-editor-test). **3 blockers found in the fresh Task 1 commits, fixed in `d80e7ee5`:** `dtNominal` 0.02 → 0.04 (project Fixed Timestep is 0.04 — growth was ~1.9× too fast as committed; two agents converged on it independently); fixed 0.5 s dt cap → rotation-scaled cap (fixed cap slowed tempo up to 7× under the target frenzy load); cursor drift on removal bursts corrected. GC coverage gaps (clients + Play Again reloads never took the scheduled collect) fixed in `4443df83` via the two all-peers post-load fade-back handlers. WaitForSeconds cache, pool marker verdicts: SOUND (notes: cache misses on the variable-`waitTime` `waitTillOutsideSkimmer` path — acceptable; prewarm burst unmarked — intentional). Final compile-sanity pass over all six edited files: PASS (arithmetic invariants proven, `MaterialStateManager` independent, no external readers of the sliced behavior). Lesson recorded: never assume Unity's 0.02 default fixed timestep — check `TimeManager.asset`. |
