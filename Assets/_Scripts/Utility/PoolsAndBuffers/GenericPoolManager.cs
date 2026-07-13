@@ -44,11 +44,17 @@ namespace CosmicShore.Utility
         private ProfilerMarker _missMarker;
         private bool _attributedCreate; // suppresses the miss marker for maintenance/prewarm creates
 
-        // Async refills instantiate here — far below the playfield — so the engine's
-        // timesliced integration can never flash an active clone inside the scene
-        // before the completion continuation deactivates it.
+        // Async refills instantiate under an INACTIVE staging parent: clones
+        // integrate with activeInHierarchy = false, so Awake/OnEnable never fire at
+        // incubation time — nothing can flash on screen or run enable-time side
+        // effects (e.g. a pooled Projectile's OnEnable registers a collider-LOD
+        // focus). Awake defers to the first Get, while the heavyweight
+        // Instantiate.Produce integration stays engine-timesliced. The far-away
+        // position is belt-and-braces on top of the inactive parent.
         private static readonly Vector3 IncubationPosition = new(0f, -100000f, 0f);
+        private Transform _incubator;
         private bool _asyncRefillSupported = true;
+        private float _lastTimerSampleTime;
 
         protected virtual void Awake()
         {
@@ -80,6 +86,11 @@ namespace CosmicShore.Utility
 
             if (enableBufferMaintenance)
             {
+                var incubator = new GameObject("Incubator (async refills)");
+                incubator.transform.SetParent(transform, false);
+                incubator.SetActive(false);
+                _incubator = incubator.transform;
+
                 maintenanceCts = CancellationTokenSource.CreateLinkedTokenSource(this.destroyCancellationToken);
                 BufferMaintenanceAsync(maintenanceCts.Token).Forget();
             }
@@ -260,11 +271,21 @@ namespace CosmicShore.Utility
         private async UniTaskVoid BufferMaintenanceAsync(CancellationToken ct)
         {
             instantiateTimer = 0f;
+            _lastTimerSampleTime = Time.time;
             try
             {
                 while (true)
                 {
                     ct.ThrowIfCancellationRequested();
+
+                    // Wall-clock accrual: an awaited async refill can span several
+                    // frames, and a per-iteration Time.deltaTime sum would drop that
+                    // elapsed time — silently capping throughput far below the
+                    // configured rate exactly when the pool is hungriest.
+                    float now = Time.time;
+                    float elapsed = now - _lastTimerSampleTime;
+                    _lastTimerSampleTime = now;
+
                     if (!enableBufferMaintenance || bufferSizeTarget <= 0)
                     {
                         await UniTask.Yield(PlayerLoopTiming.EarlyUpdate, ct);
@@ -278,7 +299,7 @@ namespace CosmicShore.Utility
                         float rate = Mathf.Lerp(maxInstantiateRate, baseInstantiateRate, fullness);
                         float interval = (rate <= 0f) ? float.MaxValue : 1f / rate;
 
-                        instantiateTimer += Time.deltaTime;
+                        instantiateTimer += elapsed;
                         int toAdd = 0;
                         while (instantiateTimer >= interval && inactive + toAdd < bufferSizeTarget && toAdd < maxAddsPerFrame)
                         {
@@ -307,30 +328,22 @@ namespace CosmicShore.Utility
         /// </summary>
         private async UniTask RefillAsync(int count, CancellationToken ct)
         {
-            if (_asyncRefillSupported)
+            if (_asyncRefillSupported && _incubator)
             {
                 AsyncInstantiateOperation<T> op = null;
+                T[] results = null;
                 try
                 {
                     using (_refillMarker.Auto())
-                        op = InstantiateAsync(prefab, count, IncubationPosition, Quaternion.identity);
+                        op = InstantiateAsync(prefab, count, _incubator, IncubationPosition, Quaternion.identity);
                     await op.ToUniTask(cancellationToken: ct);
-
-                    var results = op.Result;
-                    for (int i = 0; i < results.Length; i++)
-                    {
-                        var obj = results[i];
-                        if (!obj) continue;
-                        obj.transform.SetParent(transform, false);
-                        obj.gameObject.SetActive(false);
-                        pool.Release(obj);
-                    }
-                    return;
+                    results = op.Result;
                 }
                 catch (OperationCanceledException)
                 {
-                    // Teardown mid-integration: stop the operation and reap any
-                    // clones it already delivered so they can't leak.
+                    // Teardown mid-integration: stop the operation. Delivered clones
+                    // sit under the inactive incubator (child of this pool), so they
+                    // are destroyed with it — reaping here is belt-and-braces.
                     if (op != null)
                     {
                         op.Cancel();
@@ -342,8 +355,26 @@ namespace CosmicShore.Utility
                 }
                 catch (Exception e)
                 {
+                    // Narrow scope: only the async API itself lands here. Result
+                    // processing below stays OUTSIDE the try so its exceptions
+                    // propagate exactly like the synchronous path's would.
                     _asyncRefillSupported = false;
                     CSDebug.LogWarning($"[PoolManager] InstantiateAsync unavailable ({e.Message}) — using synchronous buffer refills for '{name}'.");
+                }
+
+                if (results != null)
+                {
+                    for (int i = 0; i < results.Length; i++)
+                    {
+                        var obj = results[i];
+                        if (!obj) continue;
+                        // Deactivate BEFORE reparenting out of the inactive incubator
+                        // so OnEnable can never fire during the move.
+                        obj.gameObject.SetActive(false);
+                        obj.transform.SetParent(transform, false);
+                        pool.Release(obj);
+                    }
+                    return;
                 }
             }
 

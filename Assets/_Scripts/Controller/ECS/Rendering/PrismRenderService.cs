@@ -182,6 +182,10 @@ namespace CosmicShore.ECS
                 _graphics = null;
                 _meshIds.Clear();
                 _materialIds.Clear();
+                // Pending keys are raw Entity ids with no epoch — a fresh world
+                // restarts version counters, so stale keys could alias entities in
+                // the new world and force-toggle an unrelated prism.
+                s_pendingVisibility.Clear();
                 LiveEntityCount = 0;
                 _epoch++;
             }
@@ -327,7 +331,11 @@ namespace CosmicShore.ECS
             desc.FilterSettings = filter;
 
             // Mesh/material here are only archetype placeholders — every clone gets
-            // its real MaterialMeshInfo via SetComponentData in Create().
+            // its real MaterialMeshInfo via SetComponentData in Create(). This is
+            // load-bearing for prototype sharing: nothing else RenderMeshUtility
+            // derives may vary per prism (shadows/probes are fixed by desc, layer is
+            // part of the prototype key) — if a per-prism render flag is ever added,
+            // it must join the key or the prototype pattern breaks.
             RenderMeshUtility.AddComponents(
                 prototype, em, in desc,
                 new MaterialMeshInfo(GetMaterialID(material), GetMeshID(mesh)));
@@ -396,6 +404,11 @@ namespace CosmicShore.ECS
         public static void SetVisible(in PrismRenderHandle handle, bool visible)
         {
             if (!IsUsable(in handle)) return;
+            // The immediate path is AUTHORITATIVE: drop any same-frame queued toggle
+            // for this entity, or a stale queued SHOW could flush after an exotic
+            // hand-off hid the entity and resurrect it alongside the MeshRenderer
+            // (a ghost box drawing through the shield morph).
+            s_pendingVisibility.Remove(handle.Entity);
             var em = _world.EntityManager;
             bool hidden = em.HasComponent<DisableRendering>(handle.Entity);
             if (visible && hidden)
@@ -430,11 +443,16 @@ namespace CosmicShore.ECS
         static void EnsureFlushHost()
         {
             if (s_flushHost != null) return;
-            var go = new GameObject("[PrismRenderVisibilityFlush]") { hideFlags = HideFlags.HideAndDontSave };
+            // HideInHierarchy (NOT HideAndDontSave — that exempts the object from
+            // play-mode-exit cleanup and leaks one host into edit mode per session).
+            var go = new GameObject("[PrismRenderVisibilityFlush]") { hideFlags = HideFlags.HideInHierarchy };
             Object.DontDestroyOnLoad(go);
             s_flushHost = go.AddComponent<VisibilityFlushHost>();
         }
 
+        // Runs after every gameplay LateUpdate so same-frame toggles queued from
+        // other LateUpdates still make this frame's flush (and render).
+        [DefaultExecutionOrder(30000)]
         sealed class VisibilityFlushHost : MonoBehaviour
         {
             void LateUpdate() => FlushVisibility();
@@ -568,6 +586,9 @@ namespace CosmicShore.ECS
         {
             if (IsUsable(in handle))
             {
+                // Entity indices recycle — drop any queued toggle so the flush can
+                // never apply a dead prism's wish to a future entity reusing the id.
+                s_pendingVisibility.Remove(handle.Entity);
                 _world.EntityManager.DestroyEntity(handle.Entity);
                 LiveEntityCount = Mathf.Max(0, LiveEntityCount - 1);
             }

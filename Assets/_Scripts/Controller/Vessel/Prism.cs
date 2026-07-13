@@ -842,6 +842,11 @@ namespace CosmicShore.Gameplay
                         SpatialIndexId = spatialIndex.Register(this);
                 }
 
+                // Restoration owns the collider again — clear any stale LOD-cull
+                // bookkeeping from the pre-destruction life, or NotifyPrismActivated's
+                // cull below would early-out on _lodCulled==true (and a later restore
+                // would reinstate a stale pre-cull snapshot).
+                _lodCulled = false;
                 blockCollider.enabled = true;
                 SetRenderVisible(true);
                 destroyed = false;

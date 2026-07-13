@@ -57,11 +57,11 @@ namespace CosmicShore.Gameplay
         [Tooltip("Seconds between LOD classification passes. At 0.25s a 100 u/s vessel moves 25m per pass — well inside the radius margin.")]
         [Min(0.05f)] [SerializeField] float tickIntervalSeconds = 0.25f;
 
-        [Tooltip("Collider cull/restore toggles applied per FRAME from a pass's transition lists. " +
-                 "Steady-state transitions are a handful; this bounds the burst cases (first " +
-                 "reconcile over a big population, a focus warping across the cell) so no single " +
-                 "frame pays thousands of collider toggles. Leftovers continue next frame; a new " +
-                 "pass waits until the backlog drains.")]
+        [Tooltip("Collider CULLS applied per frame from the deferred cull queue. Restores are " +
+                 "never budgeted (turning a collider back on near a focus is the safety-critical " +
+                 "direction, and restores on already-enabled prisms are cheap early-outs); culls " +
+                 "are the bulk direction on a reconcile (population minus near set) and never " +
+                 "urgent, so they drain at this rate without ever blocking classification.")]
         [Min(64)] [SerializeField] int maxColliderTogglesPerFrame = 512;
 
         // Focus registry: vessels + in-flight projectiles. Main-thread only, tiny.
@@ -95,8 +95,13 @@ namespace CosmicShore.Gameplay
         readonly List<Vector3> _fociSnapshot = new(16);
         readonly List<Prism> _becameNear = new(1024);
         readonly List<Prism> _becameFar = new(4096);
-        int _applyNearCursor = -1; // >= 0 ⇒ transition apply in progress
-        int _applyFarCursor = -1;
+        // Deferred culls: drained at maxColliderTogglesPerFrame. The set is the
+        // cancellation surface — a prism that re-enters the bubble before its cull
+        // applies is removed from the set by the restore pass, and the queue entry
+        // becomes a no-op at drain. Classification is never blocked by this queue.
+        readonly List<Prism> _cullQueue = new(4096);
+        readonly HashSet<Prism> _cullPending = new();
+        int _cullCursor;
         readonly List<Prism> _liveScratch = new(4096);
 
         /// <summary>
@@ -137,26 +142,27 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (_applyNearCursor >= 0 || _applyFarCursor >= 0)
+            if (!lodEnabled)
             {
-                // Kill switch mid-apply: abort the backlog; the next pass runs the
-                // restore-all (disabled) or reconcile (re-enabled) path.
-                if (!lodEnabled)
-                {
-                    _applyNearCursor = _applyFarCursor = -1;
-                    _becameNear.Clear();
-                    _becameFar.Clear();
-                    _reconcileNextSweep = true;
-                }
-                else
-                {
-                    ApplyTransitionSlice();
-                    return;
-                }
+                // Kill switch mid-drain: drop pending culls; the next tick runs the
+                // restore-all path and re-arms a reconcile.
+                if (_cullPending.Count > 0) ClearCullQueue();
             }
+            else
+            {
+                DrainCullQueue();
+            }
+
             if (Time.time < _nextTickAt) return;
             _nextTickAt = Time.time + Mathf.Max(0.05f, tickIntervalSeconds);
             RunSweep();
+        }
+
+        void ClearCullQueue()
+        {
+            _cullQueue.Clear();
+            _cullPending.Clear();
+            _cullCursor = 0;
         }
 
         void RunSweep()
@@ -173,6 +179,7 @@ namespace CosmicShore.Gameplay
             // state when LOD has no opinion.
             if (!lodEnabled || s_foci.Count == 0)
             {
+                ClearCullQueue();
                 if (_culledAnything)
                 {
                     int n = index.CopyLivePrisms(_liveScratch);
@@ -196,57 +203,86 @@ namespace CosmicShore.Gameplay
             // One Burst pass over the whole population, transitions out.
             index.RunLodClassification(_fociSnapshot, lodRadiusMeters, reconcile, _becameNear, _becameFar);
 
-            // Running near-count from transition deltas (exact on reconcile).
+            // Restores apply immediately and unbudgeted: turning a collider back ON
+            // near a focus is the safety-critical direction (a missing collider is a
+            // vessel flying through solid mass), and restores on already-enabled
+            // prisms are cheap early-outs. A restore also CANCELS any still-queued
+            // cull for the same prism — a prism can leave and re-enter the bubble
+            // across passes faster than the cull queue drains.
+            for (int i = 0; i < _becameNear.Count; i++)
+            {
+                var prism = _becameNear[i];
+                if (!prism) continue;
+                _cullPending.Remove(prism);
+                prism.SetColliderCulledByLod(false);
+            }
+
+            // Culls join the budgeted queue — disabling colliders is the bulk
+            // direction on reconciles (population minus near set) and never urgent.
+            for (int i = 0; i < _becameFar.Count; i++)
+            {
+                var prism = _becameFar[i];
+                if (prism && _cullPending.Add(prism))
+                    _cullQueue.Add(prism);
+            }
+
+            // Running near-count from transition deltas (exact on reconcile;
+            // approximate between them — telemetry only).
             if (reconcile) _nearCount = _becameNear.Count;
             else _nearCount += _becameNear.Count - _becameFar.Count;
-
-            _applyNearCursor = 0;
-            _applyFarCursor = 0;
-            ApplyTransitionSlice();
 
             LastNearCount = _nearCount;
             LastLiveCount = index.LiveCount;
         }
 
-        void ApplyTransitionSlice()
+        void DrainCullQueue()
         {
+            if (_cullCursor >= _cullQueue.Count)
+            {
+                if (_cullQueue.Count > 0) ClearCullQueue();
+                return;
+            }
+
+            float r2 = lodRadiusMeters * lodRadiusMeters;
             int budget = maxColliderTogglesPerFrame;
-
-            while (_applyNearCursor >= 0)
+            while (budget > 0 && _cullCursor < _cullQueue.Count)
             {
-                if (_applyNearCursor >= _becameNear.Count)
+                var prism = _cullQueue[_cullCursor++];
+                // Set removal FIRST — it works on destroyed refs too, so dead
+                // entries can never accumulate in the pending set.
+                if (!_cullPending.Remove(prism) || !prism) continue;
+
+                // Re-validate against LIVE foci at apply time: the queue can lag
+                // classification by many frames on a reconcile, and a pooled slot
+                // can be reborn as a different prism near a focus in that window.
+                // O(foci) — the same test NotifyPrismActivated uses. Skipping a
+                // cull leaves the collider ON (the safe direction); the flag bit
+                // reconverges on a later pass.
+                bool near = false;
+                Vector3 p = prism.transform.position;
+                for (int f = 0; f < s_foci.Count; f++)
                 {
-                    _applyNearCursor = -1;
-                    _becameNear.Clear();
-                    break;
+                    var focus = s_foci[f];
+                    if (focus && (focus.position - p).sqrMagnitude <= r2)
+                    {
+                        near = true;
+                        break;
+                    }
                 }
-                if (budget-- <= 0) return;
-                var prism = _becameNear[_applyNearCursor++];
-                if (prism) prism.SetColliderCulledByLod(false);
+                if (near) continue;
+
+                prism.SetColliderCulledByLod(true);
+                _culledAnything = true;
+                budget--;
             }
 
-            while (_applyFarCursor >= 0)
-            {
-                if (_applyFarCursor >= _becameFar.Count)
-                {
-                    _applyFarCursor = -1;
-                    _becameFar.Clear();
-                    break;
-                }
-                if (budget-- <= 0) return;
-                var prism = _becameFar[_applyFarCursor++];
-                if (prism)
-                {
-                    prism.SetColliderCulledByLod(true);
-                    _culledAnything = true;
-                }
-            }
+            if (_cullCursor >= _cullQueue.Count) ClearCullQueue();
         }
 
         void OnDisable()
         {
             // Component toggled off (or teardown): hand collider ownership back.
-            _applyNearCursor = _applyFarCursor = -1;
+            ClearCullQueue();
             _becameNear.Clear();
             _becameFar.Clear();
             _reconcileNextSweep = true;
