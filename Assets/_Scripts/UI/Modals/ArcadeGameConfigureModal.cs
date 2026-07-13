@@ -113,7 +113,16 @@ namespace CosmicShore.UI
                  "button still exists in the prefab.")]
         [SerializeField] private GameObject backFromGameSelectButton;
 
+        [Header("D-pad Row Highlights")]
+        [Tooltip("Background or border Image on each Screen 1 row, indexed 0-3: " +
+                 "Intensity, Player Count, Domain Count, Confirm. " +
+                 "Tinted to show which row the D-pad currently targets.")]
+        [SerializeField] private List<Image> dpadRowHighlights = new(4);
+        [SerializeField] private Color dpadFocusColor = new(1f, 1f, 1f, 0.15f);
+        [SerializeField] private Color dpadUnfocusColor = new(1f, 1f, 1f, 0f);
+
         // D-pad navigation for Screen 1 — rows: 0=intensity, 1=player count, 2=domain count, 3=confirm
+        bool _dpadHighlightActive;
         int _dpadFocusRow;
         const int DpadRowIntensity = 0;
         const int DpadRowPlayerCount = 1;
@@ -264,20 +273,62 @@ namespace CosmicShore.UI
             if (!configurationDetailView || !configurationDetailView.activeSelf) return;
 
             if (pad.dpad.up.wasPressedThisFrame)
+            {
+                ActivateDpadHighlight();
                 MoveDpadFocusRow(-1);
+            }
             else if (pad.dpad.down.wasPressedThisFrame)
+            {
+                ActivateDpadHighlight();
                 MoveDpadFocusRow(1);
+            }
             else if (pad.dpad.left.wasPressedThisFrame)
+            {
+                ActivateDpadHighlight();
                 HandleDpadHorizontal(-1);
+            }
             else if (pad.dpad.right.wasPressedThisFrame)
+            {
+                ActivateDpadHighlight();
                 HandleDpadHorizontal(1);
+            }
             else if (pad.buttonSouth.wasPressedThisFrame && _dpadFocusRow == DpadRowConfirm)
+            {
                 OnConfirmConfiguration();
+            }
         }
 
         void MoveDpadFocusRow(int direction)
         {
             _dpadFocusRow = Mathf.Clamp(_dpadFocusRow + direction, 0, DpadRowCount - 1);
+            RefreshDpadRowHighlights();
+        }
+
+        void RefreshDpadRowHighlights()
+        {
+            if (!_dpadHighlightActive) return;
+            for (int i = 0; i < dpadRowHighlights.Count; i++)
+            {
+                if (!dpadRowHighlights[i]) continue;
+                dpadRowHighlights[i].color = i == _dpadFocusRow ? dpadFocusColor : dpadUnfocusColor;
+            }
+        }
+
+        void ClearDpadRowHighlights()
+        {
+            _dpadHighlightActive = false;
+            for (int i = 0; i < dpadRowHighlights.Count; i++)
+            {
+                if (!dpadRowHighlights[i]) continue;
+                dpadRowHighlights[i].color = dpadUnfocusColor;
+            }
+        }
+
+        void ActivateDpadHighlight()
+        {
+            if (_dpadHighlightActive) return;
+            _dpadHighlightActive = true;
+            RefreshDpadRowHighlights();
         }
 
         void HandleDpadHorizontal(int direction)
@@ -368,6 +419,7 @@ namespace CosmicShore.UI
             ResetReadyUpUI();
 
             _dpadFocusRow = DpadRowIntensity;
+            ClearDpadRowHighlights();
 
             // Host configures privately on Screen 1. No client involvement until
             // the host clicks Confirm Configuration → CommitConfiguration RPC fires.
@@ -1072,6 +1124,7 @@ namespace CosmicShore.UI
             // Screen 2, hide the back button. SpawnChipsForAllPlayers is idempotent
             // — it calls DespawnAllChips first — so even if guard #1 is bypassed
             // somehow, no duplicate chips leak.
+            ClearDpadRowHighlights();
             SpawnChipsForAllPlayers();
             RefreshTileVisibility();
             ShowGameDetailScreen();
