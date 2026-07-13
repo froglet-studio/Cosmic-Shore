@@ -37,9 +37,30 @@ namespace CosmicShore.Utility
         // refill shows up in a capture next to a GC.Collect.
         private ProfilerMarker _refillMarker;
 
+        // On-demand miss attribution: pool.Get() found the buffer empty and created
+        // inline on the CALLER's frame (trail spawn tick, pickup burst) — the exact
+        // cost PoolRefill can't see. A capture with PoolMiss rows means consumption
+        // is outrunning the maintenance rate / buffer depth for this pool.
+        private ProfilerMarker _missMarker;
+        private bool _attributedCreate; // suppresses the miss marker for maintenance/prewarm creates
+
+        // Async refills instantiate here — far below the playfield — so the engine's
+        // timesliced integration can never flash an active clone inside the scene
+        // before the completion continuation deactivates it.
+        private static readonly Vector3 IncubationPosition = new(0f, -100000f, 0f);
+        private bool _asyncRefillSupported = true;
+
         protected virtual void Awake()
         {
-            _refillMarker = new ProfilerMarker($"PoolRefill.{(prefab ? prefab.name : GetType().Name)}");
+            string prefabName = prefab ? prefab.name : GetType().Name;
+            _refillMarker = new ProfilerMarker($"PoolRefill.{prefabName}");
+            _missMarker = new ProfilerMarker($"PoolMiss.{prefabName}");
+
+            // A buffer target above maxSize would make maintenance instantiate
+            // forever while Release destroys every extra — an infinite churn loop.
+            // Clamp so config drift can never arm that trap.
+            maxSize = Mathf.Max(maxSize, bufferSizeTarget);
+
             pool = new ObjectPool<T>(
                 CreateFunc,
                 OnGetFromPool,
@@ -50,8 +71,12 @@ namespace CosmicShore.Utility
                 maxSize
             );
 
+            // Only defaultCapacity is prewarmed synchronously (load-time cost);
+            // the async maintenance loop tops the buffer up to bufferSizeTarget
+            // over the first seconds, spread by the engine's timesliced
+            // instantiation — deep buffers no longer cost scene-load hitches.
             if (defaultCapacity > 0)
-                Prewarm(Mathf.Max(defaultCapacity, bufferSizeTarget));
+                Prewarm(defaultCapacity);
 
             if (enableBufferMaintenance)
             {
@@ -181,11 +206,16 @@ namespace CosmicShore.Utility
         {
             if (count <= 0) return;
             int missing = Mathf.Max(0, count - CountInactive);
-            for (int i = 0; i < missing; i++)
+            _attributedCreate = true;
+            try
             {
-                var obj = CreateFunc();
-                pool.Release(obj);
+                for (int i = 0; i < missing; i++)
+                {
+                    var obj = CreateFunc();
+                    pool.Release(obj);
+                }
             }
+            finally { _attributedCreate = false; }
         }
 
         public void EnsureBuffer(int count) => Prewarm(count);
@@ -194,6 +224,13 @@ namespace CosmicShore.Utility
         // ---------------- ObjectPool Callbacks ----------------
 
         protected virtual T CreateFunc()
+        {
+            if (_attributedCreate) return CreateInstance();
+            using (_missMarker.Auto())
+                return CreateInstance();
+        }
+
+        T CreateInstance()
         {
             var obj = Instantiate(prefab, transform, true);
             obj.gameObject.SetActive(false);
@@ -242,24 +279,88 @@ namespace CosmicShore.Utility
                         float interval = (rate <= 0f) ? float.MaxValue : 1f / rate;
 
                         instantiateTimer += Time.deltaTime;
-                        int addsThisFrame = 0;
-                        while (instantiateTimer >= interval && inactive < bufferSizeTarget && addsThisFrame < maxAddsPerFrame)
+                        int toAdd = 0;
+                        while (instantiateTimer >= interval && inactive + toAdd < bufferSizeTarget && toAdd < maxAddsPerFrame)
                         {
-                            using (_refillMarker.Auto())
-                            {
-                                var obj = CreateFunc();
-                                pool.Release(obj);
-                            }
                             instantiateTimer -= interval;
-                            inactive++;
-                            addsThisFrame++;
+                            toAdd++;
                         }
+
+                        if (toAdd > 0)
+                            await RefillAsync(toAdd, ct);
                     }
                     else instantiateTimer = 0f;
                     await UniTask.Yield(PlayerLoopTiming.EarlyUpdate, ct);
                 }
             }
             catch (OperationCanceledException) { }
+        }
+
+        /// <summary>
+        /// Buffer refill. Preferred path: one engine-timesliced
+        /// <see cref="Object.InstantiateAsync{T}(T, int, Vector3, Quaternion)"/>
+        /// batch — Instantiate.Produce integration is spread across frames by the
+        /// engine instead of landing as a 1-2ms (or GC-tipping) hit on a single
+        /// frame, which is what the synchronous per-frame refill cost at steady
+        /// trail consumption. Falls back to synchronous CreateFunc refills forever
+        /// if the async API fails on a platform.
+        /// </summary>
+        private async UniTask RefillAsync(int count, CancellationToken ct)
+        {
+            if (_asyncRefillSupported)
+            {
+                AsyncInstantiateOperation<T> op = null;
+                try
+                {
+                    using (_refillMarker.Auto())
+                        op = InstantiateAsync(prefab, count, IncubationPosition, Quaternion.identity);
+                    await op.ToUniTask(cancellationToken: ct);
+
+                    var results = op.Result;
+                    for (int i = 0; i < results.Length; i++)
+                    {
+                        var obj = results[i];
+                        if (!obj) continue;
+                        obj.transform.SetParent(transform, false);
+                        obj.gameObject.SetActive(false);
+                        pool.Release(obj);
+                    }
+                    return;
+                }
+                catch (OperationCanceledException)
+                {
+                    // Teardown mid-integration: stop the operation and reap any
+                    // clones it already delivered so they can't leak.
+                    if (op != null)
+                    {
+                        op.Cancel();
+                        if (op.isDone && op.Result != null)
+                            foreach (var partial in op.Result)
+                                if (partial) Destroy(partial.gameObject);
+                    }
+                    throw;
+                }
+                catch (Exception e)
+                {
+                    _asyncRefillSupported = false;
+                    CSDebug.LogWarning($"[PoolManager] InstantiateAsync unavailable ({e.Message}) — using synchronous buffer refills for '{name}'.");
+                }
+            }
+
+            for (int i = 0; i < count; i++)
+            {
+                ct.ThrowIfCancellationRequested();
+                using (_refillMarker.Auto())
+                {
+                    _attributedCreate = true;
+                    try
+                    {
+                        var obj = CreateFunc();
+                        pool.Release(obj);
+                    }
+                    finally { _attributedCreate = false; }
+                }
+            }
         }
     }
 }
