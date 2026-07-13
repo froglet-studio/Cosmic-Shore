@@ -90,9 +90,16 @@ namespace CosmicShore.UI
         [Tooltip("Arcade modal window. Opens as overlay when Arcade nav is clicked.")]
         [SerializeField] private ModalWindowManager ArcadeModal;
 
+        [Header("Gamepad Freestyle Toggle")]
+        [Tooltip("Crystal click handler that toggles freestyle mode. Y button (buttonNorth) invokes ToggleTransition.")]
+        [SerializeField] private MenuCrystalClickHandler crystalClickHandler;
+        [Tooltip("Seconds after a freestyle transition completes before Y can toggle again.")]
+        [SerializeField] private float freestyleToggleCooldown = 3f;
+
         private Vector3 panelLocation;
         private Coroutine navigateCoroutine;
         private bool _isInFreestyle;
+        private float _freestyleToggleCooldownUntil;
 
         // Cached canvas references for aspect-ratio-safe sliding
         private Canvas _rootCanvas;
@@ -207,6 +214,8 @@ namespace CosmicShore.UI
             {
                 freestyleEvents.OnGameStateTransitionStart.OnRaised += HandleEnterFreestyle;
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised += HandleExitFreestyle;
+                freestyleEvents.OnGameStateTransitionEnd.OnRaised += HandleFreestyleTransitionEnd;
+                freestyleEvents.OnMenuStateTransitionEnd.OnRaised += HandleFreestyleTransitionEnd;
             }
         }
 
@@ -216,6 +225,8 @@ namespace CosmicShore.UI
             {
                 freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleEnterFreestyle;
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleExitFreestyle;
+                freestyleEvents.OnGameStateTransitionEnd.OnRaised -= HandleFreestyleTransitionEnd;
+                freestyleEvents.OnMenuStateTransitionEnd.OnRaised -= HandleFreestyleTransitionEnd;
             }
         }
 
@@ -288,8 +299,22 @@ namespace CosmicShore.UI
 
         private void Update()
         {
-            if (_isInFreestyle) return;
             if (Gamepad.current == null) return;
+
+            // Y (buttonNorth) toggles freestyle from any state — checked before
+            // the _isInFreestyle early-return so it works as both enter and exit.
+            // A cooldown prevents accidental rapid toggling after each transition.
+            if (crystalClickHandler
+                && Gamepad.current.buttonNorth.wasPressedThisFrame
+                && Time.unscaledTime >= _freestyleToggleCooldownUntil
+                && !HasActiveModal
+                && ScreenIsActive(MenuScreens.HOME))
+            {
+                crystalClickHandler.ToggleTransition();
+                return;
+            }
+
+            if (_isInFreestyle) return;
             if (HasActiveModal) return;
 
             if (ScreenIsActive(MenuScreens.HOME))
@@ -779,6 +804,11 @@ namespace CosmicShore.UI
                 EventSystem.current.SetSelectedGameObject(null);
                 EventSystem.current.sendNavigationEvents = false;
             }
+        }
+
+        private void HandleFreestyleTransitionEnd()
+        {
+            _freestyleToggleCooldownUntil = Time.unscaledTime + freestyleToggleCooldown;
         }
 
         private void HandleExitFreestyle()
