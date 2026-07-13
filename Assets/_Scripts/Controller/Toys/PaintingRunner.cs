@@ -251,7 +251,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Continuity-law eases that must run even while benched/disengaged: the gate shrinks
-        /// away and regrows on bench toggles, and the marker shrinks out instead of blinking off.
+        /// away and regrows on bench toggles, the blueprint fades, and the ride ring grows/folds.
         /// </summary>
         void EaseTransitions()
         {
