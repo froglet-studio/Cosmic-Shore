@@ -321,16 +321,24 @@ namespace CosmicShore.Tests
             var galaxy = PaintingPresetLibrary.Generate(PaintingPreset.SpiralGalaxy, 1200f);
             Assert.AreEqual(2, galaxy.Count(s => s.name.EndsWith("Dust Lane")), "grand designs have TWO arms");
 
-            // Both flowers are closed blooms of PURE petals (per direction) — each petal is an
-            // outline + a midrib stroke.
+            // The lotus is petals all the way down: wide-open outer whorls closing to the bud
+            // core (10+9+8+6+5); each petal is an outline + a midrib stroke.
             var lotus = PaintingPresetLibrary.Generate(PaintingPreset.Lotus, 900f);
-            Assert.AreEqual(30, lotus.Count(s => s.name.Contains("Petal")), "9+9+7+5 petals, nothing else");
+            Assert.AreEqual(38, lotus.Count(s => s.name.Contains("Petal")), "10+9+8+6+5 petals, nothing else");
             Assert.AreEqual(lotus.Count(s => s.name.Contains("Petal")), lotus.Count(s => s.name.Contains("Rib")));
 
+            // The enchanted rose: long stem + two leaflets + sepals under a compact wrapped bloom.
             var rose = PaintingPresetLibrary.Generate(PaintingPreset.Rose, 900f);
             Assert.AreEqual(27, rose.Count(s => s.name.Contains("Petal")), "8+8+6+5 wrapping petals");
+            Assert.AreEqual(1, rose.Count(s => s.name == "Stem"));
+            Assert.AreEqual(2, rose.Count(s => s.name.StartsWith("Leaf ") && !s.name.Contains("Vein")));
             Assert.AreEqual(5, rose.Count(s => s.name.StartsWith("Sepal")));
             Assert.AreEqual(1, rose.Count(s => s.name.StartsWith("Furled Heart")));
+            // the stem owns the composition: the bloom sits in the top ~40% of the height
+            var bounds = PaintingPresetLibrary.ComputeBounds(rose);
+            Assert.Greater(bounds.size.y, 0.7f * 900f, "the enchanted rose is tall");
+            Assert.Greater(bounds.size.y, 1.5f * Mathf.Max(bounds.size.x, bounds.size.z),
+                "stem-dominant proportions — much taller than wide");
         }
     }
 }

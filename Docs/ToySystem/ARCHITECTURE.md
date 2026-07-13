@@ -157,7 +157,7 @@ dozen **grandiose non-planar constructions** that dwarf the Taj (every one is >2
 
 | # | Painting | Size | Strokes | What it is |
 |---|---|---|---|---|
-| 1 | Star | 420 | 1 | the basic trace, big enough to feel real |
+| 1 | Star | 840 | 1 | the basic trace, big enough to feel real (2× — the warm-up should already feel grand) |
 | 2 | Rainbow | 700 | 3 | the domain gates, one band per colour |
 | 3 | Saturn | 800 | 3 | genuinely 3D flying (tilted rings) |
 | 4 | **Taj Mahal** | 1100 | ~55 | plinth, chamfered body, iwan+niches, onion-dome rib cage, 4 chhatris, 4 minarets, pool + charbagh |
@@ -165,14 +165,22 @@ dozen **grandiose non-planar constructions** that dwarf the Taj (every one is >2
 | 6 | Buckyball | 1000 | ~62 | exact C60: **12 pentagons + 20 hexagons** (planar faces) + the 30 real 6:6 double bonds as inset dashes |
 | 7 | Double Helix | 900 | ~88 | true B-DNA: pitch/diameter 1.7, 10 bp/turn, 144° grooves, ribboned backbones, purine+pyrimidine pairs, phosphate ticks |
 | 8 | Nautilus | 900 | ~67 | the real shell model: embracing log-spiral whorls, 58 growth-line ribs, tiger striping, the open aperture |
-| 9 | Lotus | 900 | ~60 | a CLOSED bloom of pure petals: four whorls (9+9+7+5) of obovate cupped Nelumbo blades — Jade outer whorl → Ruby → Gold bud |
-| 10 | Rose | 900 | ~60 | a closed garden rose: broad wrapping petals with recurved tops (8+8+6+5 whorls), a furled Gold heart, five sepals |
+| 9 | Lotus | 900 | ~76 | the FULL lotus: wide-open outer leaves (Jade) descending through five whorls (10+9+8+6+5) into a closed pure-petal Ruby corolla and Gold bud heart |
+| 10 | Rose | 900 | ~67 | the ENCHANTED rose: a long stem owning two-thirds of the height, two leaflets, sepals curling under a compact wrapped bloom with a furled Gold heart |
 | 11 | Spiral Galaxy | 1200 | ~187 | a TWO-arm grand design at 17° pitch, inclined 22°: dust lanes, old-gold bulge, star streaks flowing along the arms |
 | 12 | Phoenix | 1200 | ~120 | a firebird: feathered wings + an impressionist flame tail |
 | 13 | Almighty Mountain | 1300 | ~110 | a Bob Ross vista flown into: 5 fractal ridges, a mirror lake, sun, happy little firs |
 | 14 | Starry Night | 1300 | 300 | **baked from the real painting**: every stroke traced from van Gogh's brush flow (structure-tensor streamlines of the public-domain scan), palette-split Jade sky / Gold lights / Ruby cypress, bent onto an immersive curved canvas |
 | 15 | Lion | 1800 | 124 | **baked from a real sculpture**: the CC0 Temperance Union Lion scan (1896), Squirrel-scaled — engraving contours + 62 mane-curl feature lines (micro-curls under 28u turn radius filtered out) |
 | 16 | Peacock | 1100 | ~226 | a fanned 3D train of eye-feathers — the toy's magnum opus |
+
+**Gallery stations are miniatures in a wall, not balls in a line.** Each station's body IS its
+painting in miniature (`MiniaturePaintingBuilder`: the ~24 longest strokes, decimated, domain-
+tinted, on a slow turntable) — a sphere only as fallback for stroke-less paintings. The sixteen
+stations arrange as a roughly-square matrix cluster at the toybox slot (columns along the ring
+tangent, rows climbing the off-plane vertical), and the monuments anchor behind their column in
+vertical tiers — a wall of masterpieces. Every toy label (stations, gates, all toys) wears
+`BillboardLabel`, facing the camera each frame so text reads from any approach.
 
 Rows 5–11 are built by composition from **`PaintingStrokeToolkit`** (below); rows 14–15 are
 **baked from real references** by the offline **painting pipeline** (`Tools/PaintingPipeline/` —

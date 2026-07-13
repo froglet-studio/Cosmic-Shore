@@ -23,12 +23,15 @@ namespace CosmicShore.ScriptableObjects
                                  "built-in default gallery (Star, Rainbow, Saturn, Taj Mahal).")]
         List<PaintingDefinitionSO> paintings = new();
 
-        [SerializeField, Tooltip("Angular gap (degrees) between adjacent painting stations around the ring. " +
-                                 "The full 16-painting gallery fans ~120° at 8°.")]
-        float anglePerToyDeg = 8f;
+        [SerializeField, Tooltip("Angular gap (degrees) between painting ANCHOR columns around the ring " +
+                                 "(the monuments themselves still spread azimuthally so they can't overlap).")]
+        float anglePerToyDeg = 10f;
 
         [SerializeField, Tooltip("Clearance between the toy ring and the near edge of each painting, world units.")]
         float paintingClearance = 150f;
+
+        [SerializeField, Tooltip("Gap between gallery stations in the cluster, as a multiple of the body radius.")]
+        float clusterSpacingBodies = 3.2f;
 
         public override void Spawn(Transform parent, ToyPlacement placement, ToyContext context)
         {
@@ -39,39 +42,55 @@ namespace CosmicShore.ScriptableObjects
                 return;
             }
 
-            // Fan the stations around this definition's slot on the toy ring (same layout maths as
-            // the swap-set coordinator), and anchor each painting radially outward behind its station.
+            // The gallery is a roughly-SQUARE matrix cluster at this definition's slot — columns run
+            // along the ring tangent, rows climb vertically (the off-plane space) — each station a
+            // miniature of its painting. Monuments anchor radially outward behind their station's
+            // column, tiered vertically to match their row.
             Vector3 center = placement.LookTarget;
             Vector3 toSlot = placement.Position - center;
             float ringRadius = new Vector2(toSlot.x, toSlot.z).magnitude;
             if (ringRadius < 1f) ringRadius = Mathf.Max(1f, toSlot.magnitude);
             float baseAngle = Mathf.Atan2(toSlot.x, toSlot.z);
-            float step = anglePerToyDeg * Mathf.Deg2Rad;
+
+            int cols = Mathf.CeilToInt(Mathf.Sqrt(gallery.Count));
+            int rows = Mathf.CeilToInt(gallery.Count / (float)cols);
+            float spacing = Mathf.Max(placement.TriggerRadius * 2.2f, placement.BodyRadius * clusterSpacingBodies);
+            float colStep = anglePerToyDeg * Mathf.Deg2Rad;
 
             for (int i = 0; i < gallery.Count; i++)
             {
                 var painting = gallery[i];
                 if (!painting) continue;
 
-                float a = baseAngle + step * (i - (gallery.Count - 1) * 0.5f);
+                int col = i % cols, row = i / cols;
+                float cOff = col - (cols - 1) * 0.5f;
+                float rOff = row - (rows - 1) * 0.5f;
+
+                // Station: grid cell in the tangent × up plane at the slot, facing the ring centre.
+                float a = baseAngle + Mathf.Atan2(cOff * spacing, ringRadius);
                 var outward = new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a));
                 Vector3 toyPos = center + outward * ringRadius;
-                toyPos.y = placement.Position.y;
+                toyPos.y = placement.Position.y + rOff * spacing;
 
-                // The painting stands upright beyond the ring, front (+Z) facing the ring centre;
-                // its near edge lands paintingClearance past the station.
+                // Monument: outward behind its column, tiered by row so the gallery is a WALL of
+                // masterpieces climbing the off-plane space rather than a flat line.
                 painting.EnsureStrokes();
                 Bounds bounds = painting.LocalBounds;
-                float anchorDistance = ringRadius + paintingClearance + Mathf.Max(40f, bounds.max.z);
-                Vector3 anchorPos = center + outward * anchorDistance;
-                anchorPos.y = placement.Position.y;
-                Quaternion anchorRot = Quaternion.LookRotation(-outward, Vector3.up);
+                float aAnchor = baseAngle + colStep * cOff;
+                var anchorOut = new Vector3(Mathf.Sin(aAnchor), 0f, Mathf.Cos(aAnchor));
+                float anchorDistance = ringRadius + paintingClearance + Mathf.Max(40f, bounds.max.z)
+                                       + row * 0.35f * Mathf.Max(200f, bounds.size.z);
+                Vector3 anchorPos = center + anchorOut * anchorDistance;
+                anchorPos.y = placement.Position.y + rOff * Mathf.Max(300f, 0.55f * bounds.size.y);
+                Quaternion anchorRot = Quaternion.LookRotation(-anchorOut, Vector3.up);
 
                 var root = ToyFactory.CreateBareRoot($"{Id}_{painting.PaintingId}", parent,
                     toyPos, center, placement.TriggerRadius);
                 var body = new GameObject("Body");
                 body.transform.SetParent(root.transform, false);
-                ToyFactory.AddSphereBody(body.transform, placement.BodyRadius, AccentColor);
+                // The station IS its painting in miniature; anonymous sphere only as fallback.
+                if (!MiniaturePaintingBuilder.TryBuild(body.transform, painting, placement.BodyRadius, context))
+                    ToyFactory.AddSphereBody(body.transform, placement.BodyRadius, AccentColor);
                 var label = ToyFactory.AddLabel(root.transform, painting.DisplayName, AccentColor,
                     placement.BodyRadius * 1.9f);
 
@@ -121,7 +140,7 @@ namespace CosmicShore.ScriptableObjects
         {
             // ── On-ramp ──
             new("painting_star", "Star", "One clean stroke — a warm-up canvas.",
-                PaintingPreset.Star, 420f, 30f),
+                PaintingPreset.Star, 840f, 30f),
             new("painting_rainbow", "Rainbow", "Three bands, three colours — ride the gates.",
                 PaintingPreset.Rainbow, 700f, 30f),
             new("painting_saturn", "Saturn", "A planet and its rings, flown in true 3D.",

@@ -351,7 +351,28 @@ namespace CosmicShore.Gameplay
             tmp.alignment = TextAlignmentOptions.Center;
             tmp.color = color;
             if (TMP_Settings.defaultFontAsset) tmp.font = TMP_Settings.defaultFontAsset;
+            go.AddComponent<BillboardLabel>(); // every toy label reads from all sides
             return tmp;
+        }
+    }
+
+    /// <summary>
+    /// Faces its transform away from the main camera each LateUpdate so world-space toy text is
+    /// readable from every approach direction. Cheap: one rotation write per frame; re-resolves
+    /// the camera only when the cached one dies (scene loads).
+    /// </summary>
+    public class BillboardLabel : MonoBehaviour
+    {
+        Camera _cam;
+
+        void LateUpdate()
+        {
+            if (!_cam) _cam = Camera.main;
+            if (!_cam) return;
+            // Forward points AWAY from the camera — TextMeshPro's readable face looks at the viewer.
+            Vector3 away = transform.position - _cam.transform.position;
+            if (away.sqrMagnitude < 1e-6f) return;
+            transform.rotation = Quaternion.LookRotation(away);
         }
     }
 }

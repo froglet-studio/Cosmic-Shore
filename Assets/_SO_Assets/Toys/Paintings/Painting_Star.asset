@@ -20,5 +20,5 @@ MonoBehaviour:
   sourceShapeDomain: 4
   sourceShapeScale: 2.5
   preset: 1
-  presetSize: 420
+  presetSize: 840
   reachThreshold: 30
