@@ -90,6 +90,17 @@ archive.org preserves each thing as item `thingiverse-<id>` with the license URL
 
 ---
 
+## 6. MOUNTAIN — Matterhorn DEM (AWS Terrain Tiles)
+
+| | |
+|---|---|
+| Subject | The Matterhorn (Zermatt, 45.9766°N 7.6585°E) — real elevation raster, used for contour + ridgeline strokes in `Painting_AlmightyMountain.asset` |
+| Source | AWS Open Data **Terrain Tiles** (Mapzen terrarium PNG tiles), `https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png` |
+| License | Open data, **attribution REQUIRED** (must appear in the game's credits): *"Terrain Tiles: DEM sources include SRTM (NASA), GMTED2010 and ETOPO1 (USGS), EU-DEM (European Environment Agency / Copernicus), and other open datasets; composited by Mapzen, hosted by AWS Open Data."* |
+| Verification | `mtn_front/side/top.png` — the north-face profile and Hörnli/Zmutt/Furggen/Lion ridges read correctly against reference photographs |
+
+---
+
 ## Verification method
 
 Every mesh was loaded with `trimesh` (python3) — vertex/face counts and bounding boxes recorded in `mesh_stats.json`; zero load failures. Each key mesh was additionally rendered as a 3-view shaded point-splat PNG (`shaded_*.png`) and visually inspected to confirm the subject and surface detail (mane locks, feathers, crest).

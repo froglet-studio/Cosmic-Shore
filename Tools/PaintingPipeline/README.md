@@ -21,7 +21,10 @@ Requirements: `pip install numpy pillow trimesh scipy fast-simplification`.
 | Painting asset | Reference | License |
 |---|---|---|
 | `Painting_Lion'sHead.asset` (displayName "Lion") | Temperance Union Lion, Las Vegas NM (Angelo de Tullio, 1896) — Thingiverse thing:985693 via the archive.org mirror | **CC0 1.0** (no attribution required) |
-| `Painting_StarryNight.asset` | *The Starry Night* (van Gogh, 1889), Google Art Project scan via Wikimedia Commons | public domain |
+| `Painting_StarryNight.asset` | *The Starry Night* (van Gogh, 1889), Google Art Project scan via Wikimedia Commons — v2 retrace: 11 star/moon ring clusters, double-swirl, 6 cypress flames, curved-canvas relief | public domain |
+| `Painting_Phoenix.asset` | *Striding Eagle* sculpture scan — threedscans.com / Saint Louis Art Museum ("without copyright restrictions"; courteous credit: "Striding Eagle — Three D Scans / Saint Louis Art Museum") | no restrictions |
+| `Painting_Peacock.asset` | Peafowl photogrammetry scan by YahooJAPAN | **CC BY 4.0 — attribution REQUIRED and shipped in the asset's player-facing description: "3D data by YahooJAPAN (CC-BY 4.0)". Keep it there.** |
+| `Painting_AlmightyMountain.asset` | Matterhorn DEM via AWS Terrain Tiles (Mapzen) | open data — **attribution REQUIRED**: "Terrain Tiles: DEM sources include SRTM (NASA), GMTED2010 and ETOPO1 (USGS), EU-DEM (European Environment Agency / Copernicus), and other open datasets; composited by Mapzen, hosted by AWS Open Data." Ship this line in the game's credits screen. |
 
 Full sourcing/licence audit for every fetched candidate (incl. rejected
 CC-BY-NC sources): `REFERENCE_MODELS.md`. Meshes themselves are NOT committed

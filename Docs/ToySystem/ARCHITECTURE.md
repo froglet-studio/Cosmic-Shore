@@ -168,11 +168,11 @@ dozen **grandiose non-planar constructions** that dwarf the Taj (every one is >2
 | 9 | Lotus | 900 | ~76 | the FULL lotus: wide-open outer leaves (Jade) descending through five whorls (10+9+8+6+5) into a closed pure-petal Ruby corolla and Gold bud heart |
 | 10 | Rose | 900 | ~67 | the ENCHANTED rose: a long stem owning two-thirds of the height, two leaflets, sepals curling under a compact wrapped bloom with a furled Gold heart |
 | 11 | Spiral Galaxy | 1200 | ~187 | a TWO-arm grand design at 17° pitch, inclined 22°: dust lanes, old-gold bulge, star streaks flowing along the arms |
-| 12 | Phoenix | 1200 | ~120 | a firebird: feathered wings + an impressionist flame tail |
-| 13 | Almighty Mountain | 1300 | ~110 | a Bob Ross vista flown into: 5 fractal ridges, a mirror lake, sun, happy little firs |
-| 14 | Starry Night | 1300 | 300 | **baked from the real painting**: every stroke traced from van Gogh's brush flow (structure-tensor streamlines of the public-domain scan), palette-split Jade sky / Gold lights / Ruby cypress, bent onto an immersive curved canvas |
+| 12 | Phoenix | 1400 | 260 | **baked from a real sculpture**: the *Striding Eagle* museum scan (threedscans / Saint Louis Art Museum, no restrictions) — 79.7·W of engraving contours + flame-chained feather feature lines |
+| 13 | Almighty Mountain | 1500 | 111 | **baked from real terrain**: the Matterhorn's actual DEM (AWS Terrain Tiles) — elevation contours (Ruby rock / Jade snowline) + Gold ridge polylines |
+| 14 | Starry Night | 1300 | 173 | **baked from the real painting** (v2 retrace): 11 star/moon ring clusters, the double-swirl as two long coherent Jade spirals, 6 Ruby cypress flames, streamlines bent onto an immersive curved canvas with luminance relief |
 | 15 | Lion | 1800 | 124 | **baked from a real sculpture**: the CC0 Temperance Union Lion scan (1896), Squirrel-scaled — engraving contours + 62 mane-curl feature lines (micro-curls under 28u turn radius filtered out) |
-| 16 | Peacock | 1100 | ~226 | a fanned 3D train of eye-feathers — the toy's magnum opus |
+| 16 | Peacock | 1300 | 236 | **baked from a real scan**: YahooJAPAN's peafowl photogrammetry (CC-BY 4.0 — attribution ships in the asset description) — the fanned train, scalloped eye-feather rim, body and legs |
 
 **Gallery stations are miniatures in a wall, not balls in a line.** Each station's body IS its
 painting in miniature (`MiniaturePaintingBuilder`: the ~24 longest strokes, decimated, domain-
@@ -182,7 +182,7 @@ tangent, rows climbing the off-plane vertical), and the monuments anchor behind 
 vertical tiers — a wall of masterpieces. Every toy label (stations, gates, all toys) wears
 `BillboardLabel`, facing the camera each frame so text reads from any approach.
 
-Rows 5–11 are built by composition from **`PaintingStrokeToolkit`** (below); rows 14–15 are
+Rows 5–11 are built by composition from **`PaintingStrokeToolkit`** (below); rows 12–16 are
 **baked from real references** by the offline **painting pipeline** (`Tools/PaintingPipeline/` —
 mesh→engraving-stroke converter + painting-flow tracer + asset baker; licences audited in
 `Tools/PaintingPipeline/REFERENCE_MODELS.md`). Baked paintings live as authored `strokes` on the
@@ -302,7 +302,7 @@ composes the toolkit; nothing else changes.
 
 **Collider budget / perf.** A painting is drawn by the *vessel's own trail* (conserved mass, no
 caps) — the geometry cost is one `LineRenderer` ghost + one start gate per stroke, created at
-`PaintingRunner.Begin`. The largest pieces (Peacock ~226, Lion ~171) therefore stand up a few hundred
+`PaintingRunner.Begin`. The largest pieces (Phoenix 260, Peacock 236) therefore stand up a few hundred
 lightweight LineRenderers; that is the deliberate "hours of flying" ceiling and is tracked in
 `BACKLOG.md` for an in-editor perf pass.
 
