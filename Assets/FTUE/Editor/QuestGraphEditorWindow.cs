@@ -49,12 +49,31 @@ namespace CosmicShore.Editor
         bool _validationDirty = true;
 
         Vector2 _leftScroll, _rightScroll;
+        Vector2 _questNotesScroll, _phaseNotesScroll;
         bool _showLegend = true;
+
+        // ── Panels (resizable + hideable, persisted per user) ──────────
+        const string PrefLeftW = "QuestGraph.LeftW";
+        const string PrefRightW = "QuestGraph.RightW";
+        const string PrefShowLeft = "QuestGraph.ShowLeft";
+        const string PrefShowRight = "QuestGraph.ShowRight";
+        const string PrefShowLegend = "QuestGraph.ShowLegend";
+        const float MinPanelW = 180f;
+        const float MaxPanelW = 560f;
+        const float MinCanvasW = 220f;
+        const float SplitterGrabW = 6f;
+
+        float _leftW = 234f;
+        float _rightW = 340f;
+        bool _showLeft = true;
+        bool _showRight = true;
+        int _panelDrag; // 0 = none, 1 = left splitter, 2 = right splitter
+
+        float EffectiveLeftW => _showLeft ? _leftW : 0f;
+        float EffectiveRightW => _showRight ? _rightW : 0f;
 
         // ── Constants ──────────────────────────────────────────────────
         const float ToolbarH = 24f;
-        const float LeftW = 234f;
-        const float RightW = 340f;
         const float HeaderH = 24f;
         const float PortR = 6f;
         const float MinZoom = 0.35f;
@@ -76,6 +95,11 @@ namespace CosmicShore.Editor
         void OnEnable()
         {
             wantsMouseMove = true;
+            _leftW = Mathf.Clamp(EditorPrefs.GetFloat(PrefLeftW, 234f), MinPanelW, MaxPanelW);
+            _rightW = Mathf.Clamp(EditorPrefs.GetFloat(PrefRightW, 340f), MinPanelW, MaxPanelW);
+            _showLeft = EditorPrefs.GetBool(PrefShowLeft, true);
+            _showRight = EditorPrefs.GetBool(PrefShowRight, true);
+            _showLegend = EditorPrefs.GetBool(PrefShowLegend, true);
             RefreshAssets();
             Undo.undoRedoPerformed += OnUndoRedo;
         }
@@ -101,20 +125,104 @@ namespace CosmicShore.Editor
             QuestGraphStyles.Ensure();
             var e = Event.current;
 
+            float leftW = EffectiveLeftW;
+            float rightW = EffectiveRightW;
+
+            // Keep the canvas usable at any window size: shrink the panels proportionally
+            // instead of letting them swallow the window (a negative-width canvas rect would
+            // silently stop responding to all mouse input).
+            float maxPanels = Mathf.Max(0f, position.width - MinCanvasW);
+            if (leftW + rightW > maxPanels && leftW + rightW > 0f)
+            {
+                float scale = maxPanels / (leftW + rightW);
+                leftW *= scale;
+                rightW *= scale;
+            }
+
             var toolbarRect = new Rect(0, 0, position.width, ToolbarH);
-            var leftRect = new Rect(0, ToolbarH, LeftW, position.height - ToolbarH);
-            var rightRect = new Rect(position.width - RightW, ToolbarH, RightW, position.height - ToolbarH);
-            _canvasRect = new Rect(LeftW, ToolbarH, position.width - LeftW - RightW, position.height - ToolbarH);
+            var leftRect = new Rect(0, ToolbarH, leftW, position.height - ToolbarH);
+            var rightRect = new Rect(position.width - rightW, ToolbarH, rightW, position.height - ToolbarH);
+            _canvasRect = new Rect(leftW, ToolbarH, position.width - leftW - rightW, position.height - ToolbarH);
 
             HandleKeyboard(e);
+            HandlePanelResize(e, leftRect, rightRect); // before the canvas so splitter drags win
 
             // Canvas first (its zoom group can over-clip at low zoom; panels drawn after cover any spill).
             DrawCanvas(_canvasRect, e);
 
             DrawToolbar(toolbarRect);
-            DrawLeftPanel(leftRect);
-            DrawRightPanel(rightRect);
+            if (_showLeft) DrawLeftPanel(leftRect);
+            if (_showRight) DrawRightPanel(rightRect);
+            DrawPanelSplitters(leftRect, rightRect);
             DrawOverlays();
+        }
+
+        // ── Panel resize (draggable splitters) ─────────────────────────
+
+        Rect LeftSplitterRect(Rect leftRect) =>
+            new(leftRect.xMax - SplitterGrabW * 0.5f, leftRect.y, SplitterGrabW, leftRect.height);
+
+        Rect RightSplitterRect(Rect rightRect) =>
+            new(rightRect.x - SplitterGrabW * 0.5f, rightRect.y, SplitterGrabW, rightRect.height);
+
+        void HandlePanelResize(Event e, Rect leftRect, Rect rightRect)
+        {
+            var leftSplit = LeftSplitterRect(leftRect);
+            var rightSplit = RightSplitterRect(rightRect);
+
+            if (_showLeft) EditorGUIUtility.AddCursorRect(leftSplit, MouseCursor.ResizeHorizontal);
+            if (_showRight) EditorGUIUtility.AddCursorRect(rightSplit, MouseCursor.ResizeHorizontal);
+
+            switch (e.type)
+            {
+                case EventType.MouseDown when e.button == 0 && _showLeft && leftSplit.Contains(e.mousePosition):
+                    _panelDrag = 1;
+                    e.Use();
+                    break;
+
+                case EventType.MouseDown when e.button == 0 && _showRight && rightSplit.Contains(e.mousePosition):
+                    _panelDrag = 2;
+                    e.Use();
+                    break;
+
+                case EventType.MouseDrag when _panelDrag == 1:
+                {
+                    // Guard the upper bound against dropping below the lower one on narrow
+                    // windows — an inverted Mathf.Clamp would snap the width negative and put
+                    // the splitter (and panel) unrecoverably offscreen.
+                    float max = Mathf.Max(MinPanelW, Mathf.Min(MaxPanelW, position.width - EffectiveRightW - MinCanvasW));
+                    _leftW = Mathf.Clamp(e.mousePosition.x, MinPanelW, max);
+                    EditorPrefs.SetFloat(PrefLeftW, _leftW);
+                    e.Use();
+                    Repaint();
+                    break;
+                }
+
+                case EventType.MouseDrag when _panelDrag == 2:
+                {
+                    float max = Mathf.Max(MinPanelW, Mathf.Min(MaxPanelW, position.width - EffectiveLeftW - MinCanvasW));
+                    _rightW = Mathf.Clamp(position.width - e.mousePosition.x, MinPanelW, max);
+                    EditorPrefs.SetFloat(PrefRightW, _rightW);
+                    e.Use();
+                    Repaint();
+                    break;
+                }
+
+                case EventType.MouseUp when _panelDrag != 0:
+                    _panelDrag = 0;
+                    e.Use();
+                    break;
+            }
+        }
+
+        void DrawPanelSplitters(Rect leftRect, Rect rightRect)
+        {
+            if (_showLeft)
+                EditorGUI.DrawRect(new Rect(leftRect.xMax - 1f, leftRect.y, _panelDrag == 1 ? 2f : 1f, leftRect.height),
+                    _panelDrag == 1 ? QuestGraphStyles.SelectionBorder : QuestGraphStyles.SplitterLine);
+            if (_showRight)
+                EditorGUI.DrawRect(new Rect(rightRect.x, rightRect.y, _panelDrag == 2 ? 2f : 1f, rightRect.height),
+                    _panelDrag == 2 ? QuestGraphStyles.SelectionBorder : QuestGraphStyles.SplitterLine);
         }
 
         void HandleKeyboard(Event e)
@@ -169,9 +277,36 @@ namespace CosmicShore.Editor
                     FrameContent();
             }
 
-            _showLegend = GUILayout.Toggle(_showLegend, "Legend", EditorStyles.toolbarButton, GUILayout.Width(58));
+            bool legend = GUILayout.Toggle(_showLegend,
+                new GUIContent("Node Colors", "Show/hide the node-color legend on the canvas."),
+                EditorStyles.toolbarButton, GUILayout.Width(82));
+            if (legend != _showLegend)
+            {
+                _showLegend = legend;
+                EditorPrefs.SetBool(PrefShowLegend, _showLegend);
+            }
 
             GUILayout.FlexibleSpace();
+
+            bool showLeft = GUILayout.Toggle(_showLeft,
+                new GUIContent("◧ Quests", "Show/hide the quest/phase sidebar. Drag its inner edge to resize."),
+                EditorStyles.toolbarButton, GUILayout.Width(70));
+            if (showLeft != _showLeft)
+            {
+                _showLeft = showLeft;
+                EditorPrefs.SetBool(PrefShowLeft, _showLeft);
+            }
+
+            bool showRight = GUILayout.Toggle(_showRight,
+                new GUIContent("Inspector ◨", "Show/hide the inspector sidebar. Drag its inner edge to resize."),
+                EditorStyles.toolbarButton, GUILayout.Width(80));
+            if (showRight != _showRight)
+            {
+                _showRight = showRight;
+                EditorPrefs.SetBool(PrefShowRight, _showRight);
+            }
+
+            GUILayout.Space(8);
 
             using (new EditorGUI.DisabledScope(_graph == null))
             {
@@ -740,8 +875,7 @@ namespace CosmicShore.Editor
                     new GUIContent("Quest Enabled (runner)", "Master test-harness switch — the runner never starts a disabled quest."),
                     _quest.questEnabled);
                 string id = EditorGUILayout.TextField("Quest Id", _quest.questId);
-                string notes = EditorGUILayout.TextArea(_quest.designerNotes ?? string.Empty,
-                    QuestGraphStyles.NotesArea, GUILayout.MinHeight(48));
+                string notes = ScrollableNotesArea(_quest.designerNotes, ref _questNotesScroll, 76f);
                 if (EditorGUI.EndChangeCheck())
                 {
                     Undo.RecordObject(_quest, "Edit Quest");
@@ -763,18 +897,30 @@ namespace CosmicShore.Editor
                 }
                 EditorGUILayout.EndHorizontal();
 
-                if (GUILayout.Button(new GUIContent("Reset ALL Player Progress (Local + Cloud)",
-                        "Clears this quest's PlayerPrefs mirror always. In PLAY MODE (signed in) it wipes EVERYTHING gameplay-side: the quest's UGS cloud record, game-mode progression (mode unlocks + intensity tiers + play counts), all vessel unlocks (hangar cloud record), and any quest arcade constraints. The Froglet Toolbox reads this state live, so its toggles reflect the reset immediately — and you can still manually re-unlock modes/intensities/vessels there.")))
+                if (!ProgressionBackendGate.CloudEnabled)
+                    EditorGUILayout.HelpBox(
+                        "Backend: LOCAL-ONLY. ProgressionBackendGate is closed — quest progress lives in " +
+                        "PlayerPrefs only and mode/intensity progression resets fresh every play session. " +
+                        "Flip ProgressionBackendGate.CloudEnabled to true to restore cloud sync.",
+                        MessageType.None);
+
+                if (GUILayout.Button(new GUIContent("Reset ALL Player Progress",
+                        "Clears this quest's PlayerPrefs mirror always. In PLAY MODE it also resets game-mode progression (unlocks + intensity tiers + play counts), all vessel unlocks, and any quest arcade constraints — plus the UGS cloud records when the backend gate is open. The Froglet Toolbox reads this state live and can still manually re-unlock anything.")))
                 {
                     if (Application.isPlaying)
                     {
                         bool cloud = QuestProgressStore.ResetAllGameplayProgress(_quest.QuestId);
-                        Debug.Log($"[Quest] '{_quest.QuestId}' FULL reset — local ✓, quest+progression+vessels cloud {(cloud ? "✓" : "✗ (repos not loaded / not signed in)")}.");
+                        string cloudMsg = !ProgressionBackendGate.CloudEnabled
+                            ? "skipped (backend gate closed — local-only mode)"
+                            : cloud ? "✓" : "✗ (repos not loaded / not signed in)";
+                        Debug.Log($"[Quest] '{_quest.QuestId}' FULL reset — local ✓, progression+vessels ✓, cloud {cloudMsg}.");
                     }
                     else
                     {
                         QuestProgressStore.ResetLocal(_quest.QuestId);
-                        Debug.Log($"[Quest] '{_quest.QuestId}' local mirror cleared. Enter PLAY MODE (signed in) and press again for the full backend reset (progression, intensities, vessels).");
+                        Debug.Log(ProgressionBackendGate.CloudEnabled
+                            ? $"[Quest] '{_quest.QuestId}' local mirror cleared. Enter PLAY MODE (signed in) and press again for the full backend reset (progression, intensities, vessels)."
+                            : $"[Quest] '{_quest.QuestId}' local mirror cleared — with the backend gate closed this IS the full reset (progression is session-local and starts fresh every play).");
                     }
                 }
 
@@ -790,8 +936,7 @@ namespace CosmicShore.Editor
                     _graph.phaseEnabled);
                 string pname = EditorGUILayout.TextField("Phase Name", _graph.phaseName);
                 GUILayout.Label("Designer Notes", EditorStyles.miniLabel);
-                string pnotes = EditorGUILayout.TextArea(_graph.designerNotes ?? string.Empty,
-                    QuestGraphStyles.NotesArea, GUILayout.MinHeight(60));
+                string pnotes = ScrollableNotesArea(_graph.designerNotes, ref _phaseNotesScroll, 92f);
                 if (EditorGUI.EndChangeCheck())
                 {
                     Undo.RecordObject(_graph, "Edit Phase");
@@ -868,6 +1013,29 @@ namespace CosmicShore.Editor
             DrawValidation();
             EditorGUILayout.EndScrollView();
             GUILayout.EndArea();
+        }
+
+        /// <summary>
+        /// Fixed-height notes editor with a WORKING scrollbar: a raw TextArea only auto-scrolls
+        /// with the caret (its "scrollbar" isn't draggable), so long notes were unreachable by
+        /// mouse. The TextArea expands to its content inside a real ScrollView instead.
+        /// </summary>
+        static string ScrollableNotesArea(string text, ref Vector2 scroll, float height)
+        {
+            text ??= string.Empty;
+
+            // The scrollbar sets GUI.changed on every drag, which would trip the caller's
+            // BeginChangeCheck and dirty the asset from mere scrolling — isolate it so only
+            // a real text edit leaks out.
+            bool outerChanged = GUI.changed;
+            GUI.changed = false;
+
+            scroll = EditorGUILayout.BeginScrollView(scroll, GUILayout.Height(height));
+            string result = EditorGUILayout.TextArea(text, QuestGraphStyles.NotesArea, GUILayout.ExpandHeight(true));
+            EditorGUILayout.EndScrollView();
+
+            GUI.changed = outerChanged || !string.Equals(result, text, StringComparison.Ordinal);
+            return result;
         }
 
         void DrawConnections()
@@ -1003,7 +1171,7 @@ namespace CosmicShore.Editor
                 float w = Mathf.Min(300f, QuestGraphStyles.Tooltip.CalcSize(content).x + 4f);
                 float h = QuestGraphStyles.Tooltip.CalcHeight(content, w);
                 var pos = _tooltipWinPos;
-                pos.x = Mathf.Min(pos.x, position.width - RightW - w - 8f);
+                pos.x = Mathf.Min(pos.x, position.width - EffectiveRightW - w - 8f);
                 pos.y = Mathf.Min(pos.y, position.height - h - 8f);
                 var r = new Rect(pos, new Vector2(w, h));
                 EditorGUI.DrawRect(new Rect(r.x - 5, r.y - 4, r.width + 10, r.height + 8), QuestGraphStyles.TooltipBg);
@@ -1388,7 +1556,7 @@ namespace CosmicShore.Editor
         public static Color ToolbarBg, PanelBg, CanvasBg, GridMinor, GridMajor;
         public static Color NodeBody, NodeBodyHover, NodeShadow, PortIn, PortRim, PortArmed;
         public static Color EntryBorder, SelectionBorder, LinkPreview, LegendBg, TooltipBg;
-        public static Color RowSelected, RowSelectedFaint;
+        public static Color RowSelected, RowSelectedFaint, SplitterLine;
 
         public static GUIStyle Breadcrumb, PanelHeader, RowLabel, RowLabelSelected, RowLabelSmall;
         public static GUIStyle MiniButton, MiniButtonDanger, MiniWide;
@@ -1418,6 +1586,7 @@ namespace CosmicShore.Editor
             TooltipBg = new Color(0.08f, 0.09f, 0.115f, 0.97f);
             RowSelected = new Color(0.25f, 0.32f, 0.52f, 0.85f);
             RowSelectedFaint = new Color(0.25f, 0.32f, 0.52f, 0.45f);
+            SplitterLine = new Color(0f, 0f, 0f, 0.55f);
 
             Breadcrumb = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
             PanelHeader = new GUIStyle(EditorStyles.boldLabel)

@@ -32,27 +32,46 @@ namespace CosmicShore.UI
         
         SO_ArcadeGame SelectedGame;
         List<GameCard> GameCards;
+        bool _subscribedToProgression;
 
         void OnEnable()
         {
             CatalogManager.OnLoadInventory += PopulateGameSelectionList;
-
-            if (GameModeProgressionService.Instance != null)
-                GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
+            QuestArcadeConstraints.OnChanged += HandleConstraintsChanged;
+            TrySubscribeToProgression();
         }
 
         void OnDisable()
         {
             CatalogManager.OnLoadInventory -= PopulateGameSelectionList;
+            QuestArcadeConstraints.OnChanged -= HandleConstraintsChanged;
 
-            if (GameModeProgressionService.Instance != null)
+            if (_subscribedToProgression && GameModeProgressionService.Instance != null)
                 GameModeProgressionService.Instance.OnProgressionChanged -= OnProgressionChanged;
+            _subscribedToProgression = false;
         }
 
         void Start()
         {
+            // Retry: the progression service may not have existed yet at OnEnable time
+            // (it lives on a DontDestroyOnLoad object created during bootstrap).
+            TrySubscribeToProgression();
+
             LoadoutSystem.Init();
             PopulateGameSelectionList();
+        }
+
+        void TrySubscribeToProgression()
+        {
+            if (_subscribedToProgression || GameModeProgressionService.Instance == null) return;
+            GameModeProgressionService.Instance.OnProgressionChanged += OnProgressionChanged;
+            _subscribedToProgression = true;
+        }
+
+        void HandleConstraintsChanged()
+        {
+            if (isActiveAndEnabled)
+                PopulateGameSelectionList();
         }
 
         public void PopulateGameSelectionList()

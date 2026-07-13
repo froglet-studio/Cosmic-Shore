@@ -25,7 +25,7 @@ namespace CosmicShore.Core
             }
         }
 
-        [TextArea(2, 5)]
+        [TextArea(2, 8)]
         [Tooltip("Instruction text shown on the overlay.")]
         public string text;
 

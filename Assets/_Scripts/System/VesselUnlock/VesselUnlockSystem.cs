@@ -76,8 +76,8 @@ namespace CosmicShore.Core
                 vessel.Lock();
             }
 
-            // Clear cloud data
-            var ds = UGSDataService.Instance;
+            // Clear cloud data (skipped while the progression backend gate is closed)
+            var ds = ProgressionBackendGate.CloudEnabled ? UGSDataService.Instance : null;
             if (ds?.HangarRepo != null)
             {
                 ds.HangarRepo.Data.UnlockedVessels.Clear();
@@ -90,6 +90,8 @@ namespace CosmicShore.Core
 
         static void PersistUnlockToCloud(string vesselName, bool unlocked)
         {
+            if (!ProgressionBackendGate.CloudEnabled) return;
+
             var ds = UGSDataService.Instance;
             if (ds?.HangarRepo == null) return;
 

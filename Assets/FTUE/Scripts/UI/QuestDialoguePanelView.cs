@@ -51,8 +51,24 @@ namespace CosmicShore.Core
         /// <summary>True while a PlayLines sequence is running.</summary>
         public bool IsPlaying { get; private set; }
 
+        bool _initialized;
+
         void Awake()
         {
+            EnsureInitialized();
+            SetVisible(false, instant: true);
+        }
+
+        /// <summary>
+        /// Idempotent setup. The hand-built scene panel usually starts INACTIVE, so Awake may
+        /// not have run when a quest node first drives it — every public entry point calls
+        /// this before touching state.
+        /// </summary>
+        void EnsureInitialized()
+        {
+            if (_initialized) return;
+            _initialized = true;
+
             if (panel == null && !TryGetComponent(out panel))
                 panel = gameObject.AddComponent<CanvasGroup>();
 
@@ -61,8 +77,6 @@ namespace CosmicShore.Core
 
             if (captainImage != null)
                 _defaultPortrait = captainImage.sprite;
-
-            SetVisible(false, instant: true);
         }
 
         // ── Direct API (quest graph — no dialogue system) ─────────────
@@ -76,6 +90,23 @@ namespace CosmicShore.Core
         {
             if (lines == null || lines.Count == 0)
             {
+                onComplete?.Invoke();
+                return;
+            }
+
+            EnsureInitialized();
+
+            // The scene panel is typically saved inactive — wake it up before playing
+            // (StartCoroutine on an inactive object throws, which would hang the quest).
+            if (!gameObject.activeSelf)
+                gameObject.SetActive(true);
+
+            if (!isActiveAndEnabled)
+            {
+                // A parent is still inactive (or the component is disabled) — we can't run
+                // coroutines. Fail OPEN: report, complete, and let the quest continue.
+                Debug.LogError($"[Quest] Dialogue panel '{name}' cannot play — a parent object is inactive " +
+                               "or the component is disabled. Skipping this dialogue beat.");
                 onComplete?.Invoke();
                 return;
             }
@@ -150,6 +181,7 @@ namespace CosmicShore.Core
 
         public void ShowDialogueSet(DialogueSet set)
         {
+            EnsureInitialized();
             _skipRequested = false;
 
             if (captainImage != null)

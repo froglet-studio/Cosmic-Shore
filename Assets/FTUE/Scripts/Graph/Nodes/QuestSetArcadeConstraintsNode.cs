@@ -40,14 +40,12 @@ namespace CosmicShore.Core
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {
+            // Apply/Clear raise QuestArcadeConstraints.OnChanged — the arcade card grid
+            // subscribes and refreshes its lock state immediately, even if already open.
             if (clearConstraints)
                 QuestArcadeConstraints.Clear();
             else
                 QuestArcadeConstraints.Apply(allowedMode, forcedIntensity, forceMaxPlayers, forcedDomainCount);
-
-            // The arcade card grid repopulates on progression change — reuse that channel so an
-            // already-open arcade screen reflects the new locks immediately.
-            GameModeProgressionService.Instance?.InvokeProgressionChanged();
 
             Debug.Log($"[Quest] Arcade constraints {(clearConstraints ? "cleared" : $"applied: {EditorSummary}")}.");
             advance(QuestPorts.Next);

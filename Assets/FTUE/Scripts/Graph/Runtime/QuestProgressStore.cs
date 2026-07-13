@@ -12,9 +12,12 @@ namespace CosmicShore.Core
     /// </summary>
     public static class QuestProgressStore
     {
-        static QuestProgressRepository Repo => UGSDataService.Instance != null
-            ? UGSDataService.Instance.QuestGraphRepo
-            : null;
+        // Null while the backend gate is closed — every read then falls back to the
+        // PlayerPrefs mirror and every cloud write becomes a no-op (local-only testing).
+        static QuestProgressRepository Repo =>
+            ProgressionBackendGate.CloudEnabled && UGSDataService.Instance != null
+                ? UGSDataService.Instance.QuestGraphRepo
+                : null;
 
         static string CompletedKey(string questId) => $"QUEST_{questId}_Completed";
         static string PhaseKey(string questId) => $"QUEST_{questId}_Phase";
@@ -147,9 +150,12 @@ namespace CosmicShore.Core
             VesselUnlockSystem.ResetAllUnlocks(vesselList != null && vesselList.Length > 0 ? vesselList[0] : null);
 
             // Vessel reset only marks the hangar repo dirty — flush so it lands in the backend now.
-            var ds = UGSDataService.Instance;
-            if (ds != null) _ = ds.FlushAllAsync();
-            else cloud = false;
+            if (ProgressionBackendGate.CloudEnabled)
+            {
+                var ds = UGSDataService.Instance;
+                if (ds != null) _ = ds.FlushAllAsync();
+                else cloud = false;
+            }
 
             return cloud;
         }

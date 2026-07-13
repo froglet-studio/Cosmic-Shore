@@ -90,9 +90,17 @@ Interactive/editable reference map (browser): the "Main Quest Progression Map" a
   node card header, in the right-panel inspectors, and in the node context menu. The runner
   never starts a disabled quest, skips disabled phases, and passes straight through disabled
   nodes (following their `next` edge) — so you can mute any beat without unwiring it.
-- **Reset Local Progress** (quest inspector) — clears the PlayerPrefs mirror so the quest runs
-  again on this machine (cloud progress resets via `UGSDataService.ResetAllDataAsync`).
+- **Reset ALL Player Progress** (quest inspector) — clears the quest's PlayerPrefs mirror; in
+  Play mode also resets mode/intensity progression, vessel unlocks, and arcade constraints
+  (plus the UGS cloud records when the backend gate is open).
+- **Backend gate** — `ProgressionBackendGate.CloudEnabled` (in `_Scripts/System/Progression/`)
+  is currently **false**: quest progress is PlayerPrefs-only and mode/intensity progression is
+  session-local (fresh every play). Flip it to `true` to restore cloud sync once the FTUE is
+  signed off. The quest inspector shows a LOCAL-ONLY banner while the gate is closed.
 - **Rename Asset** (quest inspector) — renames the QuestSO asset in place.
+- **Panels** — both sidebars hide/show from the toolbar (◧ Quests / Inspector ◨) and resize by
+  dragging their inner edge; the on-canvas node-color legend toggles with "Node Colors". All
+  persisted per user.
 - Runner-side: `debugDisable`, `debugForceRun` (ignore completion + saved progress), and
   `debugPhaseOverride` (run one phase graph without persistence).
 

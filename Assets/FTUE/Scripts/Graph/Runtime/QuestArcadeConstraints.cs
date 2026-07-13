@@ -17,6 +17,10 @@ namespace CosmicShore.Core
     /// </summary>
     public static class QuestArcadeConstraints
     {
+        /// <summary>Raised whenever the constraints are applied or cleared — arcade UI
+        /// (card grid) subscribes to refresh its lock state immediately.</summary>
+        public static event System.Action OnChanged;
+
         /// <summary>Master switch — when false every query below is a no-op.</summary>
         public static bool Active { get; private set; }
 
@@ -45,6 +49,7 @@ namespace CosmicShore.Core
             ForcedIntensity = forcedIntensity;
             ForceMaxPlayers = forceMaxPlayers;
             ForcedDomainCount = forcedDomainCount;
+            OnChanged?.Invoke();
         }
 
         public static void Clear()
@@ -54,6 +59,7 @@ namespace CosmicShore.Core
             ForcedIntensity = 0;
             ForceMaxPlayers = false;
             ForcedDomainCount = 0;
+            OnChanged?.Invoke();
         }
     }
 }

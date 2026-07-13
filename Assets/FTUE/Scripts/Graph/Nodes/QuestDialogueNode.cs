@@ -33,7 +33,7 @@ namespace CosmicShore.Core
         public Sprite portrait;
 
         [Tooltip("The dialogue lines, in order. Next steps through them; the last line closes the panel.")]
-        [TextArea(2, 4)] public List<string> lines = new();
+        [TextArea(2, 8)] public List<string> lines = new();
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {

@@ -105,9 +105,13 @@ namespace CosmicShore.Core
         {
             _ugsDataService.OnInitialized -= HandleDataServiceReady;
 
-            // Use the repo's data directly
-            if (_ugsDataService.ProgressionRepo != null)
+            // Use the repo's data directly — unless the backend gate is closed, in which case
+            // progression stays session-local (fresh every launch, ideal for FTUE testing).
+            if (ProgressionBackendGate.CloudEnabled && _ugsDataService.ProgressionRepo != null)
                 ProgressionData = _ugsDataService.ProgressionRepo.Data;
+            else if (!ProgressionBackendGate.CloudEnabled)
+                CSDebug.Log("[GameModeProgressionService] ProgressionBackendGate closed — cloud record " +
+                            "ignored; progression is session-local and starts fresh each launch.");
 
             EnsureFirstModeUnlocked();
             SyncSOCompletedFlags();
@@ -928,6 +932,8 @@ namespace CosmicShore.Core
 
         async void SaveImmediateAsync()
         {
+            if (!ProgressionBackendGate.CloudEnabled) return;
+
             var repo = _ugsDataService?.ProgressionRepo;
             if (repo == null)
             {
@@ -949,6 +955,7 @@ namespace CosmicShore.Core
 
         void ScheduleDebouncedSave()
         {
+            if (!ProgressionBackendGate.CloudEnabled) return;
             _ugsDataService?.ProgressionRepo?.MarkDirty();
         }
     }

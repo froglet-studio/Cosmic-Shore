@@ -235,6 +235,15 @@ namespace CosmicShore.Core
         /// </summary>
         public void SyncHangarToVessels()
         {
+            // Symmetric with the gated hangar WRITE paths (VesselUnlockSystem): while the
+            // progression backend gate is closed, a stale cloud record must not resurrect
+            // vessel unlocks on every sign-in — unlocks stay session-local.
+            if (!ProgressionBackendGate.CloudEnabled)
+            {
+                CSDebug.Log("[UGSDataService] ProgressionBackendGate closed — skipping hangar→vessel unlock sync.");
+                return;
+            }
+
             if (vesselList == null || _hangar?.Data == null) return;
 
             foreach (var vessel in vesselList.VesselList)
