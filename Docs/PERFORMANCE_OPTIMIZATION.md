@@ -27,6 +27,39 @@ Remaining known costs: `EventSystem.Update` ≈ **0.5 ms** flat UI raycast tax
 (Task 2); first-use shader-compile hitches (Task 3 — plumbing shipped,
 collection not yet recorded).
 
+### 2026-07-09 fixes for the soak findings (SHIPPED — verify per §5 + the soak section)
+
+All three soak offenders fixed in `e0735b2c` / `eaf107e0` / `75828ff0`:
+
+1. **Creation tick (Task 4 CLOSED):** render entities now clone a cached
+   Prefab-tagged prototype (ONE structural change, was ~8: CreateEntity + the
+   RenderMeshUtility bundle + per-override AddComponentData + DisableRendering),
+   and the lifecycle's show/hide toggles batch into a single LateUpdate flush
+   (`PrismRender.VisibilityFlush` marker) using the batch Add/RemoveComponent
+   APIs — two structural changes per frame regardless of prism count. Expect
+   `Prism.Create.Visibility` to collapse from 0.35–0.66 ms/prism to ~0.05 ms
+   and to STOP scaling with entity count. VFX pools and exotic-visual
+   hand-offs keep immediate toggles (no double-draw window).
+2. **Collider LOD:** classification is one Burst `LodClassifyJob` per 0.25 s
+   tick over the packed array (~0.1–0.3 ms at 25k, `.Run()` like every other
+   index query — no races), maintaining a per-slot `PrismFlags.LodNear` bit
+   and emitting near/far **transitions only**; the manager applies them under
+   `maxColliderTogglesPerFrame` (512). Expect `PrismColliderLodManager.Update`
+   to fall from 5.54 ms slice-frames to sub-0.5 ms ticks with nothing between
+   ticks. Slot-reuse staleness self-heals within one tick (same tolerance
+   class as before); reconcile/restore-all/kill-switch semantics unchanged.
+3. **Pool refills:** maintenance requests one engine-timesliced
+   `InstantiateAsync` batch (integration spread by the engine; clones
+   incubate at y = −100 km so nothing can flash in-scene), prism pools
+   deepened to 120 buffer / 40 s⁻¹ / 300 max, and Awake prewarms only
+   `defaultCapacity` (deep buffers no longer cost scene-load hitches — the
+   async loop tops up over the first seconds). On-demand misses now show as
+   `PoolMiss.<prefab>` — expect them in the first seconds after load and then
+   never again in steady state; the 4.38 ms `UniTaskLoopRunnerUpdate`
+   spawn-tick hits should disappear once the buffer holds. `maxSize` is
+   clamped ≥ buffer target at Awake so config drift can't create an
+   instantiate/destroy churn loop.
+
 ### 2026-07-09 soak capture (Menu_Main, ~25,000 prisms) — the population-scaling rows
 
 Long lava-lamp soak: **25,483 registered prisms** (PrismScaleManager HUD;
@@ -179,6 +212,9 @@ fix spreads or de-allocates the same work.
 | `e04d5a72` | `PoolRefill.<prefabName>` markers on pool buffer refills |
 | `d80e7ee5` | FIX from re-verification: growth tempo calibrated to the real 40 ms tick (`dtNominal = 0.04`); slice dt cap scaled to rotation period; cursor drift corrected |
 | `4443df83` | GC on every peer behind the post-load fade (clients + Play Again reloads were uncovered) |
+| `e0735b2c` | Render entities instantiate from Prefab-tagged prototypes (1 structural op, was ~8); prism visibility toggles batched into a LateUpdate flush (2 structural ops/frame total) |
+| `eaf107e0` | Collider-LOD classification is one Burst pass emitting transitions via the `LodNear` flag bit; managed cost O(changed) under a 512/frame toggle budget (was 5.5 ms managed slice frames) |
+| `75828ff0` | Pool refills via engine-timesliced `InstantiateAsync` batches; `PoolMiss.*` markers on on-demand misses; prism pools 120 buffer / 40 rate / 300 max; prewarm = defaultCapacity only; maxSize clamped ≥ buffer |
 | `019eb3c0` | Flora grow-tick instantiation paced across frames (decision at tick, drain 1/frame); branch walk de-LINQ'd |
 | `5da47650` | Spindle condense/evaporate fades via shared MaterialPropertyBlock (was a Material clone + Destroy per fade) |
 | `d4f696ae` | Creation-tick split markers: `Prism.Create.Visibility` / `.SOAPRaise` / `.SpatialBind` (Task 4 attribution) |
