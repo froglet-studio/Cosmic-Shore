@@ -25,6 +25,16 @@ namespace CosmicShore.UI
         Image[]    _boostPips;
         Coroutine[] _pipAnim;
 
+        // Four-icon contract: the pip magazine presents the boost slot and the seed-wall count
+        // icon presents the wall slot; Cloak Weave and the fourth slot have no icons yet, so the
+        // ability bar shows placeholders for those two.
+        public override Image GetAbilitySlotImage(int slotIndex) => slotIndex switch
+        {
+            0 => boostPip1,
+            1 => shieldIcon,
+            _ => null,
+        };
+
         public override void Initialize()
         {
             BuildBoostPipCache();

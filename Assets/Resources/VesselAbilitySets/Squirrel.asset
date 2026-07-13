@@ -14,23 +14,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vesselClass: 6
   slots:
-  - Label: 'Drift Right'
-    Description: 'Hold to drift right, laying trail through the turn.'
+  - Label: 'Drift'
+    Description: 'Hold left/right stick to drift, laying trail through the turn; both sticks for a sharp double drift.'
     Input: 11
     Icon: {fileID: 0}
     IsPlaceholder: 0
-  - Label: 'Drift Left'
-    Description: 'Hold to drift left, laying trail through the turn.'
-    Input: 12
-    Icon: {fileID: 0}
-    IsPlaceholder: 0
-  - Label: 'Sharp Drift'
-    Description: 'Hold both sticks for a hard double drift.'
-    Input: 13
-    Icon: {fileID: 0}
-    IsPlaceholder: 0
-  - Label: 'Overheat Trail'
-    Description: 'Passive: overheating turns your own trail into a 10x-energy danger ribbon.'
+  - Label: 'Skim Boost'
+    Description: 'Passive: skimming trails builds boost energy - your own overheat danger trail grants 10x.'
     Input: 6
+    Icon: {fileID: 0}
+    IsPlaceholder: 0
+  - Label: 'Joust'
+    Description: 'Passive: the ring flashes when you take a joust hit.'
+    Input: 7
+    Icon: {fileID: 0}
+    IsPlaceholder: 0
+  - Label: 'Crystal Shield'
+    Description: 'Passive: crystal pickups surge your shield.'
+    Input: 8
     Icon: {fileID: 0}
     IsPlaceholder: 0

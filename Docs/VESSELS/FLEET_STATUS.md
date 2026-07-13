@@ -81,13 +81,20 @@ Shipped this pass (code):
   rebuilt (it survives HUD show/hide untouched), so there is nothing high-frequency to pool.
 - **`VesselHUDController`** resolves and initializes a `VesselAbilityBar` under the HUD if present —
   **non-regressing**: existing HUDs are untouched until they adopt a bar.
-- **LIVE via zero-wire auto-adoption:** the six flyable vessels each have a
-  `Resources/VesselAbilitySets/{VesselClassType}.asset` authored with their real input wiring
-  (verified against each prefab's `_inputEventShipActions`). When a HUD has no authored bar,
-  `VesselHUDController.TryAutoAdoptAbilityBar` builds one at runtime for the local human pilot —
-  same zero-wire pattern as `ElementalBarsView`'s Resources config fallback. So **all six flyables
-  show four icons today**; authoring a bar + real icon `Image`s in the HUD prefab later upgrades a
-  vessel to the zero-alloc path and takes precedence automatically.
+- **LIVE via view binding + zero-wire auto-adoption — a refactor, not a new UI.** The icons a HUD
+  *already shows* count first: each view binds its existing icon `Image`s to the four slots via
+  `VesselHUDView.GetAbilitySlotImage(slotIndex)` (slot order must match the vessel's ability set).
+  Bound slots are presented and animated entirely by the view/controller's own logic — the bar never
+  touches them. A vessel whose view binds all four (**Squirrel**: drift/boost/danger/shield;
+  **Sparrow**: fire/missile/stance/heat; **Rhino**: forcefield/crystal/line/debuff) gets **zero new
+  objects and zero visible change**. Only genuinely missing slots render in the bar's fallback row
+  as placeholders (Manta: 3 — bank ×2 + boost; Dolphin: 3; Serpent: 2 — cloak + the empty 4th). The
+  six flyables each have a `Resources/VesselAbilitySets/{VesselClassType}.asset` authored with their
+  real input wiring (verified against each prefab's `_inputEventShipActions`);
+  `VesselHUDController.TryAutoAdoptAbilityBar` builds the runtime bar for the local human pilot only
+  when a set exists **and** the view leaves slots un-iconed — the same zero-wire Resources pattern
+  as `ElementalBarsView`'s config fallback. Authoring a bar + icon `Image`s in the HUD prefab later
+  takes precedence automatically (zero-alloc path).
 - **`Tools > Cosmic Shore > Validate Vessel Ability Icons`** (`_Scripts/Editor/`) reports every
   vessel prefab as compliant (authored bar **or** resolvable ability set) / non-compliant. A build
   gate exists (`EnforceOnBuild`, default **off**); flip it on once the stub vessels are resurrected

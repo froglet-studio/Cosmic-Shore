@@ -20,6 +20,11 @@ namespace CosmicShore.UI
         public Color NormalColor    => normalColor;
         public Color HighLightColor => highlightColor;
 
+        // Four-icon contract: only the Overcharge dial exists today (slot 3); the bank/boost
+        // slots have no authored icons yet, so the ability bar shows placeholders for them.
+        public override Image GetAbilitySlotImage(int slotIndex) =>
+            slotIndex == 3 ? fillImage : null;
+
         /// <summary>
         /// Called by controller once on Initialize.
         /// </summary>

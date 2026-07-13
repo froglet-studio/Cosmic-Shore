@@ -33,27 +33,39 @@ namespace CosmicShore.UI
 
             baseView?.Initialize();
 
-            // Four-icon contract: every vessel presents exactly four ability icons. Prefer a bar
-            // authored in the HUD prefab; otherwise auto-adopt one from the vessel's ability set in
-            // Resources (same zero-wire pattern as ElementalBarsView's config fallback).
+            // Four-icon contract: every vessel presents exactly four ability icons, counting the
+            // icons the view ALREADY shows first (bound via VesselHUDView.GetAbilitySlotImage —
+            // pure refactor, no visible change). Prefer a bar authored in the HUD prefab; otherwise
+            // auto-adopt one ONLY if the view leaves slots genuinely un-iconed (same zero-wire
+            // Resources pattern as ElementalBarsView's config fallback).
             if (!abilityBar)
                 abilityBar = GetComponentInChildren<VesselAbilityBar>(true);
             if (!abilityBar)
                 abilityBar = TryAutoAdoptAbilityBar(vesselStatus);
-            abilityBar?.Initialize(vesselStatus);
+            abilityBar?.Initialize(vesselStatus, baseView);
         }
 
         /// <summary>
-        /// Zero-wire adoption of the four-icon contract: when the HUD has no authored
-        /// <see cref="VesselAbilityBar"/> but a <c>Resources/VesselAbilitySets/{VesselClassType}</c>
-        /// set exists, build a bar under the HUD view at runtime. Only for the local human pilot —
-        /// AI and remote vessels keep their HUDs hidden and get no bar.
+        /// Zero-wire adoption of the four-icon contract, for the local human pilot only. Creates a
+        /// runtime bar ONLY when (a) a <c>Resources/VesselAbilitySets/{VesselClassType}</c> set
+        /// exists and (b) the view leaves at least one slot without an existing icon — a view that
+        /// already presents all four (e.g. Squirrel) gets nothing: zero new objects, zero visible
+        /// change. The bar then renders placeholders for just the missing slots.
         /// </summary>
         VesselAbilityBar TryAutoAdoptAbilityBar(IVesselStatus vesselStatus)
         {
             if (vesselStatus == null || vesselStatus.IsInitializedAsAI || !vesselStatus.IsLocalUser)
                 return null;
             if (!baseView) return null;
+
+            bool anyMissing = false;
+            for (int i = 0; i < VesselAbilitySetSO.SlotCount; i++)
+            {
+                if (baseView.GetAbilitySlotImage(i)) continue;
+                anyMissing = true;
+                break;
+            }
+            if (!anyMissing) return null; // the view already presents all four icons
 
             var set = Resources.Load<VesselAbilitySetSO>($"VesselAbilitySets/{vesselStatus.VesselType}");
             if (!set) return null;

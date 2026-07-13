@@ -14,6 +14,11 @@ namespace CosmicShore.UI
 
         int _stepsMinusOne;
 
+        // Four-icon contract: the charge meter presents the Charge Drift slot; the other three
+        // slots have no authored icons yet, so the ability bar shows placeholders for them.
+        public override Image GetAbilitySlotImage(int slotIndex) =>
+            slotIndex == 0 ? chargeBoostImage : null;
+
         public override void Initialize()
         {
             _stepsMinusOne = Mathf.Max(0, (chargeSteps?.Count ?? 0) - 1);

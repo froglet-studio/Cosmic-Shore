@@ -35,6 +35,17 @@ namespace CosmicShore.UI
         Coroutine _lineRoutine;
         Coroutine _debuffRoutine;
         
+        // Four-icon contract: the Rhino's existing reactive icons ARE its four ability slots
+        // (Forcefield / Crystal Stun / Danger Slab / Skim Debuff) — the ability bar adds nothing.
+        public override Image GetAbilitySlotImage(int slotIndex) => slotIndex switch
+        {
+            0 => skimmerSizeIcon ? skimmerSizeIcon.GetComponent<Image>() : null,
+            1 => crystalIcon,
+            2 => lineIcon,
+            3 => debuffIcon,
+            _ => null,
+        };
+
         public override void Initialize()
         {
             ResetAllRhinoStates();

@@ -19,6 +19,25 @@ namespace CosmicShore.UI
 
         [Header("Button highlights")] public List<HighlightBinding> highlights = new();
 
+        /// <summary>
+        /// Four-icon contract: return the Image that ALREADY presents ability slot
+        /// <paramref name="slotIndex"/> (matching the vessel's <c>VesselAbilitySetSO</c> slot
+        /// order), or null when this view has no icon for that slot. Bound slots are presented and
+        /// animated entirely by the view/controller's own logic — the <c>VesselAbilityBar</c>
+        /// renders its obvious placeholder ONLY for unbound slots, so adopting the contract is a
+        /// pure refactor for a view that already shows four icons (the player sees no change).
+        /// </summary>
+        public virtual Image GetAbilitySlotImage(int slotIndex) => null;
+
+        /// <summary>Finds the highlight overlay Image bound to <paramref name="input"/>, if any.</summary>
+        protected Image GetHighlightImage(InputEvents input)
+        {
+            for (var i = 0; i < highlights.Count; i++)
+                if (highlights[i].input == input)
+                    return highlights[i].image;
+            return null;
+        }
+
         [Header("Animation (optional)")]
         [SerializeField] private HUDAnimationSettingsSO animSettings;
 

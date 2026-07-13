@@ -33,6 +33,17 @@ namespace CosmicShore.UI
         readonly Dictionary<InputEvents, Tween> _blockTweens = new();
         private Tween _boostFillTween;
 
+        // Four-icon contract: the Sparrow's existing icons present its four ability slots
+        // (Fire / SkyBurst / Turret Stance / Overheat Boost) — the ability bar adds nothing.
+        public override Image GetAbilitySlotImage(int slotIndex) => slotIndex switch
+        {
+            0 => GetHighlightImage(InputEvents.RightStickAction), // Fire (full-auto)
+            1 => missileIcon,                                     // SkyBurst ammo
+            2 => weaponModeIcon,                                  // Turret stance
+            3 => boostFill,                                       // Overheat heat gauge
+            _ => null,
+        };
+
         public override void Initialize()
         {
             if (missileIcon)

@@ -14,23 +14,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   vesselClass: 3
   slots:
-  - Label: 'Bulldoze Charge'
-    Description: 'Passive: fly straight at full speed to boost.'
-    Input: 0
-    Icon: {fileID: 0}
-    IsPlaceholder: 0
-  - Label: 'Fatten Slab'
-    Description: 'Passive: charging straight also fattens your armored trail slab.'
-    Input: 0
-    Icon: {fileID: 0}
-    IsPlaceholder: 0
   - Label: 'Forcefield'
-    Description: 'Grow the forcefield skimmer to spin and slow enemies. (Coming online soon.)'
+    Description: 'Your forcefield skimmer - the icon grows and shrinks with its live size.'
+    Input: 0
+    Icon: {fileID: 0}
+    IsPlaceholder: 0
+  - Label: 'Crystal Stun'
+    Description: 'Crystal blasts stun nearby enemies - counts each vessel slowed.'
     Input: 6
     Icon: {fileID: 0}
-    IsPlaceholder: 1
-  - Label: 'Ram'
-    Description: 'A short-range forcefield slam. (Coming online soon.)'
+    IsPlaceholder: 0
+  - Label: 'Danger Slab'
+    Description: 'Enemies clipping your danger slab are slowed - the line flashes red.'
     Input: 7
     Icon: {fileID: 0}
-    IsPlaceholder: 1
+    IsPlaceholder: 0
+  - Label: 'Skim Debuff'
+    Description: 'Passive: holding an enemy inside your skimmer applies a decaying elemental debuff.'
+    Input: 8
+    Icon: {fileID: 0}
+    IsPlaceholder: 0

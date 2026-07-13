@@ -60,6 +60,17 @@ namespace CosmicShore.UI
         private Vector3 _shieldIconOriginalScale;
         private Color _driftIconOriginalColor;
 
+        // Four-icon contract: the Squirrel's existing icons ARE its four ability slots
+        // (Drift / Skim Boost / Joust / Crystal Shield) — the ability bar adds nothing.
+        public override Image GetAbilitySlotImage(int slotIndex) => slotIndex switch
+        {
+            0 => driftButtonIcon,
+            1 => boostFill,
+            2 => dangerRingIcon,
+            3 => shieldIcon,
+            _ => null,
+        };
+
         public override void Initialize()
         {
             if (!boostFill) return;
