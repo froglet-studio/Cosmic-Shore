@@ -543,12 +543,9 @@ namespace CosmicShore.Gameplay
         bool _lodCulled;
         bool _colliderBeforeLodCull;
 
-        /// <summary>
-        /// Id of the last collider-LOD sweep that saw this prism near a focus.
-        /// Written/read by <c>PrismColliderLodManager</c> ONLY — an O(1) stamp that
-        /// replaced the manager's HashSet bookkeeping for near/far transitions.
-        /// </summary>
-        internal int LodNearSweepStamp;
+        // (Near/far transition memory now lives in the spatial index's per-slot
+        // LodNear flag bit, maintained by the Burst classification pass — the old
+        // per-prism sweep stamp is gone with the managed sliced sweep.)
 
         /// <summary>
         /// Called by <c>PrismColliderLodManager</c> ONLY. Culls/restores this prism's

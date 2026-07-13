@@ -22,6 +22,13 @@ namespace CosmicShore.Gameplay
     /// call <see cref="RegisterFocus"/>/<see cref="UnregisterFocus"/> from their
     /// enable/disable lifecycle.
     ///
+    /// Classification runs in ONE Burst pass per tick
+    /// (<see cref="PrismSpatialIndex.RunLodClassification"/>) that emits only
+    /// near/far TRANSITIONS via the per-slot LodNear flag bit — the managed cost
+    /// here is O(changed colliders), bounded further by a per-frame toggle budget,
+    /// never O(population). (The previous managed sliced scan paid ~5.5 ms per
+    /// slice frame at 25k prisms.)
+    ///
     /// Safety properties:
     ///   - With NO focus registered (tool scenes, teardown) the manager restores
     ///     anything it culled and otherwise leaves collider state to the Prism
@@ -47,23 +54,23 @@ namespace CosmicShore.Gameplay
                  "Must comfortably exceed focus speed × tick so fast vessels never outrun their collider bubble.")]
         [Min(50f)] [SerializeField] float lodRadiusMeters = 200f;
 
-        [Tooltip("Seconds between LOD sweeps. At 0.25s a 100 u/s vessel moves 25m per sweep — well inside the radius margin.")]
+        [Tooltip("Seconds between LOD classification passes. At 0.25s a 100 u/s vessel moves 25m per pass — well inside the radius margin.")]
         [Min(0.05f)] [SerializeField] float tickIntervalSeconds = 0.25f;
 
-        [Tooltip("Upper bound on packed spatial-index entries examined per FRAME while a sweep is in " +
-                 "progress. A sweep that can't finish in one slice continues on the following frames, so " +
-                 "the per-frame cost is bounded by this budget instead of by the prism population — the " +
-                 "whole population is still reclassified once per tick. Foci drift at most " +
-                 "speed × sweep-duration between the first and last slice, well inside the radius margin.")]
-        [Min(1000)] [SerializeField] int maxPrismChecksPerFrameSlice = 8000;
+        [Tooltip("Collider cull/restore toggles applied per FRAME from a pass's transition lists. " +
+                 "Steady-state transitions are a handful; this bounds the burst cases (first " +
+                 "reconcile over a big population, a focus warping across the cell) so no single " +
+                 "frame pays thousands of collider toggles. Leftovers continue next frame; a new " +
+                 "pass waits until the backlog drains.")]
+        [Min(64)] [SerializeField] int maxColliderTogglesPerFrame = 512;
 
         // Focus registry: vessels + in-flight projectiles. Main-thread only, tiny.
         static readonly List<Transform> s_foci = new(16);
 
-        /// <summary>Active colliders after the last sweep (telemetry — EcosystemPerfProbe).</summary>
+        /// <summary>Active colliders after the last pass (telemetry — EcosystemPerfProbe).</summary>
         public static int LastNearCount { get; private set; }
 
-        /// <summary>Live prisms seen in the last sweep (telemetry — EcosystemPerfProbe).</summary>
+        /// <summary>Live prisms seen in the last pass (telemetry — EcosystemPerfProbe).</summary>
         public static int LastLiveCount { get; private set; }
 
         public static void RegisterFocus(Transform focus)
@@ -79,27 +86,22 @@ namespace CosmicShore.Gameplay
         float _nextTickAt;
         bool _culledAnything;
         // One whole-population reconciliation is needed whenever LOD (re)gains an
-        // opinion: first sweep, foci returning after an idle restore-all, or
-        // re-enable. Steady-state sweeps toggle only near/far TRANSITIONS,
-        // detected with per-prism sweep stamps (Prism.LodNearSweepStamp) instead
-        // of HashSet bookkeeping, and every sweep — reconcile included — runs as
-        // budgeted slices across frames so no single frame pays the population.
+        // opinion: first pass, foci returning after an idle restore-all, or
+        // re-enable. Steady-state passes emit only near/far transitions (the
+        // LodNear flag bit in the spatial index is the memory).
         bool _reconcileNextSweep = true;
+        int _nearCount;
 
-        // ---- In-progress sweep state (a sweep spans one or more frames) ----
-        int _sweepId;
-        int _sliceCursor = -1;                    // >= 0 ⇒ a sweep is in progress
-        bool _sweepReconcile;
         readonly List<Vector3> _fociSnapshot = new(16);
-        readonly List<Prism> _sliceNear = new(1024);
-        readonly List<Prism> _sliceFar = new(4096);
-        List<Prism> _nearList = new(4096);
-        List<Prism> _prevNearList = new(4096);
+        readonly List<Prism> _becameNear = new(1024);
+        readonly List<Prism> _becameFar = new(4096);
+        int _applyNearCursor = -1; // >= 0 ⇒ transition apply in progress
+        int _applyFarCursor = -1;
         readonly List<Prism> _liveScratch = new(4096);
 
         /// <summary>
-        /// Called when a prism's collider comes online outside the sweep cadence
-        /// (spawn-window end, trail restore). The transition-based sweep only
+        /// Called when a prism's collider comes online outside the pass cadence
+        /// (spawn-window end, trail restore). The transition-based pass only
         /// touches prisms whose near/far state CHANGES, so without this a prism
         /// born far from every focus would keep its collider until it crossed a
         /// bubble boundary. O(foci) — no population walk.
@@ -135,17 +137,29 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (_sliceCursor >= 0)
+            if (_applyNearCursor >= 0 || _applyFarCursor >= 0)
             {
-                ContinueSweep();
-                return;
+                // Kill switch mid-apply: abort the backlog; the next pass runs the
+                // restore-all (disabled) or reconcile (re-enabled) path.
+                if (!lodEnabled)
+                {
+                    _applyNearCursor = _applyFarCursor = -1;
+                    _becameNear.Clear();
+                    _becameFar.Clear();
+                    _reconcileNextSweep = true;
+                }
+                else
+                {
+                    ApplyTransitionSlice();
+                    return;
+                }
             }
             if (Time.time < _nextTickAt) return;
             _nextTickAt = Time.time + Mathf.Max(0.05f, tickIntervalSeconds);
-            BeginSweep();
+            RunSweep();
         }
 
-        void BeginSweep()
+        void RunSweep()
         {
             var index = PrismSpatialIndex.Instance;
             if (index == null || !index.IsAvailable) return;
@@ -166,93 +180,77 @@ namespace CosmicShore.Gameplay
                         _liveScratch[i].SetColliderCulledByLod(false);
                     _culledAnything = false;
                 }
-                _prevNearList.Clear();
                 _reconcileNextSweep = true; // re-reconcile when foci return
+                _nearCount = 0;
                 LastNearCount = LastLiveCount = 0;
                 return;
             }
 
-            // Snapshot the foci so every slice of this sweep classifies against the
-            // same centres. Foci drift between the first and last slice is bounded
-            // by the sweep duration — the same tolerance the tick interval already
-            // budgets for in the LOD radius margin.
             _fociSnapshot.Clear();
             for (int f = 0; f < s_foci.Count; f++)
                 _fociSnapshot.Add(s_foci[f].position);
 
-            _sweepId++;
-            _sweepReconcile = _reconcileNextSweep;
+            bool reconcile = _reconcileNextSweep;
             _reconcileNextSweep = false;
-            _nearList.Clear();
-            _sliceCursor = 0;
-            ContinueSweep();
+
+            // One Burst pass over the whole population, transitions out.
+            index.RunLodClassification(_fociSnapshot, lodRadiusMeters, reconcile, _becameNear, _becameFar);
+
+            // Running near-count from transition deltas (exact on reconcile).
+            if (reconcile) _nearCount = _becameNear.Count;
+            else _nearCount += _becameNear.Count - _becameFar.Count;
+
+            _applyNearCursor = 0;
+            _applyFarCursor = 0;
+            ApplyTransitionSlice();
+
+            LastNearCount = _nearCount;
+            LastLiveCount = index.LiveCount;
         }
 
-        void ContinueSweep()
+        void ApplyTransitionSlice()
         {
-            var index = PrismSpatialIndex.Instance;
-            if (index == null || !index.IsAvailable || !lodEnabled)
+            int budget = maxColliderTogglesPerFrame;
+
+            while (_applyNearCursor >= 0)
             {
-                // Kill switch / teardown mid-sweep: abort; the next BeginSweep runs
-                // the restore-all (disabled) or reconcile (re-enabled) path.
-                _sliceCursor = -1;
-                _reconcileNextSweep = true;
-                return;
-            }
-
-            // One budgeted window of the packed array against all foci. Near prisms
-            // get stamped + restored; far prisms are only touched on reconcile
-            // sweeps (steady state culls far-transitions from the previous near
-            // list instead — see below). Newly spawned far prisms are handled by
-            // NotifyPrismActivated.
-            int hits = index.QueryUnionOfSpheresSlice(
-                _fociSnapshot, lodRadiusMeters, _sliceCursor, maxPrismChecksPerFrameSlice,
-                _sliceNear, _sweepReconcile ? _sliceFar : null, out int nextIndex);
-
-            for (int i = 0; i < hits; i++)
-            {
-                var prism = _sliceNear[i];
-                prism.LodNearSweepStamp = _sweepId;
-                prism.SetColliderCulledByLod(false); // idempotent — no-op when already restored
-                _nearList.Add(prism);
-            }
-
-            if (_sweepReconcile)
-            {
-                for (int i = 0; i < _sliceFar.Count; i++)
-                    _sliceFar[i].SetColliderCulledByLod(true);
-            }
-
-            _sliceCursor = nextIndex;
-            if (_sliceCursor >= 0) return; // more slices on the following frames
-
-            // Sweep complete. Prisms near LAST sweep that this sweep never stamped
-            // left every bubble — cull them. (Reconcile sweeps classified the whole
-            // population explicitly, so the previous list adds nothing.)
-            if (!_sweepReconcile)
-            {
-                for (int i = 0; i < _prevNearList.Count; i++)
+                if (_applyNearCursor >= _becameNear.Count)
                 {
-                    var prism = _prevNearList[i];
-                    if (prism && prism.LodNearSweepStamp != _sweepId)
-                        prism.SetColliderCulledByLod(true);
+                    _applyNearCursor = -1;
+                    _becameNear.Clear();
+                    break;
+                }
+                if (budget-- <= 0) return;
+                var prism = _becameNear[_applyNearCursor++];
+                if (prism) prism.SetColliderCulledByLod(false);
+            }
+
+            while (_applyFarCursor >= 0)
+            {
+                if (_applyFarCursor >= _becameFar.Count)
+                {
+                    _applyFarCursor = -1;
+                    _becameFar.Clear();
+                    break;
+                }
+                if (budget-- <= 0) return;
+                var prism = _becameFar[_applyFarCursor++];
+                if (prism)
+                {
+                    prism.SetColliderCulledByLod(true);
+                    _culledAnything = true;
                 }
             }
-
-            // Double-buffer the near lists — no per-sweep copy.
-            (_prevNearList, _nearList) = (_nearList, _prevNearList);
-
-            _culledAnything = true;
-            LastNearCount = _prevNearList.Count;
-            LastLiveCount = index.LiveCount;
         }
 
         void OnDisable()
         {
             // Component toggled off (or teardown): hand collider ownership back.
-            _prevNearList.Clear();
-            _sliceCursor = -1;
+            _applyNearCursor = _applyFarCursor = -1;
+            _becameNear.Clear();
+            _becameFar.Clear();
             _reconcileNextSweep = true;
+            _nearCount = 0;
             var index = PrismSpatialIndex.Instance;
             if (index == null || !index.IsAvailable || !_culledAnything) return;
             int n = index.CopyLivePrisms(_liveScratch);
