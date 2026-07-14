@@ -797,9 +797,13 @@ and **LightFauna**. The behavior tick still *finds* every edible prism in range 
 it just *enqueues* them, and a per-frame drain executes the consumes, re-checking
 the scan's edibility predicate at drain time (destroyed / shielded / domain-stolen
 / owner-died can all change inside the pacing window; uneaten queued meals on the
-eater's death stay in the world — mass conserved). **This is pacing, NOT a grazing
-cap**: every queued meal is eaten within a few frames, well inside one behavior
-tick, so grazing throughput — the food web's population regulator — is unchanged.
+eater's death stay in the world — mass conserved; only ACTUAL consumes spend the
+frame budget, so stale entries never throttle real grazing). **This is pacing,
+NOT a grazing cap**: nothing decided is ever lost — Boid's slow tick (~1.5 s)
+drains its whole queue between ticks, and LightFauna (which can tick every few
+frames at Frenzy cadence) REBUILDS its queue from the live scan each tick, so
+anything undrained is simply re-found. Grazing throughput — the food web's
+population regulator — is unchanged.
 The win is that each consume's death cascade (implosion VFX, pool churn, spindle
 teardown, cell volume updates) lands spread across frames instead of 15+ in one
 (the measured 13.8 ms LightFauna tick): a dense cluster visibly *melts* instead of

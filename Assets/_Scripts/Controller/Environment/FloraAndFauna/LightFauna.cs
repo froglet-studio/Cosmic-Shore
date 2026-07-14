@@ -23,15 +23,21 @@ namespace CosmicShore.Gameplay
                  "finds every edible prism in range, but the death cascade each consume triggers " +
                  "(pool release, VFX activation, spindle teardown, cell volume updates) drains at " +
                  "this rate over the following frames instead of landing in one. Pacing only — " +
-                 "every queued meal is eaten well inside one behavior tick, so grazing throughput " +
-                 "(the food web's population regulator) is unchanged; a dense cluster visibly " +
-                 "melts instead of popping in a single frame. 0 or less = unpaced legacy burst.")]
+                 "the meal plan is re-derived from the live scan every tick, so nothing is ever " +
+                 "lost or duplicated and grazing throughput (the food web's population regulator) " +
+                 "is unchanged; a dense cluster visibly melts instead of popping in a single " +
+                 "frame. 0 or less = unpaced legacy burst.")]
         [SerializeField] int maxConsumesPerFrame = 8;
 
         // Edible prisms found by the behavior tick, drained at maxConsumesPerFrame.
-        // Entries are re-validated at drain time (destroyed / domain-stolen /
-        // owner-died can all change inside the pacing window). Same pattern as
-        // Boid._pendingMeals — see Docs/ECOSYSTEM.md (consume pacing).
+        // REBUILT each tick (cleared before the scan): LightFauna can tick every
+        // few frames at Frenzy cadence — unlike Boid's ~1.5s — so carrying the
+        // queue across ticks would re-enqueue every still-live prism as a
+        // duplicate, and a dead-dupe backlog would burn drain budget while fresh
+        // meals starve behind it. Entries are also re-validated at drain time
+        // (destroyed / domain-stolen / owner-died can all change inside the
+        // pacing window). Same drain pattern as Boid._pendingMeals — see
+        // Docs/ECOSYSTEM.md (consume pacing).
         readonly Queue<Prism> _pendingMeals = new();
 
         private Vector3 currentVelocity;
@@ -344,6 +350,12 @@ namespace CosmicShore.Gameplay
                 ? spatialIndex.QuerySphere(transform.position, detectionRadius, PrismScratch)
                 : 0;
 
+            // Re-derive the meal plan from this tick's live scan. Clearing loses
+            // nothing — anything still edible and in range is re-found below —
+            // and carrying entries across ticks would duplicate them (see the
+            // _pendingMeals comment).
+            _pendingMeals.Clear();
+
             for (int pi = 0; pi < prismCount; pi++)
             {
                 var prism = PrismScratch[pi];
@@ -447,38 +459,45 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Consumes up to maxConsumesPerFrame queued meals. Called once from the
         /// behavior tick (first slice lands in the tick frame) and then from
-        /// Update() until the queue empties — always well inside one behavior
-        /// cycle, so pacing never reduces what the fauna actually eats.
+        /// Update() until the queue empties or the next tick rebuilds it. Only
+        /// ACTUAL consumes spend budget — entries invalidated inside the pacing
+        /// window (eaten by a flockmate, domain stolen) are skipped for free, so
+        /// stale entries can never throttle real grazing throughput.
         /// </summary>
         void DrainPendingMeals()
         {
             int budget = maxConsumesPerFrame;
-            while (budget-- > 0 && _pendingMeals.Count > 0)
-                EatPrism(_pendingMeals.Dequeue());
+            while (budget > 0 && _pendingMeals.Count > 0)
+            {
+                if (EatPrism(_pendingMeals.Dequeue()))
+                    budget--;
+            }
         }
 
         /// <summary>
         /// The consume half of the old inline scan, with the scan's edibility
         /// predicate re-checked — inside the pacing window a flockmate may have
         /// eaten the prism (destroyed), its domain may have been stolen to ours,
-        /// or its owning lifeform may have died.
+        /// or its owning lifeform may have died. Returns true only when a
+        /// consume was actually issued.
         /// </summary>
-        void EatPrism(Prism prism)
+        bool EatPrism(Prism prism)
         {
-            if (_withering || !prism || prism.destroyed) return;
+            if (_withering || !prism || prism.destroyed) return false;
 
             if (prism is HealthPrism healthBlock)
             {
                 // Same predicate as the scan: only opposing-domain lifeform mass is edible.
-                if (!healthBlock.LifeForm || healthBlock.LifeForm.domain == domain) return;
+                if (!healthBlock.LifeForm || healthBlock.LifeForm.domain == domain) return false;
                 healthBlock.Consume(transform, domain, PLAYER_NAME, true, true);
                 NotifyFed();
-                return;
+                return true;
             }
 
-            if (prism.Domain == domain) return;
+            if (prism.Domain == domain) return false;
             prism.Consume(transform, domain, PLAYER_NAME, true, true);
             NotifyFed();
+            return true;
         }
 
         void Update()
