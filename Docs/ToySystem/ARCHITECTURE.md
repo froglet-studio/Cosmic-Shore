@@ -189,10 +189,14 @@ mesh→engraving-stroke converter + painting-flow tracer + asset baker; licences
 `PaintingDefinitionSO` asset — the SO's highest-priority source — so they need zero runtime code
 and their `preset` remains as fallback (fallback catalog descriptions deliberately do NOT claim
 reference provenance — the CC-BY/DEM attributions belong to the baked strokes only). Monument
-anchors use **width-aware pitches**: columns step along the ring tangent by the widest painting's
-bounds (+`paintingClearance`), rows climb by the tallest painting's height — (wᵢ+wⱼ)/2 ≤ max(w)
-for any pair, so no two monuments can interpenetrate by construction (studio zones may still
-overlap; `BenchOtherRunners` arbitrates the brush).
+anchors come from **proximity-first sphere packing** (`PackMonumentAnchors`, locked by
+`PaintingToyLayoutTests`): each painting occupies its bounding sphere + half `paintingClearance`;
+anchors are chosen from deterministic Fibonacci shells around the slot, nearest valid spot first.
+Pack order is hybrid — the four on-ramp entries first in ladder order (they sit right at the
+stations, Star ≈ 600u), then largest-first so the giants sit at their physical floor (the
+Matterhorn ≈ 2.4km — membrane + its own ~1.5km bounding radius is the floor; a flat wall layout
+had exiled it ~6.5km). No two monuments interpenetrate, nothing pokes through the membrane
+(studio zones may still overlap; `BenchOtherRunners` arbitrates the brush).
 
 How a run plays:
 
@@ -235,7 +239,9 @@ How a run plays:
   edge-of-screen arrow every mode shares, not a bespoke guide line): the runner implements
   `IObjectiveProvider` via a persistent objective anchor (the gate while awaiting it, the current
   ride ring while painting — the anchor outlives the ring folding on disengage), and ONE shared
-  arrow is lazily created under the menu HUD container, routed through `PaintingObjectiveRelay`
+  arrow is lazily created at the HUD **Canvas root** (the indicator stretches to its parent and
+  clamps to that rect's edges — a mid-hierarchy container is not a full-screen rect and pins the
+  arrow in a corner), routed through `PaintingObjectiveRelay`
   to whichever runner holds the brush. The arrow hides itself while the target is on screen, so
   the world rings stay the primary guidance. (The old guide line's perfect-ride glow retired with
   it; re-express that juice in-world — e.g. ring emission — in the tuning pass.)

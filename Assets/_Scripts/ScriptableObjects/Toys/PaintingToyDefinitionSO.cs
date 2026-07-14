@@ -23,9 +23,9 @@ namespace CosmicShore.ScriptableObjects
                                  "built-in 16-painting default gallery (see DefaultGalleryCatalog).")]
         List<PaintingDefinitionSO> paintings = new();
 
-        [SerializeField, Tooltip("Clearance between the toy ring and the near edge of each painting, AND the " +
-                                 "guaranteed gap between adjacent monuments (column/row pitches are derived " +
-                                 "from the largest painting's bounds plus this margin), world units.")]
+        [SerializeField, Tooltip("Clearance between the membrane and each painting, AND the guaranteed " +
+                                 "gap between any two monuments (each occupies its bounding sphere plus " +
+                                 "half this margin in the anchor packing), world units.")]
         float paintingClearance = 150f;
 
         [SerializeField, Tooltip("Gap between gallery stations in the cluster, as a multiple of the body radius.")]
@@ -42,8 +42,8 @@ namespace CosmicShore.ScriptableObjects
 
             // The gallery is a roughly-SQUARE matrix cluster at this definition's slot — columns run
             // along the ring tangent, rows climb vertically (the off-plane space) — each station a
-            // miniature of its painting. Monuments anchor radially outward behind their station's
-            // column, tiered vertically to match their row.
+            // miniature of its painting. Monument anchors come from the proximity-first sphere
+            // packing below (as close to the stations as physics allows, never interpenetrating).
             Vector3 center = placement.LookTarget;
             Vector3 toSlot = placement.Position - center;
             float ringRadius = new Vector2(toSlot.x, toSlot.z).magnitude;
@@ -54,25 +54,20 @@ namespace CosmicShore.ScriptableObjects
             int rows = Mathf.CeilToInt(gallery.Count / (float)cols);
             float spacing = Mathf.Max(placement.TriggerRadius * 2.2f, placement.BodyRadius * clusterSpacingBodies);
 
-            // Monument pitches are derived from the LARGEST painting so no two can interpenetrate:
-            // (w_i + w_j)/2 <= maxWidth for any pair, so maxExtent + clearance guarantees the gap.
-            // Monuments are ground-rebased (they occupy anchorY .. anchorY + height), so the row
-            // pitch must clear a full height, not a half.
-            float maxWidth = 0f, maxHeight = 0f, maxDepth = 0f;
-            foreach (var p in gallery)
+            // Monument anchors: proximity-first sphere packing around the slot (see
+            // PackMonumentAnchors) — every monument as close to its stations as physics allows,
+            // no two interpenetrating, the on-ramp paintings nearest because they pack first.
+            var bounds = new Bounds[gallery.Count];
+            for (int i = 0; i < gallery.Count; i++)
             {
-                if (!p) continue;
-                p.EnsureStrokes();
-                Bounds b = p.LocalBounds;
-                maxWidth = Mathf.Max(maxWidth, b.size.x);
-                maxHeight = Mathf.Max(maxHeight, b.size.y);
-                maxDepth = Mathf.Max(maxDepth, b.size.z);
+                if (!gallery[i]) continue;
+                gallery[i].EnsureStrokes();
+                bounds[i] = gallery[i].LocalBounds;
             }
-            float colPitch = maxWidth * 1.05f + paintingClearance;
-            float rowPitch = maxHeight * 1.05f + paintingClearance;
-
-            var outward = new Vector3(Mathf.Sin(baseAngle), 0f, Mathf.Cos(baseAngle));
-            var tangent = new Vector3(Mathf.Cos(baseAngle), 0f, -Mathf.Sin(baseAngle));
+            var anchorPositions = new Vector3[gallery.Count];
+            var anchorRotations = new Quaternion[gallery.Count];
+            PackMonumentAnchors(bounds, center, placement.Position, ringRadius, paintingClearance,
+                anchorPositions, anchorRotations);
 
             for (int i = 0; i < gallery.Count; i++)
             {
@@ -89,15 +84,8 @@ namespace CosmicShore.ScriptableObjects
                 Vector3 toyPos = center + stationOut * ringRadius;
                 toyPos.y = placement.Position.y + rOff * spacing;
 
-                // Monument: a width-aware WALL of masterpieces behind the cluster — columns step
-                // along the ring tangent by the widest painting plus clearance, rows climb the
-                // off-plane vertical by the tallest, with a modest radial stagger for depth.
-                Bounds bounds = painting.LocalBounds;
-                float anchorDistance = ringRadius + paintingClearance + Mathf.Max(40f, bounds.max.z)
-                                       + row * 0.35f * Mathf.Max(200f, maxDepth);
-                Vector3 anchorPos = center + outward * anchorDistance + tangent * (cOff * colPitch);
-                anchorPos.y = placement.Position.y + rOff * rowPitch;
-                Quaternion anchorRot = Quaternion.LookRotation(-outward, Vector3.up);
+                Vector3 anchorPos = anchorPositions[i];
+                Quaternion anchorRot = anchorRotations[i];
 
                 var root = ToyFactory.CreateBareRoot($"{Id}_{painting.PaintingId}", parent,
                     toyPos, center, placement.TriggerRadius);
@@ -113,6 +101,118 @@ namespace CosmicShore.ScriptableObjects
                 toy.Configure(painting, anchorPos, anchorRot, label);
                 toy.Initialize(this, context, placement);
             }
+        }
+
+        /// <summary>How many leading gallery entries are the on-ramp (packed first, nearest).</summary>
+        const int OnRampCount = 4;
+
+        /// <summary>
+        /// Proximity-first greedy sphere packing for the monument anchors. Each painting occupies
+        /// its bounding sphere (+ half the clearance); anchors are chosen from deterministic
+        /// candidate shells around the slot's outward point, ascending — the first shell with a
+        /// valid spot wins, taking the candidate nearest the slot. Pack order is HYBRID: the
+        /// on-ramp entries first in ladder order (a new player's first paintings sit right at the
+        /// stations), then everything else LARGEST-FIRST — a giant packed early sits at its
+        /// physical floor (membrane + its own radius) instead of being exiled to the leftovers
+        /// (ladder order pushed the Matterhorn ~3.1km out; hybrid holds it to ~2.4km with the
+        /// on-ramp unchanged). Never interpenetrating, never through the membrane. Static +
+        /// input-driven so tests can run it without a scene.
+        /// </summary>
+        public static void PackMonumentAnchors(Bounds[] paintingBounds, Vector3 center,
+            Vector3 slotPos, float ringRadius, float clearance,
+            Vector3[] outPositions, Quaternion[] outRotations)
+        {
+            Vector3 toSlot = slotPos - center;
+            toSlot.y = 0f;
+            Vector3 outward = toSlot.sqrMagnitude > 1f ? toSlot.normalized : Vector3.forward;
+            Vector3 anchor0 = center + outward * (ringRadius + clearance);
+            anchor0.y = slotPos.y;
+
+            const int DirsPerShell = 96;
+            const float ShellStep = 250f;
+            const int MaxShells = 60;
+            Vector3[] dirs = PaintingStrokeToolkit.FibonacciSphere(DirsPerShell);
+
+            var placedCenters = new List<Vector3>(paintingBounds.Length);
+            var placedRadii = new List<float>(paintingBounds.Length);
+
+            var order = new List<int>(paintingBounds.Length);
+            for (int i = 0; i < paintingBounds.Length; i++) order.Add(i);
+            int rampEnd = Mathf.Min(OnRampCount, paintingBounds.Length);
+            order.Sort((x, y) =>
+            {
+                bool rx = x < rampEnd, ry = y < rampEnd;
+                if (rx != ry) return rx ? -1 : 1;                 // on-ramp first…
+                if (rx) return x.CompareTo(y);                    // …in ladder order
+                int bySize = paintingBounds[y].extents.magnitude  // then largest-first
+                    .CompareTo(paintingBounds[x].extents.magnitude);
+                return bySize != 0 ? bySize : x.CompareTo(y);     // deterministic tie-break
+            });
+
+            foreach (int i in order)
+            {
+                Bounds b = paintingBounds[i];
+                if (b.size.sqrMagnitude < 1e-3f) continue; // null/empty painting slot
+
+                float r = b.extents.magnitude + clearance * 0.5f;
+                bool placed = false;
+
+                for (int shell = 0; shell <= MaxShells && !placed; shell++)
+                {
+                    float bestSqr = float.MaxValue;
+                    Vector3 bestPos = default;
+                    Quaternion bestRot = default;
+
+                    // shell 0 is the single point anchor0 itself
+                    int count = shell == 0 ? 1 : DirsPerShell;
+                    for (int d = 0; d < count; d++)
+                    {
+                        Vector3 pos = shell == 0 ? anchor0 : anchor0 + dirs[d] * (shell * ShellStep);
+                        Quaternion rot = FaceRing(pos, center);
+                        Vector3 sc = pos + rot * b.center;
+
+                        // The whole monument stays outside the membrane…
+                        if ((sc - center).magnitude < ringRadius + r) continue;
+                        // …and clear of every already-placed monument.
+                        bool overlaps = false;
+                        for (int j = 0; j < placedCenters.Count; j++)
+                            if ((sc - placedCenters[j]).magnitude < r + placedRadii[j]) { overlaps = true; break; }
+                        if (overlaps) continue;
+
+                        float sqr = (pos - slotPos).sqrMagnitude;
+                        if (sqr < bestSqr) { bestSqr = sqr; bestPos = pos; bestRot = rot; }
+                    }
+
+                    if (bestSqr < float.MaxValue)
+                    {
+                        outPositions[i] = bestPos;
+                        outRotations[i] = bestRot;
+                        placedCenters.Add(bestPos + bestRot * b.center);
+                        placedRadii.Add(r);
+                        placed = true;
+                    }
+                }
+
+                if (!placed)
+                {
+                    // Unreachable in practice (MaxShells spans 14km) — fail loud but functional.
+                    CosmicShore.Utility.CSDebug.LogWarning(
+                        $"[{nameof(PaintingToyDefinitionSO)}] monument {i} did not fit in {MaxShells} shells; placing outward.");
+                    Vector3 pos = anchor0 + outward * ((MaxShells + i) * ShellStep);
+                    outPositions[i] = pos;
+                    outRotations[i] = FaceRing(pos, center);
+                }
+            }
+        }
+
+        /// <summary>Yaw-only rotation so the monument's front (+Z authoring side) faces the ring.</summary>
+        static Quaternion FaceRing(Vector3 pos, Vector3 center)
+        {
+            Vector3 h = pos - center;
+            h.y = 0f;
+            return h.sqrMagnitude > 1e-4f
+                ? Quaternion.LookRotation(-h.normalized, Vector3.up)
+                : Quaternion.identity;
         }
 
         List<PaintingDefinitionSO> ResolvePaintings()

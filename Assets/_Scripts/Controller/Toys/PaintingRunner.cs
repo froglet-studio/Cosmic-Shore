@@ -376,23 +376,22 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Lazily stands up the ONE shared <see cref="ObjectiveIndicator"/> for the painting
-        /// gallery, parented under the menu HUD's container so it fades with the freestyle
-        /// Game UI. One-time scene lookup at run start (activation-rate, same budget as
-        /// <see cref="BenchOtherRunners"/>) — mirrors MiniGameHUD.EnsureObjectiveIndicator.
+        /// gallery. It MUST parent under the full-screen Canvas root (the indicator stretches to
+        /// its parent and clamps to that rect's edges — a mid-hierarchy container like "Game UI"
+        /// is not a full-screen rect, which pins the arrow in a corner). Freestyle-only
+        /// visibility comes from the provider, not the parent's CanvasGroup. One-time scene
+        /// lookup at run start (activation-rate, same budget as <see cref="BenchOtherRunners"/>)
+        /// — mirrors MiniGameHUD.EnsureObjectiveIndicator, which also parents at the canvas root.
         /// </summary>
         static void EnsureObjectiveIndicator()
         {
             if (s_sharedIndicator) return;
 
             var hud = FindAnyObjectByType<MenuMiniGameHUD>(FindObjectsInactive.Include);
-            Transform canvasRoot = hud ? (hud.transform.parent ? hud.transform.parent : hud.transform) : null;
-            if (!canvasRoot)
-            {
-                var canvas = FindAnyObjectByType<Canvas>();
-                if (!canvas) return; // headless/test scene — the toy plays fine without the arrow
-                canvasRoot = canvas.transform;
-            }
-            s_sharedIndicator = ObjectiveIndicator.CreateRuntime(canvasRoot, s_objectiveRelay);
+            Canvas canvas = hud ? hud.GetComponentInParent<Canvas>(true) : null;
+            if (!canvas) canvas = FindAnyObjectByType<Canvas>();
+            if (!canvas) return; // headless/test scene — the toy plays fine without the arrow
+            s_sharedIndicator = ObjectiveIndicator.CreateRuntime(canvas.transform, s_objectiveRelay);
         }
 
         void CompleteStroke()
