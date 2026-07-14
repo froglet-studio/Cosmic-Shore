@@ -58,10 +58,10 @@ namespace CosmicShore.Core
         [Tooltip("EXTRA UI groups hidden during flight training. The vessel HUD is hidden automatically through its own controller — do NOT add 'Game UI' here (that would also hide the volume button, which is the taught exit).")]
         [SerializeField] List<CanvasGroup> hideDuringFlightTraining = new();
 
-        [Tooltip("All footer nav buttons LockNavigation nodes may disable (store/home/port/hangar/profile...). Auto-wired by the Phase 0 wirer from the ScreenSwitcher's OnClick*Nav handlers.")]
+        [Tooltip("Nav buttons LockNavigation nodes disable during the FTUE funnel: the HANGAR and PROFILE links only. Ark/Port are permanently locked scene-side (never list them here — the Unlock step would re-enable them) and Home stays available. Auto-wired by the Phase 0 wirer.")]
         [SerializeField] List<UnityEngine.UI.Button> lockableNavButtons = new();
 
-        [Tooltip("The nav button that stays clickable while navigation is locked — the Arcade button.")]
+        [Tooltip("The button that opens the Arcade (wired to OnClickArcadeNav) — always stays clickable while navigation is locked.")]
         [SerializeField] UnityEngine.UI.Button arcadeNavButton;
 
         [Header("Gating (Debug)")]

@@ -4,10 +4,10 @@ using UnityEngine;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Locks the main-menu footer navigation down to the Arcade button (all other nav buttons —
-    /// profile, hangar, store, port — become non-interactable), or unlocks them all again.
-    /// The buttons are wired on the runner (auto-resolved by the Phase 0 wirer from the
-    /// ScreenSwitcher's OnClick*Nav handlers). Advances immediately.
+    /// Locks the FTUE-funnel nav buttons — the HANGAR and PROFILE links (Ark/Port are
+    /// permanently locked scene-side and Home stays available) — or unlocks them again.
+    /// The buttons are wired on the runner (auto-resolved by the Phase 0 wirer). Advances
+    /// immediately.
     ///
     /// Scene-state only: a scene reload naturally restores the buttons, so re-lock after a
     /// game round-trip needs another Lock node if the funnel is still on.
@@ -16,8 +16,8 @@ namespace CosmicShore.Core
     {
         public override QuestNodeCategory Category => QuestNodeCategory.Gameplay;
         public override string TypeTooltip =>
-            "Locks every footer nav button except the Arcade button (or unlocks them all). Buttons are wired on the runner; the quest teardown always restores them.";
-        public override string EditorSummary => unlock ? "Unlock all nav buttons" : "Nav → Arcade only";
+            "Locks the FTUE-funnel nav buttons (Hangar + Profile links; Ark/Port are permanently scene-locked, Home stays available) or unlocks them. Buttons are wired on the runner; the quest teardown always restores them.";
+        public override string EditorSummary => unlock ? "Unlock nav (Hangar/Profile)" : "Lock nav (Hangar/Profile)";
 
         [Tooltip("Restore all nav buttons instead of locking them.")]
         public bool unlock;

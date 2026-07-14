@@ -41,10 +41,11 @@ namespace CosmicShore.Core
         /// vessel HUD itself is hidden through its own controller, not this list).</summary>
         public IReadOnlyList<CanvasGroup> TrainingHiddenGroups;
 
-        /// <summary>All footer nav buttons the quest may lock (everything except the allowed one).</summary>
+        /// <summary>The FTUE-funnel nav buttons the quest may lock (Hangar + Profile links —
+        /// Ark/Port are permanently scene-locked and must never be listed here).</summary>
         public IReadOnlyList<UnityEngine.UI.Button> NavButtons;
 
-        /// <summary>The nav button that stays interactable while the nav is locked (the Arcade button).</summary>
+        /// <summary>Never locked: the button that opens the Arcade.</summary>
         public UnityEngine.UI.Button AllowedNavButton;
 
         /// <summary>The vessel action buttons disabled during flight training (sticks + triggers stay live).</summary>

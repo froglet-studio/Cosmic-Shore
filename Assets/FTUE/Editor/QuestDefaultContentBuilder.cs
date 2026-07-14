@@ -143,7 +143,7 @@ namespace CosmicShore.Editor
             var exit = Add<QuestExitFreestyleNode>(g, "Wait: Player Taps Volume Button");
             exit.forceExit = false;
 
-            var lockNav = Add<QuestLockNavigationNode>(g, "Lock Nav → Arcade Only");
+            var lockNav = Add<QuestLockNavigationNode>(g, "Lock Nav (Hangar + Profile)");
 
             var arcadeDialogue = Add<QuestDialogueNode>(g, "Dialogue: Go To The Arcade");
             arcadeDialogue.lines = new List<string>
@@ -171,7 +171,7 @@ namespace CosmicShore.Editor
             playedCC1.expectedMode = GameModes.MultiplayerCrystalCapture;
             playedCC1.minIntensity = 1;
 
-            var unlockNav = Add<QuestLockNavigationNode>(g, "Unlock Nav Buttons");
+            var unlockNav = Add<QuestLockNavigationNode>(g, "Unlock Nav (Hangar + Profile)");
             unlockNav.unlock = true;
 
             var ctaProfile = Add<QuestHighlightCTANode>(g, "CTA: Profile Screen");

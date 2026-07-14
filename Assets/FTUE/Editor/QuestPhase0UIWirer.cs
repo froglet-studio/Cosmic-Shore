@@ -238,22 +238,30 @@ namespace CosmicShore.Editor
             Button arcade = null;
             var lockable = new System.Collections.Generic.List<Button>();
 
+            // Nav-lock design (per the NavBarButtons layout): the quest locks EXACTLY the
+            // Hangar and Profile links. ArkLink and PortLink are permanently locked on the
+            // scene side — they must NOT be in the lockable list, or the quest's later
+            // Unlock step would re-enable them. HomeLink stays available throughout.
+            // The "arcade button" is the one wired to OnClickArcadeNav (opens the arcade
+            // modal) — NOT ArkLink (the always-locked ARK screen).
             foreach (var btn in Object.FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None))
             {
                 for (int i = 0; i < btn.onClick.GetPersistentEventCount(); i++)
                 {
-                    // Match by method NAME only — some nav buttons route through wrapper
-                    // components rather than the ScreenSwitcher itself, and the OnClick*Nav
-                    // naming is distinctive enough.
                     string method = btn.onClick.GetPersistentMethodName(i);
-                    if (string.IsNullOrEmpty(method) || !method.StartsWith("OnClick") || !method.EndsWith("Nav"))
-                        continue;
+                    if (string.IsNullOrEmpty(method)) continue;
 
-                    if (method == "OnClickArkNav" || method == "OnClickArcadeNav")
-                        arcade = btn;
-                    else
+                    if (method == "OnClickHangarNav" || method == "OnClickProfileNav")
+                    {
                         lockable.Add(btn);
-                    break;
+                        break;
+                    }
+
+                    if (method == "OnClickArcadeNav")
+                    {
+                        arcade = btn;
+                        break;
+                    }
                 }
             }
 
@@ -267,10 +275,11 @@ namespace CosmicShore.Editor
             EditorUtility.SetDirty(runner);
 
             if (arcade == null)
-                Debug.LogWarning("[Quest] Wirer: no Arcade nav button found (OnClickArkNav/OnClickArcadeNav) — " +
-                                 "assign Arcade Nav Button on the runner manually or LockNavigation will lock everything.");
+                Debug.LogWarning("[Quest] Wirer: no Arcade button found (OnClickArcadeNav) — " +
+                                 "assign Arcade Nav Button on the runner manually.");
             Debug.Log($"[Quest] Wirer: nav buttons — arcade: {(arcade != null ? arcade.name : "NOT FOUND")}, " +
-                      $"lockable: {lockable.Count} ({string.Join(", ", lockable.ConvertAll(b => b.name))}).");
+                      $"locked during FTUE: {lockable.Count} ({string.Join(", ", lockable.ConvertAll(b => b.name))}) " +
+                      "— Hangar + Profile only; Ark/Port stay scene-locked, Home stays available.");
         }
 
         // ── Helpers ────────────────────────────────────────────────────
