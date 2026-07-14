@@ -460,6 +460,35 @@ namespace CosmicShore.Gameplay
             };
         }
 
+        /// <summary>Catmull-Rom spline through <paramref name="ctrl"/>. Smooth, passes through every control point.</summary>
+        public static List<Vector3> CatmullRom(IList<Vector3> ctrl, int samplesPerSeg, bool closed = false)
+        {
+            var outPts = new List<Vector3>();
+            if (ctrl == null || ctrl.Count < 2) return outPts;
+            samplesPerSeg = Mathf.Max(1, samplesPerSeg);
+            int n = ctrl.Count;
+            int segs = closed ? n : n - 1;
+
+            Vector3 Get(int i)
+            {
+                if (closed) return ctrl[((i % n) + n) % n];
+                return ctrl[Mathf.Clamp(i, 0, n - 1)];
+            }
+
+            for (int seg = 0; seg < segs; seg++)
+            {
+                Vector3 p0 = Get(seg - 1), p1 = Get(seg), p2 = Get(seg + 1), p3 = Get(seg + 2);
+                int last = seg == segs - 1 && !closed ? samplesPerSeg : samplesPerSeg - 1;
+                for (int j = 0; j <= last; j++)
+                {
+                    float t = j / (float)samplesPerSeg;
+                    outPts.Add(CatmullRomPoint(p0, p1, p2, p3, t));
+                }
+            }
+            if (closed && outPts.Count > 0) outPts.Add(outPts[0]);
+            return outPts;
+        }
+
         static Vector3 CatmullRomPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
         {
             float t2 = t * t, t3 = t2 * t;
