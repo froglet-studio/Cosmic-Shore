@@ -114,17 +114,39 @@ namespace CosmicShore.Utility
 
         IEnumerator RunReveal()
         {
-            bool didWin = DidLocalPlayerWin();
+            // Fail OPEN: whatever happens during the flourish, InvokeShowGameEndScreen MUST
+            // be reached — a throw here would kill the coroutine, the scoreboard would never
+            // appear, and the player would be stranded in the game scene with no way home.
+            try
+            {
+                bool didWin = DidLocalPlayerWin();
 
-            HaltOtherVessels();
-            StartLocalVesselFlourish();
-            AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
+                HaltOtherVessels();
+                StartLocalVesselFlourish();
 
-            ShowToast(ResolveMessage(didWin));
+                if (AudioSystem.Instance != null)
+                    AudioSystem.Instance.PlayGameplaySFX(GameplaySFXCategory.GameEnd);
 
-            yield return new WaitForSeconds(revealDuration);
+                ShowToast(ResolveMessage(didWin));
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogException(e);
+                Debug.LogError("[EndGameSequencer] Reveal flourish threw — continuing to the end screen anyway.");
+            }
 
-            HideToast();
+            // Unscaled: a zero timescale at game end (pause) must not freeze the reveal forever.
+            yield return new WaitForSecondsRealtime(revealDuration);
+
+            try
+            {
+                HideToast();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogException(e);
+            }
+
             gameData.InvokeShowGameEndScreen();
             _revealRoutine = null;
         }

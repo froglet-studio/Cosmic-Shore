@@ -144,9 +144,19 @@ namespace CosmicShore.UI
         {
             if (!gameData) { CSDebug.LogError("[Scoreboard] GameData is null!"); return; }
 
-            ConfigureLobbyButtons();
-            ShowMultiplayerView();
-            PopulateDynamicStats();
+            // Fail OPEN: the panel (with its Main Menu / Play Again buttons) must appear even
+            // when a population step throws — otherwise the player has no way back to the menu.
+            try
+            {
+                ConfigureLobbyButtons();
+                ShowMultiplayerView();
+                PopulateDynamicStats();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogException(e);
+                CSDebug.LogError("[Scoreboard] Population threw — showing the panel anyway so the player can exit.");
+            }
 
             if (scoreboardPanel)
             {
