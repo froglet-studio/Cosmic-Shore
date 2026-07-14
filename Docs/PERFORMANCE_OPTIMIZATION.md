@@ -16,8 +16,9 @@ protocol and update this doc (status + measured numbers).
 
 ## 0. SESSION HANDOFF (2026-07-09) — next session starts here
 
-Branch `claude/cosmic-shore-perf-opt-g8j6n0`, head `eb707175`, everything
-committed and pushed, tree clean. All code below compiled in-editor (Step 0
+Branch `claude/cosmic-shore-perf-opt-g8j6n0` — tracked by
+**PR #588** (https://github.com/froglet-studio/Cosmic-Shore/pull/588); pushes
+to this branch update that PR. Everything committed and pushed, tree clean. All code below compiled in-editor (Step 0
 PASS) but several fixes still await their in-editor measurement. Every
 non-trivial commit this session was adversarially re-verified by agent sweeps
 BEFORE editor testing; every blocker found was fixed in a follow-up commit
