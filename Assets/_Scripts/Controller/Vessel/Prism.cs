@@ -606,8 +606,9 @@ namespace CosmicShore.Gameplay
             // visible to fauna anti-domain targeting and the cell's phase system;
             // fauna bodies are excluded from that view inside the index.
             // Seed the volume cache before the cell starts aggregating this prism
-            // (it enters massTracked via the Register → BindCell path below), so the
-            // first volume recompute reads a real value, not the default 0.
+            // (its summation-view slot binds via the Register → BindCell path
+            // below), so the first volume recompute reads a real value, not the
+            // default 0.
             using (s_createSpatialMarker.Auto())
             {
                 RefreshVolumeCache();
@@ -706,9 +707,22 @@ namespace CosmicShore.Gameplay
         /// </summary>
         internal void RefreshVolumeCache()
         {
-            if (destroyed) { CachedVolume = 0f; return; }
-            float v = scaleAnimator ? scaleAnimator.GetCurrentVolume() : 0f;
-            CachedVolume = v > 0f ? v : Mathf.Max(prismProperties?.volume ?? 0f, 0f);
+            if (destroyed)
+            {
+                CachedVolume = 0f;
+            }
+            else
+            {
+                float v = scaleAnimator ? scaleAnimator.GetCurrentVolume() : 0f;
+                CachedVolume = v > 0f ? v : Mathf.Max(prismProperties?.volume ?? 0f, 0f);
+            }
+
+            // Mirror into the spatial index's cell-volume summation view so the
+            // cell's Burst recompute (PrismSpatialIndex.SumCellVolumes) reads live
+            // volumes — same O(growing)/frame cadence as this cache itself. No-op
+            // during the spawn window (Register seeds the slot from CachedVolume).
+            if (SpatialIndexId >= 0)
+                PrismSpatialIndex.Instance?.UpdateCellVolume(SpatialIndexId, CachedVolume);
         }
 
         // Growth Methods

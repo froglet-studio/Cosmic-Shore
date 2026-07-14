@@ -6,6 +6,7 @@ using CosmicShore.Game;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Reflex.Attributes;
+using Unity.Profiling;
 using UnityEngine;
 using Random = UnityEngine.Random;
 namespace CosmicShore.Gameplay
@@ -93,15 +94,16 @@ namespace CosmicShore.Gameplay
         // per-domain bookkeeping (the §2.3.1 phantom-count class of bug).
         readonly Dictionary<Prism, Domains> trackedBlocks = new();
 
-        // EVERY prism bound to this cell — trail, flora, AND fauna bodies — for the
-        // per-domain VOLUME accounting ("volume is the spine": all prisms add to the
-        // cell's mass regardless of source). Superset of trackedBlocks: fauna bodies
-        // live here but stay out of the targeting grids/counts above (a forager swarm
-        // must not read as its own mass concentration, and fauna bodies are not
-        // edible prey). Volume sums are recomputed from live prism state
-        // (Prism.CurrentVolume + live Domain) on a short cadence, so growth, steals,
-        // and consumption are all reflected without incremental-drift bookkeeping.
-        readonly HashSet<Prism> massTracked = new();
+        // Per-domain VOLUME accounting ("volume is the spine": trail, flora, AND
+        // fauna bodies all add to the cell's mass regardless of source — fauna
+        // bodies are volume-only and stay out of the targeting grids/counts above:
+        // a forager swarm must not read as its own mass concentration, and fauna
+        // bodies are not edible prey). Membership lives in the spatial index's
+        // packed summation view (PrismCellData.CellId, written ONLY by
+        // AddBlock/RemoveBlock below); sums are recomputed from live prism state
+        // (cached volume + live Domain) on a short cadence via one Burst pass
+        // (PrismSpatialIndex.SumCellVolumes), so growth, steals, and consumption
+        // are all reflected without incremental-drift bookkeeping.
         readonly Dictionary<Domains, float> liveVolumeByDomain = new();
         readonly Dictionary<Domains, float> liveEnvVolumeByDomain = new();
         float liveVolumeTotal;
@@ -136,28 +138,23 @@ namespace CosmicShore.Gameplay
         float _nextVolumeRecomputeAt = float.NegativeInfinity;
         const float VolumeRecomputeIntervalSeconds = 0.25f;
 
-        // ---- Sliced volume recompute state ----
-        // A recompute pass snapshots massTracked, sums a bounded number of prisms
-        // per frame into fixed-slot staging accumulators (Jade/Ruby/Gold/Blue — the
-        // per-prism Dictionary ops were a large constant of the old single-frame
-        // pass), and publishes atomically at pass end. Readers keep the previously
-        // published sums while a pass runs.
-        const int VolumeSlicePrismsPerFrame = 8000;
+        // ---- Burst volume recompute state ----
+        // The recompute is one CellVolumeSumJob pass over the spatial index's
+        // packed summation view (slot order Jade/Ruby/Gold/Blue, matching
+        // s_volumeDomainSlots), published atomically into the dictionaries above.
+        // Replaces the managed 8000-prisms-per-frame slice, whose per-entry
+        // object-graph cost made every recompute a ~10 ms reader-attributed frame
+        // spike at high prism counts (Docs/PERFORMANCE_OPTIMIZATION.md).
         static readonly Domains[] s_volumeDomainSlots = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
-        readonly float[] _stageVolumeByDomain = new float[4];
-        readonly float[] _stageEnvVolumeByDomain = new float[4];
-        readonly float[] _stageNucleusEnvVolumeByDomain = new float[4];
-        float _stageVolumeTotal;
-        float _stageEnvVolumeTotal;
-        float _stageExteriorEnvVolumeTotal;
-        // Nucleus geometry captured at pass begin so a mid-pass radius refresh
-        // can't split one pass across two zone definitions.
-        Vector3 _volumePassCentre;
-        float _volumePassNucleusSqr;
-        readonly List<Prism> _volumePassScratch = new(4096);
-        readonly List<Prism> _deadMassScratch = new(32);
-        int _volumePassCursor = -1;   // >= 0 ⇒ a pass is in progress
-        int _lastVolumeSliceFrame = -1;
+        static readonly ProfilerMarker s_volumeSumMarker = new("Cell.VolumeSum");
+        readonly float[] _volumeSumResults = new float[PrismSpatialIndex.CellVolumeResultCount];
+
+        // Identity in the summation view. Assigned once per Cell instance (never
+        // reused within a session) so a stale binding from a destroyed cell can
+        // never leak into another cell's sums. 0 = not yet assigned.
+        static short s_nextVolumeCellId = 1;
+        short _volumeCellId;
+
         SnowChanger spawnedCytoplasm;
 
         // ---------------------------------------------------------------------
@@ -320,148 +317,53 @@ namespace CosmicShore.Gameplay
         // ------------------------------------------------------------------
         //  Live volume — the spine. Recomputed from live prism state on a short
         //  cadence (growth animates continuously, so event-driven deltas would
-        //  drift). The recompute runs as budgeted SLICES across frames — the old
-        //  single-frame O(massTracked) pass was a reader-triggered frame spike at
-        //  high prism counts (whoever read volume on a stale tick paid ~5ms) —
-        //  and publishes atomically at pass end. Readers keep the previously
-        //  published sums during a pass: staleness is bounded by the interval
-        //  plus a few slice frames, inside the tolerance the cadence already
-        //  declares. Reader-driven, one slice per frame at most.
+        //  drift). The recompute is ONE Burst pass over the spatial index's packed
+        //  summation view (PrismSpatialIndex.SumCellVolumes) and publishes
+        //  atomically — the previous managed slice loop over the prism object
+        //  graph (null-check + CachedVolume + trackedBlocks lookup +
+        //  transform.position per prism, 8000/frame) cost whoever read volume on
+        //  a stale tick ~10 ms per slice frame at high prism counts; the Burst
+        //  scan is ~0.1-0.3 ms for the same population (the LodClassifyJob
+        //  collapse, applied to volume). Reader-driven, at most once per interval.
         // ------------------------------------------------------------------
 
         void EnsureVolumeFresh()
         {
-            if (_volumePassCursor < 0)
+            if (Time.time < _nextVolumeRecomputeAt) return;
+
+            var index = PrismSpatialIndex.Instance;
+            if (index == null || !index.IsAvailable) return; // no index (tooling scene) — keep published sums, retry next read
+
+            using (s_volumeSumMarker.Auto())
             {
-                if (Time.time < _nextVolumeRecomputeAt) return;
-                BeginVolumePass();
-            }
+                if (!index.SumCellVolumes(_volumeCellId, transform.position, _nucleusControlRadiusSqr, _volumeSumResults))
+                    return;
+                _nextVolumeRecomputeAt = Time.time + VolumeRecomputeIntervalSeconds;
 
-            if (_lastVolumeSliceFrame == Time.frameCount) return;
-            _lastVolumeSliceFrame = Time.frameCount;
-            AdvanceVolumePass();
-        }
-
-        void BeginVolumePass()
-        {
-            _nextVolumeRecomputeAt = Time.time + VolumeRecomputeIntervalSeconds;
-
-            // Snapshot the tracked set: HashSet enumeration breaks on mutation, and
-            // Add/RemoveBlock keep running while the pass spans frames. Prisms added
-            // after the snapshot are summed by the next pass; prisms destroyed
-            // mid-pass read CachedVolume 0 and drop out — the same point-in-time
-            // semantics the single-frame pass had.
-            _volumePassScratch.Clear();
-            foreach (var prism in massTracked)
-                _volumePassScratch.Add(prism);
-
-            for (int i = 0; i < 4; i++)
-            {
-                _stageVolumeByDomain[i] = 0f;
-                _stageEnvVolumeByDomain[i] = 0f;
-                _stageNucleusEnvVolumeByDomain[i] = 0f;
-            }
-            _stageVolumeTotal = 0f;
-            _stageEnvVolumeTotal = 0f;
-            _stageExteriorEnvVolumeTotal = 0f;
-            _volumePassCentre = transform.position;
-            _volumePassNucleusSqr = _nucleusControlRadiusSqr;
-            _deadMassScratch.Clear();
-            _volumePassCursor = 0;
-        }
-
-        void AdvanceVolumePass()
-        {
-            int end = Mathf.Min(_volumePassScratch.Count, _volumePassCursor + VolumeSlicePrismsPerFrame);
-            for (int i = _volumePassCursor; i < end; i++)
-            {
-                var prism = _volumePassScratch[i];
-
-                // Destroyed-but-untracked refs (scene teardown paths that skipped
-                // RemoveBlock) are collected here instead of leaking forever.
-                if (!prism) { _deadMassScratch.Add(prism); continue; }
-
-                // Cached world-volume (Prism.CachedVolume) — identical to CurrentVolume
-                // but refreshed only when the prism's scale changes, so this whole-
-                // population recompute no longer does a transform.lossyScale parent-walk
-                // per prism (the ~23ms/recompute hotspot at high prism counts).
-                float v = prism.CachedVolume;
-                if (v <= 0f) continue; // destroyed / not yet grown
-
-                int slot = DomainSlot(prism.Domain); // LIVE domain — steals re-attribute next pass
-                _stageVolumeByDomain[slot] += v;
-                _stageVolumeTotal += v;
-
-                if (trackedBlocks.ContainsKey(prism))
+                // Publish atomically. Slot order matches s_volumeDomainSlots
+                // (Jade/Ruby/Gold/Blue) on both sides. The job already folds the
+                // no-nucleus case into ExteriorEnvVolumeTotal (== env total), the
+                // legacy opposing-domain prey math's else-branch.
+                for (int i = 0; i < PrismSpatialIndex.CellDomainSlotCount; i++)
                 {
-                    _stageEnvVolumeByDomain[slot] += v;
-                    _stageEnvVolumeTotal += v;
-
-                    // Node control vs feeding ground: environment mass inside the
-                    // nucleus claims control; everything outside is edible prey.
-                    if (_volumePassNucleusSqr > 0f &&
-                        (prism.transform.position - _volumePassCentre).sqrMagnitude <= _volumePassNucleusSqr)
-                    {
-                        _stageNucleusEnvVolumeByDomain[slot] += v;
-                    }
-                    else
-                    {
-                        _stageExteriorEnvVolumeTotal += v;
-                    }
+                    liveVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumResults[PrismSpatialIndex.CellVolumeBySlot + i];
+                    liveEnvVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumResults[PrismSpatialIndex.CellEnvVolumeBySlot + i];
+                    nucleusEnvVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumResults[PrismSpatialIndex.CellNucleusEnvVolumeBySlot + i];
                 }
+                liveVolumeTotal = _volumeSumResults[PrismSpatialIndex.CellVolumeTotal];
+                liveEnvVolumeTotal = _volumeSumResults[PrismSpatialIndex.CellEnvVolumeTotal];
+                liveExteriorEnvVolumeTotal = _volumeSumResults[PrismSpatialIndex.CellExteriorEnvVolumeTotal];
             }
-
-            _volumePassCursor = end;
-            if (_volumePassCursor < _volumePassScratch.Count) return; // more slices to go
-
-            // Pass complete — publish atomically and collect the dead refs.
-            liveVolumeByDomain.Clear();
-            liveEnvVolumeByDomain.Clear();
-            nucleusEnvVolumeByDomain.Clear();
-            for (int i = 0; i < 4; i++)
-            {
-                liveVolumeByDomain[s_volumeDomainSlots[i]] = _stageVolumeByDomain[i];
-                liveEnvVolumeByDomain[s_volumeDomainSlots[i]] = _stageEnvVolumeByDomain[i];
-                nucleusEnvVolumeByDomain[s_volumeDomainSlots[i]] = _stageNucleusEnvVolumeByDomain[i];
-            }
-            liveVolumeTotal = _stageVolumeTotal;
-            liveEnvVolumeTotal = _stageEnvVolumeTotal;
-            // Without a nucleus zone the whole cell is the feeding ground for the
-            // legacy opposing-domain prey math (OpposingVolume's else-branch).
-            liveExteriorEnvVolumeTotal = _volumePassNucleusSqr > 0f
-                ? _stageExteriorEnvVolumeTotal
-                : _stageEnvVolumeTotal;
-
-            foreach (var dead in _deadMassScratch)
-            {
-                massTracked.Remove(dead);
-                gridTracked.Remove(dead);
-            }
-            _deadMassScratch.Clear();
-
-            _volumePassCursor = -1;
-            _volumePassScratch.Clear(); // release refs promptly
         }
-
-        static int DomainSlot(Domains domain) => domain switch
-        {
-            Domains.Jade => 0,
-            Domains.Ruby => 1,
-            Domains.Gold => 2,
-            _ => 3, // Blue — the "no team" sentinel bucket
-        };
 
         /// <summary>
-        /// Drops all volume accounting — published sums, any in-progress pass, and
-        /// the recompute timer — so a cleared cell reads as empty immediately
-        /// instead of publishing a pre-reset snapshot a few frames later.
+        /// Drops all volume accounting — published sums and the recompute timer —
+        /// so a cleared cell reads as empty immediately instead of serving a
+        /// pre-reset snapshot until the next recompute.
         /// </summary>
         void ResetVolumeAccounting()
         {
             _nextVolumeRecomputeAt = float.NegativeInfinity; // resum on next read
-            _volumePassCursor = -1;
-            _volumePassScratch.Clear();
-            _deadMassScratch.Clear();
             liveVolumeByDomain.Clear();
             liveEnvVolumeByDomain.Clear();
             nucleusEnvVolumeByDomain.Clear();
@@ -738,6 +640,11 @@ namespace CosmicShore.Gameplay
 
         void OnEnable()
         {
+            // Summation-view identity — once per instance, before any prism can
+            // bind (AddBlock reads it). See the field remarks.
+            if (_volumeCellId == 0)
+                _volumeCellId = s_nextVolumeCellId++;
+
             // Spatial registry — lets pooled, prefab-spawned objects (trail prisms)
             // find which cell contains them without per-prefab SO wiring or the
             // deprecated CellControlManager singleton. See FindCellContaining.
@@ -815,7 +722,10 @@ namespace CosmicShore.Gameplay
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
-            massTracked.Clear();
+            // Packed counterpart of the old massTracked.Clear(): drop every
+            // summation-view binding this cell holds, so surviving prisms don't
+            // keep contributing to the post-reset sums.
+            PrismSpatialIndex.Instance?.ClearAllCellBindings(_volumeCellId);
             gridTracked.Clear();
             _replicatedDominantDomain = null;
             ResetVolumeAccounting();
@@ -933,7 +843,8 @@ namespace CosmicShore.Gameplay
             spawnedLifeForms.Clear();
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
-            massTracked.Clear();
+            // Packed counterpart of the old massTracked.Clear() (see ResetCell).
+            PrismSpatialIndex.Instance?.ClearAllCellBindings(_volumeCellId);
             gridTracked.Clear();
             _replicatedDominantDomain = null;
             ResetVolumeAccounting();
@@ -1193,62 +1104,83 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Sentinel default for AddBlock/RemoveBlock's spatialIndexId parameter:
+        /// "resolve from block.SpatialIndexId". PrismSpatialIndex.BindCell passes
+        /// the slot explicitly because at Register time the prism hasn't stored its
+        /// returned id yet.
+        /// </summary>
+        internal const int UnknownSpatialIndex = int.MinValue;
+
+        static int ResolveSpatialIndexId(Prism block, int explicitId) =>
+            explicitId != UnknownSpatialIndex ? explicitId : block.SpatialIndexId;
+
+        /// <summary>
         /// Files a prism into this cell's bookkeeping. ALL prisms enter the volume
         /// accounting ("volume is the spine" — trail, flora, and fauna bodies alike
-        /// feed <see cref="LiveVolume"/>). Only ENVIRONMENT mass
-        /// (<paramref name="environmentMass"/> true, the default) also enters the
-        /// targeting grids and per-domain counts: fauna bodies are volume, but they
-        /// are neither fauna-seekable mass concentrations nor edible prey.
+        /// feed <see cref="LiveVolume"/>; membership lives in the spatial index's
+        /// packed summation view, this method is its single writer). Only
+        /// ENVIRONMENT mass (<paramref name="environmentMass"/> true, the default)
+        /// also enters the targeting grids and per-domain counts: fauna bodies are
+        /// volume, but they are neither fauna-seekable mass concentrations nor
+        /// edible prey.
         /// </summary>
-        public void AddBlock(Prism block, bool environmentMass = true)
+        public void AddBlock(Prism block, bool environmentMass = true, int spatialIndexId = UnknownSpatialIndex)
         {
             // `is null` (not `!block`) so destroyed-but-non-null Unity refs can still be
             // removed from trackedBlocks via the matching RemoveBlock path; otherwise
             // LiveBlockCount drifts upward when prisms die outside the normal flow.
             if (block is null) return;
 
-            // Volume membership (all sources). Sums refresh on their own cadence.
-            massTracked.Add(block);
-
-            if (!environmentMass) return;
-            if (trackedBlocks.ContainsKey(block)) return; // already counted
-
-            // Snapshot the domain at registration time — RemoveBlock uses this snapshot
-            // so a team change (steal) between Add and Remove can't desync the grids.
-            Domains registeredDomain = block ? block.Domain : Domains.Blue;
-            trackedBlocks[block] = registeredDomain;
-
-            if (block)
+            if (environmentMass && !trackedBlocks.ContainsKey(block))
             {
-                // Nucleus-interior mass is the territorial claim, not prey: it stays
-                // out of the TARGETING grids (fauna must never be led to mass they
-                // cannot eat) while still counting toward volume, per-domain counts,
-                // and the phase backstop. gridTracked remembers the classification so
-                // RemoveBlock stays symmetric even if the nucleus radius changes.
-                if (!IsInsideNucleus(block.transform.position))
+                // Snapshot the domain at registration time — RemoveBlock uses this snapshot
+                // so a team change (steal) between Add and Remove can't desync the grids.
+                Domains registeredDomain = block ? block.Domain : Domains.Blue;
+                trackedBlocks[block] = registeredDomain;
+
+                if (block)
                 {
-                    gridTracked.Add(block);
+                    // Nucleus-interior mass is the territorial claim, not prey: it stays
+                    // out of the TARGETING grids (fauna must never be led to mass they
+                    // cannot eat) while still counting toward volume, per-domain counts,
+                    // and the phase backstop. gridTracked remembers the classification so
+                    // RemoveBlock stays symmetric even if the nucleus radius changes.
+                    if (!IsInsideNucleus(block.transform.position))
+                    {
+                        gridTracked.Add(block);
 
-                    Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-                    foreach (var t in teams)
-                        if (t != registeredDomain) countGrids[t].AddBlock(block);
+                        Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
+                        foreach (var t in teams)
+                            if (t != registeredDomain) countGrids[t].AddBlock(block);
 
-                    if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
-                        anyGrid.AddBlock(block);
+                        if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
+                            anyGrid.AddBlock(block);
+                    }
+
+                    domainBlockCounts.TryGetValue(registeredDomain, out int count);
+                    domainBlockCounts[registeredDomain] = count + 1;
                 }
-
-                domainBlockCounts.TryGetValue(registeredDomain, out int count);
-                domainBlockCounts[registeredDomain] = count + 1;
             }
+
+            // Volume membership (all sources): bind the prism's summation-view slot
+            // to this cell. EnvMass mirrors trackedBlocks so a volume-only re-bind
+            // (fauna-body restore) can't clear env status the flora tracker stream
+            // set. Sums refresh on their own cadence.
+            int slotIndex = ResolveSpatialIndexId(block, spatialIndexId);
+            if (slotIndex >= 0)
+                PrismSpatialIndex.Instance?.SetCellBinding(slotIndex, _volumeCellId,
+                    trackedBlocks.ContainsKey(block), block ? block.Domain : Domains.Blue);
         }
 
-        public void RemoveBlock(Prism block)
+        public void RemoveBlock(Prism block, int spatialIndexId = UnknownSpatialIndex)
         {
             if (block is null) return;
 
-            // Volume membership goes first — fauna bodies are in massTracked but not
-            // trackedBlocks, and must not survive the early-return below.
-            massTracked.Remove(block);
+            // Volume membership goes first — fauna bodies are bound in the summation
+            // view but not trackedBlocks, and must not survive the early-return below.
+            int slotIndex = ResolveSpatialIndexId(block, spatialIndexId);
+            if (slotIndex >= 0)
+                PrismSpatialIndex.Instance?.ClearCellBinding(slotIndex, _volumeCellId);
 
             if (!trackedBlocks.Remove(block, out Domains registeredDomain)) return; // not counted
 

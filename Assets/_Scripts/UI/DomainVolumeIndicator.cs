@@ -4,6 +4,7 @@ using CosmicShore.ScriptableObjects;
 using CosmicShore.Utility;
 using Reflex.Attributes;
 using TMPro;
+using Unity.Profiling;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -71,6 +72,13 @@ namespace CosmicShore.UI
         // sample cadence (theme swaps are rare), not per frame.
         const float ConvergedEpsilon = 0.0005f;
         const float CyclePushEpsilon = 0.002f;
+
+        // Attribution split (PERFORMANCE_OPTIMIZATION.md TODO C2): Sample is the
+        // 0.25s cell read — its cost is really Cell.VolumeSum when this component
+        // is the first volume reader of the recompute interval; Push is the
+        // per-frame lerp + SetState residual.
+        static readonly ProfilerMarker s_sampleMarker = new("DomainVolumeIndicator.Sample");
+        static readonly ProfilerMarker s_pushMarker = new("DomainVolumeIndicator.Push");
         Color _jadeColor = Color.white, _rubyColor = Color.white, _goldColor = Color.white;
         float _lastPushedCycle = -1f;
         bool _statePushPending;
@@ -114,11 +122,17 @@ namespace CosmicShore.UI
             if (Time.unscaledTime >= _nextSampleAt)
             {
                 _nextSampleAt = Time.unscaledTime + sampleIntervalSeconds;
-                SampleTargets();
-                RefreshDomainColors();
+                using (s_sampleMarker.Auto())
+                {
+                    SampleTargets();
+                    RefreshDomainColors();
+                }
                 _statePushPending = true;
             }
-            StepTowardTargets();
+            using (s_pushMarker.Auto())
+            {
+                StepTowardTargets();
+            }
         }
 
         // ------------------------------------------------------------------
