@@ -65,7 +65,7 @@ MonoBehaviour:
   graphPosition: {x: 60, y: 280}
   outputs:
   - portName: next
-    targetNodeId: 36fd4aa76b5d4d0f97e50f0f104e3bd2
+    targetNodeId: de753ae9f2b64359ac3b5e87f9d6d74f
     delaySeconds: 0
   speakerName: Captain
   portrait: {fileID: 0}
@@ -184,6 +184,8 @@ MonoBehaviour:
   - {fileID: 2764328277780040822}
   - {fileID: -3913885852676656839}
   - {fileID: -2628149559964758023}
+  - {fileID: 31459265358979303}
+  - {fileID: 31459265358979304}
   canvasScroll: {x: 0, y: 0}
   canvasZoom: 1
 --- !u!114 &2764328277780040822
@@ -209,3 +211,48 @@ MonoBehaviour:
   target: 437
   completionAction: 400
   dependencies: 64000000
+--- !u!114 &31459265358979303
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc71607207fd49ea9b400656e8aff5d3, type: 3}
+  m_Name: 'Wait: Profile Opened'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForUserActionNode
+  nodeId: de753ae9f2b64359ac3b5e87f9d6d74f
+  displayName: 'Wait: Profile Opened'
+  nodeEnabled: 1
+  graphPosition: {x: 320, y: 400}
+  outputs:
+  - portName: next
+    targetNodeId: 8210e999a4854c4abbe303aeca6a36c6
+    delaySeconds: 0.5
+  action: 500
+--- !u!114 &31459265358979304
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: 'Dialogue: Collect Your Reward'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: 8210e999a4854c4abbe303aeca6a36c6
+  displayName: 'Dialogue: Collect Your Reward'
+  nodeEnabled: 1
+  graphPosition: {x: 320, y: 520}
+  outputs:
+  - portName: next
+    targetNodeId: 36fd4aa76b5d4d0f97e50f0f104e3bd2
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - Tap the JOUST card on your quest track to collect your reward!
