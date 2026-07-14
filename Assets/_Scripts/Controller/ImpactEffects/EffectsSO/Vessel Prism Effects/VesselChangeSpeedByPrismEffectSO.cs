@@ -28,6 +28,14 @@ namespace CosmicShore.Gameplay
             var shipStatus = impactor.Vessel.VesselStatus;
             var trailBlockProperties = prismImpactee.Prism.prismProperties;
 
+            // Don't brake the vessel on its OWN trail — you skim your own mass, you don't plow through it.
+            // Without this, flying into your own large (volume-scaled → up to maxSlowStrength) prism —
+            // e.g. one the Astro League ball shielded, which makes own trail collidable — hard-brakes you,
+            // and oscillating at its edge re-triggers the slow into a stutter. DANGER prisms are exempt:
+            // they slow everyone regardless of domain (locked design — danger is not safe to its own domain).
+            if (!trailBlockProperties.IsDangerous && prismImpactee.Prism.Domain == shipStatus.Domain)
+                return;
+
             // Normal prisms: larger volume slows more, up to maxSlowStrength.
             // Danger prisms: always the danger max (maxSlowStrength * dangerSlowMultiplier),
             // independent of volume — danger is a prism state, not a function of its mass —

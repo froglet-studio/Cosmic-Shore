@@ -29,10 +29,13 @@ namespace CosmicShore.Gameplay
 
         public Domains DefendingDomain => defendingDomain;
         public Vector3 MouthCenter => transform.position;
+        /// <summary>The direction the ball must travel through the mouth to score here (the scoring direction).</summary>
+        public Vector3 InwardNormal => _inwardNormal;
 
         AstroLeagueBall _ball;
         Vector3 _inwardNormal = Vector3.forward; // from arena center out through this goal
         float _scale = 1f;
+        bool _passThrough; // central shared goal: score on CENTER crossing (no solid back wall)
         Vector3 _lastBallPos;
         bool _hasLast;
 
@@ -46,18 +49,29 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Wire the ball + arena center + intensity scale. Called by the controller on every peer once
         /// the goal is positioned at its scaled goal line (so the inward normal is computed correctly).
+        /// Pass <paramref name="explicitInwardNormal"/> for the central shared-goal layout, where the
+        /// goal sits AT the arena center so the position-derived normal would be ambiguous — the scoring
+        /// direction (which pass direction counts) is then set explicitly (e.g. ±Z). Set
+        /// <paramref name="passThrough"/> for that same layout: it has no solid back wall, so the ball
+        /// scores when its CENTER crosses the plane (not when its leading edge reaches a back wall).
         /// </summary>
-        public void Configure(AstroLeagueBall ball, Vector3 arenaCenter, float scale)
+        public void Configure(AstroLeagueBall ball, Vector3 arenaCenter, float scale,
+            Vector3? explicitInwardNormal = null, bool passThrough = false)
         {
             _ball = ball;
             _scale = Mathf.Max(0.01f, scale);
-            Vector3 outward = transform.position - arenaCenter;
-            _inwardNormal = outward.sqrMagnitude > 1e-4f ? outward.normalized : Vector3.forward;
+            _passThrough = passThrough;
+            if (explicitInwardNormal.HasValue && explicitInwardNormal.Value.sqrMagnitude > 1e-4f)
+            {
+                _inwardNormal = explicitInwardNormal.Value.normalized;
+            }
+            else
+            {
+                Vector3 outward = transform.position - arenaCenter;
+                _inwardNormal = outward.sqrMagnitude > 1e-4f ? outward.normalized : Vector3.forward;
+            }
             _hasLast = false;
         }
-
-        /// <summary>Kept for the controller's intensity-scale call: the mouth grows with the arena.</summary>
-        public void ScaleTrigger(float scale) => _scale = Mathf.Max(0.01f, scale);
 
         void FixedUpdate()
         {
@@ -88,9 +102,10 @@ namespace CosmicShore.Gameplay
             if ((cur - prev).sqrMagnitude > maxStep * maxStep) return;
 
             Vector3 mouth = transform.position;
-            // Fire when the ball's LEADING EDGE reaches the goal plane (center distance crosses −radius),
-            // so a big ball scores before bouncing off the solid back wall behind the mouth.
-            float threshold = -_ball.BallWorldRadius();
+            // End goal: fire when the ball's LEADING EDGE reaches the goal plane (center distance crosses
+            // −radius), so a big ball scores before bouncing off the solid back wall behind the mouth.
+            // Central pass-through goal: no back wall, so fire when the ball's CENTER crosses the plane.
+            float threshold = _passThrough ? 0f : -_ball.BallWorldRadius();
             float dPrev = Vector3.Dot(prev - mouth, _inwardNormal);
             float dCur = Vector3.Dot(cur - mouth, _inwardNormal);
             if (dPrev >= threshold || dCur < threshold) return; // not an inward crossing this tick
