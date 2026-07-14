@@ -26,6 +26,12 @@ namespace CosmicShore.Gameplay
         public const byte IsShielded     = 1 << 2; // bit 2
         public const byte IsSuperShielded = 1 << 3; // bit 3
 
+        // Collider-LOD state: this slot was within the LOD radius of a focus at the
+        // last classification pass (LodClassifyJob). Owned exclusively by
+        // RunLodClassification — not part of JobSkipMask semantics, and reset for
+        // free when Register writes fresh flags into a reused slot.
+        public const byte LodNear        = 1 << 4; // bit 4
+
         // Mask for the Burst job's early-exit check:
         // Active (bit 0 set) AND not destroyed (bit 1 clear) → value == 0x01
         public const byte JobSkipMask    = IsActive | Destroyed;
@@ -98,6 +104,62 @@ namespace CosmicShore.Gameplay
             if (distSq > RadiusSq) return;
 
             HitIndices.AddNoResize(index);
+        }
+    }
+
+    /// <summary>
+    /// Burst-compiled collider-LOD classification over the packed hot array.
+    /// Maintains the per-slot <see cref="PrismFlags.LodNear"/> bit and emits only
+    /// TRANSITIONS (slots whose near/far state changed since the last pass), so the
+    /// managed apply that follows is O(changed) instead of O(population). With
+    /// Reconcile set (first sweep / LOD re-enable) every live slot is emitted and
+    /// the bits are rewritten from scratch. Single-threaded IJob: 25k entries is
+    /// ~0.1-0.3 ms in Burst, and ordered appends keep the output deterministic.
+    /// </summary>
+    [BurstCompile]
+    public struct LodClassifyJob : IJob
+    {
+        public NativeArray<PrismSpatialData> Prisms; // read-write: maintains the LodNear bit
+        [ReadOnly] public NativeArray<float3> Centers;
+        public int EntryCount;
+        public int CenterCount;
+        public float RadiusSq;
+        public bool Reconcile;
+        public NativeList<int> BecameNear;
+        public NativeList<int> BecameFar;
+
+        public void Execute()
+        {
+            for (int i = 0; i < EntryCount; i++)
+            {
+                var p = Prisms[i];
+                if ((p.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
+
+                bool near = false;
+                for (int cI = 0; cI < CenterCount; cI++)
+                {
+                    if (math.distancesq(p.Position, Centers[cI]) <= RadiusSq)
+                    {
+                        near = true;
+                        break; // near at least one focus — no need to test the rest
+                    }
+                }
+
+                bool wasNear = (p.Flags & PrismFlags.LodNear) != 0;
+                if (near == wasNear && !Reconcile) continue;
+
+                if (near)
+                {
+                    p.Flags |= PrismFlags.LodNear;
+                    BecameNear.Add(i);
+                }
+                else
+                {
+                    p.Flags = (byte)(p.Flags & ~PrismFlags.LodNear);
+                    BecameFar.Add(i);
+                }
+                Prisms[i] = p;
+            }
         }
     }
 
@@ -263,6 +325,9 @@ namespace CosmicShore.Gameplay
             _cells = new Cell[INITIAL_CAPACITY];
             _hitIndices = new NativeList<int>(512, Allocator.Persistent);
             _buckets = new NativeParallelMultiHashMap<int3, int>(INITIAL_CAPACITY, Allocator.Persistent);
+            _lodCenters = new NativeArray<float3>(16, Allocator.Persistent);
+            _lodBecameNear = new NativeList<int>(512, Allocator.Persistent);
+            _lodBecameFar = new NativeList<int>(512, Allocator.Persistent);
         }
 
         #region Bucket grid
@@ -550,68 +615,70 @@ namespace CosmicShore.Gameplay
             if (cell) cell.RemoveBlock(prism);
         }
 
-        // Hoisted float3 copies of the union-query centres — the old per-prism
-        // (float3)(Vector3) conversion inside the inner loop was pure waste.
-        float3[] _unionCenterScratch = new float3[16];
+        // Collider-LOD classification scratch (persistent, reused per sweep).
+        NativeArray<float3> _lodCenters;
+        NativeList<int> _lodBecameNear;
+        NativeList<int> _lodBecameFar;
 
         /// <summary>
-        /// Windowed union-of-spheres pass for the collider LOD: scans packed entries
-        /// [<paramref name="startIndex"/>, +<paramref name="maxEntries"/>) against all
-        /// <paramref name="centers"/> in one cache-friendly pass, so the LOD sweep can
-        /// spread its O(population) reclassification across frames instead of paying
-        /// it in one (a large LOD radius forces QuerySphere into its linear-scan
-        /// fallback, so per-focus calls were O(centers × population)).
-        /// <paramref name="nearResults"/> receives the window's live prisms within
-        /// radius of ANY centre; <paramref name="farResults"/> (optional — pass null
-        /// to skip) receives its remaining live prisms, for reconcile sweeps that must
-        /// classify the whole population. Both are cleared per call (slice-local).
-        /// <paramref name="nextIndex"/> is the cursor for the following slice, or -1
-        /// when the window reached the end of the packed array.
+        /// Collider-LOD classification view: one Burst pass over the packed hot
+        /// array that maintains a per-slot near-any-focus bit
+        /// (<see cref="PrismFlags.LodNear"/>) and emits only the prisms whose
+        /// near/far state CHANGED since the last pass — or the full classification
+        /// when <paramref name="reconcile"/> is true (first sweep / LOD re-enable).
+        /// Replaces the managed 8000-entries-per-frame sliced scan, whose per-entry
+        /// interop cost made every sweep O(population) on the main thread
+        /// (5.5 ms slice frames at 25k prisms); the Burst scan is ~0.1-0.3 ms for
+        /// the same population and the managed cost becomes O(transitions).
+        /// Runs synchronously (Run — Bursted on the main thread), same as every
+        /// other query in this index, so there are no job/mutation races.
+        /// The LodNear bit lives in the slot flags and is reset naturally when a
+        /// slot is re-registered (Register writes fresh flags), so slot reuse can
+        /// at worst cost one idempotent extra transition on the next sweep.
         /// </summary>
-        public int QueryUnionOfSpheresSlice(List<Vector3> centers, float radius,
-            int startIndex, int maxEntries, List<Prism> nearResults, List<Prism> farResults,
-            out int nextIndex)
+        public void RunLodClassification(List<Vector3> centers, float radius, bool reconcile,
+            List<Prism> becameNear, List<Prism> becameFar)
         {
-            nearResults.Clear();
-            farResults?.Clear();
-            nextIndex = -1;
-            if (!_spatial.IsCreated || centers == null || centers.Count == 0) return 0;
+            becameNear.Clear();
+            becameFar.Clear();
+            if (!_spatial.IsCreated || _highWaterMark == 0 || centers == null || centers.Count == 0) return;
 
-            int centerCount = centers.Count;
-            if (_unionCenterScratch.Length < centerCount)
-                _unionCenterScratch = new float3[Mathf.NextPowerOfTwo(centerCount)];
-            for (int cI = 0; cI < centerCount; cI++)
-                _unionCenterScratch[cI] = (float3)(Vector3)centers[cI];
-
-            float radiusSq = radius * radius;
-            int start = Mathf.Max(0, startIndex);
-            int end = (maxEntries <= 0 || _highWaterMark - start <= maxEntries)
-                ? _highWaterMark
-                : start + maxEntries;
-
-            for (int i = start; i < end; i++)
+            if (!_lodCenters.IsCreated || _lodCenters.Length < centers.Count)
             {
-                var s = _spatial[i];
-                if ((s.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
-
-                bool near = false;
-                for (int cI = 0; cI < centerCount; cI++)
-                {
-                    if (math.distancesq(s.Position, _unionCenterScratch[cI]) <= radiusSq)
-                    {
-                        near = true;
-                        break; // near at least one focus — no need to test the rest
-                    }
-                }
-
-                var prism = _prisms[i];
-                if (!prism) continue;
-                if (near) nearResults.Add(prism);
-                else farResults?.Add(prism);
+                if (_lodCenters.IsCreated) _lodCenters.Dispose();
+                _lodCenters = new NativeArray<float3>(Mathf.NextPowerOfTwo(centers.Count), Allocator.Persistent);
             }
+            for (int cI = 0; cI < centers.Count; cI++)
+                _lodCenters[cI] = (float3)centers[cI];
 
-            if (end < _highWaterMark) nextIndex = end;
-            return nearResults.Count;
+            _lodBecameNear.Clear();
+            _lodBecameFar.Clear();
+            if (_lodBecameNear.Capacity < _highWaterMark) _lodBecameNear.Capacity = _highWaterMark;
+            if (_lodBecameFar.Capacity < _highWaterMark) _lodBecameFar.Capacity = _highWaterMark;
+
+            new LodClassifyJob
+            {
+                Prisms = _spatial,
+                Centers = _lodCenters,
+                EntryCount = _highWaterMark,
+                CenterCount = centers.Count,
+                RadiusSq = radius * radius,
+                Reconcile = reconcile,
+                BecameNear = _lodBecameNear,
+                BecameFar = _lodBecameFar,
+            }.Run();
+
+            // Resolve indices to managed refs — O(transitions), the only managed cost.
+            for (int i = 0; i < _lodBecameNear.Length; i++)
+            {
+                var prism = _prisms[_lodBecameNear[i]];
+                if (prism) becameNear.Add(prism);
+            }
+            for (int i = 0; i < _lodBecameFar.Length; i++)
+            {
+                var prism = _prisms[_lodBecameFar[i]];
+                if (prism) becameFar.Add(prism);
+            }
         }
 
         /// <summary>
@@ -1078,6 +1145,9 @@ namespace CosmicShore.Gameplay
             if (_damage.IsCreated) _damage.Dispose();
             if (_hitIndices.IsCreated) _hitIndices.Dispose();
             if (_buckets.IsCreated) _buckets.Dispose();
+            if (_lodCenters.IsCreated) _lodCenters.Dispose();
+            if (_lodBecameNear.IsCreated) _lodBecameNear.Dispose();
+            if (_lodBecameFar.IsCreated) _lodBecameFar.Dispose();
             LiveCount = 0;
         }
 

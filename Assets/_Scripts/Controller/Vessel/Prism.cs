@@ -1,4 +1,5 @@
 using System;
+using Unity.Profiling;
 using UnityEngine;
 using System.Collections;
 using CosmicShore.Core;
@@ -24,10 +25,16 @@ namespace CosmicShore.Gameplay
         public GameObject ParticleEffect;
         public Trail Trail;
 
-        [Header("Prism Growth")] 
+        [Header("Prism Growth")]
         public Vector3 GrowthVector = new Vector3(0, 2, 0);
         public float growthRate = 0.01f;
         public float waitTime = 0.6f;
+
+        // One yield token per prism life, reused across pool reuses — a fresh
+        // WaitForSeconds per spawn was a managed alloc for every prism ever laid,
+        // steady food for the mid-session GC.Collect spikes.
+        WaitForSeconds _spawnWait;
+        float _spawnWaitSeconds = -1f;
 
         [Header("Prism Status")] 
         public bool destroyed;
@@ -206,10 +213,16 @@ namespace CosmicShore.Gameplay
                     SyncRenderMaterial();
                     SyncRenderTransform();
                 }
-                PrismRenderService.SetVisible(in RenderHandle, show);
+                // Batched: applied in one structural change per direction at
+                // LateUpdate (same frame, before rendering). Per-prism toggles were
+                // the dominant creation-tick cost (Prism.Create.Visibility).
+                PrismRenderService.QueueVisible(in RenderHandle, show);
             }
             else
             {
+                // Immediate: the GameObject renderer takes over THIS frame (exotic
+                // shield morph / legacy fallback) — a queued hide would double-draw
+                // entity + MeshRenderer for the rest of the frame.
                 if (PrismRenderService.IsHandleUsable(in RenderHandle))
                     PrismRenderService.SetVisible(in RenderHandle, false);
                 if (meshRenderer) meshRenderer.enabled = _renderVisible;
@@ -430,9 +443,22 @@ namespace CosmicShore.Gameplay
         static int s_creationCompletionsThisFrame;
         static int s_creationBudgetFrame = -1;
 
+        // Split attribution for the ~0.5ms creation-completion tick: which of the
+        // three suspects dominates decides the fix (enableable-component render flag
+        // vs SOAP listener work vs spatial bind). See
+        // Docs/PERFORMANCE_OPTIMIZATION.md Task 4.
+        static readonly ProfilerMarker s_createVisibilityMarker = new("Prism.Create.Visibility");
+        static readonly ProfilerMarker s_createSoapMarker = new("Prism.Create.SOAPRaise");
+        static readonly ProfilerMarker s_createSpatialMarker = new("Prism.Create.SpatialBind");
+
         private IEnumerator CreateBlockCoroutine(Vector3 authoredTargetScale)
         {
-            yield return new WaitForSeconds(waitTime);
+            if (_spawnWait == null || _spawnWaitSeconds != waitTime)
+            {
+                _spawnWait = new WaitForSeconds(waitTime);
+                _spawnWaitSeconds = waitTime;
+            }
+            yield return _spawnWait;
 
             // Destroyed before creation completed (e.g. AOE within waitTime of spawn) —
             // don't resurrect the renderer/collider or register a dead prism with the
@@ -454,8 +480,11 @@ namespace CosmicShore.Gameplay
             }
             s_creationCompletionsThisFrame++;
 
-            SetRenderVisible(true);
-            blockCollider.enabled = true;
+            using (s_createVisibilityMarker.Auto())
+            {
+                SetRenderVisible(true);
+                blockCollider.enabled = true;
+            }
 
             if (scaleAnimator.TargetScale == Vector3.zero)
                 scaleAnimator.SetTargetScale(authoredTargetScale);
@@ -464,11 +493,14 @@ namespace CosmicShore.Gameplay
 
             scaleAnimator.BeginGrowthAnimation();
 
-            _onTrailBlockCreatedEventChannel.Raise(new PrismStats
+            using (s_createSoapMarker.Auto())
             {
-                OwnName = PlayerName,
-                Volume = prismProperties.volume,
-            });
+                _onTrailBlockCreatedEventChannel.Raise(new PrismStats
+                {
+                    OwnName = PlayerName,
+                    Volume = prismProperties.volume,
+                });
+            }
 
             // Register with the spatial index — one registration, every view:
             // cache-friendly batch AOE processing, growth occupancy (consumes the
@@ -480,16 +512,19 @@ namespace CosmicShore.Gameplay
             // Seed the volume cache before the cell starts aggregating this prism
             // (it enters massTracked via the Register → BindCell path below), so the
             // first volume recompute reads a real value, not the default 0.
-            RefreshVolumeCache();
+            using (s_createSpatialMarker.Auto())
+            {
+                RefreshVolumeCache();
 
-            var spatialIndex = PrismSpatialIndex.EnsureInstance();
-            if (spatialIndex != null && spatialIndex.IsAvailable)
-                SpatialIndexId = spatialIndex.Register(this);
+                var spatialIndex = PrismSpatialIndex.EnsureInstance();
+                if (spatialIndex != null && spatialIndex.IsAvailable)
+                    SpatialIndexId = spatialIndex.Register(this);
 
-            // The LOD sweep is transition-based — it must be told about colliders
-            // that come online between ticks, or a prism born far from every focus
-            // keeps its collider until a bubble boundary happens to cross it.
-            PrismColliderLodManager.NotifyPrismActivated(this);
+                // The LOD sweep is transition-based — it must be told about colliders
+                // that come online between ticks, or a prism born far from every focus
+                // keeps its collider until a bubble boundary happens to cross it.
+                PrismColliderLodManager.NotifyPrismActivated(this);
+            }
         }
 
         /// <summary>
@@ -508,12 +543,9 @@ namespace CosmicShore.Gameplay
         bool _lodCulled;
         bool _colliderBeforeLodCull;
 
-        /// <summary>
-        /// Id of the last collider-LOD sweep that saw this prism near a focus.
-        /// Written/read by <c>PrismColliderLodManager</c> ONLY — an O(1) stamp that
-        /// replaced the manager's HashSet bookkeeping for near/far transitions.
-        /// </summary>
-        internal int LodNearSweepStamp;
+        // (Near/far transition memory now lives in the spatial index's per-slot
+        // LodNear flag bit, maintained by the Burst classification pass — the old
+        // per-prism sweep stamp is gone with the managed sliced sweep.)
 
         /// <summary>
         /// Called by <c>PrismColliderLodManager</c> ONLY. Culls/restores this prism's
@@ -810,6 +842,11 @@ namespace CosmicShore.Gameplay
                         SpatialIndexId = spatialIndex.Register(this);
                 }
 
+                // Restoration owns the collider again — clear any stale LOD-cull
+                // bookkeeping from the pre-destruction life, or NotifyPrismActivated's
+                // cull below would early-out on _lodCulled==true (and a later restore
+                // would reinstate a stale pre-cull snapshot).
+                _lodCulled = false;
                 blockCollider.enabled = true;
                 SetRenderVisible(true);
                 destroyed = false;
@@ -857,9 +894,10 @@ namespace CosmicShore.Gameplay
 
             // The companion entity is not tied to GameObject activation — hide it
             // explicitly so a pooled prism can't keep drawing while it waits for
-            // reuse. (The next Initialize re-establishes visibility.)
+            // reuse. (The next Initialize re-establishes visibility.) Queued: the
+            // batch flush applies it this frame at LateUpdate, before rendering.
             if (PrismRenderService.IsHandleUsable(in RenderHandle))
-                PrismRenderService.SetVisible(in RenderHandle, false);
+                PrismRenderService.QueueVisible(in RenderHandle, false);
         }
 
         private void OnDestroy()

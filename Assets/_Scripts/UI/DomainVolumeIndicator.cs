@@ -65,6 +65,16 @@ namespace CosmicShore.UI
         int _dominant = -1;
         float _spawnCycle;
 
+        // Push gating: SetState delta-checks downstream at 0.002, so pushes below
+        // that epsilon are guaranteed no-ops — skip them here and the whole Update
+        // becomes near-free in steady state. Colors are resolved on the 0.25s
+        // sample cadence (theme swaps are rare), not per frame.
+        const float ConvergedEpsilon = 0.0005f;
+        const float CyclePushEpsilon = 0.002f;
+        Color _jadeColor = Color.white, _rubyColor = Color.white, _goldColor = Color.white;
+        float _lastPushedCycle = -1f;
+        bool _statePushPending;
+
         // Intermediate phase enter thresholds as fractions of FrenzyEnter (ascending):
         // where the concentric rings sit. With the 3-phase ladder there is exactly one
         // boundary strictly inside the frenzy extent — Restless (Frenzy itself sits at the
@@ -93,7 +103,10 @@ namespace CosmicShore.UI
             _jadeTarget = _rubyTarget = _goldTarget = 0f;
             _hasThresholds = false;
             _nextSampleAt = 0f;
-            PushState();
+            _lastPushedCycle = -1f;
+            _statePushPending = false;
+            RefreshDomainColors();
+            PushState(_spawnCycle);
         }
 
         void Update()
@@ -102,6 +115,8 @@ namespace CosmicShore.UI
             {
                 _nextSampleAt = Time.unscaledTime + sampleIntervalSeconds;
                 SampleTargets();
+                RefreshDomainColors();
+                _statePushPending = true;
             }
             StepTowardTargets();
         }
@@ -228,33 +243,49 @@ namespace CosmicShore.UI
 
         void StepTowardTargets()
         {
-            if (fillLerpSpeed <= 0f)
-            {
-                _jadeNow = _jadeTarget;
-                _rubyNow = _rubyTarget;
-                _goldNow = _goldTarget;
-            }
-            else
-            {
-                float t = 1f - Mathf.Exp(-fillLerpSpeed * Time.unscaledDeltaTime);
-                _jadeNow = Mathf.Lerp(_jadeNow, _jadeTarget, t);
-                _rubyNow = Mathf.Lerp(_rubyNow, _rubyTarget, t);
-                _goldNow = Mathf.Lerp(_goldNow, _goldTarget, t);
-            }
-            PushState();
-        }
+            bool converging =
+                Mathf.Abs(_jadeNow - _jadeTarget) > ConvergedEpsilon ||
+                Mathf.Abs(_rubyNow - _rubyTarget) > ConvergedEpsilon ||
+                Mathf.Abs(_goldNow - _goldTarget) > ConvergedEpsilon;
 
-        void PushState()
-        {
-            if (!hexGraphic) return;
-            ResolveDomainColors(out var jadeC, out var rubyC, out var goldC);
+            if (converging)
+            {
+                if (fillLerpSpeed <= 0f)
+                {
+                    _jadeNow = _jadeTarget;
+                    _rubyNow = _rubyTarget;
+                    _goldNow = _goldTarget;
+                }
+                else
+                {
+                    float t = 1f - Mathf.Exp(-fillLerpSpeed * Time.unscaledDeltaTime);
+                    _jadeNow = Mathf.Lerp(_jadeNow, _jadeTarget, t);
+                    _rubyNow = Mathf.Lerp(_rubyNow, _rubyTarget, t);
+                    _goldNow = Mathf.Lerp(_goldNow, _goldTarget, t);
+                }
+            }
+
             // Spawn-cycle fraction is read LIVE each frame (cheap Time.time math)
             // so the ring sweeps smoothly between the 0.25s volume samples. Use the
             // cached cell to avoid re-running cell resolution every frame.
             float cycle = _cachedCell ? _cachedCell.FaunaSpawnCycleFraction : _spawnCycle;
+            bool cycleMoved = Mathf.Abs(cycle - _lastPushedCycle) >= CyclePushEpsilon;
+
+            // Steady state (fills converged, ring between epsilon steps, no fresh
+            // sample) pushes nothing — the downstream delta gate would have
+            // discarded it anyway.
+            if (!converging && !cycleMoved && !_statePushPending) return;
+            _statePushPending = false;
+            PushState(cycle);
+        }
+
+        void PushState(float cycle)
+        {
+            if (!hexGraphic) return;
+            _lastPushedCycle = cycle;
             // SetState rebuilds the mesh only on a meaningful delta.
-            hexGraphic.SetState(_jadeNow, _rubyNow, _goldNow, jadeC, rubyC, goldC, _dominant, cycle,
-                                _hasThresholds ? _thresholdFracs : null);
+            hexGraphic.SetState(_jadeNow, _rubyNow, _goldNow, _jadeColor, _rubyColor, _goldColor,
+                                _dominant, cycle, _hasThresholds ? _thresholdFracs : null);
         }
 
         // ------------------------------------------------------------------
@@ -277,11 +308,12 @@ namespace CosmicShore.UI
             return _cachedCell;
         }
 
-        void ResolveDomainColors(out Color jade, out Color ruby, out Color gold)
+        void RefreshDomainColors()
         {
             // Canonical source — the same path MultiplayerHUD and every other
             // domain-tinted UI uses. The serialized override exists for prefabs that
-            // want to lock to a specific theme variant during pitch demos.
+            // want to lock to a specific theme variant during pitch demos. Resolved
+            // on the sample cadence, not per frame — theme swaps are rare.
             var colorSet = themeDataOverride
                 ? themeDataOverride.ColorSet
                 : gameData?.ThemeManagerData?.ColorSet;
@@ -289,11 +321,15 @@ namespace CosmicShore.UI
             // Last-resort neutral so the gauge stays visible if the theme container
             // genuinely isn't wired yet (e.g. tooling scenes). The DI registration in
             // AppManager makes this branch unreachable in shipping flows.
-            if (colorSet == null) { jade = ruby = gold = Color.white; return; }
+            if (colorSet == null)
+            {
+                _jadeColor = _rubyColor = _goldColor = Color.white;
+                return;
+            }
 
-            jade = ResolveDomainColor(colorSet, Domains.Jade);
-            ruby = ResolveDomainColor(colorSet, Domains.Ruby);
-            gold = ResolveDomainColor(colorSet, Domains.Gold);
+            _jadeColor = ResolveDomainColor(colorSet, Domains.Jade);
+            _rubyColor = ResolveDomainColor(colorSet, Domains.Ruby);
+            _goldColor = ResolveDomainColor(colorSet, Domains.Gold);
         }
 
         static Color ResolveDomainColor(SO_ColorSet colorSet, Domains domain)

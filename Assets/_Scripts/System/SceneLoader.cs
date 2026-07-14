@@ -180,6 +180,14 @@ namespace CosmicShore.Core
         {
             Debug.Log("<color=#FFFFFF><b>[FLOW-8] [SceneLoader] FadeFromSplashOnReady — OnClientReady fired!</b></color>");
             gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
+
+            // Runs on EVERY peer (clients never reach LoadSceneAsync's pre-load
+            // collect — they defer scene loads to the server) with the splash still
+            // fully opaque and the NEW scene loaded, so the old scene's managed heap
+            // is unreachable here — the most effective covered moment to take the
+            // full GC and reset the mid-gameplay collection clock.
+            GC.Collect();
+
             _sceneTransitionManager?.FadeFromBlack().Forget();
         }
 
@@ -242,6 +250,14 @@ namespace CosmicShore.Core
                 TimeSpan.FromSeconds(wait),
                 DelayType.UnscaledDeltaTime
             );
+
+            // The splash is opaque here — take a full blocking GC now so the heap
+            // that accumulated over the last session (conserved prisms, pool-refill
+            // churn) is collected behind cover instead of surfacing mid-gameplay as
+            // a ~20ms GC.Collect spike inside a pool-refill Instantiate. Incremental
+            // GC (enabled project-wide) spreads minor work but still blocks fully
+            // when the heap must expand; this resets that clock at every transition.
+            GC.Collect();
 
             if (isServer && nm.SceneManager != null)
             {
