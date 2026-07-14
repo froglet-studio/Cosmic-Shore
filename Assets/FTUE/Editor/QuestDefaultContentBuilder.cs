@@ -241,10 +241,11 @@ namespace CosmicShore.Editor
             GameModes gateMode, GameModes claimMode, CallToActionTargetType playCta, string nextLabel)
         {
             var g = NewPhase(index, phaseName,
-                $"Entry gate: {gateMode} reaches intensity tier 4 (its quest milestone). Guide to the " +
-                $"profile screen, explain, wait for the player to CLAIM {claimMode} on the quest track " +
-                "(unlocks to intensity 3), reward dialogue, then guide back to the arcade and play it. " +
-                $"Ends → {nextLabel}.");
+                $"Entry gate: {gateMode} reaches intensity tier 4 (its quest milestone). Light the " +
+                "profile CTA + explainer, WAIT until the player actually opens the profile, then point " +
+                $"at the {FriendlyName(gateMode)} card's claim button. Player CLAIMS {claimMode} on the " +
+                "quest track (unlocks to intensity 3), reward dialogue, then guide back to the arcade " +
+                $"and play it. Ends → {nextLabel}.");
 
             var gate = Add<QuestWaitForIntensityNode>(g, $"Gate: {gateMode} Tier 4");
             gate.mode = gateMode;
@@ -258,7 +259,17 @@ namespace CosmicShore.Editor
             explain.lines = new List<string>
             {
                 "Your quest track has something ready — the next game mode is waiting.",
-                "Claim it, then show me what you've got out there!",
+                "Head over to the Profile screen to claim it!",
+            };
+
+            // Hold until the player is actually ON the profile before pointing at the claim.
+            var waitProfile = Add<QuestWaitForUserActionNode>(g, "Wait: Profile Opened");
+            waitProfile.action = UserActionType.ViewProfileMenu;
+
+            var claimHint = Add<QuestDialogueNode>(g, "Dialogue: Collect Your Reward");
+            claimHint.lines = new List<string>
+            {
+                $"Tap the {FriendlyName(gateMode).ToUpperInvariant()} card on your quest track to collect your reward!",
             };
 
             var claim = Add<QuestWaitForModeUnlockedNode>(g, $"Wait: Claim {claimMode}");
@@ -267,27 +278,38 @@ namespace CosmicShore.Editor
             var reward = Add<QuestDialogueNode>(g, "Reward Reveal");
             reward.lines = new List<string>
             {
-                $"{claimMode} is yours, pilot! Intensities 1–3 are open — dive in.",
+                $"{FriendlyName(claimMode)} is yours, pilot! Intensities 1–3 are open — dive in.",
             };
 
-            var ctaPlay = Add<QuestHighlightCTANode>(g, $"CTA: Play {claimMode}");
+            var ctaPlay = Add<QuestHighlightCTANode>(g, $"CTA: Play {FriendlyName(claimMode)}");
             ctaPlay.target = playCta;
             ctaPlay.completionAction = UserActionType.PlayGame;
             ctaPlay.dependencies = new List<CallToActionTargetType> { CallToActionTargetType.ArcadeMenu };
 
-            var played = Add<QuestWaitForGamePlayedNode>(g, $"Wait: {claimMode} Played");
+            var played = Add<QuestWaitForGamePlayedNode>(g, $"Wait: {FriendlyName(claimMode)} Played");
             played.filterByMode = true;
             played.expectedMode = claimMode;
 
             var end = Add<QuestPhaseEndNode>(g, $"Phase {index} Complete");
 
-            Chain(g, gate, ctaProfile, explain, claim, reward, ctaPlay, played, end);
+            Chain(g, gate, ctaProfile, explain, waitProfile, claimHint, claim, reward, ctaPlay, played, end);
             SetDelay(gate, 1f);
+            SetDelay(waitProfile, 0.5f);
             SetDelay(claim, 0.5f);
             SetDelay(reward, 0.5f);
             SetDelay(played, 1f);
             return Finish(g, gate);
         }
+
+        /// <summary>Player-facing mode names for dialogue lines (enum names read clunky).</summary>
+        static string FriendlyName(GameModes mode) => mode switch
+        {
+            GameModes.MultiplayerCrystalCapture => "Crystal Capture",
+            GameModes.HexRace => "Hex Race",
+            GameModes.MultiplayerJoust => "Joust",
+            GameModes.Tournament => "Maelstrom",
+            _ => mode.ToString(),
+        };
 
         static QuestPhaseGraphSO BuildPhase4()
         {
