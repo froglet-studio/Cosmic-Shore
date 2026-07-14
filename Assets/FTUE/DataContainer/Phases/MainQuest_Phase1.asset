@@ -115,8 +115,8 @@ MonoBehaviour:
   - {fileID: 3420469172688409254}
   - {fileID: 5683260495802250319}
   - {fileID: -7389795359798162980}
-  canvasScroll: {x: 0, y: 0}
-  canvasZoom: 1
+  canvasScroll: {x: 9.917099, y: 5.6276703}
+  canvasZoom: 1.0002403
 --- !u!114 &3420469172688409254
 MonoBehaviour:
   m_ObjectHideFlags: 0

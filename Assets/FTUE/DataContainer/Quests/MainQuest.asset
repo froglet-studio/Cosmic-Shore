@@ -14,14 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestSO
   questId: MainQuest
   questEnabled: 1
-  designerNotes: "THE Main Quest (FTUE). Phase pattern after onboarding: gate on
-    the previous mode's intensity-4 milestone \u2192 guide to the profile screen
-    \u2192 player CLAIMS the next mode (unlocks to intensity 3) \u2192 reward dialogue
-    \u2192 guide back to the arcade \u2192 play it.\n\nReference map: see QUEST_GRAPH_TOOL.md.
-    Dialogue lines are authored ON the nodes (no DialogueSet assets \u2014 the panel
-    is driven directly). New CTA targets (ProfileMenu / EpisodeMenu / PlayGameMaelstrom)
-    and user actions (ViewProfileMenu / ViewEpisodeMenu / UnlockVessel) need scene
-    UI wiring."
+  designerNotes: 
   phases:
   - {fileID: 11400000, guid: 385774e18f65e064fac0a9a87e24b8d3, type: 2}
   - {fileID: 11400000, guid: e8a13e1e77a105141b6c04e1719482e1, type: 2}

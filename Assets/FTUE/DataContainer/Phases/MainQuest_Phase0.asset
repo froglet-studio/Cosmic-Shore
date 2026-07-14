@@ -15,17 +15,16 @@ MonoBehaviour:
   nodeId: 4d51e7e97c7a48a9a4330fdf253f3952
   displayName: Maps Tour + Intensity-4 Rule
   nodeEnabled: 1
-  graphPosition: {x: 1100, y: 160}
+  graphPosition: {x: 1107.7896, y: 275.7309}
   outputs:
   - portName: next
-    targetNodeId: ad63c3d249ea4c759197eb6fe5e7596f
-    delaySeconds: 0.5
+    targetNodeId: 57011872b3b64f6790bb1970cdac59fc
+    delaySeconds: 0
   speakerName: Captain
   portrait: {fileID: 0}
   lines:
   - "This is your profile \u2014 every game mode and its intensity tiers live here."
-  - Tiers 1 to 3 are open right away. Reach INTENSITY 4 in a mode to unlock the next
-    one on your quest track!
+  - "Tap the ARCADE button below. Your first real hypersea experience\n is waiting!"
 --- !u!114 &-8543043296051100338
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -40,7 +39,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForDriftNode
   nodeId: 62bc32852c844642b884e692791eebbf
   displayName: 'Wait: Drift Both Ways'
-  nodeEnabled: 1
+  nodeEnabled: 0
   graphPosition: {x: 320, y: 400}
   outputs:
   - portName: next
@@ -98,8 +97,28 @@ MonoBehaviour:
   speakerName: Captain
   portrait: {fileID: 0}
   lines:
-  - "Nicely flown, pilot \u2014 you've got the basics down."
-  - Tap the ARCADE button below. Your first real match is waiting!
+  - Nicely flown, pilot!You've got the basics down.
+  - Tap the ARCADE button below. Your first real hypersea experience is waiting!
+--- !u!114 &-5565553608570610728
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: QuestDialogueNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: 22266fc0e2a14456a92d8a0d2710790b
+  displayName: Dialogue
+  nodeEnabled: 1
+  graphPosition: {x: 1119.8318, y: 46.098907}
+  outputs: []
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines: []
 --- !u!114 &-5450907927303977473
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -169,29 +188,6 @@ MonoBehaviour:
   panelKey: 
   minDisplaySeconds: 4
   hideOnAdvance: 1
---- !u!114 &-3791404713003577815
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
-  m_Name: 'CTA: Play CC (Intensity 3)'
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
-  nodeId: 2a059f439f1441cdb1f3f1f9e32f05f4
-  displayName: 'CTA: Play CC (Intensity 3)'
-  nodeEnabled: 1
-  graphPosition: {x: 1100, y: 400}
-  outputs:
-  - portName: next
-    targetNodeId: e58b35aa533344959293782468c37a77
-    delaySeconds: 0
-  target: 433
-  completionAction: 400
-  dependencies: 64000000
 --- !u!114 &-3657544113375997979
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -207,7 +203,7 @@ MonoBehaviour:
   nodeId: 4e9d130b72e147619021272ddaacfec8
   displayName: 'CTA: Profile Screen'
   nodeEnabled: 1
-  graphPosition: {x: 1100, y: 40}
+  graphPosition: {x: 1105.564, y: 139.03894}
   outputs:
   - portName: next
     targetNodeId: 4d51e7e97c7a48a9a4330fdf253f3952
@@ -288,7 +284,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestShowInstructionNode
   nodeId: cd1a84021b8f4c489211a176dc040455
   displayName: 'Prompt: Drift'
-  nodeEnabled: 1
+  nodeEnabled: 0
   graphPosition: {x: 320, y: 280}
   outputs:
   - portName: next
@@ -319,7 +315,7 @@ MonoBehaviour:
   - portName: next
     targetNodeId: b55978264a4149d1a70fd4d2a46ebcd9
     delaySeconds: 0
-  text: "Skim close over prisms to charge your boost \u2014 skim 10!"
+  text: Skim close over prisms to charge your boost
   haptic: 0
   panelKey: skim
   minDisplaySeconds: 0
@@ -411,14 +407,11 @@ MonoBehaviour:
   - {fileID: -4537693602846388663}
   - {fileID: -3657544113375997979}
   - {fileID: -8744157475343824200}
-  - {fileID: 7877134560409023783}
-  - {fileID: -3791404713003577815}
-  - {fileID: 1699838421953932556}
-  - {fileID: 6463605892428612368}
   - {fileID: -4394247607235897517}
   - {fileID: -3332032966003280309}
-  canvasScroll: {x: -349.04016, y: 111.91098}
-  canvasZoom: 1.0904868
+  - {fileID: -5565553608570610728}
+  canvasScroll: {x: -661.35944, y: 209.84442}
+  canvasZoom: 0.8986365
 --- !u!114 &355363919843681768
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -442,31 +435,8 @@ MonoBehaviour:
   clearConstraints: 0
   allowedMode: 35
   forcedIntensity: 1
-  forceMaxPlayers: 1
+  forcedPlayerCount: 2
   forcedDomainCount: 3
---- !u!114 &1699838421953932556
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1a60d2f0b34c468d9112e27ffd7c2a6c, type: 3}
-  m_Name: 'Wait: CC Played @3'
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForGamePlayedNode
-  nodeId: e58b35aa533344959293782468c37a77
-  displayName: 'Wait: CC Played @3'
-  nodeEnabled: 1
-  graphPosition: {x: 1100, y: 520}
-  outputs:
-  - portName: next
-    targetNodeId: 240d7b7c10a64038b56ddec51abda335
-    delaySeconds: 1
-  filterByMode: 1
-  expectedMode: 35
-  minIntensity: 3
 --- !u!114 &3330411192172384795
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -582,31 +552,6 @@ MonoBehaviour:
     delaySeconds: 0.8
   acceptedInputs: 05000000
   successHaptic: 1
---- !u!114 &6463605892428612368
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0bab776763f0423199d20750edaec3af, type: 3}
-  m_Name: Clear Arcade Funnel
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestSetArcadeConstraintsNode
-  nodeId: 240d7b7c10a64038b56ddec51abda335
-  displayName: Clear Arcade Funnel
-  nodeEnabled: 1
-  graphPosition: {x: 1360, y: 40}
-  outputs:
-  - portName: next
-    targetNodeId: 57011872b3b64f6790bb1970cdac59fc
-    delaySeconds: 0
-  clearConstraints: 1
-  allowedMode: 35
-  forcedIntensity: 2
-  forceMaxPlayers: 1
-  forcedDomainCount: 3
 --- !u!114 &6546589118911501971
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -644,7 +589,7 @@ MonoBehaviour:
   nodeId: 722dc64991ac42e8b0cdfac3daa82652
   displayName: 'Prompt: Speed Up'
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 160}
+  graphPosition: {x: 58.722473, y: 160}
   outputs:
   - portName: next
     targetNodeId: 751c8dc6b91e44d6bd8c9a4946f3ca0a
@@ -654,31 +599,6 @@ MonoBehaviour:
   panelKey: speed_up
   minDisplaySeconds: 0
   hideOnAdvance: 0
---- !u!114 &7877134560409023783
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0bab776763f0423199d20750edaec3af, type: 3}
-  m_Name: 'Arcade Funnel: CC @ Intensity 3'
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestSetArcadeConstraintsNode
-  nodeId: ad63c3d249ea4c759197eb6fe5e7596f
-  displayName: 'Arcade Funnel: CC @ Intensity 3'
-  nodeEnabled: 1
-  graphPosition: {x: 1100, y: 280}
-  outputs:
-  - portName: next
-    targetNodeId: 2a059f439f1441cdb1f3f1f9e32f05f4
-    delaySeconds: 0
-  clearConstraints: 0
-  allowedMode: 35
-  forcedIntensity: 3
-  forceMaxPlayers: 1
-  forcedDomainCount: 3
 --- !u!114 &8129599645032818001
 MonoBehaviour:
   m_ObjectHideFlags: 0
