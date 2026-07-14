@@ -153,7 +153,8 @@ namespace CosmicShore.Gameplay
         [ReadOnly] public NativeArray<float3> Centers;
         public int EntryCount;
         public int CenterCount;
-        public float RadiusSq;
+        public float NearRadiusSq; // enter threshold: a FAR prism becomes near inside this
+        public float FarRadiusSq;  // exit threshold (≥ NearRadiusSq): a NEAR prism becomes far outside this
         public bool Reconcile;
         public NativeList<int> BecameNear;
         public NativeList<int> BecameFar;
@@ -165,17 +166,26 @@ namespace CosmicShore.Gameplay
                 var p = Prisms[i];
                 if ((p.Flags & PrismFlags.JobSkipMask) != PrismFlags.JobPassValue) continue;
 
+                bool wasNear = (p.Flags & PrismFlags.LodNear) != 0;
+
+                // Hysteresis: entering the bubble uses the tight radius, leaving it
+                // the wide one — prisms in the annulus keep their prior state, so
+                // the boundary of a MOVING focus stops emitting near/far flip
+                // transitions (and collider re-toggles) every tick. A reconcile has
+                // no trusted prior state: classify by the wide radius (collider-on
+                // is the safe direction).
+                float thresholdSq = (Reconcile || wasNear) ? FarRadiusSq : NearRadiusSq;
+
                 bool near = false;
                 for (int cI = 0; cI < CenterCount; cI++)
                 {
-                    if (math.distancesq(p.Position, Centers[cI]) <= RadiusSq)
+                    if (math.distancesq(p.Position, Centers[cI]) <= thresholdSq)
                     {
                         near = true;
                         break; // near at least one focus — no need to test the rest
                     }
                 }
 
-                bool wasNear = (p.Flags & PrismFlags.LodNear) != 0;
                 if (near == wasNear && !Reconcile) continue;
 
                 if (near)
@@ -737,6 +747,10 @@ namespace CosmicShore.Gameplay
         /// (<see cref="PrismFlags.LodNear"/>) and emits only the prisms whose
         /// near/far state CHANGED since the last pass — or the full classification
         /// when <paramref name="reconcile"/> is true (first sweep / LOD re-enable).
+        /// <paramref name="enterRadius"/>/<paramref name="exitRadius"/> form the
+        /// hysteresis band: far→near inside enter, near→far outside exit, prior
+        /// state preserved in the annulus (kills boundary flapping around moving
+        /// foci — the transition count is what the managed apply pays for).
         /// Replaces the managed 8000-entries-per-frame sliced scan, whose per-entry
         /// interop cost made every sweep O(population) on the main thread
         /// (5.5 ms slice frames at 25k prisms); the Burst scan is ~0.1-0.3 ms for
@@ -747,7 +761,7 @@ namespace CosmicShore.Gameplay
         /// slot is re-registered (Register writes fresh flags), so slot reuse can
         /// at worst cost one idempotent extra transition on the next sweep.
         /// </summary>
-        public void RunLodClassification(List<Vector3> centers, float radius, bool reconcile,
+        public void RunLodClassification(List<Vector3> centers, float enterRadius, float exitRadius, bool reconcile,
             List<Prism> becameNear, List<Prism> becameFar)
         {
             becameNear.Clear();
@@ -767,13 +781,15 @@ namespace CosmicShore.Gameplay
             if (_lodBecameNear.Capacity < _highWaterMark) _lodBecameNear.Capacity = _highWaterMark;
             if (_lodBecameFar.Capacity < _highWaterMark) _lodBecameFar.Capacity = _highWaterMark;
 
+            float farRadius = Mathf.Max(enterRadius, exitRadius);
             new LodClassifyJob
             {
                 Prisms = _spatial,
                 Centers = _lodCenters,
                 EntryCount = _highWaterMark,
                 CenterCount = centers.Count,
-                RadiusSq = radius * radius,
+                NearRadiusSq = enterRadius * enterRadius,
+                FarRadiusSq = farRadius * farRadius,
                 Reconcile = reconcile,
                 BecameNear = _lodBecameNear,
                 BecameFar = _lodBecameFar,
