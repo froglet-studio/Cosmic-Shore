@@ -9,7 +9,7 @@ Setup Procedure:
 
 Test Procedure:
 1. **Enter Play Mode** in the scene you want to measure
-2. **Click "Start Benchmark"** — results appear automatically when it finishes
+2. **Click "Start Recording"** — results appear automatically when it finishes
 
 Every run is saved to disk. You can compare any two runs in the History tab.
 
