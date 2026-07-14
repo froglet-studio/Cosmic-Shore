@@ -231,8 +231,14 @@ How a run plays:
   re-engage) so the lava-lamp autopilot can never drift through it and latch a checkpoint nobody
   rode. The trail-on **cone** appears only on the stroke's START gate; the final milestone ring
   carries the trail-off **jack** in its centre. Rings fold away as they're swept and the next
-  blooms in (continuity law). A **perfect ride** (hugging the curve inside ~1.2× reach) builds
-  `_rideGlow` and brightens the guide.
+  blooms in (continuity law). Wayfinding uses the game's **standard `ObjectiveIndicator`** (the
+  edge-of-screen arrow every mode shares, not a bespoke guide line): the runner implements
+  `IObjectiveProvider` via a persistent objective anchor (the gate while awaiting it, the current
+  ride ring while painting — the anchor outlives the ring folding on disengage), and ONE shared
+  arrow is lazily created under the menu HUD container, routed through `PaintingObjectiveRelay`
+  to whichever runner holds the brush. The arrow hides itself while the target is on screen, so
+  the world rings stay the primary guidance. (The old guide line's perfect-ride glow retired with
+  it; re-express that juice in-world — e.g. ring emission — in the tuning pass.)
 - **Progress, pause, resume.** Progress is stroke-granular. Re-flying the station benches /
   resumes the run ("put the brush down"); progress also persists across sessions
   (`PaintingProgressStore`, the FavoriteSystem `DataAccessor` JSON pattern — completed strokes

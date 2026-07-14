@@ -141,9 +141,13 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
   descriptions quoted, dead toolkit API pruned, `TorusKnotPreset` reuses `Tk.TorusKnot`.
   Deferred with rationale:
   - *Ride-feel constants in code* (checkpoint spacing `max(90, 0.085·diag)`, 28° turn limit,
-    milestone radius `max(18, reach·1.8)`, glow corridor `1.2·reach`): derived heuristics, not
-    designer knobs yet — promote to `PaintingToyDefinitionSO` fields when the in-editor tuning
-    pass wants to move them (CLAUDE.md config-separation).
+    milestone radius `max(18, reach·1.8)`): derived heuristics, not designer knobs yet —
+    promote to `PaintingToyDefinitionSO` fields when the in-editor tuning pass wants to move
+    them (CLAUDE.md config-separation).
+  - *Perfect-ride juice lost its visual* — the guide line (and its `_rideGlow` brightening) was
+    replaced by the standard `ObjectiveIndicator` per the prompter; re-express the perfect-ride
+    reward as in-world juice (milestone-ring emission/pulse when hugging the curve) in the
+    tuning pass.
   - *Milestone ring create/destroy per checkpoint*: one small GameObject per ~90u of flight —
     same lifecycle as gates; pool only if the profiler pass flags it.
   - *`TrySpawnRestoredPrism` mirrors `VesselPrismController.CreateBlock`* (0.6s collider window
