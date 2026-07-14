@@ -183,6 +183,13 @@ namespace CosmicShore.Editor
             var unlockNav = Add<QuestLockNavigationNode>(g, "Unlock Nav (Hangar + Profile)");
             unlockNav.unlock = true;
 
+            var profileDialogue = Add<QuestDialogueNode>(g, "Dialogue: Go To Profile");
+            profileDialogue.lines = new List<string>
+            {
+                "Great flying out there, pilot — your first match is in the books!",
+                "Tap the PROFILE button below. Your quest track is waiting for you.",
+            };
+
             var ctaProfile = Add<QuestHighlightCTANode>(g, "CTA: Profile Screen");
             ctaProfile.target = CallToActionTargetType.ProfileMenu;
             ctaProfile.completionAction = UserActionType.ViewProfileMenu;
@@ -218,7 +225,7 @@ namespace CosmicShore.Editor
                 speedUpPrompt, waitSpeedUp, slowDownPrompt, waitSlowDown, lookPrompt, waitLook,
                 driftPrompt, waitDrift, skimPrompt, waitSkim, exitPrompt, exit,
                 lockNav, arcadeDialogue, constraintsCC1, ctaArcade, ctaCC1, playedCC1,
-                loosenFunnel, unlockNav, ctaProfile, mapsDialogue, ctaCC3, playedCC3,
+                loosenFunnel, unlockNav, profileDialogue, ctaProfile, mapsDialogue, ctaCC3, playedCC3,
                 clearFunnel, socialTour, end);
 
             // Pacing: breathing room between beats (editable per arrow in the editor).

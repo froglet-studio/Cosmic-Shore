@@ -44,5 +44,22 @@ namespace CosmicShore.Core
             svc.OnProgressionChanged += OnChanged;
             ctx.AddCleanup(() => svc.OnProgressionChanged -= OnChanged);
         }
+
+        /// <summary>
+        /// Force-advance performs the REAL unlock (same write the quest track's CLAIM makes),
+        /// so the arcade card unlocks and downstream play gates are actually reachable.
+        /// </summary>
+        public override void DebugForceSatisfy(QuestRuntimeContext ctx)
+        {
+            var svc = GameModeProgressionService.Instance;
+            if (svc == null)
+            {
+                Debug.LogWarning("[Quest] Force-satisfy: GameModeProgressionService not alive — mode not unlocked.");
+                return;
+            }
+
+            svc.UnlockMode(mode);
+            Debug.Log($"[Quest] Force-satisfy: {mode} unlocked (as if claimed).");
+        }
     }
 }

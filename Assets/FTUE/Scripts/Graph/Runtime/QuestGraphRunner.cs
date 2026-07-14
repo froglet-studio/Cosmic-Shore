@@ -356,6 +356,19 @@ namespace CosmicShore.Core
             var node = _current;
             string port = node.OutputPorts.Count > 0 ? node.OutputPorts[0] : QuestPorts.Next;
             Debug.Log($"[Quest] TEST force-advance past '{node.displayName}' ({node.NodeTypeLabel}).");
+
+            // Apply the REAL state the node was waiting for (unlock the tier / the mode) so
+            // downstream systems behave as if the player earned it. May advance the node by
+            // itself via the event it was listening to — the Advance below then no-ops.
+            try
+            {
+                node.DebugForceSatisfy(_ctx);
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogException(e);
+            }
+
             Advance(node, port);
         }
 

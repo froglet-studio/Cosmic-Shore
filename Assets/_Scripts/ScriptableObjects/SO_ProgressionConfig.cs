@@ -30,7 +30,9 @@ namespace CosmicShore.ScriptableObjects
         [Header("Default Unlocks")]
         [Tooltip("Game modes that are ALWAYS unlocked regardless of quest progress " +
                  "(e.g. Tournament, a session-level meta that is not part of the chain).")]
-        public List<GameModes> alwaysUnlockedModes = new() { GameModes.Tournament };
+        // Maelstrom (Tournament) is now part of the quest chain — claimed after Joust —
+        // so nothing is always-unlocked by default anymore.
+        public List<GameModes> alwaysUnlockedModes = new();
 
         [Tooltip("If true, the first quest in the quest list is always unlocked " +
                  "('the first game is free'). This is independent of the always-unlocked list.")]

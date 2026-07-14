@@ -12,8 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f7c775382c514b72a714f024bdb1f3a5, type: 3}
   m_Name: ProgressionConfig
   m_EditorClassIdentifier:
-  alwaysUnlockedModes:
-  - 36
+  alwaysUnlockedModes: []
   firstQuestAlwaysUnlocked: 1
   defaultMaxIntensity: 3
   maxIntensity: 4

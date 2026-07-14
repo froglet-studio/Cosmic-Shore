@@ -48,5 +48,27 @@ namespace CosmicShore.Core
             svc.OnIntensityUnlocked += OnUnlocked;
             ctx.AddCleanup(() => svc.OnIntensityUnlocked -= OnUnlocked);
         }
+
+        /// <summary>
+        /// Force-advance applies the REAL milestone: the tier is actually unlocked and the
+        /// mode's quest is completed, so the profile quest track offers the CLAIM exactly as
+        /// if the player had earned intensity 4 — no Froglet Toolbox needed while testing.
+        /// </summary>
+        public override void DebugForceSatisfy(QuestRuntimeContext ctx)
+        {
+            var svc = GameModeProgressionService.Instance;
+            if (svc == null)
+            {
+                Debug.LogWarning("[Quest] Force-satisfy: GameModeProgressionService not alive — intensity not written.");
+                return;
+            }
+
+            svc.DebugSetMaxIntensity(mode, intensityTier);
+            // Tier 4 = the mode's quest milestone: evaluate it so the quest is MARKED completed
+            // and the claim button lights up on the quest track (IntensityUnlocked quests
+            // evaluate against the max unlocked tier we just wrote).
+            svc.ReportQuestStat(mode, 0f);
+            Debug.Log($"[Quest] Force-satisfy: {mode} max intensity → {intensityTier}, quest evaluated for completion.");
+        }
     }
 }

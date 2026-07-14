@@ -90,6 +90,14 @@ namespace CosmicShore.Core
         public abstract IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance);
 
         /// <summary>
+        /// TESTING hook, called by the runner's force-advance right before skipping this node:
+        /// apply the REAL state this node was waiting for (unlock the tier, unlock the mode)
+        /// so downstream systems — the profile claim flow, card locks — behave as if the
+        /// player earned it. Default: nothing (pure waits/presentation need no state).
+        /// </summary>
+        public virtual void DebugForceSatisfy(QuestRuntimeContext ctx) { }
+
+        /// <summary>
         /// Author-time validation. Append human-readable problems to <paramref name="errors"/>
         /// (missing references, unreachable targets). Called by the graph editor, never at runtime.
         /// </summary>
