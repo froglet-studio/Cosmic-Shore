@@ -360,7 +360,11 @@ namespace CosmicShore.Editor
                 }
             }
 
-            if (GUILayout.Button("Save", EditorStyles.toolbarButton, GUILayout.Width(56)))
+            bool unsaved = HasUnsavedEdits();
+            if (GUILayout.Button(new GUIContent(unsaved ? "Save*" : "Save",
+                    unsaved ? "Unsaved graph edits (text, positions, wiring) — write them to disk so git sees them."
+                            : "All graph edits are on disk."),
+                    EditorStyles.toolbarButton, GUILayout.Width(56)))
                 SaveAll();
 
             GUILayout.Space(6);
@@ -394,7 +398,7 @@ namespace CosmicShore.Editor
                 {
                     Undo.RecordObject(quest, "Toggle Quest Enabled");
                     quest.questEnabled = qEnabled;
-                    EditorUtility.SetDirty(quest);
+                    SaveToggleToDisk(quest);
                 }
 
                 var prevQuestCol = GUI.color;
@@ -423,7 +427,7 @@ namespace CosmicShore.Editor
                         {
                             Undo.RecordObject(phase, "Toggle Phase Enabled");
                             phase.phaseEnabled = pEnabled;
-                            EditorUtility.SetDirty(phase);
+                            SaveToggleToDisk(phase);
                         }
                     }
 
@@ -700,7 +704,7 @@ namespace CosmicShore.Editor
             {
                 Undo.RecordObject(n, "Toggle Node Enabled");
                 n.nodeEnabled = nEnabled;
-                EditorUtility.SetDirty(n);
+                SaveToggleToDisk(n);
                 MarkValidationDirty();
             }
             GUI.Label(new Rect(r.x + 24, r.y + 3, r.width - 68, HeaderH - 4), card.header, QuestGraphStyles.NodeHeader);
@@ -1077,7 +1081,7 @@ namespace CosmicShore.Editor
                 {
                     Undo.RecordObject(_selectedNode, "Toggle Node Enabled");
                     _selectedNode.nodeEnabled = nodeOn;
-                    EditorUtility.SetDirty(_selectedNode);
+                    SaveToggleToDisk(_selectedNode);
                     MarkValidationDirty();
                 }
 
@@ -1582,7 +1586,7 @@ namespace CosmicShore.Editor
             {
                 Undo.RecordObject(node, "Toggle Node Enabled");
                 node.nodeEnabled = !node.nodeEnabled;
-                EditorUtility.SetDirty(node);
+                SaveToggleToDisk(node);
                 MarkValidationDirty();
             });
             menu.AddItem(new GUIContent("Set As Entry Node"), _graph.entryNode == node, () =>
@@ -1632,6 +1636,31 @@ namespace CosmicShore.Editor
             _graph.canvasScroll = (_canvasRect.size / Zoom - bounds) * 0.5f - min;
             EditorUtility.SetDirty(_graph);
             Repaint();
+        }
+
+        /// <summary>
+        /// Enable/disable toggles are the tool's TEST-HARNESS state and must land in git the
+        /// moment they're flipped — SetDirty alone only changes the in-memory asset, and a
+        /// toggle that never hits disk silently vanishes from version control.
+        /// </summary>
+        static void SaveToggleToDisk(UnityEngine.Object obj)
+        {
+            EditorUtility.SetDirty(obj);
+            AssetDatabase.SaveAssets();
+        }
+
+        /// <summary>True when the selected quest/phase/nodes have unsaved (in-memory) edits.</summary>
+        bool HasUnsavedEdits()
+        {
+            if (_quest != null && EditorUtility.IsDirty(_quest)) return true;
+            if (_graph != null)
+            {
+                if (EditorUtility.IsDirty(_graph)) return true;
+                foreach (var n in _graph.nodes)
+                    if (n != null && EditorUtility.IsDirty(n))
+                        return true;
+            }
+            return false;
         }
 
         void SaveAll()
