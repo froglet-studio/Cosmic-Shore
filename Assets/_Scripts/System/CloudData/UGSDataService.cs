@@ -237,10 +237,12 @@ namespace CosmicShore.Core
         {
             // Symmetric with the gated hangar WRITE paths (VesselUnlockSystem): while the
             // progression backend gate is closed, a stale cloud record must not resurrect
-            // vessel unlocks on every sign-in — unlocks stay session-local.
+            // vessel unlocks on every sign-in — instead, normalize to the STARTER set so a
+            // fresh session always begins with only the Squirrel flyable (SO_Vessel lock
+            // state is runtime-mutable and lingers across editor play sessions otherwise).
             if (!ProgressionBackendGate.CloudEnabled)
             {
-                CSDebug.Log("[UGSDataService] ProgressionBackendGate closed — skipping hangar→vessel unlock sync.");
+                ApplyStarterUnlocks();
                 return;
             }
 
@@ -255,6 +257,27 @@ namespace CosmicShore.Core
             }
 
             CSDebug.Log($"[UGSDataService] Synced hangar unlock state for {vesselList.VesselList.Count} vessels.");
+        }
+
+        /// <summary>
+        /// Local-only testing baseline: the Squirrel (the FTUE / menu vessel) is unlocked,
+        /// every other vessel is locked until earned. Applied at sign-in while the backend
+        /// gate is closed, and by the quest editor's full progress reset.
+        /// </summary>
+        public void ApplyStarterUnlocks()
+        {
+            if (vesselList == null) return;
+
+            foreach (var vessel in vesselList.VesselList)
+            {
+                if (vessel == null) continue;
+                if (vessel.Class == CosmicShore.Data.VesselClassType.Squirrel)
+                    vessel.Unlock();
+                else
+                    vessel.Lock();
+            }
+
+            CSDebug.Log("[UGSDataService] Backend gate closed — vessel unlocks normalized to the starter set (Squirrel only).");
         }
     }
 }

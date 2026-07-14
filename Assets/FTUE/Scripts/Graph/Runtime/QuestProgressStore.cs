@@ -140,6 +140,10 @@ namespace CosmicShore.Core
             // The arcade funnel persists with the cursor — a cursor reset without a
             // constraints reset would leave the arcade locked down with no quest driving it.
             QuestArcadeConstraints.Clear();
+
+            // Same for the played-game records: leaving them would auto-pass every
+            // WaitForGamePlayed gate on the replay.
+            QuestPlayRecorder.ResetAll();
         }
 
         /// <summary>
@@ -177,8 +181,21 @@ namespace CosmicShore.Core
             if (progression != null) progression.ResetAllProgress();
             else cloud = false;
 
-            var vesselList = Resources.FindObjectsOfTypeAll<SO_VesselList>();
-            VesselUnlockSystem.ResetAllUnlocks(vesselList != null && vesselList.Length > 0 ? vesselList[0] : null);
+            var vesselLists = Resources.FindObjectsOfTypeAll<SO_VesselList>();
+            var vesselList = vesselLists != null && vesselLists.Length > 0 ? vesselLists[0] : null;
+            VesselUnlockSystem.ResetAllUnlocks(vesselList);
+
+            // ResetAllUnlocks locks EVERYTHING — including the starter. A locked Squirrel
+            // empties the configure modal's available-ship list and its null-ship fallback
+            // silently launches a Dolphin, so restore the starter immediately.
+            if (vesselList != null)
+            {
+                foreach (var vessel in vesselList.VesselList)
+                {
+                    if (vessel != null && vessel.Class == CosmicShore.Data.VesselClassType.Squirrel)
+                        vessel.Unlock();
+                }
+            }
 
             // Vessel reset only marks the hangar repo dirty — flush so it lands in the backend now.
             if (ProgressionBackendGate.CloudEnabled)

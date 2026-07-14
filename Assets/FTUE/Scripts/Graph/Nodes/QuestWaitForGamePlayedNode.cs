@@ -42,18 +42,30 @@ namespace CosmicShore.Core
 
             // Resume path: the game END happens in the game scene, but this runner lives in
             // Menu_Main — the OnMiniGameEnd raise is long gone by the time the menu reloads and
-            // the quest resumes on this node. The progression service (DontDestroyOnLoad) heard
-            // it and recorded the play, so consult its per-intensity play counts first.
-            if (filterByMode && GameModeProgressionService.Instance != null)
+            // the quest resumes on this node. Two independent records cover it:
+            //  1. QuestPlayRecorder — static PlayerPrefs stamp taken at OnMiniGameEnd time
+            //     (needs no scene object, so it can never be missing).
+            //  2. GameModeProgressionService play counts (when the service is alive).
+            if (filterByMode)
             {
-                var svc = GameModeProgressionService.Instance;
-                for (int intensity = Mathf.Max(1, minIntensity); intensity <= 4; intensity++)
+                if (QuestPlayRecorder.HasPlayed(expectedMode, minIntensity))
                 {
-                    if (svc.GetIntensityPlayCount(expectedMode, intensity) > 0)
+                    Debug.Log($"[Quest] WaitForGamePlayedNode: {expectedMode} already played (recorded @ ≥{Mathf.Max(1, minIntensity)}) — advancing (resume).");
+                    advance(QuestPorts.Next);
+                    yield break;
+                }
+
+                if (GameModeProgressionService.Instance != null)
+                {
+                    var svc = GameModeProgressionService.Instance;
+                    for (int intensity = Mathf.Max(1, minIntensity); intensity <= 4; intensity++)
                     {
-                        Debug.Log($"[Quest] WaitForGamePlayedNode: {expectedMode} already played @ intensity {intensity} — advancing (resume).");
-                        advance(QuestPorts.Next);
-                        yield break;
+                        if (svc.GetIntensityPlayCount(expectedMode, intensity) > 0)
+                        {
+                            Debug.Log($"[Quest] WaitForGamePlayedNode: {expectedMode} already played @ intensity {intensity} — advancing (resume).");
+                            advance(QuestPorts.Next);
+                            yield break;
+                        }
                     }
                 }
             }

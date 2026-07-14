@@ -242,8 +242,9 @@ namespace CosmicShore.Editor
             {
                 for (int i = 0; i < btn.onClick.GetPersistentEventCount(); i++)
                 {
-                    if (btn.onClick.GetPersistentTarget(i) is not ScreenSwitcher) continue;
-
+                    // Match by method NAME only — some nav buttons route through wrapper
+                    // components rather than the ScreenSwitcher itself, and the OnClick*Nav
+                    // naming is distinctive enough.
                     string method = btn.onClick.GetPersistentMethodName(i);
                     if (string.IsNullOrEmpty(method) || !method.StartsWith("OnClick") || !method.EndsWith("Nav"))
                         continue;
