@@ -25,6 +25,9 @@ at runtime via `Resources.Load`.
 - **`0` = auto/default, `> 0` = explicit count** (same semantic the old field had, moved into the tool):
   - **HexRace / Crystal Capture** — `0` → auto-calc from the track waypoints (then 39).
   - **Joust** — `0` → `EndConditionOverridesSO.DefaultJoustCount` (3).
+  - **Brood Rush (Nucleus Rush)** — `0` → `EndConditionOverridesSO.DefaultNucleusRushWaveTarget` (3):
+    claimed fauna waves a domain needs to win (resolved by `NucleusRushWaveTurnMonitor.StartMonitor`
+    → `GameDataSO.GoalTargetCount`, synced by NetworkVariable).
   - **Maelstrom** — `0` → `EndConditionOverridesSO.DefaultMaelstromWinTarget` (6). This is the
     "race to N" win target: the first DOMAIN whose cumulative `{2,1,0}` placement points reach it
     wins the shuffle. NOT a per-turn count — it ends the whole tournament.
@@ -64,12 +67,13 @@ networking.
 
 1. Unity → **Tools ▸ Cosmic Shore ▸ End Game Conditions** (auto-creates the asset on first open).
 2. Set **HexRace — Crystal Count**, **Crystal Capture — Crystal Count**, **Joust — Joust Count**,
-   and/or **Maelstrom — Win Target (points)**. Leave `0` for auto/default. The window shows the
+   **Maelstrom — Win Target (points)**, and/or **Brood Rush — Wave Target** (fauna waves a domain
+   must claim to win Nucleus Rush; one wave per 30s spawn cycle). Leave `0` for auto/default. The window shows the
    effective value and saves on edit.
 3. Commit `Assets/Resources/EndConditionOverrides.asset` (and its `.meta`).
 
 Defaults shipped (match the pre-tool scene/asset values, so behavior is unchanged until edited):
-HexRace `0` (auto), Crystal Capture `20`, Joust `3`, Maelstrom `6`.
+HexRace `0` (auto), Crystal Capture `20`, Joust `3`, Maelstrom `6`, Brood Rush `3`.
 
 ## Live vs. Build values (don't ship a test config)
 

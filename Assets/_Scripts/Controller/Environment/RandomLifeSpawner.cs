@@ -2,6 +2,7 @@
 using CosmicShore.Utility;
 using UnityEngine;
 using CosmicShore.Data;
+using CosmicShore.ScriptableObjects;
 using System.Linq;
 
 namespace CosmicShore.Gameplay
@@ -142,20 +143,43 @@ namespace CosmicShore.Gameplay
                 if (!host) yield break;
 
                 Domains color = host.ControllingDomain;
-                int deficit = FaunaReproductionRules.SeedSpawnCount(
-                    host.GetLiveFaunaCount(faunaCfg),
-                    Mathf.Max(1, faunaCfg.PopulationSize),
-                    faunaCfg.MaxLivePopulation);
+
+                // Seeder (default): top the species back up to its seed floor.
+                // Full-wave (SeedFullWaveEveryTick): every tick births a fresh wave of
+                // PopulationSize in the controlling color, clamped by the hard cap —
+                // wave-scored modes (Brood Rush) ride this so each 30s cycle visibly
+                // hatches a brood. Population stays starvation-bounded either way.
+                int toSpawn = spawnProfile.SeedFullWaveEveryTick
+                    ? FaunaReproductionRules.WaveSpawnCount(
+                        host.GetLiveFaunaCount(faunaCfg),
+                        Mathf.Max(1, faunaCfg.PopulationSize),
+                        faunaCfg.MaxLivePopulation)
+                    : FaunaReproductionRules.SeedSpawnCount(
+                        host.GetLiveFaunaCount(faunaCfg),
+                        Mathf.Max(1, faunaCfg.PopulationSize),
+                        faunaCfg.MaxLivePopulation);
 
                 bool preyAvailable = FaunaReproductionRules.PreyAvailable(
                     isPredator, host.GetLiveHerbivoreCount(), host.OpposingVolume(color), spawnProfile.FaunaFoodFloor);
 
-                if (deficit > 0 && preyAvailable)
-                    SpawnFaunaPopulation(host, runtime, faunaCfg, color, deficit);
+                int spawned = 0;
+                if (toSpawn > 0 && preyAvailable)
+                {
+                    SpawnFaunaPopulation(host, runtime, faunaCfg, color, toSpawn);
+                    spawned = toSpawn;
+                }
 
                 // Reset the spawn-cycle ring each period whether or not seeding happened —
                 // the ring reflects the fixed timer cadence, not the food/deficit gates.
                 host.RecordFaunaSpawn();
+
+                // Publish the wave tick: domain + whether that domain is a genuine
+                // nucleus claim (node control). Scoring systems (Brood Rush) listen on
+                // the runtime SO's channel; one event per species loop per period, so
+                // wave-scored modes author exactly ONE fauna species in their profile.
+                bool nucleusControlled = host.TryGetNucleusClaim(out var claimant) && claimant == color;
+                runtime.OnFaunaWaveSpawned.Raise(
+                    new FaunaWaveData(host.ID, color, spawned, nucleusControlled));
 
                 yield return new WaitForSeconds(period);
             }

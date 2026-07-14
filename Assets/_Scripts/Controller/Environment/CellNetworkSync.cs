@@ -54,7 +54,15 @@ namespace CosmicShore.Gameplay
             // Cell lines up with server immediately rather than waiting for the next
             // server-side mirror tick.
             if (!IsServer && cell)
+            {
+                // Pin the client's DominantDomain read to the server's answer — fauna
+                // spawn color and node-control consumers must match the server even
+                // when client-local trail reconstruction drifts near the nucleus
+                // boundary. Cell.Update keeps recomputing phase locally; the pinned
+                // dominant read overrides only the control answer.
+                cell.SetReplicatedDominantDomain(_netDominantDomain.Value);
                 cell.ApplyAuthoritativePhaseAndDomain(_netPhase.Value, _netDominantDomain.Value);
+            }
 
             _nextMirrorAt = 0f;
         }
@@ -63,6 +71,11 @@ namespace CosmicShore.Gameplay
         {
             _netPhase.OnValueChanged -= OnNetPhaseChanged;
             _netDominantDomain.OnValueChanged -= OnNetDominantDomainChanged;
+
+            // Release the pinned control read — after despawn the Cell is local-only
+            // again (single-player fallback semantics).
+            if (!IsServer && cell)
+                cell.SetReplicatedDominantDomain(null);
         }
 
         void Update()
@@ -96,7 +109,11 @@ namespace CosmicShore.Gameplay
         void OnNetDominantDomainChanged(Domains _, Domains next)
         {
             if (IsServer) return;
-            if (cell) cell.ApplyAuthoritativePhaseAndDomain(_netPhase.Value, next);
+            if (cell)
+            {
+                cell.SetReplicatedDominantDomain(next);
+                cell.ApplyAuthoritativePhaseAndDomain(_netPhase.Value, next);
+            }
         }
     }
 }

@@ -25,8 +25,11 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   ecology-specific: respect it everywhere.
 - **No imposed death.** No decay, lifespan, or fixed-period despawn timers. Populations are
   bounded by **consumption + starvation**, never an imposed clock. (Repeatedly rejected.)
-- **No domain asymmetry.** Fauna spawn in **one color — the cell's controlling color** — and
-  hunt opposing mass. Never cross-domain / prey-weighted / per-domain-biased spawning.
+- **No domain asymmetry.** Fauna spawn in **one color — the cell's controlling color**. Never
+  cross-domain / prey-weighted / per-domain-biased spawning. The herbivore DIET is spatial in
+  nucleus cells (see "Volume is the spine" below): outside the nucleus they graze **any**
+  domain's mass voraciously; inside they eat **nothing**. Cells without a nucleus keep the
+  legacy opposing-mass diet.
 - **Starvation = wither-to-crystal.** A starving (or predated) creature withers from its extremity
   spindles inward — a shark's fins / a brittlestar's arms evaporate *before* the core body
   (farthest-from-centre first, emergent from geometry) — and leaves a collectible elemental crystal.
@@ -34,11 +37,20 @@ outcome is optimization, not life). Use the `/ecology` skill for any change here
   economy" that makes the system NASA-credible). Sealed into `Fauna.Die` so no fauna can bypass it.
 - **Volume is the spine.** Phase, dominant domain, prey, HUD all key off per-domain **VOLUME**
   (`Cell.LiveVolume`), not prism count. Count is a rare frenzy/perf backstop only.
+  **Node control is the NUCLEUS**: in a cell with a nucleus, `DominantDomain` reads only the
+  per-domain ENVIRONMENT volume laid **inside the nucleus** (the territorial claim — a fauna
+  sanctuary players contest with abilities + out-laying volume); everything **outside** is the
+  voraciously-grazed feeding ground and never sways control. The fauna spawner ticks a fixed
+  **30s** wave clock (`BaseFaunaSpawnTime`), spawning each wave in the controlling color and
+  raising `CellRuntimeDataSO.OnFaunaWaveSpawned` — the heartbeat Brood Rush scores on. See
+  `Docs/ECOSYSTEM.md §13` + `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`.
 - **Every lifeform drops one elemental crystal** (Charge/Mass/Space/Time) as a powerup on death,
   enforced by `LifeFormCrystal`. It must not be possible to make a lifeform that violates this.
-- **Territorial permanence.** The dominant color's canopy is *not* culled (fauna eat only
-  opposing mass) — take a cell, leave, it stays yours. Oscillation lives in the minority + fauna
-  churn *under* that constraint.
+- **Territorial permanence.** Take a cell, leave, it stays yours — the claim fauna cannot touch.
+  In nucleus cells the permanent claim is the **nucleus interior** (fauna never consume it);
+  exterior canopy/trail is deliberately contested churn (voracious any-domain grazing). In
+  nucleus-less cells the legacy rule stands: fauna eat only opposing mass, so the dominant
+  canopy is never culled. Oscillation lives in the fauna churn *under* that constraint.
 - **Endogenous selection only.** When evolution lands, fitness is **survival itself**
   (starvation/predation/reproduction cost), never a designer-scored fitness function — the line
   between artificial life and a mere optimizer, identical to "don't cheat emergence."
@@ -247,6 +259,7 @@ All in `Assets/_Scenes/Singleplayer Scenes/`.
 | `MinigameJoust_Gameplay` | `MultiplayerJoust (34)` | `MultiplayerJoustController` |
 | `MinigameWildlifeBlitzMultuplayerCoOp` | `MultiplayerWildlifeBlitzGame (32)` | `MultiplayerWildlifeBlitzMiniGame` |
 | `MinigameAstroLeague` | `AstroLeague (36)` | `AstroLeagueController` |
+| `MinigameNucleusRush` | `NucleusRush (38)` | `NucleusRushController` |
 | `ArcadeGameMultiplayer2v2CoOpVsAI` | `Multiplayer2v2CoOpVsAI (30)` | Domain games variant |
 
 All in `Assets/_Scenes/Multiplayer Scenes/`.
@@ -259,7 +272,7 @@ All in `Assets/_Scenes/Multiplayer Scenes/`.
 
 #### GameModes Enum (`Assets/_Scripts/Data/Enums/GameModes.cs`)
 
-37 game modes with explicit numeric IDs (highest is `AstroLeague(37)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer (a standalone domain minigame, see `_Scripts/Controller/Arcade/ASTROLEAGUE.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
+38 game modes with explicit numeric IDs (highest is `NucleusRush(38)`; IDs 7 and 31 are skipped). Single-player: `Elimination(1)` through `ProtectMission(27)`. Multiplayer: `MultiplayerFreestyle(28)`, `MultiplayerCellularDuel(29)`, `Multiplayer2v2CoOpVsAI(30)`, `MultiplayerWildlifeBlitzGame(32)`, `HexRace(33)`, `MultiplayerJoust(34)`, `MultiplayerCrystalCapture(35)`, `AstroLeague(37)`, `NucleusRush(38)`. Meta-mode: `Tournament(36)` — the session-level meta that chains HexRace → Joust → Crystal Capture back-to-back via sequential `Single` loads (see `Docs/TournamentSystem/ARCHITECTURE.md`). `AstroLeague(37)` is hypersea soccer (a standalone domain minigame, see `_Scripts/Controller/Arcade/ASTROLEAGUE.md`). `NucleusRush(38)` (display name "Brood Rush") is the nucleus-control fauna-wave race (see `_Scripts/Controller/Arcade/NUCLEUSRUSH.md`). Meta sentinel: `Random(0)`. Note: IDs 7 and 31 are skipped — 7 was the retired standalone arcade Freestyle game (freestyle now lives in Menu_Main as the lava lamp; see "Lava-Lamp Mode"), 31 was never assigned. Do not reuse either ID.
 
 Many single-player modes (1-6, 9-25, 27) reference scenes that no longer exist on disk — their `SO_ArcadeGame` assets still exist and appear in the Arcade UI, but launching them would fail.
 
@@ -286,7 +299,8 @@ MiniGameControllerBase (abstract, NetworkBehaviour)
         ├── MultiplayerJoustController      — collision tracking, golf scoring
         ├── MultiplayerCellularDuelController — vessel ownership swap between rounds
         ├── MultiplayerCrystalCaptureController — minimal (1 round, 1 turn)
-        └── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
+        ├── AstroLeagueController             — hypersea soccer, server-simulated ball, golden goal
+        └── NucleusRushController             — nucleus-control fauna-wave race, brood scoring
 ```
 
 #### Game Launch Pipeline
