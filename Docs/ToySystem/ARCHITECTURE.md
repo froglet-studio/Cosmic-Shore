@@ -54,8 +54,14 @@ detection. On top of that base the `Toy` class adds:
 | Mini vessel model (mesh-extract from prefab) | `Assets/_Scripts/Controller/Toys/VesselModelBuilder.cs` |
 | Vessel Changer set | `Assets/_Scripts/Controller/Toys/VesselChangerToySet.cs` |
 | Domain Changer set | `Assets/_Scripts/Controller/Toys/DomainChangerToySet.cs` |
-| Painting ("fly by numbers") toy | `Assets/_Scripts/Controller/Toys/PaintingToy.cs` |
-| Self-contained fly-by-numbers runner | `Assets/_Scripts/Controller/Toys/MenuShapePainter.cs` |
+| Painting station (one per painting) | `Assets/_Scripts/Controller/Toys/PaintingToy.cs` |
+| Multi-stroke fly-by-numbers runner | `Assets/_Scripts/Controller/Toys/PaintingRunner.cs` |
+| Painting data (strokes + domains) | `Assets/_Scripts/ScriptableObjects/Toys/PaintingDefinitionSO.cs` |
+| Preset generators (Star…Taj Mahal) | `Assets/_Scripts/Controller/Toys/PaintingPresetLibrary.cs` |
+| Painting progress persistence | `Assets/_Scripts/Controller/Toys/PaintingProgressStore.cs` |
+| Drawing state (per-prism pose/domain) | `Assets/_Scripts/Controller/Toys/PaintingPrismStore.cs` |
+| Web share export (inline-WebGL viewer) | `Assets/_Scripts/Controller/Toys/PaintingShareExporter.cs` |
+| Idle spin for toy bodies | `Assets/_Scripts/Controller/Toys/ToyIdleSpin.cs` |
 | Conveyor ("Wanderway") toy | `Assets/_Scripts/Controller/Toys/ConveyorToy.cs` |
 | Conveyor belt runner | `Assets/_Scripts/Controller/Toys/MicrosceneConveyor.cs` |
 | One conveyor scene (lay/transport/re-arrange) | `Assets/_Scripts/Controller/Toys/Microscene.cs` |
@@ -135,6 +141,108 @@ Two toys (in a 3-domain session), each **tinted the domain it will switch you to
 colours you are *not*. Flying through one requests that domain via the server-authoritative
 `Player.RequestSetDomain_ServerRpc` (**never** a client-local write — CLAUDE.md), and the toy
 flips to the colour you just left.
+
+### Painting / Fly-by-Numbers (`PaintingToy` + `PaintingRunner`)
+
+The painting toy is a **gallery**: `PaintingToyDefinitionSO` spawns one `PaintingToy` station per
+`PaintingDefinitionSO`, fanned around its ring slot, each labelled with the painting's name and
+live progress. A painting is **multi-stroke and multi-domain** — a list of `PaintingStroke`s
+(name, domain, ordered 3D points) flown in author order — and it stands as a fixed, upright
+**monument-in-progress** anchored just outside the toy ring (front facing the ring), not a
+billboard that follows the vessel. The ladder of built-in presets (`PaintingPresetLibrary`):
+
+| Painting | Size | Strokes | Domains | What it teaches |
+|---|---|---|---|---|
+| Star | 420 | 1 | Gold | the basic trace, big enough to feel real |
+| Rainbow | 700 | 3 | all three | the domain gates, one band per colour |
+| Saturn | 800 | 3 | all three | genuinely 3D flying (tilted rings) |
+| **Taj Mahal** | 1100 | ~55 | all three | the monument: plinth, chamfered body, grand iwan + niches, onion-dome rib cage, 4 chhatris, 4 minarets with balconies, jade reflecting pool + charbagh — hours of flying |
+
+How a run plays:
+
+- **Ghost blueprint.** Every stroke renders as a `LineRenderer` ghost tinted its domain colour —
+  pending faint, the current stroke bright, completed strokes dim-solid. The whole blueprint
+  blooms in (continuity law) and fades away after completion, leaving only the painted prisms.
+- **Start gates.** Each stroke opens with a ring gate at its first point (a `SwapToy`, so it
+  inherits bloom/local-user/freestyle gating/re-arm), labelled `n/total StrokeName` and tinted
+  the stroke's domain. Flying through it **requests that domain via
+  `Player.RequestSetDomain_ServerRpc`** (never a client write; silently skipped if the session's
+  `RequestedDomainCount` excludes it) so the trail recolours, then the stroke begins. This is
+  the domain-changer composed into the painting — colour changes are part of the flying.
+- **Pen-up between strokes.** Inside the painting's "studio zone" (bounding sphere + margin),
+  the trail spawner is paused between strokes via `VesselPrismController.SetSpawnerPaused`
+  (pen-up), so transit flight never scribbles across the artwork; painting a stroke, leaving
+  the zone, exiting freestyle, benching, or destroying the runner ALWAYS restores it. Pausing
+  the spawner is the sanctioned mass-law lever ("not creating mass is allowed; aging it out is
+  not") — the painted trail itself is conserved mass, no caps/TTLs.
+- **Guide + marker.** A guide line runs from the vessel to the next point; the marker on it is
+  a faceted crystal spike (flat-shaded, six-sided, in the stroke domain's prism material) that
+  slowly spins about its pointing axis — no pulsing; the calm idle motion (`ToyIdleSpin`)
+  matches the game's other pickups. The advance threshold tightens automatically on
+  fine-detail strokes (minaret balconies) so tight loops must actually be flown.
+- **Progress, pause, resume.** Progress is stroke-granular. Re-flying the station benches /
+  resumes the run ("put the brush down"); progress also persists across sessions
+  (`PaintingProgressStore`, the FavoriteSystem `DataAccessor` JSON pattern — completed strokes
+  re-render as dim ghosts after a restart since prisms live only as long as the scene). After
+  the completion celebration, flying the station again clears the canvas for a repaint.
+- **Toy-faithful.** No score, no timer, no fail state — only progress. Solo-painting only: the
+  runner tracks the *local* player; party members see the painted prisms replicate but not
+  your gates/ghosts (same local-station model as every toy).
+
+(The full `ShapeDrawingManager` experience — preview cinematic, scoring, reveal — remains
+available for gameplay scenes; any existing `ShapeDefinition` can also become a painting via
+`PaintingDefinitionSO.sourceShape`, which splits pen-up gaps into strokes.)
+
+#### Shape language — one vocabulary of interactables
+
+Toys teach each other by recycling shapes (mindshare recycling): every interactable that does
+the same *kind* of thing wears the same form, in the domain's **prism material** (the exact
+shader the painted trail wears — `ToyFactory.DomainPrismMaterial` →
+`ThemeManagerDataContainerSO.GetTeamBlockMaterial`).
+
+| Shape | Meaning | Where |
+|---|---|---|
+| **Cone** (apex = "this way next") | *turns / keeps your trail ON* | stroke-gate hubs, every intermediate stroke point (apex points at the stroke's next point), and the **Domain Changer** bodies (apex points the way you fly through) |
+| **Jack** (three rods through a centre) | *turns your trail OFF* | each stroke's final point (reaching it ends the stroke and pens up) |
+| **Ring** (fly-through portal) | *crossing commits a choice* | stroke start gates, the SHARE/REPAINT completion gates |
+
+The domain changer and the painting gates deliberately share the cone so meeting either one
+first sets up expectations for the other. Builders live in `ToyFactory` (`AddConeBody`,
+`AddJackBody`, `AddRingBody`).
+
+#### Authoring rule — order strokes by decreasing radius of curvature
+
+Strokes are flown in author order, so **sequence them from the broadest curvature to the
+tightest**: long straight/broad strokes first (pool outlines, plinth rectangles), fine detail
+last (balcony rings, crescents). The painting then doubles as its own difficulty ramp — the
+player warms up on sweeping lines and earns the precision work — and the adaptive per-stroke
+reach (which tightens on short segments) ramps with them. The Taj Mahal preset is the
+reference: pools → plinth → body → arches → dome → chhatris → minaret balconies. Batch
+domains at meaningful architectural boundaries within that ordering (see
+`PaintingPresetLibrary`).
+
+#### Drawing state — the painting survives everything
+
+Progress is not just a stroke counter: while a stroke is painted, every prism laid inside the
+studio zone is recorded (painting-local **position, orientation, size, domain**, prism type)
+via `VesselPrismController.OnBlockSpawned` and committed per completed stroke to
+`PaintingPrismStore` (one `DataAccessor` JSON file per painting). That makes the run robust to
+everything between strokes: **swap vessels** (capture re-resolves the controller), **switch to
+another painting** (runs bench each other), or **leave for a whole game mode / quit** — on
+return, the completed strokes' prisms are *regrown* through the normal `PrismFactory` channel
+(pooled spawn, grow-in animation, streamed over frames so a monument reads as growing back,
+never popping). Restored prisms are ordinary conserved mass. Abandoned mid-stroke prisms are
+deliberately not persisted — an unfinished stroke re-flies fresh.
+
+#### Sharing — the masterpiece leaves the game
+
+Finishing a painting offers two fly-through choice gates at the station: **REPAINT** (clears
+progress + drawing state, fresh canvas) and **SHARE** — `PaintingShareExporter` writes a
+single self-contained HTML file (inline WebGL, zero external dependencies) that reconstructs
+the painting from its saved prisms with drag/pinch orbit, zoom, and a gentle auto-spin, then
+hands it to the platform share sheet via the NativeShare plugin. Paintings finished before
+drawing-state capture existed fall back to boxes laid along the stroke polylines, so share
+always works.
 
 ### Wanderway / Microscene Conveyor (`ConveyorToy` + `MicrosceneConveyor` + `Microscene`)
 
@@ -232,16 +340,6 @@ Crystals are the four elemental pickups (`ElementalCrystalSetSO`, Resources-load
 skimmable at runtime via the internal setters added to `ImpactCollider` /
 `ElementalCrystalImpactor` (the runtime mirror of the components lifeform prefabs author in the
 inspector). Content is local-only, like every toy (party guests don't see your belt).
-
-### Painting / Fly-by-Numbers (`PaintingToy` + `MenuShapePainter`)
-Fly through → starts a self-contained painting run. `MenuShapePainter` reads a
-`ShapeDefinition`'s waypoints, draws a ghost outline + a guide line + a lit marker at the next
-point, and advances as the vessel flies near each in order — **the vessel's own trail does the
-painting**. Deliberately minimal (no Cell, no crystal manager, no scoring, no HUD) so it runs
-in the menu where none of that exists. Toy-faithful: completes when the last point is reached,
-then fades; no fail state. (The full `ShapeDrawingManager` experience — preview cinematic,
-scoring, reveal — remains available for a gameplay scene that has the ecology infra; the toy
-uses the lightweight runner so it works everywhere.)
 
 ## Freestyle input ownership (reaching / leaving the toybox)
 

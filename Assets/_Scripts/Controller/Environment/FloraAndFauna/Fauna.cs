@@ -396,6 +396,13 @@ namespace CosmicShore.Gameplay
 
                 case CellAggressionLevel.Level0:
                 default:
+                    // Voracious exterior: with a nucleus control zone, sensed mass
+                    // outside the nucleus is prey at EVERY phase — hunt its densest
+                    // region even at Calm instead of idling at the crystal. (The
+                    // targeting grids only ever hold exterior mass in such cells.)
+                    if (cell.HasNucleusControlZone && cell.HasSensedExteriorMass)
+                        return cell.GetDensestRegionAnyDomain() + _goalOrbitOffset;
+
                     Vector3 anchor = cellData && cellData.CrystalTransform
                         ? cellData.CrystalTransform.position
                         : cell.transform.position;

@@ -22,6 +22,9 @@ namespace CosmicShore.Utility
         [SerializeField] public ScriptableEventNoParam OnCrystalSpawned;
         [SerializeField] public ScriptableEventNoParam OnCellItemsUpdated;
         [SerializeField] public ScriptableEventCellPhase OnPhaseChanged;
+        [Tooltip("Raised once per periodic fauna spawn-cycle tick (per species loop) with the " +
+                 "wave's domain + nucleus-claim state. Scoring systems (Brood Rush) listen here.")]
+        [SerializeField] public ScriptableEventFaunaWave OnFaunaWaveSpawned;
         
         [Header("Run Time References")]
         public CellConfigDataSO Config; // <- your "CellConfigData"
