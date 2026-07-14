@@ -137,6 +137,41 @@ namespace CosmicShore.Tests
         {
             Assert.AreEqual(25, FaunaReproductionRules.SeedSpawnCount(0, 25, 0));
         }
+
+        // ---- WaveSpawnCount: full-wave-every-tick semantics (Brood Rush) ----
+
+        [Test]
+        public void WaveSpawnCount_EmptyCell_SpawnsFullWave()
+        {
+            Assert.AreEqual(6, FaunaReproductionRules.WaveSpawnCount(0, 6, 24));
+        }
+
+        [Test]
+        public void WaveSpawnCount_PopulatedCell_StillSpawnsFullWave()
+        {
+            // Unlike the seeder, a live population at/above the floor does NOT
+            // suppress the wave — every tick births a fresh brood.
+            Assert.AreEqual(6, FaunaReproductionRules.WaveSpawnCount(12, 6, 24));
+        }
+
+        [Test]
+        public void WaveSpawnCount_CapClampsWave()
+        {
+            // Cap 24, live 20: only 4 of the 6 fit.
+            Assert.AreEqual(4, FaunaReproductionRules.WaveSpawnCount(20, 6, 24));
+        }
+
+        [Test]
+        public void WaveSpawnCount_AtCap_SpawnsNothing()
+        {
+            Assert.AreEqual(0, FaunaReproductionRules.WaveSpawnCount(24, 6, 24));
+        }
+
+        [Test]
+        public void WaveSpawnCount_ZeroCap_NoClamp()
+        {
+            Assert.AreEqual(6, FaunaReproductionRules.WaveSpawnCount(999, 6, 0));
+        }
     }
 }
 #endif
