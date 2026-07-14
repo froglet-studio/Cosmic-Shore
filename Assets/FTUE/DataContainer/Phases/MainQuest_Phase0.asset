@@ -406,7 +406,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestPhaseGraphSO
   graphId: MainQuest_Phase0
   phaseName: Onboarding & Crystal Capture
-  phaseEnabled: 1
+  phaseEnabled: 0
   designerNotes: 
   entryNode: {fileID: -2956468355650793072}
   nodes:
@@ -437,8 +437,8 @@ MonoBehaviour:
   - {fileID: 1157315426489254563}
   - {fileID: -2555887249423030796}
   - {fileID: -3574500432832461629}
-  canvasScroll: {x: 494.1819, y: 228.224}
-  canvasZoom: 0.7420736
+  canvasScroll: {x: 255.73218, y: 130.31976}
+  canvasZoom: 0.87716216
 --- !u!114 &355363919843681768
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -76,7 +76,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestPhaseGraphSO
   graphId: MainQuest_Phase4
   phaseName: Vessel Unlock Tour
-  phaseEnabled: 1
+  phaseEnabled: 0
   designerNotes: "Entry: after Maelstrom is played. Guide to the hangar, tour the
     vessel-unlock flow, wait until the player unlocks a vessel (the hangar UI fires
     UserActionType.UnlockVessel), reward dialogue. Ends \u2192 Phase 5 (finale)."
