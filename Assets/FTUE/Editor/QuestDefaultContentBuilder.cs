@@ -201,18 +201,13 @@ namespace CosmicShore.Editor
                 "Tiers 1 to 3 are open right away. Reach INTENSITY 4 in a mode to unlock the next one on your quest track!",
             };
 
-            var ctaCC3 = Add<QuestHighlightCTANode>(g, "CTA: Play CC (Intensity 3)");
-            ctaCC3.target = CallToActionTargetType.PlayGameMultiplayerCrystalCapture;
-            ctaCC3.completionAction = UserActionType.PlayGame;
-            ctaCC3.dependencies = new List<CallToActionTargetType> { CallToActionTargetType.ArcadeMenu };
-
-            var playedCC3 = Add<QuestWaitForGamePlayedNode>(g, "Wait: CC Played @3");
-            playedCC3.filterByMode = true;
-            playedCC3.expectedMode = GameModes.MultiplayerCrystalCapture;
-            playedCC3.minIntensity = 3;
-
             var clearFunnel = Add<QuestSetArcadeConstraintsNode>(g, "Clear Arcade Funnel");
             clearFunnel.clearConstraints = true;
+
+            // The social tour fires only once the player is back INSIDE the arcade —
+            // whenever that happens after the profile tour, not on a timer.
+            var arcadeReturn = Add<QuestWaitForUserActionNode>(g, "Wait: Back In The Arcade");
+            arcadeReturn.action = UserActionType.ViewArcadeMenu;
 
             var socialTour = Add<QuestShowInstructionNode>(g, "Social UI Tour (placeholder)");
             socialTour.text = "This is your crew hub — invite friends and fly together!";
@@ -225,8 +220,8 @@ namespace CosmicShore.Editor
                 speedUpPrompt, waitSpeedUp, slowDownPrompt, waitSlowDown, lookPrompt, waitLook,
                 driftPrompt, waitDrift, skimPrompt, waitSkim, exitPrompt, exit,
                 lockNav, arcadeDialogue, constraintsCC1, ctaArcade, ctaCC1, playedCC1,
-                loosenFunnel, unlockNav, profileDialogue, ctaProfile, mapsDialogue, ctaCC3, playedCC3,
-                clearFunnel, socialTour, end);
+                loosenFunnel, unlockNav, profileDialogue, ctaProfile, mapsDialogue,
+                clearFunnel, arcadeReturn, socialTour, end);
 
             // Pacing: breathing room between beats (editable per arrow in the editor).
             SetDelay(enter, 1.5f);
@@ -238,7 +233,6 @@ namespace CosmicShore.Editor
             SetDelay(exit, 1f);
             SetDelay(playedCC1, 1f);
             SetDelay(mapsDialogue, 0.5f);
-            SetDelay(playedCC3, 1f);
 
             return Finish(g, enter);
         }

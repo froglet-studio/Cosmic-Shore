@@ -132,25 +132,34 @@ namespace CosmicShore.Core
         }
 
         // ── Dialogue panel (self-contained; no dialogue system) ──
-        /// <summary>Scene instance of the dialogue panel (preferred when set).</summary>
+        /// <summary>ONE slot: a scene instance of the dialogue panel, or a PREFAB asset that is
+        /// instantiated under <see cref="DialoguePanelParent"/> on first use.</summary>
         public QuestDialoguePanelView DialoguePanel;
-        /// <summary>Prefab fallback — instantiated lazily under <see cref="DialoguePanelParent"/> on first use.</summary>
-        public QuestDialoguePanelView DialoguePanelPrefab;
         public Transform DialoguePanelParent;
 
-        /// <summary>The panel Dialogue nodes drive: the scene instance, or a lazily-instantiated prefab copy.</summary>
+        QuestDialoguePanelView _dialogueInstance;
+
+        /// <summary>The live panel Dialogue nodes drive (instantiating the prefab if needed).</summary>
         public QuestDialoguePanelView GetOrCreateDialoguePanel()
         {
-            if (DialoguePanel != null)
-                return DialoguePanel;
+            if (_dialogueInstance != null)
+                return _dialogueInstance;
 
-            if (DialoguePanelPrefab != null)
+            if (DialoguePanel == null)
+                return null;
+
+            // A scene object has a valid scene handle; a prefab asset does not.
+            if (DialoguePanel.gameObject.scene.IsValid())
             {
-                DialoguePanel = UnityEngine.Object.Instantiate(DialoguePanelPrefab, DialoguePanelParent);
+                _dialogueInstance = DialoguePanel;
+            }
+            else
+            {
+                _dialogueInstance = UnityEngine.Object.Instantiate(DialoguePanel, DialoguePanelParent);
                 Debug.Log("[Quest] Dialogue panel instantiated from prefab.");
             }
 
-            return DialoguePanel;
+            return _dialogueInstance;
         }
 
         // ── Flow-control hooks (implemented by the runner) ──

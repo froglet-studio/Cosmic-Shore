@@ -46,10 +46,9 @@ namespace CosmicShore.Core
         [SerializeField] MenuCrystalClickHandler crystalHandler;
         [Tooltip("Lightweight text+haptics overlay used by ShowInstruction nodes (control teaching).")]
         [SerializeField] QuestInstructionView instructionView;
-        [Tooltip("Scene instance of the dialogue panel (DialogueSetUI). Dialogue nodes drive it directly — no dialogue system.")]
+        [Tooltip("The dialogue panel (DialogueSetUI): a SCENE instance or a PREFAB asset — a prefab is instantiated under Dialogue Panel Parent on first use. Dialogue nodes drive it directly, no dialogue system.")]
         [SerializeField] QuestDialoguePanelView dialoguePanel;
-        [Tooltip("Optional prefab fallback: instantiated under Dialogue Panel Parent on first use when no scene instance is set.")]
-        [SerializeField] QuestDialoguePanelView dialoguePanelPrefab;
+        [Tooltip("Parent for the panel when Dialogue Panel is a prefab asset (e.g. the UI root).")]
         [SerializeField] Transform dialoguePanelParent;
         [SerializeField] ScreenSwitcher screenSwitcher;
         [Tooltip("Arcade game cards, used by LockModes nodes.")]
@@ -84,20 +83,6 @@ namespace CosmicShore.Core
             : debugPhaseOverride != null ? debugPhaseOverride.name
             : string.Empty;
 
-#if UNITY_EDITOR
-        void OnValidate()
-        {
-            // The prefab slot is a FALLBACK and must hold a prefab ASSET. Hand-wiring keeps
-            // dropping the scene DialogueSetUI into both slots — a scene object has a valid
-            // scene handle, so detect and clear it right in the inspector.
-            if (dialoguePanelPrefab != null && dialoguePanelPrefab.gameObject.scene.IsValid())
-            {
-                Debug.LogWarning("[Quest] 'Dialogue Panel Prefab' must be a prefab asset, not the scene panel — " +
-                                 "cleared. The scene 'Dialogue Panel' slot is what drives dialogue.", this);
-                dialoguePanelPrefab = null;
-            }
-        }
-#endif
 
         // ── Unity lifecycle ────────────────────────────────────────────
 
@@ -204,12 +189,6 @@ namespace CosmicShore.Core
                 CrystalHandler = crystalHandler,
                 InstructionView = instructionView,
                 DialoguePanel = dialoguePanel,
-                // Runtime belt-and-suspenders for the same mis-wiring: never treat a scene
-                // object (or a duplicate of the scene panel) as the instantiation fallback.
-                DialoguePanelPrefab = dialoguePanelPrefab != null
-                                      && (dialoguePanelPrefab == dialoguePanel || dialoguePanelPrefab.gameObject.scene.IsValid())
-                    ? null
-                    : dialoguePanelPrefab,
                 DialoguePanelParent = dialoguePanelParent,
                 ScreenSwitcher = screenSwitcher,
                 GameCards = gameCards,

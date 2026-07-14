@@ -35,7 +35,15 @@ namespace CosmicShore.Core
             if (CallToActionSystem.Instance != null)
             {
                 var deps = (dependencies != null && dependencies.Count > 0) ? dependencies : null;
-                CallToActionSystem.Instance.AddCallToAction(new CallToAction(target, completionAction, deps));
+                var cta = new CallToAction(target, completionAction, deps);
+                CallToActionSystem.Instance.AddCallToAction(cta);
+
+                // ONE-SHOT: a CTA never outlives its beat. The CTA system persists across
+                // scenes, so without this a force-advanced (or superseded) node would leave
+                // its indicator glowing forever. Cleanup runs on EVERY way this node ends —
+                // action fired, force-advance, phase teardown — and removing an
+                // already-dismissed CTA is a harmless no-op.
+                ctx.AddCleanup(() => CallToActionSystem.Instance?.RemoveCallToAction(cta));
             }
             else
             {
@@ -75,6 +83,15 @@ namespace CosmicShore.Core
             ctx.AddCleanup(() => FTUEEventManager.OnCTAClicked -= OnCtaClicked);
 
             yield break;
+        }
+
+        /// <summary>
+        /// Force-advance completes the REAL user action — the CTA dismisses through the same
+        /// channel the player's action would use, and every other listener is notified too.
+        /// </summary>
+        public override void DebugForceSatisfy(QuestRuntimeContext ctx)
+        {
+            UserActionSystem.Instance?.CompleteAction(completionAction);
         }
     }
 }

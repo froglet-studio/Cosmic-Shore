@@ -40,10 +40,8 @@ namespace CosmicShore.Editor
 
             AssignObject(so, "crystalHandler", Object.FindFirstObjectByType<MenuCrystalClickHandler>(FindObjectsInactive.Include));
             AssignObject(so, "instructionView", Object.FindFirstObjectByType<QuestInstructionView>(FindObjectsInactive.Include));
-            AssignObject(so, "dialoguePanel", Object.FindFirstObjectByType<QuestDialoguePanelView>(FindObjectsInactive.Include));
+            AssignObject(so, "dialoguePanel", FindDialoguePanel());
             AssignObject(so, "screenSwitcher", Object.FindFirstObjectByType<ScreenSwitcher>(FindObjectsInactive.Include));
-
-            FixDialoguePrefabSlot(so);
 
             AssignGameCards(so);
 
@@ -69,26 +67,22 @@ namespace CosmicShore.Editor
         }
 
         /// <summary>
-        /// The prefab slot is a FALLBACK for when no scene panel exists — it must reference a
-        /// prefab ASSET. Hand-wiring sometimes drops the scene DialogueSetUI into both slots;
-        /// clear the prefab slot whenever it holds a scene object (or duplicates the scene ref).
+        /// The runner's single dialogue slot accepts a scene instance OR a prefab asset —
+        /// prefer the scene panel, fall back to a prefab carrying QuestDialoguePanelView.
         /// </summary>
-        static void FixDialoguePrefabSlot(SerializedObject so)
+        static QuestDialoguePanelView FindDialoguePanel()
         {
-            var prefabProp = so.FindProperty("dialoguePanelPrefab");
-            var sceneProp = so.FindProperty("dialoguePanel");
-            if (prefabProp == null || prefabProp.objectReferenceValue == null) return;
+            var sceneInstance = Object.FindFirstObjectByType<QuestDialoguePanelView>(FindObjectsInactive.Include);
+            if (sceneInstance != null) return sceneInstance;
 
-            var value = prefabProp.objectReferenceValue as QuestDialoguePanelView;
-            bool duplicatesScene = sceneProp != null && prefabProp.objectReferenceValue == sceneProp.objectReferenceValue;
-            bool isSceneObject = value != null && value.gameObject.scene.IsValid();
-
-            if (duplicatesScene || isSceneObject)
+            foreach (var guid in AssetDatabase.FindAssets("DialogueSetUI t:Prefab"))
             {
-                prefabProp.objectReferenceValue = null;
-                Debug.Log("[Quest] Runner setup: cleared Dialogue Panel Prefab — it referenced the scene panel. " +
-                          "The scene instance drives dialogue; the prefab slot is only a fallback and must be a prefab asset.");
+                var go = AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(guid));
+                if (go != null && go.TryGetComponent(out QuestDialoguePanelView view))
+                    return view;
             }
+
+            return null;
         }
 
         static void AssignGameCards(SerializedObject so)
