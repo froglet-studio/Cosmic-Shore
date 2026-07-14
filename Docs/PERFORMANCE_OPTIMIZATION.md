@@ -514,13 +514,26 @@ non-structural, no sync point.
 
 ---
 
-### Task 5 — LightFauna grazing pacing parity (`/ecology`) ★ NEXT UP
+### Task 5 — LightFauna grazing pacing parity (`/ecology`) ✔ SHIPPED (2026-07-09)
 
-**Status:** EVIDENCE LANDED (2026-07-09 capture: 13.79 ms / 4 ticks, 9.27 self,
-12.8 KB, `GameObject.Activate` ×16 in the cascade) — implement on the next code
-round. Also attribute the 0.27 ms-per-activation pooled-VFX cost while in there
-(possible first-Awake of async-incubated clones → Awake-warm at refill
-completion if confirmed).
+**Status:** SHIPPED — `337443f0`, evidence was the 2026-07-09 capture (13.79 ms
+/ 4 ticks, 9.27 self, 12.8 KB, `GameObject.Activate` ×16 in the cascade). The
+behavior tick enqueues every edible prism it finds (identical eligibility);
+`maxConsumesPerFrame` (serialized on LightFauna, default 8, ≤0 = legacy burst)
+drains per frame with the edibility predicate re-checked at drain; queue clears
+on death (uneaten meals stay in the world). Predation stays inline. Mechanics
+log updated (`Docs/ECOSYSTEM.md` §12 "Consume pacing"). Same commit adds
+`PoolActivate.<prefabName>` markers around pooled Get activation — the next
+capture names which pool owns the 0.27 ms activations and whether deferred
+first-Awake (async incubation) or heavy OnEnable dominates; if first-Awake, the
+designed follow-up is an Awake-warm at refill completion.
+**Verify (in-editor):** menu with fauna feeding — `LightFauna.UpdateBehaviorCoroutine`
+should drop from ~13.8 ms tick-frames to ≤ ~2 ms, with the drain visible as small
+`LightFauna.Update` slices on following frames; a grazed cluster melts over a few
+frames instead of vanishing in one; fauna still feed (watch starvation — tune
+`maxConsumesPerFrame` up if a berserk-cadence fauna ever starves with a full
+queue, which the math says cannot happen at default settings); fauna death
+mid-graze withers normally.
 
 **Verified.** LightFauna's tick is `UpdateBehavior()`
 (`Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:228`,
