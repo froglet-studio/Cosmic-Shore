@@ -30,6 +30,7 @@ namespace CosmicShore.Gameplay
         IVesselStatus _status;
         ResourceSystem _resources;
         ElementalAbilityMapSO _map;
+        R_VesselActionHandler _netActions;
         bool _initialized;
 
         readonly Dictionary<Element, bool> _unlocked = new();
@@ -52,7 +53,13 @@ namespace CosmicShore.Gameplay
             _status = status;
             _resources = status.ResourceSystem;
             _map = ElementalAbilityMapSO.LoadFor(status.VesselType);
+            _netActions = status.ActionHandler;
             _initialized = true;
+
+            // Remote peers learn unlock flips through the replicated bits (their local
+            // ResourceSystem copies drift and must not gate outcomes).
+            if (_netActions)
+                _netActions.NetElementUnlocks.OnValueChanged += HandleNetUnlocksChanged;
 
             if (_map == null || _resources == null) return;
 
@@ -69,6 +76,8 @@ namespace CosmicShore.Gameplay
         {
             if (_resources != null)
                 _resources.OnElementLevelChange -= HandleElementLevelChanged;
+            if (_netActions)
+                _netActions.NetElementUnlocks.OnValueChanged -= HandleNetUnlocksChanged;
             _unlocked.Clear();
             _initialized = false;
         }
@@ -89,18 +98,34 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// True while this element's qualitative upgrade is active, per the map's latch policy
         /// (unlock at ≥ UnlockLevel; Relock policy turns off below RelockBelowLevel).
+        /// In a networked session, non-owner peers resolve from the replicated unlock bits so
+        /// every machine destroys the same prisms; the owner (and offline play) uses the
+        /// locally derived state.
         /// </summary>
         public bool IsUpgradeActive(Element element)
-            => _unlocked.TryGetValue(element, out var active) && active;
+        {
+            if (_netActions && _netActions.IsSpawned && !_netActions.IsOwner)
+                return (_netActions.NetElementUnlocks.Value & BitFor(element)) != 0;
+            return LocalUpgradeActive(element);
+        }
 
         public bool IsInitialized => _initialized;
+
+        bool LocalUpgradeActive(Element element)
+            => _unlocked.TryGetValue(element, out var active) && active;
+
+        static byte BitFor(Element element)
+        {
+            int i = (int)element - 1; // Charge=1 → bit 0 … Time=4 → bit 3
+            return i is >= 0 and < 4 ? (byte)(1 << i) : (byte)0;
+        }
 
         void HandleElementLevelChanged(Element element, int level)
         {
             var entry = _map ? _map.GetEntry(element) : null;
             if (entry == null) return;
 
-            bool current = IsUpgradeActive(element);
+            bool current = LocalUpgradeActive(element);
             bool next = current;
 
             if (!current && level >= entry.UnlockLevel)
@@ -112,7 +137,33 @@ namespace CosmicShore.Gameplay
             if (next == current) return;
 
             _unlocked[element] = next;
+
+            // Owner publishes the flip so remote peers (whose element levels drift) resolve
+            // outcome-affecting upgrades identically. Single-writer: only the owner writes.
+            if (_netActions && _netActions.IsSpawned && _netActions.IsOwner)
+            {
+                byte bits = _netActions.NetElementUnlocks.Value;
+                var bit = BitFor(element);
+                _netActions.NetElementUnlocks.Value =
+                    next ? (byte)(bits | bit) : (byte)(bits & ~bit);
+            }
+
             OnUpgradeStateChanged?.Invoke(element, next);
+        }
+
+        void HandleNetUnlocksChanged(byte previous, byte current)
+        {
+            // The owner already raised its event from the local derivation; this relay is for
+            // remote peers' HUD/VFX so unlock flips are visible everywhere.
+            if (_netActions && _netActions.IsOwner) return;
+
+            byte changed = (byte)(previous ^ current);
+            foreach (var element in AllElements)
+            {
+                var bit = BitFor(element);
+                if ((changed & bit) == 0) continue;
+                OnUpgradeStateChanged?.Invoke(element, (current & bit) != 0);
+            }
         }
     }
 }

@@ -62,6 +62,16 @@ public class VesselTransformer : MonoBehaviour
         public float SpeedMultiplier => throttleMultiplier;
 
         protected Vector3 velocityShift = Vector3.zero;
+
+        /// <summary>Current additive world-space displacement (the ModifyVelocity channel),
+        /// summed on top of speed * Course by MoveShip. Read-only view for systems that need
+        /// the vessel's ACTUAL travel direction (e.g. barrel-roll bridging prisms).</summary>
+        public Vector3 VelocityShift => velocityShift;
+
+        /// <summary>When set, trail prisms orient along this rotation instead of the vessel's
+        /// facing. Owned by the barrel-roll controller for the roll duration; null restores
+        /// normal facing-aligned trail.</summary>
+        public Quaternion? BlockRotationOverride { get; set; }
         private bool isActive;
 
         // ----------------------------- Analog Drift -----------------------------
@@ -86,7 +96,11 @@ public class VesselTransformer : MonoBehaviour
             if (!isActive || VesselStatus == null || VesselStatus.IsStationary)
                 return;
 
-            VesselStatus.blockRotation = transform.rotation;
+            // Trail prisms orient by blockRotation (facing). During velocity≠forward states
+            // (barrel roll) the roll controller overrides it with the actual travel
+            // direction so bridging prisms follow the true path — replicates for free via
+            // the owner-written n_BlockRotation.
+            VesselStatus.blockRotation = BlockRotationOverride ?? transform.rotation;
 
             if (decayBoost) DecayBoost();
 

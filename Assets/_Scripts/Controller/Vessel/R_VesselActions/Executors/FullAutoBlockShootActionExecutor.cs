@@ -168,6 +168,13 @@ namespace CosmicShore.Gameplay
 
                         OnBlockShot?.Invoke(_status?.PlayerName);
 
+                        // MASS level-5 'Shielded Prisms': snapshot at fire time, applied at
+                        // anchor. Regular shield only — one-hit ablative armor that fauna can
+                        // still eat via devastate, preserving the food-web sink (SuperShield
+                        // would create mass with no active sink — an ecosystem freeze vector).
+                        bool shieldOnAnchor =
+                            _status?.ElementalAbilityHandler.IsUpgradeActive(Element.Mass) == true;
+
                         var movementToken = this.GetCancellationTokenOnDestroy();
                         MoveAndAnchorAsync(
                             prism.transform,
@@ -177,6 +184,7 @@ namespace CosmicShore.Gameplay
                             so.DisableCollidersOnLaunch,
                             prism,
                             childProjectile,
+                            shieldOnAnchor,
                             movementToken
                         ).Forget();
                     }
@@ -257,7 +265,7 @@ namespace CosmicShore.Gameplay
         #endregion
 
         #region Movement / Anchor
-        private async UniTaskVoid MoveAndAnchorAsync(Transform block, Vector3 dir, float speed, float distance, bool reactivateCollidersAtEnd, Prism prism, Projectile childProjectile, CancellationToken token)
+        private async UniTaskVoid MoveAndAnchorAsync(Transform block, Vector3 dir, float speed, float distance, bool reactivateCollidersAtEnd, Prism prism, Projectile childProjectile, bool shieldOnAnchor, CancellationToken token)
         {
             Vector3 start  = block.position;
             Vector3 target = start + dir * distance; // dir is m.forward (already unit)
@@ -310,6 +318,14 @@ namespace CosmicShore.Gameplay
                     if (spatialIndex != null && spatialIndex.IsAvailable)
                         prism.SpatialIndexId = spatialIndex.Register(prism);
                 }
+
+                // MASS level-5: engage the shield AFTER the collider re-enable and the index
+                // registration — the shield's Box→Mesh collider swap must run last so the
+                // reactivation loop can't re-enable the disabled BoxCollider, and the state
+                // manager's index flag sync needs SpatialIndexId ≥ 0. Collider budget: the
+                // swap is 1:1 (count-neutral); note shield MeshColliders are LOD-exempt today.
+                if (shieldOnAnchor && prism && prism.gameObject.activeInHierarchy)
+                    prism.ActivateShield();
             }
             catch (OperationCanceledException)
             {

@@ -915,6 +915,7 @@ GameObject:
   - component: {fileID: 4851397628510934721}
   - component: {fileID: 8100000000000000081}
   - component: {fileID: 8100000000000000083}
+  - component: {fileID: 7423918465920174631}
   m_Layer: 0
   m_Name: Sparrow
   m_TagString: Player_Ship
@@ -3346,3 +3347,21 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   debugLog: 0
+--- !u!114 &7423918465920174631
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8279817603024118164}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e27d4d763f7417c9d90b5b4f730e163, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  perimeterThreshold: 0.95
+  cooldownSeconds: 1.2
+  nudgeDeadzone: 0.2
+  rollDurationSeconds: 0.6
+  nudgeSpeed: 60
+  rollVisualTarget: {fileID: 0}

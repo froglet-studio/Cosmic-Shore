@@ -242,7 +242,16 @@ namespace CosmicShore.Gameplay
             // cell re-files this prism under the new domain. No-op while
             // unregistered (spawn window) or unbound (fauna body, open space).
             if (SpatialIndexId >= 0)
+            {
                 PrismSpatialIndex.Instance?.ForwardDomainChangeToCell(SpatialIndexId);
+
+                // Also refresh the AOE cold-data domain. It was only written at Register,
+                // so stolen prisms kept their old domain in explosion queries — the
+                // documented stale-steal gap (Docs/SPATIAL_INDEX.md): explosions could
+                // destroy prisms recently stolen INTO the shooter's domain, and the
+                // Charge-5 'spare own domain' unlock needs "own" to be live.
+                PrismSpatialIndex.Instance?.UpdateDomain(SpatialIndexId, (int)newDomain);
+            }
         }
 
         /// <summary>

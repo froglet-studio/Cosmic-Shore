@@ -42,7 +42,8 @@ namespace CosmicShore.Gameplay
             float projectileTime = 3,
             float charge = 0,
             FiringPatterns firingPattern = FiringPatterns.Default,
-            int energy = 0, bool detachAfterSpawn = false)
+            int energy = 0, bool detachAfterSpawn = false,
+            bool stopOnFirstPrismImpact = false, bool spareOwnDomain = false)
         {
             if (_onCooldown && !ignoreCooldown) return;
 
@@ -55,7 +56,8 @@ namespace CosmicShore.Gameplay
 
                 default:
                     FireSingle(containerTransform, speed, inheritedVelocity,
-                        projectileScale, Vector3.zero, projectileTime, charge, energy, null, detachAfterSpawn);
+                        projectileScale, Vector3.zero, projectileTime, charge, energy, null, detachAfterSpawn,
+                        stopOnFirstPrismImpact, spareOwnDomain);
                     break;
             }
 
@@ -146,7 +148,9 @@ namespace CosmicShore.Gameplay
             float charge,
             int energy,
             Vector3? customDirection = null,
-            bool detachAfterSpawn = false)                // << NEW
+            bool detachAfterSpawn = false,
+            bool stopOnFirstPrismImpact = false,
+            bool spareOwnDomain = false)
         {
             if (_vesselStatus == null)
             {
@@ -171,7 +175,8 @@ namespace CosmicShore.Gameplay
             // tell the projectile how to parent THIS flight.
             // Domain is read live at fire time — never snapshot at Initialize
             // (locked rule: domains re-pick at runtime).
-            projectile.Initialize(projectileFactory, _vesselStatus.Domain, _vesselStatus, charge, detachAfterSpawn);
+            projectile.Initialize(projectileFactory, _vesselStatus.Domain, _vesselStatus, charge, detachAfterSpawn,
+                stopOnFirstPrismImpact, spareOwnDomain);
 
             projectile.transform.localScale = projectileScale * projectile.InitialScale;
             projectile.Velocity = direction * speed + inheritedVelocity;

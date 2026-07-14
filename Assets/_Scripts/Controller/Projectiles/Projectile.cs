@@ -36,6 +36,15 @@ namespace CosmicShore.Gameplay
         /// so a stale callback can't act on a pooled-and-reissued instance.
         public int FlightGeneration { get; private set; }
 
+        /// Per-shot: destroyed on its first prism impact (the sub-level-5 SPACE default;
+        /// the 'Piercing Bullets' upgrade clears it at fire time). Detonating projectiles
+        /// manage their own return through the detonator and leave this false.
+        public bool StopOnFirstPrismImpact { get; private set; }
+
+        /// Per-shot: the CHARGE level-5 'Domain-Safe Skybursts' upgrade — direct-hit
+        /// damage spares prisms of the shooter's own domain. Snapshot at fire time.
+        public bool SpareOwnDomain { get; private set; }
+
         private MeshRenderer meshRenderer;
         private Collider _rootCollider;
 
@@ -101,13 +110,16 @@ namespace CosmicShore.Gameplay
         }*/
 
         #region Initialization
-        public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge, bool detachOnLaunch = false)
+        public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge, bool detachOnLaunch = false,
+            bool stopOnFirstPrismImpact = false, bool spareOwnDomain = false)
         {
             _factory = factory;
             OwnDomain = ownDomain;
             VesselStatus = vesselStatus;
             Charge = charge;
             _detachOnLaunch = detachOnLaunch;
+            StopOnFirstPrismImpact = stopOnFirstPrismImpact;
+            SpareOwnDomain = spareOwnDomain;
         }
 
         public void SetType(ProjectileType type) => Type = type;

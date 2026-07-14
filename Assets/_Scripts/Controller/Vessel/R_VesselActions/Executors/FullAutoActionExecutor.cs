@@ -163,8 +163,12 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                     // per volley through the vessel's ElementalAbilityMapSO. Never cache across
                     // the hold and never bind ElementalFloats on the shared SO asset — per-vessel
                     // state lives in the handler (multiplayer: last-initializer-wins otherwise).
-                    var speedValue = so.SpeedValue.Value
-                        * (_status?.ElementalAbilityHandler.Multiplier(Element.Space) ?? 1f);
+                    var abilities  = _status?.ElementalAbilityHandler;
+                    var speedValue = so.SpeedValue.Value * (abilities?.Multiplier(Element.Space) ?? 1f);
+
+                    // SPACE level-5 'Piercing Bullets': below the threshold, bullets are
+                    // destroyed on their first prism impact; at 5+ they pierce through.
+                    var piercing = abilities != null && abilities.IsUpgradeActive(Element.Space);
 
                     for (int i = 0, count = muzzles.Length; i < count; i++)
                     {
@@ -200,7 +204,8 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                             0,
                             firingPattern,
                             energy,
-                            detachAfterSpawn: true
+                            detachAfterSpawn: true,
+                            stopOnFirstPrismImpact: !piercing
                         );
                     }
 

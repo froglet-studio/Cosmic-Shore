@@ -38,7 +38,23 @@ detonator with authored ranges 100→170 on the four skyburst effect assets.
 | 1.5 | Cherry-pick the branch's non-Sparrow executor hunks (Manta/Dolphin/Rhino/Serpent) onto the new config home; author their `ElementalAbilityMapSO` assets. |
 | 1.6 | Edit-mode tests: petal-math ↔ threshold consistency; every flyable's map resolves 4 entries; comeback-vs-crystal compositing. |
 
-## Phase 2 — Level-5 qualitative tier
+## Phase 2 — Level-5 qualitative tier — SHIPPED (2.1–2.5; 2.6 verification pending)
+
+Implementation notes: unlock bits ride an owner-write `NetworkVariable<byte>` on
+`R_VesselActionHandler` (VesselStatus is deliberately a plain MonoBehaviour); non-owner peers
+resolve `IsUpgradeActive` from the replicated bits, the owner/offline path from the locally
+derived latch. Piercing ships as a per-shot `StopOnFirstPrismImpact` flag (default true below
+Space-5) applied in `ProjectileImpactor`'s prism case; domain-sparing as a per-shot
+`SpareOwnDomain` flag gating the direct-hit damage in `SkyBurstProjectileDamagePrismEffectSO`
+(AOE already spared own domain); the steal→`UpdateDomain` gap is wired in
+`Prism.HandleTeamChangedForCell`. MASS-5 shields apply at anchor (after collider re-enable +
+index registration, so the Box→Mesh swap runs last and the index flags sync). The barrel roll
+is `BarrelRollController` on the vessel root (visual-child roll, `ModifyVelocity` displacement,
+`BlockRotationOverride` for travel-aligned bridging prisms, replicating via `n_BlockRotation`);
+`676a8f994` was cherry-picked so gamepad+touch publish the radial stick vectors. REMAINING in
+2.5: AI trigger synthesis (autopilot vessels produce no stick input, so the roll is inert for
+AI), keyboard/mouse stick population, and an authored animator roll state if the transform roll
+isn't juicy enough.
 
 | # | Item |
 |---|---|

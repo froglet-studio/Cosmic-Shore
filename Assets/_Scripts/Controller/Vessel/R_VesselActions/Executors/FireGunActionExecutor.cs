@@ -127,6 +127,10 @@ namespace CosmicShore.Gameplay
             // level (0 at resting → authored minimum; 1 at level 10 → authored maximum).
             var charge01 = Mathf.Clamp01(ElementalScaling.Level01(status, Element.Charge));
 
+            // CHARGE level-5 'Domain-Safe Skybursts': the direct-hit damage spares the
+            // shooter's own domain. Per-shot snapshot at fire time.
+            var spareOwnDomain = status.ElementalAbilityHandler.IsUpgradeActive(Element.Charge);
+
             gun.FireGun(
                 _worldMuzzleAnchor,
                 so.Speed,
@@ -137,7 +141,8 @@ namespace CosmicShore.Gameplay
                 charge01,
                 FiringPatterns.Default,
                 so.Energy,
-                detachAfterSpawn: _detachFromContainer
+                detachAfterSpawn: _detachFromContainer,
+                spareOwnDomain: spareOwnDomain
             );
         }
 
