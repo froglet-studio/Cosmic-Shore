@@ -27,6 +27,47 @@ Remaining known costs: `EventSystem.Update` ≈ **0.5 ms** flat UI raycast tax
 (Task 2); first-use shader-compile hitches (Task 3 — plumbing shipped,
 collection not yet recorded).
 
+### 2026-07-09 post-DOTS-round capture — Task 5 evidence landed; ECS question answered
+
+User capture after Step 0 (compile: PASS) + Step 1 (menu ~50–60 fps avg; target 70+).
+Confirmed working in the wild: `PrismColliderLodManager.Update` **0.71 ms** (was
+5.54), animation managers 0.41 ms. Steps 2–6 of the verification checklist are
+**pending next session** (creation-tick numbers, LOD gameplay checks, PoolMiss
+quieting, 25k re-soak, HexRace).
+
+**New frame driver — `LightFauna.UpdateBehaviorCoroutine` 13.79 ms (9.27 self),
+4 ticks, 12.8 KB GC.** This is Task 5's predicted burst, now measured. The cost
+is NOT the fauna brain (sensing already rides the Burst spatial index; the
+Physics.OverlapSphereNonAlloc inside is deliberately masked to vessels-only and
+costs 0.04 ms). It is the **inline consume cascade**: every edible prism in
+range is eaten in one tick, and each Consume pays the full death synchronously —
+spatial-index removal, pool release (`TransformHandle.SetParent` /
+`PrismScaleAnimator.OnDisable` ×16), VFX pool activation (`GameObject.Activate`
+×16 ≈ 0.27 ms EACH — attribute next round: likely first-activation Awake of
+async-incubated clones and/or heavy VFX OnEnable; if first-Awake, add an
+Awake-warm toggle at refill completion), spindle lifecycle, and ~148 small
+allocations.
+
+**Decision (recorded): do NOT port fauna to ECS.** ECS/Burst pays off for
+thousands of homogeneous things doing simple math with no managed interop —
+which is why the render matrices, the AOE scan, and now the LOD classification
+live there. Fauna are a handful of heterogeneous agents whose cost is
+GameObject-world side effects (pools, spindles, VFX, SOAP); moving the brain
+into ECS would not remove one millisecond of that cascade and would cost a huge
+integration surface. The fix is **Task 5** (NEXT UP): port the Boid
+`_pendingMeals` + `maxConsumesPerFrame` pacing to `LightFauna.UpdateBehavior` —
+queue the eligible meals at the tick, drain a few per frame, re-validate at
+drain, clear on death. Pacing only, throughput preserved (`/ecology` change,
+same invariant statement as `19b7b5a4`). Expected: the 13.79 ms tick spreads to
+~1–2 ms/frame at identical eating rate.
+
+**Also on the 70 fps path:** `DomainVolumeIndicator.Update` reads 1.22 ms self
+in this capture — the push gate helps static menus but during active feeding
+the fills/cycle change every frame, so the per-push cost itself needs a marker
+split next round (follow-up filed). `EventSystem.Update` 0.52 ms — the Raycast
+Target Audit (Task 2) has still not been run in-editor. `DiagnosticsHUD` 0.64 ms
++ 21.5 KB is editor-only.
+
 ### 2026-07-09 fixes for the soak findings (SHIPPED — verify per §5 + the soak section)
 
 All three soak offenders fixed in `e0735b2c` / `eaf107e0` / `75828ff0`:
@@ -473,10 +514,13 @@ non-structural, no sync point.
 
 ---
 
-### Task 5 — LightFauna grazing pacing parity (conditional, `/ecology`)
+### Task 5 — LightFauna grazing pacing parity (`/ecology`) ★ NEXT UP
 
-**Status:** conditional — currently cheap (0.72 ms / 16 calls); act only if a
-capture shows the LightFauna tick spiking.
+**Status:** EVIDENCE LANDED (2026-07-09 capture: 13.79 ms / 4 ticks, 9.27 self,
+12.8 KB, `GameObject.Activate` ×16 in the cascade) — implement on the next code
+round. Also attribute the 0.27 ms-per-activation pooled-VFX cost while in there
+(possible first-Awake of async-incubated clones → Awake-warm at refill
+completion if confirmed).
 
 **Verified.** LightFauna's tick is `UpdateBehavior()`
 (`Assets/_Scripts/Controller/Environment/FloraAndFauna/LightFauna.cs:228`,
