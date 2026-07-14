@@ -15,8 +15,30 @@ MonoBehaviour:
   nodeId: ab0334de1b4740a89134f7e01c7c4f35
   displayName: Phase 4 Complete
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 520}
+  graphPosition: {x: 310, y: 576}
   outputs: []
+--- !u!114 &-5824163366969753463
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3135c9b91c954d15b031ab7987d17d67, type: 3}
+  m_Name: QuestWaitForIntensityNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForIntensityNode
+  nodeId: c5db4e22130341cdbf45c73450b9f20f
+  displayName: Wait For Intensity
+  nodeEnabled: 1
+  graphPosition: {x: 331, y: 31}
+  outputs:
+  - portName: next
+    targetNodeId: b5c9e90d2b1f4f63ac6a96a32987795e
+    delaySeconds: 0
+  mode: 36
+  intensityTier: 4
 --- !u!114 &-985892852827056388
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -32,7 +54,7 @@ MonoBehaviour:
   nodeId: b5c9e90d2b1f4f63ac6a96a32987795e
   displayName: 'CTA: Hangar'
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 40}
+  graphPosition: {x: 328, y: 124}
   outputs:
   - portName: next
     targetNodeId: 353af98344ef4837949d4f83ef108e1f
@@ -58,13 +80,14 @@ MonoBehaviour:
   designerNotes: "Entry: after Maelstrom is played. Guide to the hangar, tour the
     vessel-unlock flow, wait until the player unlocks a vessel (the hangar UI fires
     UserActionType.UnlockVessel), reward dialogue. Ends \u2192 Phase 5 (finale)."
-  entryNode: {fileID: -985892852827056388}
+  entryNode: {fileID: -5824163366969753463}
   nodes:
   - {fileID: -985892852827056388}
   - {fileID: 7968783019364466321}
   - {fileID: 5685128585192790223}
   - {fileID: 3450901636837578349}
   - {fileID: -8586129727533339045}
+  - {fileID: -5824163366969753463}
   canvasScroll: {x: 0, y: 0}
   canvasZoom: 1
 --- !u!114 &3450901636837578349
@@ -82,7 +105,7 @@ MonoBehaviour:
   nodeId: 5e527af455e3478290c2be3227a5b79e
   displayName: Vessel Reward Reveal
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 400}
+  graphPosition: {x: 313, y: 469}
   outputs:
   - portName: next
     targetNodeId: ab0334de1b4740a89134f7e01c7c4f35
@@ -106,7 +129,7 @@ MonoBehaviour:
   nodeId: ae3c625329724a109acead3c2c440873
   displayName: 'Wait: Vessel Unlocked'
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 280}
+  graphPosition: {x: 315, y: 366}
   outputs:
   - portName: next
     targetNodeId: 5e527af455e3478290c2be3227a5b79e
@@ -127,7 +150,7 @@ MonoBehaviour:
   nodeId: 353af98344ef4837949d4f83ef108e1f
   displayName: Vessel Unlock Tour
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 160}
+  graphPosition: {x: 326, y: 239}
   outputs:
   - portName: next
     targetNodeId: ae3c625329724a109acead3c2c440873

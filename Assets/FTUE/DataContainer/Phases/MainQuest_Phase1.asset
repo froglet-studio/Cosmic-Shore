@@ -41,29 +41,6 @@ MonoBehaviour:
   nodeEnabled: 1
   graphPosition: {x: 320, y: 280}
   outputs: []
---- !u!114 &-2405564631641295936
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
-  m_Name: 'CTA: Profile Screen'
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
-  nodeId: b9d6b566614a4f62a250069aceeee5f6
-  displayName: 'CTA: Profile Screen'
-  nodeEnabled: 1
-  graphPosition: {x: 60, y: 160}
-  outputs:
-  - portName: next
-    targetNodeId: efa36ece7b19480689d7d4346dafb080
-    delaySeconds: 0
-  target: 500
-  completionAction: 500
-  dependencies: 
 --- !u!114 &-1540299717785453082
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -82,8 +59,8 @@ MonoBehaviour:
   graphPosition: {x: 60, y: 40}
   outputs:
   - portName: next
-    targetNodeId: b9d6b566614a4f62a250069aceeee5f6
-    delaySeconds: 1
+    targetNodeId: efa36ece7b19480689d7d4346dafb080
+    delaySeconds: 0
   mode: 35
   intensityTier: 4
 --- !u!114 &-466005247653396301
@@ -101,12 +78,15 @@ MonoBehaviour:
   nodeId: d4bd50f6eee54654bec7b27ecb94a2b4
   displayName: Dialogue
   nodeEnabled: 1
-  graphPosition: {x: 62.065628, y: 465.25916}
-  outputs: []
+  graphPosition: {x: 58.066605, y: 436.26617}
+  outputs:
+  - portName: next
+    targetNodeId: a9cf9fe9435548a9bb64a204ae0adbe5
+    delaySeconds: 0
   speakerName: Captain
   portrait: {fileID: 0}
   lines:
-  - Click on the crystal capture game card to collect your reward.
+  - Tap the SCURRY card on your quest track to collect your reward!
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -129,7 +109,6 @@ MonoBehaviour:
   entryNode: {fileID: -1540299717785453082}
   nodes:
   - {fileID: -1540299717785453082}
-  - {fileID: -2405564631641295936}
   - {fileID: 8068318484658040026}
   - {fileID: 6836187036387692030}
   - {fileID: -7957287587653399167}
@@ -155,10 +134,10 @@ MonoBehaviour:
   nodeId: dd1cbacb4df947329cfce9f23174d955
   displayName: Wait For User Action
   nodeEnabled: 1
-  graphPosition: {x: 60.066055, y: 388.27765}
+  graphPosition: {x: 59.0663, y: 341.28894}
   outputs:
   - portName: next
-    targetNodeId: a9cf9fe9435548a9bb64a204ae0adbe5
+    targetNodeId: d4bd50f6eee54654bec7b27ecb94a2b4
     delaySeconds: 0
   action: 500
 --- !u!114 &3420469172688409254
@@ -222,7 +201,7 @@ MonoBehaviour:
   nodeId: a9cf9fe9435548a9bb64a204ae0adbe5
   displayName: 'Wait: Claim HexRace'
   nodeEnabled: 1
-  graphPosition: {x: 64.99881, y: 542.9657}
+  graphPosition: {x: 59.000244, y: 522.9705}
   outputs:
   - portName: next
     targetNodeId: d5c931a387794bf5b2fb9c43d0d3e082
@@ -243,7 +222,7 @@ MonoBehaviour:
   nodeId: efa36ece7b19480689d7d4346dafb080
   displayName: Profile Explainer
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 280}
+  graphPosition: {x: 61.99951, y: 199.01949}
   outputs:
   - portName: next
     targetNodeId: dd1cbacb4df947329cfce9f23174d955

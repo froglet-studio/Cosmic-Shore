@@ -1,5 +1,26 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-9219368479096466919
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc71607207fd49ea9b400656e8aff5d3, type: 3}
+  m_Name: QuestWaitForUserActionNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForUserActionNode
+  nodeId: 97eb987978d04d2084ecbc719662d873
+  displayName: Wait For User Action
+  nodeEnabled: 1
+  graphPosition: {x: 56, y: 63}
+  outputs:
+  - portName: next
+    targetNodeId: f450b9d5b60d42ceb646b121b0a13526
+    delaySeconds: 0
+  action: 500
 --- !u!114 &-619745350775395874
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15,7 +36,7 @@ MonoBehaviour:
   nodeId: 42affe4618b94fd5aa3ed2aaddecdf3f
   displayName: FTUE Complete
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 280}
+  graphPosition: {x: 53, y: 258}
   outputs: []
 --- !u!114 &11400000
 MonoBehaviour:
@@ -35,36 +56,13 @@ MonoBehaviour:
   designerNotes: "Entry: vessel unlocked. Guide to the episodes screen, closing dialogue
     ('you can also buy new game modes'), then Quest End \u2014 the FTUE is complete
     and persisted to UGS."
-  entryNode: {fileID: 2169981765753383201}
+  entryNode: {fileID: -9219368479096466919}
   nodes:
-  - {fileID: 2169981765753383201}
   - {fileID: 4280780183346032293}
   - {fileID: -619745350775395874}
+  - {fileID: -9219368479096466919}
   canvasScroll: {x: 0, y: 0}
   canvasZoom: 1
---- !u!114 &2169981765753383201
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: bc888e6908104b06b180f4705f0bf108, type: 3}
-  m_Name: 'CTA: Episodes'
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestHighlightCTANode
-  nodeId: d43b918a5a3c4eb9b66786828ffbde8f
-  displayName: 'CTA: Episodes'
-  nodeEnabled: 1
-  graphPosition: {x: 60, y: 40}
-  outputs:
-  - portName: next
-    targetNodeId: f450b9d5b60d42ceb646b121b0a13526
-    delaySeconds: 0
-  target: 600
-  completionAction: 600
-  dependencies: 
 --- !u!114 &4280780183346032293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -80,7 +78,7 @@ MonoBehaviour:
   nodeId: f450b9d5b60d42ceb646b121b0a13526
   displayName: Finale Dialogue
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 160}
+  graphPosition: {x: 54, y: 147}
   outputs:
   - portName: next
     targetNodeId: 42affe4618b94fd5aa3ed2aaddecdf3f

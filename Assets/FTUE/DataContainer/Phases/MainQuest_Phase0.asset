@@ -15,7 +15,7 @@ MonoBehaviour:
   nodeId: 4d51e7e97c7a48a9a4330fdf253f3952
   displayName: Maps Tour + Intensity-4 Rule
   nodeEnabled: 1
-  graphPosition: {x: 1095.8989, y: 233.46613}
+  graphPosition: {x: 1081.7087, y: 249.43002}
   outputs:
   - portName: next
     targetNodeId: 38d080a5539f45c88e872ec24f2b9991
@@ -437,8 +437,8 @@ MonoBehaviour:
   - {fileID: 1157315426489254563}
   - {fileID: -2555887249423030796}
   - {fileID: -3574500432832461629}
-  canvasScroll: {x: -239.59357, y: 23.123108}
-  canvasZoom: 1.1275439
+  canvasScroll: {x: 494.1819, y: 228.224}
+  canvasZoom: 0.7420736
 --- !u!114 &355363919843681768
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -479,7 +479,7 @@ MonoBehaviour:
   nodeId: 99a4babdb4af4034a1cee165f55e4764
   displayName: Dialogue
   nodeEnabled: 1
-  graphPosition: {x: 1093.9777, y: 477.12585}
+  graphPosition: {x: 1087.9777, y: 453.12585}
   outputs:
   - portName: next
     targetNodeId: e49acbf58ca14b319267a3c2f4422eeb
@@ -488,6 +488,8 @@ MonoBehaviour:
   portrait: {fileID: 0}
   lines:
   - Click on + button add friends and play multiplayer
+  - Carry on with intensity 3, once you complete intensity 3 you unlock a new game
+    mode.
 --- !u!114 &3330411192172384795
 MonoBehaviour:
   m_ObjectHideFlags: 0

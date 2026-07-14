@@ -118,6 +118,51 @@ MonoBehaviour:
   - {fileID: 31459265358979302}
   canvasScroll: {x: 0, y: 0}
   canvasZoom: 1
+--- !u!114 &31459265358979301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc71607207fd49ea9b400656e8aff5d3, type: 3}
+  m_Name: 'Wait: Profile Opened'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForUserActionNode
+  nodeId: 0e5938393bfb4a849324115a687b7311
+  displayName: 'Wait: Profile Opened'
+  nodeEnabled: 1
+  graphPosition: {x: 41, y: 356}
+  outputs:
+  - portName: next
+    targetNodeId: 02205f6c786142f6ac83d94136d9aaf3
+    delaySeconds: 0.5
+  action: 500
+--- !u!114 &31459265358979302
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: 'Dialogue: Collect Your Reward'
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: 02205f6c786142f6ac83d94136d9aaf3
+  displayName: 'Dialogue: Collect Your Reward'
+  nodeEnabled: 1
+  graphPosition: {x: 23, y: 447}
+  outputs:
+  - portName: next
+    targetNodeId: aea68490b5cb4622bb36c073981f8c24
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - Tap the HEX RACE card on your quest track to collect your reward!
 --- !u!114 &744151684402434159
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -133,7 +178,7 @@ MonoBehaviour:
   nodeId: c2687bdca2cc4799bb93f5c1e0869c71
   displayName: Reward Reveal
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 520}
+  graphPosition: {x: 39, y: 658}
   outputs:
   - portName: next
     targetNodeId: e061a6d6876e4aeaa0f9951eaa2ac0ab
@@ -158,7 +203,7 @@ MonoBehaviour:
   nodeId: aea68490b5cb4622bb36c073981f8c24
   displayName: 'Wait: Claim MultiplayerJoust'
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 400}
+  graphPosition: {x: 28, y: 549}
   outputs:
   - portName: next
     targetNodeId: c2687bdca2cc4799bb93f5c1e0869c71
@@ -179,7 +224,7 @@ MonoBehaviour:
   nodeId: 12e410a373744f128fd39a4579140e99
   displayName: Profile Explainer
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 280}
+  graphPosition: {x: 46, y: 237}
   outputs:
   - portName: next
     targetNodeId: 0e5938393bfb4a849324115a687b7311
@@ -204,7 +249,7 @@ MonoBehaviour:
   nodeId: 92312a30a6e3436aa870eb3feca6c3fd
   displayName: 'CTA: Profile Screen'
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 160}
+  graphPosition: {x: 55, y: 142}
   outputs:
   - portName: next
     targetNodeId: 12e410a373744f128fd39a4579140e99
@@ -212,48 +257,3 @@ MonoBehaviour:
   target: 500
   completionAction: 500
   dependencies: 
---- !u!114 &31459265358979301
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fc71607207fd49ea9b400656e8aff5d3, type: 3}
-  m_Name: 'Wait: Profile Opened'
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForUserActionNode
-  nodeId: 0e5938393bfb4a849324115a687b7311
-  displayName: 'Wait: Profile Opened'
-  nodeEnabled: 1
-  graphPosition: {x: 320, y: 400}
-  outputs:
-  - portName: next
-    targetNodeId: 02205f6c786142f6ac83d94136d9aaf3
-    delaySeconds: 0.5
-  action: 500
---- !u!114 &31459265358979302
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
-  m_Name: 'Dialogue: Collect Your Reward'
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
-  nodeId: 02205f6c786142f6ac83d94136d9aaf3
-  displayName: 'Dialogue: Collect Your Reward'
-  nodeEnabled: 1
-  graphPosition: {x: 320, y: 520}
-  outputs:
-  - portName: next
-    targetNodeId: aea68490b5cb4622bb36c073981f8c24
-    delaySeconds: 0
-  speakerName: Captain
-  portrait: {fileID: 0}
-  lines:
-  - Tap the HEX RACE card on your quest track to collect your reward!
