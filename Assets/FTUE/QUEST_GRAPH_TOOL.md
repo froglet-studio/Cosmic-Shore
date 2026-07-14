@@ -101,6 +101,16 @@ Interactive/editable reference map (browser): the "Main Quest Progression Map" a
 - **Panels** — both sidebars hide/show from the toolbar (◧ Quests / Inspector ◨) and resize by
   dragging their inner edge; the on-canvas node-color legend toggles with "Node Colors". All
   persisted per user.
+- **Checkpoint view** — the canvas overlays the player's LOCAL progress: ✓ on every node the
+  player completed, an amber **▶ NEXT** banner on the node the quest resumes at, a ▶ marker on
+  the current phase in the quest list, and a "PLAYER PROGRESS" readout in the quest inspector.
+  Updates live during Play mode (~2×/s). Reset clears it.
+- **Arcade funnel persistence** — `QuestArcadeConstraints` is persisted in PlayerPrefs with the
+  quest cursor, so a play-session restart mid-quest keeps the arcade funnel (one card, one
+  intensity, authored player/domain counts) instead of silently unlocking everything.
+- **GameModeProgressionService** — the wirer now creates + wires it in Menu_Main if missing
+  (it previously existed in NO scene, so `Instance` was null: no card locks, no play tracking,
+  and played-game gates could never resume).
 - Runner-side: `debugDisable`, `debugForceRun` (ignore completion + saved progress), and
   `debugPhaseOverride` (run one phase graph without persistence).
 

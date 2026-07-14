@@ -124,7 +124,7 @@ namespace CosmicShore.Editor
                 Debug.LogWarning($"[Quest] Runner still needs manual wiring for: {string.Join(", ", missing)}");
         }
 
-        static T FindAsset<T>() where T : Object
+        internal static T FindAsset<T>() where T : Object
         {
             var guid = AssetDatabase.FindAssets($"t:{typeof(T).Name}").FirstOrDefault();
             return guid == null ? null : AssetDatabase.LoadAssetAtPath<T>(AssetDatabase.GUIDToAssetPath(guid));

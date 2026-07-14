@@ -84,6 +84,21 @@ namespace CosmicShore.Core
             : debugPhaseOverride != null ? debugPhaseOverride.name
             : string.Empty;
 
+#if UNITY_EDITOR
+        void OnValidate()
+        {
+            // The prefab slot is a FALLBACK and must hold a prefab ASSET. Hand-wiring keeps
+            // dropping the scene DialogueSetUI into both slots — a scene object has a valid
+            // scene handle, so detect and clear it right in the inspector.
+            if (dialoguePanelPrefab != null && dialoguePanelPrefab.gameObject.scene.IsValid())
+            {
+                Debug.LogWarning("[Quest] 'Dialogue Panel Prefab' must be a prefab asset, not the scene panel — " +
+                                 "cleared. The scene 'Dialogue Panel' slot is what drives dialogue.", this);
+                dialoguePanelPrefab = null;
+            }
+        }
+#endif
+
         // ── Unity lifecycle ────────────────────────────────────────────
 
         void OnEnable()
@@ -189,7 +204,12 @@ namespace CosmicShore.Core
                 CrystalHandler = crystalHandler,
                 InstructionView = instructionView,
                 DialoguePanel = dialoguePanel,
-                DialoguePanelPrefab = dialoguePanelPrefab,
+                // Runtime belt-and-suspenders for the same mis-wiring: never treat a scene
+                // object (or a duplicate of the scene panel) as the instantiation fallback.
+                DialoguePanelPrefab = dialoguePanelPrefab != null
+                                      && (dialoguePanelPrefab == dialoguePanel || dialoguePanelPrefab.gameObject.scene.IsValid())
+                    ? null
+                    : dialoguePanelPrefab,
                 DialoguePanelParent = dialoguePanelParent,
                 ScreenSwitcher = screenSwitcher,
                 GameCards = gameCards,

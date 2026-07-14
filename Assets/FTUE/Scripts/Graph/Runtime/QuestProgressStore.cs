@@ -22,6 +22,7 @@ namespace CosmicShore.Core
         static string CompletedKey(string questId) => $"QUEST_{questId}_Completed";
         static string PhaseKey(string questId) => $"QUEST_{questId}_Phase";
         static string NodeKey(string questId) => $"QUEST_{questId}_Node";
+        static string DoneNodesKey(string questId) => $"QUEST_{questId}_DoneNodes";
 
         static QuestProgressRecord LoadedRecord(string questId)
         {
@@ -56,11 +57,36 @@ namespace CosmicShore.Core
             return PlayerPrefs.GetString(NodeKey(questId), string.Empty);
         }
 
+        /// <summary>
+        /// Every node id ever completed for this quest (local mirror). Drives the editor's
+        /// checkpoint view (✓ on completed nodes, ▶ on the resume cursor).
+        /// </summary>
+        public static System.Collections.Generic.HashSet<string> GetCompletedNodeIds(string questId)
+        {
+            var set = new System.Collections.Generic.HashSet<string>();
+            string csv = PlayerPrefs.GetString(DoneNodesKey(questId), string.Empty);
+            if (!string.IsNullOrEmpty(csv))
+                foreach (var id in csv.Split(','))
+                    if (id.Length > 0)
+                        set.Add(id);
+            return set;
+        }
+
         /// <summary>Record a node completion + advance the resume cursor. Debounce-saved to UGS.</summary>
         public static void ReportNodeCompleted(string questId, int phaseIndex, string completedNodeId, string nextNodeId)
         {
             PlayerPrefs.SetInt(PhaseKey(questId), phaseIndex);
             PlayerPrefs.SetString(NodeKey(questId), nextNodeId ?? string.Empty);
+
+            // Append to the local done-set (node ids are GUID hex — containment check is exact).
+            if (!string.IsNullOrEmpty(completedNodeId))
+            {
+                string csv = PlayerPrefs.GetString(DoneNodesKey(questId), string.Empty);
+                if (!csv.Contains(completedNodeId))
+                    PlayerPrefs.SetString(DoneNodesKey(questId),
+                        csv.Length == 0 ? completedNodeId : csv + "," + completedNodeId);
+            }
+
             PlayerPrefs.Save();
 
             var repo = Repo;
@@ -102,13 +128,18 @@ namespace CosmicShore.Core
             repo.MarkDirty();
         }
 
-        /// <summary>Clears the LOCAL mirror only.</summary>
+        /// <summary>Clears the LOCAL mirror (cursor, done-set) and any persisted arcade constraints.</summary>
         public static void ResetLocal(string questId)
         {
             PlayerPrefs.DeleteKey(CompletedKey(questId));
             PlayerPrefs.DeleteKey(PhaseKey(questId));
             PlayerPrefs.DeleteKey(NodeKey(questId));
+            PlayerPrefs.DeleteKey(DoneNodesKey(questId));
             PlayerPrefs.Save();
+
+            // The arcade funnel persists with the cursor — a cursor reset without a
+            // constraints reset would leave the arcade locked down with no quest driving it.
+            QuestArcadeConstraints.Clear();
         }
 
         /// <summary>

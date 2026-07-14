@@ -1,40 +1,56 @@
 using CosmicShore.Data;
+using UnityEngine;
 
 namespace CosmicShore.Core
 {
     /// <summary>
     /// Quest-graph-driven constraints on the arcade UI, used to funnel the first orientation:
     /// lock every game card except the tutorial mode, pin the configure modal to one intensity,
-    /// and default the player/domain steppers for the best first-game experience.
+    /// and default the player/domain steppers for the authored first-game experience.
     ///
-    /// Static on purpose: the constraints must survive the Menu → game → Menu scene round-trip
-    /// (the runner and all scene UI are destroyed and rebuilt), and statics do. Set by
-    /// <see cref="QuestSetArcadeConstraintsNode"/>, cleared by the same node (Clear mode), on
-    /// quest completion, and by the editor's progress reset.
+    /// PERSISTED in PlayerPrefs alongside the quest's local progress cursor: the constraints
+    /// must survive not only the Menu → game → Menu scene round-trip but also a play-session
+    /// restart mid-quest — the resume cursor lands PAST the SetArcadeConstraints node, so if
+    /// the state lived only in statics a restart would silently unlock the whole arcade.
+    /// Set by <see cref="QuestSetArcadeConstraintsNode"/>, cleared by the same node (Clear
+    /// mode), on quest completion, and by the editor's progress reset.
     ///
     /// Consumers: <c>ArcadeExploreView</c> (card locking) and <c>ArcadeGameConfigureModal</c>
     /// (intensity buttons + player/domain stepper defaults).
     /// </summary>
     public static class QuestArcadeConstraints
     {
+        const string PrefActive = "QUEST_ARC_Active";
+        const string PrefMode = "QUEST_ARC_AllowedMode";
+        const string PrefIntensity = "QUEST_ARC_Intensity";
+        const string PrefPlayers = "QUEST_ARC_Players";
+        const string PrefDomains = "QUEST_ARC_Domains";
+
         /// <summary>Raised whenever the constraints are applied or cleared — arcade UI
         /// (card grid) subscribes to refresh its lock state immediately.</summary>
         public static event System.Action OnChanged;
 
+        static bool _loaded;
+        static bool _active;
+        static GameModes _allowedMode = GameModes.Random;
+        static int _forcedIntensity;
+        static int _forcedPlayerCount;
+        static int _forcedDomainCount;
+
         /// <summary>Master switch — when false every query below is a no-op.</summary>
-        public static bool Active { get; private set; }
+        public static bool Active { get { EnsureLoaded(); return _active; } }
 
         /// <summary>The one playable mode while active. <see cref="GameModes.Random"/> = no card restriction.</summary>
-        public static GameModes AllowedMode { get; private set; } = GameModes.Random;
+        public static GameModes AllowedMode { get { EnsureLoaded(); return _allowedMode; } }
 
         /// <summary>The only selectable intensity while active (0 = no restriction).</summary>
-        public static int ForcedIntensity { get; private set; }
+        public static int ForcedIntensity { get { EnsureLoaded(); return _forcedIntensity; } }
 
-        /// <summary>Default the configure modal's player count to the game's maximum.</summary>
-        public static bool ForceMaxPlayers { get; private set; }
+        /// <summary>Exact player count the configure modal defaults to (0 = no override).</summary>
+        public static int ForcedPlayerCount { get { EnsureLoaded(); return _forcedPlayerCount; } }
 
-        /// <summary>Default the configure modal's domain (team) count (0 = no override).</summary>
-        public static int ForcedDomainCount { get; private set; }
+        /// <summary>Domain (team) count the configure modal defaults to (0 = no override).</summary>
+        public static int ForcedDomainCount { get { EnsureLoaded(); return _forcedDomainCount; } }
 
         public static bool IsModeBlocked(GameModes mode) =>
             Active && AllowedMode != GameModes.Random && mode != AllowedMode;
@@ -42,24 +58,52 @@ namespace CosmicShore.Core
         public static bool IsIntensityBlocked(int intensity) =>
             Active && ForcedIntensity > 0 && intensity != ForcedIntensity;
 
-        public static void Apply(GameModes allowedMode, int forcedIntensity, bool forceMaxPlayers, int forcedDomainCount)
+        public static void Apply(GameModes allowedMode, int forcedIntensity, int forcedPlayerCount, int forcedDomainCount)
         {
-            Active = true;
-            AllowedMode = allowedMode;
-            ForcedIntensity = forcedIntensity;
-            ForceMaxPlayers = forceMaxPlayers;
-            ForcedDomainCount = forcedDomainCount;
+            EnsureLoaded();
+            _active = true;
+            _allowedMode = allowedMode;
+            _forcedIntensity = forcedIntensity;
+            _forcedPlayerCount = forcedPlayerCount;
+            _forcedDomainCount = forcedDomainCount;
+            Persist();
             OnChanged?.Invoke();
         }
 
         public static void Clear()
         {
-            Active = false;
-            AllowedMode = GameModes.Random;
-            ForcedIntensity = 0;
-            ForceMaxPlayers = false;
-            ForcedDomainCount = 0;
+            _loaded = true; // a clear defines the state; nothing to load over it
+            _active = false;
+            _allowedMode = GameModes.Random;
+            _forcedIntensity = 0;
+            _forcedPlayerCount = 0;
+            _forcedDomainCount = 0;
+            Persist();
             OnChanged?.Invoke();
+        }
+
+        static void EnsureLoaded()
+        {
+            if (_loaded) return;
+            _loaded = true;
+
+            _active = PlayerPrefs.GetInt(PrefActive, 0) == 1;
+            if (!_active) return;
+
+            _allowedMode = (GameModes)PlayerPrefs.GetInt(PrefMode, (int)GameModes.Random);
+            _forcedIntensity = PlayerPrefs.GetInt(PrefIntensity, 0);
+            _forcedPlayerCount = PlayerPrefs.GetInt(PrefPlayers, 0);
+            _forcedDomainCount = PlayerPrefs.GetInt(PrefDomains, 0);
+        }
+
+        static void Persist()
+        {
+            PlayerPrefs.SetInt(PrefActive, _active ? 1 : 0);
+            PlayerPrefs.SetInt(PrefMode, (int)_allowedMode);
+            PlayerPrefs.SetInt(PrefIntensity, _forcedIntensity);
+            PlayerPrefs.SetInt(PrefPlayers, _forcedPlayerCount);
+            PlayerPrefs.SetInt(PrefDomains, _forcedDomainCount);
+            PlayerPrefs.Save();
         }
     }
 }

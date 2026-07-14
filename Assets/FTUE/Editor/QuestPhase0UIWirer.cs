@@ -31,6 +31,7 @@ namespace CosmicShore.Editor
         [MenuItem("FrogletTools/Quest Graph/Wire Phase 0 UI (Menu_Main)")]
         public static void Wire()
         {
+            WireProgressionService();
             WireInstructionSet();
             WireDialoguePanel();
             QuestRunnerSetup.SetupRunner(); // resolves runner refs incl. the new instruction view
@@ -40,6 +41,39 @@ namespace CosmicShore.Editor
 
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
             Debug.Log("[Quest] Phase 0 UI wiring complete — review the mapping logs above, then SAVE THE SCENE.");
+        }
+
+        // ── Progression service (was in NO scene — Instance null every run) ──
+        //
+        // GameModeProgressionService is the lock authority for arcade cards, intensity
+        // tiers, and play-count tracking, but the only prefab carrying it lives in
+        // "MIgration_Prefabs (DELETE LATER)" and is placed nowhere. With Instance null,
+        // cards were never progression-locked and the quest's played-game gates could
+        // never resume after a scene round-trip.
+
+        static void WireProgressionService()
+        {
+            if (Object.FindFirstObjectByType<GameModeProgressionService>(FindObjectsInactive.Include) != null)
+                return;
+
+            var go = new GameObject("GameModeProgressionService");
+            Undo.RegisterCreatedObjectUndo(go, "Create GameModeProgressionService");
+            var svc = go.AddComponent<GameModeProgressionService>();
+
+            var so = new SerializedObject(svc);
+            var questList = QuestRunnerSetup.FindAsset<CosmicShore.ScriptableObjects.SO_UnlockList>();
+            so.FindProperty("questList").objectReferenceValue = questList;
+            so.FindProperty("progressionConfig").objectReferenceValue =
+                QuestRunnerSetup.FindAsset<CosmicShore.ScriptableObjects.SO_ProgressionConfig>();
+            so.FindProperty("gameData").objectReferenceValue =
+                QuestRunnerSetup.FindAsset<CosmicShore.Utility.GameDataSO>();
+            so.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(svc);
+
+            if (questList == null)
+                Debug.LogWarning("[Quest] Wirer: no SO_UnlockList asset found — assign Quest List on GameModeProgressionService manually.");
+            Debug.Log($"[Quest] Wirer: GameModeProgressionService was in NO scene (Instance was always null → no card locks, " +
+                      $"no play tracking, played-game gates couldn't resume). Created + wired it (questList: {(questList != null ? questList.name : "MISSING")}).");
         }
 
         // ── Instruction set ────────────────────────────────────────────

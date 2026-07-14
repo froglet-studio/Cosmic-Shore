@@ -20,7 +20,7 @@ namespace CosmicShore.Core
             ? "Clear all constraints"
             : $"Only {allowedMode}"
               + (forcedIntensity > 0 ? $" @ intensity {forcedIntensity}" : string.Empty)
-              + (forceMaxPlayers ? " · max players" : string.Empty)
+              + (forcedPlayerCount > 0 ? $" · {forcedPlayerCount} players" : string.Empty)
               + (forcedDomainCount > 0 ? $" · {forcedDomainCount} domains" : string.Empty);
 
         [Tooltip("Clear every constraint instead of applying (end of the funnel).")]
@@ -30,13 +30,13 @@ namespace CosmicShore.Core
         public GameModes allowedMode = GameModes.MultiplayerCrystalCapture;
 
         [Tooltip("The only selectable intensity in the configure modal (0 = no restriction).")]
-        [Range(0, 4)] public int forcedIntensity = 2;
+        [Range(0, 4)] public int forcedIntensity = 1;
 
-        [Tooltip("Default the configure modal's player count to the game's maximum.")]
-        public bool forceMaxPlayers = true;
+        [Tooltip("Exact player count the configure modal defaults to (0 = no override).")]
+        [Range(0, 12)] public int forcedPlayerCount = 2;
 
         [Tooltip("Default the configure modal's domain (team) count (0 = no override).")]
-        [Range(0, 3)] public int forcedDomainCount = 3;
+        [Range(0, 3)] public int forcedDomainCount = 2;
 
         public override IEnumerator Execute(QuestRuntimeContext ctx, System.Action<string> advance)
         {
@@ -45,7 +45,7 @@ namespace CosmicShore.Core
             if (clearConstraints)
                 QuestArcadeConstraints.Clear();
             else
-                QuestArcadeConstraints.Apply(allowedMode, forcedIntensity, forceMaxPlayers, forcedDomainCount);
+                QuestArcadeConstraints.Apply(allowedMode, forcedIntensity, forcedPlayerCount, forcedDomainCount);
 
             Debug.Log($"[Quest] Arcade constraints {(clearConstraints ? "cleared" : $"applied: {EditorSummary}")}.");
             advance(QuestPorts.Next);

@@ -462,13 +462,15 @@ namespace CosmicShore.UI
             config.PlayerCount = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
 
             // Quest-graph funnel (FTUE first orientation): pin the intensity and default the
-            // player count to the game's max for the fullest first-game experience.
+            // player count to the authored first-game size.
             if (QuestArcadeConstraints.Active)
             {
                 if (QuestArcadeConstraints.ForcedIntensity > 0)
                     config.Intensity = Mathf.Clamp(QuestArcadeConstraints.ForcedIntensity, game.MinIntensity, game.MaxIntensity);
-                if (QuestArcadeConstraints.ForceMaxPlayers)
-                    config.PlayerCount = Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers);
+                if (QuestArcadeConstraints.ForcedPlayerCount > 0)
+                    config.PlayerCount = Mathf.Clamp(QuestArcadeConstraints.ForcedPlayerCount,
+                        Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount),
+                        Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers));
             }
 
             SyncGameDataConfig();

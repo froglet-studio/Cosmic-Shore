@@ -52,6 +52,13 @@ namespace CosmicShore.Editor
         Vector2 _questNotesScroll, _phaseNotesScroll;
         bool _showLegend = true;
 
+        // ── Player progress (checkpoint view — reads the local PlayerPrefs mirror) ──
+        HashSet<string> _doneNodeIds = new();
+        string _cursorNodeId = string.Empty;
+        int _cursorPhaseIndex = -1;
+        bool _questCompletedLocal;
+        double _nextProgressPoll;
+
         // ── Panels (resizable + hideable, persisted per user) ──────────
         const string PrefLeftW = "QuestGraph.LeftW";
         const string PrefRightW = "QuestGraph.RightW";
@@ -110,11 +117,47 @@ namespace CosmicShore.Editor
             if (_nodeEditor != null) DestroyImmediate(_nodeEditor);
         }
 
-        void OnFocus() { RefreshAssets(); MarkValidationDirty(); }
+        void OnFocus() { RefreshAssets(); RefreshProgress(); MarkValidationDirty(); }
         void OnProjectChange() { RefreshAssets(); MarkValidationDirty(); Repaint(); }
         void OnUndoRedo() { _cards.Clear(); MarkValidationDirty(); Repaint(); }
 
         void MarkValidationDirty() => _validationDirty = true;
+
+        /// <summary>Re-read the player's local checkpoint (cursor + done-set) for the selected quest.</summary>
+        void RefreshProgress()
+        {
+            if (_quest == null)
+            {
+                _doneNodeIds = new HashSet<string>();
+                _cursorNodeId = string.Empty;
+                _cursorPhaseIndex = -1;
+                _questCompletedLocal = false;
+                return;
+            }
+
+            _doneNodeIds = QuestProgressStore.GetCompletedNodeIds(_quest.QuestId);
+            _cursorNodeId = QuestProgressStore.GetCurrentNodeId(_quest.QuestId) ?? string.Empty;
+            _cursorPhaseIndex = QuestProgressStore.GetPhaseIndex(_quest.QuestId);
+            _questCompletedLocal = QuestProgressStore.IsCompleted(_quest.QuestId);
+        }
+
+        /// <summary>Live checkpoint updates while testing: poll the local mirror and repaint on change.</summary>
+        void OnInspectorUpdate()
+        {
+            if (_quest == null || EditorApplication.timeSinceStartup < _nextProgressPoll) return;
+            _nextProgressPoll = EditorApplication.timeSinceStartup + (Application.isPlaying ? 0.5 : 2.0);
+
+            string prevCursor = _cursorNodeId;
+            int prevDone = _doneNodeIds.Count;
+            int prevPhase = _cursorPhaseIndex;
+            bool prevCompleted = _questCompletedLocal;
+
+            RefreshProgress();
+
+            if (prevCursor != _cursorNodeId || prevDone != _doneNodeIds.Count
+                || prevPhase != _cursorPhaseIndex || prevCompleted != _questCompletedLocal)
+                Repaint();
+        }
 
         // ════════════════════════════════════════════════════════════════
         // OnGUI
@@ -384,7 +427,9 @@ namespace CosmicShore.Editor
                         }
                     }
 
+                    bool isCursorPhase = !_questCompletedLocal && i == _cursorPhaseIndex;
                     string label = phase != null ? $"{i} · {phase.PhaseName}" : $"{i} · (missing)";
+                    if (isCursorPhase) label = "▶ " + label;
                     var prevPhaseCol = GUI.color;
                     if (phase != null && !phase.phaseEnabled) GUI.color = new Color(1f, 1f, 1f, 0.45f);
                     if (GUI.Button(new Rect(prow.x + 38, prow.y, prow.width - 104, prow.height), label,
@@ -619,14 +664,18 @@ namespace CosmicShore.Editor
 
         void DrawNodes(Event e, bool mouseInCanvas)
         {
+            // The resume marker only applies to the phase the player's cursor is in.
+            bool cursorPhase = !_questCompletedLocal && _quest != null
+                               && _quest.phases.IndexOf(_graph) == _cursorPhaseIndex;
+
             foreach (var n in _graph.nodes)
             {
                 if (n == null) continue;
-                DrawNode(n, e, mouseInCanvas);
+                DrawNode(n, e, mouseInCanvas, cursorPhase);
             }
         }
 
-        void DrawNode(QuestNodeSO n, Event e, bool mouseInCanvas)
+        void DrawNode(QuestNodeSO n, Event e, bool mouseInCanvas, bool cursorPhase)
         {
             var card = GetCard(n);
             var r = NodeRect(n);
@@ -720,6 +769,21 @@ namespace CosmicShore.Editor
             {
                 EditorGUI.DrawRect(r, new Color(0.05f, 0.05f, 0.07f, 0.45f));
                 GUI.Label(new Rect(r.xMax - 38, r.yMax - 18, 34, 16), "OFF", QuestGraphStyles.EntryBadge);
+            }
+
+            // ── Player checkpoint overlay (reads the local progress mirror) ──
+            // ▶ NEXT = the node the quest resumes at; ✓ = the player already completed it.
+            bool isResume = cursorPhase && !string.IsNullOrEmpty(_cursorNodeId) && n.nodeId == _cursorNodeId;
+            if (isResume)
+            {
+                DrawBorder(r, QuestGraphStyles.ResumeBorder, 2f);
+                var badge = new Rect(r.x - 2, r.y - 18, 64, 16);
+                EditorGUI.DrawRect(badge, QuestGraphStyles.ResumeBorder);
+                GUI.Label(badge, "▶ NEXT", QuestGraphStyles.ResumeBadge);
+            }
+            else if (_doneNodeIds.Contains(n.nodeId))
+            {
+                GUI.Label(new Rect(r.x + 6, r.yMax - 19, 16, 16), "✓", QuestGraphStyles.DoneBadge);
             }
 
             // Hover tooltip on the header
@@ -897,6 +961,36 @@ namespace CosmicShore.Editor
                 }
                 EditorGUILayout.EndHorizontal();
 
+                GUILayout.Space(6);
+                GUILayout.Label("PLAYER PROGRESS (local checkpoint)", QuestGraphStyles.PanelHeader);
+                if (_questCompletedLocal)
+                {
+                    EditorGUILayout.HelpBox("Quest COMPLETED on this machine — the runner will not start it again (reset below to replay).", MessageType.Info);
+                }
+                else if (_doneNodeIds.Count == 0 && string.IsNullOrEmpty(_cursorNodeId))
+                {
+                    EditorGUILayout.HelpBox("No progress yet — the quest starts from Phase 0's entry node.", MessageType.None);
+                }
+                else
+                {
+                    string phaseLabel = _cursorPhaseIndex >= 0 && _cursorPhaseIndex < _quest.phases.Count
+                                        && _quest.phases[_cursorPhaseIndex] != null
+                        ? $"{_cursorPhaseIndex} · {_quest.phases[_cursorPhaseIndex].PhaseName}"
+                        : _cursorPhaseIndex.ToString();
+                    var cursorNode = _cursorPhaseIndex >= 0 && _cursorPhaseIndex < _quest.phases.Count
+                                     && _quest.phases[_cursorPhaseIndex] != null
+                        ? _quest.phases[_cursorPhaseIndex].FindNode(_cursorNodeId)
+                        : null;
+                    string nextLabel = cursorNode != null ? NodeLabel(cursorNode)
+                        : string.IsNullOrEmpty(_cursorNodeId) ? "(phase entry)"
+                        : "(node not in this graph — regenerated quest? Reset below)";
+
+                    EditorGUILayout.HelpBox(
+                        $"Phase: {phaseLabel}\nResumes at: {nextLabel}\nNodes completed: {_doneNodeIds.Count}\n" +
+                        "Canvas: ✓ = completed, ▶ NEXT = resume point (updates live in Play mode).",
+                        MessageType.Info);
+                }
+
                 if (!ProgressionBackendGate.CloudEnabled)
                     EditorGUILayout.HelpBox(
                         "Backend: LOCAL-ONLY. ProgressionBackendGate is closed — quest progress lives in " +
@@ -914,10 +1008,12 @@ namespace CosmicShore.Editor
                             ? "skipped (backend gate closed — local-only mode)"
                             : cloud ? "✓" : "✗ (repos not loaded / not signed in)";
                         Debug.Log($"[Quest] '{_quest.QuestId}' FULL reset — local ✓, progression+vessels ✓, cloud {cloudMsg}.");
+                        RefreshProgress();
                     }
                     else
                     {
                         QuestProgressStore.ResetLocal(_quest.QuestId);
+                        RefreshProgress();
                         Debug.Log(ProgressionBackendGate.CloudEnabled
                             ? $"[Quest] '{_quest.QuestId}' local mirror cleared. Enter PLAY MODE (signed in) and press again for the full backend reset (progression, intensities, vessels)."
                             : $"[Quest] '{_quest.QuestId}' local mirror cleared — with the backend gate closed this IS the full reset (progression is session-local and starts fresh every play).");
@@ -1225,6 +1321,7 @@ namespace CosmicShore.Editor
         {
             _quest = quest;
             _questRename = quest != null ? quest.name : null;
+            RefreshProgress();
             if (quest.phases.Count > 0 && quest.phases[0] != null && (_graph == null || !quest.phases.Contains(_graph)))
                 SelectGraph(quest.phases[0], quest);
             MarkValidationDirty();
@@ -1556,12 +1653,13 @@ namespace CosmicShore.Editor
         public static Color ToolbarBg, PanelBg, CanvasBg, GridMinor, GridMajor;
         public static Color NodeBody, NodeBodyHover, NodeShadow, PortIn, PortRim, PortArmed;
         public static Color EntryBorder, SelectionBorder, LinkPreview, LegendBg, TooltipBg;
-        public static Color RowSelected, RowSelectedFaint, SplitterLine;
+        public static Color RowSelected, RowSelectedFaint, SplitterLine, ResumeBorder;
 
         public static GUIStyle Breadcrumb, PanelHeader, RowLabel, RowLabelSelected, RowLabelSmall;
         public static GUIStyle MiniButton, MiniButtonDanger, MiniWide;
         public static GUIStyle NodeHeader, NodeTitle, NodeSummary, NodeDelete, EntryBadge, PortLabel;
         public static GUIStyle CanvasHint, LegendHeader, LegendLabel, Tooltip, NotesArea, EdgeLabel;
+        public static GUIStyle DoneBadge, ResumeBadge;
 
         public static void Ensure()
         {
@@ -1587,6 +1685,7 @@ namespace CosmicShore.Editor
             RowSelected = new Color(0.25f, 0.32f, 0.52f, 0.85f);
             RowSelectedFaint = new Color(0.25f, 0.32f, 0.52f, 0.45f);
             SplitterLine = new Color(0f, 0f, 0f, 0.55f);
+            ResumeBorder = new Color(1f, 0.62f, 0.18f);
 
             Breadcrumb = new GUIStyle(EditorStyles.boldLabel) { fontSize = 11 };
             PanelHeader = new GUIStyle(EditorStyles.boldLabel)
@@ -1663,6 +1762,18 @@ namespace CosmicShore.Editor
                 fontSize = 9,
                 alignment = TextAnchor.MiddleCenter,
                 normal = { textColor = new Color(0.55f, 0.75f, 1f) },
+            };
+            DoneBadge = new GUIStyle(EditorStyles.boldLabel)
+            {
+                fontSize = 12,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.35f, 0.95f, 0.5f) },
+            };
+            ResumeBadge = new GUIStyle(EditorStyles.miniBoldLabel)
+            {
+                fontSize = 9,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.1f, 0.07f, 0.02f) },
             };
         }
 

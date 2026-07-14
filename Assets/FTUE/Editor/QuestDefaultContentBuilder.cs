@@ -87,8 +87,8 @@ namespace CosmicShore.Editor
                 "success haptic and every completed step is recorded to UGS. Instruction beats reference " +
                 "keyed UI panels on QuestInstructionView (speed_up, slow_down, look_around, drift, skim, " +
                 "exit_freestyle) — node text OVERWRITES the panel's TMP text. After exit: nav locks to the " +
-                "Arcade button + captain dialogue, the arcade funnels to Crystal Capture @ intensity 2 " +
-                "(max players, 3 domains), then profile/maps tour + the intensity-4 rule, CC @ intensity 3, " +
+                "Arcade button + captain dialogue, the arcade funnels to Crystal Capture @ intensity 1 " +
+                "(2 players, 2 domains), then profile/maps tour + the intensity-4 rule, CC @ intensity 3, " +
                 "funnel cleared, social UI tour.");
 
             var enter = Add<QuestEnterFreestyleNode>(g, "Camera → Player Vessel (enter freestyle)");
@@ -152,24 +152,24 @@ namespace CosmicShore.Editor
                 "Tap the ARCADE button below. Your first real match is waiting!",
             };
 
-            var constraintsCC2 = Add<QuestSetArcadeConstraintsNode>(g, "Arcade Funnel: CC @ Intensity 2");
-            constraintsCC2.allowedMode = GameModes.MultiplayerCrystalCapture;
-            constraintsCC2.forcedIntensity = 2;
-            constraintsCC2.forceMaxPlayers = true;
-            constraintsCC2.forcedDomainCount = 3;
+            var constraintsCC1 = Add<QuestSetArcadeConstraintsNode>(g, "Arcade Funnel: CC @ Intensity 1 · 2p · 2 domains");
+            constraintsCC1.allowedMode = GameModes.MultiplayerCrystalCapture;
+            constraintsCC1.forcedIntensity = 1;
+            constraintsCC1.forcedPlayerCount = 2;
+            constraintsCC1.forcedDomainCount = 2;
 
             var ctaArcade = Add<QuestHighlightCTANode>(g, "CTA: Arcade");
             ctaArcade.target = CallToActionTargetType.ArcadeMenu;
             ctaArcade.completionAction = UserActionType.ViewArcadeMenu;
 
-            var ctaCC2 = Add<QuestHighlightCTANode>(g, "CTA: Play CC (Intensity 2)");
-            ctaCC2.target = CallToActionTargetType.PlayGameMultiplayerCrystalCapture;
-            ctaCC2.completionAction = UserActionType.PlayGame;
+            var ctaCC1 = Add<QuestHighlightCTANode>(g, "CTA: Play CC (Intensity 1)");
+            ctaCC1.target = CallToActionTargetType.PlayGameMultiplayerCrystalCapture;
+            ctaCC1.completionAction = UserActionType.PlayGame;
 
-            var playedCC2 = Add<QuestWaitForGamePlayedNode>(g, "Wait: CC Played @2");
-            playedCC2.filterByMode = true;
-            playedCC2.expectedMode = GameModes.MultiplayerCrystalCapture;
-            playedCC2.minIntensity = 2;
+            var playedCC1 = Add<QuestWaitForGamePlayedNode>(g, "Wait: CC Played @1");
+            playedCC1.filterByMode = true;
+            playedCC1.expectedMode = GameModes.MultiplayerCrystalCapture;
+            playedCC1.minIntensity = 1;
 
             var unlockNav = Add<QuestLockNavigationNode>(g, "Unlock Nav Buttons");
             unlockNav.unlock = true;
@@ -185,11 +185,11 @@ namespace CosmicShore.Editor
                 "Tiers 1 to 3 are open right away. Reach INTENSITY 4 in a mode to unlock the next one on your quest track!",
             };
 
-            var constraintsCC3 = Add<QuestSetArcadeConstraintsNode>(g, "Arcade Funnel: CC @ Intensity 3");
+            var constraintsCC3 = Add<QuestSetArcadeConstraintsNode>(g, "Arcade Funnel: CC @ Intensity 3 · 2p · 2 domains");
             constraintsCC3.allowedMode = GameModes.MultiplayerCrystalCapture;
             constraintsCC3.forcedIntensity = 3;
-            constraintsCC3.forceMaxPlayers = true;
-            constraintsCC3.forcedDomainCount = 3;
+            constraintsCC3.forcedPlayerCount = 2;
+            constraintsCC3.forcedDomainCount = 2;
 
             var ctaCC3 = Add<QuestHighlightCTANode>(g, "CTA: Play CC (Intensity 3)");
             ctaCC3.target = CallToActionTargetType.PlayGameMultiplayerCrystalCapture;
@@ -214,7 +214,7 @@ namespace CosmicShore.Editor
             Chain(g, enter,
                 speedUpPrompt, waitSpeedUp, slowDownPrompt, waitSlowDown, lookPrompt, waitLook,
                 driftPrompt, waitDrift, skimPrompt, waitSkim, exitPrompt, exit,
-                lockNav, arcadeDialogue, constraintsCC2, ctaArcade, ctaCC2, playedCC2,
+                lockNav, arcadeDialogue, constraintsCC1, ctaArcade, ctaCC1, playedCC1,
                 unlockNav, ctaProfile, mapsDialogue, constraintsCC3, ctaCC3, playedCC3,
                 clearFunnel, socialTour, end);
 
@@ -226,7 +226,7 @@ namespace CosmicShore.Editor
             SetDelay(waitDrift, 0.8f);
             SetDelay(waitSkim, 1f);
             SetDelay(exit, 1f);
-            SetDelay(playedCC2, 1f);
+            SetDelay(playedCC1, 1f);
             SetDelay(mapsDialogue, 0.5f);
             SetDelay(playedCC3, 1f);
 
