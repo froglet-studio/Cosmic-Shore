@@ -255,6 +255,52 @@ code. To keep it out of captures: use the standalone Profiler process
 editor repaints), don't leave the Game view at full-res alongside Scene
 view, and treat a development build as the ground truth for frame times.
 
+### 2026-07-14 capture #3 (standalone profiler, post-`71b51a28`, 28 ms frame) — jobs still managed-speed; volume sum moved off the main thread (`4ba827ef`)
+
+Values (user capture, `LOD.Drain` marker row confirms `71b51a28` running):
+
+| Row | Capture #2 | Capture #3 | Verdict |
+|---|---|---|---|
+| `Cell.VolumeSum` job | 6.55 ms | **6.11 ms** | unchanged — still managed-execution speed |
+| `LodClassifyJob` | 2.67 ms | **2.01 ms** | unchanged class; small drop from hysteresis (fewer flag writes/list appends) |
+| `PrismColliderLodManager` managed self | 4.00 ms | **1.37 ms** (`LOD.Sweep` self) | hysteresis + drain budget worked |
+| `LOD.Drain` | — | **0.00 ms** | queue churn gone |
+| Tick stacking | stacked | **stacked again** | the naive `now + interval` re-arm re-syncs after any hitch > offset — fixed phase-preserving in `4ba827ef` |
+
+**The Burst question is still open but no longer load-bearing.** Two
+captures show both jobs at ~20× Burst-expected cost, and `LodClassifyJob`
+was CONFIRMED at 0.1–0.3 ms on 07-09 with identical code — so the
+environment changed between sessions (the `ExecuteJobFunction.Invoke()`
+row name is itself the managed-execution tell; Burst-compiled jobs show
+the job type). TODO A0 (check `Jobs ▸ Burst ▸ Enable Compilation`, look
+for yellow Burst compile errors in the console) still wants an answer —
+it decides whether `LodClassifyJob`'s remaining 2 ms is real on this
+machine — but the volume path no longer depends on it:
+
+**Shipped `4ba827ef` — async volume sum (snapshot + worker thread):**
+`Cell.EnsureVolumeFresh` now schedules `CellVolumeSumJob` via
+`PrismSpatialIndex.TryScheduleCellVolumeSum` — one per-frame-shared
+snapshot memcpy of `_spatial`+`_cellData` (marker:
+`Cell.VolumeSum.Snapshot`) + `Schedule()` — and harvests with
+`IsCompleted` on a later read (never blocks; readers keep published sums
+meanwhile, the tolerance the cadence already declares). In-flight passes
+are discarded unpublished on reset/disable; buffers complete-then-dispose
+on teardown. Main-thread cost per 0.25 s recompute is now the memcpy
+(~0.1–0.4 ms) **regardless of Burst, population, or editor settings**.
+The sync `SumCellVolumes` stays for tests/benchmarks; an equivalence test
+(`TryScheduleCellVolumeSum_MatchesSyncResults`) pins the two paths
+together.
+
+**Expected next capture:** `DomainVolumeIndicator.Update` total ≤ ~0.5 ms
+on schedule frames (snapshot memcpy) and ~0 between; the job runs on a
+worker-thread row (visible in Timeline view, not in the main-thread
+hierarchy); `LOD.Sweep` unchanged (~1.4 ms managed self + job — drops to
+sub-ms if/when Burst is re-enabled); the two ticks 0.125 s apart and
+staying apart. If `LOD.Sweep` becomes the top row after Burst is
+confirmed on, the same async treatment applies to `LodClassifyJob` but
+needs a flag-bit snapshot design (it read-writes `_spatial`) — evidence
+first.
+
 ### Session-wide lesson list (for the next agent)
 
 - Never assume Unity's 0.02 default fixed timestep — this project runs 0.04
