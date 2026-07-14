@@ -42,16 +42,26 @@ namespace CosmicShore.Core
             }
 
             bool done = false;
+
+            // The instruction overlay fades the moment the player TAPS the volume button
+            // (transition START) — not seconds later when the menu blend completes.
+            void OnMenuStart() => ctx.InstructionView?.Hide();
+
             void OnMenuComplete()
             {
                 done = true;
                 ctx.EndFlightTraining();     // release the action-button gate
-                ctx.InstructionView?.Hide(); // flight school is over — clear the overlay
+                ctx.InstructionView?.Hide(); // safety: clear the overlay even if Start never fired
                 advance(QuestPorts.Next);
             }
 
+            ctx.FreestyleEvents.OnMenuStateTransitionStart.OnRaised += OnMenuStart;
             ctx.FreestyleEvents.OnMenuStateTransitionEnd.OnRaised += OnMenuComplete;
-            ctx.AddCleanup(() => ctx.FreestyleEvents.OnMenuStateTransitionEnd.OnRaised -= OnMenuComplete);
+            ctx.AddCleanup(() =>
+            {
+                ctx.FreestyleEvents.OnMenuStateTransitionStart.OnRaised -= OnMenuStart;
+                ctx.FreestyleEvents.OnMenuStateTransitionEnd.OnRaised -= OnMenuComplete;
+            });
 
             if (!forceExit || ctx.CrystalHandler == null)
                 yield break; // passive: the player triggers the return themselves

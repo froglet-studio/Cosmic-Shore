@@ -1225,6 +1225,25 @@ namespace CosmicShore.Editor
             for (int i = 0; i < quest.phases.Count; i++)
                 if (quest.phases[i] == null)
                     sink.Add($"Quest phase slot {i} is empty.");
+
+            // The arcade funnel PERSISTS (PlayerPrefs) — a quest that applies constraints but
+            // never clears them leaves the arcade locked to the tutorial mode forever, so a
+            // newly claimed mode shows its CTA but its card stays locked.
+            bool applies = false, clears = false;
+            foreach (var phase in quest.phases)
+            {
+                if (phase == null) continue;
+                foreach (var n in phase.nodes)
+                    if (n is QuestSetArcadeConstraintsNode c && n.nodeEnabled)
+                    {
+                        if (c.clearConstraints) clears = true;
+                        else applies = true;
+                    }
+            }
+            if (applies && !clears)
+                sink.Add("Arcade constraints are applied but NEVER cleared in any phase — add a Set Arcade " +
+                         "Constraints node with 'Clear Constraints' ticked (else newly unlocked modes stay locked " +
+                         "in the arcade forever).");
         }
 
         void ValidateGraph(QuestPhaseGraphSO graph, List<string> sink)
