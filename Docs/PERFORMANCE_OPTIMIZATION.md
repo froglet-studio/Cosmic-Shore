@@ -301,6 +301,56 @@ confirmed on, the same async treatment applies to `LodClassifyJob` but
 needs a flag-bit snapshot design (it read-writes `_spatial`) — evidence
 first.
 
+### 2026-07-14 capture #4 (standalone profiler, post-`4ba827ef`, 26.43 ms CPU, ~7000 prisms, crowded view) — script side CONFIRMED FIXED; frontier moves to rendering
+
+**Verified in the wild (do not regress):**
+
+| Row | Before this session | Capture #4 |
+|---|---|---|
+| `BehaviourUpdate` (whole script tick) | 15.24 ms | **1.71 ms** |
+| `DomainVolumeIndicator.Update` | 10.31 ms | **0.00 ms** |
+| `Cell.VolumeSum` on the main thread | 6.11 ms | **absent** (worker thread) |
+| Biggest script row now | — | `CapsuleMembrane.UpdateMatrices` 0.70 ms |
+
+The `fb5e6643` → `4ba827ef` chain is confirmed working. Scripts are no
+longer the frame's problem.
+
+**Where the spike frame actually goes now (26.43 ms main thread):**
+
+- `RenderPlayModeViewCameras` **11.49 ms** — the editor's wrapper around the
+  game's real URP render loop (in a build this is the same work minus the
+  wrapper). Inside: `Inl_RenderCameraStack` 10.79 ms across **2 camera
+  stacks** ("CM PlayerCam" ≈ 4 ms, "Camera" ≈ 2 ms — identify what the
+  second camera renders and whether its culling mask needs the prism
+  layers; BRG frustum-culling + emit-draw jobs run once PER camera), and
+  `WaitForJobGroupID` **3.83 ms** — the main thread stalling on culling
+  jobs at Submit. Note the managed `CellVolumeSumJob` now occupies a worker
+  for ~6 ms every 0.25 s while Burst is off — another reason to resolve
+  TODO A0 (with Burst on it's ~0.15 ms and out of the way).
+- `EditorLoop` **4.39 ms** + `Profiler.FlushCounters` **2.62 ms** — editor
+  tax. The STANDALONE profiler only moves the profiler UI out of process;
+  the game still runs inside the editor, so EditorLoop remains and
+  FlushCounters is the cost of shipping profiler data to the other
+  process. Only profiling a development BUILD removes these (~7 ms here).
+- `UpdateScene` 7.85 ms of which scripts 1.71 ms (rest: animation, physics,
+  coroutines, late update — individually small).
+
+**The frame-time discrepancy (user question):** DiagnosticsHUD's "Frame
+Time" is wall-clock `Time.unscaledDeltaTime` — CPU main thread + GPU/present
+wait + editor loop. 26 ms profiler CPU vs 40–50 ms HUD frame time means
+~15–20 ms is GPU/present + editor tax. The HUD already answers which:
+expand it and read the **CPU (busy) / GPU split + bound verdict** row
+(FrameTimingManager, works on DX12). If it says GPU-bound in crowded views,
+the lever is GPU work — transparent-prism overdraw at 2.16M verts — not
+CPU.
+
+**Next datums wanted (in order):** (1) TODO A0 — the `Jobs ▸ Burst`
+menu state / console Burst errors (decides `LodClassifyJob`'s 2 ms and
+frees the worker thread); (2) DiagnosticsHUD bound verdict in the crowded
+view; (3) what the second camera stack entry ("Camera") is in the scene
+and its culling mask; (4) a development-build capture as ground truth
+(no EditorLoop, no PlayModeView wrapper).
+
 ### Session-wide lesson list (for the next agent)
 
 - Never assume Unity's 0.02 default fixed timestep — this project runs 0.04
