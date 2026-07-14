@@ -210,28 +210,45 @@ namespace CosmicShore.UI
 
         private void OnEnable()
         {
-            if (freestyleEvents)
-            {
-                freestyleEvents.OnGameStateTransitionStart.OnRaised += HandleEnterFreestyle;
-                freestyleEvents.OnMenuStateTransitionStart.OnRaised += HandleExitFreestyle;
-                freestyleEvents.OnGameStateTransitionEnd.OnRaised += HandleFreestyleTransitionEnd;
-                freestyleEvents.OnMenuStateTransitionEnd.OnRaised += HandleFreestyleTransitionEnd;
-            }
+            TrySubscribeFreestyleEvents();
         }
 
         private void OnDisable()
         {
-            if (freestyleEvents)
-            {
-                freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleEnterFreestyle;
-                freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleExitFreestyle;
-                freestyleEvents.OnGameStateTransitionEnd.OnRaised -= HandleFreestyleTransitionEnd;
-                freestyleEvents.OnMenuStateTransitionEnd.OnRaised -= HandleFreestyleTransitionEnd;
-            }
+            UnsubscribeFreestyleEvents();
+        }
+
+        // Deferred-subscription pattern (CLAUDE.md ▸ DI): [Inject] fields populate AFTER
+        // Awake()/OnEnable() but before Start(), so the OnEnable attempt silently no-ops on
+        // scene load and Start() retries. Without the retry, _isInFreestyle and
+        // sendNavigationEvents=false never engage — the appshell keeps paging screens and
+        // opening panels off the gamepad while the player is flying a vessel in freestyle
+        // (unnoticed until the Sparrow, whose abilities use South/East/both triggers).
+        private void TrySubscribeFreestyleEvents()
+        {
+            if (!freestyleEvents) return;
+            UnsubscribeFreestyleEvents(); // dedup guard — safe to call from both OnEnable and Start
+
+            freestyleEvents.OnGameStateTransitionStart.OnRaised += HandleEnterFreestyle;
+            freestyleEvents.OnMenuStateTransitionStart.OnRaised += HandleExitFreestyle;
+            freestyleEvents.OnGameStateTransitionEnd.OnRaised += HandleFreestyleTransitionEnd;
+            freestyleEvents.OnMenuStateTransitionEnd.OnRaised += HandleFreestyleTransitionEnd;
+        }
+
+        private void UnsubscribeFreestyleEvents()
+        {
+            if (!freestyleEvents) return;
+            freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleEnterFreestyle;
+            freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleExitFreestyle;
+            freestyleEvents.OnGameStateTransitionEnd.OnRaised -= HandleFreestyleTransitionEnd;
+            freestyleEvents.OnMenuStateTransitionEnd.OnRaised -= HandleFreestyleTransitionEnd;
         }
 
         private void Start()
         {
+            // Injected fields are live now — retry the subscription OnEnable had to skip.
+            TrySubscribeFreestyleEvents();
+
             var parentCanvas = GetComponentInParent<Canvas>();
             if (parentCanvas == null)
             {
