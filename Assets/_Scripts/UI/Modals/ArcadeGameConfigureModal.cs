@@ -411,7 +411,7 @@ namespace CosmicShore.UI
             // depends on PC (DC <= PC) and ResetState() leaves PlayerCount at 0. For modes
             // with MinDomainsAllowed >= 2 (Joust) this defaults the stepper to 2, not 1.
             config.DomainCount = ComputeDefaultDomainCount();
-            if (QuestArcadeConstraints.Active && QuestArcadeConstraints.ForcedDomainCount > 0)
+            if (QuestArcadeConstraints.AppliesTo(selectedGame.Mode) && QuestArcadeConstraints.ForcedDomainCount > 0)
                 config.DomainCount = Mathf.Clamp(QuestArcadeConstraints.ForcedDomainCount,
                     MinDomainsForGame, ComputeMaxDomainCount());
             InitializeGameMetaView(selectedGame);
@@ -462,8 +462,8 @@ namespace CosmicShore.UI
             config.PlayerCount = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
 
             // Quest-graph funnel (FTUE first orientation): pin the intensity and default the
-            // player count to the authored first-game size.
-            if (QuestArcadeConstraints.Active)
+            // player count — for the TUTORIAL mode only, never a newly unlocked one.
+            if (QuestArcadeConstraints.AppliesTo(game.Mode))
             {
                 if (QuestArcadeConstraints.ForcedIntensity > 0)
                     config.Intensity = Mathf.Clamp(QuestArcadeConstraints.ForcedIntensity, game.MinIntensity, game.MaxIntensity);
@@ -524,7 +524,7 @@ namespace CosmicShore.UI
                 {
                     bool unlocked = progressionService == null
                                     || progressionService.IsIntensityUnlocked(game.Mode, level);
-                    if (QuestArcadeConstraints.IsIntensityBlocked(level))
+                    if (QuestArcadeConstraints.IsIntensityBlocked(game.Mode, level))
                         unlocked = false;
                     button.SetLocked(!unlocked);
                 }

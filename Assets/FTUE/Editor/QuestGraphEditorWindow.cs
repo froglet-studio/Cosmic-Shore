@@ -1014,6 +1014,9 @@ namespace CosmicShore.Editor
                     }
                 }
 
+                if (Application.isPlaying)
+                    DrawLiveState();
+
                 if (!ProgressionBackendGate.CloudEnabled)
                     EditorGUILayout.HelpBox(
                         "Backend: LOCAL-ONLY. ProgressionBackendGate is closed — quest progress lives in " +
@@ -1132,6 +1135,49 @@ namespace CosmicShore.Editor
             DrawValidation();
             EditorGUILayout.EndScrollView();
             GUILayout.EndArea();
+        }
+
+        /// <summary>
+        /// Play-mode testing readout: the live arcade-funnel constraints and progression
+        /// unlocks — so "why is this card locked / this intensity blocked?" is answered at a
+        /// glance instead of by replaying the quest. Includes a Clear Funnel escape hatch.
+        /// </summary>
+        void DrawLiveState()
+        {
+            GUILayout.Space(4);
+            GUILayout.Label("LIVE STATE (play mode)", QuestGraphStyles.PanelHeader);
+
+            string funnel = QuestArcadeConstraints.Active
+                ? $"ACTIVE — only {QuestArcadeConstraints.AllowedMode}"
+                  + (QuestArcadeConstraints.ForcedIntensity > 0 ? $" @ intensity {QuestArcadeConstraints.ForcedIntensity}" : ", intensities open")
+                  + (QuestArcadeConstraints.ForcedPlayerCount > 0 ? $" · {QuestArcadeConstraints.ForcedPlayerCount}p" : string.Empty)
+                  + (QuestArcadeConstraints.ForcedDomainCount > 0 ? $" · {QuestArcadeConstraints.ForcedDomainCount} domains" : string.Empty)
+                : "inactive (arcade unrestricted)";
+
+            string unlocks = "(progression service not alive)";
+            var svc = GameModeProgressionService.Instance;
+            if (svc != null)
+            {
+                var parts = new List<string>();
+                foreach (var modeName in svc.ProgressionData.UnlockedModes)
+                {
+                    string tier = System.Enum.TryParse(modeName, out CosmicShore.Data.GameModes m)
+                        ? $" (tier ≤{svc.GetMaxUnlockedIntensity(m)})"
+                        : string.Empty;
+                    parts.Add(modeName + tier);
+                }
+                unlocks = parts.Count > 0 ? string.Join(", ", parts) : "(none)";
+            }
+
+            EditorGUILayout.HelpBox($"Arcade funnel: {funnel}\nUnlocked modes: {unlocks}", MessageType.None);
+
+            if (QuestArcadeConstraints.Active
+                && GUILayout.Button(new GUIContent("Clear Arcade Funnel Now",
+                    "TESTING: drop all funnel constraints immediately (cards + intensities revert to pure progression gating).")))
+            {
+                QuestArcadeConstraints.Clear();
+                Debug.Log("[Quest] Arcade funnel cleared from the editor.");
+            }
         }
 
         /// <summary>

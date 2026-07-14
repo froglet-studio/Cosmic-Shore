@@ -52,11 +52,28 @@ namespace CosmicShore.Core
         /// <summary>Domain (team) count the configure modal defaults to (0 = no override).</summary>
         public static int ForcedDomainCount { get { EnsureLoaded(); return _forcedDomainCount; } }
 
-        public static bool IsModeBlocked(GameModes mode) =>
-            Active && AllowedMode != GameModes.Random && mode != AllowedMode;
+        public static bool IsModeBlocked(GameModes mode)
+        {
+            if (!Active || AllowedMode == GameModes.Random || mode == AllowedMode)
+                return false;
 
-        public static bool IsIntensityBlocked(int intensity) =>
-            Active && ForcedIntensity > 0 && intensity != ForcedIntensity;
+            // A mode the progression chain has EXPLICITLY unlocked outranks the funnel —
+            // the funnel exists to focus onboarding, never to lock the quest's own reward
+            // (a claimed mode must be playable even if a stale funnel survived).
+            var svc = GameModeProgressionService.Instance;
+            if (svc != null && svc.IsGameModeUnlocked(mode))
+                return false;
+
+            return true;
+        }
+
+        /// <summary>True when the funnel's intensity/player/domain overrides apply to this game —
+        /// they shape the TUTORIAL mode only, never a newly unlocked one.</summary>
+        public static bool AppliesTo(GameModes mode) =>
+            Active && (AllowedMode == GameModes.Random || mode == AllowedMode);
+
+        public static bool IsIntensityBlocked(GameModes mode, int intensity) =>
+            AppliesTo(mode) && ForcedIntensity > 0 && intensity != ForcedIntensity;
 
         public static void Apply(GameModes allowedMode, int forcedIntensity, int forcedPlayerCount, int forcedDomainCount)
         {
