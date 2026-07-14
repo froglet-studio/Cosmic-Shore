@@ -731,10 +731,10 @@ namespace CosmicShore.Gameplay
                 ? Quaternion.LookRotation(tangent.normalized, Vector3.up)
                 : _rotation;
 
-            ToyFactory.AddRingBody(_milestone.transform, ringR, stroke.BaseColor);
+            var prismMaterial = ToyFactory.DomainPrismMaterial(_context, stroke.Domain);
+            ToyFactory.AddRingBody(_milestone.transform, ringR, stroke.BaseColor, prismMaterial);
             if (isStrokeEnd)
-                ToyFactory.AddJackBody(_milestone.transform, ringR * 0.45f, stroke.BaseColor,
-                    ToyFactory.DomainPrismMaterial(_context, stroke.Domain));
+                ToyFactory.AddJackBody(_milestone.transform, ringR * 0.45f, stroke.BaseColor, prismMaterial);
 
             var trigger = _milestone.AddComponent<SphereCollider>();
             trigger.isTrigger = true;

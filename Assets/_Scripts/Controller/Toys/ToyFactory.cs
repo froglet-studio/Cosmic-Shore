@@ -164,20 +164,78 @@ namespace CosmicShore.Gameplay
             return body;
         }
 
-        /// <summary>A flat fly-through ring in the parent's local XY plane (a portal the vessel crosses).</summary>
-        public static LineRenderer AddRingBody(Transform parent, float radius, Color color,
-            float width = 2.2f, int segments = 28)
+        static Mesh s_ringMesh;
+
+        /// <summary>
+        /// Unit low-poly torus in the XY plane (ring radius 0.5, axis +Z): 12 major × 6 minor
+        /// flat-shaded facets, hard edges like the crystal cone. Every quad owns its four
+        /// vertices so RecalculateNormals keeps the facets crisp. Scale by ring diameter —
+        /// tube thickness rides along (8% of the radius), so big rings read chunkier.
+        /// </summary>
+        static Mesh RingMesh
         {
-            var lr = CreateLine("Ring", parent, width, false);
-            lr.loop = true;
-            lr.positionCount = segments;
-            for (int i = 0; i < segments; i++)
+            get
             {
-                float a = i / (float)segments * Mathf.PI * 2f;
-                lr.SetPosition(i, new Vector3(Mathf.Cos(a) * radius, Mathf.Sin(a) * radius, 0f));
+                if (s_ringMesh) return s_ringMesh;
+
+                const int major = 12, minor = 6;
+                const float R = 0.5f, r = 0.04f;
+
+                var verts = new Vector3[major * minor * 4];
+                var tris = new int[major * minor * 6];
+                int v = 0, t = 0;
+                for (int i = 0; i < major; i++)
+                {
+                    float t0 = i / (float)major * Mathf.PI * 2f;
+                    float t1 = (i + 1) / (float)major * Mathf.PI * 2f;
+                    for (int j = 0; j < minor; j++)
+                    {
+                        float p0 = j / (float)minor * Mathf.PI * 2f;
+                        float p1 = (j + 1) / (float)minor * Mathf.PI * 2f;
+
+                        Vector3 P(float theta, float phi) => new(
+                            Mathf.Cos(theta) * (R + r * Mathf.Cos(phi)),
+                            Mathf.Sin(theta) * (R + r * Mathf.Cos(phi)),
+                            r * Mathf.Sin(phi));
+
+                        int b = v;
+                        verts[v++] = P(t0, p0); // b+0
+                        verts[v++] = P(t1, p0); // b+1
+                        verts[v++] = P(t1, p1); // b+2
+                        verts[v++] = P(t0, p1); // b+3
+                        // Outward-facing winding (verified against the analytic torus normal).
+                        tris[t++] = b; tris[t++] = b + 1; tris[t++] = b + 2;
+                        tris[t++] = b; tris[t++] = b + 2; tris[t++] = b + 3;
+                    }
+                }
+
+                s_ringMesh = new Mesh { name = "ToyLowPolyRing", vertices = verts, triangles = tris };
+                s_ringMesh.RecalculateNormals();
+                s_ringMesh.RecalculateBounds();
+                return s_ringMesh;
             }
-            lr.startColor = lr.endColor = color;
-            return lr;
+        }
+
+        /// <summary>
+        /// A flat fly-through ring in the parent's local XY plane (a portal the vessel crosses):
+        /// a low-poly flat-shaded torus in the crystal shape language, slowly spinning about its
+        /// axis so the facets glint. Pass the domain's prism material to speak the prism visual
+        /// language; falls back to an unlit accent tint.
+        /// </summary>
+        public static GameObject AddRingBody(Transform parent, float radius, Color accent,
+            Material prismMaterial = null)
+        {
+            var body = new GameObject("Ring");
+            body.transform.SetParent(parent, false);
+            body.transform.localScale = Vector3.one * (radius * 2f);
+
+            var filter = body.AddComponent<MeshFilter>();
+            filter.sharedMesh = RingMesh;
+            var renderer = body.AddComponent<MeshRenderer>();
+            ApplyBodyMaterial(renderer, accent, prismMaterial);
+
+            body.AddComponent<ToyIdleSpin>().Configure(Vector3.forward, 15f);
+            return body;
         }
 
         /// <summary>
@@ -194,7 +252,7 @@ namespace CosmicShore.Gameplay
             System.Action<SwapToy> onActivated)
         {
             var root = CreateBareRoot(gateName, parent, position, position + flightDirection, ringRadius);
-            AddRingBody(root.transform, ringRadius, color);
+            AddRingBody(root.transform, ringRadius, color, hubPrismMaterial);
             if (hubIsCone)
                 AddConeBody(root.transform, ringRadius * 0.22f, ringRadius * 0.66f, color, hubPrismMaterial);
             else
@@ -286,7 +344,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// One shared vertex-coloured material for every toy LineRenderer (ghost blueprints,
-        /// guides, gate rings) — per-line tint comes from startColor/endColor, so dozens of
+        /// miniature strokes) — per-line tint comes from startColor/endColor, so dozens of
         /// lines don't each need a Shader.Find + Material allocation.
         /// </summary>
         static Material LineMaterial

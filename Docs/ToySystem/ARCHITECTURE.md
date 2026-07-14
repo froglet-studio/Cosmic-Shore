@@ -225,7 +225,10 @@ How a run plays:
 - **Rings, not lines, not cones.** While AWAITING its gate the next stroke's ghost shows faintly
   (something to aim at); once you are RIDING it the line eases away entirely (continuity law —
   `_lineFade`, and it eases back in as the dim "done" memory line on completion) — the ride is
-  the milestone RINGS and your own painted trail. Each milestone is a ring gate faced along the
+  the milestone RINGS and your own painted trail. Rings are **low-poly flat-shaded tori**
+  (12×6 crystal facets in the domain prism material, slowly spinning so the facets glint —
+  `ToyFactory.AddRingBody`, same shape family as the cone/jack), not line renderings.
+  Each milestone is a ring gate faced along the
   local flight tangent whose **SphereCollider trigger is scaled to the ring radius** (flying
   through the ring IS the hit test; a slightly tighter distance check backstops fast physics
   misses, and all effects run on the Update tick, never in the physics callback — the trigger
