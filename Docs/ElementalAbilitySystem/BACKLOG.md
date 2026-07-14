@@ -16,7 +16,7 @@ carries its evidence pointer in `AUDIT.md`.
 | 0.6 | **Cherry-pick `7924a4e4`** — the five fleet runtime bug fixes (all verified still live). | AUDIT §6 |
 | 0.7 | **Sparrow prefab repair**: rewire `elementBars` (rename orphan — the elemental HUD is dead without it), delete the null-factory Gun + orphaned ElementPips GO, fix the Overheating turn-end event wiring, fix `TrailScaleModulator.controller`, point `SparrowPrismController.skimmer` at the active skimmer, fix `defaultAmmoIndex`. | AUDIT §5 |
 | 0.8 | **Turret prism pipeline**: route turret-fired prisms through `TargetScale` + `Prism.Initialize` (spatial-index registration, Cell binding, bloom-in). Prereq for all Mass work; fixes a live continuity-law violation. | AUDIT §4-Mass |
-| 0.9 | Decide + fix **skyburst ammo economy** (2 shots/turn, no restock today; the ability card promises crystal restock). | AUDIT §2#7 |
+| 0.9 | ~~Skyburst ammo economy~~ — RESOLVED as audit false positive: crystal restock was already wired (`SparrowVesselChangeResourceByCrystalEffect` refills Missiles to full on crystal impact). No change needed. | AUDIT §2#7 |
 
 **Exit criterion:** hold-fire for 60 s in a busy scene with 2 human + 2 AI Sparrows: no NREs, no
 runaway fire, no duds, bullets go where aimed, turret prisms bloom and register.

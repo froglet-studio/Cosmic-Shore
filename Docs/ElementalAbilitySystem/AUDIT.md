@@ -175,9 +175,11 @@ at."
 - **Full-auto bullets stay parented to the moving muzzle all flight** (REPORTED) —
   `FullAutoActionExecutor` omits `detachAfterSpawn`; bullets swerve with the shooter. The skyburst
   path already has the world-anchor + detach fix; full-auto was missed.
-- **Skyburst ammo starvation** (REPORTED): "Missiles" resource max 1, gain 0, cost 0.5 → exactly
-  2 rockets per turn, then silent refusal. The ability card promises crystal restock; nothing
-  wires it.
+- **Skyburst ammo starvation** — RETRACTED (false positive, re-verified 2026-07-14): the crystal
+  restock IS wired. `SparrowVesselChangeResourceByCrystalEffect.asset` (`_resourceIndex: 0,
+  _resourceAmount: 1, _overrideAmount: 1`) sits in `SparrowImpactorDataContainer.asset`'s
+  `vesselCrystalEffects` — any crystal impact refills Missiles to full (2 rockets). The economy
+  is 2 rockets per crystal, as the ability card promises.
 - **Dead `Gun` with `projectileFactory: {fileID: 0}`** on the prefab (`Sparrow.prefab:212-227`,
   since Oct 2025) — unreferenced rewire trap; any `FireGun` call on it NREs.
 - Pool return is **delegated entirely to impact end-effects** (`Projectile.cs:197-198`); a

@@ -184,7 +184,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2870038720229022303}
-  - component: {fileID: 3479586135178673459}
   m_Layer: 8
   m_Name: Guns
   m_TagString: Untagged
@@ -209,21 +208,6 @@ Transform:
   - {fileID: 5078300575574787067}
   m_Father: {fileID: 4283882808933721286}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3479586135178673459
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1105281298383370692}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 35a4e5dfc7064254cb27fc78eefb05a0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  firePeriod: 0.2
-  sideLength: 2
-  projectileFactory: {fileID: 0}
 --- !u!1 &1371448296427870436
 GameObject:
   m_ObjectHideFlags: 0
@@ -494,7 +478,7 @@ MonoBehaviour:
   gun: {fileID: 1086101504276561688}
   projectileContainer: {fileID: 5753371459927063969}
   OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
-  defaultAmmoIndex: 2
+  defaultAmmoIndex: 0
 --- !u!1 &3538467135756948443
 GameObject:
   m_ObjectHideFlags: 0
@@ -572,7 +556,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9471794db1a640b38856263fd8b5fab1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  OnMiniGameTurnEnd: {fileID: 11400000, guid: 91ea9101389ea884babdf61e446ced27, type: 2}
+  OnMiniGameTurnEnd: {fileID: 11400000, guid: 498a06d44bde9184f985c938c803b2a1, type: 2}
   StationaryModeChanged: {fileID: 11400000, guid: 0b48e834efdbe654ca3c7df60370ea3f,
     type: 2}
 --- !u!114 &2488967136998847961
@@ -602,7 +586,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b2fd4223c00747ca8955ea6bb12ebdd6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  controller: {fileID: 0}
+  controller: {fileID: 5613657713013293844}
   profile: {fileID: 11400000, guid: b157cce9ec71308458d171eacb6ace01, type: 2}
 --- !u!1 &4432795841785961401
 GameObject:
@@ -1179,7 +1163,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _onPrismSpawnedEventChannel: {fileID: 11400000, guid: 765004a68c88ffb439febbdf47d892db,
     type: 2}
-  skimmer: {fileID: 2301644063409676526}
+  skimmer: {fileID: 6062314127581257774}
   BaseScale: {x: 2, y: 2, z: 5}
   prismType: 2
   initialWavelength: 7
@@ -1322,7 +1306,7 @@ MonoBehaviour:
   config: {fileID: 11400000, guid: 06bb3baee9ee60b40a76c902eb6e8b9e, type: 2}
   energyResourceIndex: 0
   view: {fileID: 7416581124810081342}
-  elementPips: {fileID: 2233445566778899003}
+  elementBars: {fileID: 2233445566778899003}
 --- !u!114 &4780908095115307824
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3158,7 +3142,7 @@ GameObject:
   - component: {fileID: 2233445566778899002}
   - component: {fileID: 2233445566778899003}
   m_Layer: 5
-  m_Name: ElementPips
+  m_Name: ElementalBars
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3192,11 +3176,16 @@ MonoBehaviour:
   m_GameObject: {fileID: 2233445566778899001}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7, type: 3}
+  m_Script: {fileID: 11500000, guid: 5f380cf9710e6ec478121956993a387e, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  config: {fileID: 11400000, guid: c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8, type: 2}
-  container: {fileID: 2233445566778899002}
+  config: {fileID: 11400000, guid: d96cdc6838254cdfb6803b2c56efcdbb, type: 2}
+  bars: []
+  autoRootSize: 88
+  autoRootSpacing: 104
+  autoRootVerticalOffset: 0
+  configResourcePath: ElementalBarsConfig
+  petalResourceFormat: ElementPetals/{0}_petal
 --- !u!114 &7416581124810081342
 MonoBehaviour:
   m_ObjectHideFlags: 0

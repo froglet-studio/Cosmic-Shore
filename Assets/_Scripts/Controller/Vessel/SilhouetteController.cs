@@ -54,6 +54,7 @@ namespace CosmicShore.Gameplay
             }
 
             TrySubscribeResources();
+            TrySubscribeElementBars();
 
             //flower explosion
             VesselExplosionByCrystalEffectSO.OnMantaFlowerExplosion += HandleMantaFlowerExplosion;
@@ -225,20 +226,32 @@ namespace CosmicShore.Gameplay
                 _resources.OnElementLevelChange -= HandleElementLevelChanged;
         }
 
+        // OnDisable detaches the element-level handler, so OnEnable must re-attach it
+        // (mirroring TrySubscribeResources) — otherwise a disable/enable cycle leaves
+        // the petal flowers frozen while the energy UI keeps updating. Re-seeds levels
+        // because they may have changed while disabled (SetLevel early-outs on no-change).
+        void TrySubscribeElementBars()
+        {
+            if (_resources == null || !elementBars) return;
+            TryUnsubscribeElementBars();
+            _resources.OnElementLevelChange += HandleElementLevelChanged;
+            SeedElementBarLevels();
+        }
+
+        void SeedElementBarLevels()
+        {
+            elementBars.SetLevel(Element.Charge, _resources.GetLevel(Element.Charge));
+            elementBars.SetLevel(Element.Mass, _resources.GetLevel(Element.Mass));
+            elementBars.SetLevel(Element.Space, _resources.GetLevel(Element.Space));
+            elementBars.SetLevel(Element.Time, _resources.GetLevel(Element.Time));
+        }
+
         void InitializeElementBars()
         {
             if (!elementBars) return;
             elementBars.Build();
 
-            if (_resources != null)
-            {
-                _resources.OnElementLevelChange += HandleElementLevelChanged;
-
-                elementBars.SetLevel(Element.Charge, _resources.GetLevel(Element.Charge));
-                elementBars.SetLevel(Element.Mass, _resources.GetLevel(Element.Mass));
-                elementBars.SetLevel(Element.Space, _resources.GetLevel(Element.Space));
-                elementBars.SetLevel(Element.Time, _resources.GetLevel(Element.Time));
-            }
+            TrySubscribeElementBars();
         }
 
         void HandleElementLevelChanged(Element element, int level)

@@ -112,10 +112,28 @@ namespace CosmicShore.Gameplay
                         if (!prism) continue;
 
                         prism.transform.SetParent(null, true);
-                        prism.transform.localScale = so.BlockScale;
-                        //prism.ownerID = _status.PlayerName; 
-                        prism.ChangeTeam(domainAtShot); 
-                        prism.RegisterProjectileCreated(_status.PlayerName); 
+
+                        // Route sizing through the scale animator instead of a raw
+                        // localScale write: TargetScale stays truthful (a later
+                        // Grow/ChangeSize no longer snaps the prism back to its authored
+                        // size), live volume tracks, and the block blooms in from zero
+                        // during flight instead of popping in (continuity law).
+                        var scaleAnimator = prism.GetComponent<PrismScaleAnimator>();
+                        if (scaleAnimator)
+                        {
+                            scaleAnimator.Initialize();
+                            prism.transform.localScale = Vector3.zero;
+                            scaleAnimator.SetTargetScale(so.BlockScale);
+                            scaleAnimator.BeginGrowthAnimation();
+                        }
+                        else
+                        {
+                            prism.transform.localScale = so.BlockScale;
+                        }
+
+                        //prism.ownerID = _status.PlayerName;
+                        prism.ChangeTeam(domainAtShot);
+                        prism.RegisterProjectileCreated(_status.PlayerName);
 
                         SetupPrismVisualAsync(prism, domainAtShot, spawnVisibilityDelay,
                             this.GetCancellationTokenOnDestroy()).Forget();
@@ -271,6 +289,20 @@ namespace CosmicShore.Gameplay
                     {
                         rb.isKinematic     = true;
                     }
+                }
+
+                // Anchored: the block is now permanent world mass. Register it with the
+                // spatial index (the one registration lifecycle) so it participates in
+                // Burst AOE damage, growth occupancy, fauna density queries, and the
+                // containing cell's LiveVolume — unregistered turret prisms were
+                // invisible to the entire ecosystem. Registered at rest, not at the
+                // muzzle, so the bucket grid files it at its true position.
+                if (prism && prism.gameObject.activeInHierarchy && prism.SpatialIndexId < 0)
+                {
+                    prism.prismProperties.position = prism.transform.position;
+                    var spatialIndex = PrismSpatialIndex.EnsureInstance();
+                    if (spatialIndex != null && spatialIndex.IsAvailable)
+                        prism.SpatialIndexId = spatialIndex.Register(prism);
                 }
             }
             catch (OperationCanceledException)
