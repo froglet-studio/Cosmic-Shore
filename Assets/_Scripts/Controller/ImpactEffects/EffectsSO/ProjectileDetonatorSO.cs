@@ -47,6 +47,12 @@ namespace CosmicShore.Gameplay
             var proj   = req.Projectile;
             if (!proj) return;
 
+            // Guard against acting on a pooled-and-reissued instance after our delays:
+            // if the projectile launches a new flight while we are waiting, every
+            // continuation below must bail instead of exploding/returning someone
+            // else's live projectile.
+            var generation = proj.FlightGeneration;
+
             var status = proj.VesselStatus;
             var pos    = req.Position;
             var rot    = req.Rotation;
@@ -71,7 +77,7 @@ namespace CosmicShore.Gameplay
             if (req.ExplodeDelaySeconds > 0f)
                 await UniTask.Delay(TimeSpan.FromSeconds(req.ExplodeDelaySeconds));
 
-            if (!proj) return; // could have been pooled meanwhile
+            if (!proj || proj.FlightGeneration != generation) return; // pooled/reissued meanwhile
 
             if (req.FaceExitVelocity && proj.Velocity.sqrMagnitude > 1e-6f &&
                 SafeLookRotation.TryGet(proj.Velocity, Vector3.up, out var velocityRotation, proj))
@@ -108,7 +114,7 @@ namespace CosmicShore.Gameplay
             if (req.ReturnDelay > 0f)
                 await UniTask.Delay(TimeSpan.FromSeconds(req.ReturnDelay));
 
-            if (proj) proj.ReturnToFactory();
+            if (proj && proj.FlightGeneration == generation) proj.ReturnToFactory();
         }
     }
 }

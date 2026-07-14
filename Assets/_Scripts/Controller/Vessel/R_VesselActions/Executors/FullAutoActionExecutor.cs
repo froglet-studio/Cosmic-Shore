@@ -180,6 +180,9 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                         if (!muzzle)
                             continue;
 
+                        // detachAfterSpawn: bullets fly in world space instead of staying
+                        // parented to the moving muzzle (which made them swerve with the
+                        // shooter's maneuvers and die with the ship hierarchy mid-flight).
                         gun.FireGun(
                             muzzle,
                             speedValue,
@@ -189,7 +192,8 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                             projectileTime,
                             0,
                             firingPattern,
-                            energy
+                            energy,
+                            detachAfterSpawn: true
                         );
                     }
 

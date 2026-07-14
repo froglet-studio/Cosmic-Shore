@@ -31,7 +31,13 @@ namespace CosmicShore.Gameplay
         public Domains OwnDomain { get; private set; }
         public IVesselStatus VesselStatus { get; private set; }
 
+        /// Incremented on every launch. Delayed continuations (e.g. the detonator's
+        /// post-explosion pool return) must capture this and bail if it has moved on,
+        /// so a stale callback can't act on a pooled-and-reissued instance.
+        public int FlightGeneration { get; private set; }
+
         private MeshRenderer meshRenderer;
+        private Collider _rootCollider;
 
         // NEW: remember pooled parent so we can restore it
         private Transform _pooledParent;
@@ -54,6 +60,11 @@ namespace CosmicShore.Gameplay
                 _poolParentCaptured = true;
             }
 
+            // The detonator disables the root collider on detonation (DisableColliderNow) and
+            // pool reuse must undo that, or every detonated missile is reissued as a
+            // fly-through-everything dud.
+            if (_rootCollider) _rootCollider.enabled = true;
+
             // Proximity collider-LOD: a projectile in flight is a focus, so the prism
             // colliders along its path (including distant structures it was fired at)
             // are awake by the time it arrives. Unregistered on pool return.
@@ -68,6 +79,7 @@ namespace CosmicShore.Gameplay
         private void Awake()
         {
             InitialScale = transform.localScale;
+            _rootCollider = GetComponent<Collider>();
 
             // cache whatever parent it has in the pool (ship container or pool root)
             _pooledParent = transform.parent;
@@ -113,6 +125,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError("No factory for this projectile found. Can't return to pool!");
             }
 
+            FlightGeneration++;
             audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch, transform.position);
             ProjectileTime = projectileTime;
 

@@ -20,7 +20,6 @@ namespace CosmicShore.Gameplay
         [Header("Dependencies")]
         [SerializeField] private ProjectileFactory projectileFactory;
 
-        private Domains domain;
         private IVesselStatus _vesselStatus;
         private Projectile _lastProjectile;
 
@@ -30,7 +29,6 @@ namespace CosmicShore.Gameplay
         public void Initialize(IVesselStatus vesselStatus)
         {
             _vesselStatus = vesselStatus;
-            domain = vesselStatus.Domain;
         }
         #endregion
 
@@ -48,8 +46,6 @@ namespace CosmicShore.Gameplay
         {
             if (_onCooldown && !ignoreCooldown) return;
 
-            _onCooldown = true;
-
             switch (firingPattern)
             {
                 case FiringPatterns.Spherical:
@@ -63,7 +59,11 @@ namespace CosmicShore.Gameplay
                     break;
             }
 
-            if (!ignoreCooldown) StartCoroutine(CooldownCoroutine());
+            if (!ignoreCooldown)
+            {
+                _onCooldown = true;
+                StartCoroutine(CooldownCoroutine());
+            }
         }
 
         public void StopProjectile()
@@ -168,8 +168,10 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // tell the projectile how to parent THIS flight
-            projectile.Initialize(projectileFactory, domain, _vesselStatus, charge, detachAfterSpawn);
+            // tell the projectile how to parent THIS flight.
+            // Domain is read live at fire time — never snapshot at Initialize
+            // (locked rule: domains re-pick at runtime).
+            projectile.Initialize(projectileFactory, _vesselStatus.Domain, _vesselStatus, charge, detachAfterSpawn);
 
             projectile.transform.localScale = projectileScale * projectile.InitialScale;
             projectile.Velocity = direction * speed + inheritedVelocity;
