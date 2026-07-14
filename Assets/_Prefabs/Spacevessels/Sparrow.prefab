@@ -3163,11 +3163,11 @@ RectTransform:
   m_Children: []
   m_Father: {fileID: 434181841133139353}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: 20, y: 20}
-  m_SizeDelta: {x: 120, y: 200}
-  m_Pivot: {x: 0, y: 0}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 0}
+  m_AnchoredPosition: {x: 0, y: 40}
+  m_SizeDelta: {x: 464, y: 100}
+  m_Pivot: {x: 0.5, y: 0}
 --- !u!114 &2233445566778899003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3181,7 +3181,27 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   config: {fileID: 11400000, guid: d96cdc6838254cdfb6803b2c56efcdbb, type: 2}
-  bars: []
+  bars:
+  - element: 1
+    petalRoot: {fileID: 0}
+    petalSpriteOverride: {fileID: 0}
+    labelIcon: {fileID: 0}
+    normalLabelSprite: {fileID: 0}
+  - element: 2
+    petalRoot: {fileID: 0}
+    petalSpriteOverride: {fileID: 0}
+    labelIcon: {fileID: 0}
+    normalLabelSprite: {fileID: 0}
+  - element: 3
+    petalRoot: {fileID: 0}
+    petalSpriteOverride: {fileID: 0}
+    labelIcon: {fileID: 0}
+    normalLabelSprite: {fileID: 0}
+  - element: 4
+    petalRoot: {fileID: 0}
+    petalSpriteOverride: {fileID: 0}
+    labelIcon: {fileID: 0}
+    normalLabelSprite: {fileID: 0}
   autoRootSize: 88
   autoRootSpacing: 104
   autoRootVerticalOffset: 0

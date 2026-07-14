@@ -10,6 +10,7 @@ using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
@@ -216,6 +217,12 @@ namespace CosmicShore.UI
         private void OnDisable()
         {
             UnsubscribeFreestyleEvents();
+
+            // Scene-unload safety: the UI module's actions live on a shared asset instance
+            // that outlives this scene — never leave Submit/Cancel/Move disabled for the
+            // next scene's appshell if we go down mid-freestyle (e.g. launching a game).
+            if (_appliedFreestyleGate)
+                ApplyFreestyleInputGate(false);
         }
 
         // Deferred-subscription pattern (CLAUDE.md ▸ DI): [Inject] fields populate AFTER
@@ -316,10 +323,18 @@ namespace CosmicShore.UI
 
         private void Update()
         {
+            // Self-healing input gate: never depend solely on the freestyle events having
+            // been delivered (a missed subscription here is exactly how the appshell kept
+            // reacting to vessel ability buttons). Read the LIVE freestyle state each frame
+            // and (re)apply the EventSystem gating whenever it flips.
+            bool inFreestyle = InFreestyle;
+            if (inFreestyle != _appliedFreestyleGate)
+                ApplyFreestyleInputGate(inFreestyle);
+
             if (Gamepad.current == null) return;
 
             // Y (buttonNorth) toggles freestyle from any state — checked before
-            // the _isInFreestyle early-return so it works as both enter and exit.
+            // the freestyle early-return so it works as both enter and exit.
             // A cooldown prevents accidental rapid toggling after each transition.
             if (crystalClickHandler
                 && Gamepad.current.buttonNorth.wasPressedThisFrame
@@ -331,7 +346,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            if (_isInFreestyle) return;
+            if (inFreestyle) return;
             if (HasActiveModal) return;
 
             if (ScreenIsActive(MenuScreens.HOME))
@@ -533,8 +548,8 @@ namespace CosmicShore.UI
 
         private void NavigateTo(int ScreenIndex, bool animate = true)
         {
-            // Block screen navigation while in freestyle mode
-            if (_isInFreestyle)
+            // Block screen navigation while in freestyle mode (live state, not just the flag)
+            if (InFreestyle)
             {
                 Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked — in freestyle");
                 return;
@@ -811,21 +826,61 @@ namespace CosmicShore.UI
             SetNavBarVisible(false);
             SetCanvasGroupVisible(screensCanvasGroup, false);
 
-            // Hand the gamepad to the vessel: stop the EventSystem from also driving UI
-            // Navigate/Submit while flying. CanvasGroup.interactable can't do this — the vessel
-            // HUD group stays interactable (for touch), so the pad would otherwise both fly the
-            // ship AND navigate/submit the HUD. sendNavigationEvents=false disables ONLY the
-            // gamepad/keyboard nav ring; pointer/touch input keeps working.
-            if (EventSystem.current)
-            {
-                EventSystem.current.SetSelectedGameObject(null);
-                EventSystem.current.sendNavigationEvents = false;
-            }
+            ApplyFreestyleInputGate(true);
         }
 
         private void HandleFreestyleTransitionEnd()
         {
             _freestyleToggleCooldownUntil = Time.unscaledTime + freestyleToggleCooldown;
+        }
+
+        /// <summary>
+        /// LIVE freestyle state: the event-driven flag OR'd with the crystal handler's own
+        /// state, so gamepad gating can never desync from reality if a transition event is
+        /// missed (e.g. a subscription-timing failure).
+        /// </summary>
+        private bool InFreestyle =>
+            _isInFreestyle || (crystalClickHandler && crystalClickHandler.IsInFreestyle);
+
+        private bool _appliedFreestyleGate;
+
+        /// <summary>
+        /// Hands the gamepad to the vessel (or back to the appshell). Idempotent — called
+        /// from the transition events AND self-healed from Update on live-state flips.
+        /// CanvasGroup.interactable can't do this job: the vessel HUD group stays
+        /// interactable for touch, so the pad would otherwise both fly the ship AND
+        /// navigate/submit the HUD.
+        /// </summary>
+        private void ApplyFreestyleInputGate(bool inFreestyle)
+        {
+            _appliedFreestyleGate = inFreestyle;
+
+            var eventSystem = EventSystem.current;
+            if (!eventSystem) return;
+
+            if (inFreestyle)
+                eventSystem.SetSelectedGameObject(null);
+
+            // Honored by the legacy StandaloneInputModule; kept for completeness.
+            eventSystem.sendNavigationEvents = !inFreestyle;
+
+            // The InputSystemUIInputModule does not reliably honor sendNavigationEvents —
+            // deterministically silence its gamepad-facing actions (move/submit/cancel)
+            // while flying. Pointer/click/touch actions stay live so touch UI keeps working.
+            if (eventSystem.currentInputModule is InputSystemUIInputModule module)
+            {
+                ToggleActionRef(module.move, !inFreestyle);
+                ToggleActionRef(module.submit, !inFreestyle);
+                ToggleActionRef(module.cancel, !inFreestyle);
+            }
+        }
+
+        private static void ToggleActionRef(InputActionReference reference, bool enable)
+        {
+            var action = reference ? reference.action : null;
+            if (action == null) return;
+            if (enable) action.Enable();
+            else action.Disable();
         }
 
         private void HandleExitFreestyle()
@@ -836,8 +891,7 @@ namespace CosmicShore.UI
             CloseAllModals();
 
             // Give the appshell the gamepad back.
-            if (EventSystem.current)
-                EventSystem.current.sendNavigationEvents = true;
+            ApplyFreestyleInputGate(false);
 
             // Show NavBar and Screens
             SetNavBarVisible(true);
