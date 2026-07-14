@@ -114,6 +114,19 @@ namespace CosmicShore.UI
 
             _rootRT = (RectTransform)transform;
 
+            // Fleet-wide standard placement: the flowers are a required, uniform display on
+            // every vessel — the shared config stamps the container's rect so no vessel's
+            // HUD authoring can drift the layout (per-vessel uniqueness lives in the
+            // ElementalAbilityMapSO parameters/upgrades, never in the display).
+            if (config.enforceStandardPlacement)
+            {
+                _rootRT.anchorMin        = config.standardAnchorMin;
+                _rootRT.anchorMax        = config.standardAnchorMax;
+                _rootRT.pivot            = config.standardPivot;
+                _rootRT.anchoredPosition = config.standardAnchoredPosition;
+                _rootRT.sizeDelta        = config.standardSize;
+            }
+
             int count = bars.Length;
             _currentLevels       = new int[count];
             _petals              = new Image[count][];

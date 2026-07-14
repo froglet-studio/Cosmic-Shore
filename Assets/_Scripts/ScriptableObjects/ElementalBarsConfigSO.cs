@@ -30,6 +30,20 @@ namespace CosmicShore.ScriptableObjects
             public Sprite petalSprite;
         }
 
+        [Header("Standard placement (fleet-wide)")]
+        [Tooltip("Enforce one screen placement for the element flowers on EVERY vessel: " +
+                 "ElementalBarsView.Build() stamps these values onto its own RectTransform, so " +
+                 "the display is identical across the fleet regardless of how a vessel's HUD " +
+                 "authored the container. Turn off only for a deliberate per-vessel layout.")]
+        public bool enforceStandardPlacement = true;
+        [Tooltip("Anchors on the HUD root (default: screen centre).")]
+        public Vector2 standardAnchorMin = new(0.5f, 0.5f);
+        public Vector2 standardAnchorMax = new(0.5f, 0.5f);
+        public Vector2 standardPivot = new(0.5f, 0f);
+        [Tooltip("Offset from the anchor — the Squirrel's reference placement (bottom-right cluster).")]
+        public Vector2 standardAnchoredPosition = new(727.2f, -332f);
+        public Vector2 standardSize = new(464.5f, 100f);
+
         [Header("Per-element petal sprites")]
         [Tooltip("One white petal silhouette per element. Looked up by element; order does not matter.")]
         [SerializeField] private ElementPetal[] petals;
