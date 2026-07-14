@@ -235,6 +235,67 @@ namespace CosmicShore.Tests
             Assert.AreEqual(72, cps[^1]);
         }
 
+        static PaintingStroke Stroke(Domains dom, params Vector3[] pts)
+            => new() { domain = dom, points = new List<Vector3>(pts) };
+
+        static float TransitGaps(IReadOnlyList<PaintingStroke> s)
+        {
+            float sum = 0f;
+            for (int i = 1; i < s.Count; i++)
+                sum += Vector3.Distance(s[i - 1].points[^1], s[i].points[0]);
+            return sum;
+        }
+
+        [Test]
+        public void OrderForFlightContinuity_ChainsFlightAndStaysDomainContiguous()
+        {
+            // Deliberately shuffled: consecutive authored strokes are far apart, and the two
+            // domains interleave. The tour must chain starts to ends and group the domains.
+            var strokes = new List<PaintingStroke>
+            {
+                Stroke(Domains.Jade, new Vector3(0, 0, 0), new Vector3(100, 0, 0)),
+                Stroke(Domains.Ruby, new Vector3(900, 0, 0), new Vector3(1000, 0, 0)),
+                Stroke(Domains.Jade, new Vector3(110, 0, 0), new Vector3(200, 0, 0)),
+                Stroke(Domains.Ruby, new Vector3(1010, 0, 0), new Vector3(1100, 0, 0)),
+                Stroke(Domains.Jade, new Vector3(210, 0, 0), new Vector3(300, 0, 0)),
+                Stroke(Domains.Ruby, new Vector3(1110, 0, 0), new Vector3(1200, 0, 0)),
+            };
+
+            var ordered = Tk.OrderForFlightContinuity(strokes);
+
+            CollectionAssert.AreEquivalent(strokes, ordered, "a permutation of the same strokes");
+            Assert.AreSame(strokes[0], ordered[0], "the authored opening stroke keeps its place");
+            Assert.Less(TransitGaps(ordered), TransitGaps(strokes),
+                "the tour must shorten the stroke-to-stroke transit");
+
+            int switches = 0;
+            for (int i = 1; i < ordered.Count; i++)
+                if (ordered[i - 1].domain != ordered[i].domain) switches++;
+            Assert.AreEqual(1, switches, "two domains → exactly one recolour seam");
+
+            var again = Tk.OrderForFlightContinuity(strokes);
+            CollectionAssert.AreEqual(ordered, again, "ordering is deterministic");
+        }
+
+        [Test]
+        public void OrderForFlightContinuity_DefersCurvierStrokesOnNearTies()
+        {
+            // Two candidates start equally close to the opener's end: a straight run and a
+            // zigzag of the same span. Continuity ties → the flatter stroke flies first.
+            var zig = new List<Vector3>();
+            for (int i = 0; i <= 10; i++) zig.Add(new Vector3(120 + i * 10f, i % 2 == 0 ? 0f : 25f, 0f));
+            var strokes = new List<PaintingStroke>
+            {
+                Stroke(Domains.Jade, new Vector3(0, 0, 0), new Vector3(100, 0, 0)),
+                Stroke(Domains.Jade, zig.ToArray()),
+                Stroke(Domains.Jade, new Vector3(120, 0, 0), new Vector3(220, 0, 0)),
+            };
+
+            var ordered = Tk.OrderForFlightContinuity(strokes);
+            Assert.AreSame(strokes[2], ordered[1], "the straight near-tie flies before the zigzag");
+            Assert.AreSame(strokes[1], ordered[2], "the curvy stroke lands last");
+        }
+
         [Test]
         public void RideCheckpoints_ClosedLoopsKeepAMidCheckpoint()
         {

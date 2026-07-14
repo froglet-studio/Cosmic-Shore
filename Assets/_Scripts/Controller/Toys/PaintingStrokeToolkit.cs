@@ -620,6 +620,117 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        // ── Flight-continuity stroke ordering ────────────────────────────────
+
+        /// <summary>
+        /// Reorder strokes so the FLIGHT chains: each stroke starts near where the previous one
+        /// ended (greedy nearest-next-start tour). Continuity takes precedence; among candidates
+        /// within a near-tie band of the best gap (4% of the painting diagonal), the LEAST curvy
+        /// stroke goes first, so fine detail still lands later. The order stays domain-contiguous
+        /// — strokes group by domain and each group is entered at its most continuous stroke — so
+        /// the trail recolours at most once per domain. Stroke 0 keeps its place (the authored
+        /// opening stroke and its gate position). Returns a NEW list of the same stroke objects;
+        /// deterministic, so progress-store stroke indices are stable across sessions.
+        /// </summary>
+        public static List<PaintingStroke> OrderForFlightContinuity(IReadOnlyList<PaintingStroke> strokes)
+        {
+            int n = strokes?.Count ?? 0;
+            var result = new List<PaintingStroke>(n);
+            if (n == 0) return result;
+            if (n == 1) { result.Add(strokes[0]); return result; }
+
+            // Near-tie band scales with the painting, not the stroke.
+            Vector3 min = strokes[0].points[0], max = min;
+            var curviness = new float[n];
+            for (int i = 0; i < n; i++)
+            {
+                var pts = strokes[i].points;
+                float turn = 0f, arc = 0f;
+                for (int k = 0; k < pts.Count; k++)
+                {
+                    min = Vector3.Min(min, pts[k]);
+                    max = Vector3.Max(max, pts[k]);
+                    if (k == 0) continue;
+                    arc += Vector3.Distance(pts[k - 1], pts[k]);
+                    if (k < pts.Count - 1)
+                        turn += Vector3.Angle(pts[k] - pts[k - 1], pts[k + 1] - pts[k]);
+                }
+                curviness[i] = arc > 1e-3f ? turn / arc : 0f; // degrees per unit flown
+            }
+            float band = 0.04f * (max - min).magnitude;
+
+            // Domain groups in first-appearance order; the tour enters each group at its most
+            // continuous stroke and chains greedily inside it.
+            var domainOrder = new List<Domains>();
+            var groups = new Dictionary<Domains, List<int>>();
+            for (int i = 0; i < n; i++)
+            {
+                if (!groups.TryGetValue(strokes[i].domain, out var g))
+                {
+                    g = new List<int>();
+                    groups[strokes[i].domain] = g;
+                    domainOrder.Add(strokes[i].domain);
+                }
+                g.Add(i);
+            }
+
+            Vector3 penPos = strokes[0].points[0];
+            int entry = 0;
+            var remainingDomains = new List<Domains>(domainOrder);
+            Domains currentDomain = strokes[0].domain;
+
+            while (true)
+            {
+                remainingDomains.Remove(currentDomain);
+                var group = groups[currentDomain];
+
+                // Greedy tolerance-band tour within the group, starting from the entry stroke.
+                group.Remove(entry);
+                result.Add(strokes[entry]);
+                penPos = strokes[entry].points[^1];
+                while (group.Count > 0)
+                {
+                    float bestGap = float.MaxValue;
+                    foreach (int i in group)
+                        bestGap = Mathf.Min(bestGap, Vector3.Distance(penPos, strokes[i].points[0]));
+
+                    int pick = -1;
+                    float pickCurve = float.MaxValue;
+                    foreach (int i in group)
+                    {
+                        if (Vector3.Distance(penPos, strokes[i].points[0]) > bestGap + band) continue;
+                        if (curviness[i] < pickCurve || (curviness[i] == pickCurve && i < pick))
+                        {
+                            pick = i;
+                            pickCurve = curviness[i];
+                        }
+                    }
+
+                    group.Remove(pick);
+                    result.Add(strokes[pick]);
+                    penPos = strokes[pick].points[^1];
+                }
+
+                if (remainingDomains.Count == 0) break;
+
+                // Next domain group: the one whose best entry chains closest to the pen.
+                float bestSeam = float.MaxValue;
+                foreach (var dom in remainingDomains)
+                    foreach (int i in groups[dom])
+                    {
+                        float d = Vector3.Distance(penPos, strokes[i].points[0]);
+                        if (d < bestSeam)
+                        {
+                            bestSeam = d;
+                            currentDomain = dom;
+                            entry = i;
+                        }
+                    }
+            }
+
+            return result;
+        }
+
         // ── Small helpers ────────────────────────────────────────────────────
 
         /// <summary>Two unit vectors perpendicular to <paramref name="axis"/> (and the normalised axis).</summary>

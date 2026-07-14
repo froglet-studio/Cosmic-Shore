@@ -35,4 +35,7 @@ CC-BY-NC sources): `REFERENCE_MODELS.md`. Meshes themselves are NOT committed
 - Local space, base plane at y=0, front (broad side) toward +Z.
 - Segment lengths flyable: > ~5u, < 0.65·W.
 - Domains: Jade(1) / Ruby(2) / Gold(4) only — never Blue(3).
-- Stroke order broad→fine (contours before features) per the authoring rule.
+- Stroke order in the bake only chooses the OPENING stroke — at runtime
+  `PaintingStrokeToolkit.OrderForFlightContinuity` re-sequences every painting so each stroke
+  starts near the previous stroke's end (domain-contiguous, curvier strokes deferred on
+  near-ties). Bakes need not hand-order beyond a sensible first stroke.

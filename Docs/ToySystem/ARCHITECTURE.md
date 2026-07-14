@@ -275,16 +275,21 @@ The domain changer and the painting gates deliberately share the cone so meeting
 first sets up expectations for the other. Builders live in `ToyFactory` (`AddConeBody`,
 `AddJackBody`, `AddRingBody`).
 
-#### Authoring rule — order strokes by decreasing radius of curvature
+#### Stroke order — flight continuity first, computed at runtime
 
-Strokes are flown in author order, so **sequence them from the broadest curvature to the
-tightest**: long straight/broad strokes first (pool outlines, plinth rectangles), fine detail
-last (balcony rings, crescents). The painting then doubles as its own difficulty ramp — the
-player warms up on sweeping lines and earns the precision work — and the adaptive per-stroke
-reach (which tightens on short segments) ramps with them. The Taj Mahal preset is the
-reference: pools → plinth → body → arches → dome → chhatris → minaret balconies. Batch
-domains at meaningful architectural boundaries within that ordering (see
-`PaintingPresetLibrary`).
+Authored stroke order is no longer flown verbatim: `PaintingDefinitionSO.EnsureStrokes` passes
+every source (authored, converted, preset) through
+**`PaintingStrokeToolkit.OrderForFlightContinuity`** — a greedy nearest-next-start tour, so
+**each stroke begins near where the previous one ended** (prompter-directed: flight continuity
+takes precedence in the sort). Within a near-tie band (4% of the painting diagonal) the LEAST
+curvy candidate flies first, so fine detail still lands later and the difficulty ramp survives
+as a tiebreak. The order stays **domain-contiguous** (grouped by domain, each group entered at
+its most continuous stroke) so the trail recolours at most once per domain — on the shipped
+gallery this cut stroke-to-stroke transit 27–70% (Phoenix 138k→42k units) and collapsed
+mid-painting recolours (Rose 51→2). Stroke 0 keeps its place (the authored opening + its gate);
+the pass is deterministic, so progress-store stroke indices stay stable across sessions.
+Authors therefore only choose the opening stroke and the stroke *content* — sequencing is the
+runtime's job.
 
 #### The stroke toolkit — where sophisticated strokes come from
 
@@ -295,13 +300,12 @@ unit-tested geometry library. It answers "where do we pull more sophisticated st
 
 - **Deterministic PRNG** (`Rng`) — a seedable xorshift, never `UnityEngine.Random`, so every painting
   regenerates identically (and is testable). Same painting id → same monument every time.
-- **Parametric curve families** — `CatmullRom`, `Helix`, `LogSpiral3D`/`LogSpiralBand` (the golden
-  spiral behind Nautilus + galaxy arms), `TorusKnot(p,q)`, `Rose3D`, `Lissajous3D`, `FibonacciSphere`,
-  `Phyllotaxis` (the 137.5° golden-angle lattice behind Lotus/Rose/Peacock), plus the
+- **Parametric curve families** — `CatmullRom`, `TorusKnot(p,q)`, `FibonacciSphere`, plus the
   `TruncatedIcosahedron` / `SoccerBallFaces` graph (exact 60-vertex/90-edge/32-face buckyball).
-  Botanical/terrain helpers: `PetalLoop`, `DomeLift`, `MidpointRidge` (fractal mountains), `ReflectY`
-  (lake reflections), `FirTree`, `FeatherStroke`, `FrameStrand` (braided rope), `RadialCurlStroke`
-  (mane/flame strands).
+  Botanical/terrain helpers: `MidpointRidge` (fractal mountains), `ReflectY` (lake reflections),
+  `FirTree`, `FeatherStroke`, `RadialCurlStroke` (mane/flame strands). Only primitives with a
+  production caller live in the toolkit — the speculative API (helices, phyllotaxis, rose
+  curves…) was pruned in the pre-PR review; compose new primitives when a generator needs them.
 - **The impressionist field** — `CurlNoise` is a divergence-free 3D flow field (curl of a value-noise
   vector potential; `∇·(∇×Ψ)=0`, so streamlines fill space without converging to a point).
   `ImpressionistStrokes` integrates short strokes along it whose radii of curvature stochastically

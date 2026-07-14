@@ -175,6 +175,12 @@ namespace CosmicShore.ScriptableObjects
                     if (s?.points != null && s.points.Count >= 2)
                         _resolved.Add(s);
             }
+
+            // Flight-continuity pass: each stroke starts near where the previous one ended
+            // (domain-contiguous, curvier strokes deferred on near-ties). Applies to every
+            // source in this one funnel, returns a NEW list (the serialized asset is never
+            // mutated), and is deterministic so progress-store stroke indices stay stable.
+            _resolved = PaintingStrokeToolkit.OrderForFlightContinuity(_resolved);
         }
 
         /// <summary>
