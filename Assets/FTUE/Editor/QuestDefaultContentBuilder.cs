@@ -171,6 +171,15 @@ namespace CosmicShore.Editor
             playedCC1.expectedMode = GameModes.MultiplayerCrystalCapture;
             playedCC1.minIntensity = 1;
 
+            // The first game is done — lift the forced intensity IMMEDIATELY so the player
+            // can pick any unlocked tier (1–3 by default; tier 4 stays progression-gated).
+            // The arcade stays funneled to Crystal Capture until the funnel clears.
+            var loosenFunnel = Add<QuestSetArcadeConstraintsNode>(g, "Arcade Funnel: CC only (intensities open)");
+            loosenFunnel.allowedMode = GameModes.MultiplayerCrystalCapture;
+            loosenFunnel.forcedIntensity = 0;
+            loosenFunnel.forcedPlayerCount = 2;
+            loosenFunnel.forcedDomainCount = 2;
+
             var unlockNav = Add<QuestLockNavigationNode>(g, "Unlock Nav (Hangar + Profile)");
             unlockNav.unlock = true;
 
@@ -184,12 +193,6 @@ namespace CosmicShore.Editor
                 "This is your profile — every game mode and its intensity tiers live here.",
                 "Tiers 1 to 3 are open right away. Reach INTENSITY 4 in a mode to unlock the next one on your quest track!",
             };
-
-            var constraintsCC3 = Add<QuestSetArcadeConstraintsNode>(g, "Arcade Funnel: CC @ Intensity 3 · 2p · 2 domains");
-            constraintsCC3.allowedMode = GameModes.MultiplayerCrystalCapture;
-            constraintsCC3.forcedIntensity = 3;
-            constraintsCC3.forcedPlayerCount = 2;
-            constraintsCC3.forcedDomainCount = 2;
 
             var ctaCC3 = Add<QuestHighlightCTANode>(g, "CTA: Play CC (Intensity 3)");
             ctaCC3.target = CallToActionTargetType.PlayGameMultiplayerCrystalCapture;
@@ -215,7 +218,7 @@ namespace CosmicShore.Editor
                 speedUpPrompt, waitSpeedUp, slowDownPrompt, waitSlowDown, lookPrompt, waitLook,
                 driftPrompt, waitDrift, skimPrompt, waitSkim, exitPrompt, exit,
                 lockNav, arcadeDialogue, constraintsCC1, ctaArcade, ctaCC1, playedCC1,
-                unlockNav, ctaProfile, mapsDialogue, constraintsCC3, ctaCC3, playedCC3,
+                loosenFunnel, unlockNav, ctaProfile, mapsDialogue, ctaCC3, playedCC3,
                 clearFunnel, socialTour, end);
 
             // Pacing: breathing room between beats (editable per arrow in the editor).

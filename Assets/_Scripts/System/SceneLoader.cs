@@ -142,6 +142,12 @@ namespace CosmicShore.Core
 
             _appStateMachine?.TransitionTo(ApplicationState.LoadingGame);
 
+            // Complete the PlayGame user action HERE, while the menu (and its listeners —
+            // CTA breadcrumbs, quest 'play the game' gates) is still alive. Nothing else in
+            // the arcade launch path fires it: the GameCard prefab carries no OnCardClicked
+            // wiring and the legacy MiniGame path never runs for networked modes.
+            UserActionSystem.Instance?.CompleteAction(UserActionType.PlayGame);
+
             // Show splash overlay during scene transition.
             _sceneTransitionManager?.SetFadeImmediate(1f);
             gameData.OnClientReady.OnRaised += FadeFromSplashOnReady;

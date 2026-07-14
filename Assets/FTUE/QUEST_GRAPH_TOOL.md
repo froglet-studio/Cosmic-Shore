@@ -105,6 +105,12 @@ Interactive/editable reference map (browser): the "Main Quest Progression Map" a
   player completed, an amber **▶ NEXT** banner on the node the quest resumes at, a ▶ marker on
   the current phase in the quest list, and a "PLAYER PROGRESS" readout in the quest inspector.
   Updates live during Play mode (~2×/s). Reset clears it.
+- **Force-Advance** (quest inspector, Play mode) — completes the ▶ NEXT node as if the player
+  did it (skip a game, a gate, a dialogue) so a full test pass doesn't require replaying every
+  beat. Persists progress exactly like a real advance.
+- **PlayGame user action** — `SceneLoader.LaunchGame` completes `UserActionType.PlayGame` at
+  every game launch (while the menu listeners are still alive). Play-game CTA nodes complete
+  on launch; the following WaitForGamePlayed gate holds until the run actually finishes.
 - **Arcade funnel persistence** — `QuestArcadeConstraints` is persisted in PlayerPrefs with the
   quest cursor, so a play-session restart mid-quest keeps the arcade funnel (one card, one
   intensity, authored player/domain counts) instead of silently unlocking everything.

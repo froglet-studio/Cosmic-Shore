@@ -339,6 +339,26 @@ namespace CosmicShore.Core
                 RunNode(next);
         }
 
+        /// <summary>
+        /// TESTING: force-complete the CURRENT node as if it advanced through its first
+        /// output port — skips the gate/action it was waiting for. Persists progress and
+        /// runs cleanups exactly like a real advance (driven by the Quest Graph editor's
+        /// play-mode "Force-Advance" button so testers don't have to replay every beat).
+        /// </summary>
+        public void DebugForceAdvance()
+        {
+            if (_current == null)
+            {
+                Debug.LogWarning("[Quest] Force-advance: no node is currently active.");
+                return;
+            }
+
+            var node = _current;
+            string port = node.OutputPorts.Count > 0 ? node.OutputPorts[0] : QuestPorts.Next;
+            Debug.Log($"[Quest] TEST force-advance past '{node.displayName}' ({node.NodeTypeLabel}).");
+            Advance(node, port);
+        }
+
         // ── Completion ─────────────────────────────────────────────────
 
         void HandlePhaseComplete()

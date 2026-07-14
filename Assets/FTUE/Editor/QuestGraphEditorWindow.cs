@@ -991,6 +991,25 @@ namespace CosmicShore.Editor
                         MessageType.Info);
                 }
 
+                using (new EditorGUI.DisabledScope(!Application.isPlaying))
+                {
+                    if (GUILayout.Button(new GUIContent(
+                            Application.isPlaying ? "▶ Force-Advance Current Node" : "▶ Force-Advance (Play mode only)",
+                            "TESTING: complete the node the quest is currently waiting on (the ▶ NEXT node) as if the player did it — skip a game, a gate, a dialogue. Progress is persisted exactly like a real advance.")))
+                    {
+                        var runner = FindFirstObjectByType<QuestGraphRunner>(FindObjectsInactive.Include);
+                        if (runner != null)
+                        {
+                            runner.DebugForceAdvance();
+                            _nextProgressPoll = 0; // refresh the checkpoint view immediately
+                        }
+                        else
+                        {
+                            Debug.LogWarning("[Quest] Force-advance: no QuestGraphRunner found in the loaded scenes.");
+                        }
+                    }
+                }
+
                 if (!ProgressionBackendGate.CloudEnabled)
                     EditorGUILayout.HelpBox(
                         "Backend: LOCAL-ONLY. ProgressionBackendGate is closed — quest progress lives in " +
