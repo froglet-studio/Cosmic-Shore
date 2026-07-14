@@ -213,6 +213,15 @@ namespace CosmicShore.Gameplay
         protected static readonly List<Prism> PrismScratch = new(256);
 
         /// <summary>
+        /// Separate scratch list for the small per-MOUTHFUL cluster query intentional
+        /// feeding runs when a herbivore actually consumes (LightFauna.ConsumeMouthful /
+        /// Boid feeding). Kept distinct from <see cref="PrismScratch"/> because mouthful
+        /// consumption fires from per-frame Update code, which must never clobber a
+        /// behavior tick's in-flight neighborhood snapshot.
+        /// </summary>
+        protected static readonly List<Prism> FeedScratch = new(64);
+
+        /// <summary>
         /// Overlap mask for the physics half of fauna scans: everything EXCEPT prism
         /// layers (TrailBlocks + Mound). Prisms — including other fauna's body
         /// HealthPrisms — are served by PrismSpatialIndex.QuerySphere instead, so the
@@ -242,6 +251,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected HealthPrism[] CacheBodyPrisms() =>
             _bodyPrisms = GetComponentsInChildren<HealthPrism>(true);
+
+        /// <summary>The cached body prisms (see <see cref="CacheBodyPrisms"/>). May contain destroyed entries.</summary>
+        protected HealthPrism[] BodyPrisms => _bodyPrisms;
 
         /// <summary>
         /// Pushes the body prisms' current positions into the spatial index. Call
@@ -333,15 +345,32 @@ namespace CosmicShore.Gameplay
         public bool IsAlivePrey => !_consumedAsPrey;
 
         /// <summary>
+        /// Where a devouring predator wants this prey's body prisms suctioned to (the
+        /// predator's mouth). Set by the devour overload of <see cref="Predated"/> before
+        /// Die runs, so subclass OnDeath can choose the break-apart-and-suction exit over
+        /// the default wither. Null for non-predation deaths (starvation).
+        /// </summary>
+        protected Transform DevourTarget { get; private set; }
+
+        /// <summary>
         /// A predator has caught this fauna. Routes through the normal <see cref="Die"/> path
         /// (manager removal / destroy), is idempotent, and respects the post-spawn predation
         /// immunity window. Returns true only if the prey was actually eaten this call — the
         /// predator should reset its starvation clock (NotifyFed) only on a true result.
         /// </summary>
-        public virtual bool Predated(string predatorName = "predator")
+        public bool Predated(string predatorName = "predator") => Predated(predatorName, null);
+
+        /// <summary>
+        /// Devour variant: <paramref name="devourTarget"/> is the predator's mouth — the
+        /// suction sink the prey's body prisms implode toward (continuity rule: the prey
+        /// breaks apart and is pulled into the mouth, never popping out of existence). The
+        /// sealed <see cref="Die"/> still drops the elemental crystal first (mass conserved).
+        /// </summary>
+        public virtual bool Predated(string predatorName, Transform devourTarget)
         {
             if (_consumedAsPrey || IsPredationImmune) return false;
             _consumedAsPrey = true;
+            DevourTarget = devourTarget;
             Die(predatorName);
             return true;
         }

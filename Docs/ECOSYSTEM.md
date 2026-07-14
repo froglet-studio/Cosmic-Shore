@@ -447,7 +447,7 @@ foragers, which is counterproductive to that scene's trail-cleanup perf goal.
   shortcut). Predation-immune newborns are skipped so a shark doesn't camp a fresh
   birth. With no herbivores alive, the predator falls back to the shared
   phase-based density goal (roams plausibly, then starves). Herbivores still swarm
-  opposing-mass density.
+  opposing-mass density. **v3 layers intentional consumption on top — see §7.3.**
 - **Spawn gating (by diet):** `RandomLifeSpawner` seeds a herbivore species when
   `OpposingVolume >= FaunaFoodFloor × 16` (prism prey, in volume) and a predator species when
   `GetLiveHerbivoreCount() >= FaunaFoodFloor` (real food, not the old prism-mass
@@ -539,6 +539,50 @@ cleared.
 > 5. **Net perf.** Fauna cost CPU (per-tick `OverlapSphere` per creature). Test
 >    whether trail savings beat fauna cost: start modest and profile before/after;
 >    scale `PopulationSize` only if net-positive.
+
+### 7.3 Intentional consumption & the mouth-driven predator (v3)
+
+Consumption is no longer an instant vacuum inside a radius — both diets now *act
+out* their feeding, using the systems that already exist (the suction implosion,
+the danger prisms, `Cell.LiveFauna`). No new colliders; tunables live on
+`LightFaunaDataSO` (brittlestar/shark) and the `Boid` prefab (tadpole).
+
+**Herbivores (brittlestar `LightFauna`, tadpole `Boid` forager) — approach →
+face → suction → watch:**
+- The behavior tick only **selects** the nearest edible prism (same edibility
+  rules as before, factored into `IsEdibleForHerbivore` / `IsEdibleForForager`);
+  the creature then steers toward it.
+- Feeding starts only once inside the **minimum feeding distance**
+  (`consumeRadius` / `trailBlockInteractionRadius`) — the creature never has to
+  be right on the prisms. There it brakes to a hover and **turns to face the
+  meal**; the suction begins only within `feedingFacingAngle`.
+- One bite = the faced prism plus edible prisms within `feedingClusterRadius`
+  (capped by `maxClusterBites`), all imploding toward the creature — a
+  deliberate mouthful instead of a radius-wide vacuum, at comparable throughput.
+- The creature **holds facing for `consumeHoldSeconds`** (default 2s = the
+  suction shader's travel time) so it visibly watches its meal all the way in.
+
+**Predators (shark `LightFauna`) — pursue → strike at the mouth → devour:**
+- The tick-selected nearest prey is held as a live reference; per-frame homing
+  (`pursuitAgility`) tracks the fleeing target between ticks and
+  `pursuitSpeedMultiplier` makes the chase read as a chase. Separation from
+  environment prisms (flora/trails) still applies each tick — the shark
+  maneuvers around obstacles — but **prey bodies never repel the predator**.
+- The **mouth** is a lightweight transform at the danger-prism centroid, created
+  at Initialize. **Attack range = the longest danger-prism dimension** ×
+  `attackRangeMultiplier` (recomputed per tick as the body grows;
+  `attackRangeFallback` covers a de-toothed shark).
+- Every frame the predator checks the cell's small `LiveFauna` registry: any
+  live, non-immune herbivore within attack range of the mouth is devoured. Pure
+  math, no physics, no contact — the kill is deterministic, and the danger
+  prisms are **never disturbed by prey being eaten** while staying fully
+  vulnerable to vessels/projectiles (they're ordinary body HealthPrisms; all
+  fauna diets already exclude fauna bodies).
+- Devoured prey **breaks apart**: `Predated(name, mouth)` routes the sealed
+  crystal-dropping `Die`, then the body prisms suction (implode) **into the
+  mouth**, nearest-first, a few per frame — the suction sink follows the
+  swimming shark. Residual structure (spindles) evaporates via `CheckForLife`;
+  starvation deaths keep the classic extremities-first wither.
 
 ---
 
