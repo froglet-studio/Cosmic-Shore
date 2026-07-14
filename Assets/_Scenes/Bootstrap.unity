@@ -3180,6 +3180,11 @@ PrefabInstance:
       objectReference: {fileID: 8300000, guid: 49d6fbb77714f45da926b744d54d3944, type: 3}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}
+      propertyPath: crystalSkimEvent.Path
+      value: event:/SFX/Oneshots/Gameplay sfx/Skim
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
       propertyPath: joustScoredEvent.Path
       value: event:/SFX/Oneshots/Gameplay sfx/Charge Joust
       objectReference: {fileID: 0}
@@ -3632,6 +3637,26 @@ PrefabInstance:
         type: 3}
       propertyPath: switchViewEvent.Guid.Data4
       value: 1389866512
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: crystalSkimEvent.Guid.Data1
+      value: 175162526
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: crystalSkimEvent.Guid.Data2
+      value: 1078581788
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: crystalSkimEvent.Guid.Data3
+      value: 1171656846
+      objectReference: {fileID: 0}
+    - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
+        type: 3}
+      propertyPath: crystalSkimEvent.Guid.Data4
+      value: 200696093
       objectReference: {fileID: 0}
     - target: {fileID: 5246419679807688196, guid: 9426870f37f271d4daf180ef32c4d10f,
         type: 3}

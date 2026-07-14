@@ -40,6 +40,9 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>Maelstrom / Tournament win target used when <see cref="maelstromWinTarget"/> is 0 (auto/default).</summary>
         public const int DefaultMaelstromWinTarget = 6;
 
+        /// <summary>Nucleus Rush (Brood Rush) wave target used when <see cref="nucleusRushWaveTarget"/> is 0 (auto/default).</summary>
+        public const int DefaultNucleusRushWaveTarget = 3;
+
         [Header("Live counts — used at runtime. 0 = auto/default (edit via Tools > Cosmic Shore > End Game Conditions)")]
         [Tooltip("HexRace crystals to end the race. 0 = auto-calc from the track waypoints.")]
         [Min(0)] public int hexRaceCrystalCount = 0;
@@ -54,11 +57,16 @@ namespace CosmicShore.ScriptableObjects
                  "(race to N). 0 = default (6).")]
         [Min(0)] public int maelstromWinTarget = 6;
 
+        [Tooltip("Nucleus Rush (Brood Rush) fauna waves a domain must claim to win (race to N; one " +
+                 "wave every 30s spawn cycle, so 3 ≈ a 1.5–2.5 minute match). 0 = default (3).")]
+        [Min(0)] public int nucleusRushWaveTarget = 3;
+
         [Header("Build baseline — what a shipping build uses. Set via the tool's \"Set Build Values\" button.")]
         [Min(0)] public int hexRaceCrystalCountBuild = 0;
         [Min(0)] public int crystalCaptureCrystalCountBuild = 20;
         [Min(0)] public int joustCountBuild = 3;
         [Min(0)] public int maelstromWinTargetBuild = 6;
+        [Min(0)] public int nucleusRushWaveTargetBuild = 3;
 
         [Tooltip("When on, a build first copies the Build baseline onto the Live counts, so test values are never shipped.")]
         public bool autoRestoreBuildValuesBeforeBuild = true;
@@ -103,12 +111,19 @@ namespace CosmicShore.ScriptableObjects
         /// </summary>
         public int GetMaelstromWinTarget() => maelstromWinTarget > 0 ? maelstromWinTarget : DefaultMaelstromWinTarget;
 
+        /// <summary>
+        /// Nucleus Rush (Brood Rush) wave target ("race to N" claimed fauna waves): the configured
+        /// value when &gt; 0, otherwise <see cref="DefaultNucleusRushWaveTarget"/>.
+        /// </summary>
+        public int GetNucleusRushWaveTarget() => nucleusRushWaveTarget > 0 ? nucleusRushWaveTarget : DefaultNucleusRushWaveTarget;
+
         /// <summary>True when every Live count (used at runtime) already equals its Build baseline.</summary>
         public bool LiveMatchesBuild =>
             hexRaceCrystalCount == hexRaceCrystalCountBuild &&
             crystalCaptureCrystalCount == crystalCaptureCrystalCountBuild &&
             joustCount == joustCountBuild &&
-            maelstromWinTarget == maelstromWinTargetBuild;
+            maelstromWinTarget == maelstromWinTargetBuild &&
+            nucleusRushWaveTarget == nucleusRushWaveTargetBuild;
 
         /// <summary>Copy the Build baseline onto the Live counts (build → live) — used by the build auto-restore.</summary>
         public void ApplyBuildValues()
@@ -117,6 +132,7 @@ namespace CosmicShore.ScriptableObjects
             crystalCaptureCrystalCount = crystalCaptureCrystalCountBuild;
             joustCount = joustCountBuild;
             maelstromWinTarget = maelstromWinTargetBuild;
+            nucleusRushWaveTarget = nucleusRushWaveTargetBuild;
         }
 
         /// <summary>Snapshot the current Live counts as the Build baseline (live → build) — used by "Set Build Values".</summary>
@@ -126,6 +142,7 @@ namespace CosmicShore.ScriptableObjects
             crystalCaptureCrystalCountBuild = crystalCaptureCrystalCount;
             joustCountBuild = joustCount;
             maelstromWinTargetBuild = maelstromWinTarget;
+            nucleusRushWaveTargetBuild = nucleusRushWaveTarget;
         }
     }
 }
