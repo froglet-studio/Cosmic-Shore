@@ -788,6 +788,26 @@ Modeled steady state: ~1200 prisms, ~13 fauna → predicted **~70 fps** (was ~5)
 the gyroids **TAMED** (held ~950–1200, not stripped). `MaxLivePopulation` does
 double duty here: the §6.2 taming dial *and* the per-frame `OverlapSphere` budget.
 
+### Consume pacing (shipped — Boid + LightFauna)
+
+`ReproductionCooldownSeconds` throttles the BIRTH side of a population burst; the
+same idea applied to the CONSUMPTION side is the `_pendingMeals` queue +
+`maxConsumesPerFrame` (serialized, default 8, ≤0 = legacy unpaced burst) on **Boid**
+and **LightFauna**. The behavior tick still *finds* every edible prism in range —
+it just *enqueues* them, and a per-frame drain executes the consumes, re-checking
+the scan's edibility predicate at drain time (destroyed / shielded / domain-stolen
+/ owner-died can all change inside the pacing window; uneaten queued meals on the
+eater's death stay in the world — mass conserved). **This is pacing, NOT a grazing
+cap**: every queued meal is eaten within a few frames, well inside one behavior
+tick, so grazing throughput — the food web's population regulator — is unchanged.
+The win is that each consume's death cascade (implosion VFX, pool churn, spindle
+teardown, cell volume updates) lands spread across frames instead of 15+ in one
+(the measured 13.8 ms LightFauna tick): a dense cluster visibly *melts* instead of
+popping in a single frame — which also reads better under the continuity law. Do
+not mistake the queue for a consumption limiter, and do not "fix" a slow-looking
+graze by raising `maxConsumesPerFrame` before checking whether prey density simply
+dropped.
+
 ### The closed loop (agent-runnable, no Unity)
 
 There is no Unity or C# toolchain in the autonomy container, so perf is tuned

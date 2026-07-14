@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -17,6 +18,21 @@ namespace CosmicShore.Gameplay
 
         [Header("Data")]
         [SerializeField] private LightFaunaDataSO data;
+
+        [Tooltip("Upper bound on prisms this fauna consumes per FRAME. The behavior tick still " +
+                 "finds every edible prism in range, but the death cascade each consume triggers " +
+                 "(pool release, VFX activation, spindle teardown, cell volume updates) drains at " +
+                 "this rate over the following frames instead of landing in one. Pacing only — " +
+                 "every queued meal is eaten well inside one behavior tick, so grazing throughput " +
+                 "(the food web's population regulator) is unchanged; a dense cluster visibly " +
+                 "melts instead of popping in a single frame. 0 or less = unpaced legacy burst.")]
+        [SerializeField] int maxConsumesPerFrame = 8;
+
+        // Edible prisms found by the behavior tick, drained at maxConsumesPerFrame.
+        // Entries are re-validated at drain time (destroyed / domain-stolen /
+        // owner-died can all change inside the pacing window). Same pattern as
+        // Boid._pendingMeals — see Docs/ECOSYSTEM.md (consume pacing).
+        readonly Queue<Prism> _pendingMeals = new();
 
         private Vector3 currentVelocity;
         private Vector3 desiredDirection;
@@ -91,6 +107,9 @@ namespace CosmicShore.Gameplay
         {
             if (_withering) return;
             _withering = true;
+            // Uneaten queued meals stay in the world (mass conserved) — a dead
+            // fauna just stops being their eater.
+            _pendingMeals.Clear();
             currentVelocity = Vector3.zero;
 
             if (isActiveAndEnabled && gameObject.activeInHierarchy)
@@ -381,8 +400,10 @@ namespace CosmicShore.Gameplay
                     // Herbivores eat opposing-domain plant/trail mass; predators never eat prisms.
                     if (diet == FaunaDiet.Herbivore && sqr < consumeRadiusSqr && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
                     {
-                        otherHealthBlock.Consume(transform, domain, PLAYER_NAME, true, true);
-                        NotifyFed();
+                        if (maxConsumesPerFrame > 0)
+                            _pendingMeals.Enqueue(otherHealthBlock);
+                        else
+                            EatPrism(otherHealthBlock); // unpaced legacy burst
                     }
 
                     continue;
@@ -391,10 +412,16 @@ namespace CosmicShore.Gameplay
                 // Handle blocks
                 if (diet == FaunaDiet.Herbivore && prism.Domain != domain && sqr < consumeRadiusSqr)
                 {
-                    prism.Consume(transform, domain, PLAYER_NAME, true, true);
-                    NotifyFed();
+                    if (maxConsumesPerFrame > 0)
+                        _pendingMeals.Enqueue(prism);
+                    else
+                        EatPrism(prism); // unpaced legacy burst
                 }
             }
+
+            // Eat the first slice in the tick frame itself so sparse grazing is
+            // frame-identical to the old inline path; Update() drains the rest.
+            DrainPendingMeals();
 
             averageSpeed = neighborCount > 0
                 ? (averageSpeed > 0 ? averageSpeed / neighborCount : currentVelocity.magnitude)
@@ -417,8 +444,48 @@ namespace CosmicShore.Gameplay
                 desiredRotation = transform.rotation;
         }
 
+        /// <summary>
+        /// Consumes up to maxConsumesPerFrame queued meals. Called once from the
+        /// behavior tick (first slice lands in the tick frame) and then from
+        /// Update() until the queue empties — always well inside one behavior
+        /// cycle, so pacing never reduces what the fauna actually eats.
+        /// </summary>
+        void DrainPendingMeals()
+        {
+            int budget = maxConsumesPerFrame;
+            while (budget-- > 0 && _pendingMeals.Count > 0)
+                EatPrism(_pendingMeals.Dequeue());
+        }
+
+        /// <summary>
+        /// The consume half of the old inline scan, with the scan's edibility
+        /// predicate re-checked — inside the pacing window a flockmate may have
+        /// eaten the prism (destroyed), its domain may have been stolen to ours,
+        /// or its owning lifeform may have died.
+        /// </summary>
+        void EatPrism(Prism prism)
+        {
+            if (_withering || !prism || prism.destroyed) return;
+
+            if (prism is HealthPrism healthBlock)
+            {
+                // Same predicate as the scan: only opposing-domain lifeform mass is edible.
+                if (!healthBlock.LifeForm || healthBlock.LifeForm.domain == domain) return;
+                healthBlock.Consume(transform, domain, PLAYER_NAME, true, true);
+                NotifyFed();
+                return;
+            }
+
+            if (prism.Domain == domain) return;
+            prism.Consume(transform, domain, PLAYER_NAME, true, true);
+            NotifyFed();
+        }
+
         void Update()
         {
+            if (!_withering && _pendingMeals.Count > 0)
+                DrainPendingMeals();
+
             transform.position += currentVelocity * Time.deltaTime;
             // Movers contract: the body prisms are registered mass — keep their
             // stored index positions tracking the swimming creature.

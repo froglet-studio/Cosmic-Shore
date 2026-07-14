@@ -44,6 +44,12 @@ namespace CosmicShore.Utility
         private ProfilerMarker _missMarker;
         private bool _attributedCreate; // suppresses the miss marker for maintenance/prewarm creates
 
+        // Attribution for pooled Get activation cost (GameObject.Activate rows in
+        // consume cascades): names WHICH pool is activating and reveals whether
+        // first-activation Awake (deferred by async incubation) or a heavy OnEnable
+        // dominates — the datum for deciding on an Awake-warm at refill completion.
+        private ProfilerMarker _activateMarker;
+
         // Async refills instantiate under an INACTIVE staging parent: clones
         // integrate with activeInHierarchy = false, so Awake/OnEnable never fire at
         // incubation time — nothing can flash on screen or run enable-time side
@@ -61,6 +67,7 @@ namespace CosmicShore.Utility
             string prefabName = prefab ? prefab.name : GetType().Name;
             _refillMarker = new ProfilerMarker($"PoolRefill.{prefabName}");
             _missMarker = new ProfilerMarker($"PoolMiss.{prefabName}");
+            _activateMarker = new ProfilerMarker($"PoolActivate.{prefabName}");
 
             // A buffer target above maxSize would make maintenance instantiate
             // forever while Release destroys every extra — an infinite churn loop.
@@ -251,7 +258,8 @@ namespace CosmicShore.Utility
         protected virtual void OnGetFromPool(T obj)
         {
             if (!obj) return;
-            obj.gameObject.SetActive(true);
+            using (_activateMarker.Auto())
+                obj.gameObject.SetActive(true);
         }
 
         protected virtual void OnReleaseToPool(T obj)
