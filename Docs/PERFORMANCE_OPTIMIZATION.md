@@ -178,6 +178,83 @@ physics-query impact (strictly removes main-thread cost).
 7. Edit-mode tests: run `CosmicShore.Tests` → the six new
    `PrismSpatialIndexTests` summation-view tests pass.
 
+### 2026-07-14 capture #2 (post-`fb5e6643`, frame 86145, 40.77 ms CPU) — Burst jobs read ~20× too slow; LOD churn fixed (`71b51a28`)
+
+The `fb5e6643` attribution works: the gauge's cost now shows as
+`DomainVolumeIndicator.Sample` → `Cell.VolumeSum` → `ExecuteJobFunction.Invoke`
+(`.Push` ≈ 0.00), and the spike moved off the managed slice into the job row.
+But the numbers are wrong by a consistent multiplier:
+
+| Row | This capture | Expected (documented) |
+|---|---|---|
+| `Cell.VolumeSum` job (`CellVolumeSumJob`) | **6.55 ms** | ~0.1–0.3 ms at 25k prisms |
+| `LodClassifyJob` (under `PrismColliderLodManager.Update`) | **2.67 ms** | ~0.1–0.3 ms at 25k (`eaf107e0`, confirmed 07-09) |
+| `PrismColliderLodManager.Update` managed self | **4.00 ms** | sub-0.5 ms tick |
+
+**Diagnosis — the ~20× multiplier on BOTH Burst jobs is environmental, not
+workload.** Two independent Burst linear scans reading 20× their confirmed
+cost points at the jobs running as managed IL in the editor (Burst disabled,
+still async-compiling after the script reload, or Jobs Debugger + full safety
+checks). A real 20× population (~500k prisms) is implausible (memory,
+rendering). **User check before any further code on these rows (TODO A0):**
+in the editor menu, `Jobs ▸ Burst ▸ Enable Compilation` ON,
+`Jobs ▸ Burst ▸ Safety Checks ▸ Off` for the capture, `Jobs ▸ Jobs Debugger`
+OFF, leak detection OFF — then re-capture. Expected: both job rows sub-ms.
+Player/dev builds always run Burst-compiled — these two rows are near-free in
+a build regardless of the editor setting.
+
+**Real-workload findings fixed in `71b51a28` (valid whatever the Burst datum):**
+
+1. **LOD boundary flapping.** Classification had ONE radius for both
+   directions, so every prism at the bubble edge of a moving focus (the menu
+   autopilot vessels roam continuously) flipped near/far every 0.25 s tick —
+   transition floods that the managed side pays for (restore loop, queue
+   enqueues, collider re-toggles into PhysX). Fix: hysteresis band in
+   `LodClassifyJob` — far→near inside `lodRadiusMeters`, near→far only beyond
+   `lodRadiusMeters × lodExitRadiusMultiplier` (new knob, default 1.15),
+   annulus keeps prior state. Safety unchanged: the enter radius still
+   guarantees speed × tick margin; reconciles classify by the wide radius
+   (collider-on is the safe direction).
+2. **Unbounded drain re-validation.** `DrainCullQueue`'s budget only counted
+   APPLIED culls — entries re-validating as near (a churny queue's common
+   case) were free, so one frame could burn thousands of
+   `transform.position` + per-focus distance checks (multi-ms self). Budget
+   is now charged per entry that reaches re-validation; cancelled/dead
+   entries stay uncharged.
+3. **Tick stacking.** The LOD sweep and the volume recompute are both 0.25 s
+   passes and had locked onto the same frame (6.68 + 6.59 ms in one
+   `BehaviourUpdate`). The LOD tick now starts half an interval out of phase.
+4. **Attribution:** new `LOD.Sweep` (tick: classify + transitions) and
+   `LOD.Drain` (every-frame budgeted culls) markers.
+
+**Verification (next capture, after the Burst settings check):**
+`LOD.Sweep` ticks sub-ms with `LodClassifyJob` ~0.1–0.3 ms; `LOD.Drain`
+≤ ~0.5 ms every frame; `Cell.VolumeSum` sub-ms on its (now offset) tick
+frames; steady-state transition counts near zero when no focus crosses new
+territory (watch `becameNear/Far` sizes via a debugger or add temp logging);
+vessels never fly through solid prisms (hysteresis touches only the
+far-direction).
+
+**Designed escalation (NOT shipped — needs the Burst-on datum first):** if a
+capture with Burst confirmed ON still shows `Cell.VolumeSum` > 1 ms (i.e.
+the population genuinely is huge), move the summation off the main thread:
+index-owned async batch — snapshot `_spatial`+`_cellData` (one memcpy), one
+`Schedule()`d job summing ALL cells per 0.25 s, lazily completed next tick,
+cells consume the last published batch (the "densest-region async on a
+snapshot" pattern, staleness still ≤ interval + a frame). Same escalation
+applies to `LodClassifyJob` (schedule → apply next frame) but its flag-bit
+read-write makes snapshotting subtler — only with evidence.
+
+**EditorLoop spikes (user question):** `EditorLoop` is everything the Unity
+EDITOR itself does outside your game's PlayerLoop — profiler window repaint
+(the biggest offender while capturing), scene/inspector/console redraws,
+editor-side GC (this capture's sawtooth in the object/memory graph), version
+control polling. It does not exist in builds and is not actionable game
+code. To keep it out of captures: use the standalone Profiler process
+(Profiler window ⋮ menu), close the Console during capture runs (log spam =
+editor repaints), don't leave the Game view at full-res alongside Scene
+view, and treat a development build as the ground truth for frame times.
+
 ### Session-wide lesson list (for the next agent)
 
 - Never assume Unity's 0.02 default fixed timestep — this project runs 0.04
@@ -449,6 +526,7 @@ fix spreads or de-allocates the same work.
 | `d4f696ae` | Creation-tick split markers: `Prism.Create.Visibility` / `.SOAPRaise` / `.SpatialBind` (Task 4 attribution) |
 | `481a7ad8` | Domain-volume gauge: colors on sample cadence, push gated on real change (was 1.02 ms/frame flat) |
 | `fb5e6643` | Cell volume recompute is one Burst `CellVolumeSumJob` over the index's new packed summation view (`PrismCellData`); managed 8000-prism slice deleted (was a ~10 ms reader-attributed spike billed to `DomainVolumeIndicator.Update`); `Cell.VolumeSum` + `DomainVolumeIndicator.Sample`/`.Push` markers (closes TODO C2) |
+| `71b51a28` | Collider-LOD hysteresis band (`lodExitRadiusMultiplier`, kills moving-focus boundary flapping); drain budget charged per re-validated entry (was unbounded transform reads on churny queues); `LOD.Sweep`/`LOD.Drain` markers; LOD tick de-phased half an interval from the volume recompute |
 
 ---
 
