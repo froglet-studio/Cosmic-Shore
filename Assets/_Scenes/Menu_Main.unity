@@ -2519,8 +2519,7 @@ MonoBehaviour:
   skimBoostEvent: {fileID: 11400000, guid: 15e07b33eab9e2e47b84bb74fb591a3f, type: 2}
   crystalHandler: {fileID: 1486013850}
   instructionView: {fileID: 442643820}
-  dialoguePanel: {fileID: 0}
-  dialoguePanelPrefab: {fileID: 7781465904777828566, guid: 2eb05b0fde6be2246b2ff1d1b637eaa8,
+  dialoguePanel: {fileID: 7781465904777828566, guid: 2eb05b0fde6be2246b2ff1d1b637eaa8,
     type: 3}
   dialoguePanelParent: {fileID: 4432980322083613555}
   screenSwitcher: {fileID: 4216411968520269688}
@@ -101581,7 +101580,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 160
+    m_Left: 199
     m_Right: 0
     m_Top: 0
     m_Bottom: 0

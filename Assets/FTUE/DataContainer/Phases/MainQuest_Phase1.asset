@@ -15,7 +15,7 @@ MonoBehaviour:
   nodeId: d5c931a387794bf5b2fb9c43d0d3e082
   displayName: Reward Reveal
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 520}
+  graphPosition: {x: 63.999023, y: 627.9742}
   outputs:
   - portName: next
     targetNodeId: da0c5e9066f94b2e96e23b99cfe2ce6b
@@ -86,6 +86,27 @@ MonoBehaviour:
     delaySeconds: 1
   mode: 35
   intensityTier: 4
+--- !u!114 &-466005247653396301
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: QuestDialogueNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: d4bd50f6eee54654bec7b27ecb94a2b4
+  displayName: Dialogue
+  nodeEnabled: 1
+  graphPosition: {x: 62.065628, y: 465.25916}
+  outputs: []
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - Click on the crystal capture game card to collect your reward.
 --- !u!114 &11400000
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -115,8 +136,31 @@ MonoBehaviour:
   - {fileID: 3420469172688409254}
   - {fileID: 5683260495802250319}
   - {fileID: -7389795359798162980}
+  - {fileID: 2512483548895660448}
+  - {fileID: -466005247653396301}
   canvasScroll: {x: 9.917099, y: 5.6276703}
   canvasZoom: 1.0002403
+--- !u!114 &2512483548895660448
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc71607207fd49ea9b400656e8aff5d3, type: 3}
+  m_Name: QuestWaitForUserActionNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForUserActionNode
+  nodeId: dd1cbacb4df947329cfce9f23174d955
+  displayName: Wait For User Action
+  nodeEnabled: 1
+  graphPosition: {x: 60.066055, y: 388.27765}
+  outputs:
+  - portName: next
+    targetNodeId: a9cf9fe9435548a9bb64a204ae0adbe5
+    delaySeconds: 0
+  action: 500
 --- !u!114 &3420469172688409254
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -178,7 +222,7 @@ MonoBehaviour:
   nodeId: a9cf9fe9435548a9bb64a204ae0adbe5
   displayName: 'Wait: Claim HexRace'
   nodeEnabled: 1
-  graphPosition: {x: 60, y: 400}
+  graphPosition: {x: 64.99881, y: 542.9657}
   outputs:
   - portName: next
     targetNodeId: d5c931a387794bf5b2fb9c43d0d3e082
@@ -202,7 +246,7 @@ MonoBehaviour:
   graphPosition: {x: 60, y: 280}
   outputs:
   - portName: next
-    targetNodeId: a9cf9fe9435548a9bb64a204ae0adbe5
+    targetNodeId: dd1cbacb4df947329cfce9f23174d955
     delaySeconds: 0
   speakerName: Captain
   portrait: {fileID: 0}

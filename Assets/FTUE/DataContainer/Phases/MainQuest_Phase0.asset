@@ -15,10 +15,10 @@ MonoBehaviour:
   nodeId: 4d51e7e97c7a48a9a4330fdf253f3952
   displayName: Maps Tour + Intensity-4 Rule
   nodeEnabled: 1
-  graphPosition: {x: 1107.7896, y: 275.7309}
+  graphPosition: {x: 1095.8989, y: 233.46613}
   outputs:
   - portName: next
-    targetNodeId: 57011872b3b64f6790bb1970cdac59fc
+    targetNodeId: 38d080a5539f45c88e872ec24f2b9991
     delaySeconds: 0
   speakerName: Captain
   portrait: {fileID: 0}
@@ -114,11 +114,15 @@ MonoBehaviour:
   nodeId: 22266fc0e2a14456a92d8a0d2710790b
   displayName: Dialogue
   nodeEnabled: 1
-  graphPosition: {x: 1119.8318, y: 46.098907}
-  outputs: []
+  graphPosition: {x: 1088.2756, y: 38.099716}
+  outputs:
+  - portName: next
+    targetNodeId: 4e9d130b72e147619021272ddaacfec8
+    delaySeconds: 0
   speakerName: Captain
   portrait: {fileID: 0}
-  lines: []
+  lines:
+  - Head over to the Profile Screen to unlock new game modes
 --- !u!114 &-5450907927303977473
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -137,7 +141,7 @@ MonoBehaviour:
   graphPosition: {x: 840, y: 400}
   outputs:
   - portName: next
-    targetNodeId: 6a6faa6cb7fc4d7da700bda7d95da791
+    targetNodeId: 633e678a3b7c4f40b9ce8c79fb6fae81
     delaySeconds: 1
   filterByMode: 1
   expectedMode: 35
@@ -157,37 +161,12 @@ MonoBehaviour:
   nodeId: 6a6faa6cb7fc4d7da700bda7d95da791
   displayName: Unlock Nav Buttons
   nodeEnabled: 1
-  graphPosition: {x: 840, y: 520}
+  graphPosition: {x: 837.33936, y: 577.64746}
   outputs:
   - portName: next
-    targetNodeId: 4e9d130b72e147619021272ddaacfec8
+    targetNodeId: 22266fc0e2a14456a92d8a0d2710790b
     delaySeconds: 0
   unlock: 1
---- !u!114 &-4394247607235897517
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 14aa7558bfce4c21bd28232276b6e48e, type: 3}
-  m_Name: Social UI Tour (placeholder)
-  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestShowInstructionNode
-  nodeId: 57011872b3b64f6790bb1970cdac59fc
-  displayName: Social UI Tour (placeholder)
-  nodeEnabled: 1
-  graphPosition: {x: 1360, y: 160}
-  outputs:
-  - portName: next
-    targetNodeId: e49acbf58ca14b319267a3c2f4422eeb
-    delaySeconds: 0
-  text: "This is your crew hub \u2014 invite friends and fly together!"
-  haptic: 0
-  panelKey: 
-  minDisplaySeconds: 4
-  hideOnAdvance: 1
 --- !u!114 &-3657544113375997979
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -203,7 +182,7 @@ MonoBehaviour:
   nodeId: 4e9d130b72e147619021272ddaacfec8
   displayName: 'CTA: Profile Screen'
   nodeEnabled: 1
-  graphPosition: {x: 1105.564, y: 139.03894}
+  graphPosition: {x: 1092.4749, y: 154.64478}
   outputs:
   - portName: next
     targetNodeId: 4d51e7e97c7a48a9a4330fdf253f3952
@@ -211,6 +190,27 @@ MonoBehaviour:
   target: 500
   completionAction: 500
   dependencies: 
+--- !u!114 &-3574500432832461629
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc71607207fd49ea9b400656e8aff5d3, type: 3}
+  m_Name: QuestWaitForUserActionNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestWaitForUserActionNode
+  nodeId: 38d080a5539f45c88e872ec24f2b9991
+  displayName: Wait For User Action
+  nodeEnabled: 1
+  graphPosition: {x: 1095.436, y: 353.80234}
+  outputs:
+  - portName: next
+    targetNodeId: 99a4babdb4af4034a1cee165f55e4764
+    delaySeconds: 0
+  action: 100
 --- !u!114 &-3332032966003280309
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -226,7 +226,7 @@ MonoBehaviour:
   nodeId: e49acbf58ca14b319267a3c2f4422eeb
   displayName: Phase 0 Complete
   nodeEnabled: 1
-  graphPosition: {x: 1360, y: 280}
+  graphPosition: {x: 1097.6528, y: 576.4997}
   outputs: []
 --- !u!114 &-2956468355650793072
 MonoBehaviour:
@@ -270,6 +270,31 @@ MonoBehaviour:
     targetNodeId: 25ff321a1f6447f78e85cdd409061ab4
     delaySeconds: 0
   unlock: 0
+--- !u!114 &-2555887249423030796
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0bab776763f0423199d20750edaec3af, type: 3}
+  m_Name: QuestSetArcadeConstraintsNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestSetArcadeConstraintsNode
+  nodeId: 633e678a3b7c4f40b9ce8c79fb6fae81
+  displayName: Set Arcade Constraints
+  nodeEnabled: 1
+  graphPosition: {x: 836.70135, y: 495.33673}
+  outputs:
+  - portName: next
+    targetNodeId: 6a6faa6cb7fc4d7da700bda7d95da791
+    delaySeconds: 0
+  clearConstraints: 0
+  allowedMode: 35
+  forcedIntensity: 0
+  forcedPlayerCount: 0
+  forcedDomainCount: 0
 --- !u!114 &-2046684644557656467
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -407,11 +432,13 @@ MonoBehaviour:
   - {fileID: -4537693602846388663}
   - {fileID: -3657544113375997979}
   - {fileID: -8744157475343824200}
-  - {fileID: -4394247607235897517}
   - {fileID: -3332032966003280309}
   - {fileID: -5565553608570610728}
-  canvasScroll: {x: -661.35944, y: 209.84442}
-  canvasZoom: 0.8986365
+  - {fileID: 1157315426489254563}
+  - {fileID: -2555887249423030796}
+  - {fileID: -3574500432832461629}
+  canvasScroll: {x: -239.59357, y: 23.123108}
+  canvasZoom: 1.1275439
 --- !u!114 &355363919843681768
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -437,6 +464,30 @@ MonoBehaviour:
   forcedIntensity: 1
   forcedPlayerCount: 2
   forcedDomainCount: 3
+--- !u!114 &1157315426489254563
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dd54a9581c9f4ef5a35984a1bf6ea1c7, type: 3}
+  m_Name: QuestDialogueNode
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestDialogueNode
+  nodeId: 99a4babdb4af4034a1cee165f55e4764
+  displayName: Dialogue
+  nodeEnabled: 1
+  graphPosition: {x: 1093.9777, y: 477.12585}
+  outputs:
+  - portName: next
+    targetNodeId: e49acbf58ca14b319267a3c2f4422eeb
+    delaySeconds: 0
+  speakerName: Captain
+  portrait: {fileID: 0}
+  lines:
+  - Click on + button add friends and play multiplayer
 --- !u!114 &3330411192172384795
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -528,7 +579,7 @@ MonoBehaviour:
   text: Training complete! Tap the VOLUME button to head back to the menu.
   haptic: 0
   panelKey: exit_freestyle
-  minDisplaySeconds: 0
+  minDisplaySeconds: 2
   hideOnAdvance: 0
 --- !u!114 &6449415289397938309
 MonoBehaviour:
