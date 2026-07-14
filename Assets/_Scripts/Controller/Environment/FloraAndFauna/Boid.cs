@@ -245,8 +245,12 @@ namespace CosmicShore.Gameplay
                     var pp = otherPrism.prismProperties;
                     bool shielded = pp != null && (pp.IsShielded || pp.IsSuperShielded);
                     bool isFaunaBody = otherPrism is HealthPrism && otherPrism.GetComponentInParent<Fauna>() != null;
+                    // Foragers additionally respect the nucleus control zone: mass
+                    // inside the nucleus is the territorial claim (never eaten);
+                    // everything outside stays any-domain edible (Cell.IsPreyForHerbivore).
                     bool edible = forager
-                        ? (!shielded && !isFaunaBody)
+                        ? (!shielded && !isFaunaBody &&
+                           (cell == null || !cell.IsInsideNucleus(otherPrism.transform.position)))
                         : embeddedHealthPrism && otherPrism.Domain != embeddedHealthPrism.Domain;
 
                     if (sqr < trailBlockInteractionRadiusSqr && embeddedHealthPrism && edible)
