@@ -68,18 +68,47 @@ All shipped on the branch; see `ARCHITECTURE.md` § "Status & follow-up" for the
 
 ## Branch: painting ("fly by numbers") polish
 
-- **Orientation.** The shape currently billboards to face the vessel at activation
-  (`PaintingToy` builds `rot` from vessel→origin). Validate it reads well; consider laying it
-  flat or aligning to the flight path. `shapeScale` / `originForwardOffset` / `reachThreshold`
-  are on the painting definition — tune.
-- **Pen-up/down.** `ShapeDefinition.trailEnabledPerSegment` (smiley eyes, lightning gaps) is
-  **not** honored because `VesselPrismController.spawnerEnabled` is private. Expose a public
-  trail-spawn toggle to support gaps.
-- **Feedback.** Add marker-collect VFX + a completion flourish. Optionally offer multiple shapes
-  (a selector, or several painting toys).
-- **Full experience (optional).** For a gameplay scene that has the ecology infra, the original
-  `ShapeDrawingManager` (preview cinematic, scoring, reveal, `EndShapeDetailHUD`) can drive the
-  toy instead of `MenuShapePainter`. The menu uses the lightweight runner so it works with no Cell.
+Shipped in the fly-by-numbers enhancement: multi-stroke multi-domain paintings
+(`PaintingDefinitionSO` + `PaintingPresetLibrary`: Star / Rainbow / Saturn / **Taj Mahal**),
+world-anchored upright monuments, per-stroke domain start gates
+(`RequestSetDomain_ServerRpc`), pen-up between strokes
+(`VesselPrismController.SetSpawnerPaused` — the previously-missing public toggle), adaptive
+reach on fine detail, bench/resume via the station, cross-session stroke progress
+(`PaintingProgressStore`), completion celebration, and a per-station progress label.
+`MenuShapePainter` (single-stroke, billboarded, one colour) was removed. Remaining polish:
+
+- **In-editor tuning pass.** Gallery fan spacing (`anglePerToyDeg`), `paintingClearance`,
+  preset sizes vs. the lava-lamp play area, gate ring radius, ghost alphas, celebration
+  timing — all first-guess values.
+- **Cross-session prisms — RESOLVED.** The drawing state (per-prism pose/size/domain) is now
+  saved per completed stroke (`PaintingPrismStore`) and regrown through the normal
+  `PrismFactory` channel on return — across vessel swaps, other paintings, game modes, and
+  sessions. Prompter-approved re-blooming of saved mass; restored prisms are ordinary
+  conserved mass thereafter.
+- **Share viewer polish.** The exported HTML viewer is dependency-free WebGL with orbit +
+  auto-spin; candidates: a share-card PNG thumbnail alongside the HTML, prism bloom-in replay
+  of the build order, background starfield matching the HyperSea.
+- **Party-client colour lag.** On a party client, the gate's domain pick takes an RTT to
+  replicate, so the first prism or two of a stroke can carry the previous colour.
+- **Feedback juice.** Waypoint-collect VFX, gate-pass SFX/haptics (AudioSystem gameplay SFX +
+  NiceVibrations — the framework-wide audio item below), a subtle beam from station to its
+  monument so ownership reads at a glance.
+- **More paintings.** The preset library composes easily (arcs/rects/circles/meridians) —
+  candidates: Great Wave, rocket, pagoda, Colosseum. Any `ShapeDefinition` already converts
+  via `sourceShape` (pen-up gaps become strokes, now honored).
+- **Reviewed and deliberately deferred** (from the enhancement's review pass): coalesce the
+  per-stroke synchronous saves (`DataAccessor` full-file JSON writes at each stroke boundary —
+  both the small progress file and the growing `PaintingPrismStore` drawing-state file; the
+  writes are human-paced but a debounce/off-thread write would remove any mobile-flash hitch,
+  and the prism file could persist per-stroke deltas instead of the whole accumulation);
+  replace `PaintingRunner.BenchOtherRunners`'s `FindObjectsByType` scan with a static
+  registry (runs only on activation — rare); extract the ring fan-layout math shared with
+  `SwapToySetCoordinator.Layout` into one helper; unify the LineRenderer config duplicated
+  by `ShapeDrawingManager.ConfigureLineRenderer` with `ToyFactory.CreateLine` (touches the
+  shape-drawing system, so it belongs in its own change).
+- **Full experience (optional).** For a gameplay scene with ecology infra, the original
+  `ShapeDrawingManager` (preview cinematic, scoring, reveal, `EndShapeDetailHUD`) remains a
+  separate, score-bearing mode — the toy stays scoreless by design.
 
 ## Branch: conveyor ("Wanderway") polish
 
@@ -152,9 +181,11 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
 ## Known limitations (current)
 
 - Mini-ship hulls render as static domain-tinted silhouettes (bind pose, not animated — a
-  `SkinnedMeshRenderer.BakeMesh` snapshot would give exact current-pose fidelity); painting
-  pen-up gaps not honored; no unlock persistence; placement fallback needs in-editor tuning; toy
-  scale/label/spacing still guessed; not yet play-verified. Speed inheritance seeds the smoothed
-  cruise speed then eases to the current throttle target — with input paused during the post-swap
+  `SkinnedMeshRenderer.BakeMesh` snapshot would give exact current-pose fidelity); no unlock
+  persistence; placement fallback needs in-editor tuning; toy scale/label/spacing still guessed;
+  party clients may paint a prism or two in the old colour right after a gate (RTT); the share
+  sheet requires a NativeShare-supported platform (editor/desktop open the exported HTML in the
+  default browser instead); not yet play-verified. Speed inheritance seeds the smoothed cruise
+  speed then eases to the current throttle target — with input paused during the post-swap
   autopilot window it will drift toward `MinimumSpeed`; fine for the seamless-handoff goal, tune
   if a longer hold is wanted.

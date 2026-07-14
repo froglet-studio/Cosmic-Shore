@@ -281,6 +281,15 @@ namespace CosmicShore.Gameplay
                        : (cell ? cell.transform.position : transform.position),
             };
 
+            // Voracious exterior: with a nucleus control zone, mass outside the
+            // nucleus is prey at EVERY phase — even a Calm herbivore hunts the
+            // densest sensed exterior region instead of idling at the crystal
+            // (the grids only hold exterior mass in such cells; aggression still
+            // scales cadence/radius/speed).
+            if (phase == CellPhase.Calm && cell != null &&
+                cell.HasNucleusControlZone && cell.HasSensedExteriorMass)
+                Goal = cell.GetDensestRegionAnyDomain();
+
             // Predators hunt PREY, not mass: seek the nearest live herbivore the cell
             // senses (Cell.LiveFauna — the fauna analogue of the prism density grid).
             // Replaces the v1 approximation where predators converged on prism-density
@@ -409,8 +418,17 @@ namespace CosmicShore.Gameplay
                     if (sqr < separationRadiusSqr && !(dropFriendlyAvoidance && sameDomain))
                         separation += diff / sqr;
 
-                    // Herbivores eat opposing-domain plant/trail mass; predators never eat prisms.
-                    if (diet == FaunaDiet.Herbivore && sqr < consumeRadiusSqr && otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain != domain)
+                    // Herbivores eat plant/trail mass; predators never eat prisms.
+                    // The diet rule is spatialized through Cell.IsPreyForHerbivore:
+                    // in a cell with a nucleus control zone, exterior mass is
+                    // voraciously edible regardless of domain while nucleus-interior
+                    // mass (the territorial claim) is never consumed; without a
+                    // nucleus the legacy opposing-domain rule applies. (Fauna bodies
+                    // never reach this branch — their body prisms carry no LifeForm.)
+                    if (diet == FaunaDiet.Herbivore && sqr < consumeRadiusSqr && otherHealthBlock.LifeForm &&
+                        (cell != null
+                            ? cell.IsPreyForHerbivore(otherHealthBlock.transform.position, domain, otherHealthBlock.LifeForm.domain)
+                            : otherHealthBlock.LifeForm.domain != domain))
                     {
                         if (maxConsumesPerFrame > 0)
                             _pendingMeals.Enqueue(otherHealthBlock);
@@ -421,8 +439,11 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
-                // Handle blocks
-                if (diet == FaunaDiet.Herbivore && prism.Domain != domain && sqr < consumeRadiusSqr)
+                // Handle blocks (trail prisms) — same spatialized diet rule as above.
+                if (diet == FaunaDiet.Herbivore && sqr < consumeRadiusSqr &&
+                    (cell != null
+                        ? cell.IsPreyForHerbivore(prism.transform.position, domain, prism.Domain)
+                        : prism.Domain != domain))
                 {
                     if (maxConsumesPerFrame > 0)
                         _pendingMeals.Enqueue(prism);
@@ -487,14 +508,21 @@ namespace CosmicShore.Gameplay
 
             if (prism is HealthPrism healthBlock)
             {
-                // Same predicate as the scan: only opposing-domain lifeform mass is edible.
-                if (!healthBlock.LifeForm || healthBlock.LifeForm.domain == domain) return false;
+                // Same spatialized predicate as the scan (Cell.IsPreyForHerbivore):
+                // with a nucleus control zone, exterior mass is edible regardless of
+                // domain; otherwise only opposing-domain lifeform mass is edible.
+                if (!healthBlock.LifeForm) return false;
+                if (!(cell != null
+                        ? cell.IsPreyForHerbivore(healthBlock.transform.position, domain, healthBlock.LifeForm.domain)
+                        : healthBlock.LifeForm.domain != domain)) return false;
                 healthBlock.Consume(transform, domain, PLAYER_NAME, true, true);
                 NotifyFed();
                 return true;
             }
 
-            if (prism.Domain == domain) return false;
+            if (!(cell != null
+                    ? cell.IsPreyForHerbivore(prism.transform.position, domain, prism.Domain)
+                    : prism.Domain != domain)) return false;
             prism.Consume(transform, domain, PLAYER_NAME, true, true);
             NotifyFed();
             return true;

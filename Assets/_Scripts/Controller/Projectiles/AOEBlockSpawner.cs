@@ -27,21 +27,24 @@ namespace CosmicShore.Gameplay
                     var rotation = Quaternion.LookRotation(Vessel.VesselStatus.Course, Vessel.Transform.up);
                     var team = Vessel.VesselStatus.Domain;
 
-                    spawnable.Spawn(position, rotation, team, (int)Vessel.VesselStatus.Speed);
+                    // No intensity: the ring geometry is speed-independent by design (the old
+                    // speed-as-intensity pass tilted the ring closed at low speed).
+                    spawnable.Spawn(position, rotation, team);
 
                     await UniTask.Delay(TimeSpan.FromSeconds(delayBetweenSpawns), DelayType.DeltaTime, PlayerLoopTiming.Update, ct);
                 }
 
                 await UniTask.Yield(PlayerLoopTiming.PostLateUpdate, ct);
-
-                // Spawn-only explosion: the children are pooled and pool-parented, so
-                // nothing under this spawner persists. Match the base contract
-                // (AOEExplosion.ExplodeAsync destroys the spawner when done) instead of
-                // leaking one spawner root per detonation — the menu leaked one per
-                // crystal pickup for the session.
-                if (this) Destroy(gameObject);
             }
             catch (OperationCanceledException) { }
+            finally
+            {
+                // The rings are pooled prisms parented under the Boost pool, so this spawner shell
+                // has nothing left to own once spawning finishes — destroy it instead of leaking an
+                // empty AOE object per hit (same lifecycle as AOEDangerHemisphereBlocks).
+                if (!ct.IsCancellationRequested && this != null)
+                    Destroy(gameObject);
+            }
         }
     }
 }

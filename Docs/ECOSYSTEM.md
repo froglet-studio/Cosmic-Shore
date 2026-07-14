@@ -843,3 +843,61 @@ priors); each real sample tightens its prism-vs-overlap cost split.
   densest region via the (Burst) density grid; grazing could be driven from the cell
   instead of a per-fauna physics query. Bigger refactor; the highest ceiling-raiser
   if the food web is ever to be dense AND cheap.
+
+---
+
+## 13. Nucleus control zone & the voracious exterior (July 2026 redesign)
+
+**The volume tracking split (prompter-directed change to the control fundamental).**
+A cell with a nucleus now has TWO spatial volume regimes, measured in the same
+0.25s `EnsureVolumeFresh` pass ("volume is the spine" — unchanged measure, new
+spatial split):
+
+| Region | Role | Who removes mass here |
+|---|---|---|
+| **Inside the nucleus** (world radius from the nucleus renderer bounds) | **Node control.** `Cell.DominantDomain` = leader by per-domain ENVIRONMENT volume (trail + flora; fauna bodies excluded) inside the nucleus. This is the territorial claim — fauna neither target nor consume it. | Players only (vessel abilities; out-laying the standing claim) |
+| **Outside the nucleus** | **The feeding ground.** Voraciously edible: herbivores graze it REGARDLESS of domain (extends the Boid forager's any-domain grazing to all herbivores), at every phase (even Calm fauna hunt the densest sensed exterior region), and the targeting grids only ever hold exterior mass. | Fauna consumption + vessel abilities |
+
+Cells **without** a nucleus keep every legacy behavior (whole-cell control,
+opposing-domain diet) — the split activates only where a `NucleusPrefab` exists.
+
+**What this does and does not touch:**
+
+- **Mass is conserved — unchanged.** No decay was added anywhere; the exterior is
+  eaten faster because *more of it counts as prey*, not because anything ages out.
+  The nucleus sanctuary removes a sink (fauna) from interior mass — accumulation
+  there is a valid, player-contested state.
+- **No domain asymmetry — unchanged on the spawn side.** Fauna still spawn only in
+  the controlling color. The *diet* is now spatial rather than domain-keyed in
+  nucleus cells: outside = everything, inside = nothing. (Precedents: Boid foragers
+  were already domain-blind; Frenzy-phase seeking was already any-domain.)
+- **Territorial permanence — re-seated on the nucleus.** "Take a cell, leave, it
+  stays yours" now means the *nucleus claim* is permanent against fauna. Exterior
+  canopy/trail is explicitly contested churn — by design, that is what makes the
+  30s wave cycle readable.
+- **The prey signal follows the diet.** `Cell.OpposingVolume(domain)` returns ALL
+  exterior environment volume in nucleus cells (it is what a herbivore can actually
+  eat), legacy opposing-domain volume otherwise.
+- **Fauna spawn cadence: 30s platform-wide.** `SpawnProfileSO.BaseFaunaSpawnTime`
+  default and every authored profile now tick at 30s — the ecosystem heartbeat that
+  Brood Rush scores on (`Assets/_Scripts/Controller/Arcade/NUCLEUSRUSH.md`).
+- **The wave event.** `RandomLifeSpawner` raises
+  `CellRuntimeDataSO.OnFaunaWaveSpawned` (SOAP, `FaunaWaveData{cellId, domain,
+  spawnedCount, nucleusControlled}`) once per species loop per tick. Wave-scored
+  modes author ONE fauna species. `SpawnProfileSO.SeedFullWaveEveryTick` switches
+  the tick from deficit-seeding to a full fresh wave (cap-clamped) so every cycle
+  visibly births a brood; population remains starvation/cap-bounded.
+- **Collider budget.** Zero new colliders/physics queries; nucleus checks are O(1)
+  squared-distance tests inside existing loops; targeting grids shrink (interior
+  mass excluded).
+
+**Client sync note.** `CellNetworkSync` now PINS the client Cell's `DominantDomain`
+to the server's replicated value (`Cell.SetReplicatedDominantDomain`), so fauna
+spawn color — and anything scoring off node control — can't drift from the server
+on connected clients.
+
+**Menu/Blob and other nucleus biomes inherit the split**: flora that plant at the
+cell centre now hold the nucleus claim (fauna can't graze the core), and exterior
+gyroid fringes are grazed domain-blind. If a biome's equilibrium shifts too far
+toward stripped exteriors, the levers are the same as §6.2 (per-species caps,
+reproduction knobs) — never decay.
