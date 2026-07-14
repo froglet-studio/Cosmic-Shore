@@ -178,7 +178,13 @@ namespace CosmicShore.Gameplay
             }
 
             if (Time.time < _nextTickAt) return;
-            _nextTickAt = Time.time + Mathf.Max(0.05f, tickIntervalSeconds);
+            // Phase-preserving re-arm: advancing from the DUE time (not from now)
+            // keeps the OnEnable half-interval offset from Cell.VolumeSum forever.
+            // Re-arming from Time.time re-syncs the two ticks onto the same frame
+            // after any hitch longer than the offset (observed in the 07-14
+            // capture #3) — the exact stacking the offset exists to prevent.
+            float interval = Mathf.Max(0.05f, tickIntervalSeconds);
+            do { _nextTickAt += interval; } while (_nextTickAt <= Time.time);
             using (s_sweepMarker.Auto())
             {
                 RunSweep();

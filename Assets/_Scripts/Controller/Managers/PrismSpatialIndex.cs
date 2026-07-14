@@ -375,6 +375,20 @@ namespace CosmicShore.Gameplay
         private NativeArray<PrismCellData> _cellData;
         private NativeArray<float> _cellVolumeScratch;
 
+        // Async summation snapshot: the live arrays are mutated freely on the main
+        // thread (Register / UpdateCellVolume per grower / steals), so a
+        // worker-thread sum job reads a point-in-time COPY instead. One snapshot
+        // per frame is shared by every cell that schedules that frame; taking a
+        // new one first completes all prior readers (they finished long ago —
+        // requests are 0.25s apart). Main-thread cost = one memcpy, constant
+        // whether or not Burst is active in the editor.
+        private NativeArray<PrismSpatialData> _sumSnapSpatial;
+        private NativeArray<PrismCellData> _sumSnapCellData;
+        private int _sumSnapCount;
+        private int _sumSnapFrame = -1;
+        private JobHandle _sumSnapReaders;
+        private static readonly ProfilerMarker s_volumeSnapshotMarker = new("Cell.VolumeSum.Snapshot");
+
         // Managed: Prism references for applying damage callbacks
         private Prism[] _prisms;
 
@@ -972,6 +986,69 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
+        /// <summary>
+        /// Async counterpart of <see cref="SumCellVolumes"/>: schedules the sum on
+        /// a worker thread against a point-in-time snapshot of the packed arrays
+        /// and returns immediately. Caller (Cell.EnsureVolumeFresh) completes the
+        /// handle lazily on a later read and publishes then — readers keep the
+        /// previously published sums meanwhile, the same tolerance the old sliced
+        /// pass declared. Main-thread cost is the snapshot memcpy (shared by every
+        /// cell that schedules in the same frame), so the pass stays cheap even
+        /// when the job executes managed (editor with Burst disabled).
+        /// <paramref name="results"/> must be a caller-owned persistent
+        /// NativeArray the caller does not read until the handle completes.
+        /// </summary>
+        public bool TryScheduleCellVolumeSum(short cellId, Vector3 centre, float nucleusRadiusSqr,
+            NativeArray<float> results, out JobHandle handle)
+        {
+            handle = default;
+            if (!_spatial.IsCreated || !_cellData.IsCreated) return false;
+            if (!results.IsCreated || results.Length < CellVolumeResultCount) return false;
+
+            if (_sumSnapFrame != Time.frameCount)
+            {
+                using (s_volumeSnapshotMarker.Auto())
+                {
+                    // Prior readers reference the buffers being overwritten; they
+                    // were scheduled ≥ one 0.25s window ago, so this is a no-op wait.
+                    _sumSnapReaders.Complete();
+                    _sumSnapReaders = default;
+
+                    if (!_sumSnapSpatial.IsCreated || _sumSnapSpatial.Length < _highWaterMark)
+                    {
+                        if (_sumSnapSpatial.IsCreated) _sumSnapSpatial.Dispose();
+                        if (_sumSnapCellData.IsCreated) _sumSnapCellData.Dispose();
+                        int size = Mathf.NextPowerOfTwo(Mathf.Max(INITIAL_CAPACITY, _highWaterMark));
+                        _sumSnapSpatial = new NativeArray<PrismSpatialData>(size, Allocator.Persistent);
+                        _sumSnapCellData = new NativeArray<PrismCellData>(size, Allocator.Persistent);
+                    }
+
+                    if (_highWaterMark > 0)
+                    {
+                        NativeArray<PrismSpatialData>.Copy(_spatial, _sumSnapSpatial, _highWaterMark);
+                        NativeArray<PrismCellData>.Copy(_cellData, _sumSnapCellData, _highWaterMark);
+                    }
+                    _sumSnapCount = _highWaterMark;
+                    _sumSnapFrame = Time.frameCount;
+                }
+            }
+
+            handle = new CellVolumeSumJob
+            {
+                Spatial = _sumSnapSpatial,
+                CellData = _sumSnapCellData,
+                EntryCount = _sumSnapCount,
+                CellId = cellId,
+                Centre = centre,
+                NucleusRadiusSqr = nucleusRadiusSqr,
+                Results = results,
+            }.Schedule();
+            // Read-read concurrency across cells is fine; the combined handle only
+            // gates the NEXT snapshot overwrite (and teardown).
+            _sumSnapReaders = JobHandle.CombineDependencies(_sumSnapReaders, handle);
+            return true;
+        }
+
         #endregion
 
         #region Registration
@@ -1435,6 +1512,11 @@ namespace CosmicShore.Gameplay
 
         private void OnDestroy()
         {
+            // In-flight async volume sums read the snapshot buffers — finish them
+            // before the memory goes away.
+            _sumSnapReaders.Complete();
+            if (_sumSnapSpatial.IsCreated) _sumSnapSpatial.Dispose();
+            if (_sumSnapCellData.IsCreated) _sumSnapCellData.Dispose();
             if (_spatial.IsCreated) _spatial.Dispose();
             if (_damage.IsCreated) _damage.Dispose();
             if (_cellData.IsCreated) _cellData.Dispose();

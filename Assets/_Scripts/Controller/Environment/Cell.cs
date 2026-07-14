@@ -6,6 +6,8 @@ using CosmicShore.Game;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
 using Reflex.Attributes;
+using Unity.Collections;
+using Unity.Jobs;
 using Unity.Profiling;
 using UnityEngine;
 using Random = UnityEngine.Random;
@@ -142,12 +144,19 @@ namespace CosmicShore.Gameplay
         // The recompute is one CellVolumeSumJob pass over the spatial index's
         // packed summation view (slot order Jade/Ruby/Gold/Blue, matching
         // s_volumeDomainSlots), published atomically into the dictionaries above.
-        // Replaces the managed 8000-prisms-per-frame slice, whose per-entry
-        // object-graph cost made every recompute a ~10 ms reader-attributed frame
-        // spike at high prism counts (Docs/PERFORMANCE_OPTIMIZATION.md).
+        // Scheduled on a WORKER thread against the index's snapshot
+        // (TryScheduleCellVolumeSum) and harvested on a later read — the
+        // main-thread cost per recompute is the snapshot memcpy, whether or not
+        // the job executes Burst-compiled (the sync .Run() variant read ~6 ms in
+        // editor captures where Burst wasn't applied). Replaces the managed
+        // 8000-prisms-per-frame slice, whose per-entry object-graph cost made
+        // every recompute a ~10 ms reader-attributed frame spike at high prism
+        // counts (Docs/PERFORMANCE_OPTIMIZATION.md).
         static readonly Domains[] s_volumeDomainSlots = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
         static readonly ProfilerMarker s_volumeSumMarker = new("Cell.VolumeSum");
-        readonly float[] _volumeSumResults = new float[PrismSpatialIndex.CellVolumeResultCount];
+        NativeArray<float> _volumeSumNative;
+        JobHandle _volumeSumHandle;
+        bool _volumeSumPending;
 
         // Identity in the summation view. Assigned once per Cell instance (never
         // reused within a session) so a stale binding from a destroyed cell can
@@ -329,31 +338,53 @@ namespace CosmicShore.Gameplay
 
         void EnsureVolumeFresh()
         {
+            // Harvest the async pass scheduled on an earlier read. IsCompleted
+            // avoids ever blocking the main thread on the job — readers keep the
+            // previously published sums until the worker is done (typically the
+            // next frame; the tolerance the 0.25s cadence already declares).
+            if (_volumeSumPending && _volumeSumHandle.IsCompleted)
+            {
+                _volumeSumHandle.Complete(); // required handshake; no-op wait
+                _volumeSumPending = false;
+                PublishVolumeSums();
+            }
+
             if (Time.time < _nextVolumeRecomputeAt) return;
+            if (_volumeSumPending) return; // previous pass still crunching
 
             var index = PrismSpatialIndex.Instance;
             if (index == null || !index.IsAvailable) return; // no index (tooling scene) — keep published sums, retry next read
 
+            if (!_volumeSumNative.IsCreated)
+                _volumeSumNative = new NativeArray<float>(PrismSpatialIndex.CellVolumeResultCount, Allocator.Persistent);
+
             using (s_volumeSumMarker.Auto())
             {
-                if (!index.SumCellVolumes(_volumeCellId, transform.position, _nucleusControlRadiusSqr, _volumeSumResults))
+                if (!index.TryScheduleCellVolumeSum(_volumeCellId, transform.position, _nucleusControlRadiusSqr,
+                        _volumeSumNative, out _volumeSumHandle))
                     return;
+                _volumeSumPending = true;
                 _nextVolumeRecomputeAt = Time.time + VolumeRecomputeIntervalSeconds;
-
-                // Publish atomically. Slot order matches s_volumeDomainSlots
-                // (Jade/Ruby/Gold/Blue) on both sides. The job already folds the
-                // no-nucleus case into ExteriorEnvVolumeTotal (== env total), the
-                // legacy opposing-domain prey math's else-branch.
-                for (int i = 0; i < PrismSpatialIndex.CellDomainSlotCount; i++)
-                {
-                    liveVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumResults[PrismSpatialIndex.CellVolumeBySlot + i];
-                    liveEnvVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumResults[PrismSpatialIndex.CellEnvVolumeBySlot + i];
-                    nucleusEnvVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumResults[PrismSpatialIndex.CellNucleusEnvVolumeBySlot + i];
-                }
-                liveVolumeTotal = _volumeSumResults[PrismSpatialIndex.CellVolumeTotal];
-                liveEnvVolumeTotal = _volumeSumResults[PrismSpatialIndex.CellEnvVolumeTotal];
-                liveExteriorEnvVolumeTotal = _volumeSumResults[PrismSpatialIndex.CellExteriorEnvVolumeTotal];
             }
+        }
+
+        /// <summary>
+        /// Atomic publish of a completed volume pass. Slot order matches
+        /// s_volumeDomainSlots (Jade/Ruby/Gold/Blue) on both sides. The job already
+        /// folds the no-nucleus case into ExteriorEnvVolumeTotal (== env total),
+        /// the legacy opposing-domain prey math's else-branch.
+        /// </summary>
+        void PublishVolumeSums()
+        {
+            for (int i = 0; i < PrismSpatialIndex.CellDomainSlotCount; i++)
+            {
+                liveVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumNative[PrismSpatialIndex.CellVolumeBySlot + i];
+                liveEnvVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumNative[PrismSpatialIndex.CellEnvVolumeBySlot + i];
+                nucleusEnvVolumeByDomain[s_volumeDomainSlots[i]] = _volumeSumNative[PrismSpatialIndex.CellNucleusEnvVolumeBySlot + i];
+            }
+            liveVolumeTotal = _volumeSumNative[PrismSpatialIndex.CellVolumeTotal];
+            liveEnvVolumeTotal = _volumeSumNative[PrismSpatialIndex.CellEnvVolumeTotal];
+            liveExteriorEnvVolumeTotal = _volumeSumNative[PrismSpatialIndex.CellExteriorEnvVolumeTotal];
         }
 
         /// <summary>
@@ -364,6 +395,14 @@ namespace CosmicShore.Gameplay
         void ResetVolumeAccounting()
         {
             _nextVolumeRecomputeAt = float.NegativeInfinity; // resum on next read
+            // Discard (never publish) an in-flight pass — it summed pre-reset
+            // state. Complete() first: the results array is about to be re-used
+            // by the next scheduled job.
+            if (_volumeSumPending)
+            {
+                _volumeSumHandle.Complete();
+                _volumeSumPending = false;
+            }
             liveVolumeByDomain.Clear();
             liveEnvVolumeByDomain.Clear();
             nucleusEnvVolumeByDomain.Clear();
@@ -708,8 +747,26 @@ namespace CosmicShore.Gameplay
                 spawnedCytoplasm = null;
             }
 
+            // Settle the in-flight volume pass (never published) — the results
+            // array must be quiescent before a re-enable schedules into it again.
+            if (_volumeSumPending)
+            {
+                _volumeSumHandle.Complete();
+                _volumeSumPending = false;
+            }
+
             StopSpawner();
             runtime?.ResetRuntimeData();
+        }
+
+        void OnDestroy()
+        {
+            if (_volumeSumPending)
+            {
+                _volumeSumHandle.Complete();
+                _volumeSumPending = false;
+            }
+            if (_volumeSumNative.IsCreated) _volumeSumNative.Dispose();
         }
 
         void ResetCell()

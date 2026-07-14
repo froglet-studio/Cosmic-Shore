@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
+using Unity.Collections;
 using UnityEngine;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
@@ -382,6 +383,32 @@ namespace CosmicShore.Tests
             _index.ClearCellBinding(prism.SpatialIndexId, 7);
             _index.SumCellVolumes(7, Vector3.zero, 0f, results);
             Assert.AreEqual(0f, results[PrismSpatialIndex.CellVolumeTotal], 1e-4f);
+        }
+
+        [Test]
+        public void TryScheduleCellVolumeSum_MatchesSyncResults()
+        {
+            // The async path (snapshot + worker-thread job) must produce exactly
+            // the sums the sync .Run() path does — same job, point-in-time copy.
+            SpawnBoundPrism(new Vector3(2f, 0f, 0f), 7, true, Domains.Jade, 10f);   // inside r=5 nucleus
+            SpawnBoundPrism(new Vector3(50f, 0f, 0f), 7, true, Domains.Ruby, 20f);  // outside
+            SpawnBoundPrism(new Vector3(60f, 0f, 0f), 7, false, Domains.Gold, 30f); // fauna body
+
+            var sync = NewResults();
+            Assert.IsTrue(_index.SumCellVolumes(7, Vector3.zero, 25f, sync));
+
+            var native = new NativeArray<float>(PrismSpatialIndex.CellVolumeResultCount, Allocator.Persistent);
+            try
+            {
+                Assert.IsTrue(_index.TryScheduleCellVolumeSum(7, Vector3.zero, 25f, native, out var handle));
+                handle.Complete();
+                for (int i = 0; i < PrismSpatialIndex.CellVolumeResultCount; i++)
+                    Assert.AreEqual(sync[i], native[i], 1e-4f, $"result slot {i} diverged between sync and async paths");
+            }
+            finally
+            {
+                native.Dispose();
+            }
         }
 
         [Test]
