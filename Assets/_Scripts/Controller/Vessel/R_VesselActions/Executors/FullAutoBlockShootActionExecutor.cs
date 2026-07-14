@@ -113,6 +113,12 @@ namespace CosmicShore.Gameplay
 
                         prism.transform.SetParent(null, true);
 
+                        // MASS → turret prism stretch: the long z-axis scales with the vessel's
+                        // live Mass level (ElementalAbilityMapSO). Volume = x·y·z of lossyScale,
+                        // so the stretch feeds Cell.LiveVolume — "volume is the spine".
+                        var blockScale = so.BlockScale;
+                        blockScale.z *= _status?.ElementalAbilityHandler.Multiplier(Element.Mass) ?? 1f;
+
                         // Route sizing through the scale animator instead of a raw
                         // localScale write: TargetScale stays truthful (a later
                         // Grow/ChangeSize no longer snaps the prism back to its authored
@@ -123,12 +129,12 @@ namespace CosmicShore.Gameplay
                         {
                             scaleAnimator.Initialize();
                             prism.transform.localScale = Vector3.zero;
-                            scaleAnimator.SetTargetScale(so.BlockScale);
+                            scaleAnimator.SetTargetScale(blockScale);
                             scaleAnimator.BeginGrowthAnimation();
                         }
                         else
                         {
-                            prism.transform.localScale = so.BlockScale;
+                            prism.transform.localScale = blockScale;
                         }
 
                         //prism.ownerID = _status.PlayerName;

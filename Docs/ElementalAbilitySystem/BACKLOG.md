@@ -21,7 +21,13 @@ carries its evidence pointer in `AUDIT.md`.
 **Exit criterion:** hold-fire for 60 s in a busy scene with 2 human + 2 AI Sparrows: no NREs, no
 runaway fire, no duds, bullets go where aimed, turret prisms bloom and register.
 
-## Phase 1 — Quantitative layer (the fundamental, fleet-wide shape)
+## Phase 1 — Quantitative layer (the fundamental, fleet-wide shape) — SHIPPED
+
+All six items landed (1.3 shipped with the recommended default: resting 0 everywhere; 1.6's
+edit-mode tests remain open — folded into Phase 2.6 verification). Deltas: the handler is
+lazily self-initializing via VesselStatus.ElementalAbilityHandler; maps load from
+Resources/ElementalAbilityMaps/{VesselClassType}. Charge→blast ships as charge01 through the
+detonator with authored ranges 100→170 on the four skyburst effect assets.
 
 | # | Item |
 |---|---|

@@ -1,5 +1,6 @@
 using System;
 using CosmicShore.Core;
+using CosmicShore.Data;
 using Obvious.Soap;
 using CosmicShore.Gameplay;
 using Reflex.Attributes;
@@ -121,6 +122,11 @@ namespace CosmicShore.Gameplay
             OnGunFired?.Invoke();
             OnShotFired?.Invoke(_status?.PlayerName);
 
+            // CHARGE → blast radius: ProjectileDetonatorSO lerps each effect asset's
+            // MinScale..MaxScale by Projectile.Charge, so pass the live normalized Charge
+            // level (0 at resting → authored minimum; 1 at level 10 → authored maximum).
+            var charge01 = Mathf.Clamp01(ElementalScaling.Level01(status, Element.Charge));
+
             gun.FireGun(
                 _worldMuzzleAnchor,
                 so.Speed,
@@ -128,7 +134,7 @@ namespace CosmicShore.Gameplay
                 so.ProjectileScale,
                 true,
                 so.ProjectileTime.Value,
-                0,
+                charge01,
                 FiringPatterns.Default,
                 so.Energy,
                 detachAfterSpawn: _detachFromContainer

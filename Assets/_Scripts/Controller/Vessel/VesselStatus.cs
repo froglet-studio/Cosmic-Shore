@@ -159,6 +159,20 @@ namespace CosmicShore.Gameplay
             }
         }
 
+        R_VesselElementalAbilityHandler _elementalAbilityHandler;
+        public R_VesselElementalAbilityHandler ElementalAbilityHandler
+        {
+            get
+            {
+                _elementalAbilityHandler = _elementalAbilityHandler != null
+                    ? _elementalAbilityHandler
+                    : gameObject.GetOrAdd<R_VesselElementalAbilityHandler>();
+                if (!_elementalAbilityHandler.IsInitialized)
+                    _elementalAbilityHandler.Initialize(this);
+                return _elementalAbilityHandler;
+            }
+        }
+
         VesselTransformer vesselTransformer;
         public VesselTransformer VesselTransformer
         {

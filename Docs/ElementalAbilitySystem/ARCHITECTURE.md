@@ -1,7 +1,13 @@
 # Elemental Ability Upgrades — Architecture (proposed)
 
-**Status:** DESIGN — nothing in this document is implemented yet. `AUDIT.md` is the ground truth of
-what exists; `BACKLOG.md` sequences the work.
+**Status:** Phases 0–1 SHIPPED (gun repair, `ElementalScaling`, `ElementalAbilityMapSO`,
+`R_VesselElementalAbilityHandler`, comeback modifier layer, Sparrow quantitative wiring, fleet
+executor hunks). Phase 2 (level-5 qualitative unlocks + replication) is design. Two deltas from
+the original design: the handler is **lazily self-initializing** via
+`VesselStatus.ElementalAbilityHandler` (the ResourceSystem GetOrAdd pattern — zero prefab wiring)
+rather than initialized from `VesselController.Initialize`, and maps are Resources-loaded by
+class (`Resources/ElementalAbilityMaps/{VesselClassType}.asset`) rather than referenced from
+`SO_Vessel`. `AUDIT.md` is the ground truth of what existed; `BACKLOG.md` sequences the work.
 
 ---
 

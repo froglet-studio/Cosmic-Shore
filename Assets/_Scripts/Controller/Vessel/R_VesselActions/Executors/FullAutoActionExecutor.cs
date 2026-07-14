@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using CosmicShore.Utility;
@@ -139,7 +140,6 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
         var projectileTime  = so.ProjectileTime;
         var   firingPattern   = so.FiringPattern;
         var energy          = so.Energy;
-        var speedValue      = so.SpeedValue.Value;
 
         try
         {
@@ -158,6 +158,13 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                     var inheritVel = inherit && _status != null
                         ? _status.Course * _status.Speed
                         : Vector3.zero;
+
+                    // SPACE → gun range (range = speed × lifetime): read the LIVE element level
+                    // per volley through the vessel's ElementalAbilityMapSO. Never cache across
+                    // the hold and never bind ElementalFloats on the shared SO asset — per-vessel
+                    // state lives in the handler (multiplayer: last-initializer-wins otherwise).
+                    var speedValue = so.SpeedValue.Value
+                        * (_status?.ElementalAbilityHandler.Multiplier(Element.Space) ?? 1f);
 
                     for (int i = 0, count = muzzles.Length; i < count; i++)
                     {

@@ -58,7 +58,13 @@ namespace CosmicShore.Gameplay
                 playerShipTypeInitialized = true;
             }
         }
-        public static ResourceCollection ResourceCollection = new(.5f, .5f, .5f, .5f);
+        // Resting level 0 in every element: all authored ability baselines are exact at spawn
+        // (ElementalScaling multipliers anchor at 1× at level 0) and progression toward the
+        // level-5 qualitative unlocks is crystal-driven in every mode. The previous default of
+        // 0.5 spawned single-player vessels at integer level 5 — every qualitative upgrade
+        // would have been ON at spawn, and SP/MP disagreed (MP spawns with an empty level dict
+        // = effective 0). See Docs/ElementalAbilitySystem/BACKLOG.md § Open decisions #1.
+        public static ResourceCollection ResourceCollection = new(0f, 0f, 0f, 0f);
 
         // Game State Tracking
         protected int TurnsTakenThisRound;

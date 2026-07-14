@@ -407,7 +407,10 @@ public class VesselTransformer : MonoBehaviour
 
             float boostAmount = 1f;
             if (VesselStatus.IsBoosting)
-                boostAmount = VesselStatus.BoostMultiplier;
+                // TIME → boost speed: scaled by the vessel's live Time level via its
+                // ElementalAbilityMapSO (1x for vessels without a map or Time entry).
+                boostAmount = VesselStatus.BoostMultiplier
+                              * VesselStatus.ElementalAbilityHandler.Multiplier(Element.Time);
 
             if (VesselStatus.IsChargedBoostDischarging)
                 boostAmount *= VesselStatus.ChargedBoostCharge;
