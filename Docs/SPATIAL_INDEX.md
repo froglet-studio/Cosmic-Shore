@@ -66,6 +66,26 @@ understood as a **view** of the same lifecycle, not an independent system.
    them out of the targeting grids and counts). The flora ownership
    stream (HealthBlockTracker → Cell.AddBlock for the LifeForm's host cell)
    remains a second, idempotent contributor.
+
+ _cellData[i] (8B: live volume + cell id + live domain slot + env flag)
+ — the cell-volume SUMMATION view. Cell.EnsureVolumeFresh runs ONE Burst
+   pass (CellVolumeSumJob via SumCellVolumes) over this array every 0.25s
+   instead of a managed loop over the prism object graph (the old
+   8000-prisms-per-frame slice cost the first volume reader ~10 ms per
+   slice frame at high prism counts — the reader-attributed spike behind
+   "DomainVolumeIndicator.Update 10.31 ms"). Freshness contracts:
+     • CellId/EnvMass — written ONLY by Cell.AddBlock/RemoveBlock
+       (SetCellBinding/ClearCellBinding); both membership streams funnel
+       through them, so the packed view mirrors the cell's bookkeeping by
+       construction. Cell bulk clears (Initialize/ResetCell) call
+       ClearAllCellBindings. With dual membership (host-cell vs containing
+       cell) the LAST binder owns the slot — a prism sums into exactly one
+       cell, where the old massTracked could double-count across two.
+     • Volume — pushed by Prism.RefreshVolumeCache (UpdateCellVolume),
+       O(growing)/frame; Register seeds from CachedVolume.
+     • DomainSlot — refreshed by ForwardDomainChangeToCell on every steal /
+       ChangeTeam (the AOE damage view's Domain stays deliberately stale —
+       see Known gaps).
 ```
 
 ### Data structures
@@ -73,7 +93,12 @@ understood as a **view** of the same lifecycle, not an independent system.
 - **Hot array** `_spatial[i]` — `PrismSpatialData`, 16 bytes (float3 position +
   flags byte), 4 per cache line. Scanned by the Burst AOE job.
 - **Cold array** `_damage[i]` — volume + domain, read on the main thread only
-  for prisms that pass the spatial filter.
+  for prisms that pass the spatial filter. Registration-time snapshots — the
+  staleness is part of the tested AOE behavior (see Known gaps).
+- **Summation array** `_cellData[i]` — `PrismCellData`, 8 bytes (live volume,
+  cell id, live domain slot, env-mass flag), 8 per cache line. Scanned by
+  `CellVolumeSumJob` on each cell's 0.25s volume recompute. LIVE by contract —
+  see the architecture diagram for the three freshness streams.
 - **Bucket grid** `_buckets` — `NativeParallelMultiHashMap<int3, int>` mapping
   `floor(position / BucketSizeMeters)` → registry index. One entry per **live**
   (active, not destroyed) prism. Maintained incrementally — prisms are mostly
@@ -145,10 +170,15 @@ blocked for up to 5s). `AssembledFlora` orders its random-skip *before*
 | `Unregister(index)` | `Prism` OnDisable/OnDestroy/ResetState **only** | Leave the index; releases the cell binding |
 | `MarkDestroyed(index)` | `Prism.SetupDestruction` **only** | AOE skips; occupancy frees; leaves the cell grids |
 | `MarkRestored(index)` | `Prism.Restore` **only** | Re-enter AOE + occupancy + cell grids |
-| `ForwardDomainChangeToCell(index)` | `Prism.HandleTeamChangedForCell` **only** | Re-file a stolen prism in its cell's per-domain grids (does NOT touch AOE cold data) |
+| `ForwardDomainChangeToCell(index)` | `Prism.HandleTeamChangedForCell` **only** | Re-file a stolen prism in its cell's per-domain grids + refresh the summation view's live domain (does NOT touch AOE cold data) |
 | `UpdatePosition(index, pos)` | `Prism.NotifyPositionChanged` (movers) | Keep stored position honest |
 | `UpdateShieldState(index, ...)` | `PrismStateManager` **only** | Shield flags for AOE |
 | `ProcessExplosionFrame(...)` | `ExplosionImpactor` **only** | Batch AOE damage (Burst) |
+| `SetCellBinding(index, cellId, envMass, domain)` | `Cell.AddBlock` **only** | Bind a slot into a cell's summation view |
+| `ClearCellBinding(index, cellId)` | `Cell.RemoveBlock` **only** | Release a slot from the owning cell's summation view (no-op for non-owners) |
+| `ClearAllCellBindings(cellId)` | `Cell.Initialize` / `Cell.ResetCell` **only** | Bulk-release a cell's summation-view bindings (packed counterpart of the old massTracked.Clear) |
+| `UpdateCellVolume(index, volume)` | `Prism.RefreshVolumeCache` **only** | Mirror the live volume cache into the summation view |
+| `SumCellVolumes(cellId, centre, nucleusRadiusSqr, results)` | `Cell.EnsureVolumeFresh` **only** | One Burst pass producing the cell's per-domain volume / env-volume / nucleus-env-volume sums + totals |
 
 All methods are **main-thread only**. The Burst job inside
 `ProcessExplosionFrame` is scheduled and completed synchronously.

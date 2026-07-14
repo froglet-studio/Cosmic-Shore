@@ -92,10 +92,14 @@ BEFORE editor testing; every blocker found was fixed in a follow-up commit
    sliced scale pass made it redundant, and its capacity-floor curve is
    actively wrong; note `currentFrameInterval` creep also stretches the
    growth-manager tick under load today).
-2. **DomainVolumeIndicator per-push cost** — 1.22 ms self during active
-   feeding despite gating (gate only helps static menus). Marker-split the
-   push (`SetState` body vs `FaunaSpawnCycleFraction` vs residual), then fix
-   the winner.
+2. **DomainVolumeIndicator per-push cost** — RESOLVED `fb5e6643` (see the
+   2026-07-14 section): the multi-ms cost was never the gauge — it was
+   `Cell.EnsureVolumeFresh`'s managed volume slice billed to the first
+   volume reader of the interval (10.31 ms at high prism counts). Recompute
+   is now one Burst `CellVolumeSumJob` (~0.1-0.3 ms, under the new
+   `Cell.VolumeSum` marker); the gauge got `DomainVolumeIndicator.Sample`
+   / `.Push` split markers for the residual. Verify per the 2026-07-14
+   checklist.
 3. **Task 7 micro-items** (§4 table): AOE explosion pooling, per-prism spawn
    coroutine → `PrismTimerManager`, PlayerName `FixedString`, StatsManager
    elemental-lambda closures, `MaterialPropertyAnimator` closure.
@@ -108,6 +112,71 @@ BEFORE editor testing; every blocker found was fixed in a follow-up commit
    floor is applied BEFORE the aggression multiplier (0.05 × 0.25 = 12.5 ms
    effective floor) — pre-existing; changing it alters ecology cadence, so
    raise via `/ecology` + AskUserQuestion if pursued.
+
+### 2026-07-14 — the "DomainVolumeIndicator 10.31 ms" spike: root cause + fix (SHIPPED `fb5e6643`, verify below)
+
+User capture (Menu_Main-scale scene, 2.17M verts): `DomainVolumeIndicator.Update`
+**10.31 ms self, 32.4% of a 31.7 ms frame, 1 call, 0 B GC**, in a periodic spike
+train. TODO C2 suspected the gauge's push path (1.22 ms in the 07-09 capture) —
+the marker split planned there was pre-empted by reading the call graph:
+
+**Root cause — reader-attributed volume slice, mis-billed to the gauge.**
+`Cell.EnsureVolumeFresh` is reader-driven: the first volume reader of a stale
+0.25 s interval paid one slice of the managed recompute
+(`VolumeSlicePrismsPerFrame = 8000`; per prism: Unity null-check +
+`CachedVolume` object-graph read + `trackedBlocks` dictionary lookup +
+`transform.position` interop for env prisms in nucleus cells ≈ ~1.3 µs) —
+~10 ms per slice frame at high prism counts, billed to the reader's Update
+row. The gauge samples on exactly the recompute cadence (0.25 s), so it was
+almost always that first reader. Same pathology as the collider-LOD managed
+slice fixed in `eaf107e0` (0.7 µs/entry × 8000/frame), and the same fix.
+
+**Fix (`fb5e6643`) — Burst the pass over the index's packed data:**
+
+- `PrismSpatialIndex` gains a packed **cell-volume summation view**
+  (`PrismCellData`, 8 B/slot: live volume, cell id, live domain slot,
+  env-mass flag) + `CellVolumeSumJob`, one Burst `.Run()` per cell per
+  0.25 s producing all the sums the managed pass did (per-domain volume /
+  env volume / nucleus env volume + totals, nucleus split included).
+  ~0.1–0.3 ms at 25k prisms, under the new **`Cell.VolumeSum`** marker.
+- Freshness: `CellId`/`EnvMass` written only by `Cell.AddBlock/RemoveBlock`
+  (both membership streams already funnel through them; bulk clears →
+  `ClearAllCellBindings`); volume pushed by `Prism.RefreshVolumeCache`
+  (O(growing)/frame); domain slot refreshed by `ForwardDomainChangeToCell`
+  (AOE damage-view Domain stays deliberately stale — known gap untouched).
+- `Cell`'s slice machinery + `massTracked` deleted. Semantics preserved:
+  same cadence, atomic publish, live-domain steal re-attribution,
+  fauna-body volume-only rule. One deliberate delta: a prism sums into
+  exactly ONE cell (last binder wins) — the old dual membership
+  (flora host cell + spatially containing cell) could double-count
+  membrane-edge flora into two cells' phase ladders.
+- Gauge attribution split shipped as `DomainVolumeIndicator.Sample` / `.Push`
+  markers (TODO C2's requested split; the residual was already sub-ms).
+
+**Ecology invariants:** accounting change only — volume is still the spine,
+mass conservation / continuity / domain symmetry untouched, zero collider or
+physics-query impact (strictly removes main-thread cost).
+
+**Verification (in-editor, same scenario as the screenshot):**
+
+1. Profile the same scene: `DomainVolumeIndicator.Update` self ≤ ~0.3 ms on
+   every frame (no 0.25 s spike train); new `Cell.VolumeSum` rows ≤ ~0.5 ms
+   at ≤ 0.25 s cadence per cell; `DomainVolumeIndicator.Sample`/`.Push`
+   both sub-0.2 ms.
+2. Gauge sanity: hex wedges still track per-domain mass (lay trail → your
+   domain's wedge deepens; fauna eat → it recedes); centre hexagon tints
+   the dominant domain; spawn-cycle ring sweeps.
+3. Phase ladder unchanged: a filling cell still walks Calm → Restless →
+   Frenzy at the same volumes (DiagnosticsHUD or fauna aggression as the
+   observable); flora freeze at Frenzy and resume after consumption.
+4. Nucleus cells (Brood Rush): nucleus claim still flips by in-nucleus laid
+   volume only; exterior grazing never sways control.
+5. Steals: convert a patch of enemy trail → within ~0.25 s the wedges
+   re-attribute (old domain down, new domain up).
+6. Replay reset (HexRace Play Again): post-reset gauge starts empty — no
+   ghost volume from the previous round.
+7. Edit-mode tests: run `CosmicShore.Tests` → the six new
+   `PrismSpatialIndexTests` summation-view tests pass.
 
 ### Session-wide lesson list (for the next agent)
 
@@ -140,7 +209,8 @@ BEFORE editor testing; every blocker found was fixed in a follow-up commit
 Remaining known costs as of session end (2026-07-09): `EventSystem.Update`
 ≈ **0.5 ms** flat UI raycast tax (Task 2 — audit tool shipped, run pending);
 first-use shader-compile hitches (Task 3 — plumbing shipped, collection still
-EMPTY); `DomainVolumeIndicator` ≈ **1.2 ms** during active feeding (TODO C2);
+EMPTY); `DomainVolumeIndicator` ≈ **1.2 ms** during active feeding (TODO C2 —
+resolved `fb5e6643`, was really the Cell volume slice; see 2026-07-14 section);
 `GameObject.Activate` ≈ 0.27 ms per pooled activation (TODO A3/B1 datum);
 editor-only DiagnosticsHUD ≈ 0.6 ms + stat strings (ships out). Menu was
 50–60 fps at session end with the LightFauna fix not yet measured — see §0.
@@ -378,6 +448,7 @@ fix spreads or de-allocates the same work.
 | `5da47650` | Spindle condense/evaporate fades via shared MaterialPropertyBlock (was a Material clone + Destroy per fade) |
 | `d4f696ae` | Creation-tick split markers: `Prism.Create.Visibility` / `.SOAPRaise` / `.SpatialBind` (Task 4 attribution) |
 | `481a7ad8` | Domain-volume gauge: colors on sample cadence, push gated on real change (was 1.02 ms/frame flat) |
+| `fb5e6643` | Cell volume recompute is one Burst `CellVolumeSumJob` over the index's new packed summation view (`PrismCellData`); managed 8000-prism slice deleted (was a ~10 ms reader-attributed spike billed to `DomainVolumeIndicator.Update`); `Cell.VolumeSum` + `DomainVolumeIndicator.Sample`/`.Push` markers (closes TODO C2) |
 
 ---
 
@@ -386,11 +457,18 @@ fix spreads or de-allocates the same work.
 - **The fix pattern is: slice + per-frame budget + atomic publish.** Spread a
   hot pass across frames with a rotating cursor and a serialized per-frame
   budget; publish results atomically so consumers never see a half-updated
-  state. Reference implementations: `PrismColliderLodManager` (sliced sweep +
-  prism stamps), `Cell.EnsureVolumeFresh` (sliced recompute + atomic sum
-  publish), `Prism.CreateBlockCoroutine` (creation-completion budget),
-  `Boid._pendingMeals` (consume queue + `maxConsumesPerFrame`). Prefer this
-  over one-frame passes and over "adaptive skipping".
+  state. Reference implementations: `Prism.CreateBlockCoroutine`
+  (creation-completion budget), `Boid._pendingMeals` (consume queue +
+  `maxConsumesPerFrame`). Prefer this over one-frame passes and over
+  "adaptive skipping". **Escalation when the pass is a linear scan over
+  per-prism data:** a managed slice budget only caps the spike — the
+  per-entry interop/object-graph constant (~1 µs) makes even one slice
+  multi-ms at an 8000/frame budget. Burst the whole pass over
+  `PrismSpatialIndex`'s packed arrays instead and the slicing machinery
+  disappears: `PrismColliderLodManager` (`LodClassifyJob`, 5.5 ms slice
+  frames → 0.1-0.3 ms) and `Cell.EnsureVolumeFresh` (`CellVolumeSumJob`,
+  ~10 ms slice frames → one sub-ms pass per 0.25 s, `fb5e6643`) are the
+  reference collapses.
 - **Any change touching fauna/flora/cells/crystals/spawning goes through the
   `/ecology` skill protocol**: restate the invariants touched, state the
   active-collider-budget impact, hand back exact in-editor verification steps.
@@ -714,7 +792,7 @@ Note Task 1's dt-linear step is what makes (b) *safe* at all.
 | PlayerName string alloc per pickup | `Crystal.ExplodeParams.PlayerName` is already `FixedString64Bytes` (`…/FlowField/Crystal.cs:88`) but `.ToString()` runs per explosion (`:169`) | Plumb `FixedString64Bytes` through attribution if GC matters. Multiplayer round-trips via `NetworkExplodeParams` (`NetworkCrystalManager.cs:362-391`). |
 | StatsManager closure per collect | `StatsManager.CrystalCollected` (`…/Managers/StatsManager.cs:108`); the four **elemental** lambdas (`:127/:135/:143/:151`) capture `crystalStats` → closure alloc per collect; the Omni lambda (`:120`) is captureless → compiler-cached, no alloc | Cache delegates or switch to direct increments. `UpdateStatForPlayer` at `:325`. |
 | MaterialPropertyAnimator closure per re-target | `UpdateMaterial` (`…/Environment/Prisms/MaterialPropertyAnimator.cs:159`), `OnAnimationComplete = () => {…}` at `:208-222` | One closure per team-change re-target; invoked/nulled by `MaterialStateManager` (`:127/:133`). Minor. |
-| DomainVolumeIndicator residual | `…/UI/DomainVolumeIndicator.cs`: per-frame `StepTowardTargets` exp-lerp (`:229-245`) + `PushState` (`:247-258`, resolves theme colors each frame); targets sampled at 0.25 s (`:168`); mesh rebuild delta-gated downstream (`DomainVolumeHexGraphic.SetState :98`, ε=0.002) | Sub-ms; mesh rebuilds every frame only *during* lerp convergence. Revisit only if it reappears in captures. |
+| DomainVolumeIndicator residual | `…/UI/DomainVolumeIndicator.cs`: per-frame `StepTowardTargets` exp-lerp + push, delta-gated downstream (`DomainVolumeHexGraphic.SetState`, ε=0.002); targets sampled at 0.25 s | Sub-ms; now split under `DomainVolumeIndicator.Sample` / `.Push` markers (`fb5e6643`) — the historical multi-ms readings were `Cell.EnsureVolumeFresh` billed to this row (TODO C2, resolved). Revisit only if `.Push` itself reappears in captures. |
 
 ---
 
@@ -743,9 +821,11 @@ particular looks like a leftover.
   (birth-burst throttle) pattern applied to the consumption side; **pacing
   only, throughput preserved**. Prevents the next person mistaking the queue
   for a grazing cap. Extend it when Task 5 lands for LightFauna.
-- `Docs/ECOSYSTEM.md` / `Docs/SPATIAL_INDEX.md`: note the sliced patterns now
-  standard — collider-LOD sweep slices + prism stamps; cell volume recompute
-  slices + atomic publish; densest-region job async on a snapshot.
+- `Docs/ECOSYSTEM.md` / `Docs/SPATIAL_INDEX.md`: note the patterns now
+  standard — collider-LOD classification and the cell volume recompute are
+  Burst passes over the index's packed arrays (transitions-only / atomic
+  publish); densest-region job async on a snapshot. (`SPATIAL_INDEX.md`
+  documents the summation view as of `fb5e6643`.)
 
 ---
 
