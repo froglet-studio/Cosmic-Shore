@@ -24611,7 +24611,7 @@ MonoBehaviour:
     m_PressedTrigger: Pressed
     m_SelectedTrigger: Selected
     m_DisabledTrigger: Disabled
-  m_Interactable: 1
+  m_Interactable: 0
   m_TargetGraphic: {fileID: 4901860934531362720}
   m_OnClick:
     m_PersistentCalls:
@@ -47137,7 +47137,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Padding:
-    m_Left: 3
+    m_Left: -110
     m_Right: 0
     m_Top: 0
     m_Bottom: 0
