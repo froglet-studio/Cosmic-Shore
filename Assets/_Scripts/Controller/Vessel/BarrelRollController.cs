@@ -44,7 +44,10 @@ namespace CosmicShore.Gameplay
                  "transform, then the vessel root's first child.")]
         [SerializeField] Transform rollVisualTarget;
 
-        VesselStatus _status;
+        // Interface-typed: AutoPilotEnabled and InputStatus are default interface members on
+        // IVesselStatus (routed through AIPilot/Player) and are not visible on the concrete
+        // VesselStatus type.
+        IVesselStatus _status;
         bool _rolling;
         float _nextAllowedTime;
         Quaternion _visualRestRotation;
@@ -56,7 +59,7 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (!_status || _rolling || Time.time < _nextAllowedTime) return;
+            if (_status == null || _rolling || Time.time < _nextAllowedTime) return;
             if (_status.AutoPilotEnabled) return;
             if (_status.IsTranslationRestricted) return;
             if (!_status.IsBoosting) return;
@@ -137,7 +140,7 @@ namespace CosmicShore.Gameplay
         {
             // Never leave a half-applied roll behind (pooling / vessel swap safety).
             StopAllCoroutines();
-            if (_status && _status.VesselTransformer)
+            if (_status?.VesselTransformer)
                 _status.VesselTransformer.BlockRotationOverride = null;
             if (rollVisualTarget && _rolling)
                 rollVisualTarget.localRotation = _visualRestRotation;
