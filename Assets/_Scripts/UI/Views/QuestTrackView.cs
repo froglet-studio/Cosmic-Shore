@@ -12,7 +12,7 @@ namespace CosmicShore.UI
 {
     public class QuestTrackView : MonoBehaviour
     {
-        [SerializeField] private SO_GameModeQuestList questList;
+        [SerializeField] private SO_UnlockList questList;
         [SerializeField] private GameObject questItemPrefab;
         [SerializeField] private Transform questItemContainer;
 
@@ -253,7 +253,7 @@ namespace CosmicShore.UI
             card.PlayClaimAnimation(() => PlayClaimSequence(cardIndex, quest));
         }
 
-        void PlayClaimSequence(int cardIndex, SO_GameModeQuestData quest)
+        void PlayClaimSequence(int cardIndex, SO_UnlockData quest)
         {
             _isPlayingClaimSequence = true;
             _claimSequence?.Kill();

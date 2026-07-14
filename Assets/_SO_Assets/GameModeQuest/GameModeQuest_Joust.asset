@@ -27,3 +27,9 @@ MonoBehaviour:
   Intensity4GoalDescription: Get 3 jousts under 100 seconds in Intensity 3
   Order: 2
   IsPlaceholder: 0
+  FeatureKind: 0
+  FeatureRef: 
+  CallToActionTargetID: 434
+  CompletionUserAction: -1
+  DependencyTargetIDs:
+  - 100

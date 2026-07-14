@@ -272,7 +272,7 @@ namespace CosmicShore.Utility
                 .FirstOrDefault(x => x.name == targetName);
         }
 
-        void HandleQuestCompleted(SO_GameModeQuestData quest)
+        void HandleQuestCompleted(SO_UnlockData quest)
         {
             if (quest == null || quest.IsPlaceholder) return;
             ToastNotificationAPI.Show($"Quest Complete!\n{quest.DisplayName}");

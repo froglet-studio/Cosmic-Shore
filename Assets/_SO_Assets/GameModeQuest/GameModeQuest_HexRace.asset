@@ -27,3 +27,9 @@ MonoBehaviour:
   Intensity4GoalDescription: Complete Hex Race Intensity 3 under 270 seconds
   Order: 1
   IsPlaceholder: 0
+  FeatureKind: 0
+  FeatureRef: 
+  CallToActionTargetID: 431
+  CompletionUserAction: -1
+  DependencyTargetIDs:
+  - 100
