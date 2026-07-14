@@ -372,7 +372,12 @@ namespace CosmicShore.Gameplay
             // Forward points AWAY from the camera — TextMeshPro's readable face looks at the viewer.
             Vector3 away = transform.position - _cam.transform.position;
             if (away.sqrMagnitude < 1e-6f) return;
-            transform.rotation = Quaternion.LookRotation(away);
+            // Directly above/below a label, world-up is colinear with the view direction and
+            // LookRotation's implicit up degenerates (the text rolls wildly) — use the camera's up.
+            Vector3 up = Mathf.Abs(Vector3.Dot(away.normalized, Vector3.up)) > 0.98f
+                ? _cam.transform.up
+                : Vector3.up;
+            transform.rotation = Quaternion.LookRotation(away, up);
         }
     }
 }

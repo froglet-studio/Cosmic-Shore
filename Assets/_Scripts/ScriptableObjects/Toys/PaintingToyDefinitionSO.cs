@@ -20,14 +20,12 @@ namespace CosmicShore.ScriptableObjects
     {
         [Header("Painting (Connect the Dots)")]
         [SerializeField, Tooltip("The gallery: one painting station spawns per entry. Leave empty for the " +
-                                 "built-in default gallery (Star, Rainbow, Saturn, Taj Mahal).")]
+                                 "built-in 16-painting default gallery (see DefaultGalleryCatalog).")]
         List<PaintingDefinitionSO> paintings = new();
 
-        [SerializeField, Tooltip("Angular gap (degrees) between painting ANCHOR columns around the ring " +
-                                 "(the monuments themselves still spread azimuthally so they can't overlap).")]
-        float anglePerToyDeg = 10f;
-
-        [SerializeField, Tooltip("Clearance between the toy ring and the near edge of each painting, world units.")]
+        [SerializeField, Tooltip("Clearance between the toy ring and the near edge of each painting, AND the " +
+                                 "guaranteed gap between adjacent monuments (column/row pitches are derived " +
+                                 "from the largest painting's bounds plus this margin), world units.")]
         float paintingClearance = 150f;
 
         [SerializeField, Tooltip("Gap between gallery stations in the cluster, as a multiple of the body radius.")]
@@ -55,7 +53,26 @@ namespace CosmicShore.ScriptableObjects
             int cols = Mathf.CeilToInt(Mathf.Sqrt(gallery.Count));
             int rows = Mathf.CeilToInt(gallery.Count / (float)cols);
             float spacing = Mathf.Max(placement.TriggerRadius * 2.2f, placement.BodyRadius * clusterSpacingBodies);
-            float colStep = anglePerToyDeg * Mathf.Deg2Rad;
+
+            // Monument pitches are derived from the LARGEST painting so no two can interpenetrate:
+            // (w_i + w_j)/2 <= maxWidth for any pair, so maxExtent + clearance guarantees the gap.
+            // Monuments are ground-rebased (they occupy anchorY .. anchorY + height), so the row
+            // pitch must clear a full height, not a half.
+            float maxWidth = 0f, maxHeight = 0f, maxDepth = 0f;
+            foreach (var p in gallery)
+            {
+                if (!p) continue;
+                p.EnsureStrokes();
+                Bounds b = p.LocalBounds;
+                maxWidth = Mathf.Max(maxWidth, b.size.x);
+                maxHeight = Mathf.Max(maxHeight, b.size.y);
+                maxDepth = Mathf.Max(maxDepth, b.size.z);
+            }
+            float colPitch = maxWidth * 1.05f + paintingClearance;
+            float rowPitch = maxHeight * 1.05f + paintingClearance;
+
+            var outward = new Vector3(Mathf.Sin(baseAngle), 0f, Mathf.Cos(baseAngle));
+            var tangent = new Vector3(Mathf.Cos(baseAngle), 0f, -Mathf.Sin(baseAngle));
 
             for (int i = 0; i < gallery.Count; i++)
             {
@@ -68,21 +85,19 @@ namespace CosmicShore.ScriptableObjects
 
                 // Station: grid cell in the tangent × up plane at the slot, facing the ring centre.
                 float a = baseAngle + Mathf.Atan2(cOff * spacing, ringRadius);
-                var outward = new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a));
-                Vector3 toyPos = center + outward * ringRadius;
+                var stationOut = new Vector3(Mathf.Sin(a), 0f, Mathf.Cos(a));
+                Vector3 toyPos = center + stationOut * ringRadius;
                 toyPos.y = placement.Position.y + rOff * spacing;
 
-                // Monument: outward behind its column, tiered by row so the gallery is a WALL of
-                // masterpieces climbing the off-plane space rather than a flat line.
-                painting.EnsureStrokes();
+                // Monument: a width-aware WALL of masterpieces behind the cluster — columns step
+                // along the ring tangent by the widest painting plus clearance, rows climb the
+                // off-plane vertical by the tallest, with a modest radial stagger for depth.
                 Bounds bounds = painting.LocalBounds;
-                float aAnchor = baseAngle + colStep * cOff;
-                var anchorOut = new Vector3(Mathf.Sin(aAnchor), 0f, Mathf.Cos(aAnchor));
                 float anchorDistance = ringRadius + paintingClearance + Mathf.Max(40f, bounds.max.z)
-                                       + row * 0.35f * Mathf.Max(200f, bounds.size.z);
-                Vector3 anchorPos = center + anchorOut * anchorDistance;
-                anchorPos.y = placement.Position.y + rOff * Mathf.Max(300f, 0.55f * bounds.size.y);
-                Quaternion anchorRot = Quaternion.LookRotation(-anchorOut, Vector3.up);
+                                       + row * 0.35f * Mathf.Max(200f, maxDepth);
+                Vector3 anchorPos = center + outward * anchorDistance + tangent * (cOff * colPitch);
+                anchorPos.y = placement.Position.y + rOff * rowPitch;
+                Quaternion anchorRot = Quaternion.LookRotation(-outward, Vector3.up);
 
                 var root = ToyFactory.CreateBareRoot($"{Id}_{painting.PaintingId}", parent,
                     toyPos, center, placement.TriggerRadius);
@@ -171,20 +186,24 @@ namespace CosmicShore.ScriptableObjects
             new("painting_spiral_galaxy", "Spiral Galaxy",
                 "A two-arm grand design: dust lanes, an old-gold bulge, stars streaming along the arms.",
                 PaintingPreset.SpiralGalaxy, 1200f, 22f),
+            // NOTE: these five ship as BAKED assets (real-reference strokes; provenance +
+            // attribution live in the asset descriptions and Tools/PaintingPipeline/README.md).
+            // The catalog entries below describe the PROCEDURAL fallback the presets generate —
+            // they must not claim reference provenance the fallback geometry doesn't have.
             new("painting_phoenix", "Phoenix",
-                "A firebird engraved from a museum bronze - contour plumage over flame-chained feathers.",
+                "A firebird of feathered wings above an impressionist flame tail.",
                 PaintingPreset.Phoenix, 1400f, 24f),
             new("painting_bob_ross", "Almighty Mountain",
-                "The Matterhorn itself - contours and ridgelines drawn from real elevation data.",
+                "A mountain vista you fly into: fractal ridges, a mirror lake, and happy little firs.",
                 PaintingPreset.BobRossVista, 1500f, 26f),
             new("painting_starry_night", "Starry Night",
-                "Van Gogh's own brushwork - every stroke traced from the painting, bent around you.",
+                "Step into Van Gogh: a swirling sky shell, star vortices, a cypress flame, a village.",
                 PaintingPreset.StarryNight, 1300f, 24f),
             new("painting_lions_head", "Lion's Head",
-                "A real lion - traced from a public-domain 1896 sculpture scan, mane and all.",
+                "A golden mane of a hundred and sixty curl-field strands around a Ruby-eyed face.",
                 PaintingPreset.LionsHead, 1800f, 26f),
             new("painting_peacock", "Peacock",
-                "A fanned train of real peafowl geometry. 3D data by YahooJAPAN (CC-BY 4.0).",
+                "A fanned 3D train of eye-feathers - the toy's magnum opus.",
                 PaintingPreset.Peacock, 1300f, 22f),
         };
 

@@ -2,9 +2,16 @@
 Authored strokes are the SO's highest-priority source (strokes -> sourceShape ->
 preset), so baking needs zero runtime code. Painting conventions enforced here:
 base at y=0, front +Z, flyable segments, Jade(1)/Ruby(2)/Gold(4) only."""
+import re
 import numpy as np
 
 DOM = {'Jade': 1, 'Ruby': 2, 'Gold': 4}
+
+def sanitize_name(name):
+    """Stroke names go into the YAML unquoted — strip anything Unity's parser could
+    misread (':' ends a key, '#' starts a comment, flow/anchor chars)."""
+    clean = re.sub(r"[^A-Za-z0-9 _.\-]", "", str(name)).strip()
+    return clean or "Stroke"
 
 def bake(asset_path, strokes, round_dp=1):
     """strokes: list of (domain, name, points ndarray). Rewrites the asset's
@@ -13,7 +20,7 @@ def bake(asset_path, strokes, round_dp=1):
     min_y = min(float(np.asarray(p)[:, 1].min()) for _, _, p in strokes)
     lines = ["  strokes:"]
     for dom, name, pts in strokes:
-        lines.append(f"  - name: {name}")
+        lines.append(f"  - name: {sanitize_name(name)}")
         lines.append(f"    domain: {DOM[dom]}")
         lines.append("    points:")
         for q in np.asarray(pts):

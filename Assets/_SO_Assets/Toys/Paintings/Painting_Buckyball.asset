@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PaintingDefinitionSO
   paintingId: painting_buckyball
   displayName: Buckyball
-  description: Exact C60: twelve pentagons, twenty hexagons, thirty double bonds.
+  description: 'Exact C60: twelve pentagons, twenty hexagons, thirty double bonds.'
   strokes: []
   sourceShape: {fileID: 0}
   sourceShapeDomain: 4

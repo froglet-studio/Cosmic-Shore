@@ -77,9 +77,9 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
 (`PaintingProgressStore`), completion celebration, and a per-station progress label.
 `MenuShapePainter` (single-stroke, billboarded, one colour) was removed. Remaining polish:
 
-- **In-editor tuning pass.** Gallery fan spacing (`anglePerToyDeg`), `paintingClearance`,
-  preset sizes vs. the lava-lamp play area, gate ring radius, ghost alphas, celebration
-  timing — all first-guess values.
+- **In-editor tuning pass.** `paintingClearance` (drives the width-aware monument pitches),
+  preset sizes vs. the lava-lamp play area, gate/milestone ring radii, ghost alphas,
+  celebration timing — all first-guess values.
 - **Cross-session prisms — RESOLVED.** The drawing state (per-prism pose/size/domain) is now
   saved per completed stroke (`PaintingPrismStore`) and regrown through the normal
   `PrismFactory` channel on return — across vessel swaps, other paintings, game modes, and
@@ -103,23 +103,27 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
   Torus Knot (engineered tube on rotation-minimizing frames), Buckyball (C60 + its 30 real 6:6
   double bonds), Spiral Galaxy (two-arm grand design, dust lanes, arm-following star streaks,
   22° inclination). Anatomy counts are locked by `ReferenceRebuilds_KeepTheirAnatomy`.
-  Of the five representational subjects, **two are now baked from real references** via the
-  offline pipeline (`Tools/PaintingPipeline/`): **Lion** (CC0 Temperance Union Lion sculpture
-  scan → 56 engraving contours + 136 mane-curl feature lines) and **Starry Night** (every stroke
-  traced from the painting's own brush flow, palette-quantized, bent onto an immersive curved
-  canvas). **Peacock, Phoenix, Almighty Mountain remain procedural** pending a bake decision:
-  verified-licence references are already downloaded + audited (`REFERENCE_MODELS.md`) —
-  the YahooJAPAN Peafowl (CC-BY 4.0, attribution required in credits), the threedscans Striding
-  Eagle (no restrictions — Phoenix body/wings, flame tail stays procedural), and a real-DEM or
-  fractal rework for the vista. Extra baked-painting candidates from the same haul: the Medici
-  Riccardi Horse Head and the Glycon serpent (both threedscans, no restrictions). Remaining
-  procedural candidates: Great Wave, pagoda, Colosseum.
-- **Perf / in-editor pass for the big paintings.** Each stroke stands up one ghost `LineRenderer` +
-  one start gate at `PaintingRunner.Begin`, so Peacock (~226 strokes) and Lion's Head (~171) create a
-  few hundred lightweight LineRenderers up front. This is the intended "hours of flying" ceiling but
-  wants an in-editor confirmation on mobile (and a possible LOD/stream-in of ghosts for the largest
-  gallery entries). Gallery fan spacing is now `anglePerToyDeg = 8°` (~120° for all 16 stations) —
-  confirm it reads well against the lava-lamp play area.
+  **All five representational subjects are now baked from real references** via the offline
+  pipeline (`Tools/PaintingPipeline/`, licences audited in `REFERENCE_MODELS.md`): **Lion's
+  Head** (CC0 Temperance Union Lion scan), **Starry Night** (v2 retrace of the painting's own
+  brush flow), **Phoenix** (threedscans Striding Eagle, no restrictions), **Peacock**
+  (YahooJAPAN Peafowl — CC-BY 4.0, attribution ships in the asset description AND must appear
+  in the game credits), and **Almighty Mountain** (the real Matterhorn DEM via AWS Terrain
+  Tiles — attribution line in `Tools/PaintingPipeline/README.md` must ship in the credits
+  screen). Extra baked-painting candidates from the same haul: the Medici Riccardi Horse Head
+  and the Glycon serpent (both threedscans, no restrictions). Remaining procedural candidates:
+  Great Wave, pagoda, Colosseum.
+- **Perf / in-editor pass for the big paintings** (review-verified, deferred by design). Two
+  structural costs confirmed by the pre-PR review: (1) `PaintingRunner.Begin` eagerly creates one
+  ghost `LineRenderer` per stroke — Phoenix (260) and Peacock (236) keep 200+ lightweight
+  LineRenderers alive for the whole run (the property-write storms are transient: bloom 1.4s,
+  celebrate 3s, bench fades) — candidates: merge Pending strokes into one renderer per domain, or
+  a stream-in window around the active stroke; (2) `PaintingToyDefinitionSO.Spawn` synchronously
+  runs `EnsureStrokes` + `MiniaturePaintingBuilder` for all 16 paintings on the toybox-spawn frame
+  in Menu_Main — the 11 procedural presets regenerate there (baked assets skip generation) —
+  candidate: amortize one painting per frame via UniTask, and cache `BuildDefaultGallery`
+  statically so the empty-list fallback stops regenerating per spawn. Both want profiler numbers
+  on mobile before restructuring (CLAUDE.md: profile first).
 - **Reviewed and deliberately deferred** (from the enhancement's review pass): coalesce the
   per-stroke synchronous saves (`DataAccessor` full-file JSON writes at each stroke boundary —
   both the small progress file and the growing `PaintingPrismStore` drawing-state file; the
@@ -130,6 +134,42 @@ reach on fine detail, bench/resume via the station, cross-session stroke progres
   `SwapToySetCoordinator.Layout` into one helper; unify the LineRenderer config duplicated
   by `ShapeDrawingManager.ConfigureLineRenderer` with `ToyFactory.CreateLine` (touches the
   shape-drawing system, so it belongs in its own change).
+- **Reviewed and deliberately deferred (pre-PR review pass).** Verified findings fixed in that
+  pass: closed-loop instant-complete, disengaged-milestone latch, milestone-trigger NRE during
+  vessel swap (shared null-guarded `Toy.TryGetLocalVessel`), benched-gate forever-lerp, ridden
+  line now eases out/in (continuity law), monument layout now width-aware, six asset YAML
+  descriptions quoted, dead toolkit API pruned, `TorusKnotPreset` reuses `Tk.TorusKnot`.
+  Deferred with rationale:
+  - *Ride-feel constants in code* (checkpoint spacing `max(90, 0.085·diag)`, 28° turn limit,
+    milestone radius `max(18, reach·1.8)`, glow corridor `1.2·reach`): derived heuristics, not
+    designer knobs yet — promote to `PaintingToyDefinitionSO` fields when the in-editor tuning
+    pass wants to move them (CLAUDE.md config-separation).
+  - *Milestone ring create/destroy per checkpoint*: one small GameObject per ~90u of flight —
+    same lifecycle as gates; pool only if the profiler pass flags it.
+  - *`TrySpawnRestoredPrism` mirrors `VesselPrismController.CreateBlock`* (0.6s collider window
+    literal; skips danger/shield branches + creation events — the event skip is intentional to
+    avoid re-capture): extract a shared post-spawn setup on `VesselPrismController` so restored
+    prisms can't drift from live-painted ones.
+  - *`ToyboxSetupTool.LoadOrCreatePainting` returns existing assets untouched*: catalog edits
+    don't propagate to committed assets on re-run — needs an update-in-place pass (like the
+    tool's `extra` SerializedObject pass for toys) that respects baked strokes.
+  - *Stroke conventions enforced only in the offline baker*: `PaintingDefinitionSO` wants an
+    `OnValidate`/`EnsureStrokes` warning for Blue-domain or degenerate inspector-authored
+    strokes (a Blue stroke currently paints in the player's current colour and records that
+    into `PaintingPrismStore`).
+  - *Fallback/baked identity*: DefaultGalleryCatalog reuses the baked paintingIds, so if the
+    toy's paintings list is ever emptied the procedural fallback resets saved progress on its
+    first write (totalStrokes mismatch, by design). Acceptable while the committed
+    `Toy_Painting.asset` list stays populated; split the ids if that ever changes.
+  - *`BillboardLabel` one-LateUpdate-per-label* (~20 in the full toybox): fold into a single
+    manager iterating a static list if the profiler pass flags it (pole-degeneracy guard is in).
+  - *Toolkit `Rng` vs seeded `System.Random`* (Microscene convention): kept deliberately —
+    xorshift32 is stable across .NET runtimes, `System.Random`'s algorithm is not guaranteed.
+  - *`CatmullRomPoint` duplicates `SpawnableWaypointTrack.CatmullRom`*: unify in a shared math
+    utility in its own change (touches the environment system).
+  - *Phoenix preset fallback*: the flame fill's Ruby branch is dead (seed y-range never crosses
+    the threshold) — all flames come out Gold; harmless (single recolour), fix with the next
+    preset-content pass.
 - **Full experience (optional).** For a gameplay scene with ecology infra, the original
   `ShapeDrawingManager` (preview cinematic, scoring, reveal, `EndShapeDetailHUD`) remains a
   separate, score-bearing mode — the toy stays scoreless by design.

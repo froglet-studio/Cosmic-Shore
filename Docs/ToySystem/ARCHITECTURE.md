@@ -171,7 +171,7 @@ dozen **grandiose non-planar constructions** that dwarf the Taj (every one is >2
 | 12 | Phoenix | 1400 | 260 | **baked from a real sculpture**: the *Striding Eagle* museum scan (threedscans / Saint Louis Art Museum, no restrictions) — 79.7·W of engraving contours + flame-chained feather feature lines |
 | 13 | Almighty Mountain | 1500 | 111 | **baked from real terrain**: the Matterhorn's actual DEM (AWS Terrain Tiles) — elevation contours (Ruby rock / Jade snowline) + Gold ridge polylines |
 | 14 | Starry Night | 1300 | 173 | **baked from the real painting** (v2 retrace): 11 star/moon ring clusters, the double-swirl as two long coherent Jade spirals, 6 Ruby cypress flames, streamlines bent onto an immersive curved canvas with luminance relief |
-| 15 | Lion | 1800 | 124 | **baked from a real sculpture**: the CC0 Temperance Union Lion scan (1896), Squirrel-scaled — engraving contours + 62 mane-curl feature lines (micro-curls under 28u turn radius filtered out) |
+| 15 | Lion's Head | 1800 | 124 | **baked from a real sculpture**: the CC0 Temperance Union Lion scan (1896), Squirrel-scaled — engraving contours + 62 mane-curl feature lines (micro-curls under 28u turn radius filtered out) |
 | 16 | Peacock | 1300 | 236 | **baked from a real scan**: YahooJAPAN's peafowl photogrammetry (CC-BY 4.0 — attribution ships in the asset description) — the fanned train, scalloped eye-feather rim, body and legs |
 
 **Gallery stations are miniatures in a wall, not balls in a line.** Each station's body IS its
@@ -187,7 +187,12 @@ Rows 5–11 are built by composition from **`PaintingStrokeToolkit`** (below); r
 mesh→engraving-stroke converter + painting-flow tracer + asset baker; licences audited in
 `Tools/PaintingPipeline/REFERENCE_MODELS.md`). Baked paintings live as authored `strokes` on the
 `PaintingDefinitionSO` asset — the SO's highest-priority source — so they need zero runtime code
-and their `preset` remains as fallback. The gallery fans ~120° at `anglePerToyDeg = 8°`.
+and their `preset` remains as fallback (fallback catalog descriptions deliberately do NOT claim
+reference provenance — the CC-BY/DEM attributions belong to the baked strokes only). Monument
+anchors use **width-aware pitches**: columns step along the ring tangent by the widest painting's
+bounds (+`paintingClearance`), rows climb by the tallest painting's height — (wᵢ+wⱼ)/2 ≤ max(w)
+for any pair, so no two monuments can interpenetrate by construction (studio zones may still
+overlap; `BenchOtherRunners` arbitrates the brush).
 
 How a run plays:
 
@@ -210,19 +215,24 @@ How a run plays:
   (`PaintingStrokeToolkit.RideCheckpoints`): spaced by arc (≥ max(90u, 8.5% of the painting's
   bounds diagonal)), never parked on tight curvature (>28° local turn — a hairpin apex is a
   punishing target at speed; on an all-tight stretch the flattest vertex is used so progress
-  can't stall), with the stroke start (gate) and end (jack) always included. The checkpoint
-  marker is big (≥7u base, cone/jack in the domain prism material) with a forgiving hit box
-  (1.8× reach) — a waypoint to sweep through, not a bullseye — and each pass pops the next
-  marker in oversized before it settles.
+  can't stall), with the stroke start (gate) and end (jack) always included. **Closed loops
+  always keep a mid checkpoint near the half-arc** — otherwise a ring's end milestone sits at
+  its own gate and the stroke would complete unridden the moment the gate fires.
 - **Rings, not lines, not cones.** While AWAITING its gate the next stroke's ghost shows faintly
-  (something to aim at); once you are RIDING it the line disappears entirely — the ride is the
-  milestone RINGS and your own painted trail. Each milestone is a ring gate faced along the local
-  flight tangent whose **SphereCollider trigger is scaled to the ring radius** (flying through the
-  ring IS the hit test; a slightly tighter distance check backstops fast physics misses, and all
-  effects run on the Update tick, never in the physics callback). The trail-on **cone** appears
-  only on the stroke's START gate; the final milestone ring carries the trail-off **jack** in its
-  centre. Rings fold away as they're swept and the next blooms in (continuity law). A **perfect
-  ride** (hugging the curve inside ~1.2× reach) builds `_rideGlow` and brightens the guide.
+  (something to aim at); once you are RIDING it the line eases away entirely (continuity law —
+  `_lineFade`, and it eases back in as the dim "done" memory line on completion) — the ride is
+  the milestone RINGS and your own painted trail. Each milestone is a ring gate faced along the
+  local flight tangent whose **SphereCollider trigger is scaled to the ring radius** (flying
+  through the ring IS the hit test; a slightly tighter distance check backstops fast physics
+  misses, and all effects run on the Update tick, never in the physics callback — the trigger
+  resolves the local vessel via the shared `Toy.TryGetLocalVessel`, which also guards the
+  null-`Player` window during a mid-stroke vessel swap). The ride ring **never outlives
+  engagement**: leaving the studio zone or exiting freestyle folds it away (and it re-blooms on
+  re-engage) so the lava-lamp autopilot can never drift through it and latch a checkpoint nobody
+  rode. The trail-on **cone** appears only on the stroke's START gate; the final milestone ring
+  carries the trail-off **jack** in its centre. Rings fold away as they're swept and the next
+  blooms in (continuity law). A **perfect ride** (hugging the curve inside ~1.2× reach) builds
+  `_rideGlow` and brightens the guide.
 - **Progress, pause, resume.** Progress is stroke-granular. Re-flying the station benches /
   resumes the run ("put the brush down"); progress also persists across sessions
   (`PaintingProgressStore`, the FavoriteSystem `DataAccessor` JSON pattern — completed strokes

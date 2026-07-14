@@ -182,13 +182,17 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Resolve the colliding object to the LOCAL player's vessel. Never lets a remote (or
-        /// AI/autopilot in a party) vessel trip this client's toy.
+        /// AI/autopilot in a party) vessel trip this client's toy. Shared by every toy trigger
+        /// (gates, ride milestones) — one rule, one implementation.
         /// </summary>
-        static bool TryGetLocalVessel(Collider other, out IVesselStatus vessel)
+        internal static bool TryGetLocalVessel(Collider other, out IVesselStatus vessel)
         {
             vessel = null;
             var status = other.GetComponentInParent<VesselStatus>();
             if (!status) return false;
+            // A freshly spawned hull (mid vessel-swap) has no Player yet — IsLocalUser would
+            // dereference it inside a physics callback.
+            if (status.Player == null) return false;
             IVesselStatus iv = status;
             if (!iv.IsLocalUser) return false;
             vessel = iv;

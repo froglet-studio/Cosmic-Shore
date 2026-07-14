@@ -36,5 +36,4 @@ MonoBehaviour:
   - {fileID: 11400000, guid: ba9d6c3dfc884aefb434920a2958c833, type: 2}
   - {fileID: 11400000, guid: 19d81151cad24772afecc1d4947af2fd, type: 2}
   - {fileID: 11400000, guid: a38fa7d176e549be97fa8ac045bdab8a, type: 2}
-  anglePerToyDeg: 8
   paintingClearance: 150

@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PaintingDefinitionSO
   paintingId: painting_rose
   displayName: Rose
-  description: A real bloom: recurved petal rims spiralling to a furled heart, sepals below.
+  description: 'A real bloom: recurved petal rims spiralling to a furled heart, sepals below.'
   strokes: []
   sourceShape: {fileID: 0}
   sourceShapeDomain: 4

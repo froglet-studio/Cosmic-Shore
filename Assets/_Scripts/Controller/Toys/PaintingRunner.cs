@@ -39,6 +39,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Everything the runner knows about one stroke — one array, no index juggling.</summary>
         class StrokeInfo
         {
+            public int Index;             // position in the runner's stroke array
             public Vector3[] Points;      // world space
             public string Name;
             public Domains Domain;
@@ -69,6 +70,9 @@ namespace CosmicShore.Gameplay
         GameObject _gate;
         bool _gateBenchEasing;
         GameObject _milestone;         // the ONE live ride ring (SphereCollider trigger = its radius)
+        StrokeMilestoneTrigger _milestoneTrigger; // cached at spawn — no per-frame TryGetComponent
+        int _fadeIndex = -1;           // stroke whose ghost line is easing out (ridden) or back in (done)
+        float _lineFade = 1f;
         LineRenderer _guide;
 
         Vector3 _zoneCenter;
@@ -123,6 +127,7 @@ namespace CosmicShore.Gameplay
                 float reach = Mathf.Clamp(minSeg * 0.7f, 4f, _painting.ReachThreshold);
                 _strokes[i] = new StrokeInfo
                 {
+                    Index = i,
                     Points = world,
                     Name = string.IsNullOrEmpty(s.name) ? $"Stroke {i + 1}" : s.name,
                     Domain = s.domain,
@@ -199,6 +204,9 @@ namespace CosmicShore.Gameplay
             else
             {
                 BenchOtherRunners();
+                // The gate may have fully folded (and stopped rendering) while benched — regrow it.
+                if (_gate && !_gate.activeSelf) _gate.SetActive(true);
+                _gateBenchEasing = _gate != null;
                 // Re-spawn the ride ring we folded on pause (mid-stroke resume only).
                 if (_phase == RunPhase.Painting) SpawnMilestone();
             }
@@ -232,14 +240,21 @@ namespace CosmicShore.Gameplay
             ApplyCapture(vessel, engaged);
 
             // Re-engaging mid-stroke (back from a bench, a menu trip, or a detour through the
-            // Domain Changer) re-asserts the stroke's colour — the gate only fired once.
+            // Domain Changer) re-asserts the stroke's colour — the gate only fired once — and
+            // re-arms the ride ring folded on disengage.
             if (engaged && !_wasEngaged && _phase == RunPhase.Painting)
+            {
                 RequestStrokeDomain(CurrentStroke.Domain);
+                if (!_milestone) SpawnMilestone();
+            }
             _wasEngaged = engaged;
 
             if (!engaged)
             {
                 if (_guide) _guide.enabled = false;
+                // The ride ring must not outlive engagement: the local vessel on lava-lamp
+                // autopilot would drift through it and latch a checkpoint nobody rode.
+                DespawnMilestone();
                 return;
             }
 
@@ -260,10 +275,12 @@ namespace CosmicShore.Gameplay
                 var t = _gate.transform;
                 Vector3 target = _benched ? Vector3.zero : Vector3.one;
                 t.localScale = Vector3.Lerp(t.localScale, target, Time.deltaTime * 7f);
-                if (!_benched && (t.localScale - target).sqrMagnitude < 1e-4f)
+                if ((t.localScale - target).sqrMagnitude < 1e-4f)
                 {
                     t.localScale = target;
                     _gateBenchEasing = false;
+                    // Fully folded — stop rendering it (SetBenched(false) reactivates + re-arms).
+                    if (_benched) _gate.SetActive(false);
                 }
             }
 
@@ -279,9 +296,29 @@ namespace CosmicShore.Gameplay
             // The ride ring grows in on spawn and folds away while benched (continuity law).
             if (_milestone)
             {
+                var mt = _milestone.transform;
                 Vector3 target = _benched ? Vector3.zero : Vector3.one;
-                _milestone.transform.localScale = Vector3.Lerp(
-                    _milestone.transform.localScale, target, Time.deltaTime * 7f);
+                if ((mt.localScale - target).sqrMagnitude > 1e-6f)
+                {
+                    mt.localScale = Vector3.Lerp(mt.localScale, target, Time.deltaTime * 7f);
+                    if ((mt.localScale - target).sqrMagnitude < 1e-4f) mt.localScale = target;
+                }
+            }
+
+            // The ridden stroke's blueprint line eases out (and its "done" memory line eases back
+            // in on completion) — continuity law: no instant appear/disappear, even for a line.
+            if (_fadeIndex >= 0 && _strokes != null && _fadeIndex < _strokes.Length)
+            {
+                float fadeTarget = _phase == RunPhase.Painting && _fadeIndex == _strokeIndex ? 0f : 1f;
+                if (Mathf.Approximately(_lineFade, fadeTarget))
+                {
+                    if (fadeTarget >= 1f) _fadeIndex = -1; // fade-in finished — back to plain styles
+                }
+                else
+                {
+                    _lineFade = Mathf.MoveTowards(_lineFade, fadeTarget, Time.deltaTime * 3.5f);
+                    ApplyGhostStyle(_strokes[_fadeIndex]);
+                }
             }
         }
 
@@ -316,7 +353,7 @@ namespace CosmicShore.Gameplay
             // The milestone ring's sphere trigger is the hit volume; effects run here on the Update
             // tick (never inside the physics callback). A slightly tighter distance check backstops
             // fast passes the physics step might miss.
-            bool tripped = _milestone && _milestone.TryGetComponent(out StrokeMilestoneTrigger trig) && trig.Tripped;
+            bool tripped = _milestoneTrigger && _milestoneTrigger.Tripped;
             float backstop = MilestoneRadius(stroke) * 0.85f;
             if (!tripped && (shipPos - target).sqrMagnitude > backstop * backstop) return;
 
@@ -422,7 +459,13 @@ namespace CosmicShore.Gameplay
             _phase = RunPhase.Painting;
             _pointIndex = 1; // checkpoint 0 IS the gate — flying it consumes the stroke's start
             _rideGlow = 0f;
-            ApplyGhostStyle(stroke); // the line disappears on the stroke you are riding
+            // The ridden stroke's line EASES away (continuity law) — EaseTransitions drives
+            // _lineFade toward 0 while this stroke is the fading one.
+            int prevFade = _fadeIndex;
+            _fadeIndex = stroke.Index;
+            _lineFade = 1f;
+            if (prevFade >= 0 && prevFade != stroke.Index && prevFade < _strokes.Length)
+                ApplyGhostStyle(_strokes[prevFade]); // finalize an interrupted fade at full style
             SpawnMilestone();
 
             var gate = _gate;
@@ -626,9 +669,9 @@ namespace CosmicShore.Gameplay
             {
                 case GhostStyle.Active:
                     // While AWAITING the gate the next stroke shows faintly (something to aim at);
-                    // once you are RIDING it the line disappears entirely — the ride is the rings
-                    // and your own trail, not a line rendering.
-                    c.a = _phase == RunPhase.Painting ? 0f : 0.45f;
+                    // once you are RIDING it the line eases away entirely — the ride is the rings
+                    // and your own trail, not a line rendering. _lineFade carries the ease.
+                    c.a = 0.45f;
                     width = 1.1f;
                     break;
                 case GhostStyle.Done:
@@ -642,6 +685,7 @@ namespace CosmicShore.Gameplay
                     break;
             }
 
+            if (stroke.Index == _fadeIndex) c.a *= _lineFade;
             c.a *= _bloom * _benchVisibility;
             lr.startColor = lr.endColor = c;
             lr.startWidth = lr.endWidth = width;
@@ -687,7 +731,7 @@ namespace CosmicShore.Gameplay
             trigger.isTrigger = true;
             trigger.radius = ringR;   // the hit volume IS the ring
 
-            _milestone.AddComponent<StrokeMilestoneTrigger>();
+            _milestoneTrigger = _milestone.AddComponent<StrokeMilestoneTrigger>();
             _milestone.transform.localScale = Vector3.zero; // EaseTransitions grows it in
         }
 
@@ -696,6 +740,7 @@ namespace CosmicShore.Gameplay
         {
             var passed = _milestone;
             _milestone = null;
+            _milestoneTrigger = null;
             if (passed) ToyFactory.ScaleOutAndDestroy(passed, GateDespawnSeconds).Forget();
 
             _pointIndex++;
@@ -712,6 +757,7 @@ namespace CosmicShore.Gameplay
             if (!_milestone) return;
             ToyFactory.ScaleOutAndDestroy(_milestone, GateDespawnSeconds).Forget();
             _milestone = null;
+            _milestoneTrigger = null;
         }
 
         IVesselStatus ResolveVessel()
@@ -780,11 +826,8 @@ namespace CosmicShore.Gameplay
 
         void OnTriggerEnter(Collider other)
         {
-            var status = other.GetComponentInParent<VesselStatus>();
-            if (!status) return;
-            IVesselStatus vessel = status;
-            if (!vessel.IsLocalUser) return;
-            Tripped = true;
+            // Same local-vessel resolution the toy gates use — one rule, one implementation.
+            if (Toy.TryGetLocalVessel(other, out _)) Tripped = true;
         }
     }
 }

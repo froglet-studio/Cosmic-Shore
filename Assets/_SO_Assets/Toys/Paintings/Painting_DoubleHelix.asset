@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PaintingDefinitionSO
   paintingId: painting_double_helix
   displayName: Double Helix
-  description: B-DNA at true proportions: ribbon backbones, ten base pairs per turn.
+  description: 'B-DNA at true proportions: ribbon backbones, ten base pairs per turn.'
   strokes: []
   sourceShape: {fileID: 0}
   sourceShapeDomain: 4

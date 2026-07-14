@@ -118,17 +118,23 @@ namespace CosmicShore.Gameplay
             return b;
         }
 
+        /// <summary>Arc length of one stroke, world units. Null-safe.</summary>
+        public static float StrokeLength(PaintingStroke stroke)
+        {
+            float len = 0f;
+            if (stroke?.points == null) return len;
+            for (int i = 1; i < stroke.points.Count; i++)
+                len += Vector3.Distance(stroke.points[i - 1], stroke.points[i]);
+            return len;
+        }
+
         /// <summary>Total flight length of every stroke, world units (for tests / tuning).</summary>
         public static float TotalPathLength(IReadOnlyList<PaintingStroke> strokes)
         {
             float len = 0f;
             if (strokes == null) return len;
             foreach (var stroke in strokes)
-            {
-                if (stroke?.points == null) continue;
-                for (int i = 1; i < stroke.points.Count; i++)
-                    len += Vector3.Distance(stroke.points[i - 1], stroke.points[i]);
-            }
+                len += StrokeLength(stroke);
             return len;
         }
 
@@ -489,20 +495,18 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Impressionist curl fill translated to the toolkit's step-based API from a target arc length.
-        /// <paramref name="batch"/> sorts a multi-domain fill by domain so the trail recolours ≤2× for
-        /// the whole group rather than at every scattered stroke.
+        /// Multi-domain fills that need ≤2 trail recolours
+        /// pass the result through <see cref="Batched"/> at the call site.
         /// </summary>
         static List<PaintingStroke> Impression(int count, Func<Tk.Rng, Vector3> seed, Func<Vector3, Domains> field,
             Tk.Rng rng, int noiseSeed, float W, float curlK, float arcLen, float upBias = 0f,
-            Func<Vector3, Vector3> project = null, string prefix = "Brush", bool batch = false)
+            Func<Vector3, Vector3> project = null, string prefix = "Brush")
         {
             float step = Mathf.Clamp(0.028f * W, 10f, 40f);
             int mn = Mathf.Max(3, Mathf.RoundToInt(arcLen * 0.7f / step));
             int mx = Mathf.Max(mn + 1, Mathf.RoundToInt(arcLen * 1.4f / step));
-            var result = Tk.ImpressionistStrokes(count, seed, field, rng, noiseSeed, curlK / W, step, mn, mx,
+            return Tk.ImpressionistStrokes(count, seed, field, rng, noiseSeed, curlK / W, step, mn, mx,
                 0.55f, upBias, project, prefix);
-            if (batch) return Batched(result);
-            return result;
         }
 
         /// <summary>A logarithmic-spiral band sampled between radii rMin..rMax (keeps the tight core flyable).</summary>
@@ -850,13 +854,8 @@ namespace CosmicShore.Gameplay
             var C = new Vector3(0f, 0.52f * W, 0f);
 
             const int NP = 300;
-            var spine = new List<Vector3>(NP + 1);
-            for (int i = 0; i <= NP; i++)
-            {
-                float t = (i / (float)NP) * Mathf.PI * 2f;
-                float ring = R + rT * Mathf.Cos(2f * t);
-                spine.Add(C + new Vector3(ring * Mathf.Cos(3f * t), rT * Mathf.Sin(2f * t), ring * Mathf.Sin(3f * t)));
-            }
+            var spine = Tk.TorusKnot(3, 2, R, rT, NP);
+            for (int i = 0; i < spine.Count; i++) spine[i] += C;
             spine[NP] = spine[0]; // a knot is a LOOP — snap out the trig float-drift so it seals exactly
 
             var longs = Tk.TubeLongitudes(spine, tube, 6, 1);
@@ -1210,20 +1209,17 @@ namespace CosmicShore.Gameplay
             {
                 Vector3 tip = tips[i];
                 Tk.Basis((tip - B).normalized, out Vector3 u, out Vector3 v, out _);
-                s.Add(St($"Eye Rim {i + 1}", Domains.Gold, ArcPlane(tip, u, v, 0.04f * W, 12)));
+                s.Add(St($"Eye Rim {i + 1}", Domains.Gold, Circle(tip, u, v, 0.04f * W, 12)));
             }
             for (int i = N / 2; i < N; i++)
             {
                 Vector3 tip = tips[i];
                 Tk.Basis((tip - B).normalized, out Vector3 u, out Vector3 v, out _);
-                s.Add(St($"Eye Core {i + 1}", Domains.Ruby, ArcPlane(tip, u, v, 0.02f * W, 10)));
+                s.Add(St($"Eye Core {i + 1}", Domains.Ruby, Circle(tip, u, v, 0.02f * W, 10)));
             }
 
             return s;
         }
-
-        static List<Vector3> ArcPlane(Vector3 c, Vector3 u, Vector3 v, float radius, int seg)
-            => Circle(c, u, v, radius, seg);
 
         // ── Starry Night — Van Gogh, stepped into as a 3D sky shell ──────────────
         //

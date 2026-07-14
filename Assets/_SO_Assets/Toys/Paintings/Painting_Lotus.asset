@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PaintingDefinitionSO
   paintingId: painting_lotus
   displayName: Lotus
-  description: Nelumbo anatomy: lily pads, three petal whorls, a stamen ring, the seed pod.
+  description: 'Nelumbo anatomy: lily pads, three petal whorls, a stamen ring, the seed pod.'
   strokes: []
   sourceShape: {fileID: 0}
   sourceShapeDomain: 4

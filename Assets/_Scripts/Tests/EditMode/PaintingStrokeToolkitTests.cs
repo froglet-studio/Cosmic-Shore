@@ -236,12 +236,23 @@ namespace CosmicShore.Tests
         }
 
         [Test]
-        public void PetalLoop_IsClosedAndCupped()
+        public void RideCheckpoints_ClosedLoopsKeepAMidCheckpoint()
         {
-            var petal = Tk.PetalLoop(Vector3.zero, Vector3.forward, Vector3.up, 140f, 56f, 0.35f, 5);
-            Assert.Less(Vector3.Distance(petal[0], petal[^1]), 1e-2f, "petal loop is closed");
-            var b = PaintingPresetLibrary.ComputeBounds(new List<PaintingStroke> { new() { points = petal } });
-            Assert.Greater(b.size.y, 10f, "the cup lifts the petal out of its base plane");
+            // A ring whose end sits at its own start (a Nautilus growth line): with only
+            // [start, end] the stroke would complete unridden the moment the gate fires.
+            var pts = new List<Vector3>();
+            for (int i = 0; i <= 24; i++)
+            {
+                float a = i / 24f * Mathf.PI * 2f * 0.93f; // 335-degree near-closed loop, ~120u arc
+                pts.Add(new Vector3(Mathf.Cos(a) * 20f, Mathf.Sin(a) * 20f, 0f));
+            }
+            var cps = Tk.RideCheckpoints(pts, 90f, 28f);
+            Assert.GreaterOrEqual(cps.Count, 3, "a closed loop always keeps a mid checkpoint");
+            int mid = cps[1];
+            Assert.Greater(mid, 0);
+            Assert.Less(mid, pts.Count - 1);
+            Assert.Greater(Vector3.Distance(pts[mid], pts[0]), 25f,
+                "the forced checkpoint sits toward the loop's far side, not at the gate");
         }
     }
 }

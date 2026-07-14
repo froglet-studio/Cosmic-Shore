@@ -36,9 +36,14 @@ namespace CosmicShore.Gameplay
             Vector3 center = b.center;
 
             // The longest strokes carry the silhouette — take those, keep author order otherwise.
+            // Lengths are computed once up front: a comparator that re-walks the polylines pays
+            // O(n log n) full-stroke walks on the toybox-spawn frame.
+            var lengths = new float[strokes.Count];
+            for (int i = 0; i < strokes.Count; i++)
+                lengths[i] = PaintingPresetLibrary.StrokeLength(strokes[i]);
             var order = new List<int>();
             for (int i = 0; i < strokes.Count; i++) order.Add(i);
-            order.Sort((x, y) => StrokeLength(strokes[y]).CompareTo(StrokeLength(strokes[x])));
+            order.Sort((x, y) => lengths[y].CompareTo(lengths[x]));
             if (order.Count > MaxStrokes) order.RemoveRange(MaxStrokes, order.Count - MaxStrokes);
             order.Sort(); // back to author order so the mini reads bottom-up like the real thing
 
@@ -61,14 +66,6 @@ namespace CosmicShore.Gameplay
             // Slow turntable about the monument's vertical — a tiny spinning masterpiece.
             mini.AddComponent<ToyIdleSpin>().Configure(Vector3.up, 18f);
             return true;
-        }
-
-        static float StrokeLength(PaintingStroke s)
-        {
-            float len = 0f;
-            for (int i = 1; i < s.points.Count; i++)
-                len += Vector3.Distance(s.points[i - 1], s.points[i]);
-            return len;
         }
 
         static List<Vector3> Decimate(List<Vector3> pts, int cap)

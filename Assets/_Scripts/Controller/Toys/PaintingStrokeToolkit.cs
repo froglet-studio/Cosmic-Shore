@@ -15,9 +15,10 @@ namespace CosmicShore.Gameplay
     /// Three families live here:
     ///   1. A seedable deterministic PRNG (<see cref="Rng"/>) — never <c>UnityEngine.Random</c>, so
     ///      generation is reproducible across the test harness and never touches global RNG state.
-    ///   2. Parametric curve primitives — Catmull-Rom splines, helices, 3D logarithmic spirals,
-    ///      (p,q) torus knots, rose/Lissajous curves, Fibonacci-sphere and phyllotaxis point sets,
-    ///      and the truncated-icosahedron (soccer-ball) edge graph.
+    ///   2. Parametric curve primitives — Catmull-Rom splines, (p,q) torus knots, tube longitudes
+    ///      and rings with rotation-minimizing (parallel-transport) frames, Fibonacci-sphere point
+    ///      sets, and the truncated-icosahedron (soccer-ball) edge graph. Only primitives with a
+    ///      production caller live here — compose new ones when a generator needs them.
     ///   3. The <b>impressionist field</b> — a divergence-free curl-noise flow (<see cref="CurlNoise"/>)
     ///      that <see cref="ImpressionistStrokes"/> integrates into short curvy strokes whose radii of
     ///      curvature stochastically fill a region in every direction ("3D impressionism"). This is
@@ -275,45 +276,6 @@ namespace CosmicShore.Gameplay
         // ── Surface / petal / terrain helpers ────────────────────────────────
 
         /// <summary>
-        /// Lift XZ-plane points into a dome of height <paramref name="h"/> and footprint radius
-        /// <paramref name="R"/>: y = h·(1−(r/R)²)^p. p=0.5 spherical, 1 paraboloid, 2 a sharp spire.
-        /// </summary>
-        public static List<Vector3> DomeLift(IReadOnlyList<Vector3> xzPts, float R, float h, float p)
-        {
-            var outPts = new List<Vector3>(xzPts.Count);
-            float invR2 = 1f / Mathf.Max(1e-4f, R * R);
-            foreach (var q in xzPts)
-            {
-                float r2 = (q.x * q.x + q.z * q.z) * invR2;
-                float y = h * Mathf.Pow(Mathf.Max(0f, 1f - r2), p);
-                outPts.Add(new Vector3(q.x, q.y + y, q.z));
-            }
-            return outPts;
-        }
-
-        /// <summary>
-        /// A cupped 3D teardrop petal (closed loop) rooted at <paramref name="baseC"/>, growing along
-        /// <paramref name="outDir"/> with <paramref name="upDir"/> the cup axis. The engine of lotus/rose petals.
-        /// </summary>
-        public static List<Vector3> PetalLoop(Vector3 baseC, Vector3 outDir, Vector3 upDir,
-            float len, float wid, float cup, int samplesPerSeg)
-        {
-            outDir = outDir.normalized; upDir = upDir.normalized;
-            Vector3 side = Vector3.Cross(outDir, upDir);
-            if (side.sqrMagnitude < 1e-6f) side = Vector3.Cross(outDir, Vector3.forward);
-            side.Normalize();
-
-            Vector3 shoulderL = baseC - side * (wid * 0.5f) + outDir * (0.15f * len);
-            Vector3 shoulderR = baseC + side * (wid * 0.5f) + outDir * (0.15f * len);
-            Vector3 bellyL = baseC + outDir * (0.60f * len) - side * (0.5f * wid) + upDir * (cup * len);
-            Vector3 bellyR = baseC + outDir * (0.60f * len) + side * (0.5f * wid) + upDir * (cup * len);
-            Vector3 tip = baseC + outDir * len + upDir * (cup * 1.4f * len);
-
-            var ctrl = new List<Vector3> { baseC, shoulderL, bellyL, tip, bellyR, shoulderR };
-            return CatmullRom(ctrl, samplesPerSeg, closed: true);
-        }
-
-        /// <summary>
         /// 1D fractal ridgeline (Fournier midpoint displacement) across x∈[x0,x1] at depth <paramref name="z"/>,
         /// baseline <paramref name="yBase"/>. Roughness falls by 2^(−H) per subdivision. The mountain-maker.
         /// </summary>
@@ -462,9 +424,7 @@ namespace CosmicShore.Gameplay
                 foreach (var s in SignCombos())
                 {
                     var d = Vector3.Scale(perm, s).normalized;
-                    bool dup = false;
-                    foreach (var e in seen) if ((e - d).sqrMagnitude < 1e-4f) { dup = true; break; }
-                    if (!dup) { seen.Add(d); yield return d; }
+                    if (AddUnique(seen, d)) yield return d;
                 }
         }
 
@@ -481,33 +441,8 @@ namespace CosmicShore.Gameplay
                     foreach (var s in SignCombos())
                     {
                         var d = Vector3.Scale(perm, s).normalized;
-                        bool dup = false;
-                        foreach (var e in seen) if ((e - d).sqrMagnitude < 1e-4f) { dup = true; break; }
-                        if (!dup) { seen.Add(d); yield return d; }
+                        if (AddUnique(seen, d)) yield return d;
                     }
-        }
-
-        /// <summary>
-        /// One braided strand wound around a spine polyline: strand <paramref name="k"/> of
-        /// <paramref name="strands"/>, offset <paramref name="rho"/> from the spine, twisting
-        /// <paramref name="twist"/> turns along its length. Turns a torus-knot centreline into a woven rope.
-        /// </summary>
-        public static List<Vector3> FrameStrand(IReadOnlyList<Vector3> spine, int k, int strands, float rho, float twist)
-        {
-            var outPts = new List<Vector3>(spine.Count);
-            int n = spine.Count;
-            if (n < 2) return outPts;
-            for (int i = 0; i < n; i++)
-            {
-                Vector3 tangent = (spine[Mathf.Min(i + 1, n - 1)] - spine[Mathf.Max(i - 1, 0)]);
-                if (tangent.sqrMagnitude < 1e-8f) tangent = Vector3.forward;
-                tangent.Normalize();
-                Basis(tangent, out Vector3 nrm, out Vector3 binrm, out _);
-                float t = i / (float)(n - 1);
-                float ang = Mathf.PI * 2f * (k / (float)strands) + twist * Mathf.PI * 2f * t;
-                outPts.Add(spine[i] + (nrm * Mathf.Cos(ang) + binrm * Mathf.Sin(ang)) * rho);
-            }
-            return outPts;
         }
 
         /// <summary>
@@ -525,85 +460,12 @@ namespace CosmicShore.Gameplay
             };
         }
 
-        /// <summary>Map a scalar in [0,1] to one of the three paintable domains, evenly.</summary>
-        public static Domains DomainFromScalar(float t, Domains a = Domains.Jade,
-            Domains b = Domains.Ruby, Domains c = Domains.Gold)
-            => t < 1f / 3f ? a : t < 2f / 3f ? b : c;
-
-        // ── Parametric curves ────────────────────────────────────────────────
-
-        /// <summary>Catmull-Rom spline through <paramref name="ctrl"/>. Smooth, passes through every control point.</summary>
-        public static List<Vector3> CatmullRom(IList<Vector3> ctrl, int samplesPerSeg, bool closed = false)
-        {
-            var outPts = new List<Vector3>();
-            if (ctrl == null || ctrl.Count < 2) return outPts;
-            samplesPerSeg = Mathf.Max(1, samplesPerSeg);
-            int n = ctrl.Count;
-            int segs = closed ? n : n - 1;
-
-            Vector3 Get(int i)
-            {
-                if (closed) return ctrl[((i % n) + n) % n];
-                return ctrl[Mathf.Clamp(i, 0, n - 1)];
-            }
-
-            for (int seg = 0; seg < segs; seg++)
-            {
-                Vector3 p0 = Get(seg - 1), p1 = Get(seg), p2 = Get(seg + 1), p3 = Get(seg + 2);
-                int last = seg == segs - 1 && !closed ? samplesPerSeg : samplesPerSeg - 1;
-                for (int j = 0; j <= last; j++)
-                {
-                    float t = j / (float)samplesPerSeg;
-                    outPts.Add(CatmullRomPoint(p0, p1, p2, p3, t));
-                }
-            }
-            if (closed && outPts.Count > 0) outPts.Add(outPts[0]);
-            return outPts;
-        }
-
         static Vector3 CatmullRomPoint(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3, float t)
         {
             float t2 = t * t, t3 = t2 * t;
             return 0.5f * ((2f * p1) + (-p0 + p2) * t
                 + (2f * p0 - 5f * p1 + 4f * p2 - p3) * t2
                 + (-p0 + 3f * p1 - 3f * p2 + p3) * t3);
-        }
-
-        /// <summary>Helix around <paramref name="axis"/>: <paramref name="turns"/> revolutions, rising <paramref name="pitch"/> per turn.</summary>
-        public static List<Vector3> Helix(Vector3 baseCenter, Vector3 axis, float radius, float pitch,
-            float turns, int segments)
-        {
-            Basis(axis, out Vector3 u, out Vector3 v, out Vector3 a);
-            var pts = new List<Vector3>(segments + 1);
-            for (int i = 0; i <= segments; i++)
-            {
-                float t = i / (float)segments;          // 0..1
-                float theta = turns * Mathf.PI * 2f * t;
-                float h = pitch * turns * t;
-                pts.Add(baseCenter + a * h + (u * Mathf.Cos(theta) + v * Mathf.Sin(theta)) * radius);
-            }
-            return pts;
-        }
-
-        /// <summary>
-        /// 3D logarithmic (equiangular) spiral: r = a·e^(b·θ) in the (u,v) plane, rising along
-        /// <paramref name="axis"/>. b≈0.176 gives the golden spiral (growth ×φ per quarter-turn).
-        /// The engine of the Nautilus shell and every galaxy arm.
-        /// </summary>
-        public static List<Vector3> LogSpiral3D(Vector3 center, Vector3 u, Vector3 v, Vector3 axis,
-            float a, float b, float turns, float axialRisePerTurn, int segments)
-        {
-            u = u.normalized; v = v.normalized; axis = axis.normalized;
-            var pts = new List<Vector3>(segments + 1);
-            float thetaMax = turns * Mathf.PI * 2f;
-            for (int i = 0; i <= segments; i++)
-            {
-                float theta = thetaMax * (i / (float)segments);
-                float r = a * Mathf.Exp(b * theta);
-                float h = axialRisePerTurn * (theta / (Mathf.PI * 2f));
-                pts.Add(center + axis * h + (u * Mathf.Cos(theta) + v * Mathf.Sin(theta)) * r);
-            }
-            return pts;
         }
 
         /// <summary>
@@ -622,24 +484,6 @@ namespace CosmicShore.Gameplay
                 float z = ring * Mathf.Sin(p * t);
                 float y = r * Mathf.Sin(q * t);
                 pts.Add(new Vector3(x, y, z));
-            }
-            return pts;
-        }
-
-        /// <summary>Rose curve r = amp·cos(k·θ) drawn in the (u,v) plane and lifted into a shallow dome by <paramref name="domeHeight"/>.</summary>
-        public static List<Vector3> Rose3D(Vector3 center, Vector3 u, Vector3 v, Vector3 axis,
-            float amp, int k, float domeHeight, int segments)
-        {
-            u = u.normalized; v = v.normalized; axis = axis.normalized;
-            var pts = new List<Vector3>(segments + 1);
-            // k odd → k petals, k even → 2k petals; sweep 2π covers all petals either way.
-            for (int i = 0; i <= segments; i++)
-            {
-                float theta = (i / (float)segments) * Mathf.PI * 2f;
-                float rr = amp * Mathf.Cos(k * theta);
-                float rad = Mathf.Abs(rr);
-                float h = domeHeight * (1f - rad / Mathf.Max(1e-3f, amp)); // peak at the centre
-                pts.Add(center + axis * h + (u * Mathf.Cos(theta) + v * Mathf.Sin(theta)) * rr);
             }
             return pts;
         }
@@ -675,27 +519,6 @@ namespace CosmicShore.Gameplay
                 float r = Mathf.Sqrt(Mathf.Max(0f, 1f - y * y));
                 float phi = GoldenAngle * i;
                 pts[i] = new Vector3(Mathf.Cos(phi) * r, y, Mathf.Sin(phi) * r);
-            }
-            return pts;
-        }
-
-        /// <summary>
-        /// Phyllotaxis (sunflower) points in the (u,v) plane: point i sits at angle i·137.5°, radius
-        /// spread·√i, optionally domed along <paramref name="axis"/>. The natural layout for lotus
-        /// petals and seed heads.
-        /// </summary>
-        public static Vector3[] Phyllotaxis(Vector3 center, Vector3 u, Vector3 v, Vector3 axis,
-            int n, float spread, float domeHeight = 0f)
-        {
-            u = u.normalized; v = v.normalized; axis = axis.normalized;
-            var pts = new Vector3[Mathf.Max(0, n)];
-            float maxR = spread * Mathf.Sqrt(Mathf.Max(1, n - 1));
-            for (int i = 0; i < pts.Length; i++)
-            {
-                float theta = GoldenAngle * i;
-                float rad = spread * Mathf.Sqrt(i);
-                float h = domeHeight * (maxR > 1e-3f ? 1f - rad / maxR : 0f);
-                pts[i] = center + axis * h + (u * Mathf.Cos(theta) + v * Mathf.Sin(theta)) * rad;
             }
             return pts;
         }
@@ -760,10 +583,12 @@ namespace CosmicShore.Gameplay
                         yield return new Vector3(sx, sy, sz);
         }
 
-        static void AddUnique(List<Vector3> verts, Vector3 v)
+        /// <summary>Add if not already present (1e-4 tolerance); true when added.</summary>
+        static bool AddUnique(List<Vector3> verts, Vector3 v)
         {
-            foreach (var e in verts) if ((e - v).sqrMagnitude < 1e-4f) return;
+            foreach (var e in verts) if ((e - v).sqrMagnitude < 1e-4f) return false;
             verts.Add(v);
+            return true;
         }
 
         // ── Small helpers ────────────────────────────────────────────────────
@@ -775,14 +600,6 @@ namespace CosmicShore.Gameplay
             Vector3 seed = Mathf.Abs(Vector3.Dot(a, Vector3.up)) > 0.95f ? Vector3.right : Vector3.up;
             u = Vector3.Cross(a, seed).normalized;
             v = Vector3.Cross(a, u).normalized;
-        }
-
-        /// <summary>Translate/rotate/scale a polyline (points authored around the origin).</summary>
-        public static List<Vector3> Transform(IReadOnlyList<Vector3> pts, Vector3 pos, Quaternion rot, float scale)
-        {
-            var outPts = new List<Vector3>(pts.Count);
-            foreach (var p in pts) outPts.Add(pos + rot * (p * scale));
-            return outPts;
         }
 
         /// <summary>Lift every point of every stroke so the lowest sits exactly on y=0 (the base plane).</summary>
@@ -958,7 +775,8 @@ namespace CosmicShore.Gameplay
         /// that is tight everywhere, the flattest vertex since the last checkpoint is used once the arc
         /// exceeds 2.5× spacing, so progress can never stall. Index 0 (the start gate) and the final
         /// index (the stroke-end jack) are always included; a checkpoint landing within 0.4× spacing of
-        /// the end is dropped in its favour.
+        /// the end is dropped in its favour. Closed loops always keep at least one mid checkpoint
+        /// (near the half-arc) so a ring whose end sits at its own gate cannot complete unridden.
         /// </summary>
         public static List<int> RideCheckpoints(IReadOnlyList<Vector3> pts, float minSpacing, float maxTurnDeg)
         {
@@ -1002,6 +820,29 @@ namespace CosmicShore.Gameplay
                 if (arcToEnd < minSpacing * 0.4f) cps.RemoveAt(cps.Count - 1);
             }
             cps.Add(n - 1);
+
+            // Closed (or near-closed) loops MUST keep a mid checkpoint: with only [start, end] the
+            // end ring sits at the gate the vessel just flew and the stroke would complete
+            // instantly, unridden. Force the flattest vertex nearest the loop's half-arc.
+            if (cps.Count == 2 && n > 3 &&
+                Vector3.Distance(pts[0], pts[n - 1]) < minSpacing)
+            {
+                float total = 0f;
+                for (int k = 1; k < n; k++) total += Vector3.Distance(pts[k - 1], pts[k]);
+
+                int midIdx = -1;
+                float bestScore = float.MaxValue;
+                float arc = 0f;
+                for (int i = 1; i < n - 1; i++)
+                {
+                    arc += Vector3.Distance(pts[i - 1], pts[i]);
+                    float turn = Vector3.Angle(pts[i] - pts[i - 1], pts[i + 1] - pts[i]);
+                    // Prefer near-half-arc, tie-broken toward gentle turns.
+                    float score = Mathf.Abs(arc - total * 0.5f) + turn * 0.5f;
+                    if (score < bestScore) { bestScore = score; midIdx = i; }
+                }
+                if (midIdx > 0) cps.Insert(1, midIdx);
+            }
             return cps;
         }
 

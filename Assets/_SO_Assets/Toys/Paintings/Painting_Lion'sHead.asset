@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Painting_Lion'sHead
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PaintingDefinitionSO
   paintingId: painting_lions_head
-  displayName: Lion
+  displayName: Lion's Head
   description: A real lion - traced from a public-domain 1896 sculpture scan, mane and all.
   strokes:
   - name: Contour 1
