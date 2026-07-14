@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a269e1ecd2eaa6046b40062d218ad974, type: 3}
-  m_Name: GameModeQuest_PartyGame
+  m_Name: GameModeQuest_MaelStrom
   m_EditorClassIdentifier: 
   GameMode: 36
   DisplayName: MAELSTROM
