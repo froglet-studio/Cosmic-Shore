@@ -119,5 +119,56 @@ namespace CosmicShore.Gameplay
                     await UniTask.Yield(PlayerLoopTiming.Update, ct);
             }
         }
+
+        // ── Budgeted (UniTask, N milliseconds per frame, budget shared globally) ──
+
+        // All budgeted lays draw from ONE per-frame time pool, so three concurrently-streaming
+        // shells cost max(budget) per frame, not 3 × budget.
+        static readonly double s_msPerTick = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        static int s_budgetFrame = -1;
+        static double s_budgetSpentMs;
+
+        static bool BudgetExhausted(float budgetMs)
+        {
+            if (Time.frameCount != s_budgetFrame)
+            {
+                s_budgetFrame = Time.frameCount;
+                s_budgetSpentMs = 0.0;
+            }
+            return s_budgetSpentMs >= budgetMs;
+        }
+
+        /// <summary>
+        /// Frame-time-budgeted lay for BIG decorative structures: lays prisms until
+        /// <paramref name="budgetMsPerFrame"/> of laying time has been spent this frame (across
+        /// ALL budgeted lays), then yields — the structure blooms in over frames instead of
+        /// freezing one (Load Time Insights measured a 25k-prism geodesic shell at ~95s in a
+        /// single frame, ~97% of it raw Instantiate cost; per-prism cost varies with scene size,
+        /// so a count-per-frame batch can't hold a frame budget — a time budget can). Bails
+        /// silently if <paramref name="parent"/> dies (scene unload / container nuked) — the
+        /// remaining prisms are simply never born, which conserves mass.
+        /// </summary>
+        public static async UniTaskVoid LayBudgetedAsync(Prism prefab, SpawnPoint[] points, Domains domain,
+            Transform parent, Trail trail, string ownerPrefix, float budgetMsPerFrame)
+        {
+            if (!prefab || points == null || points.Length == 0) return;
+
+            float budget = Mathf.Max(0.5f, budgetMsPerFrame);
+
+            for (int i = 0; i < points.Length; i++)
+            {
+                if (!parent) return; // container destroyed — stop laying
+
+                while (BudgetExhausted(budget))
+                {
+                    await UniTask.Yield(PlayerLoopTiming.Update);
+                    if (!parent) return;
+                }
+
+                long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                LayOne(prefab, new PrismLay(points[i], domain), parent, trail, $"{ownerPrefix}::{i}");
+                s_budgetSpentMs += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * s_msPerTick;
+            }
+        }
     }
 }
