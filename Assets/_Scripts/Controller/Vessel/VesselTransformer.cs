@@ -156,7 +156,7 @@ public class VesselTransformer : MonoBehaviour
             speed = 0f;
             throttleMultiplier = 1f;
 
-            // Rotation — reset to face forward
+            // Rotation - reset to face forward
             accumulatedRotation = Quaternion.identity;
             transform.rotation = Quaternion.identity;
 
@@ -420,7 +420,7 @@ public class VesselTransformer : MonoBehaviour
 
             // Modifiers scale this frame's output speed only. Multiplying into the
             // persistent smoothed `speed` field compounds the modifier every frame,
-            // saturating any sub-1 multiplier to a near-stop within a few frames —
+            // saturating any sub-1 multiplier to a near-stop within a few frames -
             // which makes modifier strength untunable (a 0.5 floor and a 0.0 floor
             // both collapse to ~zero).
             float effectiveSpeed = speed * throttleMultiplier;

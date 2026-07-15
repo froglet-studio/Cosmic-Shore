@@ -14,11 +14,11 @@ namespace CosmicShore.Gameplay
     ///
     /// Supports two modes:
     /// 1. Explicit (recommended): Wire stat SOs directly via <see cref="statsToTrack"/>.
-    ///    Subscription happens on OnEnable — no timing dependency on vessel spawn.
+    ///    Subscription happens on OnEnable - no timing dependency on vessel spawn.
     /// 2. Dynamic fallback: If <see cref="statsToTrack"/> is empty, discovers stats
     ///    from the local vessel's VesselTelemetry at OnClientReady / OnMiniGameTurnStarted.
     ///
-    /// Stats are only cleared on explicit reset — they persist across turn boundaries
+    /// Stats are only cleared on explicit reset - they persist across turn boundaries
     /// until the game ends, so the scoreboard always shows the final values.
     /// </summary>
     public class EventDrivenStatsProvider : ScoreboardStatsProvider
@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
         [Header("Data")]
         [Inject] private GameDataSO gameData;
 
-        [Header("Stats (explicit — preferred)")]
+        [Header("Stats (explicit - preferred)")]
         [Tooltip("Wire the VesselStatEventSO assets here. If populated, overrides dynamic discovery.")]
         [SerializeField] private List<VesselStatEventSO> statsToTrack = new();
 
@@ -40,7 +40,7 @@ namespace CosmicShore.Gameplay
 
         private void OnEnable()
         {
-            // Subscribe immediately to explicit stats — no vessel dependency
+            // Subscribe immediately to explicit stats - no vessel dependency
             if (statsToTrack != null && statsToTrack.Count > 0)
             {
                 SubscribeToStats(statsToTrack);
@@ -71,7 +71,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         private void TrySubscribeFromVessel()
         {
-            // If explicit list is wired, we're already subscribed — skip dynamic discovery
+            // If explicit list is wired, we're already subscribed - skip dynamic discovery
             if (statsToTrack != null && statsToTrack.Count > 0) return;
 
             // Already subscribed via previous call? skip.
@@ -80,7 +80,7 @@ namespace CosmicShore.Gameplay
             var vessel = gameData?.LocalPlayer?.Vessel;
             if (vessel == null)
             {
-                if (verboseLogging) Debug.Log("[StatsProvider] Local vessel not ready yet — will retry.");
+                if (verboseLogging) Debug.Log("[StatsProvider] Local vessel not ready yet - will retry.");
                 return;
             }
 

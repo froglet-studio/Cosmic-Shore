@@ -36,7 +36,7 @@ namespace CosmicShore.Gameplay
 
         protected override int GetParameterHash()
         {
-            // MazeData is a ScriptableObject — use instance ID for identity
+            // MazeData is a ScriptableObject - use instance ID for identity
             int mazeHash = 0;
             if (mazeData != null)
             {

@@ -6,11 +6,11 @@ using UnityEngine;
 namespace CosmicShore.Editor
 {
     /// <summary>
-    /// Tools &gt; Cosmic Shore &gt; Create Benchmark Scene — materializes the stress-test scene by CLONING
+    /// Tools &gt; Cosmic Shore &gt; Create Benchmark Scene - materializes the stress-test scene by CLONING
     /// the working WildlifeBlitz single-player scene (per the user's "check other scene references"
-    /// instruction). Cloning preserves the hard-to-replicate wiring — in-scene NetworkObjects, the
+    /// instruction). Cloning preserves the hard-to-replicate wiring - in-scene NetworkObjects, the
     /// Reflex ContainerScope, the Cell + RandomLifeSpawner, the crystal manager, the GameCanvas, and
-    /// the camera — that hand-building from scratch would get subtly wrong.
+    /// the camera - that hand-building from scratch would get subtly wrong.
     ///
     /// The clone + Build-Settings registration are automated; the few semantic edits (Squirrel vessel,
     /// endless controller, high-density spawn profile, benchmark HUD) are printed as a short checklist
@@ -88,7 +88,7 @@ namespace CosmicShore.Editor
             "(selectedVesselClass = Squirrel). Set the AI count you want (e.g. 3).\n" +
             "  3. DENSITY: duplicate the cell's SpawnProfileSO to 'BenchmarkSpawnProfile', RAISE flora " +
             "InitialSpawnCount and LOWER Flora/FaunaSpawnIntervalSeconds so load ramps gradually over " +
-            "frames (do NOT add decay/TTL — conserved-mass law). Assign it on the cloned cell's " +
+            "frames (do NOT add decay/TTL - conserved-mass law). Assign it on the cloned cell's " +
             "CellConfigData. Tune for the load you want to stress.\n" +
             "  4. HUD: add your HUD canvas with the BenchmarkSceneHud component (you design the " +
             "visuals); wire its FPS/1%-low labels, the quick-setting buttons, the Run button + " +

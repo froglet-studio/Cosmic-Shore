@@ -56,7 +56,7 @@ namespace CosmicShore.Gameplay
         bool _authoredColliderSizeCached;
 
         /// <summary>
-        /// Index into PrismSpatialIndex's contiguous NativeArray — the canonical
+        /// Index into PrismSpatialIndex's contiguous NativeArray - the canonical
         /// spatial index of all live prism mass (AOE damage queries, growth
         /// occupancy, neighborhood queries, AND the cell density-grid binding;
         /// see Docs/SPATIAL_INDEX.md). Used for O(1) updates to
@@ -129,7 +129,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Overrides the grow-in speed at runtime. The <see cref="growthRate"/> field is cached
         /// onto the scale animator in <see cref="Awake"/>, so a pooled prism won't honour a later
-        /// field write on its own — this pushes the value through to the animator too. Used by the
+        /// field write on its own - this pushes the value through to the animator too. Used by the
         /// boost-prism pool (fast bloom).
         /// </summary>
         public void SetGrowthRate(float rate)
@@ -140,7 +140,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Guarantees this prism's collider covers its FULL target world size from the frame of the
-        /// call, while the visual still blooms in from (near) zero — the continuity law is visual;
+        /// call, while the visual still blooms in from (near) zero - the continuity law is visual;
         /// the physics footprint doesn't have to grow with it. The collider is enabled immediately
         /// and its BoxCollider.size is compensated inversely against the animated transform scale
         /// each frame, then restored to the authored size once growth completes. Call AFTER
@@ -151,7 +151,7 @@ namespace CosmicShore.Gameplay
         /// vessel arrives.
         /// </summary>
         /// <param name="onGrown">Invoked once the visual reaches its target scale (skipped if the
-        /// prism is destroyed or recycled first). Lets callers defer state that swaps colliders —
+        /// prism is destroyed or recycled first). Lets callers defer state that swaps colliders -
         /// e.g. shield engage, whose octahedron MeshCollider scales with the transform and would
         /// defeat the full-size hold during the bloom.</param>
         public void HoldColliderAtFullSize(Action onGrown = null)
@@ -173,7 +173,7 @@ namespace CosmicShore.Gameplay
                 Vector3 target = TargetScale;
                 if (target.x <= 0f || target.y <= 0f || target.z <= 0f)
                 {
-                    // Target not set yet — wait, a zero target has no meaningful footprint.
+                    // Target not set yet - wait, a zero target has no meaningful footprint.
                     yield return null;
                     continue;
                 }
@@ -183,7 +183,7 @@ namespace CosmicShore.Gameplay
                     break;
 
                 // A zero transform scale zeroes the collider's world footprint no matter how large
-                // its size is — floor the bloom at 1% of target so the compensation below can
+                // its size is - floor the bloom at 1% of target so the compensation below can
                 // always reconstruct the full-size world box (world = size * scale = target).
                 current = new Vector3(
                     Mathf.Max(current.x, target.x * 0.01f),
@@ -231,13 +231,13 @@ namespace CosmicShore.Gameplay
         }
 
         // --- Cell density-grid domain forwarding -------------------------------
-        // (Registration itself lives in PrismSpatialIndex since Phase 3 — the
+        // (Registration itself lives in PrismSpatialIndex since Phase 3 - the
         // index binds/releases the cell grids at Register/MarkDestroyed/
         // MarkRestored/Unregister, so the fine and coarse views share one stream.)
 
         void HandleTeamChangedForCell(Domains oldDomain, Domains newDomain)
         {
-            // The spatial index owns the cell density-grid binding (Phase 3 — see
+            // The spatial index owns the cell density-grid binding (Phase 3 - see
             // Docs/SPATIAL_INDEX.md): forward the steal / ChangeTeam so the bound
             // cell re-files this prism under the new domain. No-op while
             // unregistered (spawn window) or unbound (fauna body, open space).
@@ -271,7 +271,7 @@ namespace CosmicShore.Gameplay
 
         private void ResetState()
         {
-            // Unregister from the spatial index — drops the AOE entry, the
+            // Unregister from the spatial index - drops the AOE entry, the
             // occupancy bucket, AND the previous cell's density-grid binding.
             // Pool-reuse safety: a prism re-initialized without going through
             // SetupDestruction (e.g. trail clear) must not leave stale entries
@@ -343,7 +343,7 @@ namespace CosmicShore.Gameplay
         {
             yield return new WaitForSeconds(waitTime);
 
-            // Destroyed before creation completed (e.g. AOE within waitTime of spawn) —
+            // Destroyed before creation completed (e.g. AOE within waitTime of spawn) -
             // don't resurrect the renderer/collider or register a dead prism with the
             // AOE registry and cell grids.
             if (destroyed) yield break;
@@ -364,7 +364,7 @@ namespace CosmicShore.Gameplay
                 Volume = prismProperties.volume,
             });
 
-            // Register with the spatial index — one registration, every view:
+            // Register with the spatial index - one registration, every view:
             // cache-friendly batch AOE processing, growth occupancy (consumes the
             // TryReserve claim that protected this site through the
             // disabled-collider window), neighborhood queries, and the containing
@@ -378,7 +378,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// This prism's LIVE volume (world-scale product), the unit of mass the
-        /// ecosystem runs on — "volume is the spine" (CLAUDE.md ▸ Ecosystem Design
+        /// ecosystem runs on - "volume is the spine" (CLAUDE.md ▸ Ecosystem Design
         /// Principles). Tracks growth/shrink in real time via the scale animator;
         /// destroyed mass contributes nothing. Read by Cell's per-domain volume sums
         /// (phase ladder, dominant domain, HUD).
@@ -424,7 +424,7 @@ namespace CosmicShore.Gameplay
             {
                 if (destroyed) return 0f;
                 // GetCurrentVolume reads the live transform but returns 0 while the
-                // animator component is disabled — which Restore() leaves it as. Fall
+                // animator component is disabled - which Restore() leaves it as. Fall
                 // back to the bookkept volume (stamped at create/destroy) so restored
                 // mass still weighs what it did, rather than vanishing from the sums.
                 float v = scaleAnimator ? scaleAnimator.GetCurrentVolume() : 0f;
@@ -472,7 +472,7 @@ namespace CosmicShore.Gameplay
 
             // Mark destroyed in the spatial index: the AOE Burst job skips this
             // prism, its occupancy bucket frees so growth can fill the site, and
-            // it leaves the cell's density grids — destroyed mass must stop
+            // it leaves the cell's density grids - destroyed mass must stop
             // attracting fauna, and the cell's LiveBlockCount must fall so the
             // phase system can descend (the consumption half of the oscillation).
             if (SpatialIndexId >= 0)
@@ -553,7 +553,7 @@ namespace CosmicShore.Gameplay
         // prism before the disabled collider drops out of the next physics tick. Without
         // this gate, the second hit re-runs SetupDestruction (re-raising the destroyed
         // event, bumping AOE registry state) and Implode/Explode spawns a duplicate VFX
-        // that has to play out its full duration in PrismEffectsManager — that's the
+        // that has to play out its full duration in PrismEffectsManager - that's the
         // accumulating "garbage" the user observes (fauna swarm-eat trail blocks → 64-128
         // concurrent implosions). Once destroyed, hits become no-ops until Restore /
         // ResetState clears the flag.
@@ -638,8 +638,8 @@ namespace CosmicShore.Gameplay
                 // and the cell density grids all resume seeing this mass.
                 // (Pre-unification bug: Restore never told the AOE registry,
                 // leaving restored prisms permanently invisible to it.) A prism
-                // killed inside its spawn window never registered at all —
-                // CreateBlockCoroutine bailed before Register — so restoring one
+                // killed inside its spawn window never registered at all -
+                // CreateBlockCoroutine bailed before Register - so restoring one
                 // does a full registration instead, keeping every view consistent.
                 if (SpatialIndexId >= 0)
                 {
@@ -660,8 +660,8 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Movers (gyroid bonding steering a block into a bond site) must call this
-        /// so the spatial index's stored position — read by AOE damage queries and
-        /// growth occupancy probes — tracks the transform. Cheap when the occupancy
+        /// so the spatial index's stored position - read by AOE damage queries and
+        /// growth occupancy probes - tracks the transform. Cheap when the occupancy
         /// bucket is unchanged.
         /// </summary>
         public void NotifyPositionChanged()
@@ -675,7 +675,7 @@ namespace CosmicShore.Gameplay
             // Pool return / deactivation: a pooled-but-not-yet-reused prism must
             // not keep taking AOE damage, blocking growth at its stale position,
             // attracting fauna, or holding up the cell's LiveBlockCount until its
-            // next reuse — Unregister drops every view, including the cell
+            // next reuse - Unregister drops every view, including the cell
             // density-grid binding. (Pre-unification, cleanup waited for the next
             // Initialize → ResetState, leaving a live-looking entry behind for
             // the whole pool dwell time.)
@@ -688,7 +688,7 @@ namespace CosmicShore.Gameplay
 
         private void OnDestroy()
         {
-            // No material cleanup needed — we use sharedMaterial exclusively,
+            // No material cleanup needed - we use sharedMaterial exclusively,
             // so no per-instance material clones are created.
 
             if (teamManager)

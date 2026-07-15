@@ -6,7 +6,7 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// RuntimeCollectionSO Tests — Validates the ScriptableObject-based runtime list.
+    /// RuntimeCollectionSO Tests - Validates the ScriptableObject-based runtime list.
     ///
     /// WHY THIS MATTERS:
     /// RuntimeCollectionSO is the SOAP-compatible pattern for tracking runtime

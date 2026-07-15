@@ -25,12 +25,12 @@ namespace CosmicShore.Gameplay
                                  "default toybox of the built-in toys (painting, vessel changer, domain changer).")]
         ToyboxSO toybox;
 
-        [Header("Placement — membrane")]
+        [Header("Placement - membrane")]
         [SerializeField, Tooltip("Fraction of the membrane radius at which toys sit (just inside the boundary, " +
                                  "where the vessel flies). Used when a Cell/membrane exists in the scene.")]
         float membraneFraction = 0.82f;
 
-        [Header("Placement — fallback (no membrane)")]
+        [Header("Placement - fallback (no membrane)")]
         [SerializeField, Tooltip("Centre used when no Cell/membrane exists in the scene (the current Menu_Main).")]
         Vector3 fallbackCenter = Vector3.zero;
 
@@ -41,7 +41,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Tooltip("Body (visible sphere) radius for each toy, world units.")]
         float toyBodyRadius = 22f;
 
-        [SerializeField, Tooltip("Trigger radius — how close the vessel must get to activate, world units.")]
+        [SerializeField, Tooltip("Trigger radius - how close the vessel must get to activate, world units.")]
         float toyTriggerRadius = 42f;
 
         [Inject] GameDataSO _gameData;
@@ -110,7 +110,7 @@ namespace CosmicShore.Gameplay
             var box = ResolveToybox();
             if (!box)
             {
-                CSDebug.LogWarning("[ToyboxController] No toybox available — nothing to place.");
+                CSDebug.LogWarning("[ToyboxController] No toybox available - nothing to place.");
                 return;
             }
 
@@ -175,7 +175,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // No membrane in the menu — ring the configured fallback centre.
+            // No membrane in the menu - ring the configured fallback centre.
             center = fallbackCenter;
             radius = fallbackRadius;
         }
@@ -199,7 +199,7 @@ namespace CosmicShore.Gameplay
         {
             var box = ScriptableObject.CreateInstance<ToyboxSO>();
 
-            // The painting toy needs no shape wiring — with no paintings authored it resolves its
+            // The painting toy needs no shape wiring - with no paintings authored it resolves its
             // built-in default gallery (Star → Rainbow → Saturn → Taj Mahal).
             box.AddToy(MakeDefault<PaintingToyDefinitionSO>(
                 "painting", "Fly by Numbers", "Paint monuments with your trail.", new Color(0.20f, 0.90f, 1.00f)));
@@ -209,7 +209,7 @@ namespace CosmicShore.Gameplay
             box.AddToy(MakeDefault<DomainChangerToyDefinitionSO>(
                 "domain_changer", "Domain Changer", "Fly through to change your team colour.", new Color(0.85f, 0.30f, 0.90f)));
             // The conveyor's prism prefab is an asset reference the code-built fallback can't
-            // supply — its scenes degrade to crystals + lifeforms until the authored asset
+            // supply - its scenes degrade to crystals + lifeforms until the authored asset
             // (Tools > Cosmic Shore > Setup Freestyle Toybox) wires one.
             box.AddToy(MakeDefault<ConveyorToyDefinitionSO>(
                 "conveyor", "Wanderway", "Fly through to summon an endless trail of little worlds.",

@@ -46,7 +46,7 @@ namespace CosmicShore.Tests
                 if (go) Object.DestroyImmediate(go);
             _spawned.Clear();
 
-            // Dispose the persistent NativeArrays — OnDestroy doesn't run for
+            // Dispose the persistent NativeArrays - OnDestroy doesn't run for
             // regular scripts in edit mode, and leaked Persistent allocations
             // spam the console across test runs.
             typeof(PrismSpatialIndex)
@@ -203,7 +203,7 @@ namespace CosmicShore.Tests
         public void QuerySphere_SkipsDestroyedManagedRefs()
         {
             // A prism destroyed without Unregister (no lifecycle callbacks in
-            // edit mode) leaves a fake-null managed ref — queries must skip it
+            // edit mode) leaves a fake-null managed ref - queries must skip it
             // rather than hand callers a dead object.
             var prism = SpawnRegisteredPrism(Vector3.zero);
             Object.DestroyImmediate(prism.gameObject);
@@ -255,7 +255,7 @@ namespace CosmicShore.Tests
 
             Assert.DoesNotThrow(() => _index.ForwardDomainChangeToCell(-1));
             Assert.DoesNotThrow(() => _index.ForwardDomainChangeToCell(9999));
-            // Valid slot, but no cell bound (open space) — must be a clean no-op.
+            // Valid slot, but no cell bound (open space) - must be a clean no-op.
             Assert.DoesNotThrow(() => _index.ForwardDomainChangeToCell(prism.SpatialIndexId));
         }
 

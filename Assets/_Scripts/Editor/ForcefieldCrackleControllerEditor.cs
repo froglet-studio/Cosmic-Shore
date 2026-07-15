@@ -78,7 +78,7 @@ namespace CosmicShore.Editor
             if (!Application.isPlaying && controller.gameObject.activeInHierarchy)
             {
                 EditorGUILayout.HelpBox(
-                    "Adjust visual params above — changes apply immediately in Scene view. " +
+                    "Adjust visual params above - changes apply immediately in Scene view. " +
                     "Use test impacts to preview the arc pattern without playing.",
                     MessageType.Info);
             }

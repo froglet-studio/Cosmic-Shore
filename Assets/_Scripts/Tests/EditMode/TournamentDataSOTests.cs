@@ -9,7 +9,7 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// TournamentDataSO Tests — validates the per-DOMAIN {2,1,0} placement scoring fold that
+    /// TournamentDataSO Tests - validates the per-DOMAIN {2,1,0} placement scoring fold that
     /// powers the Tournament/Shuffle meta-mode.
     ///
     /// WHY THIS MATTERS:
@@ -32,7 +32,7 @@ namespace CosmicShore.Tests
         {
             _data = ScriptableObject.CreateInstance<TournamentDataSO>();
             // RecordResults raises these SOAP events; wire throwaway instances (fail-loud in
-            // production means they are never null there — here we supply test doubles).
+            // production means they are never null there - here we supply test doubles).
             _data.OnTournamentStarted   = MakeEvent();
             _data.OnGameResultRecorded  = MakeEvent();
             _data.OnStandingsChanged    = MakeEvent();
@@ -178,7 +178,7 @@ namespace CosmicShore.Tests
             // Points tie → best placement: Jade(1) & Ruby(1) above Gold(2); Jade<Ruby by enum order.
             Assert.AreEqual(Domains.Jade, sorted[0].Domain);
             Assert.AreEqual(Domains.Ruby, sorted[1].Domain);
-            Assert.AreEqual(Domains.Gold, sorted[2].Domain, "Gold last — never placed better than 2nd.");
+            Assert.AreEqual(Domains.Gold, sorted[2].Domain, "Gold last - never placed better than 2nd.");
         }
 
         [Test]
@@ -271,7 +271,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(0, _data.GamesPlayed, "GamesPlayed resets for a fresh shuffle.");
             Assert.IsFalse(_data.IsActive);
             Assert.AreEqual(4, _data.IntensityCeiling,
-                "IntensityCeiling persists — Play Again routes through ResetRuntime and must keep it.");
+                "IntensityCeiling persists - Play Again routes through ResetRuntime and must keep it.");
         }
 
         [Test]

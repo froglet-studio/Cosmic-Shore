@@ -6,7 +6,7 @@ using CosmicShore.Data;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Training Game Progress Tests — Validates the tier progression system.
+    /// Training Game Progress Tests - Validates the tier progression system.
     ///
     /// WHY THIS MATTERS:
     /// TrainingGameProgress tracks player achievement tiers (1-4) and reward claims.

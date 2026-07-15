@@ -5,7 +5,7 @@ namespace CosmicShore.Core
 {
     /// <summary>
     /// Plain serializable container for all DEVICE-LOCAL settings (display, graphics, and the
-    /// CPU/simulation "performance" knobs). These intentionally do NOT cloud-sync — a phone and a
+    /// CPU/simulation "performance" knobs). These intentionally do NOT cloud-sync - a phone and a
     /// PC must not share a resolution or quality tier. Roaming prefs (audio, input, accessibility,
     /// consent) live in <see cref="GameSetting"/> / <see cref="PlayerSettingsCloudData"/> instead.
     ///
@@ -35,7 +35,7 @@ namespace CosmicShore.Core
         public EcosystemDensitySetting EcosystemDensity = EcosystemDensitySetting.Normal;
         public PhysicsDetailSetting PhysicsDetail = PhysicsDetailSetting.High;
         public int AiCrowdSize = 3;            // AI vessels to backfill in solo play
-        public int VfxDensityPercent = 100;    // 25..100 — scales the per-frame explosion VFX budget
+        public int VfxDensityPercent = 100;    // 25..100 - scales the per-frame explosion VFX budget
 
         public GraphicsSettingsData Clone() => (GraphicsSettingsData)MemberwiseClone();
     }

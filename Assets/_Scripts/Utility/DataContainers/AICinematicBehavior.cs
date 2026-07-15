@@ -8,7 +8,7 @@ namespace CosmicShore.Utility
     /// <summary>
     /// The style of AI flourish a vessel can perform. Lives with its only consumer
     /// (<see cref="AICinematicBehavior"/>) now that the end-game cinematic that defined
-    /// it was removed. Currently dormant — nothing drives these behaviors.
+    /// it was removed. Currently dormant - nothing drives these behaviors.
     /// </summary>
     public enum AICinematicBehaviorType
     {

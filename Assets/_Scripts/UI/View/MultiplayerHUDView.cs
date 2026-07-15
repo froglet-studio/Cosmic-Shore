@@ -5,10 +5,10 @@ namespace CosmicShore.UI
     public class MultiplayerHUDView : MiniGameHUDView
     {
         [Header("Domain Score Panels (in-game team scores)")]
-        [Tooltip("Container holding the LOCAL player's domain panel — placed to the LEFT of the centered player score (was the empty slot in the previous layout).")]
+        [Tooltip("Container holding the LOCAL player's domain panel - placed to the LEFT of the centered player score (was the empty slot in the previous layout).")]
         [SerializeField] private Transform allyDomainContainer;
 
-        [Tooltip("Container holding the 1-2 opposing-domain panels — placed to the RIGHT of the centered player score (was the per-player icon row).")]
+        [Tooltip("Container holding the 1-2 opposing-domain panels - placed to the RIGHT of the centered player score (was the per-player icon row).")]
         [SerializeField] private Transform opposingDomainsContainer;
 
         [Tooltip("Domain panel prefab (sum text on top, small avatar row underneath). Leave unassigned to fall back to per-player cards in PlayerScoreContainer.")]

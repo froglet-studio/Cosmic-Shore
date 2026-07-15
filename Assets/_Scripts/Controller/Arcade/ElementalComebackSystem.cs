@@ -182,7 +182,7 @@ namespace CosmicShore.Gameplay
                     float bonusLevels = scoreDiff * weight;
                     float targetNormalized = baseline[i] + (bonusLevels / 10f);
 
-                    // Clamp to 0.0–1.5 — never touch the base pips (below 0)
+                    // Clamp to 0.0–1.5 - never touch the base pips (below 0)
                     targetNormalized = Mathf.Clamp(targetNormalized, 0f, 1.5f);
 
                     rs.SetElementLevel(element, targetNormalized);
@@ -220,7 +220,7 @@ namespace CosmicShore.Gameplay
         }
 
         // ---------------------------------------------------------------
-        // Value reading — uses the configured ScoreDifferenceSource
+        // Value reading - uses the configured ScoreDifferenceSource
         // ---------------------------------------------------------------
         // Comeback buffs are now keyed off DOMAIN aggregates: a player on the
         // leading domain doesn't get a comeback buff even if they personally

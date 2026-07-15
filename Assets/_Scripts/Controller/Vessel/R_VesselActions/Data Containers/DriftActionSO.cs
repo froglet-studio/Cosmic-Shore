@@ -50,7 +50,7 @@ namespace CosmicShore.Gameplay
             t.EndDrift(isSharpDrifting);
             vesselStatus.IsDrifting = t.IsDriftActive;
 
-            // See StartAction — only the local owner raises the drift HUD event.
+            // See StartAction - only the local owner raises the drift HUD event.
             if (!vesselStatus.IsLocalUser) return;
             OnDriftEnded.Raise();
         }

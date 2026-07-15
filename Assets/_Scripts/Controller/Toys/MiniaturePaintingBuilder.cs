@@ -5,7 +5,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Builds a MINIATURE of a painting — the painting's own strokes, normalized to a small radius —
+    /// Builds a MINIATURE of a painting - the painting's own strokes, normalized to a small radius -
     /// so a Connect-the-Dots station IS a tiny spinning preview of the masterpiece it offers, not an
     /// anonymous glowing ball.
     ///
@@ -20,7 +20,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Add a miniature of <paramref name="painting"/> under <paramref name="parent"/>, fitted to
         /// <paramref name="radius"/>. Returns false (no children added) when the painting has no
-        /// drawable strokes — callers keep their sphere fallback.
+        /// drawable strokes - callers keep their sphere fallback.
         /// </summary>
         public static bool TryBuild(Transform parent, PaintingDefinitionSO painting, float radius,
             ToyContext context)
@@ -35,7 +35,7 @@ namespace CosmicShore.Gameplay
             float scale = radius * 2f / Mathf.Max(b.size.x, Mathf.Max(b.size.y, b.size.z));
             Vector3 center = b.center;
 
-            // The longest strokes carry the silhouette — take those, keep author order otherwise.
+            // The longest strokes carry the silhouette - take those, keep author order otherwise.
             // Lengths are computed once up front: a comparator that re-walks the polylines pays
             // O(n log n) full-stroke walks on the toybox-spawn frame.
             var lengths = new float[strokes.Count];
@@ -63,7 +63,7 @@ namespace CosmicShore.Gameplay
                     lr.SetPosition(p, (pts[p] - center) * scale);
             }
 
-            // Slow turntable about the monument's vertical — a tiny spinning masterpiece.
+            // Slow turntable about the monument's vertical - a tiny spinning masterpiece.
             mini.AddComponent<ToyIdleSpin>().Configure(Vector3.up, 18f);
             return true;
         }

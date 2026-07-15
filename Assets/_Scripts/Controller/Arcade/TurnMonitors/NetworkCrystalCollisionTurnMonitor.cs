@@ -81,7 +81,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnDestroy()
         {
-            // Safety net for destruction paths that bypass StopMonitor — detaching
+            // Safety net for destruction paths that bypass StopMonitor - detaching
             // from the persistent RoundStats must never depend on the turn ending.
             StopMonitor();
             base.OnDestroy();

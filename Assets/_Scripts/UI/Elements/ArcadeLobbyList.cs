@@ -11,7 +11,7 @@ namespace CosmicShore.UI
     /// <summary>
     /// Widget living inside the ArcadeScreenModal that visualizes the local
     /// player's party in the same style as <see cref="FriendsListPanel"/>'s
-    /// header slots — but as its own panel with a leave-party button and a
+    /// header slots - but as its own panel with a leave-party button and a
     /// live "X Players Online" counter.
     ///
     /// Slot 0 is always the local player (avatar + display name).
@@ -19,7 +19,7 @@ namespace CosmicShore.UI
     /// in order. Empty slots expose the "+" add button, which opens the
     /// <see cref="FriendsListPanel"/> (pre-wired in the scene).
     ///
-    /// All data flows through SOAP events — no direct <see cref="HostConnectionService"/>
+    /// All data flows through SOAP events - no direct <see cref="HostConnectionService"/>
     /// references are needed beyond the Leave button callback.
     /// </summary>
     public class ArcadeLobbyList : MonoBehaviour
@@ -36,14 +36,14 @@ namespace CosmicShore.UI
         [Tooltip("Text that reads \"N Players Online\" for the presence lobby.")]
         [SerializeField] private TMP_Text onlineStatusText;
 
-        [Tooltip("Leave Party button — disconnects from the current party and returns to Menu_Main.")]
+        [Tooltip("Leave Party button - disconnects from the current party and returns to Menu_Main.")]
         [SerializeField] private Button leaveButton;
 
         [Tooltip("Panel opened when an empty slot's '+' button is pressed. " +
                  "Should be the scene-wired FriendsListPanel.")]
         [SerializeField] private FriendsListPanel friendsListPanel;
 
-        /// <summary>Max slots rendered — matches <c>HostConnectionDataSO.MaxPartySlots</c> (4 by design).</summary>
+        /// <summary>Max slots rendered - matches <c>HostConnectionDataSO.MaxPartySlots</c> (4 by design).</summary>
         const int MAX_SLOTS = 4;
 
         // ─────────────────────────────────────────────────────────────────────
@@ -72,7 +72,7 @@ namespace CosmicShore.UI
 
         // Detect scene-wiring bugs where two FriendInfoSlot instances share the
         // same internal UI child references. When that happens, the last-iterated
-        // slot wins — so an empty slot's ClearSlot can overwrite an occupied
+        // slot wins - so an empty slot's ClearSlot can overwrite an occupied
         // slot's SetPlayer. PopulateSlots compensates with a two-pass (clear
         // first, then set) ordering, but we also log here so future scene edits
         // don't reintroduce the problem silently.
@@ -88,9 +88,9 @@ namespace CosmicShore.UI
                     var b = slots[j];
                     if (b == null || a == b) continue;
                     if (ReferenceEquals(a.DisplayNameTextGO, b.DisplayNameTextGO) && a.DisplayNameTextGO != null)
-                        Debug.LogWarning($"[ArcadeLobbyList] slots[{i}] and slots[{j}] share the same displayNameText GameObject. Rewire in the scene — names will not render correctly for both slots.", this);
+                        Debug.LogWarning($"[ArcadeLobbyList] slots[{i}] and slots[{j}] share the same displayNameText GameObject. Rewire in the scene - names will not render correctly for both slots.", this);
                     if (ReferenceEquals(a.AvatarIconGO, b.AvatarIconGO) && a.AvatarIconGO != null)
-                        Debug.LogWarning($"[ArcadeLobbyList] slots[{i}] and slots[{j}] share the same avatarIcon GameObject. Rewire in the scene — avatars will not render correctly for both slots.", this);
+                        Debug.LogWarning($"[ArcadeLobbyList] slots[{i}] and slots[{j}] share the same avatarIcon GameObject. Rewire in the scene - avatars will not render correctly for both slots.", this);
                 }
             }
         }
@@ -140,13 +140,13 @@ namespace CosmicShore.UI
             // Auto-open the friends panel when an incoming party invite arrives
             // while the arcade lobby is visible. Without this, the recipient has
             // to notice the overlay popup and navigate to Arcade → Add slot
-            // themselves — the friends panel is already where the Accept/Decline
+            // themselves - the friends panel is already where the Accept/Decline
             // controls live, so surfacing it proactively matches the expected
             // AAA "notification pulls the relevant panel forward" behavior.
             if (connectionData.OnInviteReceived != null)
                 connectionData.OnInviteReceived.OnRaised += HandleInviteReceived;
 
-            // Refresh slot 0 when the cloud profile resolves — HostConnectionDataSO
+            // Refresh slot 0 when the cloud profile resolves - HostConnectionDataSO
             // may have been populated with the local "Pilot{XXXX}" default at panel
             // open time; without this, the local player's slot keeps stale text/avatar
             // until the next party-member event forces a full repopulate.
@@ -224,7 +224,7 @@ namespace CosmicShore.UI
             // occupied slots. If the scene wiring accidentally shares a
             // TMP_Text or Image GameObject between two slots, the occupied
             // slot's SetPlayer / SetAsLocalPlayer activation runs last and
-            // wins over the empty slot's ClearSlot deactivation — so the
+            // wins over the empty slot's ClearSlot deactivation - so the
             // visible name/avatar survive the shared-reference case.
             int slotCount = Mathf.Min(slots.Length, MAX_SLOTS);
             for (int i = 0; i < slotCount; i++)
@@ -254,7 +254,7 @@ namespace CosmicShore.UI
                 if (remoteIdx < remoteMembers.Count)
                 {
                     var member = remoteMembers[remoteIdx];
-                    // Only the party host can kick, and never itself — these are remote
+                    // Only the party host can kick, and never itself - these are remote
                     // member slots (slot 0 is the local player), so host ⇒ kickable.
                     slot.SetPlayer(member.PlayerId, member.DisplayName, ResolveAvatar(member.AvatarId),
                         canKick: connectionData.IsPartyHost);
@@ -277,10 +277,10 @@ namespace CosmicShore.UI
         {
             if (!onlineStatusText || !connectionData) return;
 
-            // OnlinePlayers excludes the local player by design — add 1 so
+            // OnlinePlayers excludes the local player by design - add 1 so
             // the counter reflects the total player population, which is
             // what players intuitively expect when they read "N Players Online".
-            // The Arcade header intentionally shows only the raw count here —
+            // The Arcade header intentionally shows only the raw count here -
             // "IN LOBBY X/N" / "LOBBY FULL" / "IN A MATCH" badges belong on the
             // per-remote-player rows in FriendsListPanel (OnlineInfoEntry), not
             // on the local player's count of everyone online.
@@ -351,7 +351,7 @@ namespace CosmicShore.UI
             var service = HostConnectionService.Instance;
             if (service == null)
             {
-                Debug.LogWarning("[ArcadeLobbyList] HostConnectionService not available — cannot leave party.");
+                Debug.LogWarning("[ArcadeLobbyList] HostConnectionService not available - cannot leave party.");
                 return;
             }
 
@@ -375,7 +375,7 @@ namespace CosmicShore.UI
             var service = HostConnectionService.Instance;
             if (service == null)
             {
-                Debug.LogWarning("[ArcadeLobbyList] HostConnectionService not available — cannot kick.");
+                Debug.LogWarning("[ArcadeLobbyList] HostConnectionService not available - cannot kick.");
                 PopulateSlots();
                 return;
             }

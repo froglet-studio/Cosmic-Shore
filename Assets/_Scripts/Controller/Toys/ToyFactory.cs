@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
             return root;
         }
 
-        /// <summary>A positioned, forward-facing GameObject with a trigger SphereCollider — no visuals.</summary>
+        /// <summary>A positioned, forward-facing GameObject with a trigger SphereCollider - no visuals.</summary>
         public static GameObject CreateBareRoot(string toyName, Transform parent, Vector3 position, Vector3 lookTarget, float triggerRadius)
         {
             var root = new GameObject($"Toy_{toyName}");
@@ -59,16 +59,16 @@ namespace CosmicShore.Gameplay
         // ── Shared shape language ────────────────────────────────────────────
         //
         // Objects that TURN THE TRAIL ON are cones whose apex points where you go next (the
-        // painting's stroke-start hubs and intermediate points, and the domain-changer bodies —
+        // painting's stroke-start hubs and intermediate points, and the domain-changer bodies -
         // both change your trail, so both wear the same shape). Objects that TURN THE TRAIL OFF
-        // (a stroke's final point) are jacks — three rods through a common centre, like the old
+        // (a stroke's final point) are jacks - three rods through a common centre, like the old
         // toy. One shape vocabulary across toys so each teaches the other.
 
         static Mesh s_coneMesh;
 
         /// <summary>
         /// Unit crystal spike: a SIX-sided, FLAT-SHADED cone (base radius 0.5 at z=-0.5, apex at
-        /// z=+0.5). Hexagonal facets with hard edges echo the game's crystals — under the prism
+        /// z=+0.5). Hexagonal facets with hard edges echo the game's crystals - under the prism
         /// material each facet catches the light separately as the body slowly spins, instead of
         /// reading as a smooth traffic cone.
         /// </summary>
@@ -88,7 +88,7 @@ namespace CosmicShore.Gameplay
                     ring[i] = new Vector3(Mathf.Cos(a) * 0.5f, Mathf.Sin(a) * 0.5f, -0.5f);
                 }
 
-                // Flat shading needs unshared vertices — every triangle owns its three.
+                // Flat shading needs unshared vertices - every triangle owns its three.
                 var verts = new Vector3[segs * 6];
                 var tris = new int[segs * 6];
                 int v = 0;
@@ -126,13 +126,13 @@ namespace CosmicShore.Gameplay
             var renderer = body.AddComponent<MeshRenderer>();
             ApplyBodyMaterial(renderer, accent, prismMaterial);
 
-            // Slow spin about the pointing axis — the facets glint as they turn.
+            // Slow spin about the pointing axis - the facets glint as they turn.
             body.AddComponent<ToyIdleSpin>().Configure(Vector3.forward, 45f);
             return body;
         }
 
         /// <summary>
-        /// A jack — three orthogonal rods intersecting at the centre (lines run from opposite
+        /// A jack - three orthogonal rods intersecting at the centre (lines run from opposite
         /// faces through the middle). <paramref name="radius"/> is the half-length of each rod.
         /// </summary>
         public static GameObject AddJackBody(Transform parent, float radius, Color accent,
@@ -159,7 +159,7 @@ namespace CosmicShore.Gameplay
                     ApplyBodyMaterial(rodRenderer, accent, prismMaterial);
             }
 
-            // A lazy tumble — omnidirectional, like the old toy rolling to rest.
+            // A lazy tumble - omnidirectional, like the old toy rolling to rest.
             body.AddComponent<ToyIdleSpin>().Configure(new Vector3(0.35f, 1f, 0.2f).normalized, 22f);
             return body;
         }
@@ -169,7 +169,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Unit low-poly torus in the XY plane (ring radius 0.5, axis +Z): 12 major × 6 minor
         /// flat-shaded facets, hard edges like the crystal cone. Every quad owns its four
-        /// vertices so RecalculateNormals keeps the facets crisp. Scale by ring diameter —
+        /// vertices so RecalculateNormals keeps the facets crisp. Scale by ring diameter -
         /// tube thickness rides along (8% of the radius), so big rings read chunkier.
         /// </summary>
         static Mesh RingMesh
@@ -243,7 +243,7 @@ namespace CosmicShore.Gameplay
         /// label, and a <see cref="SwapToy"/> that raises <paramref name="onActivated"/> (inheriting
         /// the standard bloom-in + local-user + freestyle gating + re-arm). Shape vocabulary: pass
         /// <paramref name="hubPrismMaterial"/> (or just true-ish intent via <paramref name="hubIsCone"/>)
-        /// for gates that turn the trail ON — the hub becomes the shared trail-changer cone; choice
+        /// for gates that turn the trail ON - the hub becomes the shared trail-changer cone; choice
         /// gates keep a neutral sphere hub, because crossing them commits a choice, not a trail state.
         /// </summary>
         public static GameObject CreateGate(string gateName, Transform parent, Vector3 position,
@@ -286,7 +286,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The domain's live PRISM material (the same shader the painted trail wears), so
         /// trail-changing toys visually belong to the prism family. Null when theme material
-        /// sets aren't available — callers fall back to an accent tint.
+        /// sets aren't available - callers fall back to an accent tint.
         /// </summary>
         public static Material DomainPrismMaterial(ToyContext context, Domains domain)
         {
@@ -302,11 +302,11 @@ namespace CosmicShore.Gameplay
         {
             if (prismMaterial)
             {
-                renderer.sharedMaterial = prismMaterial; // shared theme asset — never mutate it
+                renderer.sharedMaterial = prismMaterial; // shared theme asset - never mutate it
             }
             else
             {
-                var mat = AccentMaterial(accent); // cached per colour — rebuilds don't orphan Materials
+                var mat = AccentMaterial(accent); // cached per colour - rebuilds don't orphan Materials
                 if (mat) renderer.sharedMaterial = mat;
             }
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -314,7 +314,7 @@ namespace CosmicShore.Gameplay
         }
 
         // One material per accent colour, shared by every tinted body. Toys rebuild visuals on
-        // flips / stroke changes — per-body materials would orphan a Material each rebuild
+        // flips / stroke changes - per-body materials would orphan a Material each rebuild
         // (UnityEngine.Objects are never GC'd). Nothing mutates these after creation.
         static readonly System.Collections.Generic.Dictionary<int, Material> s_accentMaterials = new();
 
@@ -344,7 +344,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// One shared vertex-coloured material for every toy LineRenderer (ghost blueprints,
-        /// miniature strokes) — per-line tint comes from startColor/endColor, so dozens of
+        /// miniature strokes) - per-line tint comes from startColor/endColor, so dozens of
         /// lines don't each need a Shader.Find + Material allocation.
         /// </summary>
         static Material LineMaterial
@@ -398,7 +398,7 @@ namespace CosmicShore.Gameplay
         /// <summary>Adds a world-space TMP label above the body. Returns the text so callers can recolor/retext it.</summary>
         public static TMP_Text AddLabel(Transform parent, string text, Color color, float upOffset)
         {
-            // 3D TextMeshPro uses a RectTransform — create it up front so AddComponent is safe.
+            // 3D TextMeshPro uses a RectTransform - create it up front so AddComponent is safe.
             var go = new GameObject("Label", typeof(RectTransform));
             go.transform.SetParent(parent, false);
             go.transform.localPosition = Vector3.up * upOffset;
@@ -427,11 +427,11 @@ namespace CosmicShore.Gameplay
         {
             if (!_cam) _cam = Camera.main;
             if (!_cam) return;
-            // Forward points AWAY from the camera — TextMeshPro's readable face looks at the viewer.
+            // Forward points AWAY from the camera - TextMeshPro's readable face looks at the viewer.
             Vector3 away = transform.position - _cam.transform.position;
             if (away.sqrMagnitude < 1e-6f) return;
             // Directly above/below a label, world-up is colinear with the view direction and
-            // LookRotation's implicit up degenerates (the text rolls wildly) — use the camera's up.
+            // LookRotation's implicit up degenerates (the text rolls wildly) - use the camera's up.
             Vector3 up = Mathf.Abs(Vector3.Dot(away.normalized, Vector3.up)) > 0.98f
                 ? _cam.transform.up
                 : Vector3.up;

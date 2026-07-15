@@ -7,7 +7,7 @@ namespace CosmicShore.ScriptableObjects
     /// <summary>
     /// Shared visual + behaviour spec for the elemental "flower" bars used by every vessel HUD
     /// (<see cref="CosmicShore.UI.ElementalBarsView"/>). One asset is the single source of truth for
-    /// the five per-tick colours, the per-element petal sprite, and the juice timings — so the look
+    /// the five per-tick colours, the per-element petal sprite, and the juice timings - so the look
     /// stays consistent across all 11 vessels instead of drifting between per-prefab copies.
     ///
     /// Element level is an integer in [-5, 15] distributed round-robin across five petals; each petal
@@ -43,27 +43,27 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Flash colour on a petal that downgrades, before it settles to its tick colour.")]
         public Color debuffFlashColor = new(1f, 0.2f, 0.2f, 1f);
 
-        [Header("Juice — petal transitions")]
+        [Header("Juice - petal transitions")]
         public float buffPopScale        = 1.3f;
         public float buffPopDuration     = 0.22f;
         public float debuffShakeDuration = 0.20f;
         public float debuffShakeStrength = 8f;
 
-        [Header("Juice — haptics")]
+        [Header("Juice - haptics")]
         public bool  hapticOnDebuff        = true;
         public float debuffHapticAmplitude = 0.6f;
         public float debuffHapticFrequency = 0.5f;
         public float debuffHapticDuration  = 0.15f;
 
-        [Header("Juice — label icon punch")]
+        [Header("Juice - label icon punch")]
         public float iconPunchDuration  = 0.25f;
         public float iconPunchScale     = 1.4f;
         public float colorTweenDuration = 0.35f;
 
-        [Header("Juice — joust")]
+        [Header("Juice - joust")]
         public Color joustFlashColor = Color.red;
 
-        [Header("Juice — drift")]
+        [Header("Juice - drift")]
         public float  driftRotationAngle    = 15f;
         public float  driftRotationDuration = 0.2f;
         public Color  driftTintColor        = new(0.7f, 0.9f, 1f, 1f);
@@ -73,9 +73,9 @@ namespace CosmicShore.ScriptableObjects
         public const int PetalCount = 5;
         /// <summary>Z-rotation between adjacent petals.</summary>
         public const float PetalSpacing = 360f / PetalCount;
-        /// <summary>Lowest element level — all petals fire.</summary>
+        /// <summary>Lowest element level - all petals fire.</summary>
         public const int MinLevel = -PetalCount;
-        /// <summary>Highest element level — all petals lime.</summary>
+        /// <summary>Highest element level - all petals lime.</summary>
         public const int MaxLevel = PetalCount * 3;
 
         /// <summary>Maps a per-tick value {-1..3} to its spec colour.</summary>
@@ -101,7 +101,7 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>
         /// Distributes a total level in [MinLevel, MaxLevel] round-robin across the five petals. Each
         /// petal value lands in {-1,0,1,2,3}; the first <c>extra</c> petals take the higher of the two
-        /// adjacent colours, the rest the lower — exactly the spec fill order. Writes into <paramref name="dst"/>.
+        /// adjacent colours, the rest the lower - exactly the spec fill order. Writes into <paramref name="dst"/>.
         /// </summary>
         public static void DistributePetalValues(int level, int[] dst)
         {

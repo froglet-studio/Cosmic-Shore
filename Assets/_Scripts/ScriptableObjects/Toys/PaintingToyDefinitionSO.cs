@@ -5,7 +5,7 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// The "connect the dots" painting toy — a small gallery of painting stations fanned around its
+    /// The "connect the dots" painting toy - a small gallery of painting stations fanned around its
     /// toybox slot, one per <see cref="PaintingDefinitionSO"/>. Each station shows its painting's
     /// name + live progress and, when flown through, runs that painting at a fixed world anchor
     /// just outside the toy ring: multi-stroke, multi-domain (start gates recolour the trail via
@@ -13,7 +13,7 @@ namespace CosmicShore.ScriptableObjects
     ///
     /// With no paintings authored, the toy ships a default gallery that ladders from a big single
     /// stroke to a monument: Star → Rainbow → Saturn → Taj Mahal. The painted trail is conserved
-    /// mass like any other trail — no caps/TTL/culler.
+    /// mass like any other trail - no caps/TTL/culler.
     /// </summary>
     [CreateAssetMenu(fileName = "Toy_Painting", menuName = "ScriptableObjects/Toys/Painting Toy")]
     public class PaintingToyDefinitionSO : ToyDefinitionSO
@@ -40,8 +40,8 @@ namespace CosmicShore.ScriptableObjects
                 return;
             }
 
-            // The gallery is a roughly-SQUARE matrix cluster at this definition's slot — columns run
-            // along the ring tangent, rows climb vertically (the off-plane space) — each station a
+            // The gallery is a roughly-SQUARE matrix cluster at this definition's slot - columns run
+            // along the ring tangent, rows climb vertically (the off-plane space) - each station a
             // miniature of its painting. Monument anchors come from the proximity-first sphere
             // packing below (as close to the stations as physics allows, never interpenetrating).
             Vector3 center = placement.LookTarget;
@@ -55,7 +55,7 @@ namespace CosmicShore.ScriptableObjects
             float spacing = Mathf.Max(placement.TriggerRadius * 2.2f, placement.BodyRadius * clusterSpacingBodies);
 
             // Monument anchors: proximity-first sphere packing around the slot (see
-            // PackMonumentAnchors) — every monument as close to its stations as physics allows,
+            // PackMonumentAnchors) - every monument as close to its stations as physics allows,
             // no two interpenetrating, the on-ramp paintings nearest because they pack first.
             var bounds = new Bounds[gallery.Count];
             for (int i = 0; i < gallery.Count; i++)
@@ -109,10 +109,10 @@ namespace CosmicShore.ScriptableObjects
         /// <summary>
         /// Proximity-first greedy sphere packing for the monument anchors. Each painting occupies
         /// its bounding sphere (+ half the clearance); anchors are chosen from deterministic
-        /// candidate shells around the slot's outward point, ascending — the first shell with a
+        /// candidate shells around the slot's outward point, ascending - the first shell with a
         /// valid spot wins, taking the candidate nearest the slot. Pack order is HYBRID: the
         /// on-ramp entries first in ladder order (a new player's first paintings sit right at the
-        /// stations), then everything else LARGEST-FIRST — a giant packed early sits at its
+        /// stations), then everything else LARGEST-FIRST - a giant packed early sits at its
         /// physical floor (membrane + its own radius) instead of being exiled to the leftovers
         /// (ladder order pushed the Matterhorn ~3.1km out; hybrid holds it to ~2.4km with the
         /// on-ramp unchanged). Never interpenetrating, never through the membrane. Static +
@@ -195,7 +195,7 @@ namespace CosmicShore.ScriptableObjects
 
                 if (!placed)
                 {
-                    // Unreachable in practice (MaxShells spans 14km) — fail loud but functional.
+                    // Unreachable in practice (MaxShells spans 14km) - fail loud but functional.
                     CosmicShore.Utility.CSDebug.LogWarning(
                         $"[{nameof(PaintingToyDefinitionSO)}] monument {i} did not fit in {MaxShells} shells; placing outward.");
                     Vector3 pos = anchor0 + outward * ((MaxShells + i) * ShellStep);
@@ -224,7 +224,7 @@ namespace CosmicShore.ScriptableObjects
             return BuildDefaultGallery();
         }
 
-        /// <summary>One entry of the default gallery — shared by the runtime fallback and the editor setup tool.</summary>
+        /// <summary>One entry of the default gallery - shared by the runtime fallback and the editor setup tool.</summary>
         public readonly struct DefaultPaintingSpec
         {
             public readonly string Id;
@@ -247,16 +247,16 @@ namespace CosmicShore.ScriptableObjects
         }
 
         /// <summary>
-        /// THE default gallery spec — the single source of truth consumed by both the runtime
+        /// THE default gallery spec - the single source of truth consumed by both the runtime
         /// fallback (<see cref="BuildDefaultGallery"/>) and the editor asset authoring
         /// (ToyboxSetupTool), so tuning a size/reach here cannot silently diverge the two.
         /// </summary>
         public static readonly DefaultPaintingSpec[] DefaultGalleryCatalog =
         {
             // ── On-ramp ──
-            new("painting_star", "Star", "One clean stroke — a warm-up canvas.",
+            new("painting_star", "Star", "One clean stroke - a warm-up canvas.",
                 PaintingPreset.Star, 840f, 30f),
-            new("painting_rainbow", "Rainbow", "Three bands, three colours — ride the gates.",
+            new("painting_rainbow", "Rainbow", "Three bands, three colours - ride the gates.",
                 PaintingPreset.Rainbow, 700f, 30f),
             new("painting_saturn", "Saturn", "A planet and its rings, flown in true 3D.",
                 PaintingPreset.Saturn, 800f, 30f),
@@ -264,7 +264,7 @@ namespace CosmicShore.ScriptableObjects
                 "The monument. Fifty-five strokes, three colours, hours of flying.",
                 PaintingPreset.TajMahal, 1100f, 26f),
 
-            // ── Grandiose 3D constructions — beautiful when spun (each dwarfs the Taj) ──
+            // ── Grandiose 3D constructions - beautiful when spun (each dwarfs the Taj) ──
             new("painting_torus_knot", "Torus Knot",
                 "A machine-clean trefoil tube that flows through itself forever.",
                 PaintingPreset.TorusKnot, 1000f, 18f),
@@ -288,7 +288,7 @@ namespace CosmicShore.ScriptableObjects
                 PaintingPreset.SpiralGalaxy, 1200f, 22f),
             // NOTE: these five ship as BAKED assets (real-reference strokes; provenance +
             // attribution live in the asset descriptions and Tools/PaintingPipeline/README.md).
-            // The catalog entries below describe the PROCEDURAL fallback the presets generate —
+            // The catalog entries below describe the PROCEDURAL fallback the presets generate -
             // they must not claim reference provenance the fallback geometry doesn't have.
             new("painting_phoenix", "Phoenix",
                 "A firebird of feathered wings above an impressionist flame tail.",
@@ -308,8 +308,8 @@ namespace CosmicShore.ScriptableObjects
         };
 
         /// <summary>
-        /// Code-built default gallery so the toy delivers the full ladder — big simple shape up to
-        /// the Taj Mahal — before any painting assets are authored (the editor setup tool authors
+        /// Code-built default gallery so the toy delivers the full ladder - big simple shape up to
+        /// the Taj Mahal - before any painting assets are authored (the editor setup tool authors
         /// real assets that replace these).
         /// </summary>
         static List<PaintingDefinitionSO> BuildDefaultGallery()

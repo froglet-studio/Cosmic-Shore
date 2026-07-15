@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
     /// two branches from growing into the same spot.
     ///
     /// Occupancy is intentionally weak: a bucket is only "taken" while its resident
-    /// prism is alive. Mass is conserved — when fauna eat a tile, the bucket frees and
+    /// prism is alive. Mass is conserved - when fauna eat a tile, the bucket frees and
     /// a reseeded survivor can regrow the wound (see AssembledFlora.ReseedBranches).
     /// </summary>
     public class SchwarzPSurfaceFrame
@@ -59,7 +59,7 @@ namespace CosmicShore.Gameplay
             if (claim.Resident)
             {
                 if (claim.Occupant) return true;
-                occupied.Remove(Quantize(param));   // resident was consumed — bucket frees
+                occupied.Remove(Quantize(param));   // resident was consumed - bucket frees
                 return false;
             }
 
@@ -81,9 +81,9 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// Grows the Schwarz P minimal surface — cos(x) + cos(y) + cos(z) = 0, the same
+    /// Grows the Schwarz P minimal surface - cos(x) + cos(y) + cos(z) = 0, the same
     /// triply periodic surface that SpawnableSchwarzPSurface stamps out all at once for
-    /// Joust — incrementally, prism by prism, as a flora.
+    /// Joust - incrementally, prism by prism, as a flora.
     ///
     /// Where the gyroid assembler walks a baked bond-mate table (its non-Euclidean tile
     /// data), Schwarz P has a closed-form implicit function with an analytic gradient,
@@ -100,7 +100,7 @@ namespace CosmicShore.Gameplay
                  "leaf size so plates tile edge to edge.")]
         [SerializeField] float separationDistance = 6f;
 
-        [Tooltip("World-space size of one full period of the surface — the tunnel-to-tunnel repeat.")]
+        [Tooltip("World-space size of one full period of the surface - the tunnel-to-tunnel repeat.")]
         [SerializeField] float periodScale = 60f;
 
         const int NewtonIterations = 6;
@@ -185,13 +185,13 @@ namespace CosmicShore.Gameplay
                     frame.ToWorldDirection(childNormal),
                     frame.ToWorldDirection(childHeading));
 
-                // World-space occupancy via PrismSpatialIndex.TryReserve — catches foreign
+                // World-space occupancy via PrismSpatialIndex.TryReserve - catches foreign
                 // geometry the param-space lattice registry can't know about (vessel
                 // trails, other floras, environment prisms). The frame registry above
                 // stays as this flora's own lattice bookkeeping; the spatial index is
                 // the cross-structure authority. Replaces Physics.CheckBox, which was
                 // structurally blind to prisms inside their 0.6s disabled-collider spawn
-                // window (Prism.waitTime) — see Docs/SPATIAL_INDEX.md. clearRadius is
+                // window (Prism.waitTime) - see Docs/SPATIAL_INDEX.md. clearRadius is
                 // 0.4× the lattice step: below half-spacing so neighbor sites are never
                 // blocked, above any drift so a same-site duplicate always is.
                 float clearRadius = Mathf.Max(2f, 0.4f * (worldPosition - transform.position).magnitude);
@@ -216,13 +216,13 @@ namespace CosmicShore.Gameplay
 
             // Nothing viable this cycle. Sites are re-probed live each call, so a branch
             // culled here can still heal a wound later when ReseedBranches re-activates it
-            // after fauna consume a neighbor (mass is conserved — no decay, only grazing).
+            // after fauna consume a neighbor (mass is conserved - no decay, only grazing).
             return new GrowthInfo { CanGrow = false };
         }
 
         /// <summary>
-        /// Anchors the surface lattice to the seed prism. The seed sits at (π/2, π/2, π/2) —
-        /// on the zero level set with a clean non-degenerate gradient — and its transform
+        /// Anchors the surface lattice to the seed prism. The seed sits at (π/2, π/2, π/2) -
+        /// on the zero level set with a clean non-degenerate gradient - and its transform
         /// orients the whole surface: prism forward becomes the surface normal there.
         /// </summary>
         void EnsureSeeded()
@@ -289,7 +289,7 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        // f(x,y,z) = cos x + cos y + cos z — zero level set is the Schwarz P surface.
+        // f(x,y,z) = cos x + cos y + cos z - zero level set is the Schwarz P surface.
         static float SurfaceValue(Vector3 p) => Mathf.Cos(p.x) + Mathf.Cos(p.y) + Mathf.Cos(p.z);
 
         static Vector3 SurfaceGradient(Vector3 p) => new(-Mathf.Sin(p.x), -Mathf.Sin(p.y), -Mathf.Sin(p.z));
@@ -309,7 +309,7 @@ namespace CosmicShore.Gameplay
 
                 Vector3 gradient = SurfaceGradient(p);
                 float magnitudeSqr = gradient.sqrMagnitude;
-                if (magnitudeSqr < 1e-8f) return false;     // critical point — nowhere to project
+                if (magnitudeSqr < 1e-8f) return false;     // critical point - nowhere to project
 
                 p -= gradient * (f / magnitudeSqr);
             }

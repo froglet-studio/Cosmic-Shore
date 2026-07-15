@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SparrowVesselTelemetry : VesselTelemetry
     {
-        [Header("Stat Events — Sparrow")]
+        [Header("Stat Events - Sparrow")]
         [SerializeField] private VesselStatEventSO prismBlocksShotStat;
         [SerializeField] private VesselStatEventSO skyburstMissilesShotStat;
         [SerializeField] private VesselStatEventSO dangerBlocksSpawnedStat;
@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
 
         protected override void RegisterStatsExtended()
         {
-            Debug.Log($"[SparrowTelemetry] RegisterStats — " +
+            Debug.Log($"[SparrowTelemetry] RegisterStats - " +
                 $"prismBlocks={(prismBlocksShotStat != null ? "OK" : "NULL")}, " +
                 $"skyburst={(skyburstMissilesShotStat != null ? "OK" : "NULL")}, " +
                 $"dangerBlocks={(dangerBlocksSpawnedStat != null ? "OK" : "NULL")}");
@@ -43,7 +43,7 @@ namespace CosmicShore.Gameplay
             FullAutoBlockShootActionExecutor.OnBlockShot += HandleBlockShot;
             FireGunActionExecutor.OnShotFired            += HandleSkyburstFired;
             VesselPrismController.OnDangerBlockCreated   += HandleDangerBlockSpawned;
-            Debug.Log("[SparrowTelemetry] Turn started — subscribed to BlockShot, ShotFired, DangerBlockCreated");
+            Debug.Log("[SparrowTelemetry] Turn started - subscribed to BlockShot, ShotFired, DangerBlockCreated");
         }
 
         protected override void OnTurnEndedExtended()
@@ -51,7 +51,7 @@ namespace CosmicShore.Gameplay
             FullAutoBlockShootActionExecutor.OnBlockShot -= HandleBlockShot;
             FireGunActionExecutor.OnShotFired            -= HandleSkyburstFired;
             VesselPrismController.OnDangerBlockCreated   -= HandleDangerBlockSpawned;
-            Debug.Log($"[SparrowTelemetry] Turn ended — prismBlocks={PrismBlocksShot}, " +
+            Debug.Log($"[SparrowTelemetry] Turn ended - prismBlocks={PrismBlocksShot}, " +
                 $"skyburst={SkyburstMissilesShot}, dangerBlocks={DangerBlocksSpawned}");
         }
 

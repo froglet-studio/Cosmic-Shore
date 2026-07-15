@@ -24,8 +24,8 @@ namespace CosmicShore.Utility
         public SpawnProfileSO SpawnProfile;
 
         [Header("Sensing")]
-        [Tooltip("Optional override for the cell's mass-SENSING radius — prism registration " +
-                 "(ContainsPosition) and the density grids fauna seek mass with — independent of " +
+        [Tooltip("Optional override for the cell's mass-SENSING radius - prism registration " +
+                 "(ContainsPosition) and the density grids fauna seek mass with - independent of " +
                  "the visual membrane. 0 = use the membrane radius (default). Raise it for a large " +
                  "arena (e.g. the Skim Race track, ~4000 long) so fauna can sense + seek mass " +
                  "across the whole space instead of just the central membrane bubble. " +

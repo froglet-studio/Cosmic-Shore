@@ -95,7 +95,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Finds the toast container by name. Unlike <see cref="GameObject.Find"/>, this also
-        /// matches inactive objects — the container commonly lives under a menu panel that is
+        /// matches inactive objects - the container commonly lives under a menu panel that is
         /// inactive when the first toast fires, which previously caused the toast to be dropped.
         /// </summary>
         private static RectTransform FindContainerIncludingInactive()
@@ -112,7 +112,7 @@ namespace CosmicShore.UI
                 if (candidate.name != ContainerName)
                     continue;
 
-                // Only accept live scene instances — skip prefab assets and internal/hidden objects.
+                // Only accept live scene instances - skip prefab assets and internal/hidden objects.
                 if (candidate.gameObject.scene.IsValid() && candidate.hideFlags == HideFlags.None)
                     return candidate;
             }

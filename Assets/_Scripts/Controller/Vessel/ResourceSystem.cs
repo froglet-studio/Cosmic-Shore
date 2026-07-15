@@ -126,7 +126,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Elemental Recovery")]
         [Tooltip("Elements passively return to the [0,10] resting band: an overcharge above level 10 " +
-                 "drains back down to 10, and a deficit below level 0 fills back up to 0 — symmetric ends. " +
+                 "drains back down to 10, and a deficit below level 0 fills back up to 0 - symmetric ends. " +
                  "Rate is in normalized units per second (0.1 = one integer level per second). " +
                  "Set 0 to disable the drift.")]
         [SerializeField, Min(0f)] float elementalRecoveryRate = 0.05f;
@@ -141,13 +141,13 @@ namespace CosmicShore.Gameplay
         // Passive recovery pulls each element's BASE level back into the [0,10] resting band.
         // Above the upper bound it drains down to it; below the lower bound it fills up to it;
         // inside the band the level holds so ordinary crystal progress stays stable.
-        const float RestingBandLower = 0f; // integer level 0  — deficits recover up to here
-        const float RestingBandUpper = 1f; // integer level 10 — overcharge drains down to here
+        const float RestingBandLower = 0f; // integer level 0  - deficits recover up to here
+        const float RestingBandUpper = 1f; // integer level 10 - overcharge drains down to here
 
         static readonly Element[] AllElements =
             { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
-        // Base (persistent) levels — written by crystals, the comeback system, init, etc.
+        // Base (persistent) levels - written by crystals, the comeback system, init, etc.
         Dictionary<Element, float> ElementalLevels = new();
 
         // Temporary, decaying modifiers layered on top of the base levels.
@@ -199,7 +199,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Standardized elemental buff/debuff. Positive <paramref name="magnitude"/> buffs the
-        /// element, negative debuffs it — the two are fully symmetric.
+        /// element, negative debuffs it - the two are fully symmetric.
         /// <para><paramref name="duration"/> &gt; 0 → temporary: applied as a modifier that decays
         /// linearly back to zero over <paramref name="duration"/> seconds, leaving the base level
         /// untouched so persistent progress (crystals, comeback, etc.) is preserved.</para>
@@ -226,7 +226,7 @@ namespace CosmicShore.Gameplay
         // Passively pulls each element's persistent base level back toward the [0,10] resting band.
         // Symmetric with the temporary-effect decay: an overcharge above level 10 bleeds back down to
         // 10, and a deficit below level 0 fills back up to 0, both at elementalRecoveryRate per second.
-        // Levels already inside the band are left untouched, so ordinary progress is stable — this only
+        // Levels already inside the band are left untouched, so ordinary progress is stable - this only
         // removes the excess so parking at the level-15 cap yields no lasting benefit over level 10.
         void RecoverBaseLevels(float dt)
         {
@@ -236,7 +236,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < AllElements.Length; i++)
             {
                 var element = AllElements[i];
-                // A live test-harness override pins the level — don't fight it.
+                // A live test-harness override pins the level - don't fight it.
                 if (HarnessValueFor(element) != 0f) continue;
                 if (!ElementalLevels.TryGetValue(element, out var baseLevel)) continue;
 

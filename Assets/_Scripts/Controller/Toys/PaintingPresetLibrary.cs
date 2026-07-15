@@ -9,14 +9,14 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Procedural stroke generators for the built-in <see cref="PaintingPreset"/>s, plus the
-    /// <see cref="ShapeDefinition"/> converter. Pure geometry — no scene access — so it is unit-testable.
+    /// <see cref="ShapeDefinition"/> converter. Pure geometry - no scene access - so it is unit-testable.
     ///
     /// Conventions: paintings are authored in local space with their base at y=0 and their front
     /// facing +Z (the toy ring / the approaching player). Strokes are ordered bottom-up in build
     /// order, and batched by domain where it reads well so the player switches colour at meaningful
     /// architectural boundaries rather than at random.
     ///
-    /// AUTHORING RULE — order strokes by DECREASING radius of curvature: long straight / broad
+    /// AUTHORING RULE - order strokes by DECREASING radius of curvature: long straight / broad
     /// strokes first (pools, plinths), tight detail last (balcony rings, crescents). The painting
     /// then doubles as its own difficulty ramp, and the runner's adaptive reach (tighter on short
     /// segments) ramps with it. See Docs/ToySystem/ARCHITECTURE.md § "Authoring rule".
@@ -138,7 +138,7 @@ namespace CosmicShore.Gameplay
             return len;
         }
 
-        // ── Low end: Star — one big stroke, one colour ───────────────────────────
+        // ── Low end: Star - one big stroke, one colour ───────────────────────────
 
         static List<PaintingStroke> Star(float size)
         {
@@ -158,7 +158,7 @@ namespace CosmicShore.Gameplay
             };
         }
 
-        // ── Low-mid: Rainbow — three arcs, one per domain (teaches the gates) ────
+        // ── Low-mid: Rainbow - three arcs, one per domain (teaches the gates) ────
 
         static List<PaintingStroke> Rainbow(float size)
         {
@@ -184,7 +184,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        // ── Mid: Saturn — planet + two tilted rings (first genuinely 3D flight) ──
+        // ── Mid: Saturn - planet + two tilted rings (first genuinely 3D flight) ──
 
         static List<PaintingStroke> Saturn(float size)
         {
@@ -194,7 +194,7 @@ namespace CosmicShore.Gameplay
             // Planet: a vertical great circle facing the viewer.
             var planet = Circle(center, Vector3.right, Vector3.up, size * 0.28f, 20);
 
-            // Rings: circles in a plane tilted out of the picture — real 3D flying.
+            // Rings: circles in a plane tilted out of the picture - real 3D flying.
             Quaternion tilt = Quaternion.AngleAxis(24f, Vector3.right);
             Vector3 u = tilt * Vector3.right;
             Vector3 v = tilt * Vector3.forward;
@@ -232,7 +232,7 @@ namespace CosmicShore.Gameplay
             float domeApex = drumTop + 0.21f * W;
             float finialTop = domeApex + 0.055f * W;
 
-            // 1-4 · Waterworks (Jade) — the approach: pool + gardens reach toward the viewer.
+            // 1-4 · Waterworks (Jade) - the approach: pool + gardens reach toward the viewer.
             strokes.Add(new PaintingStroke
             {
                 name = "Reflecting Pool",
@@ -437,7 +437,7 @@ namespace CosmicShore.Gameplay
                 strokes.Add(new PaintingStroke { name = $"{label} Minaret", domain = Domains.Gold, points = shaft });
 
                 // Three balconies: 240° arcs opening toward the monument so the gap is invisible
-                // from the approach — and the loop stays flyable at painting scale.
+                // from the approach - and the loop stays flyable at painting scale.
                 var balconyNames = new[] { "Balcony I", "Balcony II", "Balcony III" };
                 var balconyT = new[] { 0.33f, 0.66f, 0.92f };
                 for (int b = 0; b < 3; b++)
@@ -484,7 +484,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Batch a scattered multi-domain fill by domain (Jade→Ruby→Gold) so the player recolours the
-        /// trail at most twice for the whole group instead of at every stroke — the authoring rule
+        /// trail at most twice for the whole group instead of at every stroke - the authoring rule
         /// applied to impressionist fills whose colour comes from a spatial field.
         /// </summary>
         static List<PaintingStroke> Batched(List<PaintingStroke> strokes)
@@ -526,10 +526,10 @@ namespace CosmicShore.Gameplay
             return pts;
         }
 
-        // ── Nautilus — the real shell: logarithmic helico-spiral SURFACE ─────────
+        // ── Nautilus - the real shell: logarithmic helico-spiral SURFACE ─────────
         //
         // Reference model: the equiangular shell (r = a·e^(kθ)) with an embracing tube whorl
-        // (tube/coil ratio ρ≈0.52, reniform flattening 0.86, expansion ≈2.5×/turn — a chambered-
+        // (tube/coil ratio ρ≈0.52, reniform flattening 0.86, expansion ≈2.5×/turn - a chambered-
         // nautilus fit). Rendered the way a real shell reads: whorl-margin spirals, 58 growth-line
         // ribs (the shell's visible increments), alternating stripe banding, and the bold aperture.
 
@@ -571,7 +571,7 @@ namespace CosmicShore.Gameplay
             foreach (float phiDeg in new[] { 45f, 135f, 225f, 315f })
                 s.Add(St($"Surface {phiDeg:0}", Domains.Jade, Spiral(phiDeg, th0 + 2.2f, 170)));
 
-            // Growth-line ribs — the shell's real increments, alternating stripe colours.
+            // Growth-line ribs - the shell's real increments, alternating stripe colours.
             const int ribs = 58;
             float thRib0 = th0 + 1.6f;
             for (int i = 0; i < ribs; i++)
@@ -583,18 +583,18 @@ namespace CosmicShore.Gameplay
                     Tk.MinSegFilter(ring, ms)));
             }
 
-            // The aperture — the bold open mouth at the living end.
+            // The aperture - the bold open mouth at the living end.
             var mouth = new List<Vector3>();
             for (int a = 0; a <= 360; a += 10) mouth.Add(P(thMax, a * Mathf.Deg2Rad));
             s.Add(St("Aperture", Domains.Jade, Tk.MinSegFilter(mouth, ms)));
             return s;
         }
 
-        // ── Lotus — the full bloom: open outer leaves, closed pure-petal centre ──
+        // ── Lotus - the full bloom: open outer leaves, closed pure-petal centre ──
         //
         // Five alternating whorls (10+9+8+6+5) of obovate cupped Nelumbo blades: the outer whorls
-        // open wide (30–46° tilt, greenish Jade — real buds transition sepal→petal), descending into
-        // a steep closed Ruby corolla and a Gold bud heart — the balance between a symbolic lotus
+        // open wide (30–46° tilt, greenish Jade - real buds transition sepal→petal), descending into
+        // a steep closed Ruby corolla and a Gold bud heart - the balance between a symbolic lotus
         // and a real 3D structure.
 
         static (List<Vector3> outline, List<Vector3> vein, List<List<Vector3>> sideVeins) LotusPetal(
@@ -652,13 +652,13 @@ namespace CosmicShore.Gameplay
         static List<PaintingStroke> Lotus(float W)
         {
             // A CLOSED lotus of pure petals: four alternating whorls of obovate cupped petals rising
-            // steeply around a tight bud core — nothing but petals (outer whorl greenish, as real
+            // steeply around a tight bud core - nothing but petals (outer whorl greenish, as real
             // lotus buds transition sepal→petal; Gold at the heart). Each petal = outline + midrib.
             var s = new List<PaintingStroke>();
             float ms = Mathf.Max(5f, 0.007f * W);
             float baseY = 0.06f * W;
 
-            // Open outer leaves descending into the closed pure-petal centre — the full lotus.
+            // Open outer leaves descending into the closed pure-petal centre - the full lotus.
             var whorls = new[]
             {
                 (10, 0f, 30f, 24f, 0.44f * W, 0.135f * W, 0.10f * W, Domains.Jade),
@@ -685,7 +685,7 @@ namespace CosmicShore.Gameplay
             return s;
         }
 
-        // ── Rose — the enchanted long-stemmed rose ───────────────────────────────
+        // ── Rose - the enchanted long-stemmed rose ───────────────────────────────
         //
         // Beauty-and-the-Beast proportions: the stem owns two thirds of the height, rising to a
         // COMPACT bloom of broad petal blades that wrap the axis with recurved top edges, nested to
@@ -724,7 +724,7 @@ namespace CosmicShore.Gameplay
         static List<PaintingStroke> Rose(float W)
         {
             // The ENCHANTED rose: a long elegant stem (two thirds of the height) rising to a compact
-            // wrapped bloom, two leaflets on the stem, five sepals curling under the cup — the
+            // wrapped bloom, two leaflets on the stem, five sepals curling under the cup - the
             // floating rose from the west wing.
             var s = new List<PaintingStroke>();
             float ms = Mathf.Max(5f, 0.007f * W);
@@ -803,11 +803,11 @@ namespace CosmicShore.Gameplay
             return s;
         }
 
-        // ── Buckyball — exact C60 with its 6:6 double bonds ──────────────────────
+        // ── Buckyball - exact C60 with its 6:6 double bonds ──────────────────────
         //
         // The mathematically exact truncated icosahedron (12 pentagons + 20 hexagons, planar faces)
         // plus real fullerene chemistry: the 30 hexagon–hexagon edges are C60's double bonds, drawn
-        // as inset parallel dashes. No decorative noise — the object IS the ornament.
+        // as inset parallel dashes. No decorative noise - the object IS the ornament.
 
         static List<PaintingStroke> Buckyball(float W)
         {
@@ -840,7 +840,7 @@ namespace CosmicShore.Gameplay
             return s;
         }
 
-        // ── Torus Knot — a clean (3,2) trefoil TUBE ──────────────────────────────
+        // ── Torus Knot - a clean (3,2) trefoil TUBE ──────────────────────────────
         //
         // The exact knot rendered as an engineered tube: six longitudinal frame lines on
         // rotation-minimizing frames (one full barber-pole twist), twelve circumference rings,
@@ -856,7 +856,7 @@ namespace CosmicShore.Gameplay
             const int NP = 300;
             var spine = Tk.TorusKnot(3, 2, R, rT, NP);
             for (int i = 0; i < spine.Count; i++) spine[i] += C;
-            spine[NP] = spine[0]; // a knot is a LOOP — snap out the trig float-drift so it seals exactly
+            spine[NP] = spine[0]; // a knot is a LOOP - snap out the trig float-drift so it seals exactly
 
             var longs = Tk.TubeLongitudes(spine, tube, 6, 1);
             Domains[] doms = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Jade, Domains.Ruby, Domains.Gold };
@@ -873,7 +873,7 @@ namespace CosmicShore.Gameplay
             return s;
         }
 
-        // ── Double Helix — true B-DNA proportions ────────────────────────────────
+        // ── Double Helix - true B-DNA proportions ────────────────────────────────
         //
         // Real B-DNA: pitch/diameter = 1.7 (3.4 nm / 2.0 nm), 10 base pairs per turn, strands offset
         // 144° so the major and minor grooves read. Backbones as ribbons (two parallel helices per
@@ -928,12 +928,12 @@ namespace CosmicShore.Gameplay
             return s;
         }
 
-        // ── Spiral Galaxy — a 2-arm grand design, inclined like the real sky ─────
+        // ── Spiral Galaxy - a 2-arm grand design, inclined like the real sky ─────
         //
         // Grand-design spirals have TWO arms (M81, M51): log-spiral ridges at 17° pitch with edge
-        // lines, dust lanes hugging the concave side (Ruby — HII/dust reads red), an old-gold bulge,
+        // lines, dust lanes hugging the concave side (Ruby - HII/dust reads red), an old-gold bulge,
         // and a disk of star STREAKS aligned with local orbital motion, densest along the arms
-        // (young blue stars — Jade). The whole disk is inclined 22°, the way we actually see them.
+        // (young blue stars - Jade). The whole disk is inclined 22°, the way we actually see them.
 
         static List<PaintingStroke> SpiralGalaxy(float W)
         {
@@ -1043,7 +1043,7 @@ namespace CosmicShore.Gameplay
                 stars++;
             }
 
-            // Incline the whole galaxy 22° about x — the aspect we actually see them at.
+            // Incline the whole galaxy 22° about x - the aspect we actually see them at.
             float ci = Mathf.Cos(22f * Mathf.Deg2Rad), si = Mathf.Sin(22f * Mathf.Deg2Rad);
             foreach (var st in s)
                 for (int i = 0; i < st.points.Count; i++)
@@ -1054,10 +1054,10 @@ namespace CosmicShore.Gameplay
             return s;
         }
 
-        // ── Lion's Head — a golden mane of hundreds of curl strokes ──────────────
+        // ── Lion's Head - a golden mane of hundreds of curl strokes ──────────────
         //
         // A head volume behind a spherical spray of ~160 curl-integrated mane strands, Ruby face
-        // features surfacing from the golden core. Full 3D — spun, it shimmers like a solar corona.
+        // features surfacing from the golden core. Full 3D - spun, it shimmers like a solar corona.
 
         static List<PaintingStroke> LionsHead(float W)
         {
@@ -1085,7 +1085,7 @@ namespace CosmicShore.Gameplay
             {
                 if (mane >= 160) break;
                 if (dir.z > 0.55f && dir.y < 0.25f && Mathf.Abs(dir.x) < 0.4f) continue; // face window
-                // Mostly golden with amber (Ruby) streaks and a rare cool (Jade) highlight — wider
+                // Mostly golden with amber (Ruby) streaks and a rare cool (Jade) highlight - wider
                 // thresholds than the raw noise range so the streaks actually appear.
                 float t = Mathf.Abs(Tk.ValueNoise(dir * 4f, 71));
                 Domains d = t < 0.45f ? Domains.Gold : t < 0.72f ? Domains.Ruby : Domains.Jade;
@@ -1109,7 +1109,7 @@ namespace CosmicShore.Gameplay
             return s;
         }
 
-        // ── Phoenix — a firebird of feather strokes and an impressionist flame tail ─
+        // ── Phoenix - a firebird of feather strokes and an impressionist flame tail ─
 
         static List<PaintingStroke> Phoenix(float W)
         {
@@ -1170,7 +1170,7 @@ namespace CosmicShore.Gameplay
             return s;
         }
 
-        // ── Peacock — a fanned 3D tail of eye-feather strokes ────────────────────
+        // ── Peacock - a fanned 3D tail of eye-feather strokes ────────────────────
 
         static List<PaintingStroke> Peacock(float W)
         {
@@ -1185,7 +1185,7 @@ namespace CosmicShore.Gameplay
             s.Add(St("Neck", Domains.Jade, Tk.CatmullRom(new List<Vector3> {
                 B, B + new Vector3(0f, 0.14f * W, 0.06f * W), new(0f, 0.42f * W, 0.10f * W) }, 10)));
 
-            // Rachis shafts (broadest, near-straight) — golden-angle cap, tips fanning into a +Z bulge.
+            // Rachis shafts (broadest, near-straight) - golden-angle cap, tips fanning into a +Z bulge.
             var tips = new Vector3[N];
             for (int i = 0; i < N; i++)
             {
@@ -1221,7 +1221,7 @@ namespace CosmicShore.Gameplay
             return s;
         }
 
-        // ── Starry Night — Van Gogh, stepped into as a 3D sky shell ──────────────
+        // ── Starry Night - Van Gogh, stepped into as a 3D sky shell ──────────────
         //
         // A hemispherical sky shell you fly INTO: impressionist curl swirls banking on its curvature,
         // two counter-rotating vortex galaxies, 11 star vortices, a crescent moon, a Ruby cypress
@@ -1243,7 +1243,7 @@ namespace CosmicShore.Gameplay
                 return Csky + (d.sqrMagnitude > 1e-4f ? d.normalized : Vector3.up) * rr;
             };
 
-            // ═ PASS A — JADE (sky) ═
+            // ═ PASS A - JADE (sky) ═
             s.AddRange(Impression(26,
                 r => Dome(r.Range(-1.05f, 1.05f), r.Range(0.35f, 1.5f)),
                 _ => Domains.Jade, rng, 101, W, curlK: 1.7f, arcLen: 0.5f * W, project: shell, prefix: "Swirl"));
@@ -1268,7 +1268,7 @@ namespace CosmicShore.Gameplay
                 s.Add(St($"Hills {k + 1}", Domains.Jade, Tk.CatmullRom(ctrl, 16)));
             }
 
-            // ═ PASS B — GOLD (light) ═
+            // ═ PASS B - GOLD (light) ═
             Vector3 moon = Dome(0.34f, 1.15f);
             Tk.Basis((moon - Csky).normalized, out Vector3 mu, out Vector3 mv, out _);
             s.Add(St("Moon Rim", Domains.Gold, Arc(moon, mu, mv, 0.12f * W, 0f, 250f, 14)));
@@ -1294,7 +1294,7 @@ namespace CosmicShore.Gameplay
                     c + new Vector3(0.009f * W, 0.009f * W, 0f), c + new Vector3(-0.009f * W, 0.009f * W, 0f) }, 5, closed: true)));
             }
 
-            // ═ PASS C — RUBY (foreground) ═
+            // ═ PASS C - RUBY (foreground) ═
             Vector3 cypress = new(-0.34f * W, 0.05f * W, 0.26f * W);
             s.AddRange(Impression(9,
                 r => cypress + new Vector3(r.Range(-0.045f * W, 0.045f * W), r.Range(0f, 0.85f * W), r.Range(-0.045f * W, 0.045f * W)),
@@ -1315,7 +1315,7 @@ namespace CosmicShore.Gameplay
             return s;
         }
 
-        // ── Bob Ross Vista — a mountain landscape you fly into ───────────────────
+        // ── Bob Ross Vista - a mountain landscape you fly into ───────────────────
         //
         // Five fractal snow-giant ridgelines stacked into 1.4·W of depth, inverted into a mirror lake,
         // a Gold sun raying through impressionist sunset clouds, and a copse of firs on the near shore.
@@ -1327,7 +1327,7 @@ namespace CosmicShore.Gameplay
             var s = new List<PaintingStroke>();
             float hw = 0.40f * W;
 
-            // Ridgelines (broadest) — near→far, with z-jitter for real depth.
+            // Ridgelines (broadest) - near→far, with z-jitter for real depth.
             var ridges = new (float z, float yb, float amp, int seed)[] {
                 (-0.55f * W, 0.95f * W, 0.22f * W, 11), (-0.35f * W, 0.80f * W, 0.18f * W, 22),
                 (-0.12f * W, 0.66f * W, 0.14f * W, 33), (0.06f * W, 0.55f * W, 0.10f * W, 44),
@@ -1346,7 +1346,7 @@ namespace CosmicShore.Gameplay
             {
                 var refl = Tk.ReflectY(ridgePts[i], hw, 0.05f * W);
                 for (int p = 0; p < refl.Count; p++) refl[p] = new Vector3(refl[p].x, refl[p].y, Mathf.Lerp(refl[p].z, 0.55f * W, 0.5f));
-                // Skipped above-water peaks leave gaps — subdivide so no reflection span is a long jump.
+                // Skipped above-water peaks leave gaps - subdivide so no reflection span is a long jump.
                 if (refl.Count >= 2) s.Add(St($"Reflection {i + 1}", Domains.Ruby, Tk.EnforceMaxSegment(refl, 0.14f * W)));
             }
 

@@ -8,7 +8,7 @@ namespace CosmicShore.ScriptableObjects
     /// Designer-tunable knobs for the game-mode quest progression system.
     ///
     /// Game unlocks are driven by the quest chain (<see cref="SO_GameModeQuestList"/> +
-    /// <see cref="SO_GameModeQuestData"/>), NOT by the player's XP — the XP track is a
+    /// <see cref="SO_GameModeQuestData"/>), NOT by the player's XP - the XP track is a
     /// cosmetic participation odometer. This asset centralizes the rules that used to be
     /// hardcoded inside <c>GameModeProgressionService</c> so they can be changed without
     /// touching code:

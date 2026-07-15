@@ -14,10 +14,10 @@ namespace CosmicShore.UI
     /// Controller for the FriendListPanel in Menu_Main.
     ///
     /// Both sections render simultaneously (no tab switching):
-    ///   • Online   — every online player in the presence lobby. Row background
+    ///   • Online   - every online player in the presence lobby. Row background
     ///                is the invite button; yellowish tint while the invite is
     ///                pending.
-    ///   • Requests — incoming friend requests AND incoming party invites
+    ///   • Requests - incoming friend requests AND incoming party invites
     ///                combined, with Accept/Decline buttons.
     ///
     /// Sound plays when a party invite is received.
@@ -127,7 +127,7 @@ namespace CosmicShore.UI
         /// Pulls the most recently-received, still-unresolved party invite from
         /// <see cref="HostConnectionService.LastPendingInvite"/> and seeds it
         /// into <see cref="_pendingPartyInvites"/>. This closes the gap where
-        /// an invite arrived while the panel was hidden — without this, the
+        /// an invite arrived while the panel was hidden - without this, the
         /// OnEnable SOAP subscription would have missed the event and the
         /// rendered Requests section would be empty on first open.
         /// </summary>
@@ -341,7 +341,7 @@ namespace CosmicShore.UI
             // Already in MY party → non-invitable "IN YOUR PARTY" (Task 1). Highest
             // priority: a party member is in *my* lobby, not somewhere else. OnlineInfoEntry
             // makes this status non-invitable, so the row disables + relabels (it is NOT
-            // hidden — the party member stays visible as a status indicator).
+            // hidden - the party member stays visible as a status indicator).
             if (IsInSameParty(player.PlayerId))
                 return OnlineInfoEntry.Status.InYourParty;
 
@@ -394,7 +394,7 @@ namespace CosmicShore.UI
         /// When local party membership changes, re-render the online section so the
         /// "LOBBY FULL" and "invitable" states for every row update correctly.
         /// Also clears any outgoing "PENDING REQUEST" tint for the player that just
-        /// joined — otherwise the sender's row stays stuck on the yellow pulse
+        /// joined - otherwise the sender's row stays stuck on the yellow pulse
         /// even though the invite has been accepted.
         /// </summary>
         void HandlePartyMemberChanged(PartyPlayerData member)
@@ -499,7 +499,7 @@ namespace CosmicShore.UI
             AudioSystem.Instance?.PlayMenuAudio(inviteReceivedAudio);
 
             // Auto-open the panel so the user sees the incoming invite row
-            // immediately — without this, the spawned RequestInfoEntry lives
+            // immediately - without this, the spawned RequestInfoEntry lives
             // under an inactive panel and the recipient has no visual cue
             // beyond the notification popup.
             if (!gameObject.activeSelf)
@@ -541,7 +541,7 @@ namespace CosmicShore.UI
             }
         }
 
-        // The host clicked the ✕ on a pending row. Retract the outgoing invite — HostConnectionService
+        // The host clicked the ✕ on a pending row. Retract the outgoing invite - HostConnectionService
         // re-publishes invite_payloads without it (the recipient's invite/popup/row vanish) and fires
         // OutgoingInviteCleared, which reverts the row to online. The row also resets optimistically.
         async void OnCancelInviteClicked(string playerId)

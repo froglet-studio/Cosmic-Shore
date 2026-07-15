@@ -61,7 +61,7 @@ namespace CosmicShore.UI
 
         [Header("Screen 2 – Domain Selection")]
         [Tooltip("One DomainInfoData per selectable domain (Jade, Ruby, Gold). " +
-                 "Any Blue tile in this list is hidden at runtime — Random is gone, " +
+                 "Any Blue tile in this list is hidden at runtime - Random is gone, " +
                  "Jade is the unpicked default. Tiles outside ActiveDomains[0..DC-1] " +
                  "are dimmed and non-interactable.")]
         [FormerlySerializedAs("domainInfoItems")]
@@ -94,10 +94,10 @@ namespace CosmicShore.UI
         public event Action<int> OnLockedIntensityClicked;
 
         [Header("Ready-Up UI")]
-        [Tooltip("Start/Confirm button — all players press this to lock in their choices.")]
+        [Tooltip("Start/Confirm button - all players press this to lock in their choices.")]
         [SerializeField] private Button startGameButton;
 
-        [Tooltip("'Waiting for others...' label — shown after a player confirms, hidden when choosing.")]
+        [Tooltip("'Waiting for others...' label - shown after a player confirms, hidden when choosing.")]
         [SerializeField] private GameObject waitingForOthersLabel;
 
         [Header("Network Sync")]
@@ -108,7 +108,7 @@ namespace CosmicShore.UI
                  "to defend against spam-clicks (commit fires exactly once per modal session).")]
         [SerializeField] private Button confirmConfigurationButton;
 
-        [Tooltip("Optional: the Screen-2 Back button. Hidden on Screen-2 entry — the " +
+        [Tooltip("Optional: the Screen-2 Back button. Hidden on Screen-2 entry - the " +
                  "commit-once flow has no back path. Wire in the inspector if a back " +
                  "button still exists in the prefab.")]
         [SerializeField] private GameObject backFromGameSelectButton;
@@ -121,7 +121,7 @@ namespace CosmicShore.UI
         [SerializeField] private Color dpadFocusColor = new(1f, 1f, 1f, 0.15f);
         [SerializeField] private Color dpadUnfocusColor = new(1f, 1f, 1f, 0f);
 
-        // D-pad navigation for Screen 1 — rows: 0=intensity, 1=player count, 2=domain count, 3=confirm
+        // D-pad navigation for Screen 1 - rows: 0=intensity, 1=player count, 2=domain count, 3=confirm
         bool _dpadHighlightActive;
         int _dpadFocusRow;
         const int DpadRowIntensity = 0;
@@ -138,7 +138,7 @@ namespace CosmicShore.UI
 
         // Per-game minimum domain (team) count, from SO_ArcadeGame.MinDomainsAllowed.
         // Modes that need opposing teams (e.g. Joust) set it to 2 so the domain stepper
-        // and the computed default can never collapse to a single domain — which would
+        // and the computed default can never collapse to a single domain - which would
         // put every player on one team, leaving the AI/humans with no opponents.
         int MinDomainsForGame =>
             _selectedGame != null
@@ -182,7 +182,7 @@ namespace CosmicShore.UI
 
             // Ensure no stale game selection from a previous session or scene load.
             // ArcadeGameConfigSO is a ScriptableObject that persists in memory across
-            // scene transitions — if SelectedGame was set before a game launched, it
+            // scene transitions - if SelectedGame was set before a game launched, it
             // would still be set when Menu_Main reloads.
             _selectedGame = null;
             if (config) config.ResetState();
@@ -219,11 +219,11 @@ namespace CosmicShore.UI
                 arcadeConfigSyncManager.OnConfigClosedOnClient += HandleConfigClosedOnClient;
                 arcadeConfigSyncManager.OnScreenChangedOnClient += HandleScreenChangedOnClient;
                 arcadeConfigSyncManager.OnAllPlayersReady += HandleAllPlayersReady;
-                Debug.Log($"[ArcadeConfigModal] OnEnable — subscribed to ArcadeConfigSyncManager events (instance={GetInstanceID()})");
+                Debug.Log($"[ArcadeConfigModal] OnEnable - subscribed to ArcadeConfigSyncManager events (instance={GetInstanceID()})");
             }
             else
             {
-                Debug.LogWarning($"[ArcadeConfigModal] OnEnable — arcadeConfigSyncManager is NULL, cannot subscribe (instance={GetInstanceID()})");
+                Debug.LogWarning($"[ArcadeConfigModal] OnEnable - arcadeConfigSyncManager is NULL, cannot subscribe (instance={GetInstanceID()})");
             }
         }
 
@@ -397,7 +397,7 @@ namespace CosmicShore.UI
             _isClientMode = false;
             _selectedGame = selectedGame;
 
-            // Fresh modal session — re-arm the commit guard so OnConfirmConfiguration
+            // Fresh modal session - re-arm the commit guard so OnConfirmConfiguration
             // can fire again. The Confirm button is re-enabled below in
             // ResetCommitGuard().
             ResetCommitGuard();
@@ -435,7 +435,7 @@ namespace CosmicShore.UI
         {
             get
             {
-                // Prefer Netcode connected client count — it's the ground truth for
+                // Prefer Netcode connected client count - it's the ground truth for
                 // human players and avoids stale PartyMembers (polled every 3s).
                 var nm = NetworkManager.Singleton;
                 if (nm != null && nm.IsServer)
@@ -513,7 +513,7 @@ namespace CosmicShore.UI
                 button.SetSelected(active && level == config.Intensity);
             }
 
-            // Player count — enforce minimum = party size so host can't select
+            // Player count - enforce minimum = party size so host can't select
             // fewer total players than there are humans in the lobby.
             int effectiveMin = Mathf.Max(game.MinPlayersAllowed, CurrentPartyHumanCount);
             int pcMax = Mathf.Min(game.MaxPlayersAllowed, MaxSupportedPlayers);
@@ -521,7 +521,7 @@ namespace CosmicShore.UI
             if (pcStepper)
                 pcStepper.Initialize(effectiveMin, pcMax, config.PlayerCount);
 
-            // Domain count stepper — max bound depends on current PC (DC <= PC);
+            // Domain count stepper - max bound depends on current PC (DC <= PC);
             // min bound is the per-game minimum (2 for opposing-team modes like Joust).
             if (dcStepper)
                 dcStepper.Initialize(MinDomainsForGame, ComputeMaxDomainCount(), config.DomainCount);
@@ -530,7 +530,7 @@ namespace CosmicShore.UI
         int ComputeMaxDomainCount()
         {
             // DC <= PC, capped at the hard max and at the per-game MaxDomainsAllowed
-            // (modes with a fixed team shape — e.g. Astro League — pin this to 2). Fall
+            // (modes with a fixed team shape - e.g. Astro League - pin this to 2). Fall
             // back to the hard max when PC isn't set yet (ResetState leaves it 0), and
             // never drop below the per-game minimum.
             int pc = config != null && config.PlayerCount > 0 ? config.PlayerCount : MaxSupportedDomains;
@@ -698,7 +698,7 @@ namespace CosmicShore.UI
 
             // Pre-commit, host-local DC change. No snap-back: nobody has picked
             // a domain yet (CommitConfiguration resets all humans to Jade), so
-            // there's nothing to protect against. No client broadcast either —
+            // there's nothing to protect against. No client broadcast either -
             // clients don't open the modal until commit.
             int proposed = Mathf.Clamp(newDomainCount, MinDomainsForGame, ComputeMaxDomainCount());
 
@@ -731,9 +731,9 @@ namespace CosmicShore.UI
         /// NetworkManager.LocalClient.PlayerObject because LocalPlayer can be null or
         /// stale on a client whose menu pair-init hasn't completed (game→menu return),
         /// or after RemovePlayerData's Players[0] repair pointed it at another player
-        /// (on the host that can even be an AI, which shares the host's client id —
+        /// (on the host that can even be an AI, which shares the host's client id -
         /// hence the IsInitializedAsAI guard).
-        /// Returns null only when no owned Player exists — callers must treat that as
+        /// Returns null only when no owned Player exists - callers must treat that as
         /// an error, not skip silently: a swallowed pick leaves the player on a stale
         /// domain for the whole next game while the tile UI claims otherwise.
         /// </summary>
@@ -748,7 +748,7 @@ namespace CosmicShore.UI
             var playerObj = nm != null ? nm.LocalClient?.PlayerObject : null;
             if (playerObj != null && playerObj.TryGetComponent<Player>(out var resolved) && resolved.IsOwner)
             {
-                Debug.LogWarning("[ArcadeConfigModal] gameData.LocalPlayer was null/stale — " +
+                Debug.LogWarning("[ArcadeConfigModal] gameData.LocalPlayer was null/stale - " +
                                  "resolved local Player via NetworkManager.LocalClient instead.");
                 return resolved;
             }
@@ -759,12 +759,12 @@ namespace CosmicShore.UI
         void HandleDomainSelected(Domains domain)
         {
             // Resolve BEFORE touching any UI state: if the pick cannot reach the server,
-            // the tile must not highlight — the UI shown to the player always matches the
+            // the tile must not highlight - the UI shown to the player always matches the
             // server's truth (chip movement is already NetDomain-event-driven).
             var player = ResolveLocalOwnedPlayer();
             if (player == null)
             {
-                Debug.LogError($"[ArcadeConfigModal] Domain pick '{domain}' DROPPED — no owned local " +
+                Debug.LogError($"[ArcadeConfigModal] Domain pick '{domain}' DROPPED - no owned local " +
                                "Player resolved (pair-init incomplete after scene return?). " +
                                "Pick not sent to server; tile selection unchanged.");
                 return;
@@ -774,7 +774,7 @@ namespace CosmicShore.UI
                 config.SelectedDomain = domain;
 
             // Request a server-authoritative domain update for the local player.
-            // The chip movement is purely event-driven — Player.NetDomain.OnValueChanged
+            // The chip movement is purely event-driven - Player.NetDomain.OnValueChanged
             // fires on every client (including the host) and triggers the surgical
             // reparent in HandlePlayerDomainChanged. No refresh-everything-each-event.
             player.RequestSetDomain_ServerRpc(domain);
@@ -801,7 +801,7 @@ namespace CosmicShore.UI
 
             if (chipPrefab == null)
             {
-                Debug.LogWarning("[DomainPicker] Chip Prefab is not wired on ArcadeGameConfigureModal — cannot spawn chips.");
+                Debug.LogWarning("[DomainPicker] Chip Prefab is not wired on ArcadeGameConfigureModal - cannot spawn chips.");
                 return;
             }
 
@@ -816,7 +816,7 @@ namespace CosmicShore.UI
                     SpawnChipForPlayer(p, localId, dataService);
             }
 
-            // Late-joiner support — new humans get a chip as soon as their Player object replicates.
+            // Late-joiner support - new humans get a chip as soon as their Player object replicates.
             if (gameData.OnPlayerNetworkSpawnedUlong != null && !_watchingPlayerSpawnEvent)
             {
                 gameData.OnPlayerNetworkSpawnedUlong.OnRaised += HandlePlayerSpawnedDuringModal;
@@ -831,7 +831,7 @@ namespace CosmicShore.UI
             var startTile = FindTileForDomain(p.NetDomain.Value) ?? FindTileForDomain(Domains.Jade);
             if (startTile == null || startTile.AvatarStripTransform == null)
             {
-                Debug.LogWarning($"[DomainPicker] No suitable tile (or strip) found for player {p.Name} — chip not spawned.");
+                Debug.LogWarning($"[DomainPicker] No suitable tile (or strip) found for player {p.Name} - chip not spawned.");
                 return;
             }
 
@@ -840,7 +840,7 @@ namespace CosmicShore.UI
             chip.Set(sprite, p.OwnerClientId == localId);
             _playerChips[p] = chip;
 
-            // Hook for future domain changes — closure captures the player so we know
+            // Hook for future domain changes - closure captures the player so we know
             // whose chip to move when this fires.
             NetworkVariable<Domains>.OnValueChangedDelegate handler =
                 (_, newDomain) => HandlePlayerDomainChanged(p, newDomain);
@@ -1091,14 +1091,14 @@ namespace CosmicShore.UI
                 shipVesselNameText.text = nameText;
         }
 
-        // Screen 1 → Screen 2 — host commits PC + DC + intensity.
+        // Screen 1 → Screen 2 - host commits PC + DC + intensity.
         //
         // This is the single commit point in the lava-lamp arcade flow. Before
         // this fires, clients are flying in freestyle and have no modal open.
         // After it fires, every client opens the modal at GameDetailView with
         // chips on Jade, tiles dimmed per DC, and back-navigation removed.
         //
-        // Idempotent — repeated clicks (button mash, repeated input) short-circuit
+        // Idempotent - repeated clicks (button mash, repeated input) short-circuit
         // at the _isConfigurationCommitted gate. The Confirm button is also
         // disabled visually for snappy feedback.
         public void OnConfirmConfiguration()
@@ -1122,7 +1122,7 @@ namespace CosmicShore.UI
 
             // Local: spawn chips (after server reset to Jade), refresh tiles, open
             // Screen 2, hide the back button. SpawnChipsForAllPlayers is idempotent
-            // — it calls DespawnAllChips first — so even if guard #1 is bypassed
+            // - it calls DespawnAllChips first - so even if guard #1 is bypassed
             // somehow, no duplicate chips leak.
             ClearDpadRowHighlights();
             SpawnChipsForAllPlayers();
@@ -1131,7 +1131,7 @@ namespace CosmicShore.UI
             HideBackFromGameSelectButton();
         }
 
-        // Screen 2 → Screen 1 (Back button) — DEPRECATED.
+        // Screen 2 → Screen 1 (Back button) - DEPRECATED.
         //
         // The new commit-once flow has no Screen 2 → Screen 1 transition. This
         // method is retained as a no-op stub so prefab UnityEvent wiring doesn't
@@ -1185,7 +1185,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Modal close (back/cancel) — host notifies clients to close too.
+        /// Modal close (back/cancel) - host notifies clients to close too.
         /// Wire ALL close/back buttons to this method instead of ModalWindowOut() directly.
         /// </summary>
         public void OnCloseModal()
@@ -1213,7 +1213,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Start/Confirm button — called by ALL players (host and clients).
+        /// Start/Confirm button - called by ALL players (host and clients).
         /// Confirms the player's domain + vessel choices and enters the waiting state.
         /// When all human players have confirmed, the host auto-launches the game.
         /// </summary>
@@ -1235,25 +1235,25 @@ namespace CosmicShore.UI
             }
             else
             {
-                // No sync manager — single player or no multiplayer setup.
+                // No sync manager - single player or no multiplayer setup.
                 // Launch directly.
                 HandleAllPlayersReady();
             }
         }
 
         /// <summary>
-        /// True if the local player is the launch authority — i.e. they sync the
+        /// True if the local player is the launch authority - i.e. they sync the
         /// authoritative launch config into GameDataSO and their SceneLoader
         /// performs the actual scene load. Three cases hold launch authority:
         /// (a) no sync manager at all (legacy solo path),
         /// (b) sync manager exists but the local player is not in a multi-human
-        ///     party session (PartyMembers <= 1, i.e. just self — presence-lobby
+        ///     party session (PartyMembers <= 1, i.e. just self - presence-lobby
         ///     membership is irrelevant),
         /// (c) the local player is the host of an active multi-human party session.
         ///
         /// Non-host party clients return false: they skip the data sync but still
         /// raise InvokeGameLaunch locally so SceneLoader shows the loading splash
-        /// and enters LoadingGame — its connected-client guard defers the actual
+        /// and enters LoadingGame - its connected-client guard defers the actual
         /// scene load to the server's Netcode scene replication.
         /// </summary>
         internal static bool ShouldLocalPlayerLaunch(HostConnectionDataSO data, bool hasSyncManager)
@@ -1307,7 +1307,7 @@ namespace CosmicShore.UI
         {
             if (!gameData || config?.SelectedGame == null)
             {
-                Debug.LogError("<color=#FF0000>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch — gameData or config.SelectedGame is NULL!</color>");
+                Debug.LogError("<color=#FF0000>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - gameData or config.SelectedGame is NULL!</color>");
                 return;
             }
 
@@ -1316,20 +1316,20 @@ namespace CosmicShore.UI
 
             int humanCount = CurrentPartyHumanCount;
 
-            // Single source of truth — GameDataSO owns the player count computation
+            // Single source of truth - GameDataSO owns the player count computation
             gameData.ConfigurePlayerCounts(config.PlayerCount, humanCount);
 
-            // Domain count — controls how many domains AI can be assigned to
+            // Domain count - controls how many domains AI can be assigned to
             gameData.RequestedDomainCount = config.DomainCount;
 
-            Debug.Log($"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch — " +
+            Debug.Log($"<color=#FFD700>[FLOW-2] [ArcadeConfigModal] SyncAllGameDataForLaunch - " +
                       $"Scene={selectedGame.SceneName}, Mode={selectedGame.Mode}, IsMultiplayer={selectedGame.IsMultiplayer}, " +
                       $"HumanCount={humanCount}, ConfigPlayerCount={config.PlayerCount}, " +
                       $"AIBackfill={gameData.RequestedAIBackfillCount}, " +
                       $"Vessel={gameData.selectedVesselClass.Value}, Intensity={gameData.SelectedIntensity.Value}</color>");
 
             // gameData.ActiveSession IS HCS.PartySession (single backing field
-            // — see Docs/PartySystem/ARCHITECTURE.md Q4). No hand-off needed.
+            // - see Docs/PartySystem/ARCHITECTURE.md Q4). No hand-off needed.
         }
 
         #endregion
@@ -1380,7 +1380,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// Writes the selected vessel class directly to the local Player's
-        /// NetDefaultVesselType NetworkVariable (owner-writable — legal from the
+        /// NetDefaultVesselType NetworkVariable (owner-writable - legal from the
         /// owning client, unlike NetDomain). This ensures each client's vessel
         /// choice is propagated to the server independently of
         /// gameData.selectedVesselClass (which carries the host's choice).
@@ -1390,7 +1390,7 @@ namespace CosmicShore.UI
             var localPlayer = ResolveLocalOwnedPlayer();
             if (localPlayer == null)
             {
-                Debug.LogError("[ArcadeConfigModal] Vessel selection DROPPED — no owned local Player " +
+                Debug.LogError("[ArcadeConfigModal] Vessel selection DROPPED - no owned local Player " +
                                "resolved. NetDefaultVesselType not updated; spawn would use a stale class.");
                 return;
             }
@@ -1408,7 +1408,7 @@ namespace CosmicShore.UI
         /// </summary>
         void HandleConfigOpenedOnClient(int gameModeInt, int intensity, int playerCount, int maxPlayers, int domainCount)
         {
-            Debug.Log($"[ArcadeConfigModal] HandleConfigOpenedOnClient — mode={gameModeInt}, intensity={intensity}, " +
+            Debug.Log($"[ArcadeConfigModal] HandleConfigOpenedOnClient - mode={gameModeInt}, intensity={intensity}, " +
                       $"players={playerCount}, max={maxPlayers}, domains={domainCount}");
 
             _isClientMode = true;
@@ -1447,7 +1447,7 @@ namespace CosmicShore.UI
             Debug.Log("[ArcadeConfigModal] Calling ModalWindowIn on client");
             ModalWindowIn();
 
-            // Clients skip Screen 1 entirely — modal opens straight at GameDetailView
+            // Clients skip Screen 1 entirely - modal opens straight at GameDetailView
             // with the back button hidden. Host has already committed PC + DC + intensity.
             ShowGameDetailScreen();
             HideBackFromGameSelectButton();
@@ -1495,7 +1495,7 @@ namespace CosmicShore.UI
         {
             bool isHost = !IsClientMode;
 
-            // Intensity buttons — read-only for clients
+            // Intensity buttons - read-only for clients
             foreach (var button in intensityButtons)
             {
                 if (!button) continue;
@@ -1503,7 +1503,7 @@ namespace CosmicShore.UI
                 if (uiButton) uiButton.interactable = isHost;
             }
 
-            // Steppers — visible for all, but only host can change them
+            // Steppers - visible for all, but only host can change them
             if (pcStepper) pcStepper.SetInteractable(isHost);
             if (dcStepper) dcStepper.SetInteractable(isHost);
         }

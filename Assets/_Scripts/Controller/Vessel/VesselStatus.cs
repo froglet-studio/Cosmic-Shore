@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
         void OnEnable()
         {
             // Proximity collider-LOD: every vessel (human, AI, menu autopilot) is a
-            // focus that keeps nearby prism colliders alive — hull, skimmer, and
+            // focus that keeps nearby prism colliders alive - hull, skimmer, and
             // trigger interactions all happen here. Registration lazily creates the
             // LOD manager, so it exists exactly in the scenes that have vessels.
             PrismColliderLodManager.EnsureInstance();

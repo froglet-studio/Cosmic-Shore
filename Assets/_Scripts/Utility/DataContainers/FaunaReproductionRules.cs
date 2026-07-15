@@ -4,9 +4,9 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// Pure decision rules for the prey-linked fauna population pipeline
-    /// (Docs/ECOSYSTEM.md §6): reproduction (well-fed fauna birth offspring — the
+    /// (Docs/ECOSYSTEM.md §6): reproduction (well-fed fauna birth offspring - the
     /// population driver) and seeding (the spawner only tops a species back up to
-    /// its seed floor — bootstrap + extinction recovery, NOT the population driver).
+    /// its seed floor - bootstrap + extinction recovery, NOT the population driver).
     /// Kept static and engine-free so the edit-mode tests can pin the exact
     /// Lotka–Volterra gating without a Unity runtime.
     /// </summary>
@@ -37,7 +37,7 @@ namespace CosmicShore.Utility
         /// How many fauna the periodic seeder should spawn this tick: the deficit
         /// below the species' seed floor, clamped so seeding never pushes the live
         /// population over the hard cap. Returns 0 while the food web sustains the
-        /// population at or above the floor — the seeder only matters at bootstrap
+        /// population at or above the floor - the seeder only matters at bootstrap
         /// and after a crash (starvation / predation wiped the species).
         /// </summary>
         public static int SeedSpawnCount(int livePopulation, int seedFloor, int maxPopulation)
@@ -64,7 +64,7 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// The prey-linked production gate — no fauna is seeded into famine. A predator needs enough
+        /// The prey-linked production gate - no fauna is seeded into famine. A predator needs enough
         /// live herbivores to hunt; a herbivore needs enough opposing ENVIRONMENT volume to graze.
         /// One copy shared by every producer (the cell spawners and the freestyle microscene
         /// conveyor releasing lifeforms into the cell), so the gate can't drift between them.

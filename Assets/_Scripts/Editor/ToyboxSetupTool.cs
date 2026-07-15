@@ -18,7 +18,7 @@ namespace CosmicShore.Editor
     ///   3. adds a <see cref="ToyboxController"/> to the Menu_Main scene (on the object carrying
     ///      <c>MenuCrystalClickHandler</c>, else a new root) and points it at the toybox.
     ///
-    /// Idempotent — safe to re-run (re-runs also fill newly-added unset content fields and append
+    /// Idempotent - safe to re-run (re-runs also fill newly-added unset content fields and append
     /// missing gallery paintings). The painting toy spawns one <see cref="PaintingToy"/> station
     /// per painting, each driving a multi-stroke <see cref="PaintingRunner"/>.
     /// See Docs/ToySystem/ARCHITECTURE.md.
@@ -38,7 +38,7 @@ namespace CosmicShore.Editor
             var painting = LoadOrCreateToy<PaintingToyDefinitionSO>(
                 "Toy_Painting", "painting", "Connect the Dots", "Connect the dots to paint 3D masterpieces with your trail.",
                 new Color(0.20f, 0.90f, 1.00f), 0f);
-            AssignPaintings(painting, gallery); // always — migrates pre-gallery Toy_Painting assets too
+            AssignPaintings(painting, gallery); // always - migrates pre-gallery Toy_Painting assets too
             var vessel = LoadOrCreateToy<VesselChangerToyDefinitionSO>(
                 "Toy_VesselChanger", "vessel_changer", "Vessel Changer", "Fly through to swap your ship.",
                 new Color(1.00f, 0.85f, 0.20f), 120f);
@@ -66,7 +66,7 @@ namespace CosmicShore.Editor
                 $"• Toybox:      {ToyboxAssetPath}\n" +
                 (wiredScene
                     ? "• ToyboxController added to Menu_Main and saved.\n"
-                    : "• Could not auto-add the ToyboxController — add it to the Menu_Main 'Game' object manually.\n") +
+                    : "• Could not auto-add the ToyboxController - add it to the Menu_Main 'Game' object manually.\n") +
                 "\nAll four toys work as-is. The vessel changer shows mini ship models; the domain " +
                 "changer shows the two colours you're not; the painting toy spawns one station per " +
                 "painting (multi-stroke, multi-domain connect-the-dots with start gates that recolour " +
@@ -106,7 +106,7 @@ namespace CosmicShore.Editor
             }
 
             // Always fill any UNSET content references (each 'extra' assignment guards for unset), so
-            // re-running the tool wires newly-added fields — e.g. the conveyor's omniCrystalPrefab —
+            // re-running the tool wires newly-added fields - e.g. the conveyor's omniCrystalPrefab -
             // onto an already-authored asset without clobbering user customisations.
             if (extra != null)
             {
