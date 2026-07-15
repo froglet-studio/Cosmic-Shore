@@ -124,12 +124,25 @@ namespace CosmicShore.Gameplay
             if (_meshRenderer != null)
                 _originalMaterials = _meshRenderer.sharedMaterials;
 
-            // Build the octahedron mesh once from the cached half-extents.
+            // Mesh construction is deferred to the first Engage (EnsureShieldMeshesBuilt):
+            // Load Time Insights measured two mesh builds per prism at Awake as a dominant
+            // share of mass environment lays (2 × 25k meshes in one load) — prisms that are
+            // never shielded must not pay for the shield's geometry.
+
+            ComputeMassTargets();
+        }
+
+        /// <summary>
+        /// Builds the octahedron + morph meshes on first use. Building here (not Awake) also
+        /// means the mesh reflects the CURRENT cached extents at engage time rather than the
+        /// Awake-time extents.
+        /// </summary>
+        private void EnsureShieldMeshesBuilt()
+        {
+            if (_octahedronMesh != null) return;
             _octahedronMesh = OctahedronMeshGenerator.Generate(_halfExtents, shieldScale);
             _morphMesh = new Mesh { name = "Octahedron_Shield_Morph" };
             _morphMesh.MarkDynamic();
-
-            ComputeMassTargets();
         }
 
         private void OnDisable()
@@ -215,6 +228,8 @@ namespace CosmicShore.Gameplay
         public void Engage(bool instant = false)
         {
             if (_isShielded && !_isEngaging) return;
+
+            EnsureShieldMeshesBuilt();
 
             // If a shatter overlay is still playing, kill it immediately.
             StopShatter();
