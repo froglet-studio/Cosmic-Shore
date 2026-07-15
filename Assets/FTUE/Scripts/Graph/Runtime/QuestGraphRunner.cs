@@ -63,6 +63,9 @@ namespace CosmicShore.Core
         [Tooltip("The button that opens the Arcade (wired to OnClickArcadeNav) — always stays clickable while navigation is locked.")]
         [SerializeField] UnityEngine.UI.Button arcadeNavButton;
 
+        [Tooltip("Keyed scene buttons SetButtonInteractable nodes can enable/disable — e.g. the Episodes button (key 'episodes') starts non-interactable and phase 5 unlocks it before its CTA.")]
+        [SerializeField] List<QuestButtonEntry> questButtons = new();
+
         [Header("Gating (Debug)")]
         [Tooltip("Never run the quest (hard off switch for this scene).")]
         [SerializeField] bool debugDisable;
@@ -195,6 +198,7 @@ namespace CosmicShore.Core
                 TrainingHiddenGroups = hideDuringFlightTraining,
                 NavButtons = lockableNavButtons,
                 AllowedNavButton = arcadeNavButton,
+                QuestButtons = questButtons,
                 CompletePhase = HandlePhaseComplete,
                 CompleteQuest = HandleQuestComplete,
             };

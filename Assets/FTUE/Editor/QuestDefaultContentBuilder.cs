@@ -347,8 +347,13 @@ namespace CosmicShore.Editor
         static QuestPhaseGraphSO BuildPhase5()
         {
             var g = NewPhase(5, "Episodes & Beyond — Finale",
-                "Entry: vessel unlocked. Guide to the episodes screen, closing dialogue ('you can also " +
-                "buy new game modes'), then Quest End — the FTUE is complete and persisted to UGS.");
+                "Entry: vessel unlocked. Enable the (authored non-interactable) Episodes button, guide " +
+                "to the episodes screen, closing dialogue ('you can also buy new game modes'), then " +
+                "Quest End — the FTUE is complete and persisted to UGS.");
+
+            var enableEpisodes = Add<QuestSetButtonInteractableNode>(g, "Enable Episodes Button");
+            enableEpisodes.buttonKey = "episodes";
+            enableEpisodes.interactable = true;
 
             var ctaEpisodes = Add<QuestHighlightCTANode>(g, "CTA: Episodes");
             ctaEpisodes.target = CallToActionTargetType.EpisodeMenu;
@@ -363,8 +368,8 @@ namespace CosmicShore.Editor
 
             var end = Add<QuestEndNode>(g, "FTUE Complete");
 
-            Chain(g, ctaEpisodes, finale, end);
-            return Finish(g, ctaEpisodes);
+            Chain(g, enableEpisodes, ctaEpisodes, finale, end);
+            return Finish(g, enableEpisodes);
         }
 
         // ── Helpers ────────────────────────────────────────────────────

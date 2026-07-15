@@ -995,9 +995,10 @@ namespace CosmicShore.Editor
                         MessageType.Info);
                 }
 
+                GUILayout.Space(4);
                 using (new EditorGUI.DisabledScope(!Application.isPlaying))
                 {
-                    if (GUILayout.Button(new GUIContent(
+                    if (CenteredButton(new GUIContent(
                             Application.isPlaying ? "▶ Force-Advance Current Node" : "▶ Force-Advance (Play mode only)",
                             "TESTING: complete the node the quest is currently waiting on (the ▶ NEXT node) as if the player did it — skip a game, a gate, a dialogue. Progress is persisted exactly like a real advance.")))
                     {
@@ -1017,14 +1018,8 @@ namespace CosmicShore.Editor
                 if (Application.isPlaying)
                     DrawLiveState();
 
-                if (!ProgressionBackendGate.CloudEnabled)
-                    EditorGUILayout.HelpBox(
-                        "Backend: LOCAL-ONLY. ProgressionBackendGate is closed — quest progress lives in " +
-                        "PlayerPrefs only and mode/intensity progression resets fresh every play session. " +
-                        "Flip ProgressionBackendGate.CloudEnabled to true to restore cloud sync.",
-                        MessageType.None);
-
-                if (GUILayout.Button(new GUIContent("Reset ALL Player Progress",
+                GUILayout.Space(4);
+                if (CenteredButton(new GUIContent("Reset ALL Player Progress",
                         "Clears this quest's PlayerPrefs mirror always. In PLAY MODE it also resets game-mode progression (unlocks + intensity tiers + play counts), all vessel unlocks, and any quest arcade constraints — plus the UGS cloud records when the backend gate is open. The Froglet Toolbox reads this state live and can still manually re-unlock anything.")))
                 {
                     if (Application.isPlaying)
@@ -1172,12 +1167,29 @@ namespace CosmicShore.Editor
             EditorGUILayout.HelpBox($"Arcade funnel: {funnel}\nUnlocked modes: {unlocks}", MessageType.None);
 
             if (QuestArcadeConstraints.Active
-                && GUILayout.Button(new GUIContent("Clear Arcade Funnel Now",
+                && CenteredButton(new GUIContent("Clear Arcade Funnel Now",
                     "TESTING: drop all funnel constraints immediately (cards + intensities revert to pure progression gating).")))
             {
                 QuestArcadeConstraints.Clear();
                 Debug.Log("[Quest] Arcade funnel cleared from the editor.");
             }
+        }
+
+        /// <summary>
+        /// Action button that fits its label instead of stretching to the panel width, centered
+        /// on its own row — full-width buttons read as section bars and made the inspector clumsy.
+        /// </summary>
+        static bool CenteredButton(GUIContent content)
+        {
+            var size = GUI.skin.button.CalcSize(content);
+            float width = Mathf.Max(170f, size.x + 18f);
+
+            EditorGUILayout.BeginHorizontal();
+            GUILayout.FlexibleSpace();
+            bool pressed = GUILayout.Button(content, GUILayout.Width(width), GUILayout.Height(22f));
+            GUILayout.FlexibleSpace();
+            EditorGUILayout.EndHorizontal();
+            return pressed;
         }
 
         /// <summary>

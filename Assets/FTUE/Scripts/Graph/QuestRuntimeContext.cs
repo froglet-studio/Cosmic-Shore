@@ -10,6 +10,18 @@ using UnityEngine;
 namespace CosmicShore.Core
 {
     /// <summary>
+    /// A scene Button quest nodes can enable/disable by key (e.g. the Episodes button starts
+    /// non-interactable and phase 5 unlocks it). Wired on the runner; keys are free-form.
+    /// </summary>
+    [Serializable]
+    public class QuestButtonEntry
+    {
+        [Tooltip("Key referenced by SetButtonInteractable nodes (e.g. 'episodes').")]
+        public string key;
+        public UnityEngine.UI.Button button;
+    }
+
+    /// <summary>
     /// The bundle of live scene systems and shared SOAP assets a <see cref="QuestNodeSO"/>
     /// needs to execute. Built once by the <c>QuestGraphRunner</c> from its serialized
     /// references and handed to every node's <see cref="QuestNodeSO.Execute"/>.
@@ -47,6 +59,27 @@ namespace CosmicShore.Core
 
         /// <summary>Never locked: the button that opens the Arcade.</summary>
         public UnityEngine.UI.Button AllowedNavButton;
+
+        /// <summary>Keyed scene buttons quest nodes can enable/disable (see <see cref="QuestButtonEntry"/>).</summary>
+        public IReadOnlyList<QuestButtonEntry> QuestButtons;
+
+        /// <summary>Flip a registered quest button's interactable state (key match is case-insensitive).</summary>
+        public void SetQuestButtonInteractable(string key, bool interactable)
+        {
+            if (QuestButtons != null && !string.IsNullOrEmpty(key))
+            {
+                foreach (var entry in QuestButtons)
+                {
+                    if (entry?.button == null || !string.Equals(entry.key, key, StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    entry.button.interactable = interactable;
+                    Debug.Log($"[Quest] Button '{key}' → interactable={interactable}.");
+                    return;
+                }
+            }
+
+            Debug.LogWarning($"[Quest] SetButtonInteractable: no button registered under key '{key}' on the runner (Quest Buttons list).");
+        }
 
         /// <summary>The vessel action buttons disabled during flight training (sticks + triggers stay live).</summary>
         static readonly InputEvents[] TrainingSuppressedButtons =

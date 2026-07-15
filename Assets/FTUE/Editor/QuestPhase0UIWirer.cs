@@ -38,6 +38,7 @@ namespace CosmicShore.Editor
             WireToastNotifier();
             WireTrainingHiddenGroups();
             WireNavButtons();
+            WireQuestButtons();
 
             EditorSceneManager.MarkSceneDirty(SceneManager.GetActiveScene());
             Debug.Log("[Quest] Phase 0 UI wiring complete — review the mapping logs above, then SAVE THE SCENE.");
@@ -280,6 +281,63 @@ namespace CosmicShore.Editor
             Debug.Log($"[Quest] Wirer: nav buttons — arcade: {(arcade != null ? arcade.name : "NOT FOUND")}, " +
                       $"locked during FTUE: {lockable.Count} ({string.Join(", ", lockable.ConvertAll(b => b.name))}) " +
                       "— Hangar + Profile only; Ark/Port stay scene-locked, Home stays available.");
+        }
+
+        // ── Quest buttons (SetButtonInteractable nodes) ────────────────
+        //
+        // The Episodes button is authored non-interactable in the scene; phase 5's
+        // 'Enable Episodes Button' node flips it on right before the Episodes CTA.
+        // Register it on the runner under the key the node references.
+
+        static void WireQuestButtons()
+        {
+            var runner = Object.FindFirstObjectByType<QuestGraphRunner>(FindObjectsInactive.Include);
+            if (runner == null) return;
+
+            Button episodes = null;
+            foreach (var btn in Object.FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            {
+                if (btn.gameObject.name.ToLowerInvariant().Contains("episode"))
+                {
+                    episodes = btn;
+                    break;
+                }
+            }
+
+            if (episodes == null)
+            {
+                Debug.LogWarning("[Quest] Wirer: no Button with 'episode' in its name found — add your Episodes " +
+                                 "button to the runner's Quest Buttons list manually (key 'episodes').");
+                return;
+            }
+
+            var so = new SerializedObject(runner);
+            var listProp = so.FindProperty("questButtons");
+
+            // Update an existing 'episodes' entry instead of duplicating it.
+            int slot = -1;
+            for (int i = 0; i < listProp.arraySize; i++)
+            {
+                if (listProp.GetArrayElementAtIndex(i).FindPropertyRelative("key").stringValue == "episodes")
+                {
+                    slot = i;
+                    break;
+                }
+            }
+            if (slot < 0)
+            {
+                slot = listProp.arraySize;
+                listProp.InsertArrayElementAtIndex(slot);
+            }
+
+            var entry = listProp.GetArrayElementAtIndex(slot);
+            entry.FindPropertyRelative("key").stringValue = "episodes";
+            entry.FindPropertyRelative("button").objectReferenceValue = episodes;
+            so.ApplyModifiedProperties();
+            EditorUtility.SetDirty(runner);
+
+            Debug.Log($"[Quest] Wirer: quest button 'episodes' → '{episodes.name}' " +
+                      "(phase 5's Enable Episodes Button node sets it interactable).");
         }
 
         // ── Helpers ────────────────────────────────────────────────────

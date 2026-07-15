@@ -53,16 +53,39 @@ MonoBehaviour:
   graphId: MainQuest_Phase5
   phaseName: "Episodes & Beyond \u2014 Finale"
   phaseEnabled: 0
-  designerNotes: "Entry: vessel unlocked. Guide to the episodes screen, closing dialogue
-    ('you can also buy new game modes'), then Quest End \u2014 the FTUE is complete
-    and persisted to UGS."
+  designerNotes: "Entry: vessel unlocked. Wait gate, closing dialogue ('you can also
+    buy new game modes'), then enable the (authored non-interactable) Episodes screen
+    button and Quest End \u2014 the FTUE is complete and persisted to UGS."
   entryNode: {fileID: -9219368479096466919}
   nodes:
   - {fileID: 4280780183346032293}
   - {fileID: -619745350775395874}
   - {fileID: -9219368479096466919}
+  - {fileID: 3145926535897932401}
   canvasScroll: {x: 0, y: 0}
   canvasZoom: 1
+--- !u!114 &3145926535897932401
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3014b5d137374f2695269fce5020c23a, type: 3}
+  m_Name: Enable Episodes Button
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Core.QuestSetButtonInteractableNode
+  nodeId: 6e1a4b7c2d9f4e0a8b3c5d7e9f1a2b3c
+  displayName: Enable Episodes Button
+  nodeEnabled: 1
+  graphPosition: {x: 300, y: 200}
+  outputs:
+  - portName: next
+    targetNodeId: 42affe4618b94fd5aa3ed2aaddecdf3f
+    delaySeconds: 0
+  buttonKey: episodes
+  interactable: 1
 --- !u!114 &4280780183346032293
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -81,7 +104,7 @@ MonoBehaviour:
   graphPosition: {x: 54, y: 147}
   outputs:
   - portName: next
-    targetNodeId: 42affe4618b94fd5aa3ed2aaddecdf3f
+    targetNodeId: 6e1a4b7c2d9f4e0a8b3c5d7e9f1a2b3c
     delaySeconds: 0
   speakerName: Captain
   portrait: {fileID: 0}

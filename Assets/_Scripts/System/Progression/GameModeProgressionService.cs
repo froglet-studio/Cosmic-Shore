@@ -924,6 +924,13 @@ namespace CosmicShore.Core
 
             if (IsQuestCompleted(node.GameMode)) return true;
 
+            // Full-intensity modes (e.g. Maelstrom/Tournament) have no intensity ladder to climb —
+            // the raw persisted record stays at the default forever, which made every gate chained
+            // AFTER them (the Vessel Hangar) permanently unsatisfiable. Their objective is done
+            // once the chain has unlocked them.
+            if (Config.HasFullIntensity(node.GameMode))
+                return IsGameModeUnlocked(node.GameMode);
+
             return ProgressionData.GetMaxUnlockedIntensity(node.GameMode.ToString(), Config.defaultMaxIntensity)
                    >= Config.maxIntensity;
         }
