@@ -2,7 +2,9 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
+using CosmicShore.Core;
 using CosmicShore.Gameplay;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Data;
@@ -11,6 +13,8 @@ namespace CosmicShore.Gameplay
 {
     public class FullAutoBlockShootActionExecutor : ShipActionExecutorBase
     {
+        [Inject] AudioSystem audioSystem;
+
         /// <summary>Static event: each time a block prism is shot. Param = player name.</summary>
         public static event Action<string> OnBlockShot;
 
@@ -110,6 +114,11 @@ namespace CosmicShore.Gameplay
                             null);
 
                         if (!prism) continue;
+
+                        // Stationary blocks bypass Projectile.LaunchProjectile (movement is
+                        // driven by MoveAndAnchorAsync), so play the launch SFX here — the
+                        // flying-mode guns get theirs from LaunchProjectile.
+                        audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch, m.position);
 
                         prism.transform.SetParent(null, true);
 
