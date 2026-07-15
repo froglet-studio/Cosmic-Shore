@@ -22,6 +22,9 @@ expected event sequence in the UGS dashboard; links on controlled surfaces carry
 
 ## Phase 1 — Sink seam (≈ 0.5–1 day)
 
+> **Status: SHIPPED (2026-07-15).** `IAnalyticsSink` + `UgsAnalyticsSink` extracted;
+> facade fans out to a sink list; envelope stamped in the sink layer.
+
 Pure refactor, no behavior change, shippable alone.
 
 - Add `IAnalyticsSink { void Record(string name, IDictionary<string,object> parameters); void Flush(); void SetCollecting(bool); }`
@@ -37,6 +40,12 @@ Pure refactor, no behavior change, shippable alone.
 interface + one moved class; unit test for envelope stamping.
 
 ## Phase 2 — PostHog dual-emit (≈ 2.5–4 days)
+
+> **Status: CODE SHIPPED (2026-07-15)** — via the thin HTTP `/batch/` sink (the §3.1.5
+> fallback shape) rather than the young official SDK: zero new package dependencies, all
+> platforms, fully owned. `PostHogSink` + `PostHogConfigSO` +
+> `Assets/Resources/PostHogConfig.asset`. Remaining human steps (project creation, API
+> key paste, device verification, privacy-policy entry): `POSTHOG_SETUP.md`.
 
 - Create the PostHog project on the **EU (Frankfurt)** instance; set **billing limit $0**
   (hard-caps us at the free 1M events/month — overage drops, never bills).

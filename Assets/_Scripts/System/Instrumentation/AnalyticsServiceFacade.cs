@@ -5,23 +5,23 @@ using CosmicShore.Gameplay;
 using CosmicShore.ScriptableObjects;
 using CosmicShore.UI;
 using CosmicShore.Utility;
-using Unity.Services.Analytics;
 using Unity.Services.Core;
 using UnityEngine;
 
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Single writer for all UGS Analytics custom events (UGS-only pipeline —
-    /// the Firebase analytics path is retired).
+    /// Single writer for all analytics custom events. Owns the collection lifecycle
+    /// (starts after UGS sign-in, gated by consent, age gate, and network availability),
+    /// records events through one choke point, and flushes only on app pause/quit.
     ///
-    /// Owns the collection lifecycle: starts data collection after UGS sign-in
-    /// (gated by consent and network availability), records events through one
-    /// choke point, and flushes only on app pause/quit — the SDK batches
-    /// everything else automatically.
-    ///
-    /// Custom events and their parameters must also be declared in the UGS
-    /// dashboard Event Manager or the backend silently discards them.
+    /// Destinations are <see cref="IAnalyticsSink"/>s: <see cref="UgsAnalyticsSink"/>
+    /// (system of record — events/parameters must be declared in the UGS dashboard Event
+    /// Manager or the backend silently discards them) and, when
+    /// <c>Resources/PostHogConfig.asset</c> carries a project API key,
+    /// <see cref="PostHogSink"/> (cohort/funnel/SQL exploration — see
+    /// Docs/Analytics/POSTHOG_SETUP.md). Every event goes to every sink; consent gating
+    /// lives here, upstream of all sinks.
     /// </summary>
     public class AnalyticsServiceFacade
     {
@@ -45,6 +45,9 @@ namespace CosmicShore.Core
         /// <summary>PlayerPrefs key (device-local) guarding the once-ever first-launch event.</summary>
         const string FirstLaunchPrefKey = "AnalyticsFirstLaunchRecorded";
 
+        /// <summary>PlayerPrefs key for the per-install GUID stamped on every event's envelope.</summary>
+        const string InstallIdPrefKey = "AnalyticsInstallId";
+
         /// <summary>Consecutive losses before <c>repeated_game_fail</c> fires.</summary>
         const int RepeatedFailThreshold = 3;
 
@@ -57,6 +60,12 @@ namespace CosmicShore.Core
         readonly FriendsDataSO _friendsData;
         readonly HostConnectionDataSO _hostConnectionData;
         readonly bool _allowLog;
+
+        // Destinations. Index 0 is always UGS (system of record); PostHog is appended
+        // when Resources/PostHogConfig.asset is configured with a project API key.
+        readonly List<IAnalyticsSink> _sinks = new();
+        readonly string _sessionId;
+        readonly string _installId;
 
         bool _collecting;
         bool _isConnected = true;
@@ -110,6 +119,16 @@ namespace CosmicShore.Core
             _friendsData = friendsData;
             _hostConnectionData = hostConnectionData;
             _allowLog = allowLog;
+
+            _sessionId = Guid.NewGuid().ToString("N");
+            _installId = GetOrCreateInstallId();
+
+            _sinks.Add(new UgsAnalyticsSink(Log));
+            var postHogConfig = Resources.Load<PostHogConfigSO>("PostHogConfig");
+            if (postHogConfig != null && postHogConfig.IsUsable)
+                _sinks.Add(new PostHogSink(postHogConfig, Log));
+            else
+                Log("PostHog sink disabled (Resources/PostHogConfig has no project API key).");
 
             AuthData.OnSignedIn.OnRaised += HandleSignedIn;
             NetworkData.OnNetworkFound.OnRaised += HandleNetworkFound;
@@ -201,15 +220,18 @@ namespace CosmicShore.Core
         public void RequestDataDeletion()
         {
             SetConsent(false);
-            try
+            foreach (var sink in _sinks)
             {
-                AnalyticsService.Instance.RequestDataDeletion();
-                Log("Data deletion requested.");
+                try
+                {
+                    sink.RequestDataDeletion();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[Analytics] {sink.Name} RequestDataDeletion failed: {e.Message}");
+                }
             }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[Analytics] RequestDataDeletion failed: {e.Message}");
-            }
+            Log("Data deletion requested.");
         }
 
         void HandleSignedIn()
@@ -241,19 +263,29 @@ namespace CosmicShore.Core
             if (UnityServices.State != ServicesInitializationState.Initialized)
                 return;
 
-            try
+            // No ExternalUserId override: with UGS auth active, events carry the UGS
+            // player id — the same key as Cloud Save and Leaderboards (and the PostHog
+            // distinct_id, via the envelope).
+            bool anyStarted = false;
+            foreach (var sink in _sinks)
             {
-                // No ExternalUserId override: with UGS auth active, events carry
-                // the UGS player id — the same key as Cloud Save and Leaderboards.
-                AnalyticsService.Instance.StartDataCollection();
-                _collecting = true;
-                Log("Data collection started.");
-                MaybeRecordFirstLaunch();
+                try
+                {
+                    if (sink.StartCollection())
+                        anyStarted = true;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[Analytics] {sink.Name} StartCollection failed: {e.Message}");
+                }
             }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[Analytics] StartDataCollection failed: {e.Message}");
-            }
+
+            if (!anyStarted)
+                return;
+
+            _collecting = true;
+            Log("Data collection started.");
+            MaybeRecordFirstLaunch();
         }
 
         void StopCollection()
@@ -261,16 +293,20 @@ namespace CosmicShore.Core
             if (!_collecting)
                 return;
 
-            try
+            foreach (var sink in _sinks)
             {
-                AnalyticsService.Instance.StopDataCollection();
-                _collecting = false;
-                Log("Data collection stopped (consent revoked).");
+                try
+                {
+                    sink.StopCollection();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[Analytics] {sink.Name} StopCollection failed: {e.Message}");
+                }
             }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[Analytics] StopDataCollection failed: {e.Message}");
-            }
+
+            _collecting = false;
+            Log("Data collection stopped (consent revoked).");
         }
 
         #endregion
@@ -278,9 +314,9 @@ namespace CosmicShore.Core
         #region Recording
 
         /// <summary>
-        /// Records a custom event. Parameter values must be string, int, long,
-        /// float, double, or bool, and every event/parameter must be declared in
-        /// the UGS dashboard Event Manager.
+        /// Records a custom event to every active sink. Parameter values must be string,
+        /// int, long, float, double, or bool, and every event/parameter must be declared
+        /// in the UGS dashboard Event Manager (the PostHog sink is schemaless).
         /// </summary>
         public void RecordEvent(string eventName, IDictionary<string, object> parameters = null)
         {
@@ -290,41 +326,50 @@ namespace CosmicShore.Core
                 return;
             }
 
-            try
-            {
-                var evt = new CustomEvent(eventName);
-                if (parameters != null)
-                    foreach (var kvp in parameters)
-                        evt.Add(kvp.Key, kvp.Value);
+            var envelope = new AnalyticsEnvelope(
+                playerId: AuthData.PlayerId,
+                sessionId: _sessionId,
+                installId: _installId,
+                buildVersion: Application.version,
+                platform: Application.platform.ToString());
 
-                AnalyticsService.Instance.RecordEvent(evt);
-                Log($"Recorded '{eventName}'.");
-            }
-            catch (Exception e)
+            foreach (var sink in _sinks)
             {
-                Debug.LogWarning($"[Analytics] Failed to record '{eventName}': {e.Message}");
+                try
+                {
+                    sink.Record(eventName, parameters, envelope);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[Analytics] {sink.Name} failed to record '{eventName}': {e.Message}");
+                }
             }
+
+            Log($"Recorded '{eventName}'.");
         }
 
         public void RecordPlayAgain() => RecordEvent(UGSKeys.EventPlayAgain);
 
         /// <summary>
-        /// Uploads the SDK's event batch immediately. Reserved for moments the
-        /// process may die (pause/quit) — everywhere else the SDK's own batching
-        /// is cheaper and loses nothing.
+        /// Uploads every sink's pending batch immediately. Reserved for moments the
+        /// process may die (pause/quit) — everywhere else the sinks' own batching is
+        /// cheaper and loses nothing.
         /// </summary>
         public void Flush()
         {
             if (!_collecting)
                 return;
 
-            try
+            foreach (var sink in _sinks)
             {
-                AnalyticsService.Instance.Flush();
-            }
-            catch (Exception e)
-            {
-                Debug.LogWarning($"[Analytics] Flush failed: {e.Message}");
+                try
+                {
+                    sink.Flush();
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[Analytics] {sink.Name} Flush failed: {e.Message}");
+                }
             }
         }
 
@@ -648,6 +693,18 @@ namespace CosmicShore.Core
         }
 
         static int SecondsSinceLaunch => Mathf.RoundToInt(Time.realtimeSinceStartup);
+
+        static string GetOrCreateInstallId()
+        {
+            var id = PlayerPrefs.GetString(InstallIdPrefKey, string.Empty);
+            if (string.IsNullOrEmpty(id))
+            {
+                id = Guid.NewGuid().ToString("N");
+                PlayerPrefs.SetString(InstallIdPrefKey, id);
+                PlayerPrefs.Save();
+            }
+            return id;
+        }
 
         #endregion
 
