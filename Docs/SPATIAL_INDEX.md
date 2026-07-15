@@ -178,7 +178,8 @@ blocked for up to 5s). `AssembledFlora` orders its random-skip *before*
 | `ClearCellBinding(index, cellId)` | `Cell.RemoveBlock` **only** | Release a slot from the owning cell's summation view (no-op for non-owners) |
 | `ClearAllCellBindings(cellId)` | `Cell.Initialize` / `Cell.ResetCell` **only** | Bulk-release a cell's summation-view bindings (packed counterpart of the old massTracked.Clear) |
 | `UpdateCellVolume(index, volume)` | `Prism.RefreshVolumeCache` **only** | Mirror the live volume cache into the summation view |
-| `SumCellVolumes(cellId, centre, nucleusRadiusSqr, results)` | `Cell.EnsureVolumeFresh` **only** | One Burst pass producing the cell's per-domain volume / env-volume / nucleus-env-volume sums + totals |
+| `SumCellVolumes(cellId, centre, nucleusRadiusSqr, results)` | Tests / benchmarks (sync reference path) | One synchronous `.Run()` pass producing the cell's per-domain volume / env-volume / nucleus-env-volume sums + totals |
+| `TryScheduleCellVolumeSum(cellId, centre, nucleusRadiusSqr, results, out handle)` | `Cell.EnsureVolumeFresh` **only** | The production path: snapshots `_spatial`+`_cellData` (one per-frame-shared memcpy) and `Schedule()`s the same job to a worker thread; the caller harvests with `IsCompleted` on a later read and must keep `results` quiescent until then. Result-equivalent to the sync path (pinned by an edit-mode test) |
 
 All methods are **main-thread only**. The Burst job inside
 `ProcessExplosionFrame` is scheduled and completed synchronously.

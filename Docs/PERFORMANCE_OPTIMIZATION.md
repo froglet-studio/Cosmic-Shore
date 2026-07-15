@@ -14,7 +14,150 @@ protocol and update this doc (status + measured numbers).
 
 ---
 
-## 0. SESSION HANDOFF (2026-07-09) — next session starts here
+## 0. SESSION HANDOFF (2026-07-15) — next session starts here
+
+Branch `claude/domainvolumeindicator-perf-spike-cp32yn` — everything
+committed and pushed, tree clean. Session focus: the "10 ms
+`DomainVolumeIndicator.Update` spike" from the user's profiler capture —
+root-caused, fixed, field-verified across four captures (full per-capture
+analyses in the dated sections under §0.1), and closed with the discovery
+that **the editor's Burst compilation was disabled the whole time**.
+
+### The one rule this session bought (check FIRST in every future perf session)
+
+**Before trusting any capture, verify `Jobs ▸ Burst ▸ Enable Compilation` is
+ON** (and for clean captures: `Jobs ▸ Burst ▸ Safety Checks ▸ Off`,
+`Jobs ▸ Jobs Debugger` off, leak detection off). It was OFF on the user's
+machine (confirmed 07-15), which silently ran every job as managed IL at
+~20× cost and explains all inflated job readings in captures #2–#4
+(`CellVolumeSumJob` 6.1–6.5 ms, `LodClassifyJob` 2.0–2.7 ms, and the
+`WaitForJobGroupID` 3.83 ms stall — a managed 6 ms job hogging a worker
+delays the engine's own culling jobs). The tell in the Hierarchy view: a
+job showing as **`ExecuteJobFunction.Invoke() [Invoke]`** is executing
+managed; Burst-compiled rows show the job type name.
+
+### Shipped this session (do not re-fix; regression list)
+
+1. **`fb5e6643`** — Cell volume recompute is one Burst `CellVolumeSumJob`
+   over a new packed **summation view** in `PrismSpatialIndex`
+   (`PrismCellData`: live volume + cell id + live domain slot + env flag);
+   the managed 8000-prisms/frame slice and `Cell.massTracked` are DELETED.
+   Root cause of the reported spike: `EnsureVolumeFresh` is reader-driven
+   and billed the slice to the first volume reader — the domain gauge was
+   the messenger, not the culprit. Markers: `Cell.VolumeSum`,
+   `DomainVolumeIndicator.Sample`/`.Push` (closes TODO C2). Six edit-mode
+   summation-view tests.
+2. **`71b51a28`** — Collider-LOD **hysteresis** (`lodExitRadiusMultiplier`,
+   default 1.15: far→near inside `lodRadiusMeters`, near→far only beyond
+   radius×multiplier — kills moving-focus boundary flapping); drain budget
+   charged per re-validated entry (was unbounded transform reads on churny
+   queues); `LOD.Sweep`/`LOD.Drain` markers; LOD tick offset half an
+   interval from the volume tick.
+3. **`4ba827ef`** — Volume sum moved **off the main thread**:
+   `PrismSpatialIndex.TryScheduleCellVolumeSum` snapshots
+   `_spatial`+`_cellData` (one per-frame-shared memcpy, marker
+   `Cell.VolumeSum.Snapshot`) and `Schedule()`s the job to a worker;
+   `Cell.EnsureVolumeFresh` harvests with `IsCompleted` on a later read
+   (never blocks; readers keep published sums meanwhile — the declared
+   0.25 s tolerance). In-flight passes are discarded unpublished on
+   reset/disable; buffers complete-then-dispose on teardown. LOD tick
+   re-arm made **phase-preserving** (advance from due time — re-arming from
+   `Time.time` re-stacked the ticks after any hitch, observed in capture
+   #3). Async/sync equivalence test added; sync `SumCellVolumes` kept for
+   tests/benchmarks.
+
+Docs commits `27024bab`/`722f37e1`/`3cc29fb8`/`910b0854` hold the
+per-capture analyses; `Docs/SPATIAL_INDEX.md` documents the summation view
++ its three freshness streams.
+
+### Field-verified results (capture #4, standalone profiler, ~7000 prisms, crowded view — do not regress)
+
+| Row | Session start | Capture #4 |
+|---|---|---|
+| `BehaviourUpdate` (entire script tick) | 15.24 ms | **1.71 ms** |
+| `DomainVolumeIndicator.Update` | 10.31 ms | **0.00 ms** |
+| `Cell.VolumeSum` on the main thread | 6.1–6.5 ms | **absent** (worker thread) |
+| `PrismColliderLodManager` managed self | 4.00 ms | 1.37 ms (`LOD.Sweep`), `LOD.Drain` 0.00 |
+| Biggest remaining script row | — | `CapsuleMembrane.UpdateMatrices` 0.70 ms |
+
+### TODO NEXT SESSION — in priority order
+
+1. **Burst-ON verification capture** (user just enabled it). Expected:
+   `LodClassifyJob` ~0.1–0.3 ms; `CellVolumeSumJob` ~0.15 ms on a worker
+   row (Timeline view — it never appears in the main-thread hierarchy
+   anymore); `DomainVolumeIndicator.Update` ≤ ~0.5 ms on schedule frames
+   (`Cell.VolumeSum.Snapshot` memcpy is the only real cost) and ~0
+   between; `LOD.Sweep` sub-ms; `WaitForJobGroupID` under
+   `ScriptableRenderContext.Submit` shrinks (worker no longer hogged);
+   the two 0.25 s ticks staying 0.125 s apart across hitches.
+2. **Functional re-verification of the volume path** (in-editor, from the
+   capture-#1 checklist in §0.1): gauge wedges track per-domain mass
+   (lay trail / let fauna eat); phase ladder climbs at the same volumes
+   (flora freeze at Frenzy, resume after consumption); nucleus claim flips
+   only by in-nucleus laid volume (Brood Rush); steals re-attribute wedges
+   within ~0.5 s; HexRace Play Again starts with an empty gauge (no ghost
+   pre-reset volume — the discard-unpublished path); run the
+   `PrismSpatialIndexTests` edit-mode suite (7 new summation-view tests).
+3. **Rendering frontier** (capture #4 — now the top of the frame):
+   a. Identify the second camera stack entry ("Camera", ~2 ms beside
+      CM PlayerCam's ~4 ms) — what does it render, and can its culling
+      mask drop the prism layers? BRG culling + emit-draw jobs run once
+      PER camera.
+   b. Read the DiagnosticsHUD **CPU/GPU split + bound verdict** row in the
+      crowded view. Suspicion: GPU-bound via transparent-prism overdraw at
+      2M+ verts — if confirmed, the lever is shader/overdraw work, and any
+      visual LOD idea must respect continuity (mass never disappears;
+      only shading may simplify) and go through `/ecology` discussion.
+   c. One **development-build capture** as ground truth — removes
+      `EditorLoop` (4.39 ms) + `Profiler.FlushCounters` (2.62 ms), which
+      persist even under the standalone profiler (it only moves the
+      profiler UI out of process; the game still runs in the editor).
+4. **Carried-over backlog** (§0.1 + §4, still open): Task 2 raycast-target
+   audit (tool shipped, run pending); Task 3 shader-warmup collection
+   (still EMPTY); TODO C1 Task 6 — retire the dormant adaptive
+   frame-interval machinery; Task 7 micro-items; Task 8 graphics settings
+   hygiene; TODO B pool/creation-tick datums.
+
+### Architecture contracts added this session (for anyone touching them)
+
+- **Summation view** (`PrismCellData` in `PrismSpatialIndex`): CellId/EnvMass
+  written ONLY by `Cell.AddBlock/RemoveBlock` (both membership streams
+  funnel through them; bulk clears → `ClearAllCellBindings`; BindCell
+  passes the slot index explicitly because `prism.SpatialIndexId` isn't
+  assigned yet during `Register`). Volume pushed by
+  `Prism.RefreshVolumeCache` (O(growing)/frame). Domain slot refreshed by
+  `ForwardDomainChangeToCell` on steals — the AOE damage view's
+  registration-time Domain stays deliberately stale (known gap, untouched).
+  Dual membership (flora host cell vs containing cell): last binder wins —
+  a prism sums into exactly ONE cell (the old massTracked could
+  double-count membrane-edge flora into two).
+- **Async volume sum**: never block the main thread on the handle
+  (`IsCompleted` harvest); never publish a pass scheduled before a reset;
+  the results NativeArray must be quiescent (Complete) before re-schedule
+  or dispose.
+- **LOD hysteresis**: enter radius is the safety band (speed × tick
+  margin); the exit multiplier only widens the far direction. Reconciles
+  classify by the wide radius (collider-on is safe).
+
+### Lessons (append to the standing list)
+
+- An editor with Burst compilation disabled runs every job ~20× slow and
+  poisons ALL job-row numbers — and a long managed job on a worker also
+  delays the ENGINE's culling jobs (`WaitForJobGroupID`). Check the Jobs
+  menu before profiling; recognize managed execution by the
+  `ExecuteJobFunction.Invoke()` row name.
+- Reader-driven lazy recomputes bill their cost to whichever component
+  reads first — profile rows can indict the messenger. Split markers
+  around the sample vs the push settled it in one capture.
+- Fixed-cadence ticks must re-arm from their DUE time; re-arming from
+  `Time.time` lets one hitch permanently re-stack de-phased ticks.
+- DiagnosticsHUD "Frame Time" is wall clock (CPU + GPU/present wait +
+  editor loop) — the profiler's CPU number will always read lower; use the
+  HUD's busy-CPU/GPU split + bound verdict to pick the next lever.
+
+---
+
+## 0.1 PREVIOUS SESSION HANDOFF (2026-07-09)
 
 Branch `claude/cosmic-shore-perf-opt-g8j6n0` — tracked by
 **PR #588** (https://github.com/froglet-studio/Cosmic-Shore/pull/588); pushes
@@ -196,7 +339,8 @@ workload.** Two independent Burst linear scans reading 20× their confirmed
 cost points at the jobs running as managed IL in the editor (Burst disabled,
 still async-compiling after the script reload, or Jobs Debugger + full safety
 checks). A real 20× population (~500k prisms) is implausible (memory,
-rendering). **User check before any further code on these rows (TODO A0):**
+rendering). **User check before any further code on these rows (TODO A0 —
+RESOLVED 07-15: Burst WAS disabled; user enabled it, see §0):**
 in the editor menu, `Jobs ▸ Burst ▸ Enable Compilation` ON,
 `Jobs ▸ Burst ▸ Safety Checks ▸ Off` for the capture, `Jobs ▸ Jobs Debugger`
 OFF, leak detection OFF — then re-capture. Expected: both job rows sub-ms.
@@ -275,7 +419,8 @@ row name is itself the managed-execution tell; Burst-compiled jobs show
 the job type). TODO A0 (check `Jobs ▸ Burst ▸ Enable Compilation`, look
 for yellow Burst compile errors in the console) still wants an answer —
 it decides whether `LodClassifyJob`'s remaining 2 ms is real on this
-machine — but the volume path no longer depends on it:
+machine — but the volume path no longer depends on it
+*(RESOLVED 07-15: Burst was indeed disabled — see §0)*:
 
 **Shipped `4ba827ef` — async volume sum (snapshot + worker thread):**
 `Cell.EnsureVolumeFresh` now schedules `CellVolumeSumJob` via
@@ -346,10 +491,11 @@ CPU.
 
 **Next datums wanted (in order):** (1) TODO A0 — the `Jobs ▸ Burst`
 menu state / console Burst errors (decides `LodClassifyJob`'s 2 ms and
-frees the worker thread); (2) DiagnosticsHUD bound verdict in the crowded
-view; (3) what the second camera stack entry ("Camera") is in the scene
-and its culling mask; (4) a development-build capture as ground truth
-(no EditorLoop, no PlayModeView wrapper).
+frees the worker thread) *(RESOLVED 07-15: it was disabled; enabled — see
+§0 for the Burst-ON verification checklist)*; (2) DiagnosticsHUD bound
+verdict in the crowded view; (3) what the second camera stack entry
+("Camera") is in the scene and its culling mask; (4) a development-build
+capture as ground truth (no EditorLoop, no PlayModeView wrapper).
 
 ### Session-wide lesson list (for the next agent)
 
