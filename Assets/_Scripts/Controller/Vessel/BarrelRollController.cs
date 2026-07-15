@@ -6,18 +6,23 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// TIME level-5 'Barrel Roll' (ElementalAbilityMapSO upgrade). While boosting with the
-    /// right stick at the circle's perimeter, the vessel rolls — clockwise on the right half
-    /// of the stick circle, counterclockwise on the left — animating the model about its
+    /// TIME level-5 'Barrel Roll' (ElementalAbilityMapSO upgrade). One roll per BOOST press:
+    /// while boosting with the stick at FULL deflection the vessel rolls once — holding the
+    /// stick at the perimeter is fine (it never repeats; the next boost press grants the next
+    /// roll, and a stick already pinned at max when boost starts rolls immediately).
+    /// Clockwise on the right half of the stick circle, counterclockwise on the left —
+    /// animating the model about its
     /// forward axis while a ModifyVelocity displacement orthogonal to travel (direction picked
     /// by the left stick) carries the vessel sideways. The trail becomes disjointed from
     /// facing, so for the roll duration blockRotation is overridden with the ACTUAL travel
     /// direction (Course + velocityShift): the spawn loop lays travel-aligned bridging prisms,
     /// and remote peers get the same orientation through the owner-written n_BlockRotation.
     ///
-    /// Only the visual child rolls — never the root transform (the camera reads the root's
+    /// The 360° spin lives on the visual child only — the camera reads the root's
     /// rotation/up, Course stays untouched, and a 360° root roll cannot be expressed through
-    /// the accumulatedRotation slerp target).
+    /// the accumulatedRotation slerp target. A very small REAL root roll (rootRollDegrees,
+    /// same handedness as the animation) IS applied through VesselTransformer.ApplyRotation
+    /// so the flight orientation banks subtly with the roll.
     ///
     /// Owner-driven: input polling only acts on the locally controlled vessel; the
     /// displacement replicates via the owner-authoritative NetworkTransform. Autopilot/AI
@@ -27,17 +32,22 @@ namespace CosmicShore.Gameplay
     public class BarrelRollController : MonoBehaviour
     {
         [Header("Trigger")]
-        [Tooltip("Right-stick radial magnitude treated as 'at the perimeter'. Uses the " +
+        [Tooltip("Stick radial magnitude treated as 'at the perimeter'. 1 = full deflection " +
+                 "only (the deadzone processor renormalizes a fully-deflected stick to " +
+                 "exactly 1, and the touch joystick clamps at its ring). Uses the " +
                  "normalized (radially clamped) stick vector, never the eased one — the " +
                  "per-axis ease makes diagonal magnitudes direction-dependent.")]
-        [SerializeField, Range(0.5f, 1f)] float perimeterThreshold = 0.95f;
-        [Tooltip("Seconds after a roll completes before another can trigger.")]
-        [SerializeField, Min(0f)] float cooldownSeconds = 1.2f;
+        [SerializeField, Range(0.5f, 1f)] float perimeterThreshold = 1f;
         [Tooltip("Flip the CW/CCW mapping if the roll direction reads backwards in playtest.")]
         [SerializeField] bool invertRollDirection;
 
         [Header("Roll")]
         [SerializeField, Min(0.1f)] float rollDurationSeconds = 0.6f;
+        [Tooltip("Very small REAL roll applied to the vessel root over the roll duration, in " +
+                 "the same direction (handedness) as the visual animation. Routed through " +
+                 "VesselTransformer.ApplyRotation (accumulatedRotation), so the flight " +
+                 "orientation keeps the new bank after the roll. 0 = visual-only.")]
+        [SerializeField, Range(0f, 30f)] float rootRollDegrees = 15f;
         [Tooltip("Peak sideways displacement speed injected through ModifyVelocity (world " +
                  "units/second; the transformer clamps its channel at 100).")]
         [SerializeField, Min(0f)] float nudgeSpeed = 60f;
@@ -45,12 +55,17 @@ namespace CosmicShore.Gameplay
                  "transform, then the vessel root's first child.")]
         [SerializeField] Transform rollVisualTarget;
 
+        // Float-safe "at max" comparison: deadzone renormalization / touch clamping land
+        // a hair under 1 on some frames.
+        const float ThresholdEpsilon = 0.005f;
+
         // Interface-typed: AutoPilotEnabled and InputStatus are default interface members on
         // IVesselStatus (routed through AIPilot/Player) and are not visible on the concrete
         // VesselStatus type.
         IVesselStatus _status;
         bool _rolling;
-        float _nextAllowedTime;
+        bool _wasBoosting;
+        bool _rollArmed;
         Quaternion _visualRestRotation;
 
         void Awake()
@@ -60,10 +75,21 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (_status == null || _rolling || Time.time < _nextAllowedTime) return;
+            if (_status == null) return;
+
+            // One roll per BOOST press: a fresh IsBoosting false→true transition arms a
+            // roll; triggering consumes it. The stick only needs to BE at the perimeter
+            // when the gates pass — a stick already pinned at max when boost starts
+            // rolls immediately, and holding it there never repeats (the next boost
+            // press grants the next roll).
+            bool boosting = _status.IsBoosting;
+            if (boosting && !_wasBoosting) _rollArmed = true;
+            _wasBoosting = boosting;
+
+            if (!_rollArmed || _rolling) return;
+            if (!boosting) return;
             if (_status.AutoPilotEnabled) return;
             if (_status.IsTranslationRestricted) return;
-            if (!_status.IsBoosting) return;
             if (!_status.ElementalAbilityHandler.IsUpgradeActive(Element.Time)) return;
 
             var input = _status.InputStatus;
@@ -72,7 +98,7 @@ namespace CosmicShore.Gameplay
             // LEFT stick only — the steering stick. (The right stick is not a Sparrow
             // input; the earlier right-stick trigger was a spec typo.)
             var stick = input.LeftNormalizedJoystickPosition;
-            if (stick.magnitude < perimeterThreshold) return;
+            if (stick.magnitude < perimeterThreshold - ThresholdEpsilon) return;
 
             // Right half of the circle → clockwise (positive angle about +forward is CW
             // from the pilot's seat in Unity's left-handed space); left half → CCW.
@@ -95,6 +121,7 @@ namespace CosmicShore.Gameplay
             CSDebug.Log($"[BarrelRoll] Triggered: {(rollSign > 0f ? "CW" : "CCW")}, " +
                         $"stick ({stick.x:F2}, {stick.y:F2}), nudge dir {nudge.normalized}");
 
+            _rollArmed = false;
             transformer.ModifyVelocity(nudge.normalized * nudgeSpeed, rollDurationSeconds);
             StartCoroutine(RollRoutine(rollSign, transformer));
         }
@@ -102,7 +129,6 @@ namespace CosmicShore.Gameplay
         IEnumerator RollRoutine(float rollSign, VesselTransformer transformer)
         {
             _rolling = true;
-            _nextAllowedTime = Time.time + rollDurationSeconds + cooldownSeconds;
 
             var visual = ResolveVisualTarget();
             var visualStart = visual ? visual.localRotation : Quaternion.identity;
@@ -127,6 +153,15 @@ namespace CosmicShore.Gameplay
 
                 if (visual)
                     visual.localRotation = visualStart * Quaternion.AngleAxis(angle, localRollAxis);
+
+                // Very small REAL roll on the root, same handedness as the visual spin —
+                // distributed linearly across the duration and routed through
+                // accumulatedRotation (which a small angle CAN express, unlike the 360°),
+                // so the flight orientation banks with the roll and keeps the tilt after.
+                if (rootRollDegrees > 0f)
+                    transformer.ApplyRotation(
+                        rollSign * rootRollDegrees * (Time.deltaTime / rollDurationSeconds),
+                        transform.forward);
 
                 // Bridging prisms: orient along the actual travel direction each frame while
                 // the displacement is live.
