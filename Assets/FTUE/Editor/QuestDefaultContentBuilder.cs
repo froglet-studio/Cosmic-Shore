@@ -347,17 +347,9 @@ namespace CosmicShore.Editor
         static QuestPhaseGraphSO BuildPhase5()
         {
             var g = NewPhase(5, "Episodes & Beyond — Finale",
-                "Entry: vessel unlocked. Enable the (authored non-interactable) Episodes button, guide " +
-                "to the episodes screen, closing dialogue ('you can also buy new game modes'), then " +
-                "Quest End — the FTUE is complete and persisted to UGS.");
-
-            var enableEpisodes = Add<QuestSetButtonInteractableNode>(g, "Enable Episodes Button");
-            enableEpisodes.buttonKey = "episodes";
-            enableEpisodes.interactable = true;
-
-            var ctaEpisodes = Add<QuestHighlightCTANode>(g, "CTA: Episodes");
-            ctaEpisodes.target = CallToActionTargetType.EpisodeMenu;
-            ctaEpisodes.completionAction = UserActionType.ViewEpisodeMenu;
+                "Entry: vessel unlocked. Closing dialogue ('you can also buy new game modes'), then " +
+                "enable the (authored non-interactable) Episodes button, CTA to the episodes screen, " +
+                "then Quest End — the FTUE is complete and persisted to UGS.");
 
             var finale = Add<QuestDialogueNode>(g, "Finale Dialogue");
             finale.lines = new List<string>
@@ -366,10 +358,20 @@ namespace CosmicShore.Editor
                 "That's everything, pilot. The HyperSea is yours!",
             };
 
+            // The Episodes button is authored non-interactable — enable it only AFTER the
+            // finale dialogue names it, so its CTA gate is satisfiable when it lights up.
+            var enableEpisodes = Add<QuestSetButtonInteractableNode>(g, "Enable Episodes Button");
+            enableEpisodes.buttonKey = "episodes";
+            enableEpisodes.interactable = true;
+
+            var ctaEpisodes = Add<QuestHighlightCTANode>(g, "CTA: Episodes");
+            ctaEpisodes.target = CallToActionTargetType.EpisodeMenu;
+            ctaEpisodes.completionAction = UserActionType.ViewEpisodeMenu;
+
             var end = Add<QuestEndNode>(g, "FTUE Complete");
 
-            Chain(g, enableEpisodes, ctaEpisodes, finale, end);
-            return Finish(g, enableEpisodes);
+            Chain(g, finale, enableEpisodes, ctaEpisodes, end);
+            return Finish(g, finale);
         }
 
         // ── Helpers ────────────────────────────────────────────────────
