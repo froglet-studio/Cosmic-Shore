@@ -62,7 +62,22 @@ namespace CosmicShore.UI
             if (!_showing || !statusText) return;
             _dotTimer += Time.unscaledDeltaTime;
             int dots = 1 + (int)(_dotTimer / dotInterval) % 4;   // 1..4 on a loop
-            statusText.text = statusBaseText + new string('.', dots);
+
+            // While the arena is still laying (the hold that keeps this panel up), run a live
+            // build readout under the status line — elapsed clock + prism progress — so the
+            // wait reads as a loading bar, not a hang. Rendered into statusText so no scene/
+            // prefab rewiring is needed.
+            if (PrismTrailBuilder.IsLayingInProgress)
+            {
+                statusText.text =
+                    $"{statusBaseText}{new string('.', dots)}\n" +
+                    $"<size=70%>BUILDING ARENA  {PrismTrailBuilder.LayProgress:P0}  " +
+                    $"({PrismTrailBuilder.LayDoneCount:N0} / {PrismTrailBuilder.LayQueuedCount:N0})  ·  {_dotTimer:F0}s</size>";
+            }
+            else
+            {
+                statusText.text = statusBaseText + new string('.', dots);
+            }
         }
 
         /// <param name="ct">Cancellation (HUD lifecycle).</param>

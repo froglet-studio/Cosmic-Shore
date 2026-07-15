@@ -128,6 +128,8 @@ namespace CosmicShore.Gameplay
         static int s_budgetFrame = -1;
         static double s_budgetSpentMs;
         static int s_activeBudgetedLays;
+        static int s_layQueuedTotal;
+        static int s_layDoneTotal;
 
         /// <summary>
         /// True while any budgeted lay is still placing prisms. The connecting panel holds on
@@ -135,6 +137,16 @@ namespace CosmicShore.Gameplay
         /// bloom behind the loading screen, never during play.
         /// </summary>
         public static bool IsLayingInProgress => s_activeBudgetedLays > 0;
+
+        /// <summary>Prisms laid so far in the current budgeted batch (for progress readouts).</summary>
+        public static int LayDoneCount => s_layDoneTotal;
+
+        /// <summary>Total prisms queued in the current budgeted batch (for progress readouts).</summary>
+        public static int LayQueuedCount => s_layQueuedTotal;
+
+        /// <summary>0..1 progress of the current budgeted batch (1 when idle).</summary>
+        public static float LayProgress =>
+            s_layQueuedTotal <= 0 ? 1f : Mathf.Clamp01((float)s_layDoneTotal / s_layQueuedTotal);
 
         static bool BudgetExhausted(float budgetMs)
         {
@@ -162,6 +174,14 @@ namespace CosmicShore.Gameplay
             if (!prefab || points == null || points.Length == 0) return;
 
             float budget = Mathf.Max(0.5f, budgetMsPerFrame);
+
+            // Fresh batch: reset the shared progress counters once the previous batch fully drained.
+            if (s_activeBudgetedLays == 0)
+            {
+                s_layQueuedTotal = 0;
+                s_layDoneTotal = 0;
+            }
+            s_layQueuedTotal += points.Length;
             s_activeBudgetedLays++;
             try
             {
@@ -178,6 +198,7 @@ namespace CosmicShore.Gameplay
                     long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
                     LayOne(prefab, new PrismLay(points[i], domain), parent, trail, $"{ownerPrefix}::{i}");
                     s_budgetSpentMs += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * s_msPerTick;
+                    s_layDoneTotal++;
                 }
             }
             finally
