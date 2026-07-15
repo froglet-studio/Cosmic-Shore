@@ -165,7 +165,7 @@ namespace CosmicShore.Gameplay
                 int spawned = 0;
                 if (toSpawn > 0 && preyAvailable)
                 {
-                    SpawnFaunaPopulation(host, runtime, faunaCfg, color, toSpawn);
+                    SpawnFaunaPopulation(host, runtime, spawnProfile, faunaCfg, color, toSpawn);
                     spawned = toSpawn;
                 }
 
@@ -190,20 +190,34 @@ namespace CosmicShore.Gameplay
         /// controlling domain. Spawning in the controller's color fixes "no Jade fauna
         /// when Jade controls" and lets the dominant color's fauna hunt the minority.
         /// Each spawn is lineage-bound to its species config so it counts toward the
-        /// per-cell population and can reproduce. Seeks the densest mass concentration
-        /// when present, the crystal/cell anchor otherwise.
+        /// per-cell population and can reproduce. Predators spawn on the densest mass
+        /// concentration (crystal/cell anchor when empty); herbivores rotate around the
+        /// profile's spawn-point ring when one is configured (see SpawnProfileSO).
         /// </summary>
         // Jitter radius around the mass concentration when spawning a population, so the
         // swarm spreads over the buildup instead of stacking on one point.
         const float FaunaSpawnJitter = 150f;
 
-        void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, FaunaConfigurationSO faunaCfg, Domains color, int count)
+        // Rotates herbivore waves around the spawn-point ring. Instance state — one
+        // spawner per cell — so interleaved species advance the same rotation and
+        // successive groups land on different points.
+        int _herbivoreSpawnPointIndex;
+
+        void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, SpawnProfileSO spawnProfile,
+            FaunaConfigurationSO faunaCfg, Domains color, int count)
         {
-            // Spawn new fauna right ON the prioritized mass concentration (the densest region
-            // the cell senses) so they appear on the buildup they'll forage, not at the
-            // distant cell centre — they start clearing immediately. GetDensestRegionAnyDomain
-            // falls back to the crystal/cell anchor when there's no mass yet.
-            Vector3 goal = host.GetDensestRegionAnyDomain();
+            bool isPredator = faunaCfg.FaunaPrefab && faunaCfg.FaunaPrefab.Diet == FaunaDiet.Predator;
+            bool useSpawnRing = !isPredator &&
+                spawnProfile.HerbivoreSpawnPointCount > 1 && spawnProfile.HerbivoreSpawnRadius > 0f;
+
+            // Ring mode: each herbivore wave takes the next point on the ring — its own
+            // feeding ground, away from where the last group (and any predator drawn to
+            // it) already is. Legacy mode: spawn right ON the densest mass concentration
+            // so they start clearing immediately (GetDensestRegionAnyDomain falls back to
+            // the crystal/cell anchor when there's no mass yet).
+            Vector3 goal = useSpawnRing
+                ? NextHerbivoreSpawnPoint(host, spawnProfile)
+                : host.GetDensestRegionAnyDomain();
 
             for (int i = 0; i < count; i++)
             {
@@ -211,6 +225,14 @@ namespace CosmicShore.Gameplay
                 var fauna = SpawnFaunaWithDomain(host, faunaCfg.FaunaPrefab, goal, color, spawnPos);
                 if (fauna) fauna.AssignLineage(host, faunaCfg);
             }
+        }
+
+        Vector3 NextHerbivoreSpawnPoint(Cell host, SpawnProfileSO spawnProfile)
+        {
+            int pointCount = spawnProfile.HerbivoreSpawnPointCount;
+            float angle = (_herbivoreSpawnPointIndex++ % pointCount) * (Mathf.PI * 2f / pointCount);
+            return host.transform.position
+                   + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * spawnProfile.HerbivoreSpawnRadius;
         }
     }
 }

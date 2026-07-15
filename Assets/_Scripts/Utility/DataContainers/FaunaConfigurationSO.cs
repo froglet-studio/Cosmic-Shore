@@ -32,5 +32,12 @@ namespace CosmicShore.Utility
                  "not the primary control (starvation is) — size it to what the frame budget " +
                  "tolerates, not to where you want the population to sit. 0 = uncapped.")]
         [Min(0)] public int MaxLivePopulation = 0;
+
+        [Header("Deployment behavior")]
+        [Tooltip("0-1: pulls this species' roaming goal toward the cell centre so it spends " +
+                 "more time on the central canopy (the gyroids around the nucleus). Herbivores " +
+                 "only — predators hunt prey, not places. Leave 0 (default) for deployments " +
+                 "that must range far from centre (e.g. the Skim Race track-cleanup swarm).")]
+        [Range(0f, 1f)] public float CenterFocusBias = 0f;
     }
 }

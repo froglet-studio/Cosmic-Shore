@@ -154,7 +154,15 @@ namespace CosmicShore.Gameplay
         protected override Vector3 ResolveGoal()
         {
             if (forager && cell != null)
-                return cell.GetDensestRegionAnyDomain();
+            {
+                Vector3 goal = cell.GetDensestRegionAnyDomain();
+                // Centre focus (per-deployment, FaunaConfigurationSO.CenterFocusBias):
+                // pull the forager's roaming goal toward the cell centre so the swarm
+                // lingers on the central canopy. One lerp per goal update; 0 = off
+                // (keep 0 for far-ranging deployments like the Skim Race cleanup swarm).
+                float bias = SourceConfig ? SourceConfig.CenterFocusBias : 0f;
+                return bias > 0f ? Vector3.Lerp(goal, cell.transform.position, bias) : goal;
+            }
             return base.ResolveGoal();
         }
 

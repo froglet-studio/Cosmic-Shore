@@ -56,6 +56,15 @@ namespace CosmicShore.Gameplay
                  "centroid). Prey inside it breaks apart and suctions into the mouth. " +
                  "Default 15 ~ the shark's danger-prism length.")]
         [Min(0f)] public float attackRange = 15f;
+        [Tooltip("TERRITORIAL (tiger-shark) predation: each predator claims a fixed den " +
+                 "point at spawn and only hunts prey within this radius of it, patrolling " +
+                 "home when its patch is empty — solitary hunters that never converge on " +
+                 "the same school, so each herbivore group faces at most one predator. " +
+                 "0 = non-territorial (legacy: hunts the nearest prey cell-wide).")]
+        [Min(0f)] public float territoryRadius = 600f;
+        [Tooltip("How far from the cell centre each predator's den point lands (random " +
+                 "direction, rolled once at spawn) — spreads the solitary hunters apart.")]
+        [Min(0f)] public float territoryAnchorDistance = 400f;
 
         [Header("Death (wither)")]
         [Tooltip("Continuity rule — nothing pops out of existence. On death the body withers " +

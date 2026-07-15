@@ -38,6 +38,8 @@ namespace CosmicShore.Gameplay
         // --- Hunting (predator) ---------------------------------------------
         Fauna _targetPrey;          // prey being pursued (refreshed each behavior tick)
         Transform _mouth;           // suction sink at the danger-prism centroid
+        Vector3 _territoryAnchor;   // this predator's den — fixed at spawn (tiger-shark territoriality)
+        bool _hasTerritory;
 
         [HideInInspector] public float Phase;
 
@@ -88,7 +90,19 @@ namespace CosmicShore.Gameplay
             crystal = LifeFormCrystal.EnsureElementalCrystal(this);
 
             if (diet == FaunaDiet.Predator)
+            {
                 InitializeMouth();
+
+                // Tiger-shark territoriality: roll the den once, at spawn. Random
+                // direction from the cell centre spreads concurrent predators apart
+                // (the species caps at 2-3 per cell) with zero coordination cost.
+                if (data.territoryRadius > 0f)
+                {
+                    Vector3 centre = cell ? cell.transform.position : transform.position;
+                    _territoryAnchor = centre + Random.onUnitSphere * data.territoryAnchorDistance;
+                    _hasTerritory = true;
+                }
+            }
 
             float minSpeed = Mathf.Max(0f, data.minSpeed);
             float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed);
@@ -249,14 +263,22 @@ namespace CosmicShore.Gameplay
         bool IsBerserk => cell != null && cell.AggressionLevel == CellAggressionLevel.Level2;
 
         /// <summary>
-        /// Nearest live, non-immune herbivore in the host cell's fauna registry.
-        /// O(live fauna) per behavior tick — the registry is small (bounded by the
-        /// per-species MaxLivePopulation caps).
+        /// Live, non-immune herbivore from the host cell's fauna registry. Territorial
+        /// (tiger-shark) mode: only prey inside the territory counts, and the pick is the
+        /// one closest to the DEN — the predator works its own patch instead of racing
+        /// other predators to the same school. Non-territorial: nearest to self (legacy).
+        /// O(live fauna) per behavior tick either way — the registry is small (bounded by
+        /// the per-species MaxLivePopulation caps) and this is one sqrMagnitude per entry.
         /// </summary>
         Fauna FindNearestPreyFauna()
         {
             var host = cell;
             if (host == null) return null;
+
+            Vector3 origin = _hasTerritory ? _territoryAnchor : transform.position;
+            float maxSqr = _hasTerritory
+                ? data.territoryRadius * data.territoryRadius
+                : float.PositiveInfinity;
 
             var fauna = host.LiveFauna;
             Fauna best = null;
@@ -267,8 +289,8 @@ namespace CosmicShore.Gameplay
                 if (!f || f == this) continue;
                 if (f.Diet != FaunaDiet.Herbivore || !f.IsAlivePrey || f.IsPredationImmune) continue;
 
-                float d = (f.transform.position - transform.position).sqrMagnitude;
-                if (d < bestSqr) { bestSqr = d; best = f; }
+                float d = (f.transform.position - origin).sqrMagnitude;
+                if (d < bestSqr && d <= maxSqr) { bestSqr = d; best = f; }
             }
 
             return best;
@@ -345,6 +367,14 @@ namespace CosmicShore.Gameplay
                 cell.HasNucleusControlZone && cell.HasSensedExteriorMass)
                 Goal = cell.GetDensestRegionAnyDomain();
 
+            // Centre focus (per-deployment, FaunaConfigurationSO.CenterFocusBias): pull
+            // the herbivore's roaming goal toward the cell centre so it lingers on the
+            // central canopy (the gyroids around the nucleus). Edibility is untouched —
+            // a nucleus claim stays protected. One lerp per tick; 0 = off.
+            if (diet == FaunaDiet.Herbivore && cell != null &&
+                SourceConfig && SourceConfig.CenterFocusBias > 0f)
+                Goal = Vector3.Lerp(Goal, cell.transform.position, SourceConfig.CenterFocusBias);
+
             // Predators hunt PREY, not mass: seek the nearest live herbivore the cell
             // senses (Cell.LiveFauna — the fauna analogue of the prism density grid).
             // Replaces the v1 approximation where predators converged on prism-density
@@ -357,6 +387,10 @@ namespace CosmicShore.Gameplay
             {
                 _targetPrey = FindNearestPreyFauna();
                 if (_targetPrey) Goal = _targetPrey.transform.position;
+                // Empty patch: patrol the den instead of roaming the shared density goal —
+                // a territorial predator stays out of other predators' territories, so a
+                // distant herbivore group faces at most the one shark whose patch it's in.
+                else if (_hasTerritory) Goal = _territoryAnchor;
             }
 
             if (!IsFinite(Goal) || Goal.sqrMagnitude < 0.001f)

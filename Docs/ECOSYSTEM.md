@@ -584,6 +584,33 @@ face → suction → watch:**
   swimming shark. Residual structure (spindles) evaporates via `CheckForLife`;
   starvation deaths keep the classic extremities-first wither.
 
+**v3.1 — territorial predators + herbivore breathing room** (sharks were too
+effective; herbivores got eaten before they could graze). Three levers, all
+O(1) per tick:
+- **Tiger-shark territoriality** (`LightFaunaDataSO.territoryRadius` /
+  `territoryAnchorDistance`; 0 = legacy cell-wide hunting): each predator rolls
+  a fixed **den** point at spawn (random direction × anchor distance from the
+  cell centre — spreads the 2-3 concurrent sharks apart with zero
+  coordination). Prey selection keys off distance to the DEN and ignores prey
+  outside the territory; an empty patch means **patrolling home**, not roaming
+  the shared density goal — so any herbivore group faces at most one predator
+  and distant groups feed unmolested. Same single registry loop as before.
+  The per-frame mouth check is unchanged — a shark still eats anything that
+  swims into its jaws.
+- **Centre focus** (`FaunaConfigurationSO.CenterFocusBias`, per-deployment,
+  default 0): lerps the herbivore/forager roaming goal toward the cell centre
+  so the species lingers on the central canopy (the gyroids around the
+  nucleus). Edibility untouched — a nucleus claim stays protected. Blob
+  brittlestar + tadpole run 0.35; **leave 0 on far-ranging deployments** (the
+  Skim Race cleanup swarm must reach the whole track).
+- **Herbivore spawn-point ring** (`SpawnProfileSO.HerbivoreSpawnPointCount` /
+  `HerbivoreSpawnRadius`; 0-1 = legacy densest-mass spawn): successive
+  herbivore waves rotate between N points spaced evenly on a circle around the
+  cell centre (equidistant from each other and the centre), so each new group
+  gets its own feeding ground and a head start before a territorial predator's
+  patch reaches it. Computed once per 30s wave; predators keep the
+  densest-mass spawn. Blob runs 3 points at radius 400.
+
 ---
 
 ## 8. Build order
