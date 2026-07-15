@@ -266,7 +266,7 @@ namespace CosmicShore.UI
             _canvasRect = _rootCanvas.GetComponent<RectTransform>();
             _menuAudio = GetComponent<MenuAudio>();
 
-            Debug.Log($"[ScreenSwitcher] Start — rootCanvas={_rootCanvas.name}, viewport={GetViewportWidthInCanvasUnits()}, screens={GetScreenCount()}");
+            Debug.Log($"[ScreenSwitcher] Start - rootCanvas={_rootCanvas.name}, viewport={GetViewportWidthInCanvasUnits()}, screens={GetScreenCount()}");
 
             CacheScreenComponents();
             LayoutScreensToViewport();
@@ -307,7 +307,7 @@ namespace CosmicShore.UI
             PlayerPrefs.Save();
 
             // Game-related modals require context (selected game, party state) that is
-            // lost on scene transition — never auto-reopen them after returning from a game.
+            // lost on scene transition - never auto-reopen them after returning from a game.
             // ARCADE is included because re-opening the arcade overlay on return causes
             // stale game configuration to resurface.
             if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE
@@ -333,7 +333,7 @@ namespace CosmicShore.UI
 
             if (Gamepad.current == null) return;
 
-            // Y (buttonNorth) toggles freestyle from any state — checked before
+            // Y (buttonNorth) toggles freestyle from any state - checked before
             // the freestyle early-return so it works as both enter and exit.
             // A cooldown prevents accidental rapid toggling after each transition.
             if (crystalClickHandler
@@ -551,7 +551,7 @@ namespace CosmicShore.UI
             // Block screen navigation while in freestyle mode (live state, not just the flag)
             if (InFreestyle)
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked — in freestyle");
+                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - in freestyle");
                 return;
             }
 
@@ -566,17 +566,17 @@ namespace CosmicShore.UI
 
             if (IsIndexDisabled(ScreenIndex))
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked — screen disabled ({GetScreenIdForIndex(ScreenIndex)})");
+                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - screen disabled ({GetScreenIdForIndex(ScreenIndex)})");
                 return;
             }
 
             if (ScreenIndex == currentScreen)
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked — already on this screen");
+                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - already on this screen");
                 return;
             }
 
-            Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) — sliding from {currentScreen} to {ScreenIndex} ({GetScreenIdForIndex(ScreenIndex)})");
+            Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) - sliding from {currentScreen} to {ScreenIndex} ({GetScreenIdForIndex(ScreenIndex)})");
 
             // Notify the outgoing screen
             if (_screenMap.TryGetValue(currentScreen, out var exitingScreen))
@@ -748,7 +748,7 @@ namespace CosmicShore.UI
             //  1. Explicit per-button icon lists (NavActiveImages / NavInactiveImages).
             //     Each entry is one button's Active/Inactive icon child, in screen
             //     visual order. This is the authoritative mechanism when populated
-            //     because it only ever toggles the icon GameObjects — never the
+            //     because it only ever toggles the icon GameObjects - never the
             //     button GameObjects themselves.
             //
             //  2. Legacy fallback: NavBar points directly at the buttons container and
@@ -756,7 +756,7 @@ namespace CosmicShore.UI
             //
             // The two must not run together. NavBar is also used by SetNavBarVisible to
             // hide the *entire* nav bar (gradient + line + buttons + arrows) during
-            // freestyle, so it intentionally points at the outer container — which is
+            // freestyle, so it intentionally points at the outer container - which is
             // NOT the buttons container. Running the child-toggle loop against that
             // outer container would SetActive() the buttons container's children (the
             // individual button GameObjects), making a whole button disappear. So the

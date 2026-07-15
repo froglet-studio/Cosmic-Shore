@@ -33,7 +33,7 @@ namespace CosmicShore.UI
         // Polled each frame to drive the tube cooldown icon in the freed HUD slot.
         private SquirrelTubeActionExecutor _tubeExecutor;
 
-        // Single source of truth — the same ColorSet the vessels and prisms use (R5).
+        // Single source of truth - the same ColorSet the vessels and prisms use (R5).
         private Color ResolveDomainColor(Domains domain) =>
             gameData != null && gameData.ThemeManagerData != null
                 ? gameData.ThemeManagerData.GetDomainUIColor(domain)
@@ -160,7 +160,7 @@ namespace CosmicShore.UI
         private void HandleJoustCollision(string playerName)
         {
             if (!view) return;
-            // Shared global event — only react to our own vessel's joust collisions.
+            // Shared global event - only react to our own vessel's joust collisions.
             if (playerName != _vesselStatus.PlayerName) return;
 
             // Joust and crystal share ONE impact icon; flash it with the joust colour.

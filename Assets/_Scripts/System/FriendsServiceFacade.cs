@@ -51,7 +51,7 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Initializes the Friends service. Must be called after UGS auth sign-in.
-        /// Safe to call multiple times — subsequent calls are no-ops.
+        /// Safe to call multiple times - subsequent calls are no-ops.
         /// </summary>
         public async UniTask InitializeAsync()
         {

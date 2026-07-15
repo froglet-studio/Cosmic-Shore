@@ -42,7 +42,7 @@ namespace CosmicShore.Editor
             EditorUtility.DisplayDialog("Wire Elemental Petal Bars",
                 wired > 0
                     ? $"Set up {wired} element flower(s) on '{view.name}'.\n\n" +
-                      "Reposition the *_Flower containers to taste — five rotated petals are created " +
+                      "Reposition the *_Flower containers to taste - five rotated petals are created " +
                       "inside each at play time, tinted from the shared ElementalBarsConfig."
                     : "Nothing wired. Confirm ElementalBarsConfig exists at " + ConfigPath + ".",
                 "OK");

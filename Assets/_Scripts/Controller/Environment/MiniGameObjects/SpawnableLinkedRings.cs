@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     /// an interlocking cage of rings.
     ///
     /// Ring orientations are distributed using a Fibonacci spiral on the sphere for
-    /// near-uniform coverage. The result looks like an armillary sphere — overlapping
+    /// near-uniform coverage. The result looks like an armillary sphere - overlapping
     /// circular rails at every angle, perfect for finding creative flight paths through
     /// the intersections.
     /// </summary>

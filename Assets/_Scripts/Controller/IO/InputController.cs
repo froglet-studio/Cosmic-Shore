@@ -111,7 +111,7 @@ namespace CosmicShore.Gameplay
 
             // Engage on the rising edge of both LMBs being held at the same
             // time. Once engaged, the user has to release at least one and
-            // re-press to re-trigger this — releasing escape afterward leaves
+            // re-press to re-trigger this - releasing escape afterward leaves
             // the gesture state pre-armed but does not auto re-engage.
             bool bothHeld = left.LeftButton && right.LeftButton;
             if (bothHeld && !prevBothLeftButtonsHeld)

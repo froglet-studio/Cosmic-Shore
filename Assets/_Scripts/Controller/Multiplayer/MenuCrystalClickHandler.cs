@@ -13,7 +13,7 @@ namespace CosmicShore.Gameplay
     /// Toggles between menu state (autopilot + menu UI) and freestyle state
     /// (player control + freestyle UI) on Menu_Main.
     ///
-    /// Operates exclusively on <see cref="GameDataSO.LocalPlayer"/> — in multiplayer,
+    /// Operates exclusively on <see cref="GameDataSO.LocalPlayer"/> - in multiplayer,
     /// each client has its own instance controlling only the locally-owned vessel.
     /// Other clients' vessels are unaffected by this toggle.
     ///
@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
 
         [SerializeField, Tooltip("Keep player input paused until after the camera blend completes. " +
                                  "With AI off and input paused, the vessel has no steering input and " +
-                                 "cruises forward on its own minimum-speed throttle — producing a " +
+                                 "cruises forward on its own minimum-speed throttle - producing a " +
                                  "seamless \"vessel settles in before you drive\" feel during the " +
                                  "transition. Especially useful with vessel-follow camera modes where " +
                                  "the camera barely moves and stray input would be the most jarring thing.")]
@@ -92,7 +92,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Toggles between menu and freestyle states.
-        /// Safe to call from a UI Button — silently ignored while transitioning,
+        /// Safe to call from a UI Button - silently ignored while transitioning,
         /// before the local player vessel is ready, or if the local player does
         /// not own their vessel (multiplayer ownership guard).
         /// </summary>
@@ -122,7 +122,7 @@ namespace CosmicShore.Gameplay
             var ct = _cts.Token;
             var player = gameData.LocalPlayer;
 
-            // In multiplayer, avoid touching Time.timeScale — it would freeze all
+            // In multiplayer, avoid touching Time.timeScale - it would freeze all
             // local rendering including other players' vessels. Only unpause for
             // single-player (local host with no remote clients).
             if (!IsMultiplayerSession())
@@ -131,8 +131,8 @@ namespace CosmicShore.Gameplay
             player.Vessel.ToggleAIPilot(false);
 
             // Hand steering to the player either now or after the blend, depending on the flag.
-            // With AI off and input still paused, the vessel cruises forward on MinimumSpeed —
-            // no erratic AI steering, no stray player input — producing the "forward only
+            // With AI off and input still paused, the vessel cruises forward on MinimumSpeed -
+            // no erratic AI steering, no stray player input - producing the "forward only
             // during transition" feel that keeps the camera blend reading cleanly.
             if (!lockInputDuringEnterTransition)
                 player.InputController.SetPause(false);
@@ -148,8 +148,8 @@ namespace CosmicShore.Gameplay
             freestyleEvents.OnGameStateTransitionStart.Raise();
 
             // Run UI fade and camera transition duration in parallel. The camera controller
-            // picks the duration per current mode — CrystalOrbit = long, vessel modes = short.
-            // _isTransitioning stays true until both complete — prevents click spam.
+            // picks the duration per current mode - CrystalOrbit = long, vessel modes = short.
+            // _isTransitioning stays true until both complete - prevents click spam.
             await UniTask.WhenAll(
                 FadeBetweenStates(menuAlpha: 0f, freestyleAlpha: 1f, ct),
                 UniTask.Delay((int)(CurrentTransitionDuration() * 1000),
@@ -174,13 +174,13 @@ namespace CosmicShore.Gameplay
 
             // Raise SOAP event early so the camera blend starts immediately.
             // Camera controller captures CM PlayerCam position as a static snapshot,
-            // then blends back to orbit — runs in parallel with the UI fade.
+            // then blends back to orbit - runs in parallel with the UI fade.
             freestyleEvents.OnMenuStateTransitionStart.Raise();
 
             // Run UI fade and camera transition duration in parallel.
             // FadeToSavedMenuAlphas restores each menu canvas group to its pre-freestyle
             // alpha (not blindly to 1, which would force-show hidden panels like ArcadeScreen).
-            // _isTransitioning stays true until both complete — prevents click spam.
+            // _isTransitioning stays true until both complete - prevents click spam.
             await UniTask.WhenAll(
                 FadeToSavedMenuAlphas(ct),
                 UniTask.Delay((int)(CurrentTransitionDuration() * 1000),
@@ -195,7 +195,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Blend duration to use for this transition. When a MainMenuCameraController is
-        /// wired, its ActiveTransitionDuration (per-mode) wins — so CrystalOrbit reads long
+        /// wired, its ActiveTransitionDuration (per-mode) wins - so CrystalOrbit reads long
         /// while vessel-follow modes read short. Otherwise falls back to the serialized value.
         /// </summary>
         float CurrentTransitionDuration()

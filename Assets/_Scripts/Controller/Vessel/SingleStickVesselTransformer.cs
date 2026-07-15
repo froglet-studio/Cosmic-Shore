@@ -64,7 +64,7 @@ namespace CosmicShore.Gameplay
 
             speed = Mathf.Lerp(speed, ThrottleScaler * boostAmount + MinimumSpeed, LERP_AMOUNT * Time.deltaTime);
 
-            // Scale the output speed only — see VesselTransformer.MoveShip: multiplying
+            // Scale the output speed only - see VesselTransformer.MoveShip: multiplying
             // into the persistent smoothed `speed` field compounds per frame and
             // saturates every sub-1 modifier to a near-stop.
             float effectiveSpeed = speed * throttleMultiplier;

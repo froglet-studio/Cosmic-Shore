@@ -18,7 +18,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 {
     /// <summary>
     /// In-build diagnostics overlay (uGUI). Auto-spawns in the Editor and Development builds only
-    /// (stripped from Release). Shows live performance data and can record a "diagnostic" — a
+    /// (stripped from Release). Shows live performance data and can record a "diagnostic" - a
     /// timed spike capture written to the user's Documents folder as JSON + a readable .txt.
     ///
     /// • Normal mode: FPS + Frame Time (ms) + CPU/GPU split (busy CPU work vs GPU time) and a
@@ -78,13 +78,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         ProfilerRecorder _drawCalls, _setPass, _batches, _triangles, _vertices, _gcAlloc;
         ProfilerRecorder _rpcs, _netVars, _netBytes;
 
-        // ui — two side-by-side blocks, each a label sub-column + value sub-column
+        // ui - two side-by-side blocks, each a label sub-column + value sub-column
         Text _labelA, _valueA, _labelB, _valueB, _advBtnLabel, _diagBtnLabel;
         RectTransform _panel, _labelART, _valueART, _labelBRT, _valueBRT, _buttonRow;
         GameObject _canvasGO;
         Font _font;
 
-        // cached once — local machine region + UTC offset (UGS auto-picks the Relay region and
+        // cached once - local machine region + UTC offset (UGS auto-picks the Relay region and
         // doesn't surface it, so we report the client's OS region; ping gives latency to host).
         string _regionCache, _utcCache;
 
@@ -223,7 +223,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             Row(la, va, "FPS", Col(FpsColor(_displayFps), _displayFps.ToString("F0")));
             Row(la, va, "Frame Time", Col(MsColor(_displayMs), _displayMs.ToString("F1") + " ms"));
 
-            // CPU vs GPU dependence — busy CPU (work minus present wait) against GPU time,
+            // CPU vs GPU dependence - busy CPU (work minus present wait) against GPU time,
             // plus the verdict for which side limits the frame.
             float busyCpuMs = FrameBoundness.BusyCpuMs(_smCpuMs, _smMainMs, _smWaitMs, _smRenderMs);
             Row(la, va, "CPU (busy)", MsValue(busyCpuMs));
@@ -232,7 +232,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
             if (_advanced)
             {
-                // Left block — local frame cost (cpu/gpu threads + render + memory).
+                // Left block - local frame cost (cpu/gpu threads + render + memory).
                 Header(la, va, "CPU / GPU");
                 Row(la, va, "CPU Total", MsValue(_smCpuMs));
                 Row(la, va, "Main Thread", MsValue(_smMainMs));
@@ -256,7 +256,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 Row(la, va, "Gfx Driver", gfxBytes > 0 ? Col(White, Mb(gfxBytes)) : Col(Dim, "n/a"));
                 Row(la, va, "Device", Col(Dim, DeviceMemory()));
 
-                // Right block — connection (network + region).
+                // Right block - connection (network + region).
                 Header(lb, vb, "Network");
                 double rtt = Rtt();
                 Row(lb, vb, "Ping", rtt >= 0
@@ -321,7 +321,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         static string Mb(long bytes) => (bytes / (1024f * 1024f)).ToString("F0") + " MB";
 
-        // Reserved (Unity's total footprint) against the device's physical RAM — the number
+        // Reserved (Unity's total footprint) against the device's physical RAM - the number
         // that predicts OS kills on mobile.
         static string ReservedRamValue(long reservedBytes)
         {
@@ -515,7 +515,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         static string BuildTxt(DiagReport r)
         {
             var sb = new StringBuilder(2048);
-            sb.AppendLine($"Cosmic Shore diagnostic — {r.scene}   {r.timestamp}");
+            sb.AppendLine($"Cosmic Shore diagnostic - {r.scene}   {r.timestamp}");
             sb.AppendLine($"duration {r.durationSec}s · {r.frames} frames · avg {r.avgFps:F1} fps " +
                           $"({r.avgFrameMs:F1} ms) · p99 {r.p99FrameMs:F1} ms · max {r.maxFrameMs:F1} ms");
             sb.AppendLine($"draws {r.draws} · tris {r.tris:N0} · RTT {(r.rttMs >= 0 ? r.rttMs.ToString("F0") + " ms" : "n/a")}");
@@ -582,7 +582,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             _valueBRT = CreateRect("ValuesB", _panel, new Vector2(0, 1), new Vector2(0, 1), new Vector2(310, -TopY), new Vector2(90, 40));
             _valueB = MakeColumn(_valueBRT, TextAnchor.UpperLeft);
 
-            // Button row — a container Relayout() slides up to sit just below the table.
+            // Button row - a container Relayout() slides up to sit just below the table.
             _buttonRow = CreateRect("ButtonRow", _panel, new Vector2(0, 1), new Vector2(0, 1),
                 new Vector2(Pad, -52), new Vector2(0, BtnH));
             _advBtnLabel = CreateButton("Advanced", _buttonRow, 0, 92, ToggleAdvanced);

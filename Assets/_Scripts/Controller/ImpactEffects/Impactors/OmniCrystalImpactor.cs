@@ -38,7 +38,7 @@ namespace CosmicShore.Gameplay
             if (Crystal.IsExploding)
                 return;
 
-            // Always enforce domain matching — vessels can only collect
+            // Always enforce domain matching - vessels can only collect
             // crystals that belong to their domain (or unowned crystals).
             if (!IsDomainMatching(impactee.OwnDomain))
                 return;

@@ -20,12 +20,12 @@ namespace CosmicShore.Gameplay
     /// Data-driven view for the Maelstrom scene. Two panels, picked by <see cref="TournamentController"/>'s
     /// phase:
     ///
-    ///   • <b>Intro/active panel</b> (activeRoot) — used for the lobby, the between-round hub, AND the
+    ///   • <b>Intro/active panel</b> (activeRoot) - used for the lobby, the between-round hub, AND the
     ///     end-of-tournament results entry. Shows the top bar (mode pool, round, leading domain), the
     ///     scroll of <b>Tournament Data Cards</b> (one per round, newest on top), and the button:
     ///       – lobby/hub: <b>START</b> + an animated countdown that <b>auto-starts</b> the round.
     ///       – complete (summary phase): <b>NEXT</b> → reveals the summary panel (no countdown).
-    ///   • <b>Summary panel</b> (summaryRoot) — winning-domain banner + the final domain ranking, with
+    ///   • <b>Summary panel</b> (summaryRoot) - winning-domain banner + the final domain ranking, with
     ///     host-only Play Again / Main Menu.
     ///
     /// Domain colours come from a <see cref="DomainColorPaletteSO"/> (no Graphic arrays). Runs on every
@@ -46,24 +46,24 @@ namespace CosmicShore.Gameplay
         [Header("Shared")]
         [SerializeField] TMP_Text titleText;
 
-        [Header("Active — top bar")]
+        [Header("Active - top bar")]
         [SerializeField] GameObject activeRoot;
         [Tooltip("The mode pool, e.g. \"GAMEMODES : HEX RACE - SCRUM - JOUST\".")]
         [SerializeField] TMP_Text gameModesText;
         [Tooltip("\"ROUND N\".")]
         [SerializeField] TMP_Text roundCounterText;
-        [Tooltip("Subtitle — auto-filled \"First domain to N points wins\", where N is the Maelstrom " +
+        [Tooltip("Subtitle - auto-filled \"First domain to N points wins\", where N is the Maelstrom " +
                  "win target from Tools > Cosmic Shore > End Game Conditions (TournamentDataSO.EffectiveWinTarget).")]
         [SerializeField] TMP_Text raceRuleText;
         [Tooltip("\"LEADING DOMAIN : JADE\" (domain name coloured from the palette).")]
         [SerializeField] TMP_Text leadingDomainText;
 
-        [Header("Active — round scroll")]
+        [Header("Active - round scroll")]
         [SerializeField] TournamentRoundCard roundCardPrefab;
         [SerializeField] Transform historyContent;
         [SerializeField] ScrollRect historyScrollRect;
 
-        [Header("Active — START / NEXT button + countdown")]
+        [Header("Active - START / NEXT button + countdown")]
         [SerializeField] Button readyButton;
         [SerializeField] TMP_Text readyButtonLabel;
         [Tooltip("Animated countdown text, e.g. \"Game will start in 12s\". Pulses each tick.")]
@@ -75,7 +75,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Summary panel")]
         [SerializeField] GameObject summaryRoot;
-        [Tooltip("Summary title — set to the mode name (\"MAELSTROM\").")]
+        [Tooltip("Summary title - set to the mode name (\"MAELSTROM\").")]
         [SerializeField] TMP_Text summaryTitleText;
         [Tooltip("\"GAME WON!\" if the local player's domain won, else \"GAME OVER\".")]
         [SerializeField] TMP_Text summaryInfoText;
@@ -98,7 +98,7 @@ namespace CosmicShore.Gameplay
         bool IsHost => NetworkManager.Singleton == null || NetworkManager.Singleton.IsServer;
 
         bool _active;
-        bool _summaryMode;          // complete phase — the intro panel shows NEXT → summary
+        bool _summaryMode;          // complete phase - the intro panel shows NEXT → summary
         bool _summaryActionTaken;   // anti-spam for Play Again / Main Menu
         bool _localStarted;         // local-fallback auto-start guard
         int _lastShownSecs = -1;
@@ -195,7 +195,7 @@ namespace CosmicShore.Gameplay
             if (!leadingDomainText) return;
             var lead = WinningDomain();
             leadingDomainText.text = lead == Domains.Blue
-                ? "LEADING DOMAIN : —"
+                ? "LEADING DOMAIN : -"
                 : $"LEADING DOMAIN : <color=#{ColorUtility.ToHtmlStringRGB(DomainColor(lead))}>{lead.ToString().ToUpperInvariant()}</color>";
         }
 
@@ -240,7 +240,7 @@ namespace CosmicShore.Gameplay
         }
 
         // Scroll DOWN to the latest round (bottom). Deferred a frame so the layout group / size fitter
-        // has rebuilt the content height first — setting the position before layout is why the earlier
+        // has rebuilt the content height first - setting the position before layout is why the earlier
         // attempt landed on empty space. (Requires a VerticalLayoutGroup + ContentSizeFitter on Content.)
         void AutoScrollToCurrent()
         {
@@ -263,7 +263,7 @@ namespace CosmicShore.Gameplay
             // ShowSummaryPanel() clears _active, so a stray second synchronous invocation can't fall
             // through to the round-start path and launch a game off the summary screen. The onClick is
             // code-wired only now (the inspector OnHostStartPressed entries were removed from
-            // Maelstrom.unity — they double-fired NEXT/Play Again/Main Menu into BeginNextRound).
+            // Maelstrom.unity - they double-fired NEXT/Play Again/Main Menu into BeginNextRound).
             if (!_active) return;
 
             if (_summaryMode) { ShowSummaryPanel(); return; }   // NEXT → results
@@ -274,7 +274,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            if (IsHost && !_localStarted)   // degraded path — start immediately
+            if (IsHost && !_localStarted)   // degraded path - start immediately
             {
                 _localStarted = true;
                 TournamentController.Instance?.BeginNextRound();
@@ -303,7 +303,7 @@ namespace CosmicShore.Gameplay
 
             if (summaryWinningDomainText)
                 summaryWinningDomainText.text = winner == Domains.Blue
-                    ? "WINNING DOMAIN : —"
+                    ? "WINNING DOMAIN : -"
                     : $"WINNING DOMAIN : <color=#{ColorUtility.ToHtmlStringRGB(DomainColor(winner))}>{winner.ToString().ToUpperInvariant()}</color>";
 
             BuildSummaryRankText();
@@ -381,7 +381,7 @@ namespace CosmicShore.Gameplay
             if (!IsHost || _summaryActionTaken) return;
             if (TournamentController.Instance == null)
             {
-                CSDebug.LogError("[TournamentSceneView] TournamentController.Instance is null — cannot restart.");
+                CSDebug.LogError("[TournamentSceneView] TournamentController.Instance is null - cannot restart.");
                 return;
             }
             _summaryActionTaken = true;
@@ -394,7 +394,7 @@ namespace CosmicShore.Gameplay
             if (!IsHost || _summaryActionTaken) return;
             if (onClickToMainMenu == null)
             {
-                CSDebug.LogError("[TournamentSceneView] onClickToMainMenu event not wired — cannot return to menu.");
+                CSDebug.LogError("[TournamentSceneView] onClickToMainMenu event not wired - cannot return to menu.");
                 return;
             }
             _summaryActionTaken = true;
@@ -411,7 +411,7 @@ namespace CosmicShore.Gameplay
         // ── Roster sourcing / ordering ──────────────────────────────────────────────
 
         /// <summary>
-        /// The roster for the round-0 preview — the connected human players (every peer sees all Player
+        /// The roster for the round-0 preview - the connected human players (every peer sees all Player
         /// NetworkObjects via the spawn manager). Between rounds the cards come from History instead.
         /// </summary>
         List<TournamentPlayerSnapshot> BuildActiveRoster()

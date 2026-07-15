@@ -12,7 +12,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class SparrowVesselTelemetry : VesselTelemetry
     {
-        [Header("Stat Events — Sparrow")]
+        [Header("Stat Events - Sparrow")]
         [SerializeField] private VesselStatEventSO prismBlocksShotStat;
         [SerializeField] private VesselStatEventSO skyburstMissilesShotStat;
         [SerializeField] private VesselStatEventSO dangerBlocksSpawnedStat;

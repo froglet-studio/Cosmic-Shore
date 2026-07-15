@@ -6,7 +6,7 @@ using CosmicShore.Data;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Spawns prisms along the Schwarz P minimal surface — the simplest triply periodic
+    /// Spawns prisms along the Schwarz P minimal surface - the simplest triply periodic
     /// minimal surface (TPMS).
     ///
     /// The surface is approximated by the zero-level-set of:
@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     ///
     /// This creates a network of interconnected tunnels running in all three coordinate
     /// directions, with cubic symmetry. Each tunnel opens into six neighbors, forming
-    /// a labyrinth that rewards exploration. The structure tiles infinitely — we sample
+    /// a labyrinth that rewards exploration. The structure tiles infinitely - we sample
     /// a finite number of periods.
     ///
     /// Schwarz discovered this surface in 1865; it appears naturally in block copolymers,
@@ -103,7 +103,7 @@ namespace CosmicShore.Gameplay
                             (w - halfExtent) * worldScale
                         );
 
-                        // Gradient of f gives surface normal — use it for block orientation
+                        // Gradient of f gives surface normal - use it for block orientation
                         Vector3 gradient = new Vector3(
                             -Mathf.Sin(u),
                             -Mathf.Sin(v),

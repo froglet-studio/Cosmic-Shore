@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
         float membraneRadius;
 
         [Header("Shard Density")]
-        [Tooltip("Approximate spacing between shards — lower values produce more shards")]
+        [Tooltip("Approximate spacing between shards - lower values produce more shards")]
         [SerializeField] int shardDistance = 100;
 
         [Header("Optional Fields")]

@@ -48,5 +48,10 @@ namespace CosmicShore.Data
         // AstroLeague (37): hypersea soccer domain minigame. See
         // _Scripts/Controller/Arcade/ASTROLEAGUE.md.
         AstroLeague = 37,
+        // NucleusRush (38, display name "Brood Rush"): nucleus-control domain
+        // minigame - every 30s fauna wave born under your domain's nucleus claim
+        // scores a point; first domain to the wave target (default 3) wins. See
+        // _Scripts/Controller/Arcade/NUCLEUSRUSH.md.
+        NucleusRush = 38,
     }
 }

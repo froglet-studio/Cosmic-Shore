@@ -304,7 +304,7 @@ namespace CosmicShore.Gameplay
             else if (IsMission)
             {
                 GameCanvas.AwardsContainer.SetActive(true);
-                // Mission rewards — captain system removed, awards disabled until refactored
+                // Mission rewards - captain system removed, awards disabled until refactored
                 int crystalsEarned = 0;
                 GameCanvas.CrystalsEarnedText.text = crystalsEarned.ToString();
                 GameCanvas.XPEarnedText.text = "0";

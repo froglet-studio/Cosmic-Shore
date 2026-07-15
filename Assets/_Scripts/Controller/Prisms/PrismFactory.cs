@@ -45,7 +45,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private InteractivePrismPoolManager squirrelPrismPool;
         [SerializeField] private InteractivePrismPoolManager rhinoPrismPool;
         [SerializeField] private InteractivePrismPoolManager interactivePrismPool;
-        [Tooltip("Dedicated pool for fast-growing, collider-live-on-spawn boost prisms — the " +
+        [Tooltip("Dedicated pool for fast-growing, collider-live-on-spawn boost prisms - the " +
                  "BoostRingBuilder rings (omnicrystal, joust, Squirrel tube). Serves the " +
                  "FastGrowPrism prefab. Separate from the shared pools so the waitTime/GrowthRate " +
                  "overrides can't leak into normal trail/AOE prisms.")]
@@ -59,7 +59,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("Grow-in speed for boost prisms (fast bloom). PrismScaleManager clamps " +
                  "growthRate * deltaTime into [0.05, 0.1] lerp/frame, so values below ~6 are " +
                  "indistinguishable from the default; 8 pins the bloom at the max speed across " +
-                 "framerates. The collider never waits on this — boost prisms hold a full-size " +
+                 "framerates. The collider never waits on this - boost prisms hold a full-size " +
                  "collider from frame 0 (Prism.HoldColliderAtFullSize).")]
         [SerializeField] private float boostPrismGrowthRate = 8f;
 
@@ -204,7 +204,7 @@ namespace CosmicShore.Gameplay
         // joust danger blocks). waitTime 0 → the collider comes on the frame after Initialize
         // instead of after the 0.6s spawn window, so a skimmer can boost off it right away;
         // a high GrowthRate blooms it in fast. These timing overrides are safe because this is
-        // a DEDICATED pool — they never recycle into a normal trail/AOE prism.
+        // a DEDICATED pool - they never recycle into a normal trail/AOE prism.
         GameObject SpawnBoostPrism(PrismEventData data)
         {
             if (boostPrismPool == null) { CSDebug.LogWarning("[PrismFactory] boostPrismPool not set."); return null; }
@@ -300,7 +300,7 @@ namespace CosmicShore.Gameplay
             if (renderer && materialSet)
             {
                 renderer.GetPropertyBlock(mpb);
-                // Apply basic material set — refine later if different prisms need different materials
+                // Apply basic material set - refine later if different prisms need different materials
                 mpb.SetColor(DarkColorID, colorSet.OutsideBlockColor);
                 mpb.SetColor(BrightColorID, colorSet.InsideBlockColor);
                 renderer.SetPropertyBlock(mpb);

@@ -93,7 +93,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// True when the local player owns the shared UGS presence/discovery lobby
         /// (i.e. they were the first user to sign in and create it). This has no
-        /// bearing on game-launch authority or party ownership — it only reflects
+        /// bearing on game-launch authority or party ownership - it only reflects
         /// who happens to own the global discovery session.
         /// </summary>
         [HideInInspector] public bool IsPresenceLobbyHost;

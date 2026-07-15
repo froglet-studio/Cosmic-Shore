@@ -19,8 +19,8 @@ namespace CosmicShore.Gameplay
     ///     PrismScaleAnimator. Per-prism DOMAIN (incl. neutral Blue) and KIND (plain / danger /
     ///     shielded / supershielded) come themed on the plan; nothing pops.
     ///   • Recycling is TRANSPORT, not removal: the container suctions to a point (scale → ~0),
-    ///     relocates, re-poses the SAME prism instances into a fresh plan — re-colouring and
-    ///     re-theming each prism's kind reversibly (<see cref="PrismKinds.Retheme"/>) — and blooms
+    ///     relocates, re-poses the SAME prism instances into a fresh plan - re-colouring and
+    ///     re-theming each prism's kind reversibly (<see cref="PrismKinds.Retheme"/>) - and blooms
     ///     back out. Mass is conserved by construction. Prisms that fauna ate in the meantime (the
     ///     active-force sink) are re-minted through the sanctioned pool-reuse lifecycle
     ///     (<see cref="Prism.Initialize"/>), which is creation, never a resurrection of consumed mass.
@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
     /// </summary>
     public class Microscene : MonoBehaviour
     {
-        const float SuctionScale = 0.002f; // never exactly zero — keeps lossyScale well-formed
+        const float SuctionScale = 0.002f; // never exactly zero - keeps lossyScale well-formed
 
         static readonly Element[] PickupElements = { Element.Charge, Element.Mass, Element.Space, Element.Time };
 
@@ -52,7 +52,7 @@ namespace CosmicShore.Gameplay
         /// The destination a recycle is transporting this scene to, set the instant
         /// <see cref="RecycleAsync"/> begins and cleared when it completes. During the ~2×
         /// transition the container is still visually suctioning at its OLD <see cref="Anchor"/>,
-        /// but it has already CLAIMED this slot — the conveyor reads this so it neither double-fills
+        /// but it has already CLAIMED this slot - the conveyor reads this so it neither double-fills
         /// the slot nor measures a stale reach while the bloom is in flight. Null when settled.
         /// </summary>
         public Vector3? PendingAnchor { get; private set; }
@@ -79,7 +79,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Lay the scene for the first time at its current pose. Prisms are laid a few per frame
         /// (single-frame prism batches are a known spike) via the shared builder, each growing in
-        /// from zero through its own scale animator — nothing pops in.
+        /// from zero through its own scale animator - nothing pops in.
         /// </summary>
         public async UniTask PopulateAsync(MicroscenePlan plan, System.Random rng, CancellationToken ct)
         {
@@ -126,7 +126,7 @@ namespace CosmicShore.Gameplay
                 transform.localScale = Vector3.one;
                 NotifyPrismPositions();
 
-                // Replacement crystals mint only now, at full container scale — Crystal.Start()
+                // Replacement crystals mint only now, at full container scale - Crystal.Start()
                 // stamps crystalValue from lossyScale, so minting while suctioned would leave
                 // permanently worthless pickups.
                 TopUpCrystals(plan, rng);
@@ -168,14 +168,14 @@ namespace CosmicShore.Gameplay
 
                 // Full re-initialize for EVERY prism (not just eaten ones): ResetState unregisters
                 // and CreateBlockCoroutine re-registers at the new position, which re-files the
-                // cell's per-domain density grids — UpdatePosition alone never re-files them (the
+                // cell's per-domain density grids - UpdatePosition alone never re-files them (the
                 // registration-time-binding gap in Docs/SPATIAL_INDEX.md), so a moved-but-not-
                 // reregistered prism would leave phantom fauna-sense density at the abandoned site.
                 // For fauna-eaten slots this is the pool-reuse mint: ResetState re-arms the scale
                 // animator that SetupDestruction disabled, so the replacement mass grows in from zero.
                 block.Initialize();
 
-                // AFTER Initialize — on an eaten slot the animator is only re-armed inside ResetState,
+                // AFTER Initialize - on an eaten slot the animator is only re-armed inside ResetState,
                 // so an earlier write would be silently dropped.
                 block.TargetScale = lay.Point.Scale;
 
@@ -187,7 +187,7 @@ namespace CosmicShore.Gameplay
             // Surviving crystals ride the belt to fresh plan slots (their value was stamped at full
             // scale when first minted); destroyed OR mid-collection ones drop out so TopUpCrystals
             // mints replacements. A crystal the player just skimmed is flying to the vessel on its
-            // own — detach it from the container so the suction doesn't scale it mid-flight, and stop
+            // own - detach it from the container so the suction doesn't scale it mid-flight, and stop
             // treating it as a belt resident. (Omni crystals self-destroy on body-collection, so they
             // simply become null below.)
             for (int i = _crystals.Count - 1; i >= 0; i--)
@@ -242,7 +242,7 @@ namespace CosmicShore.Gameplay
         void MintElementalCrystal(Vector3 localPosition, System.Random rng)
         {
             var set = ElementalCrystalSetSO.Load();
-            if (!set) return; // no elemental set in this project state — scenes still work without pickups
+            if (!set) return; // no elemental set in this project state - scenes still work without pickups
 
             var element = PickupElements[rng.Next(PickupElements.Length)];
             var prefab = set.GetPrefab(element);
@@ -250,7 +250,7 @@ namespace CosmicShore.Gameplay
 
             var crystal = Instantiate(prefab, transform);
             crystal.transform.localPosition = localPosition;
-            // MULTIPLY the prefab's authored scale (the elemental prefabs ship at root scale 10 —
+            // MULTIPLY the prefab's authored scale (the elemental prefabs ship at root scale 10 -
             // assigning would shrink the pickup and its trigger 10×). Sized before Start():
             // crystalValue and the element-level gain both read lossyScale.
             crystal.transform.localScale *= (float)(rng.NextDouble() * 0.2 + 0.1);
@@ -258,7 +258,7 @@ namespace CosmicShore.Gameplay
             crystal.gameObject.SetActive(true);
 
             // The standalone elemental prefabs carry no collection components (lifeform prefabs add
-            // them as authored overrides) — wire the same pair at runtime so the crystal is
+            // them as authored overrides) - wire the same pair at runtime so the crystal is
             // skimmable: the impactor collects, the ImpactCollider lets the skimmer side react.
             var impactor = crystal.gameObject.AddComponent<ElementalCrystalImpactor>();
             impactor.Crystal = crystal;
@@ -271,7 +271,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The omni jackpot: a body-collected, any-domain pickup (fuel + speed buff) — the richer,
+        /// The omni jackpot: a body-collected, any-domain pickup (fuel + speed buff) - the richer,
         /// rarer reward in the mix. Its prefab already carries OmniCrystalImpactor + ImpactCollider,
         /// so no runtime component wiring is needed; the manager-less defensive guards on
         /// Crystal/OmniCrystalImpactor make a local mint collectible without a CrystalManager.
@@ -287,7 +287,7 @@ namespace CosmicShore.Gameplay
 
             var crystal = Instantiate(_omniCrystalPrefab, transform);
             crystal.transform.localPosition = localPosition;
-            // A touch larger than an elemental skim — the omni is the "big" reward. Sized before
+            // A touch larger than an elemental skim - the omni is the "big" reward. Sized before
             // Start() so crystalValue (fuelAmount × lossyScale) reads the intended value.
             crystal.transform.localScale *= (float)(rng.NextDouble() * 0.2 + 0.2);
             crystal.enabled = true;
@@ -306,7 +306,7 @@ namespace CosmicShore.Gameplay
                     renderer.gameObject.AddComponent<FadeIn>();
         }
 
-        // ── Lifeforms (released to the cell — never toy property) ────────────
+        // ── Lifeforms (released to the cell - never toy property) ────────────
 
         void ReleaseLifeforms(MicroscenePlan plan, System.Random rng)
         {
@@ -338,11 +338,11 @@ namespace CosmicShore.Gameplay
                 {
                     var cfg = profile.SupportedFaunas[rng.Next(profile.SupportedFaunas.Count)];
                     if (!cfg || !cfg.FaunaPrefab) continue;
-                    // Respect the species' per-cell performance cap — the conveyor adds citizens,
+                    // Respect the species' per-cell performance cap - the conveyor adds citizens,
                     // never a parallel population.
                     if (cfg.MaxLivePopulation > 0 && cell.GetLiveFaunaCount(cfg) >= cfg.MaxLivePopulation) continue;
                     // …and the canonical prey-linked production gate (the ONE shared copy): no
-                    // herbivore without enough opposing mass, no predator without enough prey — a
+                    // herbivore without enough opposing mass, no predator without enough prey - a
                     // fauna spawned into famine just withers in ~30s.
                     bool isPredator = cfg.FaunaPrefab.Diet == FaunaDiet.Predator;
                     if (!FaunaReproductionRules.PreyAvailable(isPredator, cell.GetLiveHerbivoreCount(),
@@ -387,7 +387,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Movers contract (Docs/SPATIAL_INDEX.md): whenever the belt moves prisms, push their
-        /// positions into the spatial index so AOE, occupancy, and fauna senses stay honest. Cheap —
+        /// positions into the spatial index so AOE, occupancy, and fauna senses stay honest. Cheap -
         /// the index only rebuckets on 8m boundary crossings.
         /// </summary>
         void NotifyPrismPositions()

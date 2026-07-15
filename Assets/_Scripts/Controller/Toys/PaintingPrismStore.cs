@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// One recorded prism of a painting: PAINTING-LOCAL pose (independent of where the toybox
-    /// anchors the monument), scale, domain, and the prism type it was laid as. Compact fields —
+    /// anchors the monument), scale, domain, and the prism type it was laid as. Compact fields -
     /// thousands of these serialize per painting.
     /// </summary>
     [Serializable]
@@ -36,7 +36,7 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// Local persistence of the PRISMS a painting is made of, stroke by stroke — the drawing
+    /// Local persistence of the PRISMS a painting is made of, stroke by stroke - the drawing
     /// state itself, not just the stroke counter. This is what lets a half-finished monument
     /// physically regrow when the player returns from another painting, another game mode, or
     /// another session, and what the share exporter reconstructs in the web viewer.
@@ -44,7 +44,7 @@ namespace CosmicShore.Gameplay
     /// Same blessed pattern as the progress store (<see cref="Utility.DataAccessor"/> JSON in
     /// persistentDataPath), one file per painting so a Taj Mahal's few-hundred-KB doesn't ride
     /// along with every small save. Prisms buffer in memory during a stroke and are committed
-    /// only when the stroke completes — an abandoned stroke is re-flown fresh, so its partial
+    /// only when the stroke completes - an abandoned stroke is re-flown fresh, so its partial
     /// prisms never persist.
     /// </summary>
     public static class PaintingPrismStore

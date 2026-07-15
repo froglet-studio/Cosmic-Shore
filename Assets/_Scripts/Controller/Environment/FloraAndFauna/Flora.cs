@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Planting")]
         [Tooltip("Flora plant within this fraction of the cell's membrane radius, dispersing them " +
-                 "across the cell so domain clusters form in distinct locations — fauna schools of " +
+                 "across the cell so domain clusters form in distinct locations - fauna schools of " +
                  "different domains then get directed at different clusters instead of comingling " +
                  "around the centre. 0 = use the flora's legacy fixed planting radius.")]
         [Range(0f, 1f)] [SerializeField] protected float plantRadiusCellFraction = 0.6f;

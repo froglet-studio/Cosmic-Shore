@@ -44,7 +44,7 @@ namespace CosmicShore.Tests
         [Test]
         public void MenuCrystalClickHandler_IsMultiplayerSession_ReturnsFalse_WhenNoNetworkManager()
         {
-            // In edit mode, NetworkManager.Singleton is null — should return false (not throw).
+            // In edit mode, NetworkManager.Singleton is null - should return false (not throw).
             var method = typeof(Gameplay.MenuCrystalClickHandler)
                 .GetMethod("IsMultiplayerSession", BindingFlags.Static | BindingFlags.NonPublic);
 

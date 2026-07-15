@@ -5,7 +5,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// One avatar slot inside a domain button's avatar strip. Pools are managed by
-    /// <see cref="DomainInfoData"/> — never instantiate or destroy these directly.
+    /// <see cref="DomainInfoData"/> - never instantiate or destroy these directly.
     /// </summary>
     public class DomainAvatarChip : MonoBehaviour
     {
@@ -15,7 +15,7 @@ namespace CosmicShore.UI
 
         public void Set(Sprite sprite, bool isLocal)
         {
-            // Keep the Image enabled even when sprite is null — that way a chip with
+            // Keep the Image enabled even when sprite is null - that way a chip with
             // a missing/loading avatar still shows the prefab's placeholder sprite
             // instead of disappearing entirely.
             if (avatarImage)

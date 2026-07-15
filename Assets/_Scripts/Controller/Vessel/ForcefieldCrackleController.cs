@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
     /// Receives impact points from <see cref="SkimmerForcefieldCracklePrismEffectSO"/>
     /// and feeds them to the crackle shader via MaterialPropertyBlock each frame.
     ///
-    /// All visual params live here as serialized fields — tweak them in the
+    /// All visual params live here as serialized fields - tweak them in the
     /// Inspector (edit mode or play mode) and they update live in Scene view.
     /// The SO only sends impact events (position, duration, intensity, radius).
     /// </summary>
@@ -35,7 +35,7 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(1f, 20f), Tooltip("Number of arc branches radiating from each impact.")]
         private float arcDensity = 8f;
 
-        [SerializeField, Range(0.01f, 0.5f), Tooltip("Arc width — lower = thinner, sharper arcs.")]
+        [SerializeField, Range(0.01f, 0.5f), Tooltip("Arc width - lower = thinner, sharper arcs.")]
         private float arcSharpness = 0.06f;
 
         [Header("Ring / Wave")]
@@ -52,15 +52,15 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0f, 0.5f), Tooltip("Rim glow intensity.")]
         private float fresnelRimIntensity = 0.08f;
 
-        [SerializeField, Range(1f, 8f), Tooltip("Fresnel exponent — higher = thinner rim.")]
+        [SerializeField, Range(1f, 8f), Tooltip("Fresnel exponent - higher = thinner rim.")]
         private float fresnelRimPower = 3f;
 
-        // Shader property IDs — impact data
+        // Shader property IDs - impact data
         static readonly int ImpactPositionsId     = Shader.PropertyToID("_ImpactPositions");
         static readonly int ImpactParamsId        = Shader.PropertyToID("_ImpactParams");
         static readonly int ImpactCountId         = Shader.PropertyToID("_ImpactCount");
 
-        // Shader property IDs — visual params
+        // Shader property IDs - visual params
         static readonly int CrackleColorAId       = Shader.PropertyToID("_CrackleColorA");
         static readonly int CrackleColorBId       = Shader.PropertyToID("_CrackleColorB");
         static readonly int FresnelRimColorId     = Shader.PropertyToID("_FresnelRimColor");

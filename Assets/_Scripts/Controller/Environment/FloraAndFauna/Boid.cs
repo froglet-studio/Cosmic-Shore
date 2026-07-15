@@ -61,7 +61,7 @@ namespace CosmicShore.Gameplay
         [Tooltip("ON = this boid is a food-web FORAGER (tadpole): it feeds when it grazes " +
                  "opposing mass (Explode effect) and starves (despawns) after starvationSeconds " +
                  "without feeding, so the swarm self-limits to available trail/flora prey. " +
-                 "OFF (default) = drone/mound boid (BoidController) — never feeds or starves.")]
+                 "OFF (default) = drone/mound boid (BoidController) - never feeds or starves.")]
         [SerializeField] bool forager = false;
 
         BoxCollider blockCollider;
@@ -88,9 +88,9 @@ namespace CosmicShore.Gameplay
 
             // Initialize the body health prism(s) so they actually render and become a real
             // (consumable) health prism. Like LightFauna's body prisms, they start at local
-            // scale 0 and only grow once Prism.Initialize fires the scale animator — without
+            // scale 0 and only grow once Prism.Initialize fires the scale animator - without
             // this the tadpole has no visible/active health prism. (LightFauna does the same
-            // for the brittlestar/shark body.) The cache also powers NotifyBodyPrismsMoved —
+            // for the brittlestar/shark body.) The cache also powers NotifyBodyPrismsMoved -
             // the per-frame spatial-index position sync for a moving body.
             var bodyPrisms = CacheBodyPrisms();
             for (int i = 0; i < bodyPrisms.Length; i++)
@@ -114,7 +114,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Foragers (tadpoles) actively HUNT the biggest mass concentration the cell senses
-        /// — the densest region of environment prisms across the whole density grid —
+        /// - the densest region of environment prisms across the whole density grid -
         /// regardless of aggression level, so they roam to the trail/flora buildup and clean
         /// it instead of sitting at the crystal/spawn. Emergent (reads the density grid),
         /// NOT track-following. `GetDensestRegionAnyDomain` falls back to the cell anchor
@@ -183,8 +183,8 @@ namespace CosmicShore.Gameplay
             Vector3 blockAttraction = Vector3.zero;
 
             // Squared-distance space: every per-neighbor use of `distance` below is either a
-            // radius threshold or the inverse-square weight diff.normalized/distance — and
-            // diff.normalized/distance == (diff/|diff|)/|diff| == diff/diff.sqrMagnitude — so
+            // radius threshold or the inverse-square weight diff.normalized/distance - and
+            // diff.normalized/distance == (diff/|diff|)/|diff| == diff/diff.sqrMagnitude - so
             // no per-neighbor sqrt is needed. Radii are squared once per behavior tick here.
             float separationRadiusSqr = separationRadius * separationRadius;
             float trailBlockInteractionRadiusSqr = trailBlockInteractionRadius * trailBlockInteractionRadius;
@@ -192,9 +192,9 @@ namespace CosmicShore.Gameplay
             float averageSpeed = 0.0f;
             int separatedBoidCount = 0;
 
-            // Everything this scan inspects is a registered prism — neighbor boids are
+            // Everything this scan inspects is a registered prism - neighbor boids are
             // sensed through their body HealthPrisms, attraction/grazing targets ARE
-            // prisms — so the whole neighborhood comes from the spatial index
+            // prisms - so the whole neighborhood comes from the spatial index
             // (Fauna.PrismScratch snapshot): no physics broadphase, no per-collider
             // GetComponent, no 256-slot truncation in dense fields. Entries can be
             // consumed by our own side effects mid-loop, so each is re-checked.
@@ -211,7 +211,7 @@ namespace CosmicShore.Gameplay
                 // Ignore our own body prism (if present)
                 if (blockCollider && otherPrism.gameObject == blockCollider.gameObject) continue;
 
-                // Only HealthPrisms can be fauna bodies — plain prisms skip the parent walk.
+                // Only HealthPrisms can be fauna bodies - plain prisms skip the parent walk.
                 Boid otherBoid = otherPrism is HealthPrism ? otherPrism.GetComponentInParent<Boid>() : null;
 
                 Vector3 diff = transform.position - otherPrism.transform.position;
@@ -235,8 +235,8 @@ namespace CosmicShore.Gameplay
                     blockAttraction += -diff / sqr;
 
                     // Drones eat OPPOSING-domain mass (combat). Foragers (tadpoles) are cleanup
-                    // grazers: they eat prisms of ANY domain — so the dominant trail gets grazed
-                    // too, not just the minority — but they must NOT eat:
+                    // grazers: they eat prisms of ANY domain - so the dominant trail gets grazed
+                    // too, not just the minority - but they must NOT eat:
                     //   - shielded prisms (protected structure like the Skim Race track), or
                     //   - other fauna's BODY prisms (brittlestar/shark bodies are HealthPrisms but
                     //     not Boids, so they reach this branch; herbivores eating fauna is the
@@ -245,8 +245,12 @@ namespace CosmicShore.Gameplay
                     var pp = otherPrism.prismProperties;
                     bool shielded = pp != null && (pp.IsShielded || pp.IsSuperShielded);
                     bool isFaunaBody = otherPrism is HealthPrism && otherPrism.GetComponentInParent<Fauna>() != null;
+                    // Foragers additionally respect the nucleus control zone: mass
+                    // inside the nucleus is the territorial claim (never eaten);
+                    // everything outside stays any-domain edible (Cell.IsPreyForHerbivore).
                     bool edible = forager
-                        ? (!shielded && !isFaunaBody)
+                        ? (!shielded && !isFaunaBody &&
+                           (cell == null || !cell.IsInsideNucleus(otherPrism.transform.position)))
                         : embeddedHealthPrism && otherPrism.Domain != embeddedHealthPrism.Domain;
 
                     if (sqr < trailBlockInteractionRadiusSqr && embeddedHealthPrism && edible)
@@ -332,7 +336,7 @@ namespace CosmicShore.Gameplay
             if (isKilled) return;
             isKilled = true;
             StopAllCoroutines();
-            // Continuity rule — nothing pops out of existence. The sealed Fauna.Die already
+            // Continuity rule - nothing pops out of existence. The sealed Fauna.Die already
             // dropped this boid's elemental crystal (mass conserved); shrink the body out
             // (suction-like) instead of instantly destroying it, then remove the husk.
             if (isActiveAndEnabled && gameObject.activeInHierarchy)
@@ -366,7 +370,7 @@ namespace CosmicShore.Gameplay
 
             // Intentionally a physics query: the mound blocks this hunts for are built
             // by NewBlock WITHOUT Prism.Initialize, so they never register with the
-            // spatial index — their colliders on the dedicated Mound layer are the
+            // spatial index - their colliders on the dedicated Mound layer are the
             // only way to find them (tiny population, narrow layer; physics is fine).
             Collider[] colliders = new Collider[0];
             while (colliders.Length == 0)
@@ -416,7 +420,7 @@ namespace CosmicShore.Gameplay
         void Update()
         {
             transform.position += currentVelocity * Time.deltaTime;
-            // Movers contract: the body prism is registered mass — keep its stored
+            // Movers contract: the body prism is registered mass - keep its stored
             // index position tracking the swimming boid.
             NotifyBodyPrismsMoved();
             transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, Time.deltaTime);

@@ -188,7 +188,7 @@ namespace CosmicShore.Gameplay
                     float bonusLevels = scoreDiff * weight;
 
                     // Composited through the ResourceSystem's comeback-modifier layer instead
-                    // of overwriting the base level — mid-turn crystal gains (AdjustLevel)
+                    // of overwriting the base level - mid-turn crystal gains (AdjustLevel)
                     // persist underneath the comeback bonus instead of being erased each tick.
                     rs.SetComebackModifier(element, Mathf.Max(0f, bonusLevels / 10f));
 
@@ -225,7 +225,7 @@ namespace CosmicShore.Gameplay
         }
 
         // ---------------------------------------------------------------
-        // Value reading — uses the configured ScoreDifferenceSource
+        // Value reading - uses the configured ScoreDifferenceSource
         // ---------------------------------------------------------------
         // Comeback buffs are now keyed off DOMAIN aggregates: a player on the
         // leading domain doesn't get a comeback buff even if they personally

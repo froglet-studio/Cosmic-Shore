@@ -23,6 +23,9 @@ namespace CosmicShore.Utility
         [SerializeField] public ScriptableEventNoParam OnCrystalSpawned;
         [SerializeField] public ScriptableEventNoParam OnCellItemsUpdated;
         [SerializeField] public ScriptableEventCellPhase OnPhaseChanged;
+        [Tooltip("Raised once per periodic fauna spawn-cycle tick (per species loop) with the " +
+                 "wave's domain + nucleus-claim state. Scoring systems (Brood Rush) listen here.")]
+        [SerializeField] public ScriptableEventFaunaWave OnFaunaWaveSpawned;
         
         [Header("Run Time References")]
         public CellConfigDataSO Config; // <- your "CellConfigData"
@@ -84,7 +87,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Get crystal for local player.
-        /// Tries local domain, then Blue (the "no team" sentinel — uncommitted crystals),
+        /// Tries local domain, then Blue (the "no team" sentinel - uncommitted crystals),
         /// then first crystal.
         /// </summary>
         public bool TryGetLocalCrystal(out Crystal crystal)

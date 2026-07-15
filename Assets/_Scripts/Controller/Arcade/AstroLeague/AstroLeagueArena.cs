@@ -4,25 +4,25 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// HyperSea stadium for Astro League — only the GAMEPLAY-bearing structure, constructed at
+    /// HyperSea stadium for Astro League - only the GAMEPLAY-bearing structure, constructed at
     /// runtime on every peer (purely deterministic local visuals + static physics, nothing here
     /// needs networking):
     /// - A play-boundary court that IS the Cell's nucleus: the arena builds an <c>AstroLeagueBoundary</c>
     ///   at the per-intensity shape + scaled dimensions, the server's ball bounces elastically off its
-    ///   walls (no collider; see <c>AstroLeagueBall.SetBoundary</c>) — flat polytope faces BANK the ball,
-    ///   the legacy sphere focuses it — and the nucleus visual is morphed to match (a convex-hull mesh
+    ///   walls (no collider; see <c>AstroLeagueBall.SetBoundary</c>) - flat polytope faces BANK the ball,
+    ///   the legacy sphere focuses it - and the nucleus visual is morphed to match (a convex-hull mesh
     ///   via <c>Cell.SetNucleusMesh</c> for polytope shapes, or a radius via <c>Cell.SetNucleusWorldRadius</c>
     ///   for the Sphere baseline). This replaced six invisible BoxCollider walls (−6 colliders).
     /// - Portal-style goal rings at each end, with anticipation glow as the ball approaches
     /// - Center ring marking the soccer midfield / kickoff line
     ///
     /// Everything ATMOSPHERIC or TERRITORIAL is owned by the standard Cell ecosystem, NOT by this
-    /// arena (CLAUDE.md ▸ "Universality — one HyperSea, one rule set"): the playfield boundary read
+    /// arena (CLAUDE.md ▸ "Universality - one HyperSea, one rule set"): the playfield boundary read
     /// is the Cell's <c>MembranePrefab</c>, the drifting motes are the Cell's <c>CytoplasmPrefab</c>,
     /// and the boundary/core is the Cell's <c>NucleusPrefab</c> (the arena morphs it to the court shape
-    /// via <c>Cell.SetNucleusMesh</c>/<c>SetNucleusWorldRadius</c> — it does not own a duplicate). A
+    /// via <c>Cell.SetNucleusMesh</c>/<c>SetNucleusWorldRadius</c> - it does not own a duplicate). A
     /// previous bespoke wireframe edge cage and a bespoke plankton particle system were removed because
-    /// they duplicated the membrane and cytoplasm — do not reintroduce arena-local versions of cell-owned visuals.
+    /// they duplicated the membrane and cytoplasm - do not reintroduce arena-local versions of cell-owned visuals.
     ///
     /// The whole stadium scales with match intensity: the controller calls <see cref="Build"/>
     /// with the intensity scale factor, and every dimension (and the goal-ring positions the
@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
         [Header("Config")]
         [SerializeField] AstroLeagueSettingsSO settings;
 
-        [Header("Base Dimensions (intensity 1 — scaled up by Build)")]
+        [Header("Base Dimensions (intensity 1 - scaled up by Build)")]
         [Tooltip("Used only to place the end goals (Z = ±arenaLength/2) and size the midfield ring; " +
                  "the play boundary itself is the spherical nucleus (settings.boundaryRadius).")]
         [SerializeField] float arenaLength = 300f;
@@ -70,7 +70,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Build (or rebuild) the stadium at the given intensity scale + court shape. Called by the
-        /// controller on every peer once the intensity is known. Idempotent — clears prior geometry
+        /// controller on every peer once the intensity is known. Idempotent - clears prior geometry
         /// first. The boundary is exposed via <see cref="Boundary"/> so the controller can morph the
         /// cell nucleus to match (mesh for polytopes, radius for the sphere).
         /// </summary>
@@ -84,13 +84,13 @@ namespace CosmicShore.Gameplay
             _goalR = goalRingRadius * _scale;
             _boundaryRadius = (settings != null ? settings.boundaryRadius : 190f) * _scale;
 
-            // Clear anything from a prior Build (defensive — normally built once per scene).
+            // Clear anything from a prior Build (defensive - normally built once per scene).
             for (int i = _generated.Count - 1; i >= 0; i--)
                 if (_generated[i] != null) Destroy(_generated[i]);
             _generated.Clear();
 
             // The nucleus IS the wall: build the court boundary (flat polytope faces BANK the ball; a
-            // sphere focuses it) and hand it to the ball — a reflect off its walls, no collider. The
+            // sphere focuses it) and hand it to the ball - a reflect off its walls, no collider. The
             // half-extents are (width/2, height/2, length/2); the goal axis is Z (length), so the flat
             // goal caps sit on the goal lines (±length/2) and "backboard" missed shots. The nucleus
             // visual is morphed to match by the controller (Cell.SetNucleusMesh / SetNucleusWorldRadius).
@@ -109,7 +109,7 @@ namespace CosmicShore.Gameplay
             if (_centralGoal)
             {
                 // ONE shared goal at center: two back-to-back portals. Push the ball +Z (toward the Ruby
-                // cone) to score for Ruby, -Z (toward the Jade cone) to score for Jade — the rings recede
+                // cone) to score for Ruby, -Z (toward the Jade cone) to score for Jade - the rings recede
                 // outward in each scoring direction so each side reads as a portal you shoot through.
                 BuildGoalPortal("CentralGoal_Ruby", Center, Vector3.back, RubyColor, out rubyRingMaterial);
                 BuildGoalPortal("CentralGoal_Jade", Center, Vector3.forward, JadeColor, out jadeRingMaterial);
@@ -126,7 +126,7 @@ namespace CosmicShore.Gameplay
         // ── Goal portals + midfield ──────────────────────────────────────────
 
         /// <summary>
-        /// Three concentric rings receding into the goal mouth — reads as a glowing
+        /// Three concentric rings receding into the goal mouth - reads as a glowing
         /// portal from anywhere in the arena (LineRenderers are inherently double-sided).
         /// </summary>
         void BuildGoalPortal(string name, Vector3 mouthCenter, Vector3 inward, Color color, out Material ringMaterial)

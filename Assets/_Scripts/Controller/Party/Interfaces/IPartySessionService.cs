@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Manages the UGS Relay session (the live party session used for actual
     /// multiplayer networking).  Responsible for creating, joining, and leaving
-    /// the session — not for Netcode transport.
+    /// the session - not for Netcode transport.
     ///
     /// Lifetime: extracted from <see cref="HostConnectionService"/> in Phase 9.
     /// Implemented by <c>PartySessionService</c> in the Services folder.

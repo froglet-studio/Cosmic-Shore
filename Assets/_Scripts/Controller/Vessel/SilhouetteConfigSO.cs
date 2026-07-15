@@ -27,10 +27,10 @@ namespace CosmicShore.Gameplay
         // Multipliers
         public float thicknessMultiplier = 1f; // block thickness
         public float lengthMultiplier    = 1f; // block length
-        public float gapMultiplier       = 1f; // row gap (±xShift) — already used
+        public float gapMultiplier       = 1f; // row gap (±xShift) - already used
         public float columnGapMultiplier = 1f; // NEW: spacing between columns (stride)
 
-        // Color source — domain (and danger) colors now come from the theme ColorSet (R5),
+        // Color source - domain (and danger) colors now come from the theme ColorSet (R5),
         // resolved by SilhouetteController via GameDataSO.ThemeManagerData. This flag just
         // gates whether the silhouette trail is tinted with the domain color at all.
         public bool useDomainPaletteColors = true;

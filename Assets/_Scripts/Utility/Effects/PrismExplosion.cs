@@ -57,7 +57,7 @@ namespace CosmicShore.Utility
 
             _mpb = new MaterialPropertyBlock();
 
-            // Start with renderer disabled — only PrismEffectsManager should enable it
+            // Start with renderer disabled - only PrismEffectsManager should enable it
             // during active animation. This prevents pool-retrieved objects from flashing.
             if (_renderer != null)
                 _renderer.enabled = false;
@@ -150,7 +150,7 @@ namespace CosmicShore.Utility
 
             if (_renderer != null)
             {
-                // Disable renderer — only PrismEffectsManager should enable it during
+                // Disable renderer - only PrismEffectsManager should enable it during
                 // active animation. Leaving it enabled here caused undistorted sphere
                 // flashes when OnReturnToPool was null or pool deactivation was delayed.
                 _renderer.enabled = false;

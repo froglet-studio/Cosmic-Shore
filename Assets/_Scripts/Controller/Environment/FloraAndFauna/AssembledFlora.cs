@@ -41,7 +41,7 @@ namespace CosmicShore.Gameplay
         /// The max recursion depth of the assembler
         /// </summary>
         [SerializeField] int depth = 50;
-        [Tooltip("Maximum LIVE prisms this flora can hold. Consumption frees budget — a grazed " +
+        [Tooltip("Maximum LIVE prisms this flora can hold. Consumption frees budget - a grazed " +
                  "flora regrows toward this cap instead of staying a permanent un-growing fragment.")]
         [SerializeField] int maxTotalSpawnedObjects = 1000;
         [SerializeField] int maxDepth = 30;
@@ -92,7 +92,7 @@ namespace CosmicShore.Gameplay
         {
             // Live-prism budget: the flora can hold at most maxTotalSpawnedObjects LIVE
             // prisms. Consumption frees budget, so a grazed flora regrows. (Was: a
-            // lifetime spawn counter that never decremented — a fully-grown flora could
+            // lifetime spawn counter that never decremented - a fully-grown flora could
             // never grow again even after fauna ate most of it, which is exactly the
             // "ungrowing gyroid fragments" failure observed in-game.)
             if (healthTracker != null && healthTracker.Count >= maxTotalSpawnedObjects) return;
@@ -100,7 +100,7 @@ namespace CosmicShore.Gameplay
             // Frenzy gate: flora grow at a steady rate until the cell crosses into Frenzy,
             // then freeze, resuming automatically when an active force (fauna grazing /
             // vessel abilities) brings the count back below the Frenzy exit threshold.
-            // Cell.FloraGrowingEnabled is the single source of truth — no early growth cap
+            // Cell.FloraGrowingEnabled is the single source of truth - no early growth cap
             // (that staggered self-limit was a cheat; the food web is the only down-force).
             if (cell && !cell.FloraGrowingEnabled) return;
 
@@ -193,7 +193,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Re-sprout growth branches from surviving prisms — each surviving prism still
+        /// Re-sprout growth branches from surviving prisms - each surviving prism still
         /// carries its Assembler, so wrapping it in a Branch puts it back in the grow
         /// rotation. Survivors are sampled RANDOMLY (not first-N) so repeated reseeds
         /// don't keep picking the same fully-bonded prisms; ones next to consumed gaps
@@ -250,7 +250,7 @@ namespace CosmicShore.Gameplay
         public override void Plant()
         {
             assembler = CreateNewAssembler();
-            // Disperse across the cell (fraction of membrane radius — see Flora base)
+            // Disperse across the cell (fraction of membrane radius - see Flora base)
             // instead of the old hard-coded 200m huddle around the crystal. Dispersed,
             // domain-coherent flora clusters are what give fauna schools of different
             // domains genuinely different anti-domain density targets.

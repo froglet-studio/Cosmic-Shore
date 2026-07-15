@@ -32,7 +32,7 @@ namespace CosmicShore.UI
         [Header("Volume / Pause Button")]
         [SerializeField] Button volumePauseButton;
         [Tooltip("Three-wedge per-domain volume indicator on the pause button face. " +
-                 "Optional — leave null if the button has no indicator wired yet.")]
+                 "Optional - leave null if the button has no indicator wired yet.")]
         [SerializeField] DomainVolumeIndicator domainVolumeIndicator;
         [Tooltip("Toggles freestyle <-> menu state. Pressing the volume/pause button exits freestyle.")]
         [SerializeField] MenuCrystalClickHandler crystalClickHandler;
@@ -170,7 +170,7 @@ namespace CosmicShore.UI
         // UI
         // ---------------------------------------------------------
 
-        // While flying freestyle, the gamepad Start button returns you to the appshell —
+        // While flying freestyle, the gamepad Start button returns you to the appshell -
         // the counterpart to the on-screen Volume/Pause button, for pad players. Guarded on
         // freestyle so it never interferes with menu navigation; ToggleTransition itself guards
         // against re-entrancy while a transition is mid-flight.
@@ -202,7 +202,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Vessel HUD reparenting — identical to MiniGameHUD.OnShipHUDInitialized().
+        /// Vessel HUD reparenting - identical to MiniGameHUD.OnShipHUDInitialized().
         /// When a vessel spawns, ShipHUD.Start() raises this SOAP event with the
         /// vessel's MiniGameHUD children. We reparent them under our parent
         /// (Game UI canvas) so they render as siblings.

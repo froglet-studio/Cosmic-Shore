@@ -7,7 +7,7 @@ using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// PartyInviteController Tests — Validates precondition checks and state logic.
+    /// PartyInviteController Tests - Validates precondition checks and state logic.
     ///
     /// WHY THIS MATTERS:
     /// PartyInviteController orchestrates the critical host-to-client transition
@@ -35,7 +35,7 @@ namespace CosmicShore.Tests
             Object.DestroyImmediate(_connectionData);
         }
 
-        #region HostConnectionDataSO — OnPartyJoinCompleted
+        #region HostConnectionDataSO - OnPartyJoinCompleted
 
         [Test]
         public void HostConnectionDataSO_OnPartyJoinCompleted_ExistsAsPublicField()
@@ -48,7 +48,7 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        #region HostConnectionDataSO — HasOpenSlots
+        #region HostConnectionDataSO - HasOpenSlots
 
         [Test]
         public void HasOpenSlots_WithNullPartyMembers_ReturnsTrue()
@@ -58,7 +58,7 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        #region HostConnectionDataSO — RemotePartyMemberCount
+        #region HostConnectionDataSO - RemotePartyMemberCount
 
         [Test]
         public void RemotePartyMemberCount_WithNullPartyMembers_ReturnsZero()
@@ -68,7 +68,7 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        #region HostConnectionDataSO — RemovePartyMember
+        #region HostConnectionDataSO - RemovePartyMember
 
         [Test]
         public void RemovePartyMember_NullPartyMembers_ReturnsFalse()
@@ -78,7 +78,7 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        #region HostConnectionDataSO — ResetRuntimeData
+        #region HostConnectionDataSO - ResetRuntimeData
 
         [Test]
         public void ResetRuntimeData_ClearsAllState()
@@ -102,7 +102,7 @@ namespace CosmicShore.Tests
 
         #endregion
 
-        #region PartyInviteData — Round-Trip Through Accept Flow
+        #region PartyInviteData - Round-Trip Through Accept Flow
 
         [Test]
         public void PartyInviteData_PreservesDataThroughCopy()

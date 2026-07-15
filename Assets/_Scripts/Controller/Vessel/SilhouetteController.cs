@@ -161,7 +161,7 @@ namespace CosmicShore.Gameplay
             try { isDanger = prism.prismProperties != null && prism.prismProperties.IsDangerous; } catch { }
 
             // Domain (and danger) tint now come from the same theme ColorSet the
-            // vessels and prisms use (R5) — danger maps to the shared EnvironmentColors.Danger.
+            // vessels and prisms use (R5) - danger maps to the shared EnvironmentColors.Danger.
             var colorSet = gameData != null && gameData.ThemeManagerData != null
                 ? gameData.ThemeManagerData.ColorSet
                 : null;

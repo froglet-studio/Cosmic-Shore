@@ -14,7 +14,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Self-wiring controller for the 4-tab options panel. Drag each UI control into its serialized
-    /// slot — the controller populates dropdown options (from the enums, so order can't drift), sets
+    /// slot - the controller populates dropdown options (from the enums, so order can't drift), sets
     /// saved values, attaches listeners, and drives the ON/OFF highlight. No per-control UnityEvent
     /// wiring, no option authoring, no init step. Reopening the panel refreshes displayed values.
     ///
@@ -42,11 +42,11 @@ namespace CosmicShore.UI
         [Inject] ApplicationStateDataVariable appState;
 
         [Header("Panel")]
-        [SerializeField, Tooltip("OptionsMenuContent root — enabled by Open(), disabled by Close(). Wire the settings modal's open event to Open() and its close event to Close().")]
+        [SerializeField, Tooltip("OptionsMenuContent root - enabled by Open(), disabled by Close(). Wire the settings modal's open event to Open() and its close event to Close().")]
         GameObject optionsMenuContent;
         [SerializeField, Tooltip("Shown while the panel is open IN-GAME: Performance settings + Auto-Detect + Benchmark are locked outside the main menu (big graphics changes happen in the menu only).")]
         GameObject menuOnlyHint;
-        [SerializeField, Tooltip("Shown when a renderer-level change (Quality / AA / Texture / Upscaling) is made — 'some changes apply after a restart'. Hidden on open.")]
+        [SerializeField, Tooltip("Shown when a renderer-level change (Quality / AA / Texture / Upscaling) is made - 'some changes apply after a restart'. Hidden on open.")]
         GameObject restartRequiredNotice;
 
         [Header("ON/OFF Highlight")]
@@ -99,7 +99,7 @@ namespace CosmicShore.UI
         [SerializeField] string deleteDataUrl = "https://cosmicshore.com/delete-my-data";
         [SerializeField] string bugReportUrl = "https://cosmicshore.com/support";
 
-        // Option labels (index == enum value — the controller fills these, never author them in the dropdown)
+        // Option labels (index == enum value - the controller fills these, never author them in the dropdown)
         static readonly string[] ColorblindOpts = { "Off", "Protanopia", "Deuteranopia", "Tritanopia" };
         static readonly string[] SubtitleScaleOpts = { "Small", "Medium", "Large" };
         static readonly string[] DisplayModeOpts = { "Fullscreen", "Borderless", "Windowed" };
@@ -151,7 +151,7 @@ namespace CosmicShore.UI
 
         // ───────────────────────── context lock (menu vs in-game) ─────────────────────────
 
-        /// <summary>True only in the main menu — big graphics + Auto-Detect + Benchmark are locked elsewhere.</summary>
+        /// <summary>True only in the main menu - big graphics + Auto-Detect + Benchmark are locked elsewhere.</summary>
         bool InMainMenu => appState == null || appState.Value == null || appState.Value.State == ApplicationState.MainMenu;
 
         /// <summary>
@@ -357,7 +357,7 @@ namespace CosmicShore.UI
             S?.ApplyAutoDetect();
             RefreshValues();
             FlagRestartNeeded();
-            CSDebug.Log($"[Settings] Auto-Detect applied — Quality preset index {QualityIndex}, AA index {AntiAliasingIndex}.");
+            CSDebug.Log($"[Settings] Auto-Detect applied - Quality preset index {QualityIndex}, AA index {AntiAliasingIndex}.");
         }
 
         public void RunBenchmark()

@@ -16,7 +16,7 @@ namespace CosmicShore.Editor
     ///    to default(T) instead of the pre-play-mode value.
     ///
     /// 2. Plain ScriptableObject assets (GameDataSO, CellRuntimeDataSO, etc.)
-    ///    have no reset mechanism at all — Unity persists their play-mode
+    ///    have no reset mechanism at all - Unity persists their play-mode
     ///    mutations by design.
     ///
     /// Approach:

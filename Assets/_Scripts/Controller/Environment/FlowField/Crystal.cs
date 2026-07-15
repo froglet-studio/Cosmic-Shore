@@ -57,7 +57,7 @@ namespace CosmicShore.Gameplay
         // works for both pooled (SetActive) and Instantiate/Destroy lifecycles.
         static readonly List<Crystal> s_active = new();
 
-        /// <summary>Live crystals currently enabled in the scene. Read-only — do not mutate.</summary>
+        /// <summary>Live crystals currently enabled in the scene. Read-only - do not mutate.</summary>
         public static IReadOnlyList<Crystal> Active => s_active;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -95,7 +95,7 @@ namespace CosmicShore.Gameplay
         public void Respawn()
         {
             // A manager-less mint (e.g. the freestyle conveyor toy's local pickups) has no manager
-            // to respawn through — collect once and destroy.
+            // to respawn through - collect once and destroy.
             if (!allowRespawnOnImpact || CrystalManager == null)
             {
                 DestroyCrystal();

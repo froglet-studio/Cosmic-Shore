@@ -110,7 +110,7 @@ namespace CosmicShore.UI
             scrollRect.horizontal = false;
             scrollRect.vertical = true;
             scrollRect.movementType = ScrollRect.MovementType.Clamped;
-            scrollRect.scrollSensitivity = 0f; // No manual scrolling — feed is automatic
+            scrollRect.scrollSensitivity = 0f; // No manual scrolling - feed is automatic
             scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
         }
 
@@ -165,7 +165,7 @@ namespace CosmicShore.UI
             }
             else if (isRichText)
             {
-                // Joust — message already has rich text color tags
+                // Joust - message already has rich text color tags
                 SpawnEntry(payload.Message, color, true);
             }
             else
@@ -179,7 +179,7 @@ namespace CosmicShore.UI
             if (contentContainer == null || settings == null)
                 return;
 
-            // Enforce max visible entries — destroy oldest.
+            // Enforce max visible entries - destroy oldest.
             // Detach from parent first so childCount decreases immediately,
             // preventing an infinite loop when multiple entries spawn in the same frame.
             while (contentContainer.childCount >= settings.maxVisibleEntries)
@@ -228,7 +228,7 @@ namespace CosmicShore.UI
             }
         }
 
-        // Single source of truth — the same ColorSet the vessels and prisms use (R5).
+        // Single source of truth - the same ColorSet the vessels and prisms use (R5).
         public Color GetColorForDomain(Domains domain) =>
             gameData != null && gameData.ThemeManagerData != null
                 ? gameData.ThemeManagerData.GetDomainUIColor(domain)

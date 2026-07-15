@@ -11,21 +11,21 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// <b>Tournament Data Card</b> — one round in the Maelstrom scroll. Shows the round header
+    /// <b>Tournament Data Card</b> - one round in the Maelstrom scroll. Shows the round header
     /// (ROUND INDEX, ROUND NAME, WINNING DOMAIN) and instantiates one <b>Player Data Card</b>
     /// (<see cref="TournamentPlayerCard"/>) per player who finished that round, with their Round Score
     /// and Total Score. The card background tints to the winning domain via the
     /// <see cref="DomainColorPaletteSO"/>; the winning-domain name is coloured to match.
     ///
     /// Two setup paths: <see cref="Setup"/> (a completed round) and <see cref="SetupPreview"/> (the
-    /// round-0 lobby preview — roster only, no round score, winner "—").
+    /// round-0 lobby preview - roster only, no round score, winner "-").
     /// </summary>
     public class TournamentRoundCard : MonoBehaviour
     {
         [Header("Round header")]
         [Tooltip("\"ROUND INDEX : 1\".")]
         [SerializeField] TMP_Text roundNumberText;
-        [Tooltip("\"ROUND NAME : SCRUM\" (the mode; \"—\" in the preview).")]
+        [Tooltip("\"ROUND NAME : SCRUM\" (the mode; \"-\" in the preview).")]
         [SerializeField] TMP_Text roundNameText;
         [Tooltip("\"WINNING DOMAIN : JADE\" (domain name coloured).")]
         [SerializeField] TMP_Text winningDomainText;
@@ -65,7 +65,7 @@ namespace CosmicShore.UI
         {
             if (roundNumberText) roundNumberText.text = $"ROUND INDEX : {roundNumber}";
             if (roundNameText)
-                roundNameText.text = $"ROUND NAME : {(string.IsNullOrEmpty(modeName) ? "—" : modeName.ToUpperInvariant())}";
+                roundNameText.text = $"ROUND NAME : {(string.IsNullOrEmpty(modeName) ? "-" : modeName.ToUpperInvariant())}";
 
             bool hasWinner = showWinner && winner != Domains.Blue;
             Color wc = palette ? palette.Get(hasWinner ? winner : Domains.Blue) : Color.gray;
@@ -73,7 +73,7 @@ namespace CosmicShore.UI
             if (winningDomainText)
                 winningDomainText.text = hasWinner
                     ? $"WINNING DOMAIN : <color=#{ColorUtility.ToHtmlStringRGB(wc)}>{winner.ToString().ToUpperInvariant()}</color>"
-                    : "WINNING DOMAIN : —";
+                    : "WINNING DOMAIN : -";
 
             if (cardBackground && palette) cardBackground.color = wc;
         }
@@ -85,7 +85,7 @@ namespace CosmicShore.UI
             if (players == null || !playerCardPrefab || !playerCardContainer) return;
 
             // Order rows by cumulative Total Score, highest first, so the leading domain is always on
-            // top — matching the summary panel and the spec ("reorder by the overall leader"). Without
+            // top - matching the summary panel and the spec ("reorder by the overall leader"). Without
             // this the rows kept the round's finishing order, so the round where the round-winner was
             // NOT the overall leader (e.g. the deciding round) read as mis-ordered against the totals it
             // shows. OrderByDescending/ThenBy is stable, so same-domain players keep their round rank;

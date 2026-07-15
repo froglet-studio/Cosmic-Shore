@@ -11,9 +11,9 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Exports a finished painting as a single self-contained HTML file — an inline-WebGL prism
+    /// Exports a finished painting as a single self-contained HTML file - an inline-WebGL prism
     /// reconstruction (no external scripts, works anywhere a browser opens it) with drag-to-orbit,
-    /// pinch/wheel zoom, and a gentle auto-spin — then hands it to the platform share sheet via
+    /// pinch/wheel zoom, and a gentle auto-spin - then hands it to the platform share sheet via
     /// NativeShare. The reconstruction uses the saved drawing state (position/orientation/size/
     /// domain of every prism); paintings finished before prism capture existed fall back to boxes
     /// laid along the stroke polylines so sharing always works.
@@ -45,7 +45,7 @@ namespace CosmicShore.Gameplay
             }
             catch (Exception e)
             {
-                // Full disk / sandboxed path — fail the share quietly rather than throwing out of
+                // Full disk / sandboxed path - fail the share quietly rather than throwing out of
                 // the gate's trigger callback.
                 CSDebug.LogWarning($"[PaintingShareExporter] Could not write reconstruction: {e.Message}");
                 filePath = null;
@@ -58,7 +58,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Hand an exported reconstruction to the platform share sheet (mobile). The editor and
         /// desktop have no share sheet (NativeShare just logs there), so they open the viewer in
-        /// the default browser instead — flying the SHARE gate always visibly does something.
+        /// the default browser instead - flying the SHARE gate always visibly does something.
         /// </summary>
         public static void Share(string filePath, string paintingName)
         {
@@ -108,7 +108,7 @@ namespace CosmicShore.Gameplay
             return records;
         }
 
-        // ── HTML generation (pure — unit-testable) ──────────────────────────
+        // ── HTML generation (pure - unit-testable) ──────────────────────────
 
         public static string BuildHtml(string title, IReadOnlyList<PaintingPrismRecord> records,
             Color jade, Color ruby, Color gold)
@@ -163,7 +163,7 @@ namespace CosmicShore.Gameplay
         // Unity is left-handed; the viewer flips Z (positions z→-z, quaternions x,y→-x,-y).
         const string ViewerTemplate = @"<!DOCTYPE html>
 <html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
-<title>__TITLE__ — Cosmic Shore</title>
+<title>__TITLE__ - Cosmic Shore</title>
 <style>
 html,body{margin:0;height:100%;overflow:hidden;background:#05070f;font-family:system-ui,sans-serif}
 canvas{display:block;width:100%;height:100%;touch-action:none}
@@ -258,7 +258,7 @@ function mat(){ // column-major MVP + rotation for normals
   var w=canvas.width,h=canvas.height,aspect=w/h,f=1/Math.tan(0.4),near=radius*0.05,far=radius*20;
   var eye=[0,0,dist];
   var M=new Float32Array(16);
-  // model rotation + center offset, then translate eye, then perspective — composed directly.
+  // model rotation + center offset, then translate eye, then perspective - composed directly.
   function rv(v){return [R[0]*v[0]+R[3]*v[1]+R[6]*v[2],R[1]*v[0]+R[4]*v[1]+R[7]*v[2],R[2]*v[0]+R[5]*v[1]+R[8]*v[2]];}
   var t=rv([-center[0],-center[1],-center[2]]);
   var A=f/aspect,B=f,C=(far+near)/(near-far),D=(2*far*near)/(near-far);

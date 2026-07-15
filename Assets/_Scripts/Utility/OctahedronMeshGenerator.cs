@@ -48,7 +48,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Rewrite an existing mesh in-place. Reuses the mesh's vertex/index
-        /// buffers and is cheaper than allocating a new Mesh each frame — use
+        /// buffers and is cheaper than allocating a new Mesh each frame - use
         /// this for lerp/morph animations.
         /// </summary>
         public static void PopulateMesh(Mesh mesh, Vector3 halfExtents, float shieldScale = CIRCUMSCRIBING_SCALE)
@@ -132,7 +132,7 @@ namespace CosmicShore.Utility
 
             mesh.vertices = verts; // write back
             mesh.RecalculateBounds();
-            // Normals stay correct — direction is unchanged by uniform
+            // Normals stay correct - direction is unchanged by uniform
             // per-face scaling from centroid; only magnitude changes.
         }
 
@@ -191,7 +191,7 @@ namespace CosmicShore.Utility
         ///   |x|·invA + |y|·invB + |z|·invC ≤ 1
         /// where invA/B/C = 1 / (shieldScale · halfExtent).
         ///
-        /// Precompute the inverses once per prism and reuse — this is the
+        /// Precompute the inverses once per prism and reuse - this is the
         /// fast path for gameplay overlap checks without a MeshCollider.
         /// </summary>
         public static bool ContainsPointLocal(Vector3 localPoint, float invA, float invB, float invC)
