@@ -127,7 +127,10 @@ def build_snapshot(saves: dict) -> dict:
     return {k: v for k, v in props.items() if v is not None}
 
 
-def post_batch(host: str, api_key: str, events: list, max_attempts: int = 6) -> None:
+def post_batch(host: str, api_key: str, events: list, max_attempts: int = 6) -> bool:
+    """Send one batch. Returns True on success, False after exhausting retries on
+    transient (5xx / network) failures. 4xx aborts the whole run — a bad key or
+    malformed payload would fail every batch identically."""
     payload = json.dumps({"api_key": api_key, "batch": events}).encode()
     backoff = 2.0
     for attempt in range(1, max_attempts + 1):
@@ -137,25 +140,33 @@ def post_batch(host: str, api_key: str, events: list, max_attempts: int = 6) -> 
                      "User-Agent": "cosmic-shore-snapshot-import/1.0"})
         try:
             with urllib.request.urlopen(req, timeout=30):
-                return
+                return True
         except urllib.error.HTTPError as e:
             if 400 <= e.code < 500:
                 body = e.read().decode(errors="replace")[:500]
                 raise SystemExit(f"PostHog rejected the batch (HTTP {e.code}) — check the "
-                                 f"project API key and host region.\n{body}")
+                                 f"project API key (phc_...) and host region "
+                                 f"(EU vs US).\n{body}")
             if attempt == max_attempts:
-                raise SystemExit(f"PostHog send failed (HTTP {e.code}) after {max_attempts} attempts.")
+                print(f"  batch failed (HTTP {e.code}) after {max_attempts} attempts — skipping.",
+                      flush=True)
+                return False
         except urllib.error.URLError as e:
             if attempt == max_attempts:
-                raise SystemExit(f"Network failure sending to PostHog: {e.reason}")
+                print(f"  batch failed (network: {e.reason}) after {max_attempts} attempts — skipping.",
+                      flush=True)
+                return False
         print(f"  transient send failure, retrying in {backoff:.0f}s...", flush=True)
         time.sleep(backoff)
         backoff = min(backoff * 2, 60)
+    return False
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Import Cloud Save export into PostHog as snapshots.")
-    parser.add_argument("--items", required=True, help="Path to items.jsonl from export_cloud_save.py.")
+    parser.add_argument("--items", default=os.path.join("cloud_save_export", "items.jsonl"),
+                        help="Path to items.jsonl from export_cloud_save.py "
+                             "(default: cloud_save_export/items.jsonl — the export's default output).")
     parser.add_argument("--posthog-key", default=os.environ.get("POSTHOG_API_KEY"),
                         help="PostHog Project API key, phc_... (or env POSTHOG_API_KEY).")
     parser.add_argument("--host", default="https://eu.i.posthog.com",
@@ -168,9 +179,14 @@ def main() -> None:
     if not args.dry_run and not args.posthog_key:
         parser.error("--posthog-key required (or set POSTHOG_API_KEY), or use --dry-run.")
 
+    if not os.path.exists(args.items):
+        raise SystemExit(f"Export file not found: {args.items}\n"
+                         f"Run export_cloud_save.py first (see Tools/Analytics/README.md), "
+                         f"or pass --items <path-to-items.jsonl>.")
+
     # Merge items per player: {player_id: {save_key: parsed_value}}
     players = {}
-    with open(args.items) as f:
+    with open(args.items, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line:
@@ -194,17 +210,32 @@ def main() -> None:
         events.append({"event": "cloud_save_snapshot", "timestamp": timestamp, "properties": props})
 
     if args.dry_run:
-        for evt in events[:3]:
+        for evt in events[:5]:
             print(json.dumps(evt, indent=2))
-        print(f"\nDry run: would send {len(events)} snapshot event(s) to {args.host}.")
+        print(f"\nDry run: would send {len(events)} snapshot event(s) to {args.host} "
+              f"in {(len(events) + args.batch_size - 1) // args.batch_size} batch(es). "
+              f"No network calls were made.")
         return
 
+    batches_sent = 0
+    batches_failed = 0
+    players_sent = 0
     for i in range(0, len(events), args.batch_size):
-        post_batch(args.host, args.posthog_key, events[i:i + args.batch_size])
-        print(f"  sent {min(i + args.batch_size, len(events))}/{len(events)}", flush=True)
+        batch = events[i:i + args.batch_size]
+        if post_batch(args.host, args.posthog_key, batch):
+            batches_sent += 1
+            players_sent += len(batch)
+        else:
+            batches_failed += 1
+        print(f"  progress: {min(i + args.batch_size, len(events))}/{len(events)} processed", flush=True)
 
-    print(f"Done: {len(events)} player snapshot(s) imported. They appear in PostHog → Activity "
-          f"as 'cloud_save_snapshot', and each player is now a Person with filterable properties.")
+    print(f"Done: {players_sent} player snapshot(s) sent in {batches_sent} batch(es), "
+          f"{batches_failed} batch(es) failed.")
+    if batches_failed:
+        sys.exit("Some batches failed — re-running the import is safe (players get a fresh "
+                 "snapshot event; queries should use the latest per player).")
+    print("They appear in PostHog → Activity as 'cloud_save_snapshot', and each player is "
+          "now a Person with filterable properties.")
 
 
 if __name__ == "__main__":

@@ -144,8 +144,9 @@ def main() -> None:
                         help="UGS project ID (or env UGS_PROJECT_ID). Unity Cloud -> project settings.")
     parser.add_argument("--key-id", default=os.environ.get("UGS_KEY_ID"),
                         help="Service account key ID (or env UGS_KEY_ID).")
-    parser.add_argument("--secret", default=os.environ.get("UGS_SECRET_KEY"),
-                        help="Service account secret key (or env UGS_SECRET_KEY).")
+    parser.add_argument("--secret",
+                        default=os.environ.get("UGS_SECRET_KEY") or os.environ.get("UGS_SECRET"),
+                        help="Service account secret key (or env UGS_SECRET_KEY / UGS_SECRET).")
     parser.add_argument("--environment", default="production",
                         help="Environment NAME to export (default: production).")
     parser.add_argument("--environment-id", default=None,
@@ -164,7 +165,7 @@ def main() -> None:
 
     if not args.project_id or not args.key_id or not args.secret:
         parser.error("--project-id, --key-id and --secret are required "
-                     "(or set UGS_PROJECT_ID / UGS_KEY_ID / UGS_SECRET_KEY).")
+                     "(or set UGS_PROJECT_ID / UGS_KEY_ID / UGS_SECRET).")
 
     auth_header = build_auth_header(args.key_id, args.secret)
 
@@ -181,7 +182,7 @@ def main() -> None:
     explicit_players = None
     if args.players:
         if args.players.startswith("@"):
-            with open(args.players[1:]) as f:
+            with open(args.players[1:], encoding="utf-8") as f:
                 explicit_players = [line.strip() for line in f if line.strip()]
         else:
             explicit_players = [p.strip() for p in args.players.split(",") if p.strip()]
@@ -190,7 +191,8 @@ def main() -> None:
     item_count = 0
     request_estimate = 0
 
-    with open(players_path, "w") as players_file, open(items_path, "w") as items_file:
+    with open(players_path, "w", encoding="utf-8") as players_file, \
+         open(items_path, "w", encoding="utf-8") as items_file:
         if explicit_players is not None:
             player_entries = ({"id": pid, "accessClasses": None} for pid in explicit_players)
         else:
