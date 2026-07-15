@@ -141,7 +141,7 @@ namespace CosmicShore.Gameplay
         {
             var status = impactor ? impactor.Skimmer?.VesselStatus : null;
             return Mathf.Max(1, Mathf.RoundToInt(
-                ElementalScaling.Scale(status, Element.Mass, maxBlockHits, atFull: 1.75f)));
+                maxBlockHits * (status?.ElementalAbilityHandler.Multiplier(Element.Mass) ?? 1f)));
         }
         
         private void TriggerOvercharge(SkimmerImpactor impactor, HashSet<PrismImpactor> hitSet)
@@ -158,7 +158,7 @@ namespace CosmicShore.Gameplay
             var dir = shipPos - prism.transform.position;
             // Element → parameter (Charge → detonation blast strength). Anchored at 1x at resting
             // level; a charged-up reaper ray flings the harvested mass harder.
-            float chargeMul = ElementalScaling.Multiplier(status, Element.Charge, atFull: 1.75f);
+            float chargeMul = status?.ElementalAbilityHandler.Multiplier(Element.Charge) ?? 1f;
             var damage = dir * (explosionSpeed * chargeMul);
             if (Physics.Raycast(prism.transform.position, dir, out var hitInfo, dir.magnitude, LayerMask.GetMask("TrailBlocks")))
             {

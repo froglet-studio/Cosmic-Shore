@@ -204,7 +204,7 @@ namespace CosmicShore.Gameplay
             float speedFactor = Mathf.Pow(1f + Mathf.Max(0f, _status.Speed) * 0.01f, _so.SpeedExp);
             // Element → parameter (Space → handling/turn rate). Anchored at 1x at resting level;
             // the ray banks harder as the pilot's Space element rises with crystals.
-            float spaceMul = ElementalScaling.Multiplier(_status, Element.Space, atFull: 1.6f);
+            float spaceMul = _status?.ElementalAbilityHandler.Multiplier(Element.Space) ?? 1f;
             float yawPerSec = _so.MaxYawDegPerSec * spaceMul * Mathf.Max(0.0f, _so.SpeedScale) * speedFactor;
 
             float signed = yawPerSec * (int)_so.Steer;

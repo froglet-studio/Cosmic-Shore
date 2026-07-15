@@ -202,7 +202,7 @@ namespace CosmicShore.Gameplay
             float t = (so.MaxNormalizedCharge > 0f) ? Mathf.Clamp01(rawUnits / so.MaxNormalizedCharge) : 0f;
             // Element → parameter (Charge → peak blast strength). Anchored at 1x at resting level;
             // a fully-charged Charge element makes Dolphin's signature discharge hit harder.
-            float chargeMul = ElementalScaling.Multiplier(_status, Element.Charge, atFull: 1.5f);
+            float chargeMul = _status?.ElementalAbilityHandler.Multiplier(Element.Charge) ?? 1f;
             float peakBoost = 1f + (so.MaxBoostMultiplier - 1f) * chargeMul;
             return 1f + (peakBoost - 1f) * t;
         }
@@ -212,7 +212,7 @@ namespace CosmicShore.Gameplay
         float ChargePerSecond(ChargeBoostActionSO so)
         {
             float baseRate = (so.ChargeTimeToFull > 0f) ? (so.MaxNormalizedCharge / so.ChargeTimeToFull) : so.MaxNormalizedCharge;
-            return baseRate * ElementalScaling.Multiplier(_status, Element.Time, atFull: 1.5f);
+            return baseRate * (_status?.ElementalAbilityHandler.Multiplier(Element.Time) ?? 1f);
         }
 
         float DischargePerSecond(ChargeBoostActionSO so)

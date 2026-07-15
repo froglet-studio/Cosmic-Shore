@@ -248,10 +248,29 @@ namespace CosmicShore.Gameplay
 
         void InitializeElementBars()
         {
+            // The element flower display is a REQUIRED system on every vessel: when the
+            // prefab doesn't author an ElementalBarsView, create one on the vessel's HUD
+            // canvas. The view self-populates its four default bindings and the shared
+            // ElementalBarsConfig stamps the fleet-standard placement, so no per-vessel
+            // wiring is needed. Vessels with an authored view (Squirrel, Sparrow) keep it.
+            if (!elementBars)
+                elementBars = CreateDefaultElementBars();
             if (!elementBars) return;
+
             elementBars.Build();
 
             TrySubscribeElementBars();
+        }
+
+        ElementalBarsView CreateDefaultElementBars()
+        {
+            var canvas = GetComponentInChildren<Canvas>(true);
+            if (!canvas) return null; // no HUD surface on this vessel — nothing to show on
+
+            var go = new GameObject("ElementalBars (auto)", typeof(RectTransform));
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(canvas.transform, false);
+            return go.AddComponent<ElementalBarsView>();
         }
 
         void HandleElementLevelChanged(Element element, int level)

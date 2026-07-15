@@ -93,7 +93,7 @@ namespace CosmicShore.Gameplay
 
             // Element → parameter (Mass → maximum trail slab size). Anchored at base at resting
             // level; a high Mass element lets Rhino fatten its bulldozing slab further.
-            float maxSize = ElementalScaling.Scale(_status, Element.Mass, so.MaxSize, atFull: 1.5f);
+            float maxSize = so.MaxSize * (_status?.ElementalAbilityHandler.Multiplier(Element.Mass) ?? 1f);
 
             controller.XScaler = ClampAxis(controller.XScaler + so.WX * sign * dt, _min, maxSize, increase);
             controller.YScaler = ClampAxis(controller.YScaler + so.WY * sign * dt, _min, maxSize, increase);
