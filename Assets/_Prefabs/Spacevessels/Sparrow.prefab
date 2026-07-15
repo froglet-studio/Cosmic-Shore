@@ -3379,7 +3379,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4e27d4d763f7417c9d90b5b4f730e163, type: 3}
   m_Name:
   m_EditorClassIdentifier:
-  perimeterThreshold: 0.95
+  perimeterThreshold: 1
+  rearmThreshold: 0.9
   cooldownSeconds: 1.2
   invertRollDirection: 0
   rollDurationSeconds: 0.6

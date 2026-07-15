@@ -6,8 +6,9 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// TIME level-5 'Barrel Roll' (ElementalAbilityMapSO upgrade). While boosting with the
-    /// right stick at the circle's perimeter, the vessel rolls — clockwise on the right half
+    /// TIME level-5 'Barrel Roll' (ElementalAbilityMapSO upgrade). While boosting, pushing the
+    /// stick to FULL deflection rolls the vessel once — one roll per press (the stick must
+    /// leave the perimeter before another can trigger) — clockwise on the right half
     /// of the stick circle, counterclockwise on the left — animating the model about its
     /// forward axis while a ModifyVelocity displacement orthogonal to travel (direction picked
     /// by the left stick) carries the vessel sideways. The trail becomes disjointed from
@@ -27,10 +28,16 @@ namespace CosmicShore.Gameplay
     public class BarrelRollController : MonoBehaviour
     {
         [Header("Trigger")]
-        [Tooltip("Right-stick radial magnitude treated as 'at the perimeter'. Uses the " +
+        [Tooltip("Stick radial magnitude treated as 'at the perimeter'. 1 = full deflection " +
+                 "only (the deadzone processor renormalizes a fully-deflected stick to " +
+                 "exactly 1, and the touch joystick clamps at its ring). Uses the " +
                  "normalized (radially clamped) stick vector, never the eased one — the " +
                  "per-axis ease makes diagonal magnitudes direction-dependent.")]
-        [SerializeField, Range(0.5f, 1f)] float perimeterThreshold = 0.95f;
+        [SerializeField, Range(0.5f, 1f)] float perimeterThreshold = 1f;
+        [Tooltip("The stick must fall back below this magnitude before another roll can " +
+                 "trigger — one roll per press; holding the stick at the perimeter never " +
+                 "repeats. Keep below perimeterThreshold (hysteresis against edge jitter).")]
+        [SerializeField, Range(0f, 1f)] float rearmThreshold = 0.9f;
         [Tooltip("Seconds after a roll completes before another can trigger.")]
         [SerializeField, Min(0f)] float cooldownSeconds = 1.2f;
         [Tooltip("Flip the CW/CCW mapping if the roll direction reads backwards in playtest.")]
@@ -45,11 +52,16 @@ namespace CosmicShore.Gameplay
                  "transform, then the vessel root's first child.")]
         [SerializeField] Transform rollVisualTarget;
 
+        // Float-safe "at max" comparison: deadzone renormalization / touch clamping land
+        // a hair under 1 on some frames.
+        const float ThresholdEpsilon = 0.005f;
+
         // Interface-typed: AutoPilotEnabled and InputStatus are default interface members on
         // IVesselStatus (routed through AIPilot/Player) and are not visible on the concrete
         // VesselStatus type.
         IVesselStatus _status;
         bool _rolling;
+        bool _stickHeldAtPerimeter;
         float _nextAllowedTime;
         Quaternion _visualRestRotation;
 
@@ -60,19 +72,32 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            if (_status == null || _rolling || Time.time < _nextAllowedTime) return;
+            if (_status == null) return;
+
+            var input = _status.InputStatus;
+
+            // LEFT stick only — the steering stick. (The right stick is not a Sparrow
+            // input; the earlier right-stick trigger was a spec typo.)
+            var stick = input?.LeftNormalizedJoystickPosition ?? Vector2.zero;
+
+            // Edge-trigger with hysteresis: a roll fires only on the frame the stick
+            // REACHES the perimeter, and the stick must fall back below rearmThreshold
+            // before it counts as a new press — one roll per press, holding never
+            // repeats. Stick tracking runs before every other gate so a stick already
+            // pinned at max when boosting starts (or the upgrade activates) doesn't
+            // trigger a roll retroactively.
+            bool pressed = _stickHeldAtPerimeter
+                ? stick.magnitude > rearmThreshold
+                : stick.magnitude >= perimeterThreshold - ThresholdEpsilon;
+            bool risingEdge = pressed && !_stickHeldAtPerimeter;
+            _stickHeldAtPerimeter = pressed;
+
+            if (!risingEdge) return;
+            if (_rolling || Time.time < _nextAllowedTime) return;
             if (_status.AutoPilotEnabled) return;
             if (_status.IsTranslationRestricted) return;
             if (!_status.IsBoosting) return;
             if (!_status.ElementalAbilityHandler.IsUpgradeActive(Element.Time)) return;
-
-            var input = _status.InputStatus;
-            if (input == null) return;
-
-            // LEFT stick only — the steering stick. (The right stick is not a Sparrow
-            // input; the earlier right-stick trigger was a spec typo.)
-            var stick = input.LeftNormalizedJoystickPosition;
-            if (stick.magnitude < perimeterThreshold) return;
 
             // Right half of the circle → clockwise (positive angle about +forward is CW
             // from the pilot's seat in Unity's left-handed space); left half → CCW.
