@@ -1,4 +1,14 @@
-# Cloud Save Export Tool
+# Cloud Save Export & Snapshot Import Tools
+
+Two standalone scripts (Python 3.8+, standard library only, no game session or consent
+flow involved — these read server-side data with a service-account key):
+
+| Script | Purpose |
+|---|---|
+| `export_cloud_save.py` | Dump every player's Cloud Save data to JSONL (analyze locally with DuckDB) |
+| `import_snapshot_to_posthog.py` | Push the export into PostHog as one `cloud_save_snapshot` event + person properties per player, so the historical player base is visible in PostHog's UI/SQL immediately |
+
+## Export
 
 `export_cloud_save.py` dumps **every player's Cloud Save data** (all 12 keys —
 `player_profile`, `PLAYER_STATS_PROFILE`, `VESSEL_STATS`, `GAME_MODE_PROGRESSION`, …) to
@@ -96,6 +106,41 @@ WHERE p.key = 'player_profile';
 
 The key inventory and each key's JSON shape are documented in
 `Docs/Analytics/DATA_INVENTORY.md` §1.
+
+## Importing the snapshot into PostHog
+
+PostHog only sees events from the moment the in-game sink (or this importer) sends them —
+it cannot read UGS retroactively. Cloud Save also isn't an event stream: it's each
+player's *current state*. So the honest way to get "the data that's already there" into
+PostHog is a **snapshot import**: one `cloud_save_snapshot` event per player, timestamped
+at import time, with the useful fields flattened as event properties and mirrored to
+person properties (`$set`). Because `distinct_id` is the UGS PlayerId — the same ID the
+in-game sink uses — future live events attach to these same person records.
+
+```bash
+export POSTHOG_API_KEY=phc_...   # PostHog → Settings → Project → Project API key
+
+# Inspect what would be sent (prints the first 3 payloads, sends nothing)
+python3 import_snapshot_to_posthog.py --items export_2026_07_15/items.jsonl --dry-run
+
+# Send it (default host is EU; pass --host https://us.i.posthog.com for a US project)
+python3 import_snapshot_to_posthog.py --items export_2026_07_15/items.jsonl
+```
+
+Fields imported per player (when present in their saves): `name`, `avatar_id`, `xp`,
+`crystal_balance`, `first_seen`, `last_login`, `rewards_unlocked`, `total_games`,
+`favorite_vessel`, `unlocked_modes` (+count), `max_intensity_unlocked`,
+`recorded_play_count`, `vessels_unlocked`, `selected_vessel`, `keys_present`.
+
+After import: **People** shows every player with those properties; cohorts can filter on
+them (e.g. `total_games > 20 AND last_login < -30d` = lapsed veterans); SQL sees them as
+`properties.*` on the `cloud_save_snapshot` event. Re-running after a fresh export writes
+a newer snapshot per player — use the latest event per `distinct_id` in queries. A few
+thousand snapshot events is negligible against the 1M/month free tier.
+
+Only what the snapshot *flattens* goes to PostHog; the complete raw saves stay in the
+JSONL/DuckDB export. Deep per-key analysis (high scores per intensity, per-vessel
+counters, etc.) belongs in DuckDB; PostHog gets the cohort-able summary.
 
 ## Notes
 
