@@ -4,6 +4,9 @@ One unified system for the FTUE, quest progression, and CTA breadcrumbs: quests 
 as **phase graphs** in a visual editor, executed by a runner that drives the existing runtime
 systems, with every node the player completes persisted to UGS.
 
+> **How-to-use guide (editor walkthrough, testing workflow, recipes, troubleshooting):**
+> `QUEST_GRAPH_EDITOR_TOOL.md` — this file is the architecture/data-model reference.
+
 **The graph is the source of truth.** Guidance nodes light `CallToActionSystem` breadcrumbs
 (the progression service's automatic frontier breadcrumb is suppressed while a quest runs),
 gate nodes listen to `GameModeProgressionService`'s own events (intensity tiers, claims), and
