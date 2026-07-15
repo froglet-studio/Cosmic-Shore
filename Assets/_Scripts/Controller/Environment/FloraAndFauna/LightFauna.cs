@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections;
-using System.Collections.Generic;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -39,8 +38,6 @@ namespace CosmicShore.Gameplay
         // --- Hunting (predator) ---------------------------------------------
         Fauna _targetPrey;          // prey being pursued (refreshed each behavior tick)
         Transform _mouth;           // suction sink at the danger-prism centroid
-        HealthPrism[] _dangerPrisms;// the mouth prisms — attack range derives from their length
-        float _attackRangeSqr;
 
         [HideInInspector] public float Phase;
 
@@ -278,16 +275,16 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Caches the predator's danger prisms (its teeth) and creates the mouth — a
-        /// lightweight transform at their centroid. The mouth is deliberately NOT a
-        /// danger prism's own transform: the suction sink must keep tracking the
-        /// swimming predator even if players destroy the mouth prisms mid-devour
-        /// (danger prisms stay fully vulnerable to normal prism destruction).
+        /// Creates the mouth — a lightweight transform at the danger-prism centroid.
+        /// The mouth is deliberately NOT a danger prism's own transform: the suction
+        /// sink must keep tracking the swimming predator even if players destroy the
+        /// mouth prisms mid-devour (danger prisms stay fully vulnerable to normal
+        /// prism destruction).
         /// </summary>
         void InitializeMouth()
         {
             var body = BodyPrisms;
-            var dangers = new List<HealthPrism>(body?.Length ?? 0);
+            int dangerCount = 0;
             Vector3 centroid = Vector3.zero;
 
             if (body != null)
@@ -296,44 +293,16 @@ namespace CosmicShore.Gameplay
                 {
                     var hp = body[i];
                     if (!hp || hp.prismProperties == null || !hp.prismProperties.IsDangerous) continue;
-                    dangers.Add(hp);
                     centroid += hp.transform.position;
+                    dangerCount++;
                 }
             }
-
-            _dangerPrisms = dangers.ToArray();
 
             var mouthGO = new GameObject("Mouth");
             mouthGO.transform.SetParent(transform, false);
-            if (dangers.Count > 0)
-                mouthGO.transform.position = centroid / dangers.Count;
+            if (dangerCount > 0)
+                mouthGO.transform.position = centroid / dangerCount;
             _mouth = mouthGO.transform;
-        }
-
-        /// <summary>
-        /// Attack range = longest live danger-prism dimension × attackRangeMultiplier.
-        /// Recomputed each behavior tick (a handful of transforms): body prisms grow in
-        /// over the first seconds, and players can destroy the teeth outright — then the
-        /// fallback keeps the predator able to gum its prey at close range.
-        /// </summary>
-        void RefreshAttackRange()
-        {
-            float length = 0f;
-            var dangers = _dangerPrisms;
-            if (dangers != null)
-            {
-                for (int i = 0; i < dangers.Length; i++)
-                {
-                    var p = dangers[i];
-                    if (!p || p.destroyed) continue;
-                    Vector3 s = p.transform.lossyScale;
-                    length = Mathf.Max(length, Mathf.Abs(s.x), Mathf.Abs(s.y), Mathf.Abs(s.z));
-                }
-            }
-
-            if (length <= 0f) length = data.attackRangeFallback;
-            float range = length * data.attackRangeMultiplier;
-            _attackRangeSqr = range * range;
         }
 
         void UpdateBehavior()
@@ -388,7 +357,6 @@ namespace CosmicShore.Gameplay
             {
                 _targetPrey = FindNearestPreyFauna();
                 if (_targetPrey) Goal = _targetPrey.transform.position;
-                RefreshAttackRange();
             }
 
             if (!IsFinite(Goal) || Goal.sqrMagnitude < 0.001f)
@@ -722,17 +690,18 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The attack: any live, non-immune herbivore whose root comes within the attack
-        /// range of the mouth (danger-prism centroid) is devoured — it breaks apart and
-        /// its prisms suction into the mouth (Predated with a devour target). Pure math
-        /// against the cell's small fauna registry, every frame: no physics, no contact —
-        /// so the kill is deterministic ("flawless") and the danger prisms are never
-        /// disturbed by the prey being eaten, while staying fully vulnerable to vessels
-        /// and projectiles. Handles a whole school swimming into the mouth at once.
+        /// The attack: any live, non-immune herbivore whose root comes within
+        /// data.attackRange of the mouth (danger-prism centroid) is devoured — it breaks
+        /// apart and its prisms suction into the mouth (Predated with a devour target).
+        /// Pure math against the cell's small fauna registry, every frame: no physics,
+        /// no contact — so the kill is deterministic ("flawless") and the danger prisms
+        /// are never disturbed by the prey being eaten, while staying fully vulnerable
+        /// to vessels and projectiles. Handles a whole school swimming into the mouth.
         /// </summary>
         void TryDevourPreyAtMouth()
         {
-            if (!_mouth || _attackRangeSqr <= 0f) return;
+            float attackRangeSqr = data.attackRange * data.attackRange;
+            if (!_mouth || attackRangeSqr <= 0f) return;
             var host = cell;
             if (host == null) return;
 
@@ -743,7 +712,7 @@ namespace CosmicShore.Gameplay
                 var f = fauna[i];
                 if (!f || f == this || f.Diet != FaunaDiet.Herbivore) continue;
                 if (!f.IsAlivePrey || f.IsPredationImmune) continue;
-                if ((f.transform.position - mouthPos).sqrMagnitude > _attackRangeSqr) continue;
+                if ((f.transform.position - mouthPos).sqrMagnitude > attackRangeSqr) continue;
 
                 // Predated() respects the prey's post-spawn immunity window and returns
                 // false if the prey couldn't be eaten — only feed on a real kill.

@@ -569,9 +569,9 @@ face → suction → watch:**
   environment prisms (flora/trails) still applies each tick — the shark
   maneuvers around obstacles — but **prey bodies never repel the predator**.
 - The **mouth** is a lightweight transform at the danger-prism centroid, created
-  at Initialize. **Attack range = the longest danger-prism dimension** ×
-  `attackRangeMultiplier` (recomputed per tick as the body grows;
-  `attackRangeFallback` covers a de-toothed shark).
+  at Initialize. **Attack range = `attackRange`** (flat world units; default 15
+  ≈ the shark's danger-prism length — a tuning starting point, not a derived
+  value).
 - Every frame the predator checks the cell's small `LiveFauna` registry: any
   live, non-immune herbivore within attack range of the mouth is devoured. Pure
   math, no physics, no contact — the kill is deterministic, and the danger

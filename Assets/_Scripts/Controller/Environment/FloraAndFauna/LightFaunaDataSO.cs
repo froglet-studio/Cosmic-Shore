@@ -52,14 +52,10 @@ namespace CosmicShore.Gameplay
                  "The behavior tick's full steering (separation from environment prisms — " +
                  "the obstacle avoidance) still applies each tick.")]
         [Min(0f)] public float pursuitAgility = 2.5f;
-        [Tooltip("Attack range = (longest danger-prism dimension) x this multiplier, " +
-                 "measured from the mouth (danger-prism centroid). Prey inside it breaks " +
-                 "apart and suctions into the mouth. 1 = exactly the danger prism's length.")]
-        [Min(0.1f)] public float attackRangeMultiplier = 1f;
-        [Tooltip("Attack range fallback (world units) used when the predator has no live " +
-                 "danger prisms to measure (e.g. players destroyed the mouth prisms — they " +
-                 "remain fully vulnerable to normal prism destruction).")]
-        [Min(0f)] public float attackRangeFallback = 15f;
+        [Tooltip("Attack range (world units) measured from the mouth (danger-prism " +
+                 "centroid). Prey inside it breaks apart and suctions into the mouth. " +
+                 "Default 15 ~ the shark's danger-prism length.")]
+        [Min(0f)] public float attackRange = 15f;
 
         [Header("Death (wither)")]
         [Tooltip("Continuity rule — nothing pops out of existence. On death the body withers " +
