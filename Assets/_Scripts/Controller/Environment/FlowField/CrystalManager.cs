@@ -121,7 +121,11 @@ namespace CosmicShore.Gameplay
                 return existing;
             }
 
-            using var _ = LoadInsights.Measure(LoadInsightCategory.Crystals, $"Crystal spawn ({crystalPrefab.name})");
+            // IsRecording-guarded label: crystals respawn on every collection during gameplay,
+            // so the disarmed path must not pay the interpolated-string allocation.
+            using var _ = LoadInsights.IsRecording
+                ? LoadInsights.Measure(LoadInsightCategory.Crystals, $"Crystal spawn ({crystalPrefab.name})")
+                : LoadSpanScope.None;
             LoadInsights.Count("Crystals spawned during load");
 
             var crystal = Instantiate(crystalPrefab, spawnPos, Quaternion.identity, transform);

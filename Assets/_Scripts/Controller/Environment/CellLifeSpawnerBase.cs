@@ -130,7 +130,11 @@ namespace CosmicShore.Gameplay
         {
             if (!host || !floraPrefab) return null;
 
-            using var _ = LoadInsights.Measure(LoadInsightCategory.Flora, $"Flora spawn ({floraPrefab.name})");
+            // IsRecording-guarded label: this runs for EVERY gameplay spawn, so the disarmed
+            // path must not pay the interpolated-string allocation.
+            using var _ = LoadInsights.IsRecording
+                ? LoadInsights.Measure(LoadInsightCategory.Flora, $"Flora spawn ({floraPrefab.name})")
+                : LoadSpanScope.None;
             LoadInsights.Count("Flora spawned during load");
 
             var flora = UnityEngine.Object.Instantiate(floraPrefab, host.transform.position, Quaternion.identity);
@@ -145,7 +149,10 @@ namespace CosmicShore.Gameplay
         {
             if (!host || !faunaPrefab) return null;
 
-            using var _ = LoadInsights.Measure(LoadInsightCategory.Fauna, $"Fauna spawn ({faunaPrefab.name})");
+            // IsRecording-guarded label — see SpawnFlora.
+            using var _ = LoadInsights.IsRecording
+                ? LoadInsights.Measure(LoadInsightCategory.Fauna, $"Fauna spawn ({faunaPrefab.name})")
+                : LoadSpanScope.None;
             LoadInsights.Count("Fauna spawned during load");
 
             var pop = UnityEngine.Object.Instantiate(faunaPrefab, host.transform.position, Quaternion.identity);
@@ -170,7 +177,10 @@ namespace CosmicShore.Gameplay
         {
             if (!host || !faunaPrefab) return null;
 
-            using var _ = LoadInsights.Measure(LoadInsightCategory.Fauna, $"Fauna spawn ({faunaPrefab.name})");
+            // IsRecording-guarded label — see SpawnFlora.
+            using var _ = LoadInsights.IsRecording
+                ? LoadInsights.Measure(LoadInsightCategory.Fauna, $"Fauna spawn ({faunaPrefab.name})")
+                : LoadSpanScope.None;
             LoadInsights.Count("Fauna spawned during load");
 
             // Spawn at the requested position (e.g. on the mass concentration the fauna will

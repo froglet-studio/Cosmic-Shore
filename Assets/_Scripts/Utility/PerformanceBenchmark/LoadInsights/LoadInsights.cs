@@ -13,6 +13,13 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// </summary>
     public readonly struct LoadSpanScope : IDisposable
     {
+        /// <summary>
+        /// Inert scope for gameplay-hot call sites that guard on <see cref="LoadInsights.IsRecording"/>
+        /// before building a span label — so the disarmed path allocates nothing:
+        /// <c>using var _ = LoadInsights.IsRecording ? LoadInsights.Measure(...) : LoadSpanScope.None;</c>
+        /// </summary>
+        public static readonly LoadSpanScope None = new(-1);
+
         readonly int _handle;
         internal LoadSpanScope(int handle) { _handle = handle; }
         public void Dispose() => LoadInsights.End(_handle);
