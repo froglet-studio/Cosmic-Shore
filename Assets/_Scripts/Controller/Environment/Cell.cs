@@ -106,6 +106,33 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Domains, float> liveEnvVolumeByDomain = new();
         float liveVolumeTotal;
         float liveEnvVolumeTotal;
+
+        // ------------------------------------------------------------------
+        //  Nucleus control zone — "node control" lives INSIDE the nucleus.
+        //  Per-domain ENVIRONMENT volume (trail + flora; fauna bodies excluded —
+        //  a swimming school must not tip territorial control) inside the
+        //  nucleus' world radius determines DominantDomain. Everything OUTSIDE
+        //  the nucleus is the contested feeding ground: voraciously edible by
+        //  herbivores of ANY domain and the only mass the targeting grids see.
+        //  Cells with no nucleus (no NucleusPrefab) have no control zone and
+        //  keep the legacy whole-cell behavior. See Docs/ECOSYSTEM.md §13.
+        // ------------------------------------------------------------------
+        readonly Dictionary<Domains, float> nucleusEnvVolumeByDomain = new();
+        float liveExteriorEnvVolumeTotal;
+        float _nucleusControlRadiusSqr;
+
+        // Prisms actually registered in the targeting grids. Interior (nucleus)
+        // prisms are volume/count-tracked but never grid-tracked — fauna must not
+        // be led to mass they cannot eat — so RemoveBlock has to know which
+        // prisms the grids really hold (the nucleus radius can change between
+        // Add and Remove; re-deriving membership would desync bucket counts).
+        readonly HashSet<Prism> gridTracked = new();
+
+        // Server-replicated dominant domain (CellNetworkSync, client side only).
+        // Fauna spawn color must match the server's scored control read, so on
+        // networked clients the replicated value overrides the locally-computed
+        // one (client-local trail reconstruction can drift near the boundary).
+        Domains? _replicatedDominantDomain;
         float _nextVolumeRecomputeAt = float.NegativeInfinity;
         const float VolumeRecomputeIntervalSeconds = 0.25f;
         static readonly List<Prism> s_deadMassScratch = new(32);
@@ -176,23 +203,31 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Live leader by per-domain prism VOLUME — "volume is the spine" (locked
-        /// invariant): every prism's mass counts, whether trail, flora, or fauna
-        /// body. Reads the cadenced live-volume sums so the answer tracks growth
-        /// and steals, not just add/remove events. Returns <see cref="Domains.Blue"/>
-        /// (the "no team" sentinel) when the cell holds no mass yet. Ties resolve in
-        /// fixed order (Jade > Ruby > Gold > Blue).
+        /// invariant). NODE CONTROL IS THE NUCLEUS: when this cell has a nucleus
+        /// control zone, only the ENVIRONMENT volume INSIDE the nucleus counts —
+        /// lay your mass through the core to claim the cell; the exterior is the
+        /// fauna's feeding ground and never sways control. Cells without a nucleus
+        /// keep the legacy whole-cell read. On networked clients the server's
+        /// replicated answer (CellNetworkSync) overrides the local compute so
+        /// fauna spawn color always matches the scored control. Returns
+        /// <see cref="Domains.Blue"/> (the "no team" sentinel) when the deciding
+        /// volume is empty. Ties resolve in fixed order (Jade > Ruby > Gold > Blue).
         /// </summary>
         public Domains DominantDomain
         {
             get
             {
+                if (_replicatedDominantDomain.HasValue)
+                    return _replicatedDominantDomain.Value;
+
                 EnsureVolumeFresh();
+                var source = HasNucleusControlZone ? nucleusEnvVolumeByDomain : liveVolumeByDomain;
                 Domains leader = Domains.Blue;
                 float leaderVolume = 0f;
                 Domains[] order = { Domains.Jade, Domains.Ruby, Domains.Gold, Domains.Blue };
                 foreach (var d in order)
                 {
-                    if (!liveVolumeByDomain.TryGetValue(d, out float v)) continue;
+                    if (!source.TryGetValue(d, out float v)) continue;
                     if (v > leaderVolume)
                     {
                         leader = d;
@@ -202,6 +237,63 @@ namespace CosmicShore.Gameplay
                 return leader;
             }
         }
+
+        /// <summary>
+        /// True when this cell has a spawned nucleus with a measurable world radius —
+        /// the node-control zone. Without one (no NucleusPrefab in the CellConfig)
+        /// control and edibility keep their legacy whole-cell semantics.
+        /// </summary>
+        public bool HasNucleusControlZone => _nucleusControlRadiusSqr > 0f;
+
+        /// <summary>True when <paramref name="position"/> is inside the nucleus control zone (always false without one).</summary>
+        public bool IsInsideNucleus(Vector3 position) =>
+            _nucleusControlRadiusSqr > 0f &&
+            (position - transform.position).sqrMagnitude <= _nucleusControlRadiusSqr;
+
+        /// <summary>
+        /// The domain holding the nucleus claim right now. False when the cell has no
+        /// nucleus control zone OR nobody has laid environment mass inside it yet —
+        /// distinct from <see cref="ControllingDomain"/>, which falls back through
+        /// gameData so fauna always get a spawn color. Scoring systems (Brood Rush)
+        /// read THIS so an unclaimed nucleus never awards a fallback-team point.
+        /// </summary>
+        public bool TryGetNucleusClaim(out Domains claimant)
+        {
+            claimant = Domains.Blue;
+            if (!HasNucleusControlZone) return false;
+            claimant = DominantDomain;
+            return claimant != Domains.Blue;
+        }
+
+        /// <summary>
+        /// The herbivore diet rule, spatialized. With a nucleus control zone: mass
+        /// OUTSIDE the nucleus is voraciously edible by any herbivore REGARDLESS of
+        /// domain (the exterior is the contested feeding ground — extends the Boid
+        /// forager's existing any-domain grazing to all herbivores), while mass
+        /// INSIDE the nucleus is the territorial claim and is never fauna-consumed
+        /// (players contest it with abilities and by out-laying volume). Without a
+        /// nucleus zone the legacy rule stands: herbivores eat opposing-domain mass.
+        /// </summary>
+        public bool IsPreyForHerbivore(Vector3 position, Domains faunaDomain, Domains preyDomain)
+        {
+            if (HasNucleusControlZone)
+                return !IsInsideNucleus(position);
+            return preyDomain != faunaDomain;
+        }
+
+        /// <summary>
+        /// True while the targeting grids hold any environment mass — with a nucleus
+        /// zone that means EXTERIOR mass (interior prisms are never grid-tracked).
+        /// Fauna use this to hunt the feeding ground even at Calm ("voracious").
+        /// </summary>
+        public bool HasSensedExteriorMass => gridTracked.Count > 0;
+
+        /// <summary>
+        /// Client-side hook for <see cref="CellNetworkSync"/>: pins DominantDomain to
+        /// the server's replicated answer so spawn color and control UI can't drift
+        /// from the scored value. Pass null (server / single-player) to clear.
+        /// </summary>
+        public void SetReplicatedDominantDomain(Domains? domain) => _replicatedDominantDomain = domain;
 
         // ------------------------------------------------------------------
         //  Live volume — the spine. Recomputed from live prism state on a short
@@ -216,9 +308,14 @@ namespace CosmicShore.Gameplay
 
             liveVolumeByDomain.Clear();
             liveEnvVolumeByDomain.Clear();
+            nucleusEnvVolumeByDomain.Clear();
             liveVolumeTotal = 0f;
             liveEnvVolumeTotal = 0f;
+            liveExteriorEnvVolumeTotal = 0f;
             s_deadMassScratch.Clear();
+
+            Vector3 centre = transform.position;
+            float nucleusSqr = _nucleusControlRadiusSqr;
 
             foreach (var prism in massTracked)
             {
@@ -239,11 +336,32 @@ namespace CosmicShore.Gameplay
                     liveEnvVolumeByDomain.TryGetValue(domain, out float ev);
                     liveEnvVolumeByDomain[domain] = ev + v;
                     liveEnvVolumeTotal += v;
+
+                    // Node control vs feeding ground: environment mass inside the
+                    // nucleus claims control; everything outside is edible prey.
+                    if (nucleusSqr > 0f &&
+                        (prism.transform.position - centre).sqrMagnitude <= nucleusSqr)
+                    {
+                        nucleusEnvVolumeByDomain.TryGetValue(domain, out float nv);
+                        nucleusEnvVolumeByDomain[domain] = nv + v;
+                    }
+                    else
+                    {
+                        liveExteriorEnvVolumeTotal += v;
+                    }
                 }
             }
 
+            // Without a nucleus zone the whole cell is the feeding ground for the
+            // legacy opposing-domain prey math (OpposingVolume's else-branch).
+            if (nucleusSqr <= 0f)
+                liveExteriorEnvVolumeTotal = liveEnvVolumeTotal;
+
             foreach (var dead in s_deadMassScratch)
+            {
                 massTracked.Remove(dead);
+                gridTracked.Remove(dead);
+            }
         }
 
         /// <summary>
@@ -263,14 +381,17 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Live ENVIRONMENT volume (trail + flora — fauna bodies excluded) NOT of
-        /// <paramref name="domain"/>: the prey signal in volume units. Fauna bodies
-        /// are excluded because they are not edible prey for herbivores — counting
-        /// them would seed fauna against phantom food and starve them.
+        /// The herbivore PREY signal in volume units (fauna bodies excluded — not
+        /// edible, counting them would seed fauna against phantom food). With a
+        /// nucleus control zone this is ALL environment volume outside the nucleus
+        /// (the exterior is voraciously edible regardless of domain); without one it
+        /// is the legacy opposing-domain read (env volume not of <paramref name="domain"/>).
         /// </summary>
         public float OpposingVolume(Domains domain)
         {
             EnsureVolumeFresh();
+            if (HasNucleusControlZone)
+                return liveExteriorEnvVolumeTotal;
             return Mathf.Max(0f, liveEnvVolumeTotal - liveEnvVolumeByDomain.GetValueOrDefault(domain, 0f));
         }
 
@@ -589,6 +710,8 @@ namespace CosmicShore.Gameplay
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
             massTracked.Clear();
+            gridTracked.Clear();
+            _replicatedDominantDomain = null;
             _nextVolumeRecomputeAt = float.NegativeInfinity; // resum on next read
             liveFaunaCounts.Clear();
             liveFauna.Clear();
@@ -705,6 +828,8 @@ namespace CosmicShore.Gameplay
             trackedBlocks.Clear();
             domainBlockCounts.Clear();
             massTracked.Clear();
+            gridTracked.Clear();
+            _replicatedDominantDomain = null;
             _nextVolumeRecomputeAt = float.NegativeInfinity; // resum on next read
             liveFaunaCounts.Clear();
             liveFauna.Clear();
@@ -809,6 +934,28 @@ namespace CosmicShore.Gameplay
             nucleus.transform.localScale *= nucleusScaleMultiplier;
             ApplyNucleusWorldRadius(); // honor any radius a mode requested before the nucleus existed
             ApplyNucleusMesh();        // ...or a replacement boundary mesh (non-spherical court)
+            RefreshNucleusControlRadius();
+        }
+
+        /// <summary>
+        /// Re-measure the nucleus' WORLD radius (renderer bounds — mesh-agnostic, so
+        /// morphed court meshes and world-radius requests are honored) and cache it
+        /// as the node-control zone boundary. Called whenever the nucleus spawns or
+        /// is resized/re-meshed; a missing nucleus clears the zone (legacy behavior).
+        /// </summary>
+        void RefreshNucleusControlRadius()
+        {
+            _nucleusControlRadiusSqr = 0f;
+            if (nucleus == null) return;
+
+            var r = nucleus.GetComponentInChildren<Renderer>();
+            if (r == null) return;
+
+            Vector3 ext = r.bounds.extents;
+            float radius = Mathf.Max(ext.x, Mathf.Max(ext.y, ext.z));
+            if (radius <= 1e-3f) return;
+
+            _nucleusControlRadiusSqr = radius * radius;
         }
 
         /// <summary>
@@ -823,6 +970,7 @@ namespace CosmicShore.Gameplay
             if (worldRadius <= 0f) return;
             _pendingNucleusWorldRadius = worldRadius;
             ApplyNucleusWorldRadius();
+            RefreshNucleusControlRadius();
         }
 
         void ApplyNucleusWorldRadius()
@@ -850,6 +998,7 @@ namespace CosmicShore.Gameplay
         {
             _pendingNucleusMesh = mesh;
             ApplyNucleusMesh();
+            RefreshNucleusControlRadius();
         }
 
         void ApplyNucleusMesh()
@@ -913,6 +1062,21 @@ namespace CosmicShore.Gameplay
             CSDebug.Log($"<color=yellow>[Cell {ID}] Spawner stopped</color>");
         }
 
+        /// <summary>
+        /// Stops and restarts the life spawner so its fixed-period fauna clock
+        /// re-aligns to NOW. Used by modes whose scoring rides the fauna spawn cycle
+        /// (Brood Rush realigns the 30s wave clock to the GO of the countdown —
+        /// the spawner otherwise starts when the first crystal registers, which is
+        /// during the ready screen). No-op until the cell has post-initialized.
+        /// Note: a profile with flora re-runs its initial flora batch on restart —
+        /// intended callers are fauna-only biomes.
+        /// </summary>
+        public void RestartSpawnerForMode()
+        {
+            if (!postInitilized || !cellConfigData) return;
+            StartSpawnerForMode();
+        }
+
         internal Transform GetCrystalTransform()
         {
             if (runtime != null && runtime.TryGetLocalCrystal(out var crystal) && crystal)
@@ -950,12 +1114,22 @@ namespace CosmicShore.Gameplay
 
             if (block)
             {
-                Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-                foreach (var t in teams)
-                    if (t != registeredDomain) countGrids[t].AddBlock(block);
+                // Nucleus-interior mass is the territorial claim, not prey: it stays
+                // out of the TARGETING grids (fauna must never be led to mass they
+                // cannot eat) while still counting toward volume, per-domain counts,
+                // and the phase backstop. gridTracked remembers the classification so
+                // RemoveBlock stays symmetric even if the nucleus radius changes.
+                if (!IsInsideNucleus(block.transform.position))
+                {
+                    gridTracked.Add(block);
 
-                if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
-                    anyGrid.AddBlock(block);
+                    Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
+                    foreach (var t in teams)
+                        if (t != registeredDomain) countGrids[t].AddBlock(block);
+
+                    if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
+                        anyGrid.AddBlock(block);
+                }
 
                 domainBlockCounts.TryGetValue(registeredDomain, out int count);
                 domainBlockCounts[registeredDomain] = count + 1;
@@ -972,14 +1146,23 @@ namespace CosmicShore.Gameplay
 
             if (!trackedBlocks.Remove(block, out Domains registeredDomain)) return; // not counted
 
+            // Drop grid membership even for destroyed-but-non-null refs so the
+            // sensed-mass signal (gridTracked.Count) can't leak upward.
+            bool wasGridTracked = gridTracked.Remove(block);
+
             if (block)
             {
-                Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
-                foreach (Domains t in teams)
-                    if (t != registeredDomain) countGrids[t].RemoveBlock(block);
+                // Only grid-registered prisms leave the grids (nucleus-interior mass
+                // never entered them — see AddBlock).
+                if (wasGridTracked)
+                {
+                    Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
+                    foreach (Domains t in teams)
+                        if (t != registeredDomain) countGrids[t].RemoveBlock(block);
 
-                if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
-                    anyGrid.RemoveBlock(block);
+                    if (countGrids.TryGetValue(Domains.Blue, out var anyGrid))
+                        anyGrid.RemoveBlock(block);
+                }
 
                 if (domainBlockCounts.TryGetValue(registeredDomain, out int count) && count > 0)
                     domainBlockCounts[registeredDomain] = count - 1;

@@ -19,6 +19,12 @@ public class VesselTransformer : MonoBehaviour
     [SerializeField] float MaxBoostMultiplier = 5f;
     [SerializeField] float BoostDecayRate = 0.1f;
 
+    [Tooltip("Collapse drift onto a single analog trigger: the left trigger's 0-1 travel is " +
+             "remapped across the full no-drift → single → sharp range, and the right trigger no " +
+             "longer feeds drift (freed for another ability, e.g. the Squirrel's tube). Leave off " +
+             "for the default two-trigger drift where both triggers sum (e.g. Manta).")]
+    [SerializeField] bool singleTriggerDrift = false;
+
     [HideInInspector] public float DriftDamping = 0f;
 
     [Header("Events")]
@@ -300,8 +306,13 @@ public class VesselTransformer : MonoBehaviour
         }
 
         /// <summary>
-        /// Returns the combined analog trigger sum (0-2). For non-gamepad input,
-        /// returns a binary value based on which drift level is active.
+        /// Returns the analog drift intensity (0-2). With the default two-trigger drift
+        /// (e.g. Manta) both analog triggers sum, so one trigger reaches 1 (single drift) and
+        /// both reach 2 (sharp). With <see cref="singleTriggerDrift"/> on (the Squirrel, whose
+        /// right trigger is repurposed for the tube ability), only the left trigger feeds drift
+        /// and its 0-1 travel is remapped across the full 0-2 range so a single trigger spans
+        /// no-drift → single → sharp. For non-gamepad input, returns a binary value based on
+        /// which drift level is active.
         /// </summary>
         private float GetTriggerSum()
         {
@@ -309,7 +320,9 @@ public class VesselTransformer : MonoBehaviour
                 return 0f;
 
             if (InputStatus.ActiveInputDevice == InputDeviceType.Gamepad)
-                return InputStatus.LeftTriggerAnalog + InputStatus.RightTriggerAnalog;
+                return singleTriggerDrift
+                    ? InputStatus.LeftTriggerAnalog * 2f
+                    : InputStatus.LeftTriggerAnalog + InputStatus.RightTriggerAnalog;
 
             // Non-gamepad fallback: binary intensity
             if (_sharpDriftActive) return 2f;

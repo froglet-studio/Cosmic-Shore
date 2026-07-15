@@ -47,5 +47,37 @@ namespace CosmicShore.Utility
                 deficit = Mathf.Min(deficit, Mathf.Max(0, maxPopulation - livePopulation));
             return deficit;
         }
+
+        /// <summary>
+        /// How many fauna a FULL-WAVE tick spawns (SpawnProfileSO.SeedFullWaveEveryTick):
+        /// a fresh wave of <paramref name="populationSize"/> every period regardless of the
+        /// live count, clamped so the species never exceeds its hard cap. Wave-scored modes
+        /// (Brood Rush) use this so every spawn cycle visibly births a brood in the
+        /// controlling color; population remains bounded by starvation + the cap.
+        /// </summary>
+        public static int WaveSpawnCount(int livePopulation, int populationSize, int maxPopulation)
+        {
+            int wave = Mathf.Max(0, populationSize);
+            if (maxPopulation > 0)
+                wave = Mathf.Min(wave, Mathf.Max(0, maxPopulation - livePopulation));
+            return wave;
+        }
+
+        /// <summary>
+        /// The prey-linked production gate — no fauna is seeded into famine. A predator needs enough
+        /// live herbivores to hunt; a herbivore needs enough opposing ENVIRONMENT volume to graze.
+        /// One copy shared by every producer (the cell spawners and the freestyle microscene
+        /// conveyor releasing lifeforms into the cell), so the gate can't drift between them.
+        /// <paramref name="faunaFoodFloor"/> ≤ 0 means "always produce" (profile-authored).
+        /// </summary>
+        /// <param name="opposingEnvironmentVolume">Live opposing environment prism volume (NOT fauna bodies).</param>
+        /// <param name="faunaFoodFloor">The species' prey floor, authored in nominal prisms.</param>
+        public static bool PreyAvailable(bool isPredator, int liveHerbivoreCount, float opposingEnvironmentVolume, int faunaFoodFloor)
+        {
+            if (faunaFoodFloor <= 0) return true;
+            return isPredator
+                ? liveHerbivoreCount >= faunaFoodFloor
+                : opposingEnvironmentVolume >= faunaFoodFloor * CellPhaseThresholds.NominalPrismVolume;
+        }
     }
 }

@@ -32,7 +32,15 @@ namespace CosmicShore.Utility
         public bool FaunaExcludeLocalDomain = false;
         [Min(0f)] public float InitialFaunaSpawnWaitTime = 10f;
         [Min(0f)] public float FaunaSpawnVolumeThreshold = 1f;
-        [Min(0f)] public float BaseFaunaSpawnTime = 60f;
+        [Tooltip("Fixed period (seconds) between fauna spawn-cycle ticks — the ecosystem heartbeat. " +
+                 "Platform default is 30s; scoring modes that ride the wave clock (Brood Rush) depend on it.")]
+        [Min(0f)] public float BaseFaunaSpawnTime = 30f;
+        [Tooltip("OFF (default): the tick is a SEEDER — it only tops each species up to its seed floor " +
+                 "(PopulationSize), staying out while the food web sustains it. ON: every tick spawns a " +
+                 "full fresh wave of PopulationSize fauna (clamped by MaxLivePopulation), so each cycle " +
+                 "visibly births a brood in the controlling color — used by wave-scored modes (Brood Rush). " +
+                 "Population is still bounded by starvation + the per-species cap; no imposed death.")]
+        public bool SeedFullWaveEveryTick = false;
         [Tooltip("Population control (prey-linked), authored in NOMINAL PRISMS: a herbivore population " +
                  "only spawns while the cell holds at least this many prisms' worth of opposing " +
                  "ENVIRONMENT VOLUME (value × 16, the nominal leaf volume — volume is the spine; fauna " +

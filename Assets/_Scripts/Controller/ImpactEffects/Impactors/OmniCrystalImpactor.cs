@@ -23,7 +23,9 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected virtual bool IsDomainMatching(Domains domain) => true;
 
-        bool IsNetworkClient() => Crystal.CrystalManager.IsSpawned && !Crystal.CrystalManager.IsServer;
+        // Null manager = a manager-less local mint (e.g. the freestyle conveyor toy's omni pickups):
+        // treat it as a local single-machine collect, never a network client.
+        bool IsNetworkClient() => Crystal.CrystalManager != null && Crystal.CrystalManager.IsSpawned && !Crystal.CrystalManager.IsServer;
 
         protected override void AcceptImpactee(IImpactor impactee)
         {
@@ -79,12 +81,18 @@ namespace CosmicShore.Gameplay
 
             if (shipStatus.VesselType != VesselClassType.Manta)
             {
-                Crystal.NotifyManagerToExplodeCrystal(new Crystal.ExplodeParams
+                var explode = new Crystal.ExplodeParams
                 {
                     Course = shipStatus.Course,
                     Speed = shipStatus.Speed,
                     PlayerName = shipStatus.PlayerName,
-                });
+                };
+                // Manager-less local mint (conveyor toy): explode locally so the spent-crystal
+                // VFX still plays (continuity of existence) instead of the crystal popping out.
+                if (Crystal.CrystalManager != null)
+                    Crystal.NotifyManagerToExplodeCrystal(explode);
+                else
+                    Crystal.Explode(explode);
             }
         }
         

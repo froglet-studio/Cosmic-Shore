@@ -115,7 +115,11 @@ namespace CosmicShore.Gameplay
             // can't fire until that vessel flies clear.
         }
 
-        void Update()
+        // Virtual so subclasses that need their own per-frame work (e.g. PaintingToy's choice-gate
+        // cleanup) EXTEND rather than shadow it — Unity invokes only the most-derived Update(), so
+        // a hiding declaration in a subclass would silently disable the exit-gated re-arm below and
+        // the toy would never fire. Overrides must call base.Update().
+        protected virtual void Update()
         {
             if (_armed || _blooming || _activating) return;
             if (LocalVesselOutsideTrigger())
@@ -133,6 +137,18 @@ namespace CosmicShore.Gameplay
 
             _armed = false; // Update() re-arms only after the vessel has flown clear again.
             _activating = true;
+            ActivateDeferred(vessel).Forget();
+        }
+
+        /// <summary>
+        /// Toy effects run on the next Update tick, NOT inside the physics trigger callback:
+        /// they reach deep (domain RPC → vessel re-theme → HUD pool rebuilds, networked vessel
+        /// swaps), and a swath of engine APIs (DestroyImmediate among them) is illegal during
+        /// physics/animation/render callbacks. One frame of deferral is imperceptible.
+        /// </summary>
+        async UniTaskVoid ActivateDeferred(IVesselStatus vessel)
+        {
+            await UniTask.Yield(PlayerLoopTiming.Update, this.GetCancellationTokenOnDestroy());
             try { OnActivated(vessel); }
             finally { _activating = false; }
         }
@@ -166,13 +182,17 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Resolve the colliding object to the LOCAL player's vessel. Never lets a remote (or
-        /// AI/autopilot in a party) vessel trip this client's toy.
+        /// AI/autopilot in a party) vessel trip this client's toy. Shared by every toy trigger
+        /// (gates, ride milestones) — one rule, one implementation.
         /// </summary>
-        static bool TryGetLocalVessel(Collider other, out IVesselStatus vessel)
+        internal static bool TryGetLocalVessel(Collider other, out IVesselStatus vessel)
         {
             vessel = null;
             var status = other.GetComponentInParent<VesselStatus>();
             if (!status) return false;
+            // A freshly spawned hull (mid vessel-swap) has no Player yet — IsLocalUser would
+            // dereference it inside a physics callback.
+            if (status.Player == null) return false;
             IVesselStatus iv = status;
             if (!iv.IsLocalUser) return false;
             vessel = iv;
