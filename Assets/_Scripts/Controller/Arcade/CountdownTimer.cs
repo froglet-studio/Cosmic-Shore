@@ -1,5 +1,6 @@
 using CosmicShore.Core;
 using CosmicShore.UI;
+using CosmicShore.Utility.PerformanceBenchmark;
 using DG.Tweening;
 using System;
 using UnityEngine;
@@ -23,6 +24,7 @@ namespace CosmicShore.Gameplay
 
         Sprite[] _sprites;
         Sequence _seq;
+        int _loadInsightSpan = -1;
 
         void Awake()
         {
@@ -38,6 +40,11 @@ namespace CosmicShore.Gameplay
         {
             EnsureSpritesInitialized();
             _seq?.Kill();
+
+            LoadInsights.End(_loadInsightSpan);
+            _loadInsightSpan = LoadInsights.Begin(LoadInsightCategory.GameFlow,
+                $"Countdown 3-2-1-GO ({_sprites.Length * countdownDuration:F0}s)", isWait: true);
+
             _seq = DOTween.Sequence();
 
             bool unscaled = animSettings == null || animSettings.useUnscaledTime;
@@ -87,6 +94,8 @@ namespace CosmicShore.Gameplay
             _seq.OnComplete(() =>
             {
                 countdownDisplay.gameObject.SetActive(false);
+                LoadInsights.End(_loadInsightSpan);
+                _loadInsightSpan = -1;
                 onComplete?.Invoke();
             });
         }

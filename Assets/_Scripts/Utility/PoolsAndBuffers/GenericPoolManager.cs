@@ -159,6 +159,13 @@ namespace CosmicShore.Utility
         {
             if (count <= 0) return;
             int missing = Mathf.Max(0, count - CountInactive);
+            if (missing <= 0) return;
+
+            using var _ = PerformanceBenchmark.LoadInsights.Measure(
+                PerformanceBenchmark.LoadInsightCategory.Pooling,
+                $"Pool prewarm ({GetType().Name}, {missing} instances)");
+            PerformanceBenchmark.LoadInsights.Count("Pool objects prewarmed during load", missing);
+
             for (int i = 0; i < missing; i++)
             {
                 var obj = CreateFunc();

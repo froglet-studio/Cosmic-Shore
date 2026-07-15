@@ -309,13 +309,41 @@ namespace CosmicShore.Utility
             InvokeTurnStarted();
         }
 
-        public void InvokeGameLaunch() => OnLaunchGame?.Raise();
+        public void InvokeGameLaunch()
+        {
+            // Load Time Insights: a game launch is the recording trigger; every peer raises this
+            // (clients for the splash), so hosts and MPPM virtual players all self-record. The
+            // calls are no-ops unless Record Insight Mode is armed (see LoadInsights).
+            PerformanceBenchmark.LoadInsights.BeginLoad($"Game launch — {GameMode} → {SceneName}");
+            PerformanceBenchmark.LoadInsights.SetGameContext(
+                SceneName,
+                GameMode.ToString(),
+                SelectedIntensity != null ? SelectedIntensity.Value : 0,
+                SelectedPlayerCount != null ? SelectedPlayerCount.Value : 0,
+                SelectedPlayerCount != null ? Mathf.Max(0, SelectedPlayerCount.Value - RequestedAIBackfillCount) : 0,
+                RequestedAIBackfillCount,
+                IsMultiplayerMode);
+            OnLaunchGame?.Raise();
+        }
         public void InvokeSceneTransition(bool param) => OnSceneTransition?.Raise(param);
-        public void InvokeSessionStarted() => OnSessionStarted?.Raise();
+        public void InvokeSessionStarted()
+        {
+            PerformanceBenchmark.LoadInsights.Mark("Session started (app state → InGame)");
+            OnSessionStarted?.Raise();
+        }
         public void InvokeInitializeGame() => OnInitializeGame?.Raise();
-        public void InvokeClientReady() => OnClientReady?.Raise();
+        public void InvokeClientReady()
+        {
+            PerformanceBenchmark.LoadInsights.MarkVisualReady();
+            OnClientReady?.Raise();
+        }
         public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
-        public void InvokeTurnStarted() => OnMiniGameTurnStarted?.Raise();
+        public void InvokeTurnStarted()
+        {
+            // First turn start = the vessel is controllable — the load is over.
+            PerformanceBenchmark.LoadInsights.CompleteLoad("Playable — turn started, vessels active");
+            OnMiniGameTurnStarted?.Raise();
+        }
 
         public void InvokeGameTurnConditionsMet()
         {

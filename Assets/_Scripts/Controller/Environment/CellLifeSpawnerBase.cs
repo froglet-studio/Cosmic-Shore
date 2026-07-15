@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using UnityEngine;
 using CosmicShore.Data;
 using System.Linq;
@@ -129,6 +130,9 @@ namespace CosmicShore.Gameplay
         {
             if (!host || !floraPrefab) return null;
 
+            using var _ = LoadInsights.Measure(LoadInsightCategory.Flora, $"Flora spawn ({floraPrefab.name})");
+            LoadInsights.Count("Flora spawned during load");
+
             var flora = UnityEngine.Object.Instantiate(floraPrefab, host.transform.position, Quaternion.identity);
             flora.domain = PickRandomDomain(excludedDomain);
             flora.Initialize(host);
@@ -140,6 +144,9 @@ namespace CosmicShore.Gameplay
         protected Fauna SpawnFauna(Cell host, Fauna faunaPrefab, Vector3 goal, Domains? excludedDomain)
         {
             if (!host || !faunaPrefab) return null;
+
+            using var _ = LoadInsights.Measure(LoadInsightCategory.Fauna, $"Fauna spawn ({faunaPrefab.name})");
+            LoadInsights.Count("Fauna spawned during load");
 
             var pop = UnityEngine.Object.Instantiate(faunaPrefab, host.transform.position, Quaternion.identity);
             pop.domain = PickRandomDomain(excludedDomain);
@@ -162,6 +169,9 @@ namespace CosmicShore.Gameplay
         public static Fauna SpawnFaunaWithDomain(Cell host, Fauna faunaPrefab, Vector3 goal, Domains domain, Vector3? spawnPosition = null)
         {
             if (!host || !faunaPrefab) return null;
+
+            using var _ = LoadInsights.Measure(LoadInsightCategory.Fauna, $"Fauna spawn ({faunaPrefab.name})");
+            LoadInsights.Count("Fauna spawned during load");
 
             // Spawn at the requested position (e.g. on the mass concentration the fauna will
             // forage) when given; otherwise the cell centre (legacy behavior, IntensityWise).

@@ -4,6 +4,7 @@ using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
 using Reflex.Attributes;
 using Reflex.Core;
@@ -42,6 +43,9 @@ namespace CosmicShore.Gameplay
         // Client-pull bootstrap state (see RosterPullRetryLoop).
         CancellationTokenSource _rosterRetryCts;
         bool _localPairResolved;
+
+        // Load Time Insights span: open while pairs are queued waiting for replication.
+        int _pendingWaitSpan = -1;
 
         public override void OnNetworkSpawn()
         {
@@ -258,7 +262,11 @@ namespace CosmicShore.Gameplay
 
                 try
                 {
-                    await UniTask.Delay(intervalMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+                    using (LoadInsights.Measure(LoadInsightCategory.Netcode,
+                               $"Roster pull retry wait (client, {intervalMs}ms)", isWait: true))
+                    {
+                        await UniTask.Delay(intervalMs, DelayType.UnscaledDeltaTime, cancellationToken: ct);
+                    }
                 }
                 catch (OperationCanceledException)
                 {
@@ -317,6 +325,20 @@ namespace CosmicShore.Gameplay
                 // loading screen always clears when all pairs are resolved.
                 gameData.InvokeClientReady();
             }
+
+            // Load Time Insights: keep one wait-span open for exactly as long as pairs sit
+            // queued waiting for their NetworkObjects to replicate — the client's main
+            // invisible wait during a multiplayer load.
+            if (_pendingPairs.Count > 0 && _pendingWaitSpan < 0)
+            {
+                _pendingWaitSpan = LoadInsights.Begin(LoadInsightCategory.Netcode,
+                    "Waiting for player/vessel NetworkObjects to replicate (pending pairs)", isWait: true);
+            }
+            else if (_pendingPairs.Count == 0 && _pendingWaitSpan >= 0)
+            {
+                LoadInsights.End(_pendingWaitSpan);
+                _pendingWaitSpan = -1;
+            }
         }
 
         /// <summary>
@@ -364,6 +386,9 @@ namespace CosmicShore.Gameplay
         void InitializePair(IPlayer player, IVessel vessel)
         {
             Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] InitializePair — Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}</color>");
+            using var _ = LoadInsights.Measure(
+                player.IsInitializedAsAI ? LoadInsightCategory.AiBackfill : LoadInsightCategory.Vessels,
+                $"Pair init — inject + vessel.Initialize ({player.Name})");
             InjectVesselDependencies(vessel);
             player.InitializeForMultiplayerMode(vessel);
             vessel.Initialize(player);

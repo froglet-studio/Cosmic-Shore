@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Obvious.Soap;
 using Reflex.Attributes;
 using Unity.Netcode;
@@ -119,6 +120,9 @@ namespace CosmicShore.Gameplay
                 );
                 return existing;
             }
+
+            using var _ = LoadInsights.Measure(LoadInsightCategory.Crystals, $"Crystal spawn ({crystalPrefab.name})");
+            LoadInsights.Count("Crystals spawned during load");
 
             var crystal = Instantiate(crystalPrefab, spawnPos, Quaternion.identity, transform);
             crystal.InjectDependencies(this);

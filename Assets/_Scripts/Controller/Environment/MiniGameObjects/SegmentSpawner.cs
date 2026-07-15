@@ -2,6 +2,7 @@ using CosmicShore.Gameplay;
 using System.Collections.Generic;
 using System.Linq;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Reflex.Attributes;
 using UnityEngine;
 using Obvious.Soap;
@@ -271,6 +272,12 @@ namespace CosmicShore.Gameplay
         void SpawnAndLayout(SpawnableBase spawnable, int intensity, int layoutIndex)
         {
             if (Seed != 0) spawnable.SetSeed(Seed + layoutIndex);
+
+            // The per-intensity spawnable swap is where "higher intensity = denser environment"
+            // gets paid for — the span names the exact prefab so heavy variants stand out.
+            using var _ = LoadInsights.Measure(LoadInsightCategory.Environment,
+                $"Environment segment spawn ({spawnable.name}, intensity {intensity})");
+            LoadInsights.Count("Environment segments spawned during load");
 
             var spawned = spawnable.Spawn(intensity);
             if (!spawned) return;

@@ -11,7 +11,7 @@ It has three faces:
 
 | Piece | Where it lives | Use it for |
 |---|---|---|
-| **Benchmark Window** (4 tabs) | Editor only (`FrogletTools` menu) | Recording, scoring, sweeping, comparing — the analysis cockpit. |
+| **Benchmark Window** (5 tabs) | Editor only (`FrogletTools` menu) | Recording, scoring, sweeping, comparing, load-time attribution — the analysis cockpit. |
 | **DiagnosticsHUD** (F7) | Editor **and** dev builds (auto-spawns) | On-screen live readout (FPS, CPU/GPU split + bound verdict, memory) + "Run Diagnostic" spike capture to Documents. The overlay testers use on a real device. |
 | **BenchmarkHUDOverlay** (F9) | Editor (spawned from the window) | A quick IMGUI eyeball of FPS/CPU-GPU/draws/GC/memory while you play. |
 
@@ -20,12 +20,12 @@ There's also a standalone **ProfilerCsvLogger** (per-frame CSV dump) and a **dev
 
 ---
 
-## The four tabs
+## The five tabs
 
 ```
-┌──────────── Performance Benchmark Window ────────────┐
-│ Runtime Capture │ Sweep │ History (n) │ Compare       │
-└──────────────────────────────────────────────────────┘
+┌────────────────────── Performance Benchmark Window ──────────────────────┐
+│ Runtime Capture │ Sweep │ History (n) │ Compare │ Load Time Insights      │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### 1 · Runtime Capture — free-play recording with live spike breakdown ⭐
@@ -97,6 +97,48 @@ worse`), plus a non-scored "game load" context block so you can confirm both run
 workload. This is how you *prove* an optimization worked: capture → tag `baseline` → make the change
 → capture → Compare. If the two runs come from different sources (Editor vs DevBuild) or platforms,
 a **cross-source warning** flags that only same-source deltas are meaningful.
+
+### 5 · Load Time Insights — what actually took the load time ⏱
+
+Answers "why did this game take 90 seconds to load?" with **exact percentages**. One recording
+covers a single game launch end-to-end: arcade Start tap → scene load → netcode sync → vessel/AI
+spawning → cell & environment population → connecting panel/cinematic → Ready → countdown **GO**.
+
+1. Press **● Arm Record Insight Mode** (persists until disarmed — every game launch records while
+   armed, so you can capture intensity 1 vs intensity 2 back-to-back).
+2. Enter Play Mode and launch a game. Hosts start recording at the launch tap; **pure clients
+   self-record too** (triggered by the server's Netcode scene pull), each machine producing its own
+   report of its own experience.
+3. The report is ready **the moment the countdown hits GO** and lands in the tab automatically:
+   - a **donut chart + color-keyed table** — every millisecond attributed to exactly one category
+     (Scene Load, Netcode & Sync, Scripted Delays, Vessels, AI Backfill, Cell & Environment, Flora,
+     Fauna, Crystals, Pooling, UI & HUD, Game Flow…) — **percentages always sum to 100**,
+   - a **waiting vs working** strip (hardcoded delays, replication waits, and *human* Ready-click
+     time are split out so they don't masquerade as engineering time),
+   - **top costs** ranked by attributed time (with counts and worst single instance),
+   - **frame stalls** (>150 ms frames, each blamed on what was running),
+   - **errors during load**, spawn **counters**, a nested **timeline**, and rule-based **insights**
+     with fix advice (e.g. "3.2s of this load is fixed `UniTask.Delay` gates — free win").
+4. **📋 Copy insight report** puts the whole thing on the clipboard as a Claude-ready text block;
+   every report also auto-saves as **`.json` + readable `.txt`** under
+   `{persistentDataPath}/Benchmarks/LoadInsights/` (that's the downloadable file). **Past load
+   reports** are listed at the bottom for revisiting/deleting.
+
+Extras that matter in practice:
+
+- **Force-quit insurance:** while recording, an in-flight snapshot is written every 5s. If the app
+  is killed mid-load (the "user gave up after 10 minutes" case), the next run recovers it as an
+  **INTERRUPTED** report — the evidence survives.
+- **Aborts are honest:** returning to the menu, stopping Play Mode, or a 15-minute timeout finalizes
+  the recording with an `Aborted:` reason instead of silently discarding it.
+- Recording is **fully off unless armed** — the instrumentation calls sprinkled through the load
+  pipeline (`LoadInsights.Measure(...)`, mirroring the `NetMarkers` placement model) cost one bool
+  check when disarmed, and the runtime host only exists in the Editor and Development builds.
+- Dev builds can arm without the editor: launch with **`-csmloadinsights`** and pull the `.txt`
+  off the device afterwards.
+- Adding coverage: wrap new load-path work in
+  `using (LoadInsights.Measure(LoadInsightCategory.X, "label")) { … }` — unattributed time is
+  called out in the report so gaps are visible, not hidden.
 
 ---
 
@@ -237,6 +279,7 @@ DiagnosticsHUD's manual **Run Diagnostic**, which any tester can trigger in any 
 | Source | Path |
 |---|---|
 | Runtime Capture / Sweep runs | `{persistentDataPath}/Benchmarks/*.json` (+ `benchmark_index.json`, `_collect_lastrun.json`, `_sweep_lastrun.json`) |
+| Load Time Insights reports | `{persistentDataPath}/Benchmarks/LoadInsights/load_*.json` (+ `.txt`, `_loadinsights_inflight.json` while recording) |
 | DiagnosticsHUD diagnostics | `Documents/CosmicShore Diagnostics/diag_*.json` (+ `.txt`) |
 | Dev-build self-capture | `{persistentDataPath}/PerfRuns/*.json` |
 | ProfilerCsvLogger | `{persistentDataPath}/ProfilerCaptures/*.csv` (+ `_summary.txt`) |
@@ -251,7 +294,11 @@ Reports include per-frame snapshots, aggregated statistics, spikes (with markers
 
 | Role | File |
 |---|---|
-| Editor window (all 4 tabs) | `Editor/PerformanceBenchmarkWindow.cs` |
+| Editor window (all 5 tabs) | `Editor/PerformanceBenchmarkWindow.cs` |
+| Load Time Insights tab (donut chart + tables) | `Editor/LoadInsightsTab.cs` |
+| Load-time span recorder (static API + attribution) | `LoadInsights/LoadInsights.cs` |
+| Load report model + Claude-ready text renderer | `LoadInsights/LoadInsightReport.cs` |
+| Load insights runtime host (stalls, in-flight snapshots, client trigger) | `LoadInsights/LoadInsightsRuntime.cs` |
 | Per-frame capture (runtime, end-of-frame, zero-alloc) | `PerformanceBenchmarkRunner.cs` |
 | Manual-session error log + F8 marks (runtime) | `ManualSweepSession.cs` |
 | In-build overlay + Run Diagnostic (F7) | `DiagnosticsHUD.cs` |
@@ -293,5 +340,8 @@ initializers, `INetworkSerializable` structs).
 - **Directly-loaded networked scenes** are uninitialized (no host/players) in the automatic sweep —
   expected.
 - **Netcode metrics** are only as complete as the `NetMarkers` placement.
+- **Load Time Insights attribution** is only as complete as the `LoadInsights.Measure` placement —
+  time no span claims shows as "Unattributed (engine & other)" (the report flags it when large).
+  The recorder is inert unless armed AND the runtime host exists (Editor / Development builds).
 - **Cross-source runs** (Editor vs DevBuild, or different platforms) aren't comparable on absolute
   numbers — only same-source before/after deltas are meaningful (Compare warns).
