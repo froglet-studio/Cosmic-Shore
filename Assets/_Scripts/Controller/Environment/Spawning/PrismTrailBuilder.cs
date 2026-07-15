@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Data;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
 
@@ -42,16 +43,31 @@ namespace CosmicShore.Gameplay
         /// <summary>The one place a prism is born into a trail. Kind is applied AFTER Initialize.</summary>
         public static Prism LayOne(Prism prefab, PrismLay e, Transform parent, Trail trail, string ownerId)
         {
+            // Load Time Insights hot-path breakdown: per-stage accumulators (NOT per-item spans —
+            // a 25k-prism lay would blow the span budget). Inert (t stays 0) unless a load
+            // recording is active, so gameplay laying pays only a long-compare per stage.
+            long t = LoadInsights.AccumulateStart();
+            if (t != 0L) LoadInsights.Count("Prisms laid during load");
+
             var block = UnityEngine.Object.Instantiate(prefab, parent);
+            t = LoadInsights.AccumulateSample("Prism lay: Instantiate + component Awakes", t);
+
             block.ChangeTeam(e.Domain);
             block.ownerID = ownerId;
             block.transform.localPosition = e.Point.Position;
             block.transform.localRotation = e.Point.Rotation;
+            t = LoadInsights.AccumulateSample("Prism lay: team + pose", t);
+
             block.TargetScale = e.Point.Scale;
+            t = LoadInsights.AccumulateSample("Prism lay: TargetScale (scale-manager registration)", t);
+
             block.Trail = trail;
             block.Initialize();
+            t = LoadInsights.AccumulateSample("Prism lay: Initialize (reset + grow coroutine start)", t);
+
             PrismKinds.Apply(block, e.Kind); // additive: Plain leaves baked/prefab state intact
             trail.Add(block);
+            LoadInsights.AccumulateSample("Prism lay: kind + trail.Add", t);
             return block;
         }
 

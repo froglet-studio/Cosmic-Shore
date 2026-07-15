@@ -37,8 +37,9 @@ The one rule that explains the whole design:
 │        └─ on stop ─► BenchmarkStatistics ─► BenchmarkAnalysis (score+grade+hints) ─► BenchmarkReport  │
 │                                                                                                       │
 │   LoadInsights (static)  ◄── the LOAD-WINDOW measurer: spans from pipeline call sites                 │
-│        ├─ armed via PlayerPrefs; BeginLoad at game launch → CompleteLoad at turn start (playable)     │
-│        ├─ exact wall-clock attribution (innermost active span wins; sums to 100%) + hints             │
+│        ├─ armed via PlayerPrefs; BeginLoad at game launch → CompleteLoad at client ready (splash off) │
+│        ├─ exact wall-clock attribution (innermost active span wins; sums to 100%) + hot-path          │
+│        │  accumulators (per-item stage totals inside big spans) + hints                               │
 │        └─ LoadInsightsRuntime (host, editor+dev builds): frame stalls, error capture, netcode scene   │
 │           events (client trigger), in-flight snapshot every 5s, abort/timeout rails                   │
 │                                                                                                       │
@@ -244,10 +245,11 @@ fps,label}` come from `ManualSweepSession`.
 - `DiagnosticsHUD` → own `ProfilerRecorder`s + `NetMarkers` + UTP RTT → `Documents/…/diag_*.json`.
 - `BenchmarkBuildAutoRunner` (`-csmbench`) → `PerformanceBenchmarkRunner` (fixed run) →
   `PerfRuns/*.json` → History *Import External Run*.
-- Pipeline code (`GameDataSO.InvokeGameLaunch/InvokeTurnStarted`, `SceneLoader`, vessel/AI
-  initializers, `Cell`, life/segment/crystal spawners, pools, `MiniGameHUD`, `CountdownTimer`) →
-  `LoadInsights.BeginLoad / Measure / Mark / Count / CompleteLoad` (write) ← read by
-  `LoadInsightsTab` (live status + report) and persisted as `LoadInsights/load_*.json + .txt`.
+- Pipeline code (`GameDataSO.InvokeGameLaunch/InvokeClientReady`, `SceneLoader`, vessel/AI
+  initializers, `Cell`, life/segment/crystal spawners, `SpawnableBase`, `PrismTrailBuilder.LayOne`
+  stage accumulators, pools) →
+  `LoadInsights.BeginLoad / Measure / Mark / Count / AccumulateSample / CompleteLoad` (write) ←
+  read by `LoadInsightsTab` (live status + report) and persisted as `LoadInsights/load_*.json + .txt`.
 - `LoadInsightsRuntime` → Unity + Netcode scene events (client-side BeginLoad trigger, marks),
   `Application.logMessageReceived` (errors), per-frame stall feed, in-flight snapshot/recovery.
 

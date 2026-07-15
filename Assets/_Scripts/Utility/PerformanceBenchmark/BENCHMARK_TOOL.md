@@ -101,22 +101,28 @@ a **cross-source warning** flags that only same-source deltas are meaningful.
 ### 5 · Load Time Insights — what actually took the load time ⏱
 
 Answers "why did this game take 90 seconds to load?" with **exact percentages**. One recording
-covers a single game launch end-to-end: arcade Start tap → scene load → netcode sync → vessel/AI
-spawning → cell & environment population → connecting panel/cinematic → Ready → countdown **GO**.
+covers a single game launch: arcade Start tap → scene load → netcode sync → vessel/AI spawning →
+cell & environment population → **client ready** (splash clears into the connecting panel). The
+post-ready ceremony — cinematic, Ready click, countdown — is gameplay, not load, and is
+deliberately excluded from the recording.
 
 1. Press **● Arm Record Insight Mode** (persists until disarmed — every game launch records while
    armed, so you can capture intensity 1 vs intensity 2 back-to-back).
 2. Enter Play Mode and launch a game. Hosts start recording at the launch tap; **pure clients
    self-record too** (triggered by the server's Netcode scene pull), each machine producing its own
    report of its own experience.
-3. The report is ready **the moment the countdown hits GO** and lands in the tab automatically:
+3. The report is ready **the moment the client is ready** and lands in the tab automatically:
    - a **donut chart + color-keyed table** — every millisecond attributed to exactly one category
      (Scene Load, Netcode & Sync, Scripted Delays, Vessels, AI Backfill, Cell & Environment, Flora,
      Fauna, Crystals, Pooling, UI & HUD, Game Flow…) — **percentages always sum to 100**,
-   - a **waiting vs working** strip (hardcoded delays, replication waits, and *human* Ready-click
-     time are split out so they don't masquerade as engineering time),
+   - a **waiting vs working** strip (hardcoded delays and replication waits split out so they
+     don't masquerade as engineering time),
    - **top costs** ranked by attributed time (with counts and worst single instance),
-   - **frame stalls** (>150 ms frames, each blamed on what was running),
+   - a **hot-path breakdown** — per-item stage accumulators inside spans too hot for per-item
+     spans (e.g. a 25k-prism environment lay splits into Instantiate / team+pose / scale
+     registration / Initialize / trail bookkeeping totals),
+   - **frame stalls** (>150 ms frames, each blamed on the span that claimed the most of that
+     frame's window — single-frame monsters attribute correctly),
    - **errors during load**, spawn **counters**, a nested **timeline**, and rule-based **insights**
      with fix advice (e.g. "3.2s of this load is fixed `UniTask.Delay` gates — free win").
 4. **📋 Copy insight report** puts the whole thing on the clipboard as a Claude-ready text block;

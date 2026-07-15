@@ -310,8 +310,32 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
+                // The replication wait for this pair is over — close the wait span before
+                // InitializePair, which may raise OnClientReady (the recording endpoint).
+                if (_pendingWaitSpan >= 0)
+                {
+                    LoadInsights.End(_pendingWaitSpan);
+                    _pendingWaitSpan = -1;
+                }
+
                 InitializePair(player, vessel);
                 _pendingPairs.RemoveAt(i);
+            }
+
+            // Load Time Insights: keep one wait-span open for exactly as long as pairs sit
+            // queued waiting for their NetworkObjects to replicate — the client's main
+            // invisible wait during a multiplayer load. Managed BEFORE the client-ready
+            // fallback below: InvokeClientReady is the recording endpoint, so the span must
+            // already be closed when it fires.
+            if (_pendingPairs.Count > 0 && _pendingWaitSpan < 0)
+            {
+                _pendingWaitSpan = LoadInsights.Begin(LoadInsightCategory.Netcode,
+                    "Waiting for player/vessel NetworkObjects to replicate (pending pairs)", isWait: true);
+            }
+            else if (_pendingPairs.Count == 0 && _pendingWaitSpan >= 0)
+            {
+                LoadInsights.End(_pendingWaitSpan);
+                _pendingWaitSpan = -1;
             }
 
             if (_pendingPairs.Count == 0 && _signalClientReadyWhenDone)
@@ -324,20 +348,6 @@ namespace CosmicShore.Gameplay
                 // never called inside InitializePair.  Call it here so the
                 // loading screen always clears when all pairs are resolved.
                 gameData.InvokeClientReady();
-            }
-
-            // Load Time Insights: keep one wait-span open for exactly as long as pairs sit
-            // queued waiting for their NetworkObjects to replicate — the client's main
-            // invisible wait during a multiplayer load.
-            if (_pendingPairs.Count > 0 && _pendingWaitSpan < 0)
-            {
-                _pendingWaitSpan = LoadInsights.Begin(LoadInsightCategory.Netcode,
-                    "Waiting for player/vessel NetworkObjects to replicate (pending pairs)", isWait: true);
-            }
-            else if (_pendingPairs.Count == 0 && _pendingWaitSpan >= 0)
-            {
-                LoadInsights.End(_pendingWaitSpan);
-                _pendingWaitSpan = -1;
             }
         }
 
@@ -386,7 +396,9 @@ namespace CosmicShore.Gameplay
         void InitializePair(IPlayer player, IVessel vessel)
         {
             Debug.Log($"<color=#00FF00>[FLOW-6] [ClientVesselInit] InitializePair — Player={player.Name}, IsLocalUser={player.IsLocalUser}, IsAI={player.IsInitializedAsAI}</color>");
-            using var _ = LoadInsights.Measure(
+            // Explicit handle (not `using`): the local pair raises OnClientReady — the recording
+            // ENDPOINT — from inside this method, so the span must close before that call.
+            int pairSpan = LoadInsights.Begin(
                 player.IsInitializedAsAI ? LoadInsightCategory.AiBackfill : LoadInsightCategory.Vessels,
                 $"Pair init — inject + vessel.Initialize ({player.Name})");
             InjectVesselDependencies(vessel);
@@ -409,6 +421,8 @@ namespace CosmicShore.Gameplay
 
             if (player.IsLocalUser && CameraManager.Instance)
                 CameraManager.Instance.SnapPlayerCameraToTarget();
+
+            LoadInsights.End(pairSpan);
 
             if (player.IsLocalUser)
             {

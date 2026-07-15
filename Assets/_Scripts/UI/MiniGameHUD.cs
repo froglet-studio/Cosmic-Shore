@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using CosmicShore.Utility;
-using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using TMPro;
@@ -74,9 +73,6 @@ namespace CosmicShore.UI
 
         private CancellationTokenSource _lifecycleCts;
         private bool _readyButtonUnlocked;
-
-        // Load Time Insights span: open while the Ready button waits on a human click.
-        private int _readyWaitSpan = -1;
 
         private void OnValidate()
         {
@@ -343,11 +339,7 @@ namespace CosmicShore.UI
                 if (connectingPanel != null)
                 {
                     Hide();
-                    using (LoadInsights.Measure(LoadInsightCategory.UiHud,
-                               "Connecting panel (min display hold)", isWait: true))
-                    {
-                        await connectingPanel.ShowAsync(ct);
-                    }
+                    await connectingPanel.ShowAsync(ct);
                 }
                 Show();
 
@@ -361,21 +353,13 @@ namespace CosmicShore.UI
                         preGameCinematic.OnCinematicFinished += () => cinematicDone = true;
                         preGameCinematic.Play(cinematicLookAtCenter, playerTarget);
 
-                        using (LoadInsights.Measure(LoadInsightCategory.UiHud,
-                                   "Pre-game cinematic", isWait: true))
-                        {
-                            while (!cinematicDone)
-                                await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);
-                        }
+                        while (!cinematicDone)
+                            await UniTask.Yield(PlayerLoopTiming.PreUpdate, ct);
                     }
                 }
 
                 _readyButtonUnlocked = true;
                 ToggleReadyButton(true);
-                // From here the load clock is running on humans: the span stays open until the
-                // Ready button hides (local click) and the countdown span takes over.
-                _readyWaitSpan = LoadInsights.Begin(LoadInsightCategory.GameFlow,
-                    "Waiting for players to press Ready", isWait: true, isHumanWait: true);
             }
             catch (OperationCanceledException)
             {
@@ -643,11 +627,6 @@ namespace CosmicShore.UI
             // This prevents SOAP event listeners, controller SetupNewRound, and
             // any other pathway from showing the button before the cinematic finishes.
             if (toggle && !_readyButtonUnlocked) return;
-            if (!toggle && _readyWaitSpan >= 0)
-            {
-                LoadInsights.End(_readyWaitSpan);
-                _readyWaitSpan = -1;
-            }
             view.ReadyButton.gameObject.SetActive(toggle);
         }
 

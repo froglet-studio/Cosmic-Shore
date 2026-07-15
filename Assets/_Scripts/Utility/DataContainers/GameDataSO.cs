@@ -334,14 +334,19 @@ namespace CosmicShore.Utility
         public void InvokeInitializeGame() => OnInitializeGame?.Raise();
         public void InvokeClientReady()
         {
+            // Load Time Insights ENDPOINT: client ready = scene loaded, local vessel initialized,
+            // splash about to clear into the connecting panel. The post-ready ceremony
+            // (cinematic, Ready click, countdown) is gameplay, not load — deliberately excluded.
             PerformanceBenchmark.LoadInsights.MarkVisualReady();
+            PerformanceBenchmark.LoadInsights.CompleteLoad("Loaded — client ready, splash cleared");
             OnClientReady?.Raise();
         }
         public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
         public void InvokeTurnStarted()
         {
-            // First turn start = the vessel is controllable — the load is over.
-            PerformanceBenchmark.LoadInsights.CompleteLoad("Playable — turn started, vessels active");
+            // Fallback endpoint only: no-op when the recording already completed at client-ready
+            // (the normal path). Catches hypothetical flows where OnClientReady never fires.
+            PerformanceBenchmark.LoadInsights.CompleteLoad("Playable — turn started (fallback endpoint; client-ready never fired)");
             OnMiniGameTurnStarted?.Raise();
         }
 

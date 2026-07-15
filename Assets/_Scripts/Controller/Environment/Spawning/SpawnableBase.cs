@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 using CosmicShore.Data;
+using CosmicShore.Utility.PerformanceBenchmark;
 using System.Linq;
 namespace CosmicShore.Gameplay
 {
@@ -136,6 +137,13 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public virtual GameObject Spawn(int intensity = 1)
         {
+            // Load Time Insights: one span per spawnable NODE (not per prism), so nested
+            // structures (e.g. concentric layers → 3 spherene shells) break down layer by layer.
+            using var _ = LoadInsights.IsRecording
+                ? LoadInsights.Measure(LoadInsightCategory.Environment,
+                    $"Spawnable node: {name} ({GetType().Name})")
+                : LoadSpanScope.None;
+
             intensityLevel = intensity;
             trails.Clear();
 

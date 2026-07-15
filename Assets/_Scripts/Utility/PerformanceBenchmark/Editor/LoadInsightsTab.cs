@@ -22,6 +22,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         static Vector2 s_scroll;
         static bool s_foldBreakdown = true;
         static bool s_foldTopCosts = true;
+        static bool s_foldHotPath = true;
         static bool s_foldHints = true;
         static bool s_foldStalls;
         static bool s_foldErrors;
@@ -106,7 +107,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                     "No load report yet.\n\n" +
                     "1. Arm Record Insight Mode above.\n" +
                     "2. Enter Play Mode and launch a game from the arcade (host or client — both record).\n" +
-                    "3. The report is ready the moment the countdown hits GO, and lands here automatically.\n\n" +
+                    "3. The report is ready the moment the client is ready (splash clears into the " +
+                    "connecting panel), and lands here automatically.\n\n" +
                     "Loads that get force-quit still leave an in-flight snapshot that is recovered on the next run.",
                     MessageType.Info);
             }
@@ -125,8 +127,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         {
             EditorUIStyles.SectionHeader("Record Insight Mode", EditorUIStyles.Mint);
             EditorGUILayout.LabelField(
-                "Records one full game launch — menu tap → scene load → netcode sync → spawning → countdown GO — " +
-                "and attributes every millisecond to what caused it.", EditorUIStyles.Wrap);
+                "Records one game launch — menu tap → scene load → netcode sync → spawning → client ready " +
+                "(splash cleared) — and attributes every millisecond to what caused it.", EditorUIStyles.Wrap);
             EditorGUILayout.Space(2);
 
             bool armed = LoadInsights.Armed;
@@ -165,7 +167,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 EditorStyles.miniLabel);
             EditorGUILayout.EndVertical();
             EditorGUILayout.LabelField(
-                "The report completes automatically when the countdown hits GO (or on abort/timeout).",
+                "The report completes automatically at client-ready (splash cleared), or on abort/timeout.",
                 EditorStyles.miniLabel);
         }
 
@@ -197,8 +199,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             {
                 alignment = TextAnchor.MiddleCenter, fontSize = 14, normal = { textColor = Color.white }
             };
-            string visual = r.visualReadyMs >= 0f ? $"   (visually loaded at {r.visualReadyMs / 1000f:F1}s)" : "";
-            GUI.Label(barRect, $"{r.totalMs / 1000f:F2}s to playable{visual}", headline);
+            // Old reports ended at countdown GO — show the visual-ready split only when it differs.
+            string visual = r.visualReadyMs >= 0f && Mathf.Abs(r.totalMs - r.visualReadyMs) > 50f
+                ? $"   (visually loaded at {r.visualReadyMs / 1000f:F1}s)" : "";
+            GUI.Label(barRect, $"{r.totalMs / 1000f:F2}s to loaded{visual}", headline);
 
             EditorGUILayout.Space(2);
 
@@ -233,6 +237,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             // Top costs.
             if (Fold(ref s_foldTopCosts, $"Top costs ({Mathf.Min(r.topCosts.Count, 15)})"))
                 DrawTopCosts(r);
+
+            // Hot-path breakdown (accumulated sub-stages inside the big spans).
+            if (r.accumulators is { Count: > 0 } &&
+                Fold(ref s_foldHotPath, $"Hot-path breakdown ({r.accumulators.Count} stages)"))
+                DrawAccumulators(r);
 
             // Insights.
             if (Fold(ref s_foldHints, $"Insights ({r.hints.Count})"))
@@ -311,7 +320,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
             GUI.Label(new Rect(drawRect.x, drawRect.y + drawRect.height * 0.38f, drawRect.width, 22),
                 $"{r.totalMs / 1000f:F1}s", centerBig);
             GUI.Label(new Rect(drawRect.x, drawRect.y + drawRect.height * 0.38f + 20, drawRect.width, 14),
-                "to playable", centerSmall);
+                "to loaded", centerSmall);
 
             // Legend table.
             EditorGUILayout.BeginVertical();
@@ -463,6 +472,26 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                     EditorGUILayout.LabelField($"max {FormatMs(t.maxSingleMs)}", EditorStyles.miniLabel, GUILayout.Width(90));
                 EditorGUILayout.EndHorizontal();
                 rank++;
+            }
+            EditorGUILayout.EndVertical();
+        }
+
+        static void DrawAccumulators(LoadInsightReport r)
+        {
+            EditorGUILayout.BeginVertical(EditorStyles.helpBox);
+            EditorGUILayout.LabelField(
+                "Per-item stage timing accumulated inside the spans above (e.g. what each of a " +
+                "25k-prism lay's stages cost in total).", EditorStyles.miniLabel);
+            foreach (var a in r.accumulators.OrderByDescending(a => a.totalMs).Take(16))
+            {
+                EditorGUILayout.BeginHorizontal();
+                EditorGUILayout.LabelField(a.label, EditorUIStyles.CardLabel);
+                GUILayout.FlexibleSpace();
+                float avg = a.count > 0 ? a.totalMs / a.count : 0f;
+                EditorGUILayout.LabelField($"×{a.count:N0}", EditorStyles.miniLabel, GUILayout.Width(70));
+                EditorGUILayout.LabelField($"avg {avg:F2} ms", EditorStyles.miniLabel, GUILayout.Width(86));
+                EditorGUILayout.LabelField(FormatMs(a.totalMs), EditorUIStyles.CardValue, GUILayout.Width(78));
+                EditorGUILayout.EndHorizontal();
             }
             EditorGUILayout.EndVertical();
         }

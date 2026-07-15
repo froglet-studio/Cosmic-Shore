@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -126,6 +127,19 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     }
 
     /// <summary>
+    /// Aggregated hot-path sub-stage timing (see <see cref="LoadInsights.AccumulateSample"/>) —
+    /// the per-item breakdown of loops too hot for per-item spans (e.g. a 25k-prism lay).
+    /// </summary>
+    [Serializable]
+    public class LoadAccumulator
+    {
+        public string label;
+        public long count;
+        public float totalMs;
+        public float maxSingleMs;
+    }
+
+    /// <summary>
     /// Complete result of one recorded game load: what happened, in what order, and where the
     /// wall-clock went. Attribution is exact — every millisecond between load start and playable
     /// lands in exactly one category (innermost active span wins; span-free time is
@@ -181,6 +195,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         public List<LoadStall> stalls = new();
         public List<LoadMark> marks = new();
         public List<LoadCounter> counters = new();
+        public List<LoadAccumulator> accumulators = new();
         public List<SweepError> errors = new();
         public List<BenchmarkHint> hints = new();
 
@@ -264,8 +279,11 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 ? $"multiplayer {networkRole}" + (connectedClients > 0 ? $" · {connectedClients} connected" : "")
                 : "single player";
             sb.AppendLine($"  Game        {gameMode} · intensity {intensity} · {players} · {net}");
+            // Older reports ended at countdown GO; when visual-ready IS the endpoint, don't
+            // print the same number twice.
+            bool visualDiffers = visualReadyMs >= 0f && Mathf.Abs(totalMs - visualReadyMs) > 50f;
             sb.AppendLine($"  Result      {completionReason} after {Sec(totalMs)}"
-                          + (visualReadyMs >= 0f ? $"   (visually loaded at {Sec(visualReadyMs)})" : ""));
+                          + (visualDiffers ? $"   (visually loaded at {Sec(visualReadyMs)})" : ""));
             if (interrupted)
                 sb.AppendLine("  ⚠ INTERRUPTED — the app was killed mid-load; this is the last in-flight snapshot.");
             sb.AppendLine($"  Recorded    {timestamp} · {source?.origin} · {source?.platform} · {gitBranch}/{gitCommitHash}");
@@ -306,14 +324,30 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 }
             }
 
-            // Scripted delays — the free wins.
+            // Scripted delays — the free wins. Ranked by ATTRIBUTED time: a 200ms delay whose
+            // await couldn't resume during a 100s frame has a huge wall duration but only its
+            // attributed share was actually "caused" by the delay.
             var scripted = topCosts.Where(t => t.category == (int)LoadInsightCategory.ScriptedDelay).ToList();
             if (scripted.Count > 0)
             {
                 sb.AppendLine(light);
-                sb.AppendLine("  SCRIPTED DELAYS (hardcoded waits — every ms here is a tuning knob)");
-                foreach (var t in scripted.OrderByDescending(t => t.totalMs))
-                    sb.AppendLine($"  {Ms(t.totalMs),9}  = {t.count} × {t.label}");
+                sb.AppendLine("  SCRIPTED DELAYS (hardcoded waits — every attributed ms is a tuning knob)");
+                foreach (var t in scripted.OrderByDescending(t => t.exclusiveMs))
+                    sb.AppendLine($"  {Ms(t.exclusiveMs),9} attributed  = {t.count} × {t.label}"
+                                  + (t.totalMs > t.exclusiveMs * 1.5f ? $"   (wall {Ms(t.totalMs)} — stalled by other work)" : ""));
+            }
+
+            // Hot-path breakdown — what's inside the big spans (per-item stage accumulators).
+            if (accumulators is { Count: > 0 })
+            {
+                sb.AppendLine(light);
+                sb.AppendLine("  HOT-PATH BREAKDOWN (accumulated sub-stages inside the spans above)");
+                sb.AppendLine("        TOTAL        ×      AVG      MAX  STAGE");
+                foreach (var a in accumulators.OrderByDescending(a => a.totalMs))
+                {
+                    float avg = a.count > 0 ? a.totalMs / a.count : 0f;
+                    sb.AppendLine($"  {Ms(a.totalMs),11}  {N(a.count),7}  {avg,5:F2}ms  {Ms(a.maxSingleMs),7}  {a.label}");
+                }
             }
 
             // Frame stalls.
@@ -341,7 +375,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 sb.AppendLine(light);
                 sb.AppendLine("  COUNTERS");
                 foreach (var c in counters.OrderByDescending(c => c.value))
-                    sb.AppendLine($"  {c.value,8:N0}  {c.name}");
+                    sb.AppendLine($"  {N(c.value),8}  {c.name}");
             }
 
             // Insights.
@@ -406,7 +440,12 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             return new string('█', blocks) + new string('·', 10 - blocks);
         }
 
-        static string Ms(float ms) => ms >= 100f ? $"{ms:N0} ms" : $"{ms:F1} ms";
-        static string Sec(float ms) => $"{ms / 1000f:F2} s";
+        // Invariant culture: reports get pasted across machines/locales — "1,11,813 ms"-style
+        // regional digit grouping (observed on an en-IN Windows editor) hurts readability.
+        static string N(long v) => v.ToString("N0", CultureInfo.InvariantCulture);
+        static string Ms(float ms) => ms >= 100f
+            ? ms.ToString("N0", CultureInfo.InvariantCulture) + " ms"
+            : ms.ToString("F1", CultureInfo.InvariantCulture) + " ms";
+        static string Sec(float ms) => (ms / 1000f).ToString("F2", CultureInfo.InvariantCulture) + " s";
     }
 }

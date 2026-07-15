@@ -81,8 +81,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         static List<LoadStall> s_stalls;
         static List<SweepError> s_errors;
         static Dictionary<string, long> s_counters;
+        static Dictionary<string, (double ms, long count, double max)> s_accums;
         static int s_dropped;
         static int s_frames;
+        static int s_lastSampledFrame = -1;
         static float s_worstFrameMs;
         static float s_visualReadyMs = -1f;
         static string s_trigger = "";
@@ -158,8 +160,10 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 s_stalls = new List<LoadStall>(MaxStalls);
                 s_errors = new List<SweepError>(16);
                 s_counters = new Dictionary<string, long>(16);
+                s_accums = new Dictionary<string, (double, long, double)>(16);
                 s_dropped = 0;
                 s_frames = 0;
+                s_lastSampledFrame = -1;
                 s_worstFrameMs = 0f;
                 s_visualReadyMs = -1f;
                 s_trigger = trigger;
@@ -304,21 +308,65 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             }
         }
 
+        // ── Hot-path accumulators ───────────────────────
+        // Per-item spans would blow the span budget on a 25k-prism lay; accumulators aggregate
+        // sub-stage timings by label instead (total/count/max), answering "what INSIDE the big
+        // span is slow" for pennies. Usage:
+        //     long t = LoadInsights.AccumulateStart();          // 0 when not recording
+        //     DoStageA(); t = LoadInsights.AccumulateSample("StageA", t);
+        //     DoStageB(); t = LoadInsights.AccumulateSample("StageB", t);
+
+        /// <summary>Timestamp to feed <see cref="AccumulateSample"/>. 0 (inert) when not recording.</summary>
+        public static long AccumulateStart() => s_recording ? Stopwatch.GetTimestamp() : 0L;
+
+        /// <summary>
+        /// Adds (now − start) to the named accumulator and returns a fresh timestamp for the next
+        /// stage. Inert when <paramref name="startTimestamp"/> is 0 or recording has ended.
+        /// </summary>
+        public static long AccumulateSample(string label, long startTimestamp)
+        {
+            if (startTimestamp == 0L || !s_recording) return 0L;
+            long now = Stopwatch.GetTimestamp();
+            double ms = (now - startTimestamp) * s_msPerTick;
+            lock (s_gate)
+            {
+                if (!s_recording || s_accums == null) return 0L;
+                s_accums.TryGetValue(label, out var a);
+                a.ms += ms;
+                a.count++;
+                if (ms > a.max) a.max = ms;
+                s_accums[label] = a;
+            }
+            return now;
+        }
+
         // ── Host feeders (LoadInsightsRuntime) ──────────
 
-        /// <summary>Per-frame sample while recording: frame count, worst frame, stall capture.</summary>
+        /// <summary>
+        /// Per-frame sample while recording: frame count, worst frame, stall capture. Called by
+        /// the host's Update AND by CompleteInternal (so the frame the load ends on is captured
+        /// even when the endpoint fires before the host's Update that frame). Deduped by
+        /// Time.frameCount — main-thread callers only.
+        /// </summary>
         internal static void RecordFrame(float frameMs)
         {
             if (!s_recording) return;
+            int frame = Time.frameCount;
             lock (s_gate)
             {
-                if (!s_recording) return;
+                if (!s_recording || frame == s_lastSampledFrame) return;
+                s_lastSampledFrame = frame;
                 s_frames++;
                 if (frameMs > s_worstFrameMs) s_worstFrameMs = frameMs;
                 if (frameMs < StallThresholdMs) return;
 
-                string during = s_active.Count > 0 ? s_spans[s_active[^1]].label : "—";
-                var stall = new LoadStall { atMs = NowMsUnlocked(), durationMs = frameMs, during = during };
+                float endMs = NowMsUnlocked();
+                var stall = new LoadStall
+                {
+                    atMs = endMs,
+                    durationMs = frameMs,
+                    during = StallCulpritUnlocked(endMs - frameMs, endMs)
+                };
                 if (s_stalls.Count < MaxStalls) { s_stalls.Add(stall); return; }
 
                 // Full: replace the smallest stall if this one is bigger.
@@ -327,6 +375,61 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     if (s_stalls[i].durationMs < s_stalls[min].durationMs) min = i;
                 if (s_stalls[min].durationMs < frameMs) s_stalls[min] = stall;
             }
+        }
+
+        /// <summary>
+        /// Names the span that best explains a stalled frame: run the same innermost-wins
+        /// attribution the pie uses, restricted to [frameStart, frameEnd], and return the span
+        /// that claimed the most of that window. The naive "innermost active at frame end"
+        /// misattributes single-frame monsters — a 100s spawn that opens and closes mid-frame
+        /// isn't active anymore when the frame ends. Runs only for stalls (≤64/load), so the
+        /// O(spans log spans) sweep is negligible.
+        /// </summary>
+        static string StallCulpritUnlocked(float frameStartMs, float frameEndMs)
+        {
+            int n = s_spans.Count;
+            if (n == 0) return "—";
+
+            var events = new List<(float t, int kind, int idx)>(32);
+            for (int i = 0; i < n; i++)
+            {
+                var s = s_spans[i];
+                float end = s.endMs >= 0f ? s.endMs : float.MaxValue;
+                if (end <= frameStartMs || s.startMs >= frameEndMs) continue; // outside the window
+                events.Add((s.startMs, 1, i));
+                events.Add((end, 0, i));
+            }
+            if (events.Count == 0) return "—";
+            events.Sort((a, b) => a.t != b.t ? a.t.CompareTo(b.t) : a.kind.CompareTo(b.kind));
+
+            var claimed = new Dictionary<int, float>(8);
+            var active = new List<int>(8);
+            float cursor = float.MinValue;
+
+            void Claim(float upTo)
+            {
+                float from = Mathf.Max(cursor, frameStartMs);
+                float to = Mathf.Min(upTo, frameEndMs);
+                if (to <= from || active.Count == 0) return;
+                int inner = active[^1];
+                claimed.TryGetValue(inner, out float v);
+                claimed[inner] = v + (to - from);
+            }
+
+            foreach (var (t, kind, idx) in events)
+            {
+                Claim(t);
+                cursor = t;
+                if (kind == 1) active.Add(idx);
+                else active.Remove(idx);
+            }
+            Claim(frameEndMs);
+
+            int bestIdx = -1;
+            float bestMs = 0f;
+            foreach (var kv in claimed)
+                if (kv.Value > bestMs) { bestMs = kv.Value; bestIdx = kv.Key; }
+            return bestIdx >= 0 ? s_spans[bestIdx].label : "—";
         }
 
         internal static void RecordError(string type, string message)
@@ -402,6 +505,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
 
         static void CompleteInternal(string reason, bool aborted)
         {
+            // Capture the frame the load is ending on: unscaledDeltaTime still holds the
+            // just-finished frame's duration, and the host's Update may not have sampled it yet
+            // (endpoint events can fire earlier in the same frame). RecordFrame dedups by
+            // frameCount, so this never double-counts. Guarded — every completion path is
+            // main-thread, but a Time access must never be able to kill finalization.
+            try { RecordFrame(Time.unscaledDeltaTime * 1000f); }
+            catch { /* off-main or teardown — skip the final frame sample */ }
+
             LoadInsightReport report;
             lock (s_gate)
             {
@@ -409,7 +520,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 report = BuildReportUnlocked(reason, provisional: false);
                 s_recording = false;
                 s_spans = null; s_active = null; s_marks = null; s_stalls = null;
-                s_errors = null; s_counters = null;
+                s_errors = null; s_counters = null; s_accums = null;
             }
 
             try
@@ -478,7 +589,17 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                 stalls = new List<LoadStall>(s_stalls.OrderByDescending(s => s.durationMs)),
                 marks = new List<LoadMark>(s_marks),
                 errors = new List<SweepError>(s_errors),
-                counters = s_counters.Select(kv => new LoadCounter { name = kv.Key, value = kv.Value }).ToList()
+                counters = s_counters.Select(kv => new LoadCounter { name = kv.Key, value = kv.Value }).ToList(),
+                accumulators = s_accums
+                    .Select(kv => new LoadAccumulator
+                    {
+                        label = kv.Key,
+                        count = kv.Value.count,
+                        totalMs = (float)kv.Value.ms,
+                        maxSingleMs = (float)kv.Value.max
+                    })
+                    .OrderByDescending(a => a.totalMs)
+                    .ToList()
             };
 
             // Workload census at the boundary — same source as the benchmark's game-load stats.
@@ -665,6 +786,14 @@ namespace CosmicShore.Utility.PerformanceBenchmark
                     $"{netcode.attributedMs / 1000f:F1}s ({netcode.percent:F0}%) went to session/replication waits ({report.networkRole}).",
                     "Check roster RPC retries, replication waits, and per-player spawn round-trips; " +
                     "batch spawns and cut fixed replication delays."));
+
+            var dominator = report.topCosts.FirstOrDefault();
+            if (dominator != null && total > 5_000f && dominator.exclusiveMs / total >= 0.5f)
+                hints.Add(Hint("single-dominator", HintSeverity.Warning, "One cost dominates this load",
+                    $"\"{dominator.label}\" alone is {dominator.exclusiveMs / total * 100f:F0}% " +
+                    $"of the load ({dominator.exclusiveMs / 1000f:F1}s).",
+                    "See the hot-path breakdown for its per-stage costs. Cut its workload (content/" +
+                    "intensity tuning), pool or pre-instantiate its prefabs, or spread the work across frames."));
 
             var worstStall = report.stalls.OrderByDescending(s => s.durationMs).FirstOrDefault();
             if (worstStall != null && worstStall.durationMs >= 1000f)
