@@ -432,7 +432,7 @@ public class VesselTransformer : MonoBehaviour
             // Smooth throttle speed calculation
             speed = Mathf.Lerp(
                 speed,
-                InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed,
+                InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.EvaluateLive(VesselStatus) * boostAmount + MinimumSpeed,
                 LERP_AMOUNT * Time.deltaTime);
 
             // Modifiers scale this frame's output speed only. Multiplying into the

@@ -3381,7 +3381,7 @@ MonoBehaviour:
   m_EditorClassIdentifier:
   perimeterThreshold: 0.95
   cooldownSeconds: 1.2
-  nudgeDeadzone: 0.2
+  invertRollDirection: 0
   rollDurationSeconds: 0.6
   nudgeSpeed: 60
   rollVisualTarget: {fileID: 0}

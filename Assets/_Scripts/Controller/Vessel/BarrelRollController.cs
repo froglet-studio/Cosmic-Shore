@@ -33,8 +33,8 @@ namespace CosmicShore.Gameplay
         [SerializeField, Range(0.5f, 1f)] float perimeterThreshold = 0.95f;
         [Tooltip("Seconds after a roll completes before another can trigger.")]
         [SerializeField, Min(0f)] float cooldownSeconds = 1.2f;
-        [Tooltip("Left-stick magnitude below which the nudge defaults to the roll direction.")]
-        [SerializeField, Range(0f, 1f)] float nudgeDeadzone = 0.2f;
+        [Tooltip("Flip the CW/CCW mapping if the roll direction reads backwards in playtest.")]
+        [SerializeField] bool invertRollDirection;
 
         [Header("Roll")]
         [SerializeField, Min(0.1f)] float rollDurationSeconds = 0.6f;
@@ -69,36 +69,31 @@ namespace CosmicShore.Gameplay
             var input = _status.InputStatus;
             if (input == null) return;
 
-            // Trigger on WHICHEVER stick is at the perimeter. The gesture is "steering
-            // deflection at maximum + boost" — on single-stick vessels (Sparrow) the
-            // flight stick is the LEFT one and the right stick is free, so demanding the
-            // right stick specifically made the upgrade untriggerable with the natural
-            // flying grip. Either stick at the rim arms the roll.
-            var right = input.RightNormalizedJoystickPosition;
-            var left  = input.LeftNormalizedJoystickPosition;
-            var trigger = right.magnitude >= left.magnitude ? right : left;
-            if (trigger.magnitude < perimeterThreshold) return;
+            // LEFT stick only — the steering stick. (The right stick is not a Sparrow
+            // input; the earlier right-stick trigger was a spec typo.)
+            var stick = input.LeftNormalizedJoystickPosition;
+            if (stick.magnitude < perimeterThreshold) return;
 
             // Right half of the circle → clockwise (positive angle about +forward is CW
             // from the pilot's seat in Unity's left-handed space); left half → CCW.
-            float rollSign = trigger.x >= 0f ? 1f : -1f;
+            // invertRollDirection is a taste toggle if the mapping reads backwards in
+            // playtest.
+            float rollSign = (stick.x >= 0f ? 1f : -1f) * (invertRollDirection ? -1f : 1f);
 
             var transformer = _status.VesselTransformer;
             if (!transformer) return;
 
-            // The left stick picks the orthogonal nudge direction (stick up = nudge up);
-            // if it is neutral, the trigger stick's deflection is used, then the roll
-            // side. Projected onto the plane orthogonal to travel so the displacement
-            // never adds forward/backward speed.
+            // The stick's deflection picks the orthogonal nudge direction (stick up =
+            // nudge up), projected onto the plane orthogonal to travel so the
+            // displacement never adds forward/backward speed.
             var ship = _status.ShipTransform ? _status.ShipTransform : transform;
-            var nudgeInput = left.magnitude >= nudgeDeadzone ? left : trigger;
-            Vector3 nudge = ship.right * nudgeInput.x + ship.up * nudgeInput.y;
+            Vector3 nudge = ship.right * stick.x + ship.up * stick.y;
             nudge = Vector3.ProjectOnPlane(nudge, _status.Course);
             if (nudge.sqrMagnitude < 1e-4f)
                 nudge = ship.right * rollSign;
 
             CSDebug.Log($"[BarrelRoll] Triggered: {(rollSign > 0f ? "CW" : "CCW")}, " +
-                        $"trigger stick mag {trigger.magnitude:F2}, nudge dir {nudge.normalized}");
+                        $"stick ({stick.x:F2}, {stick.y:F2}), nudge dir {nudge.normalized}");
 
             transformer.ModifyVelocity(nudge.normalized * nudgeSpeed, rollDurationSeconds);
             StartCoroutine(RollRoutine(rollSign, transformer));

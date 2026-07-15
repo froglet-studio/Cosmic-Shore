@@ -28,7 +28,7 @@ executor, replicated unlock bits, no new fundamentals).
 | Dolphin | Charge→charge-boost peak (1.5) · Time→charge fill rate (1.5) |
 | Rhino | Mass→trail slab max size (1.5) |
 | Serpent | Time→boost duration (1.6) |
-| Squirrel | none yet (map exists; all 1.0) |
+| Squirrel | Time→top speed (authored `ThrottleScalerMultiplier` 1→2.5 on the transformer, now evaluated LIVE via `ElementalFloat.EvaluateLive` — the unified read for per-vessel component floats; generic map multipliers stay 1.0 to avoid double-dipping) |
 
 ## 2. Level-5 upgrade proposals (NOT implemented — mark up)
 
@@ -79,7 +79,7 @@ timers/decay, gate strictly in the acting system's layer.
 | Charge | danger-ring potency | **Ring Master** — danger ring also grants the 10× skim bonus to the owner (risk/reward symmetric) |
 | Mass | trail prism volume | **Heavy Trail** — drift trail prisms arrive shielded |
 | Space | drift trail width (xShift/gap) | **Wide Line** — double trail while drifting |
-| Time | boost speed (same hook as Sparrow) | **Barrel Roll** — direct reuse of the Sparrow TIME-5 controller (it is vessel-agnostic) |
+| Time | top speed (LIVE — see §1) | **Barrel Roll** — direct reuse of the Sparrow TIME-5 controller (it is vessel-agnostic) |
 
 ## 3. Implementation notes for approved rows
 

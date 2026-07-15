@@ -48,8 +48,10 @@ MonoBehaviour:
     UpgradeLabel: 
     UpgradeDescription: 
   - Element: 4
-    AbilityLabel: (open design slot)
-    AbilityDescription: Time mapping not yet designed for the Squirrel.
+    AbilityLabel: Top Speed
+    AbilityDescription: Time raises the racer's base throttle (authored on the
+      transformer's ThrottleScalerMultiplier, 1 at resting to 2.5 at level 10,
+      evaluated live per frame).
     Input: 0
     MultiplierAtFullLevel: 1
     MinMultiplier: 1
