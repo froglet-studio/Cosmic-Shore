@@ -27,10 +27,6 @@ namespace CosmicShore.Gameplay
 
         protected override void RegisterStatsExtended()
         {
-            Debug.Log($"[SparrowTelemetry] RegisterStats - " +
-                $"prismBlocks={(prismBlocksShotStat != null ? "OK" : "NULL")}, " +
-                $"skyburst={(skyburstMissilesShotStat != null ? "OK" : "NULL")}, " +
-                $"dangerBlocks={(dangerBlocksSpawnedStat != null ? "OK" : "NULL")}");
             RegisterStat(prismBlocksShotStat);
             RegisterStat(skyburstMissilesShotStat);
             RegisterStat(dangerBlocksSpawnedStat);
@@ -43,7 +39,6 @@ namespace CosmicShore.Gameplay
             FullAutoBlockShootActionExecutor.OnBlockShot += HandleBlockShot;
             FireGunActionExecutor.OnShotFired            += HandleSkyburstFired;
             VesselPrismController.OnDangerBlockCreated   += HandleDangerBlockSpawned;
-            Debug.Log("[SparrowTelemetry] Turn started - subscribed to BlockShot, ShotFired, DangerBlockCreated");
         }
 
         protected override void OnTurnEndedExtended()
@@ -51,8 +46,6 @@ namespace CosmicShore.Gameplay
             FullAutoBlockShootActionExecutor.OnBlockShot -= HandleBlockShot;
             FireGunActionExecutor.OnShotFired            -= HandleSkyburstFired;
             VesselPrismController.OnDangerBlockCreated   -= HandleDangerBlockSpawned;
-            Debug.Log($"[SparrowTelemetry] Turn ended - prismBlocks={PrismBlocksShot}, " +
-                $"skyburst={SkyburstMissilesShot}, dangerBlocks={DangerBlocksSpawned}");
         }
 
         protected override void ResetExtended()

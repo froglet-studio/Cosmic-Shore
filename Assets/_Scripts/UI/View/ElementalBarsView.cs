@@ -101,7 +101,22 @@ namespace CosmicShore.UI
         public void Build()
         {
             if (_built) return;
-            if (bars == null || bars.Length == 0) return;
+
+            // The four-element display is a REQUIRED fleet-wide system: a view with no
+            // authored bindings self-populates the standard four flowers instead of
+            // silently building nothing (petal roots auto-create; sprites come from
+            // Resources; placement from the shared config). Authored bindings (label
+            // icons, sprite overrides) take precedence when present.
+            if (bars == null || bars.Length == 0)
+            {
+                bars = new[]
+                {
+                    new ElementBarBinding { element = Element.Charge },
+                    new ElementBarBinding { element = Element.Mass },
+                    new ElementBarBinding { element = Element.Space },
+                    new ElementBarBinding { element = Element.Time },
+                };
+            }
 
             if (!config)
                 config = Resources.Load<ElementalBarsConfigSO>(configResourcePath);
@@ -113,6 +128,19 @@ namespace CosmicShore.UI
             }
 
             _rootRT = (RectTransform)transform;
+
+            // Fleet-wide standard placement: the flowers are a required, uniform display on
+            // every vessel — the shared config stamps the container's rect so no vessel's
+            // HUD authoring can drift the layout (per-vessel uniqueness lives in the
+            // ElementalAbilityMapSO parameters/upgrades, never in the display).
+            if (config.enforceStandardPlacement)
+            {
+                _rootRT.anchorMin        = config.standardAnchorMin;
+                _rootRT.anchorMax        = config.standardAnchorMax;
+                _rootRT.pivot            = config.standardPivot;
+                _rootRT.anchoredPosition = config.standardAnchoredPosition;
+                _rootRT.sizeDelta        = config.standardSize;
+            }
 
             int count = bars.Length;
             _currentLevels       = new int[count];

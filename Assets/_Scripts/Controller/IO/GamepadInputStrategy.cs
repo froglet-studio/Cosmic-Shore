@@ -175,6 +175,9 @@ namespace CosmicShore.Gameplay
                 Ease(2 * rightStickRaw.y)
             );
 
+            inputStatus.RightNormalizedJoystickPosition = rightStickRaw;
+            inputStatus.LeftNormalizedJoystickPosition = leftStickRaw;
+
             // Calculate sums and differences exactly as touch input does
             inputStatus.XSum = Ease(rightStickRaw.x + leftStickRaw.x);
             inputStatus.YSum = -Ease(rightStickRaw.y + leftStickRaw.y);

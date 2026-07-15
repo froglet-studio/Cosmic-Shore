@@ -153,6 +153,11 @@ namespace CosmicShore.Gameplay
         // Temporary, decaying modifiers layered on top of the base levels.
         readonly List<ElementalEffect> _activeEffects = new();
         readonly Dictionary<Element, float> _elementModifiers = new();
+        // Comeback bonus layer — composited into the effective level WITHOUT touching the
+        // crystal-earned base. (The comeback system previously wrote the base via
+        // SetElementLevel every tick, erasing crystal progression within a second.)
+        // Single-writer: ElementalComebackSystem.
+        readonly Dictionary<Element, float> _comebackModifiers = new();
         // Last integer level emitted per element, so OnElementLevelChange only fires on real changes.
         readonly Dictionary<Element, int> _emittedLevels = new();
 
@@ -164,12 +169,13 @@ namespace CosmicShore.Gameplay
             ElementalLevels[Element.Time]   = resourceGroup.Time;
         }
 
-        /// <summary>Effective level = base level + active temporary modifiers, clamped to range.</summary>
+        /// <summary>Effective level = base + temporary modifiers + comeback bonus, clamped to range.</summary>
         float GetEffectiveLevel(Element element)
         {
             float baseLevel = ElementalLevels.TryGetValue(element, out var b) ? b : 0f;
             float modifier  = _elementModifiers.TryGetValue(element, out var m) ? m : 0f;
-            return Mathf.Clamp(baseLevel + modifier, MinElementalLevel, MaxElementalLevel);
+            float comeback  = _comebackModifiers.TryGetValue(element, out var c) ? c : 0f;
+            return Mathf.Clamp(baseLevel + modifier + comeback, MinElementalLevel, MaxElementalLevel);
         }
 
         public int GetLevel(Element element)
@@ -195,6 +201,32 @@ namespace CosmicShore.Gameplay
         {
             ElementalLevels[element] = Mathf.Clamp(normalizedLevel, MinElementalLevel, MaxElementalLevel);
             EmitElementLevel(element);
+        }
+
+        /// <summary>
+        /// Sets the comeback bonus for an element (normalized units, ≥ 0). Composites into the
+        /// effective level on top of the crystal-earned base instead of overwriting it, so
+        /// crystal progression and comeback buffs coexist. Pass 0 to remove the bonus.
+        /// Single-writer: ElementalComebackSystem.
+        /// </summary>
+        public void SetComebackModifier(Element element, float normalizedBonus)
+        {
+            normalizedBonus = Mathf.Max(0f, normalizedBonus);
+            _comebackModifiers.TryGetValue(element, out var current);
+            if (Mathf.Approximately(current, normalizedBonus)) return;
+
+            if (normalizedBonus == 0f) _comebackModifiers.Remove(element);
+            else _comebackModifiers[element] = normalizedBonus;
+            EmitElementLevel(element);
+        }
+
+        /// <summary>Clears all comeback bonuses (turn/game end).</summary>
+        public void ClearComebackModifiers()
+        {
+            if (_comebackModifiers.Count == 0) return;
+            _comebackModifiers.Clear();
+            foreach (var element in AllElements)
+                EmitElementLevel(element);
         }
 
         /// <summary>

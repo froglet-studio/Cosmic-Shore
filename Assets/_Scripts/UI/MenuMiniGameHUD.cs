@@ -75,6 +75,29 @@ namespace CosmicShore.UI
 
         void OnEnable()
         {
+            TrySubscribeEvents();
+        }
+
+        void Start()
+        {
+            // Deferred-subscription pattern (CLAUDE.md ▸ DI): freestyleEvents/gameData are
+            // [Inject]ed AFTER OnEnable on scene load, so the OnEnable attempt silently
+            // skipped them — leaving the freestyle HUD show/hide and gamepad-Start exit dead.
+            TrySubscribeEvents();
+
+            InstantiatePauseMenu();
+            EnsureDomainVolumeIndicator();
+        }
+
+        void OnDisable()
+        {
+            UnsubscribeEvents();
+        }
+
+        void TrySubscribeEvents()
+        {
+            UnsubscribeEvents(); // dedup guard — safe to call from both OnEnable and Start
+
             if (onShipHUDInitialized)
                 onShipHUDInitialized.OnRaised += OnShipHUDInitialized;
             if (freestyleEvents?.OnGameStateTransitionStart)
@@ -85,13 +108,7 @@ namespace CosmicShore.UI
                 gameData.OnPlayerPairInitialized.OnRaised += HandlePlayerPairInitialized;
         }
 
-        void Start()
-        {
-            InstantiatePauseMenu();
-            EnsureDomainVolumeIndicator();
-        }
-
-        void OnDisable()
+        void UnsubscribeEvents()
         {
             if (onShipHUDInitialized)
                 onShipHUDInitialized.OnRaised -= OnShipHUDInitialized;
