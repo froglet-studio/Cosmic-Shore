@@ -10,7 +10,7 @@ namespace CosmicShore.Editor
 {
     /// <summary>
     /// One-click setup for the freestyle <b>Toybox</b> in Menu_Main. It:
-    ///   1. authors the four built-in toy definitions (Fly-by-Numbers painting, Vessel Changer,
+    ///   1. authors the four built-in toy definitions (Connect-the-Dots painting, Vessel Changer,
     ///      Domain Changer, Wanderway conveyor) under <c>Assets/_SO_Assets/Toys/</c> plus the
     ///      painting gallery under <c>Assets/_SO_Assets/Toys/Paintings/</c>,
     ///   2. creates/loads a <see cref="ToyboxSO"/> at <c>Assets/Resources/Toybox.asset</c> and
@@ -36,7 +36,7 @@ namespace CosmicShore.Editor
         {
             var gallery = CreatePaintingGallery();
             var painting = LoadOrCreateToy<PaintingToyDefinitionSO>(
-                "Toy_Painting", "painting", "Fly by Numbers", "Paint monuments with your trail.",
+                "Toy_Painting", "painting", "Connect the Dots", "Connect the dots to paint 3D masterpieces with your trail.",
                 new Color(0.20f, 0.90f, 1.00f), 0f);
             AssignPaintings(painting, gallery); // always — migrates pre-gallery Toy_Painting assets too
             var vessel = LoadOrCreateToy<VesselChangerToyDefinitionSO>(
@@ -58,16 +58,18 @@ namespace CosmicShore.Editor
             bool wiredScene = AddControllerToMenuScene(toybox);
 
             EditorUtility.DisplayDialog("Setup Freestyle Toybox",
-                "Toybox ready with 4 toys (Fly by Numbers, Vessel Changer, Domain Changer, Wanderway).\n\n" +
+                "Toybox ready with 4 toys (Connect the Dots, Vessel Changer, Domain Changer, Wanderway).\n\n" +
                 $"• Toy assets:  {ToysFolder}/\n" +
-                $"• Paintings:   {PaintingsFolder}/ (Star, Rainbow, Saturn, Taj Mahal)\n" +
+                $"• Paintings:   {PaintingsFolder}/ (16 masterpieces: Star → Taj Mahal → Torus Knot, " +
+                "Buckyball, Double Helix, Nautilus, Lotus, Rose, Spiral Galaxy, Phoenix, Almighty " +
+                "Mountain, Starry Night, Lion's Head, Peacock)\n" +
                 $"• Toybox:      {ToyboxAssetPath}\n" +
                 (wiredScene
                     ? "• ToyboxController added to Menu_Main and saved.\n"
                     : "• Could not auto-add the ToyboxController — add it to the Menu_Main 'Game' object manually.\n") +
                 "\nAll four toys work as-is. The vessel changer shows mini ship models; the domain " +
                 "changer shows the two colours you're not; the painting toy spawns one station per " +
-                "painting (multi-stroke, multi-domain fly-by-numbers with start gates that recolour " +
+                "painting (multi-stroke, multi-domain connect-the-dots with start gates that recolour " +
                 "your trail); the Wanderway conveyor streams shuffled microscenes ahead of your flight path.\n" +
                 "See Docs/ToySystem/ARCHITECTURE.md.",
                 "OK");

@@ -10,15 +10,15 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4544ecfd2206413e915b80129b81e54b, type: 3}
-  m_Name: Painting_Star
+  m_Name: Painting_Nautilus
   m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PaintingDefinitionSO
-  paintingId: painting_star
-  displayName: Star
-  description: One clean stroke - a warm-up canvas.
+  paintingId: painting_nautilus
+  displayName: Nautilus
+  description: 'The real shell: nested whorls, growth-line ribs, tiger striping, the open aperture.'
   strokes: []
   sourceShape: {fileID: 0}
   sourceShapeDomain: 4
   sourceShapeScale: 2.5
-  preset: 1
-  presetSize: 840
-  reachThreshold: 30
+  preset: 5
+  presetSize: 900
+  reachThreshold: 18

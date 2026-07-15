@@ -14,6 +14,21 @@ namespace CosmicShore.ScriptableObjects
         Rainbow = 2,    // three arcs, one per domain — teaches the domain gates
         Saturn = 3,     // planet + tilted rings — first genuinely 3D painting
         TajMahal = 4,   // the monument: ~55 strokes, three domains, hours of flying
+
+        // ── Grandiose non-planar constructions (make the Taj look like a warm-up) ──
+        // Numeric values are LOCKED — never renumber (they are the progress-save key surface).
+        Nautilus = 5,       // chambered logarithmic-spiral shell, 3D whorl
+        Lotus = 6,          // phyllotaxis petal rings opening in true 3D
+        Buckyball = 7,      // truncated-icosahedron soccer ball: 12 pentagons + 20 hexagons, 90 edges
+        TorusKnot = 8,      // a (3,2)/(2,5) knot woven on a torus — hypnotic when spun
+        DoubleHelix = 9,    // DNA: two phase-offset helices + base-pair rungs
+        SpiralGalaxy = 10,  // log-spiral arms + an impressionist starfield disk & halo
+        LionsHead = 11,     // a head volume with hundreds of curl-field mane strokes
+        Phoenix = 12,       // firebird: body, two feathered wings, an impressionist flame tail
+        Peacock = 13,       // a fanned 3D tail of eye-feather strokes
+        Rose = 14,          // nested spiral bloom of curved petals
+        StarryNight = 15,   // Van Gogh, stepped into: swirl sky, star vortices, moon, cypress, village
+        BobRossVista = 16,  // a mountain landscape you fly into: fractal ridges, firs, mirror lake, sun
     }
 
     /// <summary>
@@ -37,7 +52,7 @@ namespace CosmicShore.ScriptableObjects
     }
 
     /// <summary>
-    /// A multi-stroke, multi-domain "fly by numbers" painting for the freestyle Painting toy.
+    /// A multi-stroke, multi-domain "connect the dots" painting for the freestyle Painting toy.
     /// The vessel's own trail does the painting (conserved mass — no caps/TTLs); strokes are
     /// flown in author order, each opened by a start gate that sets the stroke's domain colour.
     ///
@@ -160,6 +175,12 @@ namespace CosmicShore.ScriptableObjects
                     if (s?.points != null && s.points.Count >= 2)
                         _resolved.Add(s);
             }
+
+            // Flight-continuity pass: each stroke starts near where the previous one ended
+            // (domain-contiguous, curvier strokes deferred on near-ties). Applies to every
+            // source in this one funnel, returns a NEW list (the serialized asset is never
+            // mutated), and is deterministic so progress-store stroke indices stay stable.
+            _resolved = PaintingStrokeToolkit.OrderForFlightContinuity(_resolved);
         }
 
         /// <summary>
