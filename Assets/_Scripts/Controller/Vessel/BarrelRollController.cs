@@ -1,5 +1,6 @@
 using System.Collections;
 using CosmicShore.Data;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -68,27 +69,36 @@ namespace CosmicShore.Gameplay
             var input = _status.InputStatus;
             if (input == null) return;
 
+            // Trigger on WHICHEVER stick is at the perimeter. The gesture is "steering
+            // deflection at maximum + boost" — on single-stick vessels (Sparrow) the
+            // flight stick is the LEFT one and the right stick is free, so demanding the
+            // right stick specifically made the upgrade untriggerable with the natural
+            // flying grip. Either stick at the rim arms the roll.
             var right = input.RightNormalizedJoystickPosition;
-            if (right.magnitude < perimeterThreshold) return;
+            var left  = input.LeftNormalizedJoystickPosition;
+            var trigger = right.magnitude >= left.magnitude ? right : left;
+            if (trigger.magnitude < perimeterThreshold) return;
 
-            // Right half of the circle → clockwise (positive angle about +forward is CW from
-            // the pilot's seat in Unity's left-handed space); left half → counterclockwise.
-            float rollSign = right.x >= 0f ? 1f : -1f;
+            // Right half of the circle → clockwise (positive angle about +forward is CW
+            // from the pilot's seat in Unity's left-handed space); left half → CCW.
+            float rollSign = trigger.x >= 0f ? 1f : -1f;
 
             var transformer = _status.VesselTransformer;
             if (!transformer) return;
 
-            // Left stick picks the orthogonal nudge direction (stick up = nudge up);
-            // neutral stick defaults to the roll direction. Projected onto the plane
-            // orthogonal to travel so the displacement never adds forward/backward speed.
-            var left = input.LeftNormalizedJoystickPosition;
+            // The left stick picks the orthogonal nudge direction (stick up = nudge up);
+            // if it is neutral, the trigger stick's deflection is used, then the roll
+            // side. Projected onto the plane orthogonal to travel so the displacement
+            // never adds forward/backward speed.
             var ship = _status.ShipTransform ? _status.ShipTransform : transform;
-            Vector3 nudge = left.magnitude >= nudgeDeadzone
-                ? ship.right * left.x + ship.up * left.y
-                : ship.right * rollSign;
+            var nudgeInput = left.magnitude >= nudgeDeadzone ? left : trigger;
+            Vector3 nudge = ship.right * nudgeInput.x + ship.up * nudgeInput.y;
             nudge = Vector3.ProjectOnPlane(nudge, _status.Course);
             if (nudge.sqrMagnitude < 1e-4f)
                 nudge = ship.right * rollSign;
+
+            CSDebug.Log($"[BarrelRoll] Triggered: {(rollSign > 0f ? "CW" : "CCW")}, " +
+                        $"trigger stick mag {trigger.magnitude:F2}, nudge dir {nudge.normalized}");
 
             transformer.ModifyVelocity(nudge.normalized * nudgeSpeed, rollDurationSeconds);
             StartCoroutine(RollRoutine(rollSign, transformer));
@@ -102,6 +112,16 @@ namespace CosmicShore.Gameplay
             var visual = ResolveVisualTarget();
             var visualStart = visual ? visual.localRotation : Quaternion.identity;
             _visualRestRotation = visualStart;
+
+            // Roll about the VESSEL's flight forward as seen from the visual target's
+            // local frame — the model's authored axes needn't align with flight forward
+            // (a raw Vector3.forward spin can read as a wrong-axis wobble or nothing).
+            Vector3 localRollAxis = visual
+                ? visual.InverseTransformDirection(transform.forward)
+                : Vector3.forward;
+            if (localRollAxis.sqrMagnitude < 1e-6f)
+                localRollAxis = Vector3.forward;
+
             float elapsed = 0f;
 
             while (elapsed < rollDurationSeconds)
@@ -111,7 +131,7 @@ namespace CosmicShore.Gameplay
                 float angle = rollSign * 360f * (t * t * (3f - 2f * t)); // smoothstep 0→360
 
                 if (visual)
-                    visual.localRotation = visualStart * Quaternion.AngleAxis(angle, Vector3.forward);
+                    visual.localRotation = visualStart * Quaternion.AngleAxis(angle, localRollAxis);
 
                 // Bridging prisms: orient along the actual travel direction each frame while
                 // the displacement is live.
