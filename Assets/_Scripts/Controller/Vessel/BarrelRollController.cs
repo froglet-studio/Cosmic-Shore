@@ -38,8 +38,6 @@ namespace CosmicShore.Gameplay
                  "normalized (radially clamped) stick vector, never the eased one — the " +
                  "per-axis ease makes diagonal magnitudes direction-dependent.")]
         [SerializeField, Range(0.5f, 1f)] float perimeterThreshold = 1f;
-        [Tooltip("Seconds after a roll completes before another can trigger.")]
-        [SerializeField, Min(0f)] float cooldownSeconds = 1.2f;
         [Tooltip("Flip the CW/CCW mapping if the roll direction reads backwards in playtest.")]
         [SerializeField] bool invertRollDirection;
 
@@ -49,7 +47,7 @@ namespace CosmicShore.Gameplay
                  "the same direction (handedness) as the visual animation. Routed through " +
                  "VesselTransformer.ApplyRotation (accumulatedRotation), so the flight " +
                  "orientation keeps the new bank after the roll. 0 = visual-only.")]
-        [SerializeField, Range(0f, 30f)] float rootRollDegrees = 5f;
+        [SerializeField, Range(0f, 30f)] float rootRollDegrees = 15f;
         [Tooltip("Peak sideways displacement speed injected through ModifyVelocity (world " +
                  "units/second; the transformer clamps its channel at 100).")]
         [SerializeField, Min(0f)] float nudgeSpeed = 60f;
@@ -68,7 +66,6 @@ namespace CosmicShore.Gameplay
         bool _rolling;
         bool _wasBoosting;
         bool _rollArmed;
-        float _nextAllowedTime;
         Quaternion _visualRestRotation;
 
         void Awake()
@@ -89,7 +86,7 @@ namespace CosmicShore.Gameplay
             if (boosting && !_wasBoosting) _rollArmed = true;
             _wasBoosting = boosting;
 
-            if (!_rollArmed || _rolling || Time.time < _nextAllowedTime) return;
+            if (!_rollArmed || _rolling) return;
             if (!boosting) return;
             if (_status.AutoPilotEnabled) return;
             if (_status.IsTranslationRestricted) return;
@@ -132,7 +129,6 @@ namespace CosmicShore.Gameplay
         IEnumerator RollRoutine(float rollSign, VesselTransformer transformer)
         {
             _rolling = true;
-            _nextAllowedTime = Time.time + rollDurationSeconds + cooldownSeconds;
 
             var visual = ResolveVisualTarget();
             var visualStart = visual ? visual.localRotation : Quaternion.identity;

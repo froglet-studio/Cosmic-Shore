@@ -3380,9 +3380,8 @@ MonoBehaviour:
   m_Name:
   m_EditorClassIdentifier:
   perimeterThreshold: 1
-  cooldownSeconds: 1.2
   invertRollDirection: 0
   rollDurationSeconds: 0.6
-  rootRollDegrees: 5
+  rootRollDegrees: 15
   nudgeSpeed: 60
   rollVisualTarget: {fileID: 0}
