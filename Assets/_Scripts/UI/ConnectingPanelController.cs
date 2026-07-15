@@ -65,7 +65,12 @@ namespace CosmicShore.UI
             statusText.text = statusBaseText + new string('.', dots);
         }
 
-        public async UniTask ShowAsync(CancellationToken ct)
+        /// <param name="ct">Cancellation (HUD lifecycle).</param>
+        /// <param name="holdUntil">Optional extra hold: after the dwell, the panel stays up until
+        /// this returns true (checked once per frame). Used to keep the connecting screen covering
+        /// the world while streamed environment structures finish laying — the arena must be
+        /// complete before the player ever sees it.</param>
+        public async UniTask ShowAsync(CancellationToken ct, Func<bool> holdUntil = null)
         {
             _dotTimer = 0f;
             SetVisible(true);
@@ -77,6 +82,11 @@ namespace CosmicShore.UI
             try
             {
                 await UniTask.Delay(TimeSpan.FromSeconds(dwellSeconds), ignoreTimeScale: true, cancellationToken: ct);
+                if (holdUntil != null)
+                {
+                    while (!holdUntil())
+                        await UniTask.Yield(PlayerLoopTiming.Update, ct);
+                }
             }
             finally
             {

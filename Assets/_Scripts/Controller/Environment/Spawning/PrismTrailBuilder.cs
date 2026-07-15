@@ -127,6 +127,14 @@ namespace CosmicShore.Gameplay
         static readonly double s_msPerTick = 1000.0 / System.Diagnostics.Stopwatch.Frequency;
         static int s_budgetFrame = -1;
         static double s_budgetSpentMs;
+        static int s_activeBudgetedLays;
+
+        /// <summary>
+        /// True while any budgeted lay is still placing prisms. The connecting panel holds on
+        /// this so the arena is COMPLETE before the player ever sees the world — prisms may
+        /// bloom behind the loading screen, never during play.
+        /// </summary>
+        public static bool IsLayingInProgress => s_activeBudgetedLays > 0;
 
         static bool BudgetExhausted(float budgetMs)
         {
@@ -154,20 +162,27 @@ namespace CosmicShore.Gameplay
             if (!prefab || points == null || points.Length == 0) return;
 
             float budget = Mathf.Max(0.5f, budgetMsPerFrame);
-
-            for (int i = 0; i < points.Length; i++)
+            s_activeBudgetedLays++;
+            try
             {
-                if (!parent) return; // container destroyed — stop laying
-
-                while (BudgetExhausted(budget))
+                for (int i = 0; i < points.Length; i++)
                 {
-                    await UniTask.Yield(PlayerLoopTiming.Update);
-                    if (!parent) return;
-                }
+                    if (!parent) return; // container destroyed — stop laying
 
-                long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
-                LayOne(prefab, new PrismLay(points[i], domain), parent, trail, $"{ownerPrefix}::{i}");
-                s_budgetSpentMs += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * s_msPerTick;
+                    while (BudgetExhausted(budget))
+                    {
+                        await UniTask.Yield(PlayerLoopTiming.Update);
+                        if (!parent) return;
+                    }
+
+                    long t0 = System.Diagnostics.Stopwatch.GetTimestamp();
+                    LayOne(prefab, new PrismLay(points[i], domain), parent, trail, $"{ownerPrefix}::{i}");
+                    s_budgetSpentMs += (System.Diagnostics.Stopwatch.GetTimestamp() - t0) * s_msPerTick;
+                }
+            }
+            finally
+            {
+                s_activeBudgetedLays--;
             }
         }
     }

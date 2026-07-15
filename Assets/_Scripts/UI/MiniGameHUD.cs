@@ -335,11 +335,21 @@ namespace CosmicShore.UI
 
                 // Connecting panel: hide the HUD (CG 0) while the panel (its own camera + reveal) holds
                 // ~2s, then restore the HUD. The panel is a sibling with its own CanvasGroup, so it stays
-                // visible while the HUD is hidden.
+                // visible while the HUD is hidden. The panel also HOLDS until streamed environment
+                // structures finish laying (PrismTrailBuilder.IsLayingInProgress) — the arena must be
+                // complete before the player gets past the connecting screen; prisms never spawn in view.
                 if (connectingPanel != null)
                 {
                     Hide();
-                    await connectingPanel.ShowAsync(ct);
+                    await connectingPanel.ShowAsync(ct, () => !PrismTrailBuilder.IsLayingInProgress);
+                }
+                else
+                {
+                    // No panel wired in this mode — still gate on lay completion (per-frame check
+                    // on static tool state; no SOAP channel exists for the builder, and the wait
+                    // is bounded by the lay itself).
+                    while (PrismTrailBuilder.IsLayingInProgress)
+                        await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
                 Show();
 
