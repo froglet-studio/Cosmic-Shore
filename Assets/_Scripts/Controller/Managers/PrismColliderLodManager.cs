@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using CosmicShore.Utility;
+using Unity.Profiling;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -54,6 +55,12 @@ namespace CosmicShore.Gameplay
                  "Must comfortably exceed focus speed × tick so fast vessels never outrun their collider bubble.")]
         [Min(50f)] [SerializeField] float lodRadiusMeters = 200f;
 
+        [Tooltip("Hysteresis: a NEAR prism only becomes far again beyond lodRadiusMeters × this " +
+                 "(prisms in the annulus keep their state). >1 stops the bubble boundary of a MOVING " +
+                 "focus from flapping prisms near/far — and re-toggling their colliders — every tick. " +
+                 "1 = no hysteresis (the pre-hysteresis behavior).")]
+        [Range(1f, 2f)] [SerializeField] float lodExitRadiusMultiplier = 1.15f;
+
         [Tooltip("Seconds between LOD classification passes. At 0.25s a 100 u/s vessel moves 25m per pass — well inside the radius margin.")]
         [Min(0.05f)] [SerializeField] float tickIntervalSeconds = 0.25f;
 
@@ -104,6 +111,12 @@ namespace CosmicShore.Gameplay
         int _cullCursor;
         readonly List<Prism> _liveScratch = new(4096);
 
+        // Attribution split (Docs/PERFORMANCE_OPTIMIZATION.md): Sweep is the 0.25s
+        // tick (Burst classify + restore/enqueue transitions); Drain is the
+        // every-frame budgeted cull application.
+        static readonly ProfilerMarker s_sweepMarker = new("LOD.Sweep");
+        static readonly ProfilerMarker s_drainMarker = new("LOD.Drain");
+
         /// <summary>
         /// Called when a prism's collider comes online outside the pass cadence
         /// (spawn-window end, trail restore). The transition-based pass only
@@ -140,6 +153,14 @@ namespace CosmicShore.Gameplay
             return host.gameObject.AddComponent<PrismColliderLodManager>();
         }
 
+        void OnEnable()
+        {
+            // De-phase from the other 0.25s whole-population pass
+            // (Cell.VolumeSum, armed by the first volume reader): a half-interval
+            // offset keeps the two tick spikes off the same frame.
+            _nextTickAt = Time.time + 0.5f * Mathf.Max(0.05f, tickIntervalSeconds);
+        }
+
         void Update()
         {
             if (!lodEnabled)
@@ -150,12 +171,24 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                DrainCullQueue();
+                using (s_drainMarker.Auto())
+                {
+                    DrainCullQueue();
+                }
             }
 
             if (Time.time < _nextTickAt) return;
-            _nextTickAt = Time.time + Mathf.Max(0.05f, tickIntervalSeconds);
-            RunSweep();
+            // Phase-preserving re-arm: advancing from the DUE time (not from now)
+            // keeps the OnEnable half-interval offset from Cell.VolumeSum forever.
+            // Re-arming from Time.time re-syncs the two ticks onto the same frame
+            // after any hitch longer than the offset (observed in the 07-14
+            // capture #3) — the exact stacking the offset exists to prevent.
+            float interval = Mathf.Max(0.05f, tickIntervalSeconds);
+            do { _nextTickAt += interval; } while (_nextTickAt <= Time.time);
+            using (s_sweepMarker.Auto())
+            {
+                RunSweep();
+            }
         }
 
         void ClearCullQueue()
@@ -201,7 +234,9 @@ namespace CosmicShore.Gameplay
             _reconcileNextSweep = false;
 
             // One Burst pass over the whole population, transitions out.
-            index.RunLodClassification(_fociSnapshot, lodRadiusMeters, reconcile, _becameNear, _becameFar);
+            // Enter/exit radii form the hysteresis band (see the multiplier knob).
+            index.RunLodClassification(_fociSnapshot, lodRadiusMeters,
+                lodRadiusMeters * Mathf.Max(1f, lodExitRadiusMultiplier), reconcile, _becameNear, _becameFar);
 
             // Restores apply immediately and unbudgeted: turning a collider back ON
             // near a focus is the safety-critical direction (a missing collider is a
@@ -252,6 +287,13 @@ namespace CosmicShore.Gameplay
                 // entries can never accumulate in the pending set.
                 if (!_cullPending.Remove(prism) || !prism) continue;
 
+                // Charge the budget for every entry that reaches the re-validation
+                // work below, not only for applied culls — a churny queue full of
+                // now-near entries otherwise drains in ONE frame with an unbounded
+                // number of transform reads (a multi-ms self-time spike at scale).
+                // Cancelled/dead entries above stay uncharged: hash-remove only.
+                budget--;
+
                 // Re-validate against LIVE foci at apply time: the queue can lag
                 // classification by many frames on a reconcile, and a pooled slot
                 // can be reborn as a different prism near a focus in that window.
@@ -273,7 +315,6 @@ namespace CosmicShore.Gameplay
 
                 prism.SetColliderCulledByLod(true);
                 _culledAnything = true;
-                budget--;
             }
 
             if (_cullCursor >= _cullQueue.Count) ClearCullQueue();
