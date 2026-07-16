@@ -12,6 +12,19 @@ namespace CosmicShore.Gameplay
     {
         readonly List<Coroutine> _running = new();
 
+        // Launch teardown (Docs/ECOSYSTEM_NETWORK_SYNC.md §3.8): the server despawns its
+        // networked brood and suppresses further fauna spawns the moment a game launch is
+        // requested, so a fauna spawn message can never batch into the same network tick
+        // as the scene-load message (the client-side "[Invalid Destroy]" race - the same
+        // lesson as the AI-spawn destroyWithScene fix in CLAUDE.md).
+        Cell _activeHost;
+        GameDataSO _activeGameData;
+        bool _suppressSpawns;
+
+        /// <summary>True from a game-launch request until the spawner restarts in the
+        /// next scene - fauna spawn loops must not originate new creatures.</summary>
+        protected bool SpawnsSuppressed => _suppressSpawns;
+
         public void Start(Cell host, CellConfigDataSO config, CellRuntimeDataSO runtime, GameDataSO gameData)
         {
             Stop(host);
@@ -19,11 +32,23 @@ namespace CosmicShore.Gameplay
             if (!Validate(host, config, runtime, gameData))
                 return;
 
+            _activeHost = host;
+            _activeGameData = gameData;
+            _suppressSpawns = false;
+            gameData.OnLaunchGame.OnRaised += HandleGameLaunching;
+
             OnStart(host, config, runtime, gameData);
         }
 
         public void Stop(Cell host)
         {
+            if (_activeGameData != null)
+            {
+                _activeGameData.OnLaunchGame.OnRaised -= HandleGameLaunching;
+                _activeGameData = null;
+            }
+            _activeHost = null;
+
             if (!host) return;
 
             for (int i = 0; i < _running.Count; i++)
@@ -34,6 +59,12 @@ namespace CosmicShore.Gameplay
             _running.Clear();
 
             OnStop(host);
+        }
+
+        void HandleGameLaunching()
+        {
+            _suppressSpawns = true;
+            FaunaNetworkSync.ServerDespawnBrood(_activeHost);
         }
 
         protected abstract void OnStart(Cell host, CellConfigDataSO config, CellRuntimeDataSO runtime, GameDataSO gameData);
@@ -151,6 +182,9 @@ namespace CosmicShore.Gameplay
             pop.Initialize(host);
 
             RegisterSpawned(host, pop.gameObject);
+            // Replicate to clients when we are the server and the species is networked
+            // (no-op otherwise - the per-species rollout gate).
+            FaunaNetworkSync.ServerSpawn(pop);
             return pop;
         }
 
@@ -173,6 +207,10 @@ namespace CosmicShore.Gameplay
             pop.Initialize(host);
 
             RegisterSpawned(host, pop.gameObject);
+            // Replicate to clients when we are the server and the species is networked
+            // (no-op otherwise). Covers every caller of the canonical spawn sequence -
+            // spawner loops and the microscene conveyor alike.
+            FaunaNetworkSync.ServerSpawn(pop);
             return pop;
         }
 

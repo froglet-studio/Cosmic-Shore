@@ -182,6 +182,12 @@ namespace CosmicShore.Gameplay
 
         void TrySpawnFauna(Cell host, CellRuntimeDataSO runtime, FaunaConfigurationSO faunaCfg)
         {
+            // Authority gate (Docs/ECOSYSTEM_NETWORK_SYNC.md): only the server originates
+            // fauna - clients receive replicated spawns. The loop itself keeps ticking so
+            // RecordFaunaSpawn telemetry (the indicator ring) stays live on every peer.
+            // SpawnsSuppressed stops late births between a launch request and scene load.
+            if (!FaunaNetworkSync.IsSimAuthority || SpawnsSuppressed) return;
+
             // Prefer the crystal as the initial goal, but fall back to the cell's own
             // position. The previous implementation silently skipped spawning when no
             // crystal existed, which contributed to fauna never appearing in cells

@@ -132,6 +132,10 @@ namespace CosmicShore.Gameplay
 
         void TryReproduce()
         {
+            // Population is server state: puppet grazing calls NotifyFed too (its consume
+            // path is shared), but only the sim authority may convert feeds into births.
+            if (!IsSimAuthority) return;
+
             var cfg = sourceConfig;
             var host = hostCell;
             if (!cfg || !host || cfg.FeedsPerOffspring <= 0 || !cfg.FaunaPrefab) return;
@@ -170,6 +174,9 @@ namespace CosmicShore.Gameplay
             child.Initialize(host);
             child.AssignLineage(host, cfg);
             host.RegisterSpawnedObject(child.gameObject);
+            // Births replicate exactly like seeder spawns (no-op offline / for
+            // species whose prefab isn't networked yet).
+            FaunaNetworkSync.ServerSpawn(child);
         }
 
         protected virtual void OnDestroy()
@@ -277,6 +284,11 @@ namespace CosmicShore.Gameplay
             // before the spawner calls Initialize or any predator's first behavior tick), so
             // predation immunity is active from the moment the creature exists.
             _spawnTime = Time.time;
+
+            // Optional replication component (Docs/ECOSYSTEM_NETWORK_SYNC.md). Absent on
+            // non-networked species/prefabs — every _networkSync use is null-tolerant, so
+            // offline behavior is untouched.
+            TryGetComponent(out _networkSync);
         }
 
         protected virtual void Start()
@@ -287,7 +299,11 @@ namespace CosmicShore.Gameplay
             _goalOrbitOffset = Random.onUnitSphere * Mathf.Max(0f, goalOrbitRadius);
             _lastFedTime = Time.time; // start the starvation clock when the creature comes alive
 
-            StartCoroutine(UpdateGoalCoroutine());
+            // Puppets don't resolve goals — a server-authoritative NetworkTransform owns
+            // their motion (FaunaNetworkSync flips puppet mode in OnNetworkSpawn, which
+            // runs before Start for dynamically spawned objects).
+            if (IsSimAuthority)
+                StartCoroutine(UpdateGoalCoroutine());
         }
 
         /// <summary>
@@ -311,6 +327,47 @@ namespace CosmicShore.Gameplay
         /// </summary>
         protected Crystal crystal;
 
+        // ------------------------------------------------------------------
+        //  Network sim-authority (Docs/ECOSYSTEM_NETWORK_SYNC.md)
+        // ------------------------------------------------------------------
+
+        // Optional sibling replication component; null on non-networked prefabs.
+        FaunaNetworkSync _networkSync;
+
+        /// <summary>
+        /// True when this peer runs this creature's SIMULATION (goals, steering,
+        /// starvation, predation, reproduction) - always, except on a client puppet of
+        /// a network-replicated fauna, where the server simulates and a NetworkTransform
+        /// owns the motion. Puppets keep exactly two duties: the movers contract
+        /// (NotifyBodyPrismsMoved) and local grazing (the replicated body consumes the
+        /// prisms it passes through on THIS peer - mass conservation's only sink must
+        /// exist everywhere).
+        /// </summary>
+        public bool IsSimAuthority { get; private set; } = true;
+
+        /// <summary>
+        /// Called ONLY by <see cref="FaunaNetworkSync.OnNetworkSpawn"/> on clients,
+        /// before Initialize, so the sim halves never start on a puppet.
+        /// </summary>
+        public void EnterPuppetMode() => IsSimAuthority = false;
+
+        /// <summary>
+        /// Called ONLY by <see cref="FaunaNetworkSync"/> on clients when the server
+        /// replicates this creature's death: runs the same sealed <see cref="Die"/>
+        /// locally, so the puppet drops its own elemental crystal and withers from the
+        /// extremities exactly like the server's original (continuity + mass
+        /// conservation on every peer). Idempotent via the subclass wither guards.
+        /// </summary>
+        public void ApplyReplicatedDeath() => Die("network");
+
+        /// <summary>
+        /// Removal routing for subclass husk-removal points (the END of a wither/fade):
+        /// true = a networked path owns the removal (server despawns after a grace;
+        /// client husks wait for the server's despawn) - the caller must NOT Destroy.
+        /// False for never-network-spawned fauna: legacy Destroy path applies.
+        /// </summary>
+        protected bool TryNetworkDespawn() => _networkSync && _networkSync.HandleHuskRemoval();
+
         /// <summary>
         /// Death chokepoint - SEALED so no fauna can die without conserving its mass.
         /// Every death path (starvation, <see cref="Predated"/>) routes here; it drops
@@ -318,12 +375,14 @@ namespace CosmicShore.Gameplay
         /// on death, mass is conserved" invariant - the creature does not just vanish)
         /// and then runs subclass removal via <see cref="OnDeath"/>. ActivateCrystal
         /// reparents the crystal to the cell, so it survives this object's destruction
-        /// as a collectible powerup.
+        /// as a collectible powerup. On a networked fauna the server's Die also flips
+        /// the replicated life state so every client mirrors this same path locally.
         /// </summary>
         protected void Die(string killerName = "")
         {
             if (crystal && crystal.gameObject && crystal.gameObject.activeInHierarchy)
                 crystal.ActivateCrystal();
+            if (_networkSync) _networkSync.NotifyDied();
             OnDeath(killerName);
         }
 

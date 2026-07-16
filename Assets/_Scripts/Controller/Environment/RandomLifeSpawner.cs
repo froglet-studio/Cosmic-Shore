@@ -159,6 +159,14 @@ namespace CosmicShore.Gameplay
                         Mathf.Max(1, faunaCfg.PopulationSize),
                         faunaCfg.MaxLivePopulation);
 
+                // Authority gate (Docs/ECOSYSTEM_NETWORK_SYNC.md): only the server
+                // originates fauna - clients receive replicated spawns instead. toSpawn
+                // is zeroed rather than breaking the loop so the fixed-period wave tick
+                // + spawn-ring telemetry below keep running on every peer. Launch
+                // teardown (SpawnsSuppressed) likewise stops late births so a spawn
+                // message can't batch into the scene-load tick.
+                if (!FaunaNetworkSync.IsSimAuthority || SpawnsSuppressed) toSpawn = 0;
+
                 bool preyAvailable = FaunaReproductionRules.PreyAvailable(
                     isPredator, host.GetLiveHerbivoreCount(), host.OpposingVolume(color), spawnProfile.FaunaFoodFloor);
 

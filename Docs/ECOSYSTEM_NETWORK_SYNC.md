@@ -1,9 +1,19 @@
 # Networked Fauna Sync — Server-Authoritative Fauna (Plan v2)
 
-**Status: PLAN v2 — awaiting prompter confirmation before any code.** Revised after
-merging `Ys-bleeding-edge` (PrismSpatialIndex fauna senses, sealed wither-to-crystal
-death path, volume-as-the-spine, proximity collider-LOD). Supersedes v1 of this doc.
-Reviewed on **PR #597**.
+**Status: CODE COMPLETE — in-editor wiring + MPPM verification owed (the human gate).**
+Decisions confirmed by the prompter: **D1 = transforms + client-local grazing**,
+**D2 = client-local crystal drop on wither**, **D3 = rollout as planned**. The runtime
+infrastructure (§3) and the rollout editor tool are implemented on PR **#597**; no
+prefab is networked until the corresponding `Tools ▸ Cosmic Shore ▸ Fauna Sync` step
+is run in-editor, so shipped behavior is unchanged until then. Revised after merging
+`Ys-bleeding-edge` (PrismSpatialIndex fauna senses, sealed wither-to-crystal death
+path, volume-as-the-spine, proximity collider-LOD). Supersedes v1 of this doc.
+
+**In-editor rollout (one step at a time, verify between steps — §5/§7):**
+`Tools ▸ Cosmic Shore ▸ Fauna Sync ▸ 0 — Wire Cell Phase Sync` →
+`1 — Network Tadpole Prefabs` → `2 — Network Brittlestar Prefab` →
+`3 — Network Shark Prefab`, then `Validate Fauna Network Setup` (checks components,
+`GlobalObjectIdHash`, and `DefaultNetworkPrefabs` registration).
 
 **Confirmed direction (prompter):** fauna are the universal prism-count reducer —
 the only *legal* down-force on trail/flora accumulation (mass is conserved; no
@@ -350,13 +360,37 @@ never calls `Predated`/`NotifyFed`/`Die`.
 
 ---
 
-## 9. Confirmation points (answer these to green-light coding)
+## 9. Decision record (confirmed by the prompter before coding)
 
-- **D1 — puppet grazing:** (A) transforms-only, or **(B) transforms + client-local
-  grazing tick (recommended)** — B is what makes prism counts fall on every peer,
-  which is the stated goal of the feature.
-- **D2 — death crystal on clients:** v1 recommended = client drops its local
-  crystal on `Withering` (collectible everywhere, collection local); alternative =
-  defer any client-side drop until an authoritative collect channel exists.
-- **D3 — rollout order:** infrastructure → tadpole → brittlestar → shark → Skim
-  Race → WildlifeBlitz (as §5), or a different priority?
+- **D1 — puppet grazing: CONFIRMED (B), transforms + client-local grazing tick.**
+  Implemented as `LightFauna.UpdatePuppetGraze` / `Boid.UpdatePuppetGraze`: the
+  consume sweep only, over the (smaller) consume/grazing radius, revalidated by the
+  existing `EatPrism` predicates and drained through the existing
+  `maxConsumesPerFrame` pacing. Predator puppets run no tick at all.
+- **D2 — death crystal: CONFIRMED, client-local drop on wither.** Implemented by
+  routing the replicated `Withering` state through the same sealed `Fauna.Die` on
+  every peer — each peer drops its own crystal and withers extremities-first;
+  collection stays local (as all crystal pickups outside `NetworkCrystalManager`
+  modes). The server despawns the husk only after its wither + a configurable
+  `despawnGraceSeconds` (0.5 s default on `FaunaNetworkSync`).
+- **D3 — rollout order: CONFIRMED as §5.** Encoded as the numbered
+  `Tools ▸ Cosmic Shore ▸ Fauna Sync` menu steps; no prefab is networked until its
+  step is run, so each species lands and verifies independently.
+
+### Implementation notes (what landed where)
+
+| Piece | Where |
+|---|---|
+| Authority rule (`IsSimAuthority`, pure + runtime) + spawn seam (`ServerSpawn`) + launch teardown (`ServerDespawnBrood`) + death replication (`NotifyDied`/`HandleHuskRemoval`, `NetDomain`/`NetLifeState`) | `FaunaNetworkSync.cs` (the ONLY environment file importing `Unity.Netcode`) |
+| Per-creature authority flag, puppet entry, replicated-death entry, husk despawn routing, reproduction gate, goal-coroutine gate | `Fauna.cs` |
+| Puppet graze tick + gated movement + husk routing | `LightFauna.cs`, `Boid.cs` |
+| Spawn-seam calls + `OnLaunchGame` brood teardown + `SpawnsSuppressed` | `CellLifeSpawnerBase.cs` |
+| Seeder-loop authority gates (wave tick + spawn-ring telemetry keep running on clients) | `RandomLifeSpawner.cs`, `IntensityWiseLifeSpawner.cs` |
+| Rollout + validation menu items | `_Scripts/Editor/FaunaNetworkSetupTool.cs` |
+| Authority truth-table tests | `_Scripts/Tests/EditMode/FaunaNetworkAuthorityTests.cs` |
+
+Known v1 divergences (accepted, documented in §4/§6): flora positions per peer (so
+puppet grazing on flora is approximate until flora replication), client-side
+Wanderway-conveyor releases stay local-only on party clients, and NucleusRush wave
+*data* on clients reports `spawned=0` (the tick itself still fires every period —
+re-verify Brood Rush scoring in MPPM, test F11).

@@ -100,7 +100,17 @@ namespace CosmicShore.Gameplay
             float maxSpeed = Mathf.Max(minSpeed, data.maxSpeed);
 
             currentVelocity = transform.forward * Random.Range(minSpeed, maxSpeed);
-            StartCoroutine(UpdateBehaviorCoroutine());
+
+            if (IsSimAuthority)
+                StartCoroutine(UpdateBehaviorCoroutine());
+            else if (diet == FaunaDiet.Herbivore)
+                // Client puppet: the server owns motion + decisions; the replicated body
+                // still GRAZES this peer's local prisms (trails/flora are client-local
+                // objects - without this, nothing consumes them on clients and the
+                // prism-count reduction fauna exist for lands on the host only).
+                // Predator puppets skip it: predators never eat prisms, and predation
+                // is a server decision replicated via the prey's despawn.
+                StartCoroutine(PuppetGrazeCoroutine());
         }
 
         /// <summary>
@@ -126,6 +136,10 @@ namespace CosmicShore.Gameplay
 
         void RemoveHusk()
         {
+            // Networked fauna: the server despawns (after a grace so a client's
+            // later-starting wither isn't clipped); client husks wait for that despawn.
+            if (TryNetworkDespawn()) return;
+
             if (LightFaunaManager)
                 LightFaunaManager.RemoveFauna(this);
             else
@@ -190,6 +204,57 @@ namespace CosmicShore.Gameplay
                 yield return new WaitForSeconds(cadence);
                 UpdateBehavior();
             }
+        }
+
+        /// <summary>
+        /// Client-puppet slice of the behavior tick: the consume sweep ONLY. Same
+        /// cadence, but the query radius is the (much smaller) consume radius - no
+        /// goal resolution, no vessel overlap, no separation math, no starvation, no
+        /// predation, so a puppet costs strictly less than today's client-local sim.
+        /// Enqueued prisms are re-validated by <see cref="EatPrism"/> (diet, nucleus
+        /// rule, fauna-body exclusion via the missing LifeForm) exactly like the sim
+        /// path, and drain through the same maxConsumesPerFrame pacing.
+        /// </summary>
+        IEnumerator PuppetGrazeCoroutine()
+        {
+            while (true)
+            {
+                if (!data)
+                    yield break;
+
+                float cadence = Mathf.Max(0.05f, data.behaviorUpdateRate + Phase) * GetAggressionCadenceMultiplier();
+                yield return new WaitForSeconds(cadence);
+                UpdatePuppetGraze();
+            }
+        }
+
+        void UpdatePuppetGraze()
+        {
+            if (!data || _withering)
+                return;
+
+            float consumeRadius = Mathf.Max(0f, data.consumeRadius) * GetAggressionConsumeRadiusMultiplier();
+
+            var spatialIndex = PrismSpatialIndex.EnsureInstance();
+            int prismCount = spatialIndex != null && spatialIndex.IsAvailable
+                ? spatialIndex.QuerySphere(transform.position, consumeRadius, PrismScratch)
+                : 0;
+
+            // Same rebuild-per-tick contract as UpdateBehavior (see _pendingMeals).
+            _pendingMeals.Clear();
+
+            for (int pi = 0; pi < prismCount; pi++)
+            {
+                var prism = PrismScratch[pi];
+                if (!prism || prism.destroyed) continue;
+
+                if (maxConsumesPerFrame > 0)
+                    _pendingMeals.Enqueue(prism);
+                else
+                    EatPrism(prism); // unpaced legacy burst
+            }
+
+            DrainPendingMeals();
         }
 
         // Cleanup urgency multipliers indexed by CellAggressionLevel (3 levels).
@@ -533,15 +598,22 @@ namespace CosmicShore.Gameplay
             if (!_withering && _pendingMeals.Count > 0)
                 DrainPendingMeals();
 
-            transform.position += currentVelocity * Time.deltaTime;
-            // Movers contract: the body prisms are registered mass - keep their
-            // stored index positions tracking the swimming creature.
+            // Puppets: the server-authoritative NetworkTransform owns position and
+            // rotation - local integration would just fight the interpolation.
+            if (IsSimAuthority)
+            {
+                transform.position += currentVelocity * Time.deltaTime;
+
+                float lerpSpeed = data ? Mathf.Max(0f, data.rotationLerpSpeed) : 5f;
+                var t = Mathf.Clamp(Time.deltaTime * lerpSpeed, 0f, 0.99f);
+
+                transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, t);
+            }
+
+            // Movers contract on EVERY peer: the body prisms are registered mass - keep
+            // their stored index positions tracking the (locally-moved or replicated)
+            // swimming creature, or client-side AOE/senses target the spawn point.
             NotifyBodyPrismsMoved();
-
-            float lerpSpeed = data ? Mathf.Max(0f, data.rotationLerpSpeed) : 5f;
-            var t = Mathf.Clamp(Time.deltaTime * lerpSpeed, 0f, 0.99f);
-
-            transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, t);
         }
 
         static bool IsFinite(Vector3 v) =>

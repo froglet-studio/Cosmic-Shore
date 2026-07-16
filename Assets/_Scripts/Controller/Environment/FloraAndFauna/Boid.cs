@@ -131,8 +131,21 @@ namespace CosmicShore.Gameplay
             crystal = LifeFormCrystal.EnsureElementalCrystal(this);
 
             currentVelocity = transform.forward * Random.Range(minSpeed, Mathf.Max(minSpeed, maxSpeed));
-            float initialDelay = normalizedIndex * behaviorUpdateRate;
-            StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
+
+            if (IsSimAuthority)
+            {
+                float initialDelay = normalizedIndex * behaviorUpdateRate;
+                StartCoroutine(CalculateBehaviorCoroutine(initialDelay));
+            }
+            else if (forager && collisionEffects != null && collisionEffects.Contains(BoidCollisionEffects.Explode))
+            {
+                // Client puppet: the server owns motion + decisions; a replicated FORAGER
+                // still grazes this peer's local prisms (trails/flora are client-local
+                // objects - without this, nothing consumes them on clients and the
+                // prism-count reduction foragers exist for lands on the host only).
+                // Attach (mound drone) behavior is never puppet-run.
+                StartCoroutine(PuppetGrazeCoroutine());
+            }
         }
 
         /// <summary>
@@ -357,6 +370,53 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
+        /// Client-puppet slice of the behavior tick: the forager consume sweep ONLY.
+        /// Same cadence (with the same anti-phase-lock jitter), but the query radius is
+        /// the grazing radius rather than the full cohesion radius, and there is no
+        /// flocking/goal/starvation math - a puppet costs strictly less than today's
+        /// client-local sim. Enqueued prisms are re-validated by <see cref="EatPrism"/>
+        /// (shielded / fauna-body / nucleus rules) exactly like the sim path, and drain
+        /// through the same maxConsumesPerFrame pacing.
+        /// </summary>
+        IEnumerator PuppetGrazeCoroutine()
+        {
+            // Same first-tick deferral contract as CalculateBehaviorCoroutine: never
+            // scan synchronously inside StartCoroutine (shared scratch safety).
+            yield return null;
+
+            while (true)
+            {
+                UpdatePuppetGraze();
+                yield return new WaitForSeconds(behaviorUpdateRate * Random.Range(0.9f, 1.1f));
+            }
+        }
+
+        void UpdatePuppetGraze()
+        {
+            if (isKilled || !embeddedHealthPrism)
+                return;
+
+            var spatialIndex = PrismSpatialIndex.EnsureInstance();
+            int prismCount = spatialIndex != null && spatialIndex.IsAvailable
+                ? spatialIndex.QuerySphere(transform.position, trailBlockInteractionRadius, PrismScratch)
+                : 0;
+
+            for (int i = 0; i < prismCount; i++)
+            {
+                var prism = PrismScratch[i];
+                if (!prism || prism.destroyed) continue;
+                if (blockCollider && prism.gameObject == blockCollider.gameObject) continue;
+
+                if (maxConsumesPerFrame > 0)
+                    _pendingMeals.Enqueue(prism);
+                else
+                    EatPrism(prism); // unpaced legacy burst
+            }
+
+            DrainPendingMeals();
+        }
+
+        /// <summary>
         /// Consumes up to maxConsumesPerFrame queued meals. Called once from the
         /// behavior tick (first slice lands in the tick frame) and then from
         /// Update() until the queue empties - always well inside one behavior
@@ -418,7 +478,7 @@ namespace CosmicShore.Gameplay
             // (suction-like) instead of instantly destroying it, then remove the husk.
             if (isActiveAndEnabled && gameObject.activeInHierarchy)
                 StartCoroutine(FadeOutAndRemove());
-            else
+            else if (!TryNetworkDespawn())
                 Destroy(gameObject);
         }
 
@@ -433,7 +493,10 @@ namespace CosmicShore.Gameplay
                 transform.localScale = Vector3.Lerp(from, Vector3.zero, t / dur);
                 yield return null;
             }
-            Destroy(gameObject);
+            // Networked boids: the server despawns the shrunk husk (after a grace so a
+            // client's later-starting fade isn't clipped); client husks wait for it.
+            if (!TryNetworkDespawn())
+                Destroy(gameObject);
         }
 
         IEnumerator AddToMoundCoroutine()
@@ -496,11 +559,18 @@ namespace CosmicShore.Gameplay
 
         void Update()
         {
-            transform.position += currentVelocity * Time.deltaTime;
-            // Movers contract: the body prism is registered mass - keep its stored
-            // index position tracking the swimming boid.
+            // Puppets: the server-authoritative NetworkTransform owns position and
+            // rotation - local integration would just fight the interpolation.
+            if (IsSimAuthority)
+            {
+                transform.position += currentVelocity * Time.deltaTime;
+                transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, Time.deltaTime);
+            }
+
+            // Movers contract on EVERY peer: the body prism is registered mass - keep
+            // its stored index position tracking the (locally-moved or replicated)
+            // swimming boid, or client-side AOE/senses target the spawn point.
             NotifyBodyPrismsMoved();
-            transform.rotation = Quaternion.Lerp(transform.rotation, desiredRotation, Time.deltaTime);
 
             if (!isKilled && _pendingMeals.Count > 0)
                 DrainPendingMeals();
