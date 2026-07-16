@@ -10,7 +10,10 @@ namespace CosmicShore.Gameplay
     /// Crystal Capture: points (not golf). Shares <c>NetworkCrystalCollisionTurnMonitor</c> with
     /// HexRace, so the turn ends when an active domain's summed crystals reach the target; the
     /// winning domain is the highest crystal sum. Each player's score IS their crystal count -
-    /// higher is better - and there is no secondary stat line.
+    /// higher is better - and there is no secondary stat line. Results rank TEAM-major (every
+    /// winning-domain player above every losing-domain player, domains by summed crystals),
+    /// matching the golf modes where the team outcome dominates the individual one - a losing
+    /// player who out-collected the winners still ranks below them.
     /// </summary>
     [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/CrystalCapture", fileName = "CrystalCaptureScoringRule")]
     public class CrystalCaptureScoringRuleSO : ScoringRuleSO
@@ -42,7 +45,15 @@ namespace CosmicShore.Gameplay
 
         public override List<ScoreResult> BuildResults(GameDataSO gameData)
         {
-            var ordered = gameData.RoundStatsList.OrderByDescending(s => s.Score);
+            // TEAM-major: domains by their placement (summed crystals, the same order the
+            // Tournament fold + placement crystals use), then teammates by individual crystals.
+            // Name is the final tiebreak so every peer produces an identical list even when two
+            // players tie on crystals (List order alone is not identical across peers).
+            var placement = ResolvePlacementOrder(gameData);
+            var ordered = gameData.RoundStatsList
+                .OrderBy(s => { int i = placement.IndexOf(s.Domain); return i < 0 ? int.MaxValue : i; })
+                .ThenByDescending(s => s.Score)
+                .ThenBy(s => s.Name, System.StringComparer.Ordinal);
 
             var rows = ordered.Select(s => new ScoreResultBuilder.Row(
                 s.Name,

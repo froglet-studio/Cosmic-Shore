@@ -200,13 +200,24 @@ TurnMonitor detects end condition → gameData.InvokeGameTurnConditionsMet()
 
 **Scoring Rules:**
 
-| Player | Score | Rank |
-|---|---|---|
-| Winner (most crystals, e.g., 25) | 25 | 1st (highest) |
-| 2nd place (e.g., 18 crystals) | 18 | 2nd |
-| 3rd place (e.g., 12 crystals) | 12 | 3rd |
+Ranking is **TEAM-major** (matching HexRace/Joust, where the team outcome dominates the
+individual one): domains are placed by their summed crystals (`ScoringRuleSO.ResolvePlacementOrder`
+— the same aggregation that ends the turn and picks `WinnerDomain`), then teammates rank by
+individual crystals (name as the final cross-peer tiebreak). Every winning-domain player ranks
+above every losing-domain player — a losing player who ties/outscores the top winner individually
+still ranks below the winning team (this previously flipped the round winner in team games:
+`Results[0]` sat on the losing domain and clobbered `WinnerDomain` via `SetResults`; the derive is
+now unset-only).
 
-Non-golf rules (`UseGolfRules = false`): Higher score = higher rank. Scores sorted descending.
+| Player (2v2 example) | Score | Rank |
+|---|---|---|
+| Winning domain, best (e.g., 12 crystals) | 12 | 1st |
+| Winning domain, teammate (e.g., 8) | 8 | 2nd |
+| Losing domain, best (e.g., 12) | 12 | 3rd |
+| Losing domain, teammate (e.g., 5) | 5 | 4th |
+
+Non-golf rules (`UseGolfRules = false`): higher score = better within a domain; `Score` stays the
+individual crystal count.
 
 ### 8. End Game (Scoreboard)
 
@@ -252,7 +263,7 @@ To swap the end condition mode (e.g., timer-based), replace the turn monitor in 
 | Component | Class | Purpose |
 |---|---|---|
 | In-game HUD | `MultiplayerCrystalCaptureHUD` (extends `MultiplayerHUD`) | Per-player crystal count cards; subscribes to `OnCrystalsCollectedChanged`; refreshes all cards on turn start |
-| Scoreboard | `Scoreboard` (base — per-mode subclass deleted in the scoring refactor; scene-added component, `gameController` wired in inspector) | End-game player ranking; "N Crystals" per card from `CrystalCaptureScoringRuleSO.BuildResults`; sorts descending (highest first) |
+| Scoreboard | `Scoreboard` (base — per-mode subclass deleted in the scoring refactor; scene-added component, `gameController` wired in inspector) | End-game player ranking; "N Crystals" per card from `CrystalCaptureScoringRuleSO.BuildResults`; team-major order (winning domain's players first, then by individual crystals) |
 | End Game | `EndGameSequencer` (shared) | Halts vessels, plays GameEnd SFX, raises `OnShowGameEndScreen` → the `Scoreboard` shows results. No cinematic. |
 | Stats Reporter | `CrystalCaptureStatsReporter` | Reports winner's crystal count + vessel telemetry to UGS (winner only) |
 

@@ -166,8 +166,12 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Sets <see cref="Results"/> (reusing the same list instance so existing references
         /// stay valid) and derives <see cref="WinnerName"/>/<see cref="WinnerDomain"/> from
-        /// the top row, keeping them a convenience view over the single source. Call once per
-        /// game end on the server and on each client.
+        /// the top row ONLY when the mode has not already written them. The domain modes set
+        /// the authoritative winner (highest DOMAIN metric sum, via their final-score ClientRpc)
+        /// BEFORE calling this - deriving over it from <c>Results[0]</c> (the best INDIVIDUAL)
+        /// mis-credited team games whenever the top individual sat on a losing domain (e.g. a
+        /// 2v2 Crystal Capture where a losing-team player tied the top score - the losing team
+        /// saw VICTORY). Call once per game end on the server and on each client.
         /// </summary>
         public void SetResults(IEnumerable<ScoreResult> results)
         {
@@ -177,8 +181,10 @@ namespace CosmicShore.Utility
 
             if (Results.Count > 0)
             {
-                WinnerName = Results[0].Name;
-                WinnerDomain = Results[0].Domain;
+                if (string.IsNullOrEmpty(WinnerName))
+                    WinnerName = Results[0].Name;
+                if (WinnerDomain == Domains.Blue)
+                    WinnerDomain = Results[0].Domain;
             }
         }
 

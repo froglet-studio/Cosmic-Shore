@@ -64,6 +64,39 @@ namespace CosmicShore.Gameplay
             return best;
         }
 
+        /// <summary>
+        /// Full per-DOMAIN finishing order for the current game - the generalization of
+        /// <see cref="ResolveWinner"/> to every place, ordered by summed metric (descending),
+        /// ties broken by enum order (Jade → Ruby → Gold) so identical inputs resolve
+        /// identically on every machine. Element 0 == <see cref="ResolveWinner"/>'s pick.
+        /// Ranks every domain that actually fielded players (read from the synced
+        /// <see cref="GameDataSO.RoundStatsList"/>), so it is valid on every peer once the
+        /// mode's final-score ClientRpc has run. The Tournament/Shuffle fold and the
+        /// Scoreboard's placement-crystal reward consume this - TEAM totals decide domain
+        /// placement, never an individual player's rank.
+        /// </summary>
+        public virtual List<Domains> ResolvePlacementOrder(GameDataSO gameData)
+        {
+            var ordered = new List<Domains>();
+            var list = gameData != null ? gameData.RoundStatsList : null;
+            if (list == null) return ordered;
+
+            for (int i = 0; i < list.Count; i++)
+            {
+                var stats = list[i];
+                if (stats == null || stats.Domain == Domains.Blue) continue;   // Blue = no-team sentinel
+                if (!ordered.Contains(stats.Domain)) ordered.Add(stats.Domain);
+            }
+
+            ordered.Sort((a, b) =>
+            {
+                int bySum = ScoringMetrics.SumByDomain(gameData, metric, b)
+                    .CompareTo(ScoringMetrics.SumByDomain(gameData, metric, a));
+                return bySum != 0 ? bySum : ((int)a).CompareTo((int)b);
+            });
+            return ordered;
+        }
+
         /// <summary>Writes each player's <c>IRoundStats.Score</c> for the final ranking.</summary>
         public abstract void AssignScores(GameDataSO gameData, Domains winner, float finishTime);
 
