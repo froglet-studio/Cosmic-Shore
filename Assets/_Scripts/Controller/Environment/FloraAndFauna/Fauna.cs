@@ -128,6 +128,20 @@ namespace CosmicShore.Gameplay
                 host.RegisterLiveFauna(this);
                 lineageRegistered = true;
             }
+
+            // Elemental contract: the species config may define the ELEMENT as data (one base
+            // prefab, 20 data-defined variants) - re-provision the heart to that element if the
+            // prefab-authored crystal disagrees - and seeds the spawn LEVEL (spawns AT size,
+            // nothing pops mid-life).
+            if (config)
+            {
+                if (config.Element != Element.None)
+                {
+                    crystal = LifeFormCrystal.EnsureElementalCrystal(this, config.Element);
+                    if (crystal) crystal.SetEmbeddedIn(this);
+                }
+                SetLevel(config.InitialLevel, animate: false);
+            }
         }
 
         void TryReproduce()
@@ -182,6 +196,93 @@ namespace CosmicShore.Gameplay
         // --- ILifeFormEntity ---
         public Domains Domain => domain;
         public GameObject GetGameObject() => gameObject;
+
+        // --- Elemental contract (element x level - one base prefab, 20 data-defined variants) ---
+
+        /// <summary>Level cap for every lifeform (the 4 elements x 5 levels contract).</summary>
+        public const int MaxLifeformLevel = 5;
+
+        /// <summary>The element this creature carries - single source: its crystal (the heart).</summary>
+        public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
+
+        /// <summary>This creature's level, 1..MaxLifeformLevel. Scales body + crystal via the species config.</summary>
+        public int Level { get; private set; } = 1;
+
+        Vector3 _levelBaseScale = Vector3.one;   // root scale at level 1 (captured on first level apply)
+        float _crystalBaseScale = 1f;            // crystal local scale at level 1
+        bool _levelBaseCaptured;
+        Coroutine _levelGrowRoutine;
+
+        float BodyScalePerLevel => sourceConfig ? sourceConfig.BodyScalePerLevel : 1.15f;
+        float CrystalScalePerLevel => sourceConfig ? sourceConfig.CrystalScalePerLevel : 1.2f;
+        float LevelGrowSeconds => sourceConfig ? sourceConfig.LevelGrowSeconds : 1f;
+
+        /// <summary>
+        /// Raises this creature's level by one (clamped at <see cref="MaxLifeformLevel"/>),
+        /// GROWING the body and its embedded crystal over LevelGrowSeconds - the continuity law:
+        /// a level-up blooms, it never pops. Returns false at the cap (callers skip their juice).
+        /// Raised in-world by active forces (e.g. an own-domain Crystal Joust).
+        /// </summary>
+        public bool LevelUp()
+        {
+            if (Level >= MaxLifeformLevel) return false;
+            SetLevel(Level + 1, animate: true);
+            return true;
+        }
+
+        /// <summary>Applies a level directly (spawn-time seeding animates nothing - it spawns AT size).</summary>
+        protected void SetLevel(int level, bool animate)
+        {
+            level = Mathf.Clamp(level, 1, MaxLifeformLevel);
+            if (!_levelBaseCaptured)
+            {
+                _levelBaseScale = transform.localScale;
+                if (crystal) _crystalBaseScale = crystal.transform.localScale.x;
+                _levelBaseCaptured = true;
+            }
+
+            Level = level;
+            Vector3 targetScale = _levelBaseScale * Mathf.Pow(BodyScalePerLevel, Level - 1);
+
+            if (!animate || !isActiveAndEnabled)
+            {
+                transform.localScale = targetScale;
+            }
+            else
+            {
+                if (_levelGrowRoutine != null) StopCoroutine(_levelGrowRoutine);
+                _levelGrowRoutine = StartCoroutine(GrowToScale(targetScale, LevelGrowSeconds));
+            }
+
+            // The heart grows with the level so the eventual death drop is a bigger powerup
+            // (crystal value reads lossyScale live at collect time - mass rewarded). The crystal
+            // is a child of the root, so divide the body growth back out of its LOCAL target.
+            if (crystal)
+            {
+                // The body grows by pow(BodyScalePerLevel, L-1), so the crystal's LOCAL target is
+                // its world target divided by the body growth (it lands at the world size wanted).
+                float worldTarget = _crystalBaseScale * Mathf.Pow(CrystalScalePerLevel, Level - 1);
+                float localTarget = worldTarget / Mathf.Pow(BodyScalePerLevel, Level - 1);
+                if (animate && crystal.gameObject.activeInHierarchy)
+                    crystal.GrowCrystal(LevelGrowSeconds, localTarget);
+                else
+                    crystal.transform.localScale = Vector3.one * localTarget;
+            }
+        }
+
+        IEnumerator GrowToScale(Vector3 target, float seconds)
+        {
+            Vector3 start = transform.localScale;
+            float t = 0f;
+            while (t < 1f)
+            {
+                t += Time.deltaTime / Mathf.Max(0.05f, seconds);
+                transform.localScale = Vector3.Lerp(start, target, Mathf.Clamp01(t));
+                NotifyBodyPrismsMoved(); // keep the spatial index honest while the body grows
+                yield return null;
+            }
+            _levelGrowRoutine = null;
+        }
 
         // Prefer the explicit host cell (set by Initialize/AssignLineage). The
         // cellData runtime SO is a SHARED asset holding only the LAST cell that

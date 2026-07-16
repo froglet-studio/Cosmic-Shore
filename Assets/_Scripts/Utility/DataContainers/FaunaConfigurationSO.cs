@@ -1,3 +1,4 @@
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -32,5 +33,27 @@ namespace CosmicShore.Utility
                  "not the primary control (starvation is) - size it to what the frame budget " +
                  "tolerates, not to where you want the population to sit. 0 = uncapped.")]
         [Min(0)] public int MaxLivePopulation = 0;
+
+        [Header("Elemental contract (element x level - one base prefab, 20 data-defined variants)")]
+        [Tooltip("The element this species config spawns as. None = keep the prefab-authored " +
+                 "crystal element (the legacy per-element prefab-variant path). Setting it lets " +
+                 "ONE base prefab serve all four element variants: the heart crystal is " +
+                 "provisioned from ElementalCrystalSet at lineage assignment.")]
+        public Element Element = Element.None;
+
+        [Tooltip("Level (1..5) this species spawns at. Level scales body + crystal below; it can " +
+                 "rise in-world (e.g. an own-domain Crystal Joust levels the creature up).")]
+        [Range(1, 5)] public int InitialLevel = 1;
+
+        [Tooltip("Uniform body scale multiplier per level above 1 (level 5 = this^4).")]
+        [Min(1f)] public float BodyScalePerLevel = 1.15f;
+
+        [Tooltip("Crystal WORLD scale multiplier per level above 1 - a higher-level lifeform " +
+                 "drops a bigger elemental powerup on death (mass rewarded, still conserved).")]
+        [Min(1f)] public float CrystalScalePerLevel = 1.2f;
+
+        [Tooltip("Seconds a level-up growth animates over (continuity - a level-up blooms, " +
+                 "never pops). Spawn-time seeding applies instantly (it spawns AT size).")]
+        [Min(0.05f)] public float LevelGrowSeconds = 1f;
     }
 }

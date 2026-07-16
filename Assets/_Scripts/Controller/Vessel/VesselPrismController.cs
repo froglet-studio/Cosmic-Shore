@@ -288,10 +288,12 @@ namespace CosmicShore.Gameplay
             }
 
             
-            // Shield. MASS level-5 'Heavy Trail': trail prisms arrive shielded while the
-            // vessel's Mass upgrade is active (per-spawn snapshot; regular shield only).
+            // Shield. MASS level-5 'Heavy Trail': trail prisms arrive shielded ONLY while
+            // DRIFTING with the Mass upgrade active (per-spawn snapshot; regular shield only).
+            // Straight-line trail stays unshielded - the armor is the drift line's reward.
             if (shielded || (massUpgradeShieldsTrail
-                             && vesselStatus?.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true))
+                             && vesselStatus is { IsDrifting: true }
+                             && vesselStatus.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true))
                 prism.prismProperties.IsShielded = true;
 
             // Add to trail & initialize

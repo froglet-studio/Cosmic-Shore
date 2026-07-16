@@ -211,18 +211,34 @@ flowchart LR
 Every arrow is implemented: spawn (seeding), reproduction (births from feeds),
 starvation, and predation all run through the same `Fauna` base.
 
-**Vessel predation — the Crystal Joust (Squirrel Space-5).** A living fauna's elemental
-crystal is its **heart**: `Crystal.SetEmbeddedIn(fauna)` (called by `LightFauna`/`Boid`
-right after `LifeFormCrystal.EnsureElementalCrystal`) enables the heart's SphereCollider so
-a vessel can JOUST it. The embedded heart is never a pickup — skim-collect and skimmer
-vacuum both gate on `Crystal.IsEmbedded` — and the vessel-side chain routes to the
-container's `VesselLifeformCrystalEffects` instead of the collect chain. The Squirrel's
-`VesselWitherLifeformByCrystalEffectSO` (gated per-impact on its live Space level-5
-upgrade) calls `Fauna.Predated(playerName)`: an ACTIVE force through the sealed
-`Fauna.Die`, so the creature withers from the extremities inward and drops its crystal
-exactly like starvation — mass conserved, continuity honored, post-spawn predation
-immunity respected. Collider cost: **+1 active SphereCollider per live fauna** (bounded by
-each species' `MaxLivePopulation`).
+**Vessel predation & husbandry — the Crystal Joust (Squirrel Space-5).** A living fauna's
+elemental crystal is its **heart**: `Crystal.SetEmbeddedIn(fauna)` (called by
+`LightFauna`/`Boid` right after `LifeFormCrystal.EnsureElementalCrystal`) enables the
+heart's SphereCollider so a vessel can JOUST it. The embedded heart is never a pickup —
+skim-collect and skimmer vacuum both gate on `Crystal.IsEmbedded` — and the vessel-side
+chain routes to the container's `VesselLifeformCrystalEffects` instead of the collect
+chain. The Squirrel's `VesselWitherLifeformByCrystalEffectSO` (gated per-impact on its
+live Space level-5 upgrade) branches on domain: an **opposing-domain** creature is
+predated — `Fauna.Predated(playerName)`, an ACTIVE force through the sealed `Fauna.Die`,
+withering from the extremities inward and dropping its crystal exactly like starvation
+(mass conserved, continuity honored, post-spawn immunity respected) — while an
+**own-domain** creature is NOURISHED: `Fauna.LevelUp()` grows body + heart one level.
+Collider cost: **+1 active SphereCollider per live fauna** (bounded by each species'
+`MaxLivePopulation`).
+
+**The lifeform elemental contract (element × level).** Mirroring the vessel contract,
+every lifeform answers `ILifeFormEntity.Element` and `.Level` (1..`Fauna.MaxLifeformLevel`
+= 5): **one base prefab, 20 data-defined variants** (4 elements × 5 levels) instead of a
+prefab per element. The element is data on `FaunaConfigurationSO.Element` — at
+`AssignLineage` the heart is provisioned from `ElementalCrystalSet` for that element
+(`LifeFormCrystal.EnsureElementalCrystal(owner, element)` replaces a disagreeing authored
+crystal; `None` keeps the legacy per-variant-prefab path). Level scales the creature via
+config (`InitialLevel`, `BodyScalePerLevel`, `CrystalScalePerLevel`, `LevelGrowSeconds`):
+spawns arrive AT size; in-world level-ups **grow** over `LevelGrowSeconds` (continuity —
+never a pop) with `NotifyBodyPrismsMoved` keeping the spatial index honest, and the heart
+grows a step per level so a higher-level creature drops a **bigger** elemental powerup on
+death (mass rewarded, still conserved). Flora answer the contract at fixed level 1 until
+flora leveling lands.
 
 ---
 

@@ -5,12 +5,13 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// SPACE level-5 'Crystal Joust': jousting a LIVING lifeform's embedded crystal (its heart)
-    /// withers the creature. Routes through Fauna.Predated -> the sealed Fauna.Die, so the body
-    /// withers from the extremities inward and drops its elemental crystal exactly like
-    /// starvation - an ACTIVE force, mass conserved, continuity honored. Gated per-impact on
-    /// the jousting vessel's live Space upgrade (IsUpgradeActive) - the SO stays stateless.
-    /// Predation immunity (post-spawn grace) is respected by Predated itself.
+    /// SPACE level-5 'Crystal Joust': jousting a LIVING lifeform's embedded crystal (its heart).
+    /// OPPOSING-domain creature: withers and dies - routes through Fauna.Predated -> the sealed
+    /// Fauna.Die, so the body withers from the extremities inward and drops its elemental
+    /// crystal exactly like starvation (an ACTIVE force, mass conserved, continuity honored;
+    /// predation immunity respected by Predated itself). OWN-domain creature: the joust NOURISHES
+    /// it instead - Fauna.LevelUp() grows body + heart one level (max 5, the lifeform elemental
+    /// contract). Gated per-impact on the jousting vessel's live Space upgrade - SO stays stateless.
     /// </summary>
     [CreateAssetMenu(fileName = "VesselWitherLifeformByCrystalEffect",
         menuName = "ScriptableObjects/Impact Effects/Vessel - Lifeform Crystal/VesselWitherLifeformByCrystalEffectSO")]
@@ -30,9 +31,20 @@ namespace CosmicShore.Gameplay
 
             if (status.ElementalAbilityHandler?.IsUpgradeActive(gatingElement) != true) return;
 
-            // Predated is idempotent and respects the post-spawn immunity window; true means
-            // the creature actually died to this joust (wither + crystal drop via sealed Die).
-            if (embeddedCrystal.EmbeddedIn.Predated(status.PlayerName))
+            var fauna = embeddedCrystal.EmbeddedIn;
+
+            // Own-domain creature: the joust nourishes it - level it up (body + heart grow a
+            // level, capped at MaxLifeformLevel). Never a kill on your own pack.
+            if (fauna.Domain == status.Domain)
+            {
+                if (fauna.LevelUp())
+                    onLifeformJousted?.Raise(status.PlayerName);
+                return;
+            }
+
+            // Opposing-domain creature: Predated is idempotent and respects the post-spawn
+            // immunity window; true means it actually died (wither + crystal drop via sealed Die).
+            if (fauna.Predated(status.PlayerName))
                 onLifeformJousted?.Raise(status.PlayerName);
         }
     }

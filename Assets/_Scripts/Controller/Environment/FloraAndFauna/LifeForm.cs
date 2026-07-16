@@ -45,6 +45,14 @@ namespace CosmicShore.Gameplay
 
         // --- Public contract (ILifeFormEntity) ---
         public Domains Domain => domain;
+
+        /// <summary>Elemental contract: the element this lifeform carries (its crystal's element).</summary>
+        public Element Element => crystal ? crystal.crystalProperties.Element : Element.None;
+
+        /// <summary>Elemental contract: flora level. Fixed at 1 until flora leveling lands
+        /// (the contract exists so every lifeform answers element x level - see ILifeFormEntity).</summary>
+        public int Level => 1;
+
         public static event Action<string, int> OnLifeFormDeath;
 
         // --- Composition: extracted trackers (SRP) ---

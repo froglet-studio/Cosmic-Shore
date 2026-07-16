@@ -79,8 +79,8 @@ The original proposal table below was superseded by Garrett's markup; the shippe
 | Element | Quantitative (LIVE) | L5 upgrade (LIVE) |
 |---|---|---|
 | Charge | skim energy per prism-skimmer collision (map 2.0, `SkimmerBoostPrismEffectSO`) | **Live Wire** — danger prisms grant the 10× energy bonus (the bonus was always-on before; it is now EARNED — below Charge 5 danger prisms pay base energy) |
-| Mass | trail prism VOLUME (`trailVolume` ElementalFloat 1→2.5, cube-root per axis) | **Heavy Trail** — trail prisms arrive shielded (`massUpgradeShieldsTrail` on `VesselPrismController`) |
-| Space | skimmer reach (skimmer `Scale` ElementalFloat 15→30 — this mapping predates the doc and was restored to the record) | **Crystal Joust** — jousting a living lifeform's embedded crystal withers it like starvation (`VesselWitherLifeformByCrystalEffectSO` → `Fauna.Predated`; see `Docs/ECOSYSTEM.md §3`) |
+| Mass | trail prism VOLUME (`trailVolume` ElementalFloat 1→2.5, cube-root per axis) | **Heavy Trail** — trail prisms arrive shielded ONLY while drifting (`massUpgradeShieldsTrail` + `IsDrifting` gate on `VesselPrismController`) |
+| Space | skimmer reach (skimmer `Scale` ElementalFloat 15→30 — this mapping predates the doc and was restored to the record) | **Crystal Joust** — jousting a living lifeform's embedded crystal: OPPOSING domain withers it like starvation (`Fauna.Predated`); OWN domain nourishes it (`Fauna.LevelUp`, the lifeform elemental contract — see `Docs/ECOSYSTEM.md §3`) |
 | Time | boost-ring cooldown ×0.5 at level 10 (`SquirrelTubeActionSO.cooldownMultiplierAtFullTime`) | **Twin Rings** — the tube deploys a second ring (baseline reduced 2→1 ring; `upgradeExtraRings`) |
 
 Removed: Time→top speed (prefab `ThrottleScalerMultiplier` disabled — one parameter per element).
