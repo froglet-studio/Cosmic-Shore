@@ -611,6 +611,35 @@ O(1) per tick:
   patch reaches it. Computed once per 30s wave; predators keep the
   densest-mass spawn. Blob runs 3 points at radius 400.
 
+**v3.2 — polar predator ring + feeding-consistency fixes** (from in-editor
+observation of v3.1):
+- **Predator spawn ring** (`SpawnProfileSO.PredatorSpawnPointCount` /
+  `PredatorSpawnRadius`; 0 = legacy): a VERTICAL circle starting at +Y,
+  orthogonal to the equatorial herbivore ring — 2 points sit exactly on the
+  poles. While active, at most **one predator spawns per interval**
+  (alternating points), and each predator's **den lands in the hemisphere it
+  spawned in** (the random den direction is mirrored if it points into the
+  opposite half — one dot product at spawn). Blob runs 2 points at radius 600.
+- **Boid dash oscillation (BUG, fixed):** the forager dash was a binary 10×
+  whenever the goal was beyond the interaction radius, re-checked only once
+  per 1.5s behavior tick — at dash speed a tadpole covered ~200+ units per
+  tick, overshot the goal, reversed at 10×, and oscillated rapidly across it
+  without ever settling into feeding range (observed as "back-and-forth
+  between two distant points, never engaging mass"). Now **arrival-capped**:
+  dash speed ≤ distance/tick, decelerating smoothly on approach (one sqrt per
+  tick). Tadpole feeding distance (`trailBlockInteractionRadius`) also tuned
+  45 → 20 on the prefab.
+- **Brittlestar "swims past its food" (fixed):** flora are HealthPrisms, and
+  ALL HealthPrisms within `separationRadius` (70) repelled the brittlestar —
+  including edible ones — while feeding required closing to `consumeRadius`
+  (40); approach geometry decided whether it ever ate. Now **edible prisms
+  attract and never repel** (one edibility check per prism decides both
+  roles; non-edible mass — own canopy, nucleus claim, fauna bodies — still
+  separates). Plus **mouthful chaining**: when a suction hold ends, one small
+  index query re-targets the nearest edible still inside feeding range, so a
+  creature parked at a buildup eats mouthful after mouthful — it feeds more
+  than it swims — resuming roaming only when the local patch is clear.
+
 ---
 
 ## 8. Build order

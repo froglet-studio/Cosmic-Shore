@@ -366,14 +366,22 @@ namespace CosmicShore.Gameplay
                                + blockAttraction).normalized;
 
             // Foragers DASH (huntSpeedMultiplier, e.g. 10x) toward a mass concentration so
-            // the swarm covers the arena quickly, then ease back to base speed once within
-            // consume range so they graze it reliably instead of overshooting. 1x when the
-            // cell is empty (idling at the crystal) or when not a forager.
+            // the swarm covers the arena quickly. The dash is ARRIVAL-CAPPED: never faster
+            // than "reach the goal around the next behavior tick". The old binary 10x dash
+            // covered ~200+ units per 1.5s tick — far past the interaction radius — so a
+            // boid overshot the goal between ticks, reversed at 10x, overshot again: a
+            // rapid back-and-forth oscillation across a distant goal point that never
+            // settled into feeding range. The cap decelerates the approach smoothly (one
+            // sqrt per tick). 1x when within range, when the cell is empty, or not a forager.
             float speedMult = 1f;
             if (forager && cell != null && cell.LiveBlockCount > 0)
             {
-                float distToGoalSqr = (target - transform.position).sqrMagnitude;
-                speedMult = distToGoalSqr > trailBlockInteractionRadiusSqr ? Mathf.Max(1f, huntSpeedMultiplier) : 1f;
+                float distToGoal = Vector3.Distance(target, transform.position);
+                if (distToGoal > trailBlockInteractionRadius)
+                {
+                    float arrivalMult = distToGoal / Mathf.Max(0.05f, maxSpeed * behaviorUpdateRate);
+                    speedMult = Mathf.Clamp(arrivalMult, 1f, Mathf.Max(1f, huntSpeedMultiplier));
+                }
             }
             currentVelocity = desiredDirection * Mathf.Clamp(averageSpeed, minSpeed * speedMult, maxSpeed * speedMult);
 

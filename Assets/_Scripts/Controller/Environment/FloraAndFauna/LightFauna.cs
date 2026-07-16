@@ -33,7 +33,8 @@ namespace CosmicShore.Gameplay
         Prism _feedTarget;          // meal chosen by the behavior tick
         Vector3 _feedFocusPoint;    // where the creature keeps looking while consuming
         float _feedHoldUntil = -1f; // facing hold until the suction completes
-        float _consumeRadiusSqr;    // cached each tick (aggression-scaled) for the per-frame gate
+        float _consumeRadius;       // cached each tick (aggression-scaled) for mouthful chaining
+        float _consumeRadiusSqr;    // squared companion for the per-frame gate
 
         // --- Hunting (predator) ---------------------------------------------
         Fauna _targetPrey;          // prey being pursued (refreshed each behavior tick)
@@ -96,10 +97,18 @@ namespace CosmicShore.Gameplay
                 // Tiger-shark territoriality: roll the den once, at spawn. Random
                 // direction from the cell centre spreads concurrent predators apart
                 // (the species caps at 2-3 per cell) with zero coordination cost.
+                // The den stays in the HEMISPHERE the predator spawned in (each pole
+                // of the predator spawn ring owns a hemisphere): mirror the random
+                // direction if it points into the opposite half. A centre spawn
+                // (legacy, no ring) has no hemisphere — the direction stands as-is.
                 if (data.territoryRadius > 0f)
                 {
                     Vector3 centre = cell ? cell.transform.position : transform.position;
-                    _territoryAnchor = centre + Random.onUnitSphere * data.territoryAnchorDistance;
+                    Vector3 denDirection = Random.onUnitSphere;
+                    Vector3 spawnDirection = transform.position - centre;
+                    if (Vector3.Dot(denDirection, spawnDirection) < 0f)
+                        denDirection = -denDirection;
+                    _territoryAnchor = centre + denDirection * data.territoryAnchorDistance;
                     _hasTerritory = true;
                 }
             }
@@ -413,7 +422,8 @@ namespace CosmicShore.Gameplay
             // loop-invariant here, squared once.
             float separationRadiusSqr = separationRadius * separationRadius;
             float consumeRadiusSqr = consumeRadius * consumeRadius;
-            _consumeRadiusSqr = consumeRadiusSqr; // per-frame feeding gate reads the tick's value
+            _consumeRadius = consumeRadius;       // per-frame feeding gate + mouthful
+            _consumeRadiusSqr = consumeRadiusSqr; // chaining read the tick's values
 
             // Intentional feeding: the tick SELECTS the nearest edible prism; the actual
             // approach → face → suction sequence runs per-frame in UpdateFeeding.
@@ -503,26 +513,39 @@ namespace CosmicShore.Gameplay
                 {
                     neighborCount++;
 
+                    // Herbivore: one edibility check per prism decides BOTH roles —
+                    // FOOD ATTRACTS AND NEVER REPELS (edible prisms are feed candidates,
+                    // exempt from separation), while non-edible mass (own canopy, the
+                    // nucleus claim, fauna bodies) keeps pushing us away. Flora are
+                    // HealthPrisms, so before this split a brittlestar's own food
+                    // repelled it from separationRadius (70) out while feeding needed
+                    // consumeRadius (40) — approach geometry decided whether it ever ate,
+                    // which read as "swims past a lot of mass before feeding".
+                    // (The diet rule is spatialized through Cell.IsPreyForHerbivore —
+                    // see IsEdibleForHerbivore. Intentional feeding: don't vacuum;
+                    // remember the NEAREST edible prism, UpdateFeeding approaches it,
+                    // turns to face it, and only then starts the suction.)
+                    if (diet == FaunaDiet.Herbivore && IsEdibleForHerbivore(prism))
+                    {
+                        if (sqr < bestFeedSqr)
+                        {
+                            bestFeedSqr = sqr;
+                            feedCandidate = prism;
+                        }
+                        continue;
+                    }
+
                     bool sameDomain = otherHealthBlock.LifeForm && otherHealthBlock.LifeForm.domain == domain;
 
                     if (sqr < separationRadiusSqr && !(dropFriendlyAvoidance && sameDomain))
                         separation += diff / sqr;
 
-                    // Herbivores eat plant/trail mass; predators never eat prisms.
-                    // The diet rule is spatialized through Cell.IsPreyForHerbivore
-                    // (see IsEdibleForHerbivore). Intentional feeding: don't vacuum —
-                    // remember the NEAREST edible prism; UpdateFeeding approaches it,
-                    // turns to face it, and only then starts the suction.
-                    if (diet == FaunaDiet.Herbivore && sqr < bestFeedSqr && IsEdibleForHerbivore(prism))
-                    {
-                        bestFeedSqr = sqr;
-                        feedCandidate = prism;
-                    }
-
                     continue;
                 }
 
-                // Handle blocks (trail prisms) — same spatialized diet rule as above.
+                // Handle blocks (trail prisms) — same spatialized diet rule as above
+                // (plain prisms never contributed separation here, so only the
+                // feed-candidate role applies).
                 if (diet == FaunaDiet.Herbivore && sqr < bestFeedSqr && IsEdibleForHerbivore(prism))
                 {
                     bestFeedSqr = sqr;
@@ -624,6 +647,19 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
+            // A suction hold just finished: CHAIN straight to the next edible prism
+            // still inside feeding range (one small index query per completed
+            // mouthful), so a creature parked at a buildup keeps eating mouthful
+            // after mouthful instead of drifting until the next behavior tick
+            // re-targets — it feeds more than it swims. Resumes roaming only when
+            // the local patch is actually clear.
+            if (_feedHoldUntil > 0f)
+            {
+                _feedHoldUntil = -1f;
+                if (!_feedTarget || _feedTarget.destroyed)
+                    _feedTarget = FindNearestEdibleInFeedingRange();
+            }
+
             var target = _feedTarget;
             if (!target || target.destroyed)
             {
@@ -678,6 +714,30 @@ namespace CosmicShore.Gameplay
             // Someone else got the whole mouthful first — nothing to watch, resume roaming.
             if (bites == 0)
                 _feedHoldUntil = 0f;
+        }
+
+        /// <summary>
+        /// Nearest edible prism within the (aggression-scaled) consume radius — the
+        /// mouthful-chaining query. Bounded and infrequent: one QuerySphere per
+        /// COMPLETED mouthful (every consumeHoldSeconds at most), never per frame.
+        /// </summary>
+        Prism FindNearestEdibleInFeedingRange()
+        {
+            if (_consumeRadius <= 0f) return null;
+            var spatialIndex = PrismSpatialIndex.EnsureInstance();
+            if (spatialIndex == null || !spatialIndex.IsAvailable) return null;
+
+            int found = spatialIndex.QuerySphere(transform.position, _consumeRadius, FeedScratch);
+            Prism best = null;
+            float bestSqr = float.PositiveInfinity;
+            for (int i = 0; i < found; i++)
+            {
+                var prism = FeedScratch[i];
+                if (!IsEdibleForHerbivore(prism)) continue;
+                float d = (prism.transform.position - transform.position).sqrMagnitude;
+                if (d < bestSqr) { bestSqr = d; best = prism; }
+            }
+            return best;
         }
 
         void FaceFeedFocus()

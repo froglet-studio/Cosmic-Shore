@@ -159,6 +159,12 @@ namespace CosmicShore.Gameplay
                         Mathf.Max(1, faunaCfg.PopulationSize),
                         faunaCfg.MaxLivePopulation);
 
+                // Solitary predators: while the predator spawn ring is active, at most
+                // ONE predator hatches per spawn interval (successive spawns alternate
+                // ring points, e.g. the two poles).
+                if (isPredator && spawnProfile.PredatorSpawnPointCount > 0 && spawnProfile.PredatorSpawnRadius > 0f)
+                    toSpawn = Mathf.Min(toSpawn, 1);
+
                 bool preyAvailable = FaunaReproductionRules.PreyAvailable(
                     isPredator, host.GetLiveHerbivoreCount(), host.OpposingVolume(color), spawnProfile.FaunaFoodFloor);
 
@@ -198,25 +204,30 @@ namespace CosmicShore.Gameplay
         // swarm spreads over the buildup instead of stacking on one point.
         const float FaunaSpawnJitter = 150f;
 
-        // Rotates herbivore waves around the spawn-point ring. Instance state — one
-        // spawner per cell — so interleaved species advance the same rotation and
-        // successive groups land on different points.
+        // Rotates herbivore/predator waves around their spawn-point rings. Instance
+        // state — one spawner per cell — so interleaved species advance the same
+        // rotation and successive groups land on different points.
         int _herbivoreSpawnPointIndex;
+        int _predatorSpawnPointIndex;
 
         void SpawnFaunaPopulation(Cell host, CellRuntimeDataSO runtime, SpawnProfileSO spawnProfile,
             FaunaConfigurationSO faunaCfg, Domains color, int count)
         {
             bool isPredator = faunaCfg.FaunaPrefab && faunaCfg.FaunaPrefab.Diet == FaunaDiet.Predator;
-            bool useSpawnRing = !isPredator &&
+            bool useHerbivoreRing = !isPredator &&
                 spawnProfile.HerbivoreSpawnPointCount > 1 && spawnProfile.HerbivoreSpawnRadius > 0f;
+            bool usePredatorRing = isPredator &&
+                spawnProfile.PredatorSpawnPointCount > 0 && spawnProfile.PredatorSpawnRadius > 0f;
 
-            // Ring mode: each herbivore wave takes the next point on the ring — its own
-            // feeding ground, away from where the last group (and any predator drawn to
-            // it) already is. Legacy mode: spawn right ON the densest mass concentration
-            // so they start clearing immediately (GetDensestRegionAnyDomain falls back to
-            // the crystal/cell anchor when there's no mass yet).
-            Vector3 goal = useSpawnRing
-                ? NextHerbivoreSpawnPoint(host, spawnProfile)
+            // Ring mode: each wave takes the next point on its diet's ring — herbivores
+            // get their own feeding ground away from where the last group (and any
+            // predator drawn to it) already is; predators enter from the poles,
+            // orthogonal to the herbivore ring. Legacy mode: spawn right ON the densest
+            // mass concentration so they start clearing immediately
+            // (GetDensestRegionAnyDomain falls back to the crystal/cell anchor when
+            // there's no mass yet).
+            Vector3 goal = useHerbivoreRing ? NextHerbivoreSpawnPoint(host, spawnProfile)
+                : usePredatorRing ? NextPredatorSpawnPoint(host, spawnProfile)
                 : host.GetDensestRegionAnyDomain();
 
             for (int i = 0; i < count; i++)
@@ -233,6 +244,17 @@ namespace CosmicShore.Gameplay
             float angle = (_herbivoreSpawnPointIndex++ % pointCount) * (Mathf.PI * 2f / pointCount);
             return host.transform.position
                    + new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * spawnProfile.HerbivoreSpawnRadius;
+        }
+
+        // Predator ring: a VERTICAL circle (X-Y plane) starting at +Y, orthogonal to the
+        // equatorial (XZ) herbivore ring — with 2 points the spawns sit exactly on the
+        // poles, alternating each wave.
+        Vector3 NextPredatorSpawnPoint(Cell host, SpawnProfileSO spawnProfile)
+        {
+            int pointCount = spawnProfile.PredatorSpawnPointCount;
+            float angle = (_predatorSpawnPointIndex++ % pointCount) * (Mathf.PI * 2f / pointCount);
+            return host.transform.position
+                   + new Vector3(Mathf.Sin(angle), Mathf.Cos(angle), 0f) * spawnProfile.PredatorSpawnRadius;
         }
     }
 }
