@@ -9,7 +9,7 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// TournamentStandingsFormatter tests — covers the "(You)" owner tag added beside the local
+    /// TournamentStandingsFormatter tests - covers the "(You)" owner tag added beside the local
     /// player's DOMAIN row, so each peer can read which team line is theirs on the Maelstrom summary
     /// (FormatFinal) and the between-game splash (FormatRunning). Scoring is per-domain, so exactly one
     /// row is ever tagged, and Domains.Blue (the no-team sentinel, never a standings row) tags nothing.

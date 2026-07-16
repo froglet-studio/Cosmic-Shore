@@ -17,8 +17,8 @@ namespace CosmicShore.UI
                 : (_channel = Resources.Load<ScriptableEventGameFeedPayload>(ChannelPath));
 
         /// <summary>
-        /// Domain color source — the same <see cref="SO_ColorSet"/> the vessels and prisms
-        /// use. Assigned once by ThemeManager at game start (single source of truth — R5).
+        /// Domain color source - the same <see cref="SO_ColorSet"/> the vessels and prisms
+        /// use. Assigned once by ThemeManager at game start (single source of truth - R5).
         /// Null before a themed scene loads, in which case GetDomainColor falls back to white.
         /// </summary>
         public static SO_ColorSet ColorSet { private get; set; }

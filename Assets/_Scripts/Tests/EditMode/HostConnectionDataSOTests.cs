@@ -6,7 +6,7 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// HostConnectionDataSO Tests — Validates the party/connection state container.
+    /// HostConnectionDataSO Tests - Validates the party/connection state container.
     ///
     /// WHY THIS MATTERS:
     /// HostConnectionDataSO is the central SOAP container for multiplayer party state.
@@ -37,7 +37,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Default_LocalPlayerId_IsEmpty()
         {
-            // Fields are initialized by Unity — in a fresh SO they default to type defaults.
+            // Fields are initialized by Unity - in a fresh SO they default to type defaults.
             Assert.IsTrue(string.IsNullOrEmpty(_data.LocalPlayerId));
         }
 

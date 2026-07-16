@@ -4,7 +4,7 @@ using UnityEngine;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// First-pass "Auto-Detect Best Settings" — an instant <see cref="SystemInfo"/> heuristic that
+    /// First-pass "Auto-Detect Best Settings" - an instant <see cref="SystemInfo"/> heuristic that
     /// recommends a quality preset (and sensible display/perf defaults) for this machine. Because
     /// the game is CPU-bound, CPU core count is weighted heavily and VRAM lightly. For an accurate
     /// result the player can follow up with the in-scene Benchmark, which measures real frame cost.
@@ -62,7 +62,7 @@ namespace CosmicShore.Core
             int monitorHz = Mathf.RoundToInt((float)Screen.currentResolution.refreshRateRatio.value);
             d.TargetFrameRate = monitorHz > 0 ? Mathf.Min(monitorHz, 120) : 60;
 
-            // CPU knobs scale with core count — the real lever on this engine.
+            // CPU knobs scale with core count - the real lever on this engine.
             int cores = SystemInfo.processorCount;
             if (cores >= 8)
             {

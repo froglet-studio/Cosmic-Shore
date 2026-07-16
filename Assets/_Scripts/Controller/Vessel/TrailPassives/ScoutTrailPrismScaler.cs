@@ -9,7 +9,7 @@ namespace CosmicShore.Gameplay
 /// <summary>
 /// Dynamically scales trail prisms based on surrounding open space.
 /// Uses an adaptive-radius PrismSpatialIndex probe to determine if the player is in
-/// open or confined areas — prisms ARE the obstacle population, and the index is the
+/// open or confined areas - prisms ARE the obstacle population, and the index is the
 /// canonical answer to "what mass is where" (Docs/SPATIAL_INDEX.md), so no physics
 /// query or layer configuration is involved.
 /// Injects scale into VesselPrismController for consistent prism scaling.

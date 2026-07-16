@@ -8,7 +8,7 @@ using UnityEngine.UI;
 namespace CosmicShore.UI
 {
     /// <summary>
-    /// <b>Summary Player Card</b> (MaelstromSummaryScoreCardContainer) — one player's row on the
+    /// <b>Summary Player Card</b> (MaelstromSummaryScoreCardContainer) - one player's row on the
     /// Maelstrom results screen: avatar, name, the player's <b>Total Score</b> (their domain's cumulative
     /// tournament points). The background tints to the player's domain via the
     /// <see cref="DomainColorPaletteSO"/> (same as the in-round Player Data Card). The authored "stats"

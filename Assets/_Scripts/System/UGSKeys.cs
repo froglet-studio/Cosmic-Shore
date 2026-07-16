@@ -26,7 +26,7 @@ namespace CosmicShore.Core
         // Every event (and its parameters) must also be declared in the UGS
         // dashboard Event Manager, or the backend silently discards it.
 
-        // Phase 1 — foundation
+        // Phase 1 - foundation
         public const string EventPlayAgain     = "play_again_pressed";
         public const string EventGameStarted   = "game_started";
         public const string EventGameCompleted = "game_completed";
@@ -34,7 +34,7 @@ namespace CosmicShore.Core
         public const string EventUiAction      = "ui_action";
         public const string EventAdImpression  = "ad_impression";
 
-        // Phase 2 — activation
+        // Phase 2 - activation
         public const string EventGameFirstLaunched = "game_first_launched";
         public const string EventMenuReady         = "menu_ready";
         public const string EventFreestyleEntered  = "freestyle_entered";
@@ -42,14 +42,14 @@ namespace CosmicShore.Core
         public const string EventIntensityUnlocked = "intensity_unlocked";
         public const string EventSettingChanged    = "setting_changed";
 
-        // Phase 2 — economy
+        // Phase 2 - economy
         public const string EventCrystalsEarned        = "crystals_earned";
         public const string EventCrystalsSpent         = "crystals_spent";
         public const string EventCrystalSpendBlocked   = "crystal_spend_blocked";
         public const string EventVesselUnlocked        = "vessel_unlocked";
         public const string EventCrystalBalanceSnapshot = "crystal_balance_snapshot";
 
-        // Phase 2 — social
+        // Phase 2 - social
         public const string EventFriendRequestSent     = "friend_request_sent";
         public const string EventFriendRequestReceived = "friend_request_received";
         public const string EventFriendAdded           = "friend_added";
@@ -59,11 +59,11 @@ namespace CosmicShore.Core
         public const string EventMinigameFavorited     = "minigame_favorited";
         public const string EventShareTriggered        = "share_triggered";
 
-        // Phase 2 — retention
+        // Phase 2 - retention
         public const string EventQuestCompleted   = "quest_completed";
         public const string EventRepeatedGameFail = "repeated_game_fail";
 
-        // Phase 3 — observability
+        // Phase 3 - observability
         public const string EventCloudSaveFailed = "cloud_save_failed";
     }
 }

@@ -218,7 +218,7 @@ namespace CosmicShore.Gameplay
             {
                 if (item.TryGetComponent(out Prism prism) && !item.CompareTag("FaunaPrefab"))
                 {
-                    // argmin over distance == argmin over squared distance — no sqrt needed.
+                    // argmin over distance == argmin over squared distance - no sqrt needed.
                     float sqrDistance = (position - item.transform.position).sqrMagnitude;
                     if (sqrDistance < closestDistance)
                     {

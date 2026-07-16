@@ -49,7 +49,7 @@ namespace CosmicShore.Gameplay
         float _pendingNucleusWorldRadius;
 
         // Optional replacement MESH for the nucleus, requested by a mode that repurposes the nucleus as
-        // a NON-spherical play boundary (Astro League's ricochet courts — box/octagon/etc.). The mesh
+        // a NON-spherical play boundary (Astro League's ricochet courts - box/octagon/etc.). The mesh
         // is already in world units (centered on origin), so the nucleus renders it at unit scale with
         // its existing material. Cached so it survives the same nucleus-spawn-vs-request ordering race.
         Mesh _pendingNucleusMesh;
@@ -67,11 +67,11 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Radius used for mass SENSING — prism registration (<see cref="ContainsPosition"/>)
+        /// Radius used for mass SENSING - prism registration (<see cref="ContainsPosition"/>)
         /// and the density grids that fauna seek mass with. Defaults to the visual
         /// <see cref="MembraneRadius"/>, but a CellConfig can override it
         /// (<c>SenseRadiusOverride</c>) to sense across a larger arena than the membrane
-        /// visual — e.g. the Skim Race track — so fauna find + seek mass track-wide instead
+        /// visual - e.g. the Skim Race track - so fauna find + seek mass track-wide instead
         /// of only inside the central bubble. Independent of the membrane so the visual /
         /// its baked animation are untouched. See Docs/ECOSYSTEM.md §7.2.
         /// </summary>
@@ -92,12 +92,12 @@ namespace CosmicShore.Gameplay
         readonly List<GameObject> spawnedLifeForms = new();
         // Prism → the domain it was REGISTERED under. RemoveBlock decrements the
         // grids/counts for the registration-time domain, not the prism's current
-        // one — so steals / ChangeTeam between Add and Remove can't desync the
+        // one - so steals / ChangeTeam between Add and Remove can't desync the
         // per-domain bookkeeping (the §2.3.1 phantom-count class of bug).
         readonly Dictionary<Prism, Domains> trackedBlocks = new();
 
         // Per-domain VOLUME accounting ("volume is the spine": trail, flora, AND
-        // fauna bodies all add to the cell's mass regardless of source — fauna
+        // fauna bodies all add to the cell's mass regardless of source - fauna
         // bodies are volume-only and stay out of the targeting grids/counts above:
         // a forager swarm must not read as its own mass concentration, and fauna
         // bodies are not edible prey). Membership lives in the spatial index's
@@ -112,8 +112,8 @@ namespace CosmicShore.Gameplay
         float liveEnvVolumeTotal;
 
         // ------------------------------------------------------------------
-        //  Nucleus control zone — "node control" lives INSIDE the nucleus.
-        //  Per-domain ENVIRONMENT volume (trail + flora; fauna bodies excluded —
+        //  Nucleus control zone - "node control" lives INSIDE the nucleus.
+        //  Per-domain ENVIRONMENT volume (trail + flora; fauna bodies excluded -
         //  a swimming school must not tip territorial control) inside the
         //  nucleus' world radius determines DominantDomain. Everything OUTSIDE
         //  the nucleus is the contested feeding ground: voraciously edible by
@@ -126,8 +126,8 @@ namespace CosmicShore.Gameplay
         float _nucleusControlRadiusSqr;
 
         // Prisms actually registered in the targeting grids. Interior (nucleus)
-        // prisms are volume/count-tracked but never grid-tracked — fauna must not
-        // be led to mass they cannot eat — so RemoveBlock has to know which
+        // prisms are volume/count-tracked but never grid-tracked - fauna must not
+        // be led to mass they cannot eat - so RemoveBlock has to know which
         // prisms the grids really hold (the nucleus radius can change between
         // Add and Remove; re-deriving membership would desync bucket counts).
         readonly HashSet<Prism> gridTracked = new();
@@ -145,7 +145,7 @@ namespace CosmicShore.Gameplay
         // packed summation view (slot order Jade/Ruby/Gold/Blue, matching
         // s_volumeDomainSlots), published atomically into the dictionaries above.
         // Scheduled on a WORKER thread against the index's snapshot
-        // (TryScheduleCellVolumeSum) and harvested on a later read — the
+        // (TryScheduleCellVolumeSum) and harvested on a later read - the
         // main-thread cost per recompute is the snapshot memcpy, whether or not
         // the job executes Burst-compiled (the sync .Run() variant read ~6 ms in
         // editor captures where Burst wasn't applied). Replaces the managed
@@ -168,7 +168,7 @@ namespace CosmicShore.Gameplay
 
         // ---------------------------------------------------------------------
         // Static spatial registry. Pooled prefab-spawned objects (trail prisms)
-        // use this to find their containing cell — they have no scene identity
+        // use this to find their containing cell - they have no scene identity
         // to wire a CellRuntimeDataSO into, and the per-prefab-asset alternative
         // breaks in multi-cell scenes where one prefab would need to point at
         // every cell's runtime SO at once.
@@ -184,7 +184,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The enabled cell whose membrane contains <paramref name="position"/>,
-        /// or null when the position is in open space. O(cells-in-scene) — call
+        /// or null when the position is in open space. O(cells-in-scene) - call
         /// at object lifecycle points (spawn/destroy), not per frame.
         /// </summary>
         public static Cell FindCellContaining(Vector3 position)
@@ -230,9 +230,9 @@ namespace CosmicShore.Gameplay
         public int LiveBlockCount => trackedBlocks.Count;
 
         /// <summary>
-        /// Live leader by per-domain prism VOLUME — "volume is the spine" (locked
+        /// Live leader by per-domain prism VOLUME - "volume is the spine" (locked
         /// invariant). NODE CONTROL IS THE NUCLEUS: when this cell has a nucleus
-        /// control zone, only the ENVIRONMENT volume INSIDE the nucleus counts —
+        /// control zone, only the ENVIRONMENT volume INSIDE the nucleus counts -
         /// lay your mass through the core to claim the cell; the exterior is the
         /// fauna's feeding ground and never sways control. Cells without a nucleus
         /// keep the legacy whole-cell read. On networked clients the server's
@@ -267,7 +267,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// True when this cell has a spawned nucleus with a measurable world radius —
+        /// True when this cell has a spawned nucleus with a measurable world radius -
         /// the node-control zone. Without one (no NucleusPrefab in the CellConfig)
         /// control and edibility keep their legacy whole-cell semantics.
         /// </summary>
@@ -280,7 +280,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// The domain holding the nucleus claim right now. False when the cell has no
-        /// nucleus control zone OR nobody has laid environment mass inside it yet —
+        /// nucleus control zone OR nobody has laid environment mass inside it yet -
         /// distinct from <see cref="ControllingDomain"/>, which falls back through
         /// gameData so fauna always get a spawn color. Scoring systems (Brood Rush)
         /// read THIS so an unclaimed nucleus never awards a fallback-team point.
@@ -296,7 +296,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// The herbivore diet rule, spatialized. With a nucleus control zone: mass
         /// OUTSIDE the nucleus is voraciously edible by any herbivore REGARDLESS of
-        /// domain (the exterior is the contested feeding ground — extends the Boid
+        /// domain (the exterior is the contested feeding ground - extends the Boid
         /// forager's existing any-domain grazing to all herbivores), while mass
         /// INSIDE the nucleus is the territorial claim and is never fauna-consumed
         /// (players contest it with abilities and by out-laying volume). Without a
@@ -310,7 +310,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// True while the targeting grids hold any environment mass — with a nucleus
+        /// True while the targeting grids hold any environment mass - with a nucleus
         /// zone that means EXTERIOR mass (interior prisms are never grid-tracked).
         /// Fauna use this to hunt the feeding ground even at Calm ("voracious").
         /// </summary>
@@ -324,11 +324,11 @@ namespace CosmicShore.Gameplay
         public void SetReplicatedDominantDomain(Domains? domain) => _replicatedDominantDomain = domain;
 
         // ------------------------------------------------------------------
-        //  Live volume — the spine. Recomputed from live prism state on a short
+        //  Live volume - the spine. Recomputed from live prism state on a short
         //  cadence (growth animates continuously, so event-driven deltas would
         //  drift). The recompute is ONE Burst pass over the spatial index's packed
         //  summation view (PrismSpatialIndex.SumCellVolumes) and publishes
-        //  atomically — the previous managed slice loop over the prism object
+        //  atomically - the previous managed slice loop over the prism object
         //  graph (null-check + CachedVolume + trackedBlocks lookup +
         //  transform.position per prism, 8000/frame) cost whoever read volume on
         //  a stale tick ~10 ms per slice frame at high prism counts; the Burst
@@ -339,7 +339,7 @@ namespace CosmicShore.Gameplay
         void EnsureVolumeFresh()
         {
             // Harvest the async pass scheduled on an earlier read. IsCompleted
-            // avoids ever blocking the main thread on the job — readers keep the
+            // avoids ever blocking the main thread on the job - readers keep the
             // previously published sums until the worker is done (typically the
             // next frame; the tolerance the 0.25s cadence already declares).
             if (_volumeSumPending && _volumeSumHandle.IsCompleted)
@@ -353,7 +353,7 @@ namespace CosmicShore.Gameplay
             if (_volumeSumPending) return; // previous pass still crunching
 
             var index = PrismSpatialIndex.Instance;
-            if (index == null || !index.IsAvailable) return; // no index (tooling scene) — keep published sums, retry next read
+            if (index == null || !index.IsAvailable) return; // no index (tooling scene) - keep published sums, retry next read
 
             if (!_volumeSumNative.IsCreated)
                 _volumeSumNative = new NativeArray<float>(PrismSpatialIndex.CellVolumeResultCount, Allocator.Persistent);
@@ -388,14 +388,14 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Drops all volume accounting — published sums and the recompute timer —
+        /// Drops all volume accounting - published sums and the recompute timer -
         /// so a cleared cell reads as empty immediately instead of serving a
         /// pre-reset snapshot until the next recompute.
         /// </summary>
         void ResetVolumeAccounting()
         {
             _nextVolumeRecomputeAt = float.NegativeInfinity; // resum on next read
-            // Discard (never publish) an in-flight pass — it summed pre-reset
+            // Discard (never publish) an in-flight pass - it summed pre-reset
             // state. Complete() first: the results array is about to be re-used
             // by the next scheduled job.
             if (_volumeSumPending)
@@ -412,7 +412,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Total live prism volume in this cell — ALL prisms (trail, flora, fauna
+        /// Total live prism volume in this cell - ALL prisms (trail, flora, fauna
         /// bodies). THE phase-ladder measure ("volume is the spine").
         /// </summary>
         public float LiveVolume
@@ -420,7 +420,7 @@ namespace CosmicShore.Gameplay
             get { EnsureVolumeFresh(); return liveVolumeTotal; }
         }
 
-        /// <summary>Live volume tracked under <paramref name="domain"/> — all prism sources.</summary>
+        /// <summary>Live volume tracked under <paramref name="domain"/> - all prism sources.</summary>
         public float GetDomainVolume(Domains domain)
         {
             EnsureVolumeFresh();
@@ -428,7 +428,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The herbivore PREY signal in volume units (fauna bodies excluded — not
+        /// The herbivore PREY signal in volume units (fauna bodies excluded - not
         /// edible, counting them would seed fauna against phantom food). With a
         /// nucleus control zone this is ALL environment volume outside the nucleus
         /// (the exterior is voraciously edible regardless of domain); without one it
@@ -453,13 +453,13 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Prism COUNT at which the perf backstop forces Frenzy. The phase ladder
-        /// itself runs on volume — see <see cref="FrenzyEnterVolume"/>.
+        /// itself runs on volume - see <see cref="FrenzyEnterVolume"/>.
         /// </summary>
         public int FrenzyEnterThreshold => ResolveThresholds().FrenzyEnter;
 
         /// <summary>
         /// LiveVolume at which the cell crosses into Frenzy. HUD widgets use this as
-        /// the "max" — when summed mass approaches it, the cell is about to enter Level2
+        /// the "max" - when summed mass approaches it, the cell is about to enter Level2
         /// aggression (and flora freeze) and the UI should communicate that.
         /// </summary>
         public float FrenzyEnterVolume => ResolveThresholds().FrenzyEnterVolume;
@@ -470,20 +470,20 @@ namespace CosmicShore.Gameplay
         /// asset). Exposed so the concentric-hexagon volume indicator can draw one
         /// ring per phase boundary (Restless, then Frenzy at the centre) at a radius
         /// proportional to its enter threshold, lighting each ring as the cell's
-        /// summed mass crosses it. Read-only — the cell is the single writer.
+        /// summed mass crosses it. Read-only - the cell is the single writer.
         /// </summary>
         public CellPhaseThresholds ResolvedThresholds => ResolveThresholds();
 
         /// <summary>
         /// True once this cell's CellConfig has been assigned (Initialize ran). While
-        /// false, threshold reads fall back to CellPhaseThresholds.Default — HUD
+        /// false, threshold reads fall back to CellPhaseThresholds.Default - HUD
         /// diagnostics surface this so a mis-scaled indicator is explainable at a
         /// glance instead of looking like dead data.
         /// </summary>
         public bool HasConfigAssigned => cellConfigData != null;
 
         // ---------------------------------------------------------------------
-        //  Fauna spawn cycle telemetry — read by the volume-indicator ring HUD.
+        //  Fauna spawn cycle telemetry - read by the volume-indicator ring HUD.
         //  Written by IntensityWiseLifeSpawner.SpawnFaunaTypeLoop when it ticks a
         //  periodic fauna spawn. The Cell exposes a 0..1 progress fraction toward
         //  the next spawn so the indicator can draw a rotating ring without
@@ -500,7 +500,7 @@ namespace CosmicShore.Gameplay
         public void RecordFaunaSpawn() => _lastFaunaSpawnTime = Time.time;
 
         /// <summary>
-        /// Fixed period (seconds) between this cell's periodic fauna population spawns —
+        /// Fixed period (seconds) between this cell's periodic fauna population spawns -
         /// just BaseFaunaSpawnTime. Per the ecology redesign the spawn cadence and swarm
         /// size are FIXED; prism count drives fauna *aggression/behavior*, not spawn rate
         /// (Docs/ECOSYSTEM.md §5). HUDs read this for the spawn-cycle ring. Returns 0 when
@@ -533,14 +533,14 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Current phase. Written exclusively by <see cref="CellNetworkSync"/> via
-        /// <see cref="ApplyAuthoritativePhaseAndDomain"/> — the server's compute on a
+        /// <see cref="ApplyAuthoritativePhaseAndDomain"/> - the server's compute on a
         /// networked cell, or the local-only fallback in single-player. Cell never
         /// recomputes phase itself; it just exposes the inputs.
         /// </summary>
         public CellPhase Phase => phase;
 
         // ---------------------------------------------------------------------
-        // Derived gates — projections of Phase the consumers actually care about.
+        // Derived gates - projections of Phase the consumers actually care about.
         // Flora planting and growing now share ONE rule (steady until Frenzy); fauna
         // read the aggression band. These properties give each consumer exactly the
         // boolean it needs without re-deriving phase semantics.
@@ -548,7 +548,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// True while new flora may be planted AND existing flora may grow: the cell is
-        /// below Frenzy. Planting and growth run at a STEADY rate all the way up — there
+        /// below Frenzy. Planting and growth run at a STEADY rate all the way up - there
         /// is no early planting cap and no mid-range growth cap (those staggered phase
         /// gates were a growth-side cheat: a hard-coded self-limit faking the homeostasis
         /// the food web is meant to produce). The only down-force on flora is the food web
@@ -556,20 +556,20 @@ namespace CosmicShore.Gameplay
         /// fills to Frenzy, growth stops and stays stopped until an ACTIVE force lowers the
         /// live prism count back below the Frenzy exit threshold (hysteresis), at which
         /// point growth resumes on its own. Mass is conserved: no passive decay, no growth
-        /// oscillator — a frozen-solid cell is a valid state, not a defect to auto-correct.
+        /// oscillator - a frozen-solid cell is a valid state, not a defect to auto-correct.
         /// See Docs/ECOSYSTEM.md §0/§5.
         /// </summary>
         public bool FloraGrowingEnabled => phase < CellPhase.Frenzy;
 
         /// <summary>
         /// True while new flora may be planted. Identical to <see cref="FloraGrowingEnabled"/>
-        /// — planting and growth share the single "below Frenzy" rule now (steady until
+        /// - planting and growth share the single "below Frenzy" rule now (steady until
         /// frenzy). Kept as a separate name so spawner code reads intent at the call site.
         /// </summary>
         public bool FloraPlantingEnabled => FloraGrowingEnabled;
 
         /// <summary>
-        /// True once the cell holds any ENVIRONMENT mass — the spawn floor for the
+        /// True once the cell holds any ENVIRONMENT mass - the spawn floor for the
         /// timer-driven IntensityWise fauna loop. Volume-keyed ("volume is the
         /// spine") and environment-only: fauna bodies must not satisfy their own
         /// spawn floor. The prey-linked RandomLifeSpawner gates on
@@ -582,7 +582,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Fauna aggression level derived from <see cref="Phase"/> — a 1:1 mapping now
+        /// Fauna aggression level derived from <see cref="Phase"/> - a 1:1 mapping now
         /// that flora are no longer staggered on separate rungs:
         ///   Calm     → Level0  (head toward crystal, normal cadence)
         ///   Restless → Level1  (head toward opposing-color centroid)
@@ -601,7 +601,7 @@ namespace CosmicShore.Gameplay
         /// back to gameData's controlling team by remaining volume, then to the local
         /// player's domain (useful in Menu_Main where there is no scored controlling
         /// team), then to Jade as a last resort. Never returns Blue (the "no team"
-        /// sentinel) — callers can use it directly without further branching.
+        /// sentinel) - callers can use it directly without further branching.
         /// </summary>
         public Domains ControllingDomain
         {
@@ -645,7 +645,7 @@ namespace CosmicShore.Gameplay
         {
             // Drive phase locally every tick interval. Server-authoritative replication
             // (CellNetworkSync) overlays this on networked clients via OnValueChanged
-            // — server's compute wins when the two diverge — but for single-player and
+            // - server's compute wins when the two diverge - but for single-player and
             // for the server itself this is the only path that advances phase. Without
             // it, no fauna ever spawn because phase stays at Calm forever.
             if (Time.time < _nextPhaseTickAt) return;
@@ -664,7 +664,7 @@ namespace CosmicShore.Gameplay
             if (!cfg) return CellPhaseThresholds.Default;
 
             // Existing CellConfig assets serialized before PhaseThresholds existed
-            // deserialize as struct zero — Unity does not apply the C# initializer.
+            // deserialize as struct zero - Unity does not apply the C# initializer.
             // Substitute the Default table so legacy biomes don't snap to Frenzy the
             // moment the first prism is added. Assets authored before volume became
             // the spine derive their volume ladder from the count fields (×16).
@@ -679,19 +679,19 @@ namespace CosmicShore.Gameplay
 
         void OnEnable()
         {
-            // Summation-view identity — once per instance, before any prism can
+            // Summation-view identity - once per instance, before any prism can
             // bind (AddBlock reads it). See the field remarks.
             if (_volumeCellId == 0)
                 _volumeCellId = s_nextVolumeCellId++;
 
-            // Spatial registry — lets pooled, prefab-spawned objects (trail prisms)
+            // Spatial registry - lets pooled, prefab-spawned objects (trail prisms)
             // find which cell contains them without per-prefab SO wiring or the
             // deprecated CellControlManager singleton. See FindCellContaining.
             if (!ActiveCells.Contains(this))
                 ActiveCells.Add(this);
 
             // Clear stale config BEFORE subscribing to events.
-            // CellRuntimeDataSO is a shared SO asset — Menu_Main's Cell sets
+            // CellRuntimeDataSO is a shared SO asset - Menu_Main's Cell sets
             // runtime.Config to Blob Cell Config, which persists into the next
             // scene. Without clearing here, OnCellItemsUpdated could fire between
             // OnEnable (subscription) and Start (where the clear previously lived),
@@ -747,7 +747,7 @@ namespace CosmicShore.Gameplay
                 spawnedCytoplasm = null;
             }
 
-            // Settle the in-flight volume pass (never published) — the results
+            // Settle the in-flight volume pass (never published) - the results
             // array must be quiescent before a re-enable schedules into it again.
             if (_volumeSumPending)
             {
@@ -840,15 +840,15 @@ namespace CosmicShore.Gameplay
         }
 
         // ---------------------------------------------------------------------
-        //  Live fauna registry — instances plus per-species counts (keyed by the
+        //  Live fauna registry - instances plus per-species counts (keyed by the
         //  FaunaConfigurationSO that defines the species). Fauna register on
         //  AssignLineage (spawner and reproduction paths both) and unregister in
-        //  OnDestroy. This registry is the cell "sensing" its inhabitants — the
+        //  OnDestroy. This registry is the cell "sensing" its inhabitants - the
         //  fauna analogue of the prism density grid: counts feed the seeder
         //  (top up to seed floor) and reproduction (MaxLivePopulation backstop);
         //  instances feed predator prey-seeking (nearest live herbivore) and the
         //  predator seeding gate. Manager-spawned fauna (no lineage) are invisible
-        //  to it — acceptable, those legacy populations never instantiate (§7).
+        //  to it - acceptable, those legacy populations never instantiate (§7).
         //  See Docs/ECOSYSTEM.md §6/§7.
         // ---------------------------------------------------------------------
 
@@ -863,7 +863,7 @@ namespace CosmicShore.Gameplay
         public IReadOnlyList<Fauna> LiveFauna => liveFauna;
 
         /// <summary>
-        /// Live herbivores still eligible as prey — the prey signal for predator
+        /// Live herbivores still eligible as prey - the prey signal for predator
         /// seeding (a real herbivore count, not the prism-mass proxy).
         /// </summary>
         public int GetLiveHerbivoreCount()
@@ -887,7 +887,7 @@ namespace CosmicShore.Gameplay
 
         public void UnregisterLiveFauna(Fauna fauna)
         {
-            // `is null` guard only — a destroyed-but-non-null fauna must still be
+            // `is null` guard only - a destroyed-but-non-null fauna must still be
             // removable from the registry during teardown.
             if (fauna is null || !fauna.SourceConfig) return;
             if (liveFaunaCounts.TryGetValue(fauna.SourceConfig, out int c) && c > 0)
@@ -969,7 +969,7 @@ namespace CosmicShore.Gameplay
         {
             // Size the density grids to the cell's SENSE radius (membrane radius by
             // default, or a CellConfig override for large arenas like the Skim Race track).
-            // With a 1200m membrane the old fixed cube saw only ~14% of the cell — outer
+            // With a 1200m membrane the old fixed cube saw only ~14% of the cell - outer
             // mass was invisible to FindDensestRegion so fauna never sought it. See
             // Docs/DENSITY_PARTITIONING_AUDIT.md.
             float membraneRadius = SenseRadius;
@@ -978,7 +978,7 @@ namespace CosmicShore.Gameplay
                 : 2400f; // fallback when the membrane prefab is missing
             Vector3 cellCenter = transform.position;
 
-            // Dispose any existing grids before replacing them — each holds
+            // Dispose any existing grids before replacing them - each holds
             // persistent NativeArrays, and Initialize() can run more than once
             // across a session (e.g. replay).
             foreach (var existing in countGrids.Values)
@@ -991,7 +991,7 @@ namespace CosmicShore.Gameplay
 
             // Blue-keyed grid accumulates every block regardless of domain so
             // GetDensestRegionAnyDomain() can answer aggression-2 fauna's "head toward
-            // nearest centroid" goal — friendly + enemy mass both count. Blue is the
+            // nearest centroid" goal - friendly + enemy mass both count. Blue is the
             // "no specific team" sentinel; this grid does double duty as the wildcard.
             countGrids[Domains.Blue] = new BlockCountDensityGrid(Domains.Blue, cellCenter, worldDiameter);
         }
@@ -1012,7 +1012,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Re-measure the nucleus' WORLD radius (renderer bounds — mesh-agnostic, so
+        /// Re-measure the nucleus' WORLD radius (renderer bounds - mesh-agnostic, so
         /// morphed court meshes and world-radius requests are honored) and cache it
         /// as the node-control zone boundary. Called whenever the nucleus spawns or
         /// is resized/re-meshed; a missing nucleus clears the zone (legacy behavior).
@@ -1035,7 +1035,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Resize the nucleus marker to a target WORLD radius (mesh-agnostic, via renderer bounds, so
         /// it works regardless of the prefab mesh's base size). Lets a mode repurpose the nucleus as
-        /// its play boundary — e.g. Astro League uses it for the Sphere-shaped court (see
+        /// its play boundary - e.g. Astro League uses it for the Sphere-shaped court (see
         /// <see cref="SetNucleusMesh"/> for the flat-walled polytope courts).
         /// Safe to call before the nucleus spawns: the target is cached and applied in SpawnVisuals.
         /// </summary>
@@ -1063,7 +1063,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Replace the nucleus MESH so a mode can repurpose the nucleus as a NON-spherical play boundary
-        /// (e.g. Astro League's ricochet courts — box/octagon/etc.), keeping the prefab's material so the
+        /// (e.g. Astro League's ricochet courts - box/octagon/etc.), keeping the prefab's material so the
         /// glowing-cage look carries over. The mesh must be in world units centered on the origin; the
         /// nucleus renders it at unit scale. Race-proof: cached and applied in SpawnVisuals if the
         /// nucleus hasn't spawned yet. Pass null to leave the prefab mesh in place.
@@ -1084,7 +1084,7 @@ namespace CosmicShore.Gameplay
 
             // sharedMesh on an instance only repoints THIS filter (doesn't mutate the prefab asset).
             mf.sharedMesh = _pendingNucleusMesh;
-            // The mesh is already world-sized, so render at unit scale — overrides the prefab's base
+            // The mesh is already world-sized, so render at unit scale - overrides the prefab's base
             // scale and any world-radius request (which targeted the original sphere mesh's bounds).
             nucleus.transform.localScale = Vector3.one;
         }
@@ -1139,10 +1139,10 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Stops and restarts the life spawner so its fixed-period fauna clock
         /// re-aligns to NOW. Used by modes whose scoring rides the fauna spawn cycle
-        /// (Brood Rush realigns the 30s wave clock to the GO of the countdown —
+        /// (Brood Rush realigns the 30s wave clock to the GO of the countdown -
         /// the spawner otherwise starts when the first crystal registers, which is
         /// during the ready screen). No-op until the cell has post-initialized.
-        /// Note: a profile with flora re-runs its initial flora batch on restart —
+        /// Note: a profile with flora re-runs its initial flora batch on restart -
         /// intended callers are fauna-only biomes.
         /// </summary>
         public void RestartSpawnerForMode()
@@ -1173,7 +1173,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Files a prism into this cell's bookkeeping. ALL prisms enter the volume
-        /// accounting ("volume is the spine" — trail, flora, and fauna bodies alike
+        /// accounting ("volume is the spine" - trail, flora, and fauna bodies alike
         /// feed <see cref="LiveVolume"/>; membership lives in the spatial index's
         /// packed summation view, this method is its single writer). Only
         /// ENVIRONMENT mass (<paramref name="environmentMass"/> true, the default)
@@ -1190,7 +1190,7 @@ namespace CosmicShore.Gameplay
 
             if (environmentMass && !trackedBlocks.ContainsKey(block))
             {
-                // Snapshot the domain at registration time — RemoveBlock uses this snapshot
+                // Snapshot the domain at registration time - RemoveBlock uses this snapshot
                 // so a team change (steal) between Add and Remove can't desync the grids.
                 Domains registeredDomain = block ? block.Domain : Domains.Blue;
                 trackedBlocks[block] = registeredDomain;
@@ -1233,7 +1233,7 @@ namespace CosmicShore.Gameplay
         {
             if (block is null) return;
 
-            // Volume membership goes first — fauna bodies are bound in the summation
+            // Volume membership goes first - fauna bodies are bound in the summation
             // view but not trackedBlocks, and must not survive the early-return below.
             int slotIndex = ResolveSpatialIndexId(block, spatialIndexId);
             if (slotIndex >= 0)
@@ -1248,7 +1248,7 @@ namespace CosmicShore.Gameplay
             if (block)
             {
                 // Only grid-registered prisms leave the grids (nucleus-interior mass
-                // never entered them — see AddBlock).
+                // never entered them - see AddBlock).
                 if (wasGridTracked)
                 {
                     Domains[] teams = { Domains.Jade, Domains.Ruby, Domains.Gold };
@@ -1277,7 +1277,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Densest region of all blocks NOT belonging to the given domain — the
+        /// Densest region of all blocks NOT belonging to the given domain - the
         /// "nearest opposing-color centroid" for fauna at aggression Level 1.
         /// Empty grids default to the cell anchor (crystal or cell transform)
         /// instead of the grid's bottom-corner sentinel, which otherwise pulled
@@ -1289,7 +1289,7 @@ namespace CosmicShore.Gameplay
                 return GetCellAnchorPosition();
 
             var region = grid.FindDensestRegion();
-            // LastResultDensity is the peak smoothed density the job found — 0 means
+            // LastResultDensity is the peak smoothed density the job found - 0 means
             // the grid is empty. (Checking GetDensityAtPosition(region) here instead
             // would false-negative when sub-voxel interp / mean-shift lands the
             // answer in a low-count voxel adjacent to the true mass.)
@@ -1299,7 +1299,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Densest region across all domains — the "nearest centroid of any color"
+        /// Densest region across all domains - the "nearest centroid of any color"
         /// goal for fauna at aggression Level 2. Reads the synthesized
         /// countGrids[Domains.Blue] grid that <see cref="AddBlock"/> populates with
         /// every block regardless of its domain (Blue serves double-duty as the
@@ -1317,7 +1317,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Alias for <see cref="GetDensestRegionAnyDomain"/> — historical name from
+        /// Alias for <see cref="GetDensestRegionAnyDomain"/> - historical name from
         /// the gyroid-overflow regulation work, kept so external callers can use
         /// either spelling.
         /// </summary>
@@ -1338,7 +1338,7 @@ namespace CosmicShore.Gameplay
         public bool ContainsPosition(Vector3 position)
         {
             // Use SenseRadius (membrane radius, or a CellConfig override for large arenas)
-            // so prisms across the whole sensed space register with the cell — not just
+            // so prisms across the whole sensed space register with the cell - not just
             // those inside the visual membrane. This is what lets fauna find + seek mass
             // across the full Skim Race track. See SenseRadius / Docs/ECOSYSTEM.md §7.2.
             float radius = SenseRadius;

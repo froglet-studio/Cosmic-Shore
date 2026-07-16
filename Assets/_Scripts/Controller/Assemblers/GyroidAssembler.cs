@@ -76,7 +76,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] float radius = 40f;
 
         // Bounds the candidates considered (and therefore ConvertBlock steals) per
-        // mate search — same bound the old 10-slot OverlapSphereNonAlloc buffer gave.
+        // mate search - same bound the old 10-slot OverlapSphereNonAlloc buffer gave.
         private const int MaxMateCandidates = 10;
         private readonly Collider[] _colliders = new Collider[MaxMateCandidates];
 
@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
         private static readonly List<Prism> s_mateScratch = new(64);
 
         // Mound blocks built by Boid.NewBlock skip Prism.Initialize, so they never
-        // register with the spatial index — their colliders on the dedicated Mound
+        // register with the spatial index - their colliders on the dedicated Mound
         // layer are the only way to find them. Lazy so LayerMask resolves after
         // engine init.
         private static int s_moundLayerMask;
@@ -137,7 +137,7 @@ namespace CosmicShore.Gameplay
                 // (and concurrent floras) stacked blocks on the same site. TryReserve
                 // claims the site synchronously with this grow decision; the claim is
                 // consumed when the spawned prism registers, or lapses after TTL if the
-                // spawn never happens. clearRadius is 0.4× this bond's lattice spacing —
+                // spawn never happens. clearRadius is 0.4× this bond's lattice spacing -
                 // below half-spacing so legitimate neighbor sites are never blocked,
                 // above any drift so a same-site duplicate always is.
                 float clearRadius = Mathf.Max(2f, 0.4f * (newPosition - transform.position).magnitude);
@@ -449,12 +449,12 @@ namespace CosmicShore.Gameplay
 
             CSDebug.Log($"GyroidAssembler: No Preferred Block, Depth: {depth}");
 
-            // Candidates come from the spatial index (the canonical prism population —
+            // Candidates come from the spatial index (the canonical prism population -
             // no physics broadphase, no per-collider GetComponent) plus a Mound-layer
             // collider probe for the unregistered blocks Boid.NewBlock builds mounds
             // from. The old unfiltered OverlapSphereNonAlloc here also iterated its
             // full 10-slot buffer regardless of the hit count, processing stale
-            // colliders from previous searches — that bug is gone with the snapshot
+            // colliders from previous searches - that bug is gone with the snapshot
             // list.
             var spatialIndex = PrismSpatialIndex.EnsureInstance();
             int prismCount = spatialIndex != null && spatialIndex.IsAvailable
@@ -510,7 +510,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // Mound blocks first — they are the structural siblings a growing mound
+            // Mound blocks first - they are the structural siblings a growing mound
             // should knit with before reaching for registered trail/flora prisms.
             for (int i = 0; i < moundCount && snapMate == null; i++)
             {
@@ -553,7 +553,7 @@ namespace CosmicShore.Gameplay
                 {
                     RotateMate(mate, targetRotation, true);
                     mate.Mate.transform.position = bondSite;
-                    // Steered blocks must keep the spatial index honest — AOE and
+                    // Steered blocks must keep the spatial index honest - AOE and
                     // occupancy both read the stored position, not the transform.
                     if (mate.Mate.Prism) mate.Mate.Prism.NotifyPositionChanged();
                     StopCoroutine(updateCoroutineDict[mate]);

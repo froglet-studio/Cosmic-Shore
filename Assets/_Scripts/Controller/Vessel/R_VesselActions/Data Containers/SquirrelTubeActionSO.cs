@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
     /// prisms</b> straight out in front of the vessel: a long tube of thick danger prisms along the
     /// nose / flight direction so a Squirrel flying straight rockets through the hollow centre and
     /// skims the whole danger wall (10x boost energy per danger skim) while it obstructs everyone
-    /// else — danger prisms slam any vessel body that touches them, friendly fire included (locked
+    /// else - danger prisms slam any vessel body that touches them, friendly fire included (locked
     /// design). No preview; it just places.
     ///
     /// The placement is led by the vessel's speed (<see cref="LeadSeconds"/>) so it appears a fixed
@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     /// same primitive behind the omnicrystal and joust rings): real conserved mass from the dedicated
     /// <b>Boost</b> prism POOL, blooming in (continuity law) with a FULL-SIZE collider from frame 0,
     /// registering with <see cref="PrismSpatialIndex"/>, and only ever removed by an active force
-    /// (skim/ability/fauna) — never a timer. See <c>SQUIRREL_TUBE.md</c>.
+    /// (skim/ability/fauna) - never a timer. See <c>SQUIRREL_TUBE.md</c>.
     /// Everything below is designer-tunable; the <see cref="Radius"/> in particular must be tuned
     /// in-editor so a level-0 Space Skimmer sphere reaches the ring while the vessel body clears it.
     /// </summary>
@@ -45,7 +45,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] private float prismScale = 6f;
 
         [Header("Placement")]
-        [Tooltip("Seconds of travel ahead of the vessel the tube mouth forms — the offset is " +
+        [Tooltip("Seconds of travel ahead of the vessel the tube mouth forms - the offset is " +
                  "speed * leadSeconds, so a faster Squirrel places it further out.")]
         [SerializeField] private float leadSeconds = 1f;
 

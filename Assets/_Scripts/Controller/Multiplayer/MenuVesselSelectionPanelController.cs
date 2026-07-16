@@ -60,21 +60,41 @@ namespace CosmicShore.Gameplay
         void OnEnable()
         {
             _cts = new CancellationTokenSource();
+            TrySubscribeEvents();
+        }
+
+        void Start()
+        {
+            // Deferred-subscription pattern (CLAUDE.md ▸ DI): freestyleEvents is [Inject]ed
+            // AFTER OnEnable on scene load, so the OnEnable attempt silently skipped it —
+            // the panel never auto-closed on freestyle exit.
+            TrySubscribeEvents();
+        }
+
+        void OnDisable()
+        {
+            UnsubscribeEvents();
+            _cts?.Cancel();
+            _cts?.Dispose();
+            _cts = null;
+        }
+
+        void TrySubscribeEvents()
+        {
+            UnsubscribeEvents(); // dedup guard — safe to call from both OnEnable and Start
+
             if (freestyleEvents?.OnMenuStateTransitionStart)
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised += OnMenuStateTransitionStart;
             if (domainSelectionPanel)
                 domainSelectionPanel.OnDomainSelected += OnDomainSelected;
         }
 
-        void OnDisable()
+        void UnsubscribeEvents()
         {
             if (freestyleEvents?.OnMenuStateTransitionStart)
                 freestyleEvents.OnMenuStateTransitionStart.OnRaised -= OnMenuStateTransitionStart;
             if (domainSelectionPanel)
                 domainSelectionPanel.OnDomainSelected -= OnDomainSelected;
-            _cts?.Cancel();
-            _cts?.Dispose();
-            _cts = null;
         }
 
         // ---------------------------------------------------------

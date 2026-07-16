@@ -5,7 +5,7 @@ using CosmicShore.Data;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Resource Collection Tests — Validates the 4-element resource struct.
+    /// Resource Collection Tests - Validates the 4-element resource struct.
     ///
     /// WHY THIS MATTERS:
     /// ResourceCollection is a fundamental data type that holds the four element
@@ -103,7 +103,7 @@ namespace CosmicShore.Tests
         [Test]
         public void Struct_CopySemantics_ModifyingCopyDoesNotAffectOriginal()
         {
-            // Structs are value types — copies should be independent.
+            // Structs are value types - copies should be independent.
             var original = new ResourceCollection(1f, 2f, 3f, 4f);
             var copy = original;
 

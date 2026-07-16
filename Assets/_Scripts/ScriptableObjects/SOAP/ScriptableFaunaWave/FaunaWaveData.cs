@@ -4,7 +4,7 @@ using CosmicShore.Data;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// Payload for one periodic fauna spawn-cycle tick (a "wave") — raised by the
+    /// Payload for one periodic fauna spawn-cycle tick (a "wave") - raised by the
     /// cell's life spawner every fixed BaseFaunaSpawnTime period, per fauna species
     /// loop. Carries the wave's spawn color and whether that color is a genuine
     /// NUCLEUS claim (node control read from environment volume inside the nucleus)
@@ -25,7 +25,7 @@ namespace CosmicShore.ScriptableObjects
 
         /// <summary>
         /// True when <see cref="Domain"/> is a real nucleus claim
-        /// (<c>Cell.TryGetNucleusClaim</c>) — false for fallback spawn colors and
+        /// (<c>Cell.TryGetNucleusClaim</c>) - false for fallback spawn colors and
         /// for cells without a nucleus control zone.
         /// </summary>
         public bool NucleusControlled;

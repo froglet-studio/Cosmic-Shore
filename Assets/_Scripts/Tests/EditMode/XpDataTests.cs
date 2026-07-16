@@ -6,13 +6,13 @@ using CosmicShore.Data;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// XpData Tests — Validates the experience points data structure.
+    /// XpData Tests - Validates the experience points data structure.
     ///
     /// WHY THIS MATTERS:
     /// XpData is the struct that stores per-element XP (Space, Time, Mass, Charge)
     /// for each captain/vessel class. It gets serialized to JSON and sent to PlayFab.
     /// If the struct fields are reordered or the constructor mapping is wrong,
-    /// players will see their XP assigned to the wrong element — a data corruption bug.
+    /// players will see their XP assigned to the wrong element - a data corruption bug.
     /// </summary>
     [TestFixture]
     public class XpDataTests

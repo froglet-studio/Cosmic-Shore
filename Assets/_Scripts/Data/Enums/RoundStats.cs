@@ -208,12 +208,12 @@ namespace CosmicShore.Data
         /// transitions, while its subscribers (HUDs, turn monitors, scoring strategies)
         /// are scene objects. A mid-turn scene exit (pause-menu Main Menu) destroys those
         /// subscribers before their turn-end cleanup ever fires, and their teardown paths
-        /// unsubscribe by iterating GameDataSO.RoundStatsList — which ResetRuntimeData
-        /// already cleared before the old scene unloads — so dead delegates stay attached
+        /// unsubscribe by iterating GameDataSO.RoundStatsList - which ResetRuntimeData
+        /// already cleared before the old scene unloads - so dead delegates stay attached
         /// and fire into destroyed objects throughout the NEXT game. Called from
         /// Player.PrepareForNewScene / InitializeForMultiplayerMode so every scene entry
         /// starts with a clean subscriber list. The NetworkVariable OnValueChanged lambdas
-        /// wired in OnNetworkSpawn are untouched — they re-raise INTO these events.
+        /// wired in OnNetworkSpawn are untouched - they re-raise INTO these events.
         /// See Docs/ScoringSystem/BUGS.md B15.
         /// </summary>
         public void ClearEventSubscriptions()
@@ -284,7 +284,7 @@ namespace CosmicShore.Data
             {
                 if (_domainLocal == value) return;
                 _domainLocal = value;
-                // Local mirror only — Player keeps this in sync on every peer from the authoritative
+                // Local mirror only - Player keeps this in sync on every peer from the authoritative
                 // Player.NetDomain (InitializeForMultiplayerMode + OnNetDomainChanged), so there is no
                 // per-RoundStats NetworkVariable to write. Notify observers (e.g. the in-game HUD) so
                 // they reconcile.

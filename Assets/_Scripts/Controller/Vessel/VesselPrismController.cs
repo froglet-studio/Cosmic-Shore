@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
 
         [Header("Spawner Control")]
         [SerializeField] bool spawnerEnabled = true;
-        bool trailPenUp; // painting pen-up — independent of spawnerEnabled (see SetSpawnerPaused)
+        bool trailPenUp; // painting pen-up - independent of spawnerEnabled (see SetSpawnerPaused)
         float waitTime;
         [SerializeField] float startDelay = 2.1f;
 

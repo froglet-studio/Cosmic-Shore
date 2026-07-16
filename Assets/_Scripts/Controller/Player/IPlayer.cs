@@ -40,7 +40,7 @@ namespace CosmicShore.Gameplay
         /// </summary>
         public bool IsNetworkClient { get; }
         /// <summary>
-        /// The locally-owned, non-AI player — the owner client providing input. Equivalent to
+        /// The locally-owned, non-AI player - the owner client providing input. Equivalent to
         /// <see cref="IsMultiplayerOwner"/>; there is no offline single-player (every session is a
         /// Relay host, solo or party) and AI shares the host's owner id, so it is excluded.
         /// </summary>

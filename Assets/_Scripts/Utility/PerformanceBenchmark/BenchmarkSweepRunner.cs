@@ -170,7 +170,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
             BuildCombinedSummary();
             IsComplete = true;
             IsSweeping = false;
-            CSDebug.Log($"[BenchmarkSweep] Complete — {Results.Count} scene(s) processed.\n{CombinedSummary}");
+            CSDebug.Log($"[BenchmarkSweep] Complete - {Results.Count} scene(s) processed.\n{CombinedSummary}");
         }
 
         // ── Error capture ───────────────────────────────
@@ -216,7 +216,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
         void BuildCombinedSummary()
         {
             var sb = new StringBuilder();
-            sb.AppendLine($"Multi-Scene Sweep '{_sweepTag}' — {Results.Count} scene(s)" +
+            sb.AppendLine($"Multi-Scene Sweep '{_sweepTag}' - {Results.Count} scene(s)" +
                           (_errorsOnly ? " (errors-only)" : ""));
             sb.AppendLine();
 

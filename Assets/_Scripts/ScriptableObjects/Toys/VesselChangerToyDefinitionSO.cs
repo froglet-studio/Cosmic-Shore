@@ -5,7 +5,7 @@ using UnityEngine;
 namespace CosmicShore.ScriptableObjects
 {
     /// <summary>
-    /// Toy that cycles the local player's vessel class on each pass — fly through it to
+    /// Toy that cycles the local player's vessel class on each pass - fly through it to
     /// hop to the next ship. Reuses the existing networked swap pipeline
     /// (<see cref="MenuServerPlayerVesselInitializer.RequestSwap"/>), so the change
     /// replicates to all clients exactly like the vessel-selection panel does.

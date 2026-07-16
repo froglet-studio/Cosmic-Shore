@@ -99,7 +99,7 @@ namespace CosmicShore.Core
         [Inject] FriendsServiceFacade friendsServiceFacade;
         [Inject] NetworkMonitor networkMonitor;
         [Inject] ApplicationStateMachine applicationStateMachine;
-        // Injected so the facade is constructed at bootstrap — it has no other
+        // Injected so the facade is constructed at bootstrap - it has no other
         // injection point until consumers appear, and its event subscriptions
         // (sign-in, game lifecycle, pause/quit) must exist from app start.
         [Inject] AnalyticsServiceFacade analyticsServiceFacade;
@@ -249,7 +249,7 @@ namespace CosmicShore.Core
                 Log($"Loading scene: {targetScene}");
 
                 // Use SceneTransitionManager if available (provides fade transitions).
-                // Skip fadeOut — the splash overlay is already opaque from bootstrap.
+                // Skip fadeOut - the splash overlay is already opaque from bootstrap.
                 if (sceneTransitionManager != null)
                     await sceneTransitionManager.LoadSceneAsync(targetScene, fadeOut: false);
                 else
@@ -302,7 +302,7 @@ namespace CosmicShore.Core
         /// <summary>
         /// Best-effort early resolution of manager references from the scene.
         /// Finds unassigned managers via FindAnyObjectByType and marks them
-        /// DontDestroyOnLoad. Does not warn on missing managers — the lazy
+        /// DontDestroyOnLoad. Does not warn on missing managers - the lazy
         /// DI factory handles that at injection time.
         /// </summary>
         void TryResolveManagersEarly()
@@ -430,7 +430,7 @@ namespace CosmicShore.Core
                 resolution: Resolution.Lazy
             );
 
-            // Tournament brain — persistent across the per-game Single loads. Capture the
+            // Tournament brain - persistent across the per-game Single loads. Capture the
             // serialized fields directly (like ApplicationStateMachine above) rather than
             // c.Resolve, so an un-wired tournamentData degrades to an inert controller instead
             // of throwing at bootstrap.
@@ -441,10 +441,10 @@ namespace CosmicShore.Core
             );
 
             // ── Party system services ────────────────────────────────────────
-            // Pure C# — registered as lazy singletons.
+            // Pure C# - registered as lazy singletons.
             // Concrete types for fields declared as concrete; interface types
             // for fields declared as interface (see HostConnectionService).
-            // Registration order does not matter — all factories are lazy and
+            // Registration order does not matter - all factories are lazy and
             // resolve their own deps from the container on first injection.
 
             builder.RegisterFactory(
@@ -515,7 +515,7 @@ namespace CosmicShore.Core
                 builder.RegisterValue(asset);
                 return;
             }
-            Debug.LogError($"[AppManager] {fieldName} ScriptableObject asset is not assigned — DI registration skipped.");
+            Debug.LogError($"[AppManager] {fieldName} ScriptableObject asset is not assigned - DI registration skipped.");
         }
 
         /// <summary>
@@ -549,7 +549,7 @@ namespace CosmicShore.Core
                         return found;
                     }
 
-                    Debug.LogError($"[AppManager] {typeof(T).Name} not found at injection time — DI resolution failed.");
+                    Debug.LogError($"[AppManager] {typeof(T).Name} not found at injection time - DI resolution failed.");
                     return null;
                 },
                 lifetime: Lifetime.Singleton,
@@ -579,7 +579,7 @@ namespace CosmicShore.Core
         {
             if (!gameData)
             {
-                Debug.LogError("[AppManager] gameData is not assigned — cannot configure game data.");
+                Debug.LogError("[AppManager] gameData is not assigned - cannot configure game data.");
                 return;
             }
 

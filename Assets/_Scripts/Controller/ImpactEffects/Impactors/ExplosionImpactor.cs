@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
 
         public override Domains OwnDomain => explosion.Domain;
 
-        // Batch AOE processing — bypasses Physics for prisms entirely
+        // Batch AOE processing - bypasses Physics for prisms entirely
         private bool _useBatchProcessing;
         private static int _trailBlockLayer = -1;
         private HashSet<int> _batchHitTracker;
@@ -27,7 +27,7 @@ namespace CosmicShore.Gameplay
         public bool IsBatchProcessing => _useBatchProcessing;
 
         /// <summary>
-        /// When true, BeginBatchProcessing() is a no-op — forces Physics OnTriggerEnter
+        /// When true, BeginBatchProcessing() is a no-op - forces Physics OnTriggerEnter
         /// for all collisions. Used by AOEBenchmarkOverlay for A/B comparison.
         /// </summary>
         public static bool ForceLegacyPhysics { get; set; }
@@ -57,7 +57,7 @@ namespace CosmicShore.Gameplay
             if (registry == null || !registry.IsAvailable)
             {
 #if DEVELOPMENT_BUILD || UNITY_EDITOR
-                Debug.LogWarning("[ExplosionImpactor] PrismSpatialIndex unavailable — falling back to Physics triggers");
+                Debug.LogWarning("[ExplosionImpactor] PrismSpatialIndex unavailable - falling back to Physics triggers");
 #endif
                 return;
             }
@@ -99,14 +99,14 @@ namespace CosmicShore.Gameplay
         public void EndBatchProcessing()
         {
             _useBatchProcessing = false;
-            // Keep HashSet allocated for reuse — just clear on next BeginBatchProcessing
+            // Keep HashSet allocated for reuse - just clear on next BeginBatchProcessing
         }
 
         protected override void OnTriggerEnter(Collider other)
         {
             using (s_onTriggerEnter.Auto())
             {
-                // Skip prisms entirely — they're handled by batch AOE processing
+                // Skip prisms entirely - they're handled by batch AOE processing
                 if (_useBatchProcessing && other.gameObject.layer == _trailBlockLayer)
                 {
                     s_onTriggerSkipped.Begin();

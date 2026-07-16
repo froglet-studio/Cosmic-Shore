@@ -8,7 +8,7 @@ namespace CosmicShore.UI
 {
     /// <summary>
     /// Individual toast item view. Sets text, fades in/out, supports swipe-to-dismiss.
-    /// Never modifies its own anchors, pivot, size, or position — layout is owned by the container.
+    /// Never modifies its own anchors, pivot, size, or position - layout is owned by the container.
     /// </summary>
     [RequireComponent(typeof(CanvasGroup))]
     public sealed class ToastNotificationItem : MonoBehaviour,
@@ -61,11 +61,11 @@ namespace CosmicShore.UI
             _activeSeq.AppendCallback(AutoDismiss);
         }
 
-        // Legacy overload kept for compatibility — ignores position parameter.
+        // Legacy overload kept for compatibility - ignores position parameter.
         public void Show(string message, Vector2 _, ToastNotificationSettingsSO settings)
             => Show(message, settings);
 
-        // Legacy — no-op, layout handles positioning.
+        // Legacy - no-op, layout handles positioning.
         public void AnimateToY(float _) { }
 
         #region Dismiss

@@ -4,7 +4,7 @@ namespace CosmicShore.Utility
 {
     /// <summary>
     /// Immutable snapshot of benchmark progress/results broadcast via SOAP events.
-    /// Lightweight payload — carries the key summary, not raw frame data.
+    /// Lightweight payload - carries the key summary, not raw frame data.
     /// </summary>
     [System.Serializable]
     public struct BenchmarkStateData

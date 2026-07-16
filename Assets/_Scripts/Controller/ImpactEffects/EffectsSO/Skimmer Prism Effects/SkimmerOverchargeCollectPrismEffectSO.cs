@@ -31,6 +31,29 @@ namespace CosmicShore.Gameplay
         private static readonly Dictionary<SkimmerImpactor, HashSet<PrismImpactor>> hitsBySkimmer = new();
         private static readonly Dictionary<SkimmerImpactor, float> cooldownTimers   = new();
         private static readonly HashSet<SkimmerImpactor> readySet                  = new();
+        private static readonly List<SkimmerImpactor> _pruneScratch = new();
+
+        // The state above is static (keyed by SkimmerImpactor) and lives for the SO asset's
+        // process lifetime, so destroyed impactors (scene unload / vessel despawn) would linger
+        // forever and carry overcharge state across scenes. Drop Unity-destroyed keys whenever a
+        // new skimmer first appears — bounds the leak without needing a turn-end event wired in
+        // the asset.
+        private static void PruneDestroyed()
+        {
+            _pruneScratch.Clear();
+            foreach (var key in hitsBySkimmer.Keys) if (!key) _pruneScratch.Add(key);
+            foreach (var key in cooldownTimers.Keys) if (!key) _pruneScratch.Add(key);
+            foreach (var key in readySet)            if (!key) _pruneScratch.Add(key);
+
+            for (int i = 0; i < _pruneScratch.Count; i++)
+            {
+                var key = _pruneScratch[i];
+                hitsBySkimmer.Remove(key);
+                cooldownTimers.Remove(key);
+                readySet.Remove(key);
+            }
+            _pruneScratch.Clear();
+        }
 
         public override void Execute(SkimmerImpactor impactor, PrismImpactor prismImpactee)
         {
@@ -57,6 +80,7 @@ namespace CosmicShore.Gameplay
             // Collect unique hits
             if (!hitsBySkimmer.TryGetValue(impactor, out var hitSet))
             {
+                PruneDestroyed();
                 hitSet = new HashSet<PrismImpactor>();
                 hitsBySkimmer[impactor] = hitSet;
             }
@@ -70,11 +94,15 @@ namespace CosmicShore.Gameplay
                     rend, overchargedMaterial, materialBlendDuration, appendOverchargedMaterial);
             }
 
-            var rawCount = hitSet.Count;
-            var clamped  = Mathf.Min(rawCount, maxBlockHits);
-            OnCountChanged?.Invoke(impactor, clamped, maxBlockHits);
+            // Element → parameter (Mass → harvest capacity). Anchored at base at resting level;
+            // a high Mass element lets the ray collect more opposing prisms before it detonates.
+            int effectiveMax = EffectiveMaxFor(impactor);
 
-            if (rawCount >= maxBlockHits)
+            var rawCount = hitSet.Count;
+            var clamped  = Mathf.Min(rawCount, effectiveMax);
+            OnCountChanged?.Invoke(impactor, clamped, effectiveMax);
+
+            if (rawCount >= effectiveMax)
             {
                 readySet.Add(impactor);
                 OnReadyToOvercharge?.Invoke(impactor);
@@ -102,7 +130,18 @@ namespace CosmicShore.Gameplay
             readySet.Remove(impactor);
             cooldownTimers[impactor] = Time.time + cooldownDuration;
             OnCooldownStarted?.Invoke(impactor, cooldownDuration);
-            OnCountChanged?.Invoke(impactor, 0, maxBlockHits); // reset UI counter
+            // Reset against the SAME Mass-scaled capacity used while filling, so the HUD "/ max"
+            // denominator doesn't jump between the scaled cap and the base cap.
+            OnCountChanged?.Invoke(impactor, 0, EffectiveMaxFor(impactor)); // reset UI counter
+        }
+
+        // Mass → harvest capacity, read per-vessel from the skimmer's own ResourceSystem.
+        // Anchored at maxBlockHits at the resting level (Mass == 0).
+        private int EffectiveMaxFor(SkimmerImpactor impactor)
+        {
+            var status = impactor ? impactor.Skimmer?.VesselStatus : null;
+            return Mathf.Max(1, Mathf.RoundToInt(
+                maxBlockHits * (status?.ElementalAbilityHandler.Multiplier(Element.Mass) ?? 1f)));
         }
         
         private void TriggerOvercharge(SkimmerImpactor impactor, HashSet<PrismImpactor> hitSet)
@@ -117,7 +156,10 @@ namespace CosmicShore.Gameplay
         {
             var shipPos = status.ShipTransform.position;
             var dir = shipPos - prism.transform.position;
-            var damage = dir * explosionSpeed; //TODO: use mult
+            // Element → parameter (Charge → detonation blast strength). Anchored at 1x at resting
+            // level; a charged-up reaper ray flings the harvested mass harder.
+            float chargeMul = status?.ElementalAbilityHandler.Multiplier(Element.Charge) ?? 1f;
+            var damage = dir * (explosionSpeed * chargeMul);
             if (Physics.Raycast(prism.transform.position, dir, out var hitInfo, dir.magnitude, LayerMask.GetMask("TrailBlocks")))
             {
                 Prism hitPrism;

@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
     /// <see cref="ClientPlayerVesselInitializer.ReplaceVesselForPlayer_ClientRpc"/>.
     ///
     /// Game data configuration (vessel class, player count, intensity) is handled
-    /// by <see cref="Core.MainMenuController"/> — this class only handles the
+    /// by <see cref="Core.MainMenuController"/> - this class only handles the
     /// network spawn chain, autopilot activation, and vessel swap.
     ///
     /// Listens to <see cref="GameDataSO.OnPlayerNetworkSpawnedUlong"/> via the base class,
@@ -31,7 +31,7 @@ namespace CosmicShore.Gameplay
                  "so the autopilot renders green and the cell's flora/fauna react to a " +
                  "consistent domain. Server-write only: replicates to all peers via " +
                  "Player.NetDomain → OnNetDomainChanged (mirrors + full repaint). This is " +
-                 "the ONLY menu domain reset — client code must never write domain locally.")]
+                 "the ONLY menu domain reset - client code must never write domain locally.")]
         [SerializeField] Domains menuVesselDomain = Domains.Jade;
 
         bool _isSwapping;
@@ -68,7 +68,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Menu override: reset the player's domain to the menu domain BEFORE the base
         /// spawns + paints the vessel, then activate autopilot after.
-        /// Server-authoritative — the ONLY menu domain reset. Runs on every menu entry
+        /// Server-authoritative - the ONLY menu domain reset. Runs on every menu entry
         /// path (fresh start, party join, host-return from a game) and applies identically
         /// to the solo host and to party members: there is no separate single-player path.
         /// Writing before base means the vessel paints the menu domain at init; if the
@@ -163,7 +163,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            // Inherit the outgoing ship's velocity so the swap is seamless — the new vessel
+            // Inherit the outgoing ship's velocity so the swap is seamless - the new vessel
             // continues at the same speed instead of the post-init dead stop (position + orientation
             // are inherited via SetPose below). Captured before despawn while the old vessel is valid.
             float snapshotSpeed = oldVessel.VesselStatus.Speed;

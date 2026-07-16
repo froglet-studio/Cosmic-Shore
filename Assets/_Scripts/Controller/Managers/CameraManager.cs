@@ -63,7 +63,7 @@ namespace CosmicShore.Gameplay
 
             // Keep FOV + post-process AA on the managed cameras in sync with the settings panel,
             // live. The cameras are children of this manager (not spawned with the vessel), so this
-            // is the spawn-proof place to apply — no per-camera scene reference needed.
+            // is the spawn-proof place to apply - no per-camera scene reference needed.
             DisplayGraphicsSettings.OnFieldOfViewChanged += HandleCameraGraphicsChanged;
             DisplayGraphicsSettings.OnAnySettingChanged += HandleCameraGraphicsChanged;
         }
@@ -152,7 +152,7 @@ namespace CosmicShore.Gameplay
             _deathCamera?.SetFollowTarget(_playerFollowTarget);
 
             SetCloseCameraActive();
-            // Use the camera we just activated directly — Camera.main can return null in the
+            // Use the camera we just activated directly - Camera.main can return null in the
             // first frame after a scene transition because the tag-based lookup hasn't
             // observed the newly-activated GameObject yet.
             var activeCam = (_playerCamera as CustomCameraController)?.Camera;

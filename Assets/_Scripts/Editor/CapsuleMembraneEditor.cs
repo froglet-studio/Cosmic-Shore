@@ -33,7 +33,7 @@ namespace CosmicShore.Editor
 
             if (Application.isPlaying)
                 EditorGUILayout.HelpBox(
-                    "Bake while not in Play Mode — the result is picked up on the next play.",
+                    "Bake while not in Play Mode - the result is picked up on the next play.",
                     MessageType.None);
         }
 
@@ -62,14 +62,14 @@ namespace CosmicShore.Editor
             if (!preset.Signature.Matches(membrane.CurrentSignature))
             {
                 EditorGUILayout.HelpBox(
-                    "Baked preset is STALE — membrane settings changed since the last bake. " +
+                    "Baked preset is STALE - membrane settings changed since the last bake. " +
                     "The membrane falls back to per-frame computation until you re-bake.",
                     MessageType.Warning);
                 return;
             }
 
             EditorGUILayout.HelpBox(
-                $"Preset up to date — {preset.FrameCount} frames × {preset.CapsuleCount} capsules, " +
+                $"Preset up to date - {preset.FrameCount} frames × {preset.CapsuleCount} capsules, " +
                 $"{preset.LoopDuration:0.#}s loop. Membrane plays back cheaply.",
                 MessageType.Info);
         }

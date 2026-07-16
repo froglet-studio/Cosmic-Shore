@@ -53,7 +53,6 @@ cloud-sync (a phone and a PC must not share a resolution). They live in `Display
 | Accessibility store | `_Scripts/Controller/Settings/AccessibilitySettings.cs` |
 | Benchmark scene launcher (Settings button) | `_Scripts/Controller/Settings/BenchmarkSceneLauncher.cs` |
 | Endless sandbox controller | `_Scripts/Controller/Arcade/SandboxBenchmarkController.cs` |
-| Create-scene editor tool | `_Scripts/Editor/CreateBenchmarkSceneTool.cs` |
 | Settings panel controller (binds canvas → backend) | `_Scripts/UI/Modals/GameSettingsPanelController.cs` |
 | Tab navigation (content + underline + scale) | `_Scripts/UI/Modals/SettingsTabBar.cs` |
 | In-scene benchmark HUD controller | `_Scripts/UI/BenchmarkSceneHud.cs` |

@@ -8,7 +8,7 @@ namespace CosmicShore.Editor
 {
     /// <summary>
     /// Before a build, when <see cref="EndConditionOverridesSO.autoRestoreBuildValuesBeforeBuild"/>
-    /// is on, copies the Build baseline onto the Live end-game counts and saves the asset — so a
+    /// is on, copies the Build baseline onto the Live end-game counts and saves the asset - so a
     /// test configuration is never shipped. No warning, no block: it just restores. Turn the toggle
     /// off in Tools &gt; Cosmic Shore &gt; End Game Conditions to build with the current Live values.
     /// See the <c>/EndGameConditions</c> skill.

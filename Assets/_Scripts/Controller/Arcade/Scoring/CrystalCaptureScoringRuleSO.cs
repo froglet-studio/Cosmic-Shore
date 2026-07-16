@@ -9,8 +9,8 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Crystal Capture: points (not golf). Shares <c>NetworkCrystalCollisionTurnMonitor</c> with
     /// HexRace, so the turn ends when an active domain's summed crystals reach the target; the
-    /// winning domain is the highest crystal sum. Each player's score IS their crystal count —
-    /// higher is better — and there is no secondary stat line.
+    /// winning domain is the highest crystal sum. Each player's score IS their crystal count -
+    /// higher is better - and there is no secondary stat line.
     /// </summary>
     [CreateAssetMenu(menuName = "ScriptableObjects/Scoring Rules/CrystalCapture", fileName = "CrystalCaptureScoringRule")]
     public class CrystalCaptureScoringRuleSO : ScoringRuleSO

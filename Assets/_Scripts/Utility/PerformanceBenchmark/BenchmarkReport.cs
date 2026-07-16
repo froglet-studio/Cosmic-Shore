@@ -11,7 +11,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// </summary>
     public enum ReportOrigin { Editor = 0, DevBuild = 1 }
 
-    /// <summary>Where a run came from — so cross-source runs aren't silently compared.</summary>
+    /// <summary>Where a run came from - so cross-source runs aren't silently compared.</summary>
     [Serializable]
     public class SourceInfo
     {

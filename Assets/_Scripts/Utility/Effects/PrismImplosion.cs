@@ -29,7 +29,7 @@ namespace CosmicShore.Utility
         private static readonly int ConvergencePointID = Shader.PropertyToID("_Location");
 
         // The live convergence target (the consuming fauna / vessel). The suction sink
-        // FOLLOWS this transform as it keeps moving — a fauna swims a long way during the
+        // FOLLOWS this transform as it keeps moving - a fauna swims a long way during the
         // ~2s implosion, so a position snapshotted at consumption time would suck the
         // prisms toward where the creature WAS, not where it is. Refreshed each frame by
         // PrismEffectsManager via RefreshConvergence(). Held as a reference (not copied to
@@ -50,7 +50,7 @@ namespace CosmicShore.Utility
 
         // --- Instanced rendering (Entities Graphics companion entity) -----------
         // Companion entity carrying _State/_Location overrides draws in the
-        // renderer's place — swarm-eat implosion storms batch instead of issuing
+        // renderer's place - swarm-eat implosion storms batch instead of issuing
         // one draw + SetPass each.
         internal PrismRenderHandle RenderHandle;
         MeshFilter _meshFilter;
@@ -74,7 +74,7 @@ namespace CosmicShore.Utility
                 PrismRenderOverrideSet.Implosion);
         }
 
-        /// <summary>Team colors from PrismFactory.ConfigureForTeam — stored and
+        /// <summary>Team colors from PrismFactory.ConfigureForTeam - stored and
         /// applied at StartImplosion/StartGrow to whichever render path is active.</summary>
         public void SetTeamColors(Color bright, Color dark)
         {
@@ -140,7 +140,7 @@ namespace CosmicShore.Utility
             mpb = new MaterialPropertyBlock();
         }
 
-        // Enabled-instance registry for PrismEffectsManager's zombie audit — replaces the
+        // Enabled-instance registry for PrismEffectsManager's zombie audit - replaces the
         // periodic FindObjectsByType full-scene scans (a recurring dev-build profiler spike).
         internal static readonly List<PrismImplosion> EnabledInstances = new();
 
@@ -160,7 +160,7 @@ namespace CosmicShore.Utility
         {
             EnabledInstances.Remove(this);
 
-            // Pool return / scene teardown may bypass CompleteEffect — never carry a target
+            // Pool return / scene teardown may bypass CompleteEffect - never carry a target
             // reference (possibly a destroyed transform) across pool reuse.
             _convergenceTransform = null;
 
@@ -285,7 +285,7 @@ namespace CosmicShore.Utility
         /// Re-read the convergence point from the live target transform. Called once per
         /// frame by PrismEffectsManager before it samples TargetPosition into the job, so
         /// the suction sink tracks the still-moving fauna. One Transform.position read per
-        /// active implosion — the per-frame _Location write to the shader already happens
+        /// active implosion - the per-frame _Location write to the shader already happens
         /// unconditionally, so this is the only marginal cost of following the target.
         /// Fake-null safe: a target destroyed mid-suction leaves TargetPosition at its last
         /// known value.
@@ -355,7 +355,7 @@ namespace CosmicShore.Utility
             // longer than 2x the configured duration. We deliberately do NOT gate on
             // IsActive because the dominant failure mode is an instance whose IsActive
             // was cleared by OnDisable but whose GameObject was reactivated through
-            // the pool without StartImplosion ever running again — those leak past
+            // the pool without StartImplosion ever running again - those leak past
             // an IsActive-only check. Tracking via Time.time (set in OnEnable as a
             // backstop, refreshed in StartImplosion / StartGrow) is the only signal
             // that survives all the state-reset failure modes.

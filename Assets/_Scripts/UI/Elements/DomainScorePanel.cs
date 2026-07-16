@@ -33,7 +33,7 @@ namespace CosmicShore.UI
         [Header("Avatars")]
         [Tooltip("Container the small per-player avatars are parented under (HorizontalLayoutGroup expected).")]
         [SerializeField] private Transform avatarContainer;
-        [Tooltip("Prefab cloned once per teammate. A PlayerScoreEntry works (name + avatar) — its score field is left empty.")]
+        [Tooltip("Prefab cloned once per teammate. A PlayerScoreEntry works (name + avatar) - its score field is left empty.")]
         [SerializeField] private PlayerScoreEntry avatarEntryPrefab;
 
         [Header("Animation (optional)")]
@@ -84,7 +84,7 @@ namespace CosmicShore.UI
 
             if (colorSet == null)
             {
-                // Theme palette unavailable — fall back to neutral white sum and hide the accent.
+                // Theme palette unavailable - fall back to neutral white sum and hide the accent.
                 SumAnimator.SetImmediate(initialSum);
                 if (domainIndicatorImage) domainIndicatorImage.gameObject.SetActive(true);
                 if (accentImage) accentImage.gameObject.SetActive(false);
