@@ -304,6 +304,12 @@ namespace CosmicShore.UI
             bool canKick = status == OnlineInfoEntry.Status.InYourParty &&
                            connectionData != null && connectionData.IsPartyHost;
 
+            // A full LOCAL party can't take another member - render every remote
+            // row non-invitable instead of letting the send fail at the service.
+            // Re-evaluated on every party-member change (HandlePartyMemberChanged
+            // repopulates the section), so rows free up when someone leaves.
+            bool localPartyFull = connectionData != null && !connectionData.HasOpenSlots;
+
             entry.Populate(
                 player.PlayerId,
                 player.DisplayName,
@@ -312,7 +318,7 @@ namespace CosmicShore.UI
                 memberCount,
                 maxSlots,
                 matchName,
-                onInvite: OnInviteClicked,
+                onInvite: localPartyFull ? null : OnInviteClicked,
                 onCancel: OnCancelInviteClicked,
                 onKick: canKick ? OnKickMemberClicked : null);
 

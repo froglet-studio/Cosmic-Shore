@@ -37,11 +37,20 @@ Sender opens the friends/online list and clicks a player row (whole row = invite
   ├─ ArcadeLobbyList empty-slot "+" → FriendsListPanel.Show() (Online + Requests sections)
   ├─ OnlineInfoEntry row click → FriendsListPanel.OnInviteClicked(playerId)
   └─ HostConnectionService.SendInviteAsync(targetPlayerId)
-      ├─ EnsurePartySessionAsync() — idempotent; the Relay party session already
-      │   exists under the eager "Always-InParty" model (created on menu entry),
-      │   so this fast-paths rather than creating one on first invite
+      ├─ Refuses when the local party is full (no open slots) — throws so the
+      │   optimistic "PENDING REQUEST" row resets; rows also render
+      │   non-invitable while the LOCAL party is full
+      ├─ EnsurePartySessionAsync() — only when ActiveSession is null AND the
+      │   sender is not a guest in someone else's party (a guest with a null
+      │   session is broken state → abort, never self-eject); under the eager
+      │   "Always-InParty" model the session already exists, so this is a
+      │   startup-race fallback only
       ├─ Writes invite_payloads on the sender's OWN presence-lobby player property
-      │   (one line per target: targetId|hostId|sessionId|hostName|avatarId)
+      │   (one line per target: targetId|senderId|sessionId|senderName|senderAvatarId).
+      │   senderId is the SENDER, not necessarily the party host — a party MEMBER
+      │   can invite too; sessionId is always the sender's CURRENT party session,
+      │   so a member's invite lands the acceptor in the member's party
+      │   (invite chain — INVITE_ENHANCEMENTS.md Task 4)
       └─ OnInviteSent SOAP event; the row shows "PENDING REQUEST" + pulse
 
 Recipient's refresh loop detects invite

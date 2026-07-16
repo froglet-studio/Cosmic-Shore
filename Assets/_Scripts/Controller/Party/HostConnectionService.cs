@@ -327,7 +327,45 @@ namespace CosmicShore.Gameplay
             }
 
             authenticationDataVariable.Value.OnSignedIn.OnRaised += HandleSignedInEvent;
+
+            // State-preserving lobby rejoin (B4): every lobby (re)join - initial,
+            // reconnect, and the periodic converge migration - publishes the LIVE
+            // stateful property values instead of wiping them to empty. HCS stays
+            // the single writer of these values; the lobby service only carries
+            // them across the rejoin.
+            _lobbyService.LivePropertySource = BuildLivePresenceProperties;
+
             HandleSignedInEvent();
+        }
+
+        /// <summary>
+        /// Live values for the stateful presence-lobby player properties, used by
+        /// the lobby service when (re)joining a lobby so migration/reconnect
+        /// preserves state instead of resetting it (Docs/PresenceSystem/BUGS.md B4):
+        /// outgoing invite lines (a member's pending invite survives a converge
+        /// migration), a guest's joined_party advertisement (the host's admit scan
+        /// doesn't lose them mid-migration), and the current match name. The
+        /// accepted_invite signal is deliberately NOT preserved - it is a fast-path
+        /// hint the inviter also gets from the session member sync, and carrying it
+        /// across rejoins would make stale signals permanent.
+        /// </summary>
+        private IReadOnlyDictionary<string, string> BuildLivePresenceProperties()
+        {
+            var live = new Dictionary<string, string>();
+
+            string inviteLines = _inviteService?.SerializeAll();
+            if (!string.IsNullOrEmpty(inviteLines))
+                live[INVITE_PAYLOADS_KEY] = inviteLines;
+
+            if (!connectionData.IsPartyHost &&
+                _partySessionService?.ActiveSession?.Id is { Length: > 0 } joinedSessionId)
+                live[JOINED_PARTY_KEY] = joinedSessionId;
+
+            string matchName = ResolveCurrentMatchName();
+            if (!string.IsNullOrEmpty(matchName))
+                live[MATCH_NAME_KEY] = matchName;
+
+            return live;
         }
 
         void Update()
@@ -495,6 +533,18 @@ namespace CosmicShore.Gameplay
                 throw new InvalidOperationException("Presence lobby unavailable.");
             }
 
+            // Capacity guard: a full party can't take another member - refuse
+            // before any network write instead of letting the acceptor discover
+            // it as a JoinByIdAsync failure + bounce. Throwing (not returning)
+            // lets the UI catch reset the optimistic "PENDING REQUEST" row.
+            if (!connectionData.HasOpenSlots)
+            {
+                DebugExtensions.LogErrorColored(
+                    $"[INVITE-SEND] ABORT - party is full " +
+                    $"({connectionData.PartyMembers?.Count ?? 0}/{connectionData.MaxPartySlots})", Color.red);
+                throw new InvalidOperationException("Party is full.");
+            }
+
             // Idempotent re-click: just refresh the timeout, no network roundtrip.
             if (_inviteService.Contains(targetPlayerId))
             {
@@ -511,6 +561,24 @@ namespace CosmicShore.Gameplay
             // serialises concurrent callers via the mutex, and post-checks again.
             if (_partySessionService.ActiveSession == null)
             {
+                // Role-aware guard (invite chain): a GUEST with a null session
+                // ref is broken party state. EnsurePartySessionAsync on a guest
+                // is guest-destructive - its IsHostingParty fast-path requires
+                // nm.IsServer, so it would shut down the NM client connection,
+                // mint a solo Relay session, flip IsPartyHost, and stamp this
+                // invite with the WRONG session id - silently ejecting the
+                // sender from the party they're in. Recovery of broken guest
+                // state belongs to the refresh watchdog / bounce paths, not a
+                // send. See Docs/PartySystem/INVITE_ENHANCEMENTS.md Task 4 (2a).
+                if (!connectionData.IsPartyHost && connectionData.RemotePartyMemberCount > 0)
+                {
+                    DebugExtensions.LogErrorColored(
+                        "[INVITE-SEND] ABORT - guest has no ActiveSession (broken party state); " +
+                        "refusing to self-eject via EnsurePartySessionAsync", Color.red);
+                    CSDebug.Log($"[INVITE-SEND] NetDiag: {NetworkDiagnostics.GetSnapshot()}");
+                    throw new InvalidOperationException("Party session unavailable.");
+                }
+
                 DebugExtensions.LogColored(
                     "[INVITE-SEND] Relay session not yet ready - awaiting EnsurePartySessionAsync...",
                     Color.yellow);
@@ -528,10 +596,15 @@ namespace CosmicShore.Gameplay
 
                 // The Relay session was created at startup (or just above).
                 // Use the real session ID directly - no PENDING placeholder.
+                // NOTE (invite chain): for a party MEMBER this is the session
+                // they are IN - i.e. the actual host's session - so a member's
+                // invite lands the acceptor in the member's current party.
+                // Throw (not return) so the UI catch resets the optimistic
+                // pending row instead of leaving it stuck until the timeout.
                 if (_partySessionService.ActiveSession?.Id is not { Length: > 0 } sessionId)
                 {
                     Debug.LogError("[INVITE-SEND] ABORT - party session creation failed; cannot send invite.");
-                    return;
+                    throw new InvalidOperationException("Party session unavailable.");
                 }
 
                 DebugExtensions.LogColored(
@@ -1009,16 +1082,15 @@ namespace CosmicShore.Gameplay
                 // mutex (held for this refresh cycle) so the rejoin can't race a
                 // concurrent lobby write.
                 //
-                // Paused while an invite is outstanding or a party has formed:
-                // rejoining a lobby re-publishes player properties (which resets
-                // invite_payloads / accepted_invite to empty), so migrating mid-
-                // handshake could drop an in-flight invite.  Convergence only needs
-                // to run during the free-discovery phase before any invite is sent;
-                // it resumes (and heals any later split) once the flow is idle again.
-                bool inActiveInviteOrParty =
-                    _inviteService.OutgoingCount > 0 ||
-                    (connectionData.PartyMembers != null && connectionData.PartyMembers.Count > 1);
-                if (Time.unscaledTime >= _nextConvergeAllowed && !inActiveInviteOrParty)
+                // Runs even while an invite is outstanding or a party has formed:
+                // the rejoin is state-preserving (BuildLivePresenceProperties via
+                // LivePropertySource re-publishes invite_payloads / joined_party /
+                // matchName), so migrating mid-handshake no longer drops in-flight
+                // invites. The old pause froze lobby splits exactly when a 3rd
+                // player was being invited into an existing party - the B4 failure
+                // (invite never delivered, partied rows vanish). See
+                // Docs/PresenceSystem/BUGS.md B4 and INVITE_ENHANCEMENTS.md Task 4.
+                if (Time.unscaledTime >= _nextConvergeAllowed)
                 {
                     _nextConvergeAllowed = Time.unscaledTime + PRESENCE_CONVERGE_INTERVAL_SECONDS;
                     await _lobbyService.ConvergeToCanonicalAsync(presenceLobbyMaxPlayers);

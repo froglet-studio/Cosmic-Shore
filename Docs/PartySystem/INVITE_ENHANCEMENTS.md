@@ -17,7 +17,7 @@ Status legend: 🔴 not started · 🟡 in progress · 🟢 done · ⚪ deferred
 | 1 | Disable inviting a player already in my party — **decided: disable + relabel** ("IN YOUR PARTY") | Party UI | 🟢 code done · verify |
 | 2 | Make pending-invite / in-lobby status **responsive & live** (foreground/background poll, jitter, optimistic UI; push as the deep option) | Presence | 🔴 ready to plan |
 | 3 | Party-merge on accept (a **host** who accepts brings its whole party; a **member** moves alone) | Party (Netcode + presence) | ⛔ discuss-only |
-| 4 | **Invite chain** — a party **member**'s invite lands the acceptor in the member's *current* party (B in A's party invites C → C joins **A's** session) | Party (presence + Netcode) | 🟡 investigated · planned below |
+| 4 | **Invite chain** — a party **member**'s invite lands the acceptor in the member's *current* party (B in A's party invites C → C joins **A's** session) | Party (presence + Netcode) | 🟡 code done (Phases 2-3) · MPPM verify pending |
 
 **Suggested order: 0/1 → 4 → 2 → 3.** Task 0 (popup) is standalone UI infra and
 Task 1 is a small self-contained UI guard — either can go first (Task 0 also
@@ -638,6 +638,8 @@ per the verdict). Log findings in the matching BUGS.md entry; the chain repro
 becomes that bug's acceptance vehicle.
 
 **Phase 2 — Make the chain deliberate (small, inside the locked design).**
+✅ 2a/2b/2c shipped 2026-07-16 (2d deferred per decisions below); in-editor
+verify pending.
 - **2a. Guest-safe send guard.** In `SendInviteAsync`, make the defensive
   `ActiveSession == null → EnsurePartySessionAsync` role-aware: when
   `!connectionData.IsPartyHost`, abort the send with a NetDiag-classified
@@ -677,6 +679,12 @@ becomes that bug's acceptance vehicle.
 commits per their BUGS.md entries (B5 is also the ROADMAP "prove 3-4-player
 reliability" item). Task 4 is **gated** on whichever blocker Phase 1
 implicates — same gating pattern as Task 3.
+✅ Shipped 2026-07-16 per owner direction (Phase 1 MPPM classification was
+skipped in favor of fixing both suspects): **B4** — state-preserving lobby
+rejoin + convergence pause removed (see `../PresenceSystem/BUGS.md` B4 fix
+note); **B5** — premature batch-complete race in
+`ClientPlayerVesselInitializer.ProcessPendingPairs` fixed (see `BUGS.md` B5
+code-audit note). Both need the MPPM retests listed in their bug entries.
 
 **Phase 4 — Tests + docs.**
 - New S-series (in `TESTS.md`): **S10 invite-chain happy path** — VP1←VP2
@@ -692,15 +700,25 @@ implicates — same gating pattern as Task 3.
   session" note; `UI.md` wire-format wording fixed per 2c; this table's
   status updated.
 
-### Open questions (owner sign-off)
+### Decisions (owner, 2026-07-16)
 
-1. **Popup copy:** keep "B invited you" (sender identity — current behavior)
-   or extend the payload so it reads "B invited you to A's party"?
-   (Recommend: keep; defer the wire change.)
-2. **Role gating:** should member-sent invites ever become a host-grantable
-   permission? (Assume no — current ask is that members invite freely; any
-   future gate belongs in `SendInviteAsync`, the UI is ungated by design.)
-3. **2d now or later** (with the per-host `OnInviteResolved` rework)?
+1. **Popup copy: DECIDED — keep "B invited you"** (sender identity, current
+   behavior). The "B invited you to A's party" payload extension is
+   **deferred**; not needed.
+2. **B4: DECIDED — allow lobby convergence.** Implemented as a
+   **state-preserving rejoin**: `BuildLocalPlayerProperties` seeds
+   `invite_payloads` / `joined_party` / `accepted_invite` / `matchName` from
+   live state (HCS-supplied provider) instead of empty, then the
+   `inActiveInviteOrParty` convergence pause is removed — a frozen
+   presence-lobby split now self-heals even while partied, and in-flight
+   invites survive the migration. (A naive unpause without preservation would
+   re-wipe in-flight invites — the drop the pause was protecting against.)
+3. **B5: DECIDED — fix the join** so the second joiner reliably joins the
+   host's session (C lands in A's party). The bounce-to-solo fallback stays
+   as the failure path, not the outcome.
+4. **Role gating:** not pursued — members invite freely by design.
+5. **2d (same-party invite dedup):** deferred to the per-host
+   `OnInviteResolved` rework (Task 0 known follow-up).
 
 ### Acceptance
 
