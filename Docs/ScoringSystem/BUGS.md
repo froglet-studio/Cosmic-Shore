@@ -341,6 +341,63 @@ Files: `_Scripts/Data/Enums/RoundStats.cs`, `_Scripts/Controller/Player/Player.c
 `_Scripts/Utility/DataContainers/GameDataSO.cs`,
 `_Scripts/Controller/Arcade/HexRaceController.cs`.
 
+### B16 — 🟡 Joust toasts without scores: client-observed jousts were never recorded (ghost feedback)
+**Reported (2026-07-16).** Most jousts never reach the scoreboard; the game feed
+posts "X jousted Y" but the joust count/score doesn't move. Reported in solo and
+multiplayer both — in multiplayer it is systematic.
+
+**Root cause (audit).** The joust pipeline had two independent halves that could
+disagree:
+
+1. **Detection & feedback ran locally on EVERY machine.** Vessel-into-skimmer
+   overlaps are plain physics triggers, simulated per machine on replicated
+   (interpolation-delayed) transforms. `VesselExplosionBySkimmerEffectSO.Execute`
+   fired wherever an overlap was locally observed and unconditionally spawned the
+   explosion, played the SFX, posted the game-feed toast, and raised
+   `OnJoustCollision`.
+2. **Recording only happened on the server.** `StatsManager.ExecuteJoustCollision`
+   early-outs on clients (`_allowRecord=false`), so a client's raise recorded
+   nothing — and the "client reports up" branch in
+   `NetworkJoustCollisionTurnMonitor.OnCollisionChanged → ReportCollision_ServerRpc`
+   was unreachable dead code: it only triggers from the `JoustCollisions` setter,
+   which on a client is only ever invoked by the server's own
+   `SyncCollision_ClientRpc` echo.
+
+So a joust counted only if the HOST's physics happened to observe the same
+overlap. At joust closing speeds with NetworkTransform interpolation the host
+frequently does NOT see the pass that the jouster's own machine sees (its vessel
++ skimmer are at true positions locally; on the host they trail by
+speed × interpolation delay). Result: client machines showed toast + explosion
+for jousts that were never recorded anywhere ("ghost feedback"), while
+host-observed jousts updated client scores silently with no toast — the exact
+reported symptoms.
+
+**Fix — owner-authoritative confirm + broadcast (crystal-impact pattern).**
+Detection still runs everywhere, but only the machine that OWNS the scoring
+(impactee) vessel may confirm a joust — it is the most reliable observer of its
+own skimmer sweep, and exactly-once semantics fall out of ownership (AI vessels
+are host-owned, so solo/AI jousts confirm on the host as before). After the
+speed/domain/cooldown checks pass on the owner, the joust routes
+`NetworkVesselImpactor.ReportJoust → ExecuteJoust_ServerRpc → ExecuteJoust_ClientRpc`
+(mirroring the crystal round-trip), and EVERY machine — server included — runs
+`ExecuteConfirmed`: explosion, `OnJoustCollision` raise, audio, game-feed post.
+The server's raise is the one StatsManager records (single-writer preserved);
+`RoundStats.n_JoustCollisions` + the monitor's existing `SyncCollision_ClientRpc`
+fan the count back out to every HUD. Toast ⟺ score, by construction. Offline /
+unspawned contexts fall back to direct local execution (previous behavior).
+
+**Verification (engine):** 2-human party Joust — every "X jousted Y" toast must
+be accompanied by the jouster's domain count moving on BOTH machines (HUD
+"jousts left" + end scoreboard), and the scoreboard totals must equal the toast
+count each player saw. Solo-vs-AI: same invariant. Also confirm the explosion +
+toast now appear on the machine that got jousted even when its own physics
+missed the pass.
+
+Files: `_Scripts/Controller/ImpactEffects/EffectsSO/Vessel Skimmer Effects/VesselExplosionBySkimmerEffectSO.cs`,
+`_Scripts/Controller/ImpactEffects/Impactors/NetworkVesselImpactor.cs`,
+`_Scripts/Controller/ImpactEffects/Impactors/VesselImpactor.cs`,
+`_Scripts/Controller/ImpactEffects/Impactors/SkimmerImpactor.cs`.
+
 ---
 
 B1–B4, B6, B7, B8 fixed (verify only — B6 also warrants a visual position check).
@@ -354,4 +411,6 @@ owner-verified in engine (Joust; HexRace/CC share the same fix shape — sweep w
 `TESTS.md` T13/T14). B15 (stale RoundStats subscribers killing the second game's
 end flow) fixed & verified in engine 2026-06-12 — regression steps in `TESTS.md`
 T15. B5 remains scheduled into **R10** (the unified ranked `ScoreResult` list
-dissolves it). No open read-through findings remain.
+dissolves it). B16 (ghost joust toasts / unrecorded client-observed jousts) fixed
+2026-07-16 — code-complete, engine verification pending (see B16's verification
+steps). No other open read-through findings remain.
