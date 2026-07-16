@@ -474,6 +474,19 @@ namespace CosmicShore.Gameplay
         void OnNetNameValueChanged(FixedString128Bytes previousValue, FixedString128Bytes newValue)
         {
             Name = newValue.ToString();
+
+            // Keep the RoundStats identity mirror live. A mid-session rename
+            // (menu profile edit -> HandleProfileLoadedAfterSpawn on the owner)
+            // replicates NetName to every peer and lands here; without this the
+            // scoreboard/HUD identity stays stale until the next scene's
+            // pair-init re-sync (InitializeForMultiplayerMode). On the server
+            // the setter also replicates RoundStats.n_Name to all peers;
+            // on clients it refreshes the local mirror. TryGetComponent (not the
+            // GetOrAdd-backed property) so this never adds a NetworkBehaviour to
+            // an already-spawned NetworkObject.
+            if (TryGetComponent<RoundStats>(out var stats))
+                stats.Name = Name;
+
             TryRaiseDeferredSpawnEvent();
         }
 

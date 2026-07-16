@@ -112,19 +112,44 @@ namespace CosmicShore.Gameplay
             foreach (var p in session.Players)
                 sessionPlayerIds.Add(p.Id);
 
-            // Add players that are in the session but not yet in the SOAP list.
+            // Add players that are in the session but not yet in the SOAP list;
+            // refresh identity (displayName/avatarId) on members already present.
             var joinedPlayerIds = new List<string>();
             foreach (var p in session.Players)
             {
                 if (string.IsNullOrEmpty(p.Id) || p.Id == localPlayerId) continue;
 
                 var memberData = ReadMemberData(p);
-                if (!_connectionData.PartyMembers.Contains(memberData))
+
+                int existingIdx = -1;
+                for (int i = 0; i < _connectionData.PartyMembers.Count; i++)
+                {
+                    if (_connectionData.PartyMembers[i].PlayerId == p.Id) { existingIdx = i; break; }
+                }
+
+                if (existingIdx < 0)
                 {
                     _connectionData.PartyMembers.Add(memberData);
                     _eventBus.RaisePartyMemberJoined(memberData);
                     joinedPlayerIds.Add(p.Id);
                     Debug.Log($"[PartyMemberService] Member joined: {memberData.DisplayName} ({p.Id})");
+                }
+                else
+                {
+                    var existing = _connectionData.PartyMembers[existingIdx];
+                    if (existing.DisplayName != memberData.DisplayName ||
+                        existing.AvatarId    != memberData.AvatarId)
+                    {
+                        // Identity refresh (mid-party rename), NOT a membership
+                        // change: RemoveAt + Insert fires the list's item events
+                        // (party slot UI repaints) WITHOUT raising the SOAP
+                        // member-joined/left events, so no invite-clear or
+                        // state-machine side effects trigger. Same pattern as
+                        // HostConnectionService.RefreshOnlinePlayersDiff.
+                        _connectionData.PartyMembers.RemoveAt(existingIdx);
+                        _connectionData.PartyMembers.Insert(existingIdx, memberData);
+                        Debug.Log($"[PartyMemberService] Member identity refreshed: '{existing.DisplayName}' -> '{memberData.DisplayName}' ({p.Id})");
+                    }
                 }
             }
 
