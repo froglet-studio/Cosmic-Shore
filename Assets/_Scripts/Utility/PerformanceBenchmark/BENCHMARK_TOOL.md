@@ -272,7 +272,7 @@ Reports include per-frame snapshots, aggregated statistics, spikes (with markers
 | Config | `BenchmarkConfigSO.cs` (default asset: `_SO_Assets/Benchmark/BenchmarkConfig.asset`) |
 | Auto-enter-Play hook | `Editor/BenchmarkAutoStart.cs` |
 | Pastel UI helpers | `Editor/EditorUIStyles.cs` |
-| Tests | `Tests/Editor/*` (`CosmicShore.PerformanceBenchmark.Tests`) |
+| Tests | `Tests/Editor/*` (`CosmicShore.Utility.PerformanceBenchmark.Tests` namespace, no `.asmdef`) |
 
 Most live under `Assets/_Scripts/Utility/PerformanceBenchmark/`. `NetMarkers` placement lives in the
 gameplay/netcode code (e.g. `VesselController`, `R_VesselActionHandler`, `Player`, the vessel
