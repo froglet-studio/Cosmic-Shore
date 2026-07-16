@@ -2967,7 +2967,8 @@ MonoBehaviour:
   summaryInfoText: {fileID: 1238573817}
   summaryWinningDomainText: {fileID: 1687345747}
   summaryRankText: {fileID: 1758685027}
-  summaryCardPrefab: {fileID: 0}
+  summaryCardPrefab: {fileID: 1759044218460177575, guid: dcf433f2806495a44931709616d958d9,
+    type: 3}
   summaryCardContainer: {fileID: 2098648986}
   playAgainButton: {fileID: 1932153207}
   mainMenuButton: {fileID: 2009116738}
