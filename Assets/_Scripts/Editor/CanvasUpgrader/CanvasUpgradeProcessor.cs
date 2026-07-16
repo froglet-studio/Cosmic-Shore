@@ -78,7 +78,8 @@ namespace CosmicShore.Editor
             public string HostPath;           // scene path of the Animator/Animation component
             public string CanvasName;
 
-            public string CurveKey => $"{ClipAssetPath}|{Binding.path}|{Binding.propertyName}";
+            // Instance ID, not asset path: sub-asset clips (e.g. inside an FBX) share one path.
+            public string CurveKey => $"{Clip.GetInstanceID()}|{Binding.path}|{Binding.propertyName}";
         }
 
         // ------------------------------------------------------------------
@@ -319,17 +320,27 @@ namespace CosmicShore.Editor
             }
 
             // --- LayoutElement ---
+            var pendingWrites = new List<System.Action>();
             foreach (var le in canvas.GetComponentsInChildren<LayoutElement>(true))
             {
+                var sub = new StringBuilder();
+                pendingWrites.Clear();
+                ScaleLayoutSize(le.minWidth, v => pendingWrites.Add(() => le.minWidth = v), "minWidth", sub);
+                ScaleLayoutSize(le.minHeight, v => pendingWrites.Add(() => le.minHeight = v), "minHeight", sub);
+                ScaleLayoutSize(le.preferredWidth, v => pendingWrites.Add(() => le.preferredWidth = v), "preferredWidth", sub);
+                ScaleLayoutSize(le.preferredHeight, v => pendingWrites.Add(() => le.preferredHeight = v), "preferredHeight", sub);
+                ScaleFlexible(le.flexibleWidth, v => pendingWrites.Add(() => le.flexibleWidth = v), "flexibleWidth", sub, c);
+                ScaleFlexible(le.flexibleHeight, v => pendingWrites.Add(() => le.flexibleHeight = v), "flexibleHeight", sub, c);
+                if (sub.Length == 0) continue;
+
                 report.AppendLine($"  {PathOf(le.transform, rootRt)} :: LayoutElement");
-                if (apply) Record(le);
-                ScaleLayoutSize(le.minWidth, v => { if (apply) le.minWidth = v; }, "minWidth", report);
-                ScaleLayoutSize(le.minHeight, v => { if (apply) le.minHeight = v; }, "minHeight", report);
-                ScaleLayoutSize(le.preferredWidth, v => { if (apply) le.preferredWidth = v; }, "preferredWidth", report);
-                ScaleLayoutSize(le.preferredHeight, v => { if (apply) le.preferredHeight = v; }, "preferredHeight", report);
-                ScaleFlexible(le.flexibleWidth, v => { if (apply) le.flexibleWidth = v; }, "flexibleWidth", report, c);
-                ScaleFlexible(le.flexibleHeight, v => { if (apply) le.flexibleHeight = v; }, "flexibleHeight", report, c);
-                if (apply) MarkDirty(le);
+                report.Append(sub);
+                if (apply && pendingWrites.Count > 0)
+                {
+                    Record(le);
+                    foreach (var write in pendingWrites) write();
+                    MarkDirty(le);
+                }
                 c.LayoutElements++;
             }
 
@@ -513,7 +524,8 @@ namespace CosmicShore.Editor
             // Keep the pivot fixed in parent space: for a point anchor the pivot sits at
             // (parentMin + anchor*parentSize) + anchoredPosition, so shifting the anchor by
             // delta moves the reference by delta*parentSize and anchoredPosition compensates.
-            Vector2 ap = rt.anchoredPosition;
+            Vector2 oldAp = rt.anchoredPosition;
+            Vector2 ap = oldAp;
             var newMin = aMin;
             var newMax = aMax;
             if (moveX)
@@ -533,7 +545,9 @@ namespace CosmicShore.Editor
             rt.anchoredPosition = ap;
             MarkDirty(rt);
 
-            report.AppendLine($"  {path} — anchors ({Fmt(aMin)}) -> ({Fmt(newMin)}), center at ({nx:0.00}, {ny:0.00}) of parent, anchoredPosition {Fmt(rt.anchoredPosition)} (visual position preserved)");
+            string anchorsBefore = stretchedX || stretchedY ? $"{Fmt(aMin)}..{Fmt(aMax)}" : Fmt(aMin);
+            string anchorsAfter = stretchedX || stretchedY ? $"{Fmt(newMin)}..{Fmt(newMax)}" : Fmt(newMin);
+            report.AppendLine($"  {path} — anchors {anchorsBefore} -> {anchorsAfter}, center at ({nx:0.00}, {ny:0.00}) of parent, anchoredPosition {Fmt(oldAp)} -> {Fmt(ap)} (visual position preserved)");
             changed++;
         }
 
