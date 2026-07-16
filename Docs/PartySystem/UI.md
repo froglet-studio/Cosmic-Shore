@@ -27,6 +27,17 @@ Requests). They share the same component family:
 | `RequestInfoEntry` | A row in the Requests section with Accept/Decline. `Kind { FriendRequest, PartyInvite }` — one row type serves both (delegates to `FriendsServiceFacade` / `PartyInviteController`). Lives on `RequestsInfo.prefab`, the shared base for the row family (`OnlineFriendsInfo Variant` and `PartyInviteNotificationPanel Variant` are prefab variants of it). |
 | `PartyInviteNotificationPanel` (`_Scripts/UI/Screens/`) | The **global invite popup** — a small bottom-left card (avatar + inviter name + Accept/Decline) shown anywhere in Menu_Main when an invite arrives. Subscribes to `OnInviteReceived`, routes to `PartyInviteController`, dismisses on `OnInviteResolved`. **3s auto-hide** (hides only — the invite stays in the `FriendsListPanel` Requests list); **latest-wins** (a newer invite replaces it). Lives as **`PartyInviteNotificationPanel Variant.prefab`** — a **prefab variant of `RequestsInfo`** (the request-row layout reused: inherited `RequestInfoEntry` removed, a `CanvasGroup` + this component added and wired to the row's avatar/name/accept/decline). Instanced bottom-left on a top-level canvas in Menu_Main. |
 
+**Live identity (names/avatars) in these panels.** Rows and slots render
+from the SOAP lists and repaint on the lists' item events, so a player's
+mid-session rename propagates without any UI code: online rows via
+`RefreshOnlinePlayersDiff`'s change-detect (RemoveAt+Insert), party slots
+via `PartyMemberService.SyncFromSession`'s identity refresh (same pattern —
+and deliberately WITHOUT raising the member-joined/left SOAP events), and
+the local player's own slot via `HostConnectionService.RefreshLocalPartyMemberEntry`.
+End-to-end pipeline + latency:
+`../PresenceSystem/ARCHITECTURE.md` § "Identity propagation"; manual test:
+`../PresenceSystem/TESTS.md` **P7**.
+
 ## Invite UX flow (UI-level)
 
 The service/SOAP-level happy path is in `ARCHITECTURE.md` § "SOAP event flow —
