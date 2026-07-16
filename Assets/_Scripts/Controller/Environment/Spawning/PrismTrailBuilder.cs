@@ -69,14 +69,26 @@ namespace CosmicShore.Gameplay
             trail.Add(block);
             LoadInsights.AccumulateSample("Prism lay: kind + trail.Add", t);
 
-            // Arena-ready gate: every environment-laid prism is watched until its grow-in
-            // settles, so the connecting screen can hold until the arena is fully GROWN, not
-            // just fully laid (slice-starved growth left freshly-laid prisms invisible at
-            // reveal, popping in waves during play). Self-prunes so ungated contexts (menu
-            // conveyor, per-turn courses) never accumulate settled entries.
+            // Arena-ready gate: every environment-laid prism is watched until it is SETTLED FOR
+            // REVEAL — created (renderer on; creation completions are frame-budgeted, so a laid
+            // prism stays invisible until the queue reaches it) AND at final scale. Laid or
+            // grown is not enough: un-created prisms pop in batches after the match starts.
+            WatchForReveal(block);
+            return block;
+        }
+
+        /// <summary>
+        /// Register a prism with the arena-ready gate's reveal watch. LayOne does this for every
+        /// prism it lays; spawnables with CUSTOM instantiate loops (e.g. SpawnableGyroid's
+        /// assembler walk) must call it per block, or their prisms pop in after the connecting
+        /// screen drops (the creation queue is frame-budgeted). Self-prunes so ungated contexts
+        /// (menu conveyor, per-turn courses) never accumulate settled entries.
+        /// </summary>
+        public static void WatchForReveal(Prism block)
+        {
+            if (!block) return;
             s_growWatch.Add(block);
             if ((s_growWatch.Count & 511) == 0) SweepGrowWatch();
-            return block;
         }
 
         // ── Sync ─────────────────────────────────────────────────────────────
@@ -148,8 +160,9 @@ namespace CosmicShore.Gameplay
 
         // ── Arena-ready gate (pending builds + lays + grow-in, all done) ─────
 
-        // Prisms laid by this builder that are still playing their grow-in. Swept (swap-remove)
-        // by the gate each poll and pruned periodically on add, so ungated contexts don't leak.
+        // Prisms laid by this builder that are not yet settled for reveal (creation queue not
+        // reached them, or grow-in unfinished). Swept (swap-remove) by the gate each poll and
+        // pruned periodically on add, so ungated contexts don't leak.
         static readonly List<Prism> s_growWatch = new(1024);
 
         // Builds announced (BeginArenaBuild) but not yet executed — covers the window where a
@@ -158,14 +171,25 @@ namespace CosmicShore.Gameplay
         static int s_pendingArenaBuilds;
 
         // Load-gate session state: set while MiniGameHUD holds the connecting screen on this
-        // gate. Read by PrismScaleManager to boost grow-in stepping behind the covered screen.
+        // gate. Read by PrismScaleManager (grow-in stepping boost) and Prism (creation-queue
+        // boost) so the arena finishes materializing behind the covered screen.
         static bool s_loadGateHolding;
         static float s_loadGateStartTime;
+        static float s_allClearSince = -1f;
         static int s_settleSpan = -1;
 
         /// <summary>Hard cap on the load-gate hold — releases with an error instead of holding a
         /// broken build forever (a wedged build must surface loud, not as an infinite screen).</summary>
         const float LoadGateHardCapSeconds = 180f;
+
+        /// <summary>The all-clear must hold this long before the gate releases — bridges any
+        /// same-frame gaps between async build steps (a lay finishing while another spawnable
+        /// is still about to schedule its own) so a momentary zero can't slip the screen open.</summary>
+        const float ReadyStableSeconds = 0.5f;
+
+        /// <summary>Grow-in snaps applied per gate poll — bounds the per-frame cost of
+        /// force-settling a 25k cohort (each snap runs full completion bookkeeping).</summary>
+        const int SettleSnapsPerPoll = 2000;
 
         /// <summary>
         /// Announce an arena build whose SegmentSpawner.Initialize happens LATER than scene
@@ -194,6 +218,7 @@ namespace CosmicShore.Gameplay
         public static void SetLoadGateHolding(bool holding)
         {
             s_loadGateHolding = holding;
+            s_allClearSince = -1f;
             if (holding)
             {
                 s_loadGateStartTime = Time.unscaledTime;
@@ -206,9 +231,11 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// THE arena-complete predicate the connecting screen holds on: every announced build
-        /// has executed, every streamed lay has drained, and every laid prism has finished its
-        /// grow-in. Only when all three are true is the arena what the player will see for the
-        /// rest of the match — nothing lays or blooms after this returns true.
+        /// has executed, every streamed lay has drained, and every laid prism is settled for
+        /// reveal — creation complete (renderer ON — creation completions are frame-budgeted,
+        /// so scale alone proves nothing) AND at final scale. Stragglers are force-settled
+        /// behind the covered screen, and the all-clear must hold ReadyStableSeconds before the
+        /// gate releases. Nothing lays, materializes, or blooms after this returns true.
         /// </summary>
         public static bool PollArenaReady()
         {
@@ -216,25 +243,36 @@ namespace CosmicShore.Gameplay
             {
                 Debug.LogError($"[PrismTrailBuilder] Arena build exceeded the {LoadGateHardCapSeconds:F0}s " +
                                $"hold cap (pendingBuilds={s_pendingArenaBuilds}, lays={s_activeBudgetedLays}, " +
-                               $"growing={GrowRemainingCount}) — releasing the gate so the match can start. " +
+                               $"settling={GrowRemainingCount}) — releasing the gate so the match can start. " +
                                "Either the build wedged or the load is pathologically slow; capture a " +
                                "Load Time Insights recording to see which.");
                 EndSettleSpan();
                 return true;
             }
 
-            if (s_pendingArenaBuilds > 0 || s_activeBudgetedLays > 0) return false;
-
-            if (SweepGrowWatch() > 0)
+            if (s_pendingArenaBuilds > 0 || s_activeBudgetedLays > 0)
             {
-                // Everything is laid; the cohort is settling behind the covered screen. Own
-                // span so Load Time Insights attributes this window to the environment
-                // (starts after the lay spans end, so it never steals their attribution).
-                if (s_settleSpan == -1)
-                    s_settleSpan = LoadInsights.Begin(LoadInsightCategory.Environment,
-                        "Arena grow-in settle (behind connecting screen)");
+                s_allClearSince = -1f;
                 return false;
             }
+
+            if (SettleGrowWatch(SettleSnapsPerPoll) > 0)
+            {
+                s_allClearSince = -1f;
+                // Everything is laid; the cohort is materializing/settling behind the covered
+                // screen. Own span so Load Time Insights attributes this window to the
+                // environment (starts after the lay spans end, so it never steals their
+                // attribution).
+                if (s_settleSpan == -1)
+                    s_settleSpan = LoadInsights.Begin(LoadInsightCategory.Environment,
+                        "Arena settle: creation queue + grow-in (behind connecting screen)");
+                return false;
+            }
+
+            // All clear — require it to HOLD before releasing, so a momentary zero between
+            // async build steps can't slip the screen open onto a still-materializing arena.
+            if (s_allClearSince < 0f) s_allClearSince = Time.unscaledTime;
+            if (Time.unscaledTime - s_allClearSince < ReadyStableSeconds) return false;
 
             EndSettleSpan();
             return true;
@@ -247,14 +285,54 @@ namespace CosmicShore.Gameplay
             s_settleSpan = -1;
         }
 
-        /// <summary>Swap-remove settled/dead entries; returns (and caches) how many still grow.</summary>
+        /// <summary>
+        /// Gate-only pass: force-settle watched prisms that are created but still growing (the
+        /// screen is covered — snapping is invisible and saves the multi-second grow-in tail),
+        /// drop everything settled or dead, keep prisms whose creation the frame-budgeted
+        /// queue hasn't reached yet. Returns (and caches) how many are still not reveal-ready.
+        /// </summary>
+        static int SettleGrowWatch(int snapBudget)
+        {
+            var list = s_growWatch;
+            for (int i = list.Count - 1; i >= 0; i--)
+            {
+                var p = list[i];
+                bool drop;
+                if (p == null || !p.isActiveAndEnabled)
+                {
+                    drop = true; // destroyed / pooled away — can never pop in later
+                }
+                else
+                {
+                    if (snapBudget > 0 && p.IsCreationComplete && !p.IsSettledForReveal)
+                    {
+                        p.CompleteGrowthImmediately();
+                        snapBudget--;
+                    }
+                    drop = p.IsSettledForReveal;
+                }
+
+                if (drop)
+                {
+                    int last = list.Count - 1;
+                    list[i] = list[last];
+                    list.RemoveAt(last);
+                }
+            }
+            GrowRemainingCount = list.Count;
+            return list.Count;
+        }
+
+        /// <summary>Maintenance sweep (prune-on-add + gate arming): drop dead and reveal-ready
+        /// entries WITHOUT force-settling — outside the gate the world is visible, so grow-ins
+        /// must finish naturally (continuity of existence).</summary>
         static int SweepGrowWatch()
         {
             var list = s_growWatch;
             for (int i = list.Count - 1; i >= 0; i--)
             {
                 var p = list[i];
-                if (p == null || !p.IsGrowing)
+                if (p == null || !p.isActiveAndEnabled || p.IsSettledForReveal)
                 {
                     int last = list.Count - 1;
                     list[i] = list[last];
