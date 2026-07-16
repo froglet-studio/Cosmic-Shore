@@ -16,6 +16,13 @@ namespace CosmicShore.Gameplay
         [SerializeField]
         private SkimmerImpactorDataContainerSO skimmerImpactorDataContainer;
 
+        /// <summary>
+        /// Effect container for this skimmer - exposed so the vessel-level confirmed-joust
+        /// dispatch (VesselImpactor.ExecuteJoustImpact) can locate the joust effect config
+        /// wired to this vessel without duplicating the reference.
+        /// </summary>
+        public SkimmerImpactorDataContainerSO EffectContainer => skimmerImpactorDataContainer;
+
         //[Header("Block-Stay effects (tick while skimming)")] [SerializeField]
         //SkimmerPrismEffectSO[] skimmerPrismStayEffectsSO; // TODO -> Add to the container
 

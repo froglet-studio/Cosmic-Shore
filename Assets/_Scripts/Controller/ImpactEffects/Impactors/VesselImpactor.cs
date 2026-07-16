@@ -27,6 +27,8 @@ namespace CosmicShore.Gameplay
 
         readonly Dictionary<int, float> _lastCrystalImpactTime = new();
 
+        SkimmerImpactor[] _skimmerImpactors;
+
         public IVessel Vessel { get; private set; }
         protected override bool isInitialized => Vessel?.VesselStatus?.Player != null;
         public override Domains OwnDomain => Vessel.VesselStatus.Domain;
@@ -108,6 +110,39 @@ namespace CosmicShore.Gameplay
 
             _lastCrystalImpactTime[id] = now;
             return true;
+        }
+
+        /// <summary>
+        /// Confirmed-joust dispatch: this vessel is the scoring impactee whose skimmer a
+        /// slower opponent swept through. Finds the joust effect in this vessel's skimmer
+        /// effect containers and runs its confirmed half (explosion, scoring raise, audio,
+        /// game-feed post). Called on every machine from
+        /// NetworkVesselImpactor.ExecuteJoust_ClientRpc after the impactee's owner
+        /// validated and reported the joust.
+        /// </summary>
+        public void ExecuteJoustImpact(VesselImpactor impactorVesselImpactor)
+        {
+            _skimmerImpactors ??= GetComponentsInChildren<SkimmerImpactor>(true);
+
+            foreach (var skimmerImpactor in _skimmerImpactors)
+            {
+                var container = skimmerImpactor.EffectContainer;
+                if (container == null || !DoesEffectExist(container.VesselSkimmerEffects))
+                    continue;
+
+                foreach (var effect in container.VesselSkimmerEffects)
+                {
+                    if (effect is not VesselExplosionBySkimmerEffectSO joustEffect)
+                        continue;
+
+                    joustEffect.ExecuteConfirmed(impactorVesselImpactor, this);
+                    return;
+                }
+            }
+
+            CSDebug.LogWarning("[VesselImpactor] Confirmed joust arrived for " +
+                $"'{Vessel?.VesselStatus?.PlayerName}' but no VesselExplosionBySkimmerEffectSO " +
+                "is wired in its skimmer effect containers.");
         }
 
         public void ExecuteOmniCrystalImpact(CrystalImpactData data)
