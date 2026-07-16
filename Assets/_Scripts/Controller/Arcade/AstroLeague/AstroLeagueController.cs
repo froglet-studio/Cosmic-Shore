@@ -14,7 +14,7 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Astro League match director — hypersea soccer on the multiplayer domain-games stack.
+    /// Astro League match director - hypersea soccer on the multiplayer domain-games stack.
     /// Two domains (Jade defends -Z, Ruby defends +Z) slam a server-simulated billiard ball
     /// through the opposing goal portal. Runs the full match loop on top of the shared flow:
     ///
@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
     {
         [Header("Astro League")]
         [SerializeField] AstroLeagueSettingsSO settings;
-        [Tooltip("Drag AstroLeagueScoringRule.asset — the per-mode scoring strategy (winner, scores, results).")]
+        [Tooltip("Drag AstroLeagueScoringRule.asset - the per-mode scoring strategy (winner, scores, results).")]
         [SerializeField] ScoringRuleSO rule;
         [SerializeField] AstroLeagueBall ball;
         [SerializeField] AstroLeagueArena arena;
@@ -52,13 +52,13 @@ namespace CosmicShore.Gameplay
         readonly List<Vector3> _baseSpawnLocalPos = new();
         float _currentScale = 1f;
 
-        // The runtime-generated nucleus cage mesh (polytope/cylinder courts) — owned here and destroyed
+        // The runtime-generated nucleus cage mesh (polytope/cylinder courts) - owned here and destroyed
         // on despawn so it doesn't leak across matches/replays (the scene-reload replay re-generates it).
         Mesh _generatedNucleusMesh;
 
         // Match config (intensity scale, court shape, goal target) replicated via NetworkVariables rather
         // than a one-shot ClientRpc, so a client that spawns AFTER the server set them still builds the
-        // arena (a one-shot RPC missed late joiners — the "not all players see the arena" bug). Every
+        // arena (a one-shot RPC missed late joiners - the "not all players see the arena" bug). Every
         // peer reads the current value at spawn AND subscribes to changes, then morphs its own arena.
         readonly NetworkVariable<float> n_IntensityScale =
             new(1f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -181,7 +181,7 @@ namespace CosmicShore.Gameplay
             return Mathf.Lerp(1f, Mathf.Max(1f, settings.intensityScaleAtMax), t);
         }
 
-        /// <summary>Court geometry for the selected intensity — one ricochet test shape per level.</summary>
+        /// <summary>Court geometry for the selected intensity - one ricochet test shape per level.</summary>
         AstroLeagueBoundaryShape ShapeForIntensity()
         {
             int intensity = gameData.SelectedIntensity != null
@@ -270,7 +270,7 @@ namespace CosmicShore.Gameplay
 
             Vector3 arenaCenter = arena != null ? arena.Center : transform.position;
 
-            // Ball spawn: only the central shared goal overrides it — off-center in the goal's plane
+            // Ball spawn: only the central shared goal overrides it - off-center in the goal's plane
             // (along X) so the ball doesn't start sitting inside the central goal. Non-central modes keep
             // the ball's authored center spawn.
             if (ball != null && centralGoal)
@@ -345,7 +345,7 @@ namespace CosmicShore.Gameplay
             var striker = FindPlayerByVessel(vessel);
             if (striker == null) return;
 
-            // Recoil the striker away from the ball so it bounces back a bit — extra anti-clip
+            // Recoil the striker away from the ball so it bounces back a bit - extra anti-clip
             // insurance on top of the ball's own ejection.
             ApplyVesselRecoil(striker, vessel, intensity);
 
@@ -359,7 +359,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Server: broadcast a backward recoil for the striking vessel. Vessels are
         /// owner-authoritative (ClientNetworkTransform), so the impulse must be applied on the
-        /// OWNING peer — the ClientRpc resolves the vessel by NetworkObjectId and only the owner
+        /// OWNING peer - the ClientRpc resolves the vessel by NetworkObjectId and only the owner
         /// applies <see cref="VesselTransformer.ModifyVelocity"/>.
         /// </summary>
         void ApplyVesselRecoil(IPlayer striker, IVessel vessel, float intensity)
@@ -399,7 +399,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Server: the ball crossed a goal line. Attribution: the goal credits the most
-        /// recent striker NOT on the defending domain — an own-goal hands the point to the
+        /// recent striker NOT on the defending domain - an own-goal hands the point to the
         /// opponent who last touched it. If no opposing vessel has ever touched the ball,
         /// nobody scores and play resets with a kickoff.
         /// </summary>
@@ -418,7 +418,7 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            scorer.RoundStats.GoalsScored++; // NetworkVariable — replicates to every peer
+            scorer.RoundStats.GoalsScored++; // NetworkVariable - replicates to every peer
 
             AnnounceGoal_ClientRpc(new FixedString64Bytes(scorer.Name), (int)scorer.Domain);
 
@@ -570,7 +570,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Suppress the base flow's SetupNewRound when the match just ended.
         /// HasEndGame=false causes ExecuteServerRoundEnd to call SetupNewRound instead of
-        /// ExecuteServerGameEnd — this override prevents the Ready button from reappearing.
+        /// ExecuteServerGameEnd - this override prevents the Ready button from reappearing.
         /// </summary>
         protected override void SetupNewRound()
         {
@@ -624,7 +624,7 @@ namespace CosmicShore.Gameplay
                 stat.GoalsScored = goalsScored[i];
             }
 
-            // Authoritative winner — written to gameData, consumed by EndGameControllers.
+            // Authoritative winner - written to gameData, consumed by EndGameControllers.
             // OnWinnerCalculated (below) is the "results ready" signal.
             gameData.WinnerName = winnerName.ToString();
             gameData.WinnerDomain = (Domains)winnerDomain;
@@ -673,7 +673,7 @@ namespace CosmicShore.Gameplay
                 .ToList();
             int slot = Mathf.Max(0, teammates.IndexOf(player));
 
-            // Slots fan out laterally: 0, +1, -1, +2, -2, ... — spacing scales with the arena.
+            // Slots fan out laterally: 0, +1, -1, +2, -2, ... - spacing scales with the arena.
             int offsetSteps = (slot + 1) / 2 * (slot % 2 == 0 ? 1 : -1);
             Vector3 lateral = anchor.right * (offsetSteps * settings.kickoffLateralSpacing * _currentScale);
 
@@ -723,7 +723,7 @@ namespace CosmicShore.Gameplay
 
             // End goals: aim at the goal mouth. Central shared goal: aim PAST the center along the
             // scoring direction (the goal's inward normal) so contact drives the ball THROUGH the
-            // central disk in the team's scoring Z direction — aiming straight at center would own-goal
+            // central disk in the team's scoring Z direction - aiming straight at center would own-goal
             // from the wrong side.
             Vector3 aimPoint = _appliedCentralGoal
                 ? targetGoal.MouthCenter + targetGoal.InwardNormal * (300f * _currentScale)
@@ -788,7 +788,7 @@ namespace CosmicShore.Gameplay
             catch (OperationCanceledException) { /* teardown mid-celebration */ }
             finally
             {
-                // Restore to known constants, not captured values — the ball's hitstop can
+                // Restore to known constants, not captured values - the ball's hitstop can
                 // interleave with this window and a stale capture would re-apply its timescale.
                 Time.timeScale = 1f;
                 Time.fixedDeltaTime = baseFixedDelta;

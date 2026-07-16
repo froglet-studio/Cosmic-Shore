@@ -86,7 +86,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Get crystal for local player.
-        /// Tries local domain, then Blue (the "no team" sentinel — uncommitted crystals),
+        /// Tries local domain, then Blue (the "no team" sentinel - uncommitted crystals),
         /// then first crystal.
         /// </summary>
         public bool TryGetLocalCrystal(out Crystal crystal)

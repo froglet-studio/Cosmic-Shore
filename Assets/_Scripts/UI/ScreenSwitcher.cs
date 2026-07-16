@@ -10,6 +10,7 @@ using Reflex.Attributes;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.UI;
 using UnityEngine.UI;
 using CosmicShore.Utility;
 
@@ -210,28 +211,51 @@ namespace CosmicShore.UI
 
         private void OnEnable()
         {
-            if (freestyleEvents)
-            {
-                freestyleEvents.OnGameStateTransitionStart.OnRaised += HandleEnterFreestyle;
-                freestyleEvents.OnMenuStateTransitionStart.OnRaised += HandleExitFreestyle;
-                freestyleEvents.OnGameStateTransitionEnd.OnRaised += HandleFreestyleTransitionEnd;
-                freestyleEvents.OnMenuStateTransitionEnd.OnRaised += HandleFreestyleTransitionEnd;
-            }
+            TrySubscribeFreestyleEvents();
         }
 
         private void OnDisable()
         {
-            if (freestyleEvents)
-            {
-                freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleEnterFreestyle;
-                freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleExitFreestyle;
-                freestyleEvents.OnGameStateTransitionEnd.OnRaised -= HandleFreestyleTransitionEnd;
-                freestyleEvents.OnMenuStateTransitionEnd.OnRaised -= HandleFreestyleTransitionEnd;
-            }
+            UnsubscribeFreestyleEvents();
+
+            // Scene-unload safety: the UI module's actions live on a shared asset instance
+            // that outlives this scene — never leave Submit/Cancel/Move disabled for the
+            // next scene's appshell if we go down mid-freestyle (e.g. launching a game).
+            if (_appliedFreestyleGate)
+                ApplyFreestyleInputGate(false);
+        }
+
+        // Deferred-subscription pattern (CLAUDE.md ▸ DI): [Inject] fields populate AFTER
+        // Awake()/OnEnable() but before Start(), so the OnEnable attempt silently no-ops on
+        // scene load and Start() retries. Without the retry, _isInFreestyle and
+        // sendNavigationEvents=false never engage — the appshell keeps paging screens and
+        // opening panels off the gamepad while the player is flying a vessel in freestyle
+        // (unnoticed until the Sparrow, whose abilities use South/East/both triggers).
+        private void TrySubscribeFreestyleEvents()
+        {
+            if (!freestyleEvents) return;
+            UnsubscribeFreestyleEvents(); // dedup guard — safe to call from both OnEnable and Start
+
+            freestyleEvents.OnGameStateTransitionStart.OnRaised += HandleEnterFreestyle;
+            freestyleEvents.OnMenuStateTransitionStart.OnRaised += HandleExitFreestyle;
+            freestyleEvents.OnGameStateTransitionEnd.OnRaised += HandleFreestyleTransitionEnd;
+            freestyleEvents.OnMenuStateTransitionEnd.OnRaised += HandleFreestyleTransitionEnd;
+        }
+
+        private void UnsubscribeFreestyleEvents()
+        {
+            if (!freestyleEvents) return;
+            freestyleEvents.OnGameStateTransitionStart.OnRaised -= HandleEnterFreestyle;
+            freestyleEvents.OnMenuStateTransitionStart.OnRaised -= HandleExitFreestyle;
+            freestyleEvents.OnGameStateTransitionEnd.OnRaised -= HandleFreestyleTransitionEnd;
+            freestyleEvents.OnMenuStateTransitionEnd.OnRaised -= HandleFreestyleTransitionEnd;
         }
 
         private void Start()
         {
+            // Injected fields are live now — retry the subscription OnEnable had to skip.
+            TrySubscribeFreestyleEvents();
+
             var parentCanvas = GetComponentInParent<Canvas>();
             if (parentCanvas == null)
             {
@@ -242,7 +266,7 @@ namespace CosmicShore.UI
             _canvasRect = _rootCanvas.GetComponent<RectTransform>();
             _menuAudio = GetComponent<MenuAudio>();
 
-            Debug.Log($"[ScreenSwitcher] Start — rootCanvas={_rootCanvas.name}, viewport={GetViewportWidthInCanvasUnits()}, screens={GetScreenCount()}");
+            Debug.Log($"[ScreenSwitcher] Start - rootCanvas={_rootCanvas.name}, viewport={GetViewportWidthInCanvasUnits()}, screens={GetScreenCount()}");
 
             CacheScreenComponents();
             LayoutScreensToViewport();
@@ -283,7 +307,7 @@ namespace CosmicShore.UI
             PlayerPrefs.Save();
 
             // Game-related modals require context (selected game, party state) that is
-            // lost on scene transition — never auto-reopen them after returning from a game.
+            // lost on scene transition - never auto-reopen them after returning from a game.
             // ARCADE is included because re-opening the arcade overlay on return causes
             // stale game configuration to resurface.
             if (modalType is ModalWindows.ARCADE_GAME_CONFIGURE
@@ -299,10 +323,18 @@ namespace CosmicShore.UI
 
         private void Update()
         {
+            // Self-healing input gate: never depend solely on the freestyle events having
+            // been delivered (a missed subscription here is exactly how the appshell kept
+            // reacting to vessel ability buttons). Read the LIVE freestyle state each frame
+            // and (re)apply the EventSystem gating whenever it flips.
+            bool inFreestyle = InFreestyle;
+            if (inFreestyle != _appliedFreestyleGate)
+                ApplyFreestyleInputGate(inFreestyle);
+
             if (Gamepad.current == null) return;
 
-            // Y (buttonNorth) toggles freestyle from any state — checked before
-            // the _isInFreestyle early-return so it works as both enter and exit.
+            // Y (buttonNorth) toggles freestyle from any state - checked before
+            // the freestyle early-return so it works as both enter and exit.
             // A cooldown prevents accidental rapid toggling after each transition.
             if (crystalClickHandler
                 && Gamepad.current.buttonNorth.wasPressedThisFrame
@@ -314,7 +346,7 @@ namespace CosmicShore.UI
                 return;
             }
 
-            if (_isInFreestyle) return;
+            if (inFreestyle) return;
             if (HasActiveModal) return;
 
             if (ScreenIsActive(MenuScreens.HOME))
@@ -516,10 +548,10 @@ namespace CosmicShore.UI
 
         private void NavigateTo(int ScreenIndex, bool animate = true)
         {
-            // Block screen navigation while in freestyle mode
-            if (_isInFreestyle)
+            // Block screen navigation while in freestyle mode (live state, not just the flag)
+            if (InFreestyle)
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked — in freestyle");
+                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - in freestyle");
                 return;
             }
 
@@ -534,17 +566,17 @@ namespace CosmicShore.UI
 
             if (IsIndexDisabled(ScreenIndex))
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked — screen disabled ({GetScreenIdForIndex(ScreenIndex)})");
+                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - screen disabled ({GetScreenIdForIndex(ScreenIndex)})");
                 return;
             }
 
             if (ScreenIndex == currentScreen)
             {
-                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked — already on this screen");
+                Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) blocked - already on this screen");
                 return;
             }
 
-            Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) — sliding from {currentScreen} to {ScreenIndex} ({GetScreenIdForIndex(ScreenIndex)})");
+            Debug.Log($"[ScreenSwitcher] NavigateTo({ScreenIndex}) - sliding from {currentScreen} to {ScreenIndex} ({GetScreenIdForIndex(ScreenIndex)})");
 
             // Notify the outgoing screen
             if (_screenMap.TryGetValue(currentScreen, out var exitingScreen))
@@ -716,7 +748,7 @@ namespace CosmicShore.UI
             //  1. Explicit per-button icon lists (NavActiveImages / NavInactiveImages).
             //     Each entry is one button's Active/Inactive icon child, in screen
             //     visual order. This is the authoritative mechanism when populated
-            //     because it only ever toggles the icon GameObjects — never the
+            //     because it only ever toggles the icon GameObjects - never the
             //     button GameObjects themselves.
             //
             //  2. Legacy fallback: NavBar points directly at the buttons container and
@@ -724,7 +756,7 @@ namespace CosmicShore.UI
             //
             // The two must not run together. NavBar is also used by SetNavBarVisible to
             // hide the *entire* nav bar (gradient + line + buttons + arrows) during
-            // freestyle, so it intentionally points at the outer container — which is
+            // freestyle, so it intentionally points at the outer container - which is
             // NOT the buttons container. Running the child-toggle loop against that
             // outer container would SetActive() the buttons container's children (the
             // individual button GameObjects), making a whole button disappear. So the
@@ -794,21 +826,61 @@ namespace CosmicShore.UI
             SetNavBarVisible(false);
             SetCanvasGroupVisible(screensCanvasGroup, false);
 
-            // Hand the gamepad to the vessel: stop the EventSystem from also driving UI
-            // Navigate/Submit while flying. CanvasGroup.interactable can't do this — the vessel
-            // HUD group stays interactable (for touch), so the pad would otherwise both fly the
-            // ship AND navigate/submit the HUD. sendNavigationEvents=false disables ONLY the
-            // gamepad/keyboard nav ring; pointer/touch input keeps working.
-            if (EventSystem.current)
-            {
-                EventSystem.current.SetSelectedGameObject(null);
-                EventSystem.current.sendNavigationEvents = false;
-            }
+            ApplyFreestyleInputGate(true);
         }
 
         private void HandleFreestyleTransitionEnd()
         {
             _freestyleToggleCooldownUntil = Time.unscaledTime + freestyleToggleCooldown;
+        }
+
+        /// <summary>
+        /// LIVE freestyle state: the event-driven flag OR'd with the crystal handler's own
+        /// state, so gamepad gating can never desync from reality if a transition event is
+        /// missed (e.g. a subscription-timing failure).
+        /// </summary>
+        private bool InFreestyle =>
+            _isInFreestyle || (crystalClickHandler && crystalClickHandler.IsInFreestyle);
+
+        private bool _appliedFreestyleGate;
+
+        /// <summary>
+        /// Hands the gamepad to the vessel (or back to the appshell). Idempotent — called
+        /// from the transition events AND self-healed from Update on live-state flips.
+        /// CanvasGroup.interactable can't do this job: the vessel HUD group stays
+        /// interactable for touch, so the pad would otherwise both fly the ship AND
+        /// navigate/submit the HUD.
+        /// </summary>
+        private void ApplyFreestyleInputGate(bool inFreestyle)
+        {
+            _appliedFreestyleGate = inFreestyle;
+
+            var eventSystem = EventSystem.current;
+            if (!eventSystem) return;
+
+            if (inFreestyle)
+                eventSystem.SetSelectedGameObject(null);
+
+            // Honored by the legacy StandaloneInputModule; kept for completeness.
+            eventSystem.sendNavigationEvents = !inFreestyle;
+
+            // The InputSystemUIInputModule does not reliably honor sendNavigationEvents —
+            // deterministically silence its gamepad-facing actions (move/submit/cancel)
+            // while flying. Pointer/click/touch actions stay live so touch UI keeps working.
+            if (eventSystem.currentInputModule is InputSystemUIInputModule module)
+            {
+                ToggleActionRef(module.move, !inFreestyle);
+                ToggleActionRef(module.submit, !inFreestyle);
+                ToggleActionRef(module.cancel, !inFreestyle);
+            }
+        }
+
+        private static void ToggleActionRef(InputActionReference reference, bool enable)
+        {
+            var action = reference ? reference.action : null;
+            if (action == null) return;
+            if (enable) action.Enable();
+            else action.Disable();
         }
 
         private void HandleExitFreestyle()
@@ -819,8 +891,7 @@ namespace CosmicShore.UI
             CloseAllModals();
 
             // Give the appshell the gamepad back.
-            if (EventSystem.current)
-                EventSystem.current.sendNavigationEvents = true;
+            ApplyFreestyleInputGate(false);
 
             // Show NavBar and Screens
             SetNavBarVisible(true);

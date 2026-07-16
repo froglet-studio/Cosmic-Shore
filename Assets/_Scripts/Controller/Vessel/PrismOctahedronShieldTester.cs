@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
     /// PrismStateManager lifecycle.
     ///
     /// The <c>OctahedronShieldTest.prefab</c> under <c>Assets/_Prefabs/Tools/</c>
-    /// is preconfigured with everything this harness needs — drag it into
+    /// is preconfigured with everything this harness needs - drag it into
     /// any scene and press Space.
     ///
     /// Uses the new Input System package (<c>UnityEngine.InputSystem</c>)

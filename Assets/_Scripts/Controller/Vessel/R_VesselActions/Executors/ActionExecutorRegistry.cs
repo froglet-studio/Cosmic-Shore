@@ -16,11 +16,11 @@ namespace CosmicShore.Gameplay
         readonly Dictionary<Type, ShipActionExecutorBase> _byType = new();
 
         public AudioSystem AudioSystem => _audioSystem;
-        public IVesselStatus VesselStatus { get; private set; }   // <—
+        public IVesselStatus VesselStatus { get; private set; }   // <-
 
         public void InitializeAll(IVesselStatus status)
         {
-            VesselStatus = status;                                // <—
+            VesselStatus = status;                                // <-
             _byType.Clear();
             foreach (var exec in _executors.Where(e => e))
             {

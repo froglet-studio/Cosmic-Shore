@@ -62,6 +62,16 @@ public class VesselTransformer : MonoBehaviour
         public float SpeedMultiplier => throttleMultiplier;
 
         protected Vector3 velocityShift = Vector3.zero;
+
+        /// <summary>Current additive world-space displacement (the ModifyVelocity channel),
+        /// summed on top of speed * Course by MoveShip. Read-only view for systems that need
+        /// the vessel's ACTUAL travel direction (e.g. barrel-roll bridging prisms).</summary>
+        public Vector3 VelocityShift => velocityShift;
+
+        /// <summary>When set, trail prisms orient along this rotation instead of the vessel's
+        /// facing. Owned by the barrel-roll controller for the roll duration; null restores
+        /// normal facing-aligned trail.</summary>
+        public Quaternion? BlockRotationOverride { get; set; }
         private bool isActive;
 
         // ----------------------------- Analog Drift -----------------------------
@@ -86,7 +96,11 @@ public class VesselTransformer : MonoBehaviour
             if (!isActive || VesselStatus == null || VesselStatus.IsStationary)
                 return;
 
-            VesselStatus.blockRotation = transform.rotation;
+            // Trail prisms orient by blockRotation (facing). During velocity≠forward states
+            // (barrel roll) the roll controller overrides it with the actual travel
+            // direction so bridging prisms follow the true path — replicates for free via
+            // the owner-written n_BlockRotation.
+            VesselStatus.blockRotation = BlockRotationOverride ?? transform.rotation;
 
             if (decayBoost) DecayBoost();
 
@@ -156,7 +170,7 @@ public class VesselTransformer : MonoBehaviour
             speed = 0f;
             throttleMultiplier = 1f;
 
-            // Rotation — reset to face forward
+            // Rotation - reset to face forward
             accumulatedRotation = Quaternion.identity;
             transform.rotation = Quaternion.identity;
 
@@ -407,7 +421,10 @@ public class VesselTransformer : MonoBehaviour
 
             float boostAmount = 1f;
             if (VesselStatus.IsBoosting)
-                boostAmount = VesselStatus.BoostMultiplier;
+                // TIME → boost speed: scaled by the vessel's live Time level via its
+                // ElementalAbilityMapSO (1x for vessels without a map or Time entry).
+                boostAmount = VesselStatus.BoostMultiplier
+                              * VesselStatus.ElementalAbilityHandler.Multiplier(Element.Time);
 
             if (VesselStatus.IsChargedBoostDischarging)
                 boostAmount *= VesselStatus.ChargedBoostCharge;
@@ -415,12 +432,12 @@ public class VesselTransformer : MonoBehaviour
             // Smooth throttle speed calculation
             speed = Mathf.Lerp(
                 speed,
-                InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.Value * boostAmount + MinimumSpeed,
+                InputStatus.XDiff * ThrottleScaler * ThrottleScalerMultiplier.EvaluateLive(VesselStatus) * boostAmount + MinimumSpeed,
                 LERP_AMOUNT * Time.deltaTime);
 
             // Modifiers scale this frame's output speed only. Multiplying into the
             // persistent smoothed `speed` field compounds the modifier every frame,
-            // saturating any sub-1 multiplier to a near-stop within a few frames —
+            // saturating any sub-1 multiplier to a near-stop within a few frames -
             // which makes modifier strength untunable (a 0.5 floor and a 0.0 floor
             // both collapse to ~zero).
             float effectiveSpeed = speed * throttleMultiplier;

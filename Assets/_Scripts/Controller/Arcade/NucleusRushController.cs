@@ -10,19 +10,19 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Nucleus Rush ("Brood Rush") — the nucleus-control domain minigame built on the
+    /// Nucleus Rush ("Brood Rush") - the nucleus-control domain minigame built on the
     /// new cell fundamentals: node control is the per-domain ENVIRONMENT volume INSIDE
     /// the cell's nucleus, everything outside is the voraciously-grazed feeding ground,
     /// and the fauna spawner ticks a fixed 30s wave clock. Every wave the cell births
     /// under a domain's nucleus claim scores that domain one brood (a point); the first
-    /// domain to the wave target (default 3 — Tools &gt; Cosmic Shore &gt; End Game
+    /// domain to the wave target (default 3 - Tools &gt; Cosmic Shore &gt; End Game
     /// Conditions) wins, so a two-domain match runs ~1.5–2.5 minutes.
     ///
     /// Zero bespoke ecology: the standard Cell + SpawnProfile produce the waves
     /// (SeedFullWaveEveryTick, one fauna species) and raise the SOAP wave event
     /// (CellRuntimeDataSO.OnFaunaWaveSpawned ← RandomLifeSpawner); this controller only
     /// LISTENS. Scoring is server-authoritative: the server's wave event increments a
-    /// representative RoundStats' GoalsScored (NetworkVariable — replicates to every
+    /// representative RoundStats' GoalsScored (NetworkVariable - replicates to every
     /// peer; domain sums ride the base controller's domain-sum NetworkVariables), and
     /// NucleusRushWaveTurnMonitor ends the turn when a domain reaches the target.
     /// End-game runs the HexRace/Joust/CrystalCapture SyncFinalScores pattern.
@@ -30,9 +30,9 @@ namespace CosmicShore.Gameplay
     public class NucleusRushController : MultiplayerDomainGamesController
     {
         [Header("Nucleus Rush")]
-        [Tooltip("Drag NucleusRushScoringRule.asset — the per-mode scoring strategy (winner, scores, results).")]
+        [Tooltip("Drag NucleusRushScoringRule.asset - the per-mode scoring strategy (winner, scores, results).")]
         [SerializeField] ScoringRuleSO rule;
-        [Tooltip("Drag Event_OnFaunaWaveSpawned.asset — the cell runtime's fauna wave channel this mode scores from.")]
+        [Tooltip("Drag Event_OnFaunaWaveSpawned.asset - the cell runtime's fauna wave channel this mode scores from.")]
         [SerializeField] ScriptableEventFaunaWave onFaunaWaveSpawned;
 
         bool _finalResultsSent;
@@ -73,10 +73,10 @@ namespace CosmicShore.Gameplay
         // ── Wave clock alignment ──────────────────────────────────────────
 
         /// <summary>
-        /// The cell's spawner starts when its bootstrap crystal registers — during the
+        /// The cell's spawner starts when its bootstrap crystal registers - during the
         /// ready screen. Realign the fixed 30s wave clock to the GO so the first scored
         /// wave lands ~30s into the race on every peer (fauna are client-local; each
-        /// peer realigns its own simulation — StartTurn is raised on all machines).
+        /// peer realigns its own simulation - StartTurn is raised on all machines).
         /// </summary>
         void HandleTurnStarted()
         {
@@ -97,7 +97,7 @@ namespace CosmicShore.Gameplay
         /// One fauna spawn-cycle tick. The SERVER's simulation is the scoring
         /// authority (every peer raises its own local event; only the server's
         /// counts). A wave scores only while the turn is live and only when its
-        /// domain holds a genuine nucleus claim — an unclaimed nucleus births an
+        /// domain holds a genuine nucleus claim - an unclaimed nucleus births an
         /// ambient wave for the fallback color but awards nobody.
         /// </summary>
         void HandleFaunaWave(FaunaWaveData wave)
@@ -105,7 +105,7 @@ namespace CosmicShore.Gameplay
             if (!IsServer || !_turnActive || _finalResultsSent) return;
             if (!wave.NucleusControlled || wave.Domain == Domains.Blue) return;
 
-            // Credit the brood to a representative player on the claiming domain —
+            // Credit the brood to a representative player on the claiming domain -
             // domain SUMS drive the race (ScoringMetrics.SumByDomain over GoalsScored),
             // so which teammate carries the point is presentation only. First roster
             // entry keeps it deterministic (server is the only writer).
@@ -122,7 +122,7 @@ namespace CosmicShore.Gameplay
         void AnnounceWaveScored_ClientRpc(int domain, int broodSum, int target)
         {
             var d = (Domains)domain;
-            GameFeedAPI.Post($"<b>{d}</b> brood hatched — {broodSum}/{target}", d, GameFeedType.Generic);
+            GameFeedAPI.Post($"<b>{d}</b> brood hatched - {broodSum}/{target}", d, GameFeedType.Generic);
         }
 
         // ── Server-authoritative game end (HexRace/Joust/CC pattern) ─────

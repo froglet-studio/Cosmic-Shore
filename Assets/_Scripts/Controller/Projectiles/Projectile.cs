@@ -31,7 +31,22 @@ namespace CosmicShore.Gameplay
         public Domains OwnDomain { get; private set; }
         public IVesselStatus VesselStatus { get; private set; }
 
+        /// Incremented on every launch. Delayed continuations (e.g. the detonator's
+        /// post-explosion pool return) must capture this and bail if it has moved on,
+        /// so a stale callback can't act on a pooled-and-reissued instance.
+        public int FlightGeneration { get; private set; }
+
+        /// Per-shot: destroyed on its first prism impact (the sub-level-5 SPACE default;
+        /// the 'Piercing Bullets' upgrade clears it at fire time). Detonating projectiles
+        /// manage their own return through the detonator and leave this false.
+        public bool StopOnFirstPrismImpact { get; private set; }
+
+        /// Per-shot: the CHARGE level-5 'Domain-Safe Skybursts' upgrade — direct-hit
+        /// damage spares prisms of the shooter's own domain. Snapshot at fire time.
+        public bool SpareOwnDomain { get; private set; }
+
         private MeshRenderer meshRenderer;
+        private Collider _rootCollider;
 
         // NEW: remember pooled parent so we can restore it
         private Transform _pooledParent;
@@ -54,6 +69,11 @@ namespace CosmicShore.Gameplay
                 _poolParentCaptured = true;
             }
 
+            // The detonator disables the root collider on detonation (DisableColliderNow) and
+            // pool reuse must undo that, or every detonated missile is reissued as a
+            // fly-through-everything dud.
+            if (_rootCollider) _rootCollider.enabled = true;
+
             // Proximity collider-LOD: a projectile in flight is a focus, so the prism
             // colliders along its path (including distant structures it was fired at)
             // are awake by the time it arrives. Unregistered on pool return.
@@ -68,6 +88,7 @@ namespace CosmicShore.Gameplay
         private void Awake()
         {
             InitialScale = transform.localScale;
+            _rootCollider = GetComponent<Collider>();
 
             // cache whatever parent it has in the pool (ship container or pool root)
             _pooledParent = transform.parent;
@@ -89,13 +110,16 @@ namespace CosmicShore.Gameplay
         }*/
 
         #region Initialization
-        public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge, bool detachOnLaunch = false)
+        public virtual void Initialize(ProjectileFactory factory, Domains ownDomain, IVesselStatus vesselStatus, float charge, bool detachOnLaunch = false,
+            bool stopOnFirstPrismImpact = false, bool spareOwnDomain = false)
         {
             _factory = factory;
             OwnDomain = ownDomain;
             VesselStatus = vesselStatus;
             Charge = charge;
             _detachOnLaunch = detachOnLaunch;
+            StopOnFirstPrismImpact = stopOnFirstPrismImpact;
+            SpareOwnDomain = spareOwnDomain;
         }
 
         public void SetType(ProjectileType type) => Type = type;
@@ -113,6 +137,7 @@ namespace CosmicShore.Gameplay
                 CSDebug.LogError("No factory for this projectile found. Can't return to pool!");
             }
 
+            FlightGeneration++;
             audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch, transform.position);
             ProjectileTime = projectileTime;
 

@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Host-authoritative ready-up + countdown for the Maelstrom lobby / between-round hub. A
-    /// scene-placed <see cref="NetworkBehaviour"/> — the Maelstrom scene loads through Netcode scene
+    /// scene-placed <see cref="NetworkBehaviour"/> - the Maelstrom scene loads through Netcode scene
     /// management (host-driven Single load), so this spawns on every peer.
     ///
     /// Behaviour (per the design):
@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
     ///   • Once EVERY connected human client has tapped Ready, the deadline snaps in to
     ///     <see cref="allReadySeconds"/> (5s) from now.
     ///   • The deadline + ready tally are synced (<see cref="NetworkVariable{T}"/>) so every peer can
-    ///     render the countdown — e.g. inside the Ready button — and the "x / y ready" line.
+    ///     render the countdown - e.g. inside the Ready button - and the "x / y ready" line.
     ///   • When the deadline elapses the host draws + loads the next random game via
     ///     <see cref="TournamentController.BeginNextRound"/>.
     ///
@@ -99,7 +99,7 @@ namespace CosmicShore.Gameplay
             if (!IsServer) return;
 
             // Only the lobby/hub arms + advances; the summary screen stays idle. Gated on phase (not
-            // OnNetworkSpawn) so it's robust to spawn-vs-sceneLoaded ordering — it self-arms on the
+            // OnNetworkSpawn) so it's robust to spawn-vs-sceneLoaded ordering - it self-arms on the
             // first frame the controller reports phase Lobby.
             var tc = TournamentController.Instance;
             if (tc == null || tc.Phase != TournamentPhase.Lobby) return;

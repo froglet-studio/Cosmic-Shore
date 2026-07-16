@@ -54,7 +54,7 @@ namespace CosmicShore.Gameplay
 
             // Teleport guard: on a kickoff park / fresh spawn the follow target jumps a long way in one
             // frame (normal flight is only a few units/frame). Snap the camera into place instead of
-            // SmoothDamping a wild swing across the arena — that swing read as a "wonky, jittery start".
+            // SmoothDamping a wild swing across the arena - that swing read as a "wonky, jittery start".
             const float teleportStep = 50f;
             if (shipDelta.sqrMagnitude > teleportStep * teleportStep)
             {
@@ -81,7 +81,7 @@ namespace CosmicShore.Gameplay
 
             if (_disableRotationLerp)
             {
-                // Hard-attached camera (no smoothing) — consistent every frame, so it never jitters.
+                // Hard-attached camera (no smoothing) - consistent every frame, so it never jitters.
                 transform.position = desiredPos;
                 _velocity = Vector3.zero;
             }
@@ -104,7 +104,7 @@ namespace CosmicShore.Gameplay
             }
             else
             {
-                // Blend the Slerp factor from the smooth base toward instant (1) as motion gets lateral —
+                // Blend the Slerp factor from the smooth base toward instant (1) as motion gets lateral -
                 // continuous, so no snap/smooth flip. This is the main fix for the Manta rotation jitter.
                 float baseT = 1f - Mathf.Exp(-_rotationSmoothTime * Time.deltaTime);
                 float t = Mathf.Lerp(baseT, 1f, _lateralDominance);

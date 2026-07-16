@@ -6,7 +6,7 @@ using static CosmicShore.Gameplay.PrismGeometry;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Pure generators for the conveyor's microscene recipes — each a small flyable set piece tuned
+    /// Pure generators for the conveyor's microscene recipes - each a small flyable set piece tuned
     /// for a Squirrel run. Every recipe re-rolls its own parameters (radii, counts, twists, bends,
     /// phases) on EVERY plan, so the same recipe never lands the same way twice, and every recipe is
     /// fitted to exactly <c>prismBudget</c> prism points so a recycled scene can re-pose its fixed
@@ -16,9 +16,9 @@ namespace CosmicShore.Gameplay
     /// Geometry is produced through the shared <see cref="PrismGeometry"/> vocabulary (helices,
     /// hoops, tubes, arches, vortices, corridors, lattices, torus rings, fans, scatters, wave
     /// sheets…). The recipe knows ONLY shape; <see cref="Finalize"/> then themes each scene from a
-    /// <see cref="MicroscenePalette"/> — per-prism domain (incl. neutral Blue), prism kind
+    /// <see cref="MicroscenePalette"/> - per-prism domain (incl. neutral Blue), prism kind
     /// (plain / danger / shielded / supershielded), a scale mood, and the elemental/omni crystal
-    /// mix — so most scenes read coherent with occasional spice, never chaotic confetti.
+    /// mix - so most scenes read coherent with occasional spice, never chaotic confetti.
     ///
     /// Prism sizing follows the shipped structures (HexRace ribbon 10×1×3, ring gates ~1.8×1.8×7.5,
     /// helix strands 1×1×5): the LONG axis runs along the structure's own path, so sparse counts
@@ -273,7 +273,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>A sparse, open field — undulating ground plates, a crystal, flora seeded into the cell.</summary>
+        /// <summary>A sparse, open field - undulating ground plates, a crystal, flora seeded into the cell.</summary>
         static void Meadow(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             float wavePhase = Range(rng, 0f, Mathf.PI * 2f);
@@ -352,7 +352,7 @@ namespace CosmicShore.Gameplay
             plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.5f + 22f));
         }
 
-        /// <summary>A single sinuous ribbon wall to surf along — plates chained on a 3D sine path.</summary>
+        /// <summary>A single sinuous ribbon wall to surf along - plates chained on a 3D sine path.</summary>
         static void SerpentRibbon(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             float ampX = Range(rng, 0.2f, 0.5f) * radius;
@@ -414,7 +414,7 @@ namespace CosmicShore.Gameplay
             plan.CrystalPoints.Add(new Vector3(0f, baseY + pillarHeight * segment * 0.5f, length * 0.5f + 18f));
         }
 
-        /// <summary>Concentric tilted rings around a heart crystal — a gyroscope to weave through.</summary>
+        /// <summary>Concentric tilted rings around a heart crystal - a gyroscope to weave through.</summary>
         static void Orbitals(MicroscenePlan plan, System.Random rng, int budget, float radius)
         {
             int rings = RangeInt(rng, 2, 5);
@@ -460,7 +460,7 @@ namespace CosmicShore.Gameplay
             plan.CrystalPoints.Add(new Vector3(0f, baseY, length * 0.5f + 18f));
         }
 
-        /// <summary>Criss-crossing diagonal strands — a loose weave with gaps to pick a line through.</summary>
+        /// <summary>Criss-crossing diagonal strands - a loose weave with gaps to pick a line through.</summary>
         static void Lattice(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             int strands = RangeInt(rng, 4, 8);
@@ -483,7 +483,7 @@ namespace CosmicShore.Gameplay
             plan.CrystalPoints.Add(new Vector3(0f, 0f, Range(rng, -0.2f, 0.2f) * length));
         }
 
-        /// <summary>A widening debris cone converging on a crystal at the apex — fly up the tail.</summary>
+        /// <summary>A widening debris cone converging on a crystal at the apex - fly up the tail.</summary>
         static void CometTail(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             float baseRadius = Range(rng, 0.35f, 0.6f) * radius;
@@ -505,7 +505,7 @@ namespace CosmicShore.Gameplay
             plan.CrystalPoints.Add(new Vector3(0f, 0f, apexZ + 12f));
         }
 
-        /// <summary>A single strand unrolling outward around the axis — an expanding spiral ramp.</summary>
+        /// <summary>A single strand unrolling outward around the axis - an expanding spiral ramp.</summary>
         static void SpiralRamp(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             float turns = Range(rng, 1.5f, 3.5f);
@@ -559,7 +559,7 @@ namespace CosmicShore.Gameplay
             plan.CrystalPoints.Add(new Vector3(0f, 0f, length * 0.4f)); // at the open mouth
         }
 
-        /// <summary>Two parallel plate walls with gaps — a slot to roll and slip through.</summary>
+        /// <summary>Two parallel plate walls with gaps - a slot to roll and slip through.</summary>
         static void SlotCorridor(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             float halfGap = Range(rng, 0.12f, 0.22f) * radius;
@@ -603,7 +603,7 @@ namespace CosmicShore.Gameplay
             plan.CrystalPoints.Add(new Vector3(0f, radius * 0.1f, length * 0.5f + 16f));
         }
 
-        /// <summary>Radial blades fanning off the axis — a turbine to weave, crystal at the hub.</summary>
+        /// <summary>Radial blades fanning off the axis - a turbine to weave, crystal at the hub.</summary>
         static void Turbine(MicroscenePlan plan, System.Random rng, int budget, float radius)
         {
             int blades = RangeInt(rng, 4, 9);
@@ -619,7 +619,7 @@ namespace CosmicShore.Gameplay
             plan.CrystalPoints.Add(new Vector3(Range(rng, -0.2f, 0.2f) * radius, 0f, Range(rng, -0.2f, 0.2f) * length));
         }
 
-        /// <summary>An open rolling floor to skim along — flora seeded into the cell.</summary>
+        /// <summary>An open rolling floor to skim along - flora seeded into the cell.</summary>
         static void RollingPlains(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             int nx = Mathf.Clamp(Mathf.RoundToInt(Mathf.Sqrt(budget)), 3, 8);
@@ -644,7 +644,7 @@ namespace CosmicShore.Gameplay
             plan.FaunaCount = 2 + rng.Next(3);
         }
 
-        /// <summary>An open preserve — a rolling floor with BOTH flora and fauna released into the cell.</summary>
+        /// <summary>An open preserve - a rolling floor with BOTH flora and fauna released into the cell.</summary>
         static void Preserve(MicroscenePlan plan, System.Random rng, int budget, float radius, float length)
         {
             int nx = Mathf.Clamp(Mathf.RoundToInt(Mathf.Sqrt(budget)), 3, 7);
@@ -728,7 +728,7 @@ namespace CosmicShore.Gameplay
             {
                 case DomainScheme.Banded:
                 {
-                    // Contiguous bands — structures tend to be contiguous runs in the point list,
+                    // Contiguous bands - structures tend to be contiguous runs in the point list,
                     // so a band ≈ a structure, keeping the colouring coherent rather than confetti.
                     int bands = Mathf.Clamp(domains.Length, 2, 3);
                     for (int i = 0; i < count; i++)

@@ -84,7 +84,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Colour the mini ships read as — the local player's domain colour (so they preview "you,
+        /// Colour the mini ships read as - the local player's domain colour (so they preview "you,
         /// different hull"), falling back to the toy's accent when the theme/player isn't available.
         /// </summary>
         Color PreviewColor()
@@ -97,7 +97,7 @@ namespace CosmicShore.Gameplay
         }
 
         // Recolour EVERY mini ship the instant the player's domain changes (via the domain-changer
-        // toy or anywhere else) — not just the one slot that flips on a ship swap. ConfigureVisual
+        // toy or anywhere else) - not just the one slot that flips on a ship swap. ConfigureVisual
         // only runs on create/flip, so without this the other ships keep the old domain colour.
         protected override void OnTick()
         {

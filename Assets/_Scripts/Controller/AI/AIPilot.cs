@@ -117,7 +117,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Routes all steering toward positions supplied by <paramref name="provider"/>.
-        /// Pass the freshest position each call — it is sampled once per frame.
+        /// Pass the freshest position each call - it is sampled once per frame.
         /// </summary>
         public void SetExternalTargetProvider(Func<Vector3> provider) => _externalTargetProvider = provider;
 
@@ -250,7 +250,7 @@ namespace CosmicShore.Gameplay
             if (best != null)
                 _targetPosition = best.position;
             else if (cellData != null && cellData.Cell != null)
-                // No opponent found — loiter toward the cell centre rather than holding a
+                // No opponent found - loiter toward the cell centre rather than holding a
                 // stale/zero target. Mirrors the crystal-seek fallback in UpdateCellContent().
                 _targetPosition = cellData.Cell.transform.position;
         }
@@ -326,7 +326,7 @@ namespace CosmicShore.Gameplay
                 _targetPosition = _targetVesselTransform.position;
 
             // External steering hook (e.g. Astro League ball striking) overrides all other
-            // targeting when set — checked last so it always wins.
+            // targeting when set - checked last so it always wins.
             if (_externalTargetProvider != null)
                 _targetPosition = _externalTargetProvider();
 
@@ -344,7 +344,7 @@ namespace CosmicShore.Gameplay
             else if (VesselStatus.IsDrifting) vessel.StopShipControllerActions(InputEvents.LeftStickAction);
 
 
-            if (_distance.sqrMagnitude < float.Epsilon) // On top of the target — avoid div-by-zero (guards the sqrMagnitude divisor below)
+            if (_distance.sqrMagnitude < float.Epsilon) // On top of the target - avoid div-by-zero (guards the sqrMagnitude divisor below)
             {
                 // Don't latch the previous frame's turn input (which would keep the vessel
                 // veering with nothing to steer toward). Fly a clean straight pass-through.

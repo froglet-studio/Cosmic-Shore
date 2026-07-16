@@ -84,8 +84,11 @@ understood as a **view** of the same lifecycle, not an independent system.
      • Volume — pushed by Prism.RefreshVolumeCache (UpdateCellVolume),
        O(growing)/frame; Register seeds from CachedVolume.
      • DomainSlot — refreshed by ForwardDomainChangeToCell on every steal /
-       ChangeTeam (the AOE damage view's Domain stays deliberately stale —
-       see Known gaps).
+       ChangeTeam. The AOE damage view's Domain is refreshed on the same
+       event: Prism.HandleTeamChangedForCell pairs the forward with
+       UpdateDomain so explosion friend/foe reads the live domain (the
+       Charge-5 "spare own domain" unlock requires it — the former
+       stale-steal gap is closed).
 ```
 
 ### Data structures
@@ -93,8 +96,9 @@ understood as a **view** of the same lifecycle, not an independent system.
 - **Hot array** `_spatial[i]` — `PrismSpatialData`, 16 bytes (float3 position +
   flags byte), 4 per cache line. Scanned by the Burst AOE job.
 - **Cold array** `_damage[i]` — volume + domain, read on the main thread only
-  for prisms that pass the spatial filter. Registration-time snapshots — the
-  staleness is part of the tested AOE behavior (see Known gaps).
+  for prisms that pass the spatial filter. Volume is a registration-time
+  snapshot (see Known gaps); Domain is refreshed on steal / ChangeTeam via
+  `UpdateDomain` (Prism.HandleTeamChangedForCell).
 - **Summation array** `_cellData[i]` — `PrismCellData`, 8 bytes (live volume,
   cell id, live domain slot, env-mass flag), 8 per cache line. Scanned by
   `CellVolumeSumJob` on each cell's 0.25s volume recompute. LIVE by contract —
@@ -244,11 +248,12 @@ registry for its own lattice, `TryReserve` for the world.
 
 ## Known gaps (intentional, tracked)
 
-- `UpdateDomain` / `UpdateVolume` have **no callers**: a stolen prism keeps its
-  registration-time domain in the AOE cold data, and a grown prism keeps its
-  spawn-time volume. Pre-existing behavior, preserved through the rename.
-  Wiring `PrismTeamManager` → `UpdateDomain` changes AOE friend/foe results and
-  must be its own tested change.
+- `UpdateVolume` has **no callers**: a grown prism keeps its spawn-time volume
+  in the AOE cold data. Pre-existing behavior, preserved through the rename.
+  (`UpdateDomain` is no longer a gap: `Prism.HandleTeamChangedForCell` calls it
+  on every steal / ChangeTeam alongside `ForwardDomainChangeToCell`, so AOE
+  friend/foe reads the live domain — required by the Charge-5 "spare own
+  domain" unlock.)
 - Occupancy treats prisms as points with a clearance radius, not oriented
   boxes. A fat trail block whose *center* is outside `clearRadius` can still
   visually intersect a grown gyroid block — same tolerance the game already

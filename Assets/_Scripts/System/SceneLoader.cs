@@ -21,11 +21,11 @@ namespace CosmicShore.Core
     ///
     /// Lives on a DontDestroyOnLoad root in the Bootstrap scene.
     /// Registered as a DI singleton via AppManager.
-    /// Subscribes to SOAP events in code — no per-scene EventListenerNoParam wiring needed.
+    /// Subscribes to SOAP events in code - no per-scene EventListenerNoParam wiring needed.
     ///
     /// Note: This is a plain MonoBehaviour (not NetworkBehaviour). Network-aware
     /// config sync is handled by MultiplayerMiniGameControllerBase.OnNetworkSpawn().
-    /// Replay / restart is owned by MiniGameControllerBase.RequestReplay() — both
+    /// Replay / restart is owned by MiniGameControllerBase.RequestReplay() - both
     /// the scoreboard and the pause menu call it directly.
     /// </summary>
     public class SceneLoader : MonoBehaviour
@@ -53,7 +53,7 @@ namespace CosmicShore.Core
         {
             if (!gameData)
             {
-                Debug.LogError("[SceneLoader] gameData was not injected — check AppManager DI registration.");
+                Debug.LogError("[SceneLoader] gameData was not injected - check AppManager DI registration.");
                 return;
             }
 
@@ -102,14 +102,14 @@ namespace CosmicShore.Core
         /// <summary>
         /// Subscribes <see cref="FadeFromSplashOnReady"/> to <see cref="GameDataSO.OnClientReady"/>
         /// so the next time the local player's vessel finishes initialization the splash
-        /// overlay fades back to transparent. Idempotent — safe to call repeatedly.
+        /// overlay fades back to transparent. Idempotent - safe to call repeatedly.
         ///
         /// Called automatically on Menu_Main load via <see cref="OnSceneLoaded"/>. Called
         /// manually by <see cref="Gameplay.PartyInviteController.AcceptInviteAsync"/> after
         /// it sets the splash opaque, because accepting an invite does not trigger a scene
         /// reload on the joining client (the host's Menu_Main is already loaded), so
         /// <see cref="OnSceneLoaded"/> never fires and the fade subscription would otherwise
-        /// stay unarmed — leaving the joining client stuck on the splash (Bug B).
+        /// stay unarmed - leaving the joining client stuck on the splash (Bug B).
         /// </summary>
         public void ArmSplashFadeOnNextClientReady()
         {
@@ -135,7 +135,7 @@ namespace CosmicShore.Core
             PlayerPrefs.DeleteKey("ReturnToModal");
             PlayerPrefs.Save();
 
-            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame — Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
+            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame - Scene={gameData.SceneName}, Mode={gameData.GameMode}, " +
                       $"IsMultiplayer={gameData.IsMultiplayerMode}, Vessel={gameData.selectedVesselClass.Value}, " +
                       $"Intensity={gameData.SelectedIntensity.Value}, PlayerCount={gameData.SelectedPlayerCount.Value}, " +
                       $"AIBackfill={gameData.RequestedAIBackfillCount}</color>");
@@ -155,7 +155,7 @@ namespace CosmicShore.Core
             // network load and destroys AI NetworkObjects before they can replicate.
             if (nm != null && nm.IsListening && !nm.IsServer)
             {
-                Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame deferring scene load to server — " +
+                Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LaunchGame deferring scene load to server - " +
                           $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}. " +
                           $"Server will replicate scene via Netcode.</color>");
                 return;
@@ -166,7 +166,7 @@ namespace CosmicShore.Core
             // in the game scene's OnNetworkSpawn, rather than here before scene load.
 
             // Tournament (Maelstrom): hold the loading splash long enough to read the between-game running
-            // standings before the next game loads. Zero outside that window — normal launches, the first
+            // standings before the next game loads. Zero outside that window - normal launches, the first
             // game, and the load into the final results summary are not delayed. Host-only: clients returned
             // at the defer guard above and follow the host's held scene load, so their splash holds too.
             float minSplashDwell = TournamentController.Instance != null
@@ -178,7 +178,7 @@ namespace CosmicShore.Core
 
         void FadeFromSplashOnReady()
         {
-            Debug.Log("<color=#FFFFFF><b>[FLOW-8] [SceneLoader] FadeFromSplashOnReady — OnClientReady fired!</b></color>");
+            Debug.Log("<color=#FFFFFF><b>[FLOW-8] [SceneLoader] FadeFromSplashOnReady - OnClientReady fired!</b></color>");
             gameData.OnClientReady.OnRaised -= FadeFromSplashOnReady;
 
             // Runs on EVERY peer (clients never reach LoadSceneAsync's pre-load
@@ -207,7 +207,7 @@ namespace CosmicShore.Core
             PlayerPrefs.DeleteKey("ReturnToModal");
             PlayerPrefs.Save();
 
-            // Show the loading splash immediately so the transition is covered ASAP — e.g. the
+            // Show the loading splash immediately so the transition is covered ASAP - e.g. the
             // Tournament summary's Main Menu button, which otherwise left the summary on-screen during
             // the async load (OnSceneLoaded only re-arms this once Menu_Main has finished loading). The
             // idempotent helper arms the fade-back on the next OnClientReady (the menu autopilot vessel).
@@ -221,7 +221,7 @@ namespace CosmicShore.Core
             // Clients rely on the server's Netcode scene management for transitions.
             if (nm != null && nm.IsListening && !nm.IsServer)
             {
-                Debug.Log($"<color=#FF8C00>[SceneLoader] ReturnToMainMenu deferring to server — " +
+                Debug.Log($"<color=#FF8C00>[SceneLoader] ReturnToMainMenu deferring to server - " +
                           $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}.</color>");
                 return;
             }
@@ -231,7 +231,7 @@ namespace CosmicShore.Core
 
         async UniTaskVoid LoadSceneAsync(string sceneName, float minSplashDwell = 0f)
         {
-            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync — sceneName={sceneName}</color>");
+            Debug.Log($"<color=#FF8C00>[FLOW-3] [SceneLoader] LoadSceneAsync - sceneName={sceneName}</color>");
             gameData.InvokeSceneTransition(false);
 
             var nm = NetworkManager.Singleton;
@@ -267,14 +267,14 @@ namespace CosmicShore.Core
             {
                 // Defensive fallback: no active server (should not happen under the
                 // always-hosted model). Load locally so a scene transition never hangs.
-                Debug.LogWarning("[SceneLoader] No active server — falling back to local scene load.");
+                Debug.LogWarning("[SceneLoader] No active server - falling back to local scene load.");
                 SceneManager.LoadScene(sceneName);
             }
         }
 
         void ClearPlayerVesselReferences()
         {
-            Debug.Log($"<color=#00FFFF>[DESPAWN] ClearPlayerVesselReferences — Players={gameData.Players.Count}, Vessels={gameData.Vessels.Count}</color>");
+            Debug.Log($"<color=#00FFFF>[DESPAWN] ClearPlayerVesselReferences - Players={gameData.Players.Count}, Vessels={gameData.Vessels.Count}</color>");
 
             foreach (var player in gameData.Players)
             {
@@ -285,7 +285,7 @@ namespace CosmicShore.Core
             // Explicitly despawn AI Player NetworkObjects so they don't persist
             // into Menu_Main. Human players survive (destroyWithScene=false from
             // connection approval) but AI players must be removed.
-            // Must happen BEFORE vessel despawn — AI player destruction after vessel
+            // Must happen BEFORE vessel despawn - AI player destruction after vessel
             // despawn causes MissingReferenceException when VesselAnimation.Update()
             // accesses the destroyed Player on the same frame.
             for (int i = gameData.Players.Count - 1; i >= 0; i--)
@@ -323,12 +323,12 @@ namespace CosmicShore.Core
             var nm = NetworkManager.Singleton;
             if (nm != null && nm.IsListening && !nm.IsServer)
             {
-                Debug.Log($"<color=#FF8C00>[SceneLoader] HandleActiveSessionEnd deferring to server — " +
+                Debug.Log($"<color=#FF8C00>[SceneLoader] HandleActiveSessionEnd deferring to server - " +
                           $"IsListening={nm.IsListening}, IsServer={nm.IsServer}, IsClient={nm.IsClient}.</color>");
                 return;
             }
 
-            // Genuine session end — a client lost its connection (OnClientDisconnect)
+            // Genuine session end - a client lost its connection (OnClientDisconnect)
             // or the transport failed (OnTransportFailure). The host's deliberate
             // "Main Menu" return does NOT route here; it goes straight through
             // ReturnToMainMenu(), which keeps the live Relay so the whole party

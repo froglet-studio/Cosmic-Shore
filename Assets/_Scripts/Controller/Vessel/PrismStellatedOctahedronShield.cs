@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
     /// Manages the visual and physical transition between a prism's unshielded
     /// box state and its super-shielded stellated octahedron (Stella Octangula)
     /// state. Mirrors <see cref="PrismOctahedronShield"/> but uses the
-    /// stellation — the compound of two interpenetrating tetrahedra whose
+    /// stellation - the compound of two interpenetrating tetrahedra whose
     /// intersection is the octahedron shield and whose union has spike tips
     /// at the 8 cube corners.
     ///
@@ -19,7 +19,7 @@ namespace CosmicShore.Gameplay
     ///                      mass = ρ · 108·a·b·c (exactly 13.5× box mass by default,
     ///                      3× the inscribed octahedron shield's mass)
     ///
-    /// Engage: per-face bloom morph — 24 outer faces grow outward from their
+    /// Engage: per-face bloom morph - 24 outer faces grow outward from their
     /// centroids.
     /// Disengage: box mesh snaps back immediately, then a shatter overlay plays
     ///   where each of the 24 faces simultaneously shrinks and flies outward
@@ -283,7 +283,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Branchless point-in-shield test (world-space input). Only valid
         /// while <see cref="IsShielded"/> is true. Uses the 4-linear-form
-        /// tetrahedral check — a point is inside the stellation iff it lies
+        /// tetrahedral check - a point is inside the stellation iff it lies
         /// in either constituent tetrahedron.
         /// </summary>
         public bool IsPointInsideShield(Vector3 worldPoint)
@@ -432,7 +432,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Lazily create the shatter overlay child. Only allocated when the
-        /// first disengage actually happens — most prisms are never
+        /// first disengage actually happens - most prisms are never
         /// super-shielded, so most never pay this cost.
         /// </summary>
         private void EnsureShatterChild()

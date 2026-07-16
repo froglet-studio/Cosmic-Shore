@@ -8,15 +8,15 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Manages a <b>set</b> of toys that together represent "the options you are not currently on".
     /// Each toy targets one option (a domain, a vessel) and is visually that option; flying through
-    /// it applies the change. The set always shows <c>universe \ {current}</c>, and — the key
-    /// behaviour the prompter asked for — <b>the toy you use flips to the option you just left</b>,
+    /// it applies the change. The set always shows <c>universe \ {current}</c>, and - the key
+    /// behaviour the prompter asked for - <b>the toy you use flips to the option you just left</b>,
     /// so the set continuously mirrors "everything except where you are now".
     ///
     /// Shared by <see cref="DomainChangerToySet"/> (Jade/Ruby/Gold) and <see cref="VesselChangerToySet"/>
     /// (a collection of ships). Current state is polled each frame, so external changes (a panel, a
     /// menu reset) reconcile the same way a toy activation does.
     /// </summary>
-    /// <typeparam name="T">The option type — <c>Domains</c> or <c>VesselClassType</c>.</typeparam>
+    /// <typeparam name="T">The option type - <c>Domains</c> or <c>VesselClassType</c>.</typeparam>
     public abstract class SwapToySetCoordinator<T> : MonoBehaviour
     {
         protected ToyContext Context { get; private set; }
@@ -115,7 +115,7 @@ namespace CosmicShore.Gameplay
                 if (s.Keep) covered.Add(s.Option);
             }
 
-            // Options still needing a slot — offer `prev` first so the used toy flips to it.
+            // Options still needing a slot - offer `prev` first so the used toy flips to it.
             var remaining = new List<T>();
             if (desired.Contains(prev) && !covered.Contains(prev)) remaining.Add(prev);
             foreach (var d in desired)
@@ -170,7 +170,7 @@ namespace CosmicShore.Gameplay
 
             // Disarm EVERY toy in the set the instant one fires. After a vessel swap the new
             // vessel re-spawns right where you flew through (on top of these toys), and the domain
-            // change keeps you inside the cluster — so without this the neighbouring toys would
+            // change keeps you inside the cluster - so without this the neighbouring toys would
             // chain-trigger and you could never escape. Each toy re-arms only once the vessel has
             // flown clear of it (Toy.Update exit gate).
             foreach (var s in _slots)
@@ -203,7 +203,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Per-frame hook for reacting to external state that isn't the tracked "current option" —
+        /// Per-frame hook for reacting to external state that isn't the tracked "current option" -
         /// e.g. the vessel changer recolouring all its mini ships when the player's domain changes,
         /// not just the one slot that flips on a ship swap. Runs before the current-option reconcile.
         /// </summary>

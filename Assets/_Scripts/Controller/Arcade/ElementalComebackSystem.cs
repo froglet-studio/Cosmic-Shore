@@ -56,7 +56,6 @@ namespace CosmicShore.Gameplay
         static readonly Element[] AllElements =
             { Element.Mass, Element.Charge, Element.Space, Element.Time };
 
-        readonly Dictionary<string, float[]> _baselines = new();
         float _lastUpdateTime;
         bool _isActive;
 
@@ -101,7 +100,6 @@ namespace CosmicShore.Gameplay
             if (comebackProfile == null) return;
 
             _isActive = true;
-            _baselines.Clear();
             ResetComebackAudioTimestamps();
 
             foreach (var player in gameData.Players)
@@ -119,14 +117,8 @@ namespace CosmicShore.Gameplay
 
                 ApplyInitialValues(rs, config);
 
-                var baseline = new float[AllElements.Length];
-                for (int i = 0; i < AllElements.Length; i++)
-                    baseline[i] = rs.GetNormalizedLevel(AllElements[i]);
-
-                _baselines[player.Name] = baseline;
-
                 if (debugLogging)
-                    CSDebug.Log($"[ElementalComebackSystem] Baseline for {player.Name} ({vesselType}): " +
+                    CSDebug.Log($"[ElementalComebackSystem] Initial levels for {player.Name} ({vesselType}): " +
                               $"M={rs.GetLevel(Element.Mass)} C={rs.GetLevel(Element.Charge)} " +
                               $"S={rs.GetLevel(Element.Space)} T={rs.GetLevel(Element.Time)}");
             }
@@ -136,12 +128,27 @@ namespace CosmicShore.Gameplay
         {
             if (debugLogging && _isActive)
                 CSDebug.Log("[ElementalComebackSystem] Turn ended. Deactivating.");
-            _isActive = false;
+            Deactivate();
         }
 
         void OnGameEnded()
         {
+            Deactivate();
+        }
+
+        void Deactivate()
+        {
+            if (!_isActive) return;
             _isActive = false;
+            ClearAllComebackModifiers();
+        }
+
+        void ClearAllComebackModifiers()
+        {
+            var players = gameData.Players;
+            if (players == null) return;
+            foreach (var player in players)
+                GetResourceSystem(player)?.ClearComebackModifiers();
         }
 
         void Update()
@@ -166,7 +173,6 @@ namespace CosmicShore.Gameplay
                 var player = players[p];
                 var rs = GetResourceSystem(player);
                 if (rs == null) continue;
-                if (!_baselines.TryGetValue(player.Name, out var baseline)) continue;
 
                 float playerValue = GetPlayerValue(player);
                 float scoreDiff = CalculateScoreDifference(leaderValue, playerValue);
@@ -180,12 +186,11 @@ namespace CosmicShore.Gameplay
                     var element = AllElements[i];
                     float weight = config.GetWeight(element);
                     float bonusLevels = scoreDiff * weight;
-                    float targetNormalized = baseline[i] + (bonusLevels / 10f);
 
-                    // Clamp to 0.0–1.5 — never touch the base pips (below 0)
-                    targetNormalized = Mathf.Clamp(targetNormalized, 0f, 1.5f);
-
-                    rs.SetElementLevel(element, targetNormalized);
+                    // Composited through the ResourceSystem's comeback-modifier layer instead
+                    // of overwriting the base level - mid-turn crystal gains (AdjustLevel)
+                    // persist underneath the comeback bonus instead of being erased each tick.
+                    rs.SetComebackModifier(element, Mathf.Max(0f, bonusLevels / 10f));
 
                     // Fire comeback audio for the local player when a buff activates,
                     // gated by per-element cooldown so it doesn't fire every tick.
@@ -220,7 +225,7 @@ namespace CosmicShore.Gameplay
         }
 
         // ---------------------------------------------------------------
-        // Value reading — uses the configured ScoreDifferenceSource
+        // Value reading - uses the configured ScoreDifferenceSource
         // ---------------------------------------------------------------
         // Comeback buffs are now keyed off DOMAIN aggregates: a player on the
         // leading domain doesn't get a comeback buff even if they personally

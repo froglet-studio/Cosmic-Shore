@@ -276,7 +276,7 @@ namespace CosmicShore.Gameplay
                     if (_pool[i, r])
                     {
                         var go = _pool[i, r].gameObject;
-                        // isPlaying, not isEditor: editor PLAY mode must use deferred Destroy —
+                        // isPlaying, not isEditor: editor PLAY mode must use deferred Destroy -
                         // DestroyImmediate is illegal inside physics/animation/render callbacks
                         // (e.g. a domain change triggered by flying through a toy gate).
                         if (Application.isPlaying) Destroy(go); else DestroyImmediate(go);

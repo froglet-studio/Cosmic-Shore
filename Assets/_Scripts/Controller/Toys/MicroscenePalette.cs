@@ -4,8 +4,8 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Tuning for how a microscene is <b>themed</b> — domain distribution, prism-kind accents, scale
-    /// mood, and crystal mix — kept separate from the recipe GEOMETRY. The weights are deliberately
+    /// Tuning for how a microscene is <b>themed</b> - domain distribution, prism-kind accents, scale
+    /// mood, and crystal mix - kept separate from the recipe GEOMETRY. The weights are deliberately
     /// lopsided toward coherence: most scenes come out one domain and all-plain (like today), with
     /// richer variety appearing as occasional spice, so the field reads "infinitely fresh" without
     /// becoming multicoloured chaotic confetti. Authored on the conveyor toy definition (config
@@ -15,7 +15,7 @@ namespace CosmicShore.Gameplay
     public sealed class MicroscenePalette
     {
         [Header("Domain scheme weights (Mono dominates → coherent)")]
-        [Tooltip("Whole scene one domain — the most common, coherent look.")]
+        [Tooltip("Whole scene one domain - the most common, coherent look.")]
         public float MonoWeight = 6f;
         [Tooltip("Contiguous structure runs, each its own domain.")]
         public float BandedWeight = 2.2f;
@@ -30,11 +30,11 @@ namespace CosmicShore.Gameplay
 
         [Header("Prism-kind scheme weights (AllPlain dominates → mostly plain)")]
         public float AllPlainWeight = 10f;
-        [Tooltip("A few danger prisms — risk/reward (Squirrel danger-skim boost).")]
+        [Tooltip("A few danger prisms - risk/reward (Squirrel danger-skim boost).")]
         public float DangerAccentWeight = 2.6f;
-        [Tooltip("A few tougher shielded accents (always-on convex MeshCollider — kept rare).")]
+        [Tooltip("A few tougher shielded accents (always-on convex MeshCollider - kept rare).")]
         public float ShieldAccentWeight = 1.1f;
-        [Tooltip("A rare supershielded landmark (always-on convex MeshCollider — kept very rare).")]
+        [Tooltip("A rare supershielded landmark (always-on convex MeshCollider - kept very rare).")]
         public float LandmarkWeight = 0.5f;
         [Min(0)] public int MaxDanger = 8;
         [Min(0), Tooltip("Collider-budget cap on shielded prisms per scene.")]
@@ -51,7 +51,7 @@ namespace CosmicShore.Gameplay
         [Range(0f, 1f), Tooltip("Per crystal point, chance it's the omni jackpot instead of an elemental skim.")]
         public float OmniCrystalChance = 0.16f;
 
-        /// <summary>The playable domains a scene may colour from — set live by the conveyor each draw
+        /// <summary>The playable domains a scene may colour from - set live by the conveyor each draw
         /// (never authored/snapshotted: the Domain Changer toy can re-pick mid-freestyle).</summary>
         [System.NonSerialized] public Domains[] PlayableDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
 

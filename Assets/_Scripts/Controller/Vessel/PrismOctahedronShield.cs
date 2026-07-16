@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
     ///                 octahedron mesh visible, mass = rho · 36·a·b·c
     ///                 (exactly 4.5× the box mass by default)
     ///
-    /// Engage: per-face bloom morph — 8 faces grow outward from their centroids.
+    /// Engage: per-face bloom morph - 8 faces grow outward from their centroids.
     /// Disengage: box mesh snaps back immediately, then a shatter overlay plays
     ///   where each octahedron face simultaneously shrinks and flies outward
     ///   along its face normal, mirroring the prism destruction VFX.
@@ -465,7 +465,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Lazily create the shatter overlay child. Only allocated when the
-        /// first disengage actually happens — most prisms are never shielded,
+        /// first disengage actually happens - most prisms are never shielded,
         /// so most never pay this cost.
         /// </summary>
         private void EnsureShatterChild()

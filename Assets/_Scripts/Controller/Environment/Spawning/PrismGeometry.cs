@@ -8,7 +8,7 @@ namespace CosmicShore.Gameplay
     /// Pure, engine-light geometry primitives that emit <see cref="SpawnPoint"/>s (position /
     /// rotation / scale) into a caller-owned list from an instance-local <see cref="System.Random"/>.
     /// The shared "prism vocabulary" behind BOTH the freestyle microscene recipes
-    /// (<c>MicroscenePatterns</c>) and — available for adoption — the environment
+    /// (<c>MicroscenePatterns</c>) and - available for adoption - the environment
     /// <c>Generators/</c>. No <see cref="UnityEngine.Random"/>, no MonoBehaviour, no cache; safe to
     /// call incrementally and deterministic per seed (unit-tested via the recipe layer).
     ///
@@ -26,7 +26,7 @@ namespace CosmicShore.Gameplay
 
         public static Vector3 OnUnitSphere(System.Random rng)
         {
-            // Polar pick — good enough distribution for scenery.
+            // Polar pick - good enough distribution for scenery.
             float z = Range(rng, -1f, 1f);
             float a = Range(rng, 0f, Mathf.PI * 2f);
             float r = Mathf.Sqrt(Mathf.Max(0f, 1f - z * z));
@@ -41,7 +41,7 @@ namespace CosmicShore.Gameplay
         // the family that suits their read; the conveyor's per-scene "scale mood" then multiplies
         // the whole scene up/down for grand vs. delicate arrangements.
 
-        /// <summary>Elongated strand (~1.7×1.7×6.5) — long axis is local +z (helix / ring / spoke).</summary>
+        /// <summary>Elongated strand (~1.7×1.7×6.5) - long axis is local +z (helix / ring / spoke).</summary>
         public static Vector3 StrandScale(System.Random rng, float bias = 1f)
         {
             float j = Range(rng, 0.85f, 1.25f) * bias;
@@ -55,63 +55,63 @@ namespace CosmicShore.Gameplay
             return new Vector3(5.5f * j, 5.5f * j, 1.2f);
         }
 
-        /// <summary>Tall trunk segment — long axis is local +y.</summary>
+        /// <summary>Tall trunk segment - long axis is local +y.</summary>
         public static Vector3 TrunkScale(System.Random rng)
         {
             float j = Range(rng, 0.85f, 1.2f);
             return new Vector3(1.8f * j, 6.5f * j, 1.8f * j);
         }
 
-        /// <summary>Nominal-ish chunk (4×4×1 ≈ the 16-volume leaf) with organic jitter — scatter/canopy.</summary>
+        /// <summary>Nominal-ish chunk (4×4×1 ≈ the 16-volume leaf) with organic jitter - scatter/canopy.</summary>
         public static Vector3 ChunkScale(System.Random rng, float bias = 1f)
         {
             float j = Range(rng, 0.8f, 1.35f) * bias;
             return new Vector3(4f * j, 4f * j, 1f);
         }
 
-        /// <summary>Tiny long shard (~0.8×0.8×3) — delicate filaments, sparse fills, comet spray.</summary>
+        /// <summary>Tiny long shard (~0.8×0.8×3) - delicate filaments, sparse fills, comet spray.</summary>
         public static Vector3 ShardScale(System.Random rng, float bias = 1f)
         {
             float j = Range(rng, 0.8f, 1.3f) * bias;
             return new Vector3(0.8f * j, 0.8f * j, 3f * j);
         }
 
-        /// <summary>Very long thin rail (~1.2×1.2×11) — long avenues and lattice spans.</summary>
+        /// <summary>Very long thin rail (~1.2×1.2×11) - long avenues and lattice spans.</summary>
         public static Vector3 RailScale(System.Random rng, float bias = 1f)
         {
             float j = Range(rng, 0.85f, 1.25f) * bias;
             return new Vector3(1.2f * j, 1.2f * j, 11f * j);
         }
 
-        /// <summary>Big flat slab (~9×9×1.6) — grand walls, floors, canyon faces.</summary>
+        /// <summary>Big flat slab (~9×9×1.6) - grand walls, floors, canyon faces.</summary>
         public static Vector3 SlabScale(System.Random rng, float bias = 1f)
         {
             float j = Range(rng, 0.85f, 1.25f) * bias;
             return new Vector3(9f * j, 9f * j, 1.6f);
         }
 
-        /// <summary>Tall pillar (~2.6×9×2.6) — colonnades and megaliths, long axis +y.</summary>
+        /// <summary>Tall pillar (~2.6×9×2.6) - colonnades and megaliths, long axis +y.</summary>
         public static Vector3 PillarScale(System.Random rng, float bias = 1f)
         {
             float j = Range(rng, 0.85f, 1.2f) * bias;
             return new Vector3(2.6f * j, 9f * j, 2.6f * j);
         }
 
-        /// <summary>Bulky boulder (~6.5×6.5×5) — landmark chunks, asteroid cores.</summary>
+        /// <summary>Bulky boulder (~6.5×6.5×5) - landmark chunks, asteroid cores.</summary>
         public static Vector3 BoulderScale(System.Random rng, float bias = 1f)
         {
             float j = Range(rng, 0.8f, 1.3f) * bias;
             return new Vector3(6.5f * j, 6.5f * j, 5f * j);
         }
 
-        /// <summary>Tiny cube mote (~1.3³) — dust, sparse speckle, delicate fills.</summary>
+        /// <summary>Tiny cube mote (~1.3³) - dust, sparse speckle, delicate fills.</summary>
         public static Vector3 MoteScale(System.Random rng, float bias = 1f)
         {
             float j = Range(rng, 0.75f, 1.4f) * bias;
             return new Vector3(1.3f * j, 1.3f * j, 1.3f * j);
         }
 
-        /// <summary>Long beam (~1.6×1.6×14) — spans, girders, long gates.</summary>
+        /// <summary>Long beam (~1.6×1.6×14) - spans, girders, long gates.</summary>
         public static Vector3 BeamScale(System.Random rng, float bias = 1f)
         {
             float j = Range(rng, 0.9f, 1.2f) * bias;
@@ -137,7 +137,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// A single arch (half-hoop) standing in the flight plane — a gate you fly UNDER. Long axes
+        /// A single arch (half-hoop) standing in the flight plane - a gate you fly UNDER. Long axes
         /// chain along the arc; the base sits at <paramref name="center"/> − up·radius.
         /// </summary>
         public static void AddArch(List<SpawnPoint> into, Vector3 center, float radius, int count, float spanDeg, System.Random rng)
@@ -182,7 +182,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Two parallel plate walls with a rideable slot between and periodic GAPS in each wall to
-        /// roll and slip through — the flat-plate "slot" read the Squirrel loves.
+        /// roll and slip through - the flat-plate "slot" read the Squirrel loves.
         /// </summary>
         public static void AddCorridor(List<SpawnPoint> into, float halfGap, float wallHeight, float length, int steps, float gapEvery, System.Random rng)
         {
@@ -217,7 +217,7 @@ namespace CosmicShore.Gameplay
                     }
         }
 
-        /// <summary>A big torus ring standing across the flight path — fly through the doughnut hole.</summary>
+        /// <summary>A big torus ring standing across the flight path - fly through the doughnut hole.</summary>
         public static void AddTorusRing(List<SpawnPoint> into, Vector3 center, Quaternion tilt, float ringRadius, float tubeRadius, int count, System.Random rng)
         {
             for (int i = 0; i < count; i++)
@@ -231,7 +231,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>A field of vertical pillars to fly between — centred on the axis so a tall
+        /// <summary>A field of vertical pillars to fly between - centred on the axis so a tall
         /// column stays inside the scene envelope rather than towering out of it.</summary>
         public static void AddPillars(List<SpawnPoint> into, int columns, int perColumn, float spread, float length, float segment, System.Random rng)
         {
@@ -248,7 +248,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>Radial blades fanning off the axis — a turbine to weave.</summary>
+        /// <summary>Radial blades fanning off the axis - a turbine to weave.</summary>
         public static void AddFan(List<SpawnPoint> into, int blades, int perBlade, float radius, float twist, System.Random rng)
         {
             for (int bld = 0; bld < blades; bld++)
@@ -277,7 +277,7 @@ namespace CosmicShore.Gameplay
             }
         }
 
-        /// <summary>An undulating sheet of plates — a rolling floor to skim along.</summary>
+        /// <summary>An undulating sheet of plates - a rolling floor to skim along.</summary>
         public static void AddWaveSheet(List<SpawnPoint> into, int nx, int nz, float radius, float length, float amp, System.Random rng)
         {
             float phase = Range(rng, 0f, Mathf.PI * 2f);

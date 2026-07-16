@@ -17,7 +17,7 @@ namespace CosmicShore.UI
     /// to a <see cref="DomainVolumeHexGraphic"/>.
     ///
     /// Look (universal across menu and all gameplay scenes): a pointy-top hexagon,
-    /// each domain owning a fixed 1/3 (two of six edges) — Jade top, Ruby lower-left,
+    /// each domain owning a fixed 1/3 (two of six edges) - Jade top, Ruby lower-left,
     /// Gold lower-right. Each sector always spans its full angular width; the colored
     /// band fills RADIALLY INWARD toward the centre as the domain's mass approaches the
     /// Frenzy threshold, the centre being the frenzy state. Concentric threshold
@@ -32,14 +32,14 @@ namespace CosmicShore.UI
     /// GameDataSO.
     ///
     /// Reads <see cref="Cell.GetDomainVolume"/>, <see cref="Cell.FrenzyEnterVolume"/>
-    /// and <see cref="Cell.ResolvedThresholds"/> — volume is the spine, so the gauge
+    /// and <see cref="Cell.ResolvedThresholds"/> - volume is the spine, so the gauge
     /// shows exactly the measure that drives the phase ladder; resolves the cell via
     /// the local player's vessel position, falling back to the nearest active cell.
     /// </summary>
     [DisallowMultipleComponent]
     public class DomainVolumeIndicator : MonoBehaviour
     {
-        [Header("Gauge (optional — self-constructed when empty)")]
+        [Header("Gauge (optional - self-constructed when empty)")]
         [Tooltip("The procedural hexagon gauge. Leave null to auto-create a full-rect child graphic.")]
         [SerializeField] DomainVolumeHexGraphic hexGraphic;
 
@@ -85,7 +85,7 @@ namespace CosmicShore.UI
 
         // Intermediate phase enter thresholds as fractions of FrenzyEnter (ascending):
         // where the concentric rings sit. With the 3-phase ladder there is exactly one
-        // boundary strictly inside the frenzy extent — Restless (Frenzy itself sits at the
+        // boundary strictly inside the frenzy extent - Restless (Frenzy itself sits at the
         // centre / boundary hexagon). Refreshed each sample so a config swap (or late cell
         // resolution) is picked up.
         readonly float[] _thresholdFracs = new float[1];
@@ -144,7 +144,7 @@ namespace CosmicShore.UI
             if (hexGraphic) return;
 
             // The pause button already owns an Image graphic, and two Graphics can't
-            // share a GameObject — so the gauge lives on a full-rect child.
+            // share a GameObject - so the gauge lives on a full-rect child.
             var go = new GameObject("DomainVolumeHex (auto)", typeof(RectTransform));
             var rt = (RectTransform)go.transform;
             rt.SetParent(transform, false);
@@ -164,7 +164,7 @@ namespace CosmicShore.UI
         /// <summary>
         /// Erase the pause button's authored face so it doesn't peek out around the
         /// hex. Keep the Image component so the Button's raycast/state machinery
-        /// still works — clearing sprite + zeroing color is enough to make it
+        /// still works - clearing sprite + zeroing color is enough to make it
         /// invisible while the rect-based hit test continues to register clicks.
         /// </summary>
         void HideHostButtonFace()
@@ -206,7 +206,7 @@ namespace CosmicShore.UI
             }
 
             // Volume is the spine (locked invariant): the gauge reads per-domain live
-            // VOLUME — every prism contributes (trail, flora, fauna bodies) — against
+            // VOLUME - every prism contributes (trail, flora, fauna bodies) - against
             // the volume phase ladder, mirroring exactly what drives the cell's phase.
             float frenzy = cell.FrenzyEnterVolume;
             float jade = cell.GetDomainVolume(Domains.Jade);
@@ -224,7 +224,7 @@ namespace CosmicShore.UI
 
                 // Concentric ring position: the Restless enter threshold as a fraction of
                 // FrenzyEnter. A wedge reaching the ring has, by construction, Restless's
-                // worth of mass — so the wedge passing through it IS that domain pushing
+                // worth of mass - so the wedge passing through it IS that domain pushing
                 // the cell into the hunting band. Frenzy sits at fraction 1 (centre /
                 // boundary hexagon), so it needs no separate ring.
                 var t = cell.ResolvedThresholds;
@@ -324,7 +324,7 @@ namespace CosmicShore.UI
 
         void RefreshDomainColors()
         {
-            // Canonical source — the same path MultiplayerHUD and every other
+            // Canonical source - the same path MultiplayerHUD and every other
             // domain-tinted UI uses. The serialized override exists for prefabs that
             // want to lock to a specific theme variant during pitch demos. Resolved
             // on the sample cadence, not per frame — theme swaps are rare.
@@ -351,10 +351,10 @@ namespace CosmicShore.UI
             if (!colorSet.TryGetColorSetByDomain(domain, out var dcs) || dcs == null)
                 return Color.white;
             // TrailHighlightColor is the BRIGHT IDENTITY hue (cyan/magenta/orange
-            // in the original palette) — the same field VesselHelper uses for trail
+            // in the original palette) - the same field VesselHelper uses for trail
             // identity and the only color set field that gives each domain a
             // recognizable face. OutsideBlockColor is the dim outer shell of a
-            // prism, which for Ruby reads as a near-black indigo — that's what the
+            // prism, which for Ruby reads as a near-black indigo - that's what the
             // user spotted as "fire instead of Ruby" (Gold's warm hue showing
             // through next to Ruby's near-black).
             var c = dcs.TrailHighlightColor;

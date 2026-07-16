@@ -22,7 +22,7 @@ namespace CosmicShore.Gameplay
             if (spawnProfile.SupportedFloras is not { Count: > 0 })
                 yield break;
 
-            // No excluded-domain roll — the locked no-domain-asymmetry invariant: all three
+            // No excluded-domain roll - the locked no-domain-asymmetry invariant: all three
             // domains seed flora uniformly (the exclusion kept the local player's color from
             // ever growing canopy). Passing null keeps legacy SpawnProfile assets with the old
             // serialized FloraExcludeLocalDomain=true inert. Fauna were already controlling-
@@ -48,7 +48,7 @@ namespace CosmicShore.Gameplay
                 yield break;
 
             // Fauna spawn in the cell's controlling color (see SpawnFaunaPopulation), so
-            // there is no excluded-domain roll here — that exclusion is exactly what kept
+            // there is no excluded-domain roll here - that exclusion is exactly what kept
             // the controller's own color (e.g. Jade) from ever appearing.
             foreach (var faunaCfg in spawnProfile.SupportedFaunas)
             {
@@ -74,7 +74,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < initialCount; i++)
             {
                 // Frenzy gate: plant at a steady rate until the cell hits Frenzy
-                // (Phase < Frenzy). No early planting cap — flora keep planting + growing
+                // (Phase < Frenzy). No early planting cap - flora keep planting + growing
                 // and the food web (fauna grazing) is the only down-force. Replaces the
                 // old scored-volume ceiling (~0 in Menu_Main, so it never bounded planting).
                 if (host && host.FloraPlantingEnabled)
@@ -82,7 +82,7 @@ namespace CosmicShore.Gameplay
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
                 // is configured; otherwise yield a single frame so a large InitialSpawnCount
-                // doesn't instantiate every (prism-bodied) life form in one frame — that
+                // doesn't instantiate every (prism-bodied) life form in one frame - that
                 // showed up as a ~48% frame spike in Cell.SpawnFaunaTypeLoop_Random.
                 if (i < initialCount - 1)
                 {
@@ -91,7 +91,7 @@ namespace CosmicShore.Gameplay
                 }
             }
 
-            // Continuous — keeps ticking so planting resumes if the cell falls back
+            // Continuous - keeps ticking so planting resumes if the cell falls back
             // across the Frenzy hysteresis floor (Phase drops below Frenzy again).
             while (true)
             {
@@ -119,18 +119,18 @@ namespace CosmicShore.Gameplay
                 yield return new WaitForSeconds(spawnProfile.InitialFaunaSpawnWaitTime);
 
             // SEEDER, not population driver: each fixed period the loop only tops the
-            // species back up to its seed floor (PopulationSize) — bootstrap on scene
+            // species back up to its seed floor (PopulationSize) - bootstrap on scene
             // start, and recovery after a starvation/predation crash so extinction is
             // never permanent. Above the floor the population is driven by REPRODUCTION
             // (well-fed fauna birth offspring, Fauna.TryReproduce) and bounded by
-            // starvation — the food web, not this timer. Production still pauses when
+            // starvation - the food web, not this timer. Production still pauses when
             // opposing prism mass is below FaunaFoodFloor (no prey ⇒ no seeding either).
             // (Docs/ECOSYSTEM.md §6: prey-linked production + starvation + reproduction.)
             float period = Mathf.Max(0.05f, spawnProfile.BaseFaunaSpawnTime);
 
-            // Prey signal by diet: herbivore species seed on prism prey — opposing
+            // Prey signal by diet: herbivore species seed on prism prey - opposing
             // ENVIRONMENT volume, per "volume is the spine" (fauna bodies excluded:
-            // not edible, so they must not read as food) — predator species on the
+            // not edible, so they must not read as food) - predator species on the
             // LIVE HERBIVORE count (creatures are eaten per-individual, so count is
             // the honest unit there). FaunaFoodFloor doubles as both floors: it is
             // authored in nominal prisms, converted ×NominalPrismVolume for the
@@ -146,7 +146,7 @@ namespace CosmicShore.Gameplay
 
                 // Seeder (default): top the species back up to its seed floor.
                 // Full-wave (SeedFullWaveEveryTick): every tick births a fresh wave of
-                // PopulationSize in the controlling color, clamped by the hard cap —
+                // PopulationSize in the controlling color, clamped by the hard cap -
                 // wave-scored modes (Brood Rush) ride this so each 30s cycle visibly
                 // hatches a brood. Population stays starvation-bounded either way.
                 int toSpawn = spawnProfile.SeedFullWaveEveryTick
@@ -169,7 +169,7 @@ namespace CosmicShore.Gameplay
                     spawned = toSpawn;
                 }
 
-                // Reset the spawn-cycle ring each period whether or not seeding happened —
+                // Reset the spawn-cycle ring each period whether or not seeding happened -
                 // the ring reflects the fixed timer cadence, not the food/deficit gates.
                 host.RecordFaunaSpawn();
 
@@ -186,7 +186,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Spawns <paramref name="count"/> fauna in <paramref name="color"/> — the cell's
+        /// Spawns <paramref name="count"/> fauna in <paramref name="color"/> - the cell's
         /// controlling domain. Spawning in the controller's color fixes "no Jade fauna
         /// when Jade controls" and lets the dominant color's fauna hunt the minority.
         /// Each spawn is lineage-bound to its species config so it counts toward the
@@ -201,7 +201,7 @@ namespace CosmicShore.Gameplay
         {
             // Spawn new fauna right ON the prioritized mass concentration (the densest region
             // the cell senses) so they appear on the buildup they'll forage, not at the
-            // distant cell centre — they start clearing immediately. GetDensestRegionAnyDomain
+            // distant cell centre - they start clearing immediately. GetDensestRegionAnyDomain
             // falls back to the crystal/cell anchor when there's no mass yet.
             Vector3 goal = host.GetDensestRegionAnyDomain();
 

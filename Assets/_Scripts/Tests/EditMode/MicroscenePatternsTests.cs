@@ -7,14 +7,14 @@ using UnityEngine;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Tests for <see cref="MicroscenePatterns.Plan"/> — the pure recipe generators + theming behind
+    /// Tests for <see cref="MicroscenePatterns.Plan"/> - the pure recipe generators + theming behind
     /// the freestyle conveyor toy (Docs/ToySystem/ARCHITECTURE.md ▸ Wanderway). Load-bearing
     /// guarantees locked here:
     ///
-    ///   1. BUDGET EXACTNESS — every recipe emits exactly prismBudget points (geometry AND themed),
+    ///   1. BUDGET EXACTNESS - every recipe emits exactly prismBudget points (geometry AND themed),
     ///      so a recycled scene can re-pose its fixed stock of prisms into ANY recipe (mass is
     ///      conserved: the belt never needs to create or destroy prisms to change arrangement).
-    ///   2. DETERMINISM — same seed → identical plan, geometry and theming (instance-local
+    ///   2. DETERMINISM - same seed → identical plan, geometry and theming (instance-local
     ///      System.Random only; the generators must never touch the global UnityEngine.Random).
     ///
     /// Plus sanity bounds: crystal clamp, lifeform counts confined to the living recipes, prism
@@ -109,7 +109,7 @@ namespace CosmicShore.Tests
         {
             // The conveyor clamps scene anchors to (bounds − sceneRadius×1.1 − margin), so a
             // generator escaping this envelope would push registered mass outside the cell's sense
-            // radius — invisible to the ecosystem.
+            // radius - invisible to the ecosystem.
             float lateral = Radius * 1.1f;
             float along = Radius * 1.1f * 1.2f; // 2.2×radius length / 2, small jitter allowance
 

@@ -18,7 +18,7 @@ namespace CosmicShore.Gameplay
     ///
     /// The misconfigured branches log loudly; the editor validator (Tools ▸ Cosmic Shore ▸
     /// Validate Lifeform Crystals) flags the same prefabs at author time so they get fixed.
-    /// Per the prompter: element is per-lifeform AUTHORED — random is only the misconfig fallback.
+    /// Per the prompter: element is per-lifeform AUTHORED - random is only the misconfig fallback.
     /// </summary>
     public static class LifeFormCrystal
     {
@@ -40,12 +40,12 @@ namespace CosmicShore.Gameplay
                 return crystal;
             }
 
-            // No crystal authored — provision a default so death still drops a powerup.
+            // No crystal authored - provision a default so death still drops a powerup.
             var set = ElementalCrystalSetSO.Load();
             if (!set)
             {
                 CSDebug.LogError($"[LifeFormCrystal] {owner.name} has no crystal and " +
-                    $"Resources/{ElementalCrystalSetSO.ResourcePath} is missing — cannot guarantee a death " +
+                    $"Resources/{ElementalCrystalSetSO.ResourcePath} is missing - cannot guarantee a death " +
                     $"powerup. Author an elemental crystal on the lifeform, or add the set asset.");
                 return null;
             }
@@ -55,7 +55,7 @@ namespace CosmicShore.Gameplay
             if (!prefab)
             {
                 CSDebug.LogError($"[LifeFormCrystal] {owner.name} has no crystal and the elemental crystal " +
-                    $"set has no prefab for '{fallbackElement}' — cannot guarantee a death powerup.");
+                    $"set has no prefab for '{fallbackElement}' - cannot guarantee a death powerup.");
                 return null;
             }
 

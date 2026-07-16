@@ -8,7 +8,7 @@ namespace CosmicShore.UI
     public class DuelForCellScoreboard : Scoreboard
     {
         /// <summary>
-        /// Descending sort — highest score wins (points-based).
+        /// Descending sort - highest score wins (points-based).
         /// </summary>
         protected override List<IRoundStats> SortPlayers(List<IRoundStats> stats)
         {

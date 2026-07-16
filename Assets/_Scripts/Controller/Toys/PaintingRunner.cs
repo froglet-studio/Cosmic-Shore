@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using CosmicShore.Data;
 using CosmicShore.ScriptableObjects;
+using CosmicShore.UI;
 using CosmicShore.Utility;
 using Cysharp.Threading.Tasks;
 using UnityEngine;
@@ -10,24 +11,24 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// The multi-stroke "fly by numbers" runner. A painting is a world-anchored monument-in-progress:
+    /// The multi-stroke "connect the dots" runner. A painting is a world-anchored monument-in-progress:
     /// every stroke renders as a ghost line tinted its domain colour, the current stroke opens with a
     /// <b>start gate</b> (a ring the vessel flies through, which requests the stroke's domain via the
     /// server-authoritative pick RPC so the trail recolours), and the vessel's own trail paints each
     /// stroke point-to-point. Between strokes the trail spawner is pen-up'd inside the painting's
-    /// "studio zone" so transit flight never scribbles across the artwork — and it is ALWAYS restored
+    /// "studio zone" so transit flight never scribbles across the artwork - and it is ALWAYS restored
     /// when the player leaves the zone, exits freestyle, benches the run, or the runner dies.
     ///
     /// Toy-faithful: no score, no timer, no fail state. Progress is stroke-granular, resumable
     /// in-session and across sessions (<see cref="PaintingProgressStore"/>), and finishing simply
     /// celebrates and offers a fresh canvas. The painted prisms are conserved mass like any trail.
     /// </summary>
-    public class PaintingRunner : MonoBehaviour
+    public class PaintingRunner : MonoBehaviour, IObjectiveProvider
     {
         enum RunPhase { AwaitingGate = 0, Painting = 1, Celebrating = 2 }
         enum GhostStyle { Pending = 0, Active = 1, Done = 2 }
 
-        /// <summary>Raised on stroke completion, bench toggles, and celebration — drives the toy's label.</summary>
+        /// <summary>Raised on stroke completion, bench toggles, and celebration - drives the toy's label.</summary>
         public event Action ProgressChanged;
 
         /// <summary>Raised once, just before the runner destroys itself after the celebration.</summary>
@@ -36,16 +37,18 @@ namespace CosmicShore.Gameplay
         const float BloomSeconds = 1.4f;
         const float GateDespawnSeconds = 0.45f;
 
-        /// <summary>Everything the runner knows about one stroke — one array, no index juggling.</summary>
+        /// <summary>Everything the runner knows about one stroke - one array, no index juggling.</summary>
         class StrokeInfo
         {
+            public int Index;             // position in the runner's stroke array
             public Vector3[] Points;      // world space
             public string Name;
             public Domains Domain;
             public float Reach;           // adaptive advance distance
-            public Color BaseColor;       // resolved once at Begin — no per-frame theme lookups
+            public Color BaseColor;       // resolved once at Begin - no per-frame theme lookups
             public LineRenderer Ghost;
             public GhostStyle Style;
+            public List<int> Checkpoints; // sparse ride targets (never on tight curvature)
         }
 
         ToyContext _context;
@@ -56,22 +59,27 @@ namespace CosmicShore.Gameplay
 
         StrokeInfo[] _strokes;
         float _bloom;                  // 0→1 on begin; swells then falls to 0 during the farewell fade
+        float _benchVisibility = 1f;   // 1 engaged, eases to 0 while benched so a paused blueprint fades away
 
         int _strokeIndex;              // == strokes completed while AwaitingGate
-        int _pointIndex;
+        int _pointIndex;               // index into CurrentStroke.Checkpoints while Painting
         RunPhase _phase;
         bool _benched;
         bool _wasEngaged;
 
         GameObject _gate;
         bool _gateBenchEasing;
-        GameObject _marker;
-        GameObject _markerCone;
-        GameObject _markerJack;
-        int _markerStrokeIndex = -1;
-        bool _markerHiding;
-        LineRenderer _guide;
-        float _markerBaseRadius;
+        GameObject _milestone;         // the ONE live ride ring (SphereCollider trigger = its radius)
+        StrokeMilestoneTrigger _milestoneTrigger; // cached at spawn - no per-frame TryGetComponent
+        int _fadeIndex = -1;           // stroke whose ghost line is easing out (ridden) or back in (done)
+        float _lineFade = 1f;
+
+        // The standard off-screen objective arrow points here: the start gate while awaiting it,
+        // the current ride ring while painting. A bare transform (not the ring itself) so the
+        // pointer survives the ring folding away on disengage.
+        Transform _objectiveAnchor;
+        static ObjectiveIndicator s_sharedIndicator;                          // ONE arrow for the whole gallery
+        static readonly PaintingObjectiveRelay s_objectiveRelay = new();      // routes it to the brush holder
 
         Vector3 _zoneCenter;
         float _zoneSqrRadius;
@@ -100,7 +108,12 @@ namespace CosmicShore.Gameplay
             _origin = origin;
             _rotation = rotation;
 
-            // PaintingDefinitionSO.Strokes is already filtered to drawable strokes — using it
+            // Checkpoint rhythm scales with the monument, not the stroke: a big painting gets big
+            // gaps between ride markers (the curve between them is scenery to carve, not a quiz).
+            Bounds localBounds = painting.LocalBounds;
+            float checkpointSpacing = Mathf.Max(90f, 0.085f * localBounds.size.magnitude);
+
+            // PaintingDefinitionSO.Strokes is already filtered to drawable strokes - using it
             // verbatim keeps this count identical to the one PaintingToy and the progress store see.
             var source = painting.Strokes;
             _strokes = new StrokeInfo[source.Count];
@@ -117,13 +130,19 @@ namespace CosmicShore.Gameplay
                 for (int p = 1; p < world.Length; p++)
                     minSeg = Mathf.Min(minSeg, Vector3.Distance(world[p - 1], world[p]));
 
+                float reach = Mathf.Clamp(minSeg * 0.7f, 4f, _painting.ReachThreshold);
                 _strokes[i] = new StrokeInfo
                 {
+                    Index = i,
                     Points = world,
                     Name = string.IsNullOrEmpty(s.name) ? $"Stroke {i + 1}" : s.name,
                     Domain = s.domain,
-                    Reach = Mathf.Clamp(minSeg * 0.7f, 4f, _painting.ReachThreshold),
+                    Reach = reach,
                     BaseColor = ToyFactory.DomainAccentColor(context, s.domain),
+                    // Ride targets are SPARSE - spaced by arc, never parked on tight curvature -
+                    // so dense reference curves are ridden freely between big forgiving markers.
+                    Checkpoints = PaintingStrokeToolkit.RideCheckpoints(world,
+                        Mathf.Max(checkpointSpacing, reach * 3f), 28f),
                 };
             }
 
@@ -142,7 +161,7 @@ namespace CosmicShore.Gameplay
 
             // Ghost blueprint: one line per stroke, tinted its domain.
             _strokeIndex = Mathf.Clamp(resumeFromStroke, 0, _strokes.Length - 1);
-            if (resumeFromStroke >= _strokes.Length) _strokeIndex = 0; // stale "complete" state — fresh canvas
+            if (resumeFromStroke >= _strokes.Length) _strokeIndex = 0; // stale "complete" state - fresh canvas
             for (int i = 0; i < _strokes.Length; i++)
             {
                 var ghost = ToyFactory.CreateLine($"Ghost_{i}", transform, 1f, true);
@@ -153,9 +172,9 @@ namespace CosmicShore.Gameplay
             }
             _strokes[_strokeIndex].Style = GhostStyle.Active;
 
-            _guide = ToyFactory.CreateLine("Guide", transform, 0.9f, true);
-            _guide.positionCount = 2;
-            _guide.enabled = false;
+            var anchor = new GameObject("ObjectiveAnchor");
+            anchor.transform.SetParent(transform, false);
+            _objectiveAnchor = anchor.transform;
 
             _phase = RunPhase.AwaitingGate;
             _pointIndex = 0;
@@ -164,10 +183,12 @@ namespace CosmicShore.Gameplay
             _bloom = 0f;
             ApplyAllGhostStyles();
             BenchOtherRunners(); // a fresh run takes the brush
+            s_objectiveRelay.Active = this;
+            EnsureObjectiveIndicator();
             BloomIn(this.GetCancellationTokenOnDestroy()).Forget();
 
             // Coming back from another session / game mode: the completed strokes' prisms were
-            // saved as drawing state — regrow them so the monument physically resumes, not just
+            // saved as drawing state - regrow them so the monument physically resumes, not just
             // the counter. (In-session resumes bench/unbench the same runner, so no duplicates.)
             if (_strokeIndex > 0 && PaintingPrismStore.HasPrisms(_painting.PaintingId))
                 RestorePrismsAsync(this.GetCancellationTokenOnDestroy()).Forget();
@@ -182,20 +203,28 @@ namespace CosmicShore.Gameplay
             _benched = benched;
             if (benched)
             {
-                // Release the pen NOW — waiting for this runner's next Update could clobber a
+                // Release the pen NOW - waiting for this runner's next Update could clobber a
                 // pause another runner (the new brush holder) sets in the meantime.
                 RestorePen();
                 _gateBenchEasing = true;
+                DespawnMilestone();     // the ride ring folds away with the blueprint
+                if (s_objectiveRelay.Active == this) s_objectiveRelay.Active = null;
             }
             else
             {
                 BenchOtherRunners();
+                s_objectiveRelay.Active = this;
+                // The gate may have fully folded (and stopped rendering) while benched - regrow it.
+                if (_gate && !_gate.activeSelf) _gate.SetActive(true);
+                _gateBenchEasing = _gate != null;
+                // Re-spawn the ride ring we folded on pause (mid-stroke resume only).
+                if (_phase == RunPhase.Painting) SpawnMilestone();
             }
             ProgressChanged?.Invoke();
         }
 
         /// <summary>
-        /// Only one painting run holds the brush at a time — neighbouring studio zones can overlap,
+        /// Only one painting run holds the brush at a time - neighbouring studio zones can overlap,
         /// and two engaged runners would fight over the trail spawner's pen state.
         /// </summary>
         void BenchOtherRunners()
@@ -221,28 +250,30 @@ namespace CosmicShore.Gameplay
             ApplyCapture(vessel, engaged);
 
             // Re-engaging mid-stroke (back from a bench, a menu trip, or a detour through the
-            // Domain Changer) re-asserts the stroke's colour — the gate only fired once.
+            // Domain Changer) re-asserts the stroke's colour - the gate only fired once - and
+            // re-arms the ride ring folded on disengage.
             if (engaged && !_wasEngaged && _phase == RunPhase.Painting)
+            {
                 RequestStrokeDomain(CurrentStroke.Domain);
+                if (!_milestone) SpawnMilestone();
+            }
             _wasEngaged = engaged;
 
             if (!engaged)
             {
-                if (_guide) _guide.enabled = false;
+                // The ride ring must not outlive engagement: the local vessel on lava-lamp
+                // autopilot would drift through it and latch a checkpoint nobody rode.
+                DespawnMilestone();
                 return;
             }
 
             if (_phase == RunPhase.Painting)
                 UpdatePainting(shipPos);
-            else
-                UpdateAwaitingGate(shipPos);
-
-            SettleMarker();
         }
 
         /// <summary>
         /// Continuity-law eases that must run even while benched/disengaged: the gate shrinks
-        /// away and regrows on bench toggles, and the marker shrinks out instead of blinking off.
+        /// away and regrows on bench toggles, the blueprint fades, and the ride ring grows/folds.
         /// </summary>
         void EaseTransitions()
         {
@@ -251,21 +282,49 @@ namespace CosmicShore.Gameplay
                 var t = _gate.transform;
                 Vector3 target = _benched ? Vector3.zero : Vector3.one;
                 t.localScale = Vector3.Lerp(t.localScale, target, Time.deltaTime * 7f);
-                if (!_benched && (t.localScale - target).sqrMagnitude < 1e-4f)
+                if ((t.localScale - target).sqrMagnitude < 1e-4f)
                 {
                     t.localScale = target;
                     _gateBenchEasing = false;
+                    // Fully folded - stop rendering it (SetBenched(false) reactivates + re-arms).
+                    if (_benched) _gate.SetActive(false);
                 }
             }
 
-            if (_markerHiding && _marker && _marker.activeSelf)
+            // A paused run's ghost blueprint fades away entirely (nothing lingers in the lava lamp);
+            // resuming fades it back. The already-painted prisms are conserved mass and are untouched.
+            float benchTarget = _benched ? 0f : 1f;
+            if (!Mathf.Approximately(_benchVisibility, benchTarget))
             {
-                var t = _marker.transform;
-                t.localScale = Vector3.Lerp(t.localScale, Vector3.zero, Time.deltaTime * 9f);
-                if (t.localScale.x < 0.05f)
+                _benchVisibility = Mathf.MoveTowards(_benchVisibility, benchTarget, Time.deltaTime * 3.5f);
+                ApplyAllGhostStyles();
+            }
+
+            // The ride ring grows in on spawn and folds away while benched (continuity law).
+            if (_milestone)
+            {
+                var mt = _milestone.transform;
+                Vector3 target = _benched ? Vector3.zero : Vector3.one;
+                if ((mt.localScale - target).sqrMagnitude > 1e-6f)
                 {
-                    _marker.SetActive(false);
-                    _markerHiding = false;
+                    mt.localScale = Vector3.Lerp(mt.localScale, target, Time.deltaTime * 7f);
+                    if ((mt.localScale - target).sqrMagnitude < 1e-4f) mt.localScale = target;
+                }
+            }
+
+            // The ridden stroke's blueprint line eases out (and its "done" memory line eases back
+            // in on completion) - continuity law: no instant appear/disappear, even for a line.
+            if (_fadeIndex >= 0 && _strokes != null && _fadeIndex < _strokes.Length)
+            {
+                float fadeTarget = _phase == RunPhase.Painting && _fadeIndex == _strokeIndex ? 0f : 1f;
+                if (Mathf.Approximately(_lineFade, fadeTarget))
+                {
+                    if (fadeTarget >= 1f) _fadeIndex = -1; // fade-in finished - back to plain styles
+                }
+                else
+                {
+                    _lineFade = Mathf.MoveTowards(_lineFade, fadeTarget, Time.deltaTime * 3.5f);
+                    ApplyGhostStyle(_strokes[_fadeIndex]);
                 }
             }
         }
@@ -275,57 +334,76 @@ namespace CosmicShore.Gameplay
             // The one hard rule: never leave the player's trail spawner paused behind us.
             RestorePen();
             StopCapture();
-            // A stroke abandoned mid-flight is re-flown fresh next time — drop its buffer.
+            if (s_objectiveRelay.Active == this) s_objectiveRelay.Active = null;
+            // A stroke abandoned mid-flight is re-flown fresh next time - drop its buffer.
             if (_painting) PaintingPrismStore.DiscardPending(_painting.PaintingId);
         }
 
         // ── Phase updates ────────────────────────────────────────────────────
 
-        void UpdateAwaitingGate(Vector3 shipPos)
-        {
-            if (!_gate) return;
-            DrawGuide(shipPos, _gate.transform.position, 0.35f);
-        }
-
         void UpdatePainting(Vector3 shipPos)
         {
             var stroke = CurrentStroke;
-            Vector3 target = stroke.Points[_pointIndex];
+            Vector3 target = stroke.Points[stroke.Checkpoints[_pointIndex]];
 
-            DrawGuide(shipPos, target, 0.6f);
+            // The milestone ring's sphere trigger is the hit volume; effects run here on the Update
+            // tick (never inside the physics callback). A slightly tighter distance check backstops
+            // fast passes the physics step might miss.
+            bool tripped = _milestoneTrigger && _milestoneTrigger.Tripped;
+            float backstop = MilestoneRadius(stroke) * 0.85f;
+            if (!tripped && (shipPos - target).sqrMagnitude > backstop * backstop) return;
 
-            if ((shipPos - target).sqrMagnitude > stroke.Reach * stroke.Reach) return;
-
-            _pointIndex++;
-            if (_pointIndex >= stroke.Points.Length)
-            {
-                CompleteStroke();
-                return;
-            }
-            MoveMarker(_strokeIndex, _pointIndex);
+            AdvanceMilestone();
         }
 
-        void DrawGuide(Vector3 from, Vector3 to, float alpha)
+        // ── Objective indicator (the game's standard off-screen pointer) ─────
+
+        /// <summary>
+        /// <see cref="IObjectiveProvider"/>: the standard edge-of-screen arrow points at the start
+        /// gate while awaiting it and at the current ride ring while painting - only for the run
+        /// that holds the brush, only in freestyle. The arrow hides by itself whenever the target
+        /// is already on screen, so the world rings stay the primary guidance.
+        /// </summary>
+        public bool TryGetObjective(out Transform target)
         {
-            if (!_guide) return;
-            _guide.enabled = true;
-            Color c = CurrentStroke.BaseColor;
-            c.a = alpha;
-            _guide.startColor = _guide.endColor = c;
-            _guide.SetPosition(0, from);
-            _guide.SetPosition(1, to);
+            target = null;
+            if (_benched || _phase == RunPhase.Celebrating || _strokes == null) return false;
+            if (_context?.IsFreestyleActive != null && !_context.IsFreestyleActive()) return false;
+            if (!_objectiveAnchor) return false;
+            target = _objectiveAnchor;
+            return true;
+        }
+
+        /// <summary>
+        /// Lazily stands up the ONE shared <see cref="ObjectiveIndicator"/> for the painting
+        /// gallery. It MUST parent under the full-screen Canvas root (the indicator stretches to
+        /// its parent and clamps to that rect's edges - a mid-hierarchy container like "Game UI"
+        /// is not a full-screen rect, which pins the arrow in a corner). Freestyle-only
+        /// visibility comes from the provider, not the parent's CanvasGroup. One-time scene
+        /// lookup at run start (activation-rate, same budget as <see cref="BenchOtherRunners"/>)
+        /// - mirrors MiniGameHUD.EnsureObjectiveIndicator, which also parents at the canvas root.
+        /// </summary>
+        static void EnsureObjectiveIndicator()
+        {
+            if (s_sharedIndicator) return;
+
+            var hud = FindAnyObjectByType<MenuMiniGameHUD>(FindObjectsInactive.Include);
+            Canvas canvas = hud ? hud.GetComponentInParent<Canvas>(true) : null;
+            if (!canvas) canvas = FindAnyObjectByType<Canvas>();
+            if (!canvas) return; // headless/test scene - the toy plays fine without the arrow
+            s_sharedIndicator = ObjectiveIndicator.CreateRuntime(canvas.transform, s_objectiveRelay);
         }
 
         void CompleteStroke()
         {
+            DespawnMilestone();
             SetGhostStyle(_strokeIndex, GhostStyle.Done);
-            // Persist the stroke's prisms as drawing state (position/orientation/size/domain) —
+            // Persist the stroke's prisms as drawing state (position/orientation/size/domain) -
             // this is what regrows on return and what the share exporter reconstructs.
             PaintingPrismStore.CommitStroke(_painting.PaintingId, _strokeIndex);
             _strokeIndex++;
             PaintingProgressStore.SetStrokesCompleted(_painting.PaintingId, _strokeIndex, _strokes.Length);
 
-            HideMarker();
             if (_strokeIndex >= _strokes.Length)
             {
                 ProgressChanged?.Invoke();
@@ -347,8 +425,8 @@ namespace CosmicShore.Gameplay
             RestorePen();
             StopCapture();
             DespawnGate();
-            HideMarker();
-            if (_guide) _guide.enabled = false;
+            DespawnMilestone();
+            if (s_objectiveRelay.Active == this) s_objectiveRelay.Active = null;
 
             PaintingProgressStore.MarkCompleted(_painting.PaintingId, _strokes.Length);
             ProgressChanged?.Invoke();
@@ -375,6 +453,7 @@ namespace CosmicShore.Gameplay
                 hubIsCone: true, ToyFactory.DomainPrismMaterial(_context, stroke.Domain),
                 _toyDefinition, _context, OnGateActivated);
             _gateBenchEasing = _benched; // spawned while benched → start hidden-bound
+            if (_objectiveAnchor) _objectiveAnchor.position = pos; // the standard arrow points at the gate
         }
 
         void OnGateActivated(SwapToy toy)
@@ -385,8 +464,15 @@ namespace CosmicShore.Gameplay
             RequestStrokeDomain(stroke.Domain);
 
             _phase = RunPhase.Painting;
-            _pointIndex = 1; // the gate sits on point 0 — flying it consumes the stroke's start
-            MoveMarker(_strokeIndex, _pointIndex);
+            _pointIndex = 1; // checkpoint 0 IS the gate - flying it consumes the stroke's start
+            // The ridden stroke's line EASES away (continuity law) - EaseTransitions drives
+            // _lineFade toward 0 while this stroke is the fading one.
+            int prevFade = _fadeIndex;
+            _fadeIndex = stroke.Index;
+            _lineFade = 1f;
+            if (prevFade >= 0 && prevFade != stroke.Index && prevFade < _strokes.Length)
+                ApplyGhostStyle(_strokes[prevFade]); // finalize an interrupted fade at full style
+            SpawnMilestone();
 
             var gate = _gate;
             _gate = null;
@@ -477,7 +563,7 @@ namespace CosmicShore.Gameplay
             var gameData = _context?.GameData;
             Domains domain = CurrentStroke.Domain;
             if (gameData && !GameDataSO.IsActiveDomain(domain, gameData.RequestedDomainCount))
-                domain = gameData.LocalPlayer?.Domain ?? domain; // pick was rejected — record reality
+                domain = gameData.LocalPlayer?.Domain ?? domain; // pick was rejected - record reality
 
             var inverse = Quaternion.Inverse(_rotation);
             PaintingPrismStore.RecordPrism(_painting.PaintingId, PaintingPrismRecord.From(
@@ -490,7 +576,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Regrow the saved prisms of every completed stroke through the normal prism factory
-        /// (pooled, grow-in animation — nothing pops), streamed over frames so a monument-sized
+        /// (pooled, grow-in animation - nothing pops), streamed over frames so a monument-sized
         /// restore reads as the painting growing back rather than a hitch.
         /// </summary>
         async UniTaskVoid RestorePrismsAsync(CancellationToken ct)
@@ -498,7 +584,7 @@ namespace CosmicShore.Gameplay
             var records = PaintingPrismStore.GetPrisms(_painting.PaintingId, _strokeIndex);
             if (records.Count == 0) return;
 
-            // Wait for a local vessel — its controller carries the factory channel + owner name.
+            // Wait for a local vessel - its controller carries the factory channel + owner name.
             VesselPrismController controller = null;
             for (int tries = 0; tries < 100 && controller == null; tries++)
             {
@@ -522,7 +608,7 @@ namespace CosmicShore.Gameplay
             }
             if (missing > 0)
                 CSDebug.LogWarning($"[PaintingRunner] Regrew {records.Count - missing}/{records.Count} " +
-                                   $"prisms of '{_painting.DisplayName}' — a recorded prism pool is unavailable.");
+                                   $"prisms of '{_painting.DisplayName}' - a recorded prism pool is unavailable.");
         }
 
         bool TrySpawnRestoredPrism(PrismEventChannelWithReturnSO channel, PaintingPrismRecord record, string owner)
@@ -540,7 +626,7 @@ namespace CosmicShore.Gameplay
                 Scale = record.Scale,
                 PrismType = prismType,
             });
-            // A scene whose factory lacks the recorded pool returns null — regrow as the generic
+            // A scene whose factory lacks the recorded pool returns null - regrow as the generic
             // Interactive prism rather than leaving holes in the monument.
             if (ret.SpawnedObject == null && prismType != PrismType.Interactive)
                 ret = channel.RaiseEvent(new PrismEventData
@@ -588,11 +674,14 @@ namespace CosmicShore.Gameplay
             switch (stroke.Style)
             {
                 case GhostStyle.Active:
-                    c.a = 0.55f;
-                    width = 1.7f;
+                    // While AWAITING the gate the next stroke shows faintly (something to aim at);
+                    // once you are RIDING it the line eases away entirely - the ride is the rings
+                    // and your own trail, not a line rendering. _lineFade carries the ease.
+                    c.a = 0.45f;
+                    width = 1.1f;
                     break;
                 case GhostStyle.Done:
-                    // Dimmed solid — across sessions this is the "memory" of already-painted strokes.
+                    // Dimmed solid - across sessions this is the "memory" of already-painted strokes.
                     c = new Color(c.r * 0.65f, c.g * 0.65f, c.b * 0.65f, 0.30f);
                     width = 1.1f;
                     break;
@@ -602,71 +691,82 @@ namespace CosmicShore.Gameplay
                     break;
             }
 
-            c.a *= _bloom;
+            if (stroke.Index == _fadeIndex) c.a *= _lineFade;
+            c.a *= _bloom * _benchVisibility;
             lr.startColor = lr.endColor = c;
             lr.startWidth = lr.endWidth = width;
         }
 
+        // ── Ride milestones - rings you fly THROUGH, sized as their own hit volume ──
+
+        float MilestoneRadius(StrokeInfo stroke) => Mathf.Max(18f, stroke.Reach * 1.8f);
+
         /// <summary>
-        /// Shared trail-toy shape language: intermediate points are CONES whose apex points at the
-        /// stroke's next point ("this way next" — the same shape the domain changer wears, since
-        /// both change your trail); each stroke's FINAL point — the one that turns the trail off —
-        /// is a JACK. Both wear the stroke domain's prism material.
+        /// The ONE live milestone: a ring gate at the current checkpoint, faced along the local
+        /// flight tangent, whose SphereCollider trigger is scaled to the ring radius - flying
+        /// through the ring IS the hit test. The final milestone carries the trail-off jack in its
+        /// centre; the trail-on cone appears only on the stroke's start gate.
         /// </summary>
-        void MoveMarker(int strokeIndex, int pointIndex)
+        void SpawnMilestone()
         {
-            var stroke = _strokes[strokeIndex];
-            Vector3 pos = stroke.Points[pointIndex];
-            bool isStrokeEnd = pointIndex == stroke.Points.Length - 1;
-            _markerBaseRadius = Mathf.Max(3.5f, stroke.Reach * 0.35f);
+            DespawnMilestone();
+            var stroke = CurrentStroke;
+            var cps = stroke.Checkpoints;
+            if (_pointIndex >= cps.Count) return;
 
-            if (!_marker)
-            {
-                _marker = new GameObject("NextPoint");
-                _marker.transform.SetParent(transform, false);
-            }
-            if (_markerStrokeIndex != strokeIndex || !_markerCone || !_markerJack)
-            {
-                _markerStrokeIndex = strokeIndex;
-                for (int i = _marker.transform.childCount - 1; i >= 0; i--)
-                    Destroy(_marker.transform.GetChild(i).gameObject);
-                var prismMat = ToyFactory.DomainPrismMaterial(_context, stroke.Domain);
-                _markerCone = ToyFactory.AddConeBody(_marker.transform, 0.45f, 1.25f, stroke.BaseColor, prismMat);
-                _markerJack = ToyFactory.AddJackBody(_marker.transform, 0.55f, stroke.BaseColor, prismMat);
-            }
-            _markerCone.SetActive(!isStrokeEnd);
-            _markerJack.SetActive(isStrokeEnd);
+            int ptIdx = cps[_pointIndex];
+            Vector3 pos = stroke.Points[ptIdx];
+            bool isStrokeEnd = _pointIndex == cps.Count - 1;
+            float ringR = MilestoneRadius(stroke);
+            // The standard arrow tracks the current checkpoint - the anchor (not the ring itself)
+            // so the pointer survives the ring folding away on disengage.
+            if (_objectiveAnchor) _objectiveAnchor.position = pos;
 
+            _milestone = new GameObject($"Milestone_{_pointIndex}");
+            _milestone.transform.SetParent(transform, false);
+            _milestone.transform.position = pos;
+            Vector3 tangent = stroke.Points[Mathf.Min(ptIdx + 1, stroke.Points.Length - 1)]
+                              - stroke.Points[Mathf.Max(ptIdx - 1, 0)];
+            _milestone.transform.rotation = tangent.sqrMagnitude > 1e-4f
+                ? Quaternion.LookRotation(tangent.normalized, Vector3.up)
+                : _rotation;
+
+            var prismMaterial = ToyFactory.DomainPrismMaterial(_context, stroke.Domain);
+            ToyFactory.AddRingBody(_milestone.transform, ringR, stroke.BaseColor, prismMaterial);
             if (isStrokeEnd)
-            {
-                _marker.transform.rotation = _rotation; // jacks are omnidirectional — sit square to the painting
-            }
-            else
-            {
-                Vector3 toNext = stroke.Points[pointIndex + 1] - pos;
-                _marker.transform.rotation = toNext.sqrMagnitude > 1e-4f
-                    ? Quaternion.LookRotation(toNext.normalized, Vector3.up)
-                    : _rotation;
-            }
+                ToyFactory.AddJackBody(_milestone.transform, ringR * 0.45f, stroke.BaseColor, prismMaterial);
 
-            _markerHiding = false;
-            _marker.SetActive(true);
-            _marker.transform.position = pos;
-            _marker.transform.localScale = Vector3.zero; // SettleMarker grows it back in — nothing snaps
+            var trigger = _milestone.AddComponent<SphereCollider>();
+            trigger.isTrigger = true;
+            trigger.radius = ringR;   // the hit volume IS the ring
+
+            _milestoneTrigger = _milestone.AddComponent<StrokeMilestoneTrigger>();
+            _milestone.transform.localScale = Vector3.zero; // EaseTransitions grows it in
         }
 
-        void HideMarker() => _markerHiding = true; // EaseTransitions shrinks it out — nothing blinks off
-
-        void SettleMarker()
+        /// <summary>Sweep past the current ring: it folds away, the next one blooms (or the stroke ends).</summary>
+        void AdvanceMilestone()
         {
-            if (!_marker || !_marker.activeSelf || _markerHiding) return;
-            // No pulsing: the marker grows in once (from the zero MoveMarker sets) and holds its
-            // size — the idle life comes from the body's slow ToyIdleSpin, matching the calm
-            // motion language of the game's other pickups.
-            float target = _markerBaseRadius * 2f;
-            float current = _marker.transform.localScale.x;
-            if (Mathf.Abs(current - target) < 0.01f) return;
-            _marker.transform.localScale = Vector3.one * Mathf.Lerp(current, target, Time.deltaTime * 8f);
+            var passed = _milestone;
+            _milestone = null;
+            _milestoneTrigger = null;
+            if (passed) ToyFactory.ScaleOutAndDestroy(passed, GateDespawnSeconds).Forget();
+
+            _pointIndex++;
+            if (_pointIndex >= CurrentStroke.Checkpoints.Count)
+            {
+                CompleteStroke();
+                return;
+            }
+            SpawnMilestone();
+        }
+
+        void DespawnMilestone()
+        {
+            if (!_milestone) return;
+            ToyFactory.ScaleOutAndDestroy(_milestone, GateDespawnSeconds).Forget();
+            _milestone = null;
+            _milestoneTrigger = null;
         }
 
         IVesselStatus ResolveVessel()
@@ -722,5 +822,37 @@ namespace CosmicShore.Gameplay
             if (this) Destroy(gameObject);
         }
 
+    }
+
+    /// <summary>
+    /// Routes the one shared <see cref="ObjectiveIndicator"/> at whichever runner currently holds
+    /// the brush (at most one is unbenched at a time - <see cref="PaintingRunner"/> claims on
+    /// begin/unbench and releases on bench/celebrate/destroy).
+    /// </summary>
+    class PaintingObjectiveRelay : IObjectiveProvider
+    {
+        public PaintingRunner Active;
+
+        public bool TryGetObjective(out Transform target)
+        {
+            target = null;
+            return Active && Active.TryGetObjective(out target);
+        }
+    }
+
+    /// <summary>
+    /// Trigger on a ride-milestone ring: trips when the LOCAL player's vessel enters its sphere
+    /// (scaled to the ring radius). The <see cref="PaintingRunner"/> polls <see cref="Tripped"/>
+    /// from Update, keeping all effects out of the physics callback.
+    /// </summary>
+    class StrokeMilestoneTrigger : MonoBehaviour
+    {
+        public bool Tripped { get; private set; }
+
+        void OnTriggerEnter(Collider other)
+        {
+            // Same local-vessel resolution the toy gates use - one rule, one implementation.
+            if (Toy.TryGetLocalVessel(other, out _)) Tripped = true;
+        }
     }
 }

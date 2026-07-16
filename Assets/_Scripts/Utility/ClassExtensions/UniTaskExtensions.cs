@@ -21,7 +21,7 @@ namespace CosmicShore.Utility
         }
 
         // ─────────────────────────────────────────────────────────────────────
-        // AsMainThread — UGS / Netcode await boundary helper
+        // AsMainThread - UGS / Netcode await boundary helper
         // ─────────────────────────────────────────────────────────────────────
         //
         // UGS-SDK and Netcode Tasks complete on the .NET ThreadPool, so code
@@ -33,16 +33,16 @@ namespace CosmicShore.Utility
         //
         // UniTask's own primitives are unreliable on this UniTask version
         // (com.cysharp.unitask@86b6e6a2e286):
-        //   • SwitchToMainThread() — awaiter's IsCompleted returns true from
+        //   • SwitchToMainThread() - awaiter's IsCompleted returns true from
         //     ThreadPool → continuation runs inline on ThreadPool.
-        //   • Yield(PlayerLoopTiming.Update) — yields, but the resumption is not
+        //   • Yield(PlayerLoopTiming.Update) - yields, but the resumption is not
         //     guaranteed on the main thread because UniTask intentionally bypasses
         //     SynchronizationContext (Cysharp/UniTask#319, #561, #151).
         //
         // We marshal through Unity's own SynchronizationContext via
         // MainThreadDispatcher, which is properly main-thread-bound.
         //
-        // Usage: `await someTask.AsMainThread();` — encodes "this is a
+        // Usage: `await someTask.AsMainThread();` - encodes "this is a
         // cross-thread call, resume on main thread" at the call boundary so
         // callers don't have to remember a separate Yield/Switch line.
 

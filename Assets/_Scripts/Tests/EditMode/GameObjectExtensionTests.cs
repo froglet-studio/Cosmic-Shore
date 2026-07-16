@@ -6,7 +6,7 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// GameObject Extension Tests — Validates Unity extension methods.
+    /// GameObject Extension Tests - Validates Unity extension methods.
     ///
     /// WHY THIS MATTERS:
     /// These extensions are used throughout the codebase for common operations

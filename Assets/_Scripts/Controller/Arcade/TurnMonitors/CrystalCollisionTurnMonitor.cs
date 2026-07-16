@@ -10,7 +10,7 @@ namespace CosmicShore.Gameplay
 {
     public class CrystalCollisionTurnMonitor : TurnMonitor
     {
-        // The RESOLVED crystal target for this turn — set in StartMonitor from
+        // The RESOLVED crystal target for this turn - set in StartMonitor from
         // EndConditionOverridesSO (Tools > Cosmic Shore > End Game Conditions) → waypoints → 39.
         // Intentionally NOT a [SerializeField]: end-game counts are authored only via the tool,
         // never per-scene. Do not re-add [SerializeField] here (see /EndGameConditions skill).
@@ -29,7 +29,7 @@ namespace CosmicShore.Gameplay
             if (ownStats != null)
             {
                 // Idempotent: StartMonitor can be invoked more than once per turn
-                // (e.g. duplicated SOAP subscriptions) — never double-attach.
+                // (e.g. duplicated SOAP subscriptions) - never double-attach.
                 ownStats.OnCrystalsCollectedChanged -= UpdateCrystals;
                 ownStats.OnCrystalsCollectedChanged += UpdateCrystals;
             }

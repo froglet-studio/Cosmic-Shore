@@ -13,11 +13,11 @@ namespace CosmicShore.Utility
     /// (<c>LobbyChannel.HandleLobbyChanges</c>) before any of our awaits, so it cannot be
     /// try/caught the way HostConnectionService.IsBenignLobbyPatcherError handles the same error
     /// on its own refresh path. It reaches Unity through the <c>LogFormat</c> route
-    /// (Debug.LogError / unityLogger.Log(LogType.Exception, e)) — NOT <c>LogException</c> — so we
+    /// (Debug.LogError / unityLogger.Log(LogType.Exception, e)) - NOT <c>LogException</c> - so we
     /// decorate Unity's global <see cref="ILogHandler"/> and drop the signature on both overrides;
     /// every other log is forwarded to the original handler verbatim.
     ///
-    /// Editor / Development only — the error has only been observed in the Editor and the release
+    /// Editor / Development only - the error has only been observed in the Editor and the release
     /// behaviour of the handler swap is untested.
     /// </summary>
     public static class BenignLobbyLogFilter
@@ -29,7 +29,7 @@ namespace CosmicShore.Utility
             if (Debug.unityLogger.logHandler is FilteringLogHandler) return;
 
             Debug.unityLogger.logHandler = new FilteringLogHandler(Debug.unityLogger.logHandler);
-            CSDebug.Log("[BenignLobbyLogFilter] Installed — suppressing the benign LobbyPatcher ArgumentOutOfRangeException.");
+            CSDebug.Log("[BenignLobbyLogFilter] Installed - suppressing the benign LobbyPatcher ArgumentOutOfRangeException.");
         }
 
         private sealed class FilteringLogHandler : ILogHandler
@@ -46,8 +46,8 @@ namespace CosmicShore.Utility
 
             public void LogFormat(LogType logType, UnityEngine.Object context, string format, params object[] args)
             {
-                // The Lobby SDK surfaces the benign exception through this route — via
-                // Debug.LogError / unityLogger.Log(LogType.Exception, e) — not LogException.
+                // The Lobby SDK surfaces the benign exception through this route - via
+                // Debug.LogError / unityLogger.Log(LogType.Exception, e) - not LogException.
                 if ((logType == LogType.Exception || logType == LogType.Error)
                     && IsBenignLobbyPatcherLogFormat(format, args))
                     return;
