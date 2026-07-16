@@ -536,6 +536,8 @@ cleared.
 >    client-local (trails reconstructed from networked vessel movement; cell phase
 >    synced via `CellNetworkSync`). Fine for a per-client **perf** test and the
 >    menu; **diverges across clients**, so not yet fair for competitive play.
+>    **Sync plan (server-authoritative fauna, replicated puppets):**
+>    `Docs/ECOSYSTEM_NETWORK_SYNC.md`.
 > 5. **Net perf.** Fauna cost CPU (per-tick `OverlapSphere` per creature). Test
 >    whether trail savings beat fauna cost: start modest and profile before/after;
 >    scale `PopulationSize` only if net-positive.
