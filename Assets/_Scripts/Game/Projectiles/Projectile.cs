@@ -157,6 +157,20 @@ namespace CosmicShore.Game.Projectiles
             }
         }
 
+        /// <summary>
+        /// Ends the flight immediately, running the same end effects (explosion,
+        /// factory return) as natural expiry. No-op once the projectile is pooled.
+        /// </summary>
+        public void Detonate()
+        {
+            if (!isActiveAndEnabled) return;
+
+            Stop();
+
+            if (!projectileImpactor || !projectileImpactor.ExecuteEndEffects())
+                ReturnToFactory();
+        }
+
         private async UniTaskVoid MoveProjectileAsync(float projectileTime, CancellationToken token)
         {
             float elapsedTime = 0f;
@@ -183,8 +197,10 @@ namespace CosmicShore.Game.Projectiles
                     await UniTask.Yield(PlayerLoopTiming.PreLateUpdate, token);
                 }
 
-                projectileImpactor.ExecuteEndEffects();
-                // ReturnToFactory(); // handled by end effects (delayed)
+                // End effects handle the (delayed) factory return; without any
+                // configured, return immediately so the projectile is not stranded.
+                if (!projectileImpactor.ExecuteEndEffects())
+                    ReturnToFactory();
             }
             catch (OperationCanceledException) { }
             catch (Exception ex)

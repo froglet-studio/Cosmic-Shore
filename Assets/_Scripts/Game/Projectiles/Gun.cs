@@ -79,7 +79,7 @@ namespace CosmicShore.Game.Projectiles
         {
             if (!_lastProjectile) return;
 
-            _lastProjectile.ReturnToFactory();
+            _lastProjectile.Detonate();
             _lastProjectile = null;
         }
         #endregion

@@ -18,13 +18,17 @@ namespace CosmicShore.Game
             
         }
 
-        public void ExecuteEndEffects()
+        /// <returns>True when at least one end effect ran. Callers that rely on end
+        /// effects to return the projectile to its pool must handle a false return.</returns>
+        public bool ExecuteEndEffects()
         {
             if (projectileImpactorDataContainer.ProjectileEndEffects.Length <= 0)
-                return;
-            
+                return false;
+
             foreach (var effect in projectileImpactorDataContainer.ProjectileEndEffects)
                 effect.Execute(this, this);     // here we are passing itself as impactee, coz it doesn't have any impactee.
+
+            return true;
         }
         
         protected override void AcceptImpactee(IImpactor impactee)

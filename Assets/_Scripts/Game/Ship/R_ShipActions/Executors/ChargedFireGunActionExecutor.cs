@@ -47,6 +47,7 @@ public sealed class ChargedFireGunActionExecutor : ShipActionExecutorBase
 
     public void Begin(ChargedFireGunActionSO so, IVesselStatus status)
     {
+        if (status != null) _status = status;
         if (so == null || _resources == null || !gun)
             return;
 
@@ -66,6 +67,7 @@ public sealed class ChargedFireGunActionExecutor : ShipActionExecutorBase
 
     public void Release(ChargedFireGunActionSO so, IVesselStatus status)
     {
+        if (status != null) _status = status;
         if (so == null || _resources == null || !gun)
             return;
 
@@ -153,13 +155,21 @@ public sealed class ChargedFireGunActionExecutor : ShipActionExecutorBase
         if (_status == null || !projectileContainer)
             return;
 
+        // Charged shots can fly until detonated, so poll on an interval instead of
+        // every frame — GetComponentInChildren avoids the per-check array allocation.
+        const float pollPeriod = 0.2f;
+
         try
         {
             _status.HasLiveProjectiles = true;
             while (!token.IsCancellationRequested &&
-                   projectileContainer.GetComponentsInChildren<Projectile>().Length > 0)
+                   projectileContainer.GetComponentInChildren<Projectile>())
             {
-                await UniTask.Yield(PlayerLoopTiming.Update, token);
+                await UniTask.Delay(
+                    TimeSpan.FromSeconds(pollPeriod),
+                    DelayType.DeltaTime,
+                    PlayerLoopTiming.Update,
+                    token);
             }
         }
         catch (OperationCanceledException)
