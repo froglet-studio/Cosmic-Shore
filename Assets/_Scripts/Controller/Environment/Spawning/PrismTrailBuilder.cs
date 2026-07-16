@@ -68,6 +68,14 @@ namespace CosmicShore.Gameplay
             PrismKinds.Apply(block, e.Kind); // additive: Plain leaves baked/prefab state intact
             trail.Add(block);
             LoadInsights.AccumulateSample("Prism lay: kind + trail.Add", t);
+
+            // Arena-ready gate: every environment-laid prism is watched until its grow-in
+            // settles, so the connecting screen can hold until the arena is fully GROWN, not
+            // just fully laid (slice-starved growth left freshly-laid prisms invisible at
+            // reveal, popping in waves during play). Self-prunes so ungated contexts (menu
+            // conveyor, per-turn courses) never accumulate settled entries.
+            s_growWatch.Add(block);
+            if ((s_growWatch.Count & 511) == 0) SweepGrowWatch();
             return block;
         }
 
@@ -132,11 +140,130 @@ namespace CosmicShore.Gameplay
         static int s_layDoneTotal;
 
         /// <summary>
-        /// True while any budgeted lay is still placing prisms. The connecting panel holds on
-        /// this so the arena is COMPLETE before the player ever sees the world — prisms may
-        /// bloom behind the loading screen, never during play.
+        /// True while any budgeted lay is still placing prisms. Part of the arena-ready gate
+        /// (see <see cref="PollArenaReady"/>) so the arena is COMPLETE before the player ever
+        /// sees the world — prisms may bloom behind the loading screen, never during play.
         /// </summary>
         public static bool IsLayingInProgress => s_activeBudgetedLays > 0;
+
+        // ── Arena-ready gate (pending builds + lays + grow-in, all done) ─────
+
+        // Prisms laid by this builder that are still playing their grow-in. Swept (swap-remove)
+        // by the gate each poll and pruned periodically on add, so ungated contexts don't leak.
+        static readonly List<Prism> s_growWatch = new(1024);
+
+        // Builds announced (BeginArenaBuild) but not yet executed — covers the window where a
+        // controller is still WAITING to build (e.g. HexRace's netcode track-seed wait) and no
+        // lay has started, which absence-of-activity checks would misread as "arena done".
+        static int s_pendingArenaBuilds;
+
+        // Load-gate session state: set while MiniGameHUD holds the connecting screen on this
+        // gate. Read by PrismScaleManager to boost grow-in stepping behind the covered screen.
+        static bool s_loadGateHolding;
+        static float s_loadGateStartTime;
+        static int s_settleSpan = -1;
+
+        /// <summary>Hard cap on the load-gate hold — releases with an error instead of holding a
+        /// broken build forever (a wedged build must surface loud, not as an infinite screen).</summary>
+        const float LoadGateHardCapSeconds = 180f;
+
+        /// <summary>
+        /// Announce an arena build whose SegmentSpawner.Initialize happens LATER than scene
+        /// start (e.g. HexRace initializes only after the netcode track seed arrives). While
+        /// any build is pending, the arena-ready gate stays closed even though no lay has
+        /// started yet. Pair with exactly one <see cref="EndArenaBuild"/>.
+        /// </summary>
+        public static void BeginArenaBuild() => s_pendingArenaBuilds++;
+
+        /// <summary>Close a <see cref="BeginArenaBuild"/> bracket (idempotence is the caller's job).</summary>
+        public static void EndArenaBuild() => s_pendingArenaBuilds = Mathf.Max(0, s_pendingArenaBuilds - 1);
+
+        /// <summary>Laid prisms still growing in, as of the last gate sweep (progress readouts).</summary>
+        public static int GrowRemainingCount { get; private set; }
+
+        /// <summary>
+        /// True while the loading gate is holding the connecting screen on this builder.
+        /// PrismScaleManager boosts grow-in stepping while this is set — the screen is covered,
+        /// so frames are free to settle the arena cohort at full tempo.
+        /// </summary>
+        public static bool IsLoadGateHolding => s_loadGateHolding;
+
+        /// <summary>Bracket the connecting-screen hold (MiniGameHUD). Stamps the hard-cap clock.
+        /// Both edges close any settle span left open by an aborted/cancelled hold — a stale
+        /// handle would otherwise block the next load's settle span from ever opening.</summary>
+        public static void SetLoadGateHolding(bool holding)
+        {
+            s_loadGateHolding = holding;
+            if (holding)
+            {
+                s_loadGateStartTime = Time.unscaledTime;
+                // Fresh readout for this load: purge last match's (destroyed) entries so the
+                // panel never shows a stale grow count during the dwell.
+                SweepGrowWatch();
+            }
+            EndSettleSpan();
+        }
+
+        /// <summary>
+        /// THE arena-complete predicate the connecting screen holds on: every announced build
+        /// has executed, every streamed lay has drained, and every laid prism has finished its
+        /// grow-in. Only when all three are true is the arena what the player will see for the
+        /// rest of the match — nothing lays or blooms after this returns true.
+        /// </summary>
+        public static bool PollArenaReady()
+        {
+            if (s_loadGateHolding && Time.unscaledTime - s_loadGateStartTime > LoadGateHardCapSeconds)
+            {
+                Debug.LogError($"[PrismTrailBuilder] Arena build exceeded the {LoadGateHardCapSeconds:F0}s " +
+                               $"hold cap (pendingBuilds={s_pendingArenaBuilds}, lays={s_activeBudgetedLays}, " +
+                               $"growing={GrowRemainingCount}) — releasing the gate so the match can start. " +
+                               "Either the build wedged or the load is pathologically slow; capture a " +
+                               "Load Time Insights recording to see which.");
+                EndSettleSpan();
+                return true;
+            }
+
+            if (s_pendingArenaBuilds > 0 || s_activeBudgetedLays > 0) return false;
+
+            if (SweepGrowWatch() > 0)
+            {
+                // Everything is laid; the cohort is settling behind the covered screen. Own
+                // span so Load Time Insights attributes this window to the environment
+                // (starts after the lay spans end, so it never steals their attribution).
+                if (s_settleSpan == -1)
+                    s_settleSpan = LoadInsights.Begin(LoadInsightCategory.Environment,
+                        "Arena grow-in settle (behind connecting screen)");
+                return false;
+            }
+
+            EndSettleSpan();
+            return true;
+        }
+
+        static void EndSettleSpan()
+        {
+            if (s_settleSpan == -1) return;
+            LoadInsights.End(s_settleSpan);
+            s_settleSpan = -1;
+        }
+
+        /// <summary>Swap-remove settled/dead entries; returns (and caches) how many still grow.</summary>
+        static int SweepGrowWatch()
+        {
+            var list = s_growWatch;
+            for (int i = list.Count - 1; i >= 0; i--)
+            {
+                var p = list[i];
+                if (p == null || !p.IsGrowing)
+                {
+                    int last = list.Count - 1;
+                    list[i] = list[last];
+                    list.RemoveAt(last);
+                }
+            }
+            GrowRemainingCount = list.Count;
+            return list.Count;
+        }
 
         /// <summary>Prisms laid so far in the current budgeted batch (for progress readouts).</summary>
         public static int LayDoneCount => s_layDoneTotal;

@@ -102,10 +102,10 @@ a **cross-source warning** flags that only same-source deltas are meaningful.
 
 Answers "why did this game take 90 seconds to load?" with **exact percentages**. One recording
 covers a single game launch: arcade Start tap → scene load → netcode sync → vessel/AI spawning →
-cell & environment population → **arena complete** (the connecting screen — which holds until every
-streamed prism lay finishes — is done and the pre-game cinematic starts). The post-arena ceremony —
-cinematic, Ready click, countdown — is gameplay, not load, and is deliberately excluded from the
-recording.
+cell & environment population → **arena complete** (the connecting screen — which holds until the
+whole structure is laid AND fully grown (`PrismTrailBuilder.PollArenaReady`) — is done and the
+pre-game cinematic starts). The post-arena ceremony — cinematic, Ready click, countdown — is
+gameplay, not load, and is deliberately excluded from the recording.
 
 1. Press **● Arm Record Insight Mode** (persists until disarmed — every game launch records while
    armed, so you can capture intensity 1 vs intensity 2 back-to-back).

@@ -132,6 +132,13 @@ namespace CosmicShore.Gameplay
         public float Volume => scaleAnimator?.GetCurrentVolume() ?? .001f;
         public BlockState CurrentState => stateManager?.CurrentState ?? BlockState.Normal;
 
+        /// <summary>
+        /// True while this prism's grow-in animation is still running (scale has not settled at
+        /// TargetScale). A deactivated prism reports false — pooled/consumed prisms must never
+        /// wedge a caller waiting on growth (PrismTrailBuilder's arena-ready gate sweeps on this).
+        /// </summary>
+        public bool IsGrowing => isActiveAndEnabled && scaleAnimator != null && scaleAnimator.IsScaling;
+
         public Vector3 MaxScale
         {
             get => scaleAnimator?.MaxScale ?? Vector3.one * 10f;
