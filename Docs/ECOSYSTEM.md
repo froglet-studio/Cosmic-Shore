@@ -211,6 +211,19 @@ flowchart LR
 Every arrow is implemented: spawn (seeding), reproduction (births from feeds),
 starvation, and predation all run through the same `Fauna` base.
 
+**Vessel predation — the Crystal Joust (Squirrel Space-5).** A living fauna's elemental
+crystal is its **heart**: `Crystal.SetEmbeddedIn(fauna)` (called by `LightFauna`/`Boid`
+right after `LifeFormCrystal.EnsureElementalCrystal`) enables the heart's SphereCollider so
+a vessel can JOUST it. The embedded heart is never a pickup — skim-collect and skimmer
+vacuum both gate on `Crystal.IsEmbedded` — and the vessel-side chain routes to the
+container's `VesselLifeformCrystalEffects` instead of the collect chain. The Squirrel's
+`VesselWitherLifeformByCrystalEffectSO` (gated per-impact on its live Space level-5
+upgrade) calls `Fauna.Predated(playerName)`: an ACTIVE force through the sealed
+`Fauna.Die`, so the creature withers from the extremities inward and drops its crystal
+exactly like starvation — mass conserved, continuity honored, post-spawn predation
+immunity respected. Collider cost: **+1 active SphereCollider per live fauna** (bounded by
+each species' `MaxLivePopulation`).
+
 ---
 
 ## 4. Part-by-part analysis

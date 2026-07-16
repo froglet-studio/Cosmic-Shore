@@ -50,6 +50,31 @@ namespace CosmicShore.Gameplay
         public CrystalManager CrystalManager { get; protected set; }
         public bool IsExploding { get; private set; }
 
+        // ── Embedded lifeform heart ──────────────────────────────────────────
+        // While a fauna is alive its elemental crystal rides INSIDE the body (the heart).
+        // SetEmbeddedIn enables the crystal's collider so a vessel can JOUST the heart
+        // (the Squirrel's Space level-5 upgrade withers the creature through Fauna.Predated),
+        // while the impact chain gates on IsEmbedded so an embedded heart is never skim-
+        // collected or treated as a free-floating pickup. ActivateCrystal (death) clears it -
+        // the crystal then drops as the normal collectible powerup (mass conserved).
+
+        /// <summary>The living fauna this crystal is embedded in; null once dropped/free.</summary>
+        public Fauna EmbeddedIn { get; private set; }
+
+        /// <summary>True while this crystal is a living lifeform's heart (not yet dropped).</summary>
+        public bool IsEmbedded => EmbeddedIn != null;
+
+        /// <summary>
+        /// Marks this crystal as a living fauna's heart and enables its collider so vessels can
+        /// joust it. Called by concrete fauna right after LifeFormCrystal.EnsureElementalCrystal.
+        /// </summary>
+        public void SetEmbeddedIn(Fauna owner)
+        {
+            EmbeddedIn = owner;
+            var col = GetComponent<SphereCollider>();
+            if (col) col.enabled = owner != null;
+        }
+
         // ── Active-crystal registry ──────────────────────────────────────────
         // Lets systems (e.g. HexRaceObjectiveProvider) enumerate live crystals without a
         // per-call FindObjectsByType scene scan. Maintained via OnEnable/OnDisable so it
@@ -203,6 +228,7 @@ namespace CosmicShore.Gameplay
 
         public void ActivateCrystal()
         {
+            EmbeddedIn = null; // no longer a living heart - it's a free collectible now
             transform.parent = cellData.Cell.transform;
             gameObject.GetComponent<SphereCollider>().enabled = true;
             enabled = true;

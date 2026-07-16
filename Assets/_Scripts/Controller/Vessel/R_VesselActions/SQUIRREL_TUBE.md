@@ -50,7 +50,11 @@ axis and made the tube read as exiting the top; that was removed.
   volume (phase / fauna targeting). Deliberate emergence, not a cosmetic overlay.
 - **Elementals** — the wall is **danger** prisms: they slam any vessel body that touches them
   (friendly fire included — locked design, danger effects never gate on domain), and a skimmer that
-  grazes them gets **10× boost energy** (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`). A level-0
+  grazes them gets **10× boost energy** (`SkimmerBoostPrismEffect.dangerEnergyMultiplier`) — the 10×
+  bonus is gated behind the vessel's **Charge level-5 upgrade ("Live Wire")**; below it danger skims
+  pay base energy. **Time** shortens the deploy cooldown (`cooldownMultiplierAtFullTime`, ×0.5 at
+  level 10) and at **Time level 5 ("Twin Rings")** each deploy lays an extra ring (baseline is now
+  ONE ring; `upgradeExtraRings`). A level-0
   Space Skimmer reaches the ring from the centre; the vessel body flies clear of it. Tune `radius`
   so that holds for the live skimmer size. Because the prisms come from the **Boost pool** (below)
   their colliders are live the instant they spawn — a skimmer can boost off them immediately, even
@@ -125,7 +129,9 @@ on either a vessel hit (joust) or a crystal hit.
 ## Tuning (all on the SO)
 
 `danger`, `radius`, `segments`, `rings`, `ringSpacing`, `prismScale`, `leadSeconds`, `forwardOffset`
-(min floor), `spawnPerFrame`, `cooldown`. Grow-in speed and collider timing are pool-level, on
+(min floor), `spawnPerFrame`, `cooldown`, `cooldownMultiplierAtFullTime` (Time → cooldown, ×0.5 at
+level 10), `minCooldownMultiplier`, `upgradeExtraRings` (Time-5 Twin Rings). Grow-in speed and
+collider timing are pool-level, on
 `PrismFactory` (`boostPrismGrowthRate`, default 8 — `PrismScaleManager` clamps
 `growthRate * deltaTime` into [0.05, 0.1] lerp/frame, so ≥6 pins the max bloom speed) +
 `SpawnBoostPrism` (`waitTime = 0`); the collider never waits on either (full-size from frame 0 via

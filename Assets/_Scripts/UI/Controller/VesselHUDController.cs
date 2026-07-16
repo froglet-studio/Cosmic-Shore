@@ -15,7 +15,17 @@ namespace CosmicShore.UI
         protected R_VesselActionHandler Actions { get; private set; }
         protected VesselHUDView View => baseView;
 
-        private void OnDestroy() => UnsubscribeFromEvents();
+        R_VesselElementalAbilityHandler _abilityHandler;
+
+        static readonly Element[] AllElements =
+            { Element.Charge, Element.Mass, Element.Space, Element.Time };
+
+        private void OnDestroy()
+        {
+            UnsubscribeFromEvents();
+            if (_abilityHandler)
+                _abilityHandler.OnUpgradeStateChanged -= HandleUpgradeStateChanged;
+        }
 
         public virtual void Initialize(IVesselStatus vesselStatus)
         {
@@ -25,7 +35,23 @@ namespace CosmicShore.UI
                 baseView = GetComponentInChildren<VesselHUDView>(true);
 
             baseView?.Initialize();
+
+            // Elemental upgrade highlight - shared across all vessel HUDs: the view binds each
+            // ability icon to the element that upgrades it (per the vessel's ElementalAbilityMapSO)
+            // and the icon glows while that upgrade is active. Idempotent across re-inits.
+            if (_abilityHandler)
+                _abilityHandler.OnUpgradeStateChanged -= HandleUpgradeStateChanged;
+            _abilityHandler = vesselStatus.ElementalAbilityHandler;
+            if (_abilityHandler && baseView)
+            {
+                _abilityHandler.OnUpgradeStateChanged += HandleUpgradeStateChanged;
+                foreach (var element in AllElements) // seed already-active upgrades
+                    baseView.SetAbilityUpgraded(element, _abilityHandler.IsUpgradeActive(element));
+            }
         }
+
+        private void HandleUpgradeStateChanged(Element element, bool active)
+            => baseView?.SetAbilityUpgraded(element, active);
 
         public void SubscribeToEvents()
         {

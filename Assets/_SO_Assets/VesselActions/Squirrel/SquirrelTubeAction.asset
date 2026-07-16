@@ -15,10 +15,13 @@ MonoBehaviour:
   danger: 1
   radius: 8
   segments: 8
-  rings: 2
+  rings: 1
   ringSpacing: 10
   prismScale: 4
   leadSeconds: -1.5
   forwardOffset: 100
   spawnPerFrame: 24
   cooldown: 20
+  cooldownMultiplierAtFullTime: 0.5
+  minCooldownMultiplier: 0.35
+  upgradeExtraRings: 1

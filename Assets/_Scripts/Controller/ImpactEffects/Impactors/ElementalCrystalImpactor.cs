@@ -44,6 +44,9 @@ namespace CosmicShore.Gameplay
             if (_hasBeenCollected) return;
             if (isImpacting) return;
             if (Crystal.IsExploding) return;
+            // A living lifeform's embedded heart is joustable (vessel-side chain) but never
+            // skim-collectable - it only becomes a pickup once death drops it (ActivateCrystal).
+            if (Crystal.IsEmbedded) return;
             if (impactee is not SkimmerImpactor skimmerImpactor) return;
 
             isImpacting = true;

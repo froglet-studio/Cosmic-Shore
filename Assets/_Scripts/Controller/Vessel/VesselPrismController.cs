@@ -40,6 +40,18 @@ namespace CosmicShore.Gameplay
         [SerializeField] bool waitTillOutsideSkimmer = true;
         [SerializeField] bool shielded = false;
 
+        [Header("Elemental (per-vessel, authored on the prefab)")]
+        [Tooltip("MASS -> trail prism VOLUME multiplier (evaluated live each spawn). Authored as " +
+                 "an ElementalFloat on the vessel prefab (the Squirrel maps it to Mass, 1 -> 2.5); " +
+                 "applied as the cube root per axis so prism volume scales linearly with the level. " +
+                 "Disabled (1x) on vessels that don't map Mass to their trail.")]
+        [SerializeField] ElementalFloat trailVolume = new(1f);
+
+        [Tooltip("MASS level-5 'Heavy Trail': when enabled on this vessel, its trail prisms " +
+                 "arrive shielded while the Mass elemental upgrade is active (regular shield, " +
+                 "never SuperShield - fauna keep their devastate sink).")]
+        [SerializeField] bool massUpgradeShieldsTrail = false;
+
         [Header("Gap Settings")]
         public float offset;
         public float Gap;
@@ -218,6 +230,14 @@ namespace CosmicShore.Gameplay
                 BaseScale.z * ZScaler
             ));
 
+            // MASS -> trail prism volume: live per-spawn read of the prefab-authored
+            // ElementalFloat (1x when disabled). Cube root per axis so VOLUME scales
+            // linearly with the element level; the mass still flows through the normal
+            // conserved spawn channel.
+            float volumeMult = trailVolume.EvaluateLive(vesselStatus);
+            if (volumeMult > 0f && !Mathf.Approximately(volumeMult, 1f))
+                scale *= Mathf.Pow(volumeMult, 1f / 3f);
+
             // --- Position & Rotation ---
             float xShift = halfGap == 0 ? 0 : (scale.x / 2f + Mathf.Abs(halfGap)) * Mathf.Sign(halfGap);
             Vector3 pos = transform.position - vesselStatus.Course * offset + vesselStatus.ShipTransform.right * xShift;
@@ -268,8 +288,10 @@ namespace CosmicShore.Gameplay
             }
 
             
-            // Shield
-            if (shielded)
+            // Shield. MASS level-5 'Heavy Trail': trail prisms arrive shielded while the
+            // vessel's Mass upgrade is active (per-spawn snapshot; regular shield only).
+            if (shielded || (massUpgradeShieldsTrail
+                             && vesselStatus?.ElementalAbilityHandler?.IsUpgradeActive(Element.Mass) == true))
                 prism.prismProperties.IsShielded = true;
 
             // Add to trail & initialize
