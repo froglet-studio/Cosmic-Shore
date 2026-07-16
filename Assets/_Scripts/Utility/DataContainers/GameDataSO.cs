@@ -155,7 +155,7 @@ namespace CosmicShore.Utility
         /// 1-based <see cref="ScoreResult.Rank"/>). Produced once per game end by the mode:
         /// server-side in networked modes (and assembled identically on each client from the
         /// already-synced score arrays), or locally in single-player. Every end-game surface
-        /// — scoreboard banner + cards, end-game cinematic, crystal reward — reads this.
+        /// - scoreboard banner + cards, end-game cinematic, crystal reward - reads this.
         /// <see cref="WinnerName"/>/<see cref="WinnerDomain"/> are a thin derived view over
         /// <c>Results[0]</c> (see <see cref="SetResults"/>). Empty until the mode computes
         /// results. Reset in <see cref="ResetRuntimeData"/> and <see cref="ResetRuntimeDataForReplay"/>.
@@ -192,7 +192,7 @@ namespace CosmicShore.Utility
         [NonSerialized] public int CrystalTargetCount;
 
         /// <summary>
-        /// The resolved joust-collision target for the current session — the per-domain
+        /// The resolved joust-collision target for the current session - the per-domain
         /// joust sum that ends a Joust turn. Published by <see cref="JoustCollisionTurnMonitor"/>
         /// in StartMonitor on every peer (a scene constant, identical across clients). Read by
         /// the Joust controller to format the "N Jousts Left" loser line into
@@ -202,7 +202,7 @@ namespace CosmicShore.Utility
         [NonSerialized] public int JoustTargetCount;
 
         /// <summary>
-        /// The resolved goal target for the current Astro League session — the per-domain
+        /// The resolved goal target for the current Astro League session - the per-domain
         /// goal sum that triggers the mercy-rule finish. Published by
         /// <see cref="AstroLeagueController"/> in OnNetworkSpawn on the server and synced to
         /// clients via its match-config ClientRpc (a settings constant, identical across
@@ -217,7 +217,7 @@ namespace CosmicShore.Utility
         /// in OnNetworkSpawn (drag the matching <see cref="CosmicShore.Gameplay.ScoringRuleSO"/>
         /// asset onto the controller). Read by the network turn monitors for the end condition
         /// and the "remaining" readout (and, in later commits, the scoreboard + end-game
-        /// cinematic). Transient — re-published on every (re)spawn, so it is intentionally NOT
+        /// cinematic). Transient - re-published on every (re)spawn, so it is intentionally NOT
         /// cleared by the reset methods.
         /// </summary>
         [NonSerialized] public ScoringRuleSO ScoringRule;
@@ -231,7 +231,7 @@ namespace CosmicShore.Utility
         {
             if (game == null)
             {
-                Debug.LogError("<color=#FF0000>[GameDataSO] SyncFromArcadeGame — game is NULL!</color>");
+                Debug.LogError("<color=#FF0000>[GameDataSO] SyncFromArcadeGame - game is NULL!</color>");
                 return;
             }
 
@@ -254,7 +254,7 @@ namespace CosmicShore.Utility
             SelectedPlayerCount.Value = totalDesired;
             RequestedAIBackfillCount = aiBackfill;
 
-            Debug.Log($"<color=#FFD700>[GameDataSO] ConfigurePlayerCounts — total={totalDesired}, humans={humanCount}, AI={aiBackfill}</color>");
+            Debug.Log($"<color=#FFD700>[GameDataSO] ConfigurePlayerCounts - total={totalDesired}, humans={humanCount}, AI={aiBackfill}</color>");
         }
 
 
@@ -406,12 +406,12 @@ namespace CosmicShore.Utility
         /// Narrower reset used by the party-join transition (NetworkTransitionService.
         /// ClearStaleReferences) after the client's local NetworkManager shuts down.
         /// The shutdown despawned the client's own Player/Vessel NetworkObjects, but
-        /// the lists keep managed references to the destroyed components — including
+        /// the lists keep managed references to the destroyed components - including
         /// the menu session's RoundStats entries (the menu populates RoundStatsList
         /// via AddPlayer exactly like a game does). A destroyed RoundStats keeps its
         /// managed Name, so it wins AddPlayer's name-keyed dedup and SHADOWS the live
         /// component for every name-keyed consumer on this client (ready-feed color,
-        /// final-score sync, per-domain sums) — frozen at the pre-party state (Jade).
+        /// final-score sync, per-domain sums) - frozen at the pre-party state (Jade).
         /// Clear the roster lists; the party session's pair-init re-adds live entries.
         /// Round/turn counters are NOT touched (no game round was entered).
         /// </summary>
@@ -494,7 +494,7 @@ namespace CosmicShore.Utility
             // A same-name RoundStats that is NOT this player's live component is a
             // stale shadow from a previous session (e.g. the pre-party solo Player,
             // despawned by the invite-accept NetworkManager shutdown). Name-keyed
-            // consumers — ready-feed color, final-score sync, per-domain sums — must
+            // consumers - ready-feed color, final-score sync, per-domain sums - must
             // resolve the LIVE component, so the shadow is replaced. Unity defers
             // Destroy to end of frame, so this also covers shadows the destroyed-
             // object prune above cannot see yet.
@@ -636,8 +636,8 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Drops roster entries whose underlying UnityEngine.Object has been destroyed
         /// (e.g. the client's pre-party Player after the invite-accept NetworkManager
-        /// shutdown). Destroyed components keep their managed state — Name still
-        /// matches — so without pruning they shadow live entries in the name-keyed
+        /// shutdown). Destroyed components keep their managed state - Name still
+        /// matches - so without pruning they shadow live entries in the name-keyed
         /// dedup and lookups. Plain C# stats (edit-mode test fakes) are not
         /// UnityEngine.Objects and pass through untouched.
         /// </summary>
@@ -841,7 +841,7 @@ namespace CosmicShore.Utility
             {
                 if (SpawnPoses == null || SpawnPoses.Length == 0)
                 {
-                    CSDebug.LogError("[GameDataSO] SpawnPoses is null or empty — returning default pose at origin.");
+                    CSDebug.LogError("[GameDataSO] SpawnPoses is null or empty - returning default pose at origin.");
                     return new Pose(Vector3.zero, Quaternion.identity);
                 }
                 _playerSpawnPoseList = new List<Pose>(SpawnPoses.Length);
@@ -862,7 +862,7 @@ namespace CosmicShore.Utility
         /// is the contiguous slice <c>ActiveDomains[0..DC-1]</c> where DC is
         /// <see cref="RequestedDomainCount"/>: DC=1 → Jade only, DC=2 → Jade+Ruby,
         /// DC=3 → Jade+Ruby+Gold. Tie-break order for AI placement is the same.
-        /// Blue is intentionally absent — it's the "no team / neutral" sentinel
+        /// Blue is intentionally absent - it's the "no team / neutral" sentinel
         /// and never a playable assignment.
         /// </summary>
         public static readonly Domains[] ActiveDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };

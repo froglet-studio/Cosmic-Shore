@@ -27,12 +27,12 @@ namespace CosmicShore.Gameplay
         {
             base.StartMonitor();
 
-            CSDebug.Log($"[NetworkJoustMonitor] StartMonitor — IsServer={IsServer}, " +
+            CSDebug.Log($"[NetworkJoustMonitor] StartMonitor - IsServer={IsServer}, " +
                 $"CollisionsNeeded={CollisionsNeeded}, " +
                 $"Players={gameData.RoundStatsList.Count}, " +
                 $"Names=[{string.Join(", ", gameData.RoundStatsList.Select(s => s.Name))}]");
 
-            // ALL machines subscribe — client needs to report its own collisions up to server,
+            // ALL machines subscribe - client needs to report its own collisions up to server,
             // and the HUD's "jousts remaining" readout needs to reflect the local player's
             // DOMAIN aggregate, which changes whenever ANY teammate jousts.
             foreach (var stat in gameData.RoundStatsList)
@@ -61,7 +61,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnDestroy()
         {
-            // Safety net for destruction paths that bypass StopMonitor — detaching
+            // Safety net for destruction paths that bypass StopMonitor - detaching
             // from the persistent RoundStats must never depend on the turn ending.
             StopMonitor();
             base.OnDestroy();
@@ -82,7 +82,7 @@ namespace CosmicShore.Gameplay
         {
             if (IsServer)
             {
-                // Server already has the correct local value from the setter —
+                // Server already has the correct local value from the setter -
                 // just broadcast to clients. Do NOT re-assign JoustCollisions here
                 // or it will re-trigger this handler and cause infinite recursion.
                 SyncCollision_ClientRpc(stats.Name, stats.JoustCollisions);
@@ -90,7 +90,7 @@ namespace CosmicShore.Gameplay
             else
             {
                 // Client detected a collision the server missed (high-speed physics)
-                // — report it up so the server can authoritatively sync everyone
+                // - report it up so the server can authoritatively sync everyone
                 ReportCollision_ServerRpc(stats.Name, stats.JoustCollisions);
             }
         }
@@ -115,7 +115,7 @@ namespace CosmicShore.Gameplay
         [ClientRpc]
         void SyncCollision_ClientRpc(string playerName, int collisionCount)
         {
-            // Server already has the correct value — only clients need the update.
+            // Server already has the correct value - only clients need the update.
             if (IsServer) return;
             if (!gameData.TryGetRoundStats(playerName, out IRoundStats stats)) return;
             stats.JoustCollisions = collisionCount;

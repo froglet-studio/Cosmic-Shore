@@ -6,7 +6,7 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// DisposableGroup Tests — Validates the composite disposal pattern.
+    /// DisposableGroup Tests - Validates the composite disposal pattern.
     ///
     /// WHY THIS MATTERS:
     /// DisposableGroup aggregates multiple IDisposable objects and disposes them

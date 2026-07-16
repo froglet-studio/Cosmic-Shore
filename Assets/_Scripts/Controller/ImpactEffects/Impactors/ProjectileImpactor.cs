@@ -49,6 +49,13 @@ namespace CosmicShore.Gameplay
                     {
                         effect.Execute(this, prismImpactee);
                     }
+
+                    // SPACE < 5 default: the bullet is destroyed on its first prism impact.
+                    // The level-5 'Piercing Bullets' upgrade clears the per-shot flag at fire
+                    // time (restoring pierce-through). Detonating projectiles leave the flag
+                    // false — their detonator owns the pool return.
+                    if (Projectile.StopOnFirstPrismImpact)
+                        Projectile.ReturnToFactory();
                     break;
                 case MineImpactor mineImpactee:
                     if(!DoesEffectExist(projectileImpactorDataContainer.ProjectileMineEffect)) return;

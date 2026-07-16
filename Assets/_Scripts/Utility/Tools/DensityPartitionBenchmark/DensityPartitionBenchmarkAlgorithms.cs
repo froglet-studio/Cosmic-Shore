@@ -26,7 +26,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
     /// <summary>
     /// Parameter knobs for the unified Search algorithm. Every benchmark variant
     /// is one combination of these options. Keeping the implementation in a single
-    /// method ensures the variants differ only along the dimensions named here —
+    /// method ensures the variants differ only along the dimensions named here -
     /// no hidden divergence between, say, the smoothing pass in GridSmoothed vs.
     /// MassHistogramSmoothed.
     /// </summary>
@@ -59,7 +59,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         /// If true, after argmax+interp, do a final O(N) pass: compute the
         /// (mass-weighted, if massWeighted=true) centroid of all prisms within
         /// smoothingRadiusM of the interp answer. Grounds the answer in the
-        /// actual prism positions instead of voxel centers — drops error toward
+        /// actual prism positions instead of voxel centers - drops error toward
         /// the analytical centroid floor at the cost of one extra prism scan.
         /// </summary>
         public bool centroidRefine;
@@ -78,7 +78,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         /// -fixedHalfExtentM) instead of adapting to the scenario's worldHalfExtent.
         /// Models the *actual shipped* BlockDensityGrid, which is hard-coded to a
         /// 1000m cube (±500m) regardless of the cell's real size. Prisms outside
-        /// the fixed grid are silently dropped — exactly the production behavior.
+        /// the fixed grid are silently dropped - exactly the production behavior.
         /// With a 1200m-radius cell, this drops ~86% of the cell volume's prisms.
         /// 0 = adaptive grid sized to the data (what every other variant does).
         /// </summary>
@@ -97,7 +97,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         /// If true, refine via mean-shift over the RAW VOXEL HISTOGRAM (count-
         /// weighted voxel centers within smoothingRadiusM), iterated
         /// centroidIterations times. This is what production FindDensestRegionJob
-        /// does — the grid stores only counts, so prism-position-based centroid
+        /// does - the grid stores only counts, so prism-position-based centroid
         /// refinement (centroidRefine) is not available to it. Mutually exclusive
         /// with centroidRefine; if both are set, voxelMeanShift wins.
         /// </summary>
@@ -106,7 +106,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
     /// <summary>
     /// Algorithms are pure functions over the (prism list, query) pair. Each returns
-    /// a BenchmarkResult timed with Stopwatch — single-shot, so noise is non-trivial;
+    /// a BenchmarkResult timed with Stopwatch - single-shot, so noise is non-trivial;
     /// the runner does a warm-up pass to reduce JIT bias.
     ///
     /// Conventions:
@@ -124,20 +124,20 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         // Default kernel radius = the swarm-effective consumption volume. A 4-fauna
         // swarm at consumeRadius=40m, goalOrbitRadius=60m, plus boid separation
         // spread covers roughly a 150m-radius region around the goal point. The
-        // algorithm only has to land within this of enemy mass — the swarm sweeps
+        // algorithm only has to land within this of enemy mass - the swarm sweeps
         // the rest. (Was 90m through iteration 3, before the hierarchical
         // fauna→swarm→population analysis re-scoped it.)
         public const float DefaultSmoothingRadiusM = 150f;
 
         // ==================================================================
-        //  Variant constructors — named for the report.
+        //  Variant constructors - named for the report.
         // ==================================================================
 
         /// <summary>
         /// The LITERAL shipped algorithm: 17³ count grid hard-fixed at ±500m,
         /// argmax, no smoothing/interp. Prisms outside ±500m are dropped exactly
         /// as BlockCountDensityGrid.AddBlock's bounds check drops them. This is
-        /// the only variant that reproduces the production grid-undersizing bug —
+        /// the only variant that reproduces the production grid-undersizing bug -
         /// every other variant adapts its grid to the data.
         /// </summary>
         public static SearchOptions ProductionFixedGrid17() => new SearchOptions
@@ -147,7 +147,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             smoothed = false,
             smoothingRadiusM = 0f,
             subVoxelInterp = false,
-            fixedHalfExtentM = ProductionExtent, // 500m — the shipped constant
+            fixedHalfExtentM = ProductionExtent, // 500m - the shipped constant
         };
 
         public static SearchOptions GridArgmax17() => new SearchOptions
@@ -244,7 +244,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         /// audit's §7.3 fix): adaptive resolution targeting 75m voxels (clamped
         /// 9..33 points/axis), count-weighted, box smoothing at 150m, sub-voxel
         /// interp, then 5 iterations of mean-shift over the RAW VOXEL HISTOGRAM
-        /// (not prism positions — the production grid only stores counts).
+        /// (not prism positions - the production grid only stores counts).
         /// Run this row to know what production will actually answer.
         /// </summary>
         public static SearchOptions ProductionV2() => new SearchOptions
@@ -260,7 +260,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         };
 
         // ==================================================================
-        //  Unified Search() — implements every variant.
+        //  Unified Search() - implements every variant.
         // ==================================================================
 
         public static BenchmarkResult Search(
@@ -276,11 +276,11 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             // fixedHalfExtentM > 0 models the shipped BlockDensityGrid, which is
             // hard-coded to a 1000m cube (±500m) regardless of cell size. Prisms
             // outside that box fall out of TryMapToIndex's bounds check and are
-            // silently dropped — exactly the production behavior.
+            // silently dropped - exactly the production behavior.
             float effectiveHalfExtent = opt.fixedHalfExtentM > 0f ? opt.fixedHalfExtentM : worldHalfExtent;
 
             // targetVoxelSizeM > 0 derives the resolution from the extent so voxel
-            // size is a physical constant — production BlockDensityGrid's adaptive
+            // size is a physical constant - production BlockDensityGrid's adaptive
             // resolution. Otherwise the explicit gridSize is used.
             int N = opt.targetVoxelSizeM > 0f
                 ? Mathf.Clamp(Mathf.CeilToInt(effectiveHalfExtent * 2f / opt.targetVoxelSizeM) + 1, 9, 33)
@@ -290,7 +290,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
             float origin = -effectiveHalfExtent;
             int len = N * N * N;
 
-            // Phase 1: bin (pooled allocation — see RentArray/ReturnArray below)
+            // Phase 1: bin (pooled allocation - see RentArray/ReturnArray below)
             float[] hist = RentArray(len);
             try
             {
@@ -343,7 +343,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                         origin + (bestY + dy) * stride,
                         origin + (bestZ + dz) * stride);
 
-                    // Phase 5a: voxel-weighted mean-shift — the PRODUCTION refinement.
+                    // Phase 5a: voxel-weighted mean-shift - the PRODUCTION refinement.
                     // Iteratively moves the answer to the count-weighted centroid of
                     // RAW HISTOGRAM voxels within the kernel radius. The production
                     // grid stores only counts (no prism positions), so this is the
@@ -388,7 +388,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
                             origin + seed.y * stride,
                             origin + seed.z * stride);
                     }
-                    // Phase 5b: prism-position centroid refinement — the IDEAL
+                    // Phase 5b: prism-position centroid refinement - the IDEAL
                     // refinement (requires prism positions, which production's grid
                     // does not store). Kept as the accuracy ceiling to compare
                     // voxelMeanShift against.
@@ -454,7 +454,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         }
 
         // ==================================================================
-        //  Ground truth — histogram + smoothing at finer resolution.
+        //  Ground truth - histogram + smoothing at finer resolution.
         //
         //  Was: brute-force scan over ~35^3 candidates × N prisms = O(N × C)
         //  Now: bin once, smooth, argmax. O(N + 3·G^3) with G=64.
@@ -525,7 +525,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         /// <summary>
         /// Continuous offset of a parabolic peak fit through (a,b,c) at indices
         /// (-1, 0, +1). Returns 0 when the fit is degenerate (no curvature) or
-        /// the peak isn't really at b. Clamped to [-0.5, 0.5] — beyond that the
+        /// the peak isn't really at b. Clamped to [-0.5, 0.5] - beyond that the
         /// peak should have been at a neighboring voxel anyway.
         /// </summary>
         static float ParabolicOffset(Vector3 abc)
@@ -541,7 +541,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
         /// <summary>
         /// Separable 3D box filter using a sliding window. O(N³) per pass × 3 passes,
-        /// independent of kernel width — works as well for 3³ kernels as for 25³ ones.
+        /// independent of kernel width - works as well for 3³ kernels as for 25³ ones.
         /// Edge voxels use a partial-window sum (no zero-padding shrink).
         ///
         /// `scratch` is a caller-provided buffer of the same length as `input`; it's
@@ -550,12 +550,12 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
         /// buffers' final contents are valid for the caller to read or recycle.
         /// </summary>
         // ──────────────────────────────────────────────────────────────────
-        // Array pool — keyed by length, lockless single-threaded LIFO.
+        // Array pool - keyed by length, lockless single-threaded LIFO.
         //
         // Iteration 1 allocated ~130 MB of float[] across one full run (5
         // algorithms × 36 queries × up to 3 arrays per Search). The resulting
         // GC pauses caused 5-7ms outliers in the 32³ rows. The pool reuses
-        // arrays across queries — typical hot run hits 4 distinct lengths
+        // arrays across queries - typical hot run hits 4 distinct lengths
         // (17³=4913, 32³=32768, 64³=262144, plus an occasional resize).
         // ──────────────────────────────────────────────────────────────────
 
@@ -588,7 +588,7 @@ namespace CosmicShore.Utility.Tools.DensityPartitionBenchmark
 
         static float[] SeparableBoxFilter3D(float[] input, float[] scratch, int N, int kernelHalfWidth)
         {
-            // We mutate `input` in-place across alternating passes — the caller's
+            // We mutate `input` in-place across alternating passes - the caller's
             // expectation is "field" returned, "hist" untouched after this returns.
             // To honor that, we use the input as the "a" buffer (reading from it,
             // overwriting it on the second pass) and scratch as the "b" buffer.

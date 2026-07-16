@@ -10,19 +10,19 @@ using UnityEngine;
 namespace CosmicShore.Gameplay
 {
     /// <summary>
-    /// Runtime executor for <see cref="SquirrelTubeActionSO"/> — the Squirrel's "Oak Trunk" tube.
+    /// Runtime executor for <see cref="SquirrelTubeActionSO"/> - the Squirrel's "Oak Trunk" tube.
     /// See <c>SQUIRREL_TUBE.md</c>.
     ///
     /// Pressing the ability trigger lays a long wall of thick danger prisms straight out in front of
     /// the vessel (along the nose / flight direction), so a Squirrel flying straight rockets through
-    /// the hollow centre while it obstructs everyone else. No preview — it just places.
+    /// the hollow centre while it obstructs everyone else. No preview - it just places.
     ///
-    /// Every ring is laid through the shared <see cref="BoostRingBuilder"/> — the same primitive
-    /// behind the omnicrystal ring and the joust ring — so the prisms are POOLED
+    /// Every ring is laid through the shared <see cref="BoostRingBuilder"/> - the same primitive
+    /// behind the omnicrystal ring and the joust ring - so the prisms are POOLED
     /// (<see cref="PrismType.Boost"/>: fast bloom, waitTime 0) and carry a FULL-SIZE collider from
     /// frame 0 (<see cref="Prism.HoldColliderAtFullSize"/>): the skimmer collides with the wall
     /// deterministically at any speed, while a vessel flying the centre usually never touches it.
-    /// Rings are laid a few per frame and the prisms returned to the pool on teardown — never
+    /// Rings are laid a few per frame and the prisms returned to the pool on teardown - never
     /// Instantiate/Destroy. Each blooms in, registers with the spatial index, and is removed only by
     /// an active force. A long cooldown gates re-use (surfaced to the HUD via
     /// <see cref="CooldownRemaining01"/>).
@@ -30,7 +30,7 @@ namespace CosmicShore.Gameplay
     public sealed class SquirrelTubeActionExecutor : ShipActionExecutorBase
     {
         [Header("Scene Refs")]
-        [Tooltip("Pooled-prism spawn channel (EventOnSpawnPrismAndReturn) — same asset the vessel " +
+        [Tooltip("Pooled-prism spawn channel (EventOnSpawnPrismAndReturn) - same asset the vessel " +
                  "trail uses. BoostRingBuilder routes the rings to the dedicated Boost pool " +
                  "(fast bloom, full-size collider from frame 0). Never Instantiated.")]
         [SerializeField] private PrismEventChannelWithReturnSO prismSpawnChannel;
@@ -93,7 +93,7 @@ namespace CosmicShore.Gameplay
             _cooldownEndTime = Time.time + so.Cooldown;
         }
 
-        /// <summary>Release: nothing — the tube is placed on press (no preview).</summary>
+        /// <summary>Release: nothing - the tube is placed on press (no preview).</summary>
         public void Commit(SquirrelTubeActionSO so, IVesselStatus status) { }
 
         // ---------------- Tube spawn (pooled, via the shared boost-ring builder) ----------------
@@ -102,7 +102,7 @@ namespace CosmicShore.Gameplay
         {
             if (!prismSpawnChannel)
             {
-                CSDebug.LogWarning("[SquirrelTube] prismSpawnChannel not wired — cannot spawn tube.");
+                CSDebug.LogWarning("[SquirrelTube] prismSpawnChannel not wired - cannot spawn tube.");
                 return;
             }
 
@@ -114,7 +114,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Lays the tube ring-by-ring through <see cref="BoostRingBuilder"/> — the same primitive
+        /// Lays the tube ring-by-ring through <see cref="BoostRingBuilder"/> - the same primitive
         /// the omnicrystal and joust rings use, so every ring is a wall of pooled Boost prisms with
         /// full-size colliders from frame 0 (the skim is deterministic at any speed). Batched a few
         /// rings per frame to spread the spawn cost.

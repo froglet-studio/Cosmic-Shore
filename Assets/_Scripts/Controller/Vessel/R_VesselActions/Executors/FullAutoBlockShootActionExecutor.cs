@@ -2,7 +2,9 @@ using System;
 using System.Threading;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
+using CosmicShore.Core;
 using CosmicShore.Gameplay;
+using Reflex.Attributes;
 using UnityEngine;
 using CosmicShore.Utility;
 using CosmicShore.Data;
@@ -11,6 +13,8 @@ namespace CosmicShore.Gameplay
 {
     public class FullAutoBlockShootActionExecutor : ShipActionExecutorBase
     {
+        [Inject] AudioSystem audioSystem;
+
         /// <summary>Static event: each time a block prism is shot. Param = player name.</summary>
         public static event Action<string> OnBlockShot;
 
@@ -111,11 +115,40 @@ namespace CosmicShore.Gameplay
 
                         if (!prism) continue;
 
+                        // Stationary blocks bypass Projectile.LaunchProjectile (movement is
+                        // driven by MoveAndAnchorAsync), so play the launch SFX here — the
+                        // flying-mode guns get theirs from LaunchProjectile.
+                        audioSystem.PlayGameplaySFX(GameplaySFXCategory.ProjectileLaunch, m.position);
+
                         prism.transform.SetParent(null, true);
-                        prism.transform.localScale = so.BlockScale;
-                        //prism.ownerID = _status.PlayerName; 
-                        prism.ChangeTeam(domainAtShot); 
-                        prism.RegisterProjectileCreated(_status.PlayerName); 
+
+                        // MASS → turret prism stretch: the long z-axis scales with the vessel's
+                        // live Mass level (ElementalAbilityMapSO). Volume = x·y·z of lossyScale,
+                        // so the stretch feeds Cell.LiveVolume — "volume is the spine".
+                        var blockScale = so.BlockScale;
+                        blockScale.z *= _status?.ElementalAbilityHandler.Multiplier(Element.Mass) ?? 1f;
+
+                        // Route sizing through the scale animator instead of a raw
+                        // localScale write: TargetScale stays truthful (a later
+                        // Grow/ChangeSize no longer snaps the prism back to its authored
+                        // size), live volume tracks, and the block blooms in from zero
+                        // during flight instead of popping in (continuity law).
+                        var scaleAnimator = prism.GetComponent<PrismScaleAnimator>();
+                        if (scaleAnimator)
+                        {
+                            scaleAnimator.Initialize();
+                            prism.transform.localScale = Vector3.zero;
+                            scaleAnimator.SetTargetScale(blockScale);
+                            scaleAnimator.BeginGrowthAnimation();
+                        }
+                        else
+                        {
+                            prism.transform.localScale = blockScale;
+                        }
+
+                        //prism.ownerID = _status.PlayerName;
+                        prism.ChangeTeam(domainAtShot);
+                        prism.RegisterProjectileCreated(_status.PlayerName);
 
                         SetupPrismVisualAsync(prism, domainAtShot, spawnVisibilityDelay,
                             this.GetCancellationTokenOnDestroy()).Forget();
@@ -144,6 +177,13 @@ namespace CosmicShore.Gameplay
 
                         OnBlockShot?.Invoke(_status?.PlayerName);
 
+                        // MASS level-5 'Shielded Prisms': snapshot at fire time, applied at
+                        // anchor. Regular shield only — one-hit ablative armor that fauna can
+                        // still eat via devastate, preserving the food-web sink (SuperShield
+                        // would create mass with no active sink — an ecosystem freeze vector).
+                        bool shieldOnAnchor =
+                            _status?.ElementalAbilityHandler.IsUpgradeActive(Element.Mass) == true;
+
                         var movementToken = this.GetCancellationTokenOnDestroy();
                         MoveAndAnchorAsync(
                             prism.transform,
@@ -153,6 +193,7 @@ namespace CosmicShore.Gameplay
                             so.DisableCollidersOnLaunch,
                             prism,
                             childProjectile,
+                            shieldOnAnchor,
                             movementToken
                         ).Forget();
                     }
@@ -233,7 +274,7 @@ namespace CosmicShore.Gameplay
         #endregion
 
         #region Movement / Anchor
-        private async UniTaskVoid MoveAndAnchorAsync(Transform block, Vector3 dir, float speed, float distance, bool reactivateCollidersAtEnd, Prism prism, Projectile childProjectile, CancellationToken token)
+        private async UniTaskVoid MoveAndAnchorAsync(Transform block, Vector3 dir, float speed, float distance, bool reactivateCollidersAtEnd, Prism prism, Projectile childProjectile, bool shieldOnAnchor, CancellationToken token)
         {
             Vector3 start  = block.position;
             Vector3 target = start + dir * distance; // dir is m.forward (already unit)
@@ -272,6 +313,28 @@ namespace CosmicShore.Gameplay
                         rb.isKinematic     = true;
                     }
                 }
+
+                // Anchored: the block is now permanent world mass. Register it with the
+                // spatial index (the one registration lifecycle) so it participates in
+                // Burst AOE damage, growth occupancy, fauna density queries, and the
+                // containing cell's LiveVolume — unregistered turret prisms were
+                // invisible to the entire ecosystem. Registered at rest, not at the
+                // muzzle, so the bucket grid files it at its true position.
+                if (prism && prism.gameObject.activeInHierarchy && prism.SpatialIndexId < 0)
+                {
+                    prism.prismProperties.position = prism.transform.position;
+                    var spatialIndex = PrismSpatialIndex.EnsureInstance();
+                    if (spatialIndex != null && spatialIndex.IsAvailable)
+                        prism.SpatialIndexId = spatialIndex.Register(prism);
+                }
+
+                // MASS level-5: engage the shield AFTER the collider re-enable and the index
+                // registration — the shield's Box→Mesh collider swap must run last so the
+                // reactivation loop can't re-enable the disabled BoxCollider, and the state
+                // manager's index flag sync needs SpatialIndexId ≥ 0. Collider budget: the
+                // swap is 1:1 (count-neutral); note shield MeshColliders are LOD-exempt today.
+                if (shieldOnAnchor && prism && prism.gameObject.activeInHierarchy)
+                    prism.ActivateShield();
             }
             catch (OperationCanceledException)
             {

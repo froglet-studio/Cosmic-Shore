@@ -137,7 +137,7 @@ namespace CosmicShore.UI
 
         /// <summary>
         /// While the cinematic plays, the gamepad's South face button (A on Xbox /
-        /// Cross on PlayStation) triggers the on-screen Skip button — the same binding
+        /// Cross on PlayStation) triggers the on-screen Skip button - the same binding
         /// the in-game input strategy uses for the primary action. Mouse/touch still
         /// works through <see cref="skipButton"/>'s onClick.
         /// </summary>

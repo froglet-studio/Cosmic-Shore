@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] int seed = 0;
 
         [Header("Scoring")]
-        [Tooltip("Drag HexRaceScoringRule.asset — the per-mode scoring strategy (end condition, scores, results).")]
+        [Tooltip("Drag HexRaceScoringRule.asset - the per-mode scoring strategy (end condition, scores, results).")]
         [SerializeField] ScoringRuleSO rule;
 
         int Intensity => Mathf.Max(1, gameData.SelectedIntensity.Value);
@@ -49,7 +49,7 @@ namespace CosmicShore.Gameplay
 
         public override void OnNetworkSpawn()
         {
-            Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] OnNetworkSpawn — IsServer={IsServer}, Intensity={Intensity}</color>");
+            Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] OnNetworkSpawn - IsServer={IsServer}, Intensity={Intensity}</color>");
             base.OnNetworkSpawn();
             gameData.ScoringRule = rule;
             numberOfRounds = 1;
@@ -71,12 +71,12 @@ namespace CosmicShore.Gameplay
             else if (_netTrackSeed.Value != 0)
             {
                 Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] Client: track seed already set ({_netTrackSeed.Value}), spawning track locally</color>");
-                // Client joined after the server already set the seed — spawn immediately
+                // Client joined after the server already set the seed - spawn immediately
                 SpawnTrackLocally(_netTrackSeed.Value);
             }
             else
             {
-                // Seed not yet available — start polling fallback.
+                // Seed not yet available - start polling fallback.
                 // Covers the race condition where OnValueChanged doesn't fire for
                 // initial sync and the ClientRpc was sent before this client spawned.
                 Debug.Log("<color=#00CED1>[FLOW-7HR] [HexRaceController] Client: seed not yet available, starting poll fallback</color>");
@@ -142,7 +142,7 @@ namespace CosmicShore.Gameplay
             }
             catch (System.OperationCanceledException)
             {
-                // Network despawn or object destroyed — expected
+                // Network despawn or object destroyed - expected
             }
         }
 
@@ -189,10 +189,10 @@ namespace CosmicShore.Gameplay
         {
             if (_trackSpawned || !segmentSpawner)
             {
-                Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] SpawnTrackLocally SKIPPED — _trackSpawned={_trackSpawned}, segmentSpawner={segmentSpawner != null}</color>");
+                Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] SpawnTrackLocally SKIPPED - _trackSpawned={_trackSpawned}, segmentSpawner={segmentSpawner != null}</color>");
                 return;
             }
-            Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] SpawnTrackLocally — seed={trackSeed}, Intensity={Intensity}</color>");
+            Debug.Log($"<color=#00CED1>[FLOW-7HR] [HexRaceController] SpawnTrackLocally - seed={trackSeed}, Intensity={Intensity}</color>");
             segmentSpawner.Seed = trackSeed;
             segmentSpawner.NumberOfSegments = scaleNumberOfSegmentsWithIntensity
                 ? baseNumberOfSegments * Intensity
@@ -231,13 +231,13 @@ namespace CosmicShore.Gameplay
             if (!rule.IsObjectiveReached(gameData, out var winningDomain))
                 return;
 
-            Debug.Log($"<color=#00CED1>[FLOW-10] [HexRaceController] Objective reached — domain {winningDomain} wins. Broadcasting final scores.</color>");
+            Debug.Log($"<color=#00CED1>[FLOW-10] [HexRaceController] Objective reached - domain {winningDomain} wins. Broadcasting final scores.</color>");
             _raceEnded = true;
 
             float finishTime = gameData.LocalRoundStats?.Score ?? 0f;
 
             // Representative winner-name = best individual contributor on the winning
-            // domain. Used for the WinnerName legacy field (display strings only —
+            // domain. Used for the WinnerName legacy field (display strings only -
             // VICTORY/DEFEAT attribution is via WinnerDomain).
             var winnerRep = gameData.RoundStatsList
                 .Where(s => s.Domain == winningDomain)
@@ -256,7 +256,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Suppress the base flow's SetupNewRound when the race just ended.
         /// HasEndGame=false causes ExecuteServerRoundEnd to call SetupNewRound instead of
-        /// ExecuteServerGameEnd — this override prevents the Ready button from appearing.
+        /// ExecuteServerGameEnd - this override prevents the Ready button from appearing.
         /// After replay reset, _raceEnded is cleared so new rounds work normally.
         /// </summary>
         protected override void SetupNewRound()
@@ -311,7 +311,7 @@ namespace CosmicShore.Gameplay
                 stat.CrystalsCollected = crystalsCollected[i];
             }
 
-            // Authoritative winner — written to gameData, consumed by EndGameControllers
+            // Authoritative winner - written to gameData, consumed by EndGameControllers
             // OnWinnerCalculated (below) is the "results ready" signal.
             gameData.WinnerName = winnerName.ToString();
             gameData.WinnerDomain = (Domains)winnerDomain;
@@ -323,7 +323,7 @@ namespace CosmicShore.Gameplay
             gameData.InvokeMiniGameEnd();
         }
 
-        // OnResetForReplayCustom removed — HexRace uses UseSceneReloadForReplay = true,
+        // OnResetForReplayCustom removed - HexRace uses UseSceneReloadForReplay = true,
         // which performs a full scene reload. All race state, track, and environment objects
         // are destroyed with the scene and re-initialized fresh via OnNetworkSpawn.
     }

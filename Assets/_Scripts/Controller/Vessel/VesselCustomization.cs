@@ -34,7 +34,7 @@ namespace CosmicShore.Gameplay
         /// Re-applies the current <see cref="IVesselStatus.ShipMaterial"/> to the
         /// ship geometry mesh renderers. Needed when the vessel's domain (and thus
         /// material reference) changes AFTER <see cref="Initialize"/> has already
-        /// painted the mesh — the one-shot paint does not follow reference swaps.
+        /// painted the mesh - the one-shot paint does not follow reference swaps.
         /// Called by <see cref="ShipHelper.SetShipProperties"/> on already-painted
         /// vessels; prefer that entry point over calling this directly, so the
         /// references and the mesh can never go out of sync.

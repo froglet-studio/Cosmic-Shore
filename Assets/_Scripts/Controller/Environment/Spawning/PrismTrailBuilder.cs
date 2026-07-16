@@ -25,17 +25,17 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// THE canonical "lay a prism into a trail" primitive, shared by every environment builder — the
+    /// THE canonical "lay a prism into a trail" primitive, shared by every environment builder - the
     /// static/procedural spawnables (<see cref="SpawnableBase"/>, <c>SpawnableShapeBase</c>) and the
     /// freestyle microscene conveyor (<c>Microscene</c>). Consolidates the previously-triplicated
-    /// sequence — Instantiate → ChangeTeam → ownerID → pose → TargetScale → Trail → Initialize →
-    /// kind → trail.Add — into one place, so a change to the prism spawn contract lands once, not
+    /// sequence - Instantiate → ChangeTeam → ownerID → pose → TargetScale → Trail → Initialize →
+    /// kind → trail.Add - into one place, so a change to the prism spawn contract lands once, not
     /// three times (the drift surface the environment audit flagged).
     ///
     /// Three lay modes over the same per-prism <see cref="LayOne"/> step:
-    ///   • <see cref="LaySync"/>    — lay all at once (SpawnableBase leaf spawn).
-    ///   • <see cref="LayGradual"/> — one every <c>interval</c> seconds (SpawnableShapeBase reveal).
-    ///   • <see cref="LayBatched"/> — a few per frame via UniTask (microscene populate — single-frame
+    ///   • <see cref="LaySync"/>    - lay all at once (SpawnableBase leaf spawn).
+    ///   • <see cref="LayGradual"/> - one every <c>interval</c> seconds (SpawnableShapeBase reveal).
+    ///   • <see cref="LayBatched"/> - a few per frame via UniTask (microscene populate - single-frame
     ///                                 prism batches are a known spike).
     /// </summary>
     public static class PrismTrailBuilder

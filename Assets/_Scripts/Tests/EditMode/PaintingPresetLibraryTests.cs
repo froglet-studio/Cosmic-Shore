@@ -43,7 +43,7 @@ namespace CosmicShore.Tests
             var strokes = PaintingPresetLibrary.Generate(preset, 1000f);
             AssertStrokesWellFormed(strokes);
 
-            // Paintings are authored with their base plane at y=0 — nothing dips below it
+            // Paintings are authored with their base plane at y=0 - nothing dips below it
             // (some, like Saturn, deliberately float above it).
             float minY = strokes.SelectMany(s => s.points).Min(p => p.y);
             Assert.GreaterOrEqual(minY, -1f, "painting dips below its base plane");
@@ -235,7 +235,7 @@ namespace CosmicShore.Tests
             var strokes = PaintingPresetLibrary.Generate(preset, W);
             AssertStrokesWellFormed(strokes); // ≥2 pts, named, ONLY Jade/Ruby/Gold
 
-            // Base plane at y=0 — every generator rebases.
+            // Base plane at y=0 - every generator rebases.
             float minY = strokes.SelectMany(s => s.points).Min(p => p.y);
             Assert.GreaterOrEqual(minY, -1f, $"{preset} dips below its base plane");
 
@@ -243,10 +243,10 @@ namespace CosmicShore.Tests
             var b = PaintingPresetLibrary.ComputeBounds(strokes);
             Assert.Greater(b.size.x, 0.05f * W, $"{preset} has no x-extent");
             Assert.Greater(b.size.y, 0.05f * W, $"{preset} has no y-extent");
-            Assert.Greater(b.size.z, 0.05f * W, $"{preset} is planar — no z-extent");
+            Assert.Greater(b.size.z, 0.05f * W, $"{preset} is planar - no z-extent");
 
             // Grandiose: eclipses or matches the Taj Mahal in flight. Reference-grade rebuilds keep
-            // HONEST proportions, so minimums are per-preset — a trefoil tube is 19 elegant strokes,
+            // HONEST proportions, so minimums are per-preset - a trefoil tube is 19 elegant strokes,
             // not 40 padded ones, and a true-scale DNA molecule flies ~14·W.
             var (minStrokes, minPathW) = preset switch
             {
@@ -308,7 +308,7 @@ namespace CosmicShore.Tests
         [Test]
         public void ReferenceRebuilds_KeepTheirAnatomy()
         {
-            // The reference-grade forms carry their real structural counts — locked so a future tweak
+            // The reference-grade forms carry their real structural counts - locked so a future tweak
             // can't silently drop the anatomy that makes them read as real.
             var nautilus = PaintingPresetLibrary.Generate(PaintingPreset.Nautilus, 900f);
             Assert.AreEqual(58, nautilus.Count(s => s.name.StartsWith("Growth Line")),
@@ -338,7 +338,7 @@ namespace CosmicShore.Tests
             var bounds = PaintingPresetLibrary.ComputeBounds(rose);
             Assert.Greater(bounds.size.y, 0.7f * 900f, "the enchanted rose is tall");
             Assert.Greater(bounds.size.y, 1.5f * Mathf.Max(bounds.size.x, bounds.size.z),
-                "stem-dominant proportions — much taller than wide");
+                "stem-dominant proportions - much taller than wide");
         }
     }
 }

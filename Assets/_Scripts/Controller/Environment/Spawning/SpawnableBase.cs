@@ -15,16 +15,16 @@ namespace CosmicShore.Gameplay
     /// and object spawning.
     ///
     /// Key features:
-    ///   1. Generates SpawnTrailData[] — position + rotation + scale per object, grouped by trail
+    ///   1. Generates SpawnTrailData[] - position + rotation + scale per object, grouped by trail
     ///   2. Caches results until parameters change (via GetParameterHash)
-    ///   3. Supports nesting via children list — tree structure of unlimited depth
+    ///   3. Supports nesting via children list - tree structure of unlimited depth
     ///   4. Can instantiate any prefab at leaf positions (prisms, crystals, flora, fauna, vessels)
     ///
     /// Subclasses implement ONE of:
-    ///   - GeneratePoints()    — returns SpawnPoint[] for single-trail patterns (most common)
-    ///   - GenerateTrailData() — returns SpawnTrailData[] for multi-trail patterns
+    ///   - GeneratePoints()    - returns SpawnPoint[] for single-trail patterns (most common)
+    ///   - GenerateTrailData() - returns SpawnTrailData[] for multi-trail patterns
     /// Plus:
-    ///   - GetParameterHash()  — returns a hash of all parameters that affect generation
+    ///   - GetParameterHash()  - returns a hash of all parameters that affect generation
     /// </summary>
     public abstract class SpawnableBase : MonoBehaviour
     {
@@ -70,7 +70,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Compute a hash of all parameters that affect generation output.
         /// Cache is invalidated when this hash changes.
-        /// Include seed, dimensions, counts — anything that changes the output.
+        /// Include seed, dimensions, counts - anything that changes the output.
         /// </summary>
         protected abstract int GetParameterHash();
 
@@ -176,7 +176,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Internal node: spawn children at each generated point.
-        /// Normalizes point scales so any spawnable can serve as a parent —
+        /// Normalizes point scales so any spawnable can serve as a parent -
         /// leaf-mode spawnables produce absolute block scales (e.g., pumpkinWidth * sin(t) ≈ 100)
         /// that would make child containers absurdly large without normalization.
         /// Generators designed for nesting (e.g., ConcentricLayersGenerator) already produce
@@ -195,7 +195,7 @@ namespace CosmicShore.Gameplay
                             Mathf.Max(Mathf.Abs(point.Scale.y), Mathf.Abs(point.Scale.z))));
                 }
 
-            // Only normalize when scales exceed 1 — preserves behavior for generators
+            // Only normalize when scales exceed 1 - preserves behavior for generators
             // that already produce normalized scales (ConcentricLayersGenerator etc.)
             float scaleNormalizer = maxScaleComponent > 1f ? maxScaleComponent : 1f;
 

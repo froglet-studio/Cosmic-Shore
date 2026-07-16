@@ -18,7 +18,7 @@ namespace CosmicShore.UI
         /// consumers must filter to their own vessel or a remote vessel drives the
         /// local owner's HUD. Reference-compared, so it works identically in
         /// networked and single-player (non-networked) modes. Not serialized
-        /// (interface ref) — this is a transient runtime payload.
+        /// (interface ref) - this is a transient runtime payload.
         /// </summary>
         public IVesselStatus VesselStatus;
     }

@@ -23,7 +23,7 @@ namespace CosmicShore.Utility
     /// Containment test: A point is inside the stellation iff it lies in
     /// either constituent tetrahedron. The two tetrahedra's face planes
     /// share the same 4 linear forms (Tet B's planes are the negations of
-    /// Tet A's), so containment reduces to 4 dot products plus min/max —
+    /// Tet A's), so containment reduces to 4 dot products plus min/max -
     /// see <see cref="ContainsPointLocal"/>. Comparable cost to a box
     /// AABB check (3 abs + 3 compares) and cheaper than a convex hull.
     /// </summary>
@@ -73,7 +73,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Rewrite an existing mesh in-place. Reuses the mesh's vertex/index
-        /// buffers; cheaper than allocating a new Mesh each frame — use this
+        /// buffers; cheaper than allocating a new Mesh each frame - use this
         /// for lerp/morph animations.
         /// </summary>
         public static void PopulateMesh(Mesh mesh, Vector3 halfExtents, float shieldScale = CIRCUMSCRIBING_SCALE)
@@ -161,7 +161,7 @@ namespace CosmicShore.Utility
 
             mesh.vertices = verts;
             mesh.RecalculateBounds();
-            // Normals stay correct — direction is unchanged by uniform
+            // Normals stay correct - direction is unchanged by uniform
             // per-face scaling from centroid.
         }
 
@@ -230,10 +230,10 @@ namespace CosmicShore.Utility
         ///   inside Tet B:        max(f1,f2,f3,f4) ≤ +1
         ///   inside super-shield: either holds
         ///
-        /// Cost: 4 linear forms + min/max + 2 compares — comparable to a box
+        /// Cost: 4 linear forms + min/max + 2 compares - comparable to a box
         /// AABB and cheaper than a full convex collision check.
         ///
-        /// Precompute the inverses once per prism and reuse — this is the
+        /// Precompute the inverses once per prism and reuse - this is the
         /// fast path for gameplay overlap checks without a MeshCollider.
         /// </summary>
         public static bool ContainsPointLocal(Vector3 localPoint, float invA, float invB, float invC)

@@ -16,7 +16,7 @@
 //   fetched by the caller) and writes to the SOAP data container.
 //
 // LIFETIME:
-//   Pure C# — no MonoBehaviour.  Instantiated as a field on
+//   Pure C# - no MonoBehaviour.  Instantiated as a field on
 //   HostConnectionService for Phases 10-11.  Phase 12 registers it in Reflex DI.
 //
 // THREAD SAFETY:
@@ -38,12 +38,12 @@ namespace CosmicShore.Gameplay
     /// to keep party-slot UI in sync.
     ///
     /// <para>
-    /// Does NOT call any UGS SDK or touch NetworkManager — it only reads from
+    /// Does NOT call any UGS SDK or touch NetworkManager - it only reads from
     /// <c>ISession.Players</c> (already refreshed by <see cref="IPartySessionService"/>)
     /// and mutates the <see cref="HostConnectionDataSO.PartyMembers"/> list.
     /// </para>
     ///
-    /// Lifetime: pure C# — no MonoBehaviour.  Created as a field on
+    /// Lifetime: pure C# - no MonoBehaviour.  Created as a field on
     /// <see cref="HostConnectionService"/>; will be DI-registered in Phase 12.
     /// Thread-safety: main-thread only.
     /// </summary>

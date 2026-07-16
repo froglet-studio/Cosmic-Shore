@@ -1,6 +1,5 @@
 
 using System.Collections.Generic;
-using System.Linq;
 using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using CosmicShore.Utility;
@@ -41,7 +40,7 @@ namespace CosmicShore.Gameplay
         /// The max recursion depth of the assembler
         /// </summary>
         [SerializeField] int depth = 50;
-        [Tooltip("Maximum LIVE prisms this flora can hold. Consumption frees budget — a grazed " +
+        [Tooltip("Maximum LIVE prisms this flora can hold. Consumption frees budget - a grazed " +
                  "flora regrows toward this cap instead of staying a permanent un-growing fragment.")]
         [SerializeField] int maxTotalSpawnedObjects = 1000;
         [SerializeField] int maxDepth = 30;
@@ -52,6 +51,32 @@ namespace CosmicShore.Gameplay
                  "branch has been consumed or exhausted (a mature gyroid has none). This is what " +
                  "lets a grazed flora 'reawaken' instead of sitting as a dead fragment.")]
         [SerializeField] int reseedBranchCount = 3;
+
+        [Tooltip("Grow-order instantiations executed per frame. The grow TICK decides up to " +
+                 "itemsPerGrow children at once (claiming their sites in the spatial index); " +
+                 "instantiating them all in that one frame was a multi-ms burst (prism + spindle " +
+                 "prefab per child). Draining the decided orders at this rate spreads the cost " +
+                 "over a few frames of the 3s grow period — pacing only, throughput preserved.")]
+        [SerializeField, Min(1)] int maxSpawnsPerFrame = 1;
+
+        // A growth decision made at the grow tick, executed by the per-frame drain.
+        // The site is already claimed (GetGrowthInfo → TryReserve), which is what
+        // makes the deferred Instantiate safe against siblings growing into it.
+        struct GrowOrder
+        {
+            public Branch parent;
+            public GrowthInfo info;
+            public float decidedAt;
+        }
+
+        // A Frenzy hold can keep orders queued longer than the spatial-index
+        // reservation TTL; executing an order whose claim lapsed can overlap
+        // another grower's spawn on the same site. Orders older than this are
+        // dropped at drain (one second of safety margin under the TTL) — the next
+        // grow tick simply re-decides them.
+        const float MaxOrderAgeSeconds = PrismSpatialIndex.ReservationTtlSeconds - 1f;
+
+        readonly Queue<GrowOrder> pendingSpawns = new Queue<GrowOrder>();
 
         HashSet<Branch> activeBranches = new HashSet<Branch>();
 
@@ -92,7 +117,7 @@ namespace CosmicShore.Gameplay
         {
             // Live-prism budget: the flora can hold at most maxTotalSpawnedObjects LIVE
             // prisms. Consumption frees budget, so a grazed flora regrows. (Was: a
-            // lifetime spawn counter that never decremented — a fully-grown flora could
+            // lifetime spawn counter that never decremented - a fully-grown flora could
             // never grow again even after fauna ate most of it, which is exactly the
             // "ungrowing gyroid fragments" failure observed in-game.)
             if (healthTracker != null && healthTracker.Count >= maxTotalSpawnedObjects) return;
@@ -100,7 +125,7 @@ namespace CosmicShore.Gameplay
             // Frenzy gate: flora grow at a steady rate until the cell crosses into Frenzy,
             // then freeze, resuming automatically when an active force (fauna grazing /
             // vessel abilities) brings the count back below the Frenzy exit threshold.
-            // Cell.FloraGrowingEnabled is the single source of truth — no early growth cap
+            // Cell.FloraGrowingEnabled is the single source of truth - no early growth cap
             // (that staggered self-limit was a cheat; the food web is the only down-force).
             if (cell && !cell.FloraGrowingEnabled) return;
 
@@ -117,14 +142,20 @@ namespace CosmicShore.Gameplay
                 return;
             }
 
-            List<Branch> newBranches = new List<Branch>();
             List<Branch> branchesToRemove = new List<Branch>();
 
+            // Decision pass only: pick branches, claim sites, enqueue. The heavyweight
+            // Instantiate work (prism + spindle prefab per child — the multi-ms
+            // AssembledFlora.GrowCoroutine burst in captures) drains at
+            // maxSpawnsPerFrame in Update. Plain enumeration replaces the old
+            // ElementAt(i) walk — LINQ ElementAt on a HashSet is O(i) per call
+            // (O(n²) per tick) and allocates an enumerator every call; enumeration
+            // order is identical.
             float itemsSpawned = 0;
             int skippedItems = 0;
-            for (int i = 0; i < activeBranches.Count && itemsSpawned < itemsPerGrow; i++)
+            foreach (Branch branch in activeBranches)
             {
-                Branch branch = activeBranches.ElementAt(i);
+                if (itemsSpawned >= itemsPerGrow) break;
 
                 if (!branch.assembler || branch.depth >= maxDepth)
                 {
@@ -148,39 +179,8 @@ namespace CosmicShore.Gameplay
                     continue;
                 }
 
-                HealthPrism newHealthPrism = Instantiate(healthPrism, growthInfo.Position, growthInfo.Rotation);
-                AddHealthBlock(newHealthPrism);
-                Branch newBranch = new Branch(newHealthPrism);
-
-                var newAssembler = AssemblerFactory.ProgramAssembler(newHealthPrism.gameObject, growthInfo);
-                if (newAssembler == null)
-                {
-                    CSDebug.LogError("Failed to create assembler");
-                    continue;
-                }
-
-                Spindle newSpindle = Instantiate(spindle, branch.gameObject.transform);
-                newSpindle.LifeForm = this;
-                newSpindle.transform.position = newHealthPrism.transform.position;
-                newSpindle.transform.rotation = newHealthPrism.transform.rotation;
-
-                newHealthPrism.transform.SetParent(newSpindle.transform, false);
-                newHealthPrism.transform.localPosition = Vector3.zero;
-                newHealthPrism.transform.localRotation = Quaternion.identity;
-                if (growthInfo.IsDangerous) newHealthPrism.MakeDangerous();
-                newHealthPrism.Initialize();
-                
-                newBranch.gameObject = newSpindle.gameObject;
-                newBranch.assembler = newAssembler;
-                newBranch.depth = branch.depth + 1;
-
-                newBranches.Add(newBranch);
+                pendingSpawns.Enqueue(new GrowOrder { parent = branch, info = growthInfo, decidedAt = Time.time });
                 itemsSpawned++;
-
-                if (branch.depth >= maxDepth - 1 || branch.assembler.IsFullyBonded())
-                {
-                    branchesToRemove.Add(branch);
-                }
             }
 
             foreach (Branch branch in branchesToRemove)
@@ -188,12 +188,95 @@ namespace CosmicShore.Gameplay
                 activeBranches.Remove(branch);
             }
 
-            activeBranches.UnionWith(newBranches);
             GrowCrystal();
         }
 
+        void Update()
+        {
+            if (pendingSpawns.Count == 0) return;
+
+            // Parity with the old WaitForSeconds-driven grow loop: growth froze at
+            // timeScale 0 (menu pause), so the drain does too.
+            if (Time.timeScale <= 0f) return;
+
+            // Frenzy gate re-checked at drain time: orders decided just before the
+            // cell crossed into Frenzy WAIT here (sites stay claimed) and execute
+            // when growing re-enables — same freeze-and-resume the tick gate gives.
+            if (cell && !cell.FloraGrowingEnabled) return;
+
+            int spawned = 0;
+            while (spawned < maxSpawnsPerFrame && pendingSpawns.Count > 0)
+            {
+                var order = pendingSpawns.Dequeue();
+
+                // Claim lapsed during a long hold — drop it (see MaxOrderAgeSeconds);
+                // the next grow tick re-decides this branch.
+                if (Time.time - order.decidedAt > MaxOrderAgeSeconds) continue;
+
+                ExecuteGrowOrder(order);
+                spawned++;
+            }
+        }
+
+        protected override void Die(string killerName = "")
+        {
+            // The old inline path stopped instantiating on death for free —
+            // Die's StopAllCoroutines killed GrowCoroutine, the only spawn site.
+            // The drain is not a coroutine, so without this a dying flora kept
+            // executing pending orders through its wither window: a fresh spindle
+            // registering on the corpse stalls DieCoroutine's empty-tracker wait
+            // (zombie flora), and a child parented under an evaporating spindle is
+            // hard-destroyed with it (a pop-out). Claimed sites release via the
+            // reservation TTL, same as any skipped-after-claim site.
+            pendingSpawns.Clear();
+            base.Die(killerName);
+        }
+
+        void ExecuteGrowOrder(GrowOrder order)
+        {
+            // Parent spindle may have been consumed in the few frames between
+            // decision and drain — the claimed site simply expires with its
+            // reservation TTL, exactly like the old skip-after-claim path.
+            if (!order.parent.gameObject || !order.parent.assembler) return;
+
+            var growthInfo = order.info;
+
+            HealthPrism newHealthPrism = Instantiate(healthPrism, growthInfo.Position, growthInfo.Rotation);
+            AddHealthBlock(newHealthPrism);
+            Branch newBranch = new Branch(newHealthPrism);
+
+            var newAssembler = AssemblerFactory.ProgramAssembler(newHealthPrism.gameObject, growthInfo);
+            if (newAssembler == null)
+            {
+                CSDebug.LogError("Failed to create assembler");
+                return;
+            }
+
+            Spindle newSpindle = Instantiate(spindle, order.parent.gameObject.transform);
+            newSpindle.LifeForm = this;
+            newSpindle.transform.position = newHealthPrism.transform.position;
+            newSpindle.transform.rotation = newHealthPrism.transform.rotation;
+
+            newHealthPrism.transform.SetParent(newSpindle.transform, false);
+            newHealthPrism.transform.localPosition = Vector3.zero;
+            newHealthPrism.transform.localRotation = Quaternion.identity;
+            if (growthInfo.IsDangerous) newHealthPrism.MakeDangerous();
+            newHealthPrism.Initialize();
+
+            newBranch.gameObject = newSpindle.gameObject;
+            newBranch.assembler = newAssembler;
+            newBranch.depth = order.parent.depth + 1;
+
+            activeBranches.Add(newBranch);
+
+            // Parent retirement, evaluated after the child exists — same ordering
+            // as the old inline loop.
+            if (order.parent.depth >= maxDepth - 1 || order.parent.assembler.IsFullyBonded())
+                activeBranches.Remove(order.parent);
+        }
+
         /// <summary>
-        /// Re-sprout growth branches from surviving prisms — each surviving prism still
+        /// Re-sprout growth branches from surviving prisms - each surviving prism still
         /// carries its Assembler, so wrapping it in a Branch puts it back in the grow
         /// rotation. Survivors are sampled RANDOMLY (not first-N) so repeated reseeds
         /// don't keep picking the same fully-bonded prisms; ones next to consumed gaps
@@ -243,14 +326,22 @@ namespace CosmicShore.Gameplay
         public override void RemoveSpindle(Spindle spindle)
         {
             base.RemoveSpindle(spindle);
-            Branch result = activeBranches.FirstOrDefault(item => item.gameObject == spindle.gameObject);
-            activeBranches.Remove(result);
+            Branch found = default;
+            bool hasMatch = false;
+            foreach (var item in activeBranches)
+            {
+                if (item.gameObject != spindle.gameObject) continue;
+                found = item;
+                hasMatch = true;
+                break;
+            }
+            if (hasMatch) activeBranches.Remove(found);
         }
 
         public override void Plant()
         {
             assembler = CreateNewAssembler();
-            // Disperse across the cell (fraction of membrane radius — see Flora base)
+            // Disperse across the cell (fraction of membrane radius - see Flora base)
             // instead of the old hard-coded 200m huddle around the crystal. Dispersed,
             // domain-coherent flora clusters are what give fauna schools of different
             // domains genuinely different anti-domain density targets.

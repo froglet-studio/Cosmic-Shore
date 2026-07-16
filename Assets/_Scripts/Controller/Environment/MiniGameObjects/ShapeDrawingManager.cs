@@ -235,10 +235,10 @@ namespace CosmicShore.Gameplay
             // Cache vessel status via the vessel interface (NOT GetComponent)
             _vesselStatus = gameData.LocalPlayer?.Vessel?.VesselStatus;
 
-            // Return existing prisms to pool via SO event — clean slate for shape mode
+            // Return existing prisms to pool via SO event - clean slate for shape mode
             if (onShapeGameModeStarted) onShapeGameModeStarted.Raise();
 
-            // Freeze player — Ready button will release via IsStationary = false
+            // Freeze player - Ready button will release via IsStationary = false
             if (_vesselStatus != null)
                 _vesselStatus.IsStationary = true;
 
@@ -267,7 +267,7 @@ namespace CosmicShore.Gameplay
             if (!_isActive || _drawingStarted) return;
             _drawingStarted = true;
 
-            // Release player — vessel's natural prism spawning takes over
+            // Release player - vessel's natural prism spawning takes over
             if (_vesselStatus != null)
                 _vesselStatus.IsStationary = false;
 
@@ -473,7 +473,7 @@ namespace CosmicShore.Gameplay
             // Camera flies to shape overview, holds, then returns to player
             yield return StartCoroutine(ShapePreviewCinematic());
 
-            // Fire event — controller shows ready button
+            // Fire event - controller shows ready button
             OnPreviewComplete?.Invoke();
         }
 
@@ -581,7 +581,7 @@ namespace CosmicShore.Gameplay
             {
                 _trackingPath = true;
                 _nextSampleTime = Time.time;
-                Debug.Log("[ShapeDrawing] First crystal hit — tracking started.");
+                Debug.Log("[ShapeDrawing] First crystal hit - tracking started.");
             }
 
             _currentWaypointIndex++;
@@ -764,7 +764,7 @@ namespace CosmicShore.Gameplay
             var worldWaypoints = GetAllWorldWaypoints();
             int waypointCount = worldWaypoints.Length;
 
-            // Compute average segment length — thresholds scale with the shape's size
+            // Compute average segment length - thresholds scale with the shape's size
             float totalSegLength = 0f;
             int segCount = 0;
             for (int i = 0; i < waypointCount - 1; i++)

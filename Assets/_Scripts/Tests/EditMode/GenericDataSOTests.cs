@@ -6,13 +6,13 @@ using CosmicShore.Utility;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// GenericDataSO Tests — Validates the ScriptableObject data container pattern.
+    /// GenericDataSO Tests - Validates the ScriptableObject data container pattern.
     ///
     /// WHY THIS MATTERS:
     /// GenericDataSO is the base class for all runtime data containers (IntDataSO,
     /// StringDataSO, etc.). It provides value storage with change notification events.
     /// If the Value setter stops firing OnValueChanged, any UI or system that listens
-    /// for value changes will silently break — scores won't update, HUD won't refresh, etc.
+    /// for value changes will silently break - scores won't update, HUD won't refresh, etc.
     /// </summary>
     [TestFixture]
     public class GenericDataSOTests
@@ -64,7 +64,7 @@ namespace CosmicShore.Tests
         [Test]
         public void IntDataSO_SetSameValue_StillFiresEvent()
         {
-            // Setting to the same value should still notify — this is by design
+            // Setting to the same value should still notify - this is by design
             // (systems may need to re-process even if the value didn't change).
             _intData.Value = 5;
             bool eventFired = false;

@@ -74,6 +74,13 @@ namespace CosmicShore.Gameplay
 
         // Used for stable initialization IDs for CellItems
         private int itemsAdded;
+
+        // Cached copy of the current intensity's anchor list. The authored lists
+        // are runtime-static, so the array only rebuilds when intensity selects a
+        // different source list — the callers (anchor pick + advance, both hit on
+        // every crystal respawn) previously allocated a fresh ToArray() each call.
+        private Vector3[] _cachedAnchors;
+        private List<Vector3> _cachedAnchorSource;
         
         protected virtual void Awake()
         {
@@ -272,7 +279,15 @@ namespace CosmicShore.Gameplay
                 return true;
             }
 
-            positions = set.positions.ToArray();
+            if (!ReferenceEquals(_cachedAnchorSource, set.positions)
+                || _cachedAnchors == null
+                || _cachedAnchors.Length != set.positions.Count)
+            {
+                _cachedAnchorSource = set.positions;
+                _cachedAnchors = set.positions.ToArray();
+            }
+
+            positions = _cachedAnchors;
             return true;
         }
 

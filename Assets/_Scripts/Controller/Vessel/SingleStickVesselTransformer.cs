@@ -1,4 +1,5 @@
 using UnityEngine;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 namespace CosmicShore.Gameplay
 {
@@ -53,14 +54,17 @@ namespace CosmicShore.Gameplay
         {
             float boostAmount = 1f;
             if (VesselStatus.IsBoosting) // TODO: if we run out of fuel while full speed and straight the vessel data still thinks we are boosting
-                boostAmount = Vessel.VesselStatus.BoostMultiplier;
+                // TIME → boost speed: scaled by the vessel's live Time level via its
+                // ElementalAbilityMapSO (1x for vessels without a map or Time entry).
+                boostAmount = Vessel.VesselStatus.BoostMultiplier
+                              * VesselStatus.ElementalAbilityHandler.Multiplier(Element.Time);
 
             if (VesselStatus.IsChargedBoostDischarging)
                 boostAmount *= VesselStatus.ChargedBoostCharge;
 
             speed = Mathf.Lerp(speed, ThrottleScaler * boostAmount + MinimumSpeed, LERP_AMOUNT * Time.deltaTime);
 
-            // Scale the output speed only — see VesselTransformer.MoveShip: multiplying
+            // Scale the output speed only - see VesselTransformer.MoveShip: multiplying
             // into the persistent smoothed `speed` field compounds per frame and
             // saturates every sub-1 modifier to a near-stop.
             float effectiveSpeed = speed * throttleMultiplier;

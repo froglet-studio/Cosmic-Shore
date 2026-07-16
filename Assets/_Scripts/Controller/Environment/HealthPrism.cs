@@ -11,6 +11,33 @@ namespace CosmicShore.Gameplay
     {
         public LifeForm LifeForm;
 
+        /// <summary>
+        /// The fauna whose body this prism is — stamped by Fauna.CacheBodyPrisms
+        /// (and lazily by ResolveOwnerFauna). Null for flora health prisms and free
+        /// prisms. Runtime-only: an auto-property is never serialized, so prefab
+        /// instances always start unstamped.
+        /// </summary>
+        public Fauna OwnerFauna { get; set; }
+
+        /// <summary>
+        /// The owning fauna: the stamp when present, else one upward
+        /// GetComponentInParent walk whose result is backfilled — so fauna senses
+        /// pay a field read per neighbor instead of a hierarchy walk per neighbor
+        /// per behavior tick. Unity-null aware: a destroyed owner reads as null,
+        /// matching what the walk would return after the owner died.
+        /// </summary>
+        public Fauna ResolveOwnerFauna()
+        {
+            var owner = OwnerFauna;
+            if (owner == null)
+            {
+                owner = GetComponentInParent<Fauna>();
+                if (owner != null)
+                    OwnerFauna = owner;
+            }
+            return owner;
+        }
+
         [Header("Optional Components")]
         [SerializeField] Spindle spindle;
 

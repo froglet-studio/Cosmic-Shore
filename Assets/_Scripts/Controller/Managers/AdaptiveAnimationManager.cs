@@ -2,7 +2,7 @@ using UnityEngine;
 using Unity.Collections;
 using System.Collections.Generic;
 using CosmicShore.Utility;
-using System.Linq;
+using CosmicShore.Utility.PerformanceBenchmark;
 
 namespace CosmicShore.Gameplay
 {
@@ -26,10 +26,10 @@ namespace CosmicShore.Gameplay
         protected readonly List<TAnimator> activeAnimatorsList = new List<TAnimator>();
         protected NativeArray<TAnimationData> animationData;
 
-        /// <summary>Number of live (registered, enabled) animators — read-only, allocation-free. Used by the performance benchmark to correlate frame cost with object load.</summary>
+        /// <summary>Number of live (registered, enabled) animators - read-only, allocation-free. Used by the performance benchmark to correlate frame cost with object load.</summary>
         public int RegisteredAnimatorCount => registeredAnimators.Count;
 
-        /// <summary>Number of animators currently mid-animation — read-only, allocation-free.</summary>
+        /// <summary>Number of animators currently mid-animation - read-only, allocation-free.</summary>
         public int ActiveAnimatorCount => activeAnimators.Count;
 
         // Performance monitoring
@@ -37,6 +37,13 @@ namespace CosmicShore.Gameplay
         private float lastIntervalUpdateTime;
         private float accumulatedTime = 0f;
         private int currentFrameInterval = BASE_FRAME_INTERVAL;
+
+        // DiagnosticsHUD live load telemetry — one profiler row aggregates every
+        // AdaptiveAnimationManager instance (the generic type collapses), so the
+        // HUD stat is what attributes cost to a manager and an animator count.
+        // Strings rebuild only when the count changes (no per-frame GC).
+        static readonly string s_statLabel = typeof(TManager).Name;
+        private int _lastReportedActive = -1;
 
         public override void Awake()
         {
@@ -169,6 +176,17 @@ namespace CosmicShore.Gameplay
 
         protected virtual void Update()
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // Guarded here (not just inside SetStat) so release builds never pay
+            // the string interpolation.
+            if (activeAnimators.Count != _lastReportedActive)
+            {
+                _lastReportedActive = activeAnimators.Count;
+                DiagnosticsHUD.SetStat("Animators", s_statLabel,
+                    $"{_lastReportedActive} / {registeredAnimators.Count} reg");
+            }
+#endif
+
             // Early exit if nothing is animating
             if (activeAnimators.Count == 0)
             {

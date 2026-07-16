@@ -37,7 +37,12 @@ namespace CosmicShore.Utility
         public override PrismImplosion Get(Vector3 spawnPosition, Quaternion rotation, Transform parent = null, bool worldPositionStays = true)
         {
             var implosion = Get_(spawnPosition, rotation, parent, worldPositionStays);
-            implosion.OnReturnToPool += Release; // auto return when done
+            // Match PrismExplosionPoolManager / InteractivePrismPoolManager: Get_ can
+            // return null when the pool yields a dead instance, and callers already
+            // null-check the result — guard the subscribe so we fail soft instead of
+            // throwing an NRE per implosion.
+            if (implosion != null)
+                implosion.OnReturnToPool += Release; // auto return when done
             return implosion;
         }
 

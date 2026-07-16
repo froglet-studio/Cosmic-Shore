@@ -16,7 +16,7 @@ namespace CosmicShore.Gameplay
     /// <b>start gate</b> (a ring the vessel flies through, which requests the stroke's domain via the
     /// server-authoritative pick RPC so the trail recolours), and the vessel's own trail paints each
     /// stroke point-to-point. Between strokes the trail spawner is pen-up'd inside the painting's
-    /// "studio zone" so transit flight never scribbles across the artwork — and it is ALWAYS restored
+    /// "studio zone" so transit flight never scribbles across the artwork - and it is ALWAYS restored
     /// when the player leaves the zone, exits freestyle, benches the run, or the runner dies.
     ///
     /// Toy-faithful: no score, no timer, no fail state. Progress is stroke-granular, resumable
@@ -28,7 +28,7 @@ namespace CosmicShore.Gameplay
         enum RunPhase { AwaitingGate = 0, Painting = 1, Celebrating = 2 }
         enum GhostStyle { Pending = 0, Active = 1, Done = 2 }
 
-        /// <summary>Raised on stroke completion, bench toggles, and celebration — drives the toy's label.</summary>
+        /// <summary>Raised on stroke completion, bench toggles, and celebration - drives the toy's label.</summary>
         public event Action ProgressChanged;
 
         /// <summary>Raised once, just before the runner destroys itself after the celebration.</summary>
@@ -37,7 +37,7 @@ namespace CosmicShore.Gameplay
         const float BloomSeconds = 1.4f;
         const float GateDespawnSeconds = 0.45f;
 
-        /// <summary>Everything the runner knows about one stroke — one array, no index juggling.</summary>
+        /// <summary>Everything the runner knows about one stroke - one array, no index juggling.</summary>
         class StrokeInfo
         {
             public int Index;             // position in the runner's stroke array
@@ -45,7 +45,7 @@ namespace CosmicShore.Gameplay
             public string Name;
             public Domains Domain;
             public float Reach;           // adaptive advance distance
-            public Color BaseColor;       // resolved once at Begin — no per-frame theme lookups
+            public Color BaseColor;       // resolved once at Begin - no per-frame theme lookups
             public LineRenderer Ghost;
             public GhostStyle Style;
             public List<int> Checkpoints; // sparse ride targets (never on tight curvature)
@@ -70,7 +70,7 @@ namespace CosmicShore.Gameplay
         GameObject _gate;
         bool _gateBenchEasing;
         GameObject _milestone;         // the ONE live ride ring (SphereCollider trigger = its radius)
-        StrokeMilestoneTrigger _milestoneTrigger; // cached at spawn — no per-frame TryGetComponent
+        StrokeMilestoneTrigger _milestoneTrigger; // cached at spawn - no per-frame TryGetComponent
         int _fadeIndex = -1;           // stroke whose ghost line is easing out (ridden) or back in (done)
         float _lineFade = 1f;
 
@@ -113,7 +113,7 @@ namespace CosmicShore.Gameplay
             Bounds localBounds = painting.LocalBounds;
             float checkpointSpacing = Mathf.Max(90f, 0.085f * localBounds.size.magnitude);
 
-            // PaintingDefinitionSO.Strokes is already filtered to drawable strokes — using it
+            // PaintingDefinitionSO.Strokes is already filtered to drawable strokes - using it
             // verbatim keeps this count identical to the one PaintingToy and the progress store see.
             var source = painting.Strokes;
             _strokes = new StrokeInfo[source.Count];
@@ -139,7 +139,7 @@ namespace CosmicShore.Gameplay
                     Domain = s.domain,
                     Reach = reach,
                     BaseColor = ToyFactory.DomainAccentColor(context, s.domain),
-                    // Ride targets are SPARSE — spaced by arc, never parked on tight curvature —
+                    // Ride targets are SPARSE - spaced by arc, never parked on tight curvature -
                     // so dense reference curves are ridden freely between big forgiving markers.
                     Checkpoints = PaintingStrokeToolkit.RideCheckpoints(world,
                         Mathf.Max(checkpointSpacing, reach * 3f), 28f),
@@ -161,7 +161,7 @@ namespace CosmicShore.Gameplay
 
             // Ghost blueprint: one line per stroke, tinted its domain.
             _strokeIndex = Mathf.Clamp(resumeFromStroke, 0, _strokes.Length - 1);
-            if (resumeFromStroke >= _strokes.Length) _strokeIndex = 0; // stale "complete" state — fresh canvas
+            if (resumeFromStroke >= _strokes.Length) _strokeIndex = 0; // stale "complete" state - fresh canvas
             for (int i = 0; i < _strokes.Length; i++)
             {
                 var ghost = ToyFactory.CreateLine($"Ghost_{i}", transform, 1f, true);
@@ -188,7 +188,7 @@ namespace CosmicShore.Gameplay
             BloomIn(this.GetCancellationTokenOnDestroy()).Forget();
 
             // Coming back from another session / game mode: the completed strokes' prisms were
-            // saved as drawing state — regrow them so the monument physically resumes, not just
+            // saved as drawing state - regrow them so the monument physically resumes, not just
             // the counter. (In-session resumes bench/unbench the same runner, so no duplicates.)
             if (_strokeIndex > 0 && PaintingPrismStore.HasPrisms(_painting.PaintingId))
                 RestorePrismsAsync(this.GetCancellationTokenOnDestroy()).Forget();
@@ -203,7 +203,7 @@ namespace CosmicShore.Gameplay
             _benched = benched;
             if (benched)
             {
-                // Release the pen NOW — waiting for this runner's next Update could clobber a
+                // Release the pen NOW - waiting for this runner's next Update could clobber a
                 // pause another runner (the new brush holder) sets in the meantime.
                 RestorePen();
                 _gateBenchEasing = true;
@@ -214,7 +214,7 @@ namespace CosmicShore.Gameplay
             {
                 BenchOtherRunners();
                 s_objectiveRelay.Active = this;
-                // The gate may have fully folded (and stopped rendering) while benched — regrow it.
+                // The gate may have fully folded (and stopped rendering) while benched - regrow it.
                 if (_gate && !_gate.activeSelf) _gate.SetActive(true);
                 _gateBenchEasing = _gate != null;
                 // Re-spawn the ride ring we folded on pause (mid-stroke resume only).
@@ -224,7 +224,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Only one painting run holds the brush at a time — neighbouring studio zones can overlap,
+        /// Only one painting run holds the brush at a time - neighbouring studio zones can overlap,
         /// and two engaged runners would fight over the trail spawner's pen state.
         /// </summary>
         void BenchOtherRunners()
@@ -250,7 +250,7 @@ namespace CosmicShore.Gameplay
             ApplyCapture(vessel, engaged);
 
             // Re-engaging mid-stroke (back from a bench, a menu trip, or a detour through the
-            // Domain Changer) re-asserts the stroke's colour — the gate only fired once — and
+            // Domain Changer) re-asserts the stroke's colour - the gate only fired once - and
             // re-arms the ride ring folded on disengage.
             if (engaged && !_wasEngaged && _phase == RunPhase.Painting)
             {
@@ -286,7 +286,7 @@ namespace CosmicShore.Gameplay
                 {
                     t.localScale = target;
                     _gateBenchEasing = false;
-                    // Fully folded — stop rendering it (SetBenched(false) reactivates + re-arms).
+                    // Fully folded - stop rendering it (SetBenched(false) reactivates + re-arms).
                     if (_benched) _gate.SetActive(false);
                 }
             }
@@ -313,13 +313,13 @@ namespace CosmicShore.Gameplay
             }
 
             // The ridden stroke's blueprint line eases out (and its "done" memory line eases back
-            // in on completion) — continuity law: no instant appear/disappear, even for a line.
+            // in on completion) - continuity law: no instant appear/disappear, even for a line.
             if (_fadeIndex >= 0 && _strokes != null && _fadeIndex < _strokes.Length)
             {
                 float fadeTarget = _phase == RunPhase.Painting && _fadeIndex == _strokeIndex ? 0f : 1f;
                 if (Mathf.Approximately(_lineFade, fadeTarget))
                 {
-                    if (fadeTarget >= 1f) _fadeIndex = -1; // fade-in finished — back to plain styles
+                    if (fadeTarget >= 1f) _fadeIndex = -1; // fade-in finished - back to plain styles
                 }
                 else
                 {
@@ -335,7 +335,7 @@ namespace CosmicShore.Gameplay
             RestorePen();
             StopCapture();
             if (s_objectiveRelay.Active == this) s_objectiveRelay.Active = null;
-            // A stroke abandoned mid-flight is re-flown fresh next time — drop its buffer.
+            // A stroke abandoned mid-flight is re-flown fresh next time - drop its buffer.
             if (_painting) PaintingPrismStore.DiscardPending(_painting.PaintingId);
         }
 
@@ -360,7 +360,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// <see cref="IObjectiveProvider"/>: the standard edge-of-screen arrow points at the start
-        /// gate while awaiting it and at the current ride ring while painting — only for the run
+        /// gate while awaiting it and at the current ride ring while painting - only for the run
         /// that holds the brush, only in freestyle. The arrow hides by itself whenever the target
         /// is already on screen, so the world rings stay the primary guidance.
         /// </summary>
@@ -377,11 +377,11 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Lazily stands up the ONE shared <see cref="ObjectiveIndicator"/> for the painting
         /// gallery. It MUST parent under the full-screen Canvas root (the indicator stretches to
-        /// its parent and clamps to that rect's edges — a mid-hierarchy container like "Game UI"
+        /// its parent and clamps to that rect's edges - a mid-hierarchy container like "Game UI"
         /// is not a full-screen rect, which pins the arrow in a corner). Freestyle-only
         /// visibility comes from the provider, not the parent's CanvasGroup. One-time scene
         /// lookup at run start (activation-rate, same budget as <see cref="BenchOtherRunners"/>)
-        /// — mirrors MiniGameHUD.EnsureObjectiveIndicator, which also parents at the canvas root.
+        /// - mirrors MiniGameHUD.EnsureObjectiveIndicator, which also parents at the canvas root.
         /// </summary>
         static void EnsureObjectiveIndicator()
         {
@@ -390,7 +390,7 @@ namespace CosmicShore.Gameplay
             var hud = FindAnyObjectByType<MenuMiniGameHUD>(FindObjectsInactive.Include);
             Canvas canvas = hud ? hud.GetComponentInParent<Canvas>(true) : null;
             if (!canvas) canvas = FindAnyObjectByType<Canvas>();
-            if (!canvas) return; // headless/test scene — the toy plays fine without the arrow
+            if (!canvas) return; // headless/test scene - the toy plays fine without the arrow
             s_sharedIndicator = ObjectiveIndicator.CreateRuntime(canvas.transform, s_objectiveRelay);
         }
 
@@ -398,7 +398,7 @@ namespace CosmicShore.Gameplay
         {
             DespawnMilestone();
             SetGhostStyle(_strokeIndex, GhostStyle.Done);
-            // Persist the stroke's prisms as drawing state (position/orientation/size/domain) —
+            // Persist the stroke's prisms as drawing state (position/orientation/size/domain) -
             // this is what regrows on return and what the share exporter reconstructs.
             PaintingPrismStore.CommitStroke(_painting.PaintingId, _strokeIndex);
             _strokeIndex++;
@@ -464,8 +464,8 @@ namespace CosmicShore.Gameplay
             RequestStrokeDomain(stroke.Domain);
 
             _phase = RunPhase.Painting;
-            _pointIndex = 1; // checkpoint 0 IS the gate — flying it consumes the stroke's start
-            // The ridden stroke's line EASES away (continuity law) — EaseTransitions drives
+            _pointIndex = 1; // checkpoint 0 IS the gate - flying it consumes the stroke's start
+            // The ridden stroke's line EASES away (continuity law) - EaseTransitions drives
             // _lineFade toward 0 while this stroke is the fading one.
             int prevFade = _fadeIndex;
             _fadeIndex = stroke.Index;
@@ -563,7 +563,7 @@ namespace CosmicShore.Gameplay
             var gameData = _context?.GameData;
             Domains domain = CurrentStroke.Domain;
             if (gameData && !GameDataSO.IsActiveDomain(domain, gameData.RequestedDomainCount))
-                domain = gameData.LocalPlayer?.Domain ?? domain; // pick was rejected — record reality
+                domain = gameData.LocalPlayer?.Domain ?? domain; // pick was rejected - record reality
 
             var inverse = Quaternion.Inverse(_rotation);
             PaintingPrismStore.RecordPrism(_painting.PaintingId, PaintingPrismRecord.From(
@@ -576,7 +576,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Regrow the saved prisms of every completed stroke through the normal prism factory
-        /// (pooled, grow-in animation — nothing pops), streamed over frames so a monument-sized
+        /// (pooled, grow-in animation - nothing pops), streamed over frames so a monument-sized
         /// restore reads as the painting growing back rather than a hitch.
         /// </summary>
         async UniTaskVoid RestorePrismsAsync(CancellationToken ct)
@@ -584,7 +584,7 @@ namespace CosmicShore.Gameplay
             var records = PaintingPrismStore.GetPrisms(_painting.PaintingId, _strokeIndex);
             if (records.Count == 0) return;
 
-            // Wait for a local vessel — its controller carries the factory channel + owner name.
+            // Wait for a local vessel - its controller carries the factory channel + owner name.
             VesselPrismController controller = null;
             for (int tries = 0; tries < 100 && controller == null; tries++)
             {
@@ -608,7 +608,7 @@ namespace CosmicShore.Gameplay
             }
             if (missing > 0)
                 CSDebug.LogWarning($"[PaintingRunner] Regrew {records.Count - missing}/{records.Count} " +
-                                   $"prisms of '{_painting.DisplayName}' — a recorded prism pool is unavailable.");
+                                   $"prisms of '{_painting.DisplayName}' - a recorded prism pool is unavailable.");
         }
 
         bool TrySpawnRestoredPrism(PrismEventChannelWithReturnSO channel, PaintingPrismRecord record, string owner)
@@ -626,7 +626,7 @@ namespace CosmicShore.Gameplay
                 Scale = record.Scale,
                 PrismType = prismType,
             });
-            // A scene whose factory lacks the recorded pool returns null — regrow as the generic
+            // A scene whose factory lacks the recorded pool returns null - regrow as the generic
             // Interactive prism rather than leaving holes in the monument.
             if (ret.SpawnedObject == null && prismType != PrismType.Interactive)
                 ret = channel.RaiseEvent(new PrismEventData
@@ -675,13 +675,13 @@ namespace CosmicShore.Gameplay
             {
                 case GhostStyle.Active:
                     // While AWAITING the gate the next stroke shows faintly (something to aim at);
-                    // once you are RIDING it the line eases away entirely — the ride is the rings
+                    // once you are RIDING it the line eases away entirely - the ride is the rings
                     // and your own trail, not a line rendering. _lineFade carries the ease.
                     c.a = 0.45f;
                     width = 1.1f;
                     break;
                 case GhostStyle.Done:
-                    // Dimmed solid — across sessions this is the "memory" of already-painted strokes.
+                    // Dimmed solid - across sessions this is the "memory" of already-painted strokes.
                     c = new Color(c.r * 0.65f, c.g * 0.65f, c.b * 0.65f, 0.30f);
                     width = 1.1f;
                     break;
@@ -697,13 +697,13 @@ namespace CosmicShore.Gameplay
             lr.startWidth = lr.endWidth = width;
         }
 
-        // ── Ride milestones — rings you fly THROUGH, sized as their own hit volume ──
+        // ── Ride milestones - rings you fly THROUGH, sized as their own hit volume ──
 
         float MilestoneRadius(StrokeInfo stroke) => Mathf.Max(18f, stroke.Reach * 1.8f);
 
         /// <summary>
         /// The ONE live milestone: a ring gate at the current checkpoint, faced along the local
-        /// flight tangent, whose SphereCollider trigger is scaled to the ring radius — flying
+        /// flight tangent, whose SphereCollider trigger is scaled to the ring radius - flying
         /// through the ring IS the hit test. The final milestone carries the trail-off jack in its
         /// centre; the trail-on cone appears only on the stroke's start gate.
         /// </summary>
@@ -718,7 +718,7 @@ namespace CosmicShore.Gameplay
             Vector3 pos = stroke.Points[ptIdx];
             bool isStrokeEnd = _pointIndex == cps.Count - 1;
             float ringR = MilestoneRadius(stroke);
-            // The standard arrow tracks the current checkpoint — the anchor (not the ring itself)
+            // The standard arrow tracks the current checkpoint - the anchor (not the ring itself)
             // so the pointer survives the ring folding away on disengage.
             if (_objectiveAnchor) _objectiveAnchor.position = pos;
 
@@ -826,7 +826,7 @@ namespace CosmicShore.Gameplay
 
     /// <summary>
     /// Routes the one shared <see cref="ObjectiveIndicator"/> at whichever runner currently holds
-    /// the brush (at most one is unbenched at a time — <see cref="PaintingRunner"/> claims on
+    /// the brush (at most one is unbenched at a time - <see cref="PaintingRunner"/> claims on
     /// begin/unbench and releases on bench/celebrate/destroy).
     /// </summary>
     class PaintingObjectiveRelay : IObjectiveProvider
@@ -851,7 +851,7 @@ namespace CosmicShore.Gameplay
 
         void OnTriggerEnter(Collider other)
         {
-            // Same local-vessel resolution the toy gates use — one rule, one implementation.
+            // Same local-vessel resolution the toy gates use - one rule, one implementation.
             if (Toy.TryGetLocalVessel(other, out _)) Tripped = true;
         }
     }

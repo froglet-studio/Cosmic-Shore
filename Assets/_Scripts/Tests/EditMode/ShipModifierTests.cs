@@ -6,13 +6,13 @@ using CosmicShore.Data;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Ship Modifier Tests — Validates throttle and velocity modifier structs.
+    /// Ship Modifier Tests - Validates throttle and velocity modifier structs.
     ///
     /// WHY THIS MATTERS:
     /// ShipThrottleModifier and ShipVelocityModifier are applied to vessels every
     /// frame during gameplay to create boosts, slowdowns, and directional pushes.
     /// If the constructor misassigns fields (e.g., duration gets initialValue),
-    /// boost effects will be wrong — a 2-second boost could last 500 frames, or
+    /// boost effects will be wrong - a 2-second boost could last 500 frames, or
     /// a speed buff could apply a duration instead of a velocity.
     /// </summary>
     [TestFixture]
@@ -68,7 +68,7 @@ namespace CosmicShore.Tests
         [Test]
         public void ThrottleModifier_ElapsedTimeCanExceedDuration()
         {
-            // This should not crash — game code checks the ratio.
+            // This should not crash - game code checks the ratio.
             var mod = new ShipThrottleModifier(1f, 2f, 5f);
 
             Assert.AreEqual(5f, mod.elapsedTime,

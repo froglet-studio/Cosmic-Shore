@@ -11,7 +11,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Joust scoring effect. When a faster vessel's skimmer sweeps past a slower
-    /// vessel — overtaking it — the faster vessel earns a joust point
+    /// vessel - overtaking it - the faster vessel earns a joust point
     /// (<see cref="OnJoustCollision"/>) and an AOE explosion spawns at the impact.
     /// Points are scored only by overtaking an OPPONENT: overtaking a same-domain
     /// teammate produces no point, no explosion, and no game-feed post (the
@@ -37,7 +37,9 @@ namespace CosmicShore.Gameplay
         [Tooltip("Minimum time between explosions from the same vessel hitting a skimmer.")]
         [SerializeField] private float _explosionCooldown = 0.15f;
 
-        private static readonly Dictionary<VesselImpactor, float> _lastExplosionTimeByImpactor
+        // Keyed by instance ID (not the impactor reference) so destroyed vessel
+        // impactors are never retained by this static dictionary across scene loads.
+        private static readonly Dictionary<int, float> _lastExplosionTimeByImpactor
             = new();
 
         public override void Execute(VesselImpactor impactor, SkimmerImpactor impactee)
@@ -57,7 +59,7 @@ namespace CosmicShore.Gameplay
 
             // Joust points are scored only by overtaking an opponent. Overtaking a
             // same-domain teammate buffs them (VesselOvertakeBySkimmerEffectSO) but
-            // never scores — skip the explosion, joust point, and feed post.
+            // never scores - skip the explosion, joust point, and feed post.
             if (impacteeVessel.VesselStatus.Domain == impactorVessel.VesselStatus.Domain)
                 return;
 
@@ -66,13 +68,14 @@ namespace CosmicShore.Gameplay
                 return;
 
             var now = Time.time;
-            if (_lastExplosionTimeByImpactor.TryGetValue(impacteeVesselImpactor, out var lastTime))
+            int impacteeId = impacteeVesselImpactor.GetInstanceID();
+            if (_lastExplosionTimeByImpactor.TryGetValue(impacteeId, out var lastTime))
             {
                 if (now - lastTime < _explosionCooldown)
                     return;
             }
 
-            _lastExplosionTimeByImpactor[impacteeVesselImpactor] = now;
+            _lastExplosionTimeByImpactor[impacteeId] = now;
 
             ExplosionHelper.CreateExplosion(
                 _aoePrefabs,
@@ -85,7 +88,7 @@ namespace CosmicShore.Gameplay
 
             OnJoustCollision.Raise(impacteeVessel.VesselStatus.PlayerName);
 
-            // Play audio for the local player — skimmer owner scored, impactor received.
+            // Play audio for the local player - skimmer owner scored, impactor received.
             if (impacteeVessel.VesselStatus.IsLocalUser)
                 AudioSystem.Instance?.PlayGameplaySFX(GameplaySFXCategory.JoustScored);
             else if (impactorVessel.VesselStatus.IsLocalUser)

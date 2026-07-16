@@ -70,7 +70,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// If waypoints is empty and autoGeneratePreset is set, generates waypoints procedurally.
-        /// Safe to call multiple times — no-ops if waypoints already exist.
+        /// Safe to call multiple times - no-ops if waypoints already exist.
         /// </summary>
         public void EnsureWaypoints()
         {
@@ -197,14 +197,14 @@ namespace CosmicShore.Gameplay
 
         void GenerateLightning(float r)
         {
-            // Main bolt — dense zigzag from top to fork point
+            // Main bolt - dense zigzag from top to fork point
             waypoints.AddRange(new[]
             {
                 new Vector3( 0.1f  * r,  r,          0f),   // top
                 new Vector3(-0.2f  * r,  0.7f  * r,  0f),   // zag left
                 new Vector3( 0.15f * r,  0.5f  * r,  0f),   // zig right
                 new Vector3(-0.25f * r,  0.25f * r,  0f),   // zag left
-                new Vector3( 0.2f  * r,  0.05f * r,  0f),   // zig right — fork point
+                new Vector3( 0.2f  * r,  0.05f * r,  0f),   // zig right - fork point
             });
 
             // Main bolt continues down from fork
@@ -216,7 +216,7 @@ namespace CosmicShore.Gameplay
                 new Vector3( 0.05f * r, -r,          0f),   // bottom tip
             });
 
-            // Pen up — jump back to fork point for branch
+            // Pen up - jump back to fork point for branch
             trailEnabledPerSegment.AddRange(new[] { true, true, true, true, true, true, true, true, false });
 
             // Branch bolt going right

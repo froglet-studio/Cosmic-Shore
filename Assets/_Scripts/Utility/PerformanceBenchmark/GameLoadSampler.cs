@@ -21,7 +21,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark
     /// Every source is null-guarded so the sampler degrades to 0 in scenes (or tooling
     /// contexts) where a given manager or data container is absent.
     ///
-    /// This is the one place the benchmark tool reaches into gameplay systems — kept
+    /// This is the one place the benchmark tool reaches into gameplay systems - kept
     /// isolated so the coupling is easy to find, extend, or remove.
     /// </summary>
     public static class GameLoadSampler

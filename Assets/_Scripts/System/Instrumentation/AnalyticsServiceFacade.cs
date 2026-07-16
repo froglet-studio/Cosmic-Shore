@@ -12,12 +12,12 @@ using UnityEngine;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Single writer for all UGS Analytics custom events (UGS-only pipeline —
+    /// Single writer for all UGS Analytics custom events (UGS-only pipeline -
     /// the Firebase analytics path is retired).
     ///
     /// Owns the collection lifecycle: starts data collection after UGS sign-in
     /// (gated by consent and network availability), records events through one
-    /// choke point, and flushes only on app pause/quit — the SDK batches
+    /// choke point, and flushes only on app pause/quit - the SDK batches
     /// everything else automatically.
     ///
     /// Custom events and their parameters must also be declared in the UGS
@@ -164,7 +164,7 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Records the COPPA age gate result. Under-13 forces consent denied and
-        /// stops collection — there is no path to collect from an ineligible player.
+        /// stops collection - there is no path to collect from an ineligible player.
         /// </summary>
         public void SetAgeEligible(bool eligible)
         {
@@ -226,7 +226,7 @@ namespace CosmicShore.Core
         }
 
         // The SDK caches events (up to 5MB memory, persisted on shutdown) while
-        // offline, so collection stays on — we only track the flag so a
+        // offline, so collection stays on - we only track the flag so a
         // first-time StartDataCollection waits for connectivity.
         void HandleNetworkLost() => _isConnected = false;
 
@@ -244,7 +244,7 @@ namespace CosmicShore.Core
             try
             {
                 // No ExternalUserId override: with UGS auth active, events carry
-                // the UGS player id — the same key as Cloud Save and Leaderboards.
+                // the UGS player id - the same key as Cloud Save and Leaderboards.
                 AnalyticsService.Instance.StartDataCollection();
                 _collecting = true;
                 Log("Data collection started.");
@@ -286,7 +286,7 @@ namespace CosmicShore.Core
         {
             if (!_collecting)
             {
-                Log($"Dropped '{eventName}' — collection not active.");
+                Log($"Dropped '{eventName}' - collection not active.");
                 return;
             }
 
@@ -310,7 +310,7 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Uploads the SDK's event batch immediately. Reserved for moments the
-        /// process may die (pause/quit) — everywhere else the SDK's own batching
+        /// process may die (pause/quit) - everywhere else the SDK's own batching
         /// is cheaper and loses nothing.
         /// </summary>
         public void Flush()
@@ -378,7 +378,7 @@ namespace CosmicShore.Core
 
         /// <summary>
         /// Best-effort local win/loss at game end. Team modes resolve by domain;
-        /// otherwise by winner name vs the local player. Defensive — never throws
+        /// otherwise by winner name vs the local player. Defensive - never throws
         /// or logs, returns false when the result can't be determined.
         /// </summary>
         bool TryResolveLocalWin(out bool won)
@@ -405,7 +405,7 @@ namespace CosmicShore.Core
             }
             catch
             {
-                // Result not populated for this mode — omit player_won.
+                // Result not populated for this mode - omit player_won.
             }
 
             return false;
@@ -499,7 +499,7 @@ namespace CosmicShore.Core
 
         #endregion
 
-        #region Phase 2 — typed events (called by injected systems)
+        #region Phase 2 - typed events (called by injected systems)
 
         /// <summary>Menu became fully interactive. Call from MainMenuController on ready.</summary>
         public void RecordMenuReady()

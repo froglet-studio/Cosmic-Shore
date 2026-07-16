@@ -35,7 +35,7 @@ namespace CosmicShore.Gameplay
         {
             foreach (var playerScore in GameData.RoundStatsList)
             {
-                // continue, not return — one unresolved player must not skip the rest.
+                // continue, not return - one unresolved player must not skip the rest.
                 if (!GameData.TryGetRoundStats(playerScore.Name, out var roundStats))
                     continue;
                 if (_subscribedStats.Contains(roundStats))

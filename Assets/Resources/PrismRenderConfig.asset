@@ -9,8 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c3170dd030c74da78c5564482eef6708, type: 3}
-  m_Name: VesselCollisionReporter
-  m_EditorClassIdentifier:
-  onSkimmerShipCollision: {fileID: 11400000, guid: 0753d1e84dfca8a41a5bdc1e4c6e1746,
-    type: 2}
+  m_Script: {fileID: 11500000, guid: 0847e7f4d2d048ea8d938b8545c2180b, type: 3}
+  m_Name: PrismRenderConfig
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.ScriptableObjects.PrismRenderConfigSO
+  useInstancedRendering: 1

@@ -34,13 +34,24 @@ namespace CosmicShore.Gameplay
 
             var go = new GameObject("[PrismEffectsManager]");
             go.AddComponent<PrismEffectsManager>();
-            Debug.LogWarning("[PrismEffectsManager] No instance found in scene — auto-created. " +
+            Debug.LogWarning("[PrismEffectsManager] No instance found in scene - auto-created. " +
                              "Consider adding one to the scene to avoid this overhead.");
             return Instance;
         }
 
         private const int BATCH_SIZE = 128;
         private const int INITIAL_CAPACITY = 64;
+
+        // Hard ceiling on CONCURRENTLY animating VFX. The per-frame spawn cap
+        // (PrismFactory, 64/frame) bounds new effects but NOT live ones: each
+        // explosion lasts 5s and each implosion 2s, so a sustained fauna swarm-eat
+        // accumulates thousands of active effects, and ProcessExplosions/Implosions'
+        // per-effect property-block apply is O(active) - profiled at ~97ms/frame.
+        // When full we recycle the OLDEST (longest-animating, hence nearly finished)
+        // so every death still animates out (continuity law) and only the oldest is
+        // truncated under extreme load - imperceptible in a frenzy of hundreds.
+        // See PRISM_PERFORMANCE_AUDIT.md rec 5.
+        private const int MAX_ACTIVE_EFFECTS = 256;
 
         // Explosion tracking
         private readonly List<PrismExplosion> activeExplosions = new(INITIAL_CAPACITY);
@@ -54,10 +65,10 @@ namespace CosmicShore.Gameplay
         private readonly List<PrismImplosion> implosionCompletionQueue = new(32);
         private NativeArray<ImplosionJobData> implosionJobData;
 
-        /// <summary>Concurrently active explosion VFX — read-only, allocation-free. Used by the performance benchmark.</summary>
+        /// <summary>Concurrently active explosion VFX - read-only, allocation-free. Used by the performance benchmark.</summary>
         public int ActiveExplosionCount => activeExplosions.Count;
 
-        /// <summary>Concurrently active implosion VFX — read-only, allocation-free. Used by the performance benchmark.</summary>
+        /// <summary>Concurrently active implosion VFX - read-only, allocation-free. Used by the performance benchmark.</summary>
         public int ActiveImplosionCount => activeImplosions.Count;
 
         // Shared property block for batched shader updates
@@ -71,7 +82,7 @@ namespace CosmicShore.Gameplay
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
         [Header("Diagnostics (Editor / Dev builds only)")]
-        [Tooltip("Seconds between the leaked-VFX safety audit. The audit uses FindObjectsByType (a full-scene scan), so keep this infrequent. Set <= 0 to disable.")]
+        [Tooltip("Seconds between the leaked-VFX safety audit. The audit walks the effects' enabled-instance registries (O(live effects), no scene scan). Set <= 0 to disable.")]
         [SerializeField] private float zombieAuditIntervalSeconds = 5f;
         private float _nextZombieAuditTime;
 #endif
@@ -89,6 +100,14 @@ namespace CosmicShore.Gameplay
         public void RegisterExplosion(PrismExplosion explosion)
         {
             if (explosion == null || activeExplosions.Contains(explosion)) return;
+            // Bound concurrent active VFX - recycle the oldest (front of the list,
+            // longest-running) to make room so the per-frame apply stays O(cap).
+            while (activeExplosions.Count >= MAX_ACTIVE_EFFECTS)
+            {
+                var oldest = activeExplosions[0];
+                activeExplosions.RemoveAt(0);
+                if (oldest != null) oldest.OnEffectComplete(); // already removed - Unregister is a no-op
+            }
             activeExplosions.Add(explosion);
             EnsureExplosionCapacity();
         }
@@ -101,6 +120,13 @@ namespace CosmicShore.Gameplay
         public void RegisterImplosion(PrismImplosion implosion)
         {
             if (implosion == null || activeImplosions.Contains(implosion)) return;
+            // Bound concurrent active VFX - recycle the oldest to keep apply O(cap).
+            while (activeImplosions.Count >= MAX_ACTIVE_EFFECTS)
+            {
+                var oldest = activeImplosions[0];
+                activeImplosions.RemoveAt(0);
+                if (oldest != null) oldest.OnEffectComplete(); // already removed - Unregister is a no-op
+            }
             activeImplosions.Add(implosion);
             EnsureImplosionCapacity();
         }
@@ -152,25 +178,33 @@ namespace CosmicShore.Gameplay
             // Safety audit: detect explosion / implosion VFX with enabled renderers
             // that aren't actively managed. Catches "zombie" pool instances whose
             // OnReturnToPool callback chain failed to deactivate the GameObject.
-            // Uses FindObjectsByType (a full-scene scan), so it runs on an infrequent
-            // time-based throttle rather than every frame — running it once per second
-            // showed up as a recurring spike in dev-build profiling.
+            // Iterates the effects' enabled-instance registries - O(live effects) -
+            // instead of FindObjectsByType full-scene scans, which showed up as a
+            // recurring multi-ms spike in dense scenes. Backwards, because
+            // SetActive(false) below removes the entry from the registry mid-walk.
             if (zombieAuditIntervalSeconds > 0f && Time.unscaledTime >= _nextZombieAuditTime)
             {
                 _nextZombieAuditTime = Time.unscaledTime + zombieAuditIntervalSeconds;
-                var allExplosions = FindObjectsByType<PrismExplosion>(FindObjectsSortMode.None);
-                foreach (var exp in allExplosions)
+                var allExplosions = PrismExplosion.EnabledInstances;
+                for (int i = allExplosions.Count - 1; i >= 0; i--)
                 {
+                    var exp = allExplosions[i];
+                    if (!exp) continue;
                     if (exp.Renderer != null && exp.Renderer.enabled && !exp.IsActive)
                         exp.Renderer.enabled = false;
+                    // Entity-path zombies: companion entity left visible without
+                    // an active animation driving it.
+                    if (!exp.IsActive && exp.UsesEntityRenderPath)
+                        CosmicShore.ECS.PrismRenderService.SetVisible(in exp.RenderHandle, false);
                 }
 
-                var allImplosions = FindObjectsByType<PrismImplosion>(FindObjectsSortMode.None);
+                var allImplosions = PrismImplosion.EnabledInstances;
                 int activeGameObjects = 0;
                 int zombies = 0;
                 int healthy = 0;
-                foreach (var imp in allImplosions)
+                for (int i = allImplosions.Count - 1; i >= 0; i--)
                 {
+                    var imp = allImplosions[i];
                     if (!imp) continue;
                     bool goActive = imp.gameObject.activeSelf;
                     if (!goActive) continue;
@@ -239,7 +273,7 @@ namespace CosmicShore.Gameplay
             var handle = job.Schedule(count, BATCH_SIZE);
             handle.Complete();
 
-            // Apply results — tempExplosionList[i] is aligned 1:1 with explosionJobData[i]
+            // Apply results - tempExplosionList[i] is aligned 1:1 with explosionJobData[i]
             for (int i = 0; i < count; i++)
             {
                 var data = explosionJobData[i];
@@ -253,19 +287,32 @@ namespace CosmicShore.Gameplay
                 if (!math.any(math.isnan(newPos)))
                     exp.transform.position = new Vector3(newPos.x, newPos.y, newPos.z);
 
-                // Update shader properties (read-modify-write to preserve team colors)
-                var renderer = exp.Renderer;
-                if (renderer != null)
+                if (exp.UsesEntityRenderPath)
                 {
-                    renderer.GetPropertyBlock(sharedMPB);
-                    sharedMPB.SetFloat(ExplosionAmountID, data.explosionAmount);
-                    sharedMPB.SetFloat(OpacityID, data.opacity);
-                    renderer.SetPropertyBlock(sharedMPB);
+                    // Instanced path: shader params + matrix sink into the
+                    // companion entity. First frame also unhides it (same
+                    // no-flash contract as the renderer-enable below).
+                    exp.SyncRenderTransform();
+                    CosmicShore.ECS.PrismRenderService.SetExplosionParams(
+                        in exp.RenderHandle, data.velocity, data.explosionAmount, data.opacity);
+                    exp.EnableVisual();
+                }
+                else
+                {
+                    // Legacy path: per-renderer MPB (read-modify-write to preserve team colors)
+                    var renderer = exp.Renderer;
+                    if (renderer != null)
+                    {
+                        renderer.GetPropertyBlock(sharedMPB);
+                        sharedMPB.SetFloat(ExplosionAmountID, data.explosionAmount);
+                        sharedMPB.SetFloat(OpacityID, data.opacity);
+                        renderer.SetPropertyBlock(sharedMPB);
 
-                    // Enable renderer on first animated frame — TriggerExplosion disables it
-                    // to prevent a one-frame flash of the unanimated mesh.
-                    if (!renderer.enabled)
-                        renderer.enabled = true;
+                        // Enable renderer on first animated frame - TriggerExplosion disables it
+                        // to prevent a one-frame flash of the unanimated mesh.
+                        if (!renderer.enabled)
+                            renderer.enabled = true;
+                    }
                 }
 
                 if (data.elapsed >= data.maxDuration)
@@ -327,7 +374,7 @@ namespace CosmicShore.Gameplay
             var handle = job.Schedule(count, BATCH_SIZE);
             handle.Complete();
 
-            // Apply results — tempImplosionList[i] is aligned 1:1 with implosionJobData[i]
+            // Apply results - tempImplosionList[i] is aligned 1:1 with implosionJobData[i]
             for (int i = 0; i < count; i++)
             {
                 var data = implosionJobData[i];
@@ -338,15 +385,25 @@ namespace CosmicShore.Gameplay
                 imp.Progress = data.progress;
                 imp.GrowDelayRemaining = data.growDelayRemaining;
 
-                // Update shader properties (read-modify-write to preserve team colors)
-                var renderer = imp.Renderer;
-                if (renderer != null)
+                if (imp.UsesEntityRenderPath)
                 {
-                    renderer.GetPropertyBlock(sharedMPB);
-                    sharedMPB.SetFloat(ImplosionProgressID, data.progress);
-                    sharedMPB.SetVector(ConvergencePointID,
-                        new Vector4(data.targetPosition.x, data.targetPosition.y, data.targetPosition.z, 0));
-                    renderer.SetPropertyBlock(sharedMPB);
+                    // Instanced path: progress + convergence point sink into the
+                    // companion entity's overrides.
+                    CosmicShore.ECS.PrismRenderService.SetImplosionParams(
+                        in imp.RenderHandle, data.progress, data.targetPosition);
+                }
+                else
+                {
+                    // Legacy path: per-renderer MPB (read-modify-write to preserve team colors)
+                    var renderer = imp.Renderer;
+                    if (renderer != null)
+                    {
+                        renderer.GetPropertyBlock(sharedMPB);
+                        sharedMPB.SetFloat(ImplosionProgressID, data.progress);
+                        sharedMPB.SetVector(ConvergencePointID,
+                            new Vector4(data.targetPosition.x, data.targetPosition.y, data.targetPosition.z, 0));
+                        renderer.SetPropertyBlock(sharedMPB);
+                    }
                 }
 
                 if (data.isComplete == 1)
@@ -445,7 +502,7 @@ namespace CosmicShore.Gameplay
         {
             var item = data[i];
 
-            // Handle grow delay — don't start animation until delay expires
+            // Handle grow delay - don't start animation until delay expires
             if (item.isGrowing == 1 && item.growDelayRemaining > 0f)
             {
                 item.growDelayRemaining -= deltaTime;

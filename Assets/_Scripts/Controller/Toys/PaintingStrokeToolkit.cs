@@ -8,18 +8,18 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// The sophisticated-stroke library the "Connect the Dots" toy pulls its constructions from.
-    /// Pure geometry — no scene access, deterministic, unit-testable — so it can build monuments
+    /// Pure geometry - no scene access, deterministic, unit-testable - so it can build monuments
     /// far beyond the hand-authored Taj Mahal by <b>composition</b> rather than by hand-placing
     /// thousands of points.
     ///
     /// Three families live here:
-    ///   1. A seedable deterministic PRNG (<see cref="Rng"/>) — never <c>UnityEngine.Random</c>, so
+    ///   1. A seedable deterministic PRNG (<see cref="Rng"/>) - never <c>UnityEngine.Random</c>, so
     ///      generation is reproducible across the test harness and never touches global RNG state.
-    ///   2. Parametric curve primitives — Catmull-Rom splines, (p,q) torus knots, tube longitudes
+    ///   2. Parametric curve primitives - Catmull-Rom splines, (p,q) torus knots, tube longitudes
     ///      and rings with rotation-minimizing (parallel-transport) frames, Fibonacci-sphere point
     ///      sets, and the truncated-icosahedron (soccer-ball) edge graph. Only primitives with a
-    ///      production caller live here — compose new ones when a generator needs them.
-    ///   3. The <b>impressionist field</b> — a divergence-free curl-noise flow (<see cref="CurlNoise"/>)
+    ///      production caller live here - compose new ones when a generator needs them.
+    ///   3. The <b>impressionist field</b> - a divergence-free curl-noise flow (<see cref="CurlNoise"/>)
     ///      that <see cref="ImpressionistStrokes"/> integrates into short curvy strokes whose radii of
     ///      curvature stochastically fill a region in every direction ("3D impressionism"). This is
     ///      the technique that makes a lion's mane, a Van Gogh sky, or a galaxy halo read as painted
@@ -33,7 +33,7 @@ namespace CosmicShore.Gameplay
         // ── Deterministic PRNG ───────────────────────────────────────────────
         //
         // A reference type (not a struct) so a single instance threaded through a generator keeps
-        // one deterministic sequence — a struct would copy and silently fork the stream.
+        // one deterministic sequence - a struct would copy and silently fork the stream.
 
         public sealed class Rng
         {
@@ -49,7 +49,7 @@ namespace CosmicShore.Gameplay
 
             public uint NextUInt()
             {
-                // xorshift32 — cheap, deterministic, adequate for procedural art.
+                // xorshift32 - cheap, deterministic, adequate for procedural art.
                 uint x = _state;
                 x ^= x << 13;
                 x ^= x >> 17;
@@ -75,7 +75,7 @@ namespace CosmicShore.Gameplay
             /// <summary>Uniform point on the unit sphere surface.</summary>
             public Vector3 OnUnitSphere()
             {
-                // z uniform in [-1,1], azimuth uniform — the standard area-preserving sampling.
+                // z uniform in [-1,1], azimuth uniform - the standard area-preserving sampling.
                 float z = Range(-1f, 1f);
                 float a = Range(0f, Mathf.PI * 2f);
                 float r = Mathf.Sqrt(Mathf.Max(0f, 1f - z * z));
@@ -126,7 +126,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Divergence-free 3D flow field: curl of a noise vector potential Ψ. Because ∇·(∇×Ψ)=0 the
         /// field has no sources/sinks, so integrated streamlines swirl and fill space without
-        /// spiralling into a point — exactly the turbulent, everywhere-curving motion of a Van Gogh
+        /// spiralling into a point - exactly the turbulent, everywhere-curving motion of a Van Gogh
         /// sky. Magnitude is O(1); scale by the desired step length at the call site.
         /// </summary>
         public static Vector3 CurlNoise(Vector3 p, float freq, int seed)
@@ -165,12 +165,12 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Fill a region with <paramref name="count"/> short curved strokes: each seeds from
         /// <paramref name="seedSampler"/> and is integrated along the curl field, so its radius of
-        /// curvature varies stochastically and the strokes point in every direction — "3D
+        /// curvature varies stochastically and the strokes point in every direction - "3D
         /// impressionism". Each stroke is coloured by <paramref name="domainField"/> evaluated at its
         /// seed, so colour clusters into coherent zones rather than per-stroke confetti.
         /// </summary>
         /// <param name="curlFreq">Base spatial frequency of the flow (world-units^-1). Lower = broader sweeps.</param>
-        /// <param name="stepLength">World spacing between consecutive stroke points — keep flyable (≳8).</param>
+        /// <param name="stepLength">World spacing between consecutive stroke points - keep flyable (≳8).</param>
         /// <param name="minSteps">Lower bound of the stochastic stroke length in points.</param>
         /// <param name="maxSteps">Upper bound of the stochastic stroke length in points (arc length varies).</param>
         /// <param name="freqJitter">Per-stroke curl-frequency spread → varied radii of curvature.</param>
@@ -230,7 +230,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// A single radial spray stroke from <paramref name="center"/> outward along <paramref name="dir"/>,
-        /// bent by the curl field — the primitive behind a lion's mane strand, a phoenix flame tongue, or a
+        /// bent by the curl field - the primitive behind a lion's mane strand, a phoenix flame tongue, or a
         /// crest tuft. Grows from rInner to rOuter; <paramref name="upBias"/> makes it climb (flame).
         /// </summary>
         public static List<Vector3> RadialCurlStroke(Vector3 center, Vector3 dir, float rInner, float rOuter,
@@ -309,13 +309,13 @@ namespace CosmicShore.Gameplay
             return pts;
         }
 
-        /// <summary>Mirror a ridgeline under a waterline plane (y' = 2·yPlane − y), clamped to a floor — a lake reflection.</summary>
+        /// <summary>Mirror a ridgeline under a waterline plane (y' = 2·yPlane − y), clamped to a floor - a lake reflection.</summary>
         public static List<Vector3> ReflectY(IReadOnlyList<Vector3> pts, float yPlane, float floorY)
         {
             var outPts = new List<Vector3>();
             foreach (var p in pts)
             {
-                if (p.y > 2f * yPlane) continue; // would reflect below the floor — skip
+                if (p.y > 2f * yPlane) continue; // would reflect below the floor - skip
                 outPts.Add(new Vector3(p.x, Mathf.Max(floorY, 2f * yPlane - p.y), p.z));
             }
             return outPts;
@@ -431,7 +431,7 @@ namespace CosmicShore.Gameplay
         static IEnumerable<Vector3> DodecahedronDirs()
         {
             // Hexagon centres = icosahedron face centroids = dodecahedron vertices DUAL to the icosa
-            // (0,±1,±φ): {(±1,±1,±1)} ∪ cyclic-perms of (0,±φ,±1/φ). Note φ and 1/φ order — the swapped
+            // (0,±1,±φ): {(±1,±1,±1)} ∪ cyclic-perms of (0,±φ,±1/φ). Note φ and 1/φ order - the swapped
             // (0,1/φ,φ) points at the wrong axis and yields non-face vertex clusters.
             float phi = (1f + Mathf.Sqrt(5f)) * 0.5f;
             var seen = new List<Vector3>();
@@ -499,7 +499,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// A (p,q) torus knot winding <paramref name="p"/> times around the axis and <paramref name="q"/>
-        /// times through the hole. gcd(p,q)=1 gives a single closed non-self-intersecting curve —
+        /// times through the hole. gcd(p,q)=1 gives a single closed non-self-intersecting curve -
         /// mesmerising when spun. Lies on a torus of major radius R, tube radius r; axis is +Y.
         /// </summary>
         public static List<Vector3> TorusKnot(int p, int q, float R, float r, int segments)
@@ -517,7 +517,7 @@ namespace CosmicShore.Gameplay
             return pts;
         }
 
-        /// <summary>3D Lissajous curve — three phase-offset sinusoids. A hypnotic non-planar ribbon.</summary>
+        /// <summary>3D Lissajous curve - three phase-offset sinusoids. A hypnotic non-planar ribbon.</summary>
         public static List<Vector3> Lissajous3D(Vector3 center, Vector3 amp,
             float ax, float ay, float az, float dx, float dy, float dz, int segments)
         {
@@ -581,7 +581,7 @@ namespace CosmicShore.Gameplay
             vertices = verts.ToArray();
 
             // Edge length on this construction is 2 (before normalising); after normalising the
-            // nearest-neighbour distance is the unique minimum — pair up by that distance.
+            // nearest-neighbour distance is the unique minimum - pair up by that distance.
             float minD = float.MaxValue;
             for (int i = 0; i < vertices.Length; i++)
                 for (int j = i + 1; j < vertices.Length; j++)
@@ -627,7 +627,7 @@ namespace CosmicShore.Gameplay
         /// ended (greedy nearest-next-start tour). Continuity takes precedence; among candidates
         /// within a near-tie band of the best gap (4% of the painting diagonal), the LEAST curvy
         /// stroke goes first, so fine detail still lands later. The order stays domain-contiguous
-        /// — strokes group by domain and each group is entered at its most continuous stroke — so
+        /// - strokes group by domain and each group is entered at its most continuous stroke - so
         /// the trail recolours at most once per domain. Stroke 0 keeps its place (the authored
         /// opening stroke and its gate position). Returns a NEW list of the same stroke objects;
         /// deterministic, so progress-store stroke indices are stable across sessions.
@@ -787,7 +787,7 @@ namespace CosmicShore.Gameplay
 
         /// <summary>
         /// Rotation-minimizing frames along a polyline (projection transport). Unlike calling
-        /// <see cref="Basis"/> per point, the frame never flips as the tangent sweeps — required for
+        /// <see cref="Basis"/> per point, the frame never flips as the tangent sweeps - required for
         /// clean tube longitudes on curves like torus knots whose tangents cover the whole sphere.
         /// </summary>
         public static void TransportFrames(IReadOnlyList<Vector3> spine, out Vector3[] normals, out Vector3[] binormals)
@@ -815,7 +815,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// <paramref name="count"/> longitudinal frame lines on a tube around <paramref name="spine"/>,
         /// twisting <paramref name="twistTurns"/> full turns end to end (keep it whole so closed curves
-        /// seal). On a CLOSED spine, parallel transport comes back rotated by the loop's holonomy —
+        /// seal). On a CLOSED spine, parallel transport comes back rotated by the loop's holonomy -
         /// left uncorrected, every longitude ends offset around the tube and the loop doesn't quite
         /// connect. The holonomy is measured and distributed as a compensating counter-twist, and the
         /// final point is snapped exactly onto the first.
@@ -865,7 +865,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// The 30 hexagon–hexagon shared edges of the truncated icosahedron — chemically, C60's 6:6
+        /// The 30 hexagon–hexagon shared edges of the truncated icosahedron - chemically, C60's 6:6
         /// DOUBLE bonds (every edge not belonging to a pentagon). Endpoints on the unit sphere.
         /// </summary>
         public static void SoccerBallDoubleBonds(out Vector3[] bondA, out Vector3[] bondB)
@@ -911,7 +911,7 @@ namespace CosmicShore.Gameplay
         /// <summary>
         /// Ride checkpoints for a stroke polyline: indices spaced at least <paramref name="minSpacing"/>
         /// of arc apart, preferring vertices whose local turn is gentle (≤ <paramref name="maxTurnDeg"/>)
-        /// — a checkpoint on a hairpin punishes a fast vessel that can't sit on the apex. On a stretch
+        /// - a checkpoint on a hairpin punishes a fast vessel that can't sit on the apex. On a stretch
         /// that is tight everywhere, the flattest vertex since the last checkpoint is used once the arc
         /// exceeds 2.5× spacing, so progress can never stall. Index 0 (the start gate) and the final
         /// index (the stroke-end jack) are always included; a checkpoint landing within 0.4× spacing of
@@ -943,7 +943,7 @@ namespace CosmicShore.Gameplay
                 }
                 else if (sinceLast > minSpacing * 2.5f && bestIdx >= 0)
                 {
-                    // everything since the last checkpoint is tight — take the flattest vertex seen
+                    // everything since the last checkpoint is tight - take the flattest vertex seen
                     cps.Add(bestIdx);
                     float arc = 0f;
                     for (int k = bestIdx + 1; k <= i; k++) arc += Vector3.Distance(pts[k - 1], pts[k]);
@@ -987,7 +987,7 @@ namespace CosmicShore.Gameplay
         }
 
         /// <summary>
-        /// Resample a polyline so no segment exceeds <paramref name="maxSeg"/> — inserts points along
+        /// Resample a polyline so no segment exceeds <paramref name="maxSeg"/> - inserts points along
         /// long spans so a fast, broad curve stays flyable (the runner advances point-to-point).
         /// </summary>
         public static List<Vector3> EnforceMaxSegment(IReadOnlyList<Vector3> pts, float maxSeg)

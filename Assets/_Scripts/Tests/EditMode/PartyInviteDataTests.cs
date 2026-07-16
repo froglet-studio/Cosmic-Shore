@@ -5,7 +5,7 @@ using CosmicShore.ScriptableObjects;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// PartyInviteData Tests — Validates the immutable invite payload struct.
+    /// PartyInviteData Tests - Validates the immutable invite payload struct.
     ///
     /// WHY THIS MATTERS:
     /// PartyInviteData carries the invite payload across SOAP events (OnInviteReceived)

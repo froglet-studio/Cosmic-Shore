@@ -69,15 +69,15 @@ namespace CosmicShore.Gameplay
         // GetExcludedDomain / GetLocalDomainOr were removed with the exclusion roll:
         // the locked no-domain-asymmetry invariant (CLAUDE.md ▸ Ecosystem Design
         // Principles) says all three domains seed flora and fauna spawn in the
-        // controlling color — no spawner may bias against any domain.
+        // controlling color - no spawner may bias against any domain.
 
         public static Domains PickRandomDomain(Domains? excluded)
         {
-            // Playable domains only — never Blue, the "no team" sentinel. A Blue
+            // Playable domains only - never Blue, the "no team" sentinel. A Blue
             // lifeform's prisms count as opposing mass for EVERY anti-domain query
             // (anti-Jade, anti-Ruby, AND anti-Gold all include them), so Blue flora
             // act as universal bait that pulls every domain's fauna school to the
-            // same place — defeating "different domains go to different locations".
+            // same place - defeating "different domains go to different locations".
             var candidates = new List<Domains>(3) { Domains.Jade, Domains.Ruby, Domains.Gold };
             if (excluded.HasValue) candidates.Remove(excluded.Value);
 

@@ -267,7 +267,7 @@ namespace CosmicShore.Gameplay
         {
             isCleaningUp = true;
             StopAllCoroutines();
-            // Drain still-living blocks to the cell counter — turn-end Destroys the
+            // Drain still-living blocks to the cell counter - turn-end Destroys the
             // gameObject without running Die()/RemoveHealthBlock, so without this
             // Cell.LiveBlockCount drifts upward across rounds.
             if (cell != null && healthTracker != null)

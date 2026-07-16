@@ -97,7 +97,7 @@ namespace CosmicShore.Gameplay
                 inputStatus.OnButtonReleased.Raise(InputEvents.FlipAction);
             // vessel.StopShipControllerActions(InputEvents.FlipAction);
 
-            // Triggers — read analog values and use custom deadzone for edge detection.
+            // Triggers - read analog values and use custom deadzone for edge detection.
             // This gives full analog range (0-1) for drift scaling while keeping
             // binary event compatibility for button-style triggers (which snap 0/1).
             float leftTriggerValue = Gamepad.current.leftTrigger.ReadValue();
@@ -174,6 +174,9 @@ namespace CosmicShore.Gameplay
                 Ease(2 * rightStickRaw.x),
                 Ease(2 * rightStickRaw.y)
             );
+
+            inputStatus.RightNormalizedJoystickPosition = rightStickRaw;
+            inputStatus.LeftNormalizedJoystickPosition = leftStickRaw;
 
             // Calculate sums and differences exactly as touch input does
             inputStatus.XSum = Ease(rightStickRaw.x + leftStickRaw.x);

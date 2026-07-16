@@ -16,10 +16,10 @@ namespace CosmicShore.Gameplay
     /// human player handling to the base class via OnPlayerNetworkSpawnedUlong.
     ///
     /// OnNetworkSpawn flow:
-    ///   1. SpawnAIs() — creates AI players + vessels (fires OnPlayerNetworkSpawnedUlong
+    ///   1. SpawnAIs() - creates AI players + vessels (fires OnPlayerNetworkSpawnedUlong
     ///      for each, but we haven't subscribed yet so the base ignores them)
     ///   2. Mark AI players in _processedPlayers so the base never processes them
-    ///   3. base.OnNetworkSpawn() — subscribes to event + handles human players going forward
+    ///   3. base.OnNetworkSpawn() - subscribes to event + handles human players going forward
     /// </summary>
     public class ServerPlayerVesselInitializerWithAI : ServerPlayerVesselInitializer
     {
@@ -40,7 +40,7 @@ namespace CosmicShore.Gameplay
         [SerializeField] SO_AIProfileList aiProfileList;
 
         // Tournament standings are keyed by player name, but AI Player NetworkObjects are
-        // destroyed and re-spawned every minigame scene — so the AI roster must stay stable
+        // destroyed and re-spawned every minigame scene - so the AI roster must stay stable
         // across the lineup. The names are seeded once (first game) into TournamentDataSO and
         // reused for every subsequent game.
         [Inject] TournamentDataSO tournamentData;
@@ -49,12 +49,12 @@ namespace CosmicShore.Gameplay
         {
             if (!NetworkManager.Singleton.IsServer)
             {
-                CSDebug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn — NOT server, disabling</color>");
+                CSDebug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - NOT server, disabling</color>");
                 enabled = false;
                 return;
             }
 
-            CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn — IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}</color>");
+            CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] OnNetworkSpawn - IsServer=true, RequestedAIBackfill={gameData.RequestedAIBackfillCount}, spawnAIOnServerReady={spawnAIOnServerReady}</color>");
 
             // Set scene-specific spawn positions before AI spawning.
             // base.OnNetworkSpawn() also sets them, but AI spawns happen first
@@ -63,7 +63,7 @@ namespace CosmicShore.Gameplay
                 gameData.SetSpawnPositions(playerSpawnPoints);
 
             // Active set is the contiguous slice ActiveDomains[0..DC-1]. Strictly
-            // deterministic — no humans-picks-influence-the-set logic. DC < 3 means
+            // deterministic - no humans-picks-influence-the-set logic. DC < 3 means
             // lower-priority domains (Gold first, then Ruby) are unavailable; humans
             // on now-inactive domains are reassigned by NormalizeUnassignedHumans.
             var activeDomains = BuildActiveDomains(gameData.RequestedDomainCount);
@@ -86,7 +86,7 @@ namespace CosmicShore.Gameplay
             // subscribed yet (base.OnNetworkSpawn hasn't run), those events
             // are harmlessly ignored by the base.
             // Wrapped in try-catch to guarantee base.OnNetworkSpawn() always
-            // runs — otherwise no human players would be processed.
+            // runs - otherwise no human players would be processed.
             if (spawnAIOnServerReady)
             {
                 try
@@ -128,7 +128,7 @@ namespace CosmicShore.Gameplay
             }
 
             int aiCount = gameData.RequestedAIBackfillCount;
-            CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs — aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, totals={string.Join(", ", totalCounts)}, humans={string.Join(", ", humanCounts)}</color>");
+            CSDebug.Log($"<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] SpawnAIs - aiCount={aiCount}, domainCount={gameData.RequestedDomainCount}, totals={string.Join(", ", totalCounts)}, humans={string.Join(", ", humanCounts)}</color>");
             if (aiCount <= 0)
             {
                 CSDebug.Log("<color=#FF00FF>[FLOW-5AI] [ServerVesselInitWithAI] No AI to spawn (aiCount <= 0)</color>");
@@ -161,7 +161,7 @@ namespace CosmicShore.Gameplay
                 var aiPlayerNO = Instantiate(aiPlayerPrefab);
                 GameObjectInjector.InjectRecursive(aiPlayerNO.gameObject, _container);
 
-                // destroyWithScene=false — AI spawns in same tick as scene load; see ClearPlayerVesselReferences for cleanup.
+                // destroyWithScene=false - AI spawns in same tick as scene load; see ClearPlayerVesselReferences for cleanup.
                 aiPlayerNO.Spawn(false);
 
                 var aiPlayer = aiPlayerNO.GetComponent<Player>();
@@ -219,7 +219,7 @@ namespace CosmicShore.Gameplay
         ///      doubling up alongside a human).
         ///   3. Final tie-break is <see cref="GameDataSO.ActiveDomains"/> enum
         ///      order (Jade → Ruby → Gold).
-        /// Identical inputs produce identical results on every machine — no shared
+        /// Identical inputs produce identical results on every machine - no shared
         /// RNG seed needed.
         /// </summary>
         public static Domains GetBalancedDomain(
@@ -242,7 +242,7 @@ namespace CosmicShore.Gameplay
                     && humanCounts.TryGetValue(d, out var h) && h == minHumans)
                     return d;
 
-            // Reachable only when totalCounts is empty (no active domains) —
+            // Reachable only when totalCounts is empty (no active domains) -
             // degrade gracefully rather than throw.
             CSDebug.LogError("[ServerPlayerVesselInitializerWithAI] GetBalancedDomain: empty counts");
             return GameDataSO.ActiveDomains[0];
@@ -361,7 +361,7 @@ namespace CosmicShore.Gameplay
             {
                 vesselNO = Instantiate(shipNetworkObject);
                 GameObjectInjector.InjectRecursive(vesselNO.gameObject, _container);
-                // destroyWithScene=false matches the AI player spawn — must stay consistent for cleanup ordering.
+                // destroyWithScene=false matches the AI player spawn - must stay consistent for cleanup ordering.
                 vesselNO.Spawn(false);
                 aiPlayer.NetVesselId.Value = vesselNO.NetworkObjectId;
                 LoadInsights.Count("Vessels spawned during load");

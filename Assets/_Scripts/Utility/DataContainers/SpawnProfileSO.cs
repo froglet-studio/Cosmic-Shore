@@ -9,7 +9,7 @@ namespace CosmicShore.Utility
     public class SpawnProfileSO : ScriptableObject
     {
         [Header("Flora Configs")]
-        [Tooltip("DEPRECATED — inert. The locked no-domain-asymmetry invariant says all three " +
+        [Tooltip("DEPRECATED - inert. The locked no-domain-asymmetry invariant says all three " +
                  "domains seed flora, so the spawners no longer roll an excluded domain " +
                  "(CLAUDE.md ▸ Ecosystem Design Principles). Kept only so legacy assets " +
                  "deserialize; remove with the next SpawnProfile asset migration.")]
@@ -21,29 +21,29 @@ namespace CosmicShore.Utility
         [Min(0f)] public float FloraSpawnIntervalSeconds;
         // The flora regrowth pulse (FloraRegrowthPulsePeriod / FloraRegrowthPulseDuration)
         // was removed: it was a hard-coded growth oscillator faking the "breathing" the
-        // food web is meant to produce. Mass is conserved — growth resumes only when an
+        // food web is meant to produce. Mass is conserved - growth resumes only when an
         // active force lowers the prism count below Frenzy. See Docs/ECOSYSTEM.md §0.
         public List<FloraConfigurationSO> SupportedFloras = new();
         
         [Header("FaunaPrefab Configs")]
-        [Tooltip("DEPRECATED — inert. Fauna spawn in the cell's controlling color only (locked " +
+        [Tooltip("DEPRECATED - inert. Fauna spawn in the cell's controlling color only (locked " +
                  "no-domain-asymmetry invariant); no spawner reads this. Kept only so legacy " +
                  "assets deserialize; remove with the next SpawnProfile asset migration.")]
         public bool FaunaExcludeLocalDomain = false;
         [Min(0f)] public float InitialFaunaSpawnWaitTime = 10f;
         [Min(0f)] public float FaunaSpawnVolumeThreshold = 1f;
-        [Tooltip("Fixed period (seconds) between fauna spawn-cycle ticks — the ecosystem heartbeat. " +
+        [Tooltip("Fixed period (seconds) between fauna spawn-cycle ticks - the ecosystem heartbeat. " +
                  "Platform default is 30s; scoring modes that ride the wave clock (Brood Rush) depend on it.")]
         [Min(0f)] public float BaseFaunaSpawnTime = 30f;
-        [Tooltip("OFF (default): the tick is a SEEDER — it only tops each species up to its seed floor " +
+        [Tooltip("OFF (default): the tick is a SEEDER - it only tops each species up to its seed floor " +
                  "(PopulationSize), staying out while the food web sustains it. ON: every tick spawns a " +
                  "full fresh wave of PopulationSize fauna (clamped by MaxLivePopulation), so each cycle " +
-                 "visibly births a brood in the controlling color — used by wave-scored modes (Brood Rush). " +
+                 "visibly births a brood in the controlling color - used by wave-scored modes (Brood Rush). " +
                  "Population is still bounded by starvation + the per-species cap; no imposed death.")]
         public bool SeedFullWaveEveryTick = false;
         [Tooltip("Population control (prey-linked), authored in NOMINAL PRISMS: a herbivore population " +
                  "only spawns while the cell holds at least this many prisms' worth of opposing " +
-                 "ENVIRONMENT VOLUME (value × 16, the nominal leaf volume — volume is the spine; fauna " +
+                 "ENVIRONMENT VOLUME (value × 16, the nominal leaf volume - volume is the spine; fauna " +
                  "bodies don't count, they aren't edible). Predator species read it directly as N live " +
                  "herbivores. Below the floor, production pauses until prey returns; existing fauna then " +
                  "starve. 0 = always produce. See Docs/ECOSYSTEM.md.")]

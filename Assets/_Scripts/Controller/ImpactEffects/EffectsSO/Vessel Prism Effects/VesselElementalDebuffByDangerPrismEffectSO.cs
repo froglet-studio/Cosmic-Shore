@@ -7,7 +7,7 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// Danger prism impact effect: when a vessel collides with a dangerous prism, all four of its
     /// elements receive a temporary, decaying debuff via the standardized
-    /// <see cref="ResourceSystem.ApplyElementalEffect"/>. Danger prisms are friendly-fire — the
+    /// <see cref="ResourceSystem.ApplyElementalEffect"/>. Danger prisms are friendly-fire - the
     /// debuff applies regardless of the prism's domain, own trail included. The debuff decays back
     /// to the vessel's base levels over <see cref="debuffDuration"/>; persistent progress is untouched.
     /// </summary>
@@ -44,7 +44,7 @@ namespace CosmicShore.Gameplay
             var rs = vesselImpactor.Vessel.VesselStatus?.ResourceSystem;
             if (rs == null) return;
 
-            // Cooldown check — anti-spam per debuffed vessel
+            // Cooldown check - anti-spam per debuffed vessel
             var now = Time.time;
             if (_lastEffectTime.TryGetValue(rs, out var lastTime) && now - lastTime < cooldown)
                 return;

@@ -6,7 +6,7 @@ namespace CosmicShore.Gameplay
 {
     /// <summary>
     /// Trigger sign that starts shape-drawing mode when the vessel flies through its collider.
-    /// Position, rotation, and scale are set in the editor — this script never touches them.
+    /// Position, rotation, and scale are set in the editor - this script never touches them.
     /// </summary>
     [RequireComponent(typeof(Collider))]
     public class ShapeSign : MonoBehaviour
@@ -68,7 +68,7 @@ namespace CosmicShore.Gameplay
     }
 
     /// <summary>
-    /// Static event bus — keeps ShapeSign and ShapeDrawingManager fully decoupled.
+    /// Static event bus - keeps ShapeSign and ShapeDrawingManager fully decoupled.
     /// </summary>
     public static class ShapeSignEvents
     {

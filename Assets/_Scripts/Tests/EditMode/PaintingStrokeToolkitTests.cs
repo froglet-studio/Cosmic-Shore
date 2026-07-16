@@ -11,7 +11,7 @@ using Tk = CosmicShore.Gameplay.PaintingStrokeToolkit;
 namespace CosmicShore.Tests
 {
     /// <summary>
-    /// Pure-geometry tests for <see cref="PaintingStrokeToolkit"/> — the library the grandiose
+    /// Pure-geometry tests for <see cref="PaintingStrokeToolkit"/> - the library the grandiose
     /// "Connect the Dots" constructions are built from. These lock the load-bearing math: a
     /// deterministic PRNG, a divergence-free curl field that fills space, a mathematically exact
     /// soccer ball, closed torus knots, and flyable impressionist strokes.
@@ -166,7 +166,7 @@ namespace CosmicShore.Tests
         [Test]
         public void TubeLongitudes_SealExactlyOnAClosedKnot()
         {
-            // Parallel transport around a closed loop returns rotated (holonomy) — uncorrected, every
+            // Parallel transport around a closed loop returns rotated (holonomy) - uncorrected, every
             // longitude ends ~30u off its own start on the trefoil tube. The fix must seal them.
             const float R = 335f, rT = 140f, tube = 52f;
             const int NP = 300;
@@ -183,7 +183,7 @@ namespace CosmicShore.Tests
             Assert.AreEqual(6, longs.Count);
             foreach (var line in longs)
                 Assert.Less(Vector3.Distance(line[0], line[^1]), 1e-3f,
-                    "every longitude must close onto itself — the knot's strokes connect on their shared surface");
+                    "every longitude must close onto itself - the knot's strokes connect on their shared surface");
         }
 
         [Test]
@@ -222,7 +222,7 @@ namespace CosmicShore.Tests
         [Test]
         public void RideCheckpoints_NeverStallOnAnAllTightStroke()
         {
-            // A tight circle — every vertex over the turn threshold. Forced checkpoints must still
+            // A tight circle - every vertex over the turn threshold. Forced checkpoints must still
             // appear (flattest-available), so progress cannot stall.
             var pts = new List<Vector3>();
             for (int i = 0; i <= 72; i++)

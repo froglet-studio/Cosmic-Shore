@@ -40,7 +40,7 @@ namespace CosmicShore.Utility
     /// Display snapshot of one player's finish in a single tournament round, captured at game-end
     /// into <see cref="TournamentDataSO.History"/>. Needed because the Maelstrom hub / summary is a
     /// UI-only scene where <c>GameDataSO.Players</c> and <c>GameDataSO.Results</c> are already cleared
-    /// by the per-scene reset — the snapshot preserves everything the round cards and the lobby player
+    /// by the per-scene reset - the snapshot preserves everything the round cards and the lobby player
     /// list need to render without those live objects.
     /// </summary>
     [System.Serializable]
@@ -92,7 +92,7 @@ namespace CosmicShore.Utility
     }
 
     /// <summary>
-    /// SOAP data container for a Tournament session — the single source of truth for
+    /// SOAP data container for a Tournament session - the single source of truth for
     /// the game lineup, the cumulative per-domain standings, and the placement-points
     /// table. Authored once as an asset (lineup + points table); the runtime fields
     /// (<see cref="IsActive"/>, <see cref="CurrentGameIndex"/>, <see cref="Standings"/>,
@@ -128,8 +128,8 @@ namespace CosmicShore.Utility
                  "2 = 3rd. Places beyond the table score 0. Shuffle awards {2,1,0}.")]
         public List<int> PointsByPlace = new() { 2, 1, 0 };
 
-        [Tooltip("FALLBACK race target only — used when the End Game Conditions tool asset is missing. " +
-                 "The authority is Tools > Cosmic Shore > End Game Conditions (Maelstrom — Win Target); " +
+        [Tooltip("FALLBACK race target only - used when the End Game Conditions tool asset is missing. " +
+                 "The authority is Tools > Cosmic Shore > End Game Conditions (Maelstrom - Win Target); " +
                  "read EffectiveWinTarget, not this field. First DOMAIN whose cumulative placement " +
                  "crystals reach the target wins the shuffle (with {2,1,0} per game, 6 ≈ three dominant finishes).")]
         public int WinTarget = 6;
@@ -142,7 +142,7 @@ namespace CosmicShore.Utility
         [Tooltip("Minimum seconds the between-game loading splash holds the running standings before the " +
                  "next game begins loading, so players can actually read the summary. The host drives the " +
                  "dwell; clients follow the held scene load. Applies ONLY mid-run (a game has finished and " +
-                 "the shuffle isn't decided) — the first launch and the load into the final results summary " +
+                 "the shuffle isn't decided) - the first launch and the load into the final results summary " +
                  "are never delayed. See TournamentController.MinLoadSplashDwellSeconds.")]
         public float BetweenGameSummaryDwellSeconds = 2f;
 
@@ -160,7 +160,7 @@ namespace CosmicShore.Utility
         /// <summary>
         /// Pool index (into <see cref="GameQueue"/>) of the game currently loaded / just finished.
         /// With the randomized lineup this tracks WHICH mode is loaded (for repeat-avoidance), not
-        /// progress — game count is <see cref="GamesPlayed"/>.
+        /// progress - game count is <see cref="GamesPlayed"/>.
         /// </summary>
         [System.NonSerialized] public int CurrentGameIndex;
 
@@ -202,7 +202,7 @@ namespace CosmicShore.Utility
         public int GameCount => GameQueue?.Count ?? 0;
 
         /// <summary>
-        /// Player-facing mode name — the mode card's DisplayName (e.g. "Maelstrom"); falls back to
+        /// Player-facing mode name - the mode card's DisplayName (e.g. "Maelstrom"); falls back to
         /// "Tournament" if <see cref="ModeCard"/> is unwired. Single source for titles/headers, used by
         /// the scene view and <see cref="TournamentStandingsFormatter"/>.
         /// </summary>
@@ -211,7 +211,7 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Runtime win target stamped by <see cref="ResolveWinTarget"/> at tournament start (0 until then).
-        /// Never serialized — re-resolved on every fresh shuffle. See <see cref="EffectiveWinTarget"/>.
+        /// Never serialized - re-resolved on every fresh shuffle. See <see cref="EffectiveWinTarget"/>.
         /// </summary>
         [System.NonSerialized] int _resolvedWinTarget;
 
@@ -219,8 +219,8 @@ namespace CosmicShore.Utility
         /// The win target actually used at runtime ("race to N"): the value resolved from the End Game
         /// Conditions tool at tournament start (see <see cref="ResolveWinTarget"/> /
         /// <c>TournamentController.StartTournamentInternal</c>), falling back to the serialized
-        /// <see cref="WinTarget"/> until then (and in pure unit tests). Use this everywhere — the win
-        /// check (<see cref="IsShuffleComplete"/>) and the UI race-rule text — so the displayed target
+        /// <see cref="WinTarget"/> until then (and in pure unit tests). Use this everywhere - the win
+        /// check (<see cref="IsShuffleComplete"/>) and the UI race-rule text - so the displayed target
         /// and the actual target can't drift. See the /EndGameConditions skill.
         /// </summary>
         public int EffectiveWinTarget => _resolvedWinTarget > 0 ? _resolvedWinTarget : WinTarget;
@@ -299,7 +299,7 @@ namespace CosmicShore.Utility
             Standings.Clear();
             History.Clear();
             TournamentAINames.Clear();
-            // IntensityCeiling is intentionally NOT cleared — it is a config value captured at the
+            // IntensityCeiling is intentionally NOT cleared - it is a config value captured at the
             // fresh start (lobby load) and must survive Play Again's reset (which routes through here).
         }
 
@@ -336,7 +336,7 @@ namespace CosmicShore.Utility
 
             GamesPlayed++;
 
-            // Per-round history snapshot — survives the per-scene reset so the Maelstrom hub/summary
+            // Per-round history snapshot - survives the per-scene reset so the Maelstrom hub/summary
             // (a UI-only scene where gameData.Players/Results are already cleared) can render the full
             // roster and per-round cards. Falls back to building from `results` alone when the caller
             // supplies no snapshots, so history is always recorded (incl. from edit-mode tests).
@@ -410,7 +410,7 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// The placement crystals a domain earns from one game's ranked <paramref name="results"/> —
+        /// The placement crystals a domain earns from one game's ranked <paramref name="results"/> -
         /// i.e. its per-game <c>{2,1,0}</c> via <see cref="PointsByPlace"/>. Returns 0 if the domain
         /// did not play. Computed straight from <paramref name="results"/> (no dependency on
         /// <see cref="RecordResults"/> having run first), so the Scoreboard can read the local

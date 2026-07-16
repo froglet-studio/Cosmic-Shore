@@ -7,9 +7,9 @@ namespace CosmicShore.Gameplay
     /// <summary>Which crystal a microscene lays at a pickup point.</summary>
     public enum CrystalKind
     {
-        /// <summary>Skimmable single-element pickup (Charge/Mass/Space/Time) — buffs the skimmed element.</summary>
+        /// <summary>Skimmable single-element pickup (Charge/Mass/Space/Time) - buffs the skimmed element.</summary>
         Elemental = 0,
-        /// <summary>Body-collected any-domain jackpot — fuel + speed buff. Rarer, the "big" reward.</summary>
+        /// <summary>Body-collected any-domain jackpot - fuel + speed buff. Rarer, the "big" reward.</summary>
         Omni = 1,
     }
 
@@ -28,11 +28,11 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// The plan for one microscene on the freestyle conveyor, in two layers:
     ///
-    ///   • GEOMETRY (<see cref="PrismPoints"/> / <see cref="CrystalPoints"/>) — pure
+    ///   • GEOMETRY (<see cref="PrismPoints"/> / <see cref="CrystalPoints"/>) - pure
     ///     position/rotation/scale produced by a <see cref="MicroscenePatterns"/> recipe. The recipe
-    ///     knows nothing about domain, kind, or crystal type — only shape — so the hand-tuned
+    ///     knows nothing about domain, kind, or crystal type - only shape - so the hand-tuned
     ///     flyability of each recipe stays untouched by theming.
-    ///   • THEMED OUTPUT (<see cref="Prisms"/> / <see cref="Crystals"/>) — produced by
+    ///   • THEMED OUTPUT (<see cref="Prisms"/> / <see cref="Crystals"/>) - produced by
     ///     <c>MicroscenePatterns.ApplyTheming</c> from a <see cref="MicroscenePalette"/>: per-prism
     ///     domain (incl. neutral Blue) + <see cref="PrismKind"/> (plain / danger / shielded /
     ///     supershielded) under a coherent per-scene style, a per-scene scale mood, and a
@@ -45,11 +45,11 @@ namespace CosmicShore.Gameplay
     {
         public string RecipeName;
 
-        // ── Geometry (recipe output — pure shape) ────────────────────────────
+        // ── Geometry (recipe output - pure shape) ────────────────────────────
         public readonly List<SpawnPoint> PrismPoints = new();
         public readonly List<Vector3> CrystalPoints = new();
 
-        // ── Themed output (Finalize output — domain + kind + crystal type) ───
+        // ── Themed output (Finalize output - domain + kind + crystal type) ───
         public readonly List<PrismLay> Prisms = new();
         public readonly List<CrystalDrop> Crystals = new();
 

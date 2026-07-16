@@ -14,7 +14,7 @@ namespace CosmicShore.Gameplay
             var shipStatus = impactor.Vessel.VesselStatus;
             var trailBlockProperties = prismImpactee.Prism.prismProperties;
 
-            // Danger prisms are not safe to their own domain — no domain gating.
+            // Danger prisms are not safe to their own domain - no domain gating.
             if (trailBlockProperties.IsDangerous)
             {
                 shipStatus.VesselTransformer.ModifyThrottle(trailBlockProperties.speedDebuffAmount, duration);

@@ -167,7 +167,7 @@ namespace CosmicShore.UI
         /// Auto-creates an off-screen objective indicator and the matching
         /// provider for the current game mode, if the scene doesn't already
         /// have one. The indicator is created even without a matching provider
-        /// so the UI element is always visible in debug mode — useful for
+        /// so the UI element is always visible in debug mode - useful for
         /// verifying that rendering works before wiring up provider logic.
         /// </summary>
         protected virtual void EnsureObjectiveIndicator()
@@ -187,7 +187,7 @@ namespace CosmicShore.UI
         /// Attaches the universal domain-volume hex gauge to this scene's "Volume /
         /// Pause Button" so the same gauge trains players as the in-game pause button
         /// everywhere (it mirrors MenuMiniGameHUD.EnsureDomainVolumeIndicator for the
-        /// menu). The button keeps its authored onClick (open PauseMenu) — the gauge
+        /// menu). The button keeps its authored onClick (open PauseMenu) - the gauge
         /// only replaces the button's face. Runs in Start so the injected gameData can
         /// be handed to the runtime-added component (which never gets Reflex injection).
         /// </summary>
@@ -263,7 +263,7 @@ namespace CosmicShore.UI
         /// <summary>
         /// Mid-turn scene exits (pause-menu Main Menu) destroy the HUD without
         /// OnMiniGameTurnEnd ever firing, leaking the per-stats handlers onto the
-        /// players' RoundStats — which live on the persistent Player NetworkObjects
+        /// players' RoundStats - which live on the persistent Player NetworkObjects
         /// and survive into the next game. Mirror the turn-end cleanup here so
         /// destruction always detaches them. See Docs/ScoringSystem/BUGS.md B15.
         /// </summary>
@@ -373,7 +373,7 @@ namespace CosmicShore.UI
             }
             catch (OperationCanceledException)
             {
-                // cancelled — nothing to do
+                // cancelled - nothing to do
             }
         }
 
@@ -416,7 +416,7 @@ namespace CosmicShore.UI
             if (gameData.LocalPlayer == null || view.PlayerScoreEntryPrefab == null)
                 return;
 
-            // Avoid duplicate — reuse existing card if already created
+            // Avoid duplicate - reuse existing card if already created
             if (_localPlayerCard != null)
                 return;
 
@@ -432,7 +432,7 @@ namespace CosmicShore.UI
         }
 
         /// <summary>
-        /// Single source of truth for a domain's UI color — the same ColorSet the vessels
+        /// Single source of truth for a domain's UI color - the same ColorSet the vessels
         /// and prisms read from (ThemeManagerData.ColorSet -> TrailHighlightColor). Neutral
         /// gray if the theme isn't available. See Docs/ScoringSystem/REFACTOR.md R5.
         /// </summary>
@@ -452,7 +452,7 @@ namespace CosmicShore.UI
 
         private void SetupAICards()
         {
-            // Avoid duplicates — skip if cards already exist
+            // Avoid duplicates - skip if cards already exist
             if (_aiCards.Count > 0)
                 return;
 

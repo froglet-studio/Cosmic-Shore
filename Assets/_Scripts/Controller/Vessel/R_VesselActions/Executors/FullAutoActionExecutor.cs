@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using UnityEngine;
 using Cysharp.Threading.Tasks;
+using CosmicShore.Data;
 using CosmicShore.Gameplay;
 using Obvious.Soap;
 using CosmicShore.Utility;
@@ -139,7 +140,6 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
         var projectileTime  = so.ProjectileTime;
         var   firingPattern   = so.FiringPattern;
         var energy          = so.Energy;
-        var speedValue      = so.SpeedValue.Value;
 
         try
         {
@@ -158,6 +158,17 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                     var inheritVel = inherit && _status != null
                         ? _status.Course * _status.Speed
                         : Vector3.zero;
+
+                    // SPACE → gun range (range = speed × lifetime): read the LIVE element level
+                    // per volley through the vessel's ElementalAbilityMapSO. Never cache across
+                    // the hold and never bind ElementalFloats on the shared SO asset — per-vessel
+                    // state lives in the handler (multiplayer: last-initializer-wins otherwise).
+                    var abilities  = _status?.ElementalAbilityHandler;
+                    var speedValue = so.SpeedValue.Value * (abilities?.Multiplier(Element.Space) ?? 1f);
+
+                    // SPACE level-5 'Piercing Bullets': below the threshold, bullets are
+                    // destroyed on their first prism impact; at 5+ they pierce through.
+                    var piercing = abilities != null && abilities.IsUpgradeActive(Element.Space);
 
                     for (int i = 0, count = muzzles.Length; i < count; i++)
                     {
@@ -180,6 +191,9 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                         if (!muzzle)
                             continue;
 
+                        // detachAfterSpawn: bullets fly in world space instead of staying
+                        // parented to the moving muzzle (which made them swerve with the
+                        // shooter's maneuvers and die with the ship hierarchy mid-flight).
                         gun.FireGun(
                             muzzle,
                             speedValue,
@@ -189,7 +203,9 @@ public sealed class FullAutoActionExecutor : ShipActionExecutorBase
                             projectileTime,
                             0,
                             firingPattern,
-                            energy
+                            energy,
+                            detachAfterSpawn: true,
+                            stopOnFirstPrismImpact: !piercing
                         );
                     }
 

@@ -8,13 +8,13 @@ namespace CosmicShore.Gameplay
     /// <summary>
     /// One "connect the dots" painting station. Its label shows the painting's name and live progress;
     /// flying through it starts (or resumes) the painting's <see cref="PaintingRunner"/> at a fixed
-    /// world anchor — a monument-in-progress you can leave and come back to (across vessel swaps,
-    /// other paintings, other game modes, and sessions — the saved drawing state regrows). Re-flying
+    /// world anchor - a monument-in-progress you can leave and come back to (across vessel swaps,
+    /// other paintings, other game modes, and sessions - the saved drawing state regrows). Re-flying
     /// the toy while a run is active benches/resumes it ("put the brush down"); once a masterpiece
     /// is finished it offers two fly-through choice gates: SHARE (export the web reconstruction to
     /// the platform share sheet) or REPAINT (clear the canvas and start fresh).
     ///
-    /// Toy-faithful: no score, no timer, no fail state — progress is the only readout, and the
+    /// Toy-faithful: no score, no timer, no fail state - progress is the only readout, and the
     /// painted trail is conserved mass like any other.
     /// </summary>
     public class PaintingToy : Toy
@@ -47,7 +47,7 @@ namespace CosmicShore.Gameplay
         {
             if (_painting == null)
             {
-                CosmicShore.Utility.CSDebug.LogWarning("[PaintingToy] No painting assigned — nothing to paint.");
+                CosmicShore.Utility.CSDebug.LogWarning("[PaintingToy] No painting assigned - nothing to paint.");
                 return;
             }
 
@@ -66,7 +66,7 @@ namespace CosmicShore.Gameplay
             int resume = PaintingProgressStore.GetStrokesCompleted(_painting.PaintingId, total);
             if (resume >= total)
             {
-                // Finished masterpiece — offer the choice gates instead of acting immediately.
+                // Finished masterpiece - offer the choice gates instead of acting immediately.
                 if (!_shareGate && !_repaintGate)
                     SpawnCompletionChoices();
                 RefreshLabel();
@@ -91,16 +91,16 @@ namespace CosmicShore.Gameplay
 
         void HandleRunnerFinished()
         {
-            // The runner destroys itself right after this — drop it and re-label from the store.
+            // The runner destroys itself right after this - drop it and re-label from the store.
             _runner = null;
             RefreshLabel();
         }
 
         protected override void Update()
         {
-            base.Update(); // the base's exit-gated re-arm — shadowing it would deaden the station
+            base.Update(); // the base's exit-gated re-arm - shadowing it would deaden the station
 
-            // The choice gates are a freestyle offer — fold them away when the player returns to
+            // The choice gates are a freestyle offer - fold them away when the player returns to
             // the menu, so the lava lamp never drifts through a stale SHARE/REPAINT pair.
             if ((_shareGate || _repaintGate)
                 && Context?.IsFreestyleActive != null && !Context.IsFreestyleActive())
@@ -124,7 +124,7 @@ namespace CosmicShore.Gameplay
 
         GameObject SpawnChoiceGate(string text, Vector3 position, Color color, System.Action onChosen)
         {
-            // Choice gates keep a neutral sphere hub — crossing commits a choice, not a trail state,
+            // Choice gates keep a neutral sphere hub - crossing commits a choice, not a trail state,
             // so they must not wear the trail-changer cone.
             return ToyFactory.CreateGate($"Choice_{text}", transform.parent, position, transform.forward,
                 ChoiceGateRadius, color, text, hubIsCone: false, null, Definition, Context, _ => onChosen());
@@ -132,7 +132,7 @@ namespace CosmicShore.Gameplay
 
         void HandleShareChosen()
         {
-            // Gates stay up — the player can share again, or go on to repaint.
+            // Gates stay up - the player can share again, or go on to repaint.
             if (!PaintingShareExporter.TryExport(_painting, Context, out string path)) return;
             PaintingShareExporter.Share(path, _painting.DisplayName);
 
@@ -171,7 +171,7 @@ namespace CosmicShore.Gameplay
                 _label.text = _runner.IsCelebrating
                     ? $"{_painting.DisplayName}\nMASTERPIECE"
                     : _runner.IsBenched
-                        ? $"{_painting.DisplayName}\n{pct}% — PAUSED"
+                        ? $"{_painting.DisplayName}\n{pct}% - PAUSED"
                         : $"{_painting.DisplayName}\n{pct}%";
                 return;
             }
@@ -181,7 +181,7 @@ namespace CosmicShore.Gameplay
             if (done >= total)
                 _label.text = _shareGate || _repaintGate
                     ? $"{_painting.DisplayName}\nSHARE it or REPAINT?"
-                    : $"{_painting.DisplayName}\nCOMPLETE — fly through for options";
+                    : $"{_painting.DisplayName}\nCOMPLETE - fly through for options";
             else if (done > 0)
                 _label.text = $"{_painting.DisplayName}\nresume {Mathf.RoundToInt(100f * done / total)}%";
             else
