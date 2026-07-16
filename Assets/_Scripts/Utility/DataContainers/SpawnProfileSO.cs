@@ -61,6 +61,14 @@ namespace CosmicShore.Utility
         [Min(0)] public int HerbivoreSpawnPointCount = 0;
         [Tooltip("Radius of the herbivore spawn-point ring (world units from the cell centre).")]
         [Min(0f)] public float HerbivoreSpawnRadius = 400f;
+        [Tooltip("PREDATOR spawn-point ring, orthogonal to the herbivore ring: points spaced " +
+                 "evenly on a VERTICAL circle (the herbivore ring is equatorial/XZ), starting " +
+                 "at +Y — so 2 points sit exactly on the poles. Solitary predators also spawn " +
+                 "at most ONE per spawn interval while the ring is active, alternating points. " +
+                 "0 = legacy behavior (spawn on the densest sensed mass, no per-interval cap).")]
+        [Min(0)] public int PredatorSpawnPointCount = 0;
+        [Tooltip("Radius of the predator spawn-point ring (world units from the cell centre).")]
+        [Min(0f)] public float PredatorSpawnRadius = 600f;
         public List<FaunaConfigurationSO> SupportedFaunas = new();
         
         public FloraConfigurationSO GetRandomFlora() => SupportedFloras[0];
