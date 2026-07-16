@@ -240,6 +240,19 @@ grows a step per level so a higher-level creature drops a **bigger** elemental p
 death (mass rewarded, still conserved). Flora answer the contract at fixed level 1 until
 flora leveling lands.
 
+**Variant expression (`FaunaVariantTuning` on the config).** The full diff between the
+authored Mass/Space/Time tadpole prefab variants was hoisted into config so one base
+prefab can express all of it as data (sentinels keep the prefab's authored value):
+body scale (0.4/0.7/0.4) · spindle body material · starvation seconds (90/30/30) ·
+cohesion radius (50/20/20) · behavior tick (1.5/3/3) · graze radius (45/15/15) · goal
+weight (3/0.3/0.3) · speed band (10-15/10-15/15-20) · forager flag (on/off/off) · FMOD
+loop event + attenuation (Mass Tadpole 0-200 / silent / Time Tadpole). Applied by
+`Fauna.ApplyVariantTuning` (base: scale/material/starvation/audio) +
+`Boid.ApplyVariantTuning` (flocking numbers) at `AssignLineage`, before the level curve
+seeds. Population-level knobs (`numberOfBoids`, `spawnRadius` on the drone
+BoidManager population prefabs) stay on that separate system; the spawner path already
+owns them via `PopulationSize`/`MaxLivePopulation`.
+
 ---
 
 ## 4. Part-by-part analysis

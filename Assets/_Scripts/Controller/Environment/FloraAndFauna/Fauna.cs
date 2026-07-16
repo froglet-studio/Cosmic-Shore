@@ -131,8 +131,10 @@ namespace CosmicShore.Gameplay
 
             // Elemental contract: the species config may define the ELEMENT as data (one base
             // prefab, 20 data-defined variants) - re-provision the heart to that element if the
-            // prefab-authored crystal disagrees - and seeds the spawn LEVEL (spawns AT size,
-            // nothing pops mid-life).
+            // prefab-authored crystal disagrees - apply the variant's expression (behavior /
+            // body / audio deltas that used to force a prefab variant per element), and seed the
+            // spawn LEVEL (spawns AT size, nothing pops mid-life). Tuning runs BEFORE SetLevel so
+            // the level curve grows from the variant's base scale.
             if (config)
             {
                 if (config.Element != Element.None)
@@ -140,6 +142,8 @@ namespace CosmicShore.Gameplay
                     crystal = LifeFormCrystal.EnsureElementalCrystal(this, config.Element);
                     if (crystal) crystal.SetEmbeddedIn(this);
                 }
+                if (config.Variant is { Enabled: true })
+                    ApplyVariantTuning(config.Variant);
                 SetLevel(config.InitialLevel, animate: false);
             }
         }
@@ -267,6 +271,52 @@ namespace CosmicShore.Gameplay
                     crystal.GrowCrystal(LevelGrowSeconds, localTarget);
                 else
                     crystal.transform.localScale = Vector3.one * localTarget;
+            }
+        }
+
+        /// <summary>
+        /// Applies the config's per-variant expression - the deltas that used to force a prefab
+        /// variant per element (see FaunaVariantTuning). The base handles what every fauna has:
+        /// body scale, spindle material, starvation, forager-agnostic survival; Boid layers the
+        /// flocking numbers on top. Runs at AssignLineage, BEFORE the level curve seeds, and
+        /// before the creature is visible-established (spawn-time - continuity is not violated).
+        /// </summary>
+        public virtual void ApplyVariantTuning(FaunaVariantTuning tuning)
+        {
+            if (tuning == null) return;
+
+            if (tuning.BaseBodyScale > 0f)
+                transform.localScale = Vector3.one * tuning.BaseBodyScale;
+
+            if (tuning.StarvationSeconds >= 0f)
+                starvationSeconds = tuning.StarvationSeconds;
+
+            // Per-element body look: swap the spindle renderers' shared material (never
+            // renderer.material - that clones). Crystal models keep their own materials.
+            if (tuning.BodyMaterial)
+            {
+                foreach (var sp in GetComponentsInChildren<Spindle>(true))
+                {
+                    if (sp && sp.TryGetComponent<Renderer>(out var rend))
+                        rend.sharedMaterial = tuning.BodyMaterial;
+                }
+            }
+
+            // Per-element audio loop: retarget the FMOD emitter before its ObjectStart play
+            // (AssignLineage runs in the spawn call, ahead of the emitter's Start). An empty
+            // reference with OverrideAudio on silences the loop (the Space tadpole is silent).
+            var emitter = tuning.OverrideAudio
+                ? GetComponentInChildren<FMODUnity.StudioEventEmitter>(true)
+                : null;
+            if (emitter)
+            {
+                emitter.EventReference = tuning.AudioLoopEvent;
+                if (tuning.AudioMinDistance >= 0f || tuning.AudioMaxDistance >= 0f)
+                {
+                    emitter.OverrideAttenuation = true;
+                    if (tuning.AudioMinDistance >= 0f) emitter.OverrideMinDistance = tuning.AudioMinDistance;
+                    if (tuning.AudioMaxDistance >= 0f) emitter.OverrideMaxDistance = tuning.AudioMaxDistance;
+                }
             }
         }
 
