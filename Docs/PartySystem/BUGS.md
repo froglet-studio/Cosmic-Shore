@@ -377,6 +377,33 @@ event).
 Commit-16 roster-pull in `ClientPlayerVesselInitializer` /
 `ServerPlayerVesselInitializer`; `MultiplayerSetup.cs` (approval).
 
+**Code audit (2026-07-16, invite-chain Task 4) — candidate root cause
+found + fixed; MPPM retest required.** The client-pull roster request
+fires from the joiner's own `ClientPlayerVesselInitializer.OnNetworkSpawn`,
+so the host's `InitializeAllPlayersAndVessels_ClientRpc` reply
+legitimately arrives BEFORE the host has spawned the requester's vessel
+(`HandleRosterRequest` kicks the spawn chain and replies immediately;
+the spawn takes preSpawnDelay 200ms + spawn + postSpawnDelay 200ms).
+That reply therefore contains every pair EXCEPT the joiner's own — and
+`ProcessPendingPairs` treated "no pending pairs + `_signalClientReadyWhenDone`"
+as batch-complete: it raised `OnClientReady` with **no local vessel**,
+set `_localPairResolved = true`, and **cancelled `RosterPullRetryLoop`**
+— defeating the exact self-heal the pull loop exists for. If the host's
+follow-up `NotifyClients` push is then lost or stalls, the joiner is
+stranded vessel-less with the retry loop dead, and (when the premature
+raise landed before `WaitForClientReadyAsync` subscribed) PIC times out
+→ the B5 bounce. The window is per-join and widens under load, which
+fits "second joiner" (host is busier; two admits in flight). **Fix:**
+the completion branch now defers (keeps the flag armed + the retry loop
+alive) until `gameData.LocalPlayer?.Vessel != null` — the local pair
+must actually resolve before the client declares ready. Failure
+semantics preserved: if the vessel truly never spawns, the retry loop
+expires and `WaitForClientReadyAsync` times out → clean bounce.
+**Retest (MPPM):** TC2 (VP1 invites VP2+VP3, accepts in both orders) and
+the invite-chain S10 (VP2 invites VP3 from inside VP1's party); confirm
+no premature `OnClientReady` (FLOW-6 raise must follow the local
+`InitializePair` log) and no `[FLOW-5]`/roster-pull stall.
+
 ---
 
 ## B7 — Client pair-init runs before remote identity replicates ⚪
