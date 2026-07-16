@@ -334,19 +334,20 @@ namespace CosmicShore.Utility
         public void InvokeInitializeGame() => OnInitializeGame?.Raise();
         public void InvokeClientReady()
         {
-            // Load Time Insights ENDPOINT: client ready = scene loaded, local vessel initialized,
-            // splash about to clear into the connecting panel. The post-ready ceremony
-            // (cinematic, Ready click, countdown) is gameplay, not load — deliberately excluded.
+            // Load Time Insights milestone: client ready = splash clearing into the connecting
+            // panel. The recording itself completes later, when the arena finishes laying and
+            // the connecting screen ends (MiniGameHUD.HandleClientReady) - the panel hold IS
+            // load time; the cinematic/Ready/countdown after it are not.
             PerformanceBenchmark.LoadInsights.MarkVisualReady();
-            PerformanceBenchmark.LoadInsights.CompleteLoad("Loaded — client ready, splash cleared");
             OnClientReady?.Raise();
         }
         public void InvokeMiniGameRoundStarted() => OnMiniGameRoundStarted?.Raise();
         public void InvokeTurnStarted()
         {
-            // Fallback endpoint only: no-op when the recording already completed at client-ready
-            // (the normal path). Catches hypothetical flows where OnClientReady never fires.
-            PerformanceBenchmark.LoadInsights.CompleteLoad("Playable — turn started (fallback endpoint; client-ready never fired)");
+            // Fallback endpoint only: no-op when the recording already completed at
+            // arena-complete (MiniGameHUD.HandleClientReady, the normal path). Catches flows
+            // without a MiniGameHUD where that endpoint never fires.
+            PerformanceBenchmark.LoadInsights.CompleteLoad("Playable - turn started (fallback endpoint; arena-complete never fired)");
             OnMiniGameTurnStarted?.Raise();
         }
 

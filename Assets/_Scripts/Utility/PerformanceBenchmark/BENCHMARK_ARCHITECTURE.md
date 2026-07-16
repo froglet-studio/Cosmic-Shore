@@ -37,7 +37,7 @@ The one rule that explains the whole design:
 │        └─ on stop ─► BenchmarkStatistics ─► BenchmarkAnalysis (score+grade+hints) ─► BenchmarkReport  │
 │                                                                                                       │
 │   LoadInsights (static)  ◄── the LOAD-WINDOW measurer: spans from pipeline call sites                 │
-│        ├─ armed via PlayerPrefs; BeginLoad at game launch → CompleteLoad at client ready (splash off) │
+│        ├─ armed via PlayerPrefs; BeginLoad at game launch → CompleteLoad at arena complete            │
 │        ├─ exact wall-clock attribution (innermost active span wins; sums to 100%) + hot-path          │
 │        │  accumulators (per-item stage totals inside big spans) + hints                               │
 │        └─ LoadInsightsRuntime (host, editor+dev builds): frame stalls, error capture, netcode scene   │

@@ -107,8 +107,8 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                     "No load report yet.\n\n" +
                     "1. Arm Record Insight Mode above.\n" +
                     "2. Enter Play Mode and launch a game from the arcade (host or client — both record).\n" +
-                    "3. The report is ready the moment the client is ready (splash clears into the " +
-                    "connecting panel), and lands here automatically.\n\n" +
+                    "3. The report is ready when the arena is complete — the connecting screen finishes " +
+                    "and the pre-game cinematic starts — and lands here automatically.\n\n" +
                     "Loads that get force-quit still leave an in-flight snapshot that is recovered on the next run.",
                     MessageType.Info);
             }
@@ -127,8 +127,9 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
         {
             EditorUIStyles.SectionHeader("Record Insight Mode", EditorUIStyles.Mint);
             EditorGUILayout.LabelField(
-                "Records one game launch — menu tap → scene load → netcode sync → spawning → client ready " +
-                "(splash cleared) — and attributes every millisecond to what caused it.", EditorUIStyles.Wrap);
+                "Records one game launch — menu tap → scene load → netcode sync → spawning → arena complete " +
+                "(connecting screen done, cinematic starting) — and attributes every millisecond to what caused it.",
+                EditorUIStyles.Wrap);
             EditorGUILayout.Space(2);
 
             bool armed = LoadInsights.Armed;
@@ -167,7 +168,7 @@ namespace CosmicShore.Utility.PerformanceBenchmark.Editor
                 EditorStyles.miniLabel);
             EditorGUILayout.EndVertical();
             EditorGUILayout.LabelField(
-                "The report completes automatically at client-ready (splash cleared), or on abort/timeout.",
+                "The report completes automatically at arena-complete (connecting screen done), or on abort/timeout.",
                 EditorStyles.miniLabel);
         }
 

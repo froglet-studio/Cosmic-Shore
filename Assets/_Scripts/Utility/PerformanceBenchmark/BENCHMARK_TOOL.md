@@ -102,16 +102,18 @@ a **cross-source warning** flags that only same-source deltas are meaningful.
 
 Answers "why did this game take 90 seconds to load?" with **exact percentages**. One recording
 covers a single game launch: arcade Start tap → scene load → netcode sync → vessel/AI spawning →
-cell & environment population → **client ready** (splash clears into the connecting panel). The
-post-ready ceremony — cinematic, Ready click, countdown — is gameplay, not load, and is
-deliberately excluded from the recording.
+cell & environment population → **arena complete** (the connecting screen — which holds until every
+streamed prism lay finishes — is done and the pre-game cinematic starts). The post-arena ceremony —
+cinematic, Ready click, countdown — is gameplay, not load, and is deliberately excluded from the
+recording.
 
 1. Press **● Arm Record Insight Mode** (persists until disarmed — every game launch records while
    armed, so you can capture intensity 1 vs intensity 2 back-to-back).
 2. Enter Play Mode and launch a game. Hosts start recording at the launch tap; **pure clients
    self-record too** (triggered by the server's Netcode scene pull), each machine producing its own
    report of its own experience.
-3. The report is ready **the moment the client is ready** and lands in the tab automatically:
+3. The report is ready **the moment the arena is complete** (connecting screen done) and lands in
+   the tab automatically:
    - a **donut chart + color-keyed table** — every millisecond attributed to exactly one category
      (Scene Load, Netcode & Sync, Scripted Delays, Vessels, AI Backfill, Cell & Environment, Flora,
      Fauna, Crystals, Pooling, UI & HUD, Game Flow…) — **percentages always sum to 100**,

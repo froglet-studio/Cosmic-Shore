@@ -183,6 +183,13 @@ namespace CosmicShore.Gameplay
             }
             s_layQueuedTotal += points.Length;
             s_activeBudgetedLays++;
+
+            // Wall-clock span for the whole streamed lay: with the connecting panel holding on
+            // IsLayingInProgress, this span is what attributes the hold window to the
+            // environment in a Load Time Insights recording (the per-stage detail lives in the
+            // LayOne accumulators). No-op when not recording.
+            int laySpan = LoadInsights.Begin(LoadInsightCategory.Environment,
+                $"Streamed prism lay ({ownerPrefix}, {points.Length} prisms)");
             try
             {
                 for (int i = 0; i < points.Length; i++)
@@ -204,6 +211,7 @@ namespace CosmicShore.Gameplay
             finally
             {
                 s_activeBudgetedLays--;
+                LoadInsights.End(laySpan);
             }
         }
     }

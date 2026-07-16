@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Threading;
 using CosmicShore.Utility;
+using CosmicShore.Utility.PerformanceBenchmark;
 using Cysharp.Threading.Tasks;
 using Obvious.Soap;
 using TMPro;
@@ -341,6 +342,7 @@ namespace CosmicShore.UI
                 if (connectingPanel != null)
                 {
                     Hide();
+                    LoadInsights.Mark("Connecting panel shown (holding for arena build)");
                     await connectingPanel.ShowAsync(ct, () => !PrismTrailBuilder.IsLayingInProgress);
                 }
                 else
@@ -351,6 +353,11 @@ namespace CosmicShore.UI
                     while (PrismTrailBuilder.IsLayingInProgress)
                         await UniTask.Yield(PlayerLoopTiming.Update, ct);
                 }
+
+                // Load Time Insights ENDPOINT: the arena is complete and the connecting screen is
+                // done — the pre-game cinematic shows next. Everything after this line is gameplay
+                // ceremony (cinematic, Ready, countdown), not load.
+                LoadInsights.CompleteLoad("Loaded — arena complete, connecting screen done");
                 Show();
 
                 // Play pre-game cinematic if available
