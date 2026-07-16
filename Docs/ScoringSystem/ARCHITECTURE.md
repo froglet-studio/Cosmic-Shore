@@ -47,6 +47,13 @@ each change raises an observer event:
 - Identity: `Name` (NetworkVariable) and `Domain` — **`Domain` is NOT networked**; it is
   a local mirror of the owning `Player.NetDomain`, kept in sync on every peer by `Player`
   (retired `n_Domain`, BUGS.md B10).
+  `Name` is seeded from `Player.Name` at every scene's pair-init
+  (`InitializeForMultiplayerMode`, server-side) AND kept live mid-scene:
+  `Player.OnNetNameValueChanged` mirrors a replicated rename into
+  `RoundStats.Name` on every peer (server write replicates `n_Name`), so a
+  menu profile rename reaches scoreboard identity without waiting for the
+  next scene load. Full rename pipeline:
+  `Docs/PresenceSystem/ARCHITECTURE.md` § "Identity propagation".
 - Primary: `float Score` + `OnScoreChanged`.
 - Mode metrics: `CrystalsCollected`, `OmniCrystalsCollected`, `JoustCollisions`,
   … each with an `OnXxxChanged` event (e.g. `OnOmniCrystalsCollectedChanged`).

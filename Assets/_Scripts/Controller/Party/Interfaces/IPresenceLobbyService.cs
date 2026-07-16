@@ -8,6 +8,7 @@
 // IPartySessionService's responsibility.
 // ─────────────────────────────────────────────────────────────────────────────
 
+using System;
 using System.Collections.Generic;
 using Cysharp.Threading.Tasks;
 using Unity.Services.Multiplayer;
@@ -27,6 +28,18 @@ namespace CosmicShore.Gameplay
         /// The active presence lobby session, or <c>null</c> if not yet joined.
         /// </summary>
         ISession ActiveLobby { get; }
+
+        /// <summary>
+        /// Optional source of LIVE values for the stateful player properties
+        /// (invite_payloads, joined_party, matchName, ...). When set, every
+        /// lobby (re)join - initial join, reconnect, and the periodic
+        /// <see cref="ConvergeToCanonicalAsync"/> migration - publishes these
+        /// values instead of resetting the keys to empty. Without it, a rejoin
+        /// wipes in-flight invites and a guest's joined_party advertisement
+        /// (Docs/PresenceSystem/BUGS.md B4). Set once by
+        /// <c>HostConnectionService</c>, the single writer of those values.
+        /// </summary>
+        Func<IReadOnlyDictionary<string, string>> LivePropertySource { get; set; }
 
         /// <summary>
         /// Joins an existing presence lobby or creates one if none exists.
