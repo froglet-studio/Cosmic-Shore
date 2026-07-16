@@ -202,6 +202,12 @@ namespace CosmicShore.Gameplay
         private int    _consecutiveRefreshErrors;
         private int    _publishedPartyCount = -1;
         private string _publishedMatchName  = "<UNSET>";
+        // Identity (displayName/avatarId) rides the same change-gated per-tick
+        // publish so a rename is GUARANTEED to reach the lobby even when the
+        // event-driven RepublishLocalIdentityAsync no-ops (lobby ref null during
+        // a reconnect/converge window) or its save fails - the tick reconciles.
+        private string _publishedDisplayName = "<UNSET>";
+        private int    _publishedAvatarId    = int.MinValue;
 
         // ─────────────────────────────────────────────────────────────────────
         // Invite state
@@ -1761,18 +1767,29 @@ namespace CosmicShore.Gameplay
         {
             var lobby = _lobbyService.ActiveLobby;
             if (lobby == null) return;
+
+            string name   = connectionData.LocalDisplayName ?? "Pilot";
+            int    avatar = connectionData.LocalAvatarId;
+
             await _propertyWriter.WriteAsync(
                 lobby,
                 () =>
                 {
                     lobby.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
-                        new PlayerProperty(connectionData.LocalDisplayName ?? "Pilot",
-                            VisibilityPropertyOptions.Public));
+                        new PlayerProperty(name, VisibilityPropertyOptions.Public));
                     lobby.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
-                        new PlayerProperty(connectionData.LocalAvatarId.ToString(),
+                        new PlayerProperty(avatar.ToString(),
                             VisibilityPropertyOptions.Public));
                 },
                 "RepublishLocalIdentity");
+
+            // Deliberately do NOT mark _publishedDisplayName/_publishedAvatarId
+            // here: WriteAsync swallows terminal save failures (logs + returns),
+            // so success can't be observed from this side. Only the per-tick
+            // reconciler (PublishPartyStateIfChangedAsync) updates the trackers,
+            // inside its own success-gated try - worst case the tick re-saves
+            // the same values once after a successful push, which is cheap and
+            // keeps the "rename always reaches the lobby" guarantee honest.
         }
 
         private async UniTaskVoid PublishPresenceImmediateAsync()
@@ -1799,10 +1816,15 @@ namespace CosmicShore.Gameplay
             var lobby = _lobbyService.ActiveLobby;
             if (lobby == null) return;
 
-            int    currentCount = connectionData.PartyMembers != null ? connectionData.PartyMembers.Count : 0;
-            string currentMatch = ResolveCurrentMatchName();
+            int    currentCount  = connectionData.PartyMembers != null ? connectionData.PartyMembers.Count : 0;
+            string currentMatch  = ResolveCurrentMatchName();
+            string currentName   = connectionData.LocalDisplayName ?? "Pilot";
+            int    currentAvatar = connectionData.LocalAvatarId;
 
-            if (currentCount == _publishedPartyCount && currentMatch == _publishedMatchName) return;
+            if (currentCount  == _publishedPartyCount &&
+                currentMatch  == _publishedMatchName &&
+                currentName   == _publishedDisplayName &&
+                currentAvatar == _publishedAvatarId) return;
 
             try
             {
@@ -1812,10 +1834,18 @@ namespace CosmicShore.Gameplay
                     new PlayerProperty(connectionData.MaxPartySlots.ToString(), VisibilityPropertyOptions.Public));
                 lobby.CurrentPlayer.SetProperty(MATCH_NAME_KEY,
                     new PlayerProperty(currentMatch ?? string.Empty, VisibilityPropertyOptions.Public));
+                // Identity reconciliation: rides the same single save so a rename
+                // missed by the event push is guaranteed out within one tick.
+                lobby.CurrentPlayer.SetProperty(DISPLAY_NAME_KEY,
+                    new PlayerProperty(currentName, VisibilityPropertyOptions.Public));
+                lobby.CurrentPlayer.SetProperty(AVATAR_ID_KEY,
+                    new PlayerProperty(currentAvatar.ToString(), VisibilityPropertyOptions.Public));
 
                 await _propertyWriter.SaveWithRetryAsync(lobby);
-                _publishedPartyCount = currentCount;
-                _publishedMatchName  = currentMatch;
+                _publishedPartyCount  = currentCount;
+                _publishedMatchName   = currentMatch;
+                _publishedDisplayName = currentName;
+                _publishedAvatarId    = currentAvatar;
             }
             catch (Exception e)
             {
@@ -1949,7 +1979,47 @@ namespace CosmicShore.Gameplay
         {
             if (profile == null) return;
             SyncLocalIdentity();
+            // Presence lobby (online lists on every peer) - immediate push; the
+            // per-tick reconciler in PublishPartyStateIfChangedAsync is the
+            // guaranteed fallback if this no-ops or its save fails.
             RepublishLocalIdentityAsync().Forget();
+            // Party session player record (party slot names on every peer) -
+            // session properties are otherwise only written at create/join.
+            _partySessionService.UpdateLocalPlayerPropertiesAsync(
+                connectionData.LocalDisplayName, connectionData.LocalAvatarId).Forget();
+            // Own row in the local PartyMembers list (slot UI repaints via the
+            // list's item events; remote peers pick the rename up from the
+            // session player record via SyncFromSession's identity refresh).
+            RefreshLocalPartyMemberEntry();
+        }
+
+        /// <summary>
+        /// Replaces the local player's own entry in <see cref="HostConnectionDataSO.PartyMembers"/>
+        /// after a profile change. The entry was seeded as a snapshot
+        /// (<see cref="PartyMemberService.SeedLocalPlayer"/>), so a rename would
+        /// otherwise leave the local party slot showing the stale name.
+        /// RemoveAt + Insert (not indexer-set) so the list's item events fire and
+        /// the slot UI repaints; the SOAP member-joined/left events are NOT raised
+        /// - this is an identity refresh, not a membership change.
+        /// </summary>
+        private void RefreshLocalPartyMemberEntry()
+        {
+            var members = connectionData.PartyMembers;
+            if (members == null) return;
+
+            for (int i = 0; i < members.Count; i++)
+            {
+                if (members[i].PlayerId != connectionData.LocalPlayerId) continue;
+
+                var updated = connectionData.LocalPlayerData;
+                if (members[i].DisplayName != updated.DisplayName ||
+                    members[i].AvatarId    != updated.AvatarId)
+                {
+                    members.RemoveAt(i);
+                    members.Insert(i, updated);
+                }
+                return;
+            }
         }
 
         private void SubscribeToPartySessionEvents()

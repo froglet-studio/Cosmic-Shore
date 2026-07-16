@@ -631,9 +631,15 @@ captured in the session notes.
 
 - Re-set per-instance display names after tagging (expected UGS
   behavior, documented).
-- Name-sync hardening (change-gated identity publish on the refresh
-  tick + party-session property refresh) — planned, awaiting owner
-  confirmation.
+- ~~Name-sync hardening~~ ✅ SHIPPED (owner-confirmed, same day): (1)
+  displayName/avatarId folded into the change-gated per-tick presence
+  publish (guaranteed reconciliation; the event push stays for speed);
+  (2) party-session player record re-published on rename
+  (`PartySessionService.UpdateLocalPlayerPropertiesAsync`) + roster
+  identity refresh in `PartyMemberService.SyncFromSession` + local
+  party-slot entry refresh; (3) live `RoundStats.Name` mirror in
+  `Player.OnNetNameValueChanged` for in-game names/scoreboards.
+  Verify via `../PresenceSystem/TESTS.md` **P7**.
 - B4 / B5 historical repros need re-validation with tagged VPs (see
   the caveats appended to both bug entries).
 
