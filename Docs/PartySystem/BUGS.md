@@ -404,6 +404,13 @@ the invite-chain S10 (VP2 invites VP3 from inside VP1's party); confirm
 no premature `OnClientReady` (FLOW-6 raise must follow the local
 `InitializePair` log) and no `[FLOW-5]`/roster-pull stall.
 
+**⚠ Repro validity caveat (2026-07-16).** The original TC2/TC4 sessions
+predate the MPPM tag prerequisite (`TESTS.md` § "MPPM prerequisites").
+With untagged clones, VP2 and VP3 shared ONE UGS PlayerId — which by
+itself corrupts concurrent joins (two "players" with the same id in one
+session). Retest with uniquely-tagged VPs; the audit fix above stands
+on its own merits either way.
+
 ---
 
 ## B7 — Client pair-init runs before remote identity replicates ⚪

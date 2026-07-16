@@ -259,6 +259,19 @@ split lobby; confirm the pending invite survives a converge migration
 (sender's `invite_payloads` non-empty after "Converged to canonical"
 log) and no B1/B6 stale-index regression from the extra rejoin writes.
 
+**⚠ Repro validity caveat (2026-07-16).** A 4-instance session with
+**untagged** MPPM clones reproduced B4-family symptoms (one-sided rows,
+empty online lists on some clones) whose actual root cause was the
+shared `mppm-clone` auth profile — all untagged clones sign in as ONE
+UGS PlayerId, and each clone's lobby join invalidates the previous
+clone's membership (dead handle → refresh errors → empty lists). Rows
+appeared correct as soon as unique tags were assigned. The original
+B4 TC1 session predates the tag prerequisite
+(`../PartySystem/TESTS.md` § "MPPM prerequisites"), so this entry's
+convergence-freeze hypothesis must be re-confirmed with **tagged** VPs
+before any further B4-specific work — the identity collision may
+account for part or all of the historical symptom.
+
 ---
 
 ## B6 — TC3: `NullReferenceException` (`WrappedLobbyService.GetLobbyAsync`) + empty online/request lists 🟡 (refresh-path noise silenced in MPPM Session 1; TC3 empty-lists symptom untested since fix)

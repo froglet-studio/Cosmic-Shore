@@ -7,6 +7,11 @@ tests see `../PartySystem/TESTS.md`. For NetDiag-specific tests see
 > **Convention.** See `../README.md` § "MPPM test convention" for VP
 > naming and NetDiag class references.
 
+> **⚠ Prerequisite:** every MPPM virtual player must carry a **unique
+> tag** (auth-profile isolation) — untagged clones share ONE UGS
+> identity and break every presence scenario. Full rule + symptom
+> table: `../PartySystem/TESTS.md` § "MPPM prerequisites".
+
 ## Smoke gate — run on every presence-side commit
 
 ### P1. Lobby join on sign-in

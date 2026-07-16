@@ -636,6 +636,11 @@ above (B4 = invite never arrives; B5 = join succeeds, client-ready times
 out; payload wrongness = C lands in the wrong/no session — **not expected**
 per the verdict). Log findings in the matching BUGS.md entry; the chain repro
 becomes that bug's acceptance vehicle.
+🟡 2026-07-16: 4-instance presence sanity ran ahead of the chain test —
+initially broken by **untagged MPPM clones** (shared `mppm-clone` auth
+profile → one UGS identity; see `TESTS.md` § "MPPM prerequisites" +
+`MPPM_SESSION_LOG.md` Session 3), **working after unique tags**. Online
+lists verified 4-wide; the S10 chain run itself is still to do.
 
 **Phase 2 — Make the chain deliberate (small, inside the locked design).**
 ✅ 2a/2b/2c shipped 2026-07-16 (2d deferred per decisions below); in-editor
