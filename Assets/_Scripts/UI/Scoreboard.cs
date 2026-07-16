@@ -99,6 +99,11 @@ namespace CosmicShore.UI
         private Sequence _entranceSeq;
         private readonly List<PlayerScoreCard> _spawnedCards = new();
 
+        // Mode rule's team-total domain placement for the game just shown (index 0 = 1st);
+        // null outside tournament mode. Computed once per ShowScoreboard, consumed by the
+        // shuffle crystal badge + wallet award so they match the standings fold exactly.
+        private List<Domains> _shufflePlacement;
+
         #endregion
 
         #region Unity Lifecycle
@@ -143,6 +148,15 @@ namespace CosmicShore.UI
         void ShowScoreboard()
         {
             if (!gameData) { CSDebug.LogError("[Scoreboard] GameData is null!"); return; }
+
+            // Shuffle placement crystals key off the mode rule's TEAM-TOTAL domain order (the same
+            // aggregation that decides WinnerDomain and the tournament standings fold) - computed
+            // once per show, while RoundStatsList still holds the synced final stats. Without the
+            // rule (non-tournament scenes / legacy) CrystalsForDomain falls back to rank-derived
+            // placement from Results.
+            _shufflePlacement = gameData.IsTournamentMode && gameData.ScoringRule != null
+                ? gameData.ScoringRule.ResolvePlacementOrder(gameData)
+                : null;
 
             ConfigureLobbyButtons();
             ShowMultiplayerView();
@@ -481,7 +495,7 @@ namespace CosmicShore.UI
             if (gameData.IsTournamentMode && tournamentData != null)
             {
                 var localDomain = gameData.LocalRoundStats != null ? gameData.LocalRoundStats.Domain : Domains.Blue;
-                amount = tournamentData.CrystalsForDomain(gameData.Results, localDomain);
+                amount = tournamentData.CrystalsForDomain(gameData.Results, localDomain, _shufflePlacement);
                 source = "shuffle_placement";
             }
             else
@@ -492,10 +506,20 @@ namespace CosmicShore.UI
                 source = "game_reward";
             }
 
-            if (amount <= 0) return;   // e.g. a 3rd-place domain earns nothing this game
+            if (amount <= 0) return;   // e.g. a last-place domain earns nothing this game
 
-            int newBalance = service.AddCrystals(amount, source);
-            CSDebug.Log($"[Scoreboard] Awarded {amount} crystals to '{localName}' ({source}). New balance: {newBalance}");
+            // Wallet write is an external-service boundary: it runs mid-way through building the
+            // end-game screen (before the panel activates), so a service hiccup must degrade to a
+            // lost reward log line - never to a missing scoreboard.
+            try
+            {
+                int newBalance = service.AddCrystals(amount, source);
+                CSDebug.Log($"[Scoreboard] Awarded {amount} crystals to '{localName}' ({source}). New balance: {newBalance}");
+            }
+            catch (System.Exception e)
+            {
+                CSDebug.LogError($"[Scoreboard] Crystal award failed for '{localName}' ({source}, {amount}): {e}");
+            }
         }
 
         /// <summary>
@@ -505,7 +529,7 @@ namespace CosmicShore.UI
         int CardCrystalReward(Domains domain, string name, string winnerName)
         {
             if (gameData.IsTournamentMode && tournamentData != null)
-                return tournamentData.CrystalsForDomain(gameData.Results, domain);
+                return tournamentData.CrystalsForDomain(gameData.Results, domain, _shufflePlacement);
             return (winnerCrystalReward > 0 && name == winnerName) ? winnerCrystalReward : 0;
         }
 

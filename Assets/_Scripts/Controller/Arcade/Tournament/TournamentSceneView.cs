@@ -221,6 +221,8 @@ namespace CosmicShore.Gameplay
 
             // Running per-domain totals, accumulated chronologically (so each card shows the standings
             // after that round). Cards are instantiated in the same order → Round 1 first (top).
+            // PointsForPlacement (not PointsForPlace) so this recomputation matches the RecordResults
+            // fold exactly - the LAST-placed domain of a round earns 0 whatever the domain count.
             var running = new Dictionary<Domains, int>();
             for (int i = 0; i < history.Count; i++)
             {
@@ -229,7 +231,7 @@ namespace CosmicShore.Gameplay
                 {
                     var d = rec.DomainOrder[place];
                     running.TryGetValue(d, out int cur);
-                    running[d] = cur + tournamentData.PointsForPlace(place + 1);
+                    running[d] = cur + tournamentData.PointsForPlacement(place + 1, rec.DomainOrder.Count);
                 }
 
                 var asOf = new Dictionary<Domains, int>(running);

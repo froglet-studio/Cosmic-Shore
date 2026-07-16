@@ -66,7 +66,8 @@ namespace CosmicShore.Utility
     /// <summary>
     /// One completed tournament round, captured at game-end. Drives the Maelstrom hub's per-round
     /// scroll cards and the final summary. <see cref="DomainOrder"/> is the per-domain placement
-    /// (index 0 = 1st), so the points each domain earned this round are <c>PointsForPlace(i+1)</c>.
+    /// (index 0 = 1st), so the points each domain earned this round are
+    /// <c>PointsForPlacement(i + 1, DomainOrder.Count)</c> (last place always 0).
     /// </summary>
     [System.Serializable]
     public class TournamentRoundRecord
@@ -125,7 +126,9 @@ namespace CosmicShore.Utility
 
         [Header("Scoring")]
         [Tooltip("Placement crystals by DOMAIN finishing place: element 0 = 1st-place domain, 1 = 2nd, " +
-                 "2 = 3rd. Places beyond the table score 0. Shuffle awards {2,1,0}.")]
+                 "2 = 3rd. Places beyond the table score 0, and the LAST-placed domain of a round " +
+                 "always earns the last entry (0) whatever the domain count - so a 2-domain game pays " +
+                 "{2,0}, never {2,1} (losing must not pay toward the race target). Shuffle awards {2,1,0}.")]
         public List<int> PointsByPlace = new() { 2, 1, 0 };
 
         [Tooltip("FALLBACK race target only - used when the End Game Conditions tool asset is missing. " +
@@ -287,6 +290,22 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
+        /// Placement points for a 1-based place among <paramref name="placedDomainCount"/> ranked
+        /// domains. Identical to <see cref="PointsForPlace"/> except that the LAST-placed domain
+        /// always earns the table's last entry (0 with {2,1,0}), whatever the domain count - losing
+        /// must never pay. With 3 domains that's the unchanged {2,1,0}; with 2 domains the loser
+        /// earns 0 (not the 2nd-place 1, which let a team race to the win target on losses alone
+        /// and broke "win a game = 2 points, lose = nothing").
+        /// </summary>
+        public int PointsForPlacement(int oneBasedPlace, int placedDomainCount)
+        {
+            if (PointsByPlace == null || PointsByPlace.Count == 0) return 0;
+            if (placedDomainCount > 1 && oneBasedPlace == placedDomainCount)
+                return PointsByPlace[PointsByPlace.Count - 1];
+            return PointsForPlace(oneBasedPlace);
+        }
+
+        /// <summary>
         /// Clears all runtime state for a fresh tournament. Lineup + points table (the
         /// authored fields) are untouched.
         /// </summary>
@@ -305,32 +324,41 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// Folds one finished game's ranked, per-player results into the cumulative PER-DOMAIN
-        /// standings. Each active domain's finishing place this game is its best (lowest) player
-        /// <see cref="ScoreResult.Rank"/>; the domains are then ordered by that best rank (ties broken
-        /// by enum order for cross-peer determinism) and awarded <see cref="PointsByPlace"/> by place.
-        /// Called on EVERY peer from the controller's <c>OnMiniGameEnd</c> handler;
-        /// <paramref name="results"/> is the already-synced <see cref="GameDataSO.Results"/>, so all
-        /// peers converge on identical standings with no extra networking.
+        /// standings. Domain placement comes from <paramref name="domainPlacementOrder"/> when the
+        /// caller supplies it - <c>TournamentController</c> passes the mode's authoritative
+        /// TEAM-total order (<c>ScoringRuleSO.ResolvePlacementOrder</c>, summed metric per domain) so
+        /// a team can never outplace a team that out-collected it via one strong individual. Without
+        /// it (edit-mode tests / legacy callers) placement falls back to
+        /// <see cref="GetDomainPlacementOrder"/> (best player rank per domain). Places are awarded
+        /// <see cref="PointsByPlace"/> via <see cref="PointsForPlacement"/> (last place always earns
+        /// the table's last entry - 0). Called on EVERY peer from the controller's
+        /// <c>OnMiniGameEnd</c> handler; <paramref name="results"/> is the already-synced
+        /// <see cref="GameDataSO.Results"/>, so all peers converge on identical standings with no
+        /// extra networking.
         /// </summary>
         /// <param name="playerSnapshots">Optional per-player display snapshot for this round's history
         /// (carries avatar/AI metadata the bare <paramref name="results"/> lacks). When null, the
         /// snapshot is rebuilt from <paramref name="results"/> alone (no avatar/AI info).</param>
         /// <param name="modeDisplayName">Player-facing name of the mode just played (for the round card).</param>
         /// <param name="intensity">Intensity this round was played at (for the round card).</param>
+        /// <param name="domainPlacementOrder">Authoritative per-domain finishing order (index 0 = 1st),
+        /// typically the mode rule's team-total placement. Sanitized against <paramref name="results"/>:
+        /// domains that fielded no player are dropped, domains missing from the order are appended.</param>
         public void RecordResults(IReadOnlyList<ScoreResult> results,
                                   List<TournamentPlayerSnapshot> playerSnapshots = null,
                                   string modeDisplayName = null,
-                                  int intensity = 0)
+                                  int intensity = 0,
+                                  IReadOnlyList<Domains> domainPlacementOrder = null)
         {
             if (results == null || results.Count == 0) return;
 
-            var ordered = GetDomainPlacementOrder(results);
+            var ordered = BuildPlacement(results, domainPlacementOrder);
 
-            // Award placement crystals by domain place (1st = PointsByPlace[0], …) + append history.
+            // Award placement crystals by domain place (1st = PointsByPlace[0], …, last = 0) + history.
             for (int place = 0; place < ordered.Count; place++)
             {
                 var standing = FindOrCreate(ordered[place]);
-                standing.TotalPoints += PointsForPlace(place + 1);
+                standing.TotalPoints += PointsForPlacement(place + 1, ordered.Count);
                 standing.Placements.Add(place + 1);
             }
 
@@ -379,12 +407,39 @@ namespace CosmicShore.Utility
         }
 
         /// <summary>
-        /// Orders the active domains by their finishing place in one game's ranked, per-player
-        /// <paramref name="results"/>: a domain's place = the best (lowest) player
+        /// Resolves the per-domain finishing order for one game: the caller-supplied authoritative
+        /// order (team-total placement from the mode rule) sanitized against <paramref name="results"/>,
+        /// falling back to <see cref="GetDomainPlacementOrder"/> when none is supplied. Sanitizing
+        /// keeps the fold robust to a stale/foreign order: only domains that actually fielded a
+        /// player stay, and any result-domain the order missed is appended (in fallback order) so
+        /// no team is ever dropped from the standings.
+        /// </summary>
+        List<Domains> BuildPlacement(IReadOnlyList<ScoreResult> results, IReadOnlyList<Domains> supplied)
+        {
+            var fallback = GetDomainPlacementOrder(results);
+            if (supplied == null || supplied.Count == 0) return fallback;
+
+            var ordered = new List<Domains>(fallback.Count);
+            for (int i = 0; i < supplied.Count; i++)
+                if (fallback.Contains(supplied[i]) && !ordered.Contains(supplied[i]))
+                    ordered.Add(supplied[i]);
+
+            for (int i = 0; i < fallback.Count; i++)
+                if (!ordered.Contains(fallback[i]))
+                    ordered.Add(fallback[i]);
+
+            return ordered;
+        }
+
+        /// <summary>
+        /// FALLBACK ordering of the active domains from one game's ranked, per-player
+        /// <paramref name="results"/> alone: a domain's place = the best (lowest) player
         /// <see cref="ScoreResult.Rank"/>; domains are sorted by that ascending, ties broken by enum
-        /// order (Jade→Ruby→Gold) so every peer agrees. Element 0 is 1st place. Shared by
-        /// <see cref="RecordResults"/> (the cumulative fold) and <see cref="CrystalsForDomain"/>
-        /// (the per-game reward), so both read identical placements.
+        /// order (Jade→Ruby→Gold) so every peer agrees. Element 0 is 1st place. Used when no
+        /// authoritative team-total order is supplied (edit-mode tests / legacy callers) - the live
+        /// game path passes <c>ScoringRuleSO.ResolvePlacementOrder</c> instead, because best player
+        /// rank can misplace teams in modes whose results rank individuals (a losing team's player
+        /// tying the top score outplaced the team that actually won).
         /// </summary>
         public List<Domains> GetDomainPlacementOrder(IReadOnlyList<ScoreResult> results)
         {
@@ -411,16 +466,20 @@ namespace CosmicShore.Utility
 
         /// <summary>
         /// The placement crystals a domain earns from one game's ranked <paramref name="results"/> -
-        /// i.e. its per-game <c>{2,1,0}</c> via <see cref="PointsByPlace"/>. Returns 0 if the domain
-        /// did not play. Computed straight from <paramref name="results"/> (no dependency on
-        /// <see cref="RecordResults"/> having run first), so the Scoreboard can read the local
-        /// player's per-game reward regardless of event ordering.
+        /// i.e. its per-game <c>{2,1,0}</c> via <see cref="PointsByPlace"/> (last place always 0,
+        /// see <see cref="PointsForPlacement"/>). Returns 0 if the domain did not play. Computed
+        /// straight from <paramref name="results"/> (no dependency on <see cref="RecordResults"/>
+        /// having run first), so the Scoreboard can read the local player's per-game reward
+        /// regardless of event ordering. Pass <paramref name="domainPlacementOrder"/> (the mode
+        /// rule's team-total placement) whenever available so the reward matches the standings fold.
         /// </summary>
-        public int CrystalsForDomain(IReadOnlyList<ScoreResult> results, Domains domain)
+        public int CrystalsForDomain(IReadOnlyList<ScoreResult> results, Domains domain,
+                                     IReadOnlyList<Domains> domainPlacementOrder = null)
         {
-            var ordered = GetDomainPlacementOrder(results);
+            if (results == null || results.Count == 0) return 0;
+            var ordered = BuildPlacement(results, domainPlacementOrder);
             int idx = ordered.IndexOf(domain);
-            return idx >= 0 ? PointsForPlace(idx + 1) : 0;
+            return idx >= 0 ? PointsForPlacement(idx + 1, ordered.Count) : 0;
         }
 
         /// <summary>
