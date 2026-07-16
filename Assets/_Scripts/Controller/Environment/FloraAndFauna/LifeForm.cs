@@ -160,6 +160,24 @@ namespace CosmicShore.Gameplay
 
         // --- Death / Lifecycle ---
 
+        /// <summary>True once this lifeform's death path has started (wither in progress).
+        /// Polled by FloraNetworkSync's server mirror to replicate flora deaths.</summary>
+        public bool IsDying => dying;
+
+        /// <summary>
+        /// Called ONLY by <see cref="FloraNetworkSync"/> on clients when the server
+        /// replicates this flora's death: runs the same protected death path locally, so
+        /// the client's copy drops its own crystal and withers spindle-by-spindle exactly
+        /// like the server's original (continuity + mass conservation on every peer).
+        /// Idempotent via the dying guard.
+        /// </summary>
+        public void ApplyReplicatedDeath()
+        {
+            if (dying) return;
+            dying = true;
+            Die("network");
+        }
+
         public void CheckIfDead(string killerName = "")
         {
             if (dying) return;

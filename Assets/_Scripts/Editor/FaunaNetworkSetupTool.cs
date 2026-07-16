@@ -87,9 +87,26 @@ namespace CosmicShore.Editor
                     changed = true;
                 }
 
+                // Flora replication (Docs/ECOSYSTEM_NETWORK_SYNC.md, Option B): planting
+                // decisions replicate as NetworkList slots on the cell.
+                if (!root.TryGetComponent<FloraNetworkSync>(out var floraSync))
+                {
+                    floraSync = root.AddComponent<FloraNetworkSync>();
+                    changed = true;
+                }
+
+                var floraSo = new SerializedObject(floraSync);
+                var floraCellProp = floraSo.FindProperty("cell");
+                if (floraCellProp != null && floraCellProp.objectReferenceValue == null)
+                {
+                    floraCellProp.objectReferenceValue = root.GetComponent<Cell>();
+                    floraSo.ApplyModifiedPropertiesWithoutUndo();
+                    changed = true;
+                }
+
                 Debug.Log(changed
-                    ? $"[FaunaNetworkSetup] Cell.prefab wired: NetworkObject + CellNetworkSync added. " +
-                      "In-scene Cell instances (Menu_Main Blob Cell) replicate phase + dominant domain " +
+                    ? $"[FaunaNetworkSetup] Cell.prefab wired: NetworkObject + CellNetworkSync + FloraNetworkSync added. " +
+                      "In-scene Cell instances (Menu_Main Blob Cell) replicate phase/domain + flora plants " +
                       "once their scenes are resaved/reimported."
                     : "[FaunaNetworkSetup] Cell.prefab already wired — nothing to do.");
             }
@@ -255,7 +272,9 @@ namespace CosmicShore.Editor
             }
             bool hasNetObj = cellPrefab.GetComponent<NetworkObject>();
             bool hasSync = cellPrefab.GetComponent<CellNetworkSync>();
-            report.AppendLine($"  {(hasNetObj && hasSync ? "✓" : "✗")} Cell.prefab — NetworkObject: {hasNetObj}, CellNetworkSync: {hasSync}");
+            bool hasFloraSync = cellPrefab.GetComponent<FloraNetworkSync>();
+            report.AppendLine($"  {(hasNetObj && hasSync && hasFloraSync ? "✓" : "✗")} Cell.prefab — NetworkObject: {hasNetObj}, " +
+                              $"CellNetworkSync: {hasSync}, FloraNetworkSync: {hasFloraSync}");
         }
 
         static void ValidateFaunaPrefab(string path, StringBuilder report)

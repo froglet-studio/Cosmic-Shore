@@ -26,6 +26,46 @@ namespace CosmicShore.Gameplay
 
         protected bool isGrowing = true;
 
+        /// <summary>
+        /// True when this flora's root pose was authored externally (a client
+        /// reconstructing a server-replicated plant event) - Plant() implementations
+        /// must then SKIP their own random positioning so the structure roots at the
+        /// replicated position on every peer. (Docs/ECOSYSTEM_NETWORK_SYNC.md, flora.)
+        /// </summary>
+        public bool UseAuthoredPlacement { get; set; }
+
+        /// <summary>
+        /// Number of Grow() cycles this flora has run (natural cadence + fast-forward).
+        /// Mirrored by FloraNetworkSync so late-joining clients can catch a plant up to
+        /// the server's SIZE. Shape stays locally emergent - growth consults the local
+        /// spatial index, so structures are same-species/same-place/same-size across
+        /// peers, not byte-identical.
+        /// </summary>
+        public int GrowthTicks { get; private set; }
+
+        /// <summary>
+        /// Runs <paramref name="ticks"/> extra Grow() cycles paced one per frame - a
+        /// visible bloom-in (continuity law: nothing pops in), which also spreads the
+        /// instantiation cost (the initial-batch frame-spike lesson). Grow()'s own
+        /// gates (live-prism budget, Frenzy) keep applying throughout.
+        /// </summary>
+        public void FastForwardGrowth(int ticks)
+        {
+            if (ticks <= 0 || !isActiveAndEnabled) return;
+            StartCoroutine(FastForwardGrowthCoroutine(ticks));
+        }
+
+        IEnumerator FastForwardGrowthCoroutine(int ticks)
+        {
+            for (int i = 0; i < ticks; i++)
+            {
+                if (IsDying) yield break;
+                Grow();
+                GrowthTicks++;
+                yield return null;
+            }
+        }
+
         public abstract void Grow();
         public abstract void Plant();
 
@@ -68,6 +108,7 @@ namespace CosmicShore.Gameplay
                 if (isGrowing)
                 {
                     Grow();
+                    GrowthTicks++;
                     yield return new WaitForSeconds(growPeriod);
                 }
                 else

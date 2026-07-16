@@ -29,6 +29,10 @@ namespace CosmicShore.Gameplay
 
         IEnumerator SpawnInitialFlora(Cell host, CellConfigDataSO config, CellRuntimeDataSO runtime, GameDataSO gameData)
         {
+            // Authority gate (Docs/ECOSYSTEM_NETWORK_SYNC.md, flora): planting decisions
+            // are server-only — clients reconstruct plants from FloraNetworkSync slots.
+            if (!FaunaNetworkSync.IsSimAuthority) yield break;
+
             var spawnProfile = config.SpawnProfile;
             if (!spawnProfile) yield break;
             if (spawnProfile.SupportedFloras is not { Count: > 0 })
@@ -90,6 +94,7 @@ namespace CosmicShore.Gameplay
                     yield return null;
 
                 if (!host) yield break;
+                if (!FaunaNetworkSync.IsSimAuthority || SpawnsSuppressed) continue;
                 if (!host.FloraPlantingEnabled) continue;
                 if (!AllowSpawn(floraCfg.SpawnProbability)) continue;
 

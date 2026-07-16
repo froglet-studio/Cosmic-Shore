@@ -311,9 +311,22 @@ Worm / QuadFish: deferred (not authored into live profiles).
 
 ## 6. Deferred (unchanged decisions, recorded)
 
-- **Flora placement/growth replication** — the follow-up that makes fauna goals
-  visibly "about" the same gyroids everywhere (plant-event replication, crystal
-  pattern). Until then puppet grazing on flora is approximate.
+- ~~**Flora placement/growth replication**~~ — **IMPLEMENTED (Option B, prompter-
+  confirmed):** `FloraNetworkSync` on the Cell replicates each plant DECISION
+  (species index into the profile's `SupportedFloras`, root pose, domain) as a
+  `NetworkList<FloraSlotData>` slot — late joiners reconstruct the whole standing
+  population from the initial list sync (the host's world is never destroyed on a
+  join). A low-cadence server mirror (2 s) tops up per-flora `GrowthTicks` (clients
+  fast-forward as a paced one-`Grow()`-per-frame bloom-in, capped) and flips slots
+  to `Withered` on death — clients then run the same `LifeForm` death path locally
+  (crystal drop + spindle wither; continuity + mass conservation per peer). Slots
+  are REUSED after wither so hours-long sessions don't grow the late-join payload.
+  **Fidelity contract (deliberate):** same species, same place, same domain,
+  approximately same size — NOT byte-identical shape. Growth consults the LOCAL
+  spatial index (`TryReserve` against local occupancy, incl. client-local trails),
+  so shape is emergent per peer by construction; a shared seed cannot fix that and
+  is not attempted. Client planting loops are authority-gated off; flora spawned
+  outside the profile (Wanderway conveyor) stay peer-local (documented).
 - **Consume-event replication** (`PrismSpatialIndex` nearest-match) — only
   worthwhile after flora placement sync; trails don't need it.
 - **Authoritative crystal collection + player→fauna damage authority** — same

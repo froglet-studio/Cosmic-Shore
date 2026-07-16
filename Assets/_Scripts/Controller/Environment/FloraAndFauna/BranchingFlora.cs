@@ -195,6 +195,9 @@ namespace CosmicShore.Gameplay
 
         public override void Plant()
         {
+            // Client copies of a server-replicated plant keep the replicated root pose -
+            // the random dispersal below is the SERVER's placement decision.
+            if (UseAuthoredPlacement) return;
             if (plantAroundCrystal)
             {
                 // Disperse across the cell (fraction of membrane radius - see Flora base)

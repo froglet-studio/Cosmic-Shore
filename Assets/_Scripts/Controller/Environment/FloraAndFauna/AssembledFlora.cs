@@ -341,6 +341,9 @@ namespace CosmicShore.Gameplay
         public override void Plant()
         {
             assembler = CreateNewAssembler();
+            // Client copies of a server-replicated plant keep the replicated root pose -
+            // the random dispersal below is the SERVER's placement decision.
+            if (UseAuthoredPlacement) return;
             // Disperse across the cell (fraction of membrane radius - see Flora base)
             // instead of the old hard-coded 200m huddle around the crystal. Dispersed,
             // domain-coherent flora clusters are what give fauna schools of different

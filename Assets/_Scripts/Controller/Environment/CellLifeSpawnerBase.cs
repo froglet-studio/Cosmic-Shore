@@ -165,6 +165,10 @@ namespace CosmicShore.Gameplay
             flora.Initialize(host);
 
             RegisterSpawned(host, flora.gameObject);
+            // Replicate the plant DECISION (species/pose/domain) to clients when we are
+            // the server and the cell carries a FloraNetworkSync (no-op otherwise;
+            // Initialize already ran Plant(), so the final root pose is captured).
+            FloraNetworkSync.ServerOnPlanted(host, floraPrefab, flora);
             return flora;
         }
 
