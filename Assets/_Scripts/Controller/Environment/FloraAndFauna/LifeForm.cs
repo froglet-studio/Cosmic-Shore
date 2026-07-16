@@ -53,6 +53,30 @@ namespace CosmicShore.Gameplay
         /// (the contract exists so every lifeform answers element x level - see ILifeFormEntity).</summary>
         public int Level => 1;
 
+        /// <summary>
+        /// Elemental contract: provisions this lifeform's crystal to EXACTLY the given element
+        /// (element as data - one base prefab, per-element variants from config). Call BEFORE
+        /// Initialize so the crystal lookup there finds the provisioned one. None is a no-op.
+        /// </summary>
+        public void ApplyElement(Element element)
+        {
+            if (element == Element.None) return;
+            crystal = LifeFormCrystal.EnsureElementalCrystal(this, element);
+        }
+
+        /// <summary>
+        /// Applies the config's per-variant expression - the deltas that used to force a flora
+        /// prefab variant per element (see FloraVariantTuning). Base handles what every
+        /// lifeform has (shield cadence); Flora / AssembledFlora layer leaf shape, growth
+        /// tempo, planting radius, and prism budget on top. Call BEFORE Initialize - leafSize
+        /// is consumed there.
+        /// </summary>
+        public virtual void ApplyVariantTuning(FloraVariantTuning tuning)
+        {
+            if (tuning == null) return;
+            if (tuning.ShieldPeriod >= 0f) shieldPeriod = tuning.ShieldPeriod;
+        }
+
         public static event Action<string, int> OnLifeFormDeath;
 
         // --- Composition: extracted trackers (SRP) ---

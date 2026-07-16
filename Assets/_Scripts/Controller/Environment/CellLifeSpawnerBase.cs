@@ -125,12 +125,24 @@ namespace CosmicShore.Gameplay
             return true;
         }
 
-        public static Flora SpawnFlora(Cell host, Flora floraPrefab, Domains? excludedDomain)
+        public static Flora SpawnFlora(Cell host, Flora floraPrefab, Domains? excludedDomain,
+            FloraConfigurationSO config = null)
         {
             if (!host || !floraPrefab) return null;
 
             var flora = UnityEngine.Object.Instantiate(floraPrefab, host.transform.position, Quaternion.identity);
             flora.domain = PickRandomDomain(excludedDomain);
+
+            // Elemental contract: the config may define the ELEMENT and the variant expression
+            // as data (one base prefab, per-element variants from config). Applied BEFORE
+            // Initialize - the leaf prism size and crystal lookup are consumed there.
+            if (config)
+            {
+                flora.ApplyElement(config.Element);
+                if (config.Variant is { Enabled: true })
+                    flora.ApplyVariantTuning(config.Variant);
+            }
+
             flora.Initialize(host);
 
             RegisterSpawned(host, flora.gameObject);

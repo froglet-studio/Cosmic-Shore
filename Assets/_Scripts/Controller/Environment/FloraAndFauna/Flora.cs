@@ -1,5 +1,6 @@
 using System.Collections;
 using CosmicShore.Gameplay;
+using CosmicShore.Utility;
 using UnityEngine;
 
 namespace CosmicShore.Gameplay
@@ -40,6 +41,22 @@ namespace CosmicShore.Gameplay
             if (plantRadiusCellFraction > 0f && cell && cell.MembraneRadius > 0f)
                 return cell.MembraneRadius * plantRadiusCellFraction;
             return legacyRadius;
+        }
+
+        /// <summary>
+        /// Flora layer of the variant expression: the per-element leaf PRISM shape, growth
+        /// tempo, and planting radius (the fields that differ between the four GyroidFlora
+        /// prefabs). Runs before Initialize, so every leaf grows to the variant's size.
+        /// </summary>
+        public override void ApplyVariantTuning(FloraVariantTuning tuning)
+        {
+            base.ApplyVariantTuning(tuning);
+            if (tuning == null) return;
+
+            if (tuning.LeafSize != Vector3.zero) leafSize = tuning.LeafSize;
+            if (tuning.GrowPeriod >= 0f) growPeriod = tuning.GrowPeriod;
+            if (tuning.PlantRadiusCellFraction >= 0f)
+                plantRadiusCellFraction = Mathf.Clamp01(tuning.PlantRadiusCellFraction);
         }
 
         public override void AddHealthBlock(HealthPrism healthPrism)

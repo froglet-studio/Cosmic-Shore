@@ -63,7 +63,7 @@ namespace CosmicShore.Gameplay
             for (int i = 0; i < initialCount; i++)
             {
                 if (host && host.FloraPlantingEnabled && AllowSpawn(floraCfg.SpawnProbability))
-                    SpawnFlora(host, floraCfg.FloraPrefab, excluded);
+                    SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
 
                 // Spread instantiation across frames. WaitForSeconds when an interval
                 // is configured; otherwise yield a single frame so a large InitialSpawnCount
@@ -93,7 +93,7 @@ namespace CosmicShore.Gameplay
                 if (!host.FloraPlantingEnabled) continue;
                 if (!AllowSpawn(floraCfg.SpawnProbability)) continue;
 
-                SpawnFlora(host, floraCfg.FloraPrefab, excluded);
+                SpawnFlora(host, floraCfg.FloraPrefab, excluded, floraCfg);
             }
         }
 

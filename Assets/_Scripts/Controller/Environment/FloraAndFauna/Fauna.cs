@@ -291,6 +291,15 @@ namespace CosmicShore.Gameplay
             if (tuning.StarvationSeconds >= 0f)
                 starvationSeconds = tuning.StarvationSeconds;
 
+            // Per-element body PRISM shape: retarget every body HealthPrism's TargetScale (the
+            // bloom target - PrismScaleManager animates toward it, so a post-Initialize retarget
+            // still grows continuously, never pops).
+            if (tuning.BodyPrismScale != Vector3.zero)
+            {
+                foreach (var hp in GetComponentsInChildren<HealthPrism>(true))
+                    if (hp) hp.TargetScale = tuning.BodyPrismScale;
+            }
+
             // Per-element body look: swap the spindle renderers' shared material (never
             // renderer.material - that clones). Crystal models keep their own materials.
             if (tuning.BodyMaterial)

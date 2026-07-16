@@ -85,6 +85,10 @@ namespace CosmicShore.Utility
         [Tooltip("Uniform root scale for this variant (the level-1 base the level curve grows " +
                  "from). 0 = keep the prefab's authored scale.")]
         [Min(0f)] public float BaseBodyScale = 0f;
+        [Tooltip("Target scale of each body HealthPrism - the per-element PRISM shape (the " +
+                 "Mass/Time tadpoles author 0.8 x 0.8 x 7 long tail prisms; Space keeps the " +
+                 "spindle default). Zero = keep the prefab's authored prism scale.")]
+        public Vector3 BodyPrismScale = Vector3.zero;
         [Tooltip("Material applied to the body's Spindle renderers (the per-element body look). " +
                  "None = keep the prefab's authored material.")]
         public Material BodyMaterial;

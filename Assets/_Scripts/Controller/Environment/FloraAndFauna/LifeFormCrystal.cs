@@ -50,7 +50,14 @@ namespace CosmicShore.Gameplay
 
             Vector3 position = crystal ? crystal.transform.localPosition : Vector3.zero;
             float scale = crystal ? crystal.transform.localScale.x : 0f;
-            if (crystal) Object.Destroy(crystal.gameObject);
+            if (crystal)
+            {
+                // Deactivate BEFORE the deferred Destroy so same-frame GetComponentInChildren
+                // lookups (e.g. LifeForm.Initialize's crystal fetch) find the replacement, not
+                // the dying authored crystal.
+                crystal.gameObject.SetActive(false);
+                Object.Destroy(crystal.gameObject);
+            }
 
             var provisioned = Object.Instantiate(prefab, owner.transform);
             provisioned.transform.localPosition = position;

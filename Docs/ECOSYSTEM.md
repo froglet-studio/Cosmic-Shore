@@ -243,15 +243,31 @@ flora leveling lands.
 **Variant expression (`FaunaVariantTuning` on the config).** The full diff between the
 authored Mass/Space/Time tadpole prefab variants was hoisted into config so one base
 prefab can express all of it as data (sentinels keep the prefab's authored value):
-body scale (0.4/0.7/0.4) · spindle body material · starvation seconds (90/30/30) ·
-cohesion radius (50/20/20) · behavior tick (1.5/3/3) · graze radius (45/15/15) · goal
-weight (3/0.3/0.3) · speed band (10-15/10-15/15-20) · forager flag (on/off/off) · FMOD
-loop event + attenuation (Mass Tadpole 0-200 / silent / Time Tadpole). Applied by
-`Fauna.ApplyVariantTuning` (base: scale/material/starvation/audio) +
-`Boid.ApplyVariantTuning` (flocking numbers) at `AssignLineage`, before the level curve
-seeds. Population-level knobs (`numberOfBoids`, `spawnRadius` on the drone
-BoidManager population prefabs) stay on that separate system; the spawner path already
-owns them via `PopulationSize`/`MaxLivePopulation`.
+body scale (0.4/0.7/0.4) · body PRISM target scale (Mass/Time author 0.8×0.8×7 tail
+prisms, Space keeps the spindle default) · spindle body material · starvation seconds
+(90/30/30) · cohesion radius (50/20/20) · behavior tick (1.5/3/3) · graze radius
+(45/15/15) · goal weight (3/0.3/0.3) · speed band (10-15/10-15/15-20) · forager flag
+(on/off/off) · FMOD loop event + attenuation (Mass Tadpole 0-200 / silent / Time
+Tadpole). Applied by `Fauna.ApplyVariantTuning` (base: scale/prism-scale/material/
+starvation/audio) + `Boid.ApplyVariantTuning` (flocking numbers) at `AssignLineage`,
+before the level curve seeds. Population-level knobs (`numberOfBoids`, `spawnRadius` on
+the drone BoidManager population prefabs) stay on that separate system; the spawner path
+already owns them via `PopulationSize`/`MaxLivePopulation`.
+
+**Flora variant expression (`FloraConfigurationSO.Element` + `FloraVariantTuning`).**
+Same move for flora, captured from the real Charge/Mass/Space/Time GyroidFlora diff —
+the per-element identity is largely the PRISM: leaf prism size (9×3.4×1.5 / 7×4.5×3.5 /
+20×1×1 needles / 9×3.4×1.5) · grow period (0.5 / 0.3 / 0.8 / **0.15** — Time grows
+fastest) · shield period (**1** — Charge ships shielded leaves / 0 / 0 / 0) · live-prism
+budget `maxTotalSpawnedObjects` (1000 / **1500** / **800** / 1000) · plant radius
+fraction · crystal element. `CellLifeSpawnerBase.SpawnFlora` now takes the config and
+applies element + tuning BEFORE `Initialize` (leaf size and the crystal lookup are
+consumed there); `LifeForm.ApplyVariantTuning` (shield cadence) → `Flora` (leaf/tempo/
+radius) → `AssembledFlora` (prism budget) layer the fields where they live.
+
+**Level → crystal size.** `CrystalScalePerLevel` makes the level curve monotone in the
+heart: level 1 = authored size, level 5 = ×(CrystalScalePerLevel)⁴ (≈2.07× at the 1.2
+default) — the level-5 creature always carries, and drops, the largest crystal.
 
 ---
 
