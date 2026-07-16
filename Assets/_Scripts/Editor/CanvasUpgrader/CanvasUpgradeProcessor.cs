@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using TMPro;
 using UnityEditor;
@@ -78,8 +79,13 @@ namespace CosmicShore.Editor
             public string HostPath;           // scene path of the Animator/Animation component
             public string CanvasName;
 
-            // Instance ID, not asset path: sub-asset clips (e.g. inside an FBX) share one path.
-            public string CurveKey => $"{Clip.GetInstanceID()}|{Binding.path}|{Binding.propertyName}";
+            // GUID + clip name, not instance ID: the key must be stable across editor sessions so
+            // the scaled-curve log can prevent double-scaling; clip name disambiguates sub-asset
+            // clips (e.g. inside an FBX) that share one path/GUID.
+            public string CurveKey =>
+                string.IsNullOrEmpty(ClipAssetPath)
+                    ? $"{Clip.GetInstanceID()}|{Binding.path}|{Binding.propertyName}"
+                    : $"{AssetDatabase.AssetPathToGUID(ClipAssetPath)}:{Clip.name}|{Binding.path}|{Binding.propertyName}";
         }
 
         // ------------------------------------------------------------------
@@ -219,17 +225,30 @@ namespace CosmicShore.Editor
                 MarkDirty(scaler);
             }
 
-            // --- RectTransforms (root excluded: it is driven by the render mode) ---
-            foreach (var rt in canvas.GetComponentsInChildren<RectTransform>(true))
+            UpgradeRectHierarchy(rootRt, includeRoot: false, apply, report, c);
+            AddAdaptiveScalerStep(entry, apply, addAdaptiveScaler, report, c);
+        }
+
+        /// <summary>
+        /// Scales every canvas-space value in a RectTransform hierarchy by x2.4. Shared by the
+        /// canvas upgrade (root excluded — the root canvas rect is driven by the render mode) and
+        /// the canvas-less UI prefab upgrade (root included — a spawned fragment's root is a plain
+        /// RectTransform that gets parented under an upgraded canvas at runtime).
+        /// </summary>
+        static void UpgradeRectHierarchy(RectTransform pathRoot, bool includeRoot, bool apply, StringBuilder report, UpgradeCounters c)
+        {
+            const float k = UpgradeScale;
+
+            foreach (var rt in pathRoot.GetComponentsInChildren<RectTransform>(true))
             {
-                if (rt == rootRt) continue;
+                if (!includeRoot && rt == pathRoot) continue;
                 Vector2 ap = rt.anchoredPosition;
                 Vector2 sd = rt.sizeDelta;
                 bool apChanges = ap.sqrMagnitude > 0f;
                 bool sdChanges = sd.sqrMagnitude > 0f;
                 if (!apChanges && !sdChanges) continue;
 
-                report.AppendLine($"  {PathOf(rt, rootRt)} :: RectTransform {DescribeAxes(rt)}");
+                report.AppendLine($"  {LabelPath(rt, pathRoot)} :: RectTransform {DescribeAxes(rt)}");
                 if (apChanges) report.AppendLine($"      anchoredPosition: {Fmt(ap)} -> {Fmt(ap * k)}");
                 if (sdChanges) report.AppendLine($"      sizeDelta: {Fmt(sd)} -> {Fmt(sd * k)}");
                 if (apply)
@@ -243,9 +262,9 @@ namespace CosmicShore.Editor
             }
 
             // --- TextMeshProUGUI ---
-            foreach (var tmp in canvas.GetComponentsInChildren<TextMeshProUGUI>(true))
+            foreach (var tmp in pathRoot.GetComponentsInChildren<TextMeshProUGUI>(true))
             {
-                report.AppendLine($"  {PathOf(tmp.transform, rootRt)} :: TextMeshProUGUI");
+                report.AppendLine($"  {LabelPath(tmp.transform, pathRoot)} :: TextMeshProUGUI");
                 report.AppendLine($"      fontSize: {Fmt(tmp.fontSize)} -> {Fmt(tmp.fontSize * k)}, fontSizeMin: {Fmt(tmp.fontSizeMin)} -> {Fmt(tmp.fontSizeMin * k)}, fontSizeMax: {Fmt(tmp.fontSizeMax)} -> {Fmt(tmp.fontSizeMax * k)}");
                 bool marginChanges = tmp.margin.sqrMagnitude > 0f;
                 if (marginChanges)
@@ -263,12 +282,12 @@ namespace CosmicShore.Editor
             }
 
             // --- Legacy UnityEngine.UI.Text ---
-            foreach (var text in canvas.GetComponentsInChildren<Text>(true))
+            foreach (var text in pathRoot.GetComponentsInChildren<Text>(true))
             {
                 int newSize = ScaleInt(text.fontSize, c);
                 int newMin = ScaleInt(text.resizeTextMinSize, c);
                 int newMax = ScaleInt(text.resizeTextMaxSize, c);
-                report.AppendLine($"  {PathOf(text.transform, rootRt)} :: Text (legacy)");
+                report.AppendLine($"  {LabelPath(text.transform, pathRoot)} :: Text (legacy)");
                 report.AppendLine($"      fontSize: {text.fontSize} -> {newSize}, resizeTextMinSize: {text.resizeTextMinSize} -> {newMin}, resizeTextMaxSize: {text.resizeTextMaxSize} -> {newMax}");
                 if (apply)
                 {
@@ -282,11 +301,11 @@ namespace CosmicShore.Editor
             }
 
             // --- Layout groups (padding on the shared base; spacing/cellSize per subtype) ---
-            foreach (var group in canvas.GetComponentsInChildren<LayoutGroup>(true))
+            foreach (var group in pathRoot.GetComponentsInChildren<LayoutGroup>(true))
             {
                 var p = group.padding;
                 var newPadding = new RectOffset(ScaleInt(p.left, c), ScaleInt(p.right, c), ScaleInt(p.top, c), ScaleInt(p.bottom, c));
-                report.AppendLine($"  {PathOf(group.transform, rootRt)} :: {group.GetType().Name}");
+                report.AppendLine($"  {LabelPath(group.transform, pathRoot)} :: {group.GetType().Name}");
                 report.AppendLine($"      padding LRTB: ({p.left}, {p.right}, {p.top}, {p.bottom}) -> ({newPadding.left}, {newPadding.right}, {newPadding.top}, {newPadding.bottom})");
 
                 if (apply) Record(group);
@@ -321,7 +340,7 @@ namespace CosmicShore.Editor
 
             // --- LayoutElement ---
             var pendingWrites = new List<System.Action>();
-            foreach (var le in canvas.GetComponentsInChildren<LayoutElement>(true))
+            foreach (var le in pathRoot.GetComponentsInChildren<LayoutElement>(true))
             {
                 var sub = new StringBuilder();
                 pendingWrites.Clear();
@@ -333,7 +352,7 @@ namespace CosmicShore.Editor
                 ScaleFlexible(le.flexibleHeight, v => pendingWrites.Add(() => le.flexibleHeight = v), "flexibleHeight", sub, c);
                 if (sub.Length == 0) continue;
 
-                report.AppendLine($"  {PathOf(le.transform, rootRt)} :: LayoutElement");
+                report.AppendLine($"  {LabelPath(le.transform, pathRoot)} :: LayoutElement");
                 report.Append(sub);
                 if (apply && pendingWrites.Count > 0)
                 {
@@ -345,9 +364,9 @@ namespace CosmicShore.Editor
             }
 
             // --- Shadow / Outline (Outline derives from Shadow) ---
-            foreach (var shadow in canvas.GetComponentsInChildren<Shadow>(true))
+            foreach (var shadow in pathRoot.GetComponentsInChildren<Shadow>(true))
             {
-                report.AppendLine($"  {PathOf(shadow.transform, rootRt)} :: {shadow.GetType().Name} effectDistance: {Fmt(shadow.effectDistance)} -> {Fmt(shadow.effectDistance * k)}");
+                report.AppendLine($"  {LabelPath(shadow.transform, pathRoot)} :: {shadow.GetType().Name} effectDistance: {Fmt(shadow.effectDistance)} -> {Fmt(shadow.effectDistance * k)}");
                 if (apply)
                 {
                     Record(shadow);
@@ -358,13 +377,13 @@ namespace CosmicShore.Editor
             }
 
             // --- RectMask2D (padding/softness are canvas-unit values) ---
-            foreach (var mask in canvas.GetComponentsInChildren<RectMask2D>(true))
+            foreach (var mask in pathRoot.GetComponentsInChildren<RectMask2D>(true))
             {
                 bool paddingChanges = mask.padding.sqrMagnitude > 0f;
                 bool softnessChanges = mask.softness != Vector2Int.zero;
                 if (!paddingChanges && !softnessChanges) continue;
                 var newSoftness = new Vector2Int(ScaleInt(mask.softness.x, c), ScaleInt(mask.softness.y, c));
-                report.AppendLine($"  {PathOf(mask.transform, rootRt)} :: RectMask2D");
+                report.AppendLine($"  {LabelPath(mask.transform, pathRoot)} :: RectMask2D");
                 if (paddingChanges) report.AppendLine($"      padding: {Fmt(mask.padding)} -> {Fmt(mask.padding * k)}");
                 if (softnessChanges) report.AppendLine($"      softness: {mask.softness} -> {newSoftness}");
                 if (apply)
@@ -376,8 +395,11 @@ namespace CosmicShore.Editor
                 }
                 c.RectMasks++;
             }
+        }
 
-            // --- AdaptiveCanvasScaler (runtime aspect matching for PC monitors) ---
+        static void AddAdaptiveScalerStep(CanvasEntry entry, bool apply, bool addAdaptiveScaler, StringBuilder report, UpgradeCounters c)
+        {
+            var canvas = entry.Canvas;
             if (addAdaptiveScaler)
             {
                 if (canvas.TryGetComponent(out CosmicShore.UI.AdaptiveCanvasScaler _))
@@ -653,11 +675,58 @@ namespace CosmicShore.Editor
                     yield return clip;
         }
 
+        // Cross-session logs in ProjectSettings (no .meta churn), committed so they protect the
+        // whole team. Curve log: shared clips like the Settings-panel animations are surfaced by
+        // EVERY scene's animation scan, and scaling twice would compound to x5.76. Prefab log:
+        // canvas-less fragments carry no CanvasScaler marking their authored space, so the log
+        // is the only double-run guard.
+        const string ScaledCurveLogPath = "ProjectSettings/CanvasUpgraderScaledCurves.txt";
+        internal const string UpgradedPrefabLogPath = "ProjectSettings/CanvasUpgraderUpgradedPrefabs.txt";
+
+        /// <summary>Loads the persistent log of animation curves already scaled x2.4 (one CurveKey per line).</summary>
+        public static HashSet<string> LoadScaledCurveLog() => LoadLog(ScaledCurveLogPath);
+
+        /// <summary>True if a canvas-less UI prefab was already upgraded per the persistent log.</summary>
+        public static bool IsPrefabLoggedUpgraded(string prefabGuid)
+        {
+            foreach (var line in LoadLog(UpgradedPrefabLogPath))
+                if (line.StartsWith(prefabGuid))
+                    return true;
+            return false;
+        }
+
+        /// <summary>Records a canvas-less UI prefab as upgraded so the window refuses a second, compounding pass.</summary>
+        public static void MarkPrefabUpgraded(string prefabGuid, string assetPath)
+        {
+            var keys = LoadLog(UpgradedPrefabLogPath);
+            if (keys.Add($"{prefabGuid} {assetPath}"))
+                SaveLog(UpgradedPrefabLogPath, keys);
+        }
+
+        static HashSet<string> LoadLog(string path)
+        {
+            var keys = new HashSet<string>();
+            if (!File.Exists(path)) return keys;
+            foreach (var line in File.ReadAllLines(path))
+                if (!string.IsNullOrWhiteSpace(line))
+                    keys.Add(line.Trim());
+            return keys;
+        }
+
+        static void SaveLog(string path, HashSet<string> keys)
+        {
+            var sorted = new List<string>(keys);
+            sorted.Sort();
+            File.WriteAllLines(path, sorted);
+        }
+
         /// <summary>
         /// Multiplies keyframe values (and tangents, which are value/time slopes) of the given
         /// curves by x2.4. Clips are ASSETS — scaling affects every scene and prefab that uses
-        /// them, and <paramref name="alreadyScaled"/> guards against double-scaling within this
-        /// window session. The caller owns the Undo group; changes persist on the next asset save.
+        /// them. <paramref name="alreadyScaled"/> (seed it from <see cref="LoadScaledCurveLog"/>)
+        /// guards against double-scaling; every curve scaled here is appended to the persistent
+        /// log. The caller owns the Undo group; changes persist on the next asset save. If a
+        /// scaling is Undone, remove the matching lines from the log file too.
         /// </summary>
         public static string ScaleAnimationKeys(List<AnimatedBindingHit> hits, HashSet<string> alreadyScaled, out int scaledCurves)
         {
@@ -671,7 +740,7 @@ namespace CosmicShore.Editor
                 if (hit == null || !hit.Clip) continue;
                 if (!alreadyScaled.Add(hit.CurveKey))
                 {
-                    report.AppendLine($"  {hit.ClipAssetPath} :: {hit.Binding.path}/{hit.Binding.propertyName} — skipped (already scaled this session)");
+                    report.AppendLine($"  {hit.ClipAssetPath} :: {hit.Binding.path}/{hit.Binding.propertyName} — skipped (already scaled per {ScaledCurveLogPath})");
                     continue;
                 }
 
@@ -696,7 +765,35 @@ namespace CosmicShore.Editor
                 scaledCurves++;
             }
 
+            if (scaledCurves > 0)
+            {
+                SaveLog(ScaledCurveLogPath, alreadyScaled);
+                report.AppendLine($"Logged to {ScaledCurveLogPath} (commit it) so future scans in other scenes skip these curves.");
+            }
             report.AppendLine("Save the project (Ctrl+S / File > Save Project) to persist the clip assets.");
+            return report.ToString();
+        }
+
+        // ------------------------------------------------------------------
+        //  Canvas-less UI prefab upgrade (runtime-spawned fragments)
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Upgrades a canvas-less UI prefab — a RectTransform hierarchy (PlayerScoreCard, toast,
+        /// feed entry, vessel HUD variant, ...) that gets Instantiate'd under a canvas at runtime.
+        /// The whole hierarchy INCLUDING the root is scaled x2.4, since the root's own
+        /// sizeDelta/anchoredPosition live in the parent canvas's units. No CanvasScaler exists on
+        /// these to mark the authored space, so the caller must gate re-runs via
+        /// <see cref="IsPrefabLoggedUpgraded"/> / <see cref="MarkPrefabUpgraded"/>. The caller
+        /// owns the Undo group.
+        /// </summary>
+        public static string UpgradePrefabRoot(RectTransform root, bool apply, UpgradeCounters counters)
+        {
+            var report = new StringBuilder();
+            report.AppendLine(apply
+                ? $"CANVAS-LESS PREFAB UPGRADE — '{root.name}' hierarchy x{UpgradeScale} (root included)"
+                : $"DRY RUN — no changes applied. '{root.name}' hierarchy WOULD scale x{UpgradeScale} (root included).");
+            UpgradeRectHierarchy(root, includeRoot: true, apply, report, counters);
             return report.ToString();
         }
 
@@ -734,6 +831,11 @@ namespace CosmicShore.Editor
         static string Fmt(float f) => f.ToString("0.##");
         static string Fmt(Vector2 v) => $"({v.x:0.##}, {v.y:0.##})";
         static string Fmt(Vector4 v) => $"({v.x:0.##}, {v.y:0.##}, {v.z:0.##}, {v.w:0.##})";
+
+        // Report label: the traversal root itself has an empty PathOf, so name it explicitly
+        // (happens only in the root-inclusive canvas-less prefab upgrade).
+        static string LabelPath(Transform t, Transform root) =>
+            t == root ? $"<root {t.name}>" : PathOf(t, root);
 
         /// <summary>Hierarchy path of <paramref name="t"/> up to (exclusive) <paramref name="stopAt"/>.</summary>
         public static string PathOf(Transform t, Transform stopAt)

@@ -30,6 +30,13 @@ namespace CosmicShore.Editor
     ///  6. Code scan  — write Assets/CanvasUpgrader/CodeReferences.md listing C# that writes
     ///                  those metrics with hardcoded constants (manual fix; never auto-edited).
     ///
+    /// Canvas-less UI prefabs — runtime-spawned fragments with no scaler of their own
+    /// (PlayerScoreCard, toasts, feed entries, vessel HUD variants) — are detected when opened in
+    /// the Prefab Stage and upgraded with the root INCLUDED, since the root's size lives in the
+    /// parent canvas's units. A persistent log (ProjectSettings/CanvasUpgraderUpgradedPrefabs.txt)
+    /// blocks accidental second passes, which would compound to x5.76; the scaled-animation-curve
+    /// log works the same way across scenes that share clips.
+    ///
     /// Verify pixel-identity at a 16:9 Game view before/after, then test 16:10, 21:9, 32:9 and
     /// 4:3. Unrelated but adjacent perf: the scan lists each canvas's enabled raycast-target
     /// count — audit those with Tools &gt; Cosmic Shore &gt; UI &gt; Raycast Target Audit.
@@ -41,6 +48,11 @@ namespace CosmicShore.Editor
         readonly List<string> _skipped = new();
         List<CanvasUpgradeProcessor.AnimatedBindingHit> _animHits = new();
         readonly HashSet<string> _scaledCurveKeys = new();
+        int _pendingAnimCurves;
+        RectTransform _canvasLessRoot;         // prefab-stage root when the open prefab is a spawned UI fragment
+        string _canvasLessPrefabPath;
+        string _canvasLessPrefabGuid;
+        bool _canvasLessAlreadyUpgraded;
         bool _reanchorRecursive;
         bool _addAdaptiveScaler = true;
         string _lastReport = "Scan the open scene (or the open Prefab Stage) to begin.";
@@ -62,6 +74,8 @@ namespace CosmicShore.Editor
                 "Converts screen-space canvases authored at 800x450 to 1920x1080 with pixel-identical output (x2.4). " +
                 "Operates on the CURRENT scene only — or on the open Prefab Stage, which is how to upgrade " +
                 "GameCanvas.prefab / GameCanvas-HexRace.prefab without creating instance overrides. " +
+                "Canvas-less UI prefabs that get spawned under a canvas at runtime (score cards, toasts, HUD variants) " +
+                "are detected in the Prefab Stage too and upgraded root-included. " +
                 "Workflow: Scan -> Dry Run -> Upgrade -> Smart Re-anchor -> Animation clips -> Code scan.",
                 MessageType.Info);
 
@@ -98,6 +112,26 @@ namespace CosmicShore.Editor
                     RunUpgrade(apply: true);
             }
 
+            // ---- Canvas-less UI fragment prefab (runtime-spawned under a canvas) ----
+            if (_canvasLessRoot != null)
+            {
+                EditorGUILayout.Space();
+                EditorGUILayout.LabelField("Canvas-less UI Prefab (runtime-spawned fragment)", EditorStyles.boldLabel);
+                EditorGUILayout.LabelField($"{_canvasLessPrefabPath} — scales the WHOLE hierarchy including the root", EditorStyles.miniLabel);
+                if (_canvasLessAlreadyUpgraded)
+                    EditorGUILayout.HelpBox(
+                        $"Already upgraded per {CanvasUpgradeProcessor.UpgradedPrefabLogPath}. A second pass would compound to x5.76 — " +
+                        "delete this prefab's line from that file only if you intentionally reverted it.",
+                        MessageType.Warning);
+                using (new EditorGUI.DisabledScope(_canvasLessAlreadyUpgraded))
+                {
+                    if (GUILayout.Button("Dry Run — report fragment changes, change nothing"))
+                        RunPrefabRootUpgrade(apply: false);
+                    if (GUILayout.Button("Upgrade fragment prefab x2.4 (single Undo step)"))
+                        RunPrefabRootUpgrade(apply: true);
+                }
+            }
+
             EditorGUILayout.Space();
 
             // ---- Smart re-anchor ----
@@ -123,9 +157,9 @@ namespace CosmicShore.Editor
                 if (GUILayout.Button("Find clips animating anchoredPosition / sizeDelta under the scanned canvases"))
                     FindAnimations();
             }
-            using (new EditorGUI.DisabledScope(_animHits.Count == 0))
+            using (new EditorGUI.DisabledScope(_pendingAnimCurves == 0))
             {
-                if (GUILayout.Button($"Scale {_animHits.Count} keyframe curve(s) x2.4 — clips are SHARED ASSETS (single Undo step)"))
+                if (GUILayout.Button($"Scale {_pendingAnimCurves} keyframe curve(s) x2.4 — clips are SHARED ASSETS (single Undo step)"))
                     RunScaleAnimationKeys();
             }
 
@@ -215,6 +249,23 @@ namespace CosmicShore.Editor
             if (_entries.Count == 0)
                 report.AppendLine("  No 800x450 / 1920x1080 Scale-With-Screen-Size canvases found.");
 
+            // A canvas-less prefab (PlayerScoreCard, toast, HUD variant, ...) is a spawned UI
+            // fragment: no scaler of its own, authored in the parent canvas's units.
+            _canvasLessRoot = null;
+            var stage = PrefabStageUtility.GetCurrentPrefabStage();
+            if (stage != null && _entries.Count == 0
+                && stage.prefabContentsRoot.transform is RectTransform fragmentRoot)
+            {
+                _canvasLessRoot = fragmentRoot;
+                _canvasLessPrefabPath = stage.assetPath;
+                _canvasLessPrefabGuid = AssetDatabase.AssetPathToGUID(stage.assetPath);
+                _canvasLessAlreadyUpgraded = CanvasUpgradeProcessor.IsPrefabLoggedUpgraded(_canvasLessPrefabGuid);
+                report.AppendLine($"  Canvas-less UI prefab '{fragmentRoot.name}' ({stage.assetPath}) — "
+                                  + (_canvasLessAlreadyUpgraded
+                                      ? "ALREADY upgraded per the persistent log."
+                                      : "runtime-spawned fragment; upgrade it with the fragment buttons (root included)."));
+            }
+
             _lastReport = report.ToString();
             Debug.Log($"[CanvasUpgrader]\n{_lastReport}");
         }
@@ -257,6 +308,34 @@ namespace CosmicShore.Editor
             return sb.ToString();
         }
 
+        void RunPrefabRootUpgrade(bool apply)
+        {
+            if (_canvasLessRoot == null) return;
+            var counters = new CanvasUpgradeProcessor.UpgradeCounters();
+            string report;
+
+            if (apply)
+            {
+                Undo.IncrementCurrentGroup();
+                Undo.SetCurrentGroupName("Canvas-less UI Prefab Upgrade x2.4");
+                int group = Undo.GetCurrentGroup();
+                report = CanvasUpgradeProcessor.UpgradePrefabRoot(_canvasLessRoot, true, counters);
+                Undo.CollapseUndoOperations(group);
+                Canvas.ForceUpdateCanvases();
+                CanvasUpgradeProcessor.MarkPrefabUpgraded(_canvasLessPrefabGuid, _canvasLessPrefabPath);
+                _canvasLessAlreadyUpgraded = true;
+            }
+            else
+            {
+                report = CanvasUpgradeProcessor.UpgradePrefabRoot(_canvasLessRoot, false, counters);
+            }
+
+            string summary = Summarize(apply, counters)
+                             + (apply ? $" Logged in {CanvasUpgradeProcessor.UpgradedPrefabLogPath} (commit it); save the prefab (Ctrl+S) to keep." : "");
+            _lastReport = $"{summary}\n\n{report}";
+            Debug.Log($"[CanvasUpgrader] {summary}\n{report}");
+        }
+
         void RunReanchor()
         {
             Undo.IncrementCurrentGroup();
@@ -274,13 +353,21 @@ namespace CosmicShore.Editor
         void FindAnimations()
         {
             _animHits = CanvasUpgradeProcessor.FindAnimatedRectBindings(_entries);
+            _scaledCurveKeys.Clear();
+            _scaledCurveKeys.UnionWith(CanvasUpgradeProcessor.LoadScaledCurveLog());
+            _pendingAnimCurves = 0;
 
             var report = new StringBuilder();
             report.AppendLine($"ANIMATION SCAN — {_animHits.Count} RectTransform anchoredPosition/sizeDelta curve(s) found under the scanned canvases.");
             if (_animHits.Count > 0)
-                report.AppendLine("Clips are SHARED ASSETS: scaling affects every scene/prefab using them. Curves already scaled this session are skipped on re-runs.");
+                report.AppendLine("Clips are SHARED ASSETS: scaling affects every scene/prefab using them. Curves already in the persistent scaled-curve log are skipped.");
             foreach (var hit in _animHits)
-                report.AppendLine($"  clip {hit.ClipAssetPath} :: {hit.Binding.propertyName} on '{hit.Binding.path}' (animator: {hit.HostPath}, canvas: {hit.CanvasName})");
+            {
+                bool alreadyScaled = _scaledCurveKeys.Contains(hit.CurveKey);
+                if (!alreadyScaled) _pendingAnimCurves++;
+                report.AppendLine($"  clip {hit.ClipAssetPath} :: {hit.Binding.propertyName} on '{hit.Binding.path}' (animator: {hit.HostPath}, canvas: {hit.CanvasName})"
+                                  + (alreadyScaled ? " — ALREADY SCALED, will be skipped" : ""));
+            }
 
             _lastReport = report.ToString();
             Debug.Log($"[CanvasUpgrader]\n{_lastReport}");
