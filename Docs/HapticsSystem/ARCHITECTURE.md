@@ -4,10 +4,52 @@
 measured from the actual sound's waveform or driven by real-time metering of the actual mix —
 instead of five generic presets fired near sounds.
 
-Status: **shipped** on `claude/audio-matched-haptics-0r6ib8`. Supersedes the rudimentary
-approach on `claude/add-haptics-for-fx-sznU5` (32 hand-wired `HapticClip` inspector fields on
-AudioSystem + preset fallbacks), which predated the FMOD migration and never covered the
-continuous emitters.
+## Feel doctrine (playtest-locked — do not relitigate)
+
+The first playtest verdict was unambiguous: *"the haptics never stop, and the place I want
+them most — the Squirrel skimming prisms — I can't feel at all."* The lesson is now doctrine:
+
+1. **Haptics are sparse signals, not a soundtrack.** A vibration that never stops numbs the
+   hand and destroys the information content of every pulse. Anything that fires often or
+   ambiently defaults to **zero**. When unsure whether an event earns a haptic: it doesn't.
+2. **Two hero feels, opposite in character:**
+   - **The skim pulse train (the reward — strongest & juiciest).** Each prism entering the
+     skimmer fires one bright ~70 ms snap (`AudioHapticsBakedDefaults.SkimPulse`, high haptic
+     frequency, full-strength emphasis, 30 ms cooldown). Riding a dense trail chains them into
+     a continuous rewarding train, pulse after pulse — the proximity-scaled effect SO
+     (`SkimmerScaleHapticWithDistanceByPrismSO`, wired on the Squirrel skimmer) makes
+     center-of-trail passes hit harder than edge grazes. Priority 80: trail chatter can never
+     eat it.
+   - **The prism punish thud (the mistake).** Vessel-body-into-prism plays a designed LOW
+     thud (freq ≈ 0.15 — the heavy motor / soft deep vibration, opposite of the bright skim),
+     gain 0.8, priority 88 so a crash cuts through the reward train, cooldown 0.25 s so
+     scraping along a wall doesn't machine-gun punishment. Fired only by the
+     local-player-gated `SquirrelVesselHapticsByPrismEffect` (HapticSpec type ShipCollision).
+3. **Only rare, big, self-relevant moments keep any other gain:** MineExplode 0.35 and
+   Explosion 0.30 (distance-attenuated world events), CrystalCollect 0.20 (local pickup).
+   Everything else — every menu/UI sound, drift, boost, gunfire, shields, jousts, elements,
+   comebacks, block breaks — defaults to **0**. Envelopes are kept in the tables so
+   re-enabling any of them is a one-number edit.
+4. **The continuous bed defaults OFF** (`bedEnabled = false`). Following the engine hum means
+   vibrating whenever the vessel moves — exactly the "never stops" failure. The machinery
+   stays for experiments and still actuates `PlayConstant` pulses.
+5. **Vessel-attributed events never fire from the audio hook** (`audioEventGain = 0` on
+   VesselImpact / TrackImpact / CrystalCollect): the local-player-gated effect SOs own them,
+   so an AI crashing next to you can't thud your device just because you heard it.
+
+These invariants are enforced by `AudioHapticsBakedDefaultsTests` (Doctrine_* tests).
+
+Status: **shipped** on `claude/audio-matched-haptics-0r6ib8` (v2 after the playtest feel
+pass — see the feel doctrine above). Supersedes the rudimentary approach on
+`claude/add-haptics-for-fx-sznU5` (32 hand-wired `HapticClip` inspector fields on AudioSystem
++ preset fallbacks), which predated the FMOD migration and never covered the continuous
+emitters.
+
+Historical bug worth remembering: the original skimmer haptic
+(`SkimmerScaleHapticWithDistanceByPrismSO`) read `SkimmerImpactor.CombinedWeight`, which has
+been dead (never written) since the block-stay rework — the one haptic that mattered most was
+silently multiplying by zero. Proximity is now computed directly from prism position vs the
+skimmer sphere.
 
 ## The two layers + the arbiter
 

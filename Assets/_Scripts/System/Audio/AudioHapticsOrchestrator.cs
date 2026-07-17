@@ -60,6 +60,7 @@ namespace CosmicShore.Core
 
         // Category-key domains for the arbiter (one flat int space).
         const int MenuKeyOffset = 1000;
+        const int SkimPulseKey = 3000;
         const int LegacyClipKeyOffset = unchecked((int)0x80000000);
 
 
@@ -208,7 +209,7 @@ namespace CosmicShore.Core
         // Public API — transients
         // ------------------------------------------------------------------
 
-        /// <summary>Plays the audio-matched haptic for a gameplay SFX category (2D — full strength).</summary>
+        /// <summary>Plays the audio-matched haptic for a gameplay SFX category (2D — full strength). For explicit, gameplay-attributed calls (HapticSpec / HapticController).</summary>
         public void PlayGameplayTransient(GameplaySFXCategory category, float gain = 1f)
             => PlayTransient(ResolveGameplaySpec(category), (int)category, gain, null);
 
@@ -216,9 +217,37 @@ namespace CosmicShore.Core
         public void PlayGameplayTransient(GameplaySFXCategory category, Vector3 worldPosition, float gain = 1f)
             => PlayTransient(ResolveGameplaySpec(category), (int)category, gain, worldPosition);
 
+        /// <summary>
+        /// Entry point for AudioSystem's automatic one-shot hook. Applies the
+        /// spec's audioEventGain on top: categories owned by a local-player-gated
+        /// effect SO set it to 0 so an AI crashing into a prism next to you
+        /// doesn't buzz your device just because you heard it.
+        /// </summary>
+        public void PlayGameplayFromAudioEvent(GameplaySFXCategory category, float gain, Vector3? worldPosition)
+        {
+            var spec = ResolveGameplaySpec(category);
+            if (spec == null || spec.audioEventGain <= 0f) return;
+            PlayTransient(spec, (int)category, gain * spec.audioEventGain, worldPosition);
+        }
+
         /// <summary>Plays the audio-matched haptic for a menu/UI audio category.</summary>
         public void PlayMenuTransient(MenuAudioCategory category, float gain = 1f)
             => PlayTransient(ResolveMenuSpec(category), MenuKeyOffset + (int)category, gain, null);
+
+        /// <summary>
+        /// THE hero haptic: one bright per-prism skim pulse. Fired by the
+        /// skimmer's prism-enter effects; riding a dense trail chains pulses
+        /// into a continuous rewarding train (the spec's 30 ms cooldown is the
+        /// train's max rate). <paramref name="strength01"/> scales the pulse —
+        /// proximity-aware callers pass how deep in the sweet spot the prism is.
+        /// </summary>
+        public void PlaySkimPulse(float strength01 = 1f)
+        {
+            var spec = _config != null && _config.skimPulse != null && _config.skimPulse.HasEnvelope
+                ? _config.skimPulse
+                : AudioHapticsBakedDefaults.SkimPulse();
+            PlayTransient(spec, SkimPulseKey, strength01, null);
+        }
 
         /// <summary>
         /// Runtime-analyzed haptic for the legacy Unity AudioClip path: the
@@ -320,7 +349,10 @@ namespace CosmicShore.Core
             // degenerate envelope and the rumble rounds up to whole steps —
             // claiming the channel for less would let the bed evict a tail.
             var sanitized = HapticPatternBuilder.Sanitize(spec.envelope);
-            var rumble = HapticPatternBuilder.RenderRumble(sanitized);
+            // Short clips (skim pulse, punish thud) need finer rumble steps than
+            // the default 50 ms or the gamepad renders them as a single mushy cell.
+            int rumbleStepMs = HapticPatternBuilder.Duration(sanitized) < 0.25f ? 16 : HapticPatternBuilder.RumbleStepMs;
+            var rumble = HapticPatternBuilder.RenderRumble(sanitized, rumbleStepMs);
             compiled = new CompiledPattern
             {
                 Json = HapticPatternBuilder.RenderJsonBytes(sanitized),

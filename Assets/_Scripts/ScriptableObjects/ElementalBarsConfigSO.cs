@@ -64,7 +64,7 @@ namespace CosmicShore.ScriptableObjects
         public float debuffShakeStrength = 8f;
 
         [Header("Juice - haptics")]
-        public bool  hapticOnDebuff        = true;
+        public bool  hapticOnDebuff        = false; // playtest: haptics are sparse signals — a stat dip doesn't earn a buzz
         public float debuffHapticAmplitude = 0.6f;
         public float debuffHapticFrequency = 0.5f;
         public float debuffHapticDuration  = 0.15f;

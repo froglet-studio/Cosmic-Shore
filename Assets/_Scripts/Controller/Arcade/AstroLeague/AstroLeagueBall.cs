@@ -982,8 +982,9 @@ namespace CosmicShore.Gameplay
             TriggerFlash(intensity * 0.6f);
             EmitBurst(position, normal, (int)(settings.impactParticleBurst * 0.5f * Mathf.Max(0.4f, intensity)));
             ShakeCamera(settings.strikeShakeIntensity * intensity * 0.35f, settings.strikeShakeDuration, position);
-            // Distance-attenuated: a carom across the arena is a murmur, not a slam on every peer.
-            HapticController.PlayHaptic(HapticType.ShipCollision, position);
+            // No haptic: a ball carom is nobody's action. The screen shake +
+            // burst carry it; haptics are reserved for events the local player
+            // caused or suffered (feel doctrine, Docs/HapticsSystem).
         }
 
         void TriggerFlash(float intensity) =>

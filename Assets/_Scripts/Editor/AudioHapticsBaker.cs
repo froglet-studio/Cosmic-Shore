@@ -112,6 +112,8 @@ namespace CosmicShore.Editor
                     category = category,
                     spec = AudioHapticsBakedDefaults.ForMenu(category).Clone(),
                 });
+
+            config.skimPulse = AudioHapticsBakedDefaults.SkimPulse().Clone();
         }
 
         static bool TryBakeSpec(HapticTransientSpec spec, string sourceRoot)

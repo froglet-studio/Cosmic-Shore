@@ -24,6 +24,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Minimum seconds between two haptics of this category. Guards burst categories from turning the actuator into mush.")]
         [Min(0f)] public float cooldownSeconds = 0.08f;
 
+        [Tooltip("Extra multiplier applied ONLY when this haptic is triggered automatically by the audio one-shot hook in AudioSystem (any actor, anywhere). Explicit gameplay calls (HapticSpec / HapticController) ignore it. Set 0 for vessel-attributed feedback (impacts, pickups) that a local-player-gated effect SO already owns — otherwise every AI collision nearby would buzz the device.")]
+        [Range(0f, 1f)] public float audioEventGain = 1f;
+
         [Tooltip("Envelope breakpoints. Time is seconds from the audio event start so the haptic tracks the sound's actual shape. Bake from source audio or author by hand.")]
         public List<HapticBreakpoint> envelope = new();
 
@@ -44,6 +47,7 @@ namespace CosmicShore.ScriptableObjects
                 gain = gain,
                 priority = priority,
                 cooldownSeconds = cooldownSeconds,
+                audioEventGain = audioEventGain,
                 bakedFrom = bakedFrom,
             };
             if (envelope != null)
@@ -94,6 +98,9 @@ namespace CosmicShore.ScriptableObjects
         [Tooltip("Per menu-audio-category haptic envelopes. Missing categories fall back to the baked code defaults.")]
         public List<MenuEntry> menuTransients = new();
 
+        [Tooltip("THE hero haptic: the Squirrel skimmer's per-prism skim pulse. Each prism the skimmer passes fires one bright, snappy pulse — riding a dense trail turns them into a continuous rewarding train. Leave empty to use the designed code default.")]
+        public HapticTransientSpec skimPulse = new();
+
         [Header("Transient arbitration (one haptic channel)")]
         [Tooltip("Requests weaker than this are dropped — below the actuator sensation threshold.")]
         [Range(0f, 0.2f)] public float transientMinStrength = 0.02f;
@@ -108,8 +115,8 @@ namespace CosmicShore.ScriptableObjects
         [Range(0f, 0.3f)] public float transientTailSeconds = 0.06f;
 
         [Header("Continuous bed (follows the measured SFX bus signal)")]
-        [Tooltip("Drive a continuous haptic layer from real-time FMOD bus metering: engine hum, drift, boost swells and one-shot tails all translate to touch with zero per-emitter wiring.")]
-        public bool bedEnabled = true;
+        [Tooltip("Drive a continuous haptic layer from real-time FMOD bus metering (engine hum, drift, boost swells, one-shot tails). OFF by default after playtest: a bed that follows the engine hum vibrates whenever the vessel moves — haptics that never stop numb the hand and mask the discrete pulses that matter. Enable only for experiments.")]
+        public bool bedEnabled = false;
 
         [Tooltip("FMOD bus whose output the bed follows. Empty = AudioSystem's SFX bus path (default \"bus:/\"). Music runs on the legacy Unity path, so it never contaminates this signal.")]
         public string bedBusPathOverride = "";
@@ -156,8 +163,8 @@ namespace CosmicShore.ScriptableObjects
         [Min(1f)] public float spatialCutoffDistance = 200f;
 
         [Header("Legacy AudioClip path")]
-        [Tooltip("Analyze AudioClips played through the legacy PlaySFXClip path at runtime (waveform envelope, cached per clip) so even unmigrated sounds get matched haptics.")]
-        public bool analyzeLegacyClips = true;
+        [Tooltip("Analyze AudioClips played through the legacy PlaySFXClip path at runtime (waveform envelope, cached per clip) so even unmigrated sounds get matched haptics. OFF by default after playtest — UI stingers don't earn a buzz (haptics are sparse signals, not a soundtrack).")]
+        public bool analyzeLegacyClips = false;
 
         [Tooltip("Envelope analysis settings used for legacy AudioClips (window, budget, transient detection). Fixed at code defaults; exposed here only for the master duration cap.")]
         [Min(0.2f)] public float legacyClipMaxSeconds = 1.5f;

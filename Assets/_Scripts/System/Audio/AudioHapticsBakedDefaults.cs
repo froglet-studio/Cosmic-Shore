@@ -1,13 +1,17 @@
 // ------------------------------------------------------------------------------------
-// GENERATED DATA - measured haptic envelopes
+// GENERATED DATA + PLAYTEST FEEL PASS - per-category haptic defaults
 //
-// Each envelope below was analyzed from the corresponding source audio file in the
-// FMOD Studio project ("Cosmic Shore/Assets/*.wav", windowed-peak amplitude +
-// zero-crossing-rate frequency + attack-flux emphasis; see HapticWaveformAnalyzer).
-// These are the ZERO-WIRE defaults: they apply when a category has no override in
-// the AudioHapticsConfig asset. To retune, bake fresh envelopes into the config
-// asset via Tools > Cosmic Shore > Audio Haptics (which runs the same analysis in
-// the editor) - do not hand-edit the tables here.
+// Envelopes were measured from the corresponding source audio in the FMOD Studio
+// project ("Cosmic Shore/Assets/*.wav"; windowed-peak amplitude + zero-crossing-rate
+// frequency + attack-flux emphasis - see HapticWaveformAnalyzer). The MIXING values
+// (gain / priority / cooldown / audioEventGain) are hand-tuned from playtest, and the
+// two hero envelopes (VesselImpact / TrackImpact punish thud, and SkimPulse) are
+// DESIGNED rather than measured.
+//
+// FEEL DOCTRINE (playtest-locked - see Docs/HapticsSystem/ARCHITECTURE.md):
+// haptics are sparse signals, not a soundtrack. Most categories default to gain 0;
+// the envelopes are kept so re-enabling one is a single gain edit (here or in the
+// AudioHapticsConfig asset, which overrides these values per category).
 // ------------------------------------------------------------------------------------
 using System.Collections.Generic;
 using CosmicShore.ScriptableObjects;
@@ -16,37 +20,52 @@ using CosmicShore.Utility;
 namespace CosmicShore.Core
 {
     /// <summary>
-    /// Code-default <see cref="HapticTransientSpec"/>s for every audio category,
-    /// with envelopes measured from the game's actual source SFX waveforms.
-    /// Used by AudioHapticsOrchestrator whenever the config asset is missing or
-    /// has no entry for a category, so audio-matched haptics work with zero
-    /// asset wiring.
+    /// Code-default <see cref="HapticTransientSpec"/>s for every audio category
+    /// plus the dedicated skim pulse. Used by AudioHapticsOrchestrator whenever
+    /// the config asset is missing or has no entry, so haptics work with zero
+    /// asset wiring. Specs are memoized - callers key compile caches by spec
+    /// reference.
     /// </summary>
     public static class AudioHapticsBakedDefaults
     {
-        // Specs are memoized per category: callers key compile caches by spec
-        // REFERENCE, so returning a fresh instance per call would defeat those
-        // caches and re-render the clip JSON on every play.
         static readonly Dictionary<GameplaySFXCategory, HapticTransientSpec> s_gameplayCache = new();
         static readonly Dictionary<MenuAudioCategory, HapticTransientSpec> s_menuCache = new();
+        static HapticTransientSpec s_skimPulse;
 
         static HapticBreakpoint P(float t, float a, float f) => new HapticBreakpoint(t, a, f);
         static HapticBreakpoint E(float t, float a, float f, float ea, float ef) => new HapticBreakpoint(t, a, f, ea, ef);
 
-        static HapticTransientSpec Spec(float gain, int priority, float cooldown, string source, params HapticBreakpoint[] points)
+        static HapticTransientSpec Spec(float gain, int priority, float cooldown, float audioEventGain, string source, params HapticBreakpoint[] points)
         {
             var spec = new HapticTransientSpec
             {
                 gain = gain,
                 priority = priority,
                 cooldownSeconds = cooldown,
+                audioEventGain = audioEventGain,
                 bakedFrom = source,
             };
             spec.envelope.AddRange(points);
             return spec;
         }
 
-        /// <summary>Measured default for a gameplay SFX category. Never null. The same instance is returned for repeat calls.</summary>
+        /// <summary>
+        /// THE hero haptic: the skimmer's per-prism pulse. One bright ~70 ms
+        /// snap with a full-strength emphasis transient; skimming down a dense
+        /// trail chains them into a continuous rewarding train (cooldown 30 ms
+        /// = up to ~30 pulses/sec). High priority so trail-break chatter can't
+        /// eat it; below the punish thud so a crash still cuts through.
+        /// </summary>
+        public static HapticTransientSpec SkimPulse()
+        {
+            s_skimPulse ??= Spec(1f, 80, 0.03f, 1f, "designed: skim pulse",
+                E(0f, 1f, 0.85f, 1f, 0.9f),
+                P(0.035f, 0.45f, 0.8f),
+                P(0.07f, 0f, 0.75f));
+            return s_skimPulse;
+        }
+
+        /// <summary>Default for a gameplay SFX category. Never null. The same instance is returned for repeat calls.</summary>
         public static HapticTransientSpec ForGameplay(GameplaySFXCategory category)
         {
             if (!s_gameplayCache.TryGetValue(category, out var spec))
@@ -57,7 +76,7 @@ namespace CosmicShore.Core
             return spec;
         }
 
-        /// <summary>Measured default for a menu audio category. Never null. The same instance is returned for repeat calls.</summary>
+        /// <summary>Default for a menu audio category. Never null. The same instance is returned for repeat calls.</summary>
         public static HapticTransientSpec ForMenu(MenuAudioCategory category)
         {
             if (!s_menuCache.TryGetValue(category, out var spec))
@@ -70,7 +89,7 @@ namespace CosmicShore.Core
 
         static HapticTransientSpec BuildGameplay(GameplaySFXCategory category) => category switch
         {
-            GameplaySFXCategory.BlockDestroy => Spec(0.5f, 35, 0.09f, "Cosmic shore block break.wav",
+            GameplaySFXCategory.BlockDestroy => Spec(0f, 35, 0.09f, 1f, "Cosmic shore block break.wav",
                 E(0f, 0.939f, 1f, 0.908f, 1f),
                 P(0.05f, 1f, 1f),
                 P(0.075f, 0.909f, 1f),
@@ -82,7 +101,7 @@ namespace CosmicShore.Core
                 P(0.3f, 0.441f, 1f),
                 P(0.375f, 0.411f, 1f),
                 P(0.45f, 0f, 1f)),
-            GameplaySFXCategory.ShieldActivate => Spec(0.7f, 55, 0.2f, "sheild cosmic shore.wav",
+            GameplaySFXCategory.ShieldActivate => Spec(0f, 55, 0.2f, 1f, "sheild cosmic shore.wav",
                 P(0f, 0f, 0.877f),
                 P(0.05f, 0f, 0.456f),
                 P(0.15f, 0.322f, 0.154f),
@@ -94,7 +113,7 @@ namespace CosmicShore.Core
                 P(0.475f, 0.337f, 1f),
                 P(0.675f, 0.249f, 1f),
                 P(0.7f, 0f, 1f)),
-            GameplaySFXCategory.ShieldDeactivate => Spec(0.7f, 55, 0.2f, "shield down.wav",
+            GameplaySFXCategory.ShieldDeactivate => Spec(0f, 55, 0.2f, 1f, "shield down.wav",
                 P(0f, 0.7f, 0.888f),
                 P(0.025f, 1f, 0.937f),
                 P(0.05f, 0.538f, 0.675f),
@@ -109,7 +128,7 @@ namespace CosmicShore.Core
                 P(0.5f, 0.115f, 0.888f),
                 P(0.525f, 0.156f, 0.914f),
                 P(0.55f, 0f, 0.723f)),
-            GameplaySFXCategory.MineExplode => Spec(1f, 90, 0.15f, "explosion.wav",
+            GameplaySFXCategory.MineExplode => Spec(0.35f, 90, 0.25f, 1f, "explosion.wav",
                 P(0f, 0.54f, 0.842f),
                 P(0.025f, 0.772f, 0.61f),
                 P(0.325f, 0.815f, 0.696f),
@@ -118,7 +137,7 @@ namespace CosmicShore.Core
                 P(0.725f, 0.871f, 0.691f),
                 P(0.75f, 0.586f, 0.522f),
                 P(0.8f, 0f, 0.522f)),
-            GameplaySFXCategory.ProjectileLaunch => Spec(0.45f, 45, 0.08f, "cosmic shore laser.wav",
+            GameplaySFXCategory.ProjectileLaunch => Spec(0f, 45, 0.08f, 1f, "cosmic shore laser.wav",
                 E(0f, 1f, 0.857f, 1f, 0.857f),
                 P(0.025f, 0.93f, 1f),
                 P(0.05f, 0.728f, 1f),
@@ -128,7 +147,7 @@ namespace CosmicShore.Core
                 P(0.15f, 0.816f, 0.914f),
                 P(0.175f, 0.581f, 1f),
                 P(0.2f, 0f, 1f)),
-            GameplaySFXCategory.CrystalCollect => Spec(0.85f, 65, 0.1f, "Crystal_Collision_Amplified.wav",
+            GameplaySFXCategory.CrystalCollect => Spec(0.2f, 65, 0.15f, 0f, "Crystal_Collision_Amplified.wav",
                 E(0f, 1f, 1f, 1f, 1f),
                 P(0.025f, 0.962f, 1f),
                 P(0.05f, 0.599f, 1f),
@@ -142,20 +161,12 @@ namespace CosmicShore.Core
                 P(0.375f, 0.284f, 1f),
                 P(0.425f, 0.14f, 0.852f),
                 P(0.6f, 0f, 0.852f)),
-            GameplaySFXCategory.VesselImpact => Spec(1f, 88, 0.12f, "ship impact cosmic shore.wav",
-                E(0f, 1f, 0.985f, 1f, 0.985f),
-                P(0.025f, 0.934f, 0.648f),
-                P(0.05f, 0.516f, 0.566f),
-                P(0.075f, 0.473f, 0.154f),
-                P(0.1f, 0.431f, 0f),
-                P(0.125f, 0.409f, 0.052f),
-                P(0.15f, 0.396f, 0.052f),
-                P(0.175f, 0.377f, 0.108f),
-                P(0.2f, 0.329f, 0f),
-                P(0.225f, 0.239f, 0.052f),
-                P(0.25f, 0.159f, 0.226f),
-                P(0.275f, 0f, 0.328f)),
-            GameplaySFXCategory.GameEnd => Spec(1f, 100, 0.5f, "explosion.wav",
+            GameplaySFXCategory.VesselImpact => Spec(0.8f, 88, 0.25f, 0f, "designed: punish thud",
+                E(0f, 1f, 0.15f, 0.85f, 0.2f),
+                P(0.06f, 0.5f, 0.12f),
+                P(0.14f, 0.2f, 0.1f),
+                P(0.22f, 0f, 0.1f)),
+            GameplaySFXCategory.GameEnd => Spec(0f, 100, 0.5f, 1f, "explosion.wav",
                 P(0f, 0.54f, 0.842f),
                 P(0.025f, 0.772f, 0.61f),
                 P(0.325f, 0.815f, 0.696f),
@@ -166,7 +177,7 @@ namespace CosmicShore.Core
                 P(0.8f, 0.735f, 0.648f),
                 P(0.875f, 0.48f, 0.659f),
                 P(1.4f, 0f, 0.659f)),
-            GameplaySFXCategory.ScoreReveal => Spec(0.6f, 50, 0.1f, "Data 24.wav",
+            GameplaySFXCategory.ScoreReveal => Spec(0f, 50, 0.1f, 1f, "Data 24.wav",
                 P(0f, 0f, 1f),
                 P(0.025f, 0f, 1f),
                 P(0.05f, 0.455f, 1f),
@@ -181,7 +192,7 @@ namespace CosmicShore.Core
                 P(0.3f, 0.197f, 0.491f),
                 P(0.35f, 0.133f, 0.54f),
                 P(0.375f, 0f, 1f)),
-            GameplaySFXCategory.PauseOpen => Spec(0.5f, 45, 0.15f, "OpenView.wav",
+            GameplaySFXCategory.PauseOpen => Spec(0f, 45, 0.15f, 1f, "OpenView.wav",
                 P(0f, 0.217f, 1f),
                 P(0.025f, 0.596f, 1f),
                 P(0.075f, 0.912f, 1f),
@@ -193,7 +204,7 @@ namespace CosmicShore.Core
                 P(0.3f, 0.703f, 1f),
                 P(0.325f, 0.771f, 1f),
                 P(0.4f, 0f, 1f)),
-            GameplaySFXCategory.PauseClose => Spec(0.5f, 45, 0.15f, "CloseView.wav",
+            GameplaySFXCategory.PauseClose => Spec(0f, 45, 0.15f, 1f, "CloseView.wav",
                 P(0f, 0.322f, 0.901f),
                 P(0.025f, 1f, 1f),
                 P(0.05f, 0.945f, 0.941f),
@@ -208,7 +219,7 @@ namespace CosmicShore.Core
                 P(0.35f, 0.462f, 1f),
                 P(0.375f, 0.121f, 1f),
                 P(0.4f, 0f, 1f)),
-            GameplaySFXCategory.GunFire => Spec(0.4f, 45, 0.06f, "cosmic shore laser.wav",
+            GameplaySFXCategory.GunFire => Spec(0f, 45, 0.06f, 1f, "cosmic shore laser.wav",
                 E(0f, 1f, 0.857f, 1f, 0.857f),
                 P(0.025f, 0.93f, 1f),
                 P(0.05f, 0.728f, 1f),
@@ -218,7 +229,7 @@ namespace CosmicShore.Core
                 P(0.15f, 0.816f, 0.914f),
                 P(0.175f, 0.581f, 1f),
                 P(0.2f, 0f, 1f)),
-            GameplaySFXCategory.BoostActivate => Spec(0.8f, 60, 0.2f, "Cosmic shore Boost.wav",
+            GameplaySFXCategory.BoostActivate => Spec(0f, 60, 0.2f, 1f, "Cosmic shore Boost.wav",
                 P(0f, 0.183f, 0.83f),
                 P(0.075f, 0.276f, 0.907f),
                 P(0.325f, 0.354f, 0.865f),
@@ -232,9 +243,8 @@ namespace CosmicShore.Core
                 P(0.65f, 0.812f, 0.89f),
                 P(0.675f, 1f, 0.899f),
                 P(0.7f, 0.86f, 0.89f),
-                P(0.725f, 0.844f, 0.988f),
-                P(0.75f, 0f, 0.988f)),
-            GameplaySFXCategory.Explosion => Spec(0.95f, 85, 0.12f, "explosion.wav",
+                P(0.725f, 0.844f, 0.988f)),
+            GameplaySFXCategory.Explosion => Spec(0.3f, 85, 0.2f, 1f, "explosion.wav",
                 P(0f, 0.54f, 0.842f),
                 P(0.025f, 0.772f, 0.61f),
                 P(0.325f, 0.815f, 0.696f),
@@ -243,7 +253,7 @@ namespace CosmicShore.Core
                 P(0.725f, 0.871f, 0.691f),
                 P(0.75f, 0.586f, 0.522f),
                 P(0.8f, 0f, 0.522f)),
-            GameplaySFXCategory.CreatureDeath => Spec(0.75f, 60, 0.15f, "mass brittle star cosmic shore.wav",
+            GameplaySFXCategory.CreatureDeath => Spec(0f, 60, 0.15f, 1f, "mass brittle star cosmic shore.wav",
                 P(0f, 0.596f, 0.691f),
                 P(0.25f, 0.879f, 0.681f),
                 P(0.3f, 0.707f, 0.7f),
@@ -251,16 +261,16 @@ namespace CosmicShore.Core
                 P(0.475f, 0.712f, 0.71f),
                 P(0.6f, 0.784f, 0.648f),
                 P(0.7f, 0f, 0.648f)),
-            GameplaySFXCategory.DriftStart => Spec(0.6f, 55, 0.15f, "Cosmic shore drift hold.wav",
+            GameplaySFXCategory.DriftStart => Spec(0f, 55, 0.15f, 1f, "Cosmic shore drift hold.wav",
                 P(0f, 0.735f, 0.879f),
                 P(0.45f, 0f, 0.879f)),
-            GameplaySFXCategory.DriftEnd => Spec(0.7f, 55, 0.15f, "drift let go cosmic shore.wav",
+            GameplaySFXCategory.DriftEnd => Spec(0f, 55, 0.15f, 1f, "drift let go cosmic shore.wav",
                 E(0f, 0.689f, 0.958f, 0.564f, 0.958f),
                 P(0.025f, 1f, 0.872f),
                 P(0.4f, 0.379f, 0.794f),
                 P(0.55f, 0.3f, 0.744f),
                 P(0.6f, 0f, 0.744f)),
-            GameplaySFXCategory.EnergyGain => Spec(0.45f, 40, 0.15f, "EnergyGain.wav",
+            GameplaySFXCategory.EnergyGain => Spec(0f, 40, 0.15f, 1f, "EnergyGain.wav",
                 E(0f, 1f, 0.648f, 1f, 0.648f),
                 P(0.025f, 0.999f, 0.654f),
                 P(0.05f, 0.983f, 0.654f),
@@ -275,7 +285,7 @@ namespace CosmicShore.Core
                 P(0.45f, 0.257f, 0.755f),
                 P(0.475f, 0.164f, 0.755f),
                 P(0.5f, 0f, 0.755f)),
-            GameplaySFXCategory.SpeedBurst => Spec(0.9f, 70, 0.2f, "SpeedBurst.wav",
+            GameplaySFXCategory.SpeedBurst => Spec(0f, 70, 0.2f, 1f, "SpeedBurst.wav",
                 E(0f, 0.941f, 0.328f, 0.911f, 0.328f),
                 P(0.05f, 1f, 0.642f),
                 P(0.075f, 0.962f, 0.788f),
@@ -290,7 +300,7 @@ namespace CosmicShore.Core
                 P(0.375f, 0.644f, 0.884f),
                 P(0.525f, 0.179f, 0.154f),
                 P(0.55f, 0f, 0.154f)),
-            GameplaySFXCategory.CrystalSkim => Spec(0.35f, 30, 0.08f, "cosmic shore new skim.wav",
+            GameplaySFXCategory.CrystalSkim => Spec(0f, 30, 0.08f, 1f, "cosmic shore new skim.wav",
                 P(0f, 1f, 0.822f),
                 P(0.025f, 0.899f, 0.752f),
                 P(0.05f, 0.677f, 0.681f),
@@ -304,14 +314,14 @@ namespace CosmicShore.Core
                 P(0.25f, 0.19f, 0.648f),
                 P(0.3f, 0.134f, 0.659f),
                 P(0.35f, 0f, 0.659f)),
-            GameplaySFXCategory.JoustScored => Spec(0.95f, 75, 0.25f, "SPACE JOUST1.wav",
+            GameplaySFXCategory.JoustScored => Spec(0f, 75, 0.25f, 1f, "SPACE JOUST1.wav",
                 E(0f, 1f, 0.686f, 1f, 0.686f),
                 P(0.15f, 0.445f, 0.642f),
                 P(0.55f, 0.11f, 0.705f),
                 P(0.575f, 0f, 0.665f),
                 P(0.625f, 0.114f, 0.589f),
                 P(0.7f, 0f, 0.589f)),
-            GameplaySFXCategory.JoustReceived => Spec(0.9f, 75, 0.25f, "time joust.wav",
+            GameplaySFXCategory.JoustReceived => Spec(0f, 75, 0.25f, 1f, "time joust.wav",
                 E(0f, 0.959f, 0.603f, 0.938f, 0.603f),
                 P(0.025f, 1f, 0.623f),
                 P(0.05f, 0.558f, 0.7f),
@@ -326,26 +336,26 @@ namespace CosmicShore.Core
                 P(0.45f, 0.128f, 0.736f),
                 P(0.5f, 0.121f, 0.7f),
                 P(0.525f, 0f, 0.727f)),
-            GameplaySFXCategory.ElementChargeReceived => Spec(0.7f, 60, 0.1f, "Cosmic shore Charge 1 ship.wav",
+            GameplaySFXCategory.ElementChargeReceived => Spec(0f, 60, 0.1f, 1f, "Cosmic shore Charge 1 ship.wav",
                 P(0f, 0.413f, 0.777f),
                 P(0.275f, 0.901f, 0.857f),
                 P(0.6f, 0f, 0.857f)),
-            GameplaySFXCategory.ElementMassReceived => Spec(0.7f, 60, 0.1f, "Cosmic shore Mass ship 1.wav",
+            GameplaySFXCategory.ElementMassReceived => Spec(0f, 60, 0.1f, 1f, "Cosmic shore Mass ship 1.wav",
                 P(0f, 0f, 0.987f),
                 P(0.125f, 0f, 0.574f),
                 P(0.475f, 0.563f, 0.306f),
                 P(0.6f, 0f, 0.306f)),
-            GameplaySFXCategory.ElementSpaceReceived => Spec(0.7f, 60, 0.1f, "Cosmic shore space ship 2.wav",
+            GameplaySFXCategory.ElementSpaceReceived => Spec(0f, 60, 0.1f, 1f, "Cosmic shore space ship 2.wav",
                 P(0f, 0.847f, 0.736f),
                 P(0.05f, 0.684f, 0.781f),
                 P(0.075f, 0.837f, 0.755f),
                 P(0.15f, 0.708f, 0.781f),
                 P(0.225f, 0.856f, 0.787f),
                 P(0.6f, 0f, 0.787f)),
-            GameplaySFXCategory.ElementTimeReceived => Spec(0.7f, 60, 0.1f, "Cosmic shore time ship 1.wav",
+            GameplaySFXCategory.ElementTimeReceived => Spec(0f, 60, 0.1f, 1f, "Cosmic shore time ship 1.wav",
                 P(0f, 0.171f, 0.77f),
                 P(0.6f, 0f, 0.77f)),
-            GameplaySFXCategory.ComebackCharge => Spec(0.85f, 70, 0.3f, "cosmic shore comeback charge.wav",
+            GameplaySFXCategory.ComebackCharge => Spec(0f, 70, 0.3f, 1f, "cosmic shore comeback charge.wav",
                 P(0f, 0f, 0.67f),
                 P(0.55f, 0.35f, 0.849f),
                 P(0.625f, 0.432f, 0.94f),
@@ -354,11 +364,11 @@ namespace CosmicShore.Core
                 P(0.8f, 0.774f, 0.993f),
                 P(0.85f, 0.504f, 0.993f),
                 P(0.9f, 0f, 0.993f)),
-            GameplaySFXCategory.ComebackMass => Spec(0.85f, 70, 0.3f, "cosmic shore comeback mass.wav",
+            GameplaySFXCategory.ComebackMass => Spec(0f, 70, 0.3f, 1f, "cosmic shore comeback mass.wav",
                 P(0f, 0f, 0f),
                 P(0.825f, 0.889f, 0f),
                 P(0.9f, 0f, 0f)),
-            GameplaySFXCategory.ComebackSpace => Spec(0.85f, 70, 0.3f, "cosmic shore comeback space.wav",
+            GameplaySFXCategory.ComebackSpace => Spec(0f, 70, 0.3f, 1f, "cosmic shore comeback space.wav",
                 P(0f, 0f, 0.512f),
                 P(0.2f, 0f, 0.648f),
                 P(0.475f, 0.6f, 0.512f),
@@ -368,14 +378,14 @@ namespace CosmicShore.Core
                 P(0.8f, 0.74f, 0.384f),
                 P(0.825f, 0.969f, 0.348f),
                 P(0.9f, 0f, 0.348f)),
-            GameplaySFXCategory.ComebackTime => Spec(0.85f, 70, 0.3f, "cosmic shore comeback time.wav",
+            GameplaySFXCategory.ComebackTime => Spec(0f, 70, 0.3f, 1f, "cosmic shore comeback time.wav",
                 P(0f, 0.199f, 0.719f),
                 P(0.525f, 0.411f, 0.755f),
                 P(0.575f, 0.71f, 0.681f),
                 P(0.675f, 0.501f, 0.752f),
                 P(0.825f, 0.888f, 0.794f),
                 P(0.9f, 0f, 0.794f)),
-            GameplaySFXCategory.JoustBuffCharge => Spec(0.8f, 65, 0.25f, "cosmic shore charge ally joust (buff).wav",
+            GameplaySFXCategory.JoustBuffCharge => Spec(0f, 65, 0.25f, 1f, "cosmic shore charge ally joust (buff).wav",
                 P(0f, 0f, 0.937f),
                 P(0.4f, 0.51f, 0.681f),
                 P(0.45f, 0.894f, 1f),
@@ -383,13 +393,13 @@ namespace CosmicShore.Core
                 P(0.5f, 0.495f, 0.828f),
                 P(0.725f, 0.859f, 0.804f),
                 P(0.8f, 0f, 0.804f)),
-            GameplaySFXCategory.JoustBuffMass => Spec(0.8f, 65, 0.25f, "cosmic shore mass ally joust (buff).wav",
+            GameplaySFXCategory.JoustBuffMass => Spec(0f, 65, 0.25f, 1f, "cosmic shore mass ally joust (buff).wav",
                 P(0f, 0f, 0.226f),
                 P(0.15f, 0.455f, 0.052f),
                 P(0.275f, 0.406f, 0f),
                 P(0.475f, 0.834f, 0f),
                 P(0.8f, 0f, 0f)),
-            GameplaySFXCategory.JoustBuffSpace => Spec(0.8f, 65, 0.25f, "cosmic shore space ally joust (buff).wav",
+            GameplaySFXCategory.JoustBuffSpace => Spec(0f, 65, 0.25f, 1f, "cosmic shore space ally joust (buff).wav",
                 P(0f, 0f, 0.781f),
                 P(0.05f, 0.46f, 0.468f),
                 P(0.275f, 0.763f, 0.63f),
@@ -401,7 +411,7 @@ namespace CosmicShore.Core
                 P(0.7f, 0.843f, 0.67f),
                 P(0.75f, 0.625f, 0.623f),
                 P(0.8f, 0f, 0.623f)),
-            GameplaySFXCategory.JoustBuffTime => Spec(0.8f, 65, 0.25f, "cosmic shore time ally joust (buff).wav",
+            GameplaySFXCategory.JoustBuffTime => Spec(0f, 65, 0.25f, 1f, "cosmic shore time ally joust (buff).wav",
                 P(0f, 0.112f, 0.531f),
                 P(0.35f, 0.191f, 0.714f),
                 P(0.425f, 0.707f, 0.696f),
@@ -409,21 +419,12 @@ namespace CosmicShore.Core
                 P(0.525f, 0.709f, 0.714f),
                 P(0.575f, 0.361f, 0.719f),
                 P(0.8f, 0f, 0.719f)),
-            GameplaySFXCategory.TrackImpact => Spec(0.9f, 80, 0.15f, "track colide cosmic shroe.wav",
-                E(0f, 0.796f, 0.931f, 0.704f, 0.931f),
-                P(0.025f, 1f, 0.956f),
-                P(0.05f, 0.623f, 0.867f),
-                P(0.075f, 0.504f, 0.897f),
-                P(0.1f, 0.495f, 0.948f),
-                P(0.125f, 0.449f, 0.886f),
-                P(0.15f, 0.397f, 0.813f),
-                P(0.175f, 0.239f, 0.819f),
-                P(0.2f, 0.232f, 0.822f),
-                P(0.225f, 0.173f, 0.797f),
-                P(0.25f, 0.147f, 0.844f),
-                P(0.275f, 0.12f, 0.852f),
-                P(0.3f, 0f, 0.867f)),
-            GameplaySFXCategory.FloraCollision => Spec(0.4f, 30, 0.12f, "Cosmic shore block break.wav",
+            GameplaySFXCategory.TrackImpact => Spec(0.7f, 80, 0.25f, 0f, "designed: punish thud",
+                E(0f, 1f, 0.15f, 0.85f, 0.2f),
+                P(0.06f, 0.5f, 0.12f),
+                P(0.14f, 0.2f, 0.1f),
+                P(0.22f, 0f, 0.1f)),
+            GameplaySFXCategory.FloraCollision => Spec(0f, 30, 0.12f, 1f, "Cosmic shore block break.wav",
                 E(0f, 0.939f, 1f, 0.908f, 1f),
                 P(0.05f, 1f, 1f),
                 P(0.075f, 0.909f, 1f),
@@ -435,7 +436,7 @@ namespace CosmicShore.Core
                 P(0.3f, 0.441f, 1f),
                 P(0.375f, 0.411f, 1f),
                 P(0.4f, 0f, 1f)),
-            GameplaySFXCategory.CreatureBlockHit => Spec(0.55f, 35, 0.12f, "CREATURE BREAKS GLASS COSMIC SHORE.wav",
+            GameplaySFXCategory.CreatureBlockHit => Spec(0f, 35, 0.12f, 1f, "CREATURE BREAKS GLASS COSMIC SHORE.wav",
                 P(0f, 0.924f, 0.574f),
                 P(0.025f, 0.865f, 0.549f),
                 P(0.1f, 1f, 0.468f),
@@ -445,18 +446,20 @@ namespace CosmicShore.Core
                 P(0.3f, 0.59f, 0.522f),
                 P(0.4f, 0.35f, 0.67f),
                 P(0.5f, 0f, 0.67f)),
-            _ => Spec(0.5f, 40, 0.1f, "fallback",
+            _ => Spec(0f, 40, 0.1f, 1f, "fallback",
                 E(0f, 1f, 0.5f, 0.8f, 0.5f),
                 P(0.08f, 0.35f, 0.45f),
                 P(0.2f, 0f, 0.4f)),
         };
 
+        // Menu/UI haptics are all zero-gain by doctrine: a click is not worth a
+        // buzz. Envelopes stay measured so a designer can opt one back in.
         static HapticTransientSpec BuildMenu(MenuAudioCategory category) => category switch
         {
-            MenuAudioCategory.OptionClick => Spec(0.55f, 40, 0.04f, "cosmic shore click.wav",
+            MenuAudioCategory.OptionClick => Spec(0f, 40, 0.04f, 1f, "cosmic shore click.wav",
                 P(0f, 1f, 0.468f),
                 P(0.025f, 0f, 0.5f)),
-            MenuAudioCategory.OpenView => Spec(0.65f, 40, 0.08f, "OpenView.wav",
+            MenuAudioCategory.OpenView => Spec(0f, 40, 0.08f, 1f, "OpenView.wav",
                 P(0f, 0.217f, 1f),
                 P(0.025f, 0.596f, 1f),
                 P(0.075f, 0.912f, 1f),
@@ -471,7 +474,7 @@ namespace CosmicShore.Core
                 P(0.45f, 0.394f, 1f),
                 P(0.5f, 0.335f, 1f),
                 P(0.6f, 0f, 1f)),
-            MenuAudioCategory.SwitchView => Spec(0.6f, 40, 0.08f, "SwitchView.wav",
+            MenuAudioCategory.SwitchView => Spec(0f, 40, 0.08f, 1f, "SwitchView.wav",
                 P(0f, 0.108f, 1f),
                 P(0.025f, 0.31f, 1f),
                 P(0.05f, 0.6f, 1f),
@@ -486,7 +489,7 @@ namespace CosmicShore.Core
                 P(0.4f, 0.738f, 0.949f),
                 P(0.425f, 0.567f, 0.996f),
                 P(0.55f, 0f, 0.996f)),
-            MenuAudioCategory.CloseView => Spec(0.6f, 40, 0.08f, "CloseView.wav",
+            MenuAudioCategory.CloseView => Spec(0f, 40, 0.08f, 1f, "CloseView.wav",
                 P(0f, 0.322f, 0.901f),
                 P(0.025f, 1f, 1f),
                 P(0.05f, 0.945f, 0.941f),
@@ -501,7 +504,7 @@ namespace CosmicShore.Core
                 P(0.35f, 0.462f, 1f),
                 P(0.375f, 0.121f, 1f),
                 P(0.4f, 0f, 1f)),
-            MenuAudioCategory.SmallReward => Spec(0.75f, 45, 0.1f, "SmallReward.wav",
+            MenuAudioCategory.SmallReward => Spec(0f, 45, 0.1f, 1f, "SmallReward.wav",
                 P(0f, 0f, 1f),
                 P(0.025f, 0f, 1f),
                 P(0.05f, 0f, 1f),
@@ -515,7 +518,7 @@ namespace CosmicShore.Core
                 P(0.25f, 0.534f, 1f),
                 P(0.275f, 0.192f, 0.897f),
                 P(0.3f, 0f, 1f)),
-            MenuAudioCategory.BigReward => Spec(1f, 55, 0.2f, "BigReward.wav",
+            MenuAudioCategory.BigReward => Spec(0f, 55, 0.2f, 1f, "BigReward.wav",
                 P(0f, 0f, 1f),
                 P(0.05f, 0f, 1f),
                 P(0.325f, 1f, 0.755f),
@@ -526,7 +529,7 @@ namespace CosmicShore.Core
                 P(0.85f, 0.317f, 0.282f),
                 P(0.9f, 0.471f, 0.193f),
                 P(1.2f, 0f, 0.193f)),
-            MenuAudioCategory.Upgrade => Spec(0.9f, 50, 0.2f, "Upgrade.wav",
+            MenuAudioCategory.Upgrade => Spec(0f, 50, 0.2f, 1f, "Upgrade.wav",
                 P(0f, 0f, 1f),
                 P(0.05f, 0f, 1f),
                 P(0.325f, 1f, 0.755f),
@@ -537,7 +540,7 @@ namespace CosmicShore.Core
                 P(0.85f, 0.317f, 0.282f),
                 P(0.9f, 0.471f, 0.193f),
                 P(1f, 0f, 0.193f)),
-            MenuAudioCategory.Denied => Spec(0.7f, 45, 0.1f, "Denied.wav",
+            MenuAudioCategory.Denied => Spec(0f, 45, 0.1f, 1f, "Denied.wav",
                 P(0f, 0.22f, 1f),
                 P(0.025f, 0.333f, 1f),
                 P(0.05f, 0.594f, 0.993f),
@@ -551,7 +554,7 @@ namespace CosmicShore.Core
                 P(0.25f, 1f, 0.582f),
                 P(0.275f, 0.219f, 0f),
                 P(0.3f, 0f, 0.306f)),
-            MenuAudioCategory.Confirmed => Spec(0.7f, 45, 0.1f, "Confirmed.wav",
+            MenuAudioCategory.Confirmed => Spec(0f, 45, 0.1f, 1f, "Confirmed.wav",
                 P(0f, 0.495f, 0.468f),
                 P(0.025f, 0.81f, 0.512f),
                 P(0.05f, 0.88f, 0.456f),
@@ -565,7 +568,7 @@ namespace CosmicShore.Core
                 P(0.55f, 0.74f, 0f),
                 P(0.625f, 0.36f, 0.154f),
                 P(0.65f, 0f, 0.154f)),
-            MenuAudioCategory.LetsGo => Spec(0.9f, 55, 0.2f, "LetsGo.wav",
+            MenuAudioCategory.LetsGo => Spec(0f, 55, 0.2f, 1f, "LetsGo.wav",
                 P(0f, 0f, 1f),
                 P(0.1f, 0.341f, 1f),
                 P(0.2f, 0.349f, 1f),
@@ -580,7 +583,7 @@ namespace CosmicShore.Core
                 P(0.725f, 0.324f, 1f),
                 P(0.8f, 0.373f, 1f),
                 P(0.875f, 0f, 1f)),
-            MenuAudioCategory.SwitchScreen => Spec(0.55f, 40, 0.08f, "cosmic shore switch screen.wav",
+            MenuAudioCategory.SwitchScreen => Spec(0f, 40, 0.08f, 1f, "cosmic shore switch screen.wav",
                 P(0f, 0.111f, 0.603f),
                 P(0.025f, 0.273f, 0.502f),
                 P(0.05f, 0.369f, 0.491f),
@@ -595,7 +598,7 @@ namespace CosmicShore.Core
                 P(0.3f, 0.179f, 0.54f),
                 P(0.35f, 0.135f, 0.468f),
                 P(0.375f, 0f, 0.603f)),
-            MenuAudioCategory.RedeemTicket => Spec(0.8f, 45, 0.15f, "RedeemTicket.wav",
+            MenuAudioCategory.RedeemTicket => Spec(0f, 45, 0.15f, 1f, "RedeemTicket.wav",
                 P(0f, 0.156f, 1f),
                 P(0.05f, 0.465f, 1f),
                 P(0.15f, 0.676f, 1f),
@@ -610,7 +613,7 @@ namespace CosmicShore.Core
                 P(0.6f, 0.308f, 1f),
                 P(0.825f, 0.191f, 1f),
                 P(0.9f, 0f, 1f)),
-            _ => Spec(0.5f, 40, 0.05f, "fallback",
+            _ => Spec(0f, 40, 0.05f, 1f, "fallback",
                 E(0f, 0.8f, 0.7f, 0.6f, 0.7f),
                 P(0.05f, 0.25f, 0.6f),
                 P(0.12f, 0f, 0.6f)),

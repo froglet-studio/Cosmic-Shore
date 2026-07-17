@@ -13,4 +13,4 @@ MonoBehaviour:
   m_Name: SquirrelVesselHapticsByPrismEffect
   m_EditorClassIdentifier: 
   _haptic:
-    _type: 5
+    _type: 3

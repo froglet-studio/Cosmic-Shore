@@ -131,7 +131,10 @@ namespace CosmicShore.Gameplay
                     orchestrator.PlayMenuTransient(MenuAudioCategory.OptionClick);
                     return;
                 case HapticType.PrismCollision:
-                    PlayGameplay(orchestrator, GameplaySFXCategory.CrystalSkim, worldPosition);
+                    // The skimmer's per-prism event — THE hero haptic. Each prism
+                    // entering the skimmer fires one bright pulse; skimming down a
+                    // trail chains them into a continuous rewarding train.
+                    orchestrator.PlaySkimPulse();
                     return;
                 case HapticType.ShipCollision:
                     PlayGameplay(orchestrator, GameplaySFXCategory.VesselImpact, worldPosition);

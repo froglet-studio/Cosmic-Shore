@@ -624,14 +624,15 @@ namespace CosmicShore.Core
                 // firing it at the same call the FMOD one-shot starts gives the
                 // best perceived sync. Gain mirrors the per-category audio
                 // attenuation; spatial events additionally fall off with
-                // listener distance inside the orchestrator. Deliberately NOT
-                // scaled by the SFX slider — haptics have their own setting.
-                if (_haptics != null)
-                {
-                    float hapticGain = GetCategoryVolumeScale(category);
-                    if (spatial) _haptics.PlayGameplayTransient(category, worldPosition, hapticGain);
-                    else _haptics.PlayGameplayTransient(category, hapticGain);
-                }
+                // listener distance, and the spec's audioEventGain lets
+                // vessel-attributed categories opt out of this automatic hook
+                // entirely (their local-player-gated effect SOs own the haptic).
+                // Deliberately NOT scaled by the SFX slider — haptics have
+                // their own setting.
+                _haptics?.PlayGameplayFromAudioEvent(
+                    category,
+                    GetCategoryVolumeScale(category),
+                    spatial ? worldPosition : (Vector3?)null);
 
                 float volume = ResolveFMODSFXVolume() * GetCategoryVolumeScale(category);
                 FMODOneShotVolumeHelper.PlaySFXOneShot(reference, spatial ? worldPosition : Vector3.zero, volume);

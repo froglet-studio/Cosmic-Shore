@@ -37,7 +37,7 @@ MonoBehaviour:
   buffPopDuration: 0.22
   debuffShakeDuration: 0.2
   debuffShakeStrength: 8
-  hapticOnDebuff: 1
+  hapticOnDebuff: 0
   debuffHapticAmplitude: 0.6
   debuffHapticFrequency: 0.5
   debuffHapticDuration: 0.15

@@ -102,6 +102,99 @@ namespace CosmicShore.Tests
             Assert.Greater(impact, blockBreak);
         }
 
+        #region Feel doctrine (playtest-locked): sparse haptics, two hero feels
+
+        [Test]
+        public void Doctrine_SkimPulse_IsTheStrongestJuiciestHaptic()
+        {
+            var skim = AudioHapticsBakedDefaults.SkimPulse();
+
+            Assert.IsNotNull(skim);
+            Assert.GreaterOrEqual(skim.gain, 0.9f, "the skim pulse is the hero — full strength");
+            Assert.LessOrEqual(skim.cooldownSeconds, 0.05f,
+                "hitting many prisms in sequence must chain into a rapid pulse train");
+            Assert.LessOrEqual(HapticPatternBuilder.Duration(skim.envelope), 0.12f,
+                "each pulse must be a discrete tick, not a smear — the train reads pulse-by-pulse");
+
+            bool hasEmphasis = false;
+            foreach (var point in skim.envelope)
+                if (point.Emphasize) hasEmphasis = true;
+            Assert.IsTrue(hasEmphasis, "the pulse needs a crisp transient snap");
+        }
+
+        [Test]
+        public void Doctrine_SkimPulse_IsMemoized()
+        {
+            Assert.AreSame(AudioHapticsBakedDefaults.SkimPulse(), AudioHapticsBakedDefaults.SkimPulse());
+        }
+
+        [Test]
+        public void Doctrine_PrismPunish_IsLowFrequencyAndCutsThroughTheTrain()
+        {
+            var punish = AudioHapticsBakedDefaults.ForGameplay(GameplaySFXCategory.VesselImpact);
+            var skim = AudioHapticsBakedDefaults.SkimPulse();
+
+            Assert.GreaterOrEqual(punish.gain, 0.7f, "hitting a prism should feel distinctly punishing");
+            Assert.LessOrEqual(punish.envelope[0].Frequency, 0.3f,
+                "punish = a LOW thud (heavy motor / soft deep vibration), opposite in character to the bright skim");
+            Assert.Greater(punish.priority, skim.priority,
+                "a crash must cut through the reward train");
+            Assert.AreEqual(0f, punish.audioEventGain,
+                "the punish fires only from the local-player-gated effect SO, never from the audio hook (an AI crashing nearby must not thud this device)");
+        }
+
+        [Test]
+        public void Doctrine_MenuHaptics_AreAllSilent()
+        {
+            foreach (MenuAudioCategory category in Enum.GetValues(typeof(MenuAudioCategory)))
+                Assert.AreEqual(0f, AudioHapticsBakedDefaults.ForMenu(category).gain,
+                    $"menu category {category} must default silent — a click is not worth a buzz");
+        }
+
+        [Test]
+        public void Doctrine_GameplayHaptics_AreSparse()
+        {
+            int audible = 0;
+            foreach (GameplaySFXCategory category in Enum.GetValues(typeof(GameplaySFXCategory)))
+                if (AudioHapticsBakedDefaults.ForGameplay(category).gain > 0f)
+                    audible++;
+
+            Assert.LessOrEqual(audible, 5,
+                "haptics are sparse signals, not a soundtrack — only events worth interrupting the hand keep a gain");
+        }
+
+        [Test]
+        public void Doctrine_ChatterCategories_AreSilent()
+        {
+            var mustBeSilent = new[]
+            {
+                GameplaySFXCategory.BlockDestroy,   // fires en masse on trail breaks
+                GameplaySFXCategory.CrystalSkim,    // superseded by the dedicated skim pulse
+                GameplaySFXCategory.DriftStart,
+                GameplaySFXCategory.DriftEnd,
+                GameplaySFXCategory.BoostActivate,
+                GameplaySFXCategory.GunFire,
+                GameplaySFXCategory.ShieldActivate,
+                GameplaySFXCategory.EnergyGain,
+            };
+
+            foreach (var category in mustBeSilent)
+                Assert.AreEqual(0f, AudioHapticsBakedDefaults.ForGameplay(category).gain,
+                    $"{category} must default silent");
+        }
+
+        [Test]
+        public void Doctrine_VesselAttributedCategories_OptOutOfTheAudioHook()
+        {
+            // These have local-player-gated effect-SO paths; the automatic
+            // audio hook (any actor, anywhere) must not fire them.
+            Assert.AreEqual(0f, AudioHapticsBakedDefaults.ForGameplay(GameplaySFXCategory.VesselImpact).audioEventGain);
+            Assert.AreEqual(0f, AudioHapticsBakedDefaults.ForGameplay(GameplaySFXCategory.TrackImpact).audioEventGain);
+            Assert.AreEqual(0f, AudioHapticsBakedDefaults.ForGameplay(GameplaySFXCategory.CrystalCollect).audioEventGain);
+        }
+
+        #endregion
+
         [Test]
         public void ChatterCategories_HaveCooldowns()
         {
