@@ -54,7 +54,11 @@ namespace CosmicShore.Gameplay
             {
                 if (status.ElementalAbilityHandler?.IsUpgradeActive(allyUpgradeElement) != true) return;
                 if (lifeform.LevelUp())
+                {
+                    CosmicShore.Utility.CSDebug.Log(
+                        $"[CrystalJoust] Shepherd: {status.PlayerName} levelled an ally to L{lifeform.Level}.");
                     onLifeformJousted?.Raise(status.PlayerName);
+                }
                 return;
             }
 

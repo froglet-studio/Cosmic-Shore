@@ -275,8 +275,8 @@ namespace CosmicShore.Gameplay
                 // its world target divided by the body growth (it lands at the world size wanted).
                 float worldTarget = _crystalBaseScale * Mathf.Pow(CrystalScalePerLevel, Level - 1);
                 float localTarget = worldTarget / Mathf.Pow(BodyScalePerLevel, Level - 1);
-                if (animate && crystal.gameObject.activeInHierarchy)
-                    crystal.GrowCrystal(LevelGrowSeconds, localTarget);
+                if (animate && isActiveAndEnabled && crystal.gameObject.activeInHierarchy)
+                    StartCoroutine(GrowCrystalWithPop(localTarget, LevelGrowSeconds));
                 else
                     crystal.transform.localScale = Vector3.one * localTarget;
             }
@@ -335,6 +335,36 @@ namespace CosmicShore.Gameplay
                     if (tuning.AudioMaxDistance >= 0f) emitter.OverrideMaxDistance = tuning.AudioMaxDistance;
                 }
             }
+        }
+
+        /// <summary>
+        /// Level-up crystal growth with an OVERSHOOT pop: the heart flares past its new size in
+        /// the first quarter of the animation, then settles - readable at flight speed, where a
+        /// plain 20%-over-a-second ease is too subtle to notice. Still continuous (never pops in).
+        /// </summary>
+        IEnumerator GrowCrystalWithPop(float localTarget, float seconds)
+        {
+            if (!crystal) yield break;
+            var t = crystal.transform;
+            float start = t.localScale.x;
+            float flare = localTarget * 1.6f;
+            float flareTime = Mathf.Max(0.05f, seconds * 0.25f);
+            float settleTime = Mathf.Max(0.05f, seconds - flareTime);
+
+            for (float e = 0f; e < flareTime; e += Time.deltaTime)
+            {
+                if (!crystal) yield break;
+                t.localScale = Vector3.one * Mathf.Lerp(start, flare, e / flareTime);
+                yield return null;
+            }
+            for (float e = 0f; e < settleTime; e += Time.deltaTime)
+            {
+                if (!crystal) yield break;
+                float u = e / settleTime;
+                t.localScale = Vector3.one * Mathf.Lerp(flare, localTarget, u * u * (3f - 2f * u));
+                yield return null;
+            }
+            if (crystal) t.localScale = Vector3.one * localTarget;
         }
 
         IEnumerator GrowToScale(Vector3 target, float seconds)

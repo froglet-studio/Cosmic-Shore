@@ -65,15 +65,25 @@ namespace CosmicShore.Gameplay
         /// <summary>True while this crystal is a living lifeform's heart (not yet dropped).</summary>
         public bool IsEmbedded => EmbeddedIn != null;
 
+        // The embedded heart's trigger is INFLATED so a vessel passing through the creature
+        // reliably clips it at flight speed (the authored radius is a pickup hitbox, tiny and
+        // buried inside the body). Restored to the authored radius when the crystal drops.
+        const float EmbeddedHeartRadiusMultiplier = 2.5f;
+        float _authoredColliderRadius = -1f;
+
         /// <summary>
-        /// Marks this crystal as a living lifeform's heart and enables its collider so vessels
-        /// can joust it. Called by lifeforms right after LifeFormCrystal.EnsureElementalCrystal.
+        /// Marks this crystal as a living lifeform's heart and enables its collider (inflated,
+        /// so the joust reliably lands) so vessels can joust it. Called by lifeforms right
+        /// after LifeFormCrystal.EnsureElementalCrystal.
         /// </summary>
         public void SetEmbeddedIn(ILifeFormEntity owner)
         {
             EmbeddedIn = owner;
             var col = GetComponent<SphereCollider>();
-            if (col) col.enabled = owner != null;
+            if (!col) return;
+            if (_authoredColliderRadius < 0f) _authoredColliderRadius = col.radius;
+            col.radius = _authoredColliderRadius * (owner != null ? EmbeddedHeartRadiusMultiplier : 1f);
+            col.enabled = owner != null;
         }
 
         // ── Active-crystal registry ──────────────────────────────────────────
@@ -231,7 +241,9 @@ namespace CosmicShore.Gameplay
         {
             EmbeddedIn = null; // no longer a living heart - it's a free collectible now
             transform.parent = cellData.Cell.transform;
-            gameObject.GetComponent<SphereCollider>().enabled = true;
+            var dropCol = gameObject.GetComponent<SphereCollider>();
+            if (_authoredColliderRadius > 0f) dropCol.radius = _authoredColliderRadius;
+            dropCol.enabled = true;
             enabled = true;
 
             for (int i = 0; i < crystalModels.Count; i++)
