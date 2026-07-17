@@ -23,13 +23,36 @@ namespace CosmicShore.Gameplay
         public bool goldenGoalOvertime = true;
 
         [Header("Intensity Scale (arena + ball + team spawns)")]
-        [Tooltip("Arena, ball, goals and team-spawn distances scale from 1x at intensity 1 up to this " +
-                 "factor at the max intensity. Kept tight (1x..2x) so all four courts play at a similar " +
-                 "size: intensities 1-4 step evenly 1x / 1.33x / 1.67x / 2x. Vessels stay normal size.")]
+        [Tooltip("Arena, ball, goal and team-spawn scale PER INTENSITY (index 0 = intensity 1). " +
+                 "Overrides the legacy even ramp whenever non-empty; falls back to the last entry " +
+                 "above its length. Default {2, 1.33, 1.67, 2}: the intensity-1 court is DOUBLED " +
+                 "(2x) while 2-4 keep the legacy even ramp. Vessels stay normal size.")]
+        public float[] arenaScaleByIntensity = { 2f, 4f / 3f, 5f / 3f, 2f };
+
+        [Tooltip("LEGACY fallback ramp (used only when arenaScaleByIntensity is empty): scale steps " +
+                 "evenly from 1x at intensity 1 up to this factor at maxIntensityLevel.")]
         public float intensityScaleAtMax = 2f;
 
-        [Tooltip("Highest intensity level used for the scale ramp (the arcade card's MaxIntensity).")]
+        [Tooltip("Highest intensity level used for the legacy scale ramp (the arcade card's MaxIntensity).")]
         public int maxIntensityLevel = 4;
+
+        /// <summary>
+        /// Arena/ball/layout scale for an intensity level (1-based). Per-intensity table first
+        /// (clamped to the configured array), legacy even 1x→intensityScaleAtMax ramp when the
+        /// table is empty.
+        /// </summary>
+        public float ScaleForIntensity(int intensity)
+        {
+            if (arenaScaleByIntensity != null && arenaScaleByIntensity.Length > 0)
+            {
+                int idx = Mathf.Clamp(intensity - 1, 0, arenaScaleByIntensity.Length - 1);
+                return Mathf.Max(0.01f, arenaScaleByIntensity[idx]);
+            }
+
+            int maxLevel = Mathf.Max(2, maxIntensityLevel);
+            float t = (Mathf.Clamp(intensity, 1, maxLevel) - 1f) / (maxLevel - 1f);
+            return Mathf.Lerp(1f, Mathf.Max(1f, intensityScaleAtMax), t);
+        }
 
         [Header("Arena - Court Boundary (the cell nucleus)")]
         [Tooltip("Court geometry the ball bounces off, ONE PER INTENSITY (index 0 = intensity 1). FLAT " +
@@ -104,6 +127,59 @@ namespace CosmicShore.Gameplay
             int idx = Mathf.Clamp(intensity - 1, 0, centralGoalByIntensity.Length - 1);
             return centralGoalByIntensity[idx];
         }
+
+        [Header("Arena - Edge Lining (super-shielded prisms)")]
+        [Tooltip("Lay a lining of SUPER-SHIELDED (invulnerable) neutral prisms along the court's edges " +
+                 "at every intensity - polytope hull edges, cylinder cap rims, sphere latitude rings. " +
+                 "Laid per peer through the standard PrismFactory channel (prisms bloom in; removal is " +
+                 "the animated Damage path - continuity law).")]
+        public bool edgePrismsEnabled = true;
+
+        [Tooltip("TOTAL prisms in the lining, distributed evenly over the court's summed edge length - " +
+                 "FIXED across shapes and intensities so the lining's volume budget (count x prism " +
+                 "volume) stays deterministic. The Astro League Cell Config's phase-volume thresholds " +
+                 "are raised by exactly that budget (96 x 62.5 = 6000) - retune them together. " +
+                 "Collider budget: each lining prism holds an always-on convex MeshCollider (the " +
+                 "engaged shield octahedron) that collider-LOD cannot reclaim - keep this modest.")]
+        public int edgePrismCount = 96;
+
+        [Tooltip("Lining prism TargetScale (long Z axis laid ALONG the edge). Volume = x*y*z; total " +
+                 "lining volume = edgePrismCount x that volume. Change either and retune the cell " +
+                 "config's phase-volume thresholds to match.")]
+        public Vector3 edgePrismScale = new(2.5f, 2.5f, 10f);
+
+        [Tooltip("Inward offset from the edge line toward the arena center (world units at intensity 1, " +
+                 "scales with the arena) so the lining sits just inside the wall the ball bounces off.")]
+        public float edgePrismInset = 6f;
+
+        [Header("Goal Reset (every non-final goal)")]
+        [Tooltip("On every goal: every peer parks the vessels it owns back on their kickoff lines with " +
+                 "speed ZEROED and clears the accumulated field prisms while the goal replay plays. " +
+                 "Kickoff re-parks (idempotent) before GO.")]
+        public bool goalResetsArena = true;
+
+        [Tooltip("Seconds the staggered prism-clear sweep takes (center-out wave, canonical animated " +
+                 "Damage path - never a raw Destroy). Keep within celebration + kickoff-freeze.")]
+        public float goalPrismClearSeconds = 1.6f;
+
+        [Header("Goal Replay (the replay camera)")]
+        [Tooltip("Replay the goal on the shared END camera (the replay camera) while the arena resets " +
+                 "behind it: a visual-only ghost ball retraces the recorded flight into the goal, camera " +
+                 "following. Purely local on every peer (the ball trajectory is already replicated); the " +
+                 "gameplay camera is restored at kickoff GO or when playback ends.")]
+        public bool goalReplayEnabled = true;
+
+        [Tooltip("Seconds of ball flight recorded for the replay (ring buffer, cleared at every kickoff " +
+                 "GO so a replay never crosses a reset).")]
+        public float goalReplayRecordSeconds = 4f;
+
+        [Tooltip("Fraction of the celebration + kickoff-freeze window the ghost playback may fill; " +
+                 "playback speed is derived to fit (slow-mo when the recording is short).")]
+        [Range(0.3f, 1f)] public float goalReplayWindowFraction = 0.85f;
+
+        [Tooltip("Playback-speed floor - a goal scored seconds after kickoff would otherwise stretch a " +
+                 "tiny recording into extreme slow-mo.")]
+        public float goalReplayMinPlaybackSpeed = 0.3f;
 
         [Header("Vessel Recoil (juice)")]
         [Tooltip("Backward velocity (units/sec) added to a vessel when it strikes the ball, a subtle " +
