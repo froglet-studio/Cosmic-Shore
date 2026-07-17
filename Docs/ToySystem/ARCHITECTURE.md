@@ -67,6 +67,7 @@ detection. On top of that base the `Toy` class adds:
 | Conveyor belt runner | `Assets/_Scripts/Controller/Toys/MicrosceneConveyor.cs` |
 | One conveyor scene (lay/transport/re-arrange) | `Assets/_Scripts/Controller/Toys/Microscene.cs` |
 | Microscene recipe generators (pure) | `Assets/_Scripts/Controller/Toys/MicroscenePatterns.cs` |
+| Microscene structural painter (domain/kind/scale) | `Assets/_Scripts/Controller/Toys/MicroscenePainter.cs` |
 | Placement + lifecycle | `Assets/_Scripts/Controller/Toys/ToyboxController.cs` |
 | Per-toy config (abstract) | `Assets/_Scripts/ScriptableObjects/Toys/ToyDefinitionSO.cs` |
 | Vessel/Domain/Painting configs | `Assets/_Scripts/ScriptableObjects/Toys/*ToyDefinitionSO.cs` |
@@ -362,30 +363,43 @@ always works.
 
 Fly through → the belt switches **ON** (the toy flips bright + relabels "flowing — fly through
 to stop"; another pass switches it off) and a field of **microscenes** blooms in ahead of your
-flight path, scene after scene — open-world exploring crossed with an infinite runner. **28
+flight path, scene after scene — open-world exploring crossed with an infinite runner. **40
 recipes** built from a shared geometry vocabulary (`PrismGeometry`): gate runs, helix weaves,
 tunnels, slaloms, starbursts, orchards, meadows, menageries, polygon gates, serpent ribbons,
 colonnades, orbitals, canyons, lattices, comet tails, spiral ramps, archways, vortices (converging
 lines with an open convergence + an inviting crystal), slot corridors (parallel plates with gaps to
-roll through), cube fields, torus gates, pillar halls, turbines, asteroid fields, and living
-plains / groves / aviaries / preserves — each re-rolling its own radii/counts/twists/bends on every
-arrival, so the same recipe never lands the same way twice. The belt **follows you anywhere at any
+roll through), cube fields, torus gates, pillar halls, turbines, asteroid fields, living
+plains / groves / aviaries / preserves, and a batch built on **superstructure-oriented
+surfaces** — shingled domes and grotto vaults, torus-knot chases, Möbius rails, petal rosettes,
+rifled terrace spirals, banked ribbon chicanes (parallel-transport-swept plate decks that roll into
+turns), split tubes (facing curved shell walls), and four **Medley** slots that compose a spine
+(straight / arc / S-curve / helix drift) with alternating motifs (hoops, polygon gates, torus
+rings, shell dishes, blade crosses, clusters) — a combinatorial space no fixed recipe list could
+enumerate. Each recipe re-rolls its own radii/counts/twists/bends on every arrival, so the same
+recipe never lands the same way twice. The belt **follows you anywhere at any
 speed**: effective spacing = `max(sceneSpacing, speed × minSceneIntervalSeconds)` and lookahead =
 `aheadTargetScenes × spacing`, so there is always a field of ~7 structures ahead.
 
-**Geometry vs. theming (why it stays fresh, not chaotic).** A recipe produces pure *shape* only;
-`MicroscenePatterns.ApplyTheming` then themes each scene from a config-authored `MicroscenePalette`
-(`ConveyorToyDefinitionSO`): a **per-scene domain scheme** (mono / banded-by-structure / accented /
-neutral-veined-with-Blue — weighted so most scenes read one coherent colour, never per-prism
-confetti; domains read live each draw so the Domain Changer toy takes effect), a sparse **prism-kind
-scheme** (mostly plain, with occasional **danger** prisms — the Squirrel danger-skim risk/reward —
-and rarer **shielded** / **supershielded** accents, capped for the collider budget), a per-scene
-**scale mood** (grand vs. delicate), and a **crystal mix** (mostly elemental skims, occasional
+**Geometry vs. theming (why it stays fresh, not chaotic).** A recipe produces pure *shape* plus
+**structural metadata** — `MicroscenePlan.CloseStructure()` after each gate/strand/tree/wall stamps
+every point with its substructure id + t-along-path — and `MicroscenePainter` then paints each
+scene from a config-authored `MicroscenePalette` (`ConveyorToyDefinitionSO`). Painting keys off the
+structure, never bare indices: **domain schemes** (mono / per-structure rainbow runs /
+gradient-along-flight / accented / radial pinwheel / candy-stripe / port-starboard mirror /
+neutral-veined-with-Blue) always draw from the **full playable triad** — belt prisms are
+environment mass, not player property, so scenes are never limited to the session's domains;
+**kind schemes** use danger/shield as palette tools (all-plain / danger sprinkle / one whole
+**danger structure** — a gate of fire to thread or deliberately skim for the Squirrel danger
+boost / **danger tips** on arm-and-blade ends / shielded sprinkle / **shielded ribs** armouring
+one frame / a **supershielded keystone** guarding the crystal — shield counts capped for the
+collider budget); **scale moods** reshape whole scenes (uniform grand/delicate × long-axis stretch
+for wiry-vs-chunky × per-structure taper riding the structure-t — with every scale family also
+jittering each axis independently); and a **crystal mix** (mostly elemental skims, occasional
 **omni** jackpots — body-collected fuel + speed buff). "Infinitely fresh" is the cross-product of
-recipe × domain-scheme × kind-scheme × scale-mood × per-arrival geometry roll; coherence comes from
-theming per *scene*, not per prism. Prism lay-down goes through the shared `PrismTrailBuilder` (the
-one canonical Instantiate→…→Initialize primitive, also used by the Spawnable environment system).
-See `Docs/EnvironmentSpawning/UNIFICATION_ASSESSMENT.md`.
+recipe × domain-scheme × kind-scheme × scale-moods × per-arrival geometry roll; coherence comes
+from painting per *structure*, not per prism. Prism lay-down goes through the shared
+`PrismTrailBuilder` (the one canonical Instantiate→…→Initialize primitive, also used by the
+Spawnable environment system). See `Docs/EnvironmentSpawning/UNIFICATION_ASSESSMENT.md`.
 
 **Placement is a connected ribbon that can break and re-lay.** Every scene sits *on* the flight
 line — never scattered laterally (no orthogonal "sphere in front of you"). Each tick the belt scans

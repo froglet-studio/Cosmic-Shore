@@ -84,7 +84,6 @@ namespace CosmicShore.Gameplay
 
         readonly List<Microscene> _scenes = new();
         readonly List<int> _recipeBag = new();
-        readonly List<Domains> _domainList = new();
 
         System.Random _rng;
         float _nextTickAt;
@@ -294,32 +293,16 @@ namespace CosmicShore.Gameplay
             int recipe = _recipeBag[^1];
             _recipeBag.RemoveAt(_recipeBag.Count - 1);
 
-            // Read the live player domains on EVERY draw - never snapshot domain at creation time
-            // (CLAUDE.md ▸ Team Domains): the Domain Changer toy can re-pick mid-freestyle and the
-            // belt should start colouring scenes from the new set immediately. The palette then
-            // distributes them per-prism under a coherent per-scene scheme.
-            _cfg.Palette.PlayableDomains = LivePlayableDomains();
+            // The belt paints from the FULL playable triad, always. Belt prisms are environment
+            // mass, not player property - limiting the palette to the domains present in the
+            // session (the old behaviour) collapsed every solo-freestyle scene to the player's one
+            // colour and starved every multi-domain scheme. The painter's per-scene schemes decide
+            // how the triad lands (alternating gates, gradients, pinwheels, mono…).
+            _cfg.Palette.PlayableDomains = AllPlayableDomains;
             return MicroscenePatterns.Plan(recipe, _rng, _cfg.PrismBudget, _cfg.SceneRadius, _cfg.MaxCrystalsPerScene, _cfg.Palette);
         }
 
-        /// <summary>The live, distinct playable domains in the session (falls back to all three).</summary>
-        Domains[] LivePlayableDomains()
-        {
-            _domainList.Clear();
-            if (_gameData?.Players != null)
-                foreach (var player in _gameData.Players)
-                    if (player != null && player.Domain != Domains.Blue && !_domainList.Contains(player.Domain))
-                        _domainList.Add(player.Domain);
-
-            if (_domainList.Count == 0)
-            {
-                _domainList.Add(Domains.Jade);
-                _domainList.Add(Domains.Ruby);
-                _domainList.Add(Domains.Gold);
-            }
-
-            return _domainList.ToArray();
-        }
+        static readonly Domains[] AllPlayableDomains = { Domains.Jade, Domains.Ruby, Domains.Gold };
 
         // ── Plumbing ─────────────────────────────────────────────────────────
 

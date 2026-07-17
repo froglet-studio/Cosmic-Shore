@@ -210,9 +210,20 @@ teardown). Everything below is remaining polish / not-yet-play-verified.
   `prismBudgetPerScene` (density vs. perf); `turnBreakDegrees` (forward-cone half-angle, 20-80° —
   how sharp a turn re-lays the ribbon straight ahead vs. bends it along the curve; lower snaps to
   your new heading sooner, higher follows longer curves before re-laying).
-- **Recipe art pass.** The 16 `MicroscenePatterns` recipes are procedural (each re-rolls its own
+- **Recipe art pass.** The 40 `MicroscenePatterns` recipes are procedural (each re-rolls its own
   radii/counts/twists/bends per arrival) — tune ranges per recipe, and consider authored recipes
   (a `MicrosceneRecipeSO`) if designers want hand-built set pieces in the shuffle bag.
+- **Diversity pass (shipped).** Recipes stamp structural metadata (`MicroscenePlan.CloseStructure`)
+  and `MicroscenePainter` paints along it: 8 domain schemes over the full triad (per-structure
+  rainbows, flight gradients, pinwheels, stripes, mirrors), 7 kind schemes using danger/shield as
+  palette tools (danger gates/tips, armoured frames, keystone landmarks — shield caps unchanged),
+  scale moods (uniform × long-axis stretch × structure taper, per-axis family jitter), plus 12 new
+  recipes on superstructure-oriented primitives (domes, grottos, torus knots, Möbius rails,
+  rosettes, terrace spirals, banked ribbon chicanes, split tubes, 4 spine×motif Medley composers).
+  In-editor check: ride the belt and confirm most scenes carry structural colour, danger structures
+  read as deliberate hot gates (and slam you on contact — friendly fire is the design), shielded
+  ribs shrug off weapon fire, and mono/plain scenes still occur as breathing room. Tune the
+  `Toy_Conveyor.asset` palette weights to taste.
 - **Belt audio/VFX.** Suction/bloom currently rides scale only; a whoosh SFX
   (`AudioSystem` gameplay SFX) + a faint particle draw toward the anchor would sell the
   conveyor. Consider a soft chime as a new scene finishes blooming.
