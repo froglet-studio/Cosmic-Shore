@@ -50,20 +50,12 @@ namespace CosmicShore.Gameplay
 
             Vector3 position = crystal ? crystal.transform.localPosition : Vector3.zero;
 
-            // The four elemental prefabs ship at very DIFFERENT authored root scales (their model
-            // proportions compensate), so copying the authored crystal's absolute localScale onto
-            // a different element's prefab distorts it - and every later level-growth compounds
-            // from that wrong base. Scale RELATIVELY instead: how much the lifeform's author
-            // scaled its crystal versus that crystal's own prefab default, applied to the new
-            // element's prefab default.
-            float scaleRatio = 1f;
-            if (crystal)
-            {
-                var authoredElementPrefab = set.GetPrefab(crystal.crystalProperties.Element);
-                float authoredDefault = authoredElementPrefab ? authoredElementPrefab.transform.localScale.x : 0f;
-                if (authoredDefault > 1e-4f)
-                    scaleRatio = crystal.transform.localScale.x / authoredDefault;
-            }
+            // The four elemental prefabs share ONE scale convention (root 1.5, and a root scale
+            // of r renders ~2r world units for every element - the model children compensate for
+            // each export's mesh size), so the authored crystal's root scale transfers directly
+            // to the replacement element and every later level-growth compounds from the same
+            // base regardless of element.
+            float scale = crystal ? crystal.transform.localScale.x : 0f;
 
             SkimmerCrystalEffectSO[] authoredEffects = null;
             if (crystal)
@@ -83,7 +75,7 @@ namespace CosmicShore.Gameplay
 
             var provisioned = Object.Instantiate(prefab, owner.transform);
             provisioned.transform.localPosition = position;
-            provisioned.transform.localScale *= scaleRatio;
+            if (scale > 0f) provisioned.transform.localScale = Vector3.one * scale;
             WireCollection(provisioned, authoredEffects, set);
             return provisioned;
         }
