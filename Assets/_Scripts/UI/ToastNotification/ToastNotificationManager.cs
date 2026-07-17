@@ -12,9 +12,16 @@ namespace CosmicShore.UI
     /// (VerticalLayoutGroup, ContentSizeFitter, RectMask2D, etc.) controls
     /// positioning and clipping - this script never touches anchors, size, or position.
     /// New toasts are added as the last sibling; older toasts shift upward via layout.
+    ///
+    /// Toast visuals come from the authored prefab: the serialized reference wins,
+    /// then Resources/ToastNotificationItem (so the runtime-auto-created manager
+    /// still uses the authored prefab), and only as a last resort a plain
+    /// code-built item.
     /// </summary>
     public sealed class ToastNotificationManager : SingletonPersistent<ToastNotificationManager>
     {
+        private const string PrefabResourcePath = "ToastNotificationItem";
+
         [Header("Configuration")]
         [SerializeField] private ToastNotificationSettingsSO settings;
 
@@ -23,7 +30,8 @@ namespace CosmicShore.UI
         [SerializeField] private ToastNotificationChannel channel;
 
         [Header("Toast Prefab")]
-        [Tooltip("Prefab for individual toast items. If null, a default one is created at runtime.")]
+        [Tooltip("Prefab for individual toast items. If null, Resources/ToastNotificationItem is used, " +
+                 "then a plain default built at runtime.")]
         [SerializeField] private ToastNotificationItem toastPrefab;
 
         [Header("Container")]
@@ -48,7 +56,7 @@ namespace CosmicShore.UI
             if (Instance != this) return;
 
             if (toastPrefab == null)
-                toastPrefab = CreateDefaultPrefab();
+                toastPrefab = ResolvePrefab();
         }
 
         private void OnEnable()
@@ -59,6 +67,23 @@ namespace CosmicShore.UI
         private void OnDisable()
         {
             if (channel) channel.OnRaised -= Show;
+        }
+
+        /// <summary>
+        /// Runtime wiring for the auto-created manager (see ToastNotificationAPI).
+        /// Rebinds the channel subscription when the channel changes.
+        /// </summary>
+        public void Configure(ToastNotificationSettingsSO newSettings, ToastNotificationChannel newChannel)
+        {
+            if (newSettings != null)
+                settings = newSettings;
+
+            if (newChannel != null && newChannel != channel)
+            {
+                if (channel && isActiveAndEnabled) channel.OnRaised -= Show;
+                channel = newChannel;
+                if (isActiveAndEnabled) channel.OnRaised += Show;
+            }
         }
 
         public void Show(string message)
@@ -77,15 +102,15 @@ namespace CosmicShore.UI
 
             if (string.IsNullOrWhiteSpace(message)) return;
 
+            // Scene transitions can destroy the previous container along with any
+            // toasts parented under it - drop the dead references before counting.
+            _activeToasts.RemoveAll(item => item == null);
+
             if (_activeToasts.Count >= settings.maxVisible)
             {
-                if (_pendingQueue.Count < settings.maxQueue)
-                {
-                    _pendingQueue.Enqueue(message);
-                    return;
-                }
+                if (_pendingQueue.Count >= settings.maxQueue)
+                    _pendingQueue.Dequeue();
 
-                _pendingQueue.Dequeue();
                 _pendingQueue.Enqueue(message);
                 return;
             }
@@ -107,19 +132,20 @@ namespace CosmicShore.UI
 
         private ToastNotificationItem GetOrCreateItem()
         {
-            ToastNotificationItem item;
+            // Pooled items live under the container, so a destroyed container
+            // leaves destroyed entries behind - skip them.
+            while (_pool.Count > 0)
+            {
+                var pooled = _pool.Pop();
+                if (pooled == null) continue;
 
-            if (_pool.Count > 0)
-            {
-                item = _pool.Pop();
-                item.transform.SetParent(container, false);
-            }
-            else
-            {
-                item = Instantiate(toastPrefab, container);
-                item.OnDismissed += HandleDismissed;
+                pooled.transform.SetParent(container, false);
+                return pooled;
             }
 
+            var item = Instantiate(toastPrefab, container);
+            item.gameObject.SetActive(false);
+            item.OnDismissed += HandleDismissed;
             return item;
         }
 
@@ -134,9 +160,20 @@ namespace CosmicShore.UI
 
         #endregion
 
-        #region Default Prefab (Runtime Fallback)
+        #region Prefab Resolution
 
-        private ToastNotificationItem CreateDefaultPrefab()
+        private ToastNotificationItem ResolvePrefab()
+        {
+            var loaded = Resources.Load<ToastNotificationItem>(PrefabResourcePath);
+            if (loaded != null) return loaded;
+
+            CSDebug.LogWarning(
+                "[ToastNotificationManager] No toast prefab assigned and none found at " +
+                $"Resources/{PrefabResourcePath}. Falling back to a code-built default.");
+            return CreateDefaultTemplate();
+        }
+
+        private ToastNotificationItem CreateDefaultTemplate()
         {
             var go = new GameObject("ToastItem_Default", typeof(RectTransform));
             go.SetActive(false);
@@ -164,11 +201,10 @@ namespace CosmicShore.UI
             tmp.alignment = TextAlignmentOptions.MidlineLeft;
             tmp.enableWordWrapping = true;
             tmp.overflowMode = TextOverflowModes.Ellipsis;
+            tmp.raycastTarget = false;
 
             var item = go.AddComponent<ToastNotificationItem>();
-            var field = typeof(ToastNotificationItem).GetField("messageText",
-                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-            field?.SetValue(item, tmp);
+            item.BindMessageText(tmp);
 
             go.transform.SetParent(transform, false);
             return item;
