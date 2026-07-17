@@ -111,35 +111,38 @@ namespace CosmicShore.Gameplay
 
             float spacing = _def.StationSpacing;
             // One layer OUTWARD from the toy (away from the cell centre): fly through the toy,
-            // keep flying, and the species row is directly ahead.
+            // keep flying, and the species matrix is directly ahead - FAUNA on the lower row,
+            // FLORA on the upper row (a full menagerie in one wall).
             Vector3 origin = transform.position + Outward * (spacing * 1.5f);
             Vector3 right = transform.right;
+            Vector3 up = transform.up;
 
-            int index = 0;
-            int total = (_def.Fauna?.Length ?? 0) + (_def.Flora?.Length ?? 0);
-
+            int faunaCount = 0;
             if (_def.Fauna != null)
                 foreach (var species in _def.Fauna)
                 {
                     if (species?.ElementConfigs is not { Length: > 0 }) continue;
-                    var pos = origin + right * (spacing * (index - (total - 1) * 0.5f));
+                    var pos = origin - up * (spacing * 0.5f)
+                              + right * (spacing * (faunaCount - (_def.Fauna.Length - 1) * 0.5f));
                     var station = CreateStation(_speciesGrid.transform, pos, species.Name,
                         _def.StationRadius, Definition.AccentColor);
                     var captured = species;
                     station.OnVesselPassed = () => BuildVariantGrid(captured.Name, captured.ElementConfigs, null);
-                    index++;
+                    faunaCount++;
                 }
 
+            int floraCount = 0;
             if (_def.Flora != null)
                 foreach (var species in _def.Flora)
                 {
                     if (species?.ElementConfigs is not { Length: > 0 }) continue;
-                    var pos = origin + right * (spacing * (index - (total - 1) * 0.5f));
+                    var pos = origin + up * (spacing * 0.5f)
+                              + right * (spacing * (floraCount - (_def.Flora.Length - 1) * 0.5f));
                     var station = CreateStation(_speciesGrid.transform, pos, species.Name,
                         _def.StationRadius, Definition.AccentColor);
                     var captured = species;
                     station.OnVesselPassed = () => BuildVariantGrid(captured.Name, null, captured.ElementConfigs);
-                    index++;
+                    floraCount++;
                 }
         }
 
@@ -227,11 +230,21 @@ namespace CosmicShore.Gameplay
             clone.name = $"{config.name} (L{level})";
             clone.InitialLevel = level;
 
+            // A POPULATION, not an individual - the same seed-floor count the cell spawner
+            // uses, jittered around the station so the group disperses like a spawner wave.
             Domains domain = Context?.GameData?.LocalPlayer?.Vessel?.VesselStatus?.Domain ?? cell.ControllingDomain;
-            var fauna = CellLifeSpawnerBase.SpawnFaunaWithDomain(
-                cell, clone.FaunaPrefab, cell.transform.position, domain, position);
-            if (fauna) fauna.AssignLineage(cell, clone);
-            CSDebug.Log($"[LifeformMatrix] Spawned {clone.name} ({domain}) at {position} -> {(fauna ? "ok" : "FAILED")}");
+            int count = Mathf.Max(1, clone.PopulationSize);
+            int spawned = 0;
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 pos = position + Random.insideUnitSphere * (_def.StationRadius * 2.5f);
+                var fauna = CellLifeSpawnerBase.SpawnFaunaWithDomain(
+                    cell, clone.FaunaPrefab, cell.transform.position, domain, pos);
+                if (!fauna) continue;
+                fauna.AssignLineage(cell, clone);
+                spawned++;
+            }
+            CSDebug.Log($"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} ({domain}) at {position}");
         }
 
         void SpawnFloraVariant(FloraConfigurationSO config, int level, Vector3 position)
@@ -247,10 +260,24 @@ namespace CosmicShore.Gameplay
             clone.name = $"{config.name} (L{level})";
             clone.InitialLevel = level;
 
-            // Root the flora AT the station so the tester sees it grow right where they flew -
-            // Plant() would otherwise disperse it across the cell, invisible from out here.
-            var flora = CellLifeSpawnerBase.SpawnFlora(cell, clone.FloraPrefab, null, clone, position);
-            CSDebug.Log($"[LifeformMatrix] Spawned {clone.name} at {position} -> {(flora ? "ok (grows from one seed prism - watch it build)" : "FAILED")}");
+            // A POPULATION (InitialSpawnCount), rooted AT the station so the tester sees it
+            // grow right where they flew - Plant() would otherwise disperse it across the cell.
+            int count = Mathf.Max(1, clone.InitialSpawnCount);
+            int spawned = 0;
+            for (int i = 0; i < count; i++)
+            {
+                Vector3 pos = position + Random.insideUnitSphere * (_def.StationRadius * 3f);
+                if (CellLifeSpawnerBase.SpawnFlora(cell, clone.FloraPrefab, null, clone, pos))
+                    spawned++;
+            }
+
+            // Frenzy gate honesty: flora growth freezes cell-wide above Frenzy (the ecology's
+            // one growth brake). A long-running lava-lamp cell is often AT Frenzy, so a fresh
+            // spawn sits as seed prisms until mass is cleared - say so instead of looking broken.
+            string growth = cell.FloraGrowingEnabled
+                ? "growing (from seed prisms - watch them build)"
+                : "FROZEN - cell is at Frenzy; clear prism mass (graze/joust/ability) and growth resumes";
+            CSDebug.Log($"[LifeformMatrix] Spawned {spawned}/{count} x {clone.name} at {position}; growth: {growth}");
         }
 
         // ── Stations ─────────────────────────────────────────────────────────
