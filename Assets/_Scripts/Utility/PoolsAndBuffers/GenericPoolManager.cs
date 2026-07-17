@@ -252,8 +252,18 @@ namespace CosmicShore.Utility
         {
             var obj = Instantiate(prefab, transform, true);
             obj.gameObject.SetActive(false);
+            OnInstanceCreated(obj);
             return obj;
         }
+
+        /// <summary>
+        /// Post-instantiation hook that runs for EVERY pooled clone, on both the
+        /// synchronous CreateFunc path and the async InstantiateAsync refill path.
+        /// Subclasses that must prepare instances (e.g. Reflex DI injection) override
+        /// this instead of CreateFunc — an async-refilled instance never routes
+        /// through CreateFunc.
+        /// </summary>
+        protected virtual void OnInstanceCreated(T obj) { }
 
         protected virtual void OnGetFromPool(T obj)
         {
@@ -380,6 +390,7 @@ namespace CosmicShore.Utility
                         // so OnEnable can never fire during the move.
                         obj.gameObject.SetActive(false);
                         obj.transform.SetParent(transform, false);
+                        OnInstanceCreated(obj);
                         pool.Release(obj);
                     }
                     return;
