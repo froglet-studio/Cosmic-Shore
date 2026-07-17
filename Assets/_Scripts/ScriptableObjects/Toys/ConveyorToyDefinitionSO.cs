@@ -35,10 +35,13 @@ namespace CosmicShore.ScriptableObjects
         [SerializeField, Min(0), Tooltip("Most crystal pickups a single scene can hold.")]
         int maxCrystalsPerScene = 3;
 
-        [SerializeField, Tooltip("Theming palette - per-scene domain distribution (incl. neutral Blue), " +
-                                 "prism-kind accents (danger / shielded / supershielded), scale mood, and " +
-                                 "the elemental/omni crystal mix. Weighted toward coherent scenes with " +
-                                 "occasional spice, never chaotic confetti.")]
+        [SerializeField, Tooltip("Theming palette - structural domain schemes over the full playable " +
+                                 "triad (per-structure rainbows, gradients, pinwheels, stripes, mirrors, " +
+                                 "neutral-Blue veins), prism-kind schemes (danger gates/tips, armoured " +
+                                 "shield frames, keystone landmarks - shield counts capped for the " +
+                                 "collider budget), scale moods (uniform / long-axis stretch / taper), " +
+                                 "and the elemental/omni crystal mix. Painted per structure, never " +
+                                 "per-prism confetti.")]
         MicroscenePalette palette = new();
 
         [SerializeField, Tooltip("Include the living recipes (Meadow flora / Menagerie fauna, released into " +
