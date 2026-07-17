@@ -99,6 +99,6 @@ MonoBehaviour:
     SkyColor: {r: 0, g: 0, b: 0.102, a: 0}
     LightColor: {r: 0, g: 0, b: 0, a: 0}
     DarkColor: {r: 0, g: 0, b: 0, a: 0}
-    BrightCTA: {r: 0, g: 0, b: 0, a: 0}
-    DarkCTA: {r: 0, g: 0, b: 0, a: 0}
+    BrightCTA: {r: 0.59, g: 0.92, b: 0.16, a: 1}
+    DarkCTA: {r: 0.18, g: 0.32, b: 0.05, a: 1}
     Danger: {r: 0.72350526, g: 0.04628531, b: 0.020476442, a: 0}

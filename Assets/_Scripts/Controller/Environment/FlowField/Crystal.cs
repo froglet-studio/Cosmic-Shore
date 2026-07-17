@@ -84,6 +84,7 @@ namespace CosmicShore.Gameplay
             if (_authoredColliderRadius < 0f) _authoredColliderRadius = col.radius;
             col.radius = _authoredColliderRadius * (owner != null ? EmbeddedHeartRadiusMultiplier : 1f);
             col.enabled = owner != null;
+            ApplyColorSetTint(); // heart = blue-white neutral while it lives
         }
 
         // ── Active-crystal registry ──────────────────────────────────────────
@@ -115,24 +116,43 @@ namespace CosmicShore.Gameplay
         }
 
         // ── Color set (single source: SO_ColorSet via the theme container) ───
-        // Crystal prefabs bake placeholder colors into their materials; the LIVE colors come from
-        // the theme's ColorSet so palette tweaks reach every crystal - lifeform hearts/drops,
-        // conveyor pickups, and cell crystals alike. Element identity stays SHAPE (per-element
-        // model); color belongs to the domain (Blue = the neutral set). Applied per-renderer via
-        // MaterialPropertyBlock - never renderer.material clones.
+        // Crystal COLOR signals WHO can collect it (element identity is shape, never color):
+        //   • domain crystal (Jade/Ruby/Gold)  → that domain's crystal colors - only it collects
+        //   • embedded lifeform heart          → blue-white neutral (BlueColors) - nobody collects
+        //   • free pickup (drop / omni / cell) → lime CTA (EnvironmentColors) - anyone collects
+        // Applies to omni and all four elemental crystals. Colors come LIVE from the theme's
+        // ColorSet, per-renderer via MaterialPropertyBlock - never renderer.material clones.
 
         static MaterialPropertyBlock s_tintBlock;
 
-        /// <summary>Tints all crystal models with the current domain's crystal colors from the
-        /// theme ColorSet. No-op when the theme container or color set is unwired.</summary>
+        /// <summary>Tints all crystal models from the theme ColorSet by collectability state
+        /// (see comment above). No-op when the theme container or color set is unwired.</summary>
         protected void ApplyColorSetTint()
         {
             if (!_themeManagerData || _themeManagerData.ColorSet == null) return;
-            // Legacy prefabs carry stale ownDomain sentinels (e.g. -1) - anything that isn't a
-            // real domain tints as Blue, the neutral "no team" set.
-            if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(ownDomain, out var colorSet) || colorSet == null)
-                if (!_themeManagerData.ColorSet.TryGetColorSetByDomain(Domains.Blue, out colorSet) || colorSet == null)
-                    return;
+            var colors = _themeManagerData.ColorSet;
+
+            Color bright, dull;
+            bool domainOwned = ownDomain is Domains.Jade or Domains.Ruby or Domains.Gold;
+            if (domainOwned && colors.TryGetColorSetByDomain(ownDomain, out var domainSet) && domainSet != null)
+            {
+                bright = domainSet.BrightCrystalColor;
+                dull = domainSet.DullCrystalColor;
+            }
+            else if (IsEmbedded)
+            {
+                // A living lifeform's heart: the blue-white neutral range - no domain can take it.
+                if (!colors.TryGetColorSetByDomain(Domains.Blue, out var neutralSet) || neutralSet == null) return;
+                bright = neutralSet.BrightCrystalColor;
+                dull = neutralSet.DullCrystalColor;
+            }
+            else
+            {
+                // Free collectible: the lime CTA - any domain can collect it now.
+                if (colors.EnvironmentColors == null) return;
+                bright = colors.EnvironmentColors.BrightCTA;
+                dull = colors.EnvironmentColors.DarkCTA;
+            }
 
             s_tintBlock ??= new MaterialPropertyBlock();
             foreach (var modelData in crystalModels)
@@ -144,8 +164,8 @@ namespace CosmicShore.Gameplay
                 if (props.bright == null) continue;
 
                 renderer.GetPropertyBlock(s_tintBlock);
-                s_tintBlock.SetColor(props.bright, colorSet.BrightCrystalColor);
-                s_tintBlock.SetColor(props.dull, colorSet.DullCrystalColor);
+                s_tintBlock.SetColor(props.bright, bright);
+                s_tintBlock.SetColor(props.dull, dull);
                 renderer.SetPropertyBlock(s_tintBlock);
             }
         }
