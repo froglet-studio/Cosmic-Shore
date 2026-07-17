@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 3197094124088707225}
   - component: {fileID: 3527439031829378468}
   - component: {fileID: 3948621484860088278}
+  - component: {fileID: 8520578125289607820}
   m_Layer: 14
   m_Name: Cell
   m_TagString: Untagged
@@ -91,3 +92,19 @@ MonoBehaviour:
   ShowTopMostFoldoutHeaderGroup: 1
   serverMirrorIntervalSeconds: 0.5
   cell: {fileID: 3197094124088707225}
+--- !u!114 &8520578125289607820
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7817456538282590180}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7bc3898491e17862fc83aba265537c2c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CosmicShore.Gameplay.FloraNetworkSync
+  ShowTopMostFoldoutHeaderGroup: 1
+  cell: {fileID: 3197094124088707225}
+  serverMirrorIntervalSeconds: 2
+  maxCatchUpGrowthTicks: 200
